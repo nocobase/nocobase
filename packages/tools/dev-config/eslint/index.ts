@@ -186,8 +186,8 @@ export const react: Linter.Config[] = [
   },
   {
     // The server renders every runtime value the browser needs into the page's client configuration, so browser
-    // code has no environment of its own to read. `PROD`, `DEV` and `MODE` stay: Vite replaces them with literals at
-    // build time, and they are how development-only code is left out of a production build.
+    // code has no environment of its own to read. Vite replaces `PROD`, `DEV`, `MODE` and the asset `BASE_URL` with
+    // build-time literals. Resolve shipped assets through resolveAssetUrl; runtime paths still use resolveAppUrl.
     name: '@nocobase/dev-config/client-env',
     files: reactFiles,
     rules: {
@@ -195,9 +195,9 @@ export const react: Linter.Config[] = [
         'error',
         {
           selector:
-            "MemberExpression[object.type='MemberExpression'][object.object.type='MetaProperty'][object.property.name='env']:not([property.name=/^(PROD|DEV|MODE)$/])",
+            "MemberExpression[object.type='MemberExpression'][object.object.type='MetaProperty'][object.property.name='env']:not([property.name=/^(PROD|DEV|MODE|BASE_URL)$/])",
           message:
-            'Read runtime values from the client configuration (resolveAppUrl, useClientApplication().config). import.meta.env is limited to PROD, DEV and MODE.',
+            'Read runtime values from the client configuration (resolveAppUrl, useClientApplication().config); use resolveAssetUrl for built assets. import.meta.env is limited to PROD, DEV, MODE and BASE_URL.',
         },
       ],
     },

@@ -30,6 +30,30 @@ export function resolveAppUrl(path: string = '/'): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
+interface ImportMetaWithAssetBase {
+  readonly env?: { readonly BASE_URL?: string };
+}
+
+/**
+ * Resolve a file shipped in the client build, such as `/assets/logo.png`. Vite replaces BASE_URL when the
+ * application is built, after this library is compiled. An absolute CDN base is independent of the application's
+ * mount path; development and relative builds follow the server-rendered mount path through resolveAppUrl.
+ * API endpoints, page links and runtime-generated files must keep using resolveAppUrl.
+ */
+export function resolveAssetUrl(path: string = '/'): string {
+  if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(path)) {
+    return path;
+  }
+  const base = (import.meta as ImportMetaWithAssetBase).env?.BASE_URL;
+  if (!base || !/^https?:\/\//i.test(base)) {
+    return resolveAppUrl(path);
+  }
+  return new URL(
+    path.replace(/^\/+/, ''),
+    base.endsWith('/') ? base : `${base}/`,
+  ).href;
+}
+
 function readConfiguredBasePath(): string {
   const config = readAppClientRuntimeConfig();
   const app = isRecord(config) ? config.app : undefined;

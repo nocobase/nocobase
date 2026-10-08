@@ -19,7 +19,7 @@ afterAll(async () => {
 });
 
 const restricted =
-  'Read runtime values from the client configuration (resolveAppUrl, useClientApplication().config). import.meta.env is limited to PROD, DEV and MODE.';
+  'Read runtime values from the client configuration (resolveAppUrl, useClientApplication().config); use resolveAssetUrl for built assets. import.meta.env is limited to PROD, DEV, MODE and BASE_URL.';
 
 async function lint(
   configs: ReturnType<typeof createApplicationConfig>,
@@ -53,18 +53,18 @@ describe('import.meta.env in browser code', () => {
     const messages = await lint(
       configs,
       file,
-      'export const url = import.meta.env.NOCOBASE_API_URL;\nexport const base = import.meta.env?.BASE_URL;\n',
+      'export const url = import.meta.env.NOCOBASE_API_URL;\nexport const cdn = import.meta.env?.CDN_BASE_URL;\n',
     );
     expect(messages.filter((message) => message === restricted)).toHaveLength(
       2,
     );
   });
 
-  it('allows the build-mode flags Vite replaces with literals', async () => {
+  it('allows the build-mode flags and asset base Vite replaces with literals', async () => {
     const messages = await lint(
       createApplicationConfig({ tsconfigRootDir: root }),
       'client/mode.jsx',
-      'export const flags = [import.meta.env.PROD, import.meta.env.DEV, import.meta.env.MODE];\n',
+      'export const flags = [import.meta.env.PROD, import.meta.env.DEV, import.meta.env.MODE];\nexport const base = import.meta.env.BASE_URL;\nexport const optionalBase = import.meta.env?.BASE_URL;\n',
     );
     expect(messages).not.toContain(restricted);
   });

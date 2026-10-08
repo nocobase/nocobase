@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { resolveAppBase, resolveAppUrl } from '../src/client.js';
+import {
+  resolveAppBase,
+  resolveAppUrl,
+  resolveAssetUrl,
+} from '../src/client.js';
 
 function renderConfig(config: unknown): void {
   document.body.innerHTML = `<script id="nocobase-runtime-config" type="application/json">${JSON.stringify(
@@ -87,6 +91,42 @@ describe('resolveAppUrl', () => {
 
     expect(resolveAppUrl('https://example.com/a')).toBe(
       'https://example.com/a',
+    );
+  });
+});
+
+describe('resolveAssetUrl', () => {
+  it('follows the runtime mount path without a compiled CDN base', () => {
+    renderConfig({ app: { basePath: '/apps/crm' } });
+
+    expect(resolveAssetUrl('/assets/logo.png')).toBe(
+      '/apps/crm/assets/logo.png',
+    );
+    expect(resolveAssetUrl('assets/logo.png?size=2#preview')).toBe(
+      '/apps/crm/assets/logo.png?size=2#preview',
+    );
+    renderConfig({ app: { basePath: '' } });
+    expect(resolveAssetUrl('assets/logo.png')).toBe('/assets/logo.png');
+  });
+
+  it.each([
+    'https://images.example.com/logo.png',
+    '//images.example.com/logo.png',
+    'data:image/png;base64,AA==',
+    'blob:https://app.example.com/image',
+  ])('preserves an already resolved URL (%s)', (url) => {
+    expect(resolveAssetUrl(url)).toBe(url);
+  });
+
+  it('preserves the path outside a browser without a compiled CDN base', () => {
+    vi.stubGlobal('window', undefined);
+
+    expect(resolveAssetUrl('/assets/logo.png')).toBe('/assets/logo.png');
+  });
+
+  it('requires the server-rendered mount path for a relative build in the browser', () => {
+    expect(() => resolveAssetUrl('/assets/logo.png')).toThrow(
+      'no app.basePath',
     );
   });
 });

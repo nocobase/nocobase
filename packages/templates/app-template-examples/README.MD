@@ -435,6 +435,28 @@ For example, `pnpm build --target linux-x64 --node-version 24` produces:
 
 If your application has no native modules — `pg`, `mysql2`, and `tedious` are all plain JavaScript — no platform-specific binaries need retargeting. The build still records the selected target, and the deployment runtime must satisfy `engines.node`.
 
+#### Serving static assets from a CDN
+
+Set `CDN_BASE_URL` when building to use a CDN for Vite-generated asset URLs:
+
+```bash
+CDN_BASE_URL=https://cdn.example.com/my-app/v1/ pnpm build
+```
+
+Use a full HTTPS URL ending in `/`. The build reads the process environment first, then `.env.local`, then `.env`. Unset, empty or whitespace-only values keep the default relative base (`./`). Development ignores this variable. This is a build parameter, not a `config.yml` option or a runtime variable listed by `pnpm nocobase config variables` or `dist/variables.json`; changing it requires rebuilding.
+
+Upload the static files in `dist/client/` to the configured CDN prefix, preserving their paths. For example, `dist/client/assets/index-abc.js` must be available at `https://cdn.example.com/my-app/v1/assets/index-abc.js`. Configure the CDN to allow cross-origin module and font requests from the application origin. A release-specific prefix keeps different builds separate; retain assets needed by clients still running an older release.
+
+Keep the complete `dist/client/` tree on the application server, and serve the application's HTML through it so runtime configuration is injected. The CDN setting changes Vite-processed HTML, JavaScript and CSS resource URLs, and static files addressed with `resolveAssetUrl`, including this template's logos:
+
+```tsx
+import { resolveAssetUrl } from '@nocobase/app-client';
+
+<img src={resolveAssetUrl('/assets/logo-mark.png')} alt='Logo' />;
+```
+
+Pass the file's path relative to `dist/client/`, with or without a leading slash. `resolveAssetUrl` reads `import.meta.env.BASE_URL`, which Vite replaces with the configured `base` during the application build; the browser does not read `CDN_BASE_URL` from the server environment. With an absolute HTTP(S) CDN base it returns the CDN URL, otherwise it falls back to `resolveAppUrl` and the runtime `APP_BASE_PATH`. Already resolved URLs are preserved. Use `resolveAppUrl` for API URLs, page links and runtime-generated resources such as workflow artifacts; the CDN must actually contain a file before it can be served there.
+
 #### Packing the build
 
 `pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact you upload to a Hub to deploy this application.
@@ -460,6 +482,14 @@ pnpm build --target linux-x64 --tar
 ```
 
 #### Building a Docker image
+
+For a source build using a CDN, pass its URL as a build argument:
+
+```bash
+docker build --build-arg CDN_BASE_URL=https://cdn.example.com/my-app/v1/ -t my-app .
+```
+
+With `DIST=prebuilt`, set `CDN_BASE_URL` on the earlier `pnpm build` command instead: the image packages the existing client files unchanged. Setting `CDN_BASE_URL` on a prebuilt image build or with `docker run -e` cannot change their compiled URLs. The source build does not read the host's `.env`; use the build argument.
 
 `Dockerfile` builds this application from its sources into a production image. From the project root:
 

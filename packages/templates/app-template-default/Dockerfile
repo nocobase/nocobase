@@ -53,6 +53,8 @@ RUN pnpm --filter "$(node -p "require('./${APP_DIR}/package.json').name")^..." b
 
 WORKDIR /src/${APP_DIR}
 ARG TARGETARCH
+# Only source builds consume this; prebuilt assets already contain their base URL.
+ARG CDN_BASE_URL
 RUN --mount=type=cache,target=/pnpm/store \
     case "${TARGETARCH}" in \
       amd64) target=linux-x64 ;; \

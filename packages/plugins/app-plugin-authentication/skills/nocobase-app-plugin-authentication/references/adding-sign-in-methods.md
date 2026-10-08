@@ -114,6 +114,8 @@ Every other Better Auth plugin has to be checked before it is enabled, because c
 
 Social and generic OAuth start from the client:
 
+Import `resolveAppUrl` from `@nocobase/app-client` for these application callback URLs so they follow the runtime mount path. `resolveAssetUrl` from the same package is for static files shipped in the client build, such as provider logos; it may point at a CDN and must not be used for sign-in endpoints or callbacks.
+
 ```ts
 const { client } = useAuthentication();
 await client.signIn.social({

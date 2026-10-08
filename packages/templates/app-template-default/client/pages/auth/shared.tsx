@@ -1,4 +1,4 @@
-import { resolveAppUrl } from '@nocobase/app-client';
+import { resolveAssetUrl } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Blocks, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
@@ -32,12 +32,12 @@ export function AuthPage({
           <img
             alt=''
             className='dark:hidden'
-            src={resolveAppUrl('/assets/logo-mark.png')}
+            src={resolveAssetUrl('/assets/logo-mark.png')}
           />
           <img
             alt=''
             className='hidden dark:block'
-            src={resolveAppUrl('/assets/logo-mark-dark.png')}
+            src={resolveAssetUrl('/assets/logo-mark-dark.png')}
           />
         </>
       }

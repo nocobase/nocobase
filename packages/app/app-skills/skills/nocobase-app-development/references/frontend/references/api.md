@@ -3,7 +3,8 @@
 Every endpoint request goes through the HTTP client the application provides:
 
 - **Do not** create your own client, do not use `fetch` or axios, do not hard-code `/api`, and do not build endpoint URLs from `location`. The client's base URL (the configuration key `api.baseURL`, by default `resolveAppUrl('/api')`) already includes the deployment base path (for example `/main`).
-- When you need a URL rather than a request, such as a download `href` or an `<img src>`, build it with `resolveAppUrl('/api/…')` from `@nocobase/app-client`, which adds the deployment base path.
+- For a URL served by the application, such as an API download `href`, an API-backed image or a page link, use `resolveAppUrl('/api/…')` from `@nocobase/app-client`, which adds the runtime deployment base path. Keep runtime-generated resources, including workflow artifacts, on this helper.
+- For a static file shipped in the frontend build, use `resolveAssetUrl('/assets/logo.png')` from `@nocobase/app-client`. Paths are relative to the client output root (`dist/client/assets/logo.png` in this example), with or without a leading slash. The helper uses Vite's absolute HTTP(S) `base` when configured, and otherwise falls back to `resolveAppUrl`; existing absolute, protocol-relative, data and blob URLs are preserved. The templates set `base` from `CDN_BASE_URL` during the build, and Vite writes it into the client code as `import.meta.env.BASE_URL`. Changing CDN settings requires rebuilding and uploading the matching files. Business code should call the helper rather than read the build variable itself.
 - Import `useApiClient`, `apiClientToken`, the `ApiClient` type and `ApiClientError` from `@nocobase/app-client`. That way the application and plugins share one runtime and one error class, which is what makes `instanceof ApiClientError` reliable.
 
 ## Endpoints and types used in the examples

@@ -13,7 +13,7 @@ export {
   type AppClientRootProps,
 } from './app-client.js';
 export { ClientApplicationContext } from './application-context.js';
-export { resolveAppBase, resolveAppUrl } from './client.js';
+export { resolveAppBase, resolveAppUrl, resolveAssetUrl } from './client.js';
 export {
   ApiClientError,
   buildFindManyOptions,
