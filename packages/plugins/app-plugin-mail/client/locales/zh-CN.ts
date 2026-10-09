@@ -92,7 +92,7 @@ const zhCN: MailResource = {
     dismiss: '关闭提示',
     accepted: '邮件已加入发送队列。',
     loadedCount: '已加载 {{count}} 封',
-    mailboxNavigation: '邮箱导航',
+    mailboxNavigation: '邮箱与文件夹',
     backToMessages: '返回邮件列表',
     closeNavigation: '关闭邮箱导航',
     retry: '重试',

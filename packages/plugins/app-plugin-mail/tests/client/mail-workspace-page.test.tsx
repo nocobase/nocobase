@@ -61,6 +61,7 @@ vi.mock('../../client/runtime.js', () => ({
   useMailClient: () => mail,
 }));
 
+import { MAIL_VIRTUAL_FOLDER_IDS } from '../../shared/mail.js';
 import { MailCenterDevPage } from '../../client/pages/mail-dev-page.js';
 import MailWorkspacePage from '../../client/pages/mail-workspace-page.js';
 import MailManagementPage from '../../client/pages/mail-management-page.js';
@@ -437,11 +438,11 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(await screen.findByText('Message content')).toBeInTheDocument();
     const requests = mail.listMessages.mock.calls.length;
     expect(
-      screen.queryByRole('button', { name: 'Back to messages' }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Back to message list' }),
+    ).toHaveClass('@min-[56rem]/mail:hidden');
     expect(
-      screen.queryByRole('button', { name: 'Mailbox navigation' }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    ).toHaveClass('@min-[56rem]/mail:hidden');
     expect(screen.getByRole('combobox', { name: 'Account' })).toBeVisible();
     expect(
       screen.getByRole('button', { name: /Reading flow/ }),
@@ -449,6 +450,275 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(mail.listMessages).toHaveBeenCalledTimes(requests);
   });
 
+  it('keeps the mounted list, page and scroll position when returning and ignores late details', async () => {
+    const first = { ...createUnreadMessage('First mobile page'), read: true };
+    const second = { ...createUnreadMessage('Second mobile page'), read: true };
+    mail.listMessages.mockResolvedValueOnce({
+      items: [first],
+      nextCursor: 'mobile-page-2',
+    });
+    mail.listMessages.mockResolvedValueOnce({ items: [second] });
+    let resolveDetails!: (message: typeof second) => void;
+    mail.getMessage.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDetails = resolve;
+        }),
+    );
+    const { container } = render(<MailWorkspacePage />);
+    await screen.findByText(first.subject);
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    await screen.findByText(second.subject);
+    const list = screen.getByRole('region', { name: 'Mail' });
+    list.scrollTop = 137;
+    const requests = mail.listMessages.mock.calls.length;
+    fireEvent.click(
+      screen.getByRole('button', { name: new RegExp(second.subject) }),
+    );
+    expect(container.querySelector('[data-slot=mail-list-pane]')).toHaveClass(
+      'hidden',
+    );
+    expect(
+      container.querySelector('[data-slot=mail-conversation-pane]'),
+    ).toHaveClass('flex');
+    expect(screen.getByRole('region', { name: 'Mail' })).toBe(list);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Back to message list' }),
+    );
+    await act(async () => {
+      resolveDetails(second);
+    });
+    expect(container.querySelector('[data-slot=mail-list-pane]')).toHaveClass(
+      'flex',
+    );
+    expect(
+      container.querySelector('[data-slot=mail-conversation-pane]'),
+    ).toHaveClass('hidden');
+    expect(screen.getByRole('region', { name: 'Mail' })).toBe(list);
+    expect(list.scrollTop).toBe(137);
+    expect(screen.getByText('Page 2')).toBeInTheDocument();
+    expect(screen.queryByText(second.text)).not.toBeInTheDocument();
+    expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+    expect(mail.updateMessage).not.toHaveBeenCalled();
+  });
+
+  it('closes mailbox navigation for the current folder and returns from the conversation', async () => {
+    const message = {
+      ...createUnreadMessage('Mobile drawer message'),
+      read: true,
+    };
+    mail.listMessages.mockResolvedValue({ items: [message] });
+    mail.getMessage.mockResolvedValue(message);
+    const { container } = render(<MailWorkspacePage />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: new RegExp(message.subject) }),
+    );
+    await screen.findByText(message.text);
+    const requests = mail.listMessages.mock.calls.length;
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    const currentFolder = drawer.querySelector<HTMLButtonElement>(
+      'button[aria-current="page"]',
+    );
+    expect(currentFolder).not.toBeNull();
+    fireEvent.click(currentFolder!);
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(container.querySelector('[data-slot=mail-list-pane]')).toHaveClass(
+      'flex',
+    );
+    expect(
+      container.querySelector('[data-slot=mail-conversation-pane]'),
+    ).toHaveClass('hidden');
+    expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+  });
+
+  it.each(['Unread', 'Starred', 'Sent', 'Drafts'])(
+    'closes the drawer and switches to %s',
+    async (name) => {
+      render(<MailWorkspacePage />);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Mailboxes and folders' }),
+      );
+      const drawer = await screen.findByRole('dialog', {
+        name: 'Mailboxes and folders',
+      });
+      fireEvent.click(within(drawer).getByRole('button', { name }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      await waitFor(() =>
+        expect(mail.listMessages).toHaveBeenLastCalledWith(
+          expect.objectContaining(
+            name === 'Unread'
+              ? { unread: true }
+              : name === 'Starred'
+                ? { starred: true }
+                : {
+                    folderId:
+                      name === 'Sent'
+                        ? MAIL_VIRTUAL_FOLDER_IDS.sent
+                        : MAIL_VIRTUAL_FOLDER_IDS.drafts,
+                  },
+          ),
+        ),
+      );
+    },
+  );
+
+  it('closes navigation on account and label changes', async () => {
+    mail.listLabels.mockResolvedValue([
+      { id: 'mobile-label', name: 'Customer', color: 'blue' },
+    ]);
+    render(<MailWorkspacePage />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    let drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    fireEvent.change(
+      within(drawer).getByRole('combobox', { name: 'Account' }),
+      { target: { value: 'account-1' } },
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(mail.listMessages).toHaveBeenLastCalledWith(
+        expect.objectContaining({ accountId: 'account-1' }),
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Customer' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(mail.listMessages).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          accountId: 'account-1',
+          labelId: 'mobile-label',
+        }),
+      ),
+    );
+  });
+
+  it('focuses the narrow reader and restores its retained row without scrolling', async () => {
+    const message = { ...createUnreadMessage('Keyboard reading'), read: true };
+    mail.listMessages.mockResolvedValue({ items: [message] });
+    mail.getMessage.mockResolvedValue(message);
+    render(<MailWorkspacePage />);
+    const row = await screen.findByRole('button', {
+      name: new RegExp(message.subject),
+    });
+    const navigation = screen.getByRole('button', {
+      name: 'Mailboxes and folders',
+    });
+    const bounds = new DOMRect(0, 0, 160, 36);
+    vi.spyOn(navigation, 'getClientRects').mockReturnValue(
+      Object.assign([bounds], { item: () => bounds }),
+    );
+    const list = screen.getByRole('region', { name: 'Mail' });
+    list.scrollTop = 137;
+    row.focus();
+    fireEvent.click(row);
+    const back = screen.getByRole('button', { name: 'Back to message list' });
+    await waitFor(() => expect(back).toHaveFocus());
+    await screen.findByText(message.text);
+    fireEvent.click(back);
+    await waitFor(() => expect(row).toHaveFocus());
+    expect(list.scrollTop).toBe(137);
+  });
+
+  it('closes an open drawer when CSS hides its trigger and focuses the live search control', async () => {
+    render(<MailWorkspacePage />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    const navigation = screen.getByRole('button', {
+      name: 'Mailboxes and folders',
+    });
+    const bounds = new DOMRect(0, 0, 160, 36);
+    const visibleRects = Object.assign([bounds], { item: () => bounds });
+    const hiddenRects = Object.assign([], { item: () => null });
+    let visible = true;
+    vi.spyOn(navigation, 'getClientRects').mockImplementation(() =>
+      visible ? visibleRects : hiddenRects,
+    );
+    let notify!: () => void;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        readonly callback: () => void;
+        constructor(callback: () => void) {
+          this.callback = callback;
+        }
+        observe(target: Element): void {
+          if (target === navigation) notify = this.callback;
+        }
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    );
+    try {
+      const requests = mail.listMessages.mock.calls.length;
+      fireEvent.click(navigation);
+      await screen.findByRole('dialog', { name: 'Mailboxes and folders' });
+      act(() => {
+        visible = false;
+        notify();
+      });
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByRole('textbox', { name: 'Search mail' }),
+        ).toHaveFocus(),
+      );
+      expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('closes navigation with its translated close control without changing the list', async () => {
+    render(<MailWorkspacePage />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    const requests = mail.listMessages.mock.calls.length;
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Close mailbox navigation' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+  });
   it.each(['Reply', 'Forward'])(
     'removes and restores quoted content in %s without changing the authored body',
     async (action) => {
