@@ -1,5 +1,17 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 88bc9eb: List the new `approval-ui` UI Library block in the application Skill's UI Library catalog: presentational approval components for a request's progress, history, route preview, parallel branches, receipts and action bar.
+- bb8484b: Support CDN_BASE_URL for frontend asset URLs in application and Docker source builds. Add resolveAssetUrl for shipped static files, migrate template logos, and document its distinction from runtime application URLs.
+- 10a1759: End a bare URL in issue descriptions and comments at the first CJK character or full-width punctuation mark, so `PR：https://example.com/pull/8（分支 x）` links `https://example.com/pull/8` instead of `https://example.com/pull/8（分支`. The UI Library catalog in the application Skill lists the `remark-cjk-autolink.ts` file the `markdown-view` item now installs.
+- a695d19: Use the public npm registry as the default source for NocoBase packages, templates, deployment commands, and generated application guidance.
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
 ## 0.1.0-beta.24
 
 ### Patch Changes

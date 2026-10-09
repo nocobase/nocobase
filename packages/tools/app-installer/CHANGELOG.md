@@ -1,5 +1,11 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.3
+
+### Patch Changes
+
+- a695d19: Use the public npm registry as the default source for NocoBase packages, templates, deployment commands, and generated application guidance.
+
 ## 0.1.0-beta.2
 
 ### Minor Changes

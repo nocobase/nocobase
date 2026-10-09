@@ -1,5 +1,12 @@
 # @nocobase/db-mssql
 
+## 0.1.0-beta.3
+
+### Patch Changes
+
+- ac30c51: Keep queued SQL requests on their owning connection and execute them in order, preventing queries from crossing transaction boundaries during concurrent work.
+- @nocobase/db@1.0.0-beta.18
+
 ## 0.1.0-beta.2
 
 ### Minor Changes
