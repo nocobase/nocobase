@@ -5,6 +5,7 @@ import type {
   EnqueueRequest,
   EnqueueResult,
   RunEnqueued,
+  RunRequestPending,
   RunService,
 } from '../server/tokens.js';
 import type { RunWait } from '../shared/runs.js';
@@ -42,14 +43,19 @@ async function enqueueApplicationWork(
   request: Omit<EnqueueRequest, 'responsibleUserId'>,
 ) {
   const result = await runs.enqueue(request);
+  expectTypeOf(result).toEqualTypeOf<EnqueueResult>();
+  // Applications guard a pending request before reporting a started run.
+  if (result.runId === null) {
+    expectTypeOf(result).toEqualTypeOf<RunRequestPending>();
+    return { started: false, requestId: result.requestId };
+  }
   expectTypeOf(result).toEqualTypeOf<RunEnqueued>();
-  // Existing applications report a started run with an optional string id.
   const started: { readonly started: boolean; readonly runId?: string } = {
     started: true,
     runId: result.runId,
   };
   const unowned = await runs.enqueue({ ...request, responsibleUserId: null });
-  expectTypeOf(unowned).toEqualTypeOf<RunEnqueued>();
+  expectTypeOf(unowned).toEqualTypeOf<EnqueueResult>();
   const responsible = await runs.enqueue({
     ...request,
     responsibleUserId: 'alice',
@@ -61,7 +67,7 @@ async function enqueueApplicationWork(
   return started;
 }
 
-it('keeps a non-null run id for callers that name no responsible person', async () => {
+it('lets applications guard a pending request and report a queued run', async () => {
   const queued: RunEnqueued = {
     outcome: 'created',
     runId: 'queued-run',
@@ -83,4 +89,25 @@ it('keeps a non-null run id for callers that name no responsible person', async 
       },
     ),
   ).toEqual({ started: true, runId: 'queued-run' });
+  const pending: RunRequestPending = {
+    outcome: 'pending',
+    runId: null,
+    inputId: null,
+    status: 'pending',
+    requestId: 'pending-request',
+  };
+  expect(
+    await enqueueApplicationWork(
+      { enqueue: () => Promise.resolve(pending) },
+      {
+        agentId: 'agent',
+        subject: { kind: 'sample', id: '1' },
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'bob', name: 'Bob' },
+          text: 'Start work.',
+        },
+      },
+    ),
+  ).toEqual({ started: false, requestId: 'pending-request' });
 });

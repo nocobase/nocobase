@@ -193,10 +193,6 @@ export interface RunService {
    * to confirm it first (`outcome` `pending`). In `outer`, joins the caller's transaction (the caller publishes its
    * events).
    */
-  enqueue(
-    request: EnqueueRequest & { readonly responsibleUserId?: null },
-    outer?: Tx,
-  ): Promise<RunEnqueued>;
   enqueue(request: EnqueueRequest, outer?: Tx): Promise<EnqueueResult>;
   /** Work waiting for the subject's responsible to confirm it: confirming, rejecting, withdrawing, handing it on. */
   readonly requests: RunRequestService;
@@ -676,94 +672,88 @@ export function createRunService(deps: RunServiceDeps): RunService {
       }),
   });
 
-  function enqueue(
-    request: EnqueueRequest & { readonly responsibleUserId?: null },
-    outer?: Tx,
-  ): Promise<RunEnqueued>;
-  function enqueue(request: EnqueueRequest, outer?: Tx): Promise<EnqueueResult>;
-  function enqueue(
-    request: EnqueueRequest,
-    outer?: Tx,
-  ): Promise<EnqueueResult> {
-    return tx.run(async (unit): Promise<EnqueueResult> => {
-      const source = await sourceOf(unit, request);
-      const responsible = request.responsibleUserId ?? null;
-      const threadScope = request.threadScope ?? DEFAULT_THREAD;
-      const foreign = responsible !== null && source !== responsible;
-      if (foreign && (request.execution ?? 'auto') === 'auto') {
-        // A consultation's asker waits for its answer at once: it can never wait for someone's confirmation.
-        if (request.parentRunId)
-          throw invalid(
-            'A consultation cannot wait for confirmation: name no responsible for it.',
-          );
-        // Someone else's work waits for the responsible, who must be able to run it once they confirm it.
-        const agent = await requireInvocable(unit, request.agentId, source);
-        if (!deps.agents.mayInvoke(agent, responsible))
-          throw forbidden(
-            'The person who answers for this may not wake this agent.',
-          );
-        if (!takesType(deps.subjects.get(request.subject.kind), agent.type))
-          throw invalid(
-            `A ${agent.type} agent cannot work on a ${request.subject.kind}.`,
-            { reason: 'AGENT_TYPE_NOT_ALLOWED', agentType: agent.type },
-          );
-        const created = await insertRunRequest(
-          unit,
-          { ids, clock },
-          {
-            agentId: agent.id,
-            subject: request.subject,
-            threadScope,
-            responsibleUserId: responsible,
-            requestedByUserId: source,
-            ownerUserId: request.ownerUserId ?? null,
-            priority: request.priority ?? 0,
-            requires: request.requires ?? [],
-            fireAt: fireAtOf(request.fireAt, clock.now()),
-            maxAttempts: request.maxAttempts ?? null,
-            input: request.input,
-          },
-        );
-        return {
-          outcome: 'pending',
-          requestId: created.id,
-          status: 'pending',
-          runId: null,
-          inputId: null,
-        };
-      }
-      // As the responsible when they caused it; as the source when they run it as themselves (`mine`); as whoever
-      // woke the agent when nobody answers for the subject.
-      const actorUserId = foreign
-        ? source
-        : (responsible ?? request.actorUserId ?? source);
-      const agent = await requireInvocable(unit, request.agentId, actorUserId);
-      if (foreign)
-        await requireRunnerFor(
-          unit,
-          agent,
-          actorUserId,
-          request.requires ?? [],
-        );
-      return queue(unit, agent, {
-        subject: request.subject,
-        threadScope,
-        actorUserId,
-        requestedByUserId: source,
-        confirmedByUserId: null,
-        ownerUserId: request.ownerUserId ?? null,
-        priority: request.priority ?? 0,
-        fireAt: fireAtOf(request.fireAt, clock.now()),
-        requires: request.requires ?? [],
-        ...(request.parentRunId ? { parentRunId: request.parentRunId } : {}),
-        ...(request.maxAttempts ? { maxAttempts: request.maxAttempts } : {}),
-        input: request.input,
-      });
-    }, outer);
-  }
-
   return {
-    enqueue,
+    enqueue: (request, outer) =>
+      tx.run(async (unit): Promise<EnqueueResult> => {
+        const source = await sourceOf(unit, request);
+        const responsible = request.responsibleUserId ?? null;
+        const threadScope = request.threadScope ?? DEFAULT_THREAD;
+        const foreign = responsible !== null && source !== responsible;
+        if (foreign && (request.execution ?? 'auto') === 'auto') {
+          // A consultation's asker waits for its answer at once: it can never wait for someone's confirmation.
+          if (request.parentRunId)
+            throw invalid(
+              'A consultation cannot wait for confirmation: name no responsible for it.',
+            );
+          // Someone else's work waits for the responsible, who must be able to run it once they confirm it.
+          const agent = await requireInvocable(unit, request.agentId, source);
+          if (!deps.agents.mayInvoke(agent, responsible))
+            throw forbidden(
+              'The person who answers for this may not wake this agent.',
+            );
+          if (!takesType(deps.subjects.get(request.subject.kind), agent.type))
+            throw invalid(
+              `A ${agent.type} agent cannot work on a ${request.subject.kind}.`,
+              { reason: 'AGENT_TYPE_NOT_ALLOWED', agentType: agent.type },
+            );
+          const created = await insertRunRequest(
+            unit,
+            { ids, clock },
+            {
+              agentId: agent.id,
+              subject: request.subject,
+              threadScope,
+              responsibleUserId: responsible,
+              requestedByUserId: source,
+              ownerUserId: request.ownerUserId ?? null,
+              priority: request.priority ?? 0,
+              requires: request.requires ?? [],
+              fireAt: fireAtOf(request.fireAt, clock.now()),
+              maxAttempts: request.maxAttempts ?? null,
+              input: request.input,
+            },
+          );
+          return {
+            outcome: 'pending',
+            requestId: created.id,
+            status: 'pending',
+            runId: null,
+            inputId: null,
+          };
+        }
+        // As the responsible when they caused it; as the source when they run it as themselves (`mine`); as whoever
+        // woke the agent when nobody answers for the subject.
+        const actorUserId = foreign
+          ? source
+          : (responsible ?? request.actorUserId ?? source);
+        const agent = await requireInvocable(
+          unit,
+          request.agentId,
+          actorUserId,
+        );
+        if (foreign)
+          await requireRunnerFor(
+            unit,
+            agent,
+            actorUserId,
+            request.requires ?? [],
+          );
+        return queue(unit, agent, {
+          subject: request.subject,
+          threadScope,
+          actorUserId,
+          requestedByUserId: source,
+          confirmedByUserId: null,
+          ownerUserId: request.ownerUserId ?? null,
+          priority: request.priority ?? 0,
+          fireAt: fireAtOf(request.fireAt, clock.now()),
+          requires: request.requires ?? [],
+          ...(request.parentRunId ? { parentRunId: request.parentRunId } : {}),
+          ...(request.maxAttempts ? { maxAttempts: request.maxAttempts } : {}),
+          input: request.input,
+        });
+      }, outer),
+
     requests,
 
     addInput: (runId, input, outer) =>

@@ -10,6 +10,10 @@ describeMigration('202610090005_ag_add_runner_variables', {
     },
   ],
   up: async ({ expectCollection }) => {
+    await expectCollection('agRunners').toHaveField('workspaceUsage', {
+      type: 'json',
+      nullable: true,
+    });
     await expectCollection('agRunnerVariables').toExist();
     await expectCollection('agRunnerVariables').toHaveField('name', {
       nullable: false,
@@ -26,5 +30,9 @@ describeMigration('202610090005_ag_add_runner_variables', {
   down: async ({ expectCollection }) => {
     await expectCollection('agRunnerVariables').not.toExist();
     await expectCollection('agRunners').not.toHaveField('variables');
+    await expectCollection('agRunners').toHaveField('workspaceUsage', {
+      type: 'json',
+      nullable: true,
+    });
   },
 });
