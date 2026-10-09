@@ -118,6 +118,7 @@ export type {
   RunnerNotice,
 } from './kernel/events.js';
 export type { DistConfig, DistService } from './distribution/index.js';
+export { JobSecretsNotAllowed } from './jobs/index.js';
 export type {
   BuildJobSpecInput,
   EnqueueJobInput,

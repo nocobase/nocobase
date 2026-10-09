@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-mail",
   "displayName": "Mail App Plugin",
   "description": "Provides mail sending and resumable mailbox synchronization architecture.",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.8",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -146,7 +146,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/app-plugin-mail"
   }
 }

@@ -12,7 +12,7 @@ A runner registers once per App with a one-time registration token (10 minutes):
 
 Then on the runner's machine: `nocobase-runner register --server <App URL> --token <token>`, and `nocobase-runner start` or `nocobase-runner service install` (launchd on macOS, a systemd user unit on Linux). The install script does all of this in one line; see [Distribution](distribution.md).
 
-A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started; their owner may share them with the team. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
+A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started, and receive its variables like any runner, except those marked "Team runtimes only" (`teamRunnersOnly`): a run that gets one goes to a team runner. Their owner may share them with the team. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
 
 ## How work reaches a runner
 

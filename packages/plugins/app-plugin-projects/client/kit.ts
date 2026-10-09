@@ -18,6 +18,12 @@ export {
   WorkflowEventsContext,
   type WorkflowEventUI,
 } from './lib/workflow-events.js';
+/** How a queued request to AI says why it waits, such as with the agents plugin's `formatRunWait`. */
+export {
+  IntakeWaitFormatContext,
+  type IntakeWait,
+  type IntakeWaitFormat,
+} from './lib/intake-wait.js';
 
 import { ACCESS_NAMESPACE } from '../shared/access.js';
 import { DataTable as BaseDataTable } from './components/data-table.js';

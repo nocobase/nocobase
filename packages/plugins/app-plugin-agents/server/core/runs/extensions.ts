@@ -233,6 +233,8 @@ export interface RepoAccessProvider {
   /** Unique among the providers. */
   readonly key: string;
   readonly prepare?: ExtensionPrepare;
+  /** Outside the transaction: revoke credentials prepared for a claim that was not delivered. Required when prepare mints credentials; idempotent. */
+  readonly discard?: (run: Run, prepared: unknown) => Promise<void>;
   /** In the claim's transaction, through its connection: database reads only. Null gives nothing. */
   forRun(
     conn: DatabaseConnection,

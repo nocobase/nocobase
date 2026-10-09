@@ -2,6 +2,7 @@ export {
   briefOf,
   createClaimService,
   fits,
+  fitsActor,
   hasTool,
   onlineEntryOf,
   pickEntry,
@@ -16,6 +17,11 @@ export {
   type ServerHolder,
 } from './claim.js';
 export { resolveAgentCli, type AgentCli } from './policy.js';
+export {
+  createClaimEligibility,
+  type ClaimEligibility,
+  type EligibilityRequest,
+} from './eligibility.js';
 export {
   createBriefSectionRegistry,
   createRepoAccessRegistry,
