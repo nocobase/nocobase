@@ -159,6 +159,14 @@ describe('agents API document', () => {
     ).toMatchObject({ command: 'run request run-as-me' });
   });
 
+  it('declares concurrent settlement conflicts on every run request mutation', () => {
+    for (const action of ['confirm', 'reject', 'withdraw', 'runAsMe'])
+      expect(
+        operation('POST', `/api/agents/runRequests/{requestId}/${action}`)
+          .responses,
+      ).toHaveProperty('409');
+  });
+
   it('names the credential of each route that takes no session', () => {
     expect(Object.keys(document.components?.securitySchemes ?? {})).toEqual(
       expect.arrayContaining(['runToken', 'runnerKey', 'registrationToken']),

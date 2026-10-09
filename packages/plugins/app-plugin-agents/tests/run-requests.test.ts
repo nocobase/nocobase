@@ -299,7 +299,7 @@ describe('run requests', () => {
     const restricted = await h.createAgent({
       name: 'Private',
       access: 'users',
-      userIds: [ALICE],
+      userIds: [ALICE, BOB],
     });
     const asked = await h.services.runs.enqueue({
       agentId: restricted,
@@ -321,6 +321,188 @@ describe('run requests', () => {
       ),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(await runsOn()).toEqual([]);
+  });
+
+  it.each(['mine', 'runAsMe'] as const)(
+    'keeps Bob’s %s input out of Alice’s running run',
+    async (execution) => {
+      await setUp();
+      const own = await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'sample', id: '1' },
+        responsibleUserId: ALICE,
+        input: comment(ALICE, 'Alice starts.'),
+      });
+      const runner = await h.registerRunner();
+      await claim(h, runner);
+      expect((await startRun(runner, own.runId!)).status).toBe(200);
+      const mine =
+        execution === 'mine'
+          ? await bobAsks('Bob alone.', { execution: 'mine' })
+          : await (async () => {
+              const asked = await bobAsks('Bob alone.');
+              return (
+                await h.services.runs.requests.runAsRequester(
+                  asked.outcome === 'pending' ? asked.requestId : '',
+                  BOB,
+                )
+              ).run;
+            })();
+      expect(mine.outcome).toBe('created');
+      expect(mine.runId).not.toBe(own.runId);
+      expect(await h.services.runs.get(mine.runId!)).toMatchObject({
+        actorUserId: BOB,
+      });
+      expect(
+        (await h.services.runs.detail(own.runId!)).inputs.map(
+          (input) => input.text,
+        ),
+      ).toEqual(['Alice starts.']);
+      // Isolation does not allow two identities to run the same work simultaneously.
+      expect(await claim(h, runner)).toEqual([]);
+    },
+  );
+
+  it.each(['queued', 'running'] as const)(
+    'keeps Alice’s confirmed work out of Bob’s %s mine run',
+    async (status) => {
+      await setUp();
+      const runner = await h.registerRunner();
+      const mine = await bobAsks('Bob starts.', { execution: 'mine' });
+      if (status === 'running') {
+        await claim(h, runner);
+        expect((await startRun(runner, mine.runId!)).status).toBe(200);
+      }
+      const asked = await bobAsks('Alice approves this.');
+      const confirmed = await h.services.runs.requests.confirm(
+        asked.outcome === 'pending' ? asked.requestId : '',
+        ALICE,
+      );
+      expect(confirmed.run.outcome).toBe('created');
+      expect(confirmed.run.runId).not.toBe(mine.runId);
+      expect(await h.services.runs.get(confirmed.run.runId)).toMatchObject({
+        actorUserId: ALICE,
+        confirmedByUserId: ALICE,
+      });
+      expect(
+        (await h.services.runs.detail(mine.runId!)).inputs.map(
+          (input) => input.text,
+        ),
+      ).toEqual(['Bob starts.']);
+    },
+  );
+
+  it.each([null, 'dave'] as const)(
+    'rejects the old responsible when the resolver now returns %s, before reassign is called',
+    async (newResponsible) => {
+      await setUp();
+      let responsible: string | null = ALICE;
+      h.services.subjects.register({
+        kind: 'ownedSample',
+        context: h.services.subjects.get('sample')!.context,
+        responsibleUserId: () => Promise.resolve(responsible),
+      });
+      const asked = await bobAsks('Needs approval.', {
+        subject: { kind: 'ownedSample', id: '1' },
+      });
+      const id = asked.outcome === 'pending' ? asked.requestId : '';
+      responsible = newResponsible;
+      for (const action of ['confirm', 'reject']) {
+        const response = await h.request(
+          'POST',
+          `/agents/runRequests/${id}/${action}`,
+          { user: ALICE, body: {} },
+        );
+        expect(response.status).toBe(403);
+      }
+      expect((await h.services.runs.requests.get(id)).status).toBe('pending');
+      responsible = ALICE;
+      expect(
+        (await h.services.runs.requests.confirm(id, ALICE)).run.outcome,
+      ).toBe('created');
+    },
+  );
+
+  it.each([null, 'dave'] as const)(
+    'expires and notifies when reassignment to %s cannot run the work, preserving runAsMe',
+    async (toUserId) => {
+      await setUp();
+      const restricted = await h.createAgent({
+        access: 'users',
+        userIds: [ALICE, BOB],
+      });
+      const asked = await bobAsks('Keep this work.', { agentId: restricted });
+      const id = asked.outcome === 'pending' ? asked.requestId : '';
+      const handed = await h.services.runs.requests.reassign({
+        subject: { kind: 'sample', id: '1' },
+        toUserId,
+        byUserId: ALICE,
+      });
+      expect(handed).toMatchObject({ superseded: [], created: [], queued: [] });
+      expect(handed.expired.map((request) => request.id)).toEqual([id]);
+      expect(events.map((event) => event.type)).toEqual([
+        'runRequest.created',
+        'runRequest.expired',
+        'notice',
+      ]);
+      expect(events.at(-1)).toMatchObject({
+        notice: { userIds: [BOB], params: { reason: 'reassignment' } },
+      });
+      await h.registerRunner();
+      const ran = await h.services.runs.requests.runAsRequester(id, BOB);
+      expect(await h.services.runs.get(ran.run.runId)).toMatchObject({
+        actorUserId: BOB,
+      });
+      await expect(
+        h.services.runs.requests.runAsRequester(id, BOB),
+      ).rejects.toMatchObject({ code: 'RUN_REQUEST_SETTLED' });
+    },
+  );
+
+  it('requires the requester’s own permission before creating an auto request', async () => {
+    await setUp();
+    const restricted = await h.createAgent({
+      access: 'users',
+      userIds: [ALICE],
+    });
+    await expect(
+      bobAsks('Unwanted.', { agentId: restricted }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(await h.services.runs.requests.list({ userId: ALICE })).toEqual([]);
+    expect(events).toEqual([]);
+  });
+
+  it('reuses an identical pending snapshot without renewing expiry, while retaining distinct work', async () => {
+    await setUp();
+    const first = await bobAsks('Same.', {
+      input: comment(BOB, 'Same.', { a: 1, b: 2 }),
+    });
+    const id = first.outcome === 'pending' ? first.requestId : '';
+    const original = await h.services.runs.requests.get(id);
+    h.clock.advance(1_000);
+    const repeats = await Promise.all([
+      bobAsks('Same.', { input: comment(BOB, 'Same.', { b: 2, a: 1 }) }),
+      bobAsks('Same.', { input: comment(BOB, 'Same.', { a: 1, b: 2 }) }),
+    ]);
+    expect(repeats).toEqual([first, first]);
+    expect((await h.services.runs.requests.get(id)).expiresAt).toBe(
+      original.expiresAt,
+    );
+    expect(events.map((event) => event.type)).toEqual(['runRequest.created']);
+    await bobAsks('Edited.', {
+      input: comment(BOB, 'Edited.', { a: 1, b: 2 }),
+    });
+    await bobAsks('Same.', {
+      input: comment(BOB, 'Same.', { a: 1, b: 2 }),
+      maxAttempts: 1,
+    });
+    expect(
+      await h.services.runs.requests.list({ userId: ALICE, status: 'pending' }),
+    ).toHaveLength(3);
+    h.clock.advance(RUN_REQUEST_TTL_MS);
+    expect(
+      await bobAsks('Same.', { input: comment(BOB, 'Same.', { a: 1, b: 2 }) }),
+    ).not.toEqual(first);
   });
 
   it('hands pending requests to a new responsible, and the old one can no longer confirm them', async () => {

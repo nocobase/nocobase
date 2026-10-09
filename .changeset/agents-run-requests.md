@@ -23,4 +23,7 @@ Add run requests to the agents plugin: when someone other than the person who an
 - New events: `runRequest.created`, `confirmed`, `rejected`, `withdrawn`, `superseded` and `expired`. The `notice` event's `notice` is now `AgentsNotice` (`RunnerNotice | RunRequestNotice`).
 - Runs record `requestedByUserId` and `confirmedByUserId`. Migration `202610080001_ag_create_run_requests` creates `agRunRequests`, adds both columns to `agRuns`, and fills `requestedByUserId` of existing runs from `actorUserId`.
 - The sweeper's report gains `requestsExpired`.
+- Work is merged or appended only into runs with the same `actorUserId`, including `mine`, `runAsMe` and confirmed requests.
+- Subjects can bind `responsibleUserId(conn, subjectId)` to recheck current responsibility when confirming or rejecting. Without a resolver, applications must reassign requests when responsibility changes. A reassignment that has no usable responsible expires the request, notifies its requester and preserves execution as the requester.
+- `auto` requests require the requester's own agent permission. Identical pending snapshots reuse the existing request without renewing its expiry or emitting another creation event. Run request mutation routes declare concurrent settlement errors (409).
 - `@nocobase/agent-protocol` adds the error reasons `RUN_REQUEST_NOT_FOUND`, `RUN_REQUEST_SETTLED` and `NO_RUNNER_AVAILABLE`.

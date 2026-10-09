@@ -511,7 +511,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
       subjectId: work.subject.id,
       threadScope: work.threadScope,
     };
-    const open = await runsOfKey(unit.conn, key, ['queued', ...ACTIVE]);
+    const open = (
+      await runsOfKey(unit.conn, key, ['queued', ...ACTIVE])
+    ).filter((run) => run.actorUserId === work.actorUserId);
     const working = open.find(
       (run) =>
         run.status === 'dispatched' ||
@@ -592,6 +594,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
     ids,
     clock,
     people: deps.people,
+    currentResponsible: (unit, subject) =>
+      deps.subjects
+        .get(subject.kind)
+        ?.responsibleUserId?.(unit.conn, subject.id),
     mayInvoke: (agent, userId) => deps.agents.mayInvoke(agent, userId),
     requireInvocable,
     requireRunnerFor,
@@ -626,10 +632,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
               'A consultation cannot wait for confirmation: name no responsible for it.',
             );
           // Someone else's work waits for the responsible, who must be able to run it once they confirm it.
-          const agent = await findAgent(unit.conn, request.agentId);
-          if (!agent) throw notFound('Agent');
-          if (agent.archivedAt)
-            throw precondition('AGENT_ARCHIVED', 'The agent is archived.');
+          const agent = await requireInvocable(unit, request.agentId, source);
           if (!deps.agents.mayInvoke(agent, responsible))
             throw forbidden(
               'The person who answers for this may not wake this agent.',

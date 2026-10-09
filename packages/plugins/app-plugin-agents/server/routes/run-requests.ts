@@ -205,7 +205,7 @@ export function createRunRequestRoutes(
       summary: 'Confirm a run request',
       operationId: 'agentsConfirmRunRequest',
       description:
-        "Runs the work as the caller, who must be the person who answers for the subject (not an administrator or a manager of agents in their place) and still able to wake the agent. It is queued with the input as it was asked, its actor the person who asked, and joins the caller's run on the subject while that run can still be told.",
+        "Runs the work as the request's responsible, who must still be able to wake the agent. When the subject binds a current responsible resolver, it is rechecked; otherwise the application must reassign requests when responsibility changes. Administrators and agent managers cannot confirm for them. The original input joins only a run acting as the caller.",
       ...cliRoute({
         command: 'run request confirm',
         args: ['requestId'],
@@ -220,6 +220,10 @@ export function createRunRequestRoutes(
           'The caller does not answer for the subject, or may no longer wake the agent (`FORBIDDEN`).',
         ),
         404: noRequest,
+        409: apiErrorResponse(
+          409,
+          'The request changed concurrently; read it again.',
+        ),
         401: apiErrorResponse(401),
         500: apiErrorResponse(500),
       },
@@ -243,7 +247,7 @@ export function createRunRequestRoutes(
       summary: 'Reject a run request',
       operationId: 'agentsRejectRunRequest',
       description:
-        'Declines the work; only the person who answers for the subject may. The person who asked may still run it as themselves by asking again.',
+        "Declines the work; only the request's responsible may. The subject's current responsible resolver is rechecked when bound; otherwise the application must reassign requests on responsibility changes. The person who asked may run it as themselves by asking again.",
       ...cliRoute({
         command: 'run request reject',
         args: ['requestId'],
@@ -252,6 +256,10 @@ export function createRunRequestRoutes(
       responses: {
         200: dataResponse(RunRequestSchema),
         400: settledError(),
+        409: apiErrorResponse(
+          409,
+          'The request changed concurrently; read it again.',
+        ),
         404: noRequest,
         ...apiErrorResponses,
       },
@@ -287,6 +295,10 @@ export function createRunRequestRoutes(
       responses: {
         200: dataResponse(RunRequestSchema),
         400: settledError(),
+        409: apiErrorResponse(
+          409,
+          'The request changed concurrently; read it again.',
+        ),
         404: noRequest,
         ...apiErrorResponses,
       },
@@ -326,6 +338,10 @@ export function createRunRequestRoutes(
           'The caller did not ask it, or may not wake the agent (`FORBIDDEN`).',
         ),
         404: noRequest,
+        409: apiErrorResponse(
+          409,
+          'The request changed concurrently; read it again.',
+        ),
         401: apiErrorResponse(401),
         500: apiErrorResponse(500),
       },

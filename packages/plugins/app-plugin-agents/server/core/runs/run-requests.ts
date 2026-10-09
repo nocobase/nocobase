@@ -5,8 +5,8 @@
  * - `enqueue` with a `responsibleUserId` whose source is someone else, and `execution` `auto`, stores a request here
  *   instead of queueing anything (`run.service.ts`).
  * - Only the responsible confirms (queued as them, the input as it was asked, its actor the asker) or rejects it; not
- *   an administrator, not a manager of agents, not a run acting for anyone. Confirming checks again that they still
- *   answer for it and may still wake the agent.
+ *   an administrator, not a manager of agents, not a run acting for anyone. A subject's responsible resolver checks
+ *   that they still answer for it; without one, the application must reassign on changes. Confirming rechecks access.
  * - The asker withdraws it, or runs it as themselves on a runner they may use (`runAsRequester`).
  * - When the subject's responsible changes, the application hands the pending requests on (`reassign`).
  * - Nobody settling it within `RUN_REQUEST_TTL_MS` expires it (the sweeper's `expireDue`), and the asker hears they may
@@ -20,6 +20,7 @@ import type {
   RunStatus,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
+import { isDeepStrictEqual } from 'node:util';
 
 import type { Agent } from '../../../shared/agents.js';
 import type {
@@ -38,7 +39,7 @@ import type { IdSource } from '../../kernel/ids.js';
 import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { asJson, cleanList, stringArray } from '../../kernel/values.js';
-import { findAgent } from '../agents/index.js';
+import { findAgent, lockAgentForClaim } from '../agents/index.js';
 
 /** How long a request waits for its responsible: seven days. */
 export const RUN_REQUEST_TTL_MS: number = 7 * 24 * 60 * 60 * 1000;
@@ -149,6 +150,41 @@ export async function insertRunRequest(
   request: NewRunRequest,
 ): Promise<RunRequest> {
   const now = deps.clock.now();
+  // Serializes retries for this agent; duplicate input never creates another inbox entry or renews its expiry.
+  await lockAgentForClaim(unit.conn, request.agentId, now.toISOString());
+  const pending = await runRequestsRepo(unit.conn).findMany({
+    filter: {
+      agentId: request.agentId,
+      subjectKind: request.subject.kind,
+      subjectId: request.subject.id,
+      threadScope: request.threadScope,
+      responsibleUserId: request.responsibleUserId,
+      requestedByUserId: request.requestedByUserId,
+      status: 'pending',
+    },
+  });
+  const duplicate = pending.find(
+    (record) =>
+      Date.parse(record.expiresAt) > now.getTime() &&
+      record.ownerUserId === request.ownerUserId &&
+      Number(record.priority) === request.priority &&
+      isDeepStrictEqual(
+        stringArray(record.requires),
+        cleanList([...request.requires]),
+      ) &&
+      record.fireAt === request.fireAt &&
+      record.maxAttempts === request.maxAttempts &&
+      record.inputType === request.input.type &&
+      record.inputActorKind === request.input.actor.kind &&
+      record.inputActorId === request.input.actor.id &&
+      record.inputActorName === request.input.actor.name &&
+      record.inputText === request.input.text &&
+      isDeepStrictEqual(
+        record.inputPayload ?? null,
+        asJson(request.input.payload),
+      ),
+  );
+  if (duplicate) return toRunRequest(duplicate);
   const id = deps.ids.next();
   await runRequestsRepo(unit.conn).createOne({
     values: {
@@ -234,7 +270,7 @@ export interface RunRequestReassignment {
   readonly created: readonly RunRequest[];
   /** Work the new responsible had asked for themselves, queued as them at once. */
   readonly queued: readonly RequestedRun[];
-  /** Requests whose time had run out before the sweeper noticed, expired now rather than handed on. */
+  /** Requests past their deadline or without a usable new responsible, expired with a notice instead of handed on. */
   readonly expired: readonly RunRequest[];
 }
 
@@ -252,7 +288,8 @@ export interface RunRequestService {
   /**
    * The responsible agrees: the work is queued as them with the input as it was asked (its actor the asker), joining
    * their run on the subject when it can still be told. Only `byUserId` equal to the request's responsible, who may
-   * still wake the agent.
+   * still wake the agent. The subject's current responsible resolver is checked when bound; otherwise the
+   * application must reassign requests on responsibility changes.
    */
   confirm(
     requestId: string,
@@ -299,6 +336,11 @@ export interface RunRequestDeps {
   readonly ids: IdSource;
   readonly clock: Clock;
   readonly people: Pick<People, 'names'>;
+  /** Undefined when the subject has no resolver; otherwise its current responsible (null when unassigned). */
+  readonly currentResponsible?: (
+    unit: Tx,
+    subject: { readonly kind: string; readonly id: string },
+  ) => Promise<string | null> | undefined;
   /** Whether the person may wake the agent. */
   readonly mayInvoke: (agent: Agent, userId: string) => boolean;
   /** The agent, if it can be woken by `userId`; refuses otherwise (`run.service.ts`'s check). */
@@ -342,7 +384,6 @@ export function createRunRequestService(
     return record;
   };
 
-  /** Refuses a request that is not pending any more, or whose time ran out before the sweeper noticed. */
   /** Whether a pending request's time ran out, whether or not the sweeper has noticed yet. */
   const isDue = (record: RunRequestRecord): boolean =>
     Date.parse(record.expiresAt) <= clock.now().getTime();
@@ -351,7 +392,11 @@ export function createRunRequestService(
    * Expires a pending request whose time ran out and tells the person who asked; false when something else moved it
    * first. The sweeper's pass and every other path that finds one due go through here.
    */
-  async function expire(unit: Tx, record: RunRequestRecord): Promise<boolean> {
+  async function expire(
+    unit: Tx,
+    record: RunRequestRecord,
+    reason: 'timeout' | 'reassignment' = 'timeout',
+  ): Promise<boolean> {
     const result = await runRequestsRepo(unit.conn).updateMany({
       filter: (f) =>
         f.and([f.string('id').eq(record.id), f.string('status').eq('pending')]),
@@ -370,13 +415,14 @@ export function createRunRequestService(
         userIds: [record.requestedByUserId],
         subject: { kind: 'runRequest', id: record.id, label: agentName },
         title: `${agentName} did not run your request`,
-        body: `Nobody confirmed your request to ${agentName} on ${record.subjectKind} ${record.subjectId} in time, so it expired. You can still run it as yourself, on your own runner or a team runner.`,
+        body: `${reason === 'timeout' ? 'Nobody confirmed your request in time' : 'The new responsible cannot run your request'}, so your request to ${agentName} on ${record.subjectKind} ${record.subjectId} expired. You can still run it as yourself, on your own runner or a team runner.`,
         params: {
           agentName,
           subjectKind: record.subjectKind,
           subjectId: record.subjectId,
           requestId: record.id,
           responsibleUserId: record.responsibleUserId,
+          reason,
         },
       },
     });
@@ -387,6 +433,19 @@ export function createRunRequestService(
     if (record.status !== 'pending') throw settled(record);
     if (isDue(record)) throw settled(record, 'expired');
   };
+
+  async function requireCurrentResponsible(
+    unit: Tx,
+    record: RunRequestRecord,
+    byUserId: string,
+  ): Promise<void> {
+    const current = await deps.currentResponsible?.(unit, {
+      kind: record.subjectKind,
+      id: record.subjectId,
+    });
+    if (current !== undefined && current !== byUserId)
+      throw forbidden('You no longer answer for this subject.');
+  }
 
   /** Moves a pending request on, once: a concurrent change that moved it first wins. */
   async function settle(
@@ -531,6 +590,7 @@ export function createRunRequestService(
             'Only the person who answers for the subject may confirm this request.',
           );
         requirePending(record);
+        await requireCurrentResponsible(unit, record, byUserId);
         // Confirming runs the work as them: they must still be able to wake the agent.
         const agent = await deps.requireInvocable(
           unit,
@@ -561,6 +621,7 @@ export function createRunRequestService(
             'Only the person who answers for the subject may reject this request.',
           );
         requirePending(record);
+        await requireCurrentResponsible(unit, record, byUserId);
         const request = toRunRequest(
           await settle(unit, record, {
             status: 'rejected',
@@ -676,13 +737,6 @@ export function createRunRequestService(
             continue;
           }
           if (record.responsibleUserId === request.toUserId) continue;
-          const now = clock.now().toISOString();
-          await settle(unit, record, {
-            status: 'superseded',
-            settledById: request.byUserId,
-            settledAt: now,
-            note: request.note ?? null,
-          });
           const agent = request.toUserId
             ? await findAgent(unit.conn, record.agentId)
             : undefined;
@@ -691,6 +745,17 @@ export function createRunRequestService(
             agent &&
             !agent.archivedAt &&
             deps.mayInvoke(agent, request.toUserId);
+          if (!usable) {
+            if (await expire(unit, record, 'reassignment'))
+              expired.push(toRunRequest(await require(unit.conn, record.id)));
+            continue;
+          }
+          await settle(unit, record, {
+            status: 'superseded',
+            settledById: request.byUserId,
+            settledAt: clock.now().toISOString(),
+            note: request.note ?? null,
+          });
           if (usable && record.requestedByUserId === request.toUserId) {
             // The new responsible asked for it: their own work needs nobody's confirmation.
             queued.push(

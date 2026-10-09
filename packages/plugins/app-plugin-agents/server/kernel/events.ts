@@ -32,9 +32,10 @@ export interface RunnerNotice {
 }
 
 /**
- * - `run_request_expired` (subject `runRequest`): nobody confirmed a run request in time; to the person who asked, who
- *   may still run it as themselves (`POST /api/agents/runRequests/{requestId}/runAsMe`). `params`: `agentName`,
- *   `subjectKind`, `subjectId`, `requestId`, `responsibleUserId`.
+ * - `run_request_expired` (subject `runRequest`): a request passed its deadline or cannot be handed to a usable new
+ *   responsible; to the person who asked, who may still run it as themselves
+ *   (`POST /api/agents/runRequests/{requestId}/runAsMe`). `params`: `agentName`, `subjectKind`, `subjectId`, `requestId`,
+ *   `responsibleUserId`, `reason` (`timeout` or `reassignment`).
  */
 export interface RunRequestNotice {
   /** Stable for the same news: delivering it twice tells people once. */
