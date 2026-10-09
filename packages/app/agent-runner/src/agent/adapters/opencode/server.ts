@@ -48,6 +48,16 @@ export class ServerStartError extends Error {
   }
 }
 
+function groupAlive(child: ChildProcess): boolean {
+  if (child.pid === undefined) return false;
+  try {
+    process.kill(-child.pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
 function killGroup(child: ChildProcess, signal: NodeJS.Signals): void {
   if (child.pid === undefined) return;
   try {
@@ -99,13 +109,19 @@ export const launchServer: LaunchFn = async (options) => {
       });
     },
   );
-  // A runner that exits must not leave the server behind.
+  // A runner that exits must not leave the server, or anything it started, behind: the group outlives the server
+  // while a process it started still runs in it, so this holds until the server is closed, not until it exits.
   const onProcessExit = () => killGroup(child, 'SIGKILL');
   process.once('exit', onProcessExit);
-  void exited.then(() => process.removeListener('exit', onProcessExit));
 
   const close = async (graceMs: number) => {
-    if (exitedState) return;
+    process.removeListener('exit', onProcessExit);
+    if (exitedState) {
+      // The server is gone, but what it started (a tool's shell, a server or watcher a command left running) may still
+      // run in its group.
+      if (groupAlive(child)) killGroup(child, 'SIGKILL');
+      return;
+    }
     killGroup(child, 'SIGTERM');
     const result = await Promise.race([exited, delay(graceMs)]);
     if (!result) {

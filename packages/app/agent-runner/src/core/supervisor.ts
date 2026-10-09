@@ -1,8 +1,9 @@
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
-// A worker is spawned detached, so it leads a new process group, and everything the agent's tool starts stays in that
-// group. Stopping a run signals the whole group: SIGTERM, then SIGKILL after 5 s. When a worker exits, whatever it left
-// in its group is killed.
+// A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
+// SIGKILL after 5 s. Not everything the agent's tool starts stays in that group (Codex, OpenCode, and the shells and
+// servers a tool starts may each lead a group of their own), so while a worker runs the supervisor notes every process
+// group below it (process-tree.ts). When a worker exits, whatever it left in its group and in those groups is killed.
 //
 // The record `<runsDir>/<runId>.json` exists from the spawn until the worker has reported the run's end. A record whose
 // worker is gone, or whose worker outlived its daemon, is an orphan: on start the daemon kills the worker's group,
@@ -31,6 +32,7 @@ import {
 import { deleteRunCredentials } from '../agent/credentials.ts';
 import { EventSpool, spoolPaths } from './events.ts';
 import { LOST_CODES } from './lease.ts';
+import { groupsBelow, killLeftovers, listProcesses } from './process-tree.ts';
 
 export interface RunRecord {
   /** The run's id; for a job, `jobRecordKey(jobId)`. */
@@ -71,6 +73,8 @@ export interface Timings {
   cancelGraceMs?: number;
   /** SIGTERM to SIGKILL. */
   killGraceMs?: number;
+  /** How often the process groups below each worker are noted. */
+  processScanMs?: number;
 }
 
 /** What a worker reads from its stdin: a run, or a job (`kind: 'job'`). */
@@ -200,6 +204,8 @@ export interface SupervisedRun {
   child: ChildProcess;
   exited: Promise<void>;
   cancelSeenAt?: number;
+  /** The process groups seen below the worker, besides its own: stopped when it exits. */
+  groups: Set<number>;
 }
 
 export interface SupervisorOptions {
@@ -215,9 +221,32 @@ export interface SupervisorOptions {
 export class Supervisor {
   private readonly options: SupervisorOptions;
   readonly runs: Map<string, SupervisedRun> = new Map();
+  private scanTimer: NodeJS.Timeout | undefined;
 
   constructor(options: SupervisorOptions) {
     this.options = options;
+  }
+
+  /** Notes the process groups below every worker now. */
+  async scanGroups(): Promise<void> {
+    if (this.runs.size === 0) return;
+    const processes = await listProcesses();
+    for (const run of this.runs.values())
+      for (const group of groupsBelow(run.pid, processes))
+        run.groups.add(group);
+  }
+
+  private watchGroups(): void {
+    if (this.scanTimer !== undefined) return;
+    this.scanTimer = setInterval(() => {
+      if (this.runs.size === 0) {
+        clearInterval(this.scanTimer);
+        this.scanTimer = undefined;
+        return;
+      }
+      void this.scanGroups();
+    }, this.options.timings.processScanMs ?? 5_000);
+    this.scanTimer.unref();
   }
 
   get size(): number {
@@ -303,8 +332,19 @@ export class Supervisor {
     const exited = new Promise<void>((resolve) => {
       child.on('exit', (code, signal) => {
         log(`${noun} ${label}: worker ${pid} exited (${signal ?? code})`);
-        // Whatever the worker left in its group goes with it.
-        void killGroup(pid, 0).finally(async () => {
+        // Whatever the worker left in its group, and in the groups seen below it, goes with it.
+        const groups = this.runs.get(runId)?.groups ?? new Set<number>();
+        void Promise.all([
+          killGroup(pid, 0),
+          killLeftovers(pid, { groups, graceMs: 0, below: false }).then(
+            ({ groups: left }) => {
+              if (left > 0)
+                log(
+                  `${noun} ${label}: killed ${left} process group(s) the worker left behind`,
+                );
+            },
+          ),
+        ]).finally(async () => {
           const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
           this.runs.delete(runId);
           await this.afterExit(runId, cancelled);
@@ -323,8 +363,10 @@ export class Supervisor {
       startedAt,
       child,
       exited,
+      groups: new Set(),
     };
     this.runs.set(runId, supervised);
+    this.watchGroups();
     log(`${noun} ${label}: worker ${pid} started`);
     return supervised;
   }

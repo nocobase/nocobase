@@ -18,6 +18,21 @@ async function script(body: string): Promise<{ bin: string; dir: string }> {
   return { bin, dir };
 }
 
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+async function waitUntil(check: () => boolean, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!check() && Date.now() < deadline)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+}
+
 describe('launchServer', () => {
   it('binds to 127.0.0.1 on port 0 with a random password, and closes', async () => {
     const { bin, dir } = await script(
@@ -63,6 +78,32 @@ describe('launchServer', () => {
     });
     await server.close(200);
     expect((await server.exited).signal).toBe('SIGKILL');
+  });
+
+  it('stops what a server left in its group when it exited first', async () => {
+    const { bin, dir } = await script(
+      [
+        'echo "server listening on http://127.0.0.1:4570"',
+        // A child that outlives the server, in the server's process group.
+        'sleep 30 &',
+        'echo $! > "$PWD/child"',
+        'sleep 0.3',
+        'exit 0',
+      ].join('\n'),
+    );
+    const server = await launchServer({
+      binary: bin,
+      cwd: dir,
+      env: { PATH: process.env.PATH ?? '/usr/bin:/bin' },
+    });
+    await server.exited;
+    const child = Number(
+      (await readFile(path.join(dir, 'child'), 'utf8')).trim(),
+    );
+    expect(alive(child)).toBe(true);
+    await server.close(200);
+    await waitUntil(() => !alive(child));
+    expect(alive(child)).toBe(false);
   });
 
   it('reports a server that exits before listening, with its stderr', async () => {
