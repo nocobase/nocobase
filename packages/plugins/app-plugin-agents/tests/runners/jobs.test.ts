@@ -1,8 +1,9 @@
 import { JobPayloadSchema, type RunnerFeature } from '@nocobase/agent-protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Job } from '../../shared/jobs.js';
 import type { JobChange } from '../../server/jobs/index.js';
+import { testSecrets } from '../harness.js';
 import {
   createHarness,
   type Harness,
@@ -49,8 +50,10 @@ describe('jobs', () => {
     await h?.close();
   });
 
-  async function setUp(): Promise<void> {
-    h = await createHarness();
+  async function setUp(
+    options: Parameters<typeof createHarness>[0] = {},
+  ): Promise<void> {
+    h = await createHarness(options);
     done = [];
     events = 0;
     h.services.jobs.register('build', {
@@ -293,6 +296,120 @@ describe('jobs', () => {
       },
     ]);
   });
+
+  it.each(['env', 'repository', 'prepared'] as const)(
+    'keeps jobs with team-only %s variables queued for team runners without blocking other jobs',
+    async (source) => {
+      const secrets = testSecrets();
+      const open = vi.spyOn(secrets, 'open');
+      await setUp({ secrets });
+      const shared = { scope: 'workdir', scopeId: 'shared' };
+      const restricted = { scope: 'workdir', scopeId: 'restricted' };
+      await h.services.variables.set(
+        shared,
+        'PUBLIC_TOKEN',
+        'shared-value',
+        'owner',
+      );
+      await h.services.variables.set(
+        restricted,
+        'PRIVATE_TOKEN',
+        'team-value',
+        'owner',
+        {
+          teamRunnersOnly: true,
+        },
+      );
+      const spec = {
+        ...buildSpec,
+        repo: {
+          ...buildSpec.repo,
+          ...(source === 'repository'
+            ? { credentials: { ...restricted, name: 'PRIVATE_TOKEN' } }
+            : {}),
+        },
+        env: [
+          { name: 'PUBLIC_TOKEN', secret: { ...shared, name: 'PUBLIC_TOKEN' } },
+          ...(source === 'repository'
+            ? []
+            : [
+                {
+                  name: 'PRIVATE_TOKEN',
+                  secret: { ...restricted, name: 'PRIVATE_TOKEN' },
+                },
+              ]),
+        ],
+      };
+      if (source === 'prepared')
+        h.services.jobs.register('acme.team.build', {
+          executor: 'build',
+          prepare: () => Promise.resolve(spec),
+        });
+      const job = await enqueue({
+        kind: source === 'prepared' ? 'acme.team.build' : 'build',
+        spec: source === 'prepared' ? { app: 'app1' } : spec,
+        priority: -1,
+      });
+      const jobs = h.services.tx.read().repository('agJobs');
+      const before = await jobs.findOne({ filter: { id: job.id } });
+      const personal = await jobRunner({
+        trust: 'ownerOnly',
+        ownerUserId: 'owner',
+      });
+      // Repeated polling is a runner mismatch, never a preparation failure.
+      for (let poll = 0; poll < 4; poll += 1)
+        expect(await claimJobs(personal)).toEqual([]);
+      expect(await jobs.findOne({ filter: { id: job.id } })).toEqual(before);
+      expect(open).not.toHaveBeenCalled();
+      for (const target of [shared, restricted])
+        expect(
+          (await h.services.variables.audits(target)).filter(
+            (audit) => audit.action === 'deliver',
+          ),
+        ).toEqual([]);
+
+      // An unreferenced team-only variable in the same scope does not block this job.
+      await h.services.variables.set(
+        shared,
+        'UNUSED_TOKEN',
+        'unused-value',
+        'owner',
+        {
+          teamRunnersOnly: true,
+        },
+      );
+      const allowed = await enqueue({
+        spec: { ...buildSpec, env: spec.env.slice(0, 1) },
+      });
+      const [personalPayload] = await claimJobs(personal);
+      expect(personalPayload.job.id).toBe(allowed.id);
+      expect(personalPayload.job.spec.env).toEqual([
+        { name: 'PUBLIC_TOKEN', value: 'shared-value', secret: true },
+      ]);
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(await jobs.findOne({ filter: { id: job.id } })).toEqual(before);
+
+      const team = await jobRunner();
+      const [teamPayload] = await claimJobs(team);
+      expect(teamPayload.job.id).toBe(job.id);
+      if (source === 'repository')
+        expect(teamPayload.job.spec.repo.auth).toEqual({ token: 'team-value' });
+      else
+        expect(teamPayload.job.spec.env).toContainEqual({
+          name: 'PRIVATE_TOKEN',
+          value: 'team-value',
+          secret: true,
+        });
+      expect(await h.services.variables.audits(restricted)).toContainEqual(
+        expect.objectContaining({
+          action: 'deliver',
+          names: ['PRIVATE_TOKEN'],
+          jobId: job.id,
+          runnerId: team.runnerId,
+        }),
+      );
+    },
+  );
 
   it('prepares the spec at claim, and fails a job that cannot be prepared', async () => {
     await setUp();

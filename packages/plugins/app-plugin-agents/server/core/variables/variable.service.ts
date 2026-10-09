@@ -29,6 +29,8 @@ import type { IdSource } from '../../kernel/ids.js';
 import type { People } from '../../kernel/people.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { stringArray } from '../../kernel/values.js';
+import { JobSecretsNotAllowed } from '../../jobs/spec.js';
+import { runnersRepo } from '../../runners/runner.store.js';
 
 interface SecretRecord {
   readonly id: string;
@@ -127,7 +129,8 @@ export interface VariableService {
   ): Promise<EnvVar[]>;
   /**
    * For a job's claim: the values of the named variables, by `scope`, `scopeId` and `name` joined with NUL, recorded
-   * as delivered for the job. A variable that is not set is left out.
+   * as delivered for the job. A variable that is not set is left out. Throws `JobSecretsNotAllowed` before opening
+   * any value if a referenced variable is for team runners only and the stored runner is not a team runner.
    */
   forJob(
     conn: DatabaseConnection,
@@ -434,6 +437,8 @@ export function createVariableService(
     async forJob(conn, refs, delivery) {
       const values = new Map<string, string>();
       const byTarget = new Map<string, typeof refs>();
+      const selected: { target: VariableTarget; records: SecretRecord[] }[] =
+        [];
       for (const ref of refs) {
         const key = `${ref.scope}\u0000${ref.scopeId}`;
         byTarget.set(key, [...(byTarget.get(key) ?? []), ref]);
@@ -445,6 +450,19 @@ export function createVariableService(
           names.has(record.name),
         );
         if (records.length === 0) continue;
+        selected.push({ target, records });
+      }
+      if (
+        selected.some(({ records }) =>
+          records.some((record) => record.teamRunnersOnly),
+        )
+      ) {
+        const runner = await runnersRepo(conn).findOne({
+          filter: { id: delivery.runnerId },
+        });
+        if (runner?.trust !== 'team') throw new JobSecretsNotAllowed();
+      }
+      for (const { target, records } of selected) {
         for (const record of records)
           values.set(
             `${target.scope}\u0000${target.scopeId}\u0000${record.name}`,
