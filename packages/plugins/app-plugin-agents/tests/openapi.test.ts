@@ -121,8 +121,50 @@ describe('agents API document', () => {
         'agentsGetCurrentRun',
         'agentsGetRunnerInstallScript',
         'agentsDownloadDistFile',
+        'agentsListRunRequests',
+        'agentsGetRunRequest',
+        'agentsConfirmRunRequest',
+        'agentsRejectRunRequest',
+        'agentsWithdrawRunRequest',
+        'agentsRunRunRequestAsMe',
       ]),
     );
+  });
+
+  it('declares the run request routes for people only, with their commands', () => {
+    const cli = (method: string, path: string) =>
+      (operation(method, path) as Record<string, unknown>)['x-cli'];
+    // A session or an API key, as every people's route: never a run token, which could confirm for its person.
+    for (const [method, path] of [
+      ['GET', '/api/agents/runRequests'],
+      ['GET', '/api/agents/runRequests/{requestId}'],
+      ['POST', '/api/agents/runRequests/{requestId}/confirm'],
+      ['POST', '/api/agents/runRequests/{requestId}/reject'],
+      ['POST', '/api/agents/runRequests/{requestId}/withdraw'],
+      ['POST', '/api/agents/runRequests/{requestId}/runAsMe'],
+    ] as const)
+      expect(operation(method, path).security).toBeUndefined();
+    expect(cli('GET', '/api/agents/runRequests')).toMatchObject({
+      command: 'run request list',
+    });
+    expect(
+      cli('POST', '/api/agents/runRequests/{requestId}/confirm'),
+    ).toMatchObject({
+      command: 'run request confirm',
+      args: ['requestId'],
+      confirm: expect.any(String),
+    });
+    expect(
+      cli('POST', '/api/agents/runRequests/{requestId}/runAsMe'),
+    ).toMatchObject({ command: 'run request run-as-me' });
+  });
+
+  it('declares concurrent settlement conflicts on every run request mutation', () => {
+    for (const action of ['confirm', 'reject', 'withdraw', 'runAsMe'])
+      expect(
+        operation('POST', `/api/agents/runRequests/{requestId}/${action}`)
+          .responses,
+      ).toHaveProperty('409');
   });
 
   it('names the credential of each route that takes no session', () => {

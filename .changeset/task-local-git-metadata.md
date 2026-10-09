@@ -7,3 +7,5 @@ Prepare new task repositories as reference clones with their own Git metadata in
 Keep push permissions in the runner's protected registry outside checkouts and ignore checkout-local permission files. Enforce protected hooks and checked configuration for every host-side Git operation in a task checkout, using trusted repository URLs for remote queries and automatic pushes. Reject unsafe configuration and redirected submodule metadata without discarding pending work. Remove stale local branches imported from the bare cache when preparing a new task clone.
 
 Allow standard submodule update policies and common local Git preferences during push and resume, while rejecting custom submodule update commands.
+
+Retain network retry behavior through the protected Git entry point and keep pending submodule preparation records in the runner-owned cache.

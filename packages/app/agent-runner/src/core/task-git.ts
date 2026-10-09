@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { CheckoutError, git } from './git.ts';
 import { isInside } from './command-policy.ts';
+import { GIT_LOW_SPEED_CONFIG } from './git-retry.ts';
 
 export interface TaskGitContext {
   readonly dir: string;
@@ -242,7 +243,9 @@ export async function taskGit(
       return `--config-env=credential.helper=${name}`;
     });
   return git(
-    settings.flatMap((value) => ['-c', value]).concat(helperArgs, args),
+    settings
+      .flatMap((value) => ['-c', value])
+      .concat(GIT_LOW_SPEED_CONFIG, helperArgs, args),
     context.dir,
     { ...env, ...helperEnv },
   );

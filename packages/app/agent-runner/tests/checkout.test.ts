@@ -3,6 +3,8 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from 'node:fs';
@@ -25,6 +27,7 @@ import {
   gcWorkspaces,
   markWorkspaceEnded,
   reportRepos,
+  SUBMODULES_PENDING,
   subjectWorkDir,
   markDirsPrepared,
 } from '../src/core/checkout.ts';
@@ -853,6 +856,53 @@ describe('checkout', () => {
       expect(existsSync(path.join(entry.dir, 'vendor/sub/README.md'))).toBe(
         true,
       );
+    });
+
+    it('keeps pending submodule preparation state outside writable clone metadata', async () => {
+      const options = {
+        paths,
+        appKey: 'app',
+        subjectKey: 'submodule-pending-boundary',
+        dirs: [repo('submodule-pending-boundary')],
+      };
+      const work = await checkout(options);
+      const entry = work.repos[0]!;
+      const child = path.join(entry.dir, 'vendor/sub');
+      git(
+        [
+          ...COMMIT,
+          'commit',
+          '-q',
+          '--allow-empty',
+          '-m',
+          'agent submodule work',
+        ],
+        child,
+      );
+      const head = git(['rev-parse', 'HEAD'], child);
+      const localPending = path.join(entry.gitDir, SUBMODULES_PENDING);
+      writeFileSync(
+        localPending,
+        JSON.stringify({ all: true, paths: ['vendor/sub'] }),
+      );
+      await work.release();
+      const resumed = await checkout(options);
+      expect(git(['rev-parse', 'HEAD'], child)).toBe(head);
+      git(
+        ['submodule', 'deinit', '--quiet', '--force', 'vendor/sub'],
+        entry.dir,
+      );
+      await resumed.release();
+
+      const target = path.join(root, 'pending-target');
+      writeFileSync(target, 'keep');
+      symlinkSync(target, localPending + '.link');
+      // Move the planted symlink over the writable legacy record.
+      renameSync(localPending + '.link', localPending);
+      const initialized = await checkout(options);
+      expect(existsSync(path.join(child, 'README.md'))).toBe(true);
+      expect(readFileSync(target, 'utf8')).toBe('keep');
+      await initialized.release();
     });
 
     it('rejects unsafe submodule config before launching any child Git on resume', async () => {
