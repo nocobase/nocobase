@@ -10,7 +10,7 @@ import {
  * reports.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202610090003_ag_add_runner_workspace_usage',
+  name: '202610090004_ag_add_runner_workspace_usage',
 
   async up({ builder }: MigrationContext): Promise<void> {
     await builder.alterCollection('agRunners', (collection) => {

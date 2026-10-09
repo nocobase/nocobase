@@ -11,7 +11,7 @@ const sources: readonly MigrationSource[] = [
   },
 ];
 
-describeMigration('202610090003_ag_add_runner_workspace_usage', {
+describeMigration('202610090004_ag_add_runner_workspace_usage', {
   sources,
   up: async ({ expectCollection }) => {
     await expectCollection('agRunners').toHaveField('workspaceUsage', {
