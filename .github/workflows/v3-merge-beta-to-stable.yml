@@ -1,10 +1,10 @@
 # This default-branch entry dispatches the implementation from the isolated v3 branch.
-name: V3 Docs
+name: V3 Merge Beta to Stable
 on:
   workflow_dispatch:
     inputs:
-      publish:
-        description: Upload to OSS and switch the CDN. Leave off to build and check only.
+      dry_run:
+        description: "Dry run: compute versions and run checks without pushing any branch"
         type: boolean
         default: false
 permissions:
@@ -19,7 +19,7 @@ jobs:
       - name: Dispatch on v3-develop
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKFLOW_FILE: docs.yml
+          WORKFLOW_FILE: v3-merge-beta-to-stable.yml
           DISPATCH_INPUTS: ${{ toJSON(inputs) }}
         run: >
           printf '%s' "$DISPATCH_INPUTS" \

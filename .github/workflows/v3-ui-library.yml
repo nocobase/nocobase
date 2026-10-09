@@ -1,14 +1,10 @@
 # This default-branch entry dispatches the implementation from the isolated v3 branch.
-name: V3 Release Beta
+name: V3 UI Library
 on:
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: "Dry run: compute versions and run checks without publishing or pushing"
-        type: boolean
-        default: false
-      skip_smoke_test:
-        description: Skip the create-app smoke test (use only when the smoke test itself is broken)
+      publish:
+        description: Upload the build to OSS (only publishes when the selected ref is v3-develop)
         type: boolean
         default: false
 permissions:
@@ -23,7 +19,7 @@ jobs:
       - name: Dispatch on v3-develop
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKFLOW_FILE: release-beta.yml
+          WORKFLOW_FILE: v3-ui-library.yml
           DISPATCH_INPUTS: ${{ toJSON(inputs) }}
         run: >
           printf '%s' "$DISPATCH_INPUTS" \

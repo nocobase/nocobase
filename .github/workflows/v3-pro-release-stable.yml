@@ -1,10 +1,22 @@
 # This default-branch entry dispatches the implementation from the isolated v3 branch.
-name: V3 Merge Beta to Stable
+name: V3 Release Pro Stable
 on:
   workflow_dispatch:
     inputs:
+      branch:
+        description: Pro branch to release
+        type: string
+        default: main
+      keep_latest:
+        description: Publish an older branch under legacy without moving latest
+        type: boolean
+        default: false
+      oss_sha:
+        description: Exact OSS main commit to pin (empty selects main once at job start)
+        type: string
+        required: false
       dry_run:
-        description: "Dry run: compute versions and run checks without pushing any branch"
+        description: Build and test without publishing or writing to the Pro repository
         type: boolean
         default: false
 permissions:
@@ -19,7 +31,7 @@ jobs:
       - name: Dispatch on v3-develop
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKFLOW_FILE: merge-beta-to-stable.yml
+          WORKFLOW_FILE: v3-pro-release-stable.yml
           DISPATCH_INPUTS: ${{ toJSON(inputs) }}
         run: >
           printf '%s' "$DISPATCH_INPUTS" \
