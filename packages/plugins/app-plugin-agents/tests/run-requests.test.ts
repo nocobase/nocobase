@@ -858,6 +858,41 @@ describe('run requests', () => {
     });
   });
 
+  it('does not queue an expired request when responsibility moves to its requester', async () => {
+    await setUp();
+    const result = await bobAsks('Synthetic request');
+    expect(result.outcome).toBe('pending');
+    h.clock.advance(RUN_REQUEST_TTL_MS + 1);
+    const reassigned = await h.services.runs.requests.reassign({
+      subject: { kind: 'sample', id: '1' },
+      toUserId: BOB,
+      byUserId: 'carol',
+    });
+    expect(reassigned.queued).toEqual([]);
+    expect(await h.services.runs.list({ subjectKind: 'sample' })).toEqual([]);
+  });
+
+  it('retains a scheduled enqueue time after confirmation', async () => {
+    await setUp();
+    const fireAt = new Date(h.clock.now().getTime() + 60_000).toISOString();
+    const result = await bobAsks('Scheduled synthetic request', {
+      fireAt,
+      input: {
+        ...comment(BOB, 'Scheduled synthetic request'),
+        type: 'signal',
+      },
+    });
+    if (result.outcome !== 'pending')
+      throw new Error('Expected pending request');
+    const confirmed = await h.services.runs.requests.confirm(
+      result.requestId,
+      ALICE,
+    );
+    expect((await h.services.runs.get(confirmed.run.runId)).availableAt).toBe(
+      fireAt,
+    );
+  });
+
   it('keeps how the work was asked to run: its moment and its attempts', async () => {
     await setUp();
     const fireAt = new Date(h.clock.now().getTime() + 3_600_000).toISOString();

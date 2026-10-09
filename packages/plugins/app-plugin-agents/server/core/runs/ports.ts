@@ -17,7 +17,7 @@ import type { Run } from '../../../shared/runs.js';
 import type { Tx } from '../../kernel/tx.js';
 
 /**
- * How the agent reaches the application's commands: `cli` for a runner agent (it types `acme issue get PM-12` in its
+ * How the agent reaches the application's commands: `cli` for a runner agent (it types `acme issue get PM-1` in its
  * terminal), `tools` for an online agent (it runs the same command in its sandboxed shell, the `bash` tool). Both name
  * commands the same way; what differs is where files go (a working directory, or `/tmp`).
  */

@@ -38,7 +38,7 @@ function runRow(id: string, actorUserId: string): Record<string, unknown> {
 describeMigration('202610090002_ag_create_run_requests', {
   sources,
   before: async ({ connection, expectCollection }) => {
-    // Applications that already applied PM-68 must keep its schema through this later migration and its rollback.
+    // Applications that already added per-tool runner slots must keep those fields through this migration and its rollback.
     await expectCollection('agRunners').toHaveField('toolSlots');
     await expectCollection('agRunners').toHaveField('load');
     await expectCollection('agRegistrationTokens').toHaveField('toolSlots');
