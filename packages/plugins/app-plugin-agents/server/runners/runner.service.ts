@@ -21,6 +21,7 @@ import {
   PROTOCOL_VERSION,
   ProtocolError,
   TIMINGS,
+  ReportedToolInfoSchema,
   type HeartbeatRequest,
   type RegisterRequest,
   type RegisterResponse,
@@ -268,7 +269,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             product: request.product ?? null,
             protocolVersion: request.protocolVersion,
             features: cleanList(request.features),
-            tools: request.tools,
+            tools: request.tools.map((tool) =>
+              ReportedToolInfoSchema.parse(tool),
+            ),
             enabledTools: storedToolChoice(token.enabledTools),
             trust: token.trust,
             ownerUserId: token.createdById,
@@ -419,7 +422,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             version: request.version,
             product: request.product ?? null,
             features: cleanList(request.features),
-            tools: request.tools,
+            tools: request.tools.map((tool) =>
+              ReportedToolInfoSchema.parse(tool),
+            ),
             policy: asJson(policy),
             variables: asJson(variables),
             // What it holds per tool across every application: read for why a run waits, so it changes nothing else.

@@ -48,6 +48,9 @@ import { z } from 'zod';
  * the application to show which runners offer what a run asks for by name (`RunWorkspace.passthrough`). A runner fails
  * a run whose passthrough names it does not provide before the agent starts; the server does not choose runners by them.
  *
+ * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
+ * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
+ *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
  */

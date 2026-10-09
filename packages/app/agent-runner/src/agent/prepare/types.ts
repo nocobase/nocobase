@@ -69,17 +69,22 @@ export class PrepareError extends Error {
 
 /**
  * What the agent writes besides `cwd`, for a tool's own sandbox (`AdapterSession.writableRoots`): the other working
- * directories, and each repository worktree's own Git directory (`<cache>/worktrees/<name>`), which holds its index,
- * HEAD and submodules. Never the cache itself, which every subject's worktrees share.
+ * directories, each repository worktree's own Git directory (`<cache>/worktrees/<name>`), which holds its index,
+ * HEAD and submodules, and `shared`, the directories every run on the machine writes, such as the pnpm store
+ * (core/pnpm-store.ts). Never the repository cache itself, which every subject's worktrees share.
  */
 export function agentWritableRoots(
   dirs: readonly PreparedDir[],
   cwd: string,
+  shared: readonly string[] = [],
 ): string[] {
-  const roots = dirs.flatMap((dir) => [
-    dir.dir,
-    ...(dir.repo === undefined ? [] : [dir.repo.gitDir]),
-  ]);
+  const roots = [
+    ...dirs.flatMap((dir) => [
+      dir.dir,
+      ...(dir.repo === undefined ? [] : [dir.repo.gitDir]),
+    ]),
+    ...shared,
+  ];
   return [...new Set(roots)].filter((root) => root !== cwd);
 }
 
