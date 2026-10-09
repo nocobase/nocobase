@@ -26,7 +26,9 @@
 import { rm } from 'node:fs/promises';
 
 import type { AgentAdapter } from '../agent/adapters/types.ts';
+import { providedNames } from '../agent/env.ts';
 import {
+  readConnection,
   runnerClient,
   type AppConnection,
   type RunnerSettings,
@@ -381,6 +383,21 @@ export class RunnerDaemon {
     return report;
   }
 
+  /**
+   * The names of the variables this runner provides to `link`'s application now: its local variables, read from the
+   * registration's file so `env set` shows without a restart, and the names its owner passes.
+   */
+  private async variablesOf(link: AppLink): Promise<string[]> {
+    const stored = await readConnection(link.key, this.options.paths).catch(
+      () => undefined,
+    );
+    return providedNames(
+      process.env,
+      this.options.settings.passEnv,
+      (stored ?? link.connection).registration.variables,
+    );
+  }
+
   private async collectGarbage(): Promise<void> {
     try {
       await gcWorkspaces({ paths: this.options.paths, log: this.options.log });
@@ -410,6 +427,7 @@ export class RunnerDaemon {
     const jobs = held.filter((run) => run.jobId !== undefined);
     try {
       const policy = await this.policyOf(link);
+      const variables = await this.variablesOf(link);
       const response = await link.client.post(
         RUNNER_ROUTES.heartbeat,
         {
@@ -417,6 +435,7 @@ export class RunnerDaemon {
           product: runnerHost().product,
           features: policy.features,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
+          variables,
           tools: this.tools,
           active: runs.map((run) => ({
             runId: run.runId,

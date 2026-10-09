@@ -20,7 +20,6 @@
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
-import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
@@ -30,6 +29,7 @@ import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
 import { classifyCodexFailure } from './codex/classify.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
+import { detectExec } from './detect-exec.ts';
 import type {
   CommandApprovalParams,
   FileChangeApprovalParams,
@@ -96,8 +96,10 @@ export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
 
 export interface CodexAdapterOptions {
   minVersion?: string;
-  /** PATH searched for `codex`; defaults to the runner's PATH. */
+  /** PATH searched for `codex`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   /** Runs a command for detection; replaceable in tests. */
   exec?: ExecFn;
   /** Starts the app-server; replaceable in tests. */
@@ -107,23 +109,6 @@ export interface CodexAdapterOptions {
 // ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 async function findOnPath(
   name: string,
@@ -179,18 +164,21 @@ function mcpResultText(
 export class CodexAdapter implements AgentAdapter {
   readonly kind = 'codex' as const;
   private readonly options: Required<
-    Omit<CodexAdapterOptions, 'searchPath'>
+    Omit<CodexAdapterOptions, 'searchPath' | 'env'>
   > & {
-    searchPath?: string;
+    searchPath: string;
+    env: NodeJS.ProcessEnv;
   };
   private detection?: Promise<ToolDetection>;
 
   constructor(options: CodexAdapterOptions = {}) {
+    const env = options.env ?? process.env;
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CODEX_VERSION,
-      exec: options.exec ?? defaultExec,
+      exec: options.exec ?? detectExec(options.env),
       spawn: options.spawn ?? spawnCodexProcess,
-      searchPath: options.searchPath,
+      searchPath: options.searchPath ?? env.PATH ?? '',
+      env,
     };
   }
 
@@ -204,15 +192,12 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   private async runDetection(): Promise<ToolDetection> {
-    const { exec, minVersion } = this.options;
-    const searchPath = this.options.searchPath ?? process.env.PATH ?? '';
+    const { exec, minVersion, searchPath, env } = this.options;
     const found = await findOnPath('codex', searchPath);
     if (!found) {
       return {
         installed: false,
-        authenticated: Boolean(
-          process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY,
-        ),
+        authenticated: Boolean(env.OPENAI_API_KEY || env.CODEX_API_KEY),
       };
     }
     const v = await exec(found, ['--version']);

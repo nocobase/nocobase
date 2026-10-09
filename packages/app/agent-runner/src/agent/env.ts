@@ -1,7 +1,13 @@
-// The environment an agent's tool process gets: a short whitelist from the runner's own environment, the variables the
-// run carries (`workspace.env`, secrets among them), and the local values of the names it asks the runner for
-// (`workspace.passthrough`). Nothing else crosses: no `NOCOBASE_RUNNER_*` variable, and no credential: the run's token
-// reaches the application's CLI only through its credentials file.
+// The environment an agent's tool process gets: a short whitelist from the runner's own environment (the basics, and
+// the proxy and CA variables a machine behind a proxy needs), the names the runner's owner always passes
+// (`--pass-env`), the variables the run carries (`workspace.env`, secrets among them), and the local values of the names
+// it asks the runner for (`workspace.passthrough`). Nothing else crosses: no `NOCOBASE_RUNNER_*` variable, and no
+// credential: the run's token reaches the application's CLI only through its credentials file.
+//
+// A name the run asks the runner for is provided only by the runner's local variables (`nocobase-runner env set`) or a
+// name its owner passes (`--pass-env`); the run fails before the agent starts when one is missing (`missingVariables`).
+// Tool detection runs in the same environment, without the run's own (`detectionEnv`), so a tool that reads its login
+// or its key from a variable is detected as it will run.
 //
 // The runner then sets what it owns: HOME (the agent's home, see agent-home.ts), TMPDIR (inside the working
 // directory), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
@@ -13,8 +19,30 @@
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { RUN_CREDENTIALS_ENV, type RunWorkspace } from '../protocol/index.ts';
+import {
+  MAX_RUNNER_VARIABLES,
+  RUN_CREDENTIALS_ENV,
+  type RunWorkspace,
+} from '../protocol/index.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
+
+/** The proxy variables, in both cases: tools read either. Their values may hold a user and password. */
+export const PROXY_ENV: readonly string[] = [
+  'HTTP_PROXY',
+  'HTTPS_PROXY',
+  'ALL_PROXY',
+  'NO_PROXY',
+  'http_proxy',
+  'https_proxy',
+  'all_proxy',
+  'no_proxy',
+];
+
+/** The certificate authorities a machine behind an inspecting proxy adds. */
+export const CA_ENV: readonly string[] = [
+  'SSL_CERT_FILE',
+  'NODE_EXTRA_CA_CERTS',
+];
 
 // USER: Claude Code's macOS keychain login lookup fails without it.
 export const ENV_WHITELIST: readonly string[] = [
@@ -24,11 +52,18 @@ export const ENV_WHITELIST: readonly string[] = [
   'LANG',
   'TERM',
   'TMPDIR',
+  ...PROXY_ENV,
+  ...CA_ENV,
 ];
+
+/** A variable name the runner's owner may set or pass: a shell name. */
+export const ENV_NAME_PATTERN: RegExp = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/u;
 
 export interface BuildEnvOptions {
   /** The runner's environment. */
   source: NodeJS.ProcessEnv;
+  /** Names always taken from `source` (`--pass-env`); a `passthrough` name is provided by these or `localVariables`. */
+  passEnv?: readonly string[];
   /** Values from the runner's local configuration, which win over `source` for `passthrough` names. */
   localVariables?: Record<string, string>;
   workspace?: Pick<RunWorkspace, 'env' | 'passthrough' | 'git'>;
@@ -41,14 +76,54 @@ export interface BuildEnvOptions {
   hooksDir?: string;
 }
 
-/** Names a run may not set: the runner's own, and what it sets itself. */
-function forbidden(name: string): boolean {
+/** Names a run may not set and the runner's owner may not pass: the runner's own, and what it sets itself. */
+export function forbidden(name: string): boolean {
   return (
     /^(NOCOBASE_RUNNER_|AGENT_RUN_|GIT_CONFIG|GIT_DIR$|GIT_WORK_TREE$|GIT_EXEC_PATH$)/i.test(
       name,
     ) ||
     ['PATH', 'HOME', 'TMPDIR'].includes(name) ||
     !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
+  );
+}
+
+/**
+ * The variables this runner provides to a run that asks for them by name (`workspace.passthrough`): the names its owner
+ * passes (`--pass-env`) as the runner's environment has them, then its local variables (`env set`), which win.
+ */
+export function providedVariables(
+  source: NodeJS.ProcessEnv,
+  passEnv: readonly string[] = [],
+  localVariables: Record<string, string> = {},
+): Record<string, string> {
+  const provided: Record<string, string> = {};
+  for (const name of passEnv) {
+    const value = source[name];
+    if (value !== undefined && !forbidden(name)) provided[name] = value;
+  }
+  for (const [name, value] of Object.entries(localVariables))
+    if (!forbidden(name)) provided[name] = value;
+  return provided;
+}
+
+/** The names of the variables this runner provides (`providedVariables`), sorted, as it reports them. */
+export function providedNames(
+  source: NodeJS.ProcessEnv,
+  passEnv: readonly string[] = [],
+  localVariables: Record<string, string> = {},
+): string[] {
+  return Object.keys(providedVariables(source, passEnv, localVariables))
+    .sort()
+    .slice(0, MAX_RUNNER_VARIABLES);
+}
+
+/** The names of `passthrough` this runner does not provide, in order. */
+export function missingVariables(
+  passthrough: readonly string[],
+  provided: Record<string, string>,
+): string[] {
+  return passthrough.filter(
+    (name) => !forbidden(name) && provided[name] === undefined,
   );
 }
 
@@ -60,9 +135,18 @@ export function buildAgentEnv(
     const value = options.source[name];
     if (value !== undefined) env[name] = value;
   }
+  const provided = providedVariables(
+    options.source,
+    options.passEnv,
+    options.localVariables,
+  );
+  for (const name of options.passEnv ?? []) {
+    const value = options.source[name];
+    if (value !== undefined && !forbidden(name)) env[name] = value;
+  }
   for (const name of options.workspace?.passthrough ?? []) {
     if (forbidden(name)) continue;
-    const value = options.localVariables?.[name] ?? options.source[name];
+    const value = provided[name];
     if (value !== undefined) env[name] = value;
   }
   for (const variable of options.workspace?.env ?? []) {
@@ -110,6 +194,35 @@ export function buildAgentEnv(
     }
   }
   return env;
+}
+
+/**
+ * What a coding tool's detection runs with: what every run gets from the runner (the whitelist and `--pass-env`), with
+ * the runner's own HOME, and none of a run's variables.
+ */
+export function detectionEnv(
+  source: NodeJS.ProcessEnv,
+  passEnv: readonly string[] = [],
+): Record<string, string> {
+  return buildAgentEnv({ source, passEnv });
+}
+
+/**
+ * The values from the runner's environment a run's output must not show: the proxy variables' (a proxy URL may hold a
+ * user and password; `NO_PROXY` holds none) and those of the names its owner passes.
+ */
+export function environmentSecrets(
+  source: NodeJS.ProcessEnv,
+  passEnv: readonly string[] = [],
+): string[] {
+  const names = [
+    ...PROXY_ENV.filter((name) => name.toUpperCase() !== 'NO_PROXY'),
+    ...passEnv,
+  ];
+  return names.flatMap((name) => {
+    const value = source[name];
+    return value === undefined || value === '' ? [] : [value];
+  });
 }
 
 /**

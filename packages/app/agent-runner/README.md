@@ -8,9 +8,10 @@ An application serves `nocobase-runner` itself, as standalone tarballs that bund
 
 ```bash
 nocobase-runner register --server https://app.example.com --token <one-time token>   # once per application
-nocobase-runner start [--foreground] [--slots 2] [--agent-home isolated|real]
+nocobase-runner start [--foreground] [--slots 2] [--agent-home isolated|real] [--pass-env NAME]...
 nocobase-runner status | logs [-f] [--run <id>] | stop
-nocobase-runner service install [--label <label>] | uninstall    # a launchd agent (macOS) or a systemd user unit (Linux)
+nocobase-runner service install [--label <label>] [--pass-env NAME]... | uninstall    # a launchd agent (macOS) or a systemd user unit (Linux)
+nocobase-runner env set NAME [VALUE] | unset NAME | list [--server <url>]              # local variables for runs that take them from the runner
 nocobase-runner update [--check] [--auto on|off]
 nocobase-runner uninstall [--purge] [--dry-run]
 nocobase-runner unregister --server https://app.example.com
@@ -26,6 +27,21 @@ A run's skills (`RunPayload.skills`) are fetched once per content hash and place
 
 The runner reports each coding tool it finds, with its version and whether it is signed in, on registration and every heartbeat; the Runtimes page shows them, and a tool it does not find is reported unavailable, so the application offers it no run for that tool. Claude Code is the `claude` on the runner's PATH, resolved to an absolute path and handed to the Claude Agent SDK as `pathToClaudeCodeExecutable`; it must be at least `DEFAULT_MIN_CLAUDE_VERSION`. The SDK's own Claude Code binary is never installed: its platform packages are ignored (`ignoredOptionalDependencies` in `pnpm-workspace.yaml`, and `--omit=optional` in the standalone pack).
 
+### Environment variables
+
+A coding tool runs with what the runner gives it, never with the runner's whole environment, and a runner started as a service never reads a shell's configuration such as `~/.zshrc`. What a tool gets, in order (`src/agent/env.ts`):
+
+- The whitelist from the runner's own environment: `PATH`, `HOME`, `USER`, `LANG`, `TERM`, `TMPDIR`, the proxy variables `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` in upper and lower case, and the CA variables `SSL_CERT_FILE` and `NODE_EXTRA_CA_CERTS`.
+- The names the machine's owner passes with `--pass-env NAME` (repeatable, on `start` and `service install`). They are remembered in the settings for later starts, and `nocobase-runner env unset NAME` forgets one.
+- The run's own variables, set in the application on the agent, a working directory or a scope it registers.
+- The variables the run takes from the runner: those set as "Take from the runtime" in the application are names only, and the runner provides their values from its local variables (`nocobase-runner env set NAME`) or from a `--pass-env` name. A name it provides neither way fails the run before anything is prepared, with `setupFailed` and a message that says which command provides it; the application does not choose runners by them. The runner reports the names it provides (never their values) on registration and every heartbeat, and the runtime's page in the application lists them under "Variables from this machine".
+
+`nocobase-runner env set NAME VALUE` keeps a local variable in each registration's file (`apps/<key>.json`, 0600), or only the one `--server` names; without `VALUE` it reads the value from standard input, which keeps it out of the shell's history (`printf %s "$KEY" | nocobase-runner env set PI_API_KEY`). `env list` shows names only. A running runner uses a change from its next run, and reports it with its next heartbeat.
+
+A service gets nothing from the shell it was installed from unless it is written into the service: `service install` writes `PATH`, and the proxy, CA and `--pass-env` variables set in that shell with their current values, into the launchd plist or systemd unit (0600), and prints the names it wrote. Install it again after changing one of them. The values are never printed: `--dry-run` and `--json` show `<hidden>` in their place.
+
+Tool detection (whether a tool is installed and signed in, reported on every heartbeat) runs in the same environment a run gets from the runner, so a login or key the tool reads from a variable is detected only when a run will have it too. The values of the proxy variables (except `NO_PROXY`), of the `--pass-env` names and of the variables a run takes from the runner are redacted from everything a run reports, since a proxy URL may carry a user and password.
+
 ### Where things are
 
 The runner keeps its state in `~/.nocobase-runner` (0700, or wherever `NOCOBASE_RUNNER_HOME` says): settings, one registration per application in `apps/`, each registration's runner key in `credentials/` (0600), run records, event spools, logs, bare repository caches, installed CLIs, skill and mount bundles, the push guard hook, and `policy.json`. Agents work elsewhere, in `~/.nocobase-runner-work/<app>/<subject>/` (`NOCOBASE_RUNNER_WORK_ROOT`), each work directory holding the run's worktrees and `.nocobase-runner/` with the agent's home, its TMPDIR, the CLI shim, the run's skills (`plugin/`) and the workspace record. Build jobs work in `~/.nocobase-runner-work/.jobs/<app>/<jobId>/`, removed when each ends.
@@ -36,7 +52,7 @@ The machine's owner decides what it takes in `~/.nocobase-runner/policy.json`, w
 
 ### What an agent can and cannot do
 
-Every tool call goes through the run's policy (`src/core/command-policy.ts`): commands must match the agent's allowlist (the application's CLI and `cd` always do); explicit paths must resolve inside the work directory or a directory used in place; never the CLI credential file's directory, the runner's directory or the state directory of the person's own copy of the run's CLI (`~/.<cli>`, such as `~/.acme` with their `acme login`), dangerous patterns, commands that download and run code unless `allowedDownloads` lists them, or skipping the push guard. Every worktree may push only its run's branch to the repository it came from (`src/core/push-guard.ts`, a `pre-push` hook the agent's git uses as `core.hooksPath`). Keychain guards refuse reads of the CLI's keychain items (`<cli>-cli`, such as `acme-cli`). The environment is a short whitelist, the run's variables and the names the run asks for; no `NOCOBASE_RUNNER_*` variable or token reaches the agent. By default each work directory has its own home (`.nocobase-runner/home`) holding links to what the tools need (`~/.claude`, `~/.codex`, OpenCode's and Pi's directories, git and package manager configuration); `--agent-home real` gives the real home instead. Everything reported (events, summaries, failures, job logs) is redacted with `@nocobase/agent-protocol`'s redactor first.
+Every tool call goes through the run's policy (`src/core/command-policy.ts`): commands must match the agent's allowlist (the application's CLI and `cd` always do); explicit paths must resolve inside the work directory or a directory used in place; never the CLI credential file's directory, the runner's directory or the state directory of the person's own copy of the run's CLI (`~/.<cli>`, such as `~/.acme` with their `acme login`), dangerous patterns, commands that download and run code unless `allowedDownloads` lists them, or skipping the push guard. Every worktree may push only its run's branch to the repository it came from (`src/core/push-guard.ts`, a `pre-push` hook the agent's git uses as `core.hooksPath`). Keychain guards refuse reads of the CLI's keychain items (`<cli>-cli`, such as `acme-cli`). The environment is a short whitelist, the `--pass-env` names, the run's variables and the names the run takes from the runner (see "Environment variables"); no `NOCOBASE_RUNNER_*` variable or token reaches the agent. By default each work directory has its own home (`.nocobase-runner/home`) holding links to what the tools need (`~/.claude`, `~/.codex`, OpenCode's and Pi's directories, git and package manager configuration); `--agent-home real` gives the real home instead. Everything reported (events, summaries, failures, job logs) is redacted with `@nocobase/agent-protocol`'s redactor first.
 
 The policy reads shell commands, it does not sandbox them: an agent allowed to run an interpreter or a build script can do anything the runner's user can. True isolation needs a separate OS user or a container per run.
 

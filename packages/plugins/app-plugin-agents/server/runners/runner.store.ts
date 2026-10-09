@@ -5,6 +5,7 @@
 import {
   AGENT_TOOLS,
   RunnerPolicySchema,
+  RunnerVariableNamesSchema,
   ToolLoadSchema,
   ToolSlotsSchema,
   type AgentTool,
@@ -43,6 +44,7 @@ export interface RunnerRecord {
   readonly load: unknown;
   readonly acceptJobs: boolean;
   readonly policy: unknown;
+  readonly variables?: unknown;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -156,6 +158,23 @@ export function storedPolicy(value: unknown): RunnerPolicy | null {
     : policy;
 }
 
+/** Reported variable names as stored: valid names, each once, sorted; null when it reported none. */
+export function storedVariableNames(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  const parsed = RunnerVariableNamesSchema.safeParse(
+    typeof value === 'string' ? safeJson(value) : value,
+  );
+  return parsed.success ? [...new Set(parsed.data)].sort() : null;
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 export function toRunner(
   record: RunnerRecord,
   ownerName: string | null = null,
@@ -181,6 +200,7 @@ export function toRunner(
     toolLoad: storedToolLoad(record.load),
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
+    variables: storedVariableNames(record.variables),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

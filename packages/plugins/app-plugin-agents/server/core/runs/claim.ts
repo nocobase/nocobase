@@ -18,7 +18,8 @@
  * the first is full; a run none of whose tools has room is passed over for the runs behind it.
  *
  * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
- * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked.
+ * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked. The
+ * names taken from the runner go in `workspace.passthrough`, without values.
  *
  * A claim is one transaction per run. It first writes the agent's row (`lockAgentForClaim`): on databases with row
  * locks, concurrent claims for the same agent wait there, so the concurrency count read next is current. The run is
@@ -592,6 +593,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             runnerId: runner.id,
           })
         : [];
+    // Variables taken from the runner: names only. A runner that does not provide one fails the run while preparing
+    // it, saying how to provide it; runners are not chosen by them.
+    const passthrough = await deps.variables.passthroughOf(conn, variables);
     const nowText = clock.now().toISOString();
     const clean = await consumeReset(
       conn,
@@ -701,6 +705,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       workspace: {
         dirs,
         env,
+        ...(passthrough.length > 0 ? { passthrough } : {}),
         ...(clean ? { clean: true } : {}),
         ...(git ? { git } : {}),
       },

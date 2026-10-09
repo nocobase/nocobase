@@ -21,8 +21,8 @@
 //
 // Nothing leaves the worker unredacted (`runSecrets`): every event is redacted as it is spooled, and so are the
 // summary, the failure detail and the worker's log lines. The redactor removes the values of the secrets the run was
-// given (its variables, the passthrough values taken from this host, its CLI credential's tokens, the runner key) and
-// the common secret patterns of `@nocobase/agent-protocol`.
+// given (its variables, the passthrough values taken from this host, the proxy and `--pass-env` values the runner
+// passes, its CLI credential's tokens, the runner key) and the common secret patterns of `@nocobase/agent-protocol`.
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -66,7 +66,7 @@ import {
 } from '../core/checkout.ts';
 import { credentialsGuard, deleteRunCredentials } from './credentials.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
-import { buildAgentEnv } from './env.ts';
+import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
@@ -195,18 +195,26 @@ const CREDENTIAL_SECRET = /token|key|secret|password/iu;
 
 /**
  * The secret values a run carries: its variables, the values of the passthrough names as this host has them, the
+ * values the runner passes from its environment (its proxies, which may hold a password, and `--pass-env`), the
  * secret fields of its CLI credential (the run token), and the runner key it was claimed with.
  */
 export function runSecrets(
   payload: Pick<RunPayload, 'workspace' | 'cli'>,
   connection?: Pick<AppConnection, 'runnerKey' | 'registration'>,
   source: NodeJS.ProcessEnv = process.env,
+  passEnv: readonly string[] = [],
 ): string[] {
   const secrets = payload.workspace.env.map((variable) => variable.value);
+  const provided = providedVariables(
+    source,
+    passEnv,
+    connection?.registration.variables,
+  );
   for (const name of payload.workspace.passthrough ?? []) {
-    const value = connection?.registration.variables?.[name] ?? source[name];
+    const value = provided[name];
     if (value !== undefined) secrets.push(value);
   }
+  secrets.push(...environmentSecrets(source, passEnv));
   const content = payload.cli.credential.content;
   if (content !== null && typeof content === 'object')
     for (const [key, value] of Object.entries(content))
@@ -264,7 +272,9 @@ export class RunWorker {
   ) {
     this.payload = payload;
     this.timings = timings;
-    this.redactor = createRedactor(runSecrets(payload, deps.connection));
+    this.redactor = createRedactor(
+      runSecrets(payload, deps.connection, process.env, deps.settings.passEnv),
+    );
     const redact = this.redactor;
     this.deps = {
       ...deps,
@@ -475,6 +485,7 @@ export class RunWorker {
       payload,
       paths: deps.paths,
       registration,
+      passEnv: deps.settings.passEnv ?? [],
       client: this.client,
       tool: payload.tool.kind,
       log: deps.log,
@@ -563,6 +574,9 @@ export class RunWorker {
       ...(home === undefined ? {} : { home }),
       tmpDir,
       hooksDir: deps.paths.hooksDir,
+      ...(deps.settings.passEnv === undefined
+        ? {}
+        : { passEnv: deps.settings.passEnv }),
       localVariables: registration.variables,
       workspace: payload.workspace,
     });

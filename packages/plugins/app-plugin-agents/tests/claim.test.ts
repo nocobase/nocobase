@@ -347,6 +347,83 @@ describe('claiming', () => {
     });
   });
 
+  it('fills passthrough with the variables taken from the runner, a later scope replacing an earlier one', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    h.scopes = [{ scope: 'team', scopeId: 't-1' }];
+    h.dirs = [
+      {
+        kind: 'repo',
+        url: 'https://example.com/app.git',
+        defaultBranch: 'main',
+        branch: 'agent/SMP-1',
+        path: 'app',
+        scopeId: 'res-1',
+      },
+    ];
+    const variables = h.services.variables;
+    const fromRunner = (scope: string, scopeId: string, name: string) =>
+      variables.set({ scope, scopeId }, name, undefined, 'owner', {
+        fromRunner: true,
+      });
+    // A key the runner provides on the agent, one on the working directory, and a value on the team that the
+    // working directory takes from the runner instead.
+    await fromRunner('agent', agentId, 'NOCOBASE_CPA_API_KEY');
+    await variables.set(
+      { scope: 'team', scopeId: 't-1' },
+      'PROXY_TOKEN',
+      'team',
+      'owner',
+    );
+    await fromRunner('workdir', 'res-1', 'PROXY_TOKEN');
+    // And one the agent sets a value for over the working directory's runner entry.
+    await fromRunner('workdir', 'res-1', 'API_URL');
+    await variables.set(
+      { scope: 'agent', scopeId: agentId },
+      'API_URL',
+      'agent',
+      'owner',
+    );
+    await h.enqueue(agentId, '1');
+
+    const runner = await h.registerRunner();
+    const [payload] = await claim(h, runner);
+    expect(payload.workspace.passthrough).toEqual([
+      'NOCOBASE_CPA_API_KEY',
+      'PROXY_TOKEN',
+    ]);
+    expect(payload.workspace.env).toEqual([
+      { name: 'API_URL', value: 'agent' },
+    ]);
+    expect(
+      (await variables.list({ scope: 'agent', scopeId: agentId })).map(
+        (variable) => [variable.name, variable.fromRunner === true],
+      ),
+    ).toEqual([
+      ['API_URL', false],
+      ['NOCOBASE_CPA_API_KEY', true],
+    ]);
+    await expect(
+      variables.set(
+        { scope: 'agent', scopeId: agentId },
+        'X_KEY',
+        'v',
+        'owner',
+        {
+          fromRunner: true,
+        },
+      ),
+    ).rejects.toMatchObject({ details: { reason: 'valueNotAllowed' } });
+  });
+
+  it('gives a run with nothing taken from the runner no passthrough', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    await h.enqueue(agentId, '1');
+    const [payload] = await claim(h, await h.registerRunner());
+    expect(payload.workspace.passthrough).toBeUndefined();
+  });
+
   it('starts from a fresh working directory once after a reset', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

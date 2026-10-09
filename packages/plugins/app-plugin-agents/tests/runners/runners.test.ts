@@ -177,6 +177,43 @@ describe('runners', () => {
     ).toBeNull();
   });
 
+  it('keeps the variable names a runner reports it provides, names only', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('alice', {});
+    const registered = await h.request('POST', '/agents/runners/register', {
+      body: { ...registration(token.token), variables: ['PI_KEY'] },
+    });
+    const { runnerId, runnerKey } = registered.body.data as {
+      runnerId: string;
+      runnerKey: string;
+    };
+    expect((await h.services.runners.get(runnerId)).variables).toEqual([
+      'PI_KEY',
+    ]);
+    const beat = (variables?: unknown) =>
+      h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey,
+        body: {
+          ...heartbeat,
+          ...(variables === undefined ? {} : { variables }),
+        },
+      });
+    expect((await beat(['ZED', 'HTTPS_PROXY', 'ZED'])).status).toBe(200);
+    expect((await h.services.runners.get(runnerId)).variables).toEqual([
+      'HTTPS_PROXY',
+      'ZED',
+    ]);
+    // A value is never a name.
+    expect((await beat(['KEY=value'])).status).toBe(400);
+    // A runner from before they were reported leaves them out: unknown.
+    await beat();
+    expect((await h.services.runners.get(runnerId)).variables).toBeNull();
+    const page = await h.request('GET', `/agents/runners/${runnerId}`, {
+      user: 'alice',
+    });
+    expect(page.body.data.variables).toBeNull();
+  });
+
   it('shows whoever sees a runner what it takes work for and what it holds', async () => {
     h = await createHarness();
     const runner = await h.registerRunner();

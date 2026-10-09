@@ -1,8 +1,8 @@
 /**
  * Runners: registering with a one-time token, authenticating by key, heartbeats, and what people change afterwards
  * (name, trust, slots, which coding tools it may run, revocation). What a runner has (its system, features and coding
- * tools, each with whether it is signed in) and what its owner's local policy lets it take (`policy`) is what it
- * reports, never configured here; which of its tools it is offered work for is chosen on the web (`enabledTools`,
+ * tools, each with whether it is signed in), what its owner's local policy lets it take (`policy`) and the names of the
+ * variables it provides to runs (`variables`) are what it reports, never configured here; which of its tools it is offered work for is chosen on the web (`enabledTools`,
  * carried over from the registration token, as are its slots and its limits per coding tool unless the runner names
  * its own).
  *
@@ -56,6 +56,7 @@ import {
   registrationTokensRepo,
   runnersRepo,
   storedPolicy,
+  storedVariableNames,
   storedToolChoice,
   storedToolLoad,
   storedToolSlots,
@@ -274,6 +275,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             load: null,
             acceptJobs: false,
             policy: asJson(storedPolicy(request.policy)),
+            variables: asJson(storedVariableNames(request.variables)),
             lastSeenAt: nowText,
             createdAt: nowText,
             updatedAt: nowText,
@@ -398,13 +400,16 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       tx.run(async ({ conn, emit }) => {
         const now = clock.now().toISOString();
         const policy = storedPolicy(request.policy);
+        const variables = storedVariableNames(request.variables);
         const changed =
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
           JSON.stringify(runner.features) !==
             JSON.stringify(cleanList(request.features)) ||
           JSON.stringify(runner.tools) !== JSON.stringify(request.tools) ||
-          JSON.stringify(runner.policy) !== JSON.stringify(policy);
+          JSON.stringify(runner.policy) !== JSON.stringify(policy) ||
+          JSON.stringify(runner.variables ?? null) !==
+            JSON.stringify(variables);
         await runnersRepo(conn).updateMany({
           filter: { id: runner.id },
           values: {
@@ -413,6 +418,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             features: cleanList(request.features),
             tools: request.tools,
             policy: asJson(policy),
+            variables: asJson(variables),
             // What it holds per tool across every application: read for why a run waits, so it changes nothing else.
             load: asJson(storedToolLoad(request.load.tools ?? null)),
             lastSeenAt: now,

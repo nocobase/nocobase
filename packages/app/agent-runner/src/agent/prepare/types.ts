@@ -17,6 +17,8 @@ export interface PrepareContext {
   readonly payload: RunPayload;
   readonly paths: RunnerPaths;
   readonly registration: AppRegistration;
+  /** The names the runner's owner passes from its environment (`--pass-env`). */
+  readonly passEnv: readonly string[];
   readonly client: ApiClient;
   readonly tool: AgentTool;
   readonly log: (message: string) => void;

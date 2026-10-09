@@ -386,6 +386,11 @@ const zhCN: AgentsResource = {
     teamRunnersOnlyHint:
       '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由团队运行环境接。',
     teamRunnersOnlyBadge: '仅限团队运行环境',
+    fromRunner: '从运行环境取',
+    fromRunnerHint:
+      '这里不保存值：由接活的运行环境从它所在的机器提供，在那台机器上用 `{{command}}` 设置，或用 `--pass-env` 放行。不提供这个变量的运行环境会在运行开始前失败。',
+    fromRunnerBadge: '从运行环境取',
+    valueRequired: '请填写值，或继续从运行环境取。',
     empty: '没有环境变量。',
     edit: '替换值',
     actions: '{{name}} 的操作',

@@ -19,7 +19,7 @@
  *   the agent starts one turn more than allowed.
  * - Stop: `abort`, close stdin, SIGTERM after 2 s, SIGKILL after 4.5 s.
  */
-import { execFile, spawn as nodeSpawn } from 'node:child_process';
+import { spawn as nodeSpawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -36,6 +36,7 @@ import {
 } from './pi/extension.ts';
 import type { PermissionAnswer } from './pi/extension.ts';
 import { classifyPiFailure, contentText } from './pi/protocol.ts';
+import { detectExec } from './detect-exec.ts';
 import type {
   PiMessage,
   PiRecord,
@@ -113,28 +114,13 @@ export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
 
 export interface PiAdapterOptions {
   minVersion?: string;
-  /** PATH searched for `pi`; defaults to the runner's PATH. */
+  /** PATH searched for `pi`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   exec?: ExecFn;
   spawn?: SpawnFn;
 }
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 const defaultSpawn: SpawnFn = (file, args, options) =>
   nodeSpawn(file, args, {
@@ -175,15 +161,16 @@ export function denialMessage(reason: string | undefined): string {
 export class PiAdapter implements AgentAdapter {
   readonly kind = 'pi' as const;
   private readonly minVersion: string;
-  private readonly searchPath?: string;
+  private readonly searchPath: string;
   private readonly exec: ExecFn;
   private readonly spawn: SpawnFn;
   private detection?: Promise<ToolDetection>;
 
   constructor(options: PiAdapterOptions = {}) {
     this.minVersion = options.minVersion ?? DEFAULT_MIN_PI_VERSION;
-    this.searchPath = options.searchPath;
-    this.exec = options.exec ?? defaultExec;
+    this.searchPath =
+      options.searchPath ?? (options.env ?? process.env).PATH ?? '';
+    this.exec = options.exec ?? detectExec(options.env);
     this.spawn = options.spawn ?? defaultSpawn;
   }
 
@@ -197,7 +184,7 @@ export class PiAdapter implements AgentAdapter {
   }
 
   private async runDetection(): Promise<ToolDetection> {
-    const searchPath = this.searchPath ?? process.env.PATH ?? '';
+    const { searchPath } = this;
     const piPath = await findOnPath('pi', searchPath);
     if (!piPath) return { installed: false, authenticated: false };
     const v = await this.exec(piPath, ['--version']);

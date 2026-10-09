@@ -88,6 +88,12 @@ export interface Runner {
    * missing from its `features` instead.
    */
   readonly policy: RunnerPolicy | null;
+  /**
+   * The names of the variables it provides to a run that asks for them by name (variables kept "from the runner"):
+   * its local variables and the names its owner passes from its environment, as it last reported them. Names only.
+   * Null or absent when it reported none (a runner from before they were reported: unknown).
+   */
+  readonly variables?: readonly string[] | null;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;

@@ -397,6 +397,11 @@ const pages = {
     teamRunnersOnlyHint:
       'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a team runtime takes runs that get this variable.',
     teamRunnersOnlyBadge: 'Team runtimes only',
+    fromRunner: 'Take from the runtime',
+    fromRunnerHint:
+      'No value is kept here: the runtime that takes a run provides it from its own machine, set there with `{{command}}` or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',
+    fromRunnerBadge: 'From the runtime',
+    valueRequired: 'Enter a value, or keep taking it from the runtime.',
     empty: 'No environment variables.',
     scope: 'Scope',
     updated: 'Updated',

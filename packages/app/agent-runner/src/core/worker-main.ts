@@ -86,14 +86,15 @@ async function main(): Promise<number> {
     phase: 'spawned',
     log: '',
   };
+  const settings = await readSettings(paths);
   const worker = new RunWorker(
     payload,
     job.timings,
     {
       paths,
       connection,
-      settings: await readSettings(paths),
-      adapters: loadAdapters(),
+      settings,
+      adapters: loadAdapters(process.env, settings.passEnv),
       log,
     },
     record,

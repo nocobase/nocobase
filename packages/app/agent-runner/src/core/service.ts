@@ -1,15 +1,17 @@
 // Runs the daemon as a per-user service: a launchd agent on macOS, a systemd user unit on Linux. The service runs
 // `nocobase-runner start --foreground` (the installation's `current` launcher, or this Node and this entry), restarts it
 // whenever it exits, which is also how a self-update takes effect, and writes its output to the daemon log. Each plan
-// lists the file it writes and the commands it runs, so `--dry-run` can show them. Installing again replaces the
-// service in place. A label other than the default lets a second runner (a test, or another state directory) run
-// beside the first.
+// lists the file it writes and the commands it runs, so `--dry-run` can show them. The service gets the installing
+// shell's PATH, proxy and CA variables and `--pass-env` names (`serviceEnvironment`), and its file is readable by its
+// owner only. Installing again replaces the service in place. A label other than the default lets a second runner (a
+// test, or another state directory) run beside the first.
 import { execFile } from 'node:child_process';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
+import { CA_ENV, forbidden, PROXY_ENV } from '../agent/env.ts';
 import type { RunnerPaths } from '../lib/home.ts';
 
 const run = promisify(execFile);
@@ -33,6 +35,8 @@ export interface ServicePlan {
   label: string;
   file: string;
   content: string;
+  /** The variables written into the service from the installing environment, by name (`serviceEnvironment`). */
+  captured: string[];
   install: string[][];
   uninstall: string[][];
 }
@@ -50,6 +54,29 @@ function systemdQuote(value: string): string {
     : value;
 }
 
+/** An `Environment=` assignment: quoted, with `%` doubled so systemd expands no specifier in it. */
+function systemdEnvironment(key: string, value: string): string {
+  return `Environment=${systemdQuote(`${key}=${value}`.replace(/%/g, '%%'))}`;
+}
+
+/**
+ * What the service takes from the environment it is installed from, beside `PATH`: a service starts without the
+ * installing shell's variables, so the proxy and CA variables (`PROXY_ENV`, `CA_ENV`) and the names its owner passes
+ * (`--pass-env`) are written into it with their values now. Changing one later means installing the service again.
+ */
+export function serviceEnvironment(
+  env: NodeJS.ProcessEnv,
+  passEnv: readonly string[] = [],
+): Record<string, string> {
+  const captured: Record<string, string> = {};
+  for (const name of [...PROXY_ENV, ...CA_ENV, ...passEnv]) {
+    const value = env[name];
+    if (value !== undefined && value !== '' && !forbidden(name))
+      captured[name] = value;
+  }
+  return captured;
+}
+
 export interface ServiceOptions {
   paths: RunnerPaths;
   /** The program and arguments that start the CLI, such as [node, bin/run.js]. */
@@ -60,6 +87,8 @@ export interface ServiceOptions {
   env?: NodeJS.ProcessEnv;
   /** `com.nocobase.runner` by default. */
   label?: string;
+  /** The names the runner's owner passes (`--pass-env`), written into the service with their values in `env`. */
+  passEnv?: readonly string[];
 }
 
 export function servicePlan(options: ServiceOptions): ServicePlan {
@@ -70,7 +99,9 @@ export function servicePlan(options: ServiceOptions): ServicePlan {
   const label = options.label ?? LAUNCHD_LABEL;
   if (!SERVICE_LABEL_PATTERN.test(label))
     throw new Error(`Not a service label: ${label}`);
+  const captured = serviceEnvironment(env, options.passEnv);
   const environment: Record<string, string> = {
+    ...captured,
     PATH: env.PATH ?? '/usr/local/bin:/usr/bin:/bin',
     NOCOBASE_RUNNER_HOME: options.paths.home,
     NOCOBASE_RUNNER_WORK_ROOT: options.paths.workRoot,
@@ -117,6 +148,7 @@ ${Object.entries(environment)
       label,
       file,
       content,
+      captured: Object.keys(captured),
       install: [['launchctl', 'bootstrap', domain, file]],
       uninstall: [['launchctl', 'bootout', `${domain}/${label}`]],
     };
@@ -131,7 +163,7 @@ After=network-online.target
 [Service]
 ExecStart=${args.map(systemdQuote).join(' ')}
 ${Object.entries(environment)
-  .map(([key, value]) => `Environment=${systemdQuote(`${key}=${value}`)}`)
+  .map(([key, value]) => systemdEnvironment(key, value))
   .join('\n')}
 Restart=always
 RestartSec=10
@@ -145,6 +177,7 @@ WantedBy=default.target
       label,
       file,
       content,
+      captured: Object.keys(captured),
       install: [
         ['systemctl', '--user', 'daemon-reload'],
         ['systemctl', '--user', 'enable', unit],
@@ -171,7 +204,9 @@ export async function installService(
       await run(command, args).catch(() => undefined);
   await mkdir(path.dirname(plan.file), { recursive: true });
   await mkdir(path.dirname(paths.daemonLog), { recursive: true, mode: 0o700 });
-  await writeFile(plan.file, plan.content, { mode: 0o644 });
+  // Only its owner reads it: the variables written into it may hold a proxy's password or a key.
+  await writeFile(plan.file, plan.content, { mode: 0o600 });
+  await chmod(plan.file, 0o600);
   for (const [command = '', ...args] of plan.install) {
     // launchd may still be removing the previous instance right after `bootout`; try again for a few seconds.
     for (let attempt = 1; ; attempt += 1) {

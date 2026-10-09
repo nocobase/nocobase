@@ -19,11 +19,11 @@
  * - The run ends when the session's execution settles and no steered input
  *   is still waiting.
  */
-import { execFile } from 'node:child_process';
 import { existsSync, constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 
+import { detectExec } from './detect-exec.ts';
 import { OpencodeClient, OpencodeHttpError } from './opencode/client.ts';
 import type {
   FetchFn,
@@ -116,8 +116,10 @@ export interface ExecResult {
 export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
 
 export interface OpencodeAdapterOptions {
-  /** PATH searched for `opencode`; defaults to the runner's PATH. */
+  /** PATH searched for `opencode`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   /** Extra places to look when it is not on PATH (the installer's default). */
   fallbackPaths?: string[];
   /** Runs a command for detection; replaceable in tests. */
@@ -131,23 +133,6 @@ export interface OpencodeAdapterOptions {
 // ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 function parseVersion(text: string): string | undefined {
   return /(\d+\.\d+\.\d+)/.exec(text)?.[1];
@@ -201,15 +186,18 @@ export class OpencodeAdapter implements AgentAdapter {
   private readonly exec: ExecFn;
   private readonly launch: LaunchFn;
   private readonly fetchFn?: FetchFn;
-  private readonly searchPath?: string;
+  private readonly searchPath: string;
+  private readonly home?: string;
   private readonly fallbackPaths?: string[];
   private detection?: Promise<ToolDetection>;
 
   constructor(options: OpencodeAdapterOptions = {}) {
-    this.exec = options.exec ?? defaultExec;
+    const env = options.env ?? process.env;
+    this.exec = options.exec ?? detectExec(options.env);
     this.launch = options.launch ?? launchServer;
     this.fetchFn = options.fetch;
-    this.searchPath = options.searchPath;
+    this.searchPath = options.searchPath ?? env.PATH ?? '';
+    this.home = env.HOME;
     this.fallbackPaths = options.fallbackPaths;
   }
 
@@ -223,8 +211,7 @@ export class OpencodeAdapter implements AgentAdapter {
   }
 
   private async runDetection(): Promise<ToolDetection> {
-    const searchPath = this.searchPath ?? process.env.PATH ?? '';
-    const home = process.env.HOME;
+    const { searchPath, home } = this;
     const fallbacks =
       this.fallbackPaths ??
       (home ? [path.join(home, '.opencode', 'bin', 'opencode')] : []);

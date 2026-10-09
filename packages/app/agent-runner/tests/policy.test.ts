@@ -3,7 +3,22 @@ import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { prepareAgentHome } from '../src/agent/agent-home.ts';
-import { buildAgentEnv } from '../src/agent/env.ts';
+import {
+  buildAgentEnv,
+  detectionEnv,
+  environmentSecrets,
+  missingVariables,
+  providedNames,
+  providedVariables,
+} from '../src/agent/env.ts';
+import {
+  PrepareError,
+  type PrepareContext,
+} from '../src/agent/prepare/index.ts';
+import {
+  missingVariablesMessage,
+  variablesStep,
+} from '../src/agent/prepare/variables.ts';
 import {
   commandSegments,
   createPolicy,
@@ -332,6 +347,106 @@ describe('agent environment', () => {
       NODE_ENV: 'test',
       NPM_TOKEN: 'npm',
     });
+  });
+
+  it('passes the proxy and CA variables by default, and the --pass-env names always', () => {
+    const env = buildAgentEnv({
+      source: {
+        PATH: '/bin',
+        HTTPS_PROXY: 'http://user:pw@proxy:3128',
+        https_proxy: 'http://proxy:3128',
+        ALL_PROXY: 'socks5://proxy:1080',
+        NO_PROXY: 'localhost,127.0.0.1',
+        SSL_CERT_FILE: '/etc/ca.pem',
+        NODE_EXTRA_CA_CERTS: '/etc/extra.pem',
+        CUSTOM_KEY: 'k',
+        OTHER: 'o',
+        NOCOBASE_RUNNER_HOME: 'no',
+      },
+      passEnv: ['CUSTOM_KEY', 'NOT_SET', 'NOCOBASE_RUNNER_HOME'],
+    });
+    expect(env).toEqual({
+      PATH: '/bin',
+      HTTPS_PROXY: 'http://user:pw@proxy:3128',
+      https_proxy: 'http://proxy:3128',
+      ALL_PROXY: 'socks5://proxy:1080',
+      NO_PROXY: 'localhost,127.0.0.1',
+      SSL_CERT_FILE: '/etc/ca.pem',
+      NODE_EXTRA_CA_CERTS: '/etc/extra.pem',
+      CUSTOM_KEY: 'k',
+    });
+  });
+
+  it('provides a passthrough name only from the local variables or --pass-env, and names the missing ones', () => {
+    const source = { PATH: '/bin', PI_KEY: 'from-env', STRAY: 'stray' };
+    const workspace = {
+      env: [],
+      passthrough: ['NOCOBASE_CPA_API_KEY', 'PI_KEY', 'STRAY'],
+    };
+    const env = buildAgentEnv({
+      source,
+      passEnv: ['PI_KEY'],
+      localVariables: { NOCOBASE_CPA_API_KEY: 'sk-local' },
+      workspace,
+    });
+    expect(env).toEqual({
+      PATH: '/bin',
+      PI_KEY: 'from-env',
+      NOCOBASE_CPA_API_KEY: 'sk-local',
+    });
+    const provided = providedVariables(source, ['PI_KEY'], {
+      NOCOBASE_CPA_API_KEY: 'sk-local',
+    });
+    expect(missingVariables(workspace.passthrough, provided)).toEqual([
+      'STRAY',
+    ]);
+    expect(
+      providedNames(source, ['PI_KEY', 'UNSET'], { LOCAL: 'x', PATH: '/x' }),
+    ).toEqual(['LOCAL', 'PI_KEY']);
+  });
+
+  it("detects tools in what every run gets, and redacts the runner's proxy and passed values", () => {
+    const source = {
+      PATH: '/bin',
+      HOME: '/h',
+      HTTPS_PROXY: 'http://user:secret@proxy:3128',
+      NO_PROXY: 'localhost',
+      OPENAI_API_KEY: 'sk-openai',
+      STRAY: 'stray',
+    };
+    expect(detectionEnv(source, ['OPENAI_API_KEY'])).toEqual({
+      PATH: '/bin',
+      HOME: '/h',
+      HTTPS_PROXY: 'http://user:secret@proxy:3128',
+      NO_PROXY: 'localhost',
+      OPENAI_API_KEY: 'sk-openai',
+    });
+    expect(environmentSecrets(source, ['OPENAI_API_KEY'])).toEqual([
+      'http://user:secret@proxy:3128',
+      'sk-openai',
+    ]);
+  });
+
+  it('fails a run whose passthrough names the runner does not provide, saying how to provide them', async () => {
+    const context = {
+      payload: { workspace: { env: [], dirs: [], passthrough: ['PI_KEY'] } },
+      passEnv: [],
+      registration: { variables: {} },
+    } as unknown as PrepareContext;
+    const failure = await variablesStep.run(context).catch((error) => error);
+    expect(failure).toBeInstanceOf(PrepareError);
+    expect(failure).toMatchObject({ reason: 'setupFailed' });
+    expect((failure as Error).message).toContain(
+      'nocobase-runner env set PI_KEY',
+    );
+    expect((failure as Error).message).toContain('--pass-env PI_KEY');
+    await expect(
+      variablesStep.run({
+        ...context,
+        registration: { variables: { PI_KEY: 'x' } },
+      } as unknown as PrepareContext),
+    ).resolves.toBeUndefined();
+    expect(missingVariablesMessage(['A', 'B'])).toContain('the variables A, B');
   });
 
   it('builds an isolated home that links only what the tool needs', async () => {

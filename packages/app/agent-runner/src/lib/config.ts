@@ -15,6 +15,7 @@ import {
   type RunApp,
   type ToolSlots,
 } from '../protocol/index.ts';
+import { ENV_NAME_PATTERN, forbidden } from '../agent/env.ts';
 import { ApiClient } from './http.ts';
 import {
   ensureHome,
@@ -46,6 +47,11 @@ export interface RunnerSettings {
   autoUpdate: boolean;
   /** The label of the service `service install` set up, so `uninstall` finds it. */
   serviceLabel?: string;
+  /**
+   * Variable names always passed from the runner's environment to every run, and provided to a run that asks for them
+   * (`--pass-env` on `start` and `service install`); absent for none.
+   */
+  passEnv?: string[];
 }
 
 export interface AppRegistration {
@@ -90,7 +96,22 @@ export async function readSettings(
     ...(typeof stored?.serviceLabel === 'string' && stored.serviceLabel !== ''
       ? { serviceLabel: stored.serviceLabel }
       : {}),
+    ...(passEnvNames(stored?.passEnv).length > 0
+      ? { passEnv: passEnvNames(stored?.passEnv) }
+      : {}),
   };
+}
+
+/** `--pass-env` names: the valid ones, each once, in order. */
+export function passEnvNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const names = value.filter(
+    (name): name is string =>
+      typeof name === 'string' &&
+      ENV_NAME_PATTERN.test(name) &&
+      !forbidden(name),
+  );
+  return [...new Set(names)];
 }
 
 export async function writeSettings(
