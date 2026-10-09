@@ -35,9 +35,13 @@ function runRow(id: string, actorUserId: string): Record<string, unknown> {
   };
 }
 
-describeMigration('202610080001_ag_create_run_requests', {
+describeMigration('202610090002_ag_create_run_requests', {
   sources,
-  before: async ({ connection }) => {
+  before: async ({ connection, expectCollection }) => {
+    // Applications that already applied PM-68 must keep its schema through this later migration and its rollback.
+    await expectCollection('agRunners').toHaveField('toolSlots');
+    await expectCollection('agRunners').toHaveField('load');
+    await expectCollection('agRegistrationTokens').toHaveField('toolSlots');
     await connection.query
       .insertInto('agRuns')
       .values([
@@ -113,5 +117,8 @@ describeMigration('202610080001_ag_create_run_requests', {
     await expectCollection('agRunRequests').not.toExist();
     await expectCollection('agRuns').not.toHaveField('requestedByUserId');
     await expectCollection('agRuns').not.toHaveField('confirmedByUserId');
+    await expectCollection('agRunners').toHaveField('toolSlots');
+    await expectCollection('agRunners').toHaveField('load');
+    await expectCollection('agRegistrationTokens').toHaveField('toolSlots');
   },
 });

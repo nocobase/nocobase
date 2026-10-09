@@ -21,7 +21,7 @@ Add run requests to the agents plugin: when someone other than the person who an
   - `POST /api/agents/runRequests/{requestId}/confirm`, `reject`, `withdraw` and `runAsMe`
   - CLI commands: `run request list|get|confirm|reject|withdraw|run-as-me`.
 - New events: `runRequest.created`, `confirmed`, `rejected`, `withdrawn`, `superseded` and `expired`. The `notice` event's `notice` is now `AgentsNotice` (`RunnerNotice | RunRequestNotice`).
-- Runs record `requestedByUserId` and `confirmedByUserId`. Migration `202610080001_ag_create_run_requests` creates `agRunRequests`, adds both columns to `agRuns`, and fills `requestedByUserId` of existing runs from `actorUserId`.
+- Runs record `requestedByUserId` and `confirmedByUserId`. Migration `202610090002_ag_create_run_requests` creates `agRunRequests`, adds both columns to `agRuns`, and fills `requestedByUserId` of existing runs from `actorUserId`. Its number follows the already merged runner tool slots migration and reserves the preceding number for the execution identity migration.
 - The sweeper's report gains `requestsExpired`.
 - Work is merged or appended only into runs with the same `actorUserId`, including `mine`, `runAsMe` and confirmed requests.
 - Subjects can bind `responsibleUserId(conn, subjectId)` to recheck current responsibility when confirming or rejecting. Without a resolver, applications must reassign requests when responsibility changes. A reassignment that has no usable responsible expires the request, notifies its requester and preserves execution as the requester.

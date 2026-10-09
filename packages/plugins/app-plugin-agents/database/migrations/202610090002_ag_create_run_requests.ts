@@ -20,7 +20,7 @@ const STATUSES = [
  * queued before this migration were started by the person they run as.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202610080001_ag_create_run_requests',
+  name: '202610090002_ag_create_run_requests',
 
   async up({ builder, query }: MigrationContext): Promise<void> {
     await builder.createCollection('agRunRequests', (collection) => {
