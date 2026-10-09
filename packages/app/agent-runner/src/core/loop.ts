@@ -76,6 +76,7 @@ import {
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
+import { ToolCapabilitiesCache } from './tool-capabilities.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
 export function runnerVersion(): string {
@@ -193,6 +194,7 @@ export class RunnerDaemon {
   private slotFreed: (() => void) | undefined;
   private gcTimer: NodeJS.Timeout | undefined;
   private tools: ToolInfo[] = [];
+  private capabilities?: ToolCapabilitiesCache;
   private claimLoop: Promise<void> | undefined;
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
@@ -329,6 +331,10 @@ export class RunnerDaemon {
     this.gcTimer.unref();
 
     this.tools = await detectTools(this.options.adapters);
+    this.capabilities = new ToolCapabilitiesCache(
+      this.options.adapters,
+      this.tools,
+    );
     for (const link of this.links) {
       await this.heartbeat(link);
       link.heartbeatTimer = setInterval(
@@ -350,6 +356,7 @@ export class RunnerDaemon {
     this.stopped ??= (async () => {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
+      await this.capabilities?.stop();
       this.slotFreed?.();
       for (const link of this.links)
         if (link.heartbeatTimer !== undefined)
@@ -412,6 +419,7 @@ export class RunnerDaemon {
   }
 
   async heartbeat(link: AppLink): Promise<void> {
+    this.capabilities?.refresh();
     if (this.stopping.signal.aborted || link.revoked) return;
     const { log } = this.options;
     const held = [...this.supervisor.runs.values()].filter(
@@ -428,7 +436,7 @@ export class RunnerDaemon {
           product: runnerHost().product,
           features: policy.features,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
-          tools: this.tools,
+          tools: this.capabilities?.tools ?? this.tools,
           active: runs.map((run) => ({
             runId: run.runId,
             pid: run.pid,
