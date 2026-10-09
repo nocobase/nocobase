@@ -19,6 +19,7 @@ export {
 } from './registry.js';
 export {
   checkSpecInput,
+  JobSecretsNotAllowed,
   runnerSpec,
   secretRefsOf,
   type BuildJobSpecInput,

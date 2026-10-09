@@ -286,17 +286,26 @@ export class AgentsApi {
     return this.list(`variables/${scope}/${id(scopeId)}`);
   }
 
-  /** Creates or replaces a variable; the value is never read back except through `revealVariables`. */
+  /**
+   * Creates or replaces a variable; the value is never read back except through `revealVariables`. Without `value`,
+   * an existing variable keeps its value and changes only what `options` says.
+   */
   public async setVariable(
     scope: VariableScope,
     scopeId: string,
     name: string,
-    value: string,
+    value: string | undefined,
+    options: { readonly teamRunnersOnly?: boolean } = {},
   ): Promise<void> {
     await this.send<Variable>(
       `variables/${scope}/${id(scopeId)}/${id(name)}`,
       'PUT',
-      { value },
+      {
+        ...(value === undefined ? {} : { value }),
+        ...(options.teamRunnersOnly === undefined
+          ? {}
+          : { teamRunnersOnly: options.teamRunnersOnly }),
+      },
     );
   }
 

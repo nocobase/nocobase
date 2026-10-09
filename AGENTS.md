@@ -22,6 +22,8 @@ Keep executable workflow YAML files directly in `.github/workflows/`; GitHub Act
 
 Every v3 workflow change must include a synchronization check of its corresponding `main` entry. Those entries dispatch the implementation from `v3-develop`, so implementation-only jobs and steps are picked up automatically rather than copied into `main`; explicitly confirm that the entry still reaches the updated implementation. Workflow additions, deletions, renames, dispatch input changes and scheduled/default-branch trigger changes must update the corresponding entry in the same delivery. Keep workflow calls, dispatch filenames, path filters, tests and documentation consistent, coordinate the paired branch rollout, and preserve existing v1/v2 workflows.
 
+See [.github/V3-MIGRATION.md](.github/V3-MIGRATION.md) for release routing, repository configuration that maintainers must confirm, and intentional historical and independent Pro references. `release-beta/*` and `release/*` remain release candidate and aggregate tag prefixes; OSS target branches are `v3-develop` and `v3-main`.
+
 ## Before Creating or Updating a Pull Request
 
 Read [.changeset/README.md](.changeset/README.md) before creating or updating a PR. If the PR changes a publishable package and affects its published output, include a changeset in the same PR covering every affected package. Run `node scripts/validate-changesets.mjs` before pushing.

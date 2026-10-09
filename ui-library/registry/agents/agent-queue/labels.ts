@@ -3,11 +3,7 @@
  * resources, for instance) to `AgentQueue`. `{name}` placeholders are filled in by the item; single braces, so a
  * consumer's i18n library that interpolates `{{name}}` leaves them alone.
  */
-import type {
-  AgentQueueIdle,
-  AgentQueueWaitKind,
-  AgentQueueWaitReason,
-} from './types.js';
+import type { AgentQueueIdle, AgentQueueWaitKind } from './types.js';
 
 export interface AgentQueueLabels {
   readonly summary: {
@@ -60,13 +56,6 @@ export interface AgentQueueLabels {
     readonly blockedCount: string;
     /** `{duration}`. */
     readonly waited: string;
-    /** `{max}` for `concurrencyFull`, `{tool}` for tool waits, `{features}`, `{time}` for `delayed`. */
-    readonly reasons: Readonly<
-      Record<Exclude<AgentQueueWaitReason, 'toolSlotsFull'>, string> & {
-        /** Optional for existing translations; falls back to the English default. */
-        readonly toolSlotsFull?: string;
-      }
-    >;
   };
   readonly wait: {
     readonly kinds: Readonly<Record<AgentQueueWaitKind, string>>;
@@ -137,21 +126,6 @@ export const defaultAgentQueueLabels: AgentQueueLabels = {
     blockedBy: 'Blocked by {issues}',
     blockedCount: 'Blocked by {count} issues',
     waited: 'Queued {duration}',
-    reasons: {
-      agentArchived: 'The agent is archived',
-      delayed: 'Scheduled for {time}',
-      noRunnerOnline: 'No runtime online',
-      runnersOffline: 'Its runtimes are offline',
-      toolUnavailable: 'No runtime has {tool} signed in',
-      noSharedRunner: 'Only other people’s runtimes are online',
-      missingFeatures: 'No runtime supports {features}',
-      sameWorkActive: 'After the run already on it',
-      concurrencyFull: 'Concurrency full ({max})',
-      runnersBusy: 'Every fitting runtime is busy',
-      toolSlotsFull: 'Every fitting runtime has its {tool} slots full',
-      setupRetrying: 'Preparing it failed; retrying',
-      next: 'Next for a free runtime',
-    },
   },
   wait: {
     kinds: {

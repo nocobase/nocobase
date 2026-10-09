@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/agent-protocol",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "The wire protocol between a NocoBase application's agents plugin, the agent runner and the application's CLI: zod schemas, types, the protocol version, runner features and error codes",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

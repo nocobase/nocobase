@@ -639,12 +639,17 @@ export function createAdminRoutes(
             description:
               'The value; stored encrypted and never shown again. Asked for when left out.',
           },
+          teamRunnersOnly: {
+            description:
+              'Only team runners receive it; personal runners leave a run that gets it.',
+          },
         },
         examples: [
           'variable set agent <agent> NPM_TOKEN --value-file token.txt',
+          'variable set agent <agent> DEPLOY_KEY --value-file key.txt --team-runners-only',
         ],
       }),
-      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. Needs the right to change the scope. ${scopeAccess}`,
+      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a team runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. Needs the right to change the scope. ${scopeAccess}`,
       responses: {
         200: dataResponse(VariableSchema.nullable()),
         404: noScope,
@@ -656,11 +661,15 @@ export function createAdminRoutes(
     async (context) => {
       const target = context.get('target');
       const { variableName } = context.req.valid('param');
+      const body = context.req.valid('json');
       await services.variables.set(
         target,
         variableName,
-        context.req.valid('json').value,
+        body.value,
         caller(context as unknown as Context<AdminEnv>).userId,
+        body.teamRunnersOnly === undefined
+          ? {}
+          : { teamRunnersOnly: body.teamRunnersOnly },
       );
       const variable = (await services.variables.list(target)).find(
         (item) => item.name === variableName,

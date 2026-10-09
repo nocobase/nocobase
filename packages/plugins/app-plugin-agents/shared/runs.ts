@@ -12,6 +12,8 @@ import type {
   RunStatus,
 } from '@nocobase/agent-protocol';
 
+import type { VariableRef } from './variables.js';
+
 /** The run subject kind of a consultation: an online agent asking another a question (`ask_agent`). */
 export const CONSULTATION_SUBJECT = 'consultation';
 
@@ -139,6 +141,8 @@ export interface RunEventPage {
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
  * - `missingFeatures`: the runners that could take it lack what it needs (`missing`).
+ * - `secretsNotAllowed`: some of its variables are for team runners only (`variables` names them), and the runners
+ *   that could take it are personal ones.
  * - `sameWorkActive`: the agent is already working on the same subject and thread; this run follows.
  * - `concurrencyFull`: the agent has as many runs held as it may have at once.
  * - `runnersBusy`: every runner that could take it has its slots full (the machine's slots).
@@ -155,6 +159,7 @@ export const RUN_WAIT_REASONS = [
   'toolUnavailable',
   'noSharedRunner',
   'missingFeatures',
+  'secretsNotAllowed',
   'sameWorkActive',
   'concurrencyFull',
   'runnersBusy',
@@ -164,6 +169,23 @@ export const RUN_WAIT_REASONS = [
 ] as const;
 
 export type RunWaitReason = (typeof RUN_WAIT_REASONS)[number];
+
+/**
+ * What a wait's words need, by reason: the server sends codes and these, never text, and the client words them
+ * (`formatRunWait` in `client/runs.ts`, or the application's own). Absent for a reason that needs nothing.
+ *
+ * - `delayed`: `until` (RFC 3339).
+ * - `toolUnavailable`: `tool`, the agent's default coding tool.
+ * - `missingFeatures`: `features`, what no fitting runner has.
+ * - `secretsNotAllowed`: `variables`, the names of the variables for team runners only.
+ * - `concurrencyFull`: `active`, `limit`, the agent's runs held and its limit.
+ * - `runnersBusy`: `runners`, how many fitting runners have their slots full.
+ * - `toolSlotsFull`: `tool`, `used`, `limit`, that tool's runs and limit on the fitting runner closest to room.
+ * - `setupRetrying`: `detail`, why preparing it failed.
+ */
+export type RunWaitParams = Readonly<
+  Record<string, string | number | readonly string[]>
+>;
 
 /** Where a queued run stands and what holds it. */
 export interface RunWait {
@@ -183,6 +205,10 @@ export interface RunWait {
   readonly missing: readonly RunnerFeature[];
   /** For `setupRetrying`: why preparing it failed. */
   readonly detail: string | null;
+  /** For `secretsNotAllowed`: the variables that ask for a team runner, by scope; absent when not provided. */
+  readonly variables?: readonly VariableRef[];
+  /** What its words need (`RunWaitParams`); absent when nothing, or from a server before they were sent. */
+  readonly params?: RunWaitParams;
 }
 
 /** The newest thing a held run reported, for a one-line "last activity". */
