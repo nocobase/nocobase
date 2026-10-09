@@ -6,6 +6,8 @@ The workflows whose names begin with `V3` provide manual entry points on `main`.
 
 Beta releases use `v3-develop`. Stable releases select the `v3-main` source through the `branch` input. The stable branch initially contains the imported beta snapshot and cannot publish until the normal promotion workflow removes prerelease state. Creating these branches or merging the entry points does not publish any package.
 
-The Pro workflows remain independent and operate on the Pro repository's own branches. Their credentials and framework references must be ready before using them. Documentation and UI Library publishing require `V3_ASSET_DEPLOY_ENABLED=true` after the v3 deployment configuration has been verified; build-only checks remain available.
+The Pro workflows remain independent and operate on the Pro repository's own branches. Their credentials and framework references must be ready before using them.
+
+Documentation deployment uses the repository secrets `V3_DOCS_ALI_OSS_BUCKET`, `V3_DOCS_ALI_OSS_REGION` and `V3_DOCS_ALI_CDN_DOMAIN` for its destination; keep the existing v2 target secrets unchanged. Documentation and UI Library reuse `DOCS_ALI_OSS_ACCESS_KEY_ID` and `DOCS_ALI_OSS_ACCESS_KEY_SECRET`, with permission to access their respective destinations. UI Library publishes to `nocobase-ui-library` in `cn-beijing`. Both workflows publish on matching pushes to `v3-develop`; manual runs publish only when `publish` is enabled. No additional migration variable is required, and pull requests remain build-only.
 
 Implementation files, scripts and application dependencies stay on the v3 branches. These entries need only the workflow token's Actions permission to dispatch the same workflow on `v3-develop`; they do not check out or execute v3 application code on `main`.
