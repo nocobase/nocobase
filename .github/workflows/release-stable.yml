@@ -1,6 +1,6 @@
-name: Release Stable
+name: V3 Release Stable
 
-# Stable releases normally publish main to the latest dist-tag. A hotfix from an older branch must set keep_latest so
+# Stable releases normally publish v3-main to the latest dist-tag. A hotfix from an older branch must set keep_latest so
 # that it publishes to legacy without moving latest backwards.
 #
 # The workflow supports two sources. A promotion from beta already contains the final versions and has no pending
@@ -14,7 +14,7 @@ on:
       branch:
         description: 'Branch to release from'
         type: string
-        default: main
+        default: v3-main
       keep_latest:
         description: 'Keep the latest dist-tag untouched (check this for hotfixes on older versions; publishes to legacy)'
         type: boolean
@@ -100,12 +100,12 @@ jobs:
             exit 1
           fi
 
-      - name: Reject develop
+      - name: Reject v3-develop
         env:
           BRANCH: ${{ inputs.branch }}
         run: |
-          if [ "$BRANCH" = "develop" ]; then
-            echo "::error::Use release-beta.yml to release from develop"
+          if [ "$BRANCH" = "v3-develop" ]; then
+            echo "::error::Use release-beta.yml to release from v3-develop"
             exit 1
           fi
 
@@ -119,7 +119,7 @@ jobs:
             echo "value=legacy" >> "$GITHUB_OUTPUT"
             echo "dist-tag: legacy (the latest pointer stays where it is)"
           else
-            if [ "$BRANCH" != "main" ]; then
+            if [ "$BRANCH" != "v3-main" ]; then
               echo "::error::Releasing from $BRANCH without keep_latest checked."
               echo "If this is a hotfix for an older version, check keep_latest and run again."
               exit 1
@@ -605,7 +605,7 @@ jobs:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           owner: nocobase
-          repositories: nocobase3
+          repositories: nocobase
           permission-contents: write
           permission-pull-requests: write
           permission-workflows: write
@@ -614,7 +614,7 @@ jobs:
         if: '!inputs.dry_run'
         env:
           RELEASE_TOKEN: ${{ steps.release_token.outputs.token }}
-        run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase3.git"
+        run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase.git"
 
       - name: Push release branch
         if: "!inputs.dry_run && needs.prepare.outputs.has_changes == 'true'"
@@ -683,17 +683,17 @@ jobs:
             echo "merged=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Sync into develop
-        if: "!inputs.dry_run && inputs.branch == 'main' && needs.prepare.outputs.has_changes == 'true' && steps.merge.outputs.merged == 'true'"
+      - name: Sync into v3-develop
+        if: "!inputs.dry_run && inputs.branch == 'v3-main' && needs.prepare.outputs.has_changes == 'true' && steps.merge.outputs.merged == 'true'"
         id: sync
         env:
           BATCH: ${{ needs.prepare.outputs.batch }}
         run: |
-          git fetch origin main develop
-          git checkout -B develop origin/develop
+          git fetch origin v3-main v3-develop
+          git checkout -B v3-develop origin/v3-develop
 
           set +e
-          git merge --no-ff origin/main -m "chore: sync $BATCH into develop [skip ci]"
+          git merge --no-ff origin/v3-main -m "chore: sync $BATCH into v3-develop [skip ci]"
           MERGE_RC=$?
           set -e
 
@@ -707,33 +707,33 @@ jobs:
               {
                 echo "::warning::Conflicts that cannot be resolved automatically — sync by hand"
                 echo
-                echo "npm publish succeeded and main is updated; only the sync back to develop failed."
-                echo "Remote develop is untouched. Run this locally:"
+                echo "npm publish succeeded and v3-main is updated; only the sync back to v3-develop failed."
+                echo "Remote v3-develop is untouched. Run this locally:"
                 echo
-                echo "  git checkout develop && git pull"
-                echo "  git merge origin/main"
+                echo "  git checkout v3-develop && git pull"
+                echo "  git merge origin/v3-main"
                 echo "  node scripts/resolve-sync-conflicts.mjs"
                 echo "  # resolve the remaining source conflicts, then commit and push"
               } >> "$GITHUB_STEP_SUMMARY"
               echo "synced=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            git commit -m "chore: sync $BATCH into develop [skip ci]"
+            git commit -m "chore: sync $BATCH into v3-develop [skip ci]"
           fi
 
           if [ ! -f .changeset/pre.json ]; then
-            echo "::warning::develop lost pre.json after the merge — aborting the push"
+            echo "::warning::v3-develop lost pre.json after the merge — aborting the push"
             echo "synced=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git push origin develop
+          git push origin v3-develop
           echo "synced=true" >> "$GITHUB_OUTPUT"
 
       - name: Notify merge failure
         if: "!inputs.dry_run && needs.prepare.outputs.has_changes == 'true' && steps.merge.outputs.merged == 'false'"
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           REGISTRY_URL: https://npm.nocobase.ai
@@ -752,20 +752,20 @@ jobs:
         run: ../scripts/feishu-notify.sh
 
       - name: Notify sync failure
-        if: "!inputs.dry_run && inputs.branch == 'main' && needs.prepare.outputs.has_changes == 'true' && steps.merge.outputs.merged == 'true' && steps.sync.outputs.synced == 'false'"
+        if: "!inputs.dry_run && inputs.branch == 'v3-main' && needs.prepare.outputs.has_changes == 'true' && steps.merge.outputs.merged == 'true' && steps.sync.outputs.synced == 'false'"
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           REGISTRY_URL: https://npm.nocobase.ai
-          TITLE: NocoBase 3 稳定版已发布，但同步到 develop 需要人工处理
+          TITLE: NocoBase 3 稳定版已发布，但同步到 v3-develop 需要人工处理
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
-            版本 **${{ needs.prepare.outputs.batch }}** 已发布到 npm 并合进 `main`。
+            版本 **${{ needs.prepare.outputs.batch }}** 已发布到 npm 并合进 `v3-main`。
 
-            但同步到 `develop` 时有无法自动解决的源码冲突。远端 `develop` 未被修改，请手工合并 `origin/main` 并运行 `node scripts/resolve-sync-conflicts.mjs`。
+            但同步到 `v3-develop` 时有无法自动解决的源码冲突。远端 `v3-develop` 未被修改，请手工合并 `origin/v3-main` 并运行 `node scripts/resolve-sync-conflicts.mjs`。
             **不同步的话，下一次转正会覆盖掉这个补丁。**
         run: ../scripts/feishu-notify.sh
 
@@ -776,7 +776,7 @@ jobs:
       - name: Notify success
         if: "!inputs.dry_run && (needs.prepare.outputs.has_changes != 'true' || steps.merge.outputs.merged == 'true')"
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           REGISTRY_URL: https://npm.nocobase.ai
@@ -791,13 +791,13 @@ jobs:
 
             ${{ needs.prepare.outputs.rows && '本次发布的 package：' || '本次发布的 package 见 GitHub Release。' }}
 
-            ${{ steps.sync.outputs.synced == 'true' && '补丁已同步到 develop。' || '' }}
+            ${{ steps.sync.outputs.synced == 'true' && '补丁已同步到 v3-develop。' || '' }}
         run: ../scripts/feishu-notify.sh
 
       - name: Notify release failure
         if: failure() && !inputs.dry_run && steps.merge.outputs.merged != 'false'
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           TITLE: NocoBase 3 稳定版发布失败
@@ -824,7 +824,7 @@ jobs:
 
       - name: Notify failure
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           TITLE: NocoBase 3 稳定版发布失败

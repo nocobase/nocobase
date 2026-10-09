@@ -1,4 +1,4 @@
-name: Release Pro Stable
+name: V3 Release Pro Stable
 
 # Publishes commercial packages from the private Pro repository without transferring its source or package archives
 # through public-repository artifacts. The Pro repository remains the owner of every branch, tag, PR, and Release.
@@ -42,7 +42,7 @@ on:
         required: true
       PRO_NPM_TOKEN:
         required: true
-      FEISHU_WEBHOOK:
+      RELEASE_RESULT_FEISHU_WEBHOOK_URL:
         required: false
 
 concurrency:
@@ -299,7 +299,7 @@ jobs:
       - name: Notify success
         if: '!inputs.dry_run && success()'
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
           REGISTRY_URL: https://npm.nocobase.ai
@@ -315,7 +315,7 @@ jobs:
       - name: Notify failure
         if: failure() && !inputs.dry_run
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
           TITLE: NocoBase 3 Pro 稳定版发布失败

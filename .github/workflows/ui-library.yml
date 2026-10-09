@@ -1,9 +1,9 @@
-name: UI Library
+name: V3 UI Library
 
 on:
   push:
     branches:
-      - develop
+      - v3-develop
     paths:
       - 'ui-library/**'
       - '.github/workflows/ui-library.yml'
@@ -11,6 +11,9 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
   pull_request:
+    branches:
+      - v3-develop
+      - v3-main
     paths:
       - 'ui-library/**'
       - '.github/workflows/ui-library.yml'
@@ -20,9 +23,9 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Upload the build to OSS (only publishes when the selected ref is develop)'
+        description: 'Upload the build to OSS (only publishes when the selected ref is v3-develop)'
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: read
@@ -102,8 +105,10 @@ jobs:
 
       - name: Publish to OSS
         if: >-
-          (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/develop')
+          vars.V3_ASSET_DEPLOY_ENABLED == 'true' && (
+          (github.event_name == 'push' && github.ref == 'refs/heads/v3-develop') ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/v3-develop')
+          )
         env:
           UI_LIBRARY_ALI_OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
           UI_LIBRARY_ALI_OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}

@@ -1,4 +1,4 @@
-name: Promote Pro Beta to Stable
+name: V3 Promote Pro Beta to Stable
 
 # Removes prerelease versions in nocobase/nocobase3-pro, merges them into Pro main, then returns the promoted
 # versions to Pro develop and re-enters prerelease mode. This workflow does not publish packages.
@@ -26,7 +26,7 @@ on:
     secrets:
       NOCOBASE_APP_PRIVATE_KEY:
         required: true
-      FEISHU_WEBHOOK:
+      RELEASE_RESULT_FEISHU_WEBHOOK_URL:
         required: false
 
 concurrency:
@@ -248,7 +248,7 @@ jobs:
       - name: Notify success
         if: '!inputs.dry_run && success()'
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
           REGISTRY_URL: https://npm.nocobase.ai
@@ -263,7 +263,7 @@ jobs:
       - name: Notify failure
         if: failure() && !inputs.dry_run
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
           TITLE: NocoBase 3 Pro 转正流程失败

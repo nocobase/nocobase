@@ -1,10 +1,13 @@
-name: Quality
+name: V3 Quality
 
 on:
   pull_request:
+    branches:
+      - v3-develop
+      - v3-main
   push:
     branches:
-      - develop
+      - v3-develop
 
 permissions:
   contents: read

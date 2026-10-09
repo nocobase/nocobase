@@ -1,4 +1,4 @@
-name: Docs
+name: V3 Docs
 
 # Publishing is atomic and reversible by construction. Each run uploads the built site to its own timestamp directory
 # in the bucket and then rewrites the CDN's back-to-origin rules to point at it, so a reader sees either the whole old
@@ -8,11 +8,14 @@ name: Docs
 on:
   push:
     branches:
-      - develop
+      - v3-develop
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'
   pull_request:
+    branches:
+      - v3-develop
+      - v3-main
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'
@@ -21,7 +24,7 @@ on:
       publish:
         description: 'Upload to OSS and switch the CDN. Leave off to build and check only.'
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: read
@@ -88,8 +91,10 @@ jobs:
 
       - name: Publish
         if: >-
+          vars.V3_ASSET_DEPLOY_ENABLED == 'true' && (
           github.event_name == 'workflow_dispatch' && inputs.publish ||
-          github.event_name == 'push' && github.ref == 'refs/heads/develop'
+          github.event_name == 'push' && github.ref == 'refs/heads/v3-develop'
+          )
         working-directory: docs
         env:
           DOCS_ALI_OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}

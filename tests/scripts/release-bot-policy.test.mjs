@@ -94,17 +94,17 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
         env: {
           ...process.env,
           PATH: `${directory}${path.delimiter}${process.env.PATH}`,
-          PR_URL: 'https://github.com/nocobase/nocobase3/pull/1',
+          PR_URL: 'https://github.com/nocobase/nocobase/pull/1',
           RELEASE_BATCH: '2026-09-22.1',
           BATCH: '2026-09-22.1',
-          RELEASE_BASE: 'main',
+          RELEASE_BASE: 'v3-main',
         },
       });
       const args = JSON.parse(output);
       assert.deepEqual(args.slice(0, 3), [
         'pr',
         'merge',
-        'https://github.com/nocobase/nocobase3/pull/1',
+        'https://github.com/nocobase/nocobase/pull/1',
       ]);
       assert.ok(args.includes('--merge'), name);
       const subjectIndex = args.indexOf('--subject');
@@ -126,7 +126,7 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
     assert.ok(tokenStep, name);
     assert.match(tokenStep, /if: '!inputs\.dry_run'/u, name);
     assert.match(tokenStep, /uses: actions\/create-github-app-token@v2/u, name);
-    assert.match(tokenStep, /repositories: nocobase3\n/u, name);
+    assert.match(tokenStep, /repositories: nocobase\n/u, name);
     assert.match(tokenStep, /permission-contents: write/u, name);
     assert.match(tokenStep, /permission-pull-requests: write/u, name);
     assert.match(tokenStep, /permission-workflows: write/u, name);
@@ -144,7 +144,7 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
     );
     assert.match(
       source,
-      /git remote set-url origin "https:\/\/x-access-token:\$\{RELEASE_TOKEN\}@github\.com\/nocobase\/nocobase3\.git"/u,
+      /git remote set-url origin "https:\/\/x-access-token:\$\{RELEASE_TOKEN\}@github\.com\/nocobase\/nocobase\.git"/u,
       name,
     );
     assert.doesNotMatch(

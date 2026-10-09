@@ -1,21 +1,14 @@
-name: Changeset Check
+name: V3 Changeset Check
 
-# 两层检查，严格程度不同：
-#   validation —— 已提交的 changeset 本身有错（非法 YAML、未知包名、非法 bump）
-#                 时阻止合并。这类问题机器能确定判断。
-#   coverage   —— 改了会进入发布产物的代码却没写 changeset 时阻止合并。判断的是
-#                 「改动会不会发出去」，不是「值不值得发版」；bump 级别仍由人定，
-#                 确实不需要发版的改动加 `release:skip` label 放行。
-#
-# 这里不检查 .changeset/pre.json —— develop 常驻 pre 模式，它出现在指向
-# develop 的 PR 里是正常的。保护 main 不被污染是 guard-main.yml 的职责，
-# 那条只在目标分支为 main 的 PR 上运行。
+# Validate changeset syntax and require coverage for files that enter published packages.
+# The release:skip label records intentional exceptions. Prerelease state is expected on
+# v3-develop; guard-main.yml rejects it only on pull requests targeting v3-main.
 
 on:
   pull_request:
     branches:
-      - main
-      - develop
+      - v3-main
+      - v3-develop
 
 permissions:
   contents: read

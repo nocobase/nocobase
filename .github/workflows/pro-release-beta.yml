@@ -1,4 +1,4 @@
-name: Release Pro Beta
+name: V3 Release Pro Beta
 
 # Run the commercial beta release on public-repository Actions minutes while every branch, tag, PR, and GitHub
 # Release remains in nocobase/nocobase3-pro. Commercial source and packages never leave this job as artifacts.
@@ -28,7 +28,7 @@ on:
         required: true
       PRO_NPM_TOKEN:
         required: true
-      FEISHU_WEBHOOK:
+      RELEASE_RESULT_FEISHU_WEBHOOK_URL:
         required: false
 
 concurrency:
@@ -229,7 +229,7 @@ jobs:
       - name: Notify success
         if: "!inputs.dry_run && steps.release_state.outputs.release == 'true' && success()"
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
           REGISTRY_URL: https://npm.nocobase.ai
@@ -245,7 +245,7 @@ jobs:
       - name: Notify failure
         if: failure() && !inputs.dry_run
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
           TITLE: NocoBase 3 Pro 预览版发布失败

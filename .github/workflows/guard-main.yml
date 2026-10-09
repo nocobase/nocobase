@@ -1,17 +1,12 @@
-name: Guard Main
+name: V3 Guard Main
 
-# main 上永远不允许出现 .changeset/pre.json 或 .changeset/pre/。
-#
-# 它们一旦进入 main，之后所有从 main 发出的版本都会变成预发布版本，
-# 而且不容易被发现——这是整套流程唯一的致命失误点，必须阻塞。
-#
-# 唯一合法的例外是 merge-beta-to-stable.yml 产生的转正合并：那次合并里
-# pre.json 已经被 changeset version 删掉了，所以这条检查依然成立。
+# Stable pull requests must contain neither prerelease state nor prerelease versions.
+# The promotion workflow removes that state before merging into v3-main.
 
 on:
   pull_request:
     branches:
-      - main
+      - v3-main
 
 permissions:
   contents: read
@@ -32,7 +27,7 @@ jobs:
             FOUND="$FOUND .changeset/pre/"
           fi
           if [ -n "$FOUND" ]; then
-            echo "::error::Prerelease state files are not allowed on main: $FOUND"
+            echo "::error::Prerelease state files are not allowed on v3-main: $FOUND"
             echo "If this is a promotion merge, changeset version either did not run or the merge happened before it did."
             exit 1
           fi
@@ -42,7 +37,7 @@ jobs:
         run: |
           LEFT=$(node scripts/list-package-versions.mjs --prerelease)
           if [ -n "$LEFT" ]; then
-            echo "::error::Prerelease versions are not allowed on main: $LEFT"
+            echo "::error::Prerelease versions are not allowed on v3-main: $LEFT"
             exit 1
           fi
           echo "No prerelease versions found"
