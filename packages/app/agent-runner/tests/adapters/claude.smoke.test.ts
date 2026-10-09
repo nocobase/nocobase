@@ -253,4 +253,59 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
     ).toBe('done');
     expect((await handle.result).exit).toBe('completed');
   }, 240_000);
+
+  it.each([false, true])(
+    'keeps permissions working after a background turn (resumed=%s)',
+    async (resumed) => {
+      const workDir = await repo();
+      let resumeSessionId: string | undefined;
+      if (resumed) {
+        const seed = adapter.start(
+          sessionFor(workDir, 'Reply "ready" without using tools.'),
+        );
+        await drain(seed);
+        const seedResult = await seed.result;
+        expect(seedResult.exit).toBe('completed');
+        resumeSessionId = seedResult.sessionId;
+        expect(resumeSessionId).toBeTruthy();
+      }
+      const handle = adapter.start(
+        sessionFor(
+          workDir,
+          'Use Bash with run_in_background=true to run `sleep 2`. End this turn immediately with "waiting". When notified that the task finished, use Write to create result.txt containing exactly "done", then reply "done". Do not schedule a wakeup.',
+          { resumeSessionId },
+        ),
+      );
+      const events = await drain(handle);
+      await save(
+        resumed ? 'resumed-background-continuation' : 'background-continuation',
+      );
+      const firstResult = events.findIndex(
+        (event) => event.type === 'status' && event.content === 'turnCompleted',
+      );
+      expect(firstResult).toBeGreaterThanOrEqual(0);
+      expect(
+        events
+          .slice(firstResult + 1)
+          .some(
+            (event) =>
+              event.type === 'permission' &&
+              event.tool === 'Write' &&
+              event.meta?.decision === 'allow',
+          ),
+      ).toBe(true);
+      expect(
+        events
+          .filter((event) => event.type === 'toolResult')
+          .some((event) =>
+            String(event.output).includes("The user doesn't want"),
+          ),
+      ).toBe(false);
+      expect(
+        (await readFile(path.join(workDir, 'result.txt'), 'utf8')).trim(),
+      ).toBe('done');
+      expect((await handle.result).exit).toBe('completed');
+    },
+    240000,
+  );
 });

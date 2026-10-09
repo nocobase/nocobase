@@ -17,7 +17,15 @@ import type {
 } from '../../src/agent/adapters/types.ts';
 import { calls, replay, setScript } from './fake-sdk.ts';
 import { createPolicy } from '../../src/core/command-policy.ts';
-import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
+import {
+  SESSION_ID,
+  assistant,
+  init,
+  result,
+  toolResult,
+  sessionState,
+  backgroundTasks,
+} from './messages.ts';
 
 vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
   query: (await import('./fake-sdk.ts')).fakeQuery,
@@ -152,7 +160,12 @@ describe('query options', () => {
     });
     expect(options.settingSources).toEqual(['project']);
     expect(options.permissionMode).toBe('acceptEdits');
-    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: '/home/runner' });
+    expect(options.permissionPrompts).toBe('host');
+    expect(options.env).toEqual({
+      PATH: '/usr/bin',
+      HOME: '/home/runner',
+      CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS: '1',
+    });
     expect(options.cwd).toBe('/work');
     expect(options.pathToClaudeCodeExecutable).toBe(path.join(dir, 'claude'));
     expect(options).toMatchObject({
@@ -562,6 +575,169 @@ describe('permissions', () => {
     });
   });
 
+  it('bounds a hung policy check and ignores its late allow', async () => {
+    let release!: (value: 'allow') => void;
+    let evaluating!: () => void;
+    const started = new Promise<void>((resolve) => {
+      evaluating = resolve;
+    });
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      expect(await ctx.callTool('Bash', { command: 'slow' }, 'slow')).toBe(
+        'deny',
+      );
+      expect(ctx.toolFeedback[0]).toContain('Policy decision timed out');
+      expect(ctx.toolFeedback[0]).toContain('not a user instruction to stop');
+      release('allow');
+      expect(await ctx.callTool('Bash', { command: 'slow' }, 'slow')).toBe(
+        'deny',
+      );
+      expect(
+        await ctx.callTool('Bash', { command: 'git status' }, 'next'),
+      ).toBe('allow');
+      yield result();
+    });
+    vi.useFakeTimers();
+    try {
+      const handle = adapterWith('9.0.0', dir).start(
+        session({
+          permission: async (_tool, input) => {
+            if (input.command !== 'slow') return 'allow';
+            evaluating();
+            return new Promise((resolve) => {
+              release = resolve;
+            });
+          },
+        }),
+      );
+      const events = collect(handle.events);
+      await started;
+      await vi.advanceTimersByTimeAsync(5000);
+      const recorded = await events;
+      expect(
+        recorded.filter(
+          (e) => e.type === 'permission' && e.meta?.decision === 'deny',
+        ),
+      ).toHaveLength(1);
+      expect((await handle.result).exit).toBe('completed');
+    } finally {
+      vi.useRealTimers();
+    }
+  }, 10000);
+
+  it('records a cancelled control request and returns a specific denial', async () => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      const controller = new AbortController();
+      const pending = ctx.options.canUseTool!(
+        'Bash',
+        { command: 'wait' },
+        {
+          signal: controller.signal,
+          toolUseID: 'cancelled',
+          requestId: 'cancelled',
+        },
+      );
+      controller.abort();
+      expect(await pending).toMatchObject({
+        behavior: 'deny',
+        message: expect.stringContaining(
+          'cancelled by the permission control channel',
+        ),
+      });
+      yield result();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ permission: async () => new Promise(() => {}) }),
+    );
+    const events = await collect(handle.events);
+    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
+      {
+        meta: {
+          decision: 'deny',
+          reason: expect.stringContaining('cancelled'),
+        },
+      },
+    ]);
+  });
+
+  it('reports a default STOP without a callback as an infrastructure failure', async () => {
+    setScript(
+      replay([
+        init(),
+        assistant([
+          {
+            type: 'tool_use',
+            id: 'lost',
+            name: 'Read',
+            input: { file_path: '/work/log' },
+          },
+        ]),
+        toolResult(
+          'lost',
+          "The user doesn't want to take this action right now. STOP what you are doing and wait for the user to tell you how to proceed.",
+          true,
+        ),
+        result({
+          permission_denials: [
+            {
+              tool_name: 'Read',
+              tool_use_id: 'lost',
+              tool_input: { file_path: '/work/log' },
+            },
+          ],
+        }),
+      ]),
+    );
+    const handle = adapterWith('9.0.0', dir).start(session());
+    const events = await collect(handle.events);
+    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
+      {
+        tool: 'Read',
+        input: { file_path: '/work/log' },
+        meta: {
+          decision: 'deny',
+          reason: expect.stringContaining('without a runner denial'),
+        },
+      },
+    ]);
+    expect(await handle.result).toMatchObject({
+      exit: 'error',
+      error: { reason: 'toolProcess' },
+    });
+  });
+
+  it('records result-only CLI denials without losing the input or duplicating earlier denials', async () => {
+    setScript(
+      replay([
+        init(),
+        result({
+          permission_denials: [
+            {
+              tool_name: 'Read',
+              tool_use_id: 'native',
+              tool_input: { file_path: '/work/log' },
+            },
+          ],
+        }),
+      ]),
+    );
+    const handle = adapterWith('9.0.0', dir).start(session());
+    const events = await collect(handle.events);
+    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
+      {
+        tool: 'Read',
+        input: { file_path: '/work/log' },
+        meta: {
+          decision: 'deny',
+          reason: expect.stringContaining('outside the runner policy callback'),
+        },
+      },
+    ]);
+  });
+
   it('records denials Claude Code made itself', async () => {
     setScript(
       replay([
@@ -589,6 +765,38 @@ describe('permissions', () => {
 });
 
 describe('steering', () => {
+  it('keeps the permission channel open until a background continuation finishes', async () => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      yield sessionState('running');
+      yield backgroundTasks(['task']);
+      yield result({ queued_turn_count: 0 });
+      yield sessionState('idle');
+      expect(
+        await ctx.callTool(
+          'Bash',
+          { command: 'git status' },
+          'background-call',
+        ),
+      ).toBe('allow');
+      yield backgroundTasks([]);
+      yield sessionState('running');
+      expect(
+        await ctx.callTool('Write', { file_path: '/work/result' }, 'followup'),
+      ).toBe('allow');
+      yield result({ result: 'background finished' });
+      yield sessionState('idle');
+      expect(await ctx.nextInput()).toBeUndefined();
+    });
+    const handle = adapterWith('9.0.0', dir).start(session());
+    await collect(handle.events);
+    expect(await handle.result).toMatchObject({
+      exit: 'completed',
+      summary: 'background finished',
+    });
+  });
+
   it('delivers a steer into the running turn and ends after it is consumed', async () => {
     const seen: string[] = [];
     let release!: () => void;
@@ -609,6 +817,7 @@ describe('steering', () => {
         user_message_uuids: [steer!.uuid],
       });
       yield result({ queued_turn_count: 0 });
+      yield sessionState('idle');
       seen.push(
         (await ctx.nextInput()) === undefined ? 'input closed' : 'more input',
       );

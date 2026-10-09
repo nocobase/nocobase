@@ -3,6 +3,32 @@ import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 
 export const SESSION_ID = '00000000-0000-4000-8000-000000000001';
 
+export function sessionState(
+  state: 'idle' | 'running' | 'requires_action',
+): SDKMessage {
+  return {
+    type: 'system',
+    subtype: 'session_state_changed',
+    state,
+    uuid: 'state',
+    session_id: SESSION_ID,
+  };
+}
+
+export function backgroundTasks(ids: string[]): SDKMessage {
+  return {
+    type: 'system',
+    subtype: 'background_tasks_changed',
+    tasks: ids.map((task_id) => ({
+      task_id,
+      task_type: 'local_bash',
+      description: 'test task',
+    })),
+    uuid: 'tasks',
+    session_id: SESSION_ID,
+  };
+}
+
 const as = (value: unknown): SDKMessage => value as SDKMessage;
 
 export function init(model = 'claude-test-1'): SDKMessage {

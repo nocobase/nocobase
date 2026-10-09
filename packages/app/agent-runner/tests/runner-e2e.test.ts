@@ -525,6 +525,36 @@ describe('runner end to end', () => {
     );
   });
 
+  it('writes each denied tool, input summary and reason to the redacted run log', async () => {
+    const secret = 'permission-log-fixture-secret';
+    const run = server.enqueue({
+      subject: { key: 'PM-log', url: 'http://app.test/PM-log' },
+      workspace: { dirs: [], env: [{ name: 'SERVICE_KEY', value: secret }] },
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: `read /outside/${secret}\nwrite /outside/result.txt private-file-body\nsay done`,
+      },
+    });
+    daemon();
+    await waitFor(
+      () => run.status === 'completed',
+      20000,
+      'the denied calls to finish',
+    );
+    const log = readFileSync(
+      path.join(home, 'logs', 'runs', `${run.payload.run.id}.log`),
+      'utf8',
+    );
+    expect(log.match(/permission denied:/g)).toHaveLength(2);
+    expect(log).toContain('Read');
+    expect(log).toContain('Write');
+    expect(log).toContain('/outside/[REDACTED]');
+    expect(log).toContain('outside the work directory');
+    expect(log).not.toContain(secret);
+    expect(log).not.toContain('private-file-body');
+  });
+
   it.each(['verdict', 'refuse'] as const)(
     'stays up and claims nothing while the application wants an upgrade (%s)',
     async (mode) => {
