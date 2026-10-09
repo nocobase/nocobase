@@ -94,6 +94,10 @@ export function FieldWithoutPermissionPlaceholder({ targetModel }) {
   );
 }
 
+const LARGE_FIELD_TEXT_INTERFACES = ['textarea', 'richText', 'json', 'markdown', 'vditor'];
+
+const LARGE_FIELD_INTERACTIVE_SELECTOR = 'a, button, input, textarea, select, [role="button"], [role="link"]';
+
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, disabled, ...others }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
@@ -116,17 +120,32 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
     return <FieldModelRenderer model={model} {...rest} onChange={handleChange} />;
   };
-  const handleClick = async (e) => {
+  const handleClick = async (e: React.MouseEvent<HTMLDivElement>) => {
     if (disabled) {
+      return;
+    }
+    const target = e.target as HTMLElement;
+    // 预览弹窗等通过 portal 渲染的内容，其点击事件也会沿 React 树冒泡到这里，不应触发编辑
+    if (!ref.current?.contains(target)) {
+      return;
+    }
+    // 只读组件自身可交互的部分（如附件缩略图点击预览）交给只读组件处理，不打开编辑弹窗
+    if (target.closest(LARGE_FIELD_INTERACTIVE_SELECTOR)) {
       return;
     }
     e.preventDefault();
     e.stopPropagation();
+    // 默认挂在 #nocobase-app-container 上，它带 transform 会形成独立层叠上下文；当子表格位于挂在 body 上的弹窗（如审批处理弹窗）里时，
+    // 编辑弹层会被弹窗遮住无法操作，此时改挂到 body
+    const appContainer = document.querySelector('#nocobase-app-container');
+    const getLargeFieldPopupContainer = () =>
+      appContainer && appContainer.contains(ref.current) ? (appContainer as HTMLElement) : document.body;
     try {
       await flowEngine.context.viewer.open({
         type: 'popover',
         target: e.target,
         placement: 'rightTop',
+        getPopupContainer: getLargeFieldPopupContainer,
         styles: {
           body: {
             minWidth: 400,
@@ -141,9 +160,10 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     }
   };
   const collectionField = model.context.collectionField;
+  const isTextLike = LARGE_FIELD_TEXT_INTERFACES.includes(collectionField.interface);
 
   const content = useMemo(() => {
-    if (['textarea', 'richText', 'json', 'markdown', 'vditor'].includes(collectionField.interface)) {
+    if (isTextLike) {
       const inputValue =
         collectionField.interface === 'json' && defaultValue
           ? JSON.stringify(defaultValue, null, 2)
@@ -151,13 +171,15 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
       return <Input value={inputValue} disabled={disabled} style={{ width: '100%' }} />;
     } else {
+      // 只读组件保持可交互：禁用时仍可点击附件缩略图预览，与 client v1 一致
       return (
         <Space>
-          <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} /> <EditOutlined className="edit-icon" />
+          <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />
+          {disabled ? null : <EditOutlined className="edit-icon" />}
         </Space>
       );
     }
-  }, [collectionField.interface, defaultValue, disabled, fieldModel]);
+  }, [collectionField.interface, defaultValue, disabled, fieldModel, isTextLike]);
   return (
     <div
       ref={ref}
@@ -170,11 +192,12 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         width: '100%',
         maxHeight: 300,
         overflowY: 'auto',
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
       }}
     >
       <span
-        style={{ pointerEvents: 'none', display: 'block', width: '100%' }} // 不拦截点击
+        // 文本类大字段只是占位展示，不拦截点击，由外层统一打开编辑弹窗
+        style={{ pointerEvents: isTextLike ? 'none' : undefined, display: 'block', width: '100%' }}
       >
         {content}
       </span>
