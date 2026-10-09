@@ -259,6 +259,8 @@ const plansEnUS = {
       concurrencyFull: 'The agent is busy; waiting for it…',
       sameWorkActive: 'Waiting for the agent to finish the request before…',
       setupRetrying: 'Preparing the work again…',
+      secretsNotAllowed:
+        'This runtime cannot receive the variables. Use a trusted runtime.',
     },
     waitsHint:
       'No runtime is online right now: a request waits until one connects.',

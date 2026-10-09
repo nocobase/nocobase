@@ -29,9 +29,17 @@ export interface EligibilityRequest {
   readonly scopes?: readonly VariableTarget[];
   /** Runner features the work needs besides what its variables do. */
   readonly requires?: readonly RunnerFeature[];
+  /** A request-local snapshot, for callers checking several agents. Never cache across requests. */
+  readonly runners?: readonly Runner[];
 }
 
 export interface ClaimEligibility {
+  /** False only when configured fitting runners exist and all are refused variables; offline runners may queue. */
+  mayQueue(
+    conn: DatabaseConnection,
+    agent: Agent,
+    request: EligibilityRequest,
+  ): Promise<boolean>;
   /** The online runners that would take the work now; none for an online or archived agent. */
   runnersFor(
     conn: DatabaseConnection,
@@ -47,16 +55,27 @@ export interface ClaimEligibility {
 }
 
 export function createClaimEligibility(deps: {
-  readonly runners: { online(conn: DatabaseConnection): Promise<Runner[]> };
+  readonly runners: {
+    online(conn: DatabaseConnection): Promise<Runner[]>;
+    all(conn: DatabaseConnection): Promise<Runner[]>;
+  };
   readonly variables: Pick<VariableService, 'holding'>;
   readonly secretTrust: Pick<SecretTrust, 'mayReceive'>;
+  readonly onError?: (error: unknown) => void;
 }): ClaimEligibility {
   async function runnersFor(
     conn: DatabaseConnection,
     agent: Agent,
     request: EligibilityRequest,
+    candidates: readonly Runner[],
+    firstOnly = false,
   ): Promise<Runner[]> {
     if (agent.archivedAt || agent.type !== 'runner') return [];
+    // No scopes or authorization query when even the tool/trust/policy rules exclude every runner.
+    const possible = candidates.filter((runner) =>
+      fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
+    );
+    if (possible.length === 0) return [];
     const held = await deps.variables.holding(conn, [
       ...(request.scopes ?? []),
       { scope: 'agent', scopeId: agent.id },
@@ -65,20 +84,56 @@ export function createClaimEligibility(deps: {
       ...(request.requires ?? []),
       ...(held.length > 0 ? ['secrets'] : []),
     ]) as RunnerFeature[];
-    const fitting = (await deps.runners.online(conn)).filter((runner) =>
+    const fitting = possible.filter((runner) =>
       fitsActor(runner, agent, request.actorUserId, requires),
     );
     const eligible: Runner[] = [];
-    for (const runner of fitting)
-      if (await deps.secretTrust.mayReceive(conn, runner, held))
+    for (const runner of fitting) {
+      try {
+        if (!(await deps.secretTrust.mayReceive(conn, runner, held))) continue;
         eligible.push(runner);
+        if (firstOnly) break;
+      } catch (error) {
+        deps.onError?.(error);
+      }
+    }
     return eligible;
   }
 
   return {
-    runnersFor,
+    runnersFor: async (conn, agent, request) =>
+      runnersFor(
+        conn,
+        agent,
+        request,
+        request.runners ?? (await deps.runners.online(conn)),
+      ),
     async canClaim(conn, agent, request) {
-      return (await runnersFor(conn, agent, request)).length > 0;
+      return (
+        (
+          await runnersFor(
+            conn,
+            agent,
+            request,
+            request.runners ?? (await deps.runners.online(conn)),
+            true,
+          )
+        ).length > 0
+      );
+    },
+    async mayQueue(conn, agent, request) {
+      if (agent.type !== 'runner') return true;
+      const candidates = (
+        request.runners ?? (await deps.runners.all(conn))
+      ).filter(
+        (runner) =>
+          runner.status !== 'revoked' &&
+          fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
+      );
+      if (candidates.length === 0) return true;
+      return (
+        (await runnersFor(conn, agent, request, candidates, true)).length > 0
+      );
     },
   };
 }

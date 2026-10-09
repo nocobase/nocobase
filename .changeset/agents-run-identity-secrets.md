@@ -1,8 +1,16 @@
 ---
 '@nocobase/app-plugin-agents': minor
+'@nocobase/app-plugin-projects': patch
+'@nocobase/agent-protocol': minor
 ---
 
 Queue work as the person it runs as, and hand a run's variables only to runners trusted with them.
+
+`RUN_WAIT_REASONS` adds `secretsNotAllowed`; this is a breaking change for consumers using exhaustive checks. Queue and intake progress UI now explain this reason. Enqueue rejects work when every configured fitting runner is refused its known variable scopes; offline trusted runners may still wait in the queue. Permission lookup failures refuse only the affected runner, and undelivered claims restore the queued fields and discard prepared repository credentials through the provider's `discard` hook.
+
+The protocol adds `SECRETS_NOT_ALLOWED` (failed precondition) for rejected enqueue requests. Consumers exhaustively matching `ErrorCode` must handle the new member.
+
+Applications must forward the new `run_secrets_not_allowed` notice and its clearing event, and credential-issuing repository providers must implement `discard` to revoke undelivered credentials. Callers using an outer enqueue transaction must call `eligibility.mayQueue` with their known variable scopes before opening it.
 
 - New work for an agent on a subject now merges only into a run working as the same person (`actorUserId`). Work woken by someone else starts a run of its own instead of borrowing the identity of a run already queued or held, and the owner's own work is no longer swallowed by a run another person's comment queued, which their personal runner would never take. Runs of one agent, subject and thread are still claimed one at a time, so the second waits with `sameWorkActive`.
 - A run with variables (an agent's, a working directory's or a subject scope's) is now claimed only by a team runner, or by a personal runner whose owner may change every scope the variables come from: the agent's owner, a manager of agents or someone whose `agents.agents/edit` reaches its owner, and for other scopes whoever the scope kind lets manage it. Behaviour change: a personal runner may no longer take work that carries variables when that work runs as someone who may not manage them, including work its owner started on someone else's agent. Such a run stays queued and its wait answers the new reason `secretsNotAllowed`. Team runners are unchanged. The refusing runners are recorded on the run in a new nullable `agRuns.secretsRefusedBy` column (migration `202610080001_ag_add_run_secrets_refused`).

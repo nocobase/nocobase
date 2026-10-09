@@ -20,6 +20,7 @@ export type AgentQueueWaitReason =
   | 'toolUnavailable'
   | 'noSharedRunner'
   | 'missingFeatures'
+  | 'secretsNotAllowed'
   | 'sameWorkActive'
   | 'concurrencyFull'
   | 'runnersBusy'

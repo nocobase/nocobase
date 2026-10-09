@@ -51,7 +51,10 @@ export function createAvailability(deps: {
         if (agent.type === 'runner')
           claimable.set(
             agent.id,
-            await deps.eligibility.canClaim(conn, agent, { actorUserId }),
+            await deps.eligibility.canClaim(conn, agent, {
+              actorUserId,
+              runners,
+            }),
           );
     const busy = await deps.openRuns(
       conn,

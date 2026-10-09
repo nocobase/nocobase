@@ -15,6 +15,7 @@ const WAITS: ReadonlySet<string> = new Set([
   'concurrencyFull',
   'sameWorkActive',
   'setupRetrying',
+  'secretsNotAllowed',
 ]);
 
 function elapsed(since: string, now: number): string {

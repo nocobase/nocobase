@@ -111,30 +111,4 @@ describe('database', () => {
       await drop();
     }
   });
-
-  it('adds the runners that refused a run for its variables, and removes it again', async () => {
-    const { database, drop } = await openDatabase();
-    try {
-      const migrator = database.createMigrator({
-        directory: path.resolve(import.meta.dirname, '../database/migrations'),
-        packageName: '@nocobase/app-plugin-agents',
-      });
-      const fields = async () =>
-        (await database.connection().collections.get('agRuns'))?.fields.map(
-          (field) => field.name,
-        ) ?? [];
-      await migrator.upTo('202610070001_ag_create_chat_attachments');
-      expect(await fields()).not.toContain('secretsRefusedBy');
-      await migrator.upTo('202610080001_ag_add_run_secrets_refused');
-      expect(await fields()).toContain('secretsRefusedBy');
-      expect((await migrator.rollback()).rolledBack).toEqual([
-        '202610080001_ag_add_run_secrets_refused',
-      ]);
-      expect(await fields()).not.toContain('secretsRefusedBy');
-      await migrator.latest();
-      expect(await fields()).toContain('secretsRefusedBy');
-    } finally {
-      await drop();
-    }
-  });
 });

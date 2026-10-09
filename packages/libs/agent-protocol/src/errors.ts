@@ -92,7 +92,8 @@ export type ErrorCode =
   | 'UPLOAD_TOO_LARGE'
   | 'INTERNAL_ERROR'
   | 'NOT_IMPLEMENTED'
-  | 'SECRETS_KEY_MISSING';
+  | 'SECRETS_KEY_MISSING'
+  | 'SECRETS_NOT_ALLOWED';
 
 /** Each code (the error's `reason`) with its canonical status. */
 export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
@@ -168,6 +169,8 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   NOT_IMPLEMENTED: 'UNAVAILABLE',
   /** Secrets cannot be stored or read: the application has no key configured for them. */
   SECRETS_KEY_MISSING: 'UNAVAILABLE',
+  /** Every configured runner for this identity is refused the work's variables. */
+  SECRETS_NOT_ALLOWED: 'FAILED_PRECONDITION',
 };
 
 export const ERROR_CODES: readonly ErrorCode[] = Object.keys(

@@ -144,6 +144,8 @@ export const defaultAgentQueueLabels: AgentQueueLabels = {
       concurrencyFull: 'Concurrency full ({max})',
       runnersBusy: 'Every fitting runtime is busy',
       setupRetrying: 'Preparing it failed; retrying',
+      secretsNotAllowed:
+        'This runtime cannot receive the variables; use a trusted runtime',
       next: 'Next for a free runtime',
     },
   },

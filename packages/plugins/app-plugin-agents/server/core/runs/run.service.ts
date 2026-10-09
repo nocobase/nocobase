@@ -71,6 +71,8 @@ import { dialectOf, takesType, type SubjectRegistry } from './ports.js';
 import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { findBrief, requestReset } from './workspace.store.js';
+import type { ClaimEligibility } from './eligibility.js';
+import type { VariableTarget } from '../variables/index.js';
 
 export const DEFAULT_THREAD = 'main';
 
@@ -82,6 +84,8 @@ export interface NewInput {
 }
 
 export interface EnqueueRequest {
+  /** Subject/workdir variable scopes known before assembly, for the enqueue eligibility check. */
+  readonly variableScopes?: readonly VariableTarget[];
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   /** Separates conversations about one subject; `main` by default. */
@@ -212,6 +216,7 @@ export interface RunService {
 }
 
 export interface RunServiceDeps extends TransitionDeps {
+  readonly eligibility: Pick<ClaimEligibility, 'mayQueue'>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -266,6 +271,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
       },
     });
     unit.emit({ type: 'run.input', runId, inputId: id });
+    await runsRepo(unit.conn).updateMany({
+      filter: { id: runId, status: 'queued' },
+      values: { secretsRefusedBy: null },
+    });
     return id;
   }
 
@@ -340,6 +349,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         workDir: null,
         directoryKey: null,
         claimFailures: 0,
+        secretsRefusedBy: null,
         payloadFingerprint: null,
         createdAt: now,
         updatedAt: now,
@@ -402,8 +412,26 @@ export function createRunService(deps: RunServiceDeps): RunService {
   }
 
   return {
-    enqueue: (request, outer) =>
-      tx.run(async (unit) => {
+    enqueue: async (request, outer) => {
+      // Permission providers use their own connections. Callers joining an outer transaction must preflight
+      // outside it; the claim still checks the assembled scopes and emits a notice when a runner is refused.
+      if (!outer) {
+        const agent = await findAgent(tx.read(), request.agentId);
+        if (
+          agent &&
+          deps.agents.mayInvoke(agent, request.actorUserId) &&
+          !(await deps.eligibility.mayQueue(tx.read(), agent, {
+            actorUserId: request.actorUserId,
+            scopes: request.variableScopes,
+            requires: request.requires,
+          }))
+        )
+          throw precondition(
+            'SECRETS_NOT_ALLOWED',
+            'No configured runner for this identity may receive the variables. Use a trusted team runner or ask a scope manager to execute.',
+          );
+      }
+      return tx.run(async (unit) => {
         const agent = await requireInvocable(
           unit,
           request.agentId,
@@ -458,7 +486,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
         });
         const inputId = await insertInput(unit, runId, request.input);
         return { runId, outcome: 'created', status: 'queued', inputId };
-      }, outer),
+      }, outer);
+    },
 
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
@@ -554,7 +583,12 @@ export function createRunService(deps: RunServiceDeps): RunService {
           );
         const agent = await requireInvocable(unit, run.agentId, byUserId);
         await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
-        const open = await runsOfKey(unit.conn, run, ['queued', ...ACTIVE]);
+        const open = await runsOfKey(
+          unit.conn,
+          run,
+          ['queued', ...ACTIVE],
+          byUserId,
+        );
         if (open.length > 0)
           throw precondition(
             'AGENT_BUSY',

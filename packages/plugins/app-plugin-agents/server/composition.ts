@@ -434,6 +434,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     runners,
     variables,
     secretTrust,
+    onError: (error) =>
+      onError('Agents could not check variable access.', error),
   });
   const availability = createAvailability({
     runners,
@@ -446,6 +448,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     tx,
     ids,
     agents,
+    eligibility,
     cliName: cli.name,
     appName: app.name,
     runners: {

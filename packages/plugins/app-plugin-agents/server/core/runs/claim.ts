@@ -241,7 +241,6 @@ interface Taken {
   readonly runId: string;
   readonly payload: RunPayload;
   /** Where its variables come from, in merge order; the ones that hold any. */
-  readonly variables: readonly VariableTarget[];
   readonly held: readonly VariableTarget[];
   /** The run token and repository credentials the payload carries, for redaction. */
   readonly secrets: readonly string[];
@@ -250,6 +249,7 @@ interface Taken {
   readonly clean: boolean;
   /** The run as it was queued, for `giveBack`. */
   readonly queued: RunRecord;
+  readonly prepared: Prepared;
 }
 
 /**
@@ -726,7 +726,20 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     } catch {
       return false;
     }
-    return !(await deps.secretTrust.mayReceive(conn, runner, held));
+    return !(await mayReceive(runner, held, candidate.id));
+  }
+
+  async function mayReceive(
+    runner: Runner,
+    held: readonly VariableTarget[],
+    runId: string,
+  ): Promise<boolean> {
+    try {
+      return await deps.secretTrust.mayReceive(tx.read(), runner, held);
+    } catch (error) {
+      deps.onClaimFailure?.(runId, error);
+      return false;
+    }
   }
 
   /** Notes on a queued run that `runner` left it for its variables, or that it no longer does. */
@@ -751,6 +764,25 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         values: { secretsRefusedBy: after.length > 0 ? after : null },
       });
       unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+      if (refused)
+        unit.emit({
+          type: 'notice',
+          notice: {
+            key: `run-secrets:${run.id}:${runnerId}`,
+            type: 'run_secrets_not_allowed',
+            userIds: [
+              ...new Set(
+                [run.actorUserId, run.ownerUserId].filter((id): id is string =>
+                  Boolean(id),
+                ),
+              ),
+            ],
+            subject: { kind: 'run', id: run.id, label: run.id },
+            title: 'A run needs a trusted runtime',
+            body: 'This runtime cannot receive the run variables. Use a trusted team runtime or ask a scope manager to execute.',
+            params: { runId: run.id, runnerId, agentId: run.agentId },
+          },
+        });
     });
   }
 
@@ -759,6 +791,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     agent: Agent,
     candidate: RunRecord,
   ): Promise<Attempt> {
+    // Avoid assembling or asking authorization when a cheap claim rule already rules this work out.
+    const conn = tx.read();
+    if (
+      !fits(runner, agent, candidate) ||
+      (await deps.slotsUsed(conn, runner.id)) >= runner.slots ||
+      (await countActive(conn, 'agentId', agent.id)) >=
+        agent.maxConcurrentRuns ||
+      (await runsOfKey(conn, candidate, ACTIVE)).length > 0
+    )
+      return { kind: 'skipped' };
     if (await refusesSecrets(runner, agent, candidate)) {
       await noteRefusal(candidate, runner.id, true);
       return { kind: 'skipped' };
@@ -771,87 +813,97 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       (error) => deps.onClaimFailure?.(candidate.id, error),
       deps.repoAccess,
     );
-    const taken = await tx.run(async (unit): Promise<Taken | null> => {
-      const { conn } = unit;
-      const now = clock.now();
-      const nowText = now.toISOString();
-      await lockAgentForClaim(conn, agent.id, nowText);
-      if (
-        (await countActive(conn, 'agentId', agent.id)) >=
-        agent.maxConcurrentRuns
-      )
-        return null;
-      // Slots are shared with the jobs the runner holds.
-      if ((await deps.slotsUsed(conn, runner.id)) >= runner.slots) return null;
-      const busy = await runsOfKey(conn, candidate, ACTIVE);
-      if (busy.length > 0) return null;
+    let taken: Taken | null;
+    try {
+      taken = await tx.run(async (unit): Promise<Taken | null> => {
+        const { conn } = unit;
+        const now = clock.now();
+        const nowText = now.toISOString();
+        await lockAgentForClaim(conn, agent.id, nowText);
+        if (
+          (await countActive(conn, 'agentId', agent.id)) >=
+          agent.maxConcurrentRuns
+        )
+          return null;
+        // Slots are shared with the jobs the runner holds.
+        if ((await deps.slotsUsed(conn, runner.id)) >= runner.slots)
+          return null;
+        const busy = await runsOfKey(conn, candidate, ACTIVE);
+        if (busy.length > 0) return null;
 
-      const leaseExpiresAt = later(now, TIMINGS.leaseMs);
-      const claimed = await runsRepo(conn).updateMany({
-        filter: (f) =>
-          f.and([
-            f.string('id').eq(candidate.id),
-            f.string('status').eq('queued'),
-          ]),
-        values: {
-          status: 'dispatched',
-          runnerId: runner.id,
-          leaseExpiresAt,
-          dispatchedAt: nowText,
-          lastActivityAt: nowText,
-          availableAt: null,
-          updatedAt: nowText,
-        },
-      });
-      if (claimed.updatedCount !== 1) return null;
-      const run = (await findRunRecord(conn, candidate.id))!;
-      const pending = await pendingInputs(conn, run.id);
-      let assembled: Assembled;
-      try {
-        assembled = await assemble(
-          unit,
-          run,
-          agent,
-          runner,
-          pending.map(toInput),
-          leaseExpiresAt,
+        const leaseExpiresAt = later(now, TIMINGS.leaseMs);
+        const claimed = await runsRepo(conn).updateMany({
+          filter: (f) =>
+            f.and([
+              f.string('id').eq(candidate.id),
+              f.string('status').eq('queued'),
+            ]),
+          values: {
+            status: 'dispatched',
+            runnerId: runner.id,
+            leaseExpiresAt,
+            dispatchedAt: nowText,
+            lastActivityAt: nowText,
+            availableAt: null,
+            updatedAt: nowText,
+          },
+        });
+        if (claimed.updatedCount !== 1) return null;
+        const run = (await findRunRecord(conn, candidate.id))!;
+        const pending = await pendingInputs(conn, run.id);
+        let assembled: Assembled;
+        try {
+          assembled = await assemble(
+            unit,
+            run,
+            agent,
+            runner,
+            pending.map(toInput),
+            leaseExpiresAt,
+            prepared,
+          );
+        } catch (error) {
+          if (error instanceof NotForThisRunner) throw error;
+          throw new AssemblyError(
+            error instanceof Error ? error.message : String(error),
+            error,
+          );
+        }
+        await markDelivered(conn, pending, nowText);
+        await runsRepo(conn).updateMany({
+          filter: { id: run.id },
+          values: {
+            payloadFingerprint: assembled.fingerprint,
+            requires: [...assembled.requires],
+            directoryKey: assembled.directoryKey,
+            tool: assembled.entry.tool,
+            modelService: null,
+            model: assembled.entry.model,
+            effort: assembled.entry.effort ?? null,
+          },
+        });
+        unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
+        return {
+          runId: run.id,
+          payload: assembled.payload,
+          held: assembled.held,
+          secrets: assembled.secrets,
+          inputIds: pending
+            .filter((input) => !input.deliveredAt)
+            .map((input) => input.id),
+          clean: assembled.clean,
+          queued: candidate,
           prepared,
-        );
-      } catch (error) {
-        if (error instanceof NotForThisRunner) throw error;
-        throw new AssemblyError(
-          error instanceof Error ? error.message : String(error),
-          error,
-        );
-      }
-      await markDelivered(conn, pending, nowText);
-      await runsRepo(conn).updateMany({
-        filter: { id: run.id },
-        values: {
-          payloadFingerprint: assembled.fingerprint,
-          requires: [...assembled.requires],
-          directoryKey: assembled.directoryKey,
-          tool: assembled.entry.tool,
-          modelService: null,
-          model: assembled.entry.model,
-          effort: assembled.entry.effort ?? null,
-        },
+        };
       });
-      unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
-      return {
-        runId: run.id,
-        payload: assembled.payload,
-        variables: assembled.variables,
-        held: assembled.held,
-        secrets: assembled.secrets,
-        inputIds: pending
-          .filter((input) => !input.deliveredAt)
-          .map((input) => input.id),
-        clean: assembled.clean,
-        queued: candidate,
-      };
-    });
-    if (!taken) return { kind: 'skipped' };
+    } catch (error) {
+      await discardRepoAccess(candidate, prepared);
+      throw error;
+    }
+    if (!taken) {
+      await discardRepoAccess(candidate, prepared);
+      return { kind: 'skipped' };
+    }
     return deliver(runner, taken);
   }
 
@@ -861,8 +913,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
    * cannot be opened, the run is given back.
    */
   async function deliver(runner: Runner, taken: Taken): Promise<Attempt> {
-    const conn = tx.read();
-    if (!(await deps.secretTrust.mayReceive(conn, runner, taken.held))) {
+    if (!(await mayReceive(runner, taken.held, taken.runId))) {
       await giveBack(runner, taken);
       await noteRefusal(taken.queued, runner.id, true);
       return { kind: 'skipped' };
@@ -871,7 +922,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     try {
       if (taken.held.length > 0)
         env = await tx.run(({ conn: unit }) =>
-          deps.variables.forRun(unit, taken.variables, {
+          deps.variables.forRun(unit, taken.held, {
             runId: taken.runId,
             runnerId: runner.id,
           }),
@@ -883,7 +934,20 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         error,
       );
     }
-    await noteRefusal(taken.queued, runner.id, false);
+    await tx.run(async ({ conn, emit }) => {
+      await runsRepo(conn).updateMany({
+        filter: { id: taken.runId, status: 'dispatched', runnerId: runner.id },
+        values: { secretsRefusedBy: null },
+      });
+      if (stringArray(taken.queued.secretsRefusedBy).length > 0)
+        emit({
+          type: 'notice.cleared',
+          notice: {
+            type: 'run_secrets_not_allowed',
+            subject: { kind: 'run', id: taken.runId, label: taken.runId },
+          },
+        });
+    });
     deps.secrets?.remember(runSecretsKey(taken.runId), [
       ...env.map((variable) => variable.value),
       ...taken.secrets,
@@ -919,7 +983,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           dispatchedAt: null,
           lastActivityAt: taken.queued.lastActivityAt,
           availableAt: taken.queued.availableAt,
-          directoryKey: null,
+          directoryKey: taken.queued.directoryKey,
+          tool: taken.queued.tool,
+          modelService: taken.queued.modelService,
+          model: taken.queued.model,
+          effort: taken.queued.effort,
+          requires: taken.queued.requires,
+          payloadFingerprint: taken.queued.payloadFingerprint,
           updatedAt: now,
         },
       });
@@ -929,6 +999,23 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (taken.clean) await restoreReset(unit.conn, taken.runId);
       unit.emit({ type: 'run.changed', runId: taken.runId, status: 'queued' });
     });
+    await discardRepoAccess(taken.queued, taken.prepared);
+  }
+
+  async function discardRepoAccess(
+    run: RunRecord,
+    prepared: Prepared,
+  ): Promise<void> {
+    for (const provider of deps.repoAccess?.list() ?? []) {
+      try {
+        await provider.discard?.(
+          toRun(run),
+          prepared.get(`repo:${provider.key}`),
+        );
+      } catch (error) {
+        deps.onClaimFailure?.(run.id, error);
+      }
+    }
   }
 
   /** Counts a failed assembly; the run fails once it has failed too often. */
@@ -1193,6 +1280,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   return {
     async claim(runner, free) {
       if (runner.status !== 'online') return [];
+      if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots)
+        return [];
       const payloads: RunPayload[] = [];
       const seen = new Set<string>();
       const limit = Math.min(free, runner.slots);

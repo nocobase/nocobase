@@ -234,6 +234,7 @@ export function isBlockingWait(item: AgentQueueItem): boolean {
     reason === 'toolUnavailable' ||
     reason === 'noSharedRunner' ||
     reason === 'missingFeatures' ||
+    reason === 'secretsNotAllowed' ||
     reason === 'setupRetrying'
   );
 }
