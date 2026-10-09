@@ -15,7 +15,7 @@ import {
 import '@testing-library/jest-dom/vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { useEffect, useState, type ReactElement } from 'react';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { answerApi, renderWithApp } from '../../src/client/index.js';
@@ -102,6 +102,141 @@ function GreetingPage(): ReactElement {
 }
 
 describe('renderWithApp', () => {
+  it('preserves services, translations, router state and component state when rerendering', async () => {
+    const starts = vi.fn();
+    const fetch = vi.fn(() => Response.json({ data: [] }));
+    function Probe({ name }: { name: string }): ReactElement {
+      const api = useApiClient();
+      const greeter = useService(greeterToken);
+      const { t } = useTranslation();
+      const location = useLocation();
+      const [count, setCount] = useState(0);
+      useEffect(() => {
+        void api.request({ path: 'orders' });
+      }, [api]);
+      return (
+        <>
+          <h1>
+            {t('title')}: {greeter.greet(name)}
+          </h1>
+          <p>{location.pathname}</p>
+          <Link to='/next'>Next</Link>
+          <button onClick={() => setCount(count + 1)}>Count {count}</button>
+        </>
+      );
+    }
+    const view = await renderWithApp(<Probe name='Ada' />, {
+      plugins: [examplePlugin()],
+      namespace: '@example/plugin',
+      route: '/orders',
+      fetch,
+      services: starts,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Count 0' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Next' }));
+    view.rerender(<Probe name='Grace' />);
+    expect(
+      screen.getByRole('heading', { name: 'Orders: Hello, Grace' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Count 1' })).toBeInTheDocument();
+    expect(screen.getByText('/next')).toBeInTheDocument();
+    expect(starts).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+  });
+
+  it.each(['', '/', '/main', '/main/'])(
+    'keeps router links and navigation under mount path %j',
+    async (basePath) => {
+      function Page(): ReactElement {
+        const location = useLocation();
+        return (
+          <>
+            <p>
+              {location.pathname}
+              {location.search}
+              {location.hash}
+            </p>
+            <Link to='/next?tab=all#top'>Next</Link>
+          </>
+        );
+      }
+      await renderWithApp(<Page />, {
+        route: '/orders?tab=open#list',
+        server: { publicBasePath: basePath, fetch: () => Response.json({}) },
+      });
+      expect(screen.getByText('/orders?tab=open#list')).toBeInTheDocument();
+      const prefix = basePath.replace(/\/$/u, '');
+      expect(screen.getByRole('link', { name: 'Next' })).toHaveAttribute(
+        'href',
+        `${prefix}/next?tab=all#top`,
+      );
+      fireEvent.click(screen.getByRole('link', { name: 'Next' }));
+      expect(screen.getByText('/next?tab=all#top')).toBeInTheDocument();
+    },
+  );
+
+  it('uses a configured basename for the default initial route', async () => {
+    await renderWithApp(<Link to='/orders'>Orders</Link>, {
+      config: { app: { basePath: '/configured/' } },
+    });
+    expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute(
+      'href',
+      '/configured/orders',
+    );
+  });
+
+  it.each(['locales', 'i18n', 'runtime'] as const)(
+    'cleans configuration immediately when %s initialization fails',
+    async (stage) => {
+      const broken = defineClientPlugin({
+        packageName: '@example/broken',
+        locales:
+          stage === 'locales'
+            ? () => Promise.reject(new Error('locales failed'))
+            : { 'en-US': () => Promise.reject(new Error('i18n failed')) },
+      });
+      await expect(
+        renderWithApp(<p>Never rendered</p>, {
+          plugins:
+            stage === 'runtime'
+              ? [examplePlugin(), examplePlugin()]
+              : [broken()],
+          server: { publicBasePath: '/stale', fetch: () => Response.json({}) },
+        }),
+      ).rejects.toThrow();
+      expect(document.getElementById('nocobase-runtime-config')).toBeNull();
+      function OrdersLink(): ReactElement {
+        return <a href={resolveAppUrl('/orders')}>Orders</a>;
+      }
+      await renderWithApp(<OrdersLink />);
+      expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute(
+        'href',
+        '/orders',
+      );
+    },
+  );
+
+  it('preserves a caller-owned configuration block when initialization fails', async () => {
+    const block = document.createElement('script');
+    block.id = 'nocobase-runtime-config';
+    block.type = 'application/json';
+    block.textContent = JSON.stringify({
+      version: 1,
+      config: { app: { basePath: '/owned' } },
+    });
+    document.head.append(block);
+    try {
+      await expect(
+        renderWithApp(<p>Never rendered</p>, {
+          plugins: [examplePlugin(), examplePlugin()],
+        }),
+      ).rejects.toThrow();
+      expect(document.getElementById(block.id)).toBe(block);
+    } finally {
+      block.remove();
+    }
+  });
+
   it('renders a page in a client application, with its translations, router, API client and toaster', async () => {
     const fetch = vi.fn((request: Request) =>
       Response.json({ data: [{ name: `${request.method} ${request.url}` }] }),
