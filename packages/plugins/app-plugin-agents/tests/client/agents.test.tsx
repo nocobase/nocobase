@@ -243,6 +243,7 @@ describe('agent pages', () => {
   });
 
   it('sets the online fallback agent from the online agents only', async () => {
+    api.routes['agents/chatSettings'] = () => ({ defaultAgentId: 'a4' });
     renderPage(<AgentsPage />);
     const section = await screen.findByTestId('chat-settings');
     const picker = await within(section).findByRole('button', {
@@ -255,6 +256,7 @@ describe('agent pages', () => {
       'chat.settings.none',
       expect.stringContaining('PM'),
     ]);
+    expect(items[1]).not.toHaveTextContent('chat.agents.systemDefault');
     await userEvent.click(screen.getByRole('menuitem', { name: /^PM/ }));
     await waitFor(() =>
       expect(callsTo('PATCH', 'agents/chatSettings')).toHaveLength(1),

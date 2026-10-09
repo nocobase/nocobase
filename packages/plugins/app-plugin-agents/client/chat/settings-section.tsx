@@ -99,13 +99,7 @@ export function ChatSettingsSection({
           description={t('chat.settings.onlineFallback.description')}
           options={live
             .filter((agent) => agent.type === 'online')
-            .map((agent) =>
-              pickerAgentOf(
-                agent,
-                text.name(agent),
-                agent.id === defaultAgentId,
-              ),
-            )}
+            .map((agent) => pickerAgentOf(agent, text.name(agent), false))}
           current={onlineFallbackAgentId}
           ready={ready}
           canManage={canManage}

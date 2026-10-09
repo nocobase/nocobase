@@ -23,9 +23,9 @@ it.each([
         reason: 'modelUnavailable',
       },
       'English fallback',
-      () => 'Review lead',
+      () => 'Coding agent',
     );
-    expect(text).toContain('Review lead');
+    expect(text).toContain('Coding agent');
     expect(text).toContain(reason);
     expect(text).not.toContain('English fallback');
   },

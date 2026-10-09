@@ -21,7 +21,7 @@ const chatEnUS = {
       modelUnavailable: 'Model unavailable',
     },
     offline: {
-      fallbackDone: 'This conversation now uses the system default',
+      fallbackDone: 'This conversation now uses another agent',
       restoreDone: 'Switched back',
       newSession: 'The agent starts a new session and reads this conversation.',
     },

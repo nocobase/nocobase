@@ -17,7 +17,7 @@ const chatZhCN: ChatLocale = {
       modelUnavailable: '模型不可用',
     },
     offline: {
-      fallbackDone: '这条对话已改用系统默认',
+      fallbackDone: '这条对话已改用其他 Agent',
       restoreDone: '已切回',
       newSession: 'Agent 会开一个新会话，重新读这条对话。',
     },
