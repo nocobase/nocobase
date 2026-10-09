@@ -6,7 +6,10 @@ import { usePmApi } from './use-pm-api.js';
 
 export interface ExecutorToolsState {
   readonly tools: readonly ExecutorTool[];
+  readonly defaultTool: ExecutorTool | null;
   readonly selected: ExecutorTool | null;
+  /** Concrete tool to persist at confirmation, with default provenance when no tool was selected. */
+  readonly resolvedExecutor: Executor | null;
   readonly availability: ExecutorAvailability | null;
   readonly loading: boolean;
   readonly error: Error | null;
@@ -24,27 +27,41 @@ export function useExecutorTools(
     enabled: executor !== null && executor.type !== 'user',
     staleTime: 30_000,
   });
+  const choices = tools.data ?? [];
+  const defaults = choices.filter((tool) => tool.isDefault);
+  const defaultTool =
+    defaults.length === 1
+      ? defaults[0]
+      : defaults.length === 0 && choices.length === 1
+        ? choices[0]
+        : null;
+  const selected = executor?.tool
+    ? (choices.find((tool) => tool.id === executor.tool) ?? null)
+    : defaultTool;
   const availability = useQuery({
     queryKey: [
       'pm',
       'executorAvailability',
       executor?.type,
       executor?.id,
-      executor?.tool,
+      selected?.id,
     ],
     queryFn: () =>
-      executor?.tool
-        ? api.executorAvailability(executor, executor.tool)
+      executor && selected
+        ? api.executorAvailability(executor, selected.id)
         : Promise.resolve(null),
-    enabled: Boolean(
-      executor?.tool && tools.data?.some((tool) => tool.id === executor.tool),
-    ),
+    enabled: executor !== null && selected !== null,
     staleTime: 0,
     refetchInterval: 15_000,
   });
   return {
-    tools: tools.data ?? [],
-    selected: tools.data?.find((tool) => tool.id === executor?.tool) ?? null,
+    tools: choices,
+    defaultTool,
+    selected,
+    resolvedExecutor:
+      executor && !executor.tool && selected
+        ? { ...executor, tool: selected.id, toolSource: 'default' }
+        : executor,
     availability: availability.data ?? null,
     loading: tools.isFetching || availability.isFetching,
     error: tools.error ?? availability.error,

@@ -25,7 +25,7 @@ import type { IssueWorkHandler } from './work.js';
 
 /** What a kind that may execute issues answers. */
 export interface ExecutorDirectory {
-  /** Both methods are required to offer tool selection. Calls are made as the current user. */
+  /** Both methods are required to offer tool selection. Mark the effective default with isDefault for the current user. */
   tools?(
     conn: DatabaseConnection,
     id: string,

@@ -185,7 +185,9 @@ describe('executor tools and comment handoffs over HTTP', () => {
         },
         canKeep: () => Promise.resolve(true),
         tools: () =>
-          Promise.resolve([{ id: 'codex', name: 'Codex', model: 'model-one' }]),
+          Promise.resolve([
+            { id: 'codex', name: 'Codex', model: 'model-one', isDefault: true },
+          ]),
         availability: (_conn, _id, tool, userId) => {
           expect([tool, userId]).toEqual(['codex', 'alice']);
           return Promise.resolve({
@@ -206,7 +208,7 @@ describe('executor tools and comment handoffs over HTTP', () => {
     ).toBe(401);
     const tools = await call('/executors/bot/b1/tools', { role: 'member' });
     expect(await tools.json()).toMatchObject({
-      data: [{ id: 'codex', model: 'model-one' }],
+      data: [{ id: 'codex', model: 'model-one', isDefault: true }],
     });
     const availability = await call(
       '/executors/bot/b1/availability?tool=codex',

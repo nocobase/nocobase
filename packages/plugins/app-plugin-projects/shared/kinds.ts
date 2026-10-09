@@ -46,6 +46,8 @@ export interface ExecutorTool {
   readonly id: string;
   readonly name: string;
   readonly model: string | null;
+  /** The effective default resolved by the kind for this executor and current user. */
+  readonly isDefault?: boolean;
 }
 
 export interface ExecutorAvailability {

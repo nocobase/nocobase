@@ -735,6 +735,7 @@ export const ExecutorToolSchema: z.ZodType<ExecutorTool> = z.object({
   id: z.string(),
   name: z.string(),
   model: z.string().nullable(),
+  isDefault: z.boolean().optional(),
 });
 export const ExecutorAvailabilitySchema: z.ZodType<ExecutorAvailability> =
   z.object({

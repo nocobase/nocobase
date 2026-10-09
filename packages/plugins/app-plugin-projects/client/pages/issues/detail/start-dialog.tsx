@@ -53,7 +53,8 @@ export function StartDialog({
   const kind = shown ? kindLabel(shown.kind) : '';
   const toolState = useExecutorTools(shown?.executor ?? null);
   function decide(start: boolean): void {
-    if (shown?.executor) onDecide(start, shown.executor);
+    if (shown?.executor)
+      onDecide(start, toolState.resolvedExecutor ?? shown.executor);
     else onDecide(start);
   }
 
@@ -87,8 +88,8 @@ export function StartDialog({
                   aria-hidden='true'
                 />
                 {name}
-                {shown?.executor?.tool
-                  ? ` · ${toolState.selected?.name ?? shown.executor.tool}`
+                {toolState.selected || shown?.executor?.tool
+                  ? ` · ${toolState.selected?.name ?? shown?.executor?.tool}`
                   : null}
               </li>
             ))}
@@ -107,7 +108,17 @@ export function StartDialog({
           <Button variant='outline' onClick={() => decide(false)}>
             {t('start.later')}
           </Button>
-          <Button onClick={() => decide(true)}>{t('start.start')}</Button>
+          <Button
+            disabled={Boolean(
+              shown?.executor &&
+              ((toolState.loading && !toolState.availability) ||
+                (toolState.tools.length > 0 && !toolState.selected) ||
+                toolState.error),
+            )}
+            onClick={() => decide(true)}
+          >
+            {t('start.start')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

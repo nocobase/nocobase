@@ -359,6 +359,8 @@ const pages = {
   executor: {
     tool: 'Tool',
     defaultTool: 'Default tool',
+    defaultToolWithName: 'Default tool ({{name}})',
+    chooseTool: 'Choose a tool to preview its model and availability',
     available: 'Available',
     availableOn: 'Available ({{name}})',
     unavailable: '⚠ Unavailable',

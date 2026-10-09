@@ -22,14 +22,17 @@ export function PmExecutorToolSelect({
   readonly disabled?: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();
-  const { tools } = useExecutorTools(executor);
+  const { tools, defaultTool } = useExecutorTools(executor);
   if (tools.length === 0) return null;
+  const defaultLabel = defaultTool
+    ? t('executor.defaultToolWithName', { name: defaultTool.name })
+    : t('executor.defaultTool');
   return (
     <Select
       value={executor.tool ?? DEFAULT}
       disabled={disabled}
       items={[
-        { value: DEFAULT, label: t('executor.defaultTool') },
+        { value: DEFAULT, label: defaultLabel },
         ...tools.map((tool) => ({ value: tool.id, label: tool.name })),
       ]}
       onValueChange={(tool) => {
@@ -49,7 +52,7 @@ export function PmExecutorToolSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={DEFAULT}>{t('executor.defaultTool')}</SelectItem>
+        <SelectItem value={DEFAULT}>{defaultLabel}</SelectItem>
         {tools.map((tool) => (
           <SelectItem key={tool.id} value={tool.id}>
             {tool.name}

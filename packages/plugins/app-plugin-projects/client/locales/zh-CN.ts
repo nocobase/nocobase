@@ -343,6 +343,8 @@ const pages = {
   executor: {
     tool: '工具',
     defaultTool: '默认工具',
+    defaultToolWithName: '默认工具（{{name}}）',
+    chooseTool: '请选择工具以查看模型和可用性',
     available: '可用',
     availableOn: '可用（{{name}}）',
     unavailable: '⚠ 不可用',
