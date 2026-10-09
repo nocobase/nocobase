@@ -16,5 +16,5 @@ export default createClientLibraryConfig({
     },
   ],
   // Registry source is compiled after installation by the consuming app.
-  ignores: ['registry/**'],
+  ignores: ['registry/**', '.registry-test-app/**'],
 });

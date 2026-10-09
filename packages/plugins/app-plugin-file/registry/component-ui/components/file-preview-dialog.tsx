@@ -12,8 +12,8 @@ import {
   resolveFilePreviewKind,
   type FilePreviewKind,
 } from '../lib/file-preview';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '#components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
 import { fileUrlCredentials, resolveSafeFileUrl } from '../lib/file-url';
 import { FilePreviewContent } from './previewers/file-preview-content';
 

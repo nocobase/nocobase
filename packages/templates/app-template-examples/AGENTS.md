@@ -113,6 +113,8 @@ Declare `authz` on the first page of every path: `{ resource: { type: 'page', id
 
 ### Components and styling
 
+Use package-local imports such as `#components/ui/button` and `#extensions/nocobase-auth-forms/form-parts`. `package.json#imports` declares their targets, and `components.json` uses the same prefixes for shadcn generation. Keep directory entry points explicitly mapped to their index files. Do not add a Vite alias or TypeScript `paths` mapping for these imports.
+
 Use shadcn/ui for UI. The template ships only the primitives its shell, compositions and example pages use: `badge`, `button`, `card`, `dialog`, `dropdown-menu`, `field`, `input`, `label`, `popover`, `select`, `separator`, `skeleton`, `spinner`, `table`, `textarea`, `toast`, `toggle`, `toggle-group` and `tooltip`. Check `client/components/ui/` first; if the primitive is not there, add it from the shadcn registry rather than writing your own. `yes n |` answers "no" when the CLI offers to overwrite a primitive that is already installed; without an answer, a non-interactive run stops at that question. Format the files it created and translate the English a few primitives carry, as `.agents/skills/nocobase-app-development/references/frontend/references/shadcn.md` lists; otherwise keep them as the CLI writes them:
 
 ```bash

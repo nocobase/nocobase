@@ -9,9 +9,9 @@ import {
   AgentComposer,
   type AgentComposerAttachments,
   type AgentComposerContext,
-} from '@/components/agent-composer';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+} from '#components/agent-composer';
+import { Label } from '#components/ui/label';
+import { Switch } from '#components/ui/switch';
 
 const CHIPS: readonly ChatContextChip[] = [
   {

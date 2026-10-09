@@ -15,10 +15,10 @@ import type {
 import { RepeatIcon, UnplugIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { AvailabilityDot as AgentAvailabilityDot } from '@/components/agent-picker';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { AvailabilityDot as AgentAvailabilityDot } from '#components/agent-picker';
+import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import { useAgentPickerLabels, useChatTranslation } from './chat-i18n.js';

@@ -7,14 +7,14 @@ import {
   type ReactNode,
 } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
+} from '#components/ui/sheet';
 import {
   Sidebar,
   SidebarContent,
@@ -22,8 +22,8 @@ import {
   SidebarProvider,
   SidebarRail,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { TooltipProvider } from '@/components/ui/tooltip';
+} from '#components/ui/sidebar';
+import { TooltipProvider } from '#components/ui/tooltip';
 
 import { useSidebarPreference } from '../use-sidebar-preference.js';
 import { AppBrand } from './app-brand.js';

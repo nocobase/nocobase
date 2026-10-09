@@ -1,6 +1,6 @@
 import type { InboxItem } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 
-import type { InboxNotice } from '@/extensions/nocobase-inbox/model';
+import type { InboxNotice } from '#extensions/nocobase-inbox/model';
 
 // Sample in-app messages and what an application's source knows about them: two deployment requests waiting on the
 // viewer, one already approved, and plain notifications nobody adds anything to.

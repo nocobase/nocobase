@@ -6,25 +6,25 @@ import {
   useTranslation,
 } from '@nocobase/i18n/client';
 
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '#components/ui/card';
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '#components/ui/field';
+import { Input } from '#components/ui/input';
+import { Skeleton } from '#components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -32,8 +32,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+} from '#components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
 
 import { createFallbackDemo, formatRegion, formatSample } from './demo';
 

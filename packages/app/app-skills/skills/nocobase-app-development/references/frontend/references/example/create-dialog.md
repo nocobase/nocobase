@@ -12,10 +12,10 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 
-import { RouteDialog } from '@/components/route-dialog';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { useRouteOverlay } from '@/components/use-route-overlay';
+import { RouteDialog } from '#components/route-dialog';
+import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
+import { useRouteOverlay } from '#components/use-route-overlay';
 
 import { ProjectForm } from './project-form.js';
 import type { ProjectsOutletContext } from './types.js';

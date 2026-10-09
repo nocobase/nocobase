@@ -129,7 +129,7 @@ function sharedFrameworkSource(template, file) {
     // Default and Examples preinstall the UI Library inbox; the Hub registers no in-app notifications. Exclude only
     // the inbox's explicit entry; all shared header behavior must still match across the three.
     const additions = [
-      /^import \{ InboxHeaderButton \} from '@\/components\/inbox-header-button';\n/gm,
+      /^import \{ InboxHeaderButton \} from '#components\/inbox-header-button';\n/gm,
       /^[\t ]*\{\/\* The inbox's entry, from the UI Library; keep its unread shortcut on every authenticated surface\. \*\/\}\n[\t ]*<InboxHeaderButton \/>\n/gm,
     ];
     return additions.reduce((shared, addition) => {

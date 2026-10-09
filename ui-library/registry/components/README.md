@@ -24,8 +24,8 @@ Single components that pages are built from. Each is its own item, installs into
 `PageContainer` renders a `section` with the full width, the responsive padding (`p-6 md:p-8`) and the spacing between sections (`space-y-6`). It accepts every `section` prop, and `className` is merged with `cn`, so it can override the defaults. `PageHeader` renders the page's only `h1`, an optional `description`, and `actions` aligned to the right from the `sm` breakpoint up.
 
 ```tsx
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
 
 export default function OrdersPage() {
   return (
@@ -48,8 +48,8 @@ A page renders one `PageContainer`. Content that renders inside another page —
 The three ways a child route presents itself over the page that opened it, each at a URL of its own. The application owns the routes: declare each overlay as a child route of its page, render an `Outlet` in that page, and return the overlay from the child route's component.
 
 ```tsx
-import { RouteDialog } from '@/components/route-dialog';
-import { useRouteOverlay } from '@/components/use-route-overlay';
+import { RouteDialog } from '#components/route-dialog';
+import { useRouteOverlay } from '#components/use-route-overlay';
 
 function CancelButton() {
   const { close, isClosing } = useRouteOverlay();
@@ -87,7 +87,7 @@ The overlays' close button names itself with `useTranslation()` from `@nocobase/
 
 ## In a plugin
 
-`page-header` has no `@/` imports and compiles in a plugin as installed. The others import `cn` from the `cn` package, which stays as it is, and most of them also import primitives as `@/components/ui/<name>` — `route-dialog` and `route-drawer` the `button` and `dialog` ones, and `rich-text-editor` the `toggle` one; rewrite those imports to relative `.js` paths, as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes.
+`page-header` has no `#` imports and compiles in a plugin as installed. The others import `cn` from the `cn` package, which stays as it is, and most of them also import primitives as `#components/ui/<name>` — `route-dialog` and `route-drawer` the `button` and `dialog` ones, and `rich-text-editor` the `toggle` one. Keep these imports unchanged. Align the plugin's `package.json#imports` and `components.json` prefixes so the imports resolve to local source files during development and compiled `dist/client` files in the published package, using `publishConfig.imports` as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes.
 
 ## Rich text editor
 

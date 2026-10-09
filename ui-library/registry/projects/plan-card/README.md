@@ -29,7 +29,7 @@ It installs `property-fields` and `markdown-view` beside it, in `client/componen
 ## Wiring
 
 ```tsx
-import { PlanCard } from '@/extensions/nocobase-plan-card/plan-card';
+import { PlanCard } from '#extensions/nocobase-plan-card/plan-card';
 
 <PlanCard planId={plan.id} plan={plan} />;
 ```
@@ -61,7 +61,7 @@ A plan another plugin proposed may be stored in English, such as a status rule's
 The card looks up `planCard.*` keys in the namespace it renders in, each with its English text as the default. Spread the block's resources into the application's locale files, which installing does not do:
 
 ```ts
-import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
+import planCardEnUS from '#extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
   ...planCardEnUS,

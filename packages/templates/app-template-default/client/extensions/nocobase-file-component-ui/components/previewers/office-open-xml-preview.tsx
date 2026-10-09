@@ -1,7 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import type { OfficeOpenXmlFormat } from '../../lib/file-preview.js';
 import { fileUrlCredentials } from '../../lib/file-url.js';
 import type { FileRecord } from '../../types.js';

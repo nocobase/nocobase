@@ -1,16 +1,16 @@
 import { useState, type ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MarkdownView } from '@/components/markdown-view';
+import { Button } from '#components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#components/ui/tabs';
+import { MarkdownView } from '#components/markdown-view';
 import {
   PersonValue,
   PropertyCard,
   PropertyDate,
   PropertyRow,
   PropertySelect,
-} from '@/components/property-fields';
+} from '#components/property-fields';
 import {
   ProjectDeleteMenu,
   ProjectDescription,
@@ -19,17 +19,17 @@ import {
   ProjectMetrics,
   ProjectOverviewLayout,
   ProjectStatusDistribution,
-} from '@/extensions/nocobase-project-detail/project-detail';
+} from '#extensions/nocobase-project-detail/project-detail';
 import {
   PreviewList,
   UnreleasedChanges,
-} from '@/extensions/nocobase-project-detail/project-releases';
+} from '#extensions/nocobase-project-detail/project-releases';
 import {
   ProjectMembersEditor,
   ProjectResourceList,
   ResourceDialog,
   type ResourceItem,
-} from '@/extensions/nocobase-project-detail/project-settings';
+} from '#extensions/nocobase-project-detail/project-settings';
 
 const PEOPLE = [
   { id: 'u1', name: 'Ada Lovelace' },

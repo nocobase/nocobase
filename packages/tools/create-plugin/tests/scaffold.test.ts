@@ -12,6 +12,7 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { PluginCapability } from '../src/lib/capabilities.ts';
@@ -69,6 +70,34 @@ async function listFiles(
 }
 
 describe('createPlugin', () => {
+  it('resolves package imports to development sources without compiler aliases', async () => {
+    const result = await createWith(['client.components', 'registry']);
+    const root = result.targetDirectory;
+    const source = path.join(root, 'client/components/probe.ts');
+    await writeFile(source, 'export const probe: string = "local";\n');
+
+    const config = JSON.parse(
+      await readFile(path.join(root, 'tsconfig.json'), 'utf8'),
+    ) as { compilerOptions: { customConditions: string[]; paths?: unknown } };
+    expect(config.compilerOptions.paths).toBeUndefined();
+    expect(
+      ts.resolveModuleName(
+        '#components/probe',
+        path.join(root, 'client/index.ts'),
+        {
+          module: ts.ModuleKind.NodeNext,
+          moduleResolution: ts.ModuleResolutionKind.NodeNext,
+          customConditions: config.compilerOptions.customConditions,
+        },
+        ts.sys,
+      ).resolvedModule?.resolvedFileName,
+    ).toBe(source);
+    const shadcn = JSON.parse(
+      await readFile(path.join(root, 'components.json'), 'utf8'),
+    ) as { aliases: { ui: string } };
+    expect(shadcn.aliases.ui).toBe('#components/ui');
+  });
+
   it.each([
     ['database', 'database/README.md', 'client/'],
     ['server.service-providers', 'server/providers/index.ts', 'server/routes/'],

@@ -1,6 +1,6 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 
-import { AuthMethods } from '@/extensions/nocobase-auth-methods/auth-methods';
+import { AuthMethods } from '#extensions/nocobase-auth-methods/auth-methods';
 
 import { LoginForm, OtherForm, type AuthView } from './auth-forms.js';
 import { providers } from './sso-providers.js';

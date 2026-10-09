@@ -1,7 +1,7 @@
 import type { Toaster, ToastOptions } from '@nocobase/app-client';
 import type { ReactNode } from 'react';
 
-import { toast } from '@/components/ui/toast';
+import { toast } from '#components/ui/toast';
 
 /**
  * The application's toaster, registered under `toasterToken` in `client/service-provider.ts`. Plugins and pages

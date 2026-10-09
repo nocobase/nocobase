@@ -1,6 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
-import deviceApprovalEnUS from '@/extensions/nocobase-device-approval/locales/en-US';
-import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
+import deviceApprovalEnUS from '#extensions/nocobase-device-approval/locales/en-US';
+import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
 
 const enUS = {
   // The UI Library block of the `/device` page; the keys below may reword it.

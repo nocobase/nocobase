@@ -1,10 +1,10 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { Layers3, MessageSquare } from 'lucide-react';
 import { Link, Outlet } from 'react-router';
-import { PageHeader } from '@/components/page-header';
-import { PageContainer } from '@/components/page-container';
-import { RouteChildPage } from '@/components/route-child-page';
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '#components/page-header';
+import { PageContainer } from '#components/page-container';
+import { RouteChildPage } from '#components/route-child-page';
+import { Button } from '#components/ui/button';
 
 import type { RouteChildPageTopic } from './topics.js';
 

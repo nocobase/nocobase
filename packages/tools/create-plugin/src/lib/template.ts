@@ -533,6 +533,19 @@ async function renderManifest(
     ...(serverPlugin ? { engines: { node: '>=24.0.0' } } : {}),
     sideEffects: false,
     exports,
+    ...(browserCode
+      ? {
+          imports: Object.fromEntries(
+            ['components', 'hooks', 'lib', 'extensions'].map((directory) => [
+              `#${directory}/*`,
+              {
+                development: `./client/${directory}/*.js`,
+                default: `./dist/client/${directory}/*.js`,
+              },
+            ]),
+          ),
+        }
+      : {}),
     files,
     ...(capabilities.registry
       ? {
@@ -541,7 +554,20 @@ async function renderManifest(
           },
         }
       : {}),
-    publishConfig: { access: 'public', exports: publishExports },
+    publishConfig: {
+      access: 'public',
+      exports: publishExports,
+      ...(browserCode
+        ? {
+            imports: Object.fromEntries(
+              ['components', 'hooks', 'lib', 'extensions'].map((directory) => [
+                `#${directory}/*`,
+                `./dist/client/${directory}/*.js`,
+              ]),
+            ),
+          }
+        : {}),
+    },
     scripts,
     ...(Object.keys(dependencies).length > 0
       ? { dependencies: sortByKey(dependencies) }
@@ -578,7 +604,7 @@ function renderTsconfig(capabilities: PluginCapabilities): string {
           lib: ['ES2022', 'DOM', 'DOM.Iterable'],
         }
       : {}),
-    ...(browserCode ? { paths: { '@/*': ['./client/*'] } } : {}),
+    ...(browserCode ? { customConditions: ['development'] } : {}),
     rootDir: '.',
     outDir: 'dist',
   };

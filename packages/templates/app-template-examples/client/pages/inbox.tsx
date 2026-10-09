@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { InboxPage as InboxBlock } from '@/extensions/nocobase-inbox/inbox-page';
+import { InboxPage as InboxBlock } from '#extensions/nocobase-inbox/inbox-page';
 
 /**
  * Route `/inbox`: the UI Library's inbox block over the in-app notification plugin, reached from the header's inbox

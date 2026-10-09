@@ -38,10 +38,10 @@ import {
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
+import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import { usePlanConfirm } from './plan-confirm.js';

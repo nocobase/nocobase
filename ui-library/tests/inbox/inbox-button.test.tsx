@@ -6,7 +6,7 @@ import { render, renderHook, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '#components/ui/tooltip';
 
 import {
   inboxBadge,

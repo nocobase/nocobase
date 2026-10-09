@@ -214,5 +214,13 @@
     "@nocobase/app-plugin-mail-example": "workspace:^"
   },
   "description": "Runnable NocoBase 3 examples for application development.",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "imports": {
+    "#components/*": "./client/components/*.js",
+    "#hooks/*": "./client/hooks/*.js",
+    "#lib/*": "./client/lib/*.js",
+    "#extensions/*": "./client/extensions/*.js",
+    "#extensions/nocobase-ai": "./client/extensions/nocobase-ai/index.ts",
+    "#pages/*": "./client/pages/*.js"
+  }
 }

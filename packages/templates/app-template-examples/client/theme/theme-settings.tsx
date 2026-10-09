@@ -2,13 +2,13 @@ import { Check, Monitor, Moon, Palette, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useId, type ReactElement } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
   PopoverTitle,
-} from '@/components/ui/popover';
+} from '#components/ui/popover';
 import { cn } from 'cn';
 import { useThemePreset } from './theme-context';
 import { themePresets } from './theme-presets';

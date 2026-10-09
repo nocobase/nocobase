@@ -4,6 +4,8 @@ This is a NocoBase application plugin: a package published to a registry and ins
 
 ## Adding a dependency
 
+Client imports use the package-local `#components/*`, `#hooks/*`, `#lib/*` and `#extensions/*` mappings in `package.json#imports`. Development resolves sources; the default targets resolve `dist/client`, and `publishConfig.imports` makes all published conditions resolve that compiled tree. Keep `components.json` prefixes aligned and add exact index mappings for directory entry points. Stable relative imports with `.js` extensions also work.
+
 Where a package goes depends on who has to resolve the import, and there are three different answers.
 
 | The import is reached from                  | Declare it in                                |
@@ -29,7 +31,7 @@ Do not mark such a peer `optional`. An optional peer is not auto-installed anywh
 
 So `hono` in `server/routes/` is a `dependency`, and `lucide-react` in `client/` is a peer. Shared runtime packages follow the peer rule below even in server code. A dynamic `import()` counts as a value import. A type-only import is erased from JavaScript but can survive in published declarations; if consumers must resolve it, declare the dependency or shared peer instead of relying on a devDependency.
 
-`registry/` is the exception: it is source the application copies into itself and compiles there, against that application's own `react` and `@/` alias. This plugin never resolves those imports at all, so declaring them would claim dependencies it does not have.
+`registry/` is the exception: it is source a consumer copies into itself and compiles there, against that package's own `react` and `package.json#imports`. The recipe's publishing plugin never resolves those imports, so declaring them would claim dependencies it does not have.
 
 ### Prefer what the application already has
 

@@ -18,27 +18,7 @@
     "declaration": false,
     "declarationMap": false,
     "isolatedDeclarations": false,
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.registry.tsbuildinfo",
-    "paths": {
-      // Items import shadcn primitives the way an application provides them. The preview's copies stand in for them;
-      // the explicit extension is what lets an extensionless alias resolve under NodeNext.
-      "@/components/ui/*": ["./website/components/ui/*.tsx"],
-      // The hook the shadcn sidebar primitive installs beside itself.
-      "@/hooks/use-mobile": ["./website/hooks/use-mobile.ts"],
-      // A component one item installs for another, imported as the application provides it; listed one by one.
-      "@/components/issue-table": ["./registry/projects/issue-table.tsx"],
-      "@/components/issue-card": ["./registry/projects/issue-card.tsx"],
-      "@/components/markdown-view": ["./registry/components/markdown-view.tsx"],
-      "@/components/agent-run-history": [
-        "./registry/agents/agent-run-history.tsx"
-      ],
-      "@/components/agent-composer": ["./registry/agents/agent-composer.tsx"],
-      "@/components/agent-picker": ["./registry/agents/agent-picker.tsx"],
-      "@/components/attachment-list": [
-        "./registry/components/attachment-list.tsx"
-      ],
-      "@/components/page-header": ["./registry/components/page-header.tsx"]
-    }
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.registry.tsbuildinfo"
   },
   "include": ["registry/**/*.ts", "registry/**/*.tsx"]
 }

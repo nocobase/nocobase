@@ -23,7 +23,7 @@ The lane header shows the agent's avatar, name, state, its taken slots (`2/3`, w
 The item imports no plugin. `AgentQueueData` mirrors an agent board an application composes from the agents plugin's runs and queue and the projects plugin's issues (in an application, `GET /api/agentBoard`), so such a response can be passed as it is. Keeping it live (refetching on announcements, polling) is the consumer's job.
 
 ```tsx
-import { AgentQueue } from '@/extensions/nocobase-agent-queue/agent-queue';
+import { AgentQueue } from '#extensions/nocobase-agent-queue/agent-queue';
 
 <AgentQueue
   data={board}

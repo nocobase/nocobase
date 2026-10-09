@@ -3,16 +3,16 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, FileClock, RefreshCw } from 'lucide-react';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '#components/ui/alert';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '#components/ui/card';
 import {
   Table,
   TableBody,
@@ -20,7 +20,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '#components/ui/table';
 import {
   fetchNotificationLogs,
   type NotificationDeliveryDetails,

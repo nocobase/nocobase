@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { AuthCenteredLayout } from '@/extensions/nocobase-auth-centered-layout/auth-centered-layout';
+import { AuthCenteredLayout } from '#extensions/nocobase-auth-centered-layout/auth-centered-layout';
 
 import { useAuthPage } from './auth-page.js';
 

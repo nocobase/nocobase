@@ -1,8 +1,8 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { Button, buttonVariants } from '@/components/ui/button';
-import { FieldSeparator } from '@/components/ui/field';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button, buttonVariants } from '#components/ui/button';
+import { FieldSeparator } from '#components/ui/field';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { cn } from 'cn';
 
 export interface AuthMethod {

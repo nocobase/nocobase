@@ -115,7 +115,7 @@ test('builds and materializes the plugin Registry example', async (t) => {
       path.join(installedRoot, 'pages/registry-example-page.tsx'),
       'utf8',
     ),
-    /from '@\/components\/ui\/button'/u,
+    /from '#components\/ui\/button'/u,
   );
   assert.match(
     fs.readFileSync(path.join(installedRoot, 'extension.ts'), 'utf8'),

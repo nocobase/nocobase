@@ -6,7 +6,7 @@ import {
   AgentPicker,
   AvailabilityDot,
   ModeTag,
-} from '@/components/agent-picker';
+} from '#components/agent-picker';
 
 const online = { online: true, reason: null, onlineRunners: 1 } as const;
 

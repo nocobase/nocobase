@@ -11,7 +11,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from '@/components/ui/combobox';
+} from '#components/ui/combobox';
 
 export interface IssuePickerItem {
   readonly id: string;
