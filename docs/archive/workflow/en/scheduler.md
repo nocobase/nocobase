@@ -15,7 +15,7 @@ Use Scheduler when:
 - Administrators need to see whether a task is enabled, its next run time, its execution history, and reasons for failure.
 - Triggers must be idempotent so process restarts or worker retries do not duplicate business effects.
 
-Background tasks that do not need administrators to monitor, enable, or disable them in the UI do not require Scheduler. Give recurring ones a `ScheduleExecutor` of their own from the application's jobs service, and one-off background work a `JobExecutor`.
+Background tasks that do not need administrators to monitor, enable, or disable them in the UI do not require Scheduler. Give recurring ones a `ScheduleExecutor` of their own from the application's jobs service, and one-off background work a `JobExecutor`. If the business requires human approval, versioned processes, execution path visibility, or node-level execution records, first ask the Agent to evaluate [Workflow](./workflow).
 
 ## Develop with an Agent
 
@@ -81,7 +81,7 @@ The Agent should report its chosen execution model, stable schedule key, timezon
 ## Recommended development process
 
 1. **Confirm whether Scheduler is needed.** The key question is whether administrators need to view tasks, enable or disable them, and track execution records in the UI. Otherwise, a `ScheduleExecutor` of the application's own is more appropriate.
-2. **Choose the execution type based on the business.** Integrate an existing application Service, a `JobExecutor`, or an external execution system according to the business requirements, and register its target.
+2. **Choose the execution type based on the business.** Use a workflow job for multiple process steps, node-level visibility, human intervention, or long-running work. Use an ordinary job for a single action that needs neither node-level visibility nor human intervention. The business scenario should determine whether to use a workflow, regardless of whether one already exists.
 3. **Define the task.** In the application or business plugin Provider, resolve `schedulerServiceToken` and call `defineSchedule(definition)`. Use a stable, application-wide unique `key`, preferably with a business namespace such as `sales.daily-report`.
 4. **Synchronize and verify.** Run `pnpm nocobase scheduler sync --json`, then sign in as an administrator and open **Settings → Automation → Scheduled Tasks** to check the task, next run time, and execution records.
 5. **Finalize during deployment.** Once the complete plugin manifest is loaded in production, run `pnpm nocobase scheduler sync --finalize --json` once per application to soft-deactivate definitions removed from code.
@@ -102,22 +102,14 @@ export default class DailyReportScheduleProvider extends ServiceProvider<Applica
     if (!this.app.container.has(schedulerServiceToken)) return;
 
     const scheduler = this.app.container.resolve(schedulerServiceToken);
-    scheduler.registerTarget({
-      type: 'app.daily-report',
-      title: 'Daily business report',
-      async start() {
-        // Call the application's report service here.
-        return { state: 'completed', outcome: 'succeeded' };
-      },
-    });
     scheduler.defineSchedule({
       key: 'daily-analytics-report',
       title: 'Daily business report',
-      description: 'Generate the business report every day at 02:00.',
+      description: 'Trigger the business report workflow every day at 02:00.',
       schedule: { cron: '0 2 * * *', timezone: 'Asia/Shanghai' },
       target: {
-        type: 'app.daily-report',
-        config: {},
+        type: 'workflow',
+        config: { workflowKey: 'example-analytics-report', input: {} },
       },
     });
   }
@@ -130,20 +122,45 @@ Both `register()` and `boot()` finish before Scheduler reads the manifest in its
 
 Definition fields:
 
-| Field                   | Description                                                                                                           |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `key`                   | Stable identifier matching `^[A-Za-z0-9][A-Za-z0-9._:-]*$`, unique across the application.                            |
-| `title` / `description` | Title and description shown in the administrator UI. The title is required.                                           |
-| `schedule.cron`         | Five- or six-field Cron expression. `*/5 * * * *` means every five minutes; `*/10 * * * * *` means every ten seconds. |
-| `schedule.timezone`     | Defaults to `UTC`. Explicitly use an IANA timezone such as `Asia/Shanghai` for local business time.                   |
-| `schedule.from` / `to`  | Optional inclusive boundaries, using `Date` values with an explicit timezone. `from` must not be later than `to`.     |
-| `schedule.limit`        | Optional positive integer limiting how many firings start, not successful completions.                                |
-| `target.type`           | A registered execution target type, such as `app.daily-report` or a type registered by a business plugin.             |
-| `target.config`         | JSON object. Do not include functions, Service instances, passwords, API keys, access tokens, or other secrets.       |
+| Field                   | Description                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `key`                   | Stable identifier matching `^[A-Za-z0-9][A-Za-z0-9._:-]*$`, unique across the application.                                        |
+| `title` / `description` | Title and description shown in the administrator UI. The title is required.                                                       |
+| `schedule.cron`         | Five- or six-field Cron expression. `*/5 * * * *` means every five minutes; `*/10 * * * * *` means every ten seconds.             |
+| `schedule.timezone`     | Defaults to `UTC`. Explicitly use an IANA timezone such as `Asia/Shanghai` for local business time.                               |
+| `schedule.from` / `to`  | Optional inclusive boundaries, using `Date` values with an explicit timezone. `from` must not be later than `to`.                 |
+| `schedule.limit`        | Optional positive integer limiting how many firings start, not successful completions.                                            |
+| `target.type`           | A registered execution target type, such as `workflow` provided by the Workflow plugin or a type registered by a business plugin. |
+| `target.config`         | JSON object. Do not include functions, Service instances, passwords, API keys, access tokens, or other secrets.                   |
 
 `defineSchedule()` validates the Cron expression, timezone, sensitive configuration fields, and target type, then normalizes the definition and calculates its hash. Do not write hashes manually or directly modify `schedule_definitions` or `schedule_occurrences`.
 
+## Use the built-in Workflow target
+
+Most complex scheduled business processes that need UI visibility can be split into two layers: Scheduler decides when to trigger, and Workflow defines the steps that follow. The Workflow plugin registers the built-in `workflow` target, so the schedule only needs to reference the workflow's source directory name:
+
+```ts
+scheduler.defineSchedule({
+  key: 'nightly-inventory-check',
+  title: 'Nightly inventory check',
+  schedule: { cron: '0 1 * * *', timezone: 'Asia/Shanghai' },
+  target: {
+    type: 'workflow',
+    config: {
+      workflowKey: 'inventory-replenishment',
+      input: { source: 'schedule' },
+    },
+  },
+});
+```
+
+`workflowKey` is the directory name of the workflow source root, not its title or database version ID. The workflow target starts a run using the schedule occurrence as its idempotency source. If the workflow is missing, disabled, or receives input that does not meet the current version's requirements, the execution record shows a failure or skip reason.
+
+When asking an Agent to implement both a workflow and a schedule, ask it to report the workflow directory, input contract, schedule key, Cron expression, timezone, synchronization result, and how to inspect at least one execution record.
+
 ## Extension development: custom targets
+
+Register a custom target only when the built-in `workflow` target cannot express the execution boundary, or when integrating an application-owned Service, a `JobExecutor`, or an external execution system. This API is an extension point, not something every schedule requires.
 
 ```ts
 const handle = scheduler.registerTarget({
@@ -241,6 +258,7 @@ Focus on evidence when reviewing the work:
 - Does it explain why Scheduler is needed instead of a `ScheduleExecutor` of its own or a workflow alone?
 - Did it inspect the application's installed plugins, Providers, `jobs` configuration, and permission entry points?
 - Does it use a stable, application-wide unique `key`, a Cron expression, and an IANA timezone?
+- Does it distinguish the built-in `workflow` target from custom target extensions?
 - Does it explain the idempotency strategy, asynchronous completion reporting, and how to observe failures?
 - Did it run type checks, relevant tests, builds, or synchronization commands, and explain anything skipped?
 - Can an administrator see the task and an execution record in the UI, or does it explain why live verification was not possible?

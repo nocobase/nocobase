@@ -67,4 +67,3 @@ NocoBase 已提供站内信、SMTP、Resend、飞书和钉钉等 Provider。Prov
 
 - [发通知教程](../tutorials/notifications.md) —— 用订单审批场景完成通知接入和验收
 - [邮件](./mail/index.md) —— 在业务页面关联个人邮箱并处理往来邮件
-- [工作流快速开始](./workflow/quick-start.md) —— 用库存补货案例完成工作流的开发、启用、运行和结果检查

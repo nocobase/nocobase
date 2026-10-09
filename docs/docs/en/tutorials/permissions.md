@@ -62,5 +62,3 @@ Create `SO-A01` as salesperson A and `SO-B01` as salesperson B. Each salesperson
 Copy A's detail URL into B's browser. B must not receive its contents. Ask the AI Agent to test direct API requests too: anonymous reads return `401`, forbidden operations are denied, and out-of-scope details do not reveal order data.
 
 In the next chapter, also test a salesperson's forged approval request. A hidden Approve button is not a security boundary.
-
-Next: [Add an approval flow](./workflow).

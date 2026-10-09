@@ -2,7 +2,7 @@
 pageType: home
 pageName: home
 title: 'NocoBase 3 文档'
-description: 'NocoBase 3 是为 AI Agent 协作开发而生的业务系统开发基座。一条命令生成归你所有的应用源码，你说要什么，AI Agent 来写，认证、权限、工作流、通知等通用能力装上就有。'
+description: 'NocoBase 3 是为 AI Agent 协作开发而生的业务系统开发基座。一条命令生成归你所有的应用源码，你说要什么，AI Agent 来写，认证、权限、通知等通用能力装上就有。'
 keywords: 'NocoBase,NocoBase 3,AI Agent 开发,业务系统,低代码,开源'
 hero:
   name: 'NocoBase 3 文档'
@@ -68,7 +68,7 @@ features:
         link: /app/
 
   - title: '内置能力'
-    details: '登录、权限、审批、通知这些常见需求，装上就有。'
+    details: '登录、权限、通知这些常见需求，装上就有。'
     items:
       - title: '认证'
         details: '登录、注册、会话与当前用户。'
@@ -76,9 +76,6 @@ features:
       - title: '权限'
         details: '角色，谁能看哪个菜单、哪条数据。'
         link: /capabilities/authorization
-      - title: '工作流'
-        details: '可观测、可版本化的多阶段业务过程。'
-        link: /capabilities/workflow
       - title: '更多…'
         details: '通知、文件、多语言、主题、AI 员工和知识库。'
         link: /capabilities/

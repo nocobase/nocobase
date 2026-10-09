@@ -10,6 +10,8 @@ This application is based on `@nocobase/app-template-default` and provides runna
 
 Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories and mounted under Settings. Keep these product integrations aligned with Default.
 
+The Workflow plugin is retained as a dependency but is disabled by default in Client, Server, and CLI. Its configuration and example sources are retained for explicit opt-in use.
+
 ## Load the development skills
 
 `pnpm install` runs `pnpm nocobase skills sync` through the application's `postinstall` hook. If `.agents/skills/nocobase-app-development/` is missing, install dependencies from the application root; if install scripts were disabled or synchronized Skills are stale, run `pnpm nocobase skills sync` explicitly.

@@ -16,7 +16,6 @@ This section covers reusable application capabilities and supporting Skills that
 - [Overview](./overview) — What is available, and how to install it.
 - [Authentication](./auth) — Accounts, passwords and sessions.
 - [Permissions](./authorization) — Roles, menu visibility, and which records each user may see.
-- [Workflow](./workflow) — Observable, versioned, multi-stage business processes.
 - [Scheduled tasks](./scheduler) — Define schedules in code and monitor, enable, or disable them in the UI.
 - [Notifications](./notification) — Email, in-app messages, and IM channels.
 - [Mail](./mail) — Connect personal mailboxes to synchronize, read, and send messages.

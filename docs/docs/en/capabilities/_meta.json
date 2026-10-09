@@ -22,12 +22,6 @@
     "collapsed": true
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "workflow",
-    "label": "Workflow"
-  },
-  {
     "type": "file",
     "name": "scheduler",
     "label": "Scheduled tasks"

@@ -53,6 +53,8 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 | User administration and application-owned role assignment                                     | `@nocobase/app-plugin-users`          |
 | Reading or writing data, schema changes, migrations                                           | `@nocobase/db`                        |
 
+The Workflow plugin is disabled by default in the official application templates. Its presence in `dependencies` or synchronized Skills does not enable it; verify registration in Client, Server, and CLI before using it.
+
 Read the relevant Skill before writing the feature, but treat this table as a map rather than an installed-package list. Implementing a permission system, a notification sender, or a scheduler by hand when a registered plugin provides one is the most expensive mistake available here.
 
 For a workflow that pauses for an external decision, use the workflow plugin's `wait` node and its App-facing Skill. Persist the `runId` alongside the application's business identity and share the wait node's stable `nodeKey` with the authorized resumer; submit a stable event id through `workflowService.getInstructionApi('wait').resume()`. Keep early events for retry when the node is not ready, and keep authentication, authorization, and business side-effect idempotency in the application.
