@@ -1,5 +1,16 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- Updated dependencies [487921c]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/dev-config@0.1.0-beta.20
+  - @nocobase/db@1.0.0-beta.18
+
 ## 1.0.0-beta.14
 
 ### Minor Changes

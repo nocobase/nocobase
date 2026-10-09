@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-template-print",
   "displayName": "Template Print",
   "description": "Agent Skill for implementing template printing in NocoBase 3 applications.",
-  "version": "0.0.2-beta.0",
+  "version": "0.0.2-beta.1",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {

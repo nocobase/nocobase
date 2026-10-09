@@ -1,5 +1,11 @@
 # @nocobase/dev-config
 
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+
 ## 0.1.0-beta.19
 
 ### Patch Changes

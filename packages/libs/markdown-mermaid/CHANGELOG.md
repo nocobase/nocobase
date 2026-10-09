@@ -1,5 +1,11 @@
 # @nocobase/markdown-mermaid
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+
 ## 0.1.0-beta.0
 
 ### Minor Changes
