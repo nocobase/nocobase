@@ -1,6 +1,5 @@
-// What a run leaves running, and a daemon that stops with something still running: a worker that ends takes the
-// processes the run started with it, in whatever process group they run, and a daemon its service supervises exits once
-// it has updated itself, even with a process still running that it cannot stop, so the service starts the new version.
+// What a run leaves running: a worker that ends takes the processes the run started with it, wherever they went, and a
+// daemon its service supervises exits once it has updated itself, so the service starts the new version.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -89,13 +88,15 @@ function findFile(dir: string, name: string): string | undefined {
 
 /**
  * A script the agent runs: it starts `sleep 3600` in a process group of its own, as a development server would be,
- * writes its pid to `leftover.pid`, and exits after `stayMs`, leaving the sleep to init.
+ * writes its pid to `leftover.pid`, and exits after `stayMs`, leaving the sleep to init. With `clearEnv` the sleep
+ * starts with an empty environment.
  */
-function leaveScript(stayMs: number): string {
+function leaveScript(stayMs: number, clearEnv = false): string {
   return (
     "import { spawn } from 'node:child_process'; import { writeFileSync } from 'node:fs'; " +
-    "const child = spawn('sleep', ['3600'], { detached: true, stdio: 'ignore' }); child.unref(); " +
-    `writeFileSync('leftover.pid', String(child.pid)); setTimeout(() => {}, ${stayMs});`
+    `const child = spawn('sleep', ['3600'], { detached: true, stdio: 'ignore'${clearEnv ? ', env: {}' : ''} }); ` +
+    "child.unref(); writeFileSync('leftover.pid', String(child.pid)); " +
+    `setTimeout(() => {}, ${stayMs});`
   );
 }
 
@@ -126,17 +127,15 @@ describe('leftover processes', () => {
     removeDir(scratch);
   });
 
+  /** The daemon's environment: fast timings, but the process groups below a worker noted as often as in production. */
   const env = (extra: Record<string, string> = {}) =>
     cliEnv(home, {
-      NOCOBASE_RUNNER_TIMINGS: JSON.stringify({
-        ...FAST_TIMINGS,
-        processScanMs: 100,
-      }),
+      NOCOBASE_RUNNER_TIMINGS: JSON.stringify(FAST_TIMINGS),
       ...extra,
     });
 
-  /** Queues a run whose agent runs `leaveScript(stayMs)`. */
-  const enqueueLeaving = (stayMs: number): FakeRun =>
+  /** Queues a run whose agent runs `leaveScript(stayMs, clearEnv)`. */
+  const enqueueLeaving = (stayMs: number, clearEnv = false): FakeRun =>
     server.enqueue({
       tool: {
         kind: 'claude',
@@ -151,7 +150,7 @@ describe('leftover processes', () => {
         system: '',
         session: 'fresh',
         turn: [
-          `write leave.mjs ${leaveScript(stayMs)}`,
+          `write leave.mjs ${leaveScript(stayMs, clearEnv)}`,
           'bash node leave.mjs',
           'say done',
         ].join('\n'),
@@ -174,16 +173,16 @@ describe('leftover processes', () => {
     return pid;
   };
 
-  it('leaves nothing the run started running once its worker ends, in any process group', async () => {
-    const run = enqueueLeaving(1_500);
+  it('stops what a run started once its worker ends, even when it left its parent and its group at once', async () => {
+    const run = enqueueLeaving(0);
     const daemon = startDaemon(env());
     daemons.push(daemon);
     const leftover = await leftoverPid();
-    expect(alive(leftover)).toBe(true);
     await waitFor(() => run.complete, 20_000, 'the run to complete');
-    await waitFor(() => !alive(leftover), 10_000, 'the leftover to be stopped');
+    // Well within the 5 s between two looks at the process groups below a worker.
+    await waitFor(() => !alive(leftover), 3_000, 'the leftover to be stopped');
     await waitFor(
-      () => daemon.output().includes('process group(s) the worker left behind'),
+      () => daemon.output().includes('process(es) the run left behind'),
       5_000,
       'the cleanup to be logged',
     );
@@ -191,7 +190,28 @@ describe('leftover processes', () => {
     expect(daemon.child.exitCode).toBeNull();
   }, 60_000);
 
-  it('exits for its service after updating while a process the run left is still running, and the service starts the new version', async () => {
+  it('stops what cleared its environment by the process group it was seen in', async () => {
+    const run = enqueueLeaving(1_500, true);
+    const daemon = startDaemon(
+      env({
+        NOCOBASE_RUNNER_TIMINGS: JSON.stringify({
+          ...FAST_TIMINGS,
+          processScanMs: 100,
+        }),
+      }),
+    );
+    daemons.push(daemon);
+    const leftover = await leftoverPid();
+    await waitFor(() => run.complete, 20_000, 'the run to complete');
+    await waitFor(() => !alive(leftover), 10_000, 'the leftover to be stopped');
+    await waitFor(
+      () => daemon.output().includes('process group(s) the worker left behind'),
+      5_000,
+      'the cleanup to be logged',
+    );
+  }, 60_000);
+
+  it('exits for its service after updating, with nothing a run started left running, and the service starts the new version', async () => {
     const prefix = path.join(scratch, 'install');
     const versionDir = installation(prefix, runnerVersion());
     const bytes = tarball(scratch, NEXT);
@@ -199,7 +219,6 @@ describe('leftover processes', () => {
       `nocobase-runner/${NEXT}/nocobase-runner.tar.gz`,
       bytes,
     );
-    // Gone from below the worker at once, so nothing the runner keeps can find it: it is still running at the update.
     const run = enqueueLeaving(0);
     const daemon = startDaemon(
       env({
@@ -210,7 +229,6 @@ describe('leftover processes', () => {
     daemons.push(daemon);
     const leftover = await leftoverPid();
     await waitFor(() => run.complete, 20_000, 'the run to complete');
-    expect(alive(leftover)).toBe(true);
     server.upgrade = {
       minVersion: '0.0.0',
       latestVersion: NEXT,
@@ -226,6 +244,7 @@ describe('leftover processes', () => {
       ),
     ]);
     expect(code).toBe(RESTART_EXIT_CODE);
+    expect(alive(leftover)).toBe(false);
     // 'exit' may come before the last of its output.
     await waitFor(() =>
       daemon.output().includes(`runner exiting (${RESTART_EXIT_CODE})`),

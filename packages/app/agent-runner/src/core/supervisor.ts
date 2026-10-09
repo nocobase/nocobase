@@ -3,7 +3,9 @@
 // A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
 // SIGKILL after 5 s. Not everything the agent's tool starts stays in that group (Codex, OpenCode, and the shells and
 // servers a tool starts may each lead a group of their own), so while a worker runs the supervisor notes every process
-// group below it (process-tree.ts). When a worker exits, whatever it left in its group and in those groups is killed.
+// group below it (process-tree.ts). Every process the worker's tool starts also carries the run's process tag in its
+// environment, recorded with the run, which still finds what left both the tree and its group before anyone looked.
+// When a worker exits, whatever it left in its group, in those groups and under its tag is killed.
 //
 // The record `<runsDir>/<runId>.json` exists from the spawn until the worker has reported the run's end. A record whose
 // worker is gone, or whose worker outlived its daemon, is an orphan: on start the daemon kills the worker's group,
@@ -32,7 +34,14 @@ import {
 import { deleteRunCredentials } from '../agent/credentials.ts';
 import { EventSpool, spoolPaths } from './events.ts';
 import { LOST_CODES } from './lease.ts';
-import { groupsBelow, killLeftovers, listProcesses } from './process-tree.ts';
+import {
+  groupsBelow,
+  killLeftovers,
+  killTagged,
+  listProcesses,
+  newProcessTag,
+  PROCESS_TAG_ENV,
+} from './process-tree.ts';
 
 export interface RunRecord {
   /** The run's id; for a job, `jobRecordKey(jobId)`. */
@@ -42,6 +51,8 @@ export interface RunRecord {
   jobId?: string;
   /** A job's command runs in a process group of its own: stopped with the worker's. */
   commandPgid?: number;
+  /** The tag in the environment of every process the run starts (process-tree.ts): what carries it is killed with it. */
+  processTag?: string;
   /** The registration (`apps/<key>.json`) the run was claimed through. */
   appKey: string;
   attempt: number;
@@ -191,6 +202,9 @@ export function workerEntry(): string[] {
 // ---------------------------------------------------------------------------------------------------------------
 // The supervisor
 
+/** How many runs' process tags a supervisor keeps to sweep again when it stops. */
+const MAX_TAGS = 1_000;
+
 export interface SupervisedRun {
   /** The record key: the run's id, or `jobRecordKey(jobId)`. */
   runId: string;
@@ -221,6 +235,8 @@ export interface SupervisorOptions {
 export class Supervisor {
   private readonly options: SupervisorOptions;
   readonly runs: Map<string, SupervisedRun> = new Map();
+  /** The process tags of the runs it started, the latest `MAX_TAGS`: swept once more when it stops. */
+  private readonly tags = new Set<string>();
   private scanTimer: NodeJS.Timeout | undefined;
 
   constructor(options: SupervisorOptions) {
@@ -303,6 +319,10 @@ export class Supervisor {
     const logFile = runLogPath(paths, runId);
     mkdirSync(path.dirname(logFile), { recursive: true, mode: 0o700 });
     const fd = openSync(logFile, 'a', 0o600);
+    const processTag = newProcessTag();
+    this.tags.add(processTag);
+    if (this.tags.size > MAX_TAGS)
+      this.tags.delete(this.tags.values().next().value!);
     const child = spawn(
       process.execPath,
       [...workerEntry(), workerMarker(runId)],
@@ -313,6 +333,8 @@ export class Supervisor {
           ...process.env,
           NOCOBASE_RUNNER_HOME: paths.home,
           NOCOBASE_RUNNER_WORK_ROOT: paths.workRoot,
+          // The worker hands it to the tool's environment (env.ts).
+          [PROCESS_TAG_ENV]: processTag,
         },
       },
     );
@@ -326,13 +348,14 @@ export class Supervisor {
       ...record,
       pid,
       startedAt,
+      processTag,
       phase: 'spawned',
       log: logFile,
     });
     const exited = new Promise<void>((resolve) => {
       child.on('exit', (code, signal) => {
         log(`${noun} ${label}: worker ${pid} exited (${signal ?? code})`);
-        // Whatever the worker left in its group, and in the groups seen below it, goes with it.
+        // Whatever the worker left in its group, in the groups seen below it and under its tag goes with it.
         const groups = this.runs.get(runId)?.groups ?? new Set<number>();
         void Promise.all([
           killGroup(pid, 0),
@@ -344,13 +367,21 @@ export class Supervisor {
                 );
             },
           ),
-        ]).finally(async () => {
-          const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
-          this.runs.delete(runId);
-          await this.afterExit(runId, cancelled);
-          this.options.onExit?.(runId);
-          resolve();
-        });
+        ])
+          .then(() => killTagged([processTag]))
+          .then((left) => {
+            if (left > 0)
+              log(
+                `${noun} ${label}: killed ${left} process(es) the run left behind`,
+              );
+          })
+          .finally(async () => {
+            const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
+            this.runs.delete(runId);
+            await this.afterExit(runId, cancelled);
+            this.options.onExit?.(runId);
+            resolve();
+          });
       });
     });
     child.stdin?.on('error', () => undefined);
@@ -449,6 +480,10 @@ export class Supervisor {
         }
       }),
     );
+    // Once more for every run it started: what a leftover started after its run's sweep goes too.
+    const left = await killTagged([...this.tags]);
+    if (left > 0)
+      this.options.log(`killed ${left} process(es) runs left behind`);
   }
 }
 
@@ -482,6 +517,11 @@ export async function recoverRun(
     // SIGKILL straight away: a worker given SIGTERM would report the run itself, as runnerOffline.
     log(`run ${runId}: killing orphaned process group ${record.pid}`);
     await killGroup(record.pid, 0);
+  }
+  if (record.processTag !== undefined) {
+    const killed = await killTagged([record.processTag]);
+    if (killed > 0)
+      log(`${runId}: killed ${killed} process(es) the run left behind`);
   }
   if (record.commandPgid !== undefined && groupAlive(record.commandPgid)) {
     log(`${runId}: killing the job's command group ${record.commandPgid}`);

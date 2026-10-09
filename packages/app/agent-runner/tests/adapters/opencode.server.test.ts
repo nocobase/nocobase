@@ -106,6 +106,32 @@ describe('launchServer', () => {
     expect(alive(child)).toBe(false);
   });
 
+  it('stops what ignores SIGTERM in the group of a server that exits on it while closing', async () => {
+    const { bin, dir } = await script(
+      [
+        // A child in the server's group that ignores SIGTERM; the server itself exits on it.
+        'sh -c \'trap "" TERM; while true; do sleep 1; done\' &',
+        'echo $! > "$PWD/child"',
+        "trap 'exit 0' TERM",
+        'echo "server listening on http://127.0.0.1:4571"',
+        'while true; do sleep 1; done',
+      ].join('\n'),
+    );
+    const server = await launchServer({
+      binary: bin,
+      cwd: dir,
+      env: { PATH: process.env.PATH ?? '/usr/bin:/bin' },
+    });
+    const child = Number(
+      (await readFile(path.join(dir, 'child'), 'utf8')).trim(),
+    );
+    expect(alive(child)).toBe(true);
+    await server.close(500);
+    expect(await server.exited).toMatchObject({ code: 0 });
+    await waitUntil(() => !alive(child));
+    expect(alive(child)).toBe(false);
+  });
+
   it('reports a server that exits before listening, with its stderr', async () => {
     const { bin, dir } = await script('echo "no provider" >&2\nexit 3');
     await expect(

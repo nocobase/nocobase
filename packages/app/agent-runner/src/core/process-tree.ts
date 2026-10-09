@@ -5,7 +5,15 @@
 // own, and a tool may start a shell, a development server or a test watcher in yet another one. A process whose
 // parent exits is adopted by init or a subreaper and leaves the tree, but not its group, so the groups seen below a
 // worker while it runs are what can still be stopped after it ends.
+//
+// A process that leaves its parent and its group before anyone looks escapes both. What it cannot leave as easily is
+// its environment: every run's tool gets `PROCESS_TAG_ENV` set to a value of that run's own, which whatever it starts
+// inherits, so the processes still carrying a run's tag once it has ended are its leftovers wherever they went
+// (`killTagged`). A process that clears its environment escapes this too; a service's own cleanup, such as systemd
+// killing what is left in the unit's cgroup, is what remains for those.
 import { execFile } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { readdir, readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 
 import { delay } from '../lib/http.ts';
@@ -153,4 +161,72 @@ export async function killLeftovers(
     while (left() && Date.now() < deadline) await delay(50);
   }
   return { processes: pids.length, groups: liveGroups.length };
+}
+
+/** The variable that marks every process a run's tool starts, and what they start in turn, as that run's. */
+export const PROCESS_TAG_ENV = 'AGENT_RUN_PROCESS_TAG';
+
+/** A new tag for a run's processes: unguessable, so no other run's processes carry it by chance. */
+export function newProcessTag(): string {
+  return randomBytes(16).toString('hex');
+}
+
+/** The pids of the processes whose environment carries one of `tags`, the calling process left out. */
+export async function taggedProcesses(
+  tags: readonly string[],
+): Promise<number[]> {
+  const entries = new Set(tags.map((tag) => `${PROCESS_TAG_ENV}=${tag}`));
+  const found: number[] = [];
+  if (entries.size === 0) return found;
+  const procs = await readdir('/proc').catch(() => undefined);
+  if (procs !== undefined && process.platform === 'linux') {
+    for (const name of procs) {
+      if (!/^\d+$/u.test(name)) continue;
+      const pid = Number(name);
+      if (pid === process.pid) continue;
+      // Readable for the runner's own processes only, which are the only ones it could have started.
+      const environ = await readFile(`/proc/${name}/environ`, 'utf8').catch(
+        () => '',
+      );
+      if (environ.split('\0').some((item) => entries.has(item)))
+        found.push(pid);
+    }
+    return found;
+  }
+  // macOS: `ps -E` appends each of the user's own processes' environment to its command.
+  try {
+    const { stdout } = await execFileAsync(
+      'ps',
+      ['-E', '-ww', '-A', '-o', 'pid=,command='],
+      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+    );
+    for (const line of stdout.split('\n')) {
+      const match = /^\s*(\d+)\s(.*)$/u.exec(line);
+      if (match?.[2] === undefined) continue;
+      const words = match[2].split(' ');
+      if (!words.some((word) => entries.has(word))) continue;
+      const pid = Number(match[1]);
+      if (pid !== process.pid) found.push(pid);
+    }
+  } catch {
+    // No `ps`: nothing found.
+  }
+  return found;
+}
+
+/**
+ * SIGKILLs every process that carries one of `tags`, again until none is left (one may start another while it is being
+ * killed), for at most a few rounds. Returns how many it killed.
+ */
+export async function killTagged(tags: readonly string[]): Promise<number> {
+  let killed = 0;
+  for (let round = 0; round < 5 && tags.length > 0; round += 1) {
+    const pids = await taggedProcesses(tags);
+    const live = pids.filter((pid) => alive(pid));
+    if (live.length === 0) break;
+    for (const pid of live) signal(pid, 'SIGKILL');
+    killed += live.length;
+    await delay(100);
+  }
+  return killed;
 }

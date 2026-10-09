@@ -114,20 +114,22 @@ export const launchServer: LaunchFn = async (options) => {
   const onProcessExit = () => killGroup(child, 'SIGKILL');
   process.once('exit', onProcessExit);
 
+  // Closed once the server has exited and nothing is left in its group: the server may exit, before or after the
+  // SIGTERM, while what it started (a tool's shell, a server or watcher a command left running) still runs there.
+  const done = () => exitedState !== undefined && !groupAlive(child);
   const close = async (graceMs: number) => {
-    process.removeListener('exit', onProcessExit);
-    if (exitedState) {
-      // The server is gone, but what it started (a tool's shell, a server or watcher a command left running) may still
-      // run in its group.
-      if (groupAlive(child)) killGroup(child, 'SIGKILL');
-      return;
+    if (!done()) {
+      killGroup(child, 'SIGTERM');
+      const deadline = Date.now() + graceMs;
+      while (!done() && Date.now() < deadline) await delay(20);
     }
-    killGroup(child, 'SIGTERM');
-    const result = await Promise.race([exited, delay(graceMs)]);
-    if (!result) {
+    if (!done()) {
       killGroup(child, 'SIGKILL');
       await exited;
+      const deadline = Date.now() + 2_000;
+      while (groupAlive(child) && Date.now() < deadline) await delay(20);
     }
+    process.removeListener('exit', onProcessExit);
   };
 
   const baseUrl = await new Promise<string>((resolve, reject) => {
