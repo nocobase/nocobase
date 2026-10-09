@@ -1,17 +1,17 @@
 import { SearchIcon } from 'lucide-react';
 import { useId, useState, type ReactElement } from 'react';
 
-import { inboxBadge, useDocumentTitleBadge } from '@/components/inbox-badge';
-import { InboxButton } from '@/components/inbox-button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { inboxBadge, useDocumentTitleBadge } from '#components/inbox-badge';
+import { InboxButton } from '#components/inbox-button';
+import { Avatar, AvatarFallback } from '#components/ui/avatar';
+import { Button } from '#components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 
 /** Sample states, each setting both counts: what waits on the viewer, and what is unread. */
 const PRESETS = {

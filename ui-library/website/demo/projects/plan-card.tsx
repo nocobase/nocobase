@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 
-import { PlanCard } from '@/extensions/nocobase-plan-card/plan-card';
+import { PlanCard } from '#extensions/nocobase-plan-card/plan-card';
 
 /**
  * Operation plans as an application shows them, read and acted on through the projects plugin's hooks (answered from

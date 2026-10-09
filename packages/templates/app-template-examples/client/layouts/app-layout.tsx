@@ -4,8 +4,8 @@ import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
 import { AIEmployeeEntry } from '../components/ai-employee-entry.js';
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { EMPTY_ARRAY } from '@/lib/constants';
+import { Breadcrumbs } from '#components/breadcrumbs';
+import { EMPTY_ARRAY } from '#lib/constants';
 
 import { RouteTreeProvider } from '../routing/route-context.js';
 

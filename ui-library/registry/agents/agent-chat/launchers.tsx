@@ -16,14 +16,14 @@ import {
 import { BotMessageSquareIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Kbd } from '@/components/ui/kbd';
+import { Button } from '#components/ui/button';
+import { Kbd } from '#components/ui/kbd';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';

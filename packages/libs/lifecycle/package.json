@@ -1,0 +1,96 @@
+{
+  "name": "@nocobase/lifecycle",
+  "version": "0.0.1",
+  "description": "Record lifecycles for NocoBase applications: states on the record, transitions declared in source, effects dispatched after commit.",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "import": "./src/testing.ts"
+    },
+    "./react": {
+      "types": "./src/react.ts",
+      "import": "./src/react.ts"
+    },
+    "./jobs": {
+      "types": "./src/jobs.ts",
+      "import": "./src/jobs.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./testing": {
+        "types": "./dist/testing.d.ts",
+        "import": "./dist/testing.js"
+      },
+      "./react": {
+        "types": "./dist/react.d.ts",
+        "import": "./dist/react.js"
+      },
+      "./jobs": {
+        "types": "./dist/jobs.d.ts",
+        "import": "./dist/jobs.js"
+      }
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "peerDependencies": {
+    "@nocobase/db": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/dev-config": "workspace:*",
+    "@nocobase/jobs": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "@nocobase/jobs": {
+      "optional": true
+    }
+  }
+}

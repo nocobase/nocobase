@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core';
 import { CalendarClockIcon, HeadingIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { MarkdownView } from '@/components/markdown-view';
+import { MarkdownView } from '#components/markdown-view';
 import {
   RichTextBlockTools,
   RichTextEditor,
@@ -11,7 +11,7 @@ import {
   RichTextToolbar,
   RichTextToolbarButton,
   RichTextToolbarSeparator,
-} from '@/components/rich-text-editor';
+} from '#components/rich-text-editor';
 
 const PEOPLE: readonly RichTextMention[] = [
   { kind: 'user', id: 'u1', name: 'Ada Lovelace' },

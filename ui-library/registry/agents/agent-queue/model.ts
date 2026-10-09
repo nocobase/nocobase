@@ -2,7 +2,11 @@
  * The queue as lanes, one per agent, kept apart from the components so a consumer can test it: what each agent runs
  * now, what it takes next in claim order, what waits for a person, and what it is assigned with nothing going on.
  */
-import { fill, type AgentQueueLabels } from './labels.js';
+import {
+  defaultAgentQueueLabels,
+  fill,
+  type AgentQueueLabels,
+} from './labels.js';
 import type {
   AgentQueueAgent,
   AgentQueueData,
@@ -209,7 +213,11 @@ export function waitText(
       : fill(labels.queue.blockedCount, { count: item.issue.blockedCount });
   const wait = entry.queue;
   if (!wait) return null;
-  return fill(labels.queue.reasons[wait.reason], {
+  const template =
+    labels.queue.reasons[wait.reason] ??
+    defaultAgentQueueLabels.queue.reasons[wait.reason] ??
+    labels.queue.reasons.next;
+  return fill(template, {
     max: agent.maxConcurrentRuns,
     tool: wait.tool ?? '',
     features: wait.missing.join(', '),

@@ -10,13 +10,13 @@ import { useLocale } from '@nocobase/i18n/client';
 import { ChevronRightIcon, MessagesSquareIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { RunTranscriptRow } from '@/components/agent-run-history';
-import { Badge } from '@/components/ui/badge';
+import { RunTranscriptRow } from '#components/agent-run-history';
+import { Badge } from '#components/ui/badge';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from '#components/ui/collapsible';
 import { cn } from 'cn';
 
 import { ChatMarkdown } from './chat-markdown.js';

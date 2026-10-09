@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { FilePreviewDialog } from '../../registry/component-ui/index';
+import { FilePreviewDialog } from '../../.registry-test-app/client/extensions/nocobase-file-component-ui/index';
 import type { FileRecord } from '../../client/index.js';
 
 const viewerMocks = vi.hoisted(() => ({

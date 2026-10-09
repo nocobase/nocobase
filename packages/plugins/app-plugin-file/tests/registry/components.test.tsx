@@ -12,7 +12,7 @@ import {
   FileList,
   FilePreviewDialog,
   FileThumbnail,
-} from '../../registry/component-ui/index';
+} from '../../.registry-test-app/client/extensions/nocobase-file-component-ui/index';
 
 function record(overrides: Partial<FileRecord> = {}): FileRecord {
   return {
@@ -225,7 +225,7 @@ it('previews a Repository record as text and shows safe image thumbnails', async
 it('replaces an image that fails to decode with a download fallback', async () => {
   const onDownload = vi.fn();
   const { FilePreviewContent } =
-    await import('../../registry/component-ui/components/previewers/file-preview-content.js');
+    await import('../../.registry-test-app/client/extensions/nocobase-file-component-ui/components/previewers/file-preview-content.js');
   const file = record({ filename: 'corrupt.png', mimeType: 'image/png' });
   const { rerender } = render(
     <FilePreviewContent

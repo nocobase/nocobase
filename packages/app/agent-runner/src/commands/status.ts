@@ -4,6 +4,8 @@ import {
   readSettings,
   type AgentHome,
 } from '../lib/config.ts';
+import { formatToolSlots } from '../lib/slots.ts';
+import type { ToolSlots } from '../protocol/index.ts';
 import { readDaemonPid } from '../core/loop.ts';
 import { readRecords, type RunRecord } from '../core/supervisor.ts';
 import { runnerCommandLine } from '../host.ts';
@@ -12,6 +14,8 @@ interface RunnerStatus {
   registered: boolean;
   name: string;
   slots: number;
+  /** Limits per coding tool beside `slots`; absent when none is set. */
+  toolSlots?: ToolSlots;
   agentHome: AgentHome;
   apps: {
     key: string;
@@ -53,7 +57,9 @@ export default class Status extends RunnerCommand {
       cli: registration.cli,
     }));
     this.log(`Runner   ${settings.name}`);
-    this.log(`Slots    ${settings.slots}`);
+    this.log(
+      `Slots    ${settings.slots}${settings.toolSlots === undefined ? '' : ` (${formatToolSlots(settings.toolSlots)})`}`,
+    );
     this.log(
       `Home     agents get ${settings.agentHome === 'real' ? 'the real home' : 'an isolated home'}`,
     );
@@ -74,6 +80,9 @@ export default class Status extends RunnerCommand {
       registered: apps.length > 0,
       name: settings.name,
       slots: settings.slots,
+      ...(settings.toolSlots === undefined
+        ? {}
+        : { toolSlots: settings.toolSlots }),
       agentHome: settings.agentHome,
       apps,
       running: daemon !== undefined,

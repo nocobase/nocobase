@@ -3,7 +3,7 @@ import { I18nProvider } from '@nocobase/i18n/client';
 import { act, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import locales from '../client/locales/index.js';
-import { NotificationLogsPage } from '../registry/logs-ui/page.js';
+import { NotificationLogsPage } from '../.registry-test-app/client/extensions/nocobase-notification-logs-ui/page.js';
 
 vi.mock('@nocobase/app-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/app-client')>();

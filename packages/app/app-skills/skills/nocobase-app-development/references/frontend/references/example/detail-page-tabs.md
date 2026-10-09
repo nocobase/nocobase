@@ -85,15 +85,15 @@ import {
   useResolvedPath,
 } from 'react-router';
 
-import { BackButton } from '@/components/back-button';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { RouteChildPage } from '@/components/route-child-page';
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { withoutParams } from '@/hooks/use-url-search';
+import { BackButton } from '#components/back-button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { RouteChildPage } from '#components/route-child-page';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Alert, AlertAction, AlertDescription } from '#components/ui/alert';
+import { Button, buttonVariants } from '#components/ui/button';
+import { Skeleton } from '#components/ui/skeleton';
+import { withoutParams } from '#hooks/use-url-search';
 import { cn } from 'cn';
 
 import {
@@ -366,7 +366,7 @@ import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useMemo } from 'react';
 import { Outlet, useOutletContext } from 'react-router';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '#components/ui/card';
 
 import type { CustomerPageOutletContext } from '../types.js';
 
@@ -438,10 +438,10 @@ import type { ReactNode } from 'react';
 import { createMemoryRouter, Outlet, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import CustomerPage from '@/pages/customers/detail/index';
-import EditCustomerPage from '@/pages/customers/detail/edit';
-import CustomerOrdersTab from '@/pages/customers/detail/orders';
-import CustomerOverviewTab from '@/pages/customers/detail/overview';
+import CustomerPage from '#pages/customers/detail/index';
+import EditCustomerPage from '#pages/customers/detail/edit';
+import CustomerOrdersTab from '#pages/customers/detail/orders';
+import CustomerOverviewTab from '#pages/customers/detail/overview';
 
 import packageMetadata from '../../package.json' with { type: 'json' };
 import enUS from '../../client/locales/en-US.js';

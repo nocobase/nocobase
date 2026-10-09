@@ -12,10 +12,10 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/page-header';
-import { PageContainer } from '@/components/page-container';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
+import { PageHeader } from '#components/page-header';
+import { PageContainer } from '#components/page-container';
 
 export default function RouteOverlaysPage() {
   const { t } = useTranslation();

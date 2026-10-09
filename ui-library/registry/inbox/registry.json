@@ -121,7 +121,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": ["tooltip"],
-      "docs": "Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from @/components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.",
+      "docs": "Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from #components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.",
       "files": [
         {
           "path": "inbox-button.tsx",

@@ -12,6 +12,7 @@ const WAITS: ReadonlySet<string> = new Set([
   'runnersOffline',
   'toolUnavailable',
   'runnersBusy',
+  'toolSlotsFull',
   'concurrencyFull',
   'sameWorkActive',
   'setupRetrying',

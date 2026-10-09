@@ -1,0 +1,152 @@
+{
+  "name": "@nocobase/app-plugin-mail",
+  "displayName": "Mail App Plugin",
+  "description": "Provides mail sending and resumable mailbox synchronization architecture.",
+  "version": "1.0.0-beta.7",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false,
+  "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./server/index.ts",
+      "import": "./server/index.ts"
+    },
+    "./server": {
+      "types": "./server/index.ts",
+      "import": "./server/index.ts"
+    },
+    "./client": {
+      "types": "./client/index.ts",
+      "import": "./client/index.ts"
+    },
+    "./client/components": {
+      "types": "./client/components/public.ts",
+      "import": "./client/components/public.ts"
+    },
+    "./realtime": {
+      "types": "./shared/realtime.ts",
+      "import": "./shared/realtime.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "nocobase": {
+    "appConfig": {
+      "namespace": "mail",
+      "configFile": "server/config/mail.ts",
+      "factory": "@nocobase/app-plugin-mail/server",
+      "environmentVariables": [
+        "MAIL_OAUTH_CALLBACK_URL",
+        "MAIL_OAUTH_RETURN_URL",
+        "MAIL_AUTOMATIC_SYNC_INTERVAL_MS",
+        "MAIL_SYNC_BATCH_SIZE",
+        "MAIL_PUSH_WEBHOOK_URL",
+        "MAIL_PUSH_WEBHOOK_SECRET",
+        "MAIL_JOBS"
+      ]
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js"
+      },
+      "./client/components": {
+        "types": "./dist/client/components/public.d.ts",
+        "import": "./dist/client/components/public.js"
+      },
+      "./realtime": {
+        "types": "./dist/shared/realtime.d.ts",
+        "import": "./dist/shared/realtime.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --coverage",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format",
+    "test:postgres": "NOCOBASE_TEST_DB_DIALECT=postgres vitest run tests/server/message-queries.test.ts",
+    "test:e2e": "playwright test --config tests/playwright/playwright.config.ts"
+  },
+  "peerDependencies": {
+    "@base-ui/react": "catalog:",
+    "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-authorization": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/db": "workspace:^",
+    "@nocobase/i18n": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
+    "@nocobase/service-provider": "workspace:^",
+    "class-variance-authority": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "catalog:",
+    "date-fns": "^4.4.0",
+    "react-day-picker": "^10.0.1",
+    "cn": "catalog:"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "catalog:",
+    "hono": "catalog:",
+    "imapflow": "^2.0.0",
+    "mailparser": "^3.9.24",
+    "nodemailer": "^9.0.5",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@nocobase/dev-config": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/mailparser": "^3.4.6",
+    "@types/node": "catalog:",
+    "@types/nodemailer": "^8.0.1",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@nocobase/app-testing": "workspace:*",
+    "@playwright/test": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "directory": "packages/plugins/app-plugin-mail"
+  }
+}

@@ -5,7 +5,7 @@ This Registry item is an application-owned page that runs AI employee tasks on a
 ## Prerequisites
 
 - `@nocobase/app-plugin-ai-employee` and `@nocobase/app-plugin-ai-employee-example` registered in the application's `client/plugins.ts` and `server/plugins.ts`, the example after the AI Employee plugin. The example's server registers the AI employee `iris` and the read-only tool `example-ticket-history`.
-- The AI Employee plugin's `nocobase-ai` item installed in `client/extensions/nocobase-ai`. The page imports it through `@/extensions/nocobase-ai`.
+- The AI Employee plugin's `nocobase-ai` item installed in `client/extensions/nocobase-ai`. The page imports it through `#extensions/nocobase-ai`.
 - A global AI entry around the signed-in layout: `NocoBaseAIRootProvider`, an `AIChatProvider` bound to `useGlobalAIChatController()`, and a `ChatSurface` that opens with the controller. The page has no chat of its own; every task it starts opens there.
 - The application's shadcn `badge`, `button` and `card`, and its `PageContainer` and `PageHeader`.
 

@@ -256,6 +256,8 @@ const plansEnUS = {
       runnersOffline: 'Waiting for the agent’s runtime to come online…',
       toolUnavailable: 'Waiting for a runtime whose coding tool is signed in…',
       runnersBusy: 'Every runtime is busy; waiting for a free one…',
+      toolSlotsFull:
+        'The coding tool is at its limit on every runtime; waiting…',
       concurrencyFull: 'The agent is busy; waiting for it…',
       sameWorkActive: 'Waiting for the agent to finish the request before…',
       setupRetrying: 'Preparing the work again…',

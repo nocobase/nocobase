@@ -1,6 +1,6 @@
 import type { AppResource } from './en-US.js';
-import deviceApprovalZhCN from '@/extensions/nocobase-device-approval/locales/zh-CN';
-import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
+import deviceApprovalZhCN from '#extensions/nocobase-device-approval/locales/zh-CN';
+import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 const zhCN: AppResource = {
   // The UI Library block of the `/device` page; the keys below may reword it.

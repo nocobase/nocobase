@@ -10,6 +10,8 @@ import remarkGfm from 'remark-gfm';
 
 import { cn } from 'cn';
 
+import { remarkCjkAutolink } from './remark-cjk-autolink.js';
+
 const MENTION_HREF = /^mention:\/\/([a-z][a-z0-9_]{1,31})\//u;
 
 function urlTransform(url: string): string {
@@ -176,7 +178,7 @@ export function MarkdownView({
       data-slot='markdown-view'
     >
       <Markdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkCjkAutolink]}
         urlTransform={urlTransform}
         components={components}
       >

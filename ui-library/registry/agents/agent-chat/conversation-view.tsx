@@ -37,7 +37,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Empty,
   EmptyContent,
@@ -45,8 +45,8 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '#components/ui/empty';
+import { Skeleton } from '#components/ui/skeleton';
 import { cn } from 'cn';
 
 import { NewChatChoice } from './agent-choice.js';

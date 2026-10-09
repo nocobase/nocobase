@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '#components/ui/tooltip';
 
 import { runtime } from './fixtures';
 

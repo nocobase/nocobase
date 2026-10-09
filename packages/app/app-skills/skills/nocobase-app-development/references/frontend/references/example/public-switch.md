@@ -20,8 +20,8 @@ import {
   FieldContent,
   FieldDescription,
   FieldLabel,
-} from '@/components/ui/field';
-import { Switch } from '@/components/ui/switch';
+} from '#components/ui/field';
+import { Switch } from '#components/ui/switch';
 
 export interface ProjectPublicSwitchProps {
   readonly projectId: string;

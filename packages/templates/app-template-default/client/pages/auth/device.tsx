@@ -3,7 +3,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router';
 
-import { DeviceApproval } from '@/extensions/nocobase-device-approval/device-approval';
+import { DeviceApproval } from '#extensions/nocobase-device-approval/device-approval';
 
 import { AuthPage } from './shared.js';
 

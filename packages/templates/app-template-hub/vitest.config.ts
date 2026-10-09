@@ -5,14 +5,6 @@ import { createReactVitestConfig } from '@nocobase/dev-config/vitest/react';
 const root = fileURLToPath(new URL('.', import.meta.url));
 
 export default createReactVitestConfig({
-  resolve: {
-    alias: [
-      {
-        find: '@',
-        replacement: fileURLToPath(new URL('./client', import.meta.url)),
-      },
-    ],
-  },
   test: {
     root,
     server: {

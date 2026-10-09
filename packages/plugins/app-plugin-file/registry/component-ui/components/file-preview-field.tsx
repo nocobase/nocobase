@@ -1,7 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useState, type ReactElement } from 'react';
 import type { FilePreviewFieldProps } from '../types';
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import { FilePreviewDialog } from './file-preview-dialog';
 import { FileThumbnail } from './file-thumbnail';
 

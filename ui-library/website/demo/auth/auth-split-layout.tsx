@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { AuthSplitLayout } from '@/extensions/nocobase-auth-split-layout/auth-split-layout';
+import { AuthSplitLayout } from '#extensions/nocobase-auth-split-layout/auth-split-layout';
 
 import { useAuthPage } from './auth-page.js';
 

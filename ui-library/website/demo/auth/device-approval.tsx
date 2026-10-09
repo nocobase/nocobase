@@ -1,8 +1,8 @@
 import { MonitorSmartphone } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { AuthCenteredLayout } from '@/extensions/nocobase-auth-centered-layout/auth-centered-layout';
-import { DeviceApproval } from '@/extensions/nocobase-device-approval/device-approval';
+import { AuthCenteredLayout } from '#extensions/nocobase-auth-centered-layout/auth-centered-layout';
+import { DeviceApproval } from '#extensions/nocobase-device-approval/device-approval';
 
 /**
  * The device-approval block as an application's `/device` page renders it, inside an authentication layout. The code

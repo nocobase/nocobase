@@ -26,9 +26,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+} from '#components/ui/alert-dialog';
+import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
 
 import {
   fieldLabel,

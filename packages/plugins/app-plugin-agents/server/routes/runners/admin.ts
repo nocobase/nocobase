@@ -145,6 +145,7 @@ export function createAdminRoutes(
       ...runnerForViewer(runner, rights.machine),
       activeRuns: held.runs,
       activeJobs: held.jobs,
+      activeByTool: held.byTool ?? {},
       takes: takes.get(runner.id) ?? [],
       canManage: rights.manage,
       canChangeTrust: rights.manage,

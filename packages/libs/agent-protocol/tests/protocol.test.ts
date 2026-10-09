@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ClaimRequestSchema,
   ClaimResponseSchema,
   UploadTicketSchema,
   CompleteRequestSchema,
@@ -382,5 +383,47 @@ describe('agent protocol', () => {
       labels: ['x'],
     });
     expect(parsed).not.toHaveProperty('labels');
+  });
+
+  it('carries limits per coding tool as optional fields', () => {
+    const base = {
+      registrationToken: 't',
+      name: 'n',
+      hostname: 'h',
+      os: 'linux',
+      arch: 'x64',
+      version: '0.0.1',
+      protocolVersion: PROTOCOL_VERSION,
+      features: [],
+      tools: [],
+    };
+    expect(
+      RegisterRequestSchema.parse({
+        ...base,
+        slots: 3,
+        toolSlots: { claude: 2, codex: 1 },
+      }).toolSlots,
+    ).toEqual({ claude: 2, codex: 1 });
+    expect(
+      RegisterRequestSchema.safeParse({ ...base, toolSlots: { vim: 1 } })
+        .success,
+    ).toBe(false);
+    expect(
+      RegisterRequestSchema.safeParse({ ...base, toolSlots: { claude: 0 } })
+        .success,
+    ).toBe(false);
+    expect(ClaimRequestSchema.parse({ free: 2 })).toEqual({ free: 2 });
+    expect(
+      ClaimRequestSchema.parse({ free: 2, tools: { claude: 0, codex: 1 } }),
+    ).toEqual({ free: 2, tools: { claude: 0, codex: 1 } });
+    expect(
+      HeartbeatRequestSchema.parse({
+        version: '1',
+        features: [],
+        tools: [],
+        active: [],
+        load: { slots: 3, free: 1, tools: { claude: { slots: 2, free: 0 } } },
+      }).load.tools,
+    ).toEqual({ claude: { slots: 2, free: 0 } });
   });
 });

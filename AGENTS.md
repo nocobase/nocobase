@@ -116,7 +116,22 @@ A name whose v2 releases have stopped may be reused, provided every version v3 p
 
 ### Test Layout
 
-Tests live in a `tests/` directory at the package root, never beside the source files they cover. A package with nested source roots puts `tests/` at the root of that source tree, as `packages/plugins/app-plugin-authentication/server/tests` does. Subdirectories inside `tests/` are free to reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`, or `tests/logic` and `tests/components` in the application templates.
+Tests live in a `tests/` directory at the package root, never beside the source files they cover. A package with nested source roots puts `tests/` at the root of that source tree, as `packages/plugins/app-plugin-authentication/server/tests` does.
+
+A plugin, an example or an application template groups its tests by the source directory they cover, and its `vitest.config.ts` picks the environment by directory through Vitest `projects`, so a test needs no `// @vitest-environment` line and one placed in the wrong directory fails in the wrong environment rather than passing by accident:
+
+| Directory                           | What goes there                                                               | Environment |
+| ----------------------------------- | ----------------------------------------------------------------------------- | ----------- |
+| `tests/client/`                     | Pages, components, client services and runtime logic                          | jsdom       |
+| `tests/server/`                     | Services, repositories, route declarations, permission boundaries             | Node        |
+| `tests/database/`                   | `describeMigration()` and seed tests                                          | Node        |
+| `tests/cli/`                        | Commands the package contributes                                              | Node        |
+| `tests/project/`                    | Files at the package root and the build: `package.json`, tsconfigs, artifacts | Node        |
+| `tests/fixtures/`, `tests/helpers/` | Test data, fixture applications and shared helpers, never a `*.test.ts`       | —           |
+| `tests/setup/` (applications only)  | `setupFiles`                                                                  | —           |
+| `tests/playwright/` (templates)     | Playwright tests against a running application; Vitest excludes it            | Browser     |
+
+`packages/tools/app-testing/vitest.config.ts` is the configuration shape, and `pnpm plugin:create` generates it. A package without client code keeps the Node project alone and adds the jsdom one with its first client test. Packages that predate this layout, the application templates among them, move to it as they are worked on; until a package has moved, a new test follows the layout it already has. Libraries and tools are not bound to it: their subdirectories reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`.
 
 Name test files `*.test.ts` or `*.test.tsx`. Vitest discovers them by filename rather than by directory, so a test placed outside `tests/` still runs and will not fail loudly; keeping the layout consistent is a convention the tooling does not enforce for you.
 
@@ -304,16 +319,17 @@ When you do add an entry, record what breaks without it rather than only the pac
 
 The current entries:
 
-| Package                      | What breaks when a second copy exists                                                                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@nocobase/service-provider` | `ServiceContainer` keys its `Map` by the token object itself, so two `createServiceToken` calls with the same name produce two keys that never match                     |
-| `@nocobase/app-server`       | Exports the tokens every server plugin resolves against, such as `queueServiceToken` and `driveManagerToken`                                                             |
-| `@nocobase/db`               | Exports `databaseManagerToken` and migration identity                                                                                                                    |
-| `@nocobase/app-client`       | Exports React contexts plus the identity-keyed `apiClientToken`, `realtimeClientToken` and `toasterToken`                                                                |
-| `@nocobase/app-cli`          | `AppCommand` reads the application the runner located and the runtimes it tracks, so a plugin command built on a second copy runs under another version of that contract |
-| `@nocobase/i18n`             | Exports the React contexts backing the i18n runtime                                                                                                                      |
-| `@nocobase/queue`            | Plugins receive the host-owned `QueueService` and type their published declarations against it, so a second copy describes that service with another contract version    |
-| any `@nocobase/app-plugin-*` | Plugins export tokens for one another, such as `authenticationToken` and `notificationServiceToken`                                                                      |
+| Package                      | What breaks when a second copy exists                                                                                                                                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@nocobase/service-provider` | `ServiceContainer` keys its `Map` by the token object itself, so two `createServiceToken` calls with the same name produce two keys that never match                                                                                               |
+| `@nocobase/app-server`       | Exports the tokens every server plugin resolves against, such as `queueServiceToken` and `driveManagerToken`                                                                                                                                       |
+| `@nocobase/db`               | Exports `databaseManagerToken` and migration identity                                                                                                                                                                                              |
+| `@nocobase/app-client`       | Exports React contexts plus the identity-keyed `apiClientToken`, `realtimeClientToken` and `toasterToken`                                                                                                                                          |
+| `@nocobase/app-cli`          | `AppCommand` reads the application the runner located and the runtimes it tracks, so a plugin command built on a second copy runs under another version of that contract                                                                           |
+| `@nocobase/i18n`             | Exports the React contexts backing the i18n runtime                                                                                                                                                                                                |
+| `@nocobase/queue`            | Plugins receive the host-owned `QueueService` and type their published declarations against it, so a second copy describes that service with another contract version                                                                              |
+| `@nocobase/lifecycle`        | A `LifecycleRuntime` is shared between plugins through `addGuard()`, and `EffectFailure` and `LifecycleError` are recognised with `instanceof`, so a second copy neither registers into the runtime it is handed nor recognises the other's errors |
+| any `@nocobase/app-plugin-*` | Plugins export tokens for one another, such as `authenticationToken` and `notificationServiceToken`                                                                                                                                                |
 
 ### Why a second copy is worth this much trouble
 
@@ -367,7 +383,7 @@ So the question is who resolves the import, and then what the import actually is
 - **A dynamic `import()` counts as a value import.** Deferring the load changes when a package is needed, not whether.
 - **The `files` field decides whether code ships at all.** A test, an eval harness, or a build script excluded from `files` never reaches a consumer, so its imports are correctly devDependencies.
 
-`registry/` is excluded for a stronger reason than the rest: it is shadcn-style source copied into an application and compiled there against that application's own `react` and `@/` alias. The plugin cannot resolve those imports at all, so declaring them would claim dependencies it does not have.
+`registry/` is excluded for a stronger reason than the rest: it is shadcn-style source copied into a consumer and compiled there against that package's own `react` and `package.json#imports`. The recipe's publishing plugin cannot resolve those imports, so declaring them would claim dependencies it does not have.
 
 `peerDependencies` is the third answer, for a package the application must supply exactly one copy of. `react`, `react-dom`, `react-router`, and everything in `IDENTITY_SENSITIVE_PACKAGES` belong here rather than in `dependencies`: a second copy of a router or a React context does not merely waste space, it silently breaks. `@nocobase/i18n` is the shape to copy: it exports a server entry and a client entry from one package, so `i18next` is an ordinary dependency while `react`, `hono`, and `react-i18next` are optional peers. Mark such a peer `optional` in `peerDependenciesMeta` so the consumer that legitimately does not need it gets no warning.
 

@@ -7,11 +7,11 @@ import {
   TooltipTrigger,
   TooltipContent,
   TooltipProvider,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 
 import { ThemeSettings } from '../../theme/index.js';
 import { UserMenu } from './user-menu.js';
-import { InboxHeaderButton } from '@/components/inbox-header-button';
+import { InboxHeaderButton } from '#components/inbox-header-button';
 
 const ACTION_LINK_CLASS =
   'inline-flex size-10 items-center justify-center rounded-xl border border-border/70 bg-background/60 text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50';

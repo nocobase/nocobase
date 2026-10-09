@@ -4,8 +4,8 @@ import { useState, type ReactElement } from 'react';
 import type {
   AttachmentFile,
   AttachmentLabels,
-} from '@/components/attachment-list';
-import { MarkdownView } from '@/components/markdown-view';
+} from '#components/attachment-list';
+import { MarkdownView } from '#components/markdown-view';
 import {
   IssueAddBar,
   IssueAddButton,
@@ -25,7 +25,7 @@ import {
   IssueSurface,
   ISSUE_SECTION_LIST,
   ISSUE_SURFACE,
-} from '@/extensions/nocobase-issue-detail/issue-detail';
+} from '#extensions/nocobase-issue-detail/issue-detail';
 import { cn } from 'cn';
 import {
   AgentIcon,
@@ -35,12 +35,12 @@ import {
   PropertyMultiSelect,
   PropertyRow,
   PropertySelect,
-} from '@/components/property-fields';
+} from '#components/property-fields';
 import {
   IssueDates,
   IssueFollowers,
   PropertyColorPicker,
-} from '@/extensions/nocobase-issue-detail/issue-properties';
+} from '#extensions/nocobase-issue-detail/issue-properties';
 
 const ago = (minutes: number) =>
   new Date(Date.now() - minutes * 60_000).toISOString();

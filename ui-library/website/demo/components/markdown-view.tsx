@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { MarkdownView } from '@/components/markdown-view';
+import { MarkdownView } from '#components/markdown-view';
 
 const CONTENT = `# Release notes
 

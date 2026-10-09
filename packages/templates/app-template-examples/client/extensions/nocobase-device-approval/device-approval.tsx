@@ -8,11 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
+import { Field, FieldGroup, FieldLabel } from '#components/ui/field';
+import { Input } from '#components/ui/input';
+import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import {

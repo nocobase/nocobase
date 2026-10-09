@@ -3,7 +3,7 @@ import { Download, Eye, Trash2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import type { FileListProps, FileRecord } from '../types';
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import { resolveSafeFileUrl } from '../lib/file-url';
 import { FilePreviewDialog } from './file-preview-dialog';
 import { FileThumbnail } from './file-thumbnail';

@@ -1,8 +1,9 @@
 /**
  * One runtime's sheet, opened from its row on the runtimes page: every setting of it. "General" holds its name, how
  * many runs it takes at once and who it works for (sharing it with the team asks first), and whether it takes build
- * jobs when the application gives runners any; "Tools" turns each coding tool it reported on or off, with its version
- * and sign-in; "Local policy" shows what its owner's policy on the machine lets it take; "Recent runs" lists its latest
+ * jobs when the application gives runners any; "Tools" is one table of the coding tools it reported, a row each: whether
+ * it is on here, its sign-in, how many runs of it at once and how many it runs now. Both are one form, saved together
+ * with "Save". "Local policy" shows what its owner's policy on the machine lets it take; "Recent runs" lists its latest
  * runs. Only its owner and the managers of runtimes change it; everyone else reads it.
  */
 import { useTranslation } from '@nocobase/i18n/client';
@@ -67,13 +68,21 @@ import {
   RunnerVersionCell,
   ToolStateTag,
 } from './runner-cells.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table.js';
 import { POLICY_FIELDS, policyRule } from './runner-policy.js';
-
-interface Update {
-  readonly patch: RunnerPatch;
-  /** The tool a switch turned on or off, for the notice. */
-  readonly tool?: { readonly kind: AgentTool; readonly on: boolean };
-}
+import {
+  readToolSlots,
+  toolSlotsDraft,
+  type ToolSlotsDraft,
+} from '../../lib/tool-slots.js';
+import { OverTotalHint, ToolLimitInput } from './tool-slots-fields.js';
 
 export function RunnerSheet({
   runner,
@@ -99,20 +108,27 @@ export function RunnerSheet({
           <>
             <SheetHeader className='border-b pr-12'>
               <SheetTitle>{runner.name}</SheetTitle>
-              <SheetDescription>
-                {[
-                  `${runner.os} · ${runner.arch}`,
-                  runner.hostname,
-                  runner.ownerName
-                    ? t('runtimes.detail.owner', { name: runner.ownerName })
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+              <SheetDescription className='flex flex-wrap items-center gap-x-1'>
+                <span>
+                  {[
+                    `${runner.os} · ${runner.arch}`,
+                    runner.hostname,
+                    runner.ownerName
+                      ? t('runtimes.detail.owner', { name: runner.ownerName })
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+                {runner.version ? (
+                  <>
+                    <span aria-hidden='true'>·</span>
+                    <RunnerVersionCell runner={runner} plain />
+                  </>
+                ) : null}
               </SheetDescription>
-              <div className='flex flex-wrap items-center gap-2 pt-1.5'>
+              <div className='pt-1.5'>
                 <RunnerStatusCell runner={runner} />
-                <RunnerVersionCell runner={runner} />
               </div>
             </SheetHeader>
             <RunnerDetail key={runner.id} runner={runner} />
@@ -137,30 +153,15 @@ function RunnerDetail({
   const editable = runner.canManage && runner.status !== 'revoked';
 
   const update = useMutation({
-    mutationFn: ({ patch }: Update) => api.updateRunner(runner.id, patch),
-    onSuccess: (saved, { tool }) =>
-      notify.success(
-        tool
-          ? t(`runtimes.tool.switched.${tool.on ? 'on' : 'off'}`, {
-              tool: t(`tools.${tool.kind}`),
-              name: saved.name,
-            })
-          : t('runtimes.edit.saved', { name: saved.name }),
-      ),
+    mutationFn: (patch: RunnerPatch) => api.updateRunner(runner.id, patch),
+    onSuccess: (saved) =>
+      notify.success(t('runtimes.edit.saved', { name: saved.name })),
     onError: (error) => notify.error(error),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: agentsKeys.runners });
       void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
     },
   });
-
-  /** Turns one coding tool on or off, keeping the others as they are. */
-  const toggleTool = (tool: AgentTool, on: boolean): void => {
-    const enabledTools = AGENT_TOOLS.filter((candidate) =>
-      candidate === tool ? on : toolEnabled(runner, candidate),
-    );
-    update.mutate({ patch: { enabledTools }, tool: { kind: tool, on } });
-  };
 
   return (
     <div className='min-h-0 flex-1 space-y-6 overflow-y-auto p-4'>
@@ -172,26 +173,12 @@ function RunnerDetail({
           {t('runtimes.detail.readOnly')}
         </p>
       )}
-      <AgSection id='ag-runner-general' title={t('runtimes.detail.general')}>
-        <GeneralForm
-          runner={runner}
-          editable={editable}
-          pending={update.isPending}
-          onSave={(patch) => update.mutate({ patch })}
-        />
-      </AgSection>
-      <AgSection
-        id='ag-runner-tools'
-        title={t('runtimes.detail.tools')}
-        description={t('runtimes.detail.toolsDescription')}
-      >
-        <ToolList
-          runner={runner}
-          editable={editable}
-          pending={update.isPending}
-          onToggle={toggleTool}
-        />
-      </AgSection>
+      <SettingsForm
+        runner={runner}
+        editable={editable}
+        pending={update.isPending}
+        onSave={(patch) => update.mutate(patch)}
+      />
       <AgSection
         id='ag-runner-policy'
         title={t('runtimes.policy.title')}
@@ -206,7 +193,18 @@ function RunnerDetail({
   );
 }
 
-function GeneralForm({
+/** The tools a runner's choice (`enabledTools`) names, as a patch stores it: the reported ones as switched here. */
+function enabledToolsOf(
+  runner: RunnerSummary,
+  switched: ReadonlySet<AgentTool>,
+): AgentTool[] {
+  const listed = listedTools(runner);
+  return AGENT_TOOLS.filter((tool) =>
+    listed.includes(tool) ? switched.has(tool) : toolEnabled(runner, tool),
+  );
+}
+
+function SettingsForm({
   runner,
   editable,
   pending,
@@ -222,26 +220,58 @@ function GeneralForm({
   const [slots, setSlots] = useState(String(runner.slots));
   const [trust, setTrust] = useState<RunnerTrust>(runner.trust);
   const [acceptJobs, setAcceptJobs] = useState(runner.acceptJobs);
-  const [errors, setErrors] = useState<{ name?: string; slots?: string }>({});
+  const [toolSlots, setToolSlots] = useState<ToolSlotsDraft>(() =>
+    toolSlotsDraft(runner.toolSlots ?? null),
+  );
+  const [switched, setSwitched] = useState<ReadonlySet<AgentTool>>(
+    () =>
+      new Set(listedTools(runner).filter((tool) => toolEnabled(runner, tool))),
+  );
+  const [errors, setErrors] = useState<{
+    name?: string;
+    slots?: string;
+    toolSlots?: boolean;
+  }>({});
+  // The tools it reports, and any it has a limit for though it no longer reports them (so the limit can be cleared).
+  const limitTools = AGENT_TOOLS.filter(
+    (tool) =>
+      listedTools(runner).includes(tool) ||
+      runner.toolSlots?.[tool] !== undefined,
+  );
   const [sharing, setSharing] = useState<RunnerPatch | null>(null);
   const jobKinds = jobKindsOf(runner);
 
   function submit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const count = Number(slots);
+    const limits = readToolSlots(toolSlots, limitTools);
     const found = {
       ...(name.trim() ? {} : { name: t('runtimes.edit.nameRequired') }),
       ...(Number.isInteger(count) && count >= 1 && count <= 64
         ? {}
         : { slots: t('runtimes.edit.slotsInvalid') }),
+      ...(limits === undefined ? { toolSlots: true } : {}),
     };
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     const patch: RunnerPatch = {
       ...(name.trim() === runner.name ? {} : { name: name.trim() }),
       ...(count === runner.slots ? {} : { slots: count }),
+      ...(limits === undefined ||
+      JSON.stringify(limits) === JSON.stringify(runner.toolSlots ?? null)
+        ? {}
+        : { toolSlots: limits }),
       ...(trust === runner.trust ? {} : { trust }),
       ...(acceptJobs === runner.acceptJobs ? {} : { acceptJobs }),
+      ...(JSON.stringify(enabledToolsOf(runner, switched)) ===
+      JSON.stringify(
+        enabledToolsOf(
+          runner,
+          new Set(AGENT_TOOLS.filter((tool) => toolEnabled(runner, tool))),
+        ),
+      )
+        ? {}
+        : { enabledTools: enabledToolsOf(runner, switched) }),
     };
     if (Object.keys(patch).length === 0) return;
     // Sharing with the team lets other people's runs onto it: it asks first.
@@ -250,88 +280,129 @@ function GeneralForm({
   }
 
   return (
-    <form onSubmit={submit} noValidate className='space-y-4'>
-      <FieldGroup>
-        <Field data-invalid={errors.name ? true : undefined}>
-          <FieldLabel htmlFor='ag-runner-name'>
-            {t('runtimes.edit.name')}
-          </FieldLabel>
-          <Input
-            id='ag-runner-name'
-            value={name}
-            maxLength={200}
-            disabled={!editable}
-            aria-invalid={errors.name ? true : undefined}
-            onChange={(event) => setName(event.target.value)}
-          />
-          {errors.name ? <FieldError>{errors.name}</FieldError> : null}
-        </Field>
-        <Field data-invalid={errors.slots ? true : undefined}>
-          <FieldLabel htmlFor='ag-runner-slots'>
-            {t('runtimes.columns.slots')}
-          </FieldLabel>
-          <Input
-            id='ag-runner-slots'
-            inputMode='numeric'
-            value={slots}
-            disabled={!editable}
-            aria-invalid={errors.slots ? true : undefined}
-            onChange={(event) => setSlots(event.target.value)}
-          />
-          {errors.slots ? (
-            <FieldError>{errors.slots}</FieldError>
-          ) : (
-            <FieldDescription>{t('runtimes.edit.slotsHint')}</FieldDescription>
-          )}
-        </Field>
-        <FieldSet>
-          <FieldLegend variant='label'>{t('runtimes.trust.label')}</FieldLegend>
-          <RadioGroup
-            value={trust}
-            disabled={!editable || !runner.canChangeTrust}
-            onValueChange={(value) => {
-              const next = RUNNER_TRUST.find((level) => level === value);
-              if (next) setTrust(next);
-            }}
-          >
-            {(['ownerOnly', 'team'] as const).map((level) => (
-              <Field key={level} orientation='horizontal'>
-                <RadioGroupItem value={level} id={`ag-runner-trust-${level}`} />
-                <FieldContent>
-                  <FieldLabel htmlFor={`ag-runner-trust-${level}`}>
-                    {t(`runtimes.trust.${level}`)}
-                  </FieldLabel>
-                  <FieldDescription>
-                    {t(`runtimes.trust.${level}Hint`)}
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-            ))}
-          </RadioGroup>
-        </FieldSet>
-        {runner.offersJobs ? (
-          <Field orientation='horizontal'>
-            <Switch
-              id='ag-runner-jobs'
-              checked={acceptJobs}
-              disabled={
-                !editable || (jobKinds.length === 0 && !runner.acceptJobs)
-              }
-              onCheckedChange={setAcceptJobs}
+    <form onSubmit={submit} noValidate className='space-y-6'>
+      <AgSection id='ag-runner-general' title={t('runtimes.detail.general')}>
+        <FieldGroup>
+          <Field data-invalid={errors.name ? true : undefined}>
+            <FieldLabel htmlFor='ag-runner-name'>
+              {t('runtimes.edit.name')}
+            </FieldLabel>
+            <Input
+              id='ag-runner-name'
+              value={name}
+              maxLength={200}
+              disabled={!editable}
+              aria-invalid={errors.name ? true : undefined}
+              onChange={(event) => setName(event.target.value)}
             />
-            <FieldContent>
-              <FieldLabel htmlFor='ag-runner-jobs'>
-                {t('runtimes.jobs.allow')}
-              </FieldLabel>
-              <FieldDescription>
-                {jobKinds.length > 0
-                  ? t('runtimes.jobs.hint', { kinds: jobKinds.join(', ') })
-                  : t('runtimes.jobs.unsupported')}
-              </FieldDescription>
-            </FieldContent>
+            {errors.name ? <FieldError>{errors.name}</FieldError> : null}
           </Field>
+          <Field data-invalid={errors.slots ? true : undefined}>
+            <FieldLabel htmlFor='ag-runner-slots'>
+              {t('connect.slots')}
+            </FieldLabel>
+            <Input
+              id='ag-runner-slots'
+              inputMode='numeric'
+              value={slots}
+              disabled={!editable}
+              aria-invalid={errors.slots ? true : undefined}
+              onChange={(event) => setSlots(event.target.value)}
+            />
+            {errors.slots ? (
+              <FieldError>{errors.slots}</FieldError>
+            ) : (
+              <FieldDescription>
+                {t('runtimes.edit.slotsHint')}
+              </FieldDescription>
+            )}
+          </Field>
+          <FieldSet>
+            <FieldLegend variant='label'>
+              {t('runtimes.trust.label')}
+            </FieldLegend>
+            <RadioGroup
+              value={trust}
+              disabled={!editable || !runner.canChangeTrust}
+              onValueChange={(value) => {
+                const next = RUNNER_TRUST.find((level) => level === value);
+                if (next) setTrust(next);
+              }}
+            >
+              {(['ownerOnly', 'team'] as const).map((level) => (
+                <Field key={level} orientation='horizontal'>
+                  <RadioGroupItem
+                    value={level}
+                    id={`ag-runner-trust-${level}`}
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor={`ag-runner-trust-${level}`}>
+                      {t(`runtimes.trust.${level}`)}
+                    </FieldLabel>
+                    <FieldDescription>
+                      {t(`runtimes.trust.${level}Hint`)}
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+              ))}
+            </RadioGroup>
+          </FieldSet>
+          {runner.offersJobs ? (
+            <Field orientation='horizontal'>
+              <Switch
+                id='ag-runner-jobs'
+                checked={acceptJobs}
+                disabled={
+                  !editable || (jobKinds.length === 0 && !runner.acceptJobs)
+                }
+                onCheckedChange={setAcceptJobs}
+              />
+              <FieldContent>
+                <FieldLabel htmlFor='ag-runner-jobs'>
+                  {t('runtimes.jobs.allow')}
+                </FieldLabel>
+                <FieldDescription>
+                  {jobKinds.length > 0
+                    ? t('runtimes.jobs.hint', { kinds: jobKinds.join(', ') })
+                    : t('runtimes.jobs.unsupported')}
+                </FieldDescription>
+              </FieldContent>
+            </Field>
+          ) : null}
+        </FieldGroup>
+      </AgSection>
+      <AgSection
+        id='ag-runner-tools'
+        title={t('runtimes.detail.tools')}
+        description={t('runtimes.detail.toolsDescription')}
+      >
+        <ToolTable
+          runner={runner}
+          tools={limitTools}
+          switched={switched}
+          limits={toolSlots}
+          invalid={errors.toolSlots === true}
+          editable={editable}
+          onSwitch={(tool, on) =>
+            setSwitched(
+              new Set(
+                AGENT_TOOLS.filter((candidate) =>
+                  candidate === tool ? on : switched.has(candidate),
+                ),
+              ),
+            )
+          }
+          onLimits={setToolSlots}
+        />
+        {errors.toolSlots ? (
+          <p className='mt-2 text-sm text-destructive' role='alert'>
+            {t('runtimes.toolSlots.invalid')}
+          </p>
         ) : null}
-      </FieldGroup>
+        <div className='mt-2'>
+          <OverTotalHint tools={limitTools} draft={toolSlots} total={slots} />
+        </div>
+      </AgSection>
       {editable ? (
         <div className='flex justify-end'>
           <Button type='submit' disabled={pending}>
@@ -373,74 +444,125 @@ function GeneralForm({
 }
 
 /**
- * A switch per coding tool the runner reported, with its version and sign-in, and where it is installed when the
- * server sent it (to the runner's owner, the managers of runners and those who may use agents).
+ * One row per coding tool: its name with its version and where it is installed (when the server sent it: to the
+ * runner's owner, the managers of runners and those who may use agents), whether it is on here, its sign-in, its limit
+ * and how many runs of it the runner holds now. What is changed here is saved with the form.
  */
-function ToolList({
+function ToolTable({
   runner,
+  tools,
+  switched,
+  limits,
+  invalid,
   editable,
-  pending,
-  onToggle,
+  onSwitch,
+  onLimits,
 }: {
   readonly runner: RunnerSummary;
+  readonly tools: readonly AgentTool[];
+  readonly switched: ReadonlySet<AgentTool>;
+  readonly limits: ToolSlotsDraft;
+  readonly invalid: boolean;
   readonly editable: boolean;
-  readonly pending: boolean;
-  readonly onToggle: (tool: AgentTool, on: boolean) => void;
+  readonly onSwitch: (tool: AgentTool, on: boolean) => void;
+  readonly onLimits: (draft: ToolSlotsDraft) => void;
 }): ReactElement {
   const { t } = useTranslation();
-  const tools = listedTools(runner);
   if (tools.length === 0)
     return (
       <p className='text-sm text-muted-foreground'>{t('runtimes.noTools')}</p>
     );
+  const enabledTools = AGENT_TOOLS.filter((tool) =>
+    listedTools(runner).includes(tool)
+      ? switched.has(tool)
+      : toolEnabled(runner, tool),
+  );
   return (
-    <ul className='divide-y rounded-lg border'>
-      {tools.map((tool) => {
-        const info = runner.tools.find((item) => item.kind === tool);
-        const enabled = toolEnabled(runner, tool);
-        return (
-          <li
-            key={tool}
-            data-testid={`runner-tool-${tool}`}
-            data-enabled={enabled}
-            className='flex items-center gap-3 px-3 py-2'
-          >
-            <Switch
-              checked={enabled}
-              disabled={pending || !editable}
-              aria-label={t('runtimes.tool.enableLabel', {
-                tool: t(`tools.${tool}`),
-                name: runner.name,
-              })}
-              onCheckedChange={(checked) => onToggle(tool, checked)}
-            />
-            <div className='min-w-0 flex-1 leading-tight'>
-              <div
-                className={
-                  enabled ? 'font-medium' : 'font-medium text-muted-foreground'
-                }
+    <div className='rounded-lg border'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('runtimes.toolTable.tool')}</TableHead>
+            <TableHead>{t('runtimes.toolTable.enabled')}</TableHead>
+            <TableHead>{t('runtimes.toolTable.state')}</TableHead>
+            <TableHead>{t('runtimes.toolTable.limit')}</TableHead>
+            <TableHead className='text-right'>
+              {t('runtimes.toolTable.active')}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {tools.map((tool) => {
+            const info = runner.tools.find((item) => item.kind === tool);
+            const enabled = enabledTools.includes(tool);
+            return (
+              <TableRow
+                key={tool}
+                data-testid={`runner-tool-${tool}`}
+                data-enabled={enabled}
               >
-                {t(`tools.${tool}`)}
-              </div>
-              {info?.version ? (
-                <div className='truncate text-xs text-muted-foreground'>
-                  {t('runtimes.tool.version', { version: info.version })}
-                </div>
-              ) : null}
-              {info?.path ? (
-                <div
-                  data-testid={`runner-tool-${tool}-path`}
-                  className='font-mono text-xs break-all text-muted-foreground'
-                >
-                  {info.path}
-                </div>
-              ) : null}
-            </div>
-            <ToolStateTag state={toolState(runner, tool)} />
-          </li>
-        );
-      })}
-    </ul>
+                <TableCell className='max-w-48 whitespace-normal'>
+                  <div
+                    className={
+                      enabled
+                        ? 'font-medium'
+                        : 'font-medium text-muted-foreground'
+                    }
+                  >
+                    {t(`tools.${tool}`)}
+                  </div>
+                  {info?.version ? (
+                    <div className='truncate text-xs text-muted-foreground'>
+                      {t('runtimes.tool.version', { version: info.version })}
+                    </div>
+                  ) : null}
+                  {info?.path ? (
+                    <div
+                      data-testid={`runner-tool-${tool}-path`}
+                      className='font-mono text-xs break-all text-muted-foreground'
+                    >
+                      {info.path}
+                    </div>
+                  ) : null}
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={enabled}
+                    disabled={!editable}
+                    aria-label={t('runtimes.tool.enableLabel', {
+                      tool: t(`tools.${tool}`),
+                      name: runner.name,
+                    })}
+                    onCheckedChange={(checked) => onSwitch(tool, checked)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <ToolStateTag
+                    state={toolState(
+                      { enabledTools, tools: runner.tools },
+                      tool,
+                    )}
+                  />
+                </TableCell>
+                <TableCell>
+                  <ToolLimitInput
+                    id={`ag-runner-tool-slots-${tool}`}
+                    tool={tool}
+                    draft={limits}
+                    invalid={invalid}
+                    disabled={!editable}
+                    onChange={onLimits}
+                  />
+                </TableCell>
+                <TableCell className='text-right tabular-nums'>
+                  {runner.activeByTool ? (runner.activeByTool[tool] ?? 0) : '—'}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

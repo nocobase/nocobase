@@ -49,11 +49,11 @@ import {
   chatLinkRoutes,
 } from '@nocobase/app-plugin-agents/client/chat';
 
-import { ChatPanel } from '@/extensions/nocobase-agent-chat/chat-panel';
+import { ChatPanel } from '#extensions/nocobase-agent-chat/chat-panel';
 import {
   ChatFloatingButton,
   ChatHeaderButton,
-} from '@/extensions/nocobase-agent-chat/launchers';
+} from '#extensions/nocobase-agent-chat/launchers';
 
 <ChatProvider conversationPath={(id) => `/chat/${encodeURIComponent(id)}`}>
   <header>
@@ -82,7 +82,7 @@ import {
 Spread each file of `locales/` into the matching application locale, before the application's own keys so they can reword it:
 
 ```ts
-import agentChatEnUS from '@/extensions/nocobase-agent-chat/locales/en-US';
+import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 
 const enUS = {
   ...agentChatEnUS,
