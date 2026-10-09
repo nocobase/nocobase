@@ -148,6 +148,7 @@ export function NewIssueForm({
     if (starting) {
       setStartRequest({
         kind: starting.type,
+        executor: starting,
         names: [
           otherExecutors.find(
             (option) =>
@@ -160,7 +161,10 @@ export function NewIssueForm({
     await create();
   }
 
-  async function create(start?: boolean): Promise<void> {
+  async function create(
+    start?: boolean,
+    selectedExecutor: Executor | null = executor,
+  ): Promise<void> {
     const trimmed = title.trim();
     setFormError(undefined);
     onSubmittingChange(true);
@@ -173,7 +177,7 @@ export function NewIssueForm({
         priority,
         ...(projectId ? { projectId } : {}),
         ...(owner ? { ownerUserId: owner } : {}),
-        ...(executor ? { executor } : {}),
+        ...(selectedExecutor ? { executor: selectedExecutor } : {}),
         ...(labelIds.length ? { labelIds } : {}),
         startDate,
         dueDate,
@@ -359,9 +363,9 @@ export function NewIssueForm({
       </FieldGroup>
       <StartDialog
         request={startRequest}
-        onDecide={(start) => {
+        onDecide={(start, selectedExecutor) => {
           setStartRequest(null);
-          void create(start);
+          void create(start, selectedExecutor);
         }}
         onCancel={() => setStartRequest(null)}
       />

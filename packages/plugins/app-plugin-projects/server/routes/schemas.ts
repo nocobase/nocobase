@@ -69,7 +69,11 @@ import {
   type UpdateIssueRequest,
   type UpdateIssueResult,
 } from '../../shared/issues.js';
-import type { ExecutorCandidate } from '../../shared/kinds.js';
+import type {
+  ExecutorCandidate,
+  ExecutorTool,
+  ExecutorAvailability,
+} from '../../shared/kinds.js';
 import type {
   CreateLabelRequest,
   Label,
@@ -147,7 +151,13 @@ const boolean = z.enum(['true', 'false']).optional();
 const priority = z.enum(PRIORITIES);
 /** `YYYY-MM-DD`; the services check that it is a real date. */
 const date = z.string().nullable();
-const executor = z.strictObject({ type: id, id }).nullable();
+const executorValue = z.strictObject({
+  type: id,
+  id,
+  tool: z.string().min(1).max(128).nullable().optional(),
+  toolSource: z.enum(['explicit', 'rule', 'default']).optional(),
+});
+const executor = executorValue.nullable();
 
 const isObject = (value: unknown): boolean =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -486,6 +496,13 @@ export const CreateCommentBody: z.ZodType<CreateCommentRequest> =
     content: z.string(),
     parentId: id.nullable().optional(),
     attachmentIds: z.array(id).optional(),
+    handoff: z
+      .union([
+        executorValue.extend({ tool: z.string().min(1).max(128) }),
+        z.strictObject({ none: z.literal(true) }),
+      ])
+      .optional(),
+    persist: z.boolean().optional(),
   });
 
 export const UpdateCommentBody: z.ZodType<UpdateCommentRequest> =
@@ -639,6 +656,8 @@ const ExecutorSchema: z.ZodType<Executor> = z
   .object({
     type: z.string().meta({ description: 'A kind’s key, such as `user`.' }),
     id: z.string(),
+    tool: z.string().nullable().optional(),
+    toolSource: z.enum(['explicit', 'rule', 'default']).optional(),
   })
   .meta({ ref: 'ProjectsExecutor' });
 
@@ -710,6 +729,23 @@ export const ExecutorCandidateSchema: z.ZodType<ExecutorCandidate> = z.object({
   nameText: NameTextSchema.optional(),
   online: z.boolean().optional(),
   busy: z.number().int().optional(),
+});
+
+export const ExecutorToolSchema: z.ZodType<ExecutorTool> = z.object({
+  id: z.string(),
+  name: z.string(),
+  model: z.string().nullable(),
+});
+export const ExecutorAvailabilitySchema: z.ZodType<ExecutorAvailability> =
+  z.object({
+    status: z.enum(['available', 'unavailable']),
+    runnerName: z.string().nullable(),
+    reason: z.string().nullable(),
+  });
+export const ExecutorParams: z.ZodType<{ type: string; executorId: string }> =
+  z.object({ type: id, executorId: id });
+export const ExecutorAvailabilityQuery: z.ZodType<{ tool: string }> = z.object({
+  tool: z.string().min(1).max(128),
 });
 
 export const MentionCandidateSchema: z.ZodType<MentionCandidate> = z.object({

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import type {
+  Executor,
   IssueListItem,
   StatusDefinition,
 } from '../../../../shared/issues.js';
@@ -26,7 +27,7 @@ export interface BoardMove {
   ) => void;
   /** The move waiting for a "Start now?" answer, for `StartDialog`. */
   readonly startRequest: StartRequest | null;
-  readonly decide: (start: boolean) => void;
+  readonly decide: (start: boolean, executor?: Executor) => void;
   readonly cancel: () => void;
 }
 
@@ -66,12 +67,14 @@ export function useBoardMove(): BoardMove {
     issue: IssueListItem,
     statusKey: string,
     start?: boolean,
+    executor?: Executor,
   ): Promise<void> {
     try {
       const { pendingApproval } = await api.updateIssue(issue.id, {
         revision: issue.revision,
         statusKey,
         ...(start === undefined ? {} : { start }),
+        ...(executor ? { executor } : {}),
       });
       if (pendingApproval)
         notify.info(
@@ -99,10 +102,10 @@ export function useBoardMove(): BoardMove {
   return {
     overrides,
     startRequest: pending?.request ?? null,
-    decide(start) {
+    decide(start, executor) {
       if (!pending) return;
       setPending(null);
-      void send(pending.issue, pending.statusKey, start);
+      void send(pending.issue, pending.statusKey, start, executor);
     },
     cancel() {
       if (!pending) return;
@@ -132,6 +135,7 @@ export function useBoardMove(): BoardMove {
           statusKey: plan.statusKey,
           request: {
             kind: starting.type,
+            executor: starting,
             names: [issue.executorName ?? starting.id],
             identifier: issue.identifier,
           },

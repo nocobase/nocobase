@@ -10,7 +10,11 @@ import {
 } from '@nocobase/db';
 
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
-import type { Issue, IssueProject } from '../../../shared/issues.js';
+import type {
+  Issue,
+  IssueProject,
+  ExecutorToolSource,
+} from '../../../shared/issues.js';
 import type { Label } from '../../../shared/labels.js';
 import { oneOf } from '../../kernel/db.js';
 import { conflict } from '../../kernel/errors.js';
@@ -32,6 +36,8 @@ export interface IssueRecord {
   /** A kind's key, null with `executorId` when nobody works on the issue. */
   readonly executorType: string | null;
   readonly executorId: string | null;
+  readonly executorTool: string | null;
+  readonly executorToolSource: ExecutorToolSource | null;
   readonly parentIssueId: string | null;
   readonly stage: number | null;
   readonly projectId: string | null;
@@ -95,6 +101,8 @@ const FIELDS = [
   'ownerUserId',
   'executorType',
   'executorId',
+  'executorTool',
+  'executorToolSource',
   'parentIssueId',
   'stage',
   'projectId',
@@ -112,6 +120,8 @@ export function toIssue(record: IssueRecord): Issue {
   const {
     executorType,
     executorId,
+    executorTool,
+    executorToolSource,
     deletedById: _deletedById,
     priorityRank: _priorityRank,
     ...issue
@@ -120,7 +130,18 @@ export function toIssue(record: IssueRecord): Issue {
     ...issue,
     executor:
       executorType && executorId
-        ? { type: executorType, id: executorId }
+        ? {
+            type: executorType,
+            id: executorId,
+            ...(executorTool
+              ? {
+                  tool: executorTool,
+                  ...(executorToolSource
+                    ? { toolSource: executorToolSource }
+                    : {}),
+                }
+              : {}),
+          }
         : null,
   };
 }

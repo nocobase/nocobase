@@ -59,7 +59,18 @@ export function usePlanLookup(): PlanLookup {
 export function executorOf(value: unknown): Executor | null {
   const record = asRecord(value);
   return typeof record.type === 'string' && typeof record.id === 'string'
-    ? { type: record.type, id: record.id }
+    ? {
+        type: record.type,
+        id: record.id,
+        ...(typeof record.tool === 'string' || record.tool === null
+          ? { tool: record.tool }
+          : {}),
+        ...(record.toolSource === 'explicit' ||
+        record.toolSource === 'rule' ||
+        record.toolSource === 'default'
+          ? { toolSource: record.toolSource }
+          : {}),
+      }
     : null;
 }
 
@@ -102,12 +113,12 @@ export function usePlanValueText(
         const executor = executorOf(value);
         if (!executor) return t('executor.none');
         if (executor.type === 'user') return person(executor.id);
-        return (
+        const name =
           lookup.executors.find(
             (option) =>
               option.type === executor.type && option.id === executor.id,
-          )?.name ?? executor.id
-        );
+          )?.name ?? executor.id;
+        return executor.tool ? `${name} · ${executor.tool}` : name;
       }
       case 'labelIds':
         return Array.isArray(value)

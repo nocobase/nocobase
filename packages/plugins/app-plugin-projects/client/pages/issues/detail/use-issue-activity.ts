@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import {
   REACTION_EMOJIS,
   type IssueComment,
+  type CommentHandoff,
 } from '../../../../shared/comments.js';
 import type { IssueDetail } from '../../../../shared/issues.js';
 import { useNotify } from '../../../hooks/use-notify.js';
@@ -112,6 +113,8 @@ export function useIssueTimeline(
 }
 
 export interface NewComment {
+  readonly handoff?: CommentHandoff;
+  readonly persist?: boolean;
   readonly content: string;
   readonly parentId?: string;
   readonly attachmentIds?: readonly string[];
@@ -178,11 +181,20 @@ export function useIssueCommentActions(
 
   return useMemo(
     () => ({
-      create: async ({ content, parentId, attachmentIds, note }) => {
+      create: async ({
+        content,
+        parentId,
+        attachmentIds,
+        note,
+        handoff,
+        persist,
+      }) => {
         const text = note && !NOTE.test(content) ? `/note ${content}` : content;
         try {
           const { comment } = await api.createComment(issueId, {
             content: text.trim(),
+            ...(handoff === undefined ? {} : { handoff }),
+            ...(persist === undefined ? {} : { persist }),
             ...(parentId ? { parentId } : {}),
             ...(attachmentIds && attachmentIds.length > 0
               ? { attachmentIds: [...attachmentIds] }

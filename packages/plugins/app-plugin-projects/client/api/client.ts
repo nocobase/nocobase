@@ -49,7 +49,12 @@ import type {
   Label,
   UpdateLabelRequest,
 } from '../../shared/labels.js';
-import type { ExecutorCandidate } from '../../shared/kinds.js';
+import type {
+  ExecutorCandidate,
+  ExecutorTool,
+  ExecutorAvailability,
+} from '../../shared/kinds.js';
+import type { Executor } from '../../shared/issues.js';
 import type { ApiKeyActor, Me, Member } from '../../shared/members.js';
 import type {
   CreateProjectRequest,
@@ -137,6 +142,20 @@ export class PmApi {
   /** Executors of other kinds (agents, say) the signed-in user may give work to. */
   public executors(): Promise<ExecutorCandidate[]> {
     return this.get('projects/executors');
+  }
+  public executorTools(executor: Executor): Promise<ExecutorTool[]> {
+    return this.get(
+      `projects/executors/${id(executor.type)}/${id(executor.id)}/tools`,
+    );
+  }
+  public executorAvailability(
+    executor: Executor,
+    tool: string,
+  ): Promise<ExecutorAvailability | null> {
+    return this.get(
+      `projects/executors/${id(executor.type)}/${id(executor.id)}/availability`,
+      { tool },
+    );
   }
 
   public invitations(): Promise<Invitation[]> {

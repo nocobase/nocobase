@@ -1,5 +1,6 @@
 import {
   apiErrorResponses,
+  apiValidator,
   cliRoute,
   dataResponse,
   describeRoute,
@@ -13,6 +14,10 @@ import {
   ApiKeyActorSchema,
   BoundedListMeta,
   ExecutorCandidateSchema,
+  ExecutorToolSchema,
+  ExecutorAvailabilitySchema,
+  ExecutorParams,
+  ExecutorAvailabilityQuery,
   MemberSchema,
   MeSchema,
 } from '../../routes/schemas.js';
@@ -106,6 +111,54 @@ export function createMemberRoutes(members: MemberService): Hono<ViewerEnv> {
     }),
     async (context) =>
       context.json(boundedList(await members.executors(viewerOf(context)))),
+  );
+  routes.get(
+    '/executors/:type/:executorId/tools',
+    describeRoute({
+      tags,
+      summary: 'List an executor’s tools and models',
+      operationId: 'projectsListExecutorTools',
+      ...cliRoute(false),
+      responses: {
+        200: listResponse(ExecutorToolSchema, BoundedListMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ExecutorParams),
+    async (context) => {
+      const { type, executorId } = context.req.valid('param');
+      return context.json(
+        boundedList(
+          await members.executorTools(viewerOf(context), type, executorId),
+        ),
+      );
+    },
+  );
+  routes.get(
+    '/executors/:type/:executorId/availability',
+    describeRoute({
+      tags,
+      summary: 'Get an executor tool’s availability for the caller',
+      operationId: 'projectsGetExecutorAvailability',
+      ...cliRoute(false),
+      responses: {
+        200: dataResponse(ExecutorAvailabilitySchema.nullable()),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ExecutorParams),
+    apiValidator('query', ExecutorAvailabilityQuery),
+    async (context) => {
+      const { type, executorId } = context.req.valid('param');
+      return context.json({
+        data: await members.executorAvailability(
+          viewerOf(context),
+          type,
+          executorId,
+          context.req.valid('query').tool,
+        ),
+      });
+    },
   );
   return routes;
 }

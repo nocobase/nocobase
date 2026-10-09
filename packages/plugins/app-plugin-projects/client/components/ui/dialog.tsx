@@ -5,6 +5,7 @@ import { cn } from 'cn';
 
 import { Button } from './button.js';
 import { XIcon } from 'lucide-react';
+import { ACCESS_NAMESPACE } from '../../../shared/access.js';
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props): React.JSX.Element {
   return <DialogPrimitive.Root data-slot='dialog' {...props} />;
@@ -52,7 +53,7 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -77,7 +78,7 @@ function DialogContent({
             }
           >
             <XIcon />
-            <span className='sr-only'>{t('actions.close')}</span>
+            <span className='sr-only'>{t('common.close')}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

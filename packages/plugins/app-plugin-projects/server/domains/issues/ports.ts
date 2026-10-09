@@ -15,6 +15,7 @@ import type { Attachment } from '../../../shared/attachments.js';
 import type { IssueChecklist } from '../../../shared/checklists.js';
 import type {
   IssueComment,
+  CommentHandoff,
   MentionRef,
   ThreadPage,
 } from '../../../shared/comments.js';
@@ -155,6 +156,8 @@ export interface IssueExtras {
 
 /** A comment someone wrote, as the triggers see it. */
 export interface CommentChange {
+  readonly handoff?: CommentHandoff;
+  readonly persist?: boolean;
   readonly comment: IssueComment;
   readonly issue: Issue;
   /** The comment it answers, if it is a reply. */

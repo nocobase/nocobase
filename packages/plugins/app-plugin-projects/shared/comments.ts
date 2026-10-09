@@ -6,6 +6,7 @@
 import type { Attachment } from './attachments.js';
 import type { Page } from './common.js';
 import type { NameText } from './kinds.js';
+import type { Executor } from './issues.js';
 
 export const REACTION_EMOJIS = [
   '👍',
@@ -93,6 +94,9 @@ export type ThreadPage = Page<CommentThread>;
 
 export interface CreateCommentRequest {
   readonly content: string;
+  readonly handoff?: CommentHandoff;
+  /** Also assigns future work to the handoff target; requires issue edit permission. */
+  readonly persist?: boolean;
   readonly parentId?: string | null;
   /**
    * Uploads of the caller's attached to nothing (`POST /api/projects/attachments`), at most
@@ -100,6 +104,9 @@ export interface CreateCommentRequest {
    */
   readonly attachmentIds?: readonly string[];
 }
+
+export type CommentHandoff =
+  (Executor & { readonly tool: string }) | { readonly none: true };
 
 export interface UpdateCommentRequest {
   readonly content: string;

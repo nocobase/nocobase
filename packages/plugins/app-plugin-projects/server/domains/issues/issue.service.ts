@@ -77,6 +77,7 @@ export interface IssueService {
     viewer: Viewer,
     idOrKey: string,
     patch: UpdateIssueRequest & StartOption,
+    outer?: Tx,
   ): Promise<IssueUpdateOutcome>;
   remove(viewer: Viewer, idOrKey: string): Promise<void>;
   /**
@@ -209,7 +210,9 @@ function changeSet(before: Issue, after: Issue): IssueChangeSet {
       ? {}
       : { owner: { from: before.ownerUserId, to: after.ownerUserId } }),
     ...(before.executor?.type === after.executor?.type &&
-    before.executor?.id === after.executor?.id
+    before.executor?.id === after.executor?.id &&
+    before.executor?.tool === after.executor?.tool &&
+    before.executor?.toolSource === after.executor?.toolSource
       ? {}
       : { executor: { from: before.executor, to: after.executor } }),
     ...(mentioned.length > 0 ? { mentions: mentioned } : {}),
@@ -281,6 +284,10 @@ export function createIssueService(deps: IssueDeps): IssueService {
           ownerUserId: values.ownerUserId,
           executorType: values.executor?.type ?? null,
           executorId: values.executor?.id ?? null,
+          executorTool: values.executor?.tool ?? null,
+          executorToolSource: values.executor?.tool
+            ? (values.executor.toolSource ?? 'explicit')
+            : null,
           parentIssueId: values.parentIssueId,
           stage: values.stage,
           projectId: values.projectId,
@@ -334,7 +341,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
       });
     },
 
-    async update(viewer, idOrKey, patch) {
+    async update(viewer, idOrKey, patch, outer) {
       if (!Number.isInteger(patch?.revision))
         throw invalid('REVISION_REQUIRED', 'revision is required.');
       return deps.tx.run(async (tx) => {
@@ -402,9 +409,19 @@ export function createIssueService(deps: IssueDeps): IssueService {
         if (!written) return before;
         const after = await reload(tx, before.id);
         if (placed) await deps.relations().placed(tx, after);
-        await announce(tx, before, after, viewer.actor, patch.start !== false);
+        const onlyTool =
+          before.executor?.type === after.executor?.type &&
+          before.executor?.id === after.executor?.id &&
+          activities.every(({ action }) => action === 'executor_changed');
+        await announce(
+          tx,
+          before,
+          after,
+          viewer.actor,
+          !onlyTool && patch.start !== false,
+        );
         return after;
-      });
+      }, outer);
     },
 
     async applyApproved(tx, request, approver) {
@@ -549,6 +566,8 @@ export function createIssueService(deps: IssueDeps): IssueService {
           await updateIssue(tx.conn, before.id, {
             executorType: null,
             executorId: null,
+            executorTool: null,
+            executorToolSource: null,
             updatedAt: now,
             lastActivityAt: now,
           });

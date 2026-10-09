@@ -126,15 +126,33 @@ function stateRuleOf(
         status: enteredStatus(ctx),
         actor,
         async setExecutor(executor: Executor) {
+          const samePrincipal =
+            issue.executor?.type === executor.type &&
+            issue.executor?.id === executor.id;
+          executor = {
+            ...(samePrincipal && executor.tool === undefined
+              ? issue.executor
+              : {}),
+            ...executor,
+            ...(executor.tool
+              ? { toolSource: executor.toolSource ?? 'rule' }
+              : {}),
+          };
           if (
             issue.executor?.type === executor.type &&
-            issue.executor.id === executor.id
+            issue.executor.id === executor.id &&
+            issue.executor.tool === executor.tool &&
+            issue.executor.toolSource === executor.toolSource
           )
             return issue;
           const now = new Date().toISOString();
           await updateIssue(tx.conn, issue.id, {
             executorType: executor.type,
             executorId: executor.id,
+            executorTool: executor.tool ?? null,
+            executorToolSource: executor.tool
+              ? (executor.toolSource ?? 'rule')
+              : null,
             updatedAt: now,
             lastActivityAt: now,
           });
