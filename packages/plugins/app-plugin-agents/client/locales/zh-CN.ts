@@ -4,6 +4,7 @@ import pricesZhCN from './prices.zh-CN.js';
 import skillsZhCN from './skills.zh-CN.js';
 import servicesZhCN from './services.zh-CN.js';
 import runtimesZhCN from './runtimes.zh-CN.js';
+import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
@@ -371,7 +372,7 @@ const zhCN: AgentsResource = {
     actionsHead: '操作',
     title: '环境变量',
     description:
-      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。',
+      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限团队运行环境」。',
     add: '添加变量',
     addTitle: '添加环境变量',
     editTitle: '替换 {{name}}',
@@ -380,6 +381,11 @@ const zhCN: AgentsResource = {
     nameHint: '大写字母、数字和下划线。',
     value: '值',
     valueTooLong: '值超过 8 KB。',
+    keepValueHint: '留空则保留原来的值。',
+    teamRunnersOnly: '仅限团队运行环境',
+    teamRunnersOnlyHint:
+      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由团队运行环境接。',
+    teamRunnersOnlyBadge: '仅限团队运行环境',
     empty: '没有环境变量。',
     edit: '替换值',
     actions: '{{name}} 的操作',
@@ -623,6 +629,7 @@ const zhCN: AgentsResource = {
   ...servicesZhCN,
   ...pricesZhCN,
   ...skillsZhCN,
+  ...runWaitZhCN,
   access: accessZhCN.access,
 };
 

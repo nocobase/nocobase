@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-office-flows-example",
   "displayName": "Office Flows Example App Plugin",
   "description": "Example app plugin running two office processes on record lifecycles: a data usage request with scheduled extraction tasks, and incoming document distribution with three levels of sub-tasks.",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

@@ -286,8 +286,18 @@ export const DistTargetQuery: z.ZodType<{
   format?: 'json' | 'env' | undefined;
 }> = z.object({ format: z.enum(['json', 'env']).optional() });
 
-export const VariableValueInput: z.ZodType<{ value: string }> = z.strictObject({
-  value: z.string().max(100_000),
+export const VariableValueInput: z.ZodType<{
+  value?: string;
+  teamRunnersOnly?: boolean;
+}> = z.strictObject({
+  value: z.string().max(100_000).optional().meta({
+    description:
+      'The value; required for a new variable, left out to keep the value of one that exists.',
+  }),
+  teamRunnersOnly: z.boolean().optional().meta({
+    description:
+      'Only team runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
+  }),
 });
 
 export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
@@ -605,6 +615,10 @@ export const RunBriefSchema: z.ZodType<RunBrief> = z.object({
 export const VariableSchema: z.ZodType<Variable> = z
   .object({
     name: z.string(),
+    teamRunnersOnly: z.boolean().optional().meta({
+      description:
+        'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
+    }),
     updatedAt: dateTime,
     updatedById: z.string().nullable(),
     updatedByName: z.string().nullable(),

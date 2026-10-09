@@ -6,6 +6,7 @@ import pricesEnUS from './prices.en-US.js';
 import skillsEnUS from './skills.en-US.js';
 import servicesEnUS from './services.en-US.js';
 import runtimesEnUS from './runtimes.en-US.js';
+import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
   actions: {
@@ -382,7 +383,7 @@ const pages = {
   envVars: {
     title: 'Environment variables',
     description:
-      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving.',
+      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Team runtimes only".',
     add: 'Add variable',
     addTitle: 'Add environment variable',
     editTitle: 'Replace {{name}}',
@@ -391,6 +392,11 @@ const pages = {
     nameHint: 'Upper-case letters, digits and underscores.',
     value: 'Value',
     valueTooLong: 'The value is larger than 8 KB.',
+    keepValueHint: 'Leave it empty to keep the current value.',
+    teamRunnersOnly: 'Team runtimes only',
+    teamRunnersOnlyHint:
+      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a team runtime takes runs that get this variable.',
+    teamRunnersOnlyBadge: 'Team runtimes only',
     empty: 'No environment variables.',
     scope: 'Scope',
     updated: 'Updated',
@@ -647,13 +653,15 @@ const enUS: typeof pages &
   typeof chatEnUS &
   typeof servicesEnUS &
   typeof pricesEnUS &
-  typeof skillsEnUS = {
+  typeof skillsEnUS &
+  typeof runWaitEnUS = {
   ...pages,
   ...runtimesEnUS,
   ...chatEnUS,
   ...servicesEnUS,
   ...pricesEnUS,
   ...skillsEnUS,
+  ...runWaitEnUS,
   access: accessEnUS.access,
 };
 
