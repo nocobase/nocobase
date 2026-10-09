@@ -21,4 +21,50 @@ describe('PmMarkdown', () => {
     expect(blocks).toHaveLength(2);
     expect(blocks[1]?.closest('[data-mermaid]')).toBeNull();
   });
+
+  it('ends a bare URL at the first CJK character or full-width punctuation mark', () => {
+    const { container } = render(
+      <PmMarkdown
+        content={
+          'PR：https://github.com/nocobase/studio/pull/8（分支 `agent/PM-1`），见 www.example.com。另见https://example.com/x.（说明）'
+        }
+      />,
+    );
+    const links = [...container.querySelectorAll('a')].map((link) => [
+      link.getAttribute('href'),
+      link.textContent,
+    ]);
+    expect(links).toEqual([
+      [
+        'https://github.com/nocobase/studio/pull/8',
+        'https://github.com/nocobase/studio/pull/8',
+      ],
+      ['http://www.example.com', 'www.example.com'],
+      ['https://example.com/x', 'https://example.com/x'],
+    ]);
+    expect(container).toHaveTextContent(
+      'PR：https://github.com/nocobase/studio/pull/8（分支 agent/PM-1），见 www.example.com。另见https://example.com/x.（说明）',
+    );
+  });
+
+  it('keeps CJK in URLs written in angle brackets or as a link, and unlinks a bare URL with no host left', () => {
+    const { container } = render(
+      <PmMarkdown
+        content={
+          '<https://example.com/中文> [维基](https://example.com/wiki/中文) https://中文.com，https://example.org'
+        }
+      />,
+    );
+    const hrefs = [...container.querySelectorAll('a')].map((link) =>
+      decodeURI(link.getAttribute('href') ?? ''),
+    );
+    expect(hrefs).toEqual([
+      'https://example.com/中文',
+      'https://example.com/wiki/中文',
+      'https://example.org',
+    ]);
+    expect(container).toHaveTextContent(
+      'https://中文.com，https://example.org',
+    );
+  });
 });

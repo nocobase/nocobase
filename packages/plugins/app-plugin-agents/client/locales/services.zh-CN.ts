@@ -68,6 +68,8 @@ const servicesZhCN: ServicesLocale = {
       testOk: '连接成功：{{model}} 有回应。',
       testFailed: '{{model}} 没有回应：{{message}}',
       testNeedsModel: '勾选一个模型后才能测试连接。',
+      openCodeHint:
+        'OpenCode 的每次请求会自动带上 x-opencode-session（每个对话一个会话 ID）。它按模型系列使用不同的接口：DeepSeek、GLM、Kimi、MiMo 用 DeepSeek 或 OpenAI-compatible 类型，Claude、MiniMax、Qwen 用 Anthropic 类型，GPT、Grok 用 OpenAI 类型。需要哪类就各添加一个该类型的服务，Base URL 都填这个地址。',
     },
     models: {
       title: '模型',

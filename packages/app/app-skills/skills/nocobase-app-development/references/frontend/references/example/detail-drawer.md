@@ -24,12 +24,12 @@ import {
   useParams,
 } from 'react-router';
 
-import { RouteDrawer } from '@/components/route-drawer';
-import { useRouteOverlay } from '@/components/use-route-overlay';
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { RouteDrawer } from '#components/route-drawer';
+import { useRouteOverlay } from '#components/use-route-overlay';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Alert, AlertAction, AlertDescription } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
+import { Skeleton } from '#components/ui/skeleton';
 
 import { ProjectDeleteDialog } from '../project-delete-dialog.js';
 import { ProjectStatusBadge } from '../status-badge.js';

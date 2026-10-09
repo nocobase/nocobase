@@ -113,6 +113,8 @@ Declare `authz` on the first page of every path: `{ resource: { type: 'page', id
 
 ### Components and styling
 
+Use package-local imports such as `#components/ui/button` and `#extensions/nocobase-auth-forms/form-parts`. `package.json#imports` declares their targets, and `components.json` uses the same prefixes for shadcn generation. Keep directory entry points explicitly mapped to their index files. Do not add a Vite alias or TypeScript `paths` mapping for these imports.
+
 Use shadcn/ui for UI. The template ships only the primitives its shell, compositions and example pages use: `badge`, `button`, `card`, `dialog`, `dropdown-menu`, `field`, `input`, `label`, `popover`, `select`, `separator`, `skeleton`, `spinner`, `table`, `textarea`, `toast`, `toggle`, `toggle-group` and `tooltip`. Check `client/components/ui/` first; if the primitive is not there, add it from the shadcn registry rather than writing your own. `yes n |` answers "no" when the CLI offers to overwrite a primitive that is already installed; without an answer, a non-interactive run stops at that question. Format the files it created and translate the English a few primitives carry, as `.agents/skills/nocobase-app-development/references/frontend/references/shadcn.md` lists; otherwise keep them as the CLI writes them:
 
 ```bash
@@ -278,6 +280,8 @@ A command this application owns is a file under `cli/commands/` whose path is it
 ## Plugins
 
 Plugins are registered in `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. Presence in the array enables a plugin and array order is contribution order. A plugin appears in the roots matching what it ships, so a plugin with only commands is listed in `cli/plugins.ts` alone. Bulk Skills synchronization and plugin updates discover plugins from these composition roots.
+
+Mail and Mail Example are registered here with three offline providers in `server/config/mail.ts`. Open `/mail-example` to prepare the demo accounts and messages. These fixtures use `@example.test` addresses and never send mail to external services; keep this example out of Default and Hub applications. The Mail plugin's synchronized Skill describes its public integration contract.
 
 Let `pnpm nocobase plugin register` and `pnpm nocobase plugin unregister` add and remove entries. Edit these files by hand only to reorder entries or to pass a plugin its options.
 

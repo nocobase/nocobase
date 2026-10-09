@@ -7,7 +7,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { matchPath, matchRoutes, type RouteObject } from 'react-router';
 
-import { EMPTY_ARRAY } from '@/lib/constants';
+import { EMPTY_ARRAY } from '#lib/constants';
 
 export interface RouteNavigationItem {
   readonly route: AppClientRegisteredRoute;

@@ -1,9 +1,9 @@
 import { Download, Plus } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '#components/page-header';
 
 /** Each variant in its own frame, since a page renders exactly one header. */
 export function PageHeaderDemo(): ReactElement {

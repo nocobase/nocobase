@@ -42,8 +42,8 @@ Use shadcn components for Registry UI. Prefer an existing shadcn primitive over 
 
 Plugin Runtime UI and App-owned Registry UI have separate source ownership:
 
-- Run `pnpm exec shadcn add <component>` in the plugin package for Runtime UI. The plugin's `components.json` and `@/*` alias resolve to its own `client/components/ui/**`.
-- In a Registry item, import App UI through paths such as `@/components/ui/button` and declare `button` in `registryDependencies`. After installation, the App's alias resolves that import to the App-owned shadcn source.
+- Run `pnpm exec shadcn add <component>` in the plugin package for Runtime UI. Inspect its `components.json` and `package.json` to learn the package-local import prefixes and targets. Keep compiled imports bound to the plugin's own files; stable relative `.js` paths work in older plugins too.
+- In a Registry item, use the consumer's package-local imports for UI and declare each primitive, such as `button`, in `registryDependencies`. Keep the consumer's `components.json` prefixes and `package.json#imports` aligned. Do not rely on a host-global build-tool alias.
 - Repository-local `registry materialize` copies files only, so prepare the App's declared shadcn primitives before materializing. Remote `shadcn add` resolves `registryDependencies` itself.
 
 Keeping the two shadcn copies separate lets the plugin upgrade its Runtime UI while the App customizes installed UI. Do not copy the plugin's entire `client/components/ui/` into an item merely to share primitives.
@@ -63,7 +63,7 @@ app-plugin-feature-card/
 └── public/r/                       generated Registry JSON
 ```
 
-Keep relative imports inside the item root. Use stable package exports for plugin APIs and `@/` for App-owned services or UI. Give directly imported items an `index.ts`. Add `extension.ts` only when the installed source must contribute automatically to the App.
+Keep relative imports inside the item root and include their `.js` extension. Use stable package exports for plugin APIs and package-local imports for consumer-owned services or UI. Give directly imported items an `index.ts` and map directory imports explicitly to that entry point. Add `extension.ts` only when the installed source must contribute automatically to the App.
 
 The Default Template discovers the exact path `client/extensions/*/extension.ts`. A page item can use `defineClientSourceExtension()` there to override an existing Route component by stable Route ID; it should not redeclare the Route. A component item normally exports an App-imported component and has no extension. A Provider item exports the Provider, Context, and hook while the App chooses the wrapping scope.
 

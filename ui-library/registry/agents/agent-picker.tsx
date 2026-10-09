@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import type { ComponentProps, ReactElement } from 'react';
 
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '#components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +31,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '#components/ui/dropdown-menu';
 import { cn } from 'cn';
 
 export interface AgentPickerLabels {

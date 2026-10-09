@@ -60,8 +60,13 @@ export interface AgentQueueLabels {
     readonly blockedCount: string;
     /** `{duration}`. */
     readonly waited: string;
-    /** `{max}` for `concurrencyFull`, `{tool}` for `toolUnavailable`, `{features}`, `{time}` for `delayed`. */
-    readonly reasons: Readonly<Record<AgentQueueWaitReason, string>>;
+    /** `{max}` for `concurrencyFull`, `{tool}` for tool waits, `{features}`, `{time}` for `delayed`. */
+    readonly reasons: Readonly<
+      Record<Exclude<AgentQueueWaitReason, 'toolSlotsFull'>, string> & {
+        /** Optional for existing translations; falls back to the English default. */
+        readonly toolSlotsFull?: string;
+      }
+    >;
   };
   readonly wait: {
     readonly kinds: Readonly<Record<AgentQueueWaitKind, string>>;
@@ -143,6 +148,7 @@ export const defaultAgentQueueLabels: AgentQueueLabels = {
       sameWorkActive: 'After the run already on it',
       concurrencyFull: 'Concurrency full ({max})',
       runnersBusy: 'Every fitting runtime is busy',
+      toolSlotsFull: 'Every fitting runtime has its {tool} slots full',
       setupRetrying: 'Preparing it failed; retrying',
       next: 'Next for a free runtime',
     },

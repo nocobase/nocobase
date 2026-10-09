@@ -21,7 +21,7 @@ All code examples use the example "projects" domain. The topic references hold t
 
 Where shared logic goes: write it in the component first. When the same logic would be copied unchanged into a second place, move it into one hook: inside one feature, a file in the feature folder (`client/pages/projects/use-project.ts`); across features, `client/hooks/` (`use-url-search.ts`). Loaders that react differently to their result, such as the detail drawer refreshing the list on a 404 while the edit dialog notifies the drawer, stay in their components, as the worked example's do. Components follow the same rule and move to `client/components/`.
 
-**Imports**: `@/` points to `client/`; relative imports use the `.js` extension (the source files are `.ts`/`.tsx`).
+**Imports**: use package-local subpaths such as `#components/ui/button`, `#hooks/use-mobile` and `#extensions/nocobase-auth-forms/form-parts`. `package.json#imports` maps them to this application's `client/` files; do not add a Vite alias or TypeScript `paths` mapping. Add an exact mapping for a directory entry point. Relative imports use the `.js` extension (the source files are `.ts`/`.tsx`).
 
 Conventions every page follows, each explained in its home:
 

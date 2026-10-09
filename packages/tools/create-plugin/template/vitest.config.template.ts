@@ -2,8 +2,8 @@ import { createNodeVitestConfig } from '@nocobase/dev-config/vitest/node';
 import { createReactVitestConfig } from '@nocobase/dev-config/vitest/react';
 import { defineConfig } from 'vitest/config';
 
-// Page tests in tests/client/ render under jsdom with renderWithApp() from @nocobase/app-testing/client; every other
-// test runs under Node.
+// Tests are grouped by the source directory they cover. tests/client/ renders under jsdom, where page tests use
+// renderWithApp() from @nocobase/app-testing/client; tests/server/, tests/database/ and tests/cli/ run under Node.
 export default defineConfig({
   test: {
     passWithNoTests: true,

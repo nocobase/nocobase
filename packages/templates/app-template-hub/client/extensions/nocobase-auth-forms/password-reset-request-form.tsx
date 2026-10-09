@@ -6,9 +6,9 @@ import {
   type ReactNode,
 } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { FieldGroup } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { Button } from '#components/ui/button';
+import { FieldGroup } from '#components/ui/field';
+import { Input } from '#components/ui/input';
 
 import { invalidProps } from './field-props.js';
 import { AuthField, AuthFormStatus, AuthFormSubmit } from './form-parts.js';

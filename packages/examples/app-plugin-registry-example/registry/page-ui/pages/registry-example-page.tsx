@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 
 export default function RegistryExamplePage(): ReactElement {
   const [clicks, setClicks] = useState(0);

@@ -10,14 +10,14 @@ import {
   AgentTag,
   ModeTag as AgentModeTag,
   type AgentTagTone,
-} from '@/components/agent-picker';
+} from '#components/agent-picker';
 import {
   Alert,
   AlertAction,
   AlertDescription,
   AlertTitle,
-} from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+} from '#components/ui/alert';
+import { Button } from '#components/ui/button';
 
 import {
   errorStatus,

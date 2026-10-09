@@ -4,12 +4,12 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { ShieldCheck } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { SidebarFooter, useSidebar } from '@/components/ui/sidebar';
+import { SidebarFooter, useSidebar } from '#components/ui/sidebar';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 
 /**
  * The application's sidebar footer: the NocoBase slogan's two lines, then the template's name and its version, each

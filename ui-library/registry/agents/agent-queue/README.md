@@ -23,7 +23,7 @@ The lane header shows the agent's avatar, name, state, its taken slots (`2/3`, w
 The item imports no plugin. `AgentQueueData` mirrors an agent board an application composes from the agents plugin's runs and queue and the projects plugin's issues (in an application, `GET /api/agentBoard`), so such a response can be passed as it is. Keeping it live (refetching on announcements, polling) is the consumer's job.
 
 ```tsx
-import { AgentQueue } from '@/extensions/nocobase-agent-queue/agent-queue';
+import { AgentQueue } from '#extensions/nocobase-agent-queue/agent-queue';
 
 <AgentQueue
   data={board}
@@ -41,6 +41,8 @@ import { AgentQueue } from '@/extensions/nocobase-agent-queue/agent-queue';
 ## Translations
 
 The item does not translate. Every word comes from `labels`, which defaults to `defaultAgentQueueLabels` in English. Give it an `AgentQueueLabels` from your own locale resources; placeholders use single braces (`{count}`), which the item fills in and i18next leaves alone, so the object can be read with `t('agentQueue', { returnObjects: true })`.
+
+`queue.reasons.toolSlotsFull` describes a runtime with room overall but no room for the run's tool. It is optional for existing label objects and falls back to the English default. Add a translated string using `{tool}`, for example "{tool} 的并发槽位已满". Applications upgrading the agents plugin must merge the `toolSlotsFull` reason in `types.ts` and the corresponding `labels.ts` and `model.ts` changes into their installed copy; updating the plugin or this registry does not update copied source.
 
 ## Customizing
 

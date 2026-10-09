@@ -1,10 +1,10 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { ArrowRight, FileStack } from 'lucide-react';
 import { Link, Outlet } from 'react-router';
-import { RouteChildPage } from '@/components/route-child-page';
-import { PageHeader } from '@/components/page-header';
-import { PageContainer } from '@/components/page-container';
-import { Button } from '@/components/ui/button';
+import { RouteChildPage } from '#components/route-child-page';
+import { PageHeader } from '#components/page-header';
+import { PageContainer } from '#components/page-container';
+import { Button } from '#components/ui/button';
 
 import { routeChildPageTopics } from './topics.js';
 

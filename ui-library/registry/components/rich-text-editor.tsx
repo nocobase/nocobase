@@ -48,7 +48,7 @@ import {
   useState,
 } from 'react';
 
-import { Toggle } from '@/components/ui/toggle';
+import { Toggle } from '#components/ui/toggle';
 import { cn } from 'cn';
 
 import {

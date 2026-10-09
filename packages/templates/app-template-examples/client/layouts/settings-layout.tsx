@@ -6,9 +6,9 @@ import { Link, Navigate, Routes, useLocation, useNavigate } from 'react-router';
 
 import { PageBreadcrumbProvider } from '@nocobase/app-client';
 
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { Loading } from '@/components/loading';
-import { EMPTY_ARRAY } from '@/lib/constants';
+import { Breadcrumbs } from '#components/breadcrumbs';
+import { Loading } from '#components/loading';
+import { EMPTY_ARRAY } from '#lib/constants';
 
 import { renderRouteTree } from '../routing/route-tree.js';
 import { RouteTreeProvider } from '../routing/route-context.js';

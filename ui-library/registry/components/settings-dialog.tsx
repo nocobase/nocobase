@@ -17,7 +17,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '#components/ui/dialog';
 import {
   Sidebar,
   SidebarContent,
@@ -29,7 +29,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-} from '@/components/ui/sidebar';
+} from '#components/ui/sidebar';
 import { cn } from 'cn';
 
 /** One entry of the sidebar. */

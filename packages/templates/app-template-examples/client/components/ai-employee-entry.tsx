@@ -10,7 +10,7 @@ import {
   useAI,
   useAIChatControllerState,
   useGlobalAIChatController,
-} from '@/extensions/nocobase-ai';
+} from '#extensions/nocobase-ai';
 
 const PANEL_WIDTH = 450;
 

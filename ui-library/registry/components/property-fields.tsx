@@ -13,9 +13,9 @@ import {
   AvatarGroup,
   AvatarGroupCount,
   AvatarImage,
-} from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+} from '#components/ui/avatar';
+import { Button } from '#components/ui/button';
+import { Calendar } from '#components/ui/calendar';
 import {
   Combobox,
   ComboboxChip,
@@ -27,25 +27,25 @@ import {
   ComboboxList,
   ComboboxValue,
   useComboboxAnchor,
-} from '@/components/ui/combobox';
-import { Input } from '@/components/ui/input';
+} from '#components/ui/combobox';
+import { Input } from '#components/ui/input';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '#components/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '#components/ui/select';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 import { cn } from 'cn';
 
 /** The words the fields show; `createNamed` fills `{name}`. */

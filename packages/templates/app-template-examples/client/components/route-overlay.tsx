@@ -15,7 +15,7 @@ import {
 } from 'react';
 import { useLocation, useNavigate, type To } from 'react-router';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -23,7 +23,7 @@ import {
   DialogOverlay,
   DialogPortal,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '#components/ui/dialog';
 import { cn } from 'cn';
 
 import { RouteOverlayContext } from './use-route-overlay.js';

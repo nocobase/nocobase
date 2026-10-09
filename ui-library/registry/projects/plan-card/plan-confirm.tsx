@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '#components/ui/alert-dialog';
 
 import { PlanTag } from './plan-tag.js';
 import { usePlanCardText } from './plan-text.js';

@@ -31,36 +31,36 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, type ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '#components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '#components/ui/dropdown-menu';
 import {
   Empty,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
+} from '#components/ui/empty';
+import { Input } from '#components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '#components/ui/select';
+import { Skeleton } from '#components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';

@@ -1,5 +1,5 @@
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
 import { useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
@@ -16,8 +16,8 @@ import {
   ShoppingBag,
   Users,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Table,
   TableBody,
@@ -25,7 +25,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '#components/ui/table';
 
 /**
  * Reads the external CRM through the read-only repository routes in

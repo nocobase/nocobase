@@ -10,7 +10,7 @@ import type { ReactElement } from 'react';
 import {
   AttachmentList,
   type AttachmentFile,
-} from '@/components/attachment-list';
+} from '#components/attachment-list';
 import { cn } from 'cn';
 
 import { useAttachmentLabels } from './chat-i18n.js';

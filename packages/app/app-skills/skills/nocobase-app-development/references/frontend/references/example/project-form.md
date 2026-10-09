@@ -18,15 +18,15 @@ import { type ReactElement, useEffect, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Alert, AlertDescription } from '#components/ui/alert';
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+} from '#components/ui/field';
+import { Input } from '#components/ui/input';
 import {
   Select,
   SelectContent,
@@ -34,7 +34,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '#components/ui/select';
 
 import { PROJECT_STATUSES, type Project } from './types.js';
 

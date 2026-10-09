@@ -12,8 +12,8 @@ import {
   useInboxUnreadCount,
 } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 
-import { inboxBadge, useDocumentTitleBadge } from '@/components/inbox-badge';
-import { InboxButton } from '@/components/inbox-button';
+import { inboxBadge, useDocumentTitleBadge } from '#components/inbox-badge';
+import { InboxButton } from '#components/inbox-button';
 
 export function InboxHeaderButton(): ReactElement {
   useInboxRefresh();

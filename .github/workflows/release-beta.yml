@@ -6,10 +6,6 @@ name: Release Beta
 on:
   workflow_dispatch:
     inputs:
-      include_pro:
-        description: 'Also release Pro plugins after the NocoBase3 release succeeds'
-        type: boolean
-        default: true
       dry_run:
         description: 'Dry run: compute versions and run checks without publishing or pushing'
         type: boolean
@@ -435,7 +431,6 @@ jobs:
     outputs:
       tag: ${{ needs.prepare.outputs.release_branch }}
       merged: ${{ steps.merge.outputs.merged }}
-      published: ${{ steps.publish_result.outputs.published }}
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -569,15 +564,7 @@ jobs:
       # Publish the exact tarballs prepared and tested from the immutable release source state.
       - name: Publish to npm
         if: '!inputs.dry_run'
-        id: publish_result
-        run: |
-          set +e
-          node scripts/publish-plan-has-publications.mjs "$RUNNER_TEMP/release-publish/publish-plan.json"
-          PLAN_RC=$?
-          set -e
-          case "$PLAN_RC" in 0) PUBLISHED=true ;; 1) PUBLISHED=false ;; *) exit "$PLAN_RC" ;; esac
-          pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
-          echo "published=$PUBLISHED" >> "$GITHUB_OUTPUT"
+        run: pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -729,37 +716,3 @@ jobs:
       NOCOBASE_APP_PRIVATE_KEY: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read
-
-  # The image is built from the release tag alone, so it starts with the GitHub Release rather than after it.
-  hub-image:
-    name: Publish Hub Docker image
-    needs: release
-    if: >-
-      !cancelled() && !inputs.dry_run
-      && needs.release.result == 'success'
-      && needs.release.outputs.merged == 'true'
-    uses: ./.github/workflows/docker-hub.yml
-    with:
-      # The tag marks the exact commit that was versioned and published; the release branch is deleted on merge.
-      ref: refs/tags/${{ needs.release.outputs.tag }}
-      image_tag: latest
-    secrets:
-      ALI_DOCKER_REGISTRY: ${{ secrets.ALI_DOCKER_REGISTRY }}
-      ALI_DOCKER_USERNAME: ${{ secrets.ALI_DOCKER_USERNAME }}
-      ALI_DOCKER_PASSWORD: ${{ secrets.ALI_DOCKER_PASSWORD }}
-    permissions:
-      contents: read
-      packages: write
-
-  follow-pro-release:
-    name: Release matching Pro beta
-    needs: [prepare, release, github-release]
-    if: >-
-      !cancelled() && inputs.include_pro && !inputs.dry_run
-      && needs.release.result == 'success' && needs.github-release.result == 'success'
-      && needs.release.outputs.merged == 'true' && needs.release.outputs.published == 'true'
-    uses: ./.github/workflows/pro-release-beta.yml
-    with:
-      oss_sha: ${{ needs.prepare.outputs.source_sha }}
-      dry_run: false
-    secrets: inherit

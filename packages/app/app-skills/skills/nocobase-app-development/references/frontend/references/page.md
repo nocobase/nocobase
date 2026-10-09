@@ -103,9 +103,9 @@ import { PlusIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { Button } from '#components/ui/button';
 
 export default function ProjectsPage(): ReactElement {
   const { t } = useTranslation();
@@ -135,12 +135,12 @@ export default function ProjectsPage(): ReactElement {
 }
 ```
 
-- **`PageContainer`** (`@/components/page-container`) renders a `section` that owns the full width, the spacing between blocks and the responsive padding (`w-full space-y-6 p-6 md:p-8`); the back button, the title, actions, content and the loading, empty and error states all go inside it. Do not hand-write an outer `div`, `main` or `section` with page padding, and do not change its spacing on one page (to change it everywhere, change the component).
+- **`PageContainer`** (`#components/page-container`) renders a `section` that owns the full width, the spacing between blocks and the responsive padding (`w-full space-y-6 p-6 md:p-8`); the back button, the title, actions, content and the loading, empty and error states all go inside it. Do not hand-write an outer `div`, `main` or `section` with page padding, and do not change its spacing on one page (to change it everywhere, change the component).
 - **`PageContainer` is provided by the component that owns the page, one per page**:
   - An inline child page (including tab content) renders inside the parent page's `PageContainer`; do not add another one.
   - A covering child page uses its own `PageContainer` inside `RouteChildPage` (see [`child-routes.md`](child-routes.md)). A child route that returns a bare `PageContainer` is neither: it renders at the parent's `Outlet`, below the parent's content.
   - Dialog and drawer content uses the overlay's own container; do not add `PageContainer`.
-- **`PageHeader`** (`@/components/page-header`) props: `title` (required), `description`, `actions` (on the right, for page-level actions). The title matches the menu name (guidelines L1, L3 and L5).
+- **`PageHeader`** (`#components/page-header`) props: `title` (required), `description`, `actions` (on the right, for page-level actions). The title matches the menu name (guidelines L1, L3 and L5).
 - A page with child routes must place `<Outlet />` itself, or the child route content does not render; put it at the end of `PageContainer`. For how to write child routes, see [`child-routes.md`](child-routes.md) and [`overlay.md`](overlay.md).
 - Navigate to a child route with a relative path (`new`, `id`, `` `edit/${id}` ``) and keep the query string, as [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page) explains.
 
@@ -343,7 +343,7 @@ The shell header shows the current page's breadcrumb after the sidebar toggle, o
 
 ### The back button
 
-`BackButton` (`@/components/back-button`) is a component of its own: the page places it inside `PageContainer`, above `PageHeader`, and it needs nothing from the header. [Section 5 of `child-routes.md`](child-routes.md#5-covering-child-pages-routechildpage) has the complete example, a covering child page.
+`BackButton` (`#components/back-button`) is a component of its own: the page places it inside `PageContainer`, above `PageHeader`, and it needs nothing from the header. [Section 5 of `child-routes.md`](child-routes.md#5-covering-child-pages-routechildpage) has the complete example, a covering child page.
 
 - It is a muted text link with an arrow and "Back" (`navigation.back`), turning to the foreground on hover.
 - By default it leads to the parent route and keeps the query string, as closing an overlay does: from `/projects/import?status=active` it returns to `/projects?status=active`, and the list keeps its search and filters. The parent is found by route, not by path segment, so a child route with a two-segment path returns to its parent too.
@@ -353,7 +353,7 @@ The shell header shows the current page's breadcrumb after the sidebar toggle, o
 
 ### The breadcrumb in the header
 
-`AppLayout` and `SettingsLayout` render `Breadcrumbs` (`@/components/breadcrumbs`) in their header, after the sidebar toggle, from the route tree they provide. `StandalonePageLayout` has no header and shows none. A page does not place `<Breadcrumbs />`.
+`AppLayout` and `SettingsLayout` render `Breadcrumbs` (`#components/breadcrumbs`) in their header, after the sidebar toggle, from the route tree they provide. `StandalonePageLayout` has no header and shows none. A page does not place `<Breadcrumbs />`.
 
 By default the trail is generated from the matched route levels:
 
@@ -394,7 +394,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { DownloadIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 
 export interface ExportProjectsButtonProps {
   readonly onExport: () => void;

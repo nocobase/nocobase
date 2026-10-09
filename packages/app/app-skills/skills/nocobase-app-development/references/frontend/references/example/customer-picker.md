@@ -14,8 +14,8 @@ import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useEffect, useState } from 'react';
 
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Button } from '@/components/ui/button';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Button } from '#components/ui/button';
 import {
   Combobox,
   ComboboxContent,
@@ -23,7 +23,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from '@/components/ui/combobox';
+} from '#components/ui/combobox';
 
 /** One option: the id the form stores and the name the user reads. */
 interface CustomerOption {

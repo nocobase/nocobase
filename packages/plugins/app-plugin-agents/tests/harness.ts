@@ -19,6 +19,7 @@ import {
   RUNNER_ROUTES,
 } from '@nocobase/agent-protocol';
 import type {
+  ClaimRequest,
   RegisterRequest,
   RunnerFeature,
   AgentTool,
@@ -137,6 +138,8 @@ export interface RunnerOptions {
   /** The tools the registration token enables; omitted for every tool. */
   readonly enabledTools?: readonly AgentTool[] | null;
   readonly slots?: number;
+  /** Its own limits per coding tool, as it registers with them. */
+  readonly toolSlots?: RegisterRequest['toolSlots'];
   /** What its owner's local policy lets it take, as it reports it. */
   readonly policy?: RegisterRequest['policy'];
 }
@@ -526,6 +529,7 @@ export async function createHarness(
           ...(options.tools ?? [{ kind: 'claude', authenticated: true }]),
         ],
         slots: options.slots ?? 2,
+        ...(options.toolSlots ? { toolSlots: options.toolSlots } : {}),
         ...(options.policy ? { policy: options.policy } : {}),
       };
       const response = await request('POST', api(RUNNER_ROUTES.register), {
@@ -566,10 +570,11 @@ export async function claim(
   harness: Harness,
   runner: RegisteredRunner,
   free = 1,
+  tools?: ClaimRequest['tools'],
 ): Promise<any[]> {
   const response = await harness.request('POST', api(RUNNER_ROUTES.claim), {
     runnerKey: runner.key,
-    body: { free },
+    body: { free, ...(tools ? { tools } : {}) },
   });
   if (response.status !== 200)
     throw new Error(`Claim failed: ${JSON.stringify(response.body)}`);

@@ -2,23 +2,23 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { ListOrdered, Send, TextCursorInput } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '#components/ui/card';
 import {
   AIEmployeeShortcut,
   AIPageContextScope,
   useAI,
   useGlobalAIChatController,
-} from '@/extensions/nocobase-ai';
+} from '#extensions/nocobase-ai';
 import { AI_EMPLOYEE_EXAMPLE_EMPLOYEE } from '@nocobase/app-plugin-ai-employee-example/client';
 
 import { useTicketTasks } from '../tasks';

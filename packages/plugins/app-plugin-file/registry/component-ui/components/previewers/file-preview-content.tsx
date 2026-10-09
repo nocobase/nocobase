@@ -10,7 +10,7 @@ import {
   resolveOfficeOpenXmlFormat,
   type FilePreviewKind,
 } from '../../lib/file-preview';
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import { resolveSafeFileUrl } from '../../lib/file-url';
 import { FileThumbnail } from '../file-thumbnail';
 

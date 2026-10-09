@@ -16,13 +16,13 @@ import { AlertCircleIcon } from 'lucide-react';
 import { type ReactElement, useEffect, useRef, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router';
 
-import { RouteDialog } from '@/components/route-dialog';
-import { useRouteOverlay } from '@/components/use-route-overlay';
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+import { RouteDialog } from '#components/route-dialog';
+import { useRouteOverlay } from '#components/use-route-overlay';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Alert, AlertAction, AlertDescription } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
+import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
 
 import { ProjectForm } from '../project-form.js';
 import type { Project, ProjectEditOutletContext } from '../types.js';

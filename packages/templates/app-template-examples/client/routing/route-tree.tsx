@@ -2,7 +2,7 @@ import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import type { ReactElement } from 'react';
 import { Outlet, Route } from 'react-router';
 
-import { EMPTY_ARRAY } from '@/lib/constants';
+import { EMPTY_ARRAY } from '#lib/constants';
 
 import { routeKey } from './route-navigation.js';
 import { ClientRoute } from './client-route.js';

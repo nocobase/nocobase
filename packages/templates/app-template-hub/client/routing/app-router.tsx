@@ -7,8 +7,8 @@ import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { lazy, Suspense, useMemo, type ReactElement } from 'react';
 import { Navigate, Outlet, Route, Routes } from 'react-router';
 
-import { Loading } from '@/components/loading';
-import { EMPTY_ARRAY } from '@/lib/constants';
+import { Loading } from '#components/loading';
+import { EMPTY_ARRAY } from '#lib/constants';
 
 import { AppLayout } from '../layouts/app-layout.js';
 import { renderRouteTree } from './route-tree.js';

@@ -16,7 +16,7 @@ import { type ReactElement, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Checkbox } from '@/components/ui/checkbox';
+import { Checkbox } from '#components/ui/checkbox';
 import {
   Field,
   FieldContent,
@@ -27,10 +27,10 @@ import {
   FieldLegend,
   FieldSeparator,
   FieldSet,
-} from '@/components/ui/field';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+} from '#components/ui/field';
+import { RadioGroup, RadioGroupItem } from '#components/ui/radio-group';
+import { Switch } from '#components/ui/switch';
+import { Textarea } from '#components/ui/textarea';
 
 const PRIORITIES = ['low', 'medium', 'high'] as const;
 const NOTIFY_CHANNELS = ['email', 'inApp', 'sms'] as const;

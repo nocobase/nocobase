@@ -9,7 +9,7 @@ import {
   RunTranscript,
   type AgentRunHistoryRun,
   type RunTranscriptEvent,
-} from '@/components/agent-run-history';
+} from '#components/agent-run-history';
 
 const ago = (minutes: number) =>
   new Date(Date.now() - minutes * 60_000).toISOString();

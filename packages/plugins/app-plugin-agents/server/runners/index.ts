@@ -14,7 +14,7 @@ export {
   storedToolChoice,
   toRunner,
 } from './runner.store.js';
-export { createSlots, type Slots } from './slots.js';
+export { createSlots, type HeldItems, type Slots } from './slots.js';
 export { createWorkSignal, type WorkSignal } from './signal.js';
 export {
   createRunnerSweeper,

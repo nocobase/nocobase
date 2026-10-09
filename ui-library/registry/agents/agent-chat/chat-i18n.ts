@@ -7,10 +7,10 @@ import { ACCESS_NAMESPACE } from '@nocobase/app-plugin-agents/shared/access';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMemo } from 'react';
 
-import type { AgentComposerLabels } from '@/components/agent-composer';
-import type { AttachmentLabels } from '@/components/attachment-list';
-import type { AgentPickerLabels } from '@/components/agent-picker';
-import type { RunTranscriptLabels } from '@/components/agent-run-history';
+import type { AgentComposerLabels } from '#components/agent-composer';
+import type { AttachmentLabels } from '#components/attachment-list';
+import type { AgentPickerLabels } from '#components/agent-picker';
+import type { RunTranscriptLabels } from '#components/agent-run-history';
 
 import agentChatEnUS from './locales/en-US.js';
 

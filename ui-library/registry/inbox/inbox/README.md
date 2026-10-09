@@ -35,7 +35,7 @@ The messages, their read state and their deletion are always `@nocobase/app-plug
 ```
 
 ```tsx
-import { InboxPage } from '@/extensions/nocobase-inbox/inbox-page';
+import { InboxPage } from '#extensions/nocobase-inbox/inbox-page';
 
 export default function Inbox(): ReactElement {
   return <InboxPage />;
@@ -49,7 +49,7 @@ Give the page the height of the layout's content area: the two columns scroll on
 A source adds three optional calls, each given the application's API client and the query's abort signal. The page owns the queries, under the plugin's `inboxKeys.all`, so invalidating that key after a decision refreshes everything.
 
 ```ts
-import type { InboxSource } from '@/extensions/nocobase-inbox/source';
+import type { InboxSource } from '#extensions/nocobase-inbox/source';
 
 export const approvalsSource: InboxSource = {
   id: 'approvals',
@@ -116,7 +116,7 @@ A feed (`InboxFeed`) is an older, narrower form for decisions kept in another AP
 Spread each file of `locales/` into the matching application locale, before the application's own keys so they can reword it:
 
 ```ts
-import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
+import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
 
 const enUS = {
   ...inboxEnUS,

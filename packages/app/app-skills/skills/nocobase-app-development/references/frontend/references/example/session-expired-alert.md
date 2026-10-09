@@ -15,8 +15,8 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { AlertCircleIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertAction, AlertDescription } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
 
 /**
  * Shown where a request failed with 401: the session ended, so a retry cannot succeed. refresh() re-reads the session;

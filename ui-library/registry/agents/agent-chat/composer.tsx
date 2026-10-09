@@ -25,7 +25,7 @@ import {
   AgentComposer,
   type AgentComposerAttachments,
   type AgentComposerContext,
-} from '@/components/agent-composer';
+} from '#components/agent-composer';
 
 import { useComposerLabels } from './chat-i18n.js';
 

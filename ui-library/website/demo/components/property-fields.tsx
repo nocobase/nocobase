@@ -10,7 +10,7 @@ import {
   PropertyNumber,
   PropertyRow,
   PropertySelect,
-} from '@/components/property-fields';
+} from '#components/property-fields';
 
 const PEOPLE = [
   { id: 'u1', name: 'Ada Lovelace', detail: 'Lead' },

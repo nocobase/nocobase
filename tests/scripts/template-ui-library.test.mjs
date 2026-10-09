@@ -102,7 +102,7 @@ for (const kind of templates) {
       }
 
       for (const dependency of item.registryDependencies ?? []) {
-        // `utils` is shadcn's `@/lib/utils`, which re-exports `cn`; every other registry dependency is a shadcn primitive.
+        // `utils` is shadcn's `#lib/utils`, which re-exports `cn`; every other registry dependency is a shadcn primitive.
         if (dependency === 'utils') {
           assert.match(
             fs.readFileSync(

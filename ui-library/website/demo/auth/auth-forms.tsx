@@ -1,9 +1,9 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 
-import { PasswordLoginForm } from '@/extensions/nocobase-auth-forms/password-login-form';
-import { PasswordRegistrationForm } from '@/extensions/nocobase-auth-forms/password-registration-form';
-import { PasswordResetForm } from '@/extensions/nocobase-auth-forms/password-reset-form';
-import { PasswordResetRequestForm } from '@/extensions/nocobase-auth-forms/password-reset-request-form';
+import { PasswordLoginForm } from '#extensions/nocobase-auth-forms/password-login-form';
+import { PasswordRegistrationForm } from '#extensions/nocobase-auth-forms/password-registration-form';
+import { PasswordResetForm } from '#extensions/nocobase-auth-forms/password-reset-form';
+import { PasswordResetRequestForm } from '#extensions/nocobase-auth-forms/password-reset-request-form';
 
 // The demos stand in for an application page: the forms are presentational, so each one is wired here to a fake
 // submission that waits briefly and then fails or succeeds, the way a page wires it to the authentication plugin's

@@ -14,7 +14,7 @@ import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, type RefObject, useRef, useState } from 'react';
 
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +24,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Spinner } from '@/components/ui/spinner';
+} from '#components/ui/alert-dialog';
+import { Spinner } from '#components/ui/spinner';
 
 import type { Project } from './types.js';
 

@@ -30,17 +30,17 @@ import {
 import { Link, Outlet, useLocation } from 'react-router';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
-import { DataTable } from '@/components/data-table';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
+import { DataTable } from '#components/data-table';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
 import {
   Alert,
   AlertAction,
   AlertDescription,
   AlertTitle,
-} from '@/components/ui/alert';
-import { Button, buttonVariants } from '@/components/ui/button';
+} from '#components/ui/alert';
+import { Button, buttonVariants } from '#components/ui/button';
 import {
   Card,
   CardAction,
@@ -48,22 +48,22 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '#components/ui/card';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart';
+} from '#components/ui/chart';
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+} from '#components/ui/empty';
+import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
 
 import { ProjectStatusBadge } from '../projects/status-badge.js';
 import {
