@@ -1,22 +1,10 @@
 # This default-branch entry dispatches the implementation from the isolated v3 branch.
-name: V3 Release Stable
+name: V3 Docs
 on:
   workflow_dispatch:
     inputs:
-      branch:
-        description: Branch to release from
-        type: string
-        default: v3-main
-      keep_latest:
-        description: Keep the latest dist-tag untouched (check this for hotfixes on older versions; publishes to legacy)
-        type: boolean
-        default: false
-      dry_run:
-        description: "Dry run: compute versions and run checks without publishing or pushing"
-        type: boolean
-        default: false
-      skip_smoke_test:
-        description: Skip the create-app smoke test (use only when the smoke test itself is broken)
+      publish:
+        description: Upload to OSS and switch the CDN. Leave off to build and check only.
         type: boolean
         default: false
 permissions:
@@ -31,7 +19,7 @@ jobs:
       - name: Dispatch on v3-develop
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKFLOW_FILE: release-stable.yml
+          WORKFLOW_FILE: v3-docs.yml
           DISPATCH_INPUTS: ${{ toJSON(inputs) }}
         run: >
           printf '%s' "$DISPATCH_INPUTS" \
