@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -243,7 +243,7 @@ describe('skills', () => {
 });
 
 describe('sandbox', () => {
-  it("lets the agent write the work directory and the session's writable roots, and nothing else", async () => {
+  it("lets the agent write the work directory, the session's writable roots and the working trees' .agents, and nothing else", async () => {
     let params: Record<string, unknown> = {};
     const { adapter } = adapterWith(async (fake) => {
       params = await handshake(fake);
@@ -252,13 +252,54 @@ describe('sandbox', () => {
     const handle = adapter.start(
       session({
         writableRoots: ['/work-other', '/cache.git/worktrees/app'],
+        workingTrees: ['/work', '/work-other', '/work/vendor/sub'],
       }),
     );
     await drain(handle);
     expect(params.sandboxPolicy).toMatchObject({
       type: 'workspaceWrite',
-      writableRoots: ['/work', '/work-other', '/cache.git/worktrees/app'],
+      writableRoots: [
+        '/work',
+        '/work-other',
+        '/cache.git/worktrees/app',
+        '/work/.agents',
+        '/work-other/.agents',
+        '/work/vendor/sub/.agents',
+      ],
     });
+  });
+
+  it('opens the .agents of the work directory without any working trees, but never one outside the run', async () => {
+    let params: Record<string, unknown> = {};
+    const { adapter } = adapterWith(async (fake) => {
+      params = await handshake(fake);
+      completeTurn(fake);
+    });
+    await drain(adapter.start(session()));
+    const roots = (params.sandboxPolicy as { writableRoots: string[] })
+      .writableRoots;
+    expect(roots).toEqual(['/work', '/work/.agents']);
+  });
+
+  it('creates a missing .agents before Codex starts, so the sandbox can open it', async () => {
+    const workDir = await mkdtemp(
+      path.join(tmpdir(), 'nocobase-runner-codex-work-'),
+    );
+    const sub = path.join(workDir, 'vendor', 'sub');
+    await mkdir(path.join(workDir, '.agents', 'skills'), { recursive: true });
+    await mkdir(sub, { recursive: true });
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake);
+      completeTurn(fake);
+    });
+    await drain(
+      adapter.start(session({ workDir, workingTrees: [workDir, sub] })),
+    );
+    expect((await stat(path.join(sub, '.agents'))).isDirectory()).toBe(true);
+    // An existing one is kept with what it holds.
+    expect(
+      (await stat(path.join(workDir, '.agents', 'skills'))).isDirectory(),
+    ).toBe(true);
   });
 });
 

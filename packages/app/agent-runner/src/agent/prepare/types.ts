@@ -81,6 +81,18 @@ export function agentWritableRoots(
   return [...new Set(roots)].filter((root) => root !== cwd);
 }
 
+/**
+ * The run's working trees, for a tool that protects paths inside its writable roots (`AdapterSession.workingTrees`):
+ * every working directory and each submodule checked out in a repository among them.
+ */
+export function agentWorkingTrees(dirs: readonly PreparedDir[]): string[] {
+  const trees = dirs.flatMap((dir) => [
+    dir.dir,
+    ...(dir.repo === undefined ? [] : dir.repo.submodules),
+  ]);
+  return [...new Set(trees)];
+}
+
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */
 export function agentCwd(context: PrepareContext): string {
   const primary = context.dirs[0];

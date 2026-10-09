@@ -3,7 +3,10 @@ import { existsSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { agentWritableRoots } from '../src/agent/prepare/index.ts';
+import {
+  agentWorkingTrees,
+  agentWritableRoots,
+} from '../src/agent/prepare/index.ts';
 import { isInside } from '../src/core/command-policy.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
@@ -234,6 +237,11 @@ describe('checkout', () => {
       expect(
         git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
       ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
+      expect(work.repos[0]!.submodules).toEqual([path.join(dir, 'vendor/sub')]);
+      expect(agentWorkingTrees(work.dirs)).toEqual([
+        dir,
+        path.join(dir, 'vendor/sub'),
+      ]);
       await work.release();
     });
 

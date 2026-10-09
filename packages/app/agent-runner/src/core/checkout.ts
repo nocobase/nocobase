@@ -274,6 +274,8 @@ export interface CheckedOutRepo {
   cache: string;
   /** The worktree's own Git directory (`<cache>/worktrees/<name>`), outside `dir`. */
   gitDir: string;
+  /** The submodules checked out in `dir`, nested ones included, as absolute paths. */
+  submodules: string[];
 }
 
 /** A working directory as the run uses it. */
@@ -530,6 +532,19 @@ export async function initSubmodules(
   return selected;
 }
 
+/** The submodules initialized in the worktree `dir`, nested ones included, as absolute paths. */
+export async function listSubmodules(dir: string): Promise<string[]> {
+  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
+  const status = await git(['submodule', 'status', '--recursive'], dir);
+  // `-<sha> <path>` is a submodule not initialized, which has no working tree yet.
+  return status
+    .split('\n')
+    .filter((line) => line !== '' && !line.startsWith('-'))
+    .map((line) => line.slice(1).trim().split(/\s+/)[1] ?? '')
+    .filter((entry) => entry !== '')
+    .map((entry) => path.join(dir, entry));
+}
+
 /** The subject's working directory, locked for one run. */
 export interface WorkspaceLock {
   workDir: string;
@@ -718,6 +733,7 @@ export async function prepareDirs(
         dir,
         cache,
         gitDir,
+        submodules: await listSubmodules(dir),
       };
       const key = preparedKey(entry);
       // A worktree created again (removed by GC, say) needs its initialization again.

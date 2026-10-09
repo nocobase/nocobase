@@ -105,7 +105,10 @@ it('replays a recorded run with a denial and a steer', async () => {
   const turnStart = fake.received.find((m) => m.method === 'turn/start');
   expect(turnStart?.params).toMatchObject({
     effort: 'low',
-    sandboxPolicy: { type: 'workspaceWrite', writableRoots: ['/work'] },
+    sandboxPolicy: {
+      type: 'workspaceWrite',
+      writableRoots: ['/work', '/work/.agents'],
+    },
   });
   const steer = fake.received.find((m) => m.method === 'turn/steer');
   expect(steer?.params).toMatchObject({

@@ -10,8 +10,10 @@
  *   started as the next turn; the run ends when a turn completes with
  *   nothing left to deliver.
  * - Permissions: approval policy `untrusted` with the `workspaceWrite`
- *   sandbox (writable: the work directory and the session's
- *   `writableRoots`, such as each worktree's Git directory; network on, since the agent
+ *   sandbox (writable: the work directory, the session's `writableRoots`,
+ *   such as each worktree's Git directory, and the `.agents` directory of
+ *   each working tree, which Codex otherwise keeps read-only as its own
+ *   skills root although an application's `skills sync` writes there; network on, since the agent
  *   reaches its application through the application CLI). Codex then asks
  *   before every command and file change, and each request is answered by
  *   the runner's policy (`shell` with the unwrapped script, `edit` per
@@ -24,7 +26,7 @@
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
@@ -248,6 +250,40 @@ interface Steer {
   prompt?: boolean;
 }
 
+/**
+ * The directory Codex's `workspaceWrite` sandbox keeps read-only inside every writable root, as the root of its own
+ * skills and plugins (seen on macOS, with seatbelt). An application keeps its synchronized Skills there
+ * (`<repo>/.agents/skills`), so `pnpm install` and `skills sync` fail with `EPERM` unless it is a writable root itself.
+ */
+export const CODEX_AGENTS_DIR = '.agents';
+
+/** The `.agents` directory of each of the run's working trees, `workDir` first. Never one outside them. */
+export function codexAgentsDirs(session: AdapterSession): string[] {
+  const trees = [session.workDir, ...(session.workingTrees ?? [])];
+  return [...new Set(trees.map((tree) => path.join(tree, CODEX_AGENTS_DIR)))];
+}
+
+/** What the sandbox lets the agent write: the work directory, the session's writable roots and their `.agents`. */
+export function codexWritableRoots(session: AdapterSession): string[] {
+  return [
+    ...new Set([
+      session.workDir,
+      ...(session.writableRoots ?? []),
+      ...codexAgentsDirs(session),
+    ]),
+  ];
+}
+
+/**
+ * Creates each `.agents` the sandbox opens, outside it: a writable root that does not exist is not opened, and creating
+ * it from inside is what the sandbox refuses. Best effort: one that exists already, or whose tree is gone, is left as it is.
+ */
+async function createAgentsDirs(session: AdapterSession): Promise<void> {
+  await Promise.all(
+    codexAgentsDirs(session).map((dir) => mkdir(dir).catch(() => undefined)),
+  );
+}
+
 class CodexRun {
   private readonly events = new Channel<AdapterEvent>();
   private readonly session: AdapterSession;
@@ -419,7 +455,7 @@ class CodexRun {
       : undefined;
     const sandboxPolicy: SandboxPolicy = {
       type: 'workspaceWrite',
-      writableRoots: [session.workDir, ...(session.writableRoots ?? [])],
+      writableRoots: codexWritableRoots(session),
       networkAccess: true,
       excludeTmpdirEnvVar: false,
       excludeSlashTmp: false,
@@ -967,6 +1003,7 @@ class CodexRun {
             : 'Codex is not installed (codex executable not found)',
         );
       }
+      await createAgentsDirs(this.session);
       // A stop or a dead process ends the run even while still connecting.
       const connecting = this.connect(detection.path ?? 'codex');
       connecting.catch(() => {
