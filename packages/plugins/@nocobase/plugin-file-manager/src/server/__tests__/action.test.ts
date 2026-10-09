@@ -11,6 +11,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import querystring from 'querystring';
+import { APIClient } from '@nocobase/sdk';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import PluginFileManagerServer from '../server';
@@ -282,6 +283,55 @@ describe('action', () => {
     });
 
     describe('specific storage', () => {
+      it('preserves the field storage when the SDK creates a direct-upload record in a sub-application', async () => {
+        await app.destroy();
+        app = await getApp({ name: 'sub-app' });
+        agent = app.agent();
+        db = app.db;
+        const storage = await db.getRepository('storages').create({
+          values: { name: 'sub-app-files', type: STORAGE_TYPE_LOCAL, rules: {} },
+        });
+        db.collection({
+          name: 'customers',
+          fields: [{ name: 'file', type: 'belongsTo', target: 'attachments', storage: storage.name }],
+        });
+        await db.sync();
+
+        const baseURL = 'https://localhost/apps/sub-app/api';
+        const api: APIClient = new APIClient({
+          appName: 'sub-app',
+          baseURL,
+          adapter: async (config) => {
+            // Exercise the SDK serializer even when the installed Axios predates the version in yarn.lock.
+            const paramsSerializer =
+              typeof config.paramsSerializer === 'function'
+                ? { serialize: config.paramsSerializer }
+                : config.paramsSerializer;
+            const url = new URL(api.axios.getUri({ ...config, paramsSerializer }));
+            expect(url.pathname).toBe('/apps/sub-app/api/attachments:create');
+            const values: Record<string, unknown> = JSON.parse(config.data);
+            const response = await agent.post(`/attachments:create${url.search}`).send(values);
+            return {
+              config,
+              data: response.body,
+              headers: response.headers,
+              status: response.status,
+              statusText: 'OK',
+            };
+          },
+        });
+
+        const response = await api.request<{ data: { storageId: number } }>({
+          url: 'attachments:create',
+          method: 'post',
+          params: new URLSearchParams({ attachmentField: 'customers.file' }),
+          data: { filename: 'direct-upload.txt', storageId: storage.id },
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.data.data.storageId).toBe(storage.id);
+      });
+
       it.each(['multipart', 'direct'])(
         'uses the attachment field storage for custom file collections (%s)',
         async (mode) => {
