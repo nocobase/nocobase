@@ -45,7 +45,7 @@ const [params, setParams] = useSearchParams();
 Spread each file of `locales/` into the matching application locale, before the application's own keys so they can reword it:
 
 ```ts
-import deviceApprovalEnUS from '@/extensions/nocobase-device-approval/locales/en-US';
+import deviceApprovalEnUS from '#extensions/nocobase-device-approval/locales/en-US';
 
 const enUS = {
   ...deviceApprovalEnUS,

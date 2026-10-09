@@ -172,7 +172,12 @@ it.skipIf(process.platform === 'win32')(
       const fs = require('node:fs');
       process.on('SIGTERM', () => {});
       const server = net.createServer();
-      server.listen(0, '127.0.0.1', () => fs.writeFileSync(process.argv[1], JSON.stringify({ pid: process.pid, port: server.address().port })));
+      server.listen(0, '127.0.0.1', () => {
+        // Publish readiness only after the complete JSON is visible to the parent.
+        const pendingFile = process.argv[1] + '.tmp';
+        fs.writeFileSync(pendingFile, JSON.stringify({ pid: process.pid, port: server.address().port }));
+        fs.renameSync(pendingFile, process.argv[1]);
+      });
     `)}, ${JSON.stringify(descendantFile)}], { stdio: 'inherit' });
     setInterval(() => {}, 1000);
   `,

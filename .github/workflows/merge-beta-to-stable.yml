@@ -20,10 +20,6 @@ name: Merge Beta to Stable
 on:
   workflow_dispatch:
     inputs:
-      include_pro:
-        description: 'Also merge Pro plugins after the nocobase3 merge succeeds (does not publish packages)'
-        type: boolean
-        default: true
       dry_run:
         description: 'Dry run: compute versions and run checks without pushing any branch'
         type: boolean
@@ -41,8 +37,6 @@ jobs:
     name: Promote beta and merge into main
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    outputs:
-      main_sha: ${{ steps.merge_main.outputs.sha }}
     steps:
       - name: Check out develop
         uses: actions/checkout@v4
@@ -213,7 +207,6 @@ jobs:
             echo "merged=false" >> "$GITHUB_OUTPUT"
           else
             echo "merged=true" >> "$GITHUB_OUTPUT"
-            echo "sha=$(gh pr view "$PR_URL" --json mergeCommit --jq '.mergeCommit.oid')" >> "$GITHUB_OUTPUT"
           fi
 
       # 转正结果合回 develop，并重新进入 pre 模式。
@@ -349,15 +342,3 @@ jobs:
 
             失败发生在合并之前，分支状态没有变化，修好之后重新触发即可。
         run: ./scripts/feishu-notify.sh
-
-  follow-pro-promotion:
-    name: Promote matching Pro beta
-    needs: merge
-    if: >-
-      !cancelled() && inputs.include_pro && !inputs.dry_run
-      && needs.merge.result == 'success' && needs.merge.outputs.main_sha != ''
-    uses: ./.github/workflows/pro-promote-to-stable.yml
-    with:
-      oss_sha: ${{ needs.merge.outputs.main_sha }}
-      dry_run: false
-    secrets: inherit

@@ -1,7 +1,7 @@
 import { KeyRound } from 'lucide-react';
 import { siGithub, siGitlab, siGoogle } from 'simple-icons';
 
-import type { AuthSsoProvider } from '@/extensions/nocobase-auth-methods/auth-methods';
+import type { AuthSsoProvider } from '#extensions/nocobase-auth-methods/auth-methods';
 
 import { SimpleIconGlyph } from './simple-icon.js';
 

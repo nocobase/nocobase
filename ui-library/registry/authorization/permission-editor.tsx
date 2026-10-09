@@ -11,15 +11,15 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from '#components/ui/collapsible';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+} from '#components/ui/select';
+import { Switch } from '#components/ui/switch';
 
 export interface PermissionEditorLevel {
   readonly value: string;

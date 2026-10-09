@@ -112,6 +112,10 @@ describe('runCreatePluginCli', () => {
       path: 'server/locales/index.ts',
       reason: 'server.locales',
     });
+    expect(result.files).toContainEqual({
+      path: 'tests/server/routes.test.ts',
+      reason: 'server.routes',
+    });
     await expect(
       readFile(
         path.join(

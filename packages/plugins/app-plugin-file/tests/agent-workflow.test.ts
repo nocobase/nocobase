@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { execFileSync } from 'node:child_process';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -68,6 +69,9 @@ it('builds a business attachment feature from the shipped Skill and materialized
       '@silurus/ooxml',
       'hono',
       'tsx',
+      '@base-ui/react',
+      'class-variance-authority',
+      'cn',
     ]) {
       const destination = path.join(appRoot, 'node_modules', name);
       mkdirSync(path.dirname(destination), { recursive: true });
@@ -78,15 +82,31 @@ it('builds a business attachment feature from the shipped Skill and materialized
           : realpathSync(
               existsSync(local)
                 ? local
-                : path.join(repoRoot, 'node_modules', name),
+                : existsSync(path.join(repoRoot, 'node_modules', name))
+                  ? path.join(repoRoot, 'node_modules', name)
+                  : path.join(templateRoot, 'node_modules', name),
             );
       symlinkSync(origin, destination, 'dir');
     }
-    // App primitives keep their own imports and dependency resolution in the real template.
-    mkdirSync(path.join(appRoot, 'client'), { recursive: true });
+    // The receiving application owns the primitives and resolves their imports in its own package scope.
+    mkdirSync(path.join(appRoot, 'client/components/ui'), { recursive: true });
+    for (const name of ['button', 'dialog']) {
+      cpSync(
+        path.join(templateRoot, `client/components/ui/${name}.tsx`),
+        path.join(appRoot, `client/components/ui/${name}.tsx`),
+      );
+    }
     writeFileSync(
       path.join(appRoot, 'package.json'),
-      JSON.stringify({ name: 'invoice-attachment-evaluation', type: 'module' }),
+      JSON.stringify({
+        name: 'invoice-attachment-evaluation',
+        type: 'module',
+        imports: {
+          '#components/*': './client/components/*.js',
+          '#extensions/nocobase-file-component-ui':
+            './client/extensions/nocobase-file-component-ui/index.ts',
+        },
+      }),
     );
     mkdirSync(path.join(appRoot, 'database/main/migrations'), {
       recursive: true,
@@ -134,16 +154,6 @@ it('builds a business attachment feature from the shipped Skill and materialized
         extends: '@nocobase/dev-config/tsconfig/client.json',
         compilerOptions: {
           types: ['node'],
-          paths: {
-            '@/components/ui/dialog': [
-              path.join(
-                repoRoot,
-                'packages/templates/app-template-examples/client/components/ui/dialog.tsx',
-              ),
-            ],
-            '@/extensions/*': ['./client/extensions/*'],
-            '@/*': [templateClient + '/*'],
-          },
         },
         include: ['client', path.join(templateClient, 'vite-env.d.ts')],
       }),

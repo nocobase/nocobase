@@ -184,5 +184,12 @@
     "@nocobase/repository-input": "workspace:^",
     "@nocobase/app-cli": "workspace:^"
   },
-  "description": "NocoBase 3 Hub for managing and hosting applications."
+  "description": "NocoBase 3 Hub for managing and hosting applications.",
+  "imports": {
+    "#components/*": "./client/components/*.js",
+    "#hooks/*": "./client/hooks/*.js",
+    "#lib/*": "./client/lib/*.js",
+    "#extensions/*": "./client/extensions/*.js",
+    "#pages/*": "./client/pages/*.js"
+  }
 }

@@ -10,7 +10,7 @@ stable route ID exported by
 `@nocobase/app-plugin-registry-example/client/route-contracts`; the route path
 and fallback page remain owned by the plugin.
 
-The installed page imports `@/components/ui/button`, so the consuming app must
+The installed page imports `#components/ui/button`, so the consuming app must
 have the shadcn `button` component. Remote `shadcn add` resolves it from
 `registryDependencies`; repository-local `materialize` expects it to exist
 already.

@@ -5,8 +5,8 @@ import {
 } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 import type { ReactElement } from 'react';
 
-import { inboxBadge, useDocumentTitleBadge } from '@/components/inbox-badge';
-import { InboxButton } from '@/components/inbox-button';
+import { inboxBadge, useDocumentTitleBadge } from '#components/inbox-badge';
+import { InboxButton } from '#components/inbox-button';
 
 /** The header's link to `/inbox` with the unread count, for a signed-in person only. */
 export function InboxHeaderButton(): ReactElement | null {

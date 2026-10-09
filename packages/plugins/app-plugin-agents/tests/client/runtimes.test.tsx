@@ -71,6 +71,7 @@ describe('runtimes page', () => {
         trust: (request.json as { trust: string }).trust,
         enabledTools: (request.json as { enabledTools: unknown }).enabledTools,
         slots: (request.json as { slots: unknown }).slots,
+        toolSlots: (request.json as { toolSlots?: unknown }).toolSlots ?? null,
         expiresAt: '2026-10-01T09:00:00.000Z',
       }),
     });
@@ -230,13 +231,113 @@ describe('runtimes page', () => {
     expect(within(sheet).queryByText(/runner update$/u)).toBeNull();
   });
 
+  it('shows the runs by coding tool against each tool’s limit', async () => {
+    runners = [
+      runner('r1', {
+        slots: 3,
+        activeRuns: 3,
+        toolSlots: { claude: 2, codex: 1 },
+        activeByTool: { claude: 2, codex: 1 },
+      }),
+      runner('r3', { slots: 2 }),
+    ];
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    const usage = within(row).getByRole('list', {
+      name: 'runtimes.toolUsage.label',
+    });
+    expect(
+      within(usage)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      'runtimes.toolUsage.item(tool=tools.claude,used=2,limit=2)',
+      'runtimes.toolUsage.item(tool=tools.codex,used=1,limit=1)',
+    ]);
+    // Without limits per tool and with nothing running, there is nothing to show.
+    expect(
+      within(screen.getByTestId('runner-r3')).queryByRole('list', {
+        name: 'runtimes.toolUsage.label',
+      }),
+    ).toBeNull();
+  });
+
+  it('shows a runtime built without limits per tool, as code from before them builds it', async () => {
+    const {
+      toolSlots: _toolSlots,
+      toolLoad: _toolLoad,
+      activeByTool: _activeByTool,
+      ...older
+    } = runner('r1', { activeRuns: 1, slots: 2, canManage: true });
+    runners = [older];
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    within(row).getByText(/^runtimes\.activity\.online\(active=1,slots=2,/u);
+    expect(
+      within(row).queryByRole('list', { name: 'runtimes.toolUsage.label' }),
+    ).toBeNull();
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByLabelText(
+        'runtimes.toolSlots.inputLabel(tool=tools.claude)',
+      ),
+    ).toHaveValue('');
+    // What it runs per tool is unknown, not zero.
+    expect(
+      within(within(sheet).getByTestId('runner-tool-claude')).getByText('—'),
+    ).toBeInTheDocument();
+  });
+
+  it('saves limits per coding tool, and clears them', async () => {
+    runners[0] = { ...runners[0]!, toolSlots: { codex: 1 } };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    // One table: each tool's switch, sign-in, limit and runs, in one row.
+    const claudeRow = within(sheet).getByTestId('runner-tool-claude');
+    within(claudeRow).getByRole('switch');
+    within(claudeRow).getByText('runtimes.tool.signedIn');
+    const claude = within(claudeRow).getByLabelText(
+      'runtimes.toolSlots.inputLabel(tool=tools.claude)',
+    );
+    const codex = within(sheet).getByLabelText(
+      'runtimes.toolSlots.inputLabel(tool=tools.codex)',
+    );
+    expect(codex).toHaveValue('1');
+    // Above the max concurrent runs (2): said, and bounded by them.
+    fireEvent.change(claude, { target: { value: '3' } });
+    expect(
+      within(sheet).getByTestId('tool-slots-over-total'),
+    ).toHaveTextContent(
+      'runtimes.toolSlots.overTotal(tools=tools.claude,slots=2)',
+    );
+    fireEvent.change(claude, { target: { value: '0' } });
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'actions.save' }),
+    );
+    expect(
+      await within(sheet).findByText('runtimes.toolSlots.invalid'),
+    ).toBeInTheDocument();
+    expect(callsTo('PATCH', 'agents/runners/r1')).toHaveLength(0);
+    fireEvent.change(claude, { target: { value: '2' } });
+    fireEvent.change(codex, { target: { value: '' } });
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'actions.save' }),
+    );
+    await waitFor(() =>
+      expect(callsTo('PATCH', 'agents/runners/r1')).toHaveLength(1),
+    );
+    expect(callsTo('PATCH', 'agents/runners/r1')[0]?.json).toEqual({
+      toolSlots: { claude: 2 },
+    });
+  });
+
   it('saves the name and concurrency, and warns before sharing with the team', async () => {
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
     fireEvent.change(within(sheet).getByLabelText('runtimes.edit.name'), {
       target: { value: 'Studio' },
     });
-    fireEvent.change(within(sheet).getByLabelText('runtimes.columns.slots'), {
+    fireEvent.change(within(sheet).getByLabelText('connect.slots'), {
       target: { value: '3' },
     });
     fireEvent.click(
@@ -375,6 +476,12 @@ describe('runtimes page', () => {
         name: 'runtimes.tool.enableLabel(tool=tools.claude,name=Mac Studio)',
       }),
     );
+    // A switch is saved with the form, as the limits are.
+    expect(claude).toHaveAttribute('data-enabled', 'true');
+    expect(callsTo('PATCH', 'agents/runners/r1')).toHaveLength(0);
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'actions.save' }),
+    );
     await waitFor(() =>
       expect(callsTo('PATCH', 'agents/runners/r1')).toHaveLength(1),
     );
@@ -389,6 +496,9 @@ describe('runtimes page', () => {
     const codex = within(sheet).getByTestId('runner-tool-codex');
     expect(codex).toHaveAttribute('data-enabled', 'true');
     fireEvent.click(within(codex).getByRole('switch'));
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'actions.save' }),
+    );
     await waitFor(() =>
       expect(callsTo('PATCH', 'agents/runners/r1')).toHaveLength(1),
     );
@@ -455,6 +565,19 @@ describe('runtimes page', () => {
       0,
     );
     fireEvent.change(slots, { target: { value: '3' } });
+    // Limits per tool are advanced options, folded away until asked for.
+    expect(dialog.querySelector('#ag-add-tool-slots-codex')).toBeNull();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'connect.advanced' }),
+    );
+    // Only the checked tools take a limit.
+    await waitFor(() =>
+      expect(dialog.querySelector('#ag-add-tool-slots-codex')).not.toBeNull(),
+    );
+    expect(dialog.querySelector('#ag-add-tool-slots-claude')).toBeNull();
+    fireEvent.change(dialog.querySelector('#ag-add-tool-slots-codex')!, {
+      target: { value: '1' },
+    });
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'connect.createCredential' }),
     );
@@ -465,7 +588,13 @@ describe('runtimes page', () => {
       trust: 'ownerOnly',
       enabledTools: ['codex'],
       slots: 3,
+      toolSlots: { codex: 1 },
     });
+    expect(
+      within(dialog).getByText(
+        /connect\.tokenToolSlots\(limits=tools\.codex 1\)/u,
+      ),
+    ).toBeInTheDocument();
     expect(
       within(dialog).getByText(/connect\.tokenTools\(tools=tools\.codex\)/u),
     ).toBeInTheDocument();

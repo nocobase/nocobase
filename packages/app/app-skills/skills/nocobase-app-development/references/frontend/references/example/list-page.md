@@ -36,19 +36,19 @@ import {
 } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
-import { DataTable } from '@/components/data-table';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
-import { useUrlSearch } from '@/hooks/use-url-search';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
+import { DataTable } from '#components/data-table';
+import { DataTableColumnHeader } from '#components/data-table/column-header';
+import { useUrlSearch } from '#hooks/use-url-search';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
 import {
   Alert,
   AlertAction,
   AlertDescription,
   AlertTitle,
-} from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+} from '#components/ui/alert';
+import { Button } from '#components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +56,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '#components/ui/dropdown-menu';
 import {
   Empty,
   EmptyContent,
@@ -64,12 +64,12 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
+} from '#components/ui/empty';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from '@/components/ui/input-group';
+} from '#components/ui/input-group';
 import {
   Select,
   SelectContent,
@@ -77,9 +77,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+} from '#components/ui/select';
+import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
 
 import { ProjectDeleteDialog } from './project-delete-dialog.js';
 import { ProjectStatusBadge } from './status-badge.js';

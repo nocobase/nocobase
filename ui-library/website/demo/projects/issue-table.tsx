@@ -4,7 +4,7 @@ import {
   IssueTable,
   type IssueTableRow,
   type IssueTableSort,
-} from '@/components/issue-table';
+} from '#components/issue-table';
 
 const minutesAgo = (minutes: number) =>
   new Date(Date.now() - minutes * 60_000).toISOString();

@@ -8,6 +8,12 @@
  * agent's runs on the run's subject and repositories, and it has a free slot. A working directory that is a directory
  * on one runner pins the run to that runner, one run at a time per directory.
  *
+ * A slot is free for a run when the runner's total has room and so does the coding tool it runs with: the tool's limit
+ * (`Runner.toolSlots`, never above the total) over the runs of that tool the runner holds here, and what the runner
+ * said it can still take of that tool across every application (`ClaimRequest.tools`). The run takes the first of its
+ * agent's entries whose tool the runner runs and has room for, so an agent listing two tools runs with the second while
+ * the first is full; a run none of whose tools has room is passed over for the runs behind it.
+ *
  * A claim is one transaction per run. It first writes the agent's row (`lockAgentForClaim`): on databases with row
  * locks, concurrent claims for the same agent wait there, so the concurrency count read next is current. The run is
  * then taken with a guarded update (`status = 'queued'`), so two runners can never take the same run. The payload is
@@ -24,6 +30,7 @@
  * mounts.
  */
 import {
+  type AgentTool,
   policyAllowsAgent,
   policyAllowsRepo,
   policyAllowsSubject,
@@ -36,7 +43,7 @@ import {
   type WorkspaceDir,
 } from '@nocobase/agent-protocol';
 import type { DistService } from '../../distribution/index.js';
-import { runsTool, type Runner } from '../../../shared/runners.js';
+import { runsTool, toolLimit, type Runner } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 import { createHash } from 'node:crypto';
 
@@ -91,6 +98,7 @@ import {
 } from './ports.js';
 import { MAX_CLAIM_FAILURES, toolPolicyFor, type AgentCli } from './policy.js';
 import { mintRunToken } from './run-tokens.js';
+import { runsHeldByTool } from './runner-view.js';
 import {
   ACTIVE,
   countActive,
@@ -148,8 +156,15 @@ export function isServerHolder(runnerId: string | null): boolean {
 }
 
 export interface ClaimService {
-  /** Up to `free` runs for `runner`, each with its payload; empty when nothing fits. */
-  claim(runner: Runner, free: number): Promise<RunPayload[]>;
+  /**
+   * Up to `free` runs for `runner`, each with its payload; empty when nothing fits. `tools` is what the runner said it
+   * can take of each coding tool it keeps a limit for (`ClaimRequest.tools`); a tool left out is bounded by `free`.
+   */
+  claim(
+    runner: Runner,
+    free: number,
+    tools?: Readonly<Partial<Record<AgentTool, number>>>,
+  ): Promise<RunPayload[]>;
   /**
    * Up to `limit` online runs for an application instance; empty when there are none to take. Consultations are never
    * among them: the holder of the run that asks takes each at once (`claimChild`).
@@ -217,6 +232,27 @@ class NotForThisRunner extends Error {
   }
 }
 
+/** What a runner said it can still take of each coding tool during one claim, counted down as runs are handed out. */
+interface ToolRoom {
+  has(tool: AgentTool): boolean;
+  take(tool: AgentTool): void;
+}
+
+function toolRoom(
+  tools: Readonly<Partial<Record<AgentTool, number>>> | undefined,
+): ToolRoom {
+  const left = new Map<AgentTool, number>(
+    Object.entries(tools ?? {}) as [AgentTool, number][],
+  );
+  return {
+    has: (tool) => (left.get(tool) ?? Number.POSITIVE_INFINITY) > 0,
+    take: (tool) => {
+      const count = left.get(tool);
+      if (count !== undefined) left.set(tool, count - 1);
+    },
+  };
+}
+
 type Attempt =
   | { readonly kind: 'claimed'; readonly payload: RunPayload }
   | { readonly kind: 'skipped' };
@@ -231,6 +267,22 @@ export function pickEntry(
 ): RunnerModelEntry | null {
   return (
     runnerEntries(agent).find((entry) => runsTool(runner, entry.tool)) ?? null
+  );
+}
+
+/**
+ * The entry `runner` takes a run of `agent` with when some of its tools are full: the first whose tool it runs and
+ * `open` says has room. Null when none has.
+ */
+export function pickOpenEntry(
+  runner: Runner,
+  agent: Pick<Agent, 'modelEntries'>,
+  open: (tool: AgentTool) => boolean,
+): RunnerModelEntry | null {
+  return (
+    runnerEntries(agent).find(
+      (entry) => runsTool(runner, entry.tool) && open(entry.tool),
+    ) ?? null
   );
 }
 
@@ -453,9 +505,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     inputs: readonly RunInput[],
     leaseExpiresAt: string,
     prepared: Prepared,
+    entry: RunnerModelEntry,
   ): Promise<Assembled> {
-    const entry = pickEntry(runner, agent);
-    if (!entry) throw new NotForThisRunner();
     const binding = deps.subjects.get(run.subjectKind);
     if (!binding)
       throw new Error(
@@ -663,6 +714,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     runner: Runner,
     agent: Agent,
     candidate: RunRecord,
+    reported: ToolRoom,
   ): Promise<Attempt> {
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
     const prepared = await prepareExtensions(
@@ -685,6 +737,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       // Slots are shared with the jobs the runner holds.
       if ((await deps.slotsUsed(conn, runner.id)) >= runner.slots)
         return { kind: 'skipped' };
+      // The first of the agent's tools with room, by its limit here and by what the runner said it can take.
+      const byTool = await runsHeldByTool(conn, runner.id);
+      const entry = pickOpenEntry(
+        runner,
+        agent,
+        (tool) =>
+          (byTool[tool] ?? 0) < toolLimit(runner, tool) && reported.has(tool),
+      );
+      if (!entry) return { kind: 'skipped' };
       const busy = await runsOfKey(conn, candidate, ACTIVE);
       if (busy.length > 0) return { kind: 'skipped' };
 
@@ -718,6 +779,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           pending.map(toInput),
           leaseExpiresAt,
           prepared,
+          entry,
         );
       } catch (error) {
         if (error instanceof NotForThisRunner) throw error;
@@ -979,6 +1041,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   async function claimOne(
     runner: Runner,
     seen: Set<string>,
+    reported: ToolRoom,
   ): Promise<RunPayload | null> {
     const conn = tx.read();
     const candidates = await candidatesOf('runner');
@@ -990,8 +1053,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         agents.set(candidate.agentId, await findAgent(conn, candidate.agentId));
       const agent = agents.get(candidate.agentId);
       if (!agent || !fits(runner, agent, candidate)) continue;
+      // None of its tools has room on the runner's side: the runs behind it may still fit.
+      if (!pickOpenEntry(runner, agent, (tool) => reported.has(tool))) continue;
       try {
-        const result = await attempt(runner, agent, candidate);
+        const result = await attempt(runner, agent, candidate, reported);
         if (result.kind === 'claimed') return result.payload;
       } catch (error) {
         // Rolled back: the run stays queued for a runner it fits.
@@ -1004,15 +1069,17 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   }
 
   return {
-    async claim(runner, free) {
+    async claim(runner, free, tools) {
       if (runner.status !== 'online') return [];
       const payloads: RunPayload[] = [];
       const seen = new Set<string>();
       const limit = Math.min(free, runner.slots);
+      const reported = toolRoom(tools);
       while (payloads.length < limit) {
-        const payload = await claimOne(runner, seen);
+        const payload = await claimOne(runner, seen, reported);
         if (!payload) break;
         payloads.push(payload);
+        reported.take(payload.tool.kind);
       }
       return payloads;
     },

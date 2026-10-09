@@ -371,6 +371,27 @@ describe('Agent team › Models', () => {
     );
   });
 
+  it('notes an OpenCode base URL, whose session header is sent automatically', async () => {
+    state.services = [service({ baseUrl: 'https://opencode.ai/zen/go/v1' })];
+    renderPage(<ModelsPage />);
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'services.service.edit(title=Team)',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText('services.connection.openCodeHint'),
+    ).toBeInTheDocument();
+    // Nothing on the form sets the session header up: the server sends it.
+    expect(within(dialog).queryAllByTestId('ag-service-header')).toEqual([]);
+    expect(
+      within(dialog).queryByRole('button', {
+        name: 'services.connection.addHeader',
+      }),
+    ).toBeNull();
+  });
+
   it('replaces the key with what is typed', async () => {
     state.services = [service()];
     renderPage(<ModelsPage />);

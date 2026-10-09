@@ -1,8 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createToastManager, Toaster } from '@/components/ui/toast';
-import { createToaster } from '@/lib/toaster';
+import { createToastManager, Toaster } from '#components/ui/toast';
+import { createToaster } from '#lib/toaster';
 
 describe('application toaster', () => {
   it('forwards what a toast reports to the Base UI toast manager', () => {

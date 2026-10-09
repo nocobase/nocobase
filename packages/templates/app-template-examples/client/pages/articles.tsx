@@ -1,5 +1,5 @@
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
 import { useApiClient } from '@nocobase/app-client';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -18,25 +18,25 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '#components/ui/button';
+import { Input } from '#components/ui/input';
+import { Textarea } from '#components/ui/textarea';
+import { Label } from '#components/ui/label';
+import { Badge } from '#components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from '#components/ui/dialog';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/ui/select';
+} from '#components/ui/select';
 
 interface Article {
   id: string;

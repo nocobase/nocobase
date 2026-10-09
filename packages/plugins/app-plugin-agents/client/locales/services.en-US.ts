@@ -68,6 +68,8 @@ const servicesEnUS = {
       testOk: 'Connected: {{model}} answered.',
       testFailed: '{{model}} did not answer: {{message}}',
       testNeedsModel: 'Check a model to test the connection.',
+      openCodeHint:
+        'OpenCode sends x-opencode-session with every request (one session id per conversation). It serves each model family through its own API: DeepSeek, GLM, Kimi and MiMo through DeepSeek or OpenAI-compatible, Claude, MiniMax and Qwen through Anthropic, GPT and Grok through OpenAI. Add a service of each type you need, all with this base URL.',
     },
     models: {
       title: 'Models',

@@ -3,20 +3,20 @@ import { useQueryClient } from '@tanstack/react-query';
 import { RocketIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { DecisionActionsBar } from '@/extensions/nocobase-inbox/decision-actions-bar';
-import { InboxPage } from '@/extensions/nocobase-inbox/inbox-page';
+import { DecisionActionsBar } from '#extensions/nocobase-inbox/decision-actions-bar';
+import { InboxPage } from '#extensions/nocobase-inbox/inbox-page';
 import type {
   InboxCollectionCategory,
   InboxEntry,
   InboxNotice,
-} from '@/extensions/nocobase-inbox/model';
+} from '#extensions/nocobase-inbox/model';
 import {
   defaultInboxCategories,
   defineInboxRenderer,
   type InboxPartProps,
   type InboxRegistry,
-} from '@/extensions/nocobase-inbox/registry';
-import type { InboxSource } from '@/extensions/nocobase-inbox/source';
+} from '#extensions/nocobase-inbox/registry';
+import type { InboxSource } from '#extensions/nocobase-inbox/source';
 
 import { demoItems, demoNotices, demoPlans } from './inbox-data.js';
 import { DemoPlanDetail, DemoPlanGroup } from './inbox-plans.js';

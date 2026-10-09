@@ -7,7 +7,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 import { cn } from 'cn';
 
 import type { InboxBadge } from './inbox-badge.js';

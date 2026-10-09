@@ -4,7 +4,7 @@ import {
   PermissionEditor,
   type PermissionEditorLevel,
   type PermissionEditorSection,
-} from '@/components/permission-editor';
+} from '#components/permission-editor';
 
 const OWN_OR_ALL: readonly PermissionEditorLevel[] = [
   { value: 'own', label: 'Their own records' },

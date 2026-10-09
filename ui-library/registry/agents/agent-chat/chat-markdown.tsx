@@ -2,7 +2,7 @@
 import { MermaidDiagram } from '@nocobase/markdown-mermaid';
 import type { ReactElement } from 'react';
 
-import { MarkdownView } from '@/components/markdown-view';
+import { MarkdownView } from '#components/markdown-view';
 
 export function ChatMarkdown({
   content,

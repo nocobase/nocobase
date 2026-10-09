@@ -58,9 +58,9 @@ import {
 } from 'lucide-react';
 import { Fragment, useState, type ReactElement, type ReactNode } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import { Button } from '#components/ui/button';
+import { Input } from '#components/ui/input';
+import { Spinner } from '#components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -68,8 +68,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
+} from '#components/ui/table';
+import { Textarea } from '#components/ui/textarea';
 import { cn } from 'cn';
 
 import {

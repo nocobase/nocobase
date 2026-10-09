@@ -16,9 +16,9 @@ import { type ReactElement, type ReactNode, useEffect, useState } from 'react';
 import { createMemoryRouter, Link, Outlet, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RouteDialog } from '@/components/route-dialog';
-import { Button } from '@/components/ui/button';
-import { useRouteOverlay } from '@/components/use-route-overlay';
+import { RouteDialog } from '#components/route-dialog';
+import { Button } from '#components/ui/button';
+import { useRouteOverlay } from '#components/use-route-overlay';
 
 import enUS from '../../client/locales/en-US.js';
 

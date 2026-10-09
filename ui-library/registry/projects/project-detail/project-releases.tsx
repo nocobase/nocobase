@@ -6,11 +6,11 @@
 import { BoxIcon, ExternalLinkIcon, GitBranchIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
+import { Skeleton } from '#components/ui/skeleton';
 
-import { IssueStatusBadge } from '@/components/issue-table';
+import { IssueStatusBadge } from '#components/issue-table';
 import {
   defaultProjectDetailLabels,
   fill,

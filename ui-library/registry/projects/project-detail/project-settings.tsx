@@ -36,9 +36,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from '#components/ui/alert-dialog';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Combobox,
   ComboboxContent,
@@ -46,7 +46,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from '@/components/ui/combobox';
+} from '#components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -54,14 +54,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '#components/ui/dialog';
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from '@/components/ui/field';
+} from '#components/ui/field';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,7 +69,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '#components/ui/dropdown-menu';
 import {
   Empty,
   EmptyContent,
@@ -77,18 +77,18 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
+} from '#components/ui/empty';
+import { Input } from '#components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+} from '#components/ui/select';
+import { Separator } from '#components/ui/separator';
+import { Textarea } from '#components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
 
 import {
   PersonValue,

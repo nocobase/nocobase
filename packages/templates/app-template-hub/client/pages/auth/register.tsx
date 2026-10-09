@@ -4,7 +4,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { Link, Navigate } from 'react-router';
 
-import { PasswordRegistrationForm } from '@/extensions/nocobase-auth-forms/password-registration-form';
+import { PasswordRegistrationForm } from '#extensions/nocobase-auth-forms/password-registration-form';
 
 import { AuthPage } from './shared.js';
 

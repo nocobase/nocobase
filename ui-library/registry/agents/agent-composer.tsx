@@ -49,14 +49,14 @@ import {
   type ReactNode,
 } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupTextarea,
-} from '@/components/ui/input-group';
-import { Spinner } from '@/components/ui/spinner';
+} from '#components/ui/input-group';
+import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 export interface AgentComposerLabels {

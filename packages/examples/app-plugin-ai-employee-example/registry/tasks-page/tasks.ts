@@ -1,7 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMemo } from 'react';
 
-import type { AIEmployeeTask } from '@/extensions/nocobase-ai';
+import type { AIEmployeeTask } from '#extensions/nocobase-ai';
 import { AI_EMPLOYEE_EXAMPLE_TICKET_HISTORY_TOOL } from '@nocobase/app-plugin-ai-employee-example/client';
 
 import type { SupportTicket } from './tickets';

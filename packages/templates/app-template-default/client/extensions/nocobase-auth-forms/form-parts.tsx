@@ -1,13 +1,13 @@
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '#components/ui/alert';
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldLabel,
-} from '@/components/ui/field';
+} from '#components/ui/field';
 
 import { errorId } from './field-props.js';
 

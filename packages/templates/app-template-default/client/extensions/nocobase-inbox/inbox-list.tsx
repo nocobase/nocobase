@@ -6,9 +6,9 @@ import {
   AlertAction,
   AlertDescription,
   AlertTitle,
-} from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from '#components/ui/alert';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Empty,
   EmptyContent,
@@ -16,18 +16,18 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { Kbd } from '@/components/ui/kbd';
+} from '#components/ui/empty';
+import { Kbd } from '#components/ui/kbd';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '#components/ui/select';
+import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
 import { cn } from 'cn';
 
 import { useInboxFrameText } from './frame.js';

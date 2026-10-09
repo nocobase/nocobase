@@ -2,10 +2,10 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { SendIcon } from 'lucide-react';
 import { type KeyboardEvent, type ReactElement, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Kbd } from '@/components/ui/kbd';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '#components/ui/button';
+import { Kbd } from '#components/ui/kbd';
+import { Spinner } from '#components/ui/spinner';
+import { Textarea } from '#components/ui/textarea';
 
 export type ApprovalDecision = 'approve' | 'reject';
 

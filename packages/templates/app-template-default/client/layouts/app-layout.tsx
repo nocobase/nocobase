@@ -3,8 +3,8 @@ import { useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { EMPTY_ARRAY } from '@/lib/constants';
+import { Breadcrumbs } from '#components/breadcrumbs';
+import { EMPTY_ARRAY } from '#lib/constants';
 
 import { RouteTreeProvider } from '../routing/route-context.js';
 

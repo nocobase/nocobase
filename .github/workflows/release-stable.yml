@@ -11,10 +11,6 @@ name: Release Stable
 on:
   workflow_dispatch:
     inputs:
-      include_pro:
-        description: 'Also release Pro plugins after the NocoBase3 release succeeds'
-        type: boolean
-        default: true
       branch:
         description: 'Branch to release from'
         type: string
@@ -497,7 +493,6 @@ jobs:
       tag: ${{ needs.prepare.outputs.tag }}
       merged: ${{ steps.merge.outputs.merged }}
       needs_version: ${{ needs.prepare.outputs.needs_version }}
-      published: ${{ steps.publish_result.outputs.published }}
     steps:
       - name: Check out workflow code
         uses: actions/checkout@v4
@@ -649,17 +644,9 @@ jobs:
 
       - name: Publish to npm
         if: '!inputs.dry_run'
-        id: publish_result
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          set +e
-          node scripts/publish-plan-has-publications.mjs "$RUNNER_TEMP/release-publish/publish-plan.json"
-          PLAN_RC=$?
-          set -e
-          case "$PLAN_RC" in 0) PUBLISHED=true ;; 1) PUBLISHED=false ;; *) exit "$PLAN_RC" ;; esac
-          pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
-          echo "published=$PUBLISHED" >> "$GITHUB_OUTPUT"
+        run: pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
 
       - name: Push package tags
         if: '!inputs.dry_run'
@@ -863,20 +850,3 @@ jobs:
       NOCOBASE_APP_PRIVATE_KEY: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read
-
-  follow-pro-release:
-    name: Release matching Pro stable
-    needs: [prepare, release, github-release]
-    if: >-
-      !cancelled() && inputs.include_pro && !inputs.dry_run
-      && inputs.branch == 'main' && !inputs.keep_latest
-      && needs.release.result == 'success' && needs.github-release.result == 'success'
-      && needs.release.outputs.published == 'true'
-      && (needs.prepare.outputs.has_changes != 'true' || needs.release.outputs.merged == 'true')
-    uses: ./.github/workflows/pro-release-stable.yml
-    with:
-      branch: main
-      keep_latest: false
-      oss_sha: ${{ needs.prepare.outputs.source_sha }}
-      dry_run: false
-    secrets: inherit

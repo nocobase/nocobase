@@ -3,7 +3,7 @@ import { I18nProvider } from '@nocobase/i18n/client';
 import { act, render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import plugin from '../../client/plugin.js';
-import { FilePreviewField } from '../../registry/component-ui/components/file-preview-field.js';
+import { FilePreviewField } from '../../.registry-test-app/client/extensions/nocobase-file-component-ui/components/file-preview-field.js';
 
 it('uses the file plugin locale outside its namespace and updates on language changes', async () => {
   const definition = plugin();
@@ -29,7 +29,7 @@ it('uses the file plugin locale outside its namespace and updates on language ch
 
 it('translates stored preview errors and preserves unknown server messages', async () => {
   const { FilePreviewContent } =
-    await import('../../registry/component-ui/components/previewers/file-preview-content.js');
+    await import('../../.registry-test-app/client/extensions/nocobase-file-component-ui/components/previewers/file-preview-content.js');
   const runtime = new I18nRuntime({
     applicationNamespace: 'app',
     defaultLocale: 'en-US',
@@ -78,7 +78,7 @@ it('translates stored preview errors and preserves unknown server messages', asy
 it('retranslates a stored generic upload error after changing language', async () => {
   const { fireEvent } = await import('@testing-library/react');
   const { FileUploadField } =
-    await import('../../registry/component-ui/components/file-upload-field.js');
+    await import('../../.registry-test-app/client/extensions/nocobase-file-component-ui/components/file-upload-field.js');
   const runtime = new I18nRuntime({
     applicationNamespace: 'app',
     defaultLocale: 'en-US',

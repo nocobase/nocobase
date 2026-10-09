@@ -949,3 +949,54 @@ describe('one runner, several applications', () => {
     }
   });
 });
+
+describe('limits per coding tool', () => {
+  it('keeps them and says how many runs of each it can take', async () => {
+    const server = new FakeServer();
+    await server.listen();
+    const home = tempDir('nocobase-runner-tools-');
+    const scratch = tempDir('nocobase-runner-tools-scratch-');
+    const env = cliEnv(home);
+    const started: Daemon[] = [];
+    try {
+      await registerRunner(server.url, env, [
+        '--slots',
+        '2,claude=1',
+        '--cli',
+        `appcli=${writeFakeCli(scratch)}`,
+      ]);
+      const registered = [...server.runners.values()][0];
+      expect(registered?.register).toMatchObject({
+        slots: 2,
+        toolSlots: { claude: 1 },
+      });
+      const status = await cli(['status', '--json'], env);
+      expect(JSON.parse(status.stdout).result).toMatchObject({
+        slots: 2,
+        toolSlots: { claude: 1 },
+      });
+      started.push(startDaemon(env));
+      await waitFor(
+        () => (registered?.claimBodies.length ?? 0) > 0,
+        10_000,
+        'a claim from the runner',
+      );
+      expect(registered?.claimBodies[0]).toEqual({
+        free: 2,
+        tools: { claude: 1 },
+      });
+      await waitFor(() => server.lastHeartbeat(), 10_000, 'a heartbeat');
+      expect(server.lastHeartbeat()?.load).toEqual({
+        slots: 2,
+        free: 2,
+        tools: { claude: { slots: 1, free: 1 } },
+      });
+    } finally {
+      for (const daemon of started) await stopDaemon(daemon);
+      await server.close();
+      removeDir(home);
+      removeDir(workRootOf(home));
+      removeDir(scratch);
+    }
+  });
+});

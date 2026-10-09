@@ -20,6 +20,10 @@
  * has one (`apiKeySet`). Listing models and checking take a connection being edited (`provider`, `baseUrl`, `apiKey`)
  * over a saved service (`service`), so a form can try a new key before saving it and an unchanged one without sending
  * it; neither fails for the provider's sake, they answer what it said.
+ *
+ * Every request to a provider says who sends it (`User-Agent: nocobase-agents/<version>`). A call to an OpenCode
+ * base URL (Zen or Go) additionally carries `x-opencode-session` with a session id the server derives: the same one
+ * for every model call of a conversation, a new one for each call outside any.
  */
 
 export type ModelProviderName =
@@ -130,6 +134,20 @@ export const MODEL_PROVIDER_NAMES: readonly ModelProviderName[] =
 
 export function providerOf(name: string): ModelProviderOption | null {
   return MODEL_PROVIDERS.find((provider) => provider.name === name) ?? null;
+}
+
+/** The session header OpenCode Zen and Go require; a call to an OpenCode base URL sends it without being asked. */
+export const OPENCODE_SESSION_HEADER = 'x-opencode-session';
+
+/** Whether a base URL is OpenCode's (Zen or Go), which requires `OPENCODE_SESSION_HEADER`. */
+export function isOpenCodeUrl(baseUrl: string | null | undefined): boolean {
+  if (!baseUrl) return false;
+  try {
+    const host = new URL(baseUrl).hostname.toLowerCase();
+    return host === 'opencode.ai' || host.endsWith('.opencode.ai');
+  } catch {
+    return false;
+  }
 }
 
 export interface ModelOption {

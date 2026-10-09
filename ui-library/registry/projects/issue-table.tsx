@@ -17,10 +17,10 @@ import {
 } from 'lucide-react';
 import type { MouseEvent, ReactElement, ReactNode } from 'react';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '#components/ui/avatar';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
+import { Checkbox } from '#components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -28,7 +28,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '#components/ui/table';
 import { cn } from 'cn';
 
 /** The colours statuses and labels take, as the projects plugin names them. */

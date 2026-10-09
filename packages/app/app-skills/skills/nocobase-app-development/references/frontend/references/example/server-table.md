@@ -235,7 +235,7 @@ import {
 } from '@tanstack/react-table';
 import type { ReactElement, ReactNode } from 'react';
 
-import { DataTablePagination } from '@/components/data-table/pagination';
+import { DataTablePagination } from '#components/data-table/pagination';
 import {
   Table,
   TableBody,
@@ -243,7 +243,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '#components/ui/table';
 
 import type { Project } from './types.js';
 

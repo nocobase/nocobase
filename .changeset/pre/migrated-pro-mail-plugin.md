@@ -1,0 +1,59 @@
+---
+'@nocobase/app-plugin-mail': minor
+---
+
+Add the Mail plugin with built-in Gmail, Microsoft 365, and IMAP/SMTP adapters, automatic provider registration, and extension contracts for third-party providers.
+
+Provide account connection and lifecycle management, sending identities, reusable templates with current-record variables, rich-text signatures, inbound and outbound attachments, automatic draft saving and recovery, replies, forwards, scheduled delivery, and separate per-recipient bulk sending. Use a shared composer in the Mail center and development send page, preserve each account's message, attachments, and signature when switching senders, and preserve editing during background autosaves. Preserve forwarded content, formatting, and attachments without duplicating the original body. Confirm account deactivation and template or signature deletion, and explain template placeholder requirements.
+
+Add automatic and manual mailbox synchronization, push webhooks with subscription renewal, synchronization retry and cancellation, and a global unread indicator. Configure automatic synchronization through server configuration. Preserve IMAP folder pagination and mailbox selection, handle missing UIDNEXT metadata, retain Gmail recovery checkpoints, load Microsoft inline attachments, and prevent implicit permanent IMAP deletion. Refresh mailboxes after accepted sends and support configurable IMAP sent-copy archiving without retrying confirmed deliveries. Consolidate the unreleased schema into one initial migration, including synchronization recovery state, incomplete message metadata, and synchronization deletion records.
+
+Preserve request identity after lost send responses, distinguish temporary and permanent SMTP failures from unknown delivery outcomes, and report partially accepted deliveries with accepted and rejected recipients without retrying accepted recipients. Keep attachment preparation failures classified as unsent. Add persistent delivery histories with recipient details, expandable batch totals, safe retry and pending-delivery cancellation, and pagination that keeps complete batches together.
+
+Improve the responsive Mail center and conversation reading layout with isolated, script-disabled HTML rendering that preserves email styles and authenticated inline images. Resize message bodies as content loads, mark opened messages as read, preserve conversation expansion choices, keep single messages expanded, and show labels, notes, to-do controls, and localized action tooltips. Improve rich-text heading and font-size controls, paragraph spacing, form spacing, management selection, and signature ordering. Exclude drafts from non-draft lists before pagination and hide draft read-state controls.
+
+Unify account, management, and log table pagination with server-side totals, numbered pages, direct page entry, and page-size selection while retaining the Mail center's cursor pagination. Show account owner names and provide permission-protected management detail drawers and attachment downloads. Remove the unsafe cross-account move control, provider message ID column, standalone Mail application route, and administration operation-log page. Keep the development Mail center, account management, and consolidated send, bulk, and synchronization logs available, with redirects from the previous send tabs.
+
+Keep folder membership and signatures in dedicated sources of truth, enforce account and identity ownership, cascade account-owned records, and clean up temporary OAuth credentials and published outbox records. Preserve local draft attachment contents, scope the client to its application container, expose supported server integration and background-runtime contracts, and retain translation metadata in HTTP errors. Store provider credentials as plain JSON in the core credential store; encryption is left to a separate plugin. Expand persistence, ownership, provider, API, and UI regression coverage, enforce coverage thresholds, and update integration documentation and plugin guidance.
+
+Hide suspended accounts and their messages from the Mail center and unread count while preserving management access to synchronized mail. Explain this behavior in the deactivation confirmation.
+
+Fix Microsoft Graph attachment metadata queries by qualifying the fileAttachment contentId property, allowing draft and forwarded messages to send without HTTP 400 errors while preserving inline image metadata.
+
+Import all date-scoped mail history in resumable batches, interleave new-mail synchronization, recover abandoned queue tasks, and rescan expired cursors without skipping mail. Preserve incomplete message metadata, expose independent content retries, and display recovery and partial-content progress.
+
+Preserve mail error details in application logs, route cleanup and realtime failures through the shared logger, and record sending, synchronization, and retry outcomes with correlation fields without changing delivery behavior when logging fails.
+
+Show accepted messages with provider IDs in the known Sent folder immediately, reconcile them with later mailbox synchronization, and prevent stale provider drafts from reverting accepted messages. Hide synchronized duplicates of editable local drafts before pagination and preserve confirmed delivery when local cleanup fails.
+
+Reorganize the Mail application Skill into focused configuration, client integration, sending, and synchronization references. Clarify production OAuth return handling, provider capabilities, delivery retry boundaries, and resumable synchronization without a total history cap.
+
+Unify personal and management message mutations, including local draft deletion; refresh mailbox data on realtime changes while preserving reading and composing state; drain background synchronization work on shutdown. Separate shared contracts, scheduling, delivery, and composer state responsibilities while preserving existing public exports.
+
+Recover failed initial mailbox loads on realtime changes and mark newly displayed replies in an open conversation as read after refreshing.
+
+Fix PostgreSQL folder and label queries, index creation, and address searches with persisted text projections. Preserve editable Gmail drafts and attachments across changing provider message IDs. Honor Reply-To, keep explicit unread state and mailbox pagination during refreshes, bound automatic read writes, coalesce badge refreshes, preserve notifications across service boot order, and prefilter IMAP history by receipt date before downloading bodies.
+
+Store absent mail received and sent timestamps as SQL NULL so PostgreSQL accepts messages with missing date metadata and clears dates consistently on updates.
+
+Save drafts silently after two seconds of inactivity using local editing, inline save status and browser recovery, without interrupting typing, closing, attachments or sending. Retain a manual Save draft action that closes the composer only after the latest content is persisted. Preserve editing on failure, reload the latest draft before reopening and validate save acknowledgements against stale revisions. Transfer submitted content and attachments to durable outgoing snapshots, remove drafts after accepted, failed, unknown or partially accepted delivery, retry failed snapshots independently, and prevent late saves or synchronization from resurrecting closed drafts.
+
+Keep scheduled messages in Drafts with their send time and status until delivery, and require successful cancellation before editing or rescheduling. Preserve recipients and attachments, prevent cancelled jobs from sending, and protect in-progress and uncertain deliveries against duplicate sends. Show a dedicated detail banner and compact list badges, place cancellation beside the scheduled time, and expose full date and timezone details on hover.
+
+Allow sending without a subject after composer confirmation, including scheduled and separate delivery, and allow templates without a subject. Accept HTML-only and image-only bodies for single and bulk sends while retaining subject and body type and size validation and requiring a non-empty body. Preserve the authored message body when sending or saving so sanitized or edited signatures are not duplicated. Newly created and imported signatures are not automatically defaults; allow clearing a default, including the only signature, by clicking its Default badge.
+
+Support rich-text image uploads with authenticated previews, CID references, and proportional resizing through a drag handle or arrow keys. Preserve image dimensions and inline delivery data through drafts and sends. Hide inline images from attachment lists, counts and indicators while retaining their body previews; keep regular image and document attachments visible. Allow deleting selected editor images and drop attachment references when the final body reference is removed. Clear retained inline font sizes when changing heading levels, track the caret in the heading selector, and align heading spacing in the editor and message details.
+
+Include original content and inline images in replies, preserve quotes through draft saves, and prevent duplicate original bodies in Microsoft replies. Allow removing and restoring quoted content while preserving authored text and attachments, without the provider reinserting removed reply content. Collapse recognized HTML and plain-text history when reading, with accessible expansion controls. Adapt HTML bodies to light and dark application themes while restoring sender formatting on returning to light mode.
+
+Show sender and recipient names with address fallbacks, avoid duplicate sender addresses, and show recipients in message details. Place header actions beneath timestamps in narrow detail panes. Add global reply and forward buttons below conversation details, targeting the latest non-draft message regardless of collapsed state or loading older pages. Exclude drafts from conversation content and counts before pagination while keeping them in Drafts.
+
+Align mail page containers and headers with the application template layout. Remove the duplicate mail center header and conflicting height constraints, place search in the mailbox toolbar, and keep log navigation below its page header. Show the current message range and total on one line immediately before compact previous and next arrow buttons, with the whole pagination group aligned right. Clarify English and Chinese copy for account connections, synchronization, signatures, label deletion and provider acceptance, including automatic synchronization after connection and initial progress in Sync logs. Throttle focus refreshes to once every 30 seconds and avoid reloading composer identities and folders when account metadata is unchanged.
+
+Bound background IMAP body reads to 2 MiB per message and on-demand content reads to 16 MiB. Stream attachments independently without downloading entire messages, preserve synchronization pagination and checkpoints, enforce protocol response allocation limits, and avoid encoded attachment sizes in download Content-Length headers.
+
+Remove accounts asynchronously in bounded database batches with durable work, restart recovery, retryable cleanup failures and visible removal status. Fence late synchronization and sending results so removed accounts cannot be repopulated. Return HTTP 202 for removal while preserving provider messages. Index active synchronization recovery and align removal folder batches with the existing index to reduce scans and sorting.
+
+Use one initial migration for the complete unreleased Mail schema, including address search, account cleanup, synchronization recovery, scheduled drafts and draft states. Development databases that ran the former migration sequence require a fresh database for this baseline.
+
+Remove icons from the Mail development submenu while retaining its parent navigation icon.

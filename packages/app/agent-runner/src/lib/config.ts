@@ -8,7 +8,13 @@ import { chmod, mkdir, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { HEADERS, PROTOCOL_VERSION, type RunApp } from '../protocol/index.ts';
+import {
+  HEADERS,
+  PROTOCOL_VERSION,
+  ToolSlotsSchema,
+  type RunApp,
+  type ToolSlots,
+} from '../protocol/index.ts';
 import { ApiClient } from './http.ts';
 import {
   ensureHome,
@@ -27,6 +33,11 @@ export interface RunnerSettings {
   name: string;
   /** Runs at once across every application; `start --slots` overrides it. */
   slots: number;
+  /**
+   * Runs of each coding tool at once across every application, beside `slots` (`register --slots claude=2,codex=1`); a
+   * tool left out is bounded by `slots` only.
+   */
+  toolSlots?: ToolSlots;
   agentHome: AgentHome;
   /**
    * Whether a runner installed by the install script updates itself between runs when an application serves a newer
@@ -65,9 +76,15 @@ export async function readSettings(
   paths: RunnerPaths = runnerPaths(),
 ): Promise<RunnerSettings> {
   const stored = await readJson<Partial<RunnerSettings>>(paths.settings);
+  const toolSlots = ToolSlotsSchema.safeParse(stored?.toolSlots);
   return {
     name: stored?.name ?? defaultRunnerName(),
     slots: stored?.slots ?? 1,
+    ...(toolSlots.success &&
+    toolSlots.data !== undefined &&
+    Object.keys(toolSlots.data).length > 0
+      ? { toolSlots: toolSlots.data }
+      : {}),
     agentHome: stored?.agentHome === 'real' ? 'real' : 'isolated',
     autoUpdate: stored?.autoUpdate !== false,
     ...(typeof stored?.serviceLabel === 'string' && stored.serviceLabel !== ''

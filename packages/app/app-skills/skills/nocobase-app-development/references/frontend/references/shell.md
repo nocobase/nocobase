@@ -37,7 +37,7 @@ import {
   TooltipTrigger,
   TooltipContent,
   TooltipProvider,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 // … (the other imports and ACTION_LINK_CLASS stay unchanged)
 
 export function HeaderActions({
