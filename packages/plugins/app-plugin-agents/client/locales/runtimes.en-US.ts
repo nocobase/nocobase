@@ -77,7 +77,7 @@ const runtimesEnUS = {
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
       runsFailed: 'Could not load its runs.',
-      readOnly: 'Only its owner or a manager of runtimes can change it.',
+      readOnly: 'Only its owner can change it.',
       owner: 'Owner {{name}}',
     },
     status: {
