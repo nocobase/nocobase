@@ -273,6 +273,16 @@ const pages = {
     moveDown: 'Move down',
     remove: 'Remove',
     suggestions: 'Type any model, or pick a common one',
+    builtIn: 'Built-in',
+    availableRunners: '{{count}} runtimes available',
+    runnerReady: 'Ready',
+    runnerNotReady: 'Not ready',
+    reportHint:
+      'Runtime model reports are suggestions and take effect only after you save. Tool support does not guarantee permission, account quota or a successful call.',
+    reportedEfforts: 'Reported efforts: {{efforts}}.',
+    noReportedEfforts: 'none',
+    effortNotReported:
+      'The saved effort {{effort}} was not reported; it stays until you change it.',
     required: 'Add at least one.',
     runnerNeedsOne:
       'A runner agent needs at least one tool and model, so its last one stays.',
