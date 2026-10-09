@@ -93,8 +93,8 @@ Extract the archive as the service user or transfer ownership to that user. Writ
 On a server without a Hub or a container platform, prefer `@nocobase/app-installer` to running the archive by hand: it installs the archive into a directory of its own, writes `config.yml` and `app.env`, applies migrations, runs the application under pm2, and later upgrades to a new archive with a backup of every SQLite database and an automatic rollback when the new release fails to start. The server needs Node.js 24 and a global pm2, nothing from the project. The global `nocobase-app-installer` Skill drives it, and its `--help` documents every flag:
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
+npx --registry=https://registry.npmjs.org @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
+npx --registry=https://registry.npmjs.org @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
 ```
 
 `install --base-path /crm` chooses the mount path and writes it to `app.env` as `APP_BASE_PATH`; without it the server default `/main` applies, and `/hub` for the Hub template. Upgrades keep the path `app.env` names, and editing it there moves the application on its next start. The installer refuses an archive for another application, an older version or another machine. The same version built again deploys as a new release, so the version need not be bumped for each deployment. An archive from an `@nocobase/app-cli` that predates relocatable builds has its mount path compiled in and runs only at that path, so a mismatch is refused with `BASE_PATH_MISMATCH`; one older still, which records no build time, or a release whose `@nocobase/app-server` predates `APP_STORAGE_DIR`, is refused: upgrade the project's NocoBase packages and build again. Each application on the server gets its own directory, port and pm2 process.

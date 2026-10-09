@@ -5,9 +5,9 @@ import test from 'node:test';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const proWorkflows = [
-  'pro-release-beta.yml',
-  'pro-release-stable.yml',
-  'pro-promote-to-stable.yml',
+  'v3-pro-release-beta.yml',
+  'v3-pro-release-stable.yml',
+  'v3-pro-promote-to-stable.yml',
 ];
 
 async function workflow(name) {

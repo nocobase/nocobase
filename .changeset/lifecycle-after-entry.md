@@ -1,0 +1,5 @@
+---
+"@nocobase/lifecycle": minor
+---
+
+Add `afterEntry(callback)` to the context of `onEnterState` hooks, typed as `EnterStateHookContext`, with `EnterStateHook` for the hook itself; leave hooks, `onTransition` and `tx` do not carry it. The callback runs in the entry's transaction once every entry hook of the state, the state's own and the lifecycle's, has run and the entry's effect runs are registered, on a transition and on `runtime.create()` alike. A callback that throws rolls the whole entry back. One that moves the record on through `tx` ends a stay that has begun, unlike a hook doing so, which ends it before it begins: the entered state's `onEnter` effects are still queued and run, but their continuations are dropped because the record has left the stay they served. Work can be queued only while the entry hooks run; queuing it later, from a callback or through a kept context, throws. It lets a second layer such as an approval conclude a stay that needs no decision once the business's own entry hooks have run.

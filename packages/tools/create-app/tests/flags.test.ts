@@ -108,7 +108,7 @@ describe('formatHelp', () => {
     expect(help).toContain('--template-tag');
     expect(help).toContain('default');
     expect(help).toContain('--[no-]install');
-    expect(help).toContain('https://npm.nocobase.ai');
+    expect(help).toContain('https://registry.npmjs.org');
     expect(help).toContain('create-app crm');
   });
 });

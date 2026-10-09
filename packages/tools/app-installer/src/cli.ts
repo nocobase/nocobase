@@ -100,7 +100,7 @@ export function formatHelp(): string {
     'NOTES',
     `  Requires Node.js 24+ and, to start the application, pm2 ${MINIMUM_PM2_VERSION}+ installed globally; --template also needs pnpm 11+.`,
     '  Build an archive in the application project with pnpm build --target <platform> --node-version <major> --tar, matching this machine.',
-    '  Packages come from https://npm.nocobase.ai by default; override with --registry or NOCOBASE_REGISTRY.',
+    '  Packages come from https://registry.npmjs.org by default; override with --registry or NOCOBASE_REGISTRY.',
     '  --template builds the Hub on this machine and takes several minutes.',
     '  To change the origin or port, edit app.env in the installation root, then run pm2 restart with the process name.',
   ].join('\n');

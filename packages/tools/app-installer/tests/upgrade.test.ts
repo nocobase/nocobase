@@ -52,7 +52,7 @@ function state(overrides: Partial<InstallerState> = {}): InstallerState {
       package: '@nocobase/app-template-hub',
     },
     name: 'nocobase-hub',
-    registry: 'https://npm.nocobase.ai',
+    registry: 'https://registry.internal.example',
     dialect: 'sqlite',
     drivers: [],
     current: '3.0.0',
