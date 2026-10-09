@@ -12,6 +12,21 @@ The plugin contributes no routes. An application places `MailWorkspacePage`, `Ma
 
 If account connection is included, configure `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL` to the application page that renders the accounts and read [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page); the default returns to the application root. The return page only consumes `mailAuthorization` and refreshes account state; it does not need `MailAccountConnector` unless it also starts a separate new-account flow.
 
+### Personal account entry and workspace actions
+
+Register an application-owned `/mail/accounts` page whose lazy loader imports the public `MailAccountsPage` from `/client`. Require authentication (`auth: 'required'`) and declare `authz: { resource: { type: 'page', id: 'mail.workspace' }, action: 'access' }` on that page and the workspace. The account APIs independently enforce permissions; a link grants no access. This is a personal connection/management page, including resuming suspended accounts, not a read-only administrator account overview.
+
+```tsx
+<MailWorkspacePage
+  accountsHref='/mail/accounts'
+  headerActions={<a href={resolveAppUrl('/mail/logs')}>Mail logs</a>}
+/>
+```
+
+Import `resolveAppUrl` from `@nocobase/app-client` for application-owned links. `accountsHref` excludes the deployment prefix: `/mail/accounts` becomes `/main/mail/accounts` under `/main`. With no usable accounts the workspace displays Connect mail account; with accounts it retains Mail accounts in the header. If the property is omitted, neither link is invented. `headerActions` appends arbitrary React content after the built-in controls without replacing their disabled/loading behavior, and never implicitly supplies an empty-state account link. The reusable workspace does not depend on development mode, and the plugin contributes no routes.
+
+Separately configure `mail.oauthReturnUrl: /mail/accounts` so OAuth success and failure return to the registered production page. This server configuration is independent of the component property; the return page consumes the authorization result and reloads accounts. Passing a link does not register a page; the application must declare it in its production routes.
+
 ## Business records and templates
 
 Pass the allowed record values through `templateVariables` when embedding the workspace:
