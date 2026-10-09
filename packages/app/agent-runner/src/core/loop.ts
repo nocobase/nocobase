@@ -23,7 +23,8 @@
 //
 // Self-update: a heartbeat answer may name a newer runner the application serves (`upgrade`). A daemon started by
 // its service from an installation (`selfUpdate`) stops claiming, waits for its runs to end, installs the new version
-// (update.ts) and stops; the service starts the new version. Any other daemon only logs the notice.
+// (update.ts) and stops, and its process exits with `exitCode`; the service starts the new version. Any other daemon
+// only logs the notice.
 import { rm } from 'node:fs/promises';
 
 import type { AgentAdapter } from '../agent/adapters/types.ts';
@@ -70,7 +71,12 @@ import {
   type IsolationConfig,
   type PolicyReport,
 } from './local-policy.ts';
-import { applyUpdate, isNewer, type UpdateTarget } from './update.ts';
+import {
+  applyUpdate,
+  isNewer,
+  RESTART_EXIT_CODE,
+  type UpdateTarget,
+} from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
@@ -231,6 +237,11 @@ export class RunnerDaemon {
         void this.pruneStore();
       },
     });
+  }
+
+  /** How the process exits once the daemon has stopped: `RESTART_EXIT_CODE` when it updated itself, 0 otherwise. */
+  get exitCode(): number {
+    return this.updatedTo === undefined ? 0 : RESTART_EXIT_CODE;
   }
 
   get activeRuns(): string[] {

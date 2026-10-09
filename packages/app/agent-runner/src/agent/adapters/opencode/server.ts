@@ -48,6 +48,16 @@ export class ServerStartError extends Error {
   }
 }
 
+function groupAlive(child: ChildProcess): boolean {
+  if (child.pid === undefined) return false;
+  try {
+    process.kill(-child.pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
 function killGroup(child: ChildProcess, signal: NodeJS.Signals): void {
   if (child.pid === undefined) return;
   try {
@@ -99,19 +109,27 @@ export const launchServer: LaunchFn = async (options) => {
       });
     },
   );
-  // A runner that exits must not leave the server behind.
+  // A runner that exits must not leave the server, or anything it started, behind: the group outlives the server
+  // while a process it started still runs in it, so this holds until the server is closed, not until it exits.
   const onProcessExit = () => killGroup(child, 'SIGKILL');
   process.once('exit', onProcessExit);
-  void exited.then(() => process.removeListener('exit', onProcessExit));
 
+  // Closed once the server has exited and nothing is left in its group: the server may exit, before or after the
+  // SIGTERM, while what it started (a tool's shell, a server or watcher a command left running) still runs there.
+  const done = () => exitedState !== undefined && !groupAlive(child);
   const close = async (graceMs: number) => {
-    if (exitedState) return;
-    killGroup(child, 'SIGTERM');
-    const result = await Promise.race([exited, delay(graceMs)]);
-    if (!result) {
+    if (!done()) {
+      killGroup(child, 'SIGTERM');
+      const deadline = Date.now() + graceMs;
+      while (!done() && Date.now() < deadline) await delay(20);
+    }
+    if (!done()) {
       killGroup(child, 'SIGKILL');
       await exited;
+      const deadline = Date.now() + 2_000;
+      while (groupAlive(child) && Date.now() < deadline) await delay(20);
     }
+    process.removeListener('exit', onProcessExit);
   };
 
   const baseUrl = await new Promise<string>((resolve, reject) => {
