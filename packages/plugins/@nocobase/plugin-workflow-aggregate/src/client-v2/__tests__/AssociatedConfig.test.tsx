@@ -12,6 +12,7 @@ import { act, render, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import type { CascaderProps } from 'antd';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCollectionFieldOptions } from '../../../../plugin-workflow/src/client-v2/canvas/collectionFieldOptions';
 import { AssociatedConfig } from '../components/AssociatedConfig';
 
 type MockField = {
@@ -411,5 +412,72 @@ describe('AssociatedConfig', () => {
       expect(getForm()?.getFieldValue(['config', 'params', 'field'])).toBeNull();
       expect(getForm()?.getFieldValue(['config', 'params', 'filter'])).toBeNull();
     });
+  });
+
+  it.each([
+    ['{{$context.data.id}}', ['$context', 'data', 'comments']],
+    ['{{$context.data.author0.id}}', ['$context', 'data', 'author0', 'comments']],
+  ])('restores %s without eagerly traversing unrelated or target collections', async (associatedKey, selectedPath) => {
+    const getCollectionAllFields = vi.fn((collection: string) => [
+      ...Array.from({ length: 8 }, (_, index) => ({
+        collectionName: collection,
+        name: `author${index}`,
+        foreignKey: `author${index}Id`,
+        target: collection,
+        type: 'belongsTo',
+        interface: 'm2o',
+      })),
+      {
+        collectionName: collection,
+        name: 'comments',
+        target: 'comments',
+        type: 'hasMany',
+        interface: 'o2m',
+      },
+    ]);
+    const trigger = mockWorkflowPlugin.triggers.get();
+    const useVariables = vi.spyOn(trigger, 'useVariables').mockImplementation(
+      (_config, options) =>
+        getCollectionFieldOptions({
+          ...options,
+          fields: [{ name: 'data', type: 'hasOne', target: 'posts', collectionName: 'posts' }],
+          compile: (key: string) => key,
+          collectionManager: { getCollectionAllFields },
+        }) as ReturnType<typeof trigger.useVariables>,
+    );
+    const getTrigger = vi.spyOn(mockWorkflowPlugin.triggers, 'get').mockReturnValue(trigger);
+
+    try {
+      renderWithForm({
+        config: {
+          association: {
+            associatedCollection: 'posts',
+            associatedKey,
+            name: 'comments',
+          },
+          collection: 'comments',
+        },
+      });
+
+      await waitFor(() => {
+        expect(getTriggerOptions().triggerDataOptions.some((option) => option.value === 'comments')).toBe(true);
+      });
+
+      expect(cascaderProps.current?.value).toEqual(selectedPath);
+      expect(getCollectionAllFields.mock.calls.length).toBe(selectedPath.length - 2);
+      expect(getCollectionAllFields.mock.calls.every(([collection]) => collection === 'posts')).toBe(true);
+      expect(findOption(getTriggerOptions().triggerDataOptions, 'author1').children).toBeUndefined();
+      let options = getCascaderOptions();
+      let selectedOption: MockOption | undefined;
+      for (const key of selectedPath) {
+        selectedOption = findOption(options, key);
+        options = selectedOption.children ?? [];
+      }
+      expect(selectedOption?.label).toBe('comments');
+      expect(selectedOption?.children).toBeUndefined();
+    } finally {
+      useVariables.mockRestore();
+      getTrigger.mockRestore();
+    }
   });
 });

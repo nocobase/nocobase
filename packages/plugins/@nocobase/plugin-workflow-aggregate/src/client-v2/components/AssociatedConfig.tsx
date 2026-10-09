@@ -144,6 +144,10 @@ function createRootOption({
   };
 }
 
+function matchAssociationBranch(field: CollectionTriggerField) {
+  return matchToManyField(field) || ['belongsTo', 'hasOne', 'belongsToArray'].includes(field.type ?? '');
+}
+
 function useAssociatedFields() {
   const flowEngine = useFlowEngine();
   const current = useNodeContext();
@@ -153,7 +157,9 @@ function useAssociatedFields() {
     flowEngine.context.app.pm.get('@nocobase/plugin-workflow')) as WorkflowPluginLike | undefined;
   const compile = (key: string, options?: Record<string, unknown>) => flowEngine.context.t(key, options);
   const variableOptions: UseVariableOptions = {
-    types: [matchToManyField],
+    // Match intermediate relations directly so the variable builder does not recursively search their target tables.
+    // Only to-many fields are committed by onChange; other relations remain lazy navigation branches.
+    types: [matchAssociationBranch],
     appends: null,
     depth: 4,
   };
@@ -265,13 +271,16 @@ export function AssociatedConfig({
       let currentOptions = options;
       let currentOption: AssociatedCascaderOption | undefined;
       let resolved = true;
-      for (const key of selectedPath) {
+      for (const [index, key] of selectedPath.entries()) {
         currentOption = currentOptions.find((option) => option.value === key);
         if (!currentOption) {
           resolved = false;
           break;
         }
-        await loadOptionChildren(currentOption);
+        // The final relation already has its label and field metadata; its target fields are not needed for display.
+        if (index < selectedPath.length - 1) {
+          await loadOptionChildren(currentOption);
+        }
         currentOptions = currentOption.children ?? [];
       }
 
