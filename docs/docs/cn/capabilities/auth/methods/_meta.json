@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "password",
+    "label": "密码认证"
+  },
+  {
+    "type": "file",
+    "name": "api-keys",
+    "label": "API keys"
+  }
+]

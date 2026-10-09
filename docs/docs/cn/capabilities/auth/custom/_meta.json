@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "增加认证方式"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "定制登录页面"
+  }
+]

@@ -49,8 +49,6 @@ Create the order. Its status should be Draft. Open its number and check the deta
 
 ![Order detail showing SO-001 for CNY 1280 in Draft status; Chinese interface](https://static-docs.nocobase.com/nb3-docs-20260916-tutorial-detail.png)
 
-Add the Submit for approval action in the [approval chapter](./workflow).
-
 ## Check persistence and routing
 
 1. Refresh the detail URL and verify that the same order opens.
