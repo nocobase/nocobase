@@ -18,9 +18,9 @@ Provide an existing template and tell your Agent which information to include, w
 
 This example uses a Word purchase approval template to generate a DOCX file for the current order. The template contains a heading, a purchase information table, and a sign-off area. The Agent maps the information in the template to the application's fields.
 
-[Download the example Word template](/downloads/purchase-approval-template.docx)
+<a href="/downloads/purchase-approval-template.docx" download>Download the example Word template</a>
 
-![Word purchase approval template](../../../cn/capabilities/assets/template-print-template.png)
+![Word purchase approval template](../../cn/capabilities/assets/template-print-template.png)
 
 ## Example: generate a purchase approval form from an order
 
@@ -38,11 +38,11 @@ Anyone with access to the order can generate its approval form. Use the current 
 
 1. Open order details and click **Generate approval form** to download the current order's purchase approval form.
 
-![Generate a purchase approval form from order details](../../../cn/capabilities/assets/template-print-generate.png)
+![Generate a purchase approval form from order details](../../cn/capabilities/assets/template-print-generate.png)
 
 2. Click **Preview approval form** to see the result, or open the downloaded file in Word. The order number, applicant, amount, and approval result are filled in, while the template's heading, table layout, and sign-off area are preserved.
 
-![Purchase approval form filled with current order data](../../../cn/capabilities/assets/template-print-result.png)
+![Purchase approval form filled with current order data](../../cn/capabilities/assets/template-print-result.png)
 
 After business data changes, generate the document again to obtain a file with the current information. Previously downloaded files retain their contents from the time of generation.
 

@@ -17,13 +17,13 @@ Configure these common records as a default data scope that administrators can a
 
 In Settings → Authorization → Default Data Scope, configure Approved orders for View orders. This example extends reading while keeping approval responsibilities unchanged.
 
-![Configure approved orders as the default viewing scope](../../../../cn/capabilities/authorization/assets/default-access.png)
+![Configure approved orders as the default viewing scope](../../../cn/capabilities/authorization/assets/default-access.png)
 
 ### View the result
 
 Alice's list includes her orders and Bob's approved PO-2026-003. Other users with View orders permission can consult the same reference records.
 
-![A requester consults another person's approved order](../../../../cn/capabilities/authorization/assets/default-access-orders.png)
+![A requester consults another person's approved order](../../../cn/capabilities/authorization/assets/default-access-orders.png)
 
 ## Adjust the common scope
 

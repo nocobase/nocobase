@@ -18,7 +18,7 @@ keywords: 'NocoBase 3,模板打印,Word,DOCX,审批单,文档生成'
 
 本例使用一份 Word 采购审批单模板，为当前订单生成 DOCX 文件。模板包含标题、采购信息表和签名区域，Agent 负责把模板中的信息与应用字段对应起来。
 
-[下载本例 Word 模板](/cn/downloads/purchase-approval-template.docx)
+<a href="/cn/downloads/purchase-approval-template.docx" download>下载本例 Word 模板</a>
 
 ![采购审批单 Word 模板](./assets/template-print-template.png)
 

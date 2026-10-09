@@ -29,25 +29,25 @@ After integration, administrators open a job in Settings → Authorization → P
 
 In Business permissions, click the scope icon beside View orders, choose Orders requested by me, and save. Reviewers can view orders required for their work; approval controls appear only on pending orders.
 
-![Configure the requester's order action and record scope](../../../../cn/capabilities/authorization/assets/permission-set.png)
+![Configure the requester's order action and record scope](../../../cn/capabilities/authorization/assets/permission-set.png)
 
 ### Assign people
 
 Add people on the permission set's Assignees page. This example assigns Alice Miller and Bob Carter as requesters, and Emma Wilson as an order reviewer.
 
-![Assign the purchase requester permission set to people](../../../../cn/capabilities/authorization/assets/assignments.png)
+![Assign the purchase requester permission set to people](../../../cn/capabilities/authorization/assets/assignments.png)
 
 ### View the results
 
 Alice signs in to view her orders. Emma signs in to view orders and process pending approvals. Permissions define responsibilities; business state determines whether an order is currently eligible for approval.
 
-![A requester views her own orders](../../../../cn/capabilities/authorization/assets/requester-orders.png)
+![A requester views her own orders](../../../cn/capabilities/authorization/assets/requester-orders.png)
 
-![A reviewer views pending orders and approval controls](../../../../cn/capabilities/authorization/assets/reviewer-orders.png)
+![A reviewer views pending orders and approval controls](../../../cn/capabilities/authorization/assets/reviewer-orders.png)
 
 Open pending order PO-2026-004 to view its details. Emma can use Approve or Reject to process it.
 
-![A reviewer processes approvals in the order details](../../../../cn/capabilities/authorization/assets/reviewer-order-details.png)
+![A reviewer processes approvals in the order details](../../../cn/capabilities/authorization/assets/reviewer-order-details.png)
 
 ## Adjust and reuse
 

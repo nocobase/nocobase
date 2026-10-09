@@ -17,11 +17,11 @@ Administrators can adjust each job's order-viewing scope in its permission set.
 
 Your Agent connects the order requester to the signed-in user and provides the appropriate scope. In the requester's business permissions, administrators choose Orders requested by me for View orders.
 
-![Choose orders requested by the current user](../../../../cn/capabilities/authorization/assets/data-scope.png)
+![Choose orders requested by the current user](../../../cn/capabilities/authorization/assets/data-scope.png)
 
 Alice's order list shows her orders, while Bob's shows his. The same page returns different data according to each user's permissions.
 
-![Alice's list shows orders she requested](../../../../cn/capabilities/authorization/assets/requester-orders.png)
+![Alice's list shows orders she requested](../../../cn/capabilities/authorization/assets/requester-orders.png)
 
 ## Choose scopes for responsibilities
 

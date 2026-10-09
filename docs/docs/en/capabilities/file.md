@@ -34,15 +34,15 @@ Removing an attachment only unlinks it from the current order; retain the file.
 
 1. Open order details, click **Choose files** in the attachment area, and select the purchase documents. Click **Save attachments** to associate them with the order. The files remain available when you reopen the order.
 
-![Upload and save purchase documents in order details](../../../cn/capabilities/assets/file-order-attachments.png)
+![Upload and save purchase documents in order details](../../cn/capabilities/assets/file-order-attachments.png)
 
 2. Click **Preview** beside an attachment to read its contents in the application.
 
-![Preview product specifications in the application](../../../cn/capabilities/assets/file-preview-attachment.png)
+![Preview product specifications in the application](../../cn/capabilities/assets/file-preview-attachment.png)
 
 3. Click **Download** to download the original file. Click **Remove** and save to unlink an attachment from the current order.
 
-![Download a supplier quotation from an order](../../../cn/capabilities/assets/file-download-attachment.png)
+![Download a supplier quotation from an order](../../cn/capabilities/assets/file-download-attachment.png)
 
 ## Further use
 

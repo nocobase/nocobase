@@ -11,11 +11,11 @@ The Permission Inspector helps administrators understand a user's permissions an
 
 An administrator with inspection permission opens Settings → Authorization → Permission Inspector, selects Alice Miller, opens the Order approvals section, and clicks View orders for details.
 
-![Select Alice and inspect order permissions](../../../../cn/capabilities/authorization/assets/inspector.png)
+![Select Alice and inspect order permissions](../../../cn/capabilities/authorization/assets/inspector.png)
 
 The result shows permission sets, record scopes, and rule sources. Here, Order applicant grants View orders, default scope includes approved orders, sharing adds PO-2026-004, and a restriction allows orders up to CNY 2,000.
 
-![View order scopes and rule sources](../../../../cn/capabilities/authorization/assets/inspector-details.png)
+![View order scopes and rule sources](../../../cn/capabilities/authorization/assets/inspector-details.png)
 
 ## Adjust configuration by source
 

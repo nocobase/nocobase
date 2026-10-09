@@ -20,13 +20,13 @@ Let administrators manage this sharing rule in Settings.
 
 In Settings → Authorization → Sharing Rules, administrators create a rule, select the order-viewing action, choose the order, and select Alice as the recipient.
 
-![Choose the shared order and recipient](../../../../cn/capabilities/authorization/assets/sharing-rule.png)
+![Choose the shared order and recipient](../../../cn/capabilities/authorization/assets/sharing-rule.png)
 
 ### View the result
 
 Alice opens the order list and can view Bob's PO-2026-004. Her existing records remain available under their current rules.
 
-![Alice views a pending order shared by her colleague](../../../../cn/capabilities/authorization/assets/shared-orders.png)
+![Alice views a pending order shared by her colleague](../../../cn/capabilities/authorization/assets/shared-orders.png)
 
 ## After collaboration
 

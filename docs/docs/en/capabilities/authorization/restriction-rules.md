@@ -18,13 +18,13 @@ Let administrators select the appropriate amount scope in Settings.
 
 In Settings → Authorization → Restriction Rules, select Alice, the order-viewing action, and the amount scope. The selected condition describes allowed records: orders up to CNY 2,000.
 
-![Configure Alice's order-viewing budget limit](../../../../cn/capabilities/authorization/assets/restriction-rule.png)
+![Configure Alice's order-viewing budget limit](../../../cn/capabilities/authorization/assets/restriction-rule.png)
 
 ### View the result
 
 Alice's list retains accessible orders whose amounts meet the condition, including the shared PO-2026-004 for CNY 1,550.
 
-![Accessible orders whose amounts meet the restriction](../../../../cn/capabilities/authorization/assets/restricted-orders.png)
+![Accessible orders whose amounts meet the restriction](../../../cn/capabilities/authorization/assets/restricted-orders.png)
 
 ## Set conditions for responsibilities
 
