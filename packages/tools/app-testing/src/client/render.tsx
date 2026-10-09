@@ -113,7 +113,11 @@ export async function renderWithApp(
   );
   let application: ClientApplication | undefined;
   let removeConfigBlock = (): void => {};
+  let disposed = false;
   const dispose = async (): Promise<void> => {
+    // A failure handled by the caller must not be reported again by the test-finished hook.
+    if (disposed) return;
+    disposed = true;
     toaster.dispose();
     removeConfigBlock();
     await application?.shutdown();
@@ -211,7 +215,15 @@ export async function renderWithApp(
       toasts: (): readonly TestToast[] => toaster.list(),
     });
   } catch (error) {
-    await dispose();
+    try {
+      await dispose();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        'Test application initialization and cleanup both failed.',
+        { cause: cleanupError },
+      );
+    }
     throw error;
   }
 }

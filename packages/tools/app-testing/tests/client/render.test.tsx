@@ -364,6 +364,51 @@ describe('renderWithApp', () => {
     expect(lifecycle).toEqual(['start', 'shutdown']);
   });
 
+  it.each(['startup', 'render'] as const)(
+    'preserves the %s failure when shutdown also fails',
+    async (stage) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const primaryError = new Error(`${stage} failed`);
+      const cleanupError = new Error('shutdown failed');
+      class BrokenProvider extends ServiceProvider<ClientApplication> {
+        public readonly name: string = '@example/broken-cleanup';
+
+        public override register(): void {
+          if (stage === 'startup') throw primaryError;
+        }
+
+        public override shutdown(): Promise<void> {
+          return Promise.reject(cleanupError);
+        }
+      }
+      const plugin = defineClientPlugin({
+        packageName: '@example/broken-cleanup',
+        serviceProviders: [BrokenProvider],
+      });
+      function Page(): ReactElement {
+        if (stage === 'render') throw primaryError;
+        return <p>Never rendered</p>;
+      }
+
+      const error = await renderWithApp(<Page />, {
+        plugins: [plugin()],
+      }).catch((error: unknown) => error);
+
+      expect(error).toBeInstanceOf(AggregateError);
+      expect(error).toMatchObject({
+        cause: cleanupError,
+        errors: [
+          stage === 'startup'
+            ? expect.objectContaining({ errors: [primaryError, cleanupError] })
+            : primaryError,
+          cleanupError,
+        ],
+      });
+      expect(document.getElementById('nocobase-runtime-config')).toBeNull();
+      // The test-finished hook must not report the cleanup failure again after this assertion handles it.
+    },
+  );
+
   it('fails a request nothing answers instead of sending it anywhere', async () => {
     const errors: unknown[] = [];
     function Probe(): ReactElement {
