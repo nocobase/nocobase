@@ -29,6 +29,51 @@ import type { ScriptItem } from './opencode-fake-server.ts';
 const SID = 'ses_test';
 const MODEL = { id: 'm1', providerID: 'prov' };
 
+describe('model capabilities', () => {
+  it('lists provider/model ids and actual variants and closes the server without creating a session', async () => {
+    const fake = new FakeOpencode({
+      script: [],
+      models: [
+        {
+          providerID: 'openai',
+          id: 'catalog-id',
+          modelID: 'gpt-6-sol',
+          variants: [{ id: 'high', secret: 'private' }, { id: 'low' }],
+          config: 'private',
+        },
+      ],
+    });
+    const adapter = adapterFor(fake);
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'openai/gpt-6-sol', efforts: ['high', 'low'] }],
+    });
+    expect(fake.closed).toBe(true);
+    expect(fake.requests.map((request) => request.path)).toEqual([
+      '/api/model',
+    ]);
+  });
+  it('closes the server when listing fails', async () => {
+    const fake = new FakeOpencode({ script: [], models: [] });
+    const adapter = new OpencodeAdapter({
+      searchPath: '',
+      fallbackPaths: [process.execPath],
+      exec: async (_file, args) => ({
+        code: 0,
+        stdout: args[0] === '--version' ? '2.0.12' : 'Provider API key stored',
+      }),
+      launch: fake.launch,
+      fetch: async () => {
+        throw new Error('secret=private');
+      },
+    });
+    await expect(
+      adapter.detectModels(new AbortController().signal),
+    ).rejects.toThrow();
+    expect(fake.closed).toBe(true);
+  });
+});
+
 function adapterFor(fake: FakeOpencode, version = '2.0.12'): OpencodeAdapter {
   return new OpencodeAdapter({
     launch: fake.launch,

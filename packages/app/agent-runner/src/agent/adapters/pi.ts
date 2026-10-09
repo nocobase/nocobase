@@ -24,8 +24,11 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Readable, Writable } from 'node:stream';
+import { stripVTControlCharacters } from 'node:util';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
+import type { ToolCapabilities, ToolModel } from '@nocobase/agent-protocol';
+import { boundedModels } from './models.ts';
 
 import {
   PERMISSION_COMMAND,
@@ -153,6 +156,30 @@ function hasAvailableModels(stdout: string): boolean {
   return lines.length > 1 && /^provider\s+model\b/.test(lines[0]);
 }
 
+/** The table reports a thinking boolean, not per-model effort levels: keep efforts unknown. */
+export function parsePiModels(stdout: string): ToolModel[] {
+  const lines = stripVTControlCharacters(stdout)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0 || /^No models (available|found)\b/i.test(lines[0]))
+    return [];
+  const header = lines[0].split(/\s+/);
+  if (header[0] !== 'provider' || header[1] !== 'model')
+    throw new Error('Invalid model listing response');
+  return boundedModels(
+    lines
+      .slice(1)
+      .filter((line) => !/^[-─]+$/.test(line.replace(/\s/g, '')))
+      .map((line) => {
+        const columns = line.split(/\s+/);
+        if (columns.length < header.length)
+          throw new Error('Invalid model listing response');
+        return { id: columns[1] };
+      }),
+  );
+}
+
 export function normalizeDecision(decision: PermissionDecision): {
   allow: boolean;
   reason?: string;
@@ -194,6 +221,31 @@ export class PiAdapter implements AgentAdapter {
   detect(): Promise<ToolDetection> {
     this.detection ??= this.runDetection();
     return this.detection;
+  }
+
+  async detectModels(): Promise<ToolCapabilities> {
+    const detection = await this.detect();
+    if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
+    const response = await this.exec(detection.path, [
+      '--offline',
+      '--list-models',
+    ]);
+    if (response.code !== 0)
+      return {
+        modelsDetectionStatus: 'failed',
+        modelsDetectionError: 'Model listing command failed',
+      };
+    try {
+      return {
+        modelsDetectionStatus: 'detected',
+        models: parsePiModels(response.stdout),
+      };
+    } catch {
+      return {
+        modelsDetectionStatus: 'failed',
+        modelsDetectionError: 'Invalid model listing response',
+      };
+    }
   }
 
   private async runDetection(): Promise<ToolDetection> {

@@ -43,6 +43,9 @@ import { z } from 'zod';
  * Limits per coding tool (`ToolSlots` on register, `load.tools` on heartbeat, `tools` on claim) were added within
  * version 7 as optional fields: a server that does not know them ignores them, and a runner that does not send them is
  * bounded by its total slots only.
+ *
+ * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
+ * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
  */
 export const PROTOCOL_VERSION = 7;
 

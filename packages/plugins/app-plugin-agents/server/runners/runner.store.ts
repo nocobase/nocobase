@@ -6,6 +6,7 @@ import {
   AGENT_TOOLS,
   RunnerPolicySchema,
   ToolLoadSchema,
+  ToolInfoSchema,
   ToolSlotsSchema,
   type AgentTool,
   type RunnerFeature,
@@ -92,12 +93,10 @@ export function registrationTokensRepo(
 
 function toolList(value: unknown): ToolInfo[] {
   const list = Array.isArray(value) ? (value as unknown[]) : [];
-  return list.filter(
-    (item): item is ToolInfo =>
-      !!item &&
-      typeof item === 'object' &&
-      typeof (item as { kind?: unknown }).kind === 'string',
-  );
+  return list.flatMap((item) => {
+    const parsed = ToolInfoSchema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 /** A stored tool choice: null (every tool) stays null; otherwise the known tools in their canonical order. */

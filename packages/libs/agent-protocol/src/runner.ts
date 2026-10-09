@@ -3,6 +3,7 @@
  * them.
  */
 import { z } from 'zod';
+import { createRedactor } from './redact.js';
 
 import {
   FailureReasonSchema,
@@ -38,8 +39,64 @@ import {
   type RunnerFeature,
 } from './version.js';
 
+/** Bounded, advisory capabilities, never an Agent configuration or an access guarantee. */
+export const MAX_TOOL_MODELS = 256;
+export const MAX_MODEL_ID_LENGTH = 200;
+export const MAX_MODEL_EFFORTS = 16;
+export const MAX_EFFORT_LENGTH = 40;
+
+export interface ToolModel {
+  readonly id: string;
+  /** Absent when the tool cannot report this model's supported efforts. */
+  readonly efforts?: readonly string[];
+}
+
+const modelRedactor = createRedactor();
+const capabilityIdentifier = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .regex(/^[a-zA-Z0-9][a-zA-Z0-9._:/+-]*$/)
+    .refine(
+      (value) => !value.includes('://') && modelRedactor.text(value) === value,
+      'Invalid capability identifier',
+    );
+
+export const ToolModelSchema: z.ZodType<ToolModel> = z.object({
+  id: capabilityIdentifier(MAX_MODEL_ID_LENGTH),
+  efforts: z
+    .array(capabilityIdentifier(MAX_EFFORT_LENGTH))
+    .max(MAX_MODEL_EFFORTS)
+    .optional(),
+});
+
+export type ModelsDetectionStatus = 'detected' | 'unsupported' | 'failed';
+export const ModelsDetectionStatusSchema: z.ZodType<ModelsDetectionStatus> =
+  z.enum(['detected', 'unsupported', 'failed']);
+/** Fixed reasons keep command output, paths and credentials out of the contract. */
+export type ModelsDetectionError =
+  | 'Model detection failed'
+  | 'Model detection timed out'
+  | 'Model listing command failed'
+  | 'Invalid model listing response';
+export const ModelsDetectionErrorSchema: z.ZodType<ModelsDetectionError> =
+  z.enum([
+    'Model detection failed',
+    'Model detection timed out',
+    'Model listing command failed',
+    'Invalid model listing response',
+  ]);
+
+export interface ToolCapabilities {
+  readonly models?: readonly ToolModel[];
+  readonly modelsDetectedAt?: string;
+  readonly modelsDetectionStatus?: ModelsDetectionStatus;
+  readonly modelsDetectionError?: ModelsDetectionError;
+}
+
 /** A coding tool found on the runner's host. */
-export interface ToolInfo {
+export interface ToolInfo extends ToolCapabilities {
   readonly kind: AgentTool;
   readonly version?: string;
   readonly path?: string;
@@ -51,6 +108,10 @@ export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
   version: z.string().optional(),
   path: z.string().optional(),
   authenticated: z.boolean(),
+  models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
+  modelsDetectedAt: z.iso.datetime().optional(),
+  modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
+  modelsDetectionError: ModelsDetectionErrorSchema.optional(),
 });
 
 /**
