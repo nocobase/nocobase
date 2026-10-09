@@ -51,6 +51,7 @@ export interface MoveRequest<Subject, Context> {
   readonly from: string;
   readonly to: string;
   readonly actor: LifecycleActor;
+  readonly sourceActor?: LifecycleActor;
   readonly subject: Subject;
   readonly context: Context;
   /** The approval was given already: step 3 is skipped. */
@@ -241,6 +242,7 @@ export async function canMove<Subject, Context>(
       from,
       to,
       actor,
+      sourceActor: request.sourceActor ?? actor,
       machine,
       context: request.context,
       ...(request.event === undefined ? {} : { event: request.event }),
@@ -273,6 +275,7 @@ export async function move<Subject, Context>(
     from,
     to,
     actor,
+    sourceActor: request.sourceActor ?? actor,
     machine,
     context: request.context,
     ...(request.event === undefined ? {} : { event: request.event }),
