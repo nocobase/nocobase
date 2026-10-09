@@ -62,6 +62,19 @@ The agents' chat: a side panel beside the content area with the conversation, li
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
 - After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
 
+## Approval
+
+### approval-ui
+
+Presentational approval components: a request's progress through its stages with vote tallies, its history, the route a new request would take, parallel branches as a whole, a notice's receipts, and a bar of the actions the person may take.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/approval-ui`
+- Installs to: `client/extensions/nocobase-approval-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/approval-ui-demo` (`pnpm exec shadcn view @nocobase/approval-ui-demo`)
+- After installing: Pure presentation: map your approval data into the shapes in types.ts (ApprovalStep, ApprovalTimelineLine, ApprovalRoute, ApprovalBranch, ApprovalReceipt, ApprovalBarAction) with translated labels, name people through ApprovalUiProvider, and merge locales/ into your locale resources.
+
 ## Authentication
 
 ### auth-forms

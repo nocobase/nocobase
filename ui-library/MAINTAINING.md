@@ -22,6 +22,7 @@ Two neighbours look similar and are not the same thing:
 ui-library/
 ├── registry.json               registry index: name, homepage, and one include per group
 ├── registry/
+│   ├── approval/               approval: the approval-ui block, presentational components for an approval process
 │   ├── auth/                   a group of blocks: registry.json, a README, and one directory per block
 │   ├── agents/                 agents: the agent-queue and agent-chat blocks and the agent-run-history, agent-composer and agent-picker components
 │   ├── authorization/          the permission-editor component

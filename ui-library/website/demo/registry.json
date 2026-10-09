@@ -611,6 +611,26 @@
           "target": "client/extensions/nocobase-inbox-button-demo/inbox-button.tsx"
         }
       ]
+    },
+    {
+      "name": "approval-ui-demo",
+      "type": "registry:example",
+      "title": "Approval UI Demo",
+      "description": "Usage example of @nocobase/approval-ui. One expense claim mapped for display: its progress through the manager, finance and the CFO with the count of answers, its history with bookkeeping folded, the route a new claim would take, a purchase's parallel branches, a notice's receipts, and the action bar with a comment form.",
+      "categories": ["approval"],
+      "registryDependencies": ["card", "textarea", "@nocobase/approval-ui"],
+      "files": [
+        {
+          "path": "approval/index.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-approval-ui-demo/index.tsx"
+        },
+        {
+          "path": "approval/fixtures.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-approval-ui-demo/fixtures.ts"
+        }
+      ]
     }
   ]
 }

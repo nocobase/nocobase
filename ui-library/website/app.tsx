@@ -13,6 +13,7 @@ import {
   KeyRound,
   Layers,
   LayoutTemplate,
+  ListChecks,
   Monitor,
   MonitorSmartphone,
   Moon,
@@ -82,6 +83,7 @@ import { IssueCardDemo } from './demo/projects/issue-card';
 import { PlanCardDemo } from './demo/projects/plan-card';
 import { IssueTableDemo } from './demo/projects/issue-table';
 import { KanbanDemo } from './demo/components/kanban';
+import { ApprovalDemo } from './demo/approval';
 import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
@@ -206,6 +208,7 @@ const itemPreviews: Record<string, ItemPreview> = {
   'agent-chat': { path: '/demo/agents/agent-chat', icon: BotMessageSquare },
   inbox: { path: '/demo/inbox/inbox', icon: Inbox },
   'inbox-button': { path: '/demo/inbox/inbox-button', icon: BellDot },
+  'approval-ui': { path: '/demo/approval/approval-ui', icon: ListChecks },
 };
 
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -252,6 +255,9 @@ function AppContent(): ReactElement {
   }
   if (pathname.startsWith('/demo/auth/')) {
     return <AuthenticationDemo />;
+  }
+  if (pathname.startsWith('/demo/approval/')) {
+    return <ApprovalDemo />;
   }
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
