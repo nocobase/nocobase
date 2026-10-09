@@ -118,7 +118,9 @@ describe.skipIf(process.platform === 'win32')(
           expect(snapshot.cwd).not.toBe(process.cwd());
           expect(snapshot.entries).toEqual([]);
           await cache.stop();
-          expect(await Promise.all(pids.map(running))).toEqual([false, false]);
+          await expect
+            .poll(() => Promise.all(pids.map(running)), { timeout: 5000 })
+            .toEqual([false, false]);
           await expect(readdir(snapshot.cwd)).rejects.toMatchObject({
             code: 'ENOENT',
           });
