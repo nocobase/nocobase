@@ -1,36 +1,56 @@
 ---
 title: 'Permission sets and assignments'
-description: 'Configure pages, operations and record scopes around job responsibilities.'
+description: 'Configure pages, business actions, and data scopes for a job, then assign people.'
 ---
 
 # Permission sets and assignments
 
-A permission set groups reusable capabilities. Name sets after real jobs, such as Sales engineer; express region and ownership as scopes rather than creating a role for every combination.
+A permission set combines permissions into reusable job responsibilities. A purchase requester can view their own orders, while a reviewer can view orders and process approvals. Assign the same set to employees with the same responsibilities.
 
-In Settings → Authorization → Permission sets, create or select a set, enable business operations, configure each operation's scopes, grant page access separately, then assign users or integrated teams. Permissions, assignments and basic information have their own save actions.
+## Example: purchase requesters and reviewers
 
-The permissions of a set are organized in three sections:
+The procurement application needs two jobs. Ask your development Agent:
 
-| Section              | What it grants                                                                                                          |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Page permissions     | Entry to pages, listed from the application's menu and grouped the same way. “All pages” also covers pages added later. |
-| Business permissions | Business operations such as View, Edit or Submit quotes, each with its record scopes                                    |
-| Administration       | Settings pages and their actions, such as reading or changing permission sets, rules and other module settings          |
+```text
+Create Purchase requester and Order reviewer jobs for the procurement application.
+Purchase requesters can enter the orders page and view orders they requested.
+Order reviewers can enter the orders page, view orders, and approve or reject pending orders.
+Only application administrators can change permissions and assignments.
+Use the application's existing authorization capability so administrators can adjust permissions and assign people in Settings later.
+```
 
-Under Business permissions and Administration, the left side lists one entry per module the application declares, such as Sales, Automation or Authorization; anything that names no module is listed under Other. Only pages, operations and settings that the application declares appear; a section is empty until developers add them. Plugins may add further sections.
+After integration, administrators open a job in Settings → Authorization → Permission Sets. Permissions have three parts:
 
-| Setting       | Sales engineer example                                                  |
-| ------------- | ----------------------------------------------------------------------- |
-| Page          | Quotes                                                                  |
-| View          | Non-confidential reference quotes                                       |
-| Edit          | Quotes prepared by the current user                                     |
-| Submit        | Both an accessible quote and a project in the responsible region        |
-| Writable data | Amount/notes for editing, status for submission; defined by the feature |
+| Part                 | Configuration in this example                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Page permissions     | Access to the orders page                                                                                    |
+| Business permissions | Requesters view orders; reviewers view orders and process approvals                                          |
+| Administration       | Administrators manage configuration; business jobs receive permissions appropriate to their responsibilities |
 
-Page-only access cannot read the feature's data; an operation grant does not automatically open a page. A multi-table operation can expose several independent scopes, such as Quotes and Projects.
+In Business permissions, click the scope icon beside View orders, choose Orders requested by me, and save. Reviewers can view orders required for their work; approval controls appear only on pending orders.
 
-Assign sets directly to users or to registered teams/departments. Pickers use directories the administrator can read; an unresolved stored name does not mean an assignment disappeared. Multiple sources can contribute capabilities. Removing a team's engineer role should preserve a coordinator's direct project-manager job.
+![Configure the requester's order action and record scope](../../../../cn/capabilities/authorization/assets/permission-set.png)
 
-The default `member` set applies through the authenticated audience. Give it only capabilities every signed-in user should receive. Root provides unrestricted access and is unsuitable for ordinary job assignments or boundary testing.
+### Assign people
 
-Validate with two ordinary users and different records. Exchange detail URLs, test direct API calls, and test page-only, action-only, out-of-scope and revoked access. Use the [inspector](inspector) to identify remaining sources.
+Add people on the permission set's Assignees page. This example assigns Alice Miller and Bob Carter as requesters, and Emma Wilson as an order reviewer.
+
+![Assign the purchase requester permission set to people](../../../../cn/capabilities/authorization/assets/assignments.png)
+
+### View the results
+
+Alice signs in to view her orders. Emma signs in to view orders and process pending approvals. Permissions define responsibilities; business state determines whether an order is currently eligible for approval.
+
+![A requester views her own orders](../../../../cn/capabilities/authorization/assets/requester-orders.png)
+
+![A reviewer views pending orders and approval controls](../../../../cn/capabilities/authorization/assets/reviewer-orders.png)
+
+Open pending order PO-2026-004 to view its details. Emma can use Approve or Reject to process it.
+
+![A reviewer processes approvals in the order details](../../../../cn/capabilities/authorization/assets/reviewer-order-details.png)
+
+## Adjust and reuse
+
+Administrators can adjust the set and assign it to new employees. Users can hold multiple permission sets. Team and department assignments require integration with the application's organization and membership model.
+
+The default Member set applies to all signed-in users and suits common basic capabilities. Use dedicated sets for everyday jobs and the system administrator for application management.

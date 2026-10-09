@@ -1,14 +1,35 @@
 ---
 title: 'Sharing rules'
-description: 'Extend existing record access for a concrete collaboration task.'
+description: 'Let selected people collaborate on records beyond their regular responsibilities.'
 ---
 
 # Sharing rules
 
-Share selected quotes with a proposal team for a handover without opening all quotes. Recipients must already hold the corresponding business operation; sharing only adds records.
+Sharing rules provide additional records for temporary collaboration or handover. For example, Bob can ask Alice to review an order by sharing viewing access to that order.
 
-In Settings → Authorization → Sharing rules, create a purposefully named rule, select the resource, action, named scope and recipients. Choose explicit records for a handover or a dynamic strategy for a maintained business range.
+## Example: a colleague reviews an order
 
-If submission needs the parent project, share both the quote and project scopes. View, Edit and Submit are independent. Each scope's record selection is stored separately.
+Alice already has View orders permission and normally views her own orders. She now needs to review a pending order from Bob:
 
-Verify the collaborator can operate on handed-over records but not other records. Remove one required scope and verify denial. When collaboration ends, remove the sharing and inspect other direct/team sources if access remains. Restrictions can still exclude shared records.
+```text
+Share Bob's PO-2026-004 with Alice so she can review it.
+Alice already has View orders permission; add viewing access to this order.
+Keep her existing responsibilities. Order reviewers still process approvals.
+Let administrators manage this sharing rule in Settings.
+```
+
+In Settings → Authorization → Sharing Rules, administrators create a rule, select the order-viewing action, choose the order, and select Alice as the recipient.
+
+![Choose the shared order and recipient](../../../../cn/capabilities/authorization/assets/sharing-rule.png)
+
+### View the result
+
+Alice opens the order list and can view Bob's PO-2026-004. Her existing records remain available under their current rules.
+
+![Alice views a pending order shared by her colleague](../../../../cn/capabilities/authorization/assets/shared-orders.png)
+
+## After collaboration
+
+Administrators can adjust or delete the rule. Sharing adds a record scope; recipients still need the corresponding page and action permissions. If collaboration requires editing or approval, describe those responsibilities and configure the scope for each action.
+
+Applications with integrated teams or departments can also assign rules to those subjects.
