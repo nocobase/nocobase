@@ -35,7 +35,7 @@ Add this Provider to the existing `server/providers/index.ts` array; a business 
 
 Both `register()` and `boot()` run, across every plugin, before the scheduler's own `start()` reads what was registered — so call order between plugins does not matter, only that the call happens before `start()`. A call after that point has no effect until the next sync.
 
-## Declare Either Target
+## Declare a Registered Target
 
 Register one call per schedule, in whichever Provider owns it:
 
@@ -49,6 +49,30 @@ scheduler.defineSchedule({
     config: { batchSize: 100 },
   },
 });
+```
+
+Implement and register `app.maintenance` first. Keep only the definitions the application needs.
+
+| Field                   | Current contract                                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`                   | Required; matches `^[A-Za-z0-9][A-Za-z0-9._:-]*$`; unique within the application. Application name and key form persistent identity, so renaming is not an in-place update |
+| `title` / `description` | Required title / optional description                                                                                                                                      |
+| `schedule.cron`         | Five fields starting with minutes, or six starting with seconds; `*/5 * * * *` runs every five minutes, `*/10 * * * * *` every ten seconds                                 |
+| `schedule.timezone`     | Defaults to `UTC`; use an explicit IANA timezone and consider daylight saving changes for local business time                                                              |
+| `schedule.from` / `to`  | Optional inclusive `Date` boundaries; construct from ISO timestamps with explicit timezone offsets; from must not exceed to                                                |
+| `schedule.limit`        | Optional positive integer; counts firings started, not successful completions. Disabling and re-enabling or changing the definition continues from the firings already run |
+| `target.type`           | A registered target type: `workflow` with Workflow enabled and its target registered, or one the application or a plugin registered itself. There is no built-in type      |
+| `target.config`         | JSON object; no functions, Service instances, or credentials. Sensitive field names are rejected recursively                                                               |
+
+`defineSchedule()` validates and normalizes the definition before adding it to the in-memory manifest for the next sync. It defaults the timezone, computes a definition hash, and freezes the stored definition. Do not construct the hash manually or mutate a definition after passing it in. There are no `enabled`, `retry`, or `overlap` declaration fields; do not insert job or queue options, or fields from another scheduling framework.
+
+`target.config` is whatever the target's own `validate()` accepts. Synchronization checks that the type is registered and runs that `validate()`; anything it does not check is checked when the schedule fires. Successful synchronization does not prove the config drives correct business behavior.
+
+### Optional Workflow Target
+
+Use this declaration only when the application explicitly enables the Workflow plugin and its `workflow` target is registered. Retaining the package dependency alone is insufficient. For an application-owned Provider that keeps optional Workflow schedules in source, guard their registration with `this.app.container.has(workflowServiceToken)` using the token exported by `@nocobase/app-plugin-workflow/server`. Keep application-owned schedules outside that guard.
+
+```ts
 scheduler.defineSchedule({
   key: 'daily-reconciliation',
   title: 'Daily reconciliation workflow',
@@ -60,28 +84,13 @@ scheduler.defineSchedule({
 });
 ```
 
-Implement and register these targets first. Keep only the definitions the application needs.
-
-| Field                   | Current contract                                                                                                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `key`                   | Required; matches `^[A-Za-z0-9][A-Za-z0-9._:-]*$`; unique within the application. Application name and key form persistent identity, so renaming is not an in-place update |
-| `title` / `description` | Required title / optional description                                                                                                                                      |
-| `schedule.cron`         | Five fields starting with minutes, or six starting with seconds; `*/5 * * * *` runs every five minutes, `*/10 * * * * *` every ten seconds                                 |
-| `schedule.timezone`     | Defaults to `UTC`; use an explicit IANA timezone and consider daylight saving changes for local business time                                                              |
-| `schedule.from` / `to`  | Optional inclusive `Date` boundaries; construct from ISO timestamps with explicit timezone offsets; from must not exceed to                                                |
-| `schedule.limit`        | Optional positive integer; counts firings started, not successful completions. Disabling and re-enabling or changing the definition continues from the firings already run |
-| `target.type`           | A registered target type: `workflow` with Workflow installed, or one the application or a plugin registered itself. There is no built-in type                              |
-| `target.config`         | JSON object; no functions, Service instances, or credentials. Sensitive field names are rejected recursively                                                               |
-
-`defineSchedule()` validates and normalizes the definition before adding it to the in-memory manifest for the next sync. It defaults the timezone, computes a definition hash, and freezes the stored definition. Do not construct the hash manually or mutate a definition after passing it in. There are no `enabled`, `retry`, or `overlap` declaration fields; do not insert job or queue options, or fields from another scheduling framework.
-
-`target.config` is whatever the target's own `validate()` accepts. Synchronization checks that the type is registered and runs that `validate()`; anything it does not check is checked when the schedule fires. Successful synchronization does not prove the config drives correct business behavior.
-
 ## Workflow Readiness and Execution Recovery
+
+This section applies only to the optional Workflow target. Verify plugin and target registration before checking a workflow definition or run.
 
 The `workflow` config is `{ workflowKey: string, input?: JsonObject }`, with input defaulting to `{}`. The key is the workflow source directory name, not its title or database revision id. Complete workflow checking, Artifact build, synchronization, and enablement separately; schedule synchronization does not perform these steps. Triggers use the current version, and its input schema validates input.
 
-The Workflow plugin registers its target, reports terminal completion through its Scheduler handle, and supplies persisted-run inspection for lost notifications. Applications using this built-in integration do not need a second job wrapping the workflow or their own completion bridge. It uses `schedule:<scheduleId>:<occurrenceId>` as eventKey and records `sourceType: 'schedule'` with occurrenceId. Recovery of the same trigger looks up that eventKey and returns the existing `workflow-run` reference; inspection reads that original run's persisted status. Preserve scheduleId and occurrenceId during recovery; do not trigger another workflow independently. For missing or disabled targets and invalid input, inspect the actual occurrence status and reason.
+The Workflow plugin registers its target, reports terminal completion through its Scheduler handle, and supplies persisted-run inspection for lost notifications. Applications using this plugin-provided integration do not need a second job wrapping the workflow or their own completion bridge. It uses `schedule:<scheduleId>:<occurrenceId>` as eventKey and records `sourceType: 'schedule'` with occurrenceId. Recovery of the same trigger looks up that eventKey and returns the existing `workflow-run` reference; inspection reads that original run's persisted status. Preserve scheduleId and occurrenceId during recovery; do not trigger another workflow independently. For missing or disabled targets and invalid input, inspect the actual occurrence status and reason.
 
 ## Synchronization and Deployment
 

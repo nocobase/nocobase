@@ -62,15 +62,35 @@ test('v3 GitHub Releases never take the shared Latest marker', () => {
   assert.match(source, /release\/\*\)\s+FLAGS=\(--latest=false\)/u);
 });
 
-test('site deployment waits for migration configuration while PR builds stay available', () => {
+test('site deployment uses the existing publish triggers without a migration gate', () => {
   for (const name of ['docs', 'ui-library']) {
     const source = workflow(name);
-    assert.match(source, /vars\.V3_ASSET_DEPLOY_ENABLED == 'true'/u);
+    assert.doesNotMatch(source, /V3_ASSET_DEPLOY_ENABLED/u);
+    assert.match(
+      source,
+      /github\.event_name == 'push' && github\.ref == 'refs\/heads\/v3-develop'/u,
+    );
+    assert.match(
+      source,
+      /github\.event_name == 'workflow_dispatch' && inputs\.publish/u,
+    );
     assert.match(
       source,
       /pull_request:\n    branches:\n      - v3-develop\n      - v3-main/u,
     );
     assert.match(source, /publish:[\s\S]*?default: false/u);
+  }
+  const docs = workflow('docs');
+  for (const name of ['OSS_BUCKET', 'OSS_REGION', 'CDN_DOMAIN']) {
+    assert.ok(docs.includes(`secrets.V3_DOCS_ALI_${name}`));
+    assert.ok(!docs.includes(`secrets.DOCS_ALI_${name}`));
+  }
+  for (const name of ['docs', 'ui-library']) {
+    for (const key of ['ID', 'SECRET']) {
+      assert.ok(
+        workflow(name).includes(`secrets.DOCS_ALI_OSS_ACCESS_KEY_${key}`),
+      );
+    }
   }
 });
 

@@ -1,5 +1,25 @@
 # @nocobase/app-server
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 487921c: Prevent stale development pages after runtime public configuration changes by removing upstream HTML cache validators while preserving Vite resource caching.
+- @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/db-dameng@0.1.0-beta.3
+  - @nocobase/db-kingbase@0.1.0-beta.3
+  - @nocobase/db-mssql@0.1.0-beta.3
+  - @nocobase/db-mysql@0.1.0-beta.4
+  - @nocobase/db-oceanbase@0.1.0-beta.3
+  - @nocobase/db-oracle@0.1.0-beta.3
+  - @nocobase/db-postgres@0.1.0-beta.3
+  - @nocobase/db-sqlite@0.1.0-beta.4
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/queue@0.1.0-beta.8
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.1
 
 ### Minor Changes

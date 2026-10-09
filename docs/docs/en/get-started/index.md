@@ -15,7 +15,7 @@ NocoBase 3 is a foundation for building enterprise business systems with an AI A
 
 ### Reuse capabilities and build lasting business value
 
-Authentication, authorization, workflow, and notifications can provide a shared foundation for different business modules. Build customers, orders, projects, and processes on that foundation, making each development effort a starting point for the next extension. As your application grows, so does the business functionality your team can reuse.
+Authentication, authorization, and notifications can provide a shared foundation for different business modules. Build customers, orders, projects, and processes on that foundation, making each development effort a starting point for the next extension. As your application grows, so does the business functionality your team can reuse.
 
 ### Make an AI Agent a partner in building your system
 

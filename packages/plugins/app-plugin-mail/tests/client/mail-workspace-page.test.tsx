@@ -1887,7 +1887,10 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('removes inline attachment references when the image is deleted from the body', async () => {
     render(<MailWorkspacePage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    // Compose is rendered before account and provider metadata enables it.
+    await waitFor(() => expect(compose).toBeEnabled());
+    fireEvent.click(compose);
     fireEvent.change(await screen.findByLabelText('TO'), {
       target: { value: 'recipient@example.com' },
     });

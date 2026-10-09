@@ -43,6 +43,9 @@ import { z } from 'zod';
  * Limits per coding tool (`ToolSlots` on register, `load.tools` on heartbeat, `tools` on claim) were added within
  * version 7 as optional fields: a server that does not know them ignores them, and a runner that does not send them is
  * bounded by its total slots only.
+ *
+ * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
+ * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
  */
 export const PROTOCOL_VERSION = 7;
 

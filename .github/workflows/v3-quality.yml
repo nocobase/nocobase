@@ -5,9 +5,13 @@ on:
     branches:
       - v3-develop
       - v3-main
+    paths-ignore:
+      - 'docs/**'
   push:
     branches:
       - v3-develop
+    paths-ignore:
+      - 'docs/**'
 
 permissions:
   contents: read
