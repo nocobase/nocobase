@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { describeMigration } from '@nocobase/app-testing/server';
 
-describeMigration('202610090003_ag_add_run_git_credentials', {
+describeMigration('202610090004_ag_add_run_git_credentials', {
   sources: [
     {
       packageName: '@nocobase/app-plugin-agents',
@@ -10,6 +10,10 @@ describeMigration('202610090003_ag_add_run_git_credentials', {
     },
   ],
   up: async ({ expectCollection }) => {
+    await expectCollection('agRuns').toHaveField('executionHistory', {
+      type: 'json',
+      nullable: true,
+    });
     await expectCollection('agRuns').toHaveField('gitCredentialUrls', {
       type: 'json',
       nullable: true,
@@ -27,5 +31,13 @@ describeMigration('202610090003_ag_add_run_git_credentials', {
     await expectCollection('agRuns').not.toHaveField('gitCredentialUrls');
     await expectCollection('agRunRepos').not.toHaveField('failureReason');
     await expectCollection('agRunRepos').not.toHaveField('failureDetail');
+    await expectCollection('agRuns').toHaveField('executionHistory', {
+      type: 'json',
+      nullable: true,
+    });
+    await expectCollection('agRunners').toHaveField('toolSlots', {
+      type: 'json',
+      nullable: true,
+    });
   },
 });

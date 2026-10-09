@@ -68,6 +68,11 @@ export type {
 export { commandRef, dialectOf } from './core/runs/ports.js';
 export { RepoAccessError } from './core/runs/extensions.js';
 export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './core/runs/execution-view.js';
+export {
   RUN_CREDENTIAL,
   runIdentityOf,
   type RunCredentialData,

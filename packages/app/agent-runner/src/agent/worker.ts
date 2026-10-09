@@ -78,6 +78,7 @@ import {
   serveGitCredentials,
   type CredentialServer,
 } from './git-credentials.ts';
+import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
@@ -652,6 +653,9 @@ export class RunWorker {
       tmpDir,
       hooksDir: deps.paths.hooksDir,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),
+      ...(process.env[PROCESS_TAG_ENV] === undefined
+        ? {}
+        : { processTag: process.env[PROCESS_TAG_ENV] }),
       localVariables: registration.variables,
       workspace: payload.workspace,
     });

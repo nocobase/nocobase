@@ -4,7 +4,8 @@
 // reaches the application's CLI only through its credentials file.
 //
 // The runner then sets what it owns: HOME (the agent's home, see agent-home.ts), TMPDIR (inside the working
-// directory), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
+// directory), the run's process tag (`AGENT_RUN_PROCESS_TAG`, which marks what the tool starts as the run's, see
+// core/process-tree.ts), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
 // git the agent runs uses the runner's hooks (push-guard.ts) whatever the repository configures. With the run's git
 // (`workspace.git`): the commit author and committer (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), the trailers the
 // `prepare-commit-msg` hook adds, and for each repository with a credential (`credentialHelper`) the runner's
@@ -16,6 +17,7 @@ import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { RUN_CREDENTIALS_ENV, type RunWorkspace } from '../protocol/index.ts';
+import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
 import {
   CREDENTIAL_NONCE_ENV,
@@ -59,6 +61,8 @@ export interface BuildEnvOptions {
   hooksDir?: string;
   /** The run's repository credentials, through the runner's helper. */
   credentialHelper?: CredentialHelperOptions;
+  /** The run's process tag (core/process-tree.ts), which marks what the tool starts as the run's. */
+  processTag?: string;
 }
 
 /** Names a run may not set: the runner's own, and what it sets itself. */
@@ -96,6 +100,8 @@ export function buildAgentEnv(
         : `${options.binDir}${path.delimiter}${env.PATH}`;
   if (options.home !== undefined) env.HOME = options.home;
   if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
+  if (options.processTag !== undefined)
+    env[PROCESS_TAG_ENV] = options.processTag;
   const config: [string, string][] = [];
   if (options.hooksDir !== undefined)
     config.push(['core.hooksPath', options.hooksDir]);
