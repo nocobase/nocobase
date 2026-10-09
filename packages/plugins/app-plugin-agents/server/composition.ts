@@ -1,3 +1,4 @@
+import { modelsConfigured } from './core/runs/model-configuration.js';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `agentsToken`; tests call it directly against a real database.
@@ -418,6 +419,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     actionTypes: (key) =>
       actions.list().find((option) => option.key === key)?.types,
     owned: {
+      modelsConfigured,
       openRuns: async (conn, agentId) =>
         (await openCounts(conn, [agentId])).get(agentId) ?? 0,
       clearVariables: (conn, agentId) =>

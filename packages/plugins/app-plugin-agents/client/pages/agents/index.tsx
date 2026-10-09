@@ -232,7 +232,9 @@ function EntriesCell({
       </span>
     );
   const model =
-    'tool' in first ? first.model : `${first.modelService} · ${first.model}`;
+    'tool' in first
+      ? first.model?.trim()
+      : `${first.modelService} · ${first.model}`;
   return (
     <span
       className='inline-flex items-center gap-1.5'
@@ -242,7 +244,7 @@ function EntriesCell({
         <span className='font-mono text-xs'>{model}</span>
       ) : (
         <span className='text-muted-foreground'>
-          {t('agents.defaultModel')}
+          {t('modelEntries.runnerModelRequired')}
         </span>
       )}
       {others.length > 0 ? <AgTag tone='grey'>+{others.length}</AgTag> : null}

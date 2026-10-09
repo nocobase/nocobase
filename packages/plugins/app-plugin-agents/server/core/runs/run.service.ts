@@ -1,3 +1,4 @@
+import { executableRunnerEntries } from '../../../shared/agents.js';
 /**
  * Runs as the rest of the application starts and follows them: queueing work for an agent, adding input to a run,
  * cancelling and retrying, and reading runs and their transcripts. Who may read or change a run is decided by the
@@ -415,6 +416,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
         agentType: agent.type,
         runnerId: null,
         status: 'queued',
+        modelPending:
+          agent.type === 'runner' &&
+          executableRunnerEntries(agent).length === 0,
         priority: values.priority,
         attempt: 1,
         maxAttempts: values.maxAttempts ?? agent.maxAttempts,

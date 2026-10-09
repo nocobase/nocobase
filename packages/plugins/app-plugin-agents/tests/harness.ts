@@ -510,7 +510,7 @@ export async function createHarness(
     async createAgent(input: Partial<AgentInput> = {}) {
       const agent = await services.agents.create('owner', {
         name: 'Coder',
-        modelEntries: [{ tool: 'claude', model: null }],
+        modelEntries: [{ tool: 'claude', model: 'opus' }],
         access: 'everyone',
         ...input,
       });

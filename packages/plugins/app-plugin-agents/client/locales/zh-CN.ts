@@ -254,6 +254,7 @@ const zhCN: AgentsResource = {
     },
   },
   modelEntries: {
+    runnerModelRequired: '请为每个工具条目补齐执行模型。',
     title: '工具与模型',
     hintRunner:
       '按顺序排列。运行环境领取任务时，使用它已启用并登录的第一项；运行记录会显示实际用了哪一项。',

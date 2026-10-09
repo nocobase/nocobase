@@ -1833,13 +1833,13 @@ export function createAdminRoutes(
           userIds: { name: 'users' },
         },
         examples: [
-          'agent create --name Coder --models \'[{"tool":"claude"},{"tool":"codex","model":"gpt-5"}]\'',
+          'agent create --name Coder --models \'[{"tool":"claude","model":"opus"},{"tool":"codex","model":"gpt-5"}]\'',
           'agent create --name PM --type online --models \'[{"modelService":"openai","model":"gpt-5"}]\'',
           'agent create --file agent.json',
         ],
       }),
       description:
-        '`modelEntries` lists the tools and models it works with, in order (the first is its default): `{ tool, model? }` for a runner agent, `{ modelService, model }` for an online one. Needs `agents.agents` manage.',
+        '`modelEntries` lists the tools and models it works with, in order (the first is its default): `{ tool, model }` for a runner agent, `{ modelService, model }` for an online one. Needs `agents.agents` manage.',
       responses: {
         201: dataResponse(AgentSchema, 'Created.'),
         ...apiErrorResponses,
@@ -1966,7 +1966,7 @@ export function createAdminRoutes(
         },
         examples: [
           'agent update <agent> --instructions-file notes.md --revision 4',
-          'agent update <agent> --models \'[{"tool":"codex"},{"tool":"claude","model":"opus"}]\' --revision 4',
+          'agent update <agent> --models \'[{"tool":"codex","model":"gpt-6.1-sol"},{"tool":"claude","model":"opus"}]\' --revision 4',
         ],
       }),
       description: `Changes the fields given, against \`expectedRevision\`. ${editAccess} Only a manager of agents may give it to another owner, and an owner adds only business actions they hold themselves.`,

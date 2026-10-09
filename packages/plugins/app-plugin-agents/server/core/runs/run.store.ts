@@ -31,6 +31,7 @@ export interface RunRecord {
   readonly agentType: string;
   readonly runnerId: string | null;
   readonly executionHistory?: JsonColumn;
+  readonly modelPending?: boolean;
   readonly tool?: string | null;
   readonly modelService?: string | null;
   readonly model?: string | null;
@@ -222,6 +223,7 @@ export function toRun(record: RunRecord): Run {
   const latest = executions.at(-1);
   return {
     id: record.id,
+    modelPending: Boolean(record.modelPending),
     agentId: record.agentId,
     agentType: record.agentType === 'online' ? 'online' : 'runner',
     runnerId: record.runnerId,

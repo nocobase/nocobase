@@ -42,6 +42,7 @@ let binDir: string;
 
 function session(prompt: string): AdapterSession {
   return {
+    model: 'gpt-test',
     workDir,
     prompt,
     systemPrompt: 'brief',

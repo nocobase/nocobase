@@ -419,7 +419,8 @@ const RunnerModelEntrySchema = z
   .object({
     tool: AgentToolSchema,
     model: z.string().nullable().meta({
-      description: "The tool's model; null for the tool's default.",
+      description:
+        'Explicit execution model; null only on legacy configuration waiting to be completed.',
     }),
     effort: z.string().nullable().optional().meta({
       description:
@@ -860,6 +861,7 @@ const runObject = z.object({
   actualEffortSource: z.string().nullable().optional(),
   actualEffortAt: dateTime.nullable().optional(),
   machineHidden: z.boolean().optional(),
+  modelPending: z.boolean().optional(),
   runnerId: z.string().nullable().meta({
     description:
       'The runner holding it; `server:<instance>` for an online run held by an application instance.',
@@ -874,7 +876,7 @@ const runObject = z.object({
   }),
   model: z.string().nullable().meta({
     description:
-      "The model it works with; null for a runner tool's default, or before a claim.",
+      'Requested execution model; null before a claim or on legacy history.',
   }),
   effort: z.string().nullable().meta({
     description:

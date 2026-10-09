@@ -109,6 +109,8 @@ export function explainWait(
 ): Omit<RunWait, 'position' | 'agentPosition'> {
   const { agent } = context;
   if (!agent || agent.archivedAt) return wait('agentArchived');
+  if (agent.type === 'runner' && entryTools(agent).length === 0)
+    return wait('modelNotConfigured');
   const availableAt = time(run.availableAt);
   if (availableAt !== null && availableAt > context.now.getTime()) {
     const until = iso(run.availableAt);
@@ -306,7 +308,7 @@ export async function readWorkload(
   let claimable = 0;
   for (const run of queued) {
     const at = time(run.availableAt);
-    if (at === null || at <= now.getTime())
+    if (!run.modelPending && (at === null || at <= now.getTime()))
       position.set(run.id, (claimable += 1));
     const count = (agentQueued.get(run.agentId) ?? 0) + 1;
     agentQueued.set(run.agentId, count);

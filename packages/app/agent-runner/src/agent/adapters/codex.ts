@@ -1,3 +1,4 @@
+import { missingModel } from './model-required.ts';
 /**
  * Codex adapter, built on `codex app-server` (JSON-RPC over stdio).
  *
@@ -310,6 +311,8 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   start(session: AdapterSession): AdapterHandle {
+    if (!session.model?.trim()) return missingModel('codex');
+    session = { ...session, model: session.model.trim() };
     return new CodexRun(
       session,
       () => this.detect(),
@@ -343,6 +346,7 @@ class CodexRun {
   private turnRunning = false;
   private lastTurn?: Turn;
   private lastError?: TurnError;
+  private rejectedModel?: { reason: 'modelUnavailable'; message: string };
   private turnSummary?: string;
   private summary?: string;
 
@@ -660,7 +664,12 @@ class CodexRun {
         this.emit({ type: 'status', content: 'compacted' });
         return;
       case 'model/rerouted':
-        this.emit({ type: 'status', content: 'modelRerouted', meta: p });
+        this.rejectedModel = {
+          reason: 'modelUnavailable',
+          message: `Codex refused the requested model ${this.session.model} and attempted to route to another model. Execution stopped.`,
+        };
+        this.ending = true;
+        this.resolveEnded();
         return;
       default:
         return;
@@ -1014,7 +1023,7 @@ class CodexRun {
       approvalPolicy: 'never',
       sandbox: 'danger-full-access',
       developerInstructions: session.systemPrompt,
-      ...(session.model ? { model: session.model } : {}),
+      model: session.model!,
     };
     const thread = session.resumeSessionId
       ? await rpc.request<ThreadResponse>('thread/resume', {
@@ -1076,6 +1085,8 @@ class CodexRun {
         error: { reason: 'cancelled', message: 'Stopped by the runner' },
       };
     }
+    if (this.rejectedModel)
+      return { ...base, exit: 'error', error: this.rejectedModel };
     const turn = this.lastTurn;
     if (
       thrown === undefined &&

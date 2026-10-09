@@ -27,7 +27,7 @@ describe('execution history', () => {
       list: () => Promise.resolve([]),
     });
     const agent = await h.createAgent({
-      modelEntries: [{ tool: 'codex', model: null, effort: 'high' }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test', effort: 'high' }],
     });
     const runner = await h.registerRunner({
       name: 'dev-2',
@@ -60,7 +60,7 @@ describe('execution history', () => {
         runnerId: runner.runnerId,
         runnerName: 'dev-2',
         runnerTrust: 'team',
-        model: null,
+        model: 'gpt-test',
         actualModels: ['gpt-real'],
         effort: 'high',
         finishedAt: expect.any(String),
@@ -74,7 +74,7 @@ describe('execution history', () => {
   it('isolates attempts and preserves the released runner while waiting to retry', async () => {
     h = await createHarness();
     const agent = await h.createAgent({
-      modelEntries: [{ tool: 'codex', model: null }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
     });
     const options = {
       tools: [{ kind: 'codex' as const, authenticated: true }],
@@ -153,7 +153,7 @@ describe('execution history', () => {
   it('returns known legacy models without fabricating historical runner snapshots', async () => {
     h = await createHarness();
     const agent = await h.createAgent({
-      modelEntries: [{ tool: 'codex', model: null }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
     });
     const runner = await h.registerRunner({
       tools: [{ kind: 'codex', authenticated: true }],

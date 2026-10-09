@@ -47,6 +47,7 @@ function adapterWith(
 
 function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
   return {
+    model: 'opus',
     workDir: '/work',
     prompt: 'Create hello.txt',
     systemPrompt: 'BRIEF',
@@ -624,4 +625,61 @@ describe('stopping', () => {
     expect(res.exit).toBe('aborted');
     expect(calls).toHaveLength(0);
   });
+});
+
+it('stops when Claude rejects the explicit model without querying a fallback', async () => {
+  setScript(
+    replay([
+      init(),
+      result({
+        subtype: 'error_during_execution',
+        is_error: true,
+        errors: ['Model not found: rejected-model'],
+      }),
+    ]),
+  );
+  const res = await adapterWith('9.0.0', dir).start(
+    session({ model: 'rejected-model', resumeSessionId: SESSION_ID }),
+  ).result;
+  expect(res).toMatchObject({
+    exit: 'error',
+    error: { reason: 'modelUnavailable' },
+  });
+  expect(calls).toHaveLength(1);
+  expect(calls[0]?.options).toMatchObject({
+    model: 'rejected-model',
+    resume: SESSION_ID,
+  });
+});
+
+it('disables project fallback models and stops an automatic primary-model fallback', async () => {
+  setScript(
+    replay([
+      init(),
+      {
+        type: 'system',
+        subtype: 'model_refusal_fallback',
+        scope: 'session',
+        trigger: 'refusal',
+        direction: 'retry',
+        original_model: 'opus',
+        fallback_model: 'other-model',
+        request_id: null,
+        session_id: SESSION_ID,
+        uuid: 'fallback-event',
+      },
+      result(),
+    ]),
+  );
+  expect(await adapterWith('9.0.0', dir).start(session()).result).toMatchObject(
+    {
+      exit: 'error',
+      error: {
+        reason: 'modelUnavailable',
+        message: expect.stringContaining('other-model'),
+      },
+    },
+  );
+  expect(calls[0]?.options.settings).toEqual({ fallbackModel: [] });
+  expect(calls).toHaveLength(1);
 });

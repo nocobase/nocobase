@@ -1,3 +1,5 @@
+import { executableRunnerEntries } from '../../../shared/agents.js';
+import { findAgent } from '../agents/index.js';
 /**
  * The moves every part of the runs domain shares: ending a run and sending it back to the queue. Each is a guarded
  * update (it changes the run only while it is still in the state the caller saw), so concurrent callers, such as a
@@ -134,6 +136,12 @@ export async function requeueRun(
       ]),
     values: {
       status: 'queued',
+      modelPending:
+        run.agentType === 'runner' &&
+        executableRunnerEntries({
+          modelEntries:
+            (await findAgent(tx.conn, run.agentId))?.modelEntries ?? [],
+        }).length === 0,
       teamOnlyVariables: null,
       runnerId: null,
       attempt: Number(run.attempt) + 1,

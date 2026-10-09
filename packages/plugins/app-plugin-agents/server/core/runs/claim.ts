@@ -57,7 +57,7 @@ import { createHash } from 'node:crypto';
 
 import {
   onlineEntriesOrDefault,
-  runnerEntries,
+  executableRunnerEntries,
   sameEntry,
   type Agent,
   type OnlineModelEntry,
@@ -291,7 +291,9 @@ export function pickEntry(
   agent: Pick<Agent, 'modelEntries'>,
 ): RunnerModelEntry | null {
   return (
-    runnerEntries(agent).find((entry) => runsTool(runner, entry.tool)) ?? null
+    executableRunnerEntries(agent).find((entry) =>
+      runsTool(runner, entry.tool),
+    ) ?? null
   );
 }
 
@@ -305,7 +307,7 @@ export function pickOpenEntry(
   open: (tool: AgentTool) => boolean,
 ): RunnerModelEntry | null {
   return (
-    runnerEntries(agent).find(
+    executableRunnerEntries(agent).find(
       (entry) => runsTool(runner, entry.tool) && open(entry.tool),
     ) ?? null
   );
@@ -696,7 +698,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       },
       tool: {
         kind: entry.tool,
-        ...(entry.model ? { model: entry.model } : {}),
+        model: entry.model!.trim(),
         ...(entry.effort ? { effort: entry.effort } : {}),
         policy: toolPolicyFor(agent.toolPolicy),
       },
@@ -823,6 +825,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const now = clock.now();
         const nowText = now.toISOString();
         await lockAgentForClaim(conn, agent.id, nowText);
+        const current = await findAgent(conn, agent.id);
+        if (!current || !fits(runner, current, candidate)) return null;
+        agent = current;
         if (
           (await countActive(conn, 'agentId', agent.id)) >=
           agent.maxConcurrentRuns
@@ -849,6 +854,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             f.and([
               f.string('id').eq(candidate.id),
               f.string('status').eq('queued'),
+              f.boolean('modelPending').isFalse(),
             ]),
           values: {
             status: 'dispatched',
@@ -994,6 +1000,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         f.and([
           f.string('status').eq('queued'),
           f.string('agentType').eq(type),
+          f.boolean('modelPending').isFalse(),
           // A consultation is taken by the holder of the run that asked it, never from the queue.
           f.string('parentRunId').empty(),
           f.or([

@@ -23,7 +23,10 @@ describe('admin API', () => {
     const reader = await h.request('POST', '/agents', {
       user: 'bob',
       can: ['agents.agents/read'],
-      body: { name: 'Coder', modelEntries: [{ tool: 'claude' }] },
+      body: {
+        name: 'Coder',
+        modelEntries: [{ tool: 'claude', model: 'opus' }],
+      },
     });
     expect(reader.status).toBe(403);
     // Anyone signed in may add a personal runner; a team runner needs the runners item.
@@ -51,7 +54,7 @@ describe('admin API', () => {
       can: ADMIN,
       body: {
         name: 'Reviewer',
-        modelEntries: [{ tool: 'claude' }],
+        modelEntries: [{ tool: 'claude', model: 'opus' }],
         runnerIds: ['r-1', ' r-1'],
         actions: ['crm.deals/comment'],
         access: 'users',
@@ -77,8 +80,8 @@ describe('admin API', () => {
     expect(invalid.body.error.reason).toBe('INVALID_INPUT');
     // Each entry's effort is one its tool takes: neither Codex nor Claude Code has `minimal`.
     for (const entry of [
-      { tool: 'codex', effort: 'minimal' },
-      { tool: 'claude', effort: 'minimal' },
+      { tool: 'codex', model: 'gpt-test', effort: 'minimal' },
+      { tool: 'claude', model: 'opus', effort: 'minimal' },
     ]) {
       const refused = await h.request('POST', '/agents', {
         user: 'alice',
@@ -99,8 +102,8 @@ describe('admin API', () => {
         body: {
           modelEntries: [
             { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
-            { tool: 'claude', effort: 'max' },
-            { tool: 'pi', effort: '' },
+            { tool: 'claude', model: 'opus', effort: 'max' },
+            { tool: 'pi', model: 'anthropic/test-model', effort: '' },
           ],
           expectedRevision: 1,
         },
@@ -108,8 +111,8 @@ describe('admin API', () => {
     );
     expect(efforts.body.data.modelEntries).toEqual([
       { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
-      { tool: 'claude', model: null, effort: 'max' },
-      { tool: 'pi', model: null, effort: null },
+      { tool: 'claude', model: 'opus', effort: 'max' },
+      { tool: 'pi', model: 'anthropic/test-model', effort: null },
     ]);
     const unknownSkill = await h.request(
       'PATCH',
@@ -191,7 +194,7 @@ describe('admin API', () => {
     const agentId = await h.createAgent();
     await h.createAgent({
       name: 'Elsewhere',
-      modelEntries: [{ tool: 'codex', model: null }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
     });
     await h.enqueue(agentId);
     const runner = await h.registerRunner();

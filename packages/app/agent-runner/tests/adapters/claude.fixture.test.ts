@@ -89,6 +89,7 @@ it('replays a recorded run with a steer, asking the runner nothing', async () =>
     workDir: '/work',
     prompt: 'steps',
     systemPrompt: 'brief',
+    model: 'haiku',
     env: {},
     abort: new AbortController().signal,
     permission: vi.fn(async () => 'allow' as const),

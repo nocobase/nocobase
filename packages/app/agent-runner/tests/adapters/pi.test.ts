@@ -33,6 +33,7 @@ import type { FakePi } from './pi-fake.ts';
 
 function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
   return {
+    model: 'anthropic/test-model',
     workDir: '/work',
     prompt: 'Write hello.txt',
     systemPrompt: 'You are a Acme agent.',
@@ -746,4 +747,22 @@ describe('failures and stop', () => {
     expect(result.exit).toBe('aborted');
     expect(processes[0]!.signals).toEqual(['SIGTERM']);
   });
+});
+
+it('stops when Pi rejects the explicit model without relaunching', async () => {
+  const { spawn, processes } = fakeSpawn((pi) => {
+    void pi
+      .next('prompt')
+      .then((prompt) =>
+        pi.respond(prompt, undefined, false, 'Model not found: rejected-model'),
+      );
+  });
+  const res = await (
+    await adapterWith(spawn)
+  ).start(session({ model: 'anthropic/rejected-model' })).result;
+  expect(res).toMatchObject({
+    exit: 'error',
+    error: { reason: 'modelUnavailable' },
+  });
+  expect(processes).toHaveLength(1);
 });

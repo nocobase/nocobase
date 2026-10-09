@@ -95,6 +95,7 @@ function adapterFor(fake: FakeOpencode, version = '2.0.12'): OpencodeAdapter {
 
 function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
   return {
+    model: 'prov/m1',
     workDir: '/work',
     prompt: 'Do the task',
     systemPrompt: 'BRIEF',
@@ -316,6 +317,7 @@ describe('session setup', () => {
     });
     expect(fake.requestsTo('POST', /^\/api\/session$/)[0].body).toEqual({
       title: 'Agent run',
+      model: MODEL,
       location: { directory: '/work' },
       permissions: ASK_EVERYTHING,
     });
@@ -721,4 +723,36 @@ describe('parseEventStream', () => {
       { id: 'e2', type: 'b', data: {} },
     ]);
   });
+});
+
+it('stops when OpenCode rejects the specified model', async () => {
+  const fake = new FakeOpencode({
+    script: [
+      ...begin(),
+      ev('session.execution.failed', {
+        sessionID: SID,
+        error: {
+          type: 'provider.invalid-request',
+          message: 'Model not found: prov/rejected',
+          status: 404,
+        },
+      }),
+    ],
+  });
+  const res = await adapterFor(fake).start(session({ model: 'prov/rejected' }))
+    .result;
+  expect(res).toMatchObject({
+    exit: 'error',
+    error: { reason: 'modelUnavailable' },
+  });
+});
+it('does not create a default-model session when the explicit model cannot be resolved', async () => {
+  const fake = new FakeOpencode({ script: [] });
+  const res = await adapterFor(fake).start(session({ model: 'missing-model' }))
+    .result;
+  expect(res).toMatchObject({
+    exit: 'error',
+    error: { reason: 'modelUnavailable' },
+  });
+  expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(0);
 });

@@ -1,3 +1,4 @@
+import { missingModel } from './model-required.ts';
 /**
  * Claude Code adapter, built on the Claude Agent SDK.
  *
@@ -354,6 +355,8 @@ export class ClaudeAdapter implements AgentAdapter {
   }
 
   start(session: AdapterSession): AdapterHandle {
+    if (!session.model?.trim()) return missingModel('claude');
+    session = { ...session, model: session.model.trim() };
     return new ClaudeRun(session, () => this.resolveExecutable()).handle();
   }
 }
@@ -374,6 +377,7 @@ class ClaudeRun {
   private model?: string;
   private lastResult?: SDKResultMessage;
   private lastAssistantError?: string;
+  private rejectedModel?: { reason: 'modelUnavailable'; message: string };
   private turnUsage: Usage = {
     tool: 'claude',
     inputTokens: 0,
@@ -492,6 +496,8 @@ class ClaudeRun {
         append: session.systemPrompt,
       },
       settingSources: ['project'],
+      // Project fallback settings must not substitute another execution model.
+      settings: { fallbackModel: [] },
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       env: { ...session.env },
@@ -505,7 +511,7 @@ class ClaudeRun {
         );
       },
       pathToClaudeCodeExecutable: executable.path,
-      ...(session.model ? { model: session.model } : {}),
+      model: session.model!,
       ...(session.effort && EFFORTS.has(session.effort)
         ? { effort: session.effort as Options['effort'] }
         : {}),
@@ -557,6 +563,8 @@ class ClaudeRun {
         error: { reason: 'cancelled', message: 'Stopped by the runner' },
       };
     }
+    if (this.rejectedModel)
+      return { ...base, exit: 'error', error: this.rejectedModel };
     const r = this.lastResult;
     const signal: ClaudeFailureSignal = {
       assistantError: this.lastAssistantError,
@@ -735,6 +743,16 @@ class ClaudeRun {
 
   private onSystem(message: Extract<SDKMessage, { type: 'system' }>): void {
     switch (message.subtype) {
+      case 'model_refusal_fallback':
+        if (message.scope !== 'local') {
+          this.rejectedModel = {
+            reason: 'modelUnavailable',
+            message: `Claude refused the requested model ${this.session.model} and attempted to use ${message.fallback_model}. Execution stopped.`,
+          };
+          this.abortController.abort();
+          this.closeQuery?.();
+        }
+        return;
       case 'init':
         this.sessionId = message.session_id;
         this.model = message.model;

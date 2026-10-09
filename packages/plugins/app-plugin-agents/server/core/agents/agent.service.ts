@@ -88,13 +88,7 @@ const EffortSchema = z
 
 const RunnerEntrySchema: z.ZodType<RunnerModelEntry> = z.strictObject({
   tool: AgentToolSchema,
-  model: z
-    .string()
-    .trim()
-    .max(200)
-    .nullable()
-    .optional()
-    .transform((model) => (model ? model : null)),
+  model: z.string().trim().min(1).max(200),
   effort: EffortSchema,
 });
 
@@ -105,7 +99,7 @@ const OnlineEntrySchema: z.ZodType<OnlineModelEntry> = z.strictObject({
 });
 
 /**
- * An agent's list of tools and models: runner entries (`{ tool, model?, effort? }`) or online ones
+ * An agent's list of tools and models: runner entries (`{ tool, model, effort? }`) or online ones
  * (`{ modelService, model, effort? }`).
  */
 export const ModelEntriesSchema: z.ZodType<AgentModelEntry[]> = z
@@ -113,7 +107,7 @@ export const ModelEntriesSchema: z.ZodType<AgentModelEntry[]> = z
   .max(MAX_MODEL_ENTRIES)
   .meta({
     description:
-      'The tools and models, in order, the first its default, each with an optional reasoning effort its tool or service takes: `[{"tool":"codex","model":"gpt-5","effort":"high"},{"tool":"claude"}]` for a runner agent, `[{"modelService":"openai","model":"gpt-5","effort":"low"}]` for an online one. A runner agent needs at least one; an online agent may have none until a model is configured.',
+      'The tools and models, in order, the first its default, each with an optional reasoning effort its tool or service takes: `[{"tool":"codex","model":"gpt-5","effort":"high"},{"tool":"claude","model":"opus"}]` for a runner agent, `[{"modelService":"openai","model":"gpt-5","effort":"low"}]` for an online one. A runner agent needs at least one; an online agent may have none until a model is configured.',
   });
 
 const fields = {
@@ -225,6 +219,7 @@ export interface AgentServiceDeps {
   readonly actionTypes?: (key: string) => readonly AgentType[] | undefined;
   /** The agent's variables and runs: deleting it checks its open runs and clears its variables; archiving it withdraws its queued runs. */
   readonly owned?: {
+    readonly modelsConfigured?: (unit: Tx, agent: Agent) => Promise<void>;
     readonly openRuns: (
       conn: DatabaseConnection,
       agentId: string,
@@ -342,6 +337,13 @@ async function checkType(
       { reason: 'ACTION_NOT_FOR_TYPE', actions: refused },
     );
   const entries = agent.modelEntries;
+  if (
+    agent.type === 'runner' &&
+    entries.some((entry) => isRunnerEntry(entry) && !entry.model?.trim())
+  )
+    throw invalid('Every runner entry needs an explicit model.', {
+      reason: 'RUNNER_MODEL_REQUIRED',
+    });
   if (entries.length === 0 && agent.type === 'runner')
     throw invalid(
       'A runner agent needs at least one coding tool (modelEntries).',
@@ -521,7 +523,8 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         current.modelEntries,
       );
       try {
-        return await tx.run(async ({ conn, emit }) => {
+        return await tx.run(async (unit) => {
+          const { conn, emit } = unit;
           const before = await require(conn, id);
           if (patch.expectedRevision !== before.revision)
             throw revisionConflict(before.revision);
@@ -560,6 +563,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
             changes,
             createdAt: now,
           });
+          await deps.owned?.modelsConfigured?.(unit, after);
           emit({ type: 'agent.changed', agentId: id });
           return after;
         });

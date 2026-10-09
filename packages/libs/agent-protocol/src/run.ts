@@ -153,7 +153,7 @@ export const ToolPolicySchema: z.ZodType<ToolPolicy> = z.object({
 
 /**
  * The coding tool to run and how: the entry of the agent's list the server picked for this runner (the first whose tool
- * it has signed in). `model` is passed to the tool as its model; absent, the tool runs its default. A model the tool's
+ * it has signed in). `model` must name an explicit model for execution. It remains optional on the wire for legacy peers; current adapters reject an absent or empty model before starting. A model the tool's
  * account cannot use fails the run `modelUnavailable`. `effort` is the entry's reasoning effort, one of the tool's
  * (`TOOL_EFFORTS`); absent, the tool's default.
  */

@@ -153,7 +153,7 @@ describe('a runner at a glance', () => {
     const coder = {
       id: 'a1',
       name: 'Coder',
-      modelEntries: [{ tool: 'claude' as const, model: null }],
+      modelEntries: [{ tool: 'claude' as const, model: 'opus' }],
       runnerIds: [],
     };
     expect(runnerTakesAgent(runner('r1'), coder)).toBe(true);
@@ -163,7 +163,7 @@ describe('a runner at a glance', () => {
     expect(
       runnerTakesAgent(runner('r1'), {
         ...coder,
-        modelEntries: [{ tool: 'codex', model: null }],
+        modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
       }),
     ).toBe(false);
     // Any of its tools will do.
@@ -171,7 +171,7 @@ describe('a runner at a glance', () => {
       runnerTakesAgent(runner('r1'), {
         ...coder,
         modelEntries: [
-          { tool: 'codex', model: null },
+          { tool: 'codex', model: 'gpt-test' },
           { tool: 'claude', model: 'opus' },
         ],
       }),

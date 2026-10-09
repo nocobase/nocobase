@@ -54,7 +54,7 @@ export function entryText(
     ? ` · ${t(`agentForm.efforts.${entry.effort}`)}`
     : '';
   return isRunnerEntry(entry)
-    ? `${t(`tools.${entry.tool}`)} · ${entry.model ?? t('agents.defaultModel')}${effort}`
+    ? `${t(`tools.${entry.tool}`)} · ${entry.model?.trim() || t('modelEntries.runnerModelRequired')}${effort}`
     : `${entry.modelService} · ${entry.model}${effort}`;
 }
 

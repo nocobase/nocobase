@@ -1,7 +1,7 @@
 /**
  * An agent's tools and models, in order, as a compact list: one header row names the columns, and each row is one entry
  * with its reasoning effort. A runner agent's rows pair a coding tool with a model (free text, suggested from built-ins
- * and visible runner reports; empty for the tool's default), an online agent's rows a model service with one of its
+ * and visible runner reports; an explicit model is required), an online agent's rows a model service with one of its
  * models. The efforts offered are the row's tool's or the online ones. The first row is the default. Rows are added,
  * removed and moved up or down; an online agent may remove its last row and wait for a model, a runner agent may not.
  */
@@ -126,6 +126,9 @@ export function ModelInput({
         disabled={disabled}
         placeholder={placeholder}
         aria-label={ariaLabel}
+        required
+        aria-invalid={!value.trim()}
+        aria-describedby={!value.trim() ? `${id}-error` : undefined}
         title={t('modelEntries.suggestions')}
       />
       <ComboboxContent
@@ -338,16 +341,27 @@ export function ModelEntriesEditor({
                             })
                           }
                         />
-                        <ModelInput
-                          id={`${rowId}-model`}
-                          tool={entry.tool}
-                          runners={runners}
-                          value={entry.model}
-                          disabled={disabled}
-                          placeholder={t('agents.defaultModel')}
-                          ariaLabel={t('agentForm.model')}
-                          onChange={(model) => replace(index, { model })}
-                        />
+                        <div className='min-w-0'>
+                          <ModelInput
+                            id={`${rowId}-model`}
+                            tool={entry.tool}
+                            runners={runners}
+                            value={entry.model}
+                            disabled={disabled}
+                            placeholder={t('modelEntries.choose')}
+                            ariaLabel={t('agentForm.model')}
+                            onChange={(model) => replace(index, { model })}
+                          />
+                          {!entry.model.trim() && (
+                            <span
+                              id={`${rowId}-model-error`}
+                              role='alert'
+                              className='text-destructive text-sm'
+                            >
+                              {t('modelEntries.runnerModelRequired')}
+                            </span>
+                          )}
+                        </div>
                       </>
                     )}
                     <EffortSelect

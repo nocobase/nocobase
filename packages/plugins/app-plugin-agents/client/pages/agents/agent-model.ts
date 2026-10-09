@@ -16,7 +16,7 @@ export interface NewAgentDraft {
   readonly description: string;
   /** Chosen first; the fields below follow it. */
   readonly type: AgentType;
-  /** A runner agent's rows: coding tools, their models (empty for the tool's default) and efforts. */
+  /** A runner agent's rows: coding tools, their required models and optional efforts. */
   readonly runnerEntries: readonly EntryDraft[];
   /**
    * An online agent's rows: model services, their models and efforts. Null until the person changes them: the dialog
@@ -95,8 +95,8 @@ export function newAgentInput(
 }
 
 /**
- * A row of the tools-and-models list as the editor holds it: a runner row uses `tool` and `model` (empty for the tool's
- * default), an online row `modelService` and `model`; both an `effort` (empty for the default). `key` tells rows apart
+ * A row of the tools-and-models list as the editor holds it: a runner row uses `tool` and a required `model`,
+ * an online row `modelService` and `model`; both an `effort` (empty for the default). `key` tells rows apart
  * while they move.
  */
 export interface EntryDraft {
@@ -170,6 +170,8 @@ export function entriesError(
   if (drafts.length === 0)
     return type === 'runner' ? 'modelEntries.required' : null;
   if (drafts.length > MAX_MODEL_ENTRIES) return 'modelEntries.tooMany';
+  if (type === 'runner' && drafts.some((draft) => !draft.model.trim()))
+    return 'modelEntries.runnerModelRequired';
   if (
     type === 'online' &&
     drafts.some((draft) => !draft.modelService || !draft.model)

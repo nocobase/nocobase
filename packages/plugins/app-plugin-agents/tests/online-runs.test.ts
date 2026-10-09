@@ -762,7 +762,7 @@ describe('online runs', () => {
       (
         await create({
           type: 'online',
-          modelEntries: [{ tool: 'claude', model: null }],
+          modelEntries: [{ tool: 'claude', model: 'opus' }],
         })
       ).status,
     ).toBe(400);

@@ -4,6 +4,8 @@ import {
   RunAttempts,
   RunExecutionBadge,
   RunHeader,
+  RunLivePill,
+  RunActivityRow,
   AgentRunHistory,
   type AgentRunExecution,
   type AgentRunHistoryRun,
@@ -200,4 +202,29 @@ describe('run execution display', () => {
       'Requested reasoning: high · Actual reasoning: high · Source: codex.thread/start · Changed: 2026-10-09T00:00:00Z',
     );
   });
+});
+
+it('shows configuration waiting in a queued run header, activity and live pill', () => {
+  const waiting: AgentRunHistoryRun = {
+    ...run,
+    status: 'queued',
+    modelPending: true,
+    executions: [],
+    startedAt: null,
+    finishedAt: null,
+  };
+  const header = render(<RunHeader run={waiting} />);
+  expect(
+    screen.getByText('Execution model is not configured yet'),
+  ).toBeVisible();
+  header.unmount();
+  const activity = render(<RunActivityRow run={waiting} />);
+  expect(
+    screen.getByText('Execution model is not configured yet'),
+  ).toBeVisible();
+  activity.unmount();
+  render(<RunLivePill runs={[waiting]} />);
+  expect(
+    screen.getByText('Execution model is not configured yet'),
+  ).toBeVisible();
 });

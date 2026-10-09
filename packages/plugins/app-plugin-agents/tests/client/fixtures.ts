@@ -58,7 +58,7 @@ export function agent(
     descriptionText: null,
     avatar: null,
     type: 'runner',
-    modelEntries: [{ tool: 'claude', model: null }],
+    modelEntries: [{ tool: 'claude', model: 'opus' }],
     instructions: null,
     actions: [],
     confirmChanges: 'larger',

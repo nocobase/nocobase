@@ -25,7 +25,7 @@ describe('limits per coding tool', () => {
     h = await createHarness();
     const claude = await h.createAgent({ maxConcurrentRuns: 5 });
     const codex = await h.createAgent({
-      modelEntries: [{ tool: 'codex', model: null }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
     });
     const first = await h.enqueue(claude, '1');
     const second = await h.enqueue(claude, '2');
@@ -69,7 +69,7 @@ describe('limits per coding tool', () => {
     h = await createHarness();
     const claude = await h.createAgent();
     const codex = await h.createAgent({
-      modelEntries: [{ tool: 'codex', model: null }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
     });
     await h.enqueue(claude, '1');
     const codexRun = await h.enqueue(codex, '2');

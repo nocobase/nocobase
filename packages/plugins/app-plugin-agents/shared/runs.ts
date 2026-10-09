@@ -59,6 +59,8 @@ export interface RunExecutionSnapshot {
 
 export interface Run {
   readonly id: string;
+  /** Waiting for explicit runner model configuration; inputs remain pending. */
+  readonly modelPending?: boolean;
   readonly agentId: string;
   /** The agent's type (`AgentType`): an `online` run is held by the application itself, a `runner` run by a runner. */
   readonly agentType: 'online' | 'runner';
@@ -77,8 +79,8 @@ export interface Run {
   readonly actualEffortAt?: string | null;
   readonly machineHidden?: boolean;
   /**
-   * The entry of the agent's list it works with (`AgentModelEntry`): a runner run's coding tool and model (null: the
-   * tool's default), set when a runner claims it; an online run's model service and model, set when it is claimed (a
+   * The entry of the agent's list it works with (`AgentModelEntry`): a runner run's coding tool and explicit model,
+   * set when a runner claims it; an online run's model service and model, set when it is claimed (a
    * conversation's choice, else the agent's first entry). Null fields while nothing settled them.
    */
   readonly tool: AgentTool | null;
@@ -210,6 +212,7 @@ export interface RunEventPage {
  */
 export const RUN_WAIT_REASONS = [
   'agentArchived',
+  'modelNotConfigured',
   'delayed',
   'noRunnerOnline',
   'runnersOffline',

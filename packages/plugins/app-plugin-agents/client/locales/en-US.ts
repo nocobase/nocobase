@@ -261,6 +261,7 @@ const pages = {
     },
   },
   modelEntries: {
+    runnerModelRequired: 'Choose an explicit model for every tool entry.',
     title: 'Tools and models',
     hintRunner:
       'In order. A runtime takes a run with the first entry whose tool it has enabled and signed in; the run shows which one it used.',

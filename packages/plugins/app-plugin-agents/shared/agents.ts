@@ -58,7 +58,7 @@ export const ONLINE_EFFORTS = [
 ] as const;
 
 /**
- * An entry of a runner agent's list: a coding tool, its model (null: the tool's default) and its reasoning effort, one
+ * An entry of a runner agent's list: a coding tool, its explicit model (null only on legacy configuration awaiting completion) and its reasoning effort, one
  * of the tool's (`TOOL_EFFORTS`; null or absent: the tool's default).
  */
 export interface RunnerModelEntry {
@@ -109,6 +109,16 @@ export function runnerEntries(agent: {
   return agent.modelEntries.filter(isRunnerEntry);
 }
 
+/** Only entries with an explicit model may participate in runner execution. Legacy empty entries remain editable. */
+export function executableRunnerEntries(agent: {
+  readonly modelEntries: readonly AgentModelEntry[];
+}): (RunnerModelEntry & { readonly model: string })[] {
+  return runnerEntries(agent).filter(
+    (entry): entry is RunnerModelEntry & { readonly model: string } =>
+      typeof entry.model === 'string' && entry.model.trim().length > 0,
+  );
+}
+
 /** An online agent's entries, in order; empty for a runner agent. */
 export function onlineEntries(agent: {
   readonly modelEntries: readonly AgentModelEntry[];
@@ -142,7 +152,9 @@ export function onlineEntriesOrDefault(
 export function entryTools(agent: {
   readonly modelEntries: readonly AgentModelEntry[];
 }): AgentTool[] {
-  return [...new Set(runnerEntries(agent).map((entry) => entry.tool))];
+  return [
+    ...new Set(executableRunnerEntries(agent).map((entry) => entry.tool)),
+  ];
 }
 
 /** Whether two entries name the same tool or service and model, whatever their efforts. */

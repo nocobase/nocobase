@@ -240,6 +240,7 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
           filter: (f) =>
             f.and([
               f.string('status').eq('queued'),
+              f.boolean('modelPending').isFalse(),
               f.string('subjectKind').eq(binding.kind),
               f.date('updatedAt').before(cutoff),
               f.or([

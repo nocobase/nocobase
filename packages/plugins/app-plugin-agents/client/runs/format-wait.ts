@@ -33,6 +33,7 @@ export interface FormatRunWaitOptions {
 /** The reasons that need someone to act (an administrator, an agent's owner) rather than time. */
 export const BLOCKING_RUN_WAIT_REASONS: readonly string[] = [
   'agentArchived',
+  'modelNotConfigured',
   'noRunnerOnline',
   'runnersOffline',
   'toolUnavailable',

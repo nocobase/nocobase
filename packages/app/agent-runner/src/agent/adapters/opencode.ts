@@ -1,3 +1,4 @@
+import { missingModel } from './model-required.ts';
 /**
  * OpenCode adapter, built on the `opencode serve` HTTP API of OpenCode 2.x.
  *
@@ -294,6 +295,8 @@ export class OpencodeAdapter implements AgentAdapter {
   }
 
   start(session: AdapterSession): AdapterHandle {
+    if (!session.model?.trim()) return missingModel('opencode');
+    session = { ...session, model: session.model.trim() };
     return new OpencodeRun(session, {
       detect: () => this.detect(),
       launch: this.launch,
@@ -490,14 +493,14 @@ class OpencodeRun {
       await client.updateSession(sessionId, {
         permissions: [...ASK_EVERYTHING],
       });
-      if (model) await client.switchModel(sessionId, model);
+      await client.switchModel(sessionId, model);
     } else {
       sessionId = (
         await client.createSession({
           title: 'Agent run',
           location: { directory: session.workDir },
           permissions: [...ASK_EVERYTHING],
-          ...(model ? { model } : {}),
+          model,
         })
       ).id;
     }
@@ -532,11 +535,12 @@ class OpencodeRun {
     return this.ending.promise;
   }
 
-  private async resolveModel(
-    client: OpencodeClient,
-  ): Promise<ModelRef | undefined> {
+  private async resolveModel(client: OpencodeClient): Promise<ModelRef> {
     const { model, effort } = this.session;
-    if (!model) return undefined;
+    if (!model)
+      throw new Error(
+        'OpenCode model is not available: an explicit model is required.',
+      );
     let ref = parseModel(model);
     if (!ref || effort) {
       try {
@@ -560,6 +564,10 @@ class OpencodeRun {
         // keep what the name says
       }
     }
+    if (!ref)
+      throw new Error(
+        `OpenCode model ${model} is not available. Use an explicit provider/model identifier.`,
+      );
     return ref;
   }
 

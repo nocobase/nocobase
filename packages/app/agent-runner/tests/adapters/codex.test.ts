@@ -64,6 +64,7 @@ function adapterWith(script: (fake: FakeCodex) => void | Promise<void>) {
 
 function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
   return {
+    model: 'gpt-test',
     workDir: defaultWorkDir,
     prompt: 'do it',
     systemPrompt: 'brief',
@@ -725,4 +726,40 @@ describe('stopping and resuming', () => {
       },
     ]);
   });
+});
+
+it('stops when Codex rejects the explicit model without starting another thread', async () => {
+  const { adapter, spawn } = adapterWith(async (fake) => {
+    await handshake(fake);
+    completeTurn(fake, 'turn-1', 'failed', {
+      message: 'Model not found: rejected-model',
+      codexErrorInfo: 'other',
+      additionalDetails: null,
+    });
+  });
+  const res = await adapter.start(session({ model: 'rejected-model' })).result;
+  expect(res).toMatchObject({
+    exit: 'error',
+    error: { reason: 'modelUnavailable' },
+  });
+  expect(spawn.processes).toHaveLength(1);
+});
+
+it('stops when Codex attempts to route to a different model', async () => {
+  const { adapter, spawn } = adapterWith(async (fake) => {
+    await handshake(fake);
+    fake.notify('model/rerouted', {
+      threadId: 'thread-1',
+      fromModel: 'gpt-test',
+      toModel: 'other-model',
+    });
+  });
+  expect(await adapter.start(session()).result).toMatchObject({
+    exit: 'error',
+    error: {
+      reason: 'modelUnavailable',
+      message: expect.stringContaining('another model'),
+    },
+  });
+  expect(spawn.processes).toHaveLength(1);
 });

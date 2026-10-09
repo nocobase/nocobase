@@ -1,3 +1,4 @@
+import { missingModel } from './model-required.ts';
 /**
  * Pi adapter: drives the machine's installed `pi` (@earendil-works/pi-coding-agent,
  * formerly @mariozechner/pi-coding-agent) in RPC mode, one JSON record per LF
@@ -320,6 +321,8 @@ export class PiAdapter implements AgentAdapter {
   }
 
   start(session: AdapterSession): AdapterHandle {
+    if (!session.model?.trim()) return missingModel('pi');
+    session = { ...session, model: session.model.trim() };
     return new PiRun(session, {
       detect: () => this.detect(),
       spawn: this.spawn,
@@ -522,7 +525,7 @@ class PiRun {
       await writeFile(brief, this.session.systemPrompt);
       args.push('--append-system-prompt', brief);
     }
-    if (this.session.model) args.push('--model', this.session.model);
+    args.push('--model', this.session.model!);
     if (this.session.effort && THINKING_LEVELS.has(this.session.effort))
       args.push('--thinking', this.session.effort);
     if (this.session.resumeSessionId)

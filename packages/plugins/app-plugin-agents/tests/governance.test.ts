@@ -316,7 +316,10 @@ describe('agent governance', () => {
           user: 'bob',
           can: READ,
           scope: OWN,
-          body: { name: 'New', modelEntries: [{ tool: 'claude' }] },
+          body: {
+            name: 'New',
+            modelEntries: [{ tool: 'claude', model: 'opus' }],
+          },
         })
       ).status,
     ).toBe(403);

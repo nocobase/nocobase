@@ -70,7 +70,7 @@ describe('agent forms', () => {
       ...blank,
       name: ' Coder ',
       runnerEntries: [
-        { ...blank.runnerEntries[0]!, model: ' ', effort: 'high' },
+        { ...blank.runnerEntries[0]!, model: ' opus ', effort: 'high' },
         newEntryDraft({ tool: 'codex', model: 'gpt-5' }),
       ],
       instructions: '  ',
@@ -83,7 +83,7 @@ describe('agent forms', () => {
         description: null,
         type: 'runner',
         modelEntries: [
-          { tool: 'claude', model: null, effort: 'high' },
+          { tool: 'claude', model: 'opus', effort: 'high' },
           { tool: 'codex', model: 'gpt-5', effort: null },
         ],
         instructions: null,
@@ -136,7 +136,9 @@ describe('agent forms', () => {
       ['codex', 'gpt-5', 'xhigh'],
       ['claude', '', ''],
     ]);
-    expect(entriesError('runner', rows)).toBeNull();
+    expect(entriesError('runner', rows)).toBe(
+      'modelEntries.runnerModelRequired',
+    );
     const moved = moveEntry(rows, 1, 0);
     expect(draftEntries('runner', moved)).toEqual([
       { tool: 'claude', model: null, effort: null },
@@ -166,7 +168,7 @@ describe('agent forms', () => {
     expect(entriesError('online', [])).toBeNull();
     expect(
       entriesError('runner', [
-        ...rows,
+        ...rows.map((row) => ({ ...row, model: row.model || 'opus' })),
         newEntryDraft({ tool: 'codex', model: 'gpt-5' }),
       ]),
     ).toBe('modelEntries.duplicate');

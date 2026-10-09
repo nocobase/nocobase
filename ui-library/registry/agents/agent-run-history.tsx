@@ -54,6 +54,8 @@ export interface AgentRunHistoryRun {
   readonly agentId: string;
   readonly agentName: string;
   readonly status: AgentRunHistoryStatus;
+  /** Inputs wait for explicit model configuration and cannot be claimed yet. */
+  readonly modelPending?: boolean;
   /** A stop was asked for and the run has not ended yet. */
   readonly stopping?: boolean;
   readonly createdAt: string;
@@ -126,6 +128,7 @@ const defaultRunExecutionLabels: RunExecutionLabels = {
 export interface AgentRunHistoryLabels {
   readonly execution?: RunExecutionLabels;
   readonly title: string;
+  readonly modelNotConfigured?: string;
   readonly empty: string;
   readonly status: Readonly<Record<AgentRunHistoryStatus | 'stopping', string>>;
   /** What a run did, on an activity line: `{name}` is the agent. */
@@ -146,6 +149,7 @@ export interface AgentRunHistoryLabels {
 
 const defaultAgentRunHistoryLabels: AgentRunHistoryLabels = {
   title: 'Execution log',
+  modelNotConfigured: 'Execution model is not configured yet',
   empty: 'No runs yet.',
   status: {
     queued: 'Queued',
@@ -532,7 +536,10 @@ export function RunStatusBadge({
   run,
   labels = defaultAgentRunHistoryLabels,
 }: {
-  readonly run: Pick<AgentRunHistoryRun, 'status' | 'stopping'>;
+  readonly run: Pick<
+    AgentRunHistoryRun,
+    'status' | 'stopping' | 'modelPending'
+  >;
   readonly labels?: AgentRunHistoryLabels;
 }): ReactElement {
   const stopping = Boolean(run.stopping) && isRunOpen(run);
@@ -547,7 +554,12 @@ export function RunStatusBadge({
       )}
     >
       <span aria-hidden className='size-1.5 rounded-full bg-current' />
-      {stopping ? labels.status.stopping : labels.status[run.status]}
+      {stopping
+        ? labels.status.stopping
+        : run.status === 'queued' && run.modelPending
+          ? (labels.modelNotConfigured ??
+            'Execution model is not configured yet')
+          : labels.status[run.status]}
     </Badge>
   );
 }
@@ -903,7 +915,9 @@ export function RunLivePill({
   const working = isRunActive(live);
   const name = live.agentName;
   const text = !working
-    ? fillLabel(labels.live.queued, { name })
+    ? live.modelPending
+      ? (labels.modelNotConfigured ?? 'Execution model is not configured yet')
+      : fillLabel(labels.live.queued, { name })
     : seconds === null
       ? fillLabel(labels.live.working, { name })
       : fillLabel(labels.live.workingFor, {
@@ -965,7 +979,10 @@ export function RunActivityRow({
         <BotIcon className='size-3.5 shrink-0' aria-hidden='true' />
       )}
       <span className='text-foreground'>
-        {fillLabel(labels.activity[run.status], { name: run.agentName })}
+        {run.status === 'queued' && run.modelPending
+          ? (labels.modelNotConfigured ??
+            'Execution model is not configured yet')
+          : fillLabel(labels.activity[run.status], { name: run.agentName })}
       </span>
       {run.status === 'failed' && run.failure ? (
         <span className='text-xs text-destructive'>· {run.failure}</span>
@@ -1451,7 +1468,10 @@ export function RunActions({
   busy = false,
   labels = defaultAgentRunHistoryLabels,
 }: {
-  readonly run: Pick<AgentRunHistoryRun, 'status' | 'stopping'>;
+  readonly run: Pick<
+    AgentRunHistoryRun,
+    'status' | 'stopping' | 'modelPending'
+  >;
   readonly onStop?: () => void;
   readonly onRetry?: () => void;
   readonly busy?: boolean;

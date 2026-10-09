@@ -144,7 +144,7 @@ describe('the workload', () => {
 describe('explainWait', () => {
   const agent = {
     id: 'a1',
-    modelEntries: [{ tool: 'claude', model: null }],
+    modelEntries: [{ tool: 'claude', model: 'opus' }],
     runnerIds: [],
     maxConcurrentRuns: 2,
     archivedAt: null,
@@ -324,8 +324,8 @@ describe('explainWait', () => {
         agent: {
           ...agent,
           modelEntries: [
-            { tool: 'claude', model: null },
-            { tool: 'codex', model: null },
+            { tool: 'claude', model: 'opus' },
+            { tool: 'codex', model: 'gpt-test' },
           ],
         } as unknown as Agent,
         runners: [

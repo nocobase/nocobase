@@ -134,7 +134,7 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     user: 'admin',
     body: {
       name: 'Echo',
-      modelEntries: [{ tool: 'claude' }],
+      modelEntries: [{ tool: 'claude', model: 'opus' }],
       access: 'everyone',
     },
   });

@@ -280,7 +280,7 @@ describe('agent pages', () => {
     expect(within(row).getByText('Reviewer')).toBeInTheDocument();
     expect(within(row).getByText('Reviews pull requests')).toBeInTheDocument();
     expect(within(row).getByText('tools.claude')).toBeInTheDocument();
-    expect(within(row).getByText('agents.defaultModel')).toBeInTheDocument();
+    expect(within(row).getByText('opus')).toBeInTheDocument();
     expect(within(row).getByText('agents.anyRunner')).toBeInTheDocument();
     expect(
       within(row).getByText('agents.onlineCount(count=2)'),
@@ -315,6 +315,9 @@ describe('agent pages', () => {
     );
     const rows = within(dialog).getAllByTestId('ag-model-entry');
     expect(rows).toHaveLength(2);
+    fireEvent.change(within(rows[0]!).getByLabelText('agentForm.model'), {
+      target: { value: 'sonnet' },
+    });
     fireEvent.change(within(rows[1]!).getByLabelText('agentForm.model'), {
       target: { value: 'opus' },
     });
@@ -325,7 +328,7 @@ describe('agent pages', () => {
       description: null,
       type: 'runner',
       modelEntries: [
-        { tool: 'claude', model: null, effort: null },
+        { tool: 'claude', model: 'sonnet', effort: null },
         { tool: 'claude', model: 'opus', effort: null },
       ],
       instructions: null,
@@ -613,7 +616,7 @@ describe('agent pages', () => {
     const summary = await screen.findByTestId('agent-summary');
     expect(within(summary).getByText('agentTypes.runner')).toBeInTheDocument();
     expect(
-      within(summary).getByText('tools.claude · agents.defaultModel'),
+      within(summary).getByText('tools.claude · opus'),
     ).toBeInTheDocument();
     expect(within(summary).getByText('agents.anyRunner')).toBeInTheDocument();
     expect(
@@ -699,10 +702,44 @@ describe('agent pages', () => {
     );
     await waitFor(() => expect(callsTo('PATCH', 'agents/a1')).toHaveLength(2));
     expect(callsTo('PATCH', 'agents/a1')[1]?.json).toEqual({
-      modelEntries: [{ tool: 'claude', model: null, effort: null }],
+      modelEntries: [{ tool: 'claude', model: 'opus', effort: null }],
       toolPolicy: { maxTurns: 40 },
       confirmChanges: 'always',
       expectedRevision: 2,
+    });
+  });
+
+  it('prompts for a legacy empty model and refuses saving until it is completed', async () => {
+    agents[0] = {
+      ...agents[0]!,
+      modelEntries: [{ tool: 'claude', model: null }],
+    };
+    renderRoute(
+      <AgentDetailPage />,
+      '/agents/:agentId',
+      '/agents/a1?tab=capabilities',
+    );
+    const tool = await screen.findByRole('region', {
+      name: 'toolSection.title',
+    });
+    const model = within(tool).getByLabelText('agentForm.model');
+    expect(model).toBeRequired();
+    expect(model).toHaveAttribute('aria-invalid', 'true');
+    expect(within(tool).getByRole('alert')).toHaveTextContent(
+      'modelEntries.runnerModelRequired',
+    );
+    fireEvent.change(within(tool).getByLabelText('toolSection.maxTurns'), {
+      target: { value: '40' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'actions.save' }));
+    expect(callsTo('PATCH', 'agents/a1')).toHaveLength(0);
+    fireEvent.change(model, { target: { value: 'opus' } });
+    expect(model).toHaveAttribute('aria-invalid', 'false');
+    expect(document.getElementById(`${model.id}-error`)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'actions.save' }));
+    await waitFor(() => expect(callsTo('PATCH', 'agents/a1')).toHaveLength(1));
+    expect(callsTo('PATCH', 'agents/a1')[0]?.json).toMatchObject({
+      modelEntries: [{ tool: 'claude', model: 'opus', effort: null }],
     });
   });
 
@@ -748,6 +785,9 @@ describe('agent pages', () => {
     );
     const rows = within(tool).getAllByTestId('ag-model-entry');
     expect(rows).toHaveLength(2);
+    fireEvent.change(within(rows[0]!).getByLabelText('agentForm.model'), {
+      target: { value: 'sonnet' },
+    });
     fireEvent.change(within(rows[1]!).getByLabelText('agentForm.model'), {
       target: { value: 'opus' },
     });
@@ -775,7 +815,7 @@ describe('agent pages', () => {
     expect(callsTo('PATCH', 'agents/a1')[0]?.json).toMatchObject({
       modelEntries: [
         { tool: 'claude', model: 'opus', effort: 'max' },
-        { tool: 'claude', model: null, effort: null },
+        { tool: 'claude', model: 'sonnet', effort: null },
       ],
       expectedRevision: 1,
     });

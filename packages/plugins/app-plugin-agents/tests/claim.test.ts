@@ -57,7 +57,7 @@ describe('claiming', () => {
   it('matches the tool, the named runners, trust and features', async () => {
     h = await createHarness();
     const codex = await h.createAgent({
-      modelEntries: [{ tool: 'codex', model: null }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
     });
     const plain = await h.createAgent();
     await h.enqueue(codex, '1');
@@ -103,7 +103,7 @@ describe('claiming', () => {
       modelEntries: [
         { tool: 'codex', model: 'gpt-6', effort: 'xhigh' },
         { tool: 'claude', model: 'opus', effort: 'max' },
-        { tool: 'claude', model: null },
+        { tool: 'claude', model: 'sonnet' },
       ],
     });
     const first = await h.enqueue(agentId, '1');
@@ -160,7 +160,7 @@ describe('claiming', () => {
     h = await createHarness();
     const onClaude = await h.createAgent();
     const onCodex = await h.createAgent({
-      modelEntries: [{ tool: 'codex', model: null }],
+      modelEntries: [{ tool: 'codex', model: 'gpt-test' }],
     });
     await h.enqueue(onClaude, '1');
     await h.enqueue(onCodex, '2');

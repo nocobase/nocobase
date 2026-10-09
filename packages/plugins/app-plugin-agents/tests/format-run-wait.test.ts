@@ -125,3 +125,15 @@ describe('formatRunWait', () => {
     expect(runWaitBlocks({ reason: 'somethingNew' })).toBe(false);
   });
 });
+
+it('translates missing execution models in both languages and marks them as blocking', async () => {
+  const { runtime, t } = await runtimeWith();
+  expect(formatRunWait(t, { reason: 'modelNotConfigured' })).toBe(
+    'Execution model is not configured yet',
+  );
+  expect(runWaitBlocks({ reason: 'modelNotConfigured' })).toBe(true);
+  await runtime.changeLanguage('zh-CN');
+  expect(
+    formatRunWait(runtime.getFixedT('app'), { reason: 'modelNotConfigured' }),
+  ).toBe('尚未配置执行模型');
+});
