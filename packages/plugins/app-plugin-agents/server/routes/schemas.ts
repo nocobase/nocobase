@@ -1133,6 +1133,16 @@ const notice = z.discriminatedUnion('code', [
     fromAgentId: z.string(),
   }),
   z.object({
+    code: z.literal('switchedToOnline'),
+    agentId: z.string(),
+    fromAgentId: z.string(),
+  }),
+  z.object({
+    code: z.literal('onlineFallbackUnavailable'),
+    fromAgentId: z.string(),
+    reason: z.enum(OFFLINE_REASONS),
+  }),
+  z.object({
     code: z.literal('switchedBack'),
     agentId: z.string(),
     fromAgentId: z.string(),
@@ -1235,6 +1245,7 @@ const messageObject = z.object({
     agentId: z.string().optional(),
     runEventSeq: z.number().int().optional(),
     notice: notice.optional(),
+    onlineFallbackResolved: z.boolean().optional(),
     clientId: z.string().optional(),
     streaming: z.boolean().optional(),
     interrupted: z.boolean().optional(),
@@ -1275,10 +1286,26 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   isSystemDefault: z.boolean(),
   isMyDefault: z.boolean(),
   availability,
+  fallbackAgentId: z.string().nullable().meta({
+    description:
+      'A runner agent no runner may run for the caller now: the online agent a new conversation with it starts on instead. Null otherwise.',
+  }),
 });
 
-export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences & ChatSettings> =
-  z.object({ defaultAgentId: z.string().nullable() });
+export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
+  defaultAgentId: z.string().nullable(),
+});
+
+export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
+  defaultAgentId: z.string().nullable().meta({
+    description:
+      'The agent new conversations go to when a person has no default of their own.',
+  }),
+  onlineFallbackAgentId: z.string().nullable().meta({
+    description:
+      'The online agent that answers in place of a runner agent no runner may run for the person now.',
+  }),
+});
 
 // Runners, as people manage them.
 const runnerObject = z.object({
