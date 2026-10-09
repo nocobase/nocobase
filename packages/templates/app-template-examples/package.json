@@ -159,8 +159,6 @@
   },
   "dependencies": {
     "zod": "catalog:",
-    "@nocobase/app-plugin-ai-employee": "workspace:^",
-    "@nocobase/app-plugin-ai-employee-example": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
@@ -208,7 +206,6 @@
     "@nocobase/lifecycle": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
-    "@nocobase/ai-employee": "workspace:^",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-plugin-mail": "workspace:^",
     "@nocobase/app-plugin-mail-example": "workspace:^"
@@ -220,7 +217,6 @@
     "#hooks/*": "./client/hooks/*.js",
     "#lib/*": "./client/lib/*.js",
     "#extensions/*": "./client/extensions/*.js",
-    "#extensions/nocobase-ai": "./client/extensions/nocobase-ai/index.ts",
     "#pages/*": "./client/pages/*.js"
   }
 }

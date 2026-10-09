@@ -45,6 +45,9 @@ export interface RunRecord {
   readonly subjectId: string;
   readonly threadScope: string;
   readonly actorUserId: string;
+  /** Null only on a run older than the column that no backfill reached; read as the actor then. */
+  readonly requestedByUserId?: string | null;
+  readonly confirmedByUserId?: string | null;
   readonly ownerUserId: string | null;
   readonly requires: readonly unknown[];
   readonly acceptsInput: boolean;
@@ -244,6 +247,8 @@ export function toRun(record: RunRecord): Run {
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
     actorUserId: record.actorUserId,
+    requestedByUserId: record.requestedByUserId ?? record.actorUserId,
+    confirmedByUserId: record.confirmedByUserId ?? null,
     ownerUserId: record.ownerUserId,
     requires: stringArray(record.requires) as RunnerFeature[],
     acceptsInput: Boolean(record.acceptsInput),

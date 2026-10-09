@@ -242,6 +242,26 @@ describe('skills', () => {
   });
 });
 
+describe('sandbox', () => {
+  it("lets the agent write the work directory and the session's writable roots, and nothing else", async () => {
+    let params: Record<string, unknown> = {};
+    const { adapter } = adapterWith(async (fake) => {
+      params = await handshake(fake);
+      completeTurn(fake);
+    });
+    const handle = adapter.start(
+      session({
+        writableRoots: ['/work-other', '/cache.git/worktrees/app'],
+      }),
+    );
+    await drain(handle);
+    expect(params.sandboxPolicy).toMatchObject({
+      type: 'workspaceWrite',
+      writableRoots: ['/work', '/work-other', '/cache.git/worktrees/app'],
+    });
+  });
+});
+
 describe('shell commands', () => {
   it('unwraps the shell Codex runs commands in', () => {
     expect(unwrapShell("/bin/zsh -lc 'printf hello > hello.txt'")).toBe(

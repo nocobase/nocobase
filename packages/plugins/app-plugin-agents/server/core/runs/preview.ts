@@ -117,6 +117,8 @@ export function createBriefPreviewer(deps: {
           subject: { kind: scenario, id: SAMPLE_SUBJECT_ID },
           threadScope: DEFAULT_THREAD,
           actorUserId: user.id,
+          requestedByUserId: user.id,
+          confirmedByUserId: null,
           ownerUserId: null,
           requires: [],
           acceptsInput: false,

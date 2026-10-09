@@ -6,7 +6,7 @@ Example plugin that shows how an application hands an AI employee prepared tasks
 - **Client**: an App route at `/ai-employee-example` with a fallback page that explains what to install.
 - **Registry**: `tasks-page`, an application-owned page that replaces the fallback through the route's stable ID and runs AI employee tasks on a queue of sample support tickets.
 
-The page has no chat of its own. Every task opens in the application's global AI entry: a floating trigger at the lower right and a side panel that expands into a dialog, built from `NocoBaseAIRootProvider`, an `AIChatProvider` bound to `useGlobalAIChatController()`, `AIChatFloatingTrigger` and `ChatSurface`. `packages/templates/app-template-examples/client/components/ai-employee-entry.tsx` is that entry in the Examples template.
+The page has no chat of its own. Every task opens in an application-owned global AI entry: a floating trigger at the lower right and a side panel that expands into a dialog, built from `NocoBaseAIRootProvider`, an `AIChatProvider` bound to `useGlobalAIChatController()`, `AIChatFloatingTrigger` and `ChatSurface`. The AI Employee plugin's `registry/nocobase-ai/README.md` describes these components. Current templates no longer install the deprecated AI Employee plugin or this example; the registration steps below apply to applications that explicitly retain the plugin.
 
 ## AI employee tasks
 
@@ -45,4 +45,4 @@ pnpm --filter @nocobase/app-plugin-ai-employee-example test
 pnpm --filter @nocobase/app-plugin-ai-employee-example build
 ```
 
-The Registry page is compiled and tested by the application it is installed in; the Examples template's tests cover its route override, its tasks, and the requests they send.
+The Registry page is compiled and tested by the application it is installed in. An application that retains this example owns tests for its route override, tasks, and requests; the Examples template no longer installs or tests this page.

@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
@@ -15,11 +16,7 @@ import packageMetadata from '../package.json' with { type: 'json' };
 const execFileAsync = promisify(execFile);
 const packageRoot = path.resolve(import.meta.dirname, '..');
 const repoRoot = path.resolve(packageRoot, '../../..');
-// The application CLI of the Default template, named through `NOCOBASE_APP_ROOT` so the working directory stays free
-// for the relative paths each test passes.
 const appCli = path.join(repoRoot, 'packages/app/app-cli/bin/run.js');
-const appRoot = path.join(repoRoot, 'packages/templates/app-template-default');
-const appEnv = { ...process.env, NOCOBASE_APP_ROOT: appRoot };
 
 describe('workflow CLI contribution', () => {
   it('declares the workflow topic and command map', () => {
@@ -95,29 +92,58 @@ describe('workflow CLI contribution', () => {
   });
 
   it('checks a relative workflow path through the application CLI', async () => {
-    const fixture = path.relative(
-      packageRoot,
-      path.join(
+    // Own the plugin registration instead of depending on a template's default capabilities.
+    const appRoot = await fsPromises.mkdtemp(
+      path.join(os.tmpdir(), 'workflow-cli-app-'),
+    );
+    try {
+      await fsPromises.writeFile(
+        path.join(appRoot, 'package.json'),
+        JSON.stringify({
+          name: 'workflow-cli-test-app',
+          type: 'module',
+          nocobase: { templateKind: 'app' },
+        }),
+      );
+      await fsPromises.symlink(
+        path.join(packageRoot, 'node_modules'),
+        path.join(appRoot, 'node_modules'),
+        'dir',
+      );
+      await fsPromises.mkdir(path.join(appRoot, 'cli'));
+      await fsPromises.writeFile(
+        path.join(appRoot, 'cli/plugins.ts'),
+        `import { defineCliPlugins } from '@nocobase/app-cli';\nimport workflow from ${JSON.stringify(pathToFileURL(path.join(packageRoot, 'cli/index.ts')).href)};\nexport default defineCliPlugins([workflow]);\n`,
+      );
+      const fixture = path.relative(
         packageRoot,
-        'skill-evals/nocobase3-workflow-manage/fixtures/workflows/valid-quotation',
-      ),
-    );
-    const { stdout } = await execFileAsync(
-      process.execPath,
-      [appCli, 'workflow', 'check', fixture, '--json'],
-      { cwd: packageRoot, env: appEnv },
-    );
+        path.join(
+          packageRoot,
+          'skill-evals/nocobase3-workflow-manage/fixtures/workflows/valid-quotation',
+        ),
+      );
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [appCli, 'workflow', 'check', fixture, '--json'],
+        {
+          cwd: packageRoot,
+          env: { ...process.env, NOCOBASE_APP_ROOT: appRoot },
+        },
+      );
 
-    expect(JSON.parse(stdout)).toMatchObject({
-      schemaVersion: 1,
-      ok: true,
-      command: 'workflow check',
-      status: 'success',
-      result: {
-        file: path.join(packageRoot, fixture, 'workflow.ts'),
-        nodes: expect.any(Number),
-      },
-    });
+      expect(JSON.parse(stdout)).toMatchObject({
+        schemaVersion: 1,
+        ok: true,
+        command: 'workflow check',
+        status: 'success',
+        result: {
+          file: path.join(packageRoot, fixture, 'workflow.ts'),
+          nodes: expect.any(Number),
+        },
+      });
+    } finally {
+      await fsPromises.rm(appRoot, { recursive: true, force: true });
+    }
   });
 });
 
