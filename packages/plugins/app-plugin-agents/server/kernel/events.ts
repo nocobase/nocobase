@@ -20,36 +20,22 @@ import type { RunRequest } from '../../shared/runs.js';
  *   when a runner takes the run.
  * - `runner_revoked` (subject `runner`): a manager of runners revoked someone else's runner, so it takes no more work
  *   until it registers again; to its owner. `params`: `runnerName`, `revokedByUserId`, `revokedByName` (or null).
- */
-export interface RunnerNotice {
-  /** Stable for the same news: delivering it twice tells people once. */
-  readonly key: string;
-  readonly type:
-    'runner_upgrade_required' | 'run_secrets_not_allowed' | 'runner_revoked';
-  readonly userIds: readonly string[];
-  readonly subject: {
-    readonly kind: 'runner' | 'run';
-    readonly id: string;
-    readonly label: string;
-  };
-  readonly title: string;
-  readonly body: string;
-  readonly params: Readonly<Record<string, string | number | null>>;
-}
-
-/**
  * - `run_request_expired` (subject `runRequest`): a request passed its deadline or cannot be handed to a usable new
  *   responsible; to the person who asked, who may still run it as themselves
  *   (`POST /api/agents/runRequests/{requestId}/runAsMe`). `params`: `agentName`, `subjectKind`, `subjectId`, `requestId`,
  *   `responsibleUserId`, `reason` (`timeout` or `reassignment`).
  */
-export interface RunRequestNotice {
+export interface AgentsNotice {
   /** Stable for the same news: delivering it twice tells people once. */
   readonly key: string;
-  readonly type: 'run_request_expired';
+  readonly type:
+    | 'runner_upgrade_required'
+    | 'run_secrets_not_allowed'
+    | 'runner_revoked'
+    | 'run_request_expired';
   readonly userIds: readonly string[];
   readonly subject: {
-    readonly kind: 'runRequest';
+    readonly kind: 'runner' | 'run' | 'runRequest';
     readonly id: string;
     readonly label: string;
   };
@@ -57,9 +43,6 @@ export interface RunRequestNotice {
   readonly body: string;
   readonly params: Readonly<Record<string, string | number | null>>;
 }
-
-/** Something people should hear about (see `RunnerNotice` and `RunRequestNotice`). */
-export type AgentsNotice = RunnerNotice | RunRequestNotice;
 
 /**
  * A run request (`shared/runs.ts`) was made (`created`, for its responsible to confirm), or settled: `confirmed` (its

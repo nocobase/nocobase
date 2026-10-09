@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AGENT_LAYER_PREFIX } from '../server/core/brief/index.js';
-import type { RunnerNotice } from '../server/tokens.js';
+import type { AgentsNotice } from '../server/tokens.js';
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
 
 const ADMIN = ['agents.agents/manage', 'agents.runners/manage'];
@@ -275,7 +275,7 @@ describe('admin API', () => {
     const runId = await h.enqueue(agentId);
     const runner = await h.registerRunner();
     await claim(h, runner);
-    const notices: RunnerNotice[] = [];
+    const notices: AgentsNotice[] = [];
     h.services.events.on('notice', (event) => notices.push(event.notice));
     const logged = vi.spyOn(console, 'info').mockImplementation(() => {});
     const revoked = await h.request(
@@ -319,7 +319,7 @@ describe('admin API', () => {
   it('tells nobody when an owner revokes their own runner', async () => {
     h = await createHarness();
     const runner = await h.registerRunner({ ownerUserId: 'bob' });
-    const notices: RunnerNotice[] = [];
+    const notices: AgentsNotice[] = [];
     h.services.events.on('notice', (event) => notices.push(event.notice));
     const revoked = await h.request(
       'POST',

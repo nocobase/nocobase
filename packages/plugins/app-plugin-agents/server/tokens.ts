@@ -117,8 +117,6 @@ export type {
   AgentsEvent,
   AgentsEventBus,
   AgentsNotice,
-  RunnerNotice,
-  RunRequestNotice,
 } from './kernel/events.js';
 export type { DistConfig, DistService } from './distribution/index.js';
 export { JobSecretsNotAllowed } from './jobs/index.js';

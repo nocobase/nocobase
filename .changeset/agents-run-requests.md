@@ -20,7 +20,7 @@ Add run requests to the agents plugin: when someone other than the person who an
   - `GET /api/agents/runRequests/{requestId}`
   - `POST /api/agents/runRequests/{requestId}/confirm`, `reject`, `withdraw` and `runAsMe`
   - CLI commands: `run request list|get|confirm|reject|withdraw|run-as-me`.
-- New events: `runRequest.created`, `confirmed`, `rejected`, `withdrawn`, `superseded` and `expired`. The `notice` event's `notice` is now `AgentsNotice` (`RunnerNotice | RunRequestNotice`).
+- New events: `runRequest.created`, `confirmed`, `rejected`, `withdrawn`, `superseded` and `expired`. Breaking type rename: `RunnerNotice` is now the single `AgentsNotice` interface, which adds `run_request_expired` alongside the existing runner and run notices, with subjects of kind `runner`, `run` or `runRequest`. Applications must replace imports and references to `RunnerNotice` with `AgentsNotice`; no old-name alias is exported. Both `notice` and `notice.cleared` use this interface.
 - Runs record `requestedByUserId` and `confirmedByUserId`. Migration `202610090002_ag_create_run_requests` creates `agRunRequests`, adds both columns to `agRuns`, and fills `requestedByUserId` of existing runs from `actorUserId`. It runs after the team runner variables migration (`202610090001_ag_add_team_runner_variables`).
 - The sweeper's report gains `requestsExpired`.
 - Work is merged or appended only into runs with the same `actorUserId`, including `mine`, `runAsMe` and confirmed requests.
