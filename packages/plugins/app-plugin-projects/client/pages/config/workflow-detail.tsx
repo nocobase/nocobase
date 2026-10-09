@@ -222,6 +222,9 @@ function WorkflowBody({
     // The page remounts on the new revision, back in view mode.
     onSuccess: (next) => {
       releaseLeaveGuard();
+      queryClient.setQueryData<WorkflowListItem[]>(pmKeys.workflows, (items) =>
+        items?.map((item) => (item.id === next.id ? next : item)),
+      );
       setEditing(false);
       notify.success(t('workflows.saved', { name: workflowName(t, next) }));
       void queryClient.invalidateQueries({ queryKey: pmKeys.workflows });

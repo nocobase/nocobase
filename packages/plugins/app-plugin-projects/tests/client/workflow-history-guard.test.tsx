@@ -51,6 +51,42 @@ function setup(): void {
 }
 
 describe('workflow browser history guard', () => {
+  it('allows native restoration after declining a non-cancelable traversal', async () => {
+    const navigation = new EventTarget();
+    vi.stubGlobal('navigation', navigation);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    setup();
+    const traversal = (cancelable: boolean) =>
+      Object.assign(new Event('navigate', { cancelable }), {
+        navigationType: 'traverse',
+        destination: { sameDocument: true },
+      });
+    const first = traversal(true);
+    navigation.dispatchEvent(first);
+    expect(first.defaultPrevented).toBe(true);
+
+    // After cancellation consumes activation, another browser Back cannot be canceled.
+    navigation.dispatchEvent(traversal(false));
+    const restore = traversal(true);
+    const originalGo = window.history.go.bind(window.history);
+    const go = vi.spyOn(window.history, 'go').mockImplementation((delta) => {
+      navigation.dispatchEvent(restore);
+      if (!restore.defaultPrevented) originalGo(delta);
+    });
+    window.history.back();
+    await waitFor(() => expect(go).toHaveBeenCalledWith(1));
+    expect(restore.defaultPrevented).toBe(false);
+    await waitFor(() => expect(window.location.pathname).toBe('/edit'));
+    expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+      'Keep this draft',
+    );
+    expect(confirm).toHaveBeenCalledTimes(2);
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByText('Other page'));
+    expect(await screen.findByText('Other destination')).toBeInTheDocument();
+  });
+
   it('cancels native navigation before the router can unmount a returning editor', () => {
     const navigation = new EventTarget();
     vi.stubGlobal('navigation', navigation);

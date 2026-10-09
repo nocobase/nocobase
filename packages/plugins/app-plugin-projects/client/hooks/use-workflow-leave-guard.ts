@@ -96,6 +96,8 @@ function installGuard(
   };
   // Unlike popstate, this runs before an existing router listener can synchronously unmount a returning editor.
   const onNavigate = (event: NavigateEvent): void => {
+    // Let the restoring popstate clear the flag without notifying the router.
+    if (restoring) return;
     if (
       event.navigationType !== 'traverse' ||
       !event.destination.sameDocument ||

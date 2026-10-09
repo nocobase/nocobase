@@ -47,6 +47,7 @@ function unloading(): boolean {
 async function setup(
   locale = 'en-US',
   fail = false,
+  failRefetch = false,
 ): Promise<Mock<(call: ApiCall) => unknown>> {
   let saved = workflow();
   const requests = vi.fn(({ method, path, json }: ApiCall): unknown => {
@@ -59,7 +60,11 @@ async function setup(
           kinds: [],
         },
       };
-    if (path === 'projects/workflows') return { data: [saved] };
+    if (path === 'projects/workflows') {
+      if (failRefetch && saved.revision > 1)
+        return new Response(null, { status: 500 });
+      return { data: [saved] };
+    }
     if (path.endsWith('/preview'))
       return { data: { rules: [], attention: [] } };
     if (method === 'PATCH') {
@@ -154,30 +159,45 @@ describe('workflow save and leave behavior', () => {
     expect(unloading()).toBe(false);
   });
 
-  it('saves through preview and releases the warning on success', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const requests = await setup();
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Edit', exact: true }),
-    );
-    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), {
-      target: { value: 'Changed' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save', exact: true }));
-    await screen.findByRole('button', { name: 'Edit', exact: true });
-    expect(
-      requests.mock.calls.some(([request]) =>
-        request.path.endsWith('/preview'),
-      ),
-    ).toBe(true);
-    expect(
-      requests.mock.calls.some(([request]) => request.method === 'PATCH'),
-    ).toBe(true);
-    expect(unloading()).toBe(false);
-    fireEvent.click(screen.getByRole('link', { name: 'Elsewhere' }));
-    expect(await screen.findByText('Destination')).toBeInTheDocument();
-    expect(confirm).not.toHaveBeenCalled();
-  });
+  it.each([false, true])(
+    'shows the saved workflow and releases the warning even if refetch fails: %s',
+    async (failRefetch) => {
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const requests = await setup('en-US', false, failRefetch);
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Edit', exact: true }),
+      );
+      fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), {
+        target: { value: 'Changed' },
+      });
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Save', exact: true }),
+      );
+      await screen.findByRole('button', { name: 'Edit', exact: true });
+      expect(
+        await screen.findByRole('heading', { name: 'Changed', exact: true }),
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          requests.mock.calls.filter(
+            ([request]) => request.path === 'projects/workflows',
+          ).length,
+        ).toBeGreaterThan(1),
+      );
+      expect(
+        requests.mock.calls.some(([request]) =>
+          request.path.endsWith('/preview'),
+        ),
+      ).toBe(true);
+      expect(
+        requests.mock.calls.some(([request]) => request.method === 'PATCH'),
+      ).toBe(true);
+      expect(unloading()).toBe(false);
+      fireEvent.click(screen.getByRole('link', { name: 'Elsewhere' }));
+      expect(await screen.findByText('Destination')).toBeInTheDocument();
+      expect(confirm).not.toHaveBeenCalled();
+    },
+  );
 
   it('keeps the warning and draft after a failed save', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
