@@ -278,6 +278,66 @@ describe('execution history', () => {
     expect((await h.services.runs.get(runId)).actualEffort).toBeNull();
   });
 
+  it.each(['high', null])(
+    'keeps the latest repeated effort observation across batches (%s)',
+    async (effort) => {
+      h = await createHarness();
+      const agent = await h.createAgent({
+        modelEntries: [{ tool: 'codex', model: 'requested' }],
+      });
+      const runner = await h.registerRunner({
+        tools: [{ kind: 'codex', authenticated: true }],
+      });
+      const runId = await h.enqueue(agent);
+      await claim(h, runner);
+      const t1 = h.clock.now().toISOString();
+      h.clock.advance(1000);
+      const t2 = h.clock.now().toISOString();
+      h.clock.advance(1000);
+      const t3 = h.clock.now().toISOString();
+      const source = 'codex.thread/start';
+      const report = (seq: number, at: string, value: string | null) => ({
+        seq,
+        type: 'status' as const,
+        tool: 'codex',
+        at,
+        meta: { execution: { effort: value, source } },
+      });
+      for (const events of [
+        [report(1, t1, effort)],
+        [report(2, t3, effort)],
+        [report(3, t2, 'medium')],
+        [
+          report(4, t2, 'low'),
+          {
+            seq: 5,
+            type: 'usage' as const,
+            at: t3,
+            meta: { usage: [usage('new-model')] },
+          },
+        ],
+      ]) {
+        await h.services.reports.events({ id: runner.runnerId }, runId, {
+          events,
+        });
+        expect(await h.services.runs.get(runId)).toMatchObject({
+          actualEffort: effort,
+          actualEffortSource: source,
+          actualEffortAt: t1,
+          executions: [{ effortReports: [{ effort, source, at: t1 }] }],
+        });
+      }
+      expect(await h.services.runs.get(runId)).toMatchObject({
+        actualModels: ['new-model'],
+        executions: [{ actualEffortObservedAt: t3 }],
+      });
+      const response = await h.request('GET', `/agents/runs/${runId}`, {
+        user: 'owner',
+      });
+      expect(response.body.data.executions[0].actualEffortObservedAt).toBe(t3);
+    },
+  );
+
   it('skips snapshot reads and writes for repeated or helper model usage', async () => {
     h = await createHarness();
     const agent = await h.createAgent({

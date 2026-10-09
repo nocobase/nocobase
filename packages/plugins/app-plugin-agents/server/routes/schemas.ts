@@ -799,6 +799,7 @@ export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
     actualModels: z.array(z.string()),
     effort: z.string().nullable(),
     effortReports: z.array(RunEffortReportSchema).optional(),
+    actualEffortObservedAt: dateTime.optional(),
     actualEffort: z.string().nullable().optional(),
     actualEffortSource: z.string().nullable().optional(),
     actualEffortAt: dateTime.nullable().optional(),

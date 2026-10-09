@@ -43,19 +43,18 @@ export async function recordActualModels(
         .map((item) => item.model!.trim()),
     ),
   ];
-  const hasEffortChange = (execution: RunExecutionSnapshot): boolean => {
-    let last = execution.effortReports?.at(-1);
-    return effortReports.some((report) => {
-      if (last && report.at < last.at) return false;
-      const changed =
-        !last || last.effort !== report.effort || last.source !== report.source;
-      last = report;
-      return changed;
-    });
+  const hasNewEffortObservation = (
+    execution: RunExecutionSnapshot,
+  ): boolean => {
+    const observedAt =
+      execution.actualEffortObservedAt ?? execution.effortReports?.at(-1)?.at;
+    return effortReports.some(
+      (report) => !observedAt || report.at >= observedAt,
+    );
   };
   if (
     models.every((model) => previous.actualModels.includes(model)) &&
-    !hasEffortChange(previous)
+    !hasNewEffortObservation(previous)
   )
     return;
   // Lock only when there are new facts. Event batches already hold the row through their activity update.
@@ -75,13 +74,15 @@ export async function recordActualModels(
   const actualModels = [...new Set([...execution.actualModels, ...models])];
   if (
     actualModels.length === execution.actualModels.length &&
-    !hasEffortChange(execution)
+    !hasNewEffortObservation(execution)
   )
     return;
   const reports = [...(execution.effortReports ?? [])];
+  let observedAt = execution.actualEffortObservedAt ?? reports.at(-1)?.at;
   for (const report of effortReports) {
+    if (observedAt && report.at < observedAt) continue;
+    observedAt = report.at;
     const last = reports.at(-1);
-    if (last && report.at < last.at) continue;
     if (!last || last.effort !== report.effort || last.source !== report.source)
       reports.push(report);
   }
@@ -89,6 +90,7 @@ export async function recordActualModels(
   executions[index] = {
     ...execution,
     actualModels,
+    ...(observedAt ? { actualEffortObservedAt: observedAt } : {}),
     ...(latest
       ? {
           effortReports: reports,

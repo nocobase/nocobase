@@ -45,6 +45,8 @@ export interface RunExecutionSnapshot {
   /** Requested effort, never evidence of what the tool used. */
   readonly effort: string | null;
   readonly effortReports?: readonly RunEffortReport[];
+  /** Latest accepted observation, including repeats; distinct from the value/source change time. */
+  readonly actualEffortObservedAt?: string;
   readonly actualEffort?: string | null;
   readonly actualEffortSource?: string | null;
   readonly actualEffortAt?: string | null;
