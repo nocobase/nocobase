@@ -16,6 +16,7 @@ import {
   type Harness,
   type RegisteredRunner,
 } from './harness.js';
+import { runnerForViewer } from '../server/core/runs/runner-view.js';
 
 const GB = 1024 ** 3;
 
@@ -39,7 +40,14 @@ describe("a runner's working directories", () => {
       body,
     });
 
-  /** A runner holding one run on each of `subjects`; the run ids in that order. */
+  /** Ends a run as `status`, as if the runner had reported it. */
+  const end = (runId: string, status = 'completed') =>
+    h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({ filter: { id: runId }, values: { status } });
+
+  /** A runner that worked one run on each of `subjects`, each ended; the run ids in that order. */
   const runnerWithRuns = async (
     subjects: readonly string[],
   ): Promise<{ runner: RegisteredRunner; runIds: string[] }> => {
@@ -50,6 +58,7 @@ describe("a runner's working directories", () => {
       runIds.push(await h.enqueue(agentId, subject));
       await claim(h, runner, 1);
     }
+    for (const runId of runIds) await end(runId);
     return { runner, runIds };
   };
 
@@ -127,6 +136,22 @@ describe("a runner's working directories", () => {
     });
   });
 
+  it("shows only the totals to a viewer who may not see the runner's machine", async () => {
+    h = await createHarness();
+    h.settled = new Set(['1']);
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    await report(runner, { workspaces: [workspace(runIds[0], GB)] });
+    const stored = await h.services.runners.get(runner.runnerId);
+    expect(
+      runnerForViewer(stored, true).workspaceUsage?.workspaces,
+    ).toHaveLength(1);
+    expect(runnerForViewer(stored, false).workspaceUsage).toMatchObject({
+      appBytes: GB,
+      count: 1,
+      workspaces: [],
+    });
+  });
+
   it('decides nothing for a subject kind whose binding cannot say', async () => {
     h = await createHarness();
     const { runner, runIds } = await runnerWithRuns(['1']);
@@ -141,6 +166,18 @@ describe("a runner's working directories", () => {
       limitBytes: null,
       workspaces: [{ runId: runIds[0], settled: null }],
     });
+  });
+
+  it('never calls a subject over while a run on it has not finished, whatever the binding says', async () => {
+    h = await createHarness();
+    h.settled = new Set(['1']);
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    // New work on the same subject, still queued.
+    await h.enqueue(await h.createAgent({ name: 'Another' }), '1');
+    const response = await report(runner, {
+      workspaces: [workspace(runIds[0], GB)],
+    });
+    expect(response.body.data).toEqual({ remove: [], keep: [runIds[0]] });
   });
 
   it("answers only for the runner's own runs", async () => {

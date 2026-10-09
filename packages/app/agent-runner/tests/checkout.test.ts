@@ -1082,7 +1082,7 @@ describe('checkout', () => {
       dirs,
     });
     expect(retried.dirs.map((dir) => dir.fresh)).toEqual([true, true]);
-    await markDirsPrepared(retried.workDir, retried.dirs);
+    await markDirsPrepared(paths, retried.workDir, retried.dirs);
     await retried.release();
 
     const second = await checkout({
@@ -1179,7 +1179,14 @@ describe('checkout', () => {
       dirs: [repo('pushed-retention')],
     });
     await pushed.release();
-    await markWorkspaceEnded(pushed.workDir, true);
+    await markWorkspaceEnded(paths, pushed.workDir, [
+      {
+        url: remote,
+        branch: 'agent/pushed-retention',
+        pushed: true,
+        headSha: git(['rev-parse', 'HEAD'], pushed.repos[0]!.dir),
+      },
+    ]);
     const kept = await checkout({
       paths,
       appKey: 'app',
@@ -1187,7 +1194,14 @@ describe('checkout', () => {
       dirs: [repo('idle-retention')],
     });
     await kept.release();
-    await markWorkspaceEnded(kept.workDir, false);
+    await markWorkspaceEnded(paths, kept.workDir, [
+      {
+        url: remote,
+        branch: 'agent/idle-retention',
+        pushed: false,
+        headSha: git(['rev-parse', 'HEAD'], kept.repos[0]!.dir),
+      },
+    ]);
     const day = 24 * 60 * 60 * 1000;
 
     expect(await gcWorkspaces({ paths, now: Date.now() + 6 * day })).toEqual(

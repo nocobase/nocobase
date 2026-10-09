@@ -760,7 +760,7 @@ export class RunWorker {
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir === undefined) return [];
     if (repos.length === 0) {
-      await markWorkspaceEnded(workDir, true);
+      await markWorkspaceEnded(this.deps.paths, workDir, []);
       return [];
     }
     const reports = await reportRepos(repos, {
@@ -772,10 +772,7 @@ export class RunWorker {
           }),
       log: this.deps.log,
     });
-    await markWorkspaceEnded(
-      workDir,
-      reports.every((report) => report.pushed),
-    );
+    await markWorkspaceEnded(this.deps.paths, workDir, reports);
     return reports;
   }
 
@@ -785,7 +782,11 @@ export class RunWorker {
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir !== undefined)
-      await markDirsPrepared(workDir, this.prepared?.dirs ?? []);
+      await markDirsPrepared(
+        this.deps.paths,
+        workDir,
+        this.prepared?.dirs ?? [],
+      );
     await this.drainEvents();
     if (this.ending !== undefined) return this.finishEnding();
     try {

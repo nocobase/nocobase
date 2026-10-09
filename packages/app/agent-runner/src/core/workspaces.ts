@@ -1,10 +1,11 @@
 // What the runner keeps in its work root, and when a working directory may go.
 //
-// Each subject's working directory (`<work root>/<app>/<subjectKey>/`, checkout.ts) records the last run that worked
-// there (`lastRunId`) and, once measured, what it takes on disk and whether it holds unpushed work. Unpushed means
-// changes not committed, or commits no remote-tracking ref has; it is never judged from the default branch's history,
-// so a branch merged with a squash is not unpushed once it was pushed. A directory is measured again only after a run
-// used it, or once a day.
+// The runner's record of each subject's working directory (`<work root>/<app>/<subjectKey>/`, kept out of the agent's
+// reach by checkout.ts) holds the last run that worked there (`lastRunId`) and, once measured, what it takes on disk
+// and whether it holds unpushed work (`hasUnpushedWork`): changes not committed, or a HEAD past both where the runner
+// started the checkout and what it last saw the remote task branch hold. It is never judged from the default branch's
+// history, so a branch merged with a squash is not unpushed once it was pushed. A directory is measured again only
+// after a run used it, or once a day.
 //
 // The runner cannot tell on its own when the work on a subject is over. An application that accepts reports
 // (`HeartbeatResponse.workspaces`) is told about each of its directories and answers which runs belong to subjects
@@ -16,7 +17,7 @@ import { existsSync } from 'node:fs';
 import { lstat, readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-import { readJson, writeJsonAtomic, type RunnerPaths } from '../lib/home.ts';
+import type { RunnerPaths } from '../lib/home.ts';
 import {
   MAX_WORKSPACES_PER_REPORT,
   type WorkspacesRequest,
@@ -24,13 +25,16 @@ import {
 } from '../protocol/index.ts';
 import {
   acquireLock,
-  metaPath,
+  hasUnpushedWork,
+  readWorkspaceMeta,
   removeWorkspace,
+  writeWorkspaceMeta,
   type Lock,
   type WorkspaceMeta,
 } from './checkout.ts';
 import { isAlive } from './supervisor.ts';
-import { taskGit, taskGitOk } from './task-git.ts';
+
+export { hasUnpushedWork } from './checkout.ts';
 
 /** How long a measurement stands when nothing used the directory since. */
 const REMEASURE_MS = 24 * 60 * 60 * 1000;
@@ -67,9 +71,7 @@ export async function listWorkspaceDirs(
     )) {
       if (!entry.isDirectory()) continue;
       const workDir = path.join(appDir, entry.name);
-      const meta = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-        () => undefined,
-      );
+      const meta = await readWorkspaceMeta(paths, workDir);
       if (meta !== undefined) found.push({ workDir, meta });
     }
   }
@@ -117,52 +119,11 @@ export async function diskUsage(dir: string): Promise<number> {
 }
 
 /**
- * Whether the directory holds work that is not on the remote: changes not committed (untracked files included), or
- * commits no remote-tracking ref has, unless the last run ended with every branch pushed. A checkout that cannot be
- * read counts as unpushed, so it is kept.
- */
-export async function hasUnpushedWork(
-  workDir: string,
-  meta: WorkspaceMeta,
-  log?: (message: string) => void,
-): Promise<boolean> {
-  for (const repo of meta.repos) {
-    const dir = path.join(workDir, repo.path);
-    if (!existsSync(dir)) continue;
-    const context = { dir, cache: repo.cache, url: repo.url };
-    try {
-      const status = await taskGit(context, [
-        'status',
-        '--porcelain',
-        '--untracked-files=normal',
-      ]);
-      if (status.trim() !== '') return true;
-      if (meta.pushed === true) continue;
-      if (!(await taskGitOk(context, ['rev-parse', '--verify', '-q', 'HEAD'])))
-        continue;
-      const ahead = await taskGit(context, [
-        'rev-list',
-        '--count',
-        'HEAD',
-        '--not',
-        '--remotes',
-      ]);
-      if (Number(ahead.trim()) > 0) return true;
-    } catch (error) {
-      log?.(
-        `workspaces: ${dir}: counted as unpushed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
  * The directory with its size and unpushed state, measured again when a run used it since the last measurement (or a
  * day passed), and recorded unless a run started meanwhile. A directory a run holds is measured but not recorded.
  */
 export async function measureWorkspace(
+  paths: RunnerPaths,
   workDir: string,
   meta: WorkspaceMeta,
   options: { now?: number; force?: boolean; log?: (message: string) => void },
@@ -183,7 +144,7 @@ export async function measureWorkspace(
   if (stale || inUse) sizeBytes = await diskUsage(workDir);
   if (stale && !inUse) {
     unpushed = await hasUnpushedWork(workDir, meta, options.log);
-    await recordMeasurement(workDir, meta, {
+    await recordMeasurement(paths, workDir, meta, {
       sizeBytes,
       unpushed,
       measuredAt: new Date(now).toISOString(),
@@ -204,6 +165,7 @@ export async function measureWorkspace(
 
 /** Writes a measurement into the record, unless a run used the directory since it was read. */
 async function recordMeasurement(
+  paths: RunnerPaths,
   workDir: string,
   read: WorkspaceMeta,
   measurement: Pick<WorkspaceMeta, 'sizeBytes' | 'unpushed' | 'measuredAt'>,
@@ -215,11 +177,9 @@ async function recordMeasurement(
     return;
   }
   try {
-    const current = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-      () => undefined,
-    );
+    const current = await readWorkspaceMeta(paths, workDir);
     if (current === undefined || current.lastUsedAt !== read.lastUsedAt) return;
-    await writeJsonAtomic(metaPath(workDir), { ...current, ...measurement });
+    await writeWorkspaceMeta(paths, workDir, { ...current, ...measurement });
   } finally {
     await lock.release();
   }
@@ -236,7 +196,7 @@ export async function scanWorkspaces(
 ): Promise<WorkspaceEntry[]> {
   const entries: WorkspaceEntry[] = [];
   for (const { workDir, meta } of await listWorkspaceDirs(paths))
-    entries.push(await measureWorkspace(workDir, meta, options));
+    entries.push(await measureWorkspace(paths, workDir, meta, options));
   return entries;
 }
 
@@ -285,7 +245,7 @@ export interface WorkspaceFilters {
   readonly ended?: boolean;
   /** Those not used for this long. */
   readonly olderThanMs?: number;
-  /** Those of this subject (`PM-81`). */
+  /** Those of this subject (`TASK-42`). */
   readonly subject?: string;
 }
 
@@ -409,6 +369,7 @@ export function planRemovals(
  * it has unpushed work now. Returns why it was kept, or undefined when it was removed.
  */
 export async function removePlanned(
+  paths: RunnerPaths,
   entry: WorkspaceEntry,
   options: { force?: boolean; log?: (message: string) => void } = {},
 ): Promise<'inUse' | 'changed' | 'unpushed' | undefined> {
@@ -419,9 +380,7 @@ export async function removePlanned(
     return 'inUse';
   }
   try {
-    const meta = await readJson<WorkspaceMeta>(metaPath(entry.workDir)).catch(
-      () => undefined,
-    );
+    const meta = await readWorkspaceMeta(paths, entry.workDir);
     if (meta === undefined) return 'changed';
     if (
       meta.lastUsedAt !== entry.lastUsedAt ||
@@ -432,13 +391,13 @@ export async function removePlanned(
       options.force !== true &&
       (await hasUnpushedWork(entry.workDir, meta, options.log))
     ) {
-      await writeJsonAtomic(metaPath(entry.workDir), {
+      await writeWorkspaceMeta(paths, entry.workDir, {
         ...meta,
         unpushed: true,
       });
       return 'unpushed';
     }
-    await removeWorkspace(entry.workDir, meta);
+    await removeWorkspace(paths, entry.workDir, meta);
     return undefined;
   } finally {
     await lock.release();
@@ -500,7 +459,11 @@ export async function collectWorkspaces(
     reason,
   }));
   for (const { entry, reason } of plan.remove) {
-    const why = await removePlanned(entry, log === undefined ? {} : { log });
+    const why = await removePlanned(
+      options.paths,
+      entry,
+      log === undefined ? {} : { log },
+    );
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
       log?.(

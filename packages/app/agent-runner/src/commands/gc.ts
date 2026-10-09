@@ -56,7 +56,7 @@ export default class Gc extends RunnerCommand {
     '<%= config.bin %> gc',
     '<%= config.bin %> gc --apply',
     '<%= config.bin %> gc --older-than 14d --apply',
-    '<%= config.bin %> gc --subject PM-81 --apply --force',
+    '<%= config.bin %> gc --subject TASK-42 --apply --force',
   ];
   static override flags: {
     apply: Interfaces.BooleanFlag<boolean>;
@@ -78,7 +78,7 @@ export default class Gc extends RunnerCommand {
         'Pick the directories not used for this long (14d, 12h, 30m).',
     }),
     subject: Flags.string({
-      description: 'Pick the directories of this subject (PM-81).',
+      description: 'Pick the directories of this subject (TASK-42).',
     }),
     force: Flags.boolean({
       description: 'Also remove picked directories with unpushed work.',
@@ -136,7 +136,7 @@ export default class Gc extends RunnerCommand {
     let remainingBytes = plan.remainingBytes;
     if (apply)
       for (const { entry } of plan.remove) {
-        const kept = await removePlanned(entry, { force });
+        const kept = await removePlanned(this.paths, entry, { force });
         removed.set(entry.workDir, kept === undefined);
         if (kept !== undefined) {
           remainingBytes += entry.sizeBytes;

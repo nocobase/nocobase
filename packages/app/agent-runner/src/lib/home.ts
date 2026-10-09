@@ -18,13 +18,14 @@
 //   ~/.nocobase-runner/locks/<sha1>.lock           one lock per directory used in place (one run at a time in it)
 //   ~/.nocobase-runner/hooks/pre-push              the push guard every agent's git runs
 //   ~/.nocobase-runner/push-allow/<sha256>         push permissions keyed by a checkout's real Git directory
+//   ~/.nocobase-runner/workspaces/<sha256>.json    the runner's record of each work directory, keyed by its path
 //
 // The work root, where agents work: `~/.nocobase-runner-work`, or `<NOCOBASE_RUNNER_HOME>-work`.
 // `NOCOBASE_RUNNER_WORK_ROOT` moves it.
 //
 //   ~/.nocobase-runner-work/<app>/<subjectKey>/   one long-lived working directory per subject
-//     .nocobase-runner/                           the runner's per-workspace files: the agent's home, tmp, bin, the
-//                                                 run's skills (`plugin/skills/`) and the workspace record
+//     .nocobase-runner/                           the runner's per-workspace files: the agent's home, tmp, bin and
+//                                                 the run's skills (`plugin/skills/`)
 import {
   chmod,
   mkdir,
@@ -89,6 +90,7 @@ export interface RunnerPaths {
   locksDir: string;
   hooksDir: string;
   pushAllowDir: string;
+  workspacesDir: string;
   workRoot: string;
 }
 
@@ -114,6 +116,7 @@ export function runnerPaths(
     locksDir: path.join(home, 'locks'),
     hooksDir: path.join(home, 'hooks'),
     pushAllowDir: path.join(home, 'push-allow'),
+    workspacesDir: path.join(home, 'workspaces'),
     workRoot: work,
   };
 }

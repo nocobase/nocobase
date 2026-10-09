@@ -9,6 +9,7 @@
  * so a branch merged with a squash counts once its subject's work is over.
  */
 import {
+  TERMINAL_RUN_STATUSES,
   WORKSPACE_REPORT_INTERVAL_MS,
   type WorkspaceReport,
   type WorkspaceReporting,
@@ -79,7 +80,34 @@ async function ownRuns(
   return found;
 }
 
-/** For each subject kind, the subjects whose work is over; a kind whose binding cannot say is absent. */
+/** Of `subjectIds` of `kind`, the ones a run has not finished on (queued, dispatched or running, on any runner). */
+async function busySubjects(
+  conn: DatabaseConnection,
+  kind: string,
+  subjectIds: readonly string[],
+): Promise<Set<string>> {
+  const busy = new Set<string>();
+  for (let start = 0; start < subjectIds.length; start += CHUNK) {
+    const chunk = subjectIds.slice(start, start + CHUNK);
+    const records = await runsRepo(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('subjectKind').eq(kind),
+          f.or(chunk.map((id) => f.string('subjectId').eq(id))),
+          ...TERMINAL_RUN_STATUSES.map((status) =>
+            f.string('status').ne(status),
+          ),
+        ]),
+    });
+    for (const record of records) busy.add(record.subjectId);
+  }
+  return busy;
+}
+
+/**
+ * For each subject kind, the subjects whose work is over; a kind whose binding cannot say is absent. A subject a run
+ * has not finished on is never over, whatever its binding says: work on it goes on somewhere.
+ */
 async function settledSubjects(
   conn: DatabaseConnection,
   subjects: SubjectRegistry,
@@ -95,7 +123,11 @@ async function settledSubjects(
   for (const [kind, ids] of byKind) {
     const binding = subjects.get(kind)?.workspaces;
     if (binding === undefined) continue;
-    settled.set(kind, await binding.settled(conn, [...ids]));
+    const over = [...(await binding.settled(conn, [...ids]))].filter((id) =>
+      ids.has(id),
+    );
+    const busy = await busySubjects(conn, kind, over);
+    settled.set(kind, new Set(over.filter((id) => !busy.has(id))));
   }
   return settled;
 }

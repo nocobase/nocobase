@@ -16,7 +16,8 @@
 // each cache. A lock whose owner is dead is taken over.
 //
 // GC removes a subject's work directory 7 days after a run that ended with every branch pushed, and any work directory
-// not used for 30 days. The application's word that the work is over, and the owner's size limit, remove others
+// not used for 30 days, unless it holds work that was never pushed (`hasUnpushedWork`). The runner's record of each
+// work directory lives in its own directory, out of the agent's reach (`workspaceRecordPath`). The application's word that the work is over, and the owner's size limit, remove others
 // (workspaces.ts).
 //
 // A repository the run carries a credential for (`workspace.git.credentials`, a short-lived token) is fetched with it,
@@ -246,10 +247,31 @@ export interface Checkout {
   release(): Promise<void>;
 }
 
+/** A repository checked out in a work directory, as the runner recorded it. */
+export interface WorkspaceRepo {
+  url: string;
+  /** Relative to the work directory, and inside it. */
+  path: string;
+  /** Always `cachePath(paths, url)`. */
+  cache: string;
+  branch: string;
+  /** Where the checkout started when the runner created it; nothing past it was committed while HEAD is here. */
+  startSha?: string;
+  /** What the runner last saw the remote task branch hold after it pushed (or found it already pushed). */
+  pushedSha?: string;
+}
+
+/**
+ * The runner's record of a subject's work directory. It lives in the runner's own directory
+ * (`workspaces/<sha256(workDir)>.json`), which no agent can write, because removing a directory, and deciding whether
+ * it holds unpushed work, rest on it. Records kept before that in the work directory itself
+ * (`.nocobase-runner/workspace.json`, `legacyMetaPath`) are still read, as written by the agent's side: their caches
+ * and paths are derived and checked again, and what they say was pushed is ignored (`legacy`).
+ */
 export interface WorkspaceMeta {
   appKey?: string;
   subjectKey: string;
-  repos: { url: string; path: string; cache: string; branch: string }[];
+  repos: WorkspaceRepo[];
   /**
    * Working directories a run of the subject finished in (`repo:<path>` or `directory:<abs path>`); `clean` empties
    * it.
@@ -266,10 +288,179 @@ export interface WorkspaceMeta {
   sizeBytes?: number;
   unpushed?: boolean;
   measuredAt?: string;
+  /**
+   * Read from a record in the work directory, kept before the runner kept its own, or measured from one since: only
+   * its layout is believed. A run preparing the directory again writes a record of the runner's own.
+   */
+  legacy?: true;
 }
 
-export function metaPath(workDir: string): string {
+/** Where the runner keeps its record of a work directory. */
+export function workspaceRecordPath(
+  paths: RunnerPaths,
+  workDir: string,
+): string {
+  return path.join(
+    paths.workspacesDir,
+    `${createHash('sha256').update(path.resolve(workDir)).digest('hex')}.json`,
+  );
+}
+
+/** Where earlier runners kept the record, inside the work directory (and so within the agent's reach). */
+export function legacyMetaPath(workDir: string): string {
   return path.join(workDir, RUNNER_DIR, 'workspace.json');
+}
+
+const isText = (value: unknown): value is string =>
+  typeof value === 'string' && value !== '';
+const SHA = /^[0-9a-f]{40,64}$/u;
+
+/**
+ * A record as far as it can be believed: every repository's cache derived from its URL, and every path inside the
+ * work directory (not the runner's own part of it); entries that are neither are dropped.
+ */
+function believable(
+  paths: RunnerPaths,
+  workDir: string,
+  raw: Record<string, unknown>,
+  fromWorkDir: boolean,
+): WorkspaceMeta | undefined {
+  if (!isText(raw.subjectKey) || !isText(raw.lastUsedAt)) return undefined;
+  // A legacy record stays one when the runner measures it into its own directory, until a run prepares it again.
+  const legacy = fromWorkDir || raw.legacy === true;
+  const root = path.resolve(workDir);
+  const repos = (
+    Array.isArray(raw.repos) ? (raw.repos as unknown[]) : []
+  ).flatMap((item): WorkspaceRepo[] => {
+    const repo = (item ?? {}) as Record<string, unknown>;
+    if (!isText(repo.url) || !isText(repo.path) || !isText(repo.branch))
+      return [];
+    const dir = path.resolve(root, repo.path);
+    if (
+      dir === root ||
+      !isInside(root, dir) ||
+      isInside(path.join(root, RUNNER_DIR), dir)
+    )
+      return [];
+    return [
+      {
+        url: repo.url,
+        path: path.relative(root, dir),
+        cache: cachePath(paths, repo.url),
+        branch: repo.branch,
+        ...(!legacy && isText(repo.startSha) && SHA.test(repo.startSha)
+          ? { startSha: repo.startSha }
+          : {}),
+        ...(!legacy && isText(repo.pushedSha) && SHA.test(repo.pushedSha)
+          ? { pushedSha: repo.pushedSha }
+          : {}),
+      },
+    ];
+  });
+  const text = (key: string) =>
+    isText(raw[key]) ? { [key]: raw[key] } : {};
+  return {
+    ...text('appKey'),
+    subjectKey: raw.subjectKey,
+    repos,
+    ...(Array.isArray(raw.prepared)
+      ? { prepared: (raw.prepared as unknown[]).filter(isText) }
+      : {}),
+    lastUsedAt: raw.lastUsedAt,
+    ...text('endedAt'),
+    ...text('lastRunId'),
+    ...text('measuredAt'),
+    ...(typeof raw.sizeBytes === 'number' && raw.sizeBytes >= 0
+      ? { sizeBytes: raw.sizeBytes }
+      : {}),
+    ...(typeof raw.unpushed === 'boolean' ? { unpushed: raw.unpushed } : {}),
+    ...(legacy
+      ? { legacy: true as const }
+      : typeof raw.pushed === 'boolean'
+        ? { pushed: raw.pushed }
+        : {}),
+  };
+}
+
+/** The runner's record of `workDir`, else an earlier runner's record kept inside it; undefined when there is neither. */
+export async function readWorkspaceMeta(
+  paths: RunnerPaths,
+  workDir: string,
+): Promise<WorkspaceMeta | undefined> {
+  const own = await readJson<Record<string, unknown>>(
+    workspaceRecordPath(paths, workDir),
+  ).catch(() => undefined);
+  if (own !== undefined) return believable(paths, workDir, own, false);
+  const legacy = await readJson<Record<string, unknown>>(
+    legacyMetaPath(workDir),
+  ).catch(() => undefined);
+  return legacy === undefined
+    ? undefined
+    : believable(paths, workDir, legacy, true);
+}
+
+export async function writeWorkspaceMeta(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: WorkspaceMeta,
+): Promise<void> {
+  await writeJsonAtomic(workspaceRecordPath(paths, workDir), meta);
+}
+
+/**
+ * Whether the directory holds work that is not on the remote: changes not committed (untracked files included) in any
+ * of its repositories, or a HEAD that is neither where the runner started the checkout nor contained in what it last
+ * saw the remote task branch hold. A record from an earlier runner, which recorded neither, is judged by the task
+ * branch's remote-tracking ref instead. A checkout that cannot be read counts as unpushed, so it is kept.
+ */
+export async function hasUnpushedWork(
+  workDir: string,
+  meta: WorkspaceMeta,
+  log?: (message: string) => void,
+): Promise<boolean> {
+  for (const repo of meta.repos) {
+    const dir = path.join(workDir, repo.path);
+    if (!existsSync(dir)) continue;
+    const context = { dir, cache: repo.cache, url: repo.url };
+    try {
+      const status = await taskGit(context, [
+        'status',
+        '--porcelain',
+        '--untracked-files=normal',
+      ]);
+      if (status.trim() !== '') return true;
+      const head = await taskGit(context, [
+        'rev-parse',
+        '--verify',
+        '-q',
+        'HEAD',
+      ]).catch(() => '');
+      // No commit at all: nothing to push.
+      if (head === '') continue;
+      if (head === repo.startSha || head === repo.pushedSha) continue;
+      const pushed =
+        meta.legacy === true
+          ? `refs/remotes/origin/${repo.branch}`
+          : repo.pushedSha;
+      if (
+        pushed !== undefined &&
+        (await taskGitOk(context, [
+          'merge-base',
+          '--is-ancestor',
+          head,
+          pushed,
+        ]))
+      )
+        continue;
+      return true;
+    } catch (error) {
+      log?.(
+        `workspaces: ${dir}: counted as unpushed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return true;
+    }
+  }
+  return false;
 }
 
 async function addClone(
@@ -602,20 +793,12 @@ export async function lockWorkspace(options: {
  * directory, including the record of prepared directories. The caller holds the workspace lock. A directory used in
  * place is never inside a work directory (`prepareDirs` refuses that), so its contents are never touched.
  */
-export async function cleanWorkspace(workDir: string): Promise<void> {
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-    () => undefined,
-  );
-  for (const repo of meta?.repos ?? []) {
-    if (!existsSync(repo.cache)) continue;
-    await gitOk(
-      ['worktree', 'remove', '--force', path.join(workDir, repo.path)],
-      repo.cache,
-    );
-  }
-  await rm(workDir, { recursive: true, force: true });
-  for (const repo of meta?.repos ?? [])
-    if (existsSync(repo.cache)) await gitOk(['worktree', 'prune'], repo.cache);
+export async function cleanWorkspace(
+  paths: RunnerPaths,
+  workDir: string,
+): Promise<void> {
+  const meta = await readWorkspaceMeta(paths, workDir);
+  await removeWorkspace(paths, workDir, meta ?? { repos: [] });
   await mkdir(path.join(workDir, RUNNER_DIR), { recursive: true, mode: 0o700 });
 }
 
@@ -658,10 +841,9 @@ export async function prepareDirs(
   options: PrepareDirsOptions,
 ): Promise<{ dirs: PreparedDir[]; release(): Promise<void> }> {
   const { paths, workDir } = options;
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-    () => undefined,
-  );
+  const meta = await readWorkspaceMeta(paths, workDir);
   const prepared = new Set(meta?.prepared ?? []);
+  const shas = new Map<string, Pick<WorkspaceRepo, 'startSha' | 'pushedSha'>>();
   const locks: Lock[] = [];
   const release = async (): Promise<void> => {
     for (const lock of locks.splice(0)) await lock.release();
@@ -737,6 +919,25 @@ export async function prepareDirs(
       });
       const created = await ensureCheckout(cache, dir, entry);
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
+      const relative = path.relative(workDir, dir);
+      const known = meta?.repos.find(
+        (item) => item.url === entry.url && item.path === relative,
+      );
+      // Where a new checkout starts: nothing past it is the agent's. A resumed one keeps what was recorded.
+      const startSha = created
+        ? await taskGit({ dir, cache, url: entry.url }, [
+            'rev-parse',
+            '--verify',
+            '-q',
+            'HEAD',
+          ]).catch(() => '')
+        : (known?.startSha ?? '');
+      shas.set(dir, {
+        ...(startSha === '' ? {} : { startSha }),
+        ...(!created && known?.pushedSha !== undefined
+          ? { pushedSha: known.pushedSha }
+          : {}),
+      });
       // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
@@ -774,7 +975,7 @@ export async function prepareDirs(
     const repos = dirs.flatMap((entry) =>
       entry.repo === undefined ? [] : [entry.repo],
     );
-    await writeJsonAtomic(metaPath(workDir), {
+    await writeWorkspaceMeta(paths, workDir, {
       appKey: options.appKey,
       subjectKey: options.subjectKey,
       repos: repos.map((repo) => ({
@@ -782,6 +983,7 @@ export async function prepareDirs(
         path: path.relative(workDir, repo.dir),
         cache: repo.cache,
         branch: repo.branch,
+        ...shas.get(repo.dir),
       })),
       prepared: [...prepared],
       lastUsedAt: new Date().toISOString(),
@@ -794,7 +996,7 @@ export async function prepareDirs(
       ...(meta?.measuredAt === undefined
         ? {}
         : { measuredAt: meta.measuredAt }),
-    } satisfies WorkspaceMeta);
+    });
     return { dirs, release };
   } catch (error) {
     await release();
@@ -825,7 +1027,8 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
       : { timeoutMs: options.lockTimeoutMs }),
   });
   try {
-    if (options.clean === true) await cleanWorkspace(lock.workDir);
+    if (options.clean === true)
+      await cleanWorkspace(options.paths, lock.workDir);
     const prepared = await prepareDirs({ ...options, workDir: lock.workDir });
     return {
       workDir: lock.workDir,
@@ -927,31 +1130,46 @@ export async function reportRepos(
 
 /** Records that a run finished in `dirs`: they are no longer fresh for the subject. */
 export async function markDirsPrepared(
+  paths: RunnerPaths,
   workDir: string,
   dirs: readonly Pick<PreparedDir, 'key'>[],
 ): Promise<void> {
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir));
+  const meta = await readWorkspaceMeta(paths, workDir);
   if (meta === undefined) return;
   const prepared = new Set(meta.prepared ?? []);
   for (const dir of dirs) prepared.add(dir.key);
-  await writeJsonAtomic(metaPath(workDir), {
+  await writeWorkspaceMeta(paths, workDir, {
     ...meta,
     prepared: [...prepared],
   });
 }
 
+/**
+ * Records that the run ended, with where each repository stood (`reportRepos`): every branch pushed or not, and for
+ * each one pushed, the commit the remote task branch now holds.
+ */
 export async function markWorkspaceEnded(
+  paths: RunnerPaths,
   workDir: string,
-  pushed: boolean,
+  reports: readonly RepoReport[],
 ): Promise<void> {
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir));
+  const meta = await readWorkspaceMeta(paths, workDir);
   if (meta === undefined) return;
   const now = new Date().toISOString();
-  await writeJsonAtomic(metaPath(workDir), {
+  await writeWorkspaceMeta(paths, workDir, {
     ...meta,
+    repos: meta.repos.map((repo) => {
+      const report = reports.find(
+        (item) => item.url === repo.url && item.branch === repo.branch,
+      );
+      const headSha = report?.headSha ?? '';
+      return report?.pushed === true && SHA.test(headSha)
+        ? { ...repo, pushedSha: headSha }
+        : repo;
+    }),
     lastUsedAt: now,
     endedAt: now,
-    pushed,
+    pushed: reports.every((report) => report.pushed),
   });
 }
 
@@ -972,15 +1190,19 @@ const DAY = 24 * 60 * 60 * 1000;
  * Removes a subject's work directory, and a legacy worktree's record in its cache. The caller holds the workspace lock.
  */
 export async function removeWorkspace(
+  paths: RunnerPaths,
   workDir: string,
   meta: Pick<WorkspaceMeta, 'repos'>,
 ): Promise<void> {
+  // Only repositories as `readWorkspaceMeta` believes them: a cache derived from the URL, a path inside `workDir`.
   for (const repo of meta.repos) {
     const dir = path.join(workDir, repo.path);
+    if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
     if (existsSync(repo.cache))
       await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
   }
   await rm(workDir, { recursive: true, force: true });
+  await rm(workspaceRecordPath(paths, workDir), { force: true });
   for (const repo of meta.repos)
     if (existsSync(repo.cache)) await gitOk(['worktree', 'prune'], repo.cache);
 }
@@ -1005,9 +1227,7 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
       if (entry.isDirectory()) workDirs.push(path.join(appDir, entry.name));
   }
   for (const workDir of workDirs) {
-    const meta = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-      () => undefined,
-    );
+    const meta = await readWorkspaceMeta(paths, workDir);
     if (meta === undefined) continue;
     const lastUsed = Date.parse(meta.lastUsedAt);
     const ended =
@@ -1025,7 +1245,17 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
       continue;
     }
     try {
-      await removeWorkspace(workDir, meta);
+      // Read again under the lock: a run may have used it since.
+      const current = await readWorkspaceMeta(paths, workDir);
+      if (current === undefined || current.lastUsedAt !== meta.lastUsedAt)
+        continue;
+      if (await hasUnpushedWork(workDir, current, options.log)) {
+        options.log?.(
+          `gc: kept ${workDir}: it holds work that was never pushed`,
+        );
+        continue;
+      }
+      await removeWorkspace(paths, workDir, current);
       removed.push(workDir);
       options.log?.(`gc: removed ${workDir}`);
     } finally {

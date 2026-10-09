@@ -1,18 +1,23 @@
 // Collecting working directories: what is measured and counted as unpushed, which directories the application's word
 // and the owner's limit remove, and which are never removed.
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   acquireLock,
+  cachePath,
   checkout,
+  gcWorkspaces,
+  legacyMetaPath,
   markWorkspaceEnded,
-  metaPath,
+  readWorkspaceMeta,
   reportRepos,
+  workspaceRecordPath,
   type Checkout,
   type WorkspaceMeta,
 } from '../src/core/checkout.ts';
+import { isInside } from '../src/core/command-policy.ts';
 import {
   collectWorkspaces,
   planRemovals,
@@ -73,10 +78,7 @@ describe('working directories', () => {
     work?.(path.join(prepared.workDir, 'app'));
     const reports = await reportRepos(prepared.repos, { push: true });
     await prepared.release();
-    await markWorkspaceEnded(
-      prepared.workDir,
-      reports.every((report) => report.pushed),
-    );
+    await markWorkspaceEnded(paths, prepared.workDir, reports);
     return prepared;
   };
 
@@ -87,7 +89,15 @@ describe('working directories', () => {
   };
 
   const meta = (workDir: string): WorkspaceMeta =>
-    JSON.parse(readFileSync(metaPath(workDir), 'utf8')) as WorkspaceMeta;
+    JSON.parse(
+      readFileSync(workspaceRecordPath(paths, workDir), 'utf8'),
+    ) as WorkspaceMeta;
+
+  /** What an agent may write in its work directory, posing as the runner's record. */
+  const forgeRecord = (workDir: string, record: Record<string, unknown>) => {
+    mkdirSync(path.dirname(legacyMetaPath(workDir)), { recursive: true });
+    writeFileSync(legacyMetaPath(workDir), JSON.stringify(record));
+  };
 
   /** A reporter that answers `answer` and keeps what it was told. */
   const reporter = (answer: Partial<WorkspacesResponse>) => {
@@ -103,7 +113,7 @@ describe('working directories', () => {
   };
 
   it('records the last run, and measures size and unpushed work once the run is over', async () => {
-    const done = await finishedRun('PM-1', 'run-1', (dir) =>
+    const done = await finishedRun('TASK-1', 'run-1', (dir) =>
       commit(dir, 'a.txt'),
     );
     expect(meta(done.workDir).lastRunId).toBe('run-1');
@@ -111,7 +121,7 @@ describe('working directories', () => {
     expect(entry).toMatchObject({
       workDir: done.workDir,
       appKey: 'acme',
-      subjectKey: 'PM-1',
+      subjectKey: 'TASK-1',
       lastRunId: 'run-1',
       unpushed: false,
       inUse: false,
@@ -124,7 +134,7 @@ describe('working directories', () => {
   });
 
   it('counts uncommitted changes, untracked files included, as unpushed', async () => {
-    await finishedRun('PM-1', 'run-1', (dir) =>
+    await finishedRun('TASK-1', 'run-1', (dir) =>
       writeFileSync(path.join(dir, 'notes.md'), 'draft\n'),
     );
     const [entry] = await scanWorkspaces(paths);
@@ -135,14 +145,14 @@ describe('working directories', () => {
     const prepared = await checkout({
       paths,
       appKey: 'acme',
-      subjectKey: 'PM-1',
+      subjectKey: 'TASK-1',
       runId: 'run-1',
       dirs: [
         {
           kind: 'repo',
           url: remote,
           defaultBranch: 'main',
-          branch: 'agent/PM-1',
+          branch: 'agent/TASK-1',
           path: 'app',
         },
       ],
@@ -150,31 +160,117 @@ describe('working directories', () => {
     commit(path.join(prepared.workDir, 'app'), 'a.txt');
     await prepared.release();
     // The push failed (or the run died before it).
-    await markWorkspaceEnded(prepared.workDir, false);
+    await markWorkspaceEnded(paths, prepared.workDir, [
+      {
+        url: remote,
+        branch: 'agent/TASK-1',
+        pushed: false,
+        headSha: git(['rev-parse', 'HEAD'], path.join(prepared.workDir, 'app')),
+      },
+    ]);
     const [entry] = await scanWorkspaces(paths);
     expect(entry.unpushed).toBe(true);
   });
 
   it('does not judge a pushed branch by the default branch, so a squash-merged one is not unpushed', async () => {
-    const done = await finishedRun('PM-1', 'run-1', (dir) =>
+    const done = await finishedRun('TASK-1', 'run-1', (dir) =>
       commit(dir, 'a.txt'),
     );
     // The branch's commit is on the remote task branch, never on main (as after a squash merge).
     const bare = remote.replace(/^file:\/\//u, '');
-    expect(git(['branch', '--contains', 'agent/PM-1'], bare)).not.toContain(
+    expect(git(['branch', '--contains', 'agent/TASK-1'], bare)).not.toContain(
       'main',
     );
-    // Even with the run's record lost, the checkout's tracking ref says the remote has it.
-    const record = meta(done.workDir);
-    delete record.pushed;
-    writeFileSync(metaPath(done.workDir), JSON.stringify(record));
     const [entry] = await scanWorkspaces(paths, { force: true });
     expect(entry.unpushed).toBe(false);
+    expect(meta(done.workDir).repos[0]?.pushedSha).toBe(
+      git(['rev-parse', 'HEAD'], path.join(done.workDir, 'app')),
+    );
+  });
+
+  it("keeps its record out of the agent's reach, and believes nothing the agent writes in its work directory", async () => {
+    const done = await finishedRun('TASK-1', 'run-1');
+    commit(path.join(done.workDir, 'app'), 'unpushed.txt');
+    // The record lives in the runner's own directory, which agents are kept from.
+    expect(isInside(paths.home, workspaceRecordPath(paths, done.workDir))).toBe(
+      true,
+    );
+    expect(existsSync(legacyMetaPath(done.workDir))).toBe(false);
+    // A record the agent writes in its work directory, claiming nothing is there to push.
+    forgeRecord(done.workDir, {
+      subjectKey: 'TASK-1',
+      repos: [],
+      pushed: true,
+      lastUsedAt: '2000-01-01T00:00:00.000Z',
+    });
+    // Moving the remote-tracking ref along does not make the commit pushed either.
+    git(
+      ['update-ref', 'refs/remotes/origin/agent/TASK-1', 'HEAD'],
+      path.join(done.workDir, 'app'),
+    );
+    const [entry] = await scanWorkspaces(paths, { force: true });
+    expect(entry.unpushed).toBe(true);
+    const { reporters } = reporter({ remove: ['run-1'] });
+    const result = await collectWorkspaces({ paths, reporters, limitBytes: 1 });
+    expect(result.removed).toEqual([]);
+    expect(existsSync(done.workDir)).toBe(true);
+  });
+
+  it("checks an earlier runner's record: caches derived from the URL, paths inside the work directory, pushed ignored", async () => {
+    const workDir = path.join(paths.workRoot, 'acme', 'TASK-9');
+    mkdirSync(path.join(workDir, 'app'), { recursive: true });
+    forgeRecord(workDir, {
+      appKey: 'acme',
+      subjectKey: 'TASK-9',
+      repos: [
+        {
+          url: remote,
+          path: 'app',
+          cache: path.join(root, 'elsewhere.git'),
+          branch: 'agent/TASK-9',
+          pushedSha: 'a'.repeat(40),
+        },
+        {
+          url: remote,
+          path: '../TASK-8/app',
+          cache: path.join(root, 'elsewhere.git'),
+          branch: 'agent/TASK-8',
+        },
+        { url: remote, path: '.nocobase-runner/x', cache: '', branch: 'b' },
+      ],
+      pushed: true,
+      lastUsedAt: '2026-10-01T00:00:00.000Z',
+    });
+    const read = await readWorkspaceMeta(paths, workDir);
+    expect(read).toMatchObject({
+      legacy: true,
+      repos: [
+        {
+          url: remote,
+          path: 'app',
+          cache: cachePath(paths, remote),
+          branch: 'agent/TASK-9',
+        },
+      ],
+    });
+    expect(read).not.toHaveProperty('pushed');
+    expect(read?.repos[0]).not.toHaveProperty('pushedSha');
+  });
+
+  it('keeps a directory idle past the retention rules while it holds unpushed work', async () => {
+    const idle = await finishedRun('TASK-1', 'run-1', (dir) =>
+      writeFileSync(path.join(dir, 'notes.md'), 'draft\n'),
+    );
+    const day = 24 * 60 * 60 * 1000;
+    expect(await gcWorkspaces({ paths, now: Date.now() + 31 * day })).toEqual(
+      [],
+    );
+    expect(existsSync(idle.workDir)).toBe(true);
   });
 
   it("reports each application's directories and removes those whose work is over", async () => {
-    const ended = await finishedRun('PM-1', 'run-1');
-    const ongoing = await finishedRun('PM-2', 'run-2');
+    const ended = await finishedRun('TASK-1', 'run-1');
+    const ongoing = await finishedRun('TASK-2', 'run-2');
     const { requests, reporters } = reporter({
       remove: ['run-1'],
       keep: ['run-2'],
@@ -206,7 +302,7 @@ describe('working directories', () => {
   });
 
   it('keeps a directory whose work is over but holds unpushed work, and marks it', async () => {
-    const done = await finishedRun('PM-1', 'run-1', (dir) =>
+    const done = await finishedRun('TASK-1', 'run-1', (dir) =>
       writeFileSync(path.join(dir, 'notes.md'), 'draft\n'),
     );
     const { reporters } = reporter({ remove: ['run-1'] });
@@ -220,7 +316,7 @@ describe('working directories', () => {
   });
 
   it('never touches a directory a run holds', async () => {
-    const done = await finishedRun('PM-1', 'run-1');
+    const done = await finishedRun('TASK-1', 'run-1');
     const lock = await acquireLock(`${done.workDir}.lock`);
     try {
       const { reporters } = reporter({ remove: ['run-1'] });
@@ -234,8 +330,8 @@ describe('working directories', () => {
   });
 
   it('removes nothing on its own without an application that answers, unless over the limit', async () => {
-    const older = await finishedRun('PM-1', 'run-1');
-    const newer = await finishedRun('PM-2', 'run-2');
+    const older = await finishedRun('TASK-1', 'run-1');
+    const newer = await finishedRun('TASK-2', 'run-2');
     expect((await collectWorkspaces({ paths })).removed).toEqual([]);
     const result = await collectWorkspaces({ paths, limitBytes: 1 });
     // Over a limit nothing can meet, every pushed directory goes, least recently used first.
@@ -246,7 +342,7 @@ describe('working directories', () => {
   });
 
   it('describes a directory for the application by its last run', async () => {
-    await finishedRun('PM-1', 'run-1');
+    await finishedRun('TASK-1', 'run-1');
     const entries = await scanWorkspaces(paths);
     const request = workspacesRequest(entries, 'acme', undefined);
     expect(request).not.toHaveProperty('limitBytes');
@@ -322,22 +418,22 @@ describe('what goes', () => {
   it('picks by filters instead, and removes unpushed work only when forced', () => {
     const now = Date.UTC(2026, 11, 1);
     const entries = [
-      entry('PM-81', 1, { unpushed: true }),
-      entry('PM-82', 1),
-      entry('PM-83', 1, { lastUsedAt: new Date(now).toISOString() }),
+      entry('TASK-81', 1, { unpushed: true }),
+      entry('TASK-82', 1),
+      entry('TASK-83', 1, { lastUsedAt: new Date(now).toISOString() }),
     ];
     expect(
-      removed(planRemovals(entries, { now, filters: { subject: 'PM-81' } })),
+      removed(planRemovals(entries, { now, filters: { subject: 'TASK-81' } })),
     ).toEqual([]);
     expect(
       removed(
         planRemovals(entries, {
           now,
-          filters: { subject: 'PM-81' },
+          filters: { subject: 'TASK-81' },
           force: true,
         }),
       ),
-    ).toEqual(['PM-81:selected']);
+    ).toEqual(['TASK-81:selected']);
     expect(
       removed(
         planRemovals(entries, {
@@ -345,7 +441,7 @@ describe('what goes', () => {
           filters: { olderThanMs: 14 * 86_400_000 },
         }),
       ),
-    ).toEqual(['PM-82:selected']);
+    ).toEqual(['TASK-82:selected']);
     expect(
       removed(planRemovals(entries, { now, filters: { ended: true } })),
     ).toEqual([]);

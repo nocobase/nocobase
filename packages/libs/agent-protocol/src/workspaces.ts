@@ -30,8 +30,8 @@ export interface WorkspaceReport {
   /** What the directory takes on disk, as last measured. */
   readonly sizeBytes: number;
   /**
-   * The directory holds work that is not on the remote: changes not committed, or commits the remote task branch does
-   * not have. Such a directory is never removed on the application's word.
+   * The directory holds work that may not be on the remote: changes not committed, or commits past what the runner
+   * last saw the remote task branch hold. Such a directory is never removed on the application's word.
    */
   readonly unpushed: boolean;
   /** When a run last used it, RFC 3339. */

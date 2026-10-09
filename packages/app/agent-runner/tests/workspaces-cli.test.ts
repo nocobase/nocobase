@@ -80,8 +80,8 @@ describe('cleaning up working directories', () => {
   it('shows what would go without removing it, and removes it with --apply', async () => {
     server.workspaceReporting = { intervalMs: 60_000 };
     server.workspaceAnswer = { remove: ['run-1'], keep: ['run-2'] };
-    const ended = workspace('PM-1', 'run-1');
-    const ongoing = workspace('PM-2', 'run-2');
+    const ended = workspace('TASK-1', 'run-1');
+    const ongoing = workspace('TASK-2', 'run-2');
 
     const preview = await cli(['gc', '--json'], env);
     expect(preview.code).toBe(0);
@@ -96,8 +96,13 @@ describe('cleaning up working directories', () => {
       })),
     ).toEqual(
       expect.arrayContaining([
-        { subject: 'PM-1', status: 'ended', action: 'remove', reason: 'ended' },
-        { subject: 'PM-2', status: 'active', action: 'keep', reason: null },
+        {
+          subject: 'TASK-1',
+          status: 'ended',
+          action: 'remove',
+          reason: 'ended',
+        },
+        { subject: 'TASK-2', status: 'active', action: 'keep', reason: null },
       ]),
     );
     expect(existsSync(ended)).toBe(true);
@@ -110,10 +115,10 @@ describe('cleaning up working directories', () => {
   });
 
   it('picks by subject, and lists the status as unknown when the application predates reports', async () => {
-    const picked = workspace('PM-81', 'run-81');
-    const other = workspace('PM-82', 'run-82');
+    const picked = workspace('TASK-81', 'run-81');
+    const other = workspace('TASK-82', 'run-82');
     const result = await cli(
-      ['gc', '--subject', 'PM-81', '--apply', '--json'],
+      ['gc', '--subject', 'TASK-81', '--apply', '--json'],
       env,
     );
     expect(result.code).toBe(0);
@@ -147,7 +152,7 @@ describe('cleaning up working directories', () => {
   it('reports from the daemon to an application that announces reports, and removes what it says is over', async () => {
     server.workspaceReporting = { intervalMs: 60_000 };
     server.workspaceAnswer = { remove: ['run-1'], keep: [] };
-    const ended = workspace('PM-1', 'run-1');
+    const ended = workspace('TASK-1', 'run-1');
     const daemon = startDaemon(
       cliEnv(home, {
         NOCOBASE_RUNNER_TIMINGS: JSON.stringify({
@@ -172,7 +177,7 @@ describe('cleaning up working directories', () => {
   });
 
   it('sends no report to an application that does not announce reports', async () => {
-    const kept = workspace('PM-1', 'run-1');
+    const kept = workspace('TASK-1', 'run-1');
     const daemon = startDaemon(
       cliEnv(home, {
         NOCOBASE_RUNNER_TIMINGS: JSON.stringify({
