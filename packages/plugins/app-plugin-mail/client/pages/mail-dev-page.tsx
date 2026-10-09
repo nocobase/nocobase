@@ -7,6 +7,7 @@ export function MailCenterDevPage(): ReactElement {
   const { t } = useTranslation();
   return (
     <MailWorkspacePage
+      accountsHref='/dev/mail/accounts'
       title={t('dev.centerTitle', { defaultValue: 'Mail center' })}
       description={t('dev.centerDescription', {
         defaultValue: 'Search, synchronize, and read your mail.',

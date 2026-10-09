@@ -20,7 +20,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { resolveAppUrl } from '@nocobase/app-client';
 import type { MailComposerRequest } from '../contracts/composer.js';
@@ -60,6 +60,10 @@ import { MAIL_PLUGIN_NS } from '../namespace.js';
 export interface MailWorkspacePageProps {
   readonly title?: string;
   readonly description?: string;
+  /** Application-owned personal account path, without the deployment base path. */
+  readonly accountsHref?: string;
+  /** Additional actions appended after the built-in workspace actions. */
+  readonly headerActions?: ReactNode;
   /** Values available to `{{path.to.value}}` placeholders in mail templates. */
   readonly templateVariables?: MailTemplateVariables;
 }
@@ -70,6 +74,8 @@ const LAST_COMPOSE_ACCOUNT_KEY_PREFIX =
 export default function MailWorkspacePage({
   title,
   description,
+  accountsHref,
+  headerActions,
   templateVariables = {},
 }: MailWorkspacePageProps = {}): ReactElement {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
@@ -770,6 +776,17 @@ export default function MailWorkspacePage({
                   : syncLabel}
               </span>
             </Button>
+            {accountsHref && accounts.length > 0 ? (
+              <Button
+                render={<a href={resolveAppUrl(accountsHref)} />}
+                nativeButton={false}
+                role='link'
+                variant='outline'
+              >
+                {t('navigation.accounts', { defaultValue: 'Mail accounts' })}
+              </Button>
+            ) : null}
+            {headerActions}
           </div>
         }
       />
@@ -852,13 +869,9 @@ export default function MailWorkspacePage({
                   })}
                 </p>
               </div>
-              {(
-                import.meta as ImportMeta & {
-                  readonly env?: { readonly DEV?: boolean };
-                }
-              ).env?.DEV ? (
+              {accountsHref ? (
                 <Button
-                  render={<a href={resolveAppUrl('/dev/mail/accounts')} />}
+                  render={<a href={resolveAppUrl(accountsHref)} />}
                   nativeButton={false}
                   role='link'
                 >

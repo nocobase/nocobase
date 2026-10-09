@@ -61,6 +61,7 @@ vi.mock('../../client/runtime.js', () => ({
   useMailClient: () => mail,
 }));
 
+import { MailCenterDevPage } from '../../client/pages/mail-dev-page.js';
 import MailWorkspacePage from '../../client/pages/mail-workspace-page.js';
 import MailManagementPage from '../../client/pages/mail-management-page.js';
 import { MAIL_UNREAD_COUNT_CHANGED_EVENT } from '../../client/components/mail-navigation-icon.js';
@@ -231,13 +232,156 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('links first-time users to mailbox setup in Dev tools', async () => {
     mail.listAccounts.mockResolvedValue([]);
-    render(<MailWorkspacePage />);
+    render(<MailCenterDevPage />);
     const connect = await screen.findByRole('link', {
       name: 'Connect mail account',
     });
     expect(connect).toHaveAttribute('href', '/dev/mail/accounts');
     expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
   });
+
+  it.each(['/', '/main', '/team/crm'])(
+    'links production empty workspaces under %s',
+    async (basePath) => {
+      vi.stubEnv('DEV', false);
+      const runtimeConfig = document.getElementById('nocobase-runtime-config')!;
+      const originalConfig = runtimeConfig.textContent;
+      runtimeConfig.textContent = JSON.stringify({
+        version: 1,
+        config: { app: { basePath } },
+      });
+      try {
+        mail.listAccounts.mockResolvedValue([]);
+        render(
+          <MailWorkspacePage
+            accountsHref='/mail/accounts?from=workspace'
+            headerActions={<button type='button'>Application action</button>}
+          />,
+        );
+        const connect = await screen.findByRole('link', {
+          name: 'Connect mail account',
+        });
+        expect(connect).toHaveAttribute(
+          'href',
+          `${basePath === '/' ? '' : basePath}/mail/accounts?from=workspace`,
+        );
+        expect(
+          screen.getByRole('button', { name: 'Application action' }),
+        ).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
+        expect(
+          screen.getByRole('button', { name: 'Sync all mailboxes' }),
+        ).toBeDisabled();
+        expect(
+          document.querySelector('a[href*="/dev/mail/accounts"]'),
+        ).toBeNull();
+      } finally {
+        runtimeConfig.textContent = originalConfig;
+        vi.unstubAllEnvs();
+      }
+    },
+  );
+
+  it.each([undefined, ''])(
+    'does not invent a personal account route without accountsHref %j',
+    async (accountsHref) => {
+      mail.listAccounts.mockResolvedValue([]);
+      const { rerender } = render(
+        <MailWorkspacePage
+          accountsHref={accountsHref}
+          headerActions={<button type='button'>Application action</button>}
+        />,
+      );
+      await screen.findByText('Connect your first mailbox');
+      expect(
+        screen.queryByRole('link', { name: 'Connect mail account' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('link', { name: 'Mail accounts' }),
+      ).not.toBeInTheDocument();
+      expect(
+        document.querySelector('a[href*="/dev/mail/accounts"]'),
+      ).toBeNull();
+      rerender(<MailWorkspacePage accountsHref='/mail/accounts' />);
+      expect(
+        screen.getByRole('link', { name: 'Connect mail account' }),
+      ).toHaveAttribute('href', '/mail/accounts');
+    },
+  );
+
+  it('does not invent account links for a populated workspace either', async () => {
+    render(<MailWorkspacePage />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    expect(
+      screen.queryByRole('link', { name: 'Mail accounts' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Connect mail account' }),
+    ).not.toBeInTheDocument();
+    expect(document.querySelector('a[href*="/dev/mail/accounts"]')).toBeNull();
+  });
+
+  it('keeps production account management and application actions beside Compose and Sync', async () => {
+    const extraAction = vi.fn();
+    mail.getSyncRun.mockResolvedValue({
+      ...(await mail.startSync()),
+      status: 'completed',
+    });
+    mail.startSync.mockClear();
+    render(
+      <MailWorkspacePage
+        accountsHref='/mail/accounts'
+        headerActions={
+          <button type='button' onClick={extraAction}>
+            Application action
+          </button>
+        }
+      />,
+    );
+    const compose = screen.getByRole('button', { name: 'Compose' });
+    const sync = screen.getByRole('button', { name: 'Sync all mailboxes' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    expect(
+      await screen.findByRole('link', { name: 'Mail accounts' }),
+    ).toHaveAttribute('href', '/mail/accounts');
+    expect(
+      screen.queryByRole('link', { name: 'Connect mail account' }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(sync).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Application action' }));
+    expect(extraAction).toHaveBeenCalledOnce();
+    fireEvent.click(sync);
+    await waitFor(() =>
+      expect(mail.startSync).toHaveBeenCalledWith(
+        expect.objectContaining({ accountId: 'account-1' }),
+      ),
+    );
+    fireEvent.click(compose);
+    await screen.findByRole('dialog', { name: 'New message' });
+  });
+
+  it.each(['suspended', 'removing'])(
+    'offers account recovery when the only mailbox is %s',
+    async (status) => {
+      mail.listAccounts.mockResolvedValue([
+        {
+          id: 'account-1',
+          userId: 'user-1',
+          provider: { type: 'gmail', name: 'google' },
+          address: 'user@example.com',
+          scopes: [],
+          status,
+        },
+      ]);
+      render(<MailWorkspacePage accountsHref='/mail/accounts' />);
+      expect(
+        await screen.findByRole('link', { name: 'Connect mail account' }),
+      ).toHaveAttribute('href', '/mail/accounts');
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
+    },
+  );
 
   it('keeps composer errors and entered text when the mailbox refreshes', async () => {
     mail.listTemplates.mockRejectedValue(new Error('templates unavailable'));
@@ -1473,7 +1617,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       },
     ]);
 
-    render(<MailWorkspacePage />);
+    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
 
     expect(
       await screen.findByRole('button', { name: 'Compose' }),
@@ -1525,7 +1669,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         },
       ],
     });
-    render(<MailWorkspacePage />);
+    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
     expect(await screen.findByText('Previously visible mail')).toBeVisible();
     mail.listAccounts.mockResolvedValue([{ ...active, status: 'suspended' }]);
     now.mockReturnValue(30_000);

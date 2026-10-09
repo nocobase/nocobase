@@ -25,6 +25,21 @@ The plugin contributes these current routes, relative to the public base path:
 
 Development routes are excluded from production. Adding a production workspace also requires application-owned account/settings/log links as needed. If account connection is included, configure `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL` to an application-owned production page and read [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page). The default return destination remains a development page for backward compatibility. The return page only consumes `mailAuthorization` and refreshes account state; it does not need `MailAccountConnector` unless it also starts a separate new-account flow. Do not claim that the plugin contributes a standalone production `/mail` route.
 
+### Personal account entry and workspace actions
+
+Register an application-owned `/mail/accounts` page whose lazy loader imports the public `MailAccountsPage` from `/client`. Require authentication (`auth: 'required'`) and declare `authz: { resource: { type: 'page', id: 'mail.workspace' }, action: 'access' }` on that page and the workspace. The account APIs independently enforce permissions; a link grants no access. This is a personal connection/management page, including resuming suspended accounts, not the administrator's read-only `/settings/mail/accounts` overview.
+
+```tsx
+<MailWorkspacePage
+  accountsHref='/mail/accounts'
+  headerActions={<a href={resolveAppUrl('/mail/logs')}>Mail logs</a>}
+/>
+```
+
+Import `resolveAppUrl` from `@nocobase/app-client` for application-owned links. `accountsHref` excludes the deployment prefix: `/mail/accounts` becomes `/main/mail/accounts` under `/main`. With no usable accounts the workspace displays Connect mail account; with accounts it retains Mail accounts in the header. If the property is omitted, neither link is invented. `headerActions` appends arbitrary React content after the built-in controls without replacing their disabled/loading behavior, and never implicitly supplies an empty-state account link. The Dev wrapper explicitly passes `/dev/mail/accounts`; the reusable workspace does not depend on development mode.
+
+Separately configure `mail.oauthReturnUrl: /mail/accounts` so OAuth success and failure return to the registered production page. This server configuration is independent of the component property; the return page consumes the authorization result and reloads accounts. Registering a path only in Dev routes or passing a link does not put that page in a production build.
+
 ## Business records and templates
 
 Pass the allowed record values through `templateVariables` when embedding the workspace:
