@@ -522,6 +522,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     agents,
     runners,
+    eligibility,
     runs,
     people,
     settings: chat,

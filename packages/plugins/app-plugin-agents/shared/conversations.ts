@@ -28,8 +28,10 @@
  *   online, signed-in runner may run it, the conversation reports `offline` with the reason; the owner may switch the
  *   conversation to the system default agent and later switch back. A runner conversation may also switch to the online
  *   fallback agent (`ChatSettings.onlineFallbackAgentId`), and a conversation started with a runner agent that no runner
- *   may run for its owner now (such as one whose only online runner is someone else's personal one) starts on that
- *   agent in its place, as if switched. The owner is the one answerable for their conversation, so none of this waits
+ *   may run for its owner now (including claim's feature and team-only variable restrictions) starts on that
+ *   agent in its place, as if switched. Existing runner conversations check again on each message and transfer
+ *   unanswered queued messages when switching. Manual fallback skips an unavailable system default, and restoring
+ *   requires the original agent to be available again. The owner is the one answerable for their conversation, so none of this waits
  *   for anyone's confirmation.
  * - **Titles**: the first message's first `CONVERSATION_TITLE_AUTO_CHARS` characters (`auto`), until the agent sets one
  *   of at most `CONVERSATION_TITLE_AGENT_MAX` characters (`agent`), which it may do until the owner renames the
@@ -341,11 +343,11 @@ export interface ConversationDetail extends ConversationSummary {
   /** An online conversation: the entries of its agent's list the owner may choose from, in order; empty otherwise. */
   readonly models: readonly ChatModelChoice[];
   /**
-   * Another agent may take over (`POST …/fallback`): the system default when it is of the conversation's mode, else,
+   * Another agent may take over (`POST …/fallback`): an available system default of the conversation's mode, else,
    * for a runner conversation, the online fallback agent (`ChatSettings.onlineFallbackAgentId`).
    */
   readonly canFallback: boolean;
-  /** The conversation is on the system default and its own agent may take it back (`POST …/restore`). */
+  /** The conversation uses another agent and its original agent can answer again (`POST …/restore`). */
   readonly canRestore: boolean;
 }
 
@@ -661,7 +663,7 @@ export interface MessagePage {
   readonly lastSeq: number;
 }
 
-/** `POST messages`. */
+/** `POST messages`: an unavailable runner may first switch to the configured usable online fallback agent. */
 export interface SendMessageRequest {
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
   readonly content: string;

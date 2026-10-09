@@ -1,3 +1,4 @@
+import { TIMINGS } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -57,6 +58,21 @@ describe('conversations', () => {
     });
     expect(sent.status).toBe(201);
     return sent.body.data;
+  }
+
+  async function onlineAssistant() {
+    const service = await h.services.online.services.create({
+      title: 'Mock',
+      provider: 'openai-compatible',
+      baseUrl: 'http://127.0.0.1:9/v1',
+      models: [{ value: 'm1', label: 'Model one' }],
+    });
+    const id = await h.createAgent({
+      name: 'Online assistant',
+      type: 'online',
+      modelEntries: [{ modelService: service.name, model: 'm1' }],
+    });
+    return { id, service: service.name };
   }
 
   it('starts a conversation from a source the application registered, with the text as it gives it', async () => {
@@ -385,6 +401,7 @@ describe('conversations', () => {
 
   it('switches to the system default and back, each time with a new session', async () => {
     h = await createHarness();
+    await h.registerRunner();
     const own = await h.createAgent({ name: 'My PM' });
     const fallback = await h.createAgent({ name: 'Team PM' });
     const id = await newConversation(own);
@@ -883,7 +900,7 @@ describe('conversations', () => {
       mode: 'online',
       fallbackFrom: { id: lead },
       canFallback: false,
-      canRestore: true,
+      canRestore: false,
     });
     const id = created.body.data.id as string;
     const sent = await bob().post(`${base}/${id}/messages`, {
@@ -902,7 +919,11 @@ describe('conversations', () => {
       { code: 'switchedToOnline', agentId: assistant, fromAgentId: lead },
     ]);
 
-    // Switching back puts the runner agent and its mode back; the message waits for a runner again.
+    // The unavailable runner cannot be restored until a runner can actually take Bob's work.
+    expect((await bob().post(`${base}/${id}/restore`)).status).toBe(400);
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: BOB });
+    expect((await bob().get(`${base}/${id}`)).body.data.canRestore).toBe(true);
+    // Switching back puts the runner agent and its mode back on a new thread.
     const back = await bob().post(`${base}/${id}/restore`);
     expect(back.body.data).toMatchObject({
       agent: { id: lead },
@@ -939,6 +960,289 @@ describe('conversations', () => {
       mode: 'runner',
       fallbackFrom: null,
       availability: { online: true },
+    });
+  });
+
+  it.each(['teamOnly', 'missingSecrets'] as const)(
+    'uses claim eligibility for automatic fallback and restore when a personal runner is excluded by %s',
+    async (restriction) => {
+      h = await createHarness();
+      const lead = await h.createAgent({ name: 'Coding agent' });
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: lead },
+        'API_TOKEN',
+        'synthetic-test-value',
+        'owner',
+        { teamRunnersOnly: restriction === 'teamOnly' },
+      );
+      const personal = await h.registerRunner({
+        trust: 'ownerOnly',
+        ownerUserId: BOB,
+        ...(restriction === 'missingSecrets'
+          ? { features: ['input'] as const }
+          : {}),
+      });
+      const assistant = await onlineAssistant();
+      // Without a fallback setting, the conversation still waits on the runner agent.
+      const waiting = await h.services.conversations.create(BOB, {
+        agentId: lead,
+      });
+      expect(waiting).toMatchObject({
+        agent: { id: lead },
+        availability: { online: false, onlineRunners: 0, reason: 'noRunner' },
+        canFallback: false,
+      });
+      await h.services.chat.updateSettings('owner', {
+        onlineFallbackAgentId: assistant.id,
+      });
+      expect(
+        (await h.services.conversations.chatAgents(BOB)).find(
+          (agent) => agent.id === lead,
+        ),
+      ).toMatchObject({
+        availability: { online: false, onlineRunners: 0 },
+        fallbackAgentId: assistant.id,
+      });
+      const conversation = await h.services.conversations.create(BOB, {
+        agentId: lead,
+      });
+      expect(conversation).toMatchObject({
+        agent: { id: assistant.id },
+        fallbackFrom: { id: lead },
+        mode: 'online',
+        canRestore: false,
+      });
+      await expect(
+        h.services.conversations.restore(BOB, conversation.id),
+      ).rejects.toMatchObject({ details: { reason: 'noRestore' } });
+      const sent = await h.services.conversations.send(BOB, conversation.id, {
+        content: 'Synthetic request',
+      });
+      expect(await h.services.runs.get(sent.run!.id)).toMatchObject({
+        agentId: assistant.id,
+        actorUserId: BOB,
+        ownerUserId: BOB,
+      });
+      expect(await claim(h, personal)).toEqual([]);
+      const team = await h.registerRunner();
+      expect(
+        (await h.services.conversations.get(BOB, conversation.id)).canRestore,
+      ).toBe(true);
+      const restored = await h.services.conversations.restore(
+        BOB,
+        conversation.id,
+      );
+      expect(restored).toMatchObject({
+        agent: { id: lead },
+        mode: 'runner',
+        fallbackFrom: null,
+        availability: { online: true, onlineRunners: 1 },
+      });
+      const [payload] = await claim(h, team);
+      expect(await h.services.runs.get(payload.run.id)).toMatchObject({
+        agentId: lead,
+        actorUserId: BOB,
+      });
+      expect(payload.workspace.env).toEqual([
+        { name: 'API_TOKEN', value: 'synthetic-test-value' },
+      ]);
+    },
+  );
+
+  it('keeps using a personal runner when shared variables are not restricted to team runners', async () => {
+    h = await createHarness();
+    const lead = await h.createAgent();
+    await h.services.variables.set(
+      { scope: 'agent', scopeId: lead },
+      'API_TOKEN',
+      'synthetic-test-value',
+      'owner',
+    );
+    const personal = await h.registerRunner({
+      trust: 'ownerOnly',
+      ownerUserId: BOB,
+    });
+    const assistant = await onlineAssistant();
+    await h.services.chat.updateSettings('owner', {
+      onlineFallbackAgentId: assistant.id,
+    });
+    expect(
+      (await h.services.conversations.chatAgents(BOB)).find(
+        (agent) => agent.id === lead,
+      ),
+    ).toMatchObject({
+      availability: { online: true, onlineRunners: 1 },
+      fallbackAgentId: null,
+    });
+    const conversation = await h.services.conversations.create(BOB, {
+      agentId: lead,
+    });
+    expect(conversation.agent.id).toBe(lead);
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Use the shared token',
+    });
+    const [payload] = await claim(h, personal);
+    expect(payload.workspace.env).toEqual([
+      { name: 'API_TOKEN', value: 'synthetic-test-value' },
+    ]);
+  });
+
+  it.each(['queued', 'running'])(
+    'switches an existing conversation on the next message after its runner disconnects and transfers %s messages once',
+    async (state) => {
+      h = await createHarness();
+      const lead = await h.createAgent();
+      const personal = await h.registerRunner({
+        trust: 'ownerOnly',
+        ownerUserId: BOB,
+      });
+      const assistant = await onlineAssistant();
+      await h.services.chat.updateSettings('owner', {
+        onlineFallbackAgentId: assistant.id,
+      });
+      const conversation = await h.services.conversations.create(BOB, {
+        agentId: lead,
+      });
+      const first = await h.services.conversations.send(BOB, conversation.id, {
+        content: 'First question',
+      });
+      if (state === 'running') {
+        const [payload] = await claim(h, personal);
+        await runner(personal).post(payload.run.id, 'start', start);
+      }
+      h.clock.advance(TIMINGS.offlineAfterMs + 1);
+      await h.sweep();
+      expect(
+        (await h.services.conversations.chatAgents(BOB)).find(
+          (agent) => agent.id === lead,
+        ),
+      ).toMatchObject({
+        availability: { online: false, onlineRunners: 0 },
+        fallbackAgentId: assistant.id,
+      });
+      expect(
+        (await h.services.conversations.get(BOB, conversation.id)).availability
+          .online,
+      ).toBe(false);
+      const second = await h.services.conversations.send(BOB, conversation.id, {
+        content: 'Second question',
+      });
+      expect(second.conversation).toMatchObject({
+        agent: { id: assistant.id },
+        mode: 'online',
+        fallbackFrom: { id: lead },
+        canRestore: false,
+      });
+      expect(await h.services.runs.get(first.run!.id)).toMatchObject({
+        status: 'cancelled',
+      });
+      const run = await h.services.runs.detail(second.run!.id);
+      expect(run.inputs.map((input) => input.text)).toEqual([
+        'First question',
+        'Second question',
+      ]);
+      expect(run).toMatchObject({ agentId: assistant.id, actorUserId: BOB });
+      const messages = await h.services.conversations.messages(
+        BOB,
+        conversation.id,
+        {},
+      );
+      expect(
+        messages.items.filter(
+          (message) => message.metadata.notice?.code === 'switchedToOnline',
+        ),
+      ).toHaveLength(1);
+    },
+  );
+
+  it('preserves the runner and explains the unavailable online model when fallback fails mid-conversation', async () => {
+    h = await createHarness();
+    const lead = await h.createAgent();
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: BOB });
+    const assistant = await onlineAssistant();
+    await h.services.chat.updateSettings('owner', {
+      onlineFallbackAgentId: assistant.id,
+    });
+    const conversation = await h.services.conversations.create(BOB, {
+      agentId: lead,
+    });
+    await h.services.online.services.update(assistant.service, {
+      enabled: false,
+    });
+    h.clock.advance(TIMINGS.offlineAfterMs + 1);
+    await h.sweep();
+    const sent = await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Keep this question',
+    });
+    expect(sent.conversation).toMatchObject({
+      agent: { id: lead },
+      mode: 'runner',
+      fallbackFrom: null,
+      canFallback: false,
+    });
+    expect(sent.message.content.content).toBe('Keep this question');
+    expect(
+      (await h.services.conversations.messages(BOB, conversation.id, {})).items
+        .map((message) => message.metadata.notice)
+        .filter(Boolean),
+    ).toEqual([
+      {
+        code: 'onlineFallbackUnavailable',
+        fromAgentId: lead,
+        reason: 'modelUnavailable',
+      },
+    ]);
+  });
+
+  it('skips an unavailable runner system default when manually falling back', async () => {
+    h = await createHarness();
+    const lead = await h.createAgent();
+    const defaultAgent = await h.createAgent({ name: 'Default runner' });
+    const conversation = await h.services.conversations.create(BOB, {
+      agentId: lead,
+    });
+    const assistant = await onlineAssistant();
+    await h.services.chat.updateSettings('owner', {
+      defaultAgentId: defaultAgent,
+      onlineFallbackAgentId: assistant.id,
+    });
+    const switched = await h.services.conversations.fallback(
+      BOB,
+      conversation.id,
+    );
+    expect(switched).toMatchObject({
+      agent: { id: assistant.id },
+      fallbackFrom: { id: lead },
+      mode: 'online',
+    });
+  });
+
+  it('prefers an eligible runner system default and preserves the original agent if that replacement later disconnects', async () => {
+    h = await createHarness();
+    const lead = await h.createAgent({ runnerIds: ['unregistered-runner'] });
+    const defaultAgent = await h.createAgent({ name: 'Default runner' });
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: BOB });
+    const conversation = await h.services.conversations.create(BOB, {
+      agentId: lead,
+    });
+    const assistant = await onlineAssistant();
+    await h.services.chat.updateSettings('owner', {
+      defaultAgentId: defaultAgent,
+      onlineFallbackAgentId: assistant.id,
+    });
+    expect(
+      (await h.services.conversations.fallback(BOB, conversation.id)).agent.id,
+    ).toBe(defaultAgent);
+    h.clock.advance(TIMINGS.offlineAfterMs + 1);
+    await h.sweep();
+    const sent = await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Continue the conversation',
+    });
+    expect(sent.conversation).toMatchObject({
+      agent: { id: assistant.id },
+      fallbackFrom: { id: lead },
+      mode: 'online',
+      canRestore: false,
     });
   });
 
@@ -1080,14 +1384,16 @@ describe('conversations', () => {
         type: 'online',
         modelEntries: [{ modelService: service.name, model: 'm1' }],
       });
-      await h.services.chat.updateSettings('owner', {
-        onlineFallbackAgentId: online,
-      });
       const waiting = await h.services.conversations.create('bob', {
         agentId: lead,
       });
-      expect(waiting.agent.id).toBe(online);
-      await h.services.conversations.restore('bob', waiting.id);
+      await h.services.chat.updateSettings('owner', {
+        onlineFallbackAgentId: online,
+      });
+      expect(
+        (await h.services.conversations.create('bob', { agentId: lead })).agent
+          .id,
+      ).toBe(online);
       if (failure === 'removed')
         await h.services.online.services.remove(service.name);
       else
