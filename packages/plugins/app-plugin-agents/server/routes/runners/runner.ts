@@ -41,7 +41,7 @@ import {
   RunnerFeatureSchema,
   RunnerPolicySchema,
   TIMINGS,
-  ToolInfoSchema,
+  ReportedToolInfoSchema,
   type ClaimRequest,
   type ClaimResponse,
   type HeartbeatRequest,
@@ -127,7 +127,7 @@ const LenientRegisterSchema: z.ZodType<RegisterRequest> = z.preprocess(
       ? {
           ...raw,
           features: known(raw.features, RunnerFeatureSchema),
-          tools: known(raw.tools, ToolInfoSchema),
+          tools: known(raw.tools, ReportedToolInfoSchema),
         }
       : raw,
   RegisterRequestSchema,
@@ -146,7 +146,7 @@ const LenientHeartbeatSchema: z.ZodType<HeartbeatRequest> = z.preprocess(
       version:
         typeof body.version === 'string' ? body.version.slice(0, 64) : '',
       features: known(body.features, RunnerFeatureSchema),
-      tools: known(body.tools, ToolInfoSchema),
+      tools: known(body.tools, ReportedToolInfoSchema),
       active: known(body.active, ActiveRunSchema),
       ...(Array.isArray(body.jobs)
         ? { jobs: known(body.jobs, ActiveJobSchema) }

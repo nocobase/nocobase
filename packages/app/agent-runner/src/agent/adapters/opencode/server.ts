@@ -72,6 +72,7 @@ function killGroup(child: ChildProcess, signal: NodeJS.Signals): void {
 }
 
 export const launchServer: LaunchFn = async (options) => {
+  options.signal?.throwIfAborted();
   const password = randomBytes(24).toString('base64url');
   const child = spawn(
     options.binary,
@@ -84,9 +85,13 @@ export const launchServer: LaunchFn = async (options) => {
         OPENCODE_SERVER_PASSWORD: password,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
-      detached: true,
+      detached: process.platform !== 'win32',
     },
   );
+
+  const onAbort = () => killGroup(child, 'SIGKILL');
+  options.signal?.addEventListener('abort', onAbort, { once: true });
+  if (options.signal?.aborted) onAbort();
 
   const stderrLines: string[] = [];
   const keep = (text: string) => {
@@ -113,6 +118,7 @@ export const launchServer: LaunchFn = async (options) => {
   // while a process it started still runs in it, so this holds until the server is closed, not until it exits.
   const onProcessExit = () => killGroup(child, 'SIGKILL');
   process.once('exit', onProcessExit);
+  void exited.then(() => options.signal?.removeEventListener('abort', onAbort));
 
   // Closed once the server has exited and nothing is left in its group: the server may exit, before or after the
   // SIGTERM, while what it started (a tool's shell, a server or watcher a command left running) still runs there.
@@ -144,15 +150,18 @@ export const launchServer: LaunchFn = async (options) => {
       options.startTimeoutMs ?? DEFAULT_START_TIMEOUT_MS,
     );
     timer.unref();
-    const onAbort = () =>
+    const rejectAbort = () => {
+      clearTimeout(timer);
       reject(new ServerStartError('opencode serve start aborted'));
-    if (options.signal?.aborted) onAbort();
-    options.signal?.addEventListener('abort', onAbort, { once: true });
+    };
+    if (options.signal?.aborted) rejectAbort();
+    options.signal?.addEventListener('abort', rejectAbort, { once: true });
     child.stdout?.setEncoding('utf8').on('data', (text: string) => {
       stdout = (stdout + text).slice(-4096);
       const match = /listening on (https?:\/\/[^\s/]+)/.exec(stdout);
       if (!match) return;
       clearTimeout(timer);
+      options.signal?.removeEventListener('abort', rejectAbort);
       const url = new URL(match[1]);
       if (url.hostname !== '127.0.0.1') {
         reject(
@@ -166,6 +175,7 @@ export const launchServer: LaunchFn = async (options) => {
     });
     void exited.then(({ code, signal }) => {
       clearTimeout(timer);
+      options.signal?.removeEventListener('abort', rejectAbort);
       const tail = stderrLines.slice(-5).join('\n');
       reject(
         new ServerStartError(

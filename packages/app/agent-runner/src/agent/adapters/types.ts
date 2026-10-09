@@ -14,6 +14,7 @@ import type {
   FailureReason,
   RunEventType,
   RunnerFeature,
+  ToolCapabilities,
   ToolUnavailableReason,
 } from '../../protocol/index.ts';
 
@@ -160,6 +161,8 @@ export interface AdapterHandle {
 export interface AgentAdapter {
   kind: ToolKind;
   detect(): Promise<ToolDetection>;
+  /** Fresh capability discovery, independent of cached installation detection. No method means unsupported. */
+  detectModels?(signal: AbortSignal): Promise<ToolCapabilities>;
   features(): RunnerFeature[];
   start(session: AdapterSession): AdapterHandle;
 }
