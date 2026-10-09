@@ -28,6 +28,7 @@ async function prepare(
       paths: context.paths,
       appKey: context.registration.key,
       subjectKey: context.payload.subject.key,
+      runId: context.payload.run.id,
       workDir,
       dirs: context.payload.workspace.dirs,
       ...(context.payload.workspace.git?.credentials
