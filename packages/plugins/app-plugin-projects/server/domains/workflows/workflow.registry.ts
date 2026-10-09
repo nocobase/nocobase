@@ -34,12 +34,14 @@ import type {
 
 export type { RelationChecks } from './built-in-rule-types.js';
 
-/** The lifecycle actor as the activity log records it: its kind and id, as they are. */
+/** Preserve the lifecycle actor's identity and trace in the public rule contract. */
 function actorOf(actor: {
   readonly type: string;
   readonly id: string | null;
+  readonly via?: Actor['via'];
+  readonly trace?: Actor['trace'];
 }): Actor {
-  return { type: actor.type, id: actor.id };
+  return actor;
 }
 
 /** Who the approver roles are, read in the transaction of the move. */
@@ -69,6 +71,7 @@ function checkOf(ctx: RuleContext<Issue, Tx>): StatusRuleCheck {
     from: ctx.from,
     status: enteredStatus(ctx),
     actor: actorOf(ctx.actor),
+    sourceActor: ctx.sourceActor ?? actorOf(ctx.actor),
     event: ctx.event ?? null,
   };
 }
@@ -125,6 +128,7 @@ function stateRuleOf(
         from: ctx.from,
         status: enteredStatus(ctx),
         actor,
+        sourceActor: ctx.sourceActor ?? actor,
         async setExecutor(executor: Executor) {
           if (
             issue.executor?.type === executor.type &&
@@ -140,7 +144,7 @@ function stateRuleOf(
           });
           await activity.record(tx.conn, {
             issueId: issue.id,
-            actor,
+            actor: ctx.sourceActor ?? actor,
             action: 'executor_changed',
             details: {
               from: issue.executor,
