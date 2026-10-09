@@ -2,6 +2,7 @@ import type { ApiClient } from '@nocobase/app-client';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -174,14 +175,31 @@ async function chooseOption(trigger: HTMLElement, name: string): Promise<void> {
 it.each(['en-US', 'zh-CN'] as const)(
   'picks the assignee for a new task from a Select (%s)',
   async (locale) => {
+    const respond = state.request.getMockImplementation()!;
+    let releaseAssignees!: () => void;
+    const assigneesLoaded = new Promise<void>((resolve) => {
+      releaseAssignees = resolve;
+    });
+    state.request.mockImplementation(async (options: RequestOptions) => {
+      if (options.path === 'notificationExample/assignees') {
+        await assigneesLoaded;
+      }
+      return respond(options);
+    });
     await show(locale, ['/notification-example']);
     const messages = copy[locale];
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: messages.tasks.add }),
-    );
+    const addTask = await screen.findByRole('button', {
+      name: messages.tasks.add,
+    });
+    // The button is rendered while tasks and assignees are still loading.
+    expect(addTask).toBeDisabled();
+    await act(async () => releaseAssignees());
+    await waitFor(() => expect(addTask).toBeEnabled());
+    await userEvent.click(addTask);
+    // The sheet becomes accessible after its portal and opening state have committed.
     fireEvent.change(
-      screen.getByRole('textbox', { name: messages.fields.title }),
+      await screen.findByRole('textbox', { name: messages.fields.title }),
       { target: { value: 'Ship the example plugin' } },
     );
     fireEvent.change(
@@ -234,7 +252,7 @@ it('edits the status and the assignee through Selects on the task detail page', 
   const messages = copy['en-US'];
 
   expect(await screen.findByText('Review the release notes')).toBeVisible();
-  fireEvent.click(
+  await userEvent.click(
     screen.getByRole('button', { name: messages.taskDetail.edit }),
   );
 

@@ -15,7 +15,7 @@ description: '让 Agent 使用 Scheduler 插件开发可观测、可启停的定
 - 管理员需要看到任务是否启用、下次运行时间、历史触发记录和失败原因；
 - 触发动作需要幂等，不能因为进程重启或 worker 重试产生重复业务效果。
 
-不需要管理员在 UI 上查看和启停的后台任务，不必接入 Scheduler；周期性的用应用自己的 `ScheduleExecutor`，一次性的后台工作用 `JobExecutor`，二者都来自应用的 jobs 服务。
+不需要管理员在 UI 上查看和启停的后台任务，不必接入 Scheduler；周期性的用应用自己的 `ScheduleExecutor`，一次性的后台工作用 `JobExecutor`，二者都来自应用的 jobs 服务。如果业务需要人工审批、版本化流程、路径观测和节点级运行记录，优先让 Agent 评估是否使用[工作流](./workflow)。
 
 ## 使用 Agent 开发
 
@@ -80,7 +80,7 @@ Agent 应报告它选择的执行模型、稳定 schedule key、时区、目标�
 ## 推荐开发流程
 
 1. **确认是否需要 Scheduler。** 关键判断是管理员是否需要通过 UI 查看、启停和追踪执行记录。没有这个要求时，用应用自己的 `ScheduleExecutor` 更合适。
-2. **根据业务选择执行任务类型。** 根据业务需要接入应用已有 Service、`JobExecutor` 或外部执行系统，并注册对应目标。
+2. **根据业务选择执行任务类型。** 需要多个流程步骤、节点级观测、人工介入或较长时间运行的任务，使用工作流类 job；单一动作、无需节点级观测和人工介入的任务，使用普通 job。是否使用工作流应由业务场景决定，而不是由任务是否已经存在工作流来决定。
 3. **定义任务。** 在应用或业务插件 Provider 中调用 `schedulerServiceToken.defineSchedule(definition)`，使用应用内全局唯一且稳定的 `key`，建议使用业务命名空间，例如 `sales.daily-report`。
 4. **同步并验证。** 运行 `pnpm nocobase scheduler sync --json`，用管理员账号进入“设置 → 自动化 → 定时任务”确认任务、下次运行时间和执行记录。
 5. **发布时 finalize。** 生产部署确认完整插件清单已加载后，每个应用运行一次 `pnpm nocobase scheduler sync --finalize --json`，软停用代码中已移除的定义。
@@ -101,22 +101,14 @@ export default class DailyReportScheduleProvider extends ServiceProvider<Applica
     if (!this.app.container.has(schedulerServiceToken)) return;
 
     const scheduler = this.app.container.resolve(schedulerServiceToken);
-    scheduler.registerTarget({
-      type: 'app.daily-report',
-      title: 'Daily business report',
-      async start() {
-        // Call the application's report service here.
-        return { state: 'completed', outcome: 'succeeded' };
-      },
-    });
     scheduler.defineSchedule({
       key: 'daily-analytics-report',
       title: '每日经营报表',
-      description: '每天 02:00 生成经营报表。',
+      description: '每天 02:00 触发经营报表工作流。',
       schedule: { cron: '0 2 * * *', timezone: 'Asia/Shanghai' },
       target: {
-        type: 'app.daily-report',
-        config: {},
+        type: 'workflow',
+        config: { workflowKey: 'example-analytics-report', input: {} },
       },
     });
   }
@@ -129,20 +121,45 @@ export default class DailyReportScheduleProvider extends ServiceProvider<Applica
 
 定义字段：
 
-| 字段                    | 说明                                                                       |
-| ----------------------- | -------------------------------------------------------------------------- |
-| `key`                   | 稳定标识，匹配 `^[A-Za-z0-9][A-Za-z0-9._:-]*$`，在应用内全局唯一。         |
-| `title` / `description` | 管理界面显示的标题和说明；标题必填。                                       |
-| `schedule.cron`         | 五段或六段 Cron。`*/5 * * * *` 表示每五分钟，`*/10 * * * * *` 表示每十秒。 |
-| `schedule.timezone`     | 默认 `UTC`；业务本地时间应显式使用 IANA 时区，例如 `Asia/Shanghai`。       |
-| `schedule.from` / `to`  | 可选的包含边界，使用带明确时区的 `Date`；`from` 不能晚于 `to`。            |
-| `schedule.limit`        | 可选正整数，限制开始执行的触发次数，不是成功完成次数。                     |
-| `target.type`           | 已注册的执行目标类型，例如业务插件注册的 `app.daily-report`。              |
-| `target.config`         | JSON 对象。不能放函数、Service 实例、密码、API key、访问令牌或其他秘密。   |
+| 字段                    | 说明                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `key`                   | 稳定标识，匹配 `^[A-Za-z0-9][A-Za-z0-9._:-]*$`，在应用内全局唯一。                    |
+| `title` / `description` | 管理界面显示的标题和说明；标题必填。                                                  |
+| `schedule.cron`         | 五段或六段 Cron。`*/5 * * * *` 表示每五分钟，`*/10 * * * * *` 表示每十秒。            |
+| `schedule.timezone`     | 默认 `UTC`；业务本地时间应显式使用 IANA 时区，例如 `Asia/Shanghai`。                  |
+| `schedule.from` / `to`  | 可选的包含边界，使用带明确时区的 `Date`；`from` 不能晚于 `to`。                       |
+| `schedule.limit`        | 可选正整数，限制开始执行的触发次数，不是成功完成次数。                                |
+| `target.type`           | 已注册的执行目标类型，例如 Workflow 插件提供的 `workflow`，或业务插件自己注册的类型。 |
+| `target.config`         | JSON 对象。不能放函数、Service 实例、密码、API key、访问令牌或其他秘密。              |
 
 `defineSchedule()` 会校验 Cron、时区、敏感配置字段和目标类型，规范化定义并计算哈希。不要手写哈希，也不要直接修改 `schedule_definitions` 或 `schedule_occurrences`。
 
+## 使用内置 Workflow 目标
+
+多数“需要 UI 观测的复杂定时业务”可以拆成两层：Scheduler 负责“什么时候触发”，Workflow 负责“触发后做哪些步骤”。Workflow 插件注册了内置目标 `workflow`，所以定时任务只需要引用工作流源码目录名：
+
+```ts
+scheduler.defineSchedule({
+  key: 'nightly-inventory-check',
+  title: '夜间库存检查',
+  schedule: { cron: '0 1 * * *', timezone: 'Asia/Shanghai' },
+  target: {
+    type: 'workflow',
+    config: {
+      workflowKey: 'inventory-replenishment',
+      input: { source: 'schedule' },
+    },
+  },
+});
+```
+
+`workflowKey` 是工作流 source root 的目录名，不是标题或数据库里的版本 id。工作流目标会用本次定时任务 occurrence 作为幂等来源启动运行。工作流不存在、被禁用或输入不符合当前版本要求时，任务会在执行记录中显示失败或跳过原因。
+
+让 Agent 同时处理工作流和定时任务时，应要求它分别报告：工作流目录、输入约定、定时任务 key、Cron、时区、同步结果，以及至少一次执行记录如何检查。
+
 ## 扩展开发：自定义目标
+
+只有当内置 `workflow` 目标不能表达执行边界，或你要接入应用自有 Service、`JobExecutor`、外部执行系统时，才需要注册自定义 target。这个 API 是扩展开发入口，不是每个定时任务都要写。
 
 ```ts
 const handle = scheduler.registerTarget({
@@ -240,6 +257,7 @@ pnpm nocobase scheduler sync --finalize --json
 - 是否说明为什么使用 Scheduler，而不是应用自己的 `ScheduleExecutor` 或工作流单独处理；
 - 是否读取了当前应用已安装插件、Provider、`jobs` 配置和权限入口；
 - 是否使用应用内全局唯一且稳定的 `key`、Cron 和 IANA 时区；
+- 是否区分了内置 `workflow` 目标和自定义 target 扩展；
 - 是否说明幂等策略、异步完成回报和失败后的观测方式；
 - 是否运行了类型检查、相关测试、构建或同步命令，并说明跳过项；
 - 是否能在管理员 UI 中看到任务和一次执行记录，或说明为什么无法现场验证。

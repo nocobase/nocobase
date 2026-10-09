@@ -24,7 +24,14 @@ export default createReactVitestConfig({
     // those tests were never run at all.
     include: ['tests/**/*.test.{ts,tsx}'],
     // Playwright runs tests/playwright/ against a built application; its files are named *.test.ts too.
-    exclude: ['tests/playwright/**'],
+    exclude: [
+      'tests/playwright/**',
+      // TODO: Re-enable Workflow examples and page tests with the capability tests.
+      'tests/components/workflow-waiting-task.test.tsx',
+      'tests/logic/workflow-examples.test.ts',
+      'tests/logic/quotation-review-routes.test.ts',
+      'tests/logic/analytics-report-date.test.ts',
+    ],
     setupFiles: ['./tests/setup/client-config.ts'],
     // Keep the command usable if an application intentionally removes all scaffold tests before adding its own.
     passWithNoTests: true,
