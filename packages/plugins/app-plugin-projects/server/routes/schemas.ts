@@ -82,6 +82,7 @@ import {
   PLAN_STATUSES,
   PLAN_UNDO_OPS,
   type ActivityVia,
+  type ActivityExecution,
   type CreatePlanRequest,
   type EditPlanRequest,
   type Plan,
@@ -948,6 +949,38 @@ const MentionRefSchema: z.ZodType<MentionRef> = z.object({
   id: z.string(),
 });
 
+const ActivityExecutionSchema: z.ZodType<ActivityExecution> = z
+  .object({
+    attempt: z.number().int(),
+    runnerId: z.string(),
+    runnerName: z.string().nullable().optional(),
+    runnerOwnerUserId: z.string().nullable().optional(),
+    runnerOwnerName: z.string().nullable().optional(),
+    runnerTrust: z.enum(['team', 'ownerOnly']).nullable().optional(),
+    machineHidden: z.boolean().optional(),
+    tool: z.string().nullable().optional(),
+    toolVersion: z.string().nullable().optional(),
+    model: z.string().nullable().optional(),
+    actualModels: z.array(z.string()).optional(),
+    effort: z.string().nullable().optional(),
+    actualEffort: z.string().nullable().optional(),
+    actualEffortSource: z.string().nullable().optional(),
+    actualEffortAt: dateTime.nullable().optional(),
+  })
+  .meta({ ref: 'ProjectsActivityExecution' });
+
+const ActivityViaSchema: z.ZodType<ActivityVia> = z
+  .object({
+    type: z.enum(['cli', 'api_key', 'agent', 'plan']),
+    agentId: z.string().optional(),
+    agentName: z.string().nullable().optional(),
+    runId: z.string().optional(),
+    execution: ActivityExecutionSchema.optional(),
+    conversationId: z.string().optional(),
+    planId: z.string().optional(),
+  })
+  .meta({ ref: 'ProjectsActivityVia' });
+
 export const IssueCommentSchema: z.ZodType<IssueComment> = z
   .object({
     id: z.string(),
@@ -961,6 +994,7 @@ export const IssueCommentSchema: z.ZodType<IssueComment> = z
     parentId: z.string().nullable(),
     rootId: z.string(),
     via: z.enum(['cli', 'api_key', 'agent']).nullable(),
+    source: ActivityViaSchema.nullable().optional(),
     createdAt: dateTime,
     editedAt: dateTime.nullable(),
     deleted: z.boolean(),
@@ -1003,17 +1037,6 @@ export const SubscriptionStateSchema: z.ZodType<SubscriptionState> = z.object({
 });
 
 // Issues
-
-const ActivityViaSchema: z.ZodType<ActivityVia> = z
-  .object({
-    type: z.enum(['cli', 'api_key', 'agent', 'plan']),
-    agentId: z.string().optional(),
-    agentName: z.string().nullable().optional(),
-    runId: z.string().optional(),
-    conversationId: z.string().optional(),
-    planId: z.string().optional(),
-  })
-  .meta({ ref: 'ProjectsActivityVia' });
 
 export const ActivitySchema: z.ZodType<Activity> = z
   .object({

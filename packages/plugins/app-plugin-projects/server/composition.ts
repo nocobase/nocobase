@@ -367,8 +367,8 @@ export function createProjects(deps: ProjectsDeps): Projects {
       checklist: (conn, issue) => checklists.current(conn, issue),
       pendingApproval: (conn, issue) => approvals.pendingFor(conn, issue.id),
       recentApprovals: (conn, issue) => approvals.decidedFor(conn, issue.id),
-      threads: (conn, issue) =>
-        threadPage(conn, kinds, issue.id, {}, attachments.links),
+      threads: (conn, issue, viewer) =>
+        threadPage(conn, kinds, issue.id, {}, attachments.links, viewer),
       attachments: (conn, viewer, issue) =>
         attachments.links.ofIssue(conn, viewer, issue),
       subscribers: (conn, issue) => subscriptions.subscribers(conn, issue.id),

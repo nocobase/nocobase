@@ -23,6 +23,30 @@ const RUNS: readonly AgentRunHistoryRun[] = [
     createdAt: ago(4),
     startedAt: ago(3),
     finishedAt: null,
+    executions: [
+      {
+        attempt: 1,
+        runnerId: 'dev-1',
+        runnerName: 'dev-1',
+        runnerOwnerName: 'Alice',
+        tool: 'codex',
+        toolVersion: '1.2.3',
+        model: null,
+        actualModels: ['model-one'],
+        effort: 'high',
+      },
+      {
+        attempt: 2,
+        runnerId: 'dev-2',
+        runnerName: 'dev-2',
+        runnerOwnerName: 'Bob',
+        tool: 'codex',
+        toolVersion: '1.2.4',
+        model: null,
+        actualModels: ['model-two'],
+        effort: 'high',
+      },
+    ],
   },
   ...['completed', 'failed', 'completed', 'cancelled', 'completed'].map(
     (status, index): AgentRunHistoryRun => ({
@@ -34,6 +58,17 @@ const RUNS: readonly AgentRunHistoryRun[] = [
       startedAt: ago(60 * (index + 1) - 1),
       finishedAt: ago(60 * (index + 1) - 9),
       failure: status === 'failed' ? 'The runtime lost its credentials' : null,
+      execution: {
+        attempt: 1,
+        runnerId: 'dev-1',
+        runnerName: 'dev-1',
+        runnerOwnerName: 'Alice',
+        tool: 'codex',
+        toolVersion: '1.2.3',
+        model: null,
+        actualModels: ['model-one'],
+        effort: 'high',
+      },
     }),
   ),
 ];
@@ -81,7 +116,7 @@ export function AgentRunHistoryDemo(): ReactElement {
               <RunHeader
                 run={shown}
                 trigger='Moved to In progress'
-                attempt='attempt 1 of 3'
+                attempt={`attempt ${shown.executions?.at(-1)?.attempt ?? shown.execution?.attempt ?? 1} of 3`}
               />
             }
             events={EVENTS}
