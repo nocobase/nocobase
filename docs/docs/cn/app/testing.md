@@ -95,7 +95,7 @@ it('shows the orders returned by the API', async () => {
 
 工具内部已有内存路由。用 `route` 指定起始 URL，在渲染内容中声明 `Routes` 和子 `Route`，不要再套一层 Router。应用声明的路由守卫不会自动执行，需要另用应用路由测试或浏览器流程验证。
 
-如果安装后的应用在工具内部仍报 `useLocation()` 找不到 Router，检查 React Vitest preset 的 inline 规则。旧 preset 可以在 `test.server.deps.inline` 中补上 `/@nocobase\/(?:app-client\/|app-plugin-[^/]+\/(?:dist\/)?client\/|app-testing\/(?:dist\/)?src\/client\/)/u`，让发布包中的工具、页面和插件客户端共用应用与路由上下文。服务端与数据库 fixture 保持 external；再加一层 Router 不能解决上下文被分开的原因。
+如果安装后的应用在工具内部仍报 `useLocation()` 找不到 Router，检查 React Vitest preset 的 inline 规则。旧 preset 可以在 `test.server.deps.inline` 中补上 `/(?:@nocobase\/(?:app-client\/|app-testing\/(?:dist\/)?src\/client\/)|@[^/]+\/app-plugin-[^/]+\/(?:dist\/)?client\/)/u`，让发布包中的工具、页面和插件客户端共用应用与路由上下文。服务端与数据库 fixture 保持 external；再加一层 Router 不能解决上下文被分开的原因。
 
 翻译检查默认严格：缺失 key 会使渲染失败，即使组件传了 `defaultValue`。应修复 key 或语言资源。传入语言加载映射并设置 `locale: 'zh-CN'` 可以验证中文。不依赖应用服务的独立翻译组件，仍可使用 `@nocobase/i18n/testing` 的 `TestI18nProvider`。
 

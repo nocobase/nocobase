@@ -34,7 +34,7 @@ Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` an
 - `toasts()` on the render result lists open notifications as `{ type, title, description, ... }`; assert those values or their rendered text rather than mocking `useToaster()` or inspecting the production toast component's DOM.
 - For a second language, use the locale loader map with `locale: 'zh-CN'`. Translations are strict; fix missing keys rather than mocking `t` or disabling checks. `strictTranslations: false` is only for deliberately unowned literal text.
 
-If an installed application's page reports `useLocation() may be used only in the context of a <Router>` even inside `renderWithApp()`, check the shared React Vitest preset. Its inline rules must include app-client, plugin client entries and the published app-testing client files so they use the same router module as the page. With an older preset, add `/@nocobase\/(?:app-client\/|app-plugin-[^/]+\/(?:dist\/)?client\/|app-testing\/(?:dist\/)?src\/client\/)/u` to `test.server.deps.inline` locally. Keep server/database fixtures external and do not add another Router.
+If an installed application's page reports `useLocation() may be used only in the context of a <Router>` even inside `renderWithApp()`, check the shared React Vitest preset. Its inline rules must include app-client, plugin client entries and the published app-testing client files so they use the same router module as the page. With an older preset, add `/(?:@nocobase\/(?:app-client\/|app-testing\/(?:dist\/)?src\/client\/)|@[^/]+\/app-plugin-[^/]+\/(?:dist\/)?client\/)/u` to `test.server.deps.inline` locally. Keep server/database fixtures external and do not add another Router.
 
 ## A page test
 

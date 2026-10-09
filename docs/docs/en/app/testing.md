@@ -95,7 +95,7 @@ it('shows the orders returned by the API', async () => {
 
 The helper owns a memory router. Set `route` for the starting URL and render `Routes` with child `Route` elements inside it; do not nest another router. Declared host route guards are not enforced automatically, so test them through the application's route tests or a browser flow too.
 
-If an installed application reports that `useLocation()` has no Router inside this helper, check the React Vitest preset's inline rules. With an older preset, add `/@nocobase\/(?:app-client\/|app-plugin-[^/]+\/(?:dist\/)?client\/|app-testing\/(?:dist\/)?src\/client\/)/u` to `test.server.deps.inline` so the published helper, page and plugin clients share application and router contexts. Keep server/database fixtures external; adding another Router does not fix the split context.
+If an installed application reports that `useLocation()` has no Router inside this helper, check the React Vitest preset's inline rules. With an older preset, add `/(?:@nocobase\/(?:app-client\/|app-testing\/(?:dist\/)?src\/client\/)|@[^/]+\/app-plugin-[^/]+\/(?:dist\/)?client\/)/u` to `test.server.deps.inline` so the published helper, page and plugin clients share application and router contexts. Keep server/database fixtures external; adding another Router does not fix the split context.
 
 Translations are strict: a missing key fails rendering even if the component supplies `defaultValue`. Fix the key or locale resources. Use the locale loader map with `locale: 'zh-CN'` to cover another language. An isolated translated primitive that does not need application services can still use `TestI18nProvider` from `@nocobase/i18n/testing`.
 

@@ -25,8 +25,8 @@ const reactConfig: ViteUserConfig = {
           /@refinedev\/react-router/u,
           // Its providers import Refine's bindings; keep that transitive import in the same graph as well.
           /@nocobase\/app-client\//u,
-          // Plugin hooks and service providers must read that same application's contexts and service tokens.
-          /@nocobase\/app-plugin-[^/]+\/(?:dist\/)?client\//u,
+          // Plugin clients in any scope must read that same application's contexts and service tokens.
+          /@[^/]+\/app-plugin-[^/]+\/(?:dist\/)?client\//u,
           // Published app-testing fixtures also own a MemoryRouter. Keep only their client entry in Vite's module
           // graph so the page shares its router context, without transforming server fixtures or database tokens.
           /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
