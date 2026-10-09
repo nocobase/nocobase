@@ -99,6 +99,18 @@ const ui = {
     deploying: 'Deploying',
   },
   operate: {
+    refreshFailed:
+      'Could not refresh the app state. Operations are unavailable until the state is refreshed. Check your connection and access, then retry.',
+    disabled: {
+      busy: 'An operation is in progress.',
+      unavailable:
+        'The app state is unavailable. Refresh the state before operating the app.',
+      deploying: 'A deployment is in progress.',
+      starting: 'The app is starting.',
+      notDeployed: 'Deploy a release first.',
+      alreadyRunning: 'The app is already running.',
+      notRunning: 'The app is not running.',
+    },
     start: 'Start',
     stop: 'Stop',
     restart: 'Restart',
