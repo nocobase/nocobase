@@ -13,6 +13,38 @@ import {
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
+// Optional routes retained for applications that explicitly enable the Workflow plugin.
+export const workflowExampleRoutes: AppClientRouteContribution =
+  defineAppRoutes([
+    {
+      auth: 'required',
+      name: 'workflowExamples',
+      path: '/workflow',
+      navigation: { title: 'navigation.workflow', icon: Workflow },
+      children: [
+        {
+          auth: 'required',
+          authz: 'skip',
+          name: 'workflowWaitingTasks',
+          path: 'waiting-tasks',
+          navigation: { title: 'navigation.workflowWaitingTasks' },
+          breadcrumb: { title: 'navigation.workflowWaitingTasks' },
+          componentLoader: () =>
+            import('./pages/workflow-waiting-tasks/index.js'),
+        },
+        {
+          auth: 'required',
+          authz: 'skip',
+          name: 'workflowWaitingTask',
+          path: 'waiting-tasks/:id',
+          breadcrumb: { title: 'workflowTasks.detailTitle' },
+          componentLoader: () =>
+            import('./pages/workflow-waiting-tasks/task.js'),
+        },
+      ],
+    },
+  ]);
+
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
     // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
@@ -130,32 +162,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'articles',
     navigation: { title: 'navigation.articles', icon: FileText },
     path: '/articles',
-  },
-  {
-    auth: 'required',
-    name: 'workflowExamples',
-    path: '/workflow',
-    navigation: { title: 'navigation.workflow', icon: Workflow },
-    children: [
-      {
-        auth: 'required',
-        authz: 'skip',
-        name: 'workflowWaitingTasks',
-        path: 'waiting-tasks',
-        navigation: { title: 'navigation.workflowWaitingTasks' },
-        breadcrumb: { title: 'navigation.workflowWaitingTasks' },
-        componentLoader: () =>
-          import('./pages/workflow-waiting-tasks/index.js'),
-      },
-      {
-        auth: 'required',
-        authz: 'skip',
-        name: 'workflowWaitingTask',
-        path: 'waiting-tasks/:id',
-        breadcrumb: { title: 'workflowTasks.detailTitle' },
-        componentLoader: () => import('./pages/workflow-waiting-tasks/task.js'),
-      },
-    ],
   },
   {
     auth: 'required',

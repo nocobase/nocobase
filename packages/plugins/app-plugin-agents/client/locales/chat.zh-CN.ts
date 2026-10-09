@@ -17,13 +17,17 @@ const chatZhCN: ChatLocale = {
       modelUnavailable: '模型不可用',
     },
     offline: {
-      fallbackDone: '这条对话已改用系统默认',
+      fallbackDone: '这条对话已改用其他 Agent',
       restoreDone: '已切回',
       newSession: 'Agent 会开一个新会话，重新读这条对话。',
     },
     notice: {
       switchedToDefault:
         '已临时改用系统默认的 {{name}}，等 {{own}} 恢复后可以切回。',
+      switchedToOnline:
+        '{{own}} 现在没有你能用的运行环境，先由 {{name}} 回答，等 {{own}} 恢复后可以切回。',
+      onlineFallbackUnavailable:
+        '在线兜底 Agent 暂时无法回答（{{reason}}），这条对话仍由 {{own}} 等待可用的运行环境。',
       switchedBack: '已切回 {{name}}。',
       runFailed: 'Agent 没有回复就停止了。',
       runFailedReason: 'Agent 没有回复就停止了：{{reason}}',
@@ -60,6 +64,12 @@ const chatZhCN: ChatLocale = {
       none: '不设置',
       unknown: '你看不到的 Agent',
       saved: '系统默认对话 Agent 已保存',
+      onlineFallback: {
+        title: '在线兜底 Agent',
+        description:
+          'Runner Agent 没有成员能用的运行环境时由它回答：和那个 Agent 的新对话会从它开始，Runner 对话也可以临时改用它。',
+        saved: '在线兜底 Agent 已保存',
+      },
     },
   },
   chatProfile: {

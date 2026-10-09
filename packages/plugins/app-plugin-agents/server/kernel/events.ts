@@ -16,11 +16,14 @@ import type { JobStatus, RunStatus } from '@nocobase/agent-protocol';
  * - `run_secrets_not_allowed` (subject `run`): a personal runner left a run because some of its variables are for team
  *   runners only; to its actor and owner. `params`: `runId`, `agentId`, `variables` (the variables, in words). Cleared
  *   when a runner takes the run.
+ * - `runner_revoked` (subject `runner`): a manager of runners revoked someone else's runner, so it takes no more work
+ *   until it registers again; to its owner. `params`: `runnerName`, `revokedByUserId`, `revokedByName` (or null).
  */
 export interface RunnerNotice {
   /** Stable for the same news: delivering it twice tells people once. */
   readonly key: string;
-  readonly type: 'runner_upgrade_required' | 'run_secrets_not_allowed';
+  readonly type:
+    'runner_upgrade_required' | 'run_secrets_not_allowed' | 'runner_revoked';
   readonly userIds: readonly string[];
   readonly subject: {
     readonly kind: 'runner' | 'run';

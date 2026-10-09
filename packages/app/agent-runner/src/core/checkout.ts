@@ -20,6 +20,12 @@
 // A repository the run carries a credential for (`workspace.git.credentials`, a short-lived token) is fetched with it,
 // and the agent's git pushes with it through a credential helper (env.ts); it is never written to disk. Without one,
 // the host's own git credentials are used.
+//
+// A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
+// sandbox of its tool: a worktree's Git metadata, the submodules' `modules/` among it, lives in the cache
+// (`<cache>/worktrees/<name>/`), not in the work directory. They are fetched with the repository's credential, sent only
+// to the repository's own host. A new worktree initializes every submodule, recursively; an existing one only those not
+// initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation.
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -67,14 +73,19 @@ export interface GitAuth {
  * The environment that gives one git invocation an `Authorization` header, through `GIT_CONFIG_*` so the token is in
  * neither the command line nor any configuration file.
  */
-export function gitAuthEnv(auth: GitAuth | undefined): Record<string, string> {
+export function gitAuthEnv(
+  auth: GitAuth | undefined,
+  /** Send it only to URLs under this prefix (`http.<url>.extraHeader`); without one, to every URL the invocation reaches. */
+  scope?: string,
+): Record<string, string> {
   if (auth === undefined) return {};
   const basic = Buffer.from(
     `${auth.username ?? 'x-access-token'}:${auth.token}`,
   ).toString('base64');
   return {
     GIT_CONFIG_COUNT: '1',
-    GIT_CONFIG_KEY_0: 'http.extraHeader',
+    GIT_CONFIG_KEY_0:
+      scope === undefined ? 'http.extraHeader' : `http.${scope}.extraHeader`,
     GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
   };
 }
@@ -227,6 +238,8 @@ export interface CheckedOutRepo {
   /** Absolute. */
   dir: string;
   cache: string;
+  /** The worktree's own Git directory (`<cache>/worktrees/<name>`), outside `dir`. */
+  gitDir: string;
 }
 
 /** A working directory as the run uses it. */
@@ -357,6 +370,63 @@ async function ensureWorktree(
   await mkdir(path.dirname(dir), { recursive: true });
   await addWorktree(cache, dir, repo);
   return true;
+}
+
+/** The host part of an HTTP(S) URL (`https://github.com/`), the only place a submodule fetch sends the credential. */
+function httpOrigin(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+      ? `${parsed.origin}/`
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Initializes the worktree's submodules as its `.gitmodules` lists them: every one, recursively, when `all`; otherwise
+ * only the top-level ones not initialized yet (with theirs). Returns the paths it initialized.
+ */
+export async function initSubmodules(
+  dir: string,
+  options: { all: boolean; url: string; auth?: GitAuth },
+): Promise<string[]> {
+  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
+  const failed = (step: string, error: unknown): CheckoutError =>
+    new CheckoutError(
+      `${options.url}: ${step} its submodules failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  let status: string;
+  try {
+    status = await git(['submodule', 'status'], dir);
+  } catch (error) {
+    throw failed('reading', error);
+  }
+  // `-<sha> <path>` is a submodule not initialized; ` `, `+` and `U` are initialized ones.
+  const selected = status
+    .split('\n')
+    .filter((line) => line !== '' && (options.all || line.startsWith('-')))
+    .map((line) => line.slice(1).trim().split(/\s+/)[1] ?? '')
+    .filter((entry) => entry !== '');
+  if (selected.length === 0) return [];
+  const origin = httpOrigin(options.url);
+  try {
+    await git(
+      [
+        'submodule',
+        'update',
+        '--init',
+        '--recursive',
+        ...(options.all ? [] : ['--', ...selected]),
+      ],
+      dir,
+      origin === undefined ? {} : gitAuthEnv(options.auth, origin),
+    );
+  } catch (error) {
+    throw failed('initializing', error);
+  }
+  return selected;
 }
 
 /** The subject's working directory, locked for one run. */
@@ -518,24 +588,25 @@ export async function prepareDirs(
       const credential = options.credentials?.find(
         (item) => item.url === entry.url,
       );
+      const auth: GitAuth | undefined =
+        credential === undefined
+          ? undefined
+          : { username: credential.username, token: credential.password };
       const cache = await updateCache(
         paths,
         entry.url,
-        credential
-          ? {
-              auth: {
-                username: credential.username,
-                token: credential.password,
-              },
-            }
-          : {},
+        auth === undefined ? {} : { auth },
       );
       const created = await ensureWorktree(cache, dir, entry);
-      await allowPush(
-        await git(['rev-parse', '--absolute-git-dir'], dir),
-        entry.url,
-        entry.branch,
-      );
+      const gitDir = await git(['rev-parse', '--absolute-git-dir'], dir);
+      await allowPush(gitDir, entry.url, entry.branch);
+      const submodules = await initSubmodules(dir, {
+        all: created,
+        url: entry.url,
+        ...(auth === undefined ? {} : { auth }),
+      });
+      if (submodules.length > 0)
+        options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
         url: entry.url,
         branch: entry.branch,
@@ -543,6 +614,7 @@ export async function prepareDirs(
         primary,
         dir,
         cache,
+        gitDir,
       };
       const key = preparedKey(entry);
       // A worktree created again (removed by GC, say) needs its initialization again.

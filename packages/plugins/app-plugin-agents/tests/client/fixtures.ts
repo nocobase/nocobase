@@ -38,6 +38,7 @@ export function runner(
     activeByTool: {},
     canManage: false,
     canChangeTrust: false,
+    canRevoke: false,
     updateVersion: null,
     requiredProtocol: { min: 3, max: 4 },
     offersJobs: false,

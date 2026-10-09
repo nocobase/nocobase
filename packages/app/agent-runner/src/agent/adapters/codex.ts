@@ -10,7 +10,8 @@
  *   started as the next turn; the run ends when a turn completes with
  *   nothing left to deliver.
  * - Permissions: approval policy `untrusted` with the `workspaceWrite`
- *   sandbox (writable: the work directory; network on, since the agent
+ *   sandbox (writable: the work directory and the session's
+ *   `writableRoots`, such as each worktree's Git directory; network on, since the agent
  *   reaches its application through the application CLI). Codex then asks
  *   before every command and file change, and each request is answered by
  *   the runner's policy (`shell` with the unwrapped script, `edit` per
@@ -418,7 +419,7 @@ class CodexRun {
       : undefined;
     const sandboxPolicy: SandboxPolicy = {
       type: 'workspaceWrite',
-      writableRoots: [session.workDir],
+      writableRoots: [session.workDir, ...(session.writableRoots ?? [])],
       networkAccess: true,
       excludeTmpdirEnvVar: false,
       excludeSlashTmp: false,
