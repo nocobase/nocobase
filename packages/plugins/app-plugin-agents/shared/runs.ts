@@ -28,7 +28,7 @@ export interface RunEffortReport {
   readonly at: string;
 }
 
-export interface RunExecution {
+export interface RunExecutionSnapshot {
   readonly attempt: number;
   readonly runnerId: string;
   readonly runnerName: string | null;
@@ -63,7 +63,7 @@ export interface Run {
   /** The runner holding it; `server:<instance>` for an online run held by an application instance. */
   readonly runnerId: string | null;
   /** Claim snapshots, oldest first. Absent on responses from older servers. */
-  readonly executions?: readonly RunExecution[];
+  readonly executions?: readonly RunExecutionSnapshot[];
   /** The latest attempt's runner, including while queued again. Null when no snapshot exists. */
   readonly runnerName?: string | null;
   readonly runnerOwnerUserId?: string | null;

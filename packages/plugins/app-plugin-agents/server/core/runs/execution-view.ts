@@ -1,4 +1,4 @@
-import type { Run, RunExecution } from '../../../shared/runs.js';
+import type { Run, RunExecutionSnapshot } from '../../../shared/runs.js';
 
 /** An application's permission decision, using the same rules as its runner machine views. */
 export interface RunMachineViewer {
@@ -7,9 +7,9 @@ export interface RunMachineViewer {
 }
 
 export function executionForViewer(
-  execution: RunExecution,
+  execution: RunExecutionSnapshot,
   viewer: RunMachineViewer,
-): RunExecution {
+): RunExecutionSnapshot {
   if (viewer.seesMachines || execution.runnerOwnerUserId === viewer.userId)
     return execution;
   return {

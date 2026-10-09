@@ -1,7 +1,10 @@
 /** Updates execution facts in the same transaction as the claim, report or state transition. */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { RunExecution, RunEffortReport } from '../../../shared/runs.js';
+import type {
+  RunExecutionSnapshot,
+  RunEffortReport,
+} from '../../../shared/runs.js';
 import {
   findRunRecord,
   runsRepo,
@@ -11,8 +14,8 @@ import {
 
 export function executionHistory(
   run: RunRecord,
-  execution: RunExecution,
-): readonly RunExecution[] {
+  execution: RunExecutionSnapshot,
+): readonly RunExecutionSnapshot[] {
   return [...toExecutions(run.executionHistory), execution];
 }
 
@@ -40,7 +43,7 @@ export async function recordActualModels(
         .map((item) => item.model!.trim()),
     ),
   ];
-  const hasEffortChange = (execution: RunExecution): boolean => {
+  const hasEffortChange = (execution: RunExecutionSnapshot): boolean => {
     let last = execution.effortReports?.at(-1);
     return effortReports.some((report) => {
       if (last && report.at < last.at) return false;

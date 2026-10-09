@@ -87,7 +87,7 @@ import {
   RUN_REQUEST_STATUSES,
   type Run,
   type RunDetail,
-  type RunExecution,
+  type RunExecutionSnapshot,
   type RunEffortReport,
   type RunRequest,
   type RunRequestItem,
@@ -784,7 +784,7 @@ const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
   })
   .meta({ ref: 'AgentsRunEffortReport' });
 
-export const RunExecutionSchema: z.ZodType<RunExecution> = z
+export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
   .object({
     attempt: z.number().int(),
     runnerId: z.string(),
@@ -807,12 +807,12 @@ export const RunExecutionSchema: z.ZodType<RunExecution> = z
     finishedAt: dateTime.nullable(),
     failureReason: z.string().nullable(),
   })
-  .meta({ ref: 'AgentsRunExecution' });
+  .meta({ ref: 'AgentsRunExecutionSnapshot' });
 const runObject = z.object({
   id: z.string(),
   agentId: z.string(),
   agentType: z.enum(['online', 'runner']),
-  executions: z.array(RunExecutionSchema).optional(),
+  executions: z.array(RunExecutionSnapshotSchema).optional(),
   runnerName: z.string().nullable().optional(),
   runnerOwnerUserId: z.string().nullable().optional(),
   runnerOwnerName: z.string().nullable().optional(),

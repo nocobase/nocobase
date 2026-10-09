@@ -15,7 +15,7 @@ import type { DatabaseConnection, Repository } from '@nocobase/db';
 
 import type {
   Run,
-  RunExecution,
+  RunExecutionSnapshot,
   RunInputRecord as RunInputView,
   RunRepo,
 } from '../../../shared/runs.js';
@@ -187,7 +187,7 @@ export function sessionsRepo(
 export const ACTIVE: readonly RunStatus[] = ['dispatched', 'running'];
 
 /** JSON columns may be decoded by the driver or returned as strings. */
-export function toExecutions(value: unknown): RunExecution[] {
+export function toExecutions(value: unknown): RunExecutionSnapshot[] {
   if (typeof value === 'string') {
     try {
       return toExecutions(JSON.parse(value) as unknown);
@@ -196,7 +196,7 @@ export function toExecutions(value: unknown): RunExecution[] {
     }
   }
   if (!Array.isArray(value)) return [];
-  return value.filter((item: unknown): item is RunExecution => {
+  return value.filter((item: unknown): item is RunExecutionSnapshot => {
     const record = jsonObject(item);
     return (
       typeof record.attempt === 'number' &&
