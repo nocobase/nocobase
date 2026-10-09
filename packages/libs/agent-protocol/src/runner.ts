@@ -71,6 +71,23 @@ export const ToolModelSchema: z.ZodType<ToolModel> = z.object({
     .optional(),
 });
 
+const reportedToolModelSchema = z.object({
+  id: capabilityIdentifier(MAX_MODEL_ID_LENGTH),
+  efforts: z
+    .unknown()
+    .transform((value) => {
+      if (!Array.isArray(value)) return undefined;
+      return (value as unknown[])
+        .slice(0, MAX_MODEL_EFFORTS)
+        .flatMap((effort) => {
+          const parsed =
+            capabilityIdentifier(MAX_EFFORT_LENGTH).safeParse(effort);
+          return parsed.success ? [parsed.data] : [];
+        });
+    })
+    .optional(),
+});
+
 export type ModelsDetectionStatus = 'detected' | 'unsupported' | 'failed';
 export const ModelsDetectionStatusSchema: z.ZodType<ModelsDetectionStatus> =
   z.enum(['detected', 'unsupported', 'failed']);
@@ -119,23 +136,35 @@ export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
 });
 
 /** Keep a runner connected when an independently released sender reports unfamiliar advisory capabilities. */
-export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z.object({
-  ...toolInfoFields,
-  models: z
-    .unknown()
-    .transform((value) => {
-      if (!Array.isArray(value)) return undefined;
-      return (value as unknown[]).slice(0, MAX_TOOL_MODELS).flatMap((model) => {
-        const parsed = ToolModelSchema.safeParse(model);
-        return parsed.success ? [parsed.data] : [];
-      });
-    })
-    .optional(),
-  modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
-  modelsDetectionStatus:
-    ModelsDetectionStatusSchema.optional().catch(undefined),
-  modelsDetectionError: ModelsDetectionErrorSchema.optional().catch(undefined),
-});
+export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
+  .object({
+    ...toolInfoFields,
+    models: z
+      .unknown()
+      .transform((value) => {
+        if (!Array.isArray(value)) return undefined;
+        const models = (value as unknown[])
+          .slice(0, MAX_TOOL_MODELS)
+          .flatMap((model) => {
+            const parsed = reportedToolModelSchema.safeParse(model);
+            return parsed.success ? [parsed.data] : [];
+          });
+        return value.length > 0 && models.length === 0 ? undefined : models;
+      })
+      .optional(),
+    modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
+    modelsDetectionStatus:
+      ModelsDetectionStatusSchema.optional().catch(undefined),
+    modelsDetectionError:
+      ModelsDetectionErrorSchema.optional().catch(undefined),
+  })
+  .transform((tool) => ({
+    ...tool,
+    modelsDetectionStatus:
+      tool.modelsDetectionStatus === 'detected' && tool.models === undefined
+        ? undefined
+        : tool.modelsDetectionStatus,
+  }));
 
 /**
  * How many runs of each coding tool a runner may hold at once, beside its total slots: `{ claude: 2, codex: 1 }`. A tool

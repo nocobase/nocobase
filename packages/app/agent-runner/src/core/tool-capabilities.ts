@@ -11,6 +11,7 @@ export const MODEL_DETECTION_TIMEOUT_MS = 30_000;
 /** Refresh without making heartbeats or claims wait; every tool settles independently. */
 export class ToolCapabilitiesCache {
   private pending?: Promise<void>;
+  private readonly detecting = new Set<Promise<unknown>>();
   private lastRefresh = -Infinity;
   private readonly stopped = new AbortController();
   private readonly adapters: ReadonlyMap<AgentTool, AgentAdapter>;
@@ -53,13 +54,15 @@ export class ToolCapabilitiesCache {
             signal.addEventListener('abort', onAbort, { once: true });
             if (signal.aborted) reject(new Error('Model detection timed out'));
           });
-          const capability = await Promise.race([
+          const detection =
             adapter?.detectModels?.(signal) ??
-              Promise.resolve({
-                modelsDetectionStatus: 'unsupported' as const,
-              }),
-            aborted,
-          ]);
+            Promise.resolve({ modelsDetectionStatus: 'unsupported' as const });
+          this.detecting.add(detection);
+          void detection.then(
+            () => this.detecting.delete(detection),
+            () => this.detecting.delete(detection),
+          );
+          const capability = await Promise.race([detection, aborted]);
           const {
             models: _models,
             modelsDetectionStatus: _status,
@@ -108,7 +111,8 @@ export class ToolCapabilitiesCache {
         tool.kind === kind ? value : tool,
       );
   }
-  stop(): void {
+  async stop(): Promise<void> {
     this.stopped.abort();
+    await Promise.allSettled(this.detecting);
   }
 }

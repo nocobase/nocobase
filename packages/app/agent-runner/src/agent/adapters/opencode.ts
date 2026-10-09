@@ -25,6 +25,7 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import type { ToolCapabilities } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
+import { withDetectionEnvironment } from './detection.ts';
 
 import { OpencodeClient, OpencodeHttpError } from './opencode/client.ts';
 import type {
@@ -227,50 +228,49 @@ export class OpencodeAdapter implements AgentAdapter {
   async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
     const detection = await this.detect();
     if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
-    const server = await this.launch({
-      binary: detection.path,
-      cwd: process.cwd(),
-      env: Object.fromEntries(
-        Object.entries(process.env).filter(
-          (entry): entry is [string, string] => entry[1] !== undefined,
-        ),
-      ),
-      signal,
-      startTimeoutMs: 15_000,
-    });
-    try {
-      const client = new OpencodeClient({
-        baseUrl: server.baseUrl,
-        username: server.username,
-        password: server.password,
-        fetch: this.fetchFn,
+    const binary = detection.path;
+    return withDetectionEnvironment(signal, async (cwd, env) => {
+      const server = await this.launch({
+        binary,
+        cwd,
+        env,
+        signal,
+        startTimeoutMs: 15_000,
       });
-      const models = await client.listModels(signal);
-      if (
-        models.some(
-          (model) =>
-            typeof model?.providerID !== 'string' ||
-            typeof (model.modelID ?? model.id) !== 'string',
+      try {
+        const client = new OpencodeClient({
+          baseUrl: server.baseUrl,
+          username: server.username,
+          password: server.password,
+          fetch: this.fetchFn,
+        });
+        const models = await client.listModels(signal);
+        if (
+          models.some(
+            (model) =>
+              typeof model?.providerID !== 'string' ||
+              typeof (model.modelID ?? model.id) !== 'string',
+          )
         )
-      )
+          return {
+            modelsDetectionStatus: 'failed',
+            modelsDetectionError: 'Invalid model listing response',
+          };
         return {
-          modelsDetectionStatus: 'failed',
-          modelsDetectionError: 'Invalid model listing response',
+          modelsDetectionStatus: 'detected',
+          models: boundedModels(
+            models.map((model) => ({
+              id: `${model.providerID}/${model.modelID ?? model.id}`,
+              ...(model.variants === undefined
+                ? {}
+                : { efforts: model.variants.map((variant) => variant.id) }),
+            })),
+          ),
         };
-      return {
-        modelsDetectionStatus: 'detected',
-        models: boundedModels(
-          models.map((model) => ({
-            id: `${model.providerID}/${model.modelID ?? model.id}`,
-            ...(model.variants === undefined
-              ? {}
-              : { efforts: model.variants.map((variant) => variant.id) }),
-          })),
-        ),
-      };
-    } finally {
-      await server.close(1000);
-    }
+      } finally {
+        await server.close(1000);
+      }
+    });
   }
 
   private async runDetection(): Promise<ToolDetection> {

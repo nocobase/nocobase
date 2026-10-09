@@ -60,12 +60,14 @@ const settled = [
 
 describe('detect', () => {
   it('parses the available model table and leaves per-model effort levels unknown', () => {
-    expect(parsePiModels(MODELS_TABLE)).toEqual([{ id: 'claude-sonnet-4-5' }]);
+    expect(parsePiModels(MODELS_TABLE)).toEqual([
+      { id: 'anthropic/claude-sonnet-4-5' },
+    ]);
     expect(
       parsePiModels(
-        'provider model context max-out thinking images\r\nopenai gpt-6-sol 200K 64K yes yes\r\nopenai gpt-6-sol 200K 64K yes yes',
+        'provider model context max-out thinking images\r\nopenai gpt-6-sol 200K 64K yes yes\r\nother gpt-6-sol 200K 64K yes yes',
       ),
-    ).toEqual([{ id: 'gpt-6-sol' }]);
+    ).toEqual([{ id: 'openai/gpt-6-sol' }, { id: 'other/gpt-6-sol' }]);
     expect(() => parsePiModels('unexpected configuration dump')).toThrow();
   });
 
@@ -83,7 +85,7 @@ describe('detect', () => {
     });
     expect(await adapter.detectModels()).toEqual({
       modelsDetectionStatus: 'detected',
-      models: [{ id: 'claude-sonnet-4-5' }],
+      models: [{ id: 'anthropic/claude-sonnet-4-5' }],
     });
     code = 1;
     expect(await adapter.detectModels()).toEqual({

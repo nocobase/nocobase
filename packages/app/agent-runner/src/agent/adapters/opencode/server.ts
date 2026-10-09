@@ -62,6 +62,7 @@ function killGroup(child: ChildProcess, signal: NodeJS.Signals): void {
 }
 
 export const launchServer: LaunchFn = async (options) => {
+  options.signal?.throwIfAborted();
   const password = randomBytes(24).toString('base64url');
   const child = spawn(
     options.binary,
@@ -74,9 +75,16 @@ export const launchServer: LaunchFn = async (options) => {
         OPENCODE_SERVER_PASSWORD: password,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
-      detached: true,
+      detached: process.platform !== 'win32',
     },
   );
+
+  const closed = new Promise<void>((resolve) =>
+    child.once('close', () => resolve()),
+  );
+  const onAbort = () => killGroup(child, 'SIGKILL');
+  options.signal?.addEventListener('abort', onAbort, { once: true });
+  if (options.signal?.aborted) onAbort();
 
   const stderrLines: string[] = [];
   const keep = (text: string) => {
@@ -102,16 +110,20 @@ export const launchServer: LaunchFn = async (options) => {
   // A runner that exits must not leave the server behind.
   const onProcessExit = () => killGroup(child, 'SIGKILL');
   process.once('exit', onProcessExit);
-  void exited.then(() => process.removeListener('exit', onProcessExit));
+  void exited.then(() => {
+    // Descendants can outlive a leader that exits promptly on SIGTERM.
+    killGroup(child, 'SIGKILL');
+    options.signal?.removeEventListener('abort', onAbort);
+    process.removeListener('exit', onProcessExit);
+  });
 
   const close = async (graceMs: number) => {
-    if (exitedState) return;
-    killGroup(child, 'SIGTERM');
-    const result = await Promise.race([exited, delay(graceMs)]);
-    if (!result) {
-      killGroup(child, 'SIGKILL');
-      await exited;
+    if (!exitedState) {
+      killGroup(child, 'SIGTERM');
+      await Promise.race([exited, delay(graceMs)]);
     }
+    killGroup(child, 'SIGKILL');
+    await closed;
   };
 
   const baseUrl = await new Promise<string>((resolve, reject) => {
@@ -126,15 +138,18 @@ export const launchServer: LaunchFn = async (options) => {
       options.startTimeoutMs ?? DEFAULT_START_TIMEOUT_MS,
     );
     timer.unref();
-    const onAbort = () =>
+    const rejectAbort = () => {
+      clearTimeout(timer);
       reject(new ServerStartError('opencode serve start aborted'));
-    if (options.signal?.aborted) onAbort();
-    options.signal?.addEventListener('abort', onAbort, { once: true });
+    };
+    if (options.signal?.aborted) rejectAbort();
+    options.signal?.addEventListener('abort', rejectAbort, { once: true });
     child.stdout?.setEncoding('utf8').on('data', (text: string) => {
       stdout = (stdout + text).slice(-4096);
       const match = /listening on (https?:\/\/[^\s/]+)/.exec(stdout);
       if (!match) return;
       clearTimeout(timer);
+      options.signal?.removeEventListener('abort', rejectAbort);
       const url = new URL(match[1]);
       if (url.hostname !== '127.0.0.1') {
         reject(
@@ -148,6 +163,7 @@ export const launchServer: LaunchFn = async (options) => {
     });
     void exited.then(({ code, signal }) => {
       clearTimeout(timer);
+      options.signal?.removeEventListener('abort', rejectAbort);
       const tail = stderrLines.slice(-5).join('\n');
       reject(
         new ServerStartError(

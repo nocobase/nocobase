@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -52,6 +52,10 @@ describe('model capabilities', () => {
     expect(fake.requests.map((request) => request.path)).toEqual([
       '/api/model',
     ]);
+    expect(fake.launches[0]?.cwd).not.toBe(process.cwd());
+    await expect(readdir(fake.launches[0]!.cwd)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
   });
   it('closes the server when listing fails', async () => {
     const fake = new FakeOpencode({ script: [], models: [] });
@@ -71,6 +75,9 @@ describe('model capabilities', () => {
       adapter.detectModels(new AbortController().signal),
     ).rejects.toThrow();
     expect(fake.closed).toBe(true);
+    await expect(readdir(fake.launches[0]!.cwd)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
   });
 });
 

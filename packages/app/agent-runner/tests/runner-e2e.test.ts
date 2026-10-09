@@ -130,7 +130,7 @@ describe('runner end to end', () => {
     );
     expect(
       server.lastHeartbeat()?.tools.find((tool) => tool.kind === 'pi')?.models,
-    ).toEqual([{ id: 'gpt-6-sol' }]);
+    ).toEqual([{ id: 'openai/gpt-6-sol' }]);
     await waitFor(
       () => ([...server.runners.values()][0]?.claims ?? 0) > 0,
       10_000,

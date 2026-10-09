@@ -46,7 +46,7 @@ describe('tool capabilities within protocol 7', () => {
     };
     expect(ReportedToolInfoSchema.parse(tool)).toEqual({
       ...legacy,
-      models: [{ id: 'gpt-6-sol' }],
+      models: [{ id: 'model', efforts: [] }, { id: 'gpt-6-sol' }],
     });
     expect(ToolInfoSchema.safeParse(tool).success).toBe(false);
     expect(
@@ -72,6 +72,35 @@ describe('tool capabilities within protocol 7', () => {
       ReportedToolInfoSchema.parse({ ...legacy, models: 'invalid' }).models,
     ).toBeUndefined();
     expect(ReportedToolInfoSchema.parse(legacy)).toEqual(legacy);
+  });
+
+  it('discards individual invalid efforts and clears detected status when all reported models are invalid', () => {
+    expect(
+      ReportedToolInfoSchema.parse({
+        ...legacy,
+        models: [
+          { id: 'openai/model', efforts: ['high', 'bad effort', 1, 'low'] },
+        ],
+        modelsDetectionStatus: 'detected',
+      }),
+    ).toMatchObject({
+      models: [{ id: 'openai/model', efforts: ['high', 'low'] }],
+      modelsDetectionStatus: 'detected',
+    });
+    const invalid = ReportedToolInfoSchema.parse({
+      ...legacy,
+      models: [{ id: 'bad model' }],
+      modelsDetectionStatus: 'detected',
+    });
+    expect(invalid.models).toBeUndefined();
+    expect(invalid.modelsDetectionStatus).toBeUndefined();
+    expect(
+      ReportedToolInfoSchema.parse({
+        ...legacy,
+        models: [],
+        modelsDetectionStatus: 'detected',
+      }).modelsDetectionStatus,
+    ).toBe('detected');
   });
 
   it('accepts legacy tools and lets legacy receivers strip the optional additions', () => {

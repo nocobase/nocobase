@@ -345,7 +345,7 @@ export class RunnerDaemon {
     this.stopped ??= (async () => {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
-      this.capabilities?.stop();
+      await this.capabilities?.stop();
       this.slotFreed?.();
       for (const link of this.links)
         if (link.heartbeatTimer !== undefined)

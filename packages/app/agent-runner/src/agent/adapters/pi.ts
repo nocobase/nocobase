@@ -19,7 +19,7 @@
  *   the agent starts one turn more than allowed.
  * - Stop: `abort`, close stdin, SIGTERM after 2 s, SIGKILL after 4.5 s.
  */
-import { execFile, spawn as nodeSpawn } from 'node:child_process';
+import { spawn as nodeSpawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -29,6 +29,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
 import type { ToolCapabilities, ToolModel } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
+import { withDetectionEnvironment } from './detection.ts';
 
 import {
   PERMISSION_COMMAND,
@@ -112,7 +113,11 @@ export interface ExecResult {
   stdout: string;
 }
 
-export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
+export type ExecFn = (
+  file: string,
+  args: string[],
+  options?: { signal?: AbortSignal },
+) => Promise<ExecResult>;
 
 export interface PiAdapterOptions {
   minVersion?: string;
@@ -122,22 +127,58 @@ export interface PiAdapterOptions {
   spawn?: SpawnFn;
 }
 
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
+const defaultExec: ExecFn = (file, args, options) =>
+  withDetectionEnvironment(
+    options?.signal,
+    (cwd, env) =>
+      new Promise((resolve) => {
+        let stdout = '';
+        let failed = false;
+        const child = nodeSpawn(file, args, {
+          cwd,
+          env,
+          signal: options?.signal,
+          killSignal: 'SIGKILL',
+          detached: process.platform !== 'win32',
+          timeout: 15_000,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        child.on('error', () => {
+          failed = true;
+        });
+        const kill = () => {
+          if (child.pid === undefined) return;
+          try {
+            if (process.platform === 'win32') child.kill('SIGKILL');
+            else process.kill(-child.pid, 'SIGKILL');
+          } catch {
+            // The process group is already gone.
+          }
+        };
+        child.stdout?.setEncoding('utf8').on('data', (text: string) => {
+          if (
+            Buffer.byteLength(stdout) + Buffer.byteLength(text) >
+            1024 * 1024
+          ) {
+            failed = true;
+            kill();
+          } else stdout += text;
+        });
+        child.stderr?.resume();
+        // spawn's own timeout only signals the direct child; also end descendants holding its pipes.
+        const timer = setTimeout(kill, 15_000);
+        options?.signal?.addEventListener('abort', kill, { once: true });
+        if (options?.signal?.aborted) kill();
+        process.once('exit', kill);
+        child.once('exit', kill);
+        child.once('close', (code) => {
+          clearTimeout(timer);
+          options?.signal?.removeEventListener('abort', kill);
+          process.removeListener('exit', kill);
+          resolve({ code: failed ? 1 : (code ?? 1), stdout });
+        });
+      }),
+  );
 
 const defaultSpawn: SpawnFn = (file, args, options) =>
   nodeSpawn(file, args, {
@@ -175,7 +216,7 @@ export function parsePiModels(stdout: string): ToolModel[] {
         const columns = line.split(/\s+/);
         if (columns.length < header.length)
           throw new Error('Invalid model listing response');
-        return { id: columns[1] };
+        return { id: `${columns[0]}/${columns[1]}` };
       }),
   );
 }
@@ -218,18 +259,20 @@ export class PiAdapter implements AgentAdapter {
     return ['steer'];
   }
 
-  detect(): Promise<ToolDetection> {
-    this.detection ??= this.runDetection();
+  detect(signal?: AbortSignal): Promise<ToolDetection> {
+    this.detection ??= this.runDetection(signal);
     return this.detection;
   }
 
-  async detectModels(): Promise<ToolCapabilities> {
-    const detection = await this.detect();
+  async detectModels(signal?: AbortSignal): Promise<ToolCapabilities> {
+    const detection = await this.detect(signal);
+    signal?.throwIfAborted();
     if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
-    const response = await this.exec(detection.path, [
-      '--offline',
-      '--list-models',
-    ]);
+    const response = await this.exec(
+      detection.path,
+      ['--offline', '--list-models'],
+      { signal },
+    );
     if (response.code !== 0)
       return {
         modelsDetectionStatus: 'failed',
@@ -248,14 +291,16 @@ export class PiAdapter implements AgentAdapter {
     }
   }
 
-  private async runDetection(): Promise<ToolDetection> {
+  private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
     const searchPath = this.searchPath ?? process.env.PATH ?? '';
     const piPath = await findOnPath('pi', searchPath);
     if (!piPath) return { installed: false, authenticated: false };
-    const v = await this.exec(piPath, ['--version']);
+    const v = await this.exec(piPath, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
     if (!version) return { installed: false, authenticated: false };
-    const models = await this.exec(piPath, ['--offline', '--list-models']);
+    const models = await this.exec(piPath, ['--offline', '--list-models'], {
+      signal,
+    });
     return {
       installed: true,
       version,
