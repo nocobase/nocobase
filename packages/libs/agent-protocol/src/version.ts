@@ -113,18 +113,52 @@ export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
 /**
  * Models each coding tool is commonly run with, as its `--model` (or equivalent) takes them, for editors to suggest. Not
  * a limit: a tool takes any model its account may use, and an empty model runs the tool's default.
+ *
+ * This list goes stale as providers release models, so keep it to the current generation and check it against the
+ * providers' own model lists whenever one ships: Anthropic's models overview
+ * (https://platform.claude.com/docs/en/about-claude/models/overview) and OpenAI's
+ * (https://developers.openai.com/api/docs/models). Claude Code keeps its `opus` / `sonnet` / `haiku` aliases, which
+ * follow the newest model of each family, followed by the full ids; OpenCode and Pi name a model `provider/model` so
+ * providers with the same model id stay distinct; Codex takes the bare id. Last checked on 2026-10-09. Keep commonly
+ * used earlier models as suggestions too; this list does not establish availability on any runner.
  */
 export const TOOL_MODEL_SUGGESTIONS: Readonly<
   Record<AgentTool, readonly string[]>
 > = {
-  claude: ['opus', 'sonnet', 'haiku'],
-  codex: ['gpt-5-codex', 'gpt-5', 'gpt-5-mini'],
-  opencode: [
-    'anthropic/claude-sonnet-4-5',
-    'anthropic/claude-opus-4-1',
-    'openai/gpt-5',
+  claude: [
+    'opus',
+    'sonnet',
+    'haiku',
+    'claude-opus-5-5',
+    'claude-sonnet-5-5',
+    'claude-haiku-5-5',
+    'claude-sonnet-5',
+    'claude-haiku-4-5',
+    'claude-fable-5-1',
   ],
-  pi: ['claude-sonnet-4-5', 'claude-opus-4-1', 'gpt-5'],
+  codex: ['gpt-6.1-sol', 'gpt-6-astra', 'gpt-6-luna'],
+  opencode: [
+    'anthropic/claude-opus-5-5',
+    'anthropic/claude-sonnet-5-5',
+    'anthropic/claude-haiku-5-5',
+    'anthropic/claude-sonnet-5',
+    'anthropic/claude-haiku-4-5',
+    'anthropic/claude-fable-5-1',
+    'openai/gpt-6.1-sol',
+    'openai/gpt-6-astra',
+    'openai/gpt-6-luna',
+  ],
+  pi: [
+    'anthropic/claude-opus-5-5',
+    'anthropic/claude-sonnet-5-5',
+    'anthropic/claude-haiku-5-5',
+    'anthropic/claude-sonnet-5',
+    'anthropic/claude-haiku-4-5',
+    'anthropic/claude-fable-5-1',
+    'openai/gpt-6.1-sol',
+    'openai/gpt-6-astra',
+    'openai/gpt-6-luna',
+  ],
 };
 
 /**

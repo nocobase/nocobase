@@ -68,6 +68,7 @@ import { credentialsGuard, deleteRunCredentials } from './credentials.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv } from './env.ts';
 import { permissionDenialLog } from './permission-log.ts';
+import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
@@ -570,6 +571,9 @@ export class RunWorker {
       ...(home === undefined ? {} : { home }),
       tmpDir,
       hooksDir: deps.paths.hooksDir,
+      ...(process.env[PROCESS_TAG_ENV] === undefined
+        ? {}
+        : { processTag: process.env[PROCESS_TAG_ENV] }),
       localVariables: registration.variables,
       workspace: payload.workspace,
     });

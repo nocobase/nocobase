@@ -19,6 +19,7 @@ import { parseSlotsFlag } from '../lib/slots.ts';
 import { runnerCommandLine } from '../host.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, RunnerDaemon } from '../core/loop.ts';
+import { killLeftovers } from '../core/process-tree.ts';
 import { SERVICE_ENV } from '../core/service.ts';
 import type { Timings } from '../core/supervisor.ts';
 
@@ -53,6 +54,24 @@ export default class Start extends RunnerCommand {
       options: ['isolated', 'real'],
     }),
   };
+
+  /**
+   * Ends the foreground daemon's process: whatever is still running below it is stopped first, so nothing it started
+   * outlives it, and the process exits even when a handle would keep it alive, so a service sees it stop and starts it
+   * again when it should.
+   */
+  private async exitProcess(
+    code: number,
+    log: (message: string) => void,
+  ): Promise<never> {
+    const left = await killLeftovers(process.pid, { graceMs: 3_000 });
+    if (left.processes > 0 || left.groups > 0)
+      log(
+        `stopped ${left.processes} process(es) and ${left.groups} process group(s) left behind`,
+      );
+    log(`runner exiting (${code})`);
+    process.exit(code);
+  }
 
   async run(): Promise<{ pid: number }> {
     const { flags } = await this.parse(Start);
@@ -147,6 +166,6 @@ export default class Start extends RunnerCommand {
     process.on('SIGINT', () => stop('SIGINT'));
     await daemon.start();
     await daemon.wait();
-    return { pid: process.pid };
+    return this.exitProcess(daemon.exitCode, log);
   }
 }
