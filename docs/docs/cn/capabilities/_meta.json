@@ -2,11 +2,6 @@
   {
     "type": "file",
     "name": "index",
-    "label": "内置能力"
-  },
-  {
-    "type": "file",
-    "name": "overview",
     "label": "总览"
   },
   {

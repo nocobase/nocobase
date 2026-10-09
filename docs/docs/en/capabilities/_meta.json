@@ -2,11 +2,6 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Built-in capabilities"
-  },
-  {
-    "type": "file",
-    "name": "overview",
     "label": "Overview"
   },
   {
