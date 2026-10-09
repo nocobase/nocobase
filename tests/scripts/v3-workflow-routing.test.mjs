@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const workflow = (name) =>
   readFileSync(
-    new URL(`../../.github/workflows/${name}.yml`, import.meta.url),
+    new URL(`../../.github/workflows/v3-${name}.yml`, import.meta.url),
     'utf8',
   );
 
@@ -109,7 +109,7 @@ test('installer smoke covers the Default archive instead of publishing or instal
   }
   assert.match(
     quality,
-    /uses: \.\/\.github\/workflows\/app-installer-smoke\.yml/u,
+    /uses: \.\/\.github\/workflows\/v3-app-installer-smoke\.yml/u,
   );
   assert.doesNotMatch(
     quality,

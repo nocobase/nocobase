@@ -105,7 +105,7 @@ jobs:
           BRANCH: ${{ inputs.branch }}
         run: |
           if [ "$BRANCH" = "v3-develop" ]; then
-            echo "::error::Use release-beta.yml to release from v3-develop"
+            echo "::error::Use v3-release-beta.yml to release from v3-develop"
             exit 1
           fi
 
@@ -843,7 +843,7 @@ jobs:
       !cancelled() && !inputs.dry_run
       && needs.release.outputs.tag != ''
       && (needs.release.result == 'success' || needs.release.outputs.merged == 'false')
-    uses: ./.github/workflows/github-release.yml
+    uses: ./.github/workflows/v3-github-release.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
     secrets:

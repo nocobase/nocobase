@@ -6,7 +6,7 @@ on:
       - v3-develop
     paths:
       - 'ui-library/**'
-      - '.github/workflows/ui-library.yml'
+      - '.github/workflows/v3-ui-library.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -16,7 +16,7 @@ on:
       - v3-main
     paths:
       - 'ui-library/**'
-      - '.github/workflows/ui-library.yml'
+      - '.github/workflows/v3-ui-library.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'

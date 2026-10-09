@@ -709,7 +709,7 @@ jobs:
       !cancelled() && !inputs.dry_run
       && needs.release.outputs.tag != ''
       && (needs.release.result == 'success' || needs.release.outputs.merged == 'false')
-    uses: ./.github/workflows/github-release.yml
+    uses: ./.github/workflows/v3-github-release.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
     secrets:
