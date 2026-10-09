@@ -5,7 +5,7 @@ import {
 } from '@nocobase/db';
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202610080001_ag_add_execution_history',
+  name: '202610090003_ag_add_execution_history',
   async up({ builder }: MigrationContext): Promise<void> {
     await builder.alterCollection('agRuns', (collection) => {
       collection.json('executionHistory').nullable();
