@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/lifecycle",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "description": "Record lifecycles for NocoBase applications: states on the record, transitions declared in source, effects dispatched after commit.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

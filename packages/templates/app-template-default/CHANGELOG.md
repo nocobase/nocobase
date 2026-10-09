@@ -1,5 +1,21 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.57
+
+### Patch Changes
+
+- bb8484b: Support CDN_BASE_URL for frontend asset URLs in application and Docker source builds. Add resolveAssetUrl for shipped static files, migrate template logos, and document its distinction from runtime application URLs.
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
+- Updated dependencies [bb8484b]
+- Updated dependencies [dc91aab]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.20
+  - @nocobase/app-plugin-notification@1.0.0-beta.24
+  - @nocobase/app-plugin-ai-employee@3.0.0-beta.1
+
 ## 1.0.0-beta.56
 
 ### Minor Changes

@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- bb8484b: Support CDN_BASE_URL for frontend asset URLs in application and Docker source builds. Add resolveAssetUrl for shipped static files, migrate template logos, and document its distinction from runtime application URLs.
+- Updated dependencies [bb8484b]
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.1
 
 ### Minor Changes
