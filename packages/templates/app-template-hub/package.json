@@ -123,7 +123,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/templates/app-template-hub"
   },
   "scripts": {
