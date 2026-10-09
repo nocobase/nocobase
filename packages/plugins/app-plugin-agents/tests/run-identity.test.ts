@@ -193,7 +193,7 @@ describe('runs as their actors', () => {
         reason: 'secretsNotAllowed',
         variables: [{ scope: 'agent', scopeId: agentId, name: 'DEPLOY_KEY' }],
       });
-      expect(wait?.detail).toContain('DEPLOY_KEY');
+      expect(wait?.params).toEqual({ variables: ['DEPLOY_KEY'] });
       expect(notices).toEqual(['run_secrets_not_allowed']);
       expect(await delivered('agent', agentId)).toEqual([]);
 

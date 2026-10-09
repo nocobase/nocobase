@@ -1556,6 +1556,13 @@ export const IntakeAiJobSchema: z.ZodType<IntakeAiJob> = z
         phase: z.enum(['queued', 'working']),
         by: z.string().nullable(),
         waitReason: z.string().nullable(),
+        waitParams: z
+          .record(
+            z.string(),
+            z.union([z.string(), z.number(), z.array(z.string())]),
+          )
+          .nullable()
+          .optional(),
         activity: z.string().nullable(),
         since: dateTime.nullable(),
       })

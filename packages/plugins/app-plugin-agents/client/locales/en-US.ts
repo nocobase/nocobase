@@ -6,6 +6,7 @@ import pricesEnUS from './prices.en-US.js';
 import skillsEnUS from './skills.en-US.js';
 import servicesEnUS from './services.en-US.js';
 import runtimesEnUS from './runtimes.en-US.js';
+import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
   actions: {
@@ -652,13 +653,15 @@ const enUS: typeof pages &
   typeof chatEnUS &
   typeof servicesEnUS &
   typeof pricesEnUS &
-  typeof skillsEnUS = {
+  typeof skillsEnUS &
+  typeof runWaitEnUS = {
   ...pages,
   ...runtimesEnUS,
   ...chatEnUS,
   ...servicesEnUS,
   ...pricesEnUS,
   ...skillsEnUS,
+  ...runWaitEnUS,
   access: accessEnUS.access,
 };
 

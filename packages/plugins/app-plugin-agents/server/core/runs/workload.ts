@@ -23,7 +23,7 @@ import {
 } from '../../../shared/runs.js';
 import type { Clock } from '../../kernel/clock.js';
 import { covers } from '../../kernel/values.js';
-import { describeVariables, variableRefs } from '../variables/index.js';
+import { variableRefs } from '../variables/index.js';
 import { listAgents } from '../agents/index.js';
 import {
   ACTIVE,
@@ -110,8 +110,10 @@ export function explainWait(
   const { agent } = context;
   if (!agent || agent.archivedAt) return wait('agentArchived');
   const availableAt = time(run.availableAt);
-  if (availableAt !== null && availableAt > context.now.getTime())
-    return wait('delayed', { until: iso(run.availableAt) });
+  if (availableAt !== null && availableAt > context.now.getTime()) {
+    const until = iso(run.availableAt);
+    return wait('delayed', { until, params: until ? { until } : {} });
+  }
   // An online run needs no runner: the application takes it as soon as an instance looks.
   if (agent.type === 'online') return wait('next');
   const tools = entryTools(agent);
@@ -125,7 +127,8 @@ export function explainWait(
   fitting = fitting.filter((runner) =>
     tools.some((each) => runsTool(runner, each)),
   );
-  if (fitting.length === 0) return wait('toolUnavailable', { tool });
+  if (fitting.length === 0)
+    return wait('toolUnavailable', { tool, params: tool ? { tool } : {} });
   fitting = fitting.filter(
     (runner) =>
       runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
@@ -136,9 +139,8 @@ export function explainWait(
   );
   if (withFeatures.length === 0) {
     const offered = new Set(fitting.flatMap((runner) => runner.features));
-    return wait('missingFeatures', {
-      missing: run.requires.filter((feature) => !offered.has(feature)),
-    });
+    const missing = run.requires.filter((feature) => !offered.has(feature));
+    return wait('missingFeatures', { missing, params: { features: missing } });
   }
   // Variables for team runners only, as the last claim by a personal runner found them (`claim.ts`).
   const teamOnly = variableRefs(run.teamOnlyVariables);
@@ -149,15 +151,18 @@ export function explainWait(
   if (trusted.length === 0)
     return wait('secretsNotAllowed', {
       variables: teamOnly,
-      detail: `Team runtimes only: ${describeVariables(teamOnly)}`,
+      params: { variables: [...new Set(teamOnly.map((each) => each.name))] },
     });
   if (context.sameWorkActive) return wait('sameWorkActive');
   if (context.agentActive >= agent.maxConcurrentRuns)
-    return wait('concurrencyFull');
+    return wait('concurrencyFull', {
+      params: { active: context.agentActive, limit: agent.maxConcurrentRuns },
+    });
   const free = trusted.filter(
     (runner) => (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
   );
-  if (free.length === 0) return wait('runnersBusy');
+  if (free.length === 0)
+    return wait('runnersBusy', { params: { runners: trusted.length } });
   // A tool has room on a runner below its limit here and while the runner last said it could take more of it.
   const hasRoom = (runner: Runner, each: AgentTool): boolean =>
     (context.runnerToolUsed?.get(runner.id)?.[each] ?? 0) <
@@ -167,14 +172,30 @@ export function explainWait(
       (runner) =>
         !tools.some((each) => runsTool(runner, each) && hasRoom(runner, each)),
     )
-  )
+  ) {
+    const full =
+      tools.find((each) => free.some((runner) => runsTool(runner, each))) ??
+      null;
+    // The runner that runs it with the fewest of its slots taken: the one closest to room.
+    const closest = full
+      ? free
+          .filter((runner) => runsTool(runner, full))
+          .map((runner) => ({
+            used: context.runnerToolUsed?.get(runner.id)?.[full] ?? 0,
+            limit: toolLimit(runner, full),
+          }))
+          .sort((a, b) => a.used - a.limit - (b.used - b.limit))[0]
+      : undefined;
     return wait('toolSlotsFull', {
-      tool:
-        tools.find((each) => free.some((runner) => runsTool(runner, each))) ??
-        null,
+      tool: full,
+      params: full ? { tool: full, ...(closest ? closest : {}) } : {},
     });
+  }
   if (Number(run.claimFailures) > 0)
-    return wait('setupRetrying', { detail: run.failureDetail });
+    return wait('setupRetrying', {
+      detail: run.failureDetail,
+      params: run.failureDetail ? { detail: run.failureDetail } : {},
+    });
   return wait('next');
 }
 

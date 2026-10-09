@@ -5,6 +5,8 @@ import type {
   AgentQueueData,
   AgentQueueEntry,
   AgentQueueRow,
+  AgentQueueWait,
+  AgentQueueWaitView,
 } from '#extensions/nocobase-agent-queue/types';
 
 const VIEWER = 'u-me';
@@ -220,6 +222,20 @@ const DEMO_DATA: AgentQueueData = {
   generatedAt: new Date().toISOString(),
 };
 
+// The words an application gives the waits, such as the agents plugin's `formatRunWait`; the item knows no reason.
+const DEMO_WAITS: Readonly<Record<string, string>> = {
+  noRunnerOnline: 'No runtime online',
+  concurrencyFull: 'Concurrency full',
+  next: 'Next for a free runtime',
+};
+
+function formatDemoWait(wait: AgentQueueWait): AgentQueueWaitView {
+  return {
+    text: DEMO_WAITS[wait.reason] ?? `Queued (${wait.reason})`,
+    blocking: wait.reason === 'noRunnerOnline',
+  };
+}
+
 export function AgentQueueDemo(): ReactElement {
   const [onlyMine, setOnlyMine] = useState(false);
   const [opened, setOpened] = useState<string | null>(null);
@@ -237,6 +253,7 @@ export function AgentQueueDemo(): ReactElement {
           onlyMine={onlyMine}
           onOnlyMineChange={setOnlyMine}
           onStart={(issue) => setOpened(`Started ${issue.identifier}`)}
+          formatWait={formatDemoWait}
           expandIdle
         />
       </div>

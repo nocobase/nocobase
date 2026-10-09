@@ -4,6 +4,7 @@ import pricesZhCN from './prices.zh-CN.js';
 import skillsZhCN from './skills.zh-CN.js';
 import servicesZhCN from './services.zh-CN.js';
 import runtimesZhCN from './runtimes.zh-CN.js';
+import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
@@ -628,6 +629,7 @@ const zhCN: AgentsResource = {
   ...servicesZhCN,
   ...pricesZhCN,
   ...skillsZhCN,
+  ...runWaitZhCN,
   access: accessZhCN.access,
 };
 
