@@ -16,6 +16,7 @@ import { Collection, Model, Transactionable } from '@nocobase/database';
 import { Application, Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Readable } from 'stream';
+import type { CreateOptions, InstanceUpdateOptions } from 'sequelize';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
 import { createFileAccessMiddleware } from './file-access';
@@ -36,6 +37,7 @@ import {
 } from './utils';
 import { registerRepairFilenamesCommand } from './commands/repair-filenames';
 import { getTemporaryFileAccessExpiresIn } from './temporary-access';
+import { consumeUploadedFile } from './uploaded-file';
 
 export type * from './storages';
 
@@ -306,10 +308,24 @@ export class PluginFileManagerServer extends Plugin {
       if (extnameField) {
         extnameField.options.updatable = false;
       }
+      collection.model.beforeCreate((model, options: CreateOptions & { context?: Context }) => {
+        const ctx = options.context;
+        if (!ctx?.action) {
+          return;
+        }
+        const storage = this.storagesCache.get(model.get('storageId'));
+        if (storage && storage.type !== STORAGE_TYPE_LOCAL && !consumeUploadedFile(ctx, collection.name, model)) {
+          ctx.throw(400, this.t('Cloud file records must be created by uploading a file.'));
+        }
+      });
       collection.model.afterCreate(async (model) => {
         await this.setFileResponseURLs(model as AttachmentRecord, collection.name);
       });
-      collection.model.beforeUpdate((model) => {
+      collection.model.beforeUpdate((model, options: InstanceUpdateOptions & { context?: Context }) => {
+        // Apply at the model boundary so association updates cannot bypass the file resource middleware.
+        if (options.context?.action && ['path', 'filename', 'storageId'].some((key) => model.changed(key))) {
+          options.context.throw(400, this.t('File storage location cannot be changed.'));
+        }
         if (model.changed('extname')) {
           model.set('extname', model.previous('extname'));
           model.changed('extname', false);
