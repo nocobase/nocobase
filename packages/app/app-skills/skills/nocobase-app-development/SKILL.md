@@ -41,17 +41,16 @@ Build the feature in the application. Do not run a plugin generator, create a `p
 
 NocoBase packages may publish Skills under `.agents/skills/`. Current application templates run `pnpm nocobase skills sync` automatically through `postinstall`; run it manually if install scripts were disabled or that directory is missing or stale. Confirm that the package is a direct `@nocobase/*` dependency or a registered plugin before relying on its Skill. The common capability mappings are:
 
-| The requirement sounds like                                                                   | Read the Skill for                    |
-| --------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Approvals, multi-step processes, "when X happens then Y"                                      | `@nocobase/app-plugin-workflow`       |
-| An assistant in the app: chat, reading files dropped into it, acting through tools you define | `@nocobase/app-plugin-ai-employee`    |
-| Email, IM, or in-app messages                                                                 | `@nocobase/app-plugin-notification`   |
-| Roles, permissions, per-user or per-record access                                             | `@nocobase/app-plugin-authorization`  |
-| Sign-in, registration, sessions                                                               | `@nocobase/app-plugin-authentication` |
-| File upload and metadata through Repository                                                   | `@nocobase/app-plugin-file`           |
-| Translated text and language switching                                                        | `@nocobase/app-plugin-i18n`           |
-| User administration and application-owned role assignment                                     | `@nocobase/app-plugin-users`          |
-| Reading or writing data, schema changes, migrations                                           | `@nocobase/db`                        |
+| The requirement sounds like                               | Read the Skill for                    |
+| --------------------------------------------------------- | ------------------------------------- |
+| Approvals, multi-step processes, "when X happens then Y"  | `@nocobase/app-plugin-workflow`       |
+| Email, IM, or in-app messages                             | `@nocobase/app-plugin-notification`   |
+| Roles, permissions, per-user or per-record access         | `@nocobase/app-plugin-authorization`  |
+| Sign-in, registration, sessions                           | `@nocobase/app-plugin-authentication` |
+| File upload and metadata through Repository               | `@nocobase/app-plugin-file`           |
+| Translated text and language switching                    | `@nocobase/app-plugin-i18n`           |
+| User administration and application-owned role assignment | `@nocobase/app-plugin-users`          |
+| Reading or writing data, schema changes, migrations       | `@nocobase/db`                        |
 
 Read the relevant Skill before writing the feature, but treat this table as a map rather than an installed-package list. Implementing a permission system, a notification sender, or a scheduler by hand when a registered plugin provides one is the most expensive mistake available here.
 

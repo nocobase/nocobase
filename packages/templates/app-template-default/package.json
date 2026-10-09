@@ -159,7 +159,6 @@
   },
   "dependencies": {
     "zod": "catalog:",
-    "@nocobase/app-plugin-ai-employee": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
@@ -189,7 +188,6 @@
     "@nocobase/jobs": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
-    "@nocobase/ai-employee": "workspace:^",
     "@nocobase/repository-input": "workspace:^",
     "@nocobase/app-cli": "workspace:^"
   },
