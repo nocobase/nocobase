@@ -600,8 +600,8 @@ jobs:
         if: '!inputs.dry_run'
         run: git push origin --tags
 
-      # Keep the release commit's ancestry by merging instead of squashing. A conflict leaves the branch available for
-      # manual resolution rather than overriding changes that reached v3-develop during the release.
+      # The tag preserves the exact tested candidate; squash its PR to follow the repository's merge policy.
+      # Conflicts leave the candidate branch available for manual resolution.
       - name: Merge back into v3-develop
         if: '!inputs.dry_run'
         id: merge

@@ -1,81 +1,22 @@
-name: app-installer smoke test
+name: V3 app-installer smoke test
 
-# Installs, upgrades and rolls back an application with the app-installer built from this checkout. It runs the compiled
-# dist/, which is what `npx @nocobase/app-installer` runs, not the TypeScript sources.
-#
-# The archive job builds a deployment archive of the default template from this checkout and runs on pull requests.
-# The template job installs the published Hub and runs only daily and on demand: the Hub template ships no lockfile, so
-# a newly published dependency can break an install with no change in this repository. Pull requests test the installer
-# against the Hub from their own checkout instead, in the Quality workflow's app-installer smoke job, since a change can
-# need both at once.
+# Build the default application's deployment archive and exercise the compiled installer's
+# install, upgrade and rollback paths on Debian. Quality calls this workflow for its source snapshot.
 
 on:
-  pull_request:
-    paths:
-      - 'packages/tools/app-installer/**'
-      - 'packages/app/app-cli/src/tools/scripts/**'
-      - 'packages/app/app-server/src/runtime/**'
-      - 'scripts/smoke-app-installer.mjs'
-      - '.github/workflows/app-installer-smoke.yml'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-  schedule:
-    - cron: '0 3 * * *'
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  # The event is part of the group, so a manual run and the daily one on the same branch do not cancel each other.
   group: app-installer-smoke-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  template:
-    name: Install the published Hub template on Debian bookworm
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
-    container: node:24-bookworm
-    timeout-minutes: 30
-    env:
-      APP_ROOT: /tmp/hub
-      NOCOBASE_APP_INSTALLER_USE_DIST: '1'
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Install pm2
-        run: npm install -g pm2
-
-      # A filtered install is enough: the build needs only the package's own devDependencies, and the tsconfig preset
-      # it extends is a JSON file @nocobase/dev-config exports as it is, with nothing of its own to build.
-      - name: Install app-installer dependencies
-        run: pnpm install --frozen-lockfile --filter @nocobase/app-installer
-
-      - name: Build app-installer
-        run: |
-          pnpm --filter @nocobase/app-installer build
-          test -f packages/tools/app-installer/dist/cli.js
-
-      # The same script backs `pnpm unreleased:installer-smoke`: install, check, rebuild, upgrade from a copy registered
-      # as an older release, roll back, check again.
-      - name: Install, upgrade and roll back a Hub
-        run: node scripts/smoke-app-installer.mjs --source template --root "$APP_ROOT" --port 13000 -- node packages/tools/app-installer/bin/run.js
-
-      - name: Show logs
-        if: failure()
-        run: |
-          tail -n 200 "$APP_ROOT"/logs/*.log || true
-          pm2 logs --nostream --lines 100 || true
-
   archive:
-    name: Install a deployment archive on Debian bookworm
+    name: Install the app-template-default archive on Debian bookworm
     runs-on: ubuntu-24.04
     container: node:24-bookworm
     timeout-minutes: 45
