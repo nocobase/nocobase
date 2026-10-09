@@ -121,7 +121,11 @@ export default class Register extends RunnerCommand {
         EXIT_CODES.conflict,
       );
     }
-    const adapters = loadAdapters(process.env, settings.passEnv);
+    const adapters = loadAdapters(
+      process.env,
+      settings.passEnv,
+      existing?.registration.variables,
+    );
     // The owner's local policy as it reads before the application is known; the first heartbeat sends its own.
     const policy = await policyReport(
       this.paths,

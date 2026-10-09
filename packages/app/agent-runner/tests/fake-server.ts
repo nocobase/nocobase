@@ -98,6 +98,8 @@ export interface FakeServerOptions {
   heartbeatIntervalMs?: number;
   /** The application the server says it is on registration; none when absent. */
   app?: { id: string; name: string };
+  /** Gate dispatch on the reported tool authentication, as an application does. */
+  requireAuthentication?: boolean;
 }
 
 type RunInit = Partial<Omit<RunPayload, 'run'>> & {
@@ -179,6 +181,7 @@ export class FakeServer {
     this.options = {
       pollTimeoutMs: 1_000,
       heartbeatIntervalMs: 500,
+      requireAuthentication: false,
       app: { id: 'test-app', name: 'Test App' },
       ...options,
     };
@@ -402,9 +405,17 @@ export class FakeServer {
     const features = new Set(
       runner.heartbeats.at(-1)?.features ?? runner.register.features,
     );
-    const index = this.queue.findIndex((id) =>
-      this.run(id).payload.run.requires.every((f) => features.has(f)),
-    );
+    const tools = runner.heartbeats.at(-1)?.tools ?? runner.register.tools;
+    const index = this.queue.findIndex((id) => {
+      const payload = this.run(id).payload;
+      return (
+        payload.run.requires.every((f) => features.has(f)) &&
+        (!this.options.requireAuthentication ||
+          tools.some(
+            (tool) => tool.kind === payload.tool.kind && tool.authenticated,
+          ))
+      );
+    });
     if (index < 0) return undefined;
     const [id] = this.queue.splice(index, 1);
     const run = this.run(id as string);

@@ -424,6 +424,27 @@ describe('claiming', () => {
     expect(payload.workspace.passthrough).toBeUndefined();
   });
 
+  it('rejects runner-owned variable names before saving a runner declaration or a value', async () => {
+    h = await createHarness();
+    const target = { scope: 'agent', scopeId: await h.createAgent() };
+    for (const name of [
+      'NOCOBASE_RUNNER_CUSTOM_KEY',
+      'AGENT_RUN_CREDENTIALS',
+      'GIT_CONFIG_COUNT',
+      'PATH',
+    ]) {
+      await expect(
+        h.services.variables.set(target, name, undefined, 'owner', {
+          fromRunner: true,
+        }),
+      ).rejects.toMatchObject({ details: { reason: 'reserved' } });
+      await expect(
+        h.services.variables.set(target, name, 'unused', 'owner'),
+      ).rejects.toMatchObject({ details: { reason: 'reserved' } });
+    }
+    expect(await h.services.variables.list(target)).toEqual([]);
+  });
+
   it('starts from a fresh working directory once after a reset', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

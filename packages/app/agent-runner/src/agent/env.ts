@@ -123,7 +123,7 @@ export function missingVariables(
   provided: Record<string, string>,
 ): string[] {
   return passthrough.filter(
-    (name) => !forbidden(name) && provided[name] === undefined,
+    (name) => forbidden(name) || !Object.hasOwn(provided, name),
   );
 }
 
@@ -197,14 +197,20 @@ export function buildAgentEnv(
 }
 
 /**
- * What a coding tool's detection runs with: what every run gets from the runner (the whitelist and `--pass-env`), with
- * the runner's own HOME, and none of a run's variables.
+ * What a coding tool's detection runs with: the whitelist, `--pass-env` and this application's local variables, with
+ * the runner's own HOME. Variables belonging to other applications never participate.
  */
 export function detectionEnv(
   source: NodeJS.ProcessEnv,
   passEnv: readonly string[] = [],
+  localVariables: Record<string, string> = {},
 ): Record<string, string> {
-  return buildAgentEnv({ source, passEnv });
+  return buildAgentEnv({
+    source,
+    passEnv,
+    localVariables,
+    workspace: { env: [], passthrough: Object.keys(localVariables) },
+  });
 }
 
 /**

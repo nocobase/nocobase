@@ -23,12 +23,15 @@
 // Self-update: a heartbeat answer may name a newer runner the application serves (`upgrade`). A daemon started by
 // its service from an installation (`selfUpdate`) stops claiming, waits for its runs to end, installs the new version
 // (update.ts) and stops; the service starts the new version. Any other daemon only logs the notice.
+import { createHash } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 
 import type { AgentAdapter } from '../agent/adapters/types.ts';
-import { providedNames } from '../agent/env.ts';
+import { detectionEnv, providedNames } from '../agent/env.ts';
+import type { loadAdapters } from '../agent/adapters/registry.ts';
 import {
   readConnection,
+  passEnvNames,
   runnerClient,
   type AppConnection,
   type RunnerSettings,
@@ -145,6 +148,8 @@ export interface DaemonOptions {
   settings: RunnerSettings;
   connections: readonly AppConnection[];
   adapters: Map<AgentTool, AgentAdapter>;
+  /** Fresh adapters for each application's detection environment; the supplied adapters otherwise (tests). */
+  adaptersFor?: typeof loadAdapters;
   slots?: number;
   /** Limits per coding tool for this start; the settings' otherwise. */
   toolSlots?: ToolSlots;
@@ -176,6 +181,8 @@ interface AppLink {
   heartbeatTimer?: NodeJS.Timeout;
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
+  /** Detection is cached only for this application and refreshed when its effective variables change. */
+  detection?: { key: string; tools: Promise<ToolInfo[]> };
 }
 
 export class RunnerDaemon {
@@ -188,7 +195,6 @@ export class RunnerDaemon {
   private readonly stopping = new AbortController();
   private slotFreed: (() => void) | undefined;
   private gcTimer: NodeJS.Timeout | undefined;
-  private tools: ToolInfo[] = [];
   private claimLoop: Promise<void> | undefined;
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
@@ -319,7 +325,6 @@ export class RunnerDaemon {
     );
     this.gcTimer.unref();
 
-    this.tools = await detectTools(this.options.adapters);
     for (const link of this.links) {
       await this.heartbeat(link);
       link.heartbeatTimer = setInterval(
@@ -384,18 +389,41 @@ export class RunnerDaemon {
   }
 
   /**
-   * The names of the variables this runner provides to `link`'s application now: its local variables, read from the
-   * registration's file so `env set` shows without a restart, and the names its owner passes.
+   * The names this application can request and tools it can use now. Re-read its local variables and the passed
+   * names so changes refresh detection without a restart; cache no detection across applications.
    */
-  private async variablesOf(link: AppLink): Promise<string[]> {
+  private async environmentOf(
+    link: AppLink,
+  ): Promise<{ variables: string[]; tools: ToolInfo[] }> {
     const stored = await readConnection(link.key, this.options.paths).catch(
       () => undefined,
     );
-    return providedNames(
-      process.env,
-      this.options.settings.passEnv,
-      (stored ?? link.connection).registration.variables,
-    );
+    const settings =
+      (await readJson<RunnerSettings>(this.options.paths.settings)) ??
+      this.options.settings;
+    const passEnv = passEnvNames(settings.passEnv);
+    const localVariables = (stored ?? link.connection).registration.variables;
+    const key = createHash('sha256')
+      .update(
+        JSON.stringify(
+          Object.entries(
+            detectionEnv(process.env, passEnv, localVariables),
+          ).sort(([a], [b]) => a.localeCompare(b)),
+        ),
+      )
+      .digest('hex');
+    if (link.detection?.key !== key)
+      link.detection = {
+        key,
+        tools: detectTools(
+          this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
+            this.options.adapters,
+        ),
+      };
+    return {
+      variables: providedNames(process.env, passEnv, localVariables),
+      tools: await link.detection.tools,
+    };
   }
 
   private async collectGarbage(): Promise<void> {
@@ -427,7 +455,7 @@ export class RunnerDaemon {
     const jobs = held.filter((run) => run.jobId !== undefined);
     try {
       const policy = await this.policyOf(link);
-      const variables = await this.variablesOf(link);
+      const { variables, tools } = await this.environmentOf(link);
       const response = await link.client.post(
         RUNNER_ROUTES.heartbeat,
         {
@@ -436,7 +464,7 @@ export class RunnerDaemon {
           features: policy.features,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
           variables,
-          tools: this.tools,
+          tools,
           active: runs.map((run) => ({
             runId: run.runId,
             pid: run.pid,

@@ -15,18 +15,19 @@ const KINDS: readonly AgentTool[] = ['claude', 'codex', 'opencode', 'pi'];
 
 /**
  * The adapters, detecting their tools in the environment a run gets from the runner (`detectionEnv`): `env` and the
- * names the runner's owner passes (`--pass-env`).
+ * names the runner's owner passes (`--pass-env`) and the application's local variables.
  */
 export function loadAdapters(
   env: NodeJS.ProcessEnv = process.env,
   passEnv: readonly string[] = [],
+  localVariables: Record<string, string> = {},
 ): Map<AgentTool, AgentAdapter> {
   const adapters = new Map<AgentTool, AgentAdapter>();
   if (env.NOCOBASE_RUNNER_ADAPTER === 'echo') {
     for (const kind of KINDS) adapters.set(kind, createEchoAdapter({ kind }));
     return adapters;
   }
-  const detection = { env: detectionEnv(env, passEnv) };
+  const detection = { env: detectionEnv(env, passEnv, localVariables) };
   adapters.set('claude', createClaudeAdapter(detection));
   adapters.set('codex', createCodexAdapter(detection));
   adapters.set('opencode', createOpencodeAdapter(detection));

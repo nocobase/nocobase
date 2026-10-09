@@ -94,7 +94,15 @@ async function main(): Promise<number> {
       paths,
       connection,
       settings,
-      adapters: loadAdapters(process.env, settings.passEnv),
+      adapters: loadAdapters(
+        process.env,
+        settings.passEnv,
+        Object.fromEntries(
+          Object.entries(connection.registration.variables).filter(([name]) =>
+            payload.workspace.passthrough?.includes(name),
+          ),
+        ),
+      ),
       log,
     },
     record,

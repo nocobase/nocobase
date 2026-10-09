@@ -449,6 +449,47 @@ describe('agent environment', () => {
     expect(missingVariablesMessage(['A', 'B'])).toContain('the variables A, B');
   });
 
+  it('detects with the local keys of one application, with local values overriding passed values', () => {
+    const source = {
+      PATH: '/bin',
+      PROVIDER_KEY: 'shell',
+      UNDECLARED_KEY: 'stray',
+    };
+    expect(
+      detectionEnv(source, ['PROVIDER_KEY'], { PROVIDER_KEY: 'local' }),
+    ).toEqual({ PATH: '/bin', PROVIDER_KEY: 'local' });
+    expect(detectionEnv(source)).toEqual({ PATH: '/bin' });
+  });
+
+  it.each([
+    'NOCOBASE_RUNNER_CUSTOM_KEY',
+    'GIT_CONFIG_COUNT',
+    'PATH',
+    '__proto__',
+    'toString',
+  ])(
+    'does not silently satisfy an unavailable passthrough declaration %s',
+    (name) => {
+      expect(missingVariables([name], {})).toEqual([name]);
+    },
+  );
+
+  it('fails preparation for a reserved passthrough even when an old local configuration contains it', async () => {
+    const name = 'NOCOBASE_RUNNER_CUSTOM_KEY';
+    const context = {
+      payload: { workspace: { env: [], dirs: [], passthrough: [name] } },
+      passEnv: [name],
+      registration: { variables: { [name]: 'unused' } },
+    } as unknown as PrepareContext;
+    await expect(variablesStep.run(context)).rejects.toMatchObject({
+      reason: 'setupFailed',
+      message: expect.stringContaining(`reserved variables ${name}`),
+    });
+    await expect(variablesStep.run(context)).rejects.toThrow(
+      'Remove or rename',
+    );
+  });
+
   it('builds an isolated home that links only what the tool needs', async () => {
     const real = path.join(root, 'real-home');
     mkdirSync(path.join(real, '.claude'), { recursive: true });

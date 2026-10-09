@@ -49,8 +49,14 @@ function xml(value: string): string {
 }
 
 function systemdQuote(value: string): string {
-  return /[\s"\\]/.test(value)
-    ? `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  return /[\s'"\\\p{Cc}]/u.test(value)
+    ? `"${value.replace(/[\\"\p{Cc}]/gu, (character) => {
+        if (character === '\\' || character === '"') return `\\${character}`;
+        const code = character.charCodeAt(0);
+        return code < 128
+          ? `\\x${code.toString(16).padStart(2, '0')}`
+          : `\\u${code.toString(16).padStart(4, '0')}`;
+      })}"`
     : value;
 }
 
@@ -71,6 +77,10 @@ export function serviceEnvironment(
   const captured: Record<string, string> = {};
   for (const name of [...PROXY_ENV, ...CA_ENV, ...passEnv]) {
     const value = env[name];
+    if (value?.includes('\0'))
+      throw new Error(
+        `Cannot write ${name} to a service: environment values cannot contain NUL.`,
+      );
     if (value !== undefined && value !== '' && !forbidden(name))
       captured[name] = value;
   }

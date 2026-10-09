@@ -56,7 +56,7 @@ export class EnvSet extends RunnerCommand {
   static override description: string =
     'The value stays on this machine, in the registration file (readable by you only); applications learn the name ' +
     'only. Leave VALUE out to read it from standard input, so it stays out of your shell history: ' +
-    '`printf %s "$KEY" | nocobase-runner env set MY_API_KEY`. A running runner uses it from its next run.';
+    '`printf %s "$KEY" | nocobase-runner env set MY_API_KEY`. A running runner uses it from its next heartbeat and run.';
   static override args: {
     name: Interfaces.Arg<string>;
     value: Interfaces.Arg<string | undefined>;

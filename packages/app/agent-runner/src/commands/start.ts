@@ -138,6 +138,7 @@ export default class Start extends RunnerCommand {
       settings,
       connections,
       adapters: loadAdapters(process.env, settings.passEnv),
+      adaptersFor: loadAdapters,
       ...(slotsFlag.slots === undefined ? {} : { slots: slotsFlag.slots }),
       ...(slotsFlag.toolSlots === undefined
         ? {}
