@@ -59,9 +59,70 @@ export interface AgentRunHistoryRun {
   readonly finishedAt: string | null;
   /** Why it failed, in the reader's language. */
   readonly failure?: string | null;
+  readonly execution?: AgentRunExecution;
+  readonly executions?: readonly AgentRunExecution[];
+  /** The preceding run's runner, supplied by the application when comparing runs on one subject. */
+  readonly previousRunnerId?: string | null;
 }
 
+/** Compatible with the agents run snapshot and projects activity execution; imports neither plugin. */
+export interface AgentRunExecution {
+  readonly attempt: number;
+  readonly runnerId: string;
+  readonly runnerName?: string | null;
+  readonly runnerOwnerUserId?: string | null;
+  readonly runnerOwnerName?: string | null;
+  readonly tool?: string | null;
+  readonly toolVersion?: string | null;
+  readonly modelService?: string | null;
+  readonly model?: string | null;
+  readonly actualModels?: readonly string[];
+  readonly effort?: string | null;
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+  readonly machineHidden?: boolean;
+}
+
+export interface RunExecutionLabels {
+  readonly unknownRunner: string;
+  readonly unknownModel: string;
+  readonly defaultModel: string;
+  /** `{model}` is the reported model or models. */
+  readonly defaultActual: string;
+  readonly specifiedActual: string;
+  readonly owner: string;
+  readonly defaultEffort: string;
+  readonly effort: string;
+  readonly attempt: string;
+  readonly changedRunner: string;
+  readonly hiddenRunner?: string;
+  readonly actualEffort?: string;
+  readonly unreportedEffort?: string;
+  readonly effortSource?: string;
+  readonly effortChangedAt?: string;
+}
+
+const defaultRunExecutionLabels: RunExecutionLabels = {
+  unknownRunner: 'Unknown runtime',
+  unknownModel: 'Actual model not reported',
+  defaultModel: 'Requested model: default (legacy)',
+  defaultActual: 'Legacy default (actual: {model})',
+  specifiedActual: 'Requested model: {requested} (actual: {model})',
+  owner: 'owned by {name}',
+  defaultEffort: 'Requested reasoning: default',
+  effort: 'Requested reasoning: {effort}',
+  attempt: 'Attempt {attempt}',
+  changedRunner: 'Runtime changed',
+  hiddenRunner: 'Team runtime',
+  actualEffort: 'Actual reasoning: {effort}',
+  unreportedEffort: 'Actual reasoning not reported',
+  effortSource: 'Source: {source}',
+  effortChangedAt: 'Changed: {at}',
+};
+
 export interface AgentRunHistoryLabels {
+  readonly execution?: RunExecutionLabels;
   readonly title: string;
   readonly empty: string;
   readonly status: Readonly<Record<AgentRunHistoryStatus | 'stopping', string>>;
@@ -125,6 +186,180 @@ function fillLabel(
 ): string {
   return text.replace(/\{(\w+)\}/gu, (whole, key: string) =>
     key in values ? String(values[key]) : whole,
+  );
+}
+
+function latestExecution(
+  run: AgentRunHistoryRun,
+): AgentRunExecution | undefined {
+  return run.execution ?? run.executions?.at(-1);
+}
+
+function runnerChanged(run: AgentRunHistoryRun): boolean {
+  const executions = run.executions ?? [];
+  const latest = latestExecution(run);
+  return (
+    Boolean(
+      run.previousRunnerId &&
+      latest &&
+      latest.runnerId !== run.previousRunnerId,
+    ) ||
+    executions.some(
+      (execution, index) =>
+        index > 0 && execution.runnerId !== executions[index - 1]?.runnerId,
+    )
+  );
+}
+
+function executionModel(
+  execution: AgentRunExecution,
+  labels: RunExecutionLabels,
+  short = false,
+): string {
+  const actual = execution.actualModels?.join(', ');
+  if (short) return actual || labels.unknownModel;
+  if (!execution.model)
+    return actual
+      ? fillLabel(labels.defaultActual, { model: actual })
+      : `${labels.defaultModel} (${labels.unknownModel})`;
+  return fillLabel(labels.specifiedActual, {
+    requested: execution.model,
+    model: actual || labels.unknownModel,
+  });
+}
+
+function executionRunner(
+  execution: AgentRunExecution,
+  labels: RunExecutionLabels,
+): string {
+  return execution.machineHidden
+    ? (labels.hiddenRunner ?? defaultRunExecutionLabels.hiddenRunner!)
+    : execution.runnerName || execution.runnerId || labels.unknownRunner;
+}
+
+/** A complete execution heading; the owner and tool version come from the historical snapshot. */
+export function RunExecutionSummary({
+  execution,
+  labels = defaultRunExecutionLabels,
+}: {
+  readonly execution: AgentRunExecution;
+  readonly labels?: RunExecutionLabels;
+}): ReactElement {
+  return (
+    <span className='text-xs text-muted-foreground' data-testid='run-execution'>
+      {[
+        executionRunner(execution, labels),
+        !execution.machineHidden &&
+        (execution.runnerOwnerName || execution.runnerOwnerUserId)
+          ? fillLabel(labels.owner, {
+              name: execution.runnerOwnerName || execution.runnerOwnerUserId!,
+            })
+          : null,
+        [execution.tool || execution.modelService, execution.toolVersion]
+          .filter(Boolean)
+          .join(' '),
+        executionModel(execution, labels),
+        execution.effort
+          ? fillLabel(labels.effort, { effort: execution.effort })
+          : labels.defaultEffort,
+        execution.actualEffort
+          ? fillLabel(
+              labels.actualEffort ?? defaultRunExecutionLabels.actualEffort!,
+              { effort: execution.actualEffort },
+            )
+          : (labels.unreportedEffort ??
+            defaultRunExecutionLabels.unreportedEffort!),
+        execution.actualEffortSource
+          ? fillLabel(
+              labels.effortSource ?? defaultRunExecutionLabels.effortSource!,
+              { source: execution.actualEffortSource },
+            )
+          : null,
+        execution.actualEffortAt
+          ? fillLabel(
+              labels.effortChangedAt ??
+                defaultRunExecutionLabels.effortChangedAt!,
+              { at: execution.actualEffortAt },
+            )
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+    </span>
+  );
+}
+
+/** The short badge beside an agent's action; the consumer opens its originating run. */
+export function RunExecutionBadge({
+  execution,
+  href,
+  onOpen,
+  labels = defaultRunExecutionLabels,
+}: {
+  readonly execution: AgentRunExecution;
+  readonly href?: string;
+  readonly onOpen?: () => void;
+  readonly labels?: RunExecutionLabels;
+}): ReactElement {
+  const text = `${executionRunner(execution, labels)} · ${executionModel(execution, labels, true)}`;
+  const className =
+    'inline-flex rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground';
+  if (href)
+    return (
+      <a
+        href={href}
+        className={className}
+        onClick={(event) => {
+          if (!onOpen || !plainClick(event)) return;
+          event.preventDefault();
+          onOpen();
+        }}
+      >
+        {text}
+      </a>
+    );
+  if (onOpen)
+    return (
+      <Button variant='ghost' size='xs' className={className} onClick={onOpen}>
+        {text}
+      </Button>
+    );
+  return <span className={className}>{text}</span>;
+}
+
+/** Each attempt keeps its own execution facts, including the one whose holder was released for a retry. */
+export function RunAttempts({
+  executions,
+  previousRunnerId,
+  labels = defaultRunExecutionLabels,
+}: {
+  readonly executions: readonly AgentRunExecution[];
+  readonly previousRunnerId?: string | null;
+  readonly labels?: RunExecutionLabels;
+}): ReactElement {
+  return (
+    <ol className='w-full space-y-1' data-testid='run-attempts'>
+      {executions.map((execution, index) => {
+        const previous =
+          index === 0 ? previousRunnerId : executions[index - 1]?.runnerId;
+        return (
+          <li
+            key={execution.attempt}
+            className='flex flex-wrap gap-x-2 gap-y-1'
+          >
+            <span className='text-xs text-muted-foreground'>
+              {fillLabel(labels.attempt, { attempt: execution.attempt })}
+            </span>
+            <RunExecutionSummary execution={execution} labels={labels} />
+            {previous && previous !== execution.runnerId ? (
+              <span className='text-xs text-primary'>
+                {labels.changedRunner}
+              </span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -454,6 +689,14 @@ function PinnedRun({
         <RunStatusBadge run={run} labels={labels} />
         <span className='min-w-0 truncate text-sm font-medium'>
           {run.agentName}
+          {latestExecution(run) ? (
+            <span className='block font-normal'>
+              <RunExecutionSummary
+                execution={latestExecution(run)!}
+                labels={labels.execution}
+              />
+            </span>
+          ) : null}
         </span>
         <span
           className='ml-auto shrink-0 font-mono text-xs text-muted-foreground tabular-nums'
@@ -526,6 +769,17 @@ function RunLine({
               {relativeTime(at, locale)}
             </time>
           </span>
+          {latestExecution(run) ? (
+            <RunExecutionSummary
+              execution={latestExecution(run)!}
+              labels={labels.execution}
+            />
+          ) : null}
+          {runnerChanged(run) ? (
+            <span className='block text-xs text-primary'>
+              {(labels.execution ?? defaultRunExecutionLabels).changedRunner}
+            </span>
+          ) : null}
         </span>
       </RunLink>
     </li>
@@ -722,6 +976,14 @@ export function RunActivityRow({
         >
           {labels.viewTranscript}
         </RunLink>
+      ) : null}
+      {latestExecution(run) ? (
+        <RunExecutionBadge
+          execution={latestExecution(run)!}
+          href={opener.runHref?.(run)}
+          onOpen={opener.onOpenRun ? () => opener.onOpenRun?.(run) : undefined}
+          labels={labels.execution}
+        />
       ) : null}
       <time
         dateTime={at}
@@ -927,6 +1189,26 @@ export function RunHeader({
       ) : null}
       {actions ? (
         <span className='ml-auto flex flex-wrap gap-1.5'>{actions}</span>
+      ) : null}
+      {latestExecution(run) ? (
+        <span className='basis-full'>
+          <RunExecutionSummary
+            execution={latestExecution(run)!}
+            labels={labels.execution}
+          />
+        </span>
+      ) : null}
+      {runnerChanged(run) && (run.executions?.length ?? 0) < 2 ? (
+        <span className='text-xs text-primary'>
+          {(labels.execution ?? defaultRunExecutionLabels).changedRunner}
+        </span>
+      ) : null}
+      {run.executions && run.executions.length > 1 ? (
+        <RunAttempts
+          executions={run.executions}
+          previousRunnerId={run.previousRunnerId}
+          labels={labels.execution}
+        />
       ) : null}
     </div>
   );

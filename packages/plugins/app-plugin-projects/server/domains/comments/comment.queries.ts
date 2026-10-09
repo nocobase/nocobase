@@ -17,6 +17,7 @@ import {
   type ThreadPage,
 } from '../../../shared/comments.js';
 import type { Viewer } from '../../access/viewer.js';
+import { splitVia } from '../../kernel/activity.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
 import { isNote } from '../../kernel/mentions.js';
 import { decodeCursor, pageLimit, pageOf } from '../../kernel/pagination.js';
@@ -33,6 +34,21 @@ import type { CommentAttachments, CommentReader } from './ports.js';
 
 const iso = (value: Date | string | null): string | null =>
   value === null ? null : new Date(value).toISOString();
+
+function originOf(
+  value: CommentRecord['origin'],
+): Readonly<Record<string, unknown>> {
+  if (typeof value === 'string') {
+    try {
+      return originOf(JSON.parse(value) as CommentRecord['origin']);
+    } catch {
+      return {};
+    }
+  }
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value
+    : {};
+}
 
 function reactionList(
   rows: readonly { readonly emoji: string; readonly userId: string }[],
@@ -54,10 +70,22 @@ export async function mapComments(
   kinds: KindRegistry,
   records: readonly CommentRecord[],
   attachments?: CommentAttachments,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): Promise<IssueComment[]> {
   const name = await kinds.nameAll(conn, [
     ...records.map((row) => ({ type: row.authorType, id: row.authorId })),
     ...records.map((row) => ({ type: 'user', id: row.resolvedById })),
+    ...records.map((row) => {
+      const trace = originOf(row.origin).trace;
+      const agentId =
+        trace && typeof trace === 'object' && 'agentId' in trace
+          ? trace.agentId
+          : null;
+      return {
+        type: 'agent',
+        id: typeof agentId === 'string' ? agentId : null,
+      };
+    }),
   ]);
   const live = records.filter((row) => !row.deletedAt).map((row) => row.id);
   const reactions = await reactionsFor(conn, live);
@@ -66,6 +94,7 @@ export async function mapComments(
     : new Map<string, never>();
   return records.map((row) => {
     const deleted = row.deletedAt !== null;
+    const origin = originOf(row.origin);
     return {
       id: row.id,
       issueId: row.issueId,
@@ -77,6 +106,13 @@ export async function mapComments(
       note: !deleted && isNote(row.content),
       parentId: row.parentId,
       rootId: row.rootId,
+      source: deleted
+        ? null
+        : splitVia(
+            { ...origin, via: row.via },
+            (id) => name('agent', id),
+            viewer,
+          ).via,
       via:
         row.via === 'cli' || row.via === 'api_key' || row.via === 'agent'
           ? row.via
@@ -102,6 +138,7 @@ export async function threadPage(
   issueId: string,
   options: { readonly cursor?: string; readonly limit?: number } = {},
   attachments?: CommentAttachments,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): Promise<ThreadPage> {
   const limit = pageLimit(
     options.limit,
@@ -131,6 +168,7 @@ export async function threadPage(
     kinds,
     [...roots, ...replies],
     attachments,
+    viewer,
   );
   const byId = new Map(mapped.map((comment) => [comment.id, comment]));
   const data: CommentThread[] = roots.map((root) => ({
@@ -174,6 +212,7 @@ export function createCommentQueries(deps: {
         issue.id,
         options,
         deps.attachments?.(),
+        viewer,
       );
     },
     async mentionCandidates(viewer, input) {

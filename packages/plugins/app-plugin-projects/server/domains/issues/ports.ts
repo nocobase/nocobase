@@ -103,7 +103,11 @@ export const noApprovals: IssueApprovals = {
  * sub-issues and dependencies, the newest threads and who follows it.
  */
 export interface IssueExtras {
-  threads(conn: DatabaseConnection, issue: Issue): Promise<ThreadPage>;
+  threads(
+    conn: DatabaseConnection,
+    issue: Issue,
+    viewer?: Viewer,
+  ): Promise<ThreadPage>;
   /** The issue's own files, as the viewer sees them (who may remove which). */
   attachments(
     conn: DatabaseConnection,

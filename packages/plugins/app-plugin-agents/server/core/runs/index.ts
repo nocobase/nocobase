@@ -103,6 +103,11 @@ export {
 } from './run-requests.js';
 export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
 export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './execution-view.js';
+export {
   createAvailability,
   type AgentAvailability,
   type Availability,
