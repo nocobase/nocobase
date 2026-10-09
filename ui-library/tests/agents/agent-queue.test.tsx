@@ -34,7 +34,7 @@ const agent: AgentQueueAgent = {
 const queued = (wait: AgentQueueWait): AgentQueueItem => ({
   issue: {
     id: 'issue',
-    identifier: 'PM-59',
+    identifier: 'PM-2',
     title: 'Secrets',
     blockedCount: 0,
   },

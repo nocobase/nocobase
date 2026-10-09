@@ -35,7 +35,7 @@ const row = (
   value: AgentQueueEntry,
 ): AgentQueueRow => ({
   ...value,
-  issue: { id: `i${id}`, identifier: `PM-${id}`, title, blockedCount: 0 },
+  issue: { id: `i${id}`, identifier: `EXAMPLE-${id}`, title, blockedCount: 0 },
   others: [],
   mine,
 });
@@ -137,7 +137,7 @@ const DEMO_DATA: AgentQueueData = {
       false,
       entry('code', 'queued', {
         blockedBy: [
-          { issueId: 'i12', identifier: 'PM-12', title: 'Theme tokens' },
+          { issueId: 'i12', identifier: 'EXAMPLE-12', title: 'Theme tokens' },
         ],
       }),
     ),
@@ -151,7 +151,7 @@ const DEMO_DATA: AgentQueueData = {
           since: ago(3600),
           waitingFor: [{ userId: VIEWER, name: 'Me' }],
           viewerDecides: true,
-          path: '/issues/PM-30#design',
+          path: '/issues/EXAMPLE-30#design',
           detail: null,
         },
       }),

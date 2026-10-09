@@ -1033,7 +1033,7 @@ const issueShape = {
   number: z.number().int(),
   identifier: z
     .string()
-    .meta({ description: '`PREFIX-number`, such as `PM-12`.' }),
+    .meta({ description: '`PREFIX-number`, such as `PM-1`.' }),
   title: z.string(),
   description: z.string().meta({ description: 'Markdown.' }),
   statusKey: z.string(),
