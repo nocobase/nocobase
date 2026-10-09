@@ -43,8 +43,14 @@ import { z } from 'zod';
  * Limits per coding tool (`ToolSlots` on register, `load.tools` on heartbeat, `tools` on claim) were added within
  * version 7 as optional fields: a server that does not know them ignores them, and a runner that does not send them is
  * bounded by its total slots only.
+ *
+ * Version 8 added repository credentials on demand (the `gitCredentials` feature, `RunGit.onDemand`,
+ * `RUNNER_ROUTES.gitCredential`), the `repoAccessUnavailable` and `repoAccessDenied` failures and why a repository was
+ * not pushed (`RepoReport.failure`). Nothing of version 7 changed, and a run never requires the feature: a runner
+ * without it still gets the credentials in its payload. The number moved so that a runner announcing
+ * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 8;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -72,6 +78,8 @@ export function isProtocolSupported(version: number): boolean {
  *   kind `archive`).
  * - `jobs.build`: executes build jobs (`jobs.ts`, `jobFeature`).
  * - `mounts`: places the run's mounts (`RunPayload.mounts`) in its work directory before the agent starts.
+ * - `gitCredentials`: asks for a repository's credential whenever git needs one (`RunGit.onDemand`,
+ *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
  */
 export const RUNNER_FEATURES = [
   'input',
@@ -84,6 +92,7 @@ export const RUNNER_FEATURES = [
   'archives',
   'jobs.build',
   'mounts',
+  'gitCredentials',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];

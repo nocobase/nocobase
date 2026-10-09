@@ -30,6 +30,10 @@ import {
   WorkspaceDirSchema,
   type RunPayload,
   RepoDirSchema,
+  GitCredentialRequestSchema,
+  RepoReportSchema,
+  RunGitSchema,
+  RunnerFeatureSchema,
 } from '../src/index.js';
 
 const payload: RunPayload = {
@@ -100,8 +104,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 7 and still serves versions 3 to 6', () => {
-    expect(PROTOCOL_VERSION).toBe(7);
+  it('is version 8 and still serves versions 3 to 7', () => {
+    expect(PROTOCOL_VERSION).toBe(8);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -109,8 +113,64 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(6)).toBe(true);
     expect(isProtocolSupported(2)).toBe(false);
     expect(isProtocolSupported(7)).toBe(true);
-    expect(isProtocolSupported(8)).toBe(false);
+    expect(isProtocolSupported(8)).toBe(true);
+    expect(isProtocolSupported(9)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
+  });
+
+  it('lists repositories whose credential is asked for on demand, and reads a payload without them', () => {
+    const git = {
+      onDemand: ['https://github.com/acme/app.git'],
+      credentials: [
+        {
+          url: 'https://github.com/acme/other.git',
+          username: 'x-access-token',
+          password: 'synthetic',
+          expiresAt: '2026-10-02T01:00:00Z',
+        },
+      ],
+    };
+    expect(RunGitSchema.parse(git)).toEqual(git);
+    expect(RunGitSchema.parse({}).onDemand).toBeUndefined();
+    expect(RunnerFeatureSchema.parse('gitCredentials')).toBe('gitCredentials');
+    expect(routePath(RUNNER_ROUTES.gitCredential, { runId: 'r1' })).toBe(
+      '/api/agents/runners/runs/r1/gitCredentials',
+    );
+    expect(
+      GitCredentialRequestSchema.safeParse({
+        attempt: 2,
+        url: 'https://github.com/acme/app.git',
+        refresh: true,
+      }).success,
+    ).toBe(true);
+    // Strict: a request names no other field, such as a credential of its own.
+    expect(
+      GitCredentialRequestSchema.safeParse({
+        attempt: 2,
+        url: 'https://github.com/acme/app.git',
+        password: 'x',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('says why a repository was not pushed, and reads a report without it', () => {
+    const report = {
+      url: 'https://github.com/acme/app.git',
+      branch: 'agent/x',
+      pushed: false,
+      failure: { reason: 'authFailed', message: 'The remote refused.' },
+    };
+    expect(RepoReportSchema.parse(report)).toEqual(report);
+    expect(
+      RepoReportSchema.safeParse({
+        ...report,
+        failure: { reason: 'other', message: '' },
+      }).success,
+    ).toBe(false);
+    expect(isRetryable('repoAccessUnavailable')).toBe(true);
+    expect(isRetryable('repoAccessDenied')).toBe(false);
+    expect(ERROR_API_STATUS.REPO_ACCESS_UNAVAILABLE).toBe('UNAVAILABLE');
+    expect(ERROR_API_STATUS.REPO_ACCESS_DENIED).toBe('PERMISSION_DENIED');
   });
 
   it('marks the one run that makes the first commit of an empty repository', () => {
