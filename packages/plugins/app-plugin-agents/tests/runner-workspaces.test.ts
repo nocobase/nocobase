@@ -3,7 +3,10 @@
  * runs whose subject's work is over (`remove`) or goes on (`keep`), as the subject's binding says. Only the runner's
  * own runs are answered for, and the report is kept on the runner for the runtimes pages.
  */
-import { RUNNER_ROUTES, WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
+import {
+  RUNNER_ROUTES,
+  WORKSPACE_REPORT_INTERVAL_MS,
+} from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -93,11 +96,9 @@ describe("a runner's working directories", () => {
       limitBytes: 40 * GB,
       totalBytes: 64 * GB,
     });
-    const shown = await h.request(
-      'GET',
-      `/agents/runners/${runner.runnerId}`,
-      { user: 'owner' },
-    );
+    const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+      user: 'owner',
+    });
     expect(shown.body.data.workspaceUsage).toMatchObject({
       totalBytes: 64 * GB,
       appBytes: 5 * GB,
@@ -133,11 +134,9 @@ describe("a runner's working directories", () => {
       workspaces: [workspace(runIds[0], GB)],
     });
     expect(response.body.data).toEqual({ remove: [], keep: [] });
-    const shown = await h.request(
-      'GET',
-      `/agents/runners/${runner.runnerId}`,
-      { user: 'owner' },
-    );
+    const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+      user: 'owner',
+    });
     expect(shown.body.data.workspaceUsage).toMatchObject({
       limitBytes: null,
       workspaces: [{ runId: runIds[0], settled: null }],

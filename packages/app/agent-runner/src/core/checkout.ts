@@ -785,13 +785,15 @@ export async function prepareDirs(
       })),
       prepared: [...prepared],
       lastUsedAt: new Date().toISOString(),
-      ...(options.runId ?? meta?.lastRunId
+      ...((options.runId ?? meta?.lastRunId)
         ? { lastRunId: options.runId ?? meta?.lastRunId }
         : {}),
       // Measured again once the run is over (core/workspaces.ts); what it took before stands in until then.
       ...(meta?.sizeBytes === undefined ? {} : { sizeBytes: meta.sizeBytes }),
       ...(meta?.unpushed === undefined ? {} : { unpushed: meta.unpushed }),
-      ...(meta?.measuredAt === undefined ? {} : { measuredAt: meta.measuredAt }),
+      ...(meta?.measuredAt === undefined
+        ? {}
+        : { measuredAt: meta.measuredAt }),
     } satisfies WorkspaceMeta);
     return { dirs, release };
   } catch (error) {
