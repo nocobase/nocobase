@@ -194,6 +194,8 @@ export interface RunEventPage {
  * - `delayed`: it was given a moment (`fireAt`, or a retry's backoff) that has not come; `until` says when.
  * - `noRunnerOnline`: no runner is online at all.
  * - `runnersOffline`: the agent names its runners, and none of them is online.
+ * - `toolVersionTooOld`: runners are online, but none runs any of the agent's coding tools, and one has a tool
+ *   enabled in a version too old for the runner to drive (`tool`; `version`, `minVersion` in `params`).
  * - `toolUnavailable`: runners are online, but none has any of the agent's coding tools enabled, installed and
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
@@ -213,6 +215,7 @@ export const RUN_WAIT_REASONS = [
   'delayed',
   'noRunnerOnline',
   'runnersOffline',
+  'toolVersionTooOld',
   'toolUnavailable',
   'noSharedRunner',
   'missingFeatures',
@@ -232,6 +235,7 @@ export type RunWaitReason = (typeof RUN_WAIT_REASONS)[number];
  * (`formatRunWait` in `client/runs.ts`, or the application's own). Absent for a reason that needs nothing.
  *
  * - `delayed`: `until` (RFC 3339).
+ * - `toolVersionTooOld`: `tool`, `version`, `minVersion`, and `command` when the tool has an update command.
  * - `toolUnavailable`: `tool`, the agent's default coding tool.
  * - `missingFeatures`: `features`, what no fitting runner has.
  * - `secretsNotAllowed`: `variables`, the names of the variables for team runners only.
@@ -254,7 +258,8 @@ export interface RunWait {
   /** When a delayed run may be claimed. */
   readonly until: string | null;
   /**
-   * For `toolUnavailable`: the agent's default coding tool (its first entry's); any of its tools would do. For
+   * For `toolVersionTooOld`: the agent's tool a runner has in a version too old. For `toolUnavailable`: the agent's
+   * default coding tool (its first entry's); any of its tools would do. For
    * `toolSlotsFull`: the first of the agent's tools the free runners run, all of whose slots are taken.
    */
   readonly tool: AgentTool | null;

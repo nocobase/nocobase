@@ -102,6 +102,11 @@ const runtimesZhCN: RuntimesLocale = {
       signedIn: '已登录',
       signedOut: '未登录',
       notInstalled: '未安装',
+      versionTooOld: '版本过旧',
+      versionTooOldHint:
+        '{{tool}} {{version}} 太旧，需要 {{minVersion}} 或更高，请在它所在的主机上运行 `{{command}}`，再重启 runner。',
+      versionTooOldUpgrade:
+        '{{tool}} {{version}} 太旧，需要 {{minVersion}} 或更高，请在它所在的主机上升级，再重启 runner。',
       off: '已关闭',
       offHint: '已关闭：这个工具的工作不会派到这个运行环境。',
       enableLabel: '在 {{name}} 上运行 {{tool}}',

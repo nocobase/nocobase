@@ -325,7 +325,17 @@ describe('permissions', () => {
     expect(events.filter((e) => e.type === 'permission')).toMatchObject([
       {
         tool: 'edit',
-        meta: { decision: 'deny', reason: 'outside the work directory' },
+        meta: {
+          decision: 'deny',
+          reason: 'outside the work directory',
+          inputSummary: {
+            fields: ['changes'],
+            changes: [
+              { path: '/work/a.txt', kind: 'add' },
+              { path: '/etc/hosts', kind: 'update' },
+            ],
+          },
+        },
       },
     ]);
     expect(events.find((e) => e.type === 'toolResult')?.meta?.isError).toBe(

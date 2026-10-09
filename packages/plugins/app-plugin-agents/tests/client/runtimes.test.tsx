@@ -109,6 +109,38 @@ describe('runtimes page', () => {
     ).toBeInTheDocument();
   });
 
+  it('says a tool is too old, with the versions and the update command, rather than not installed', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      tools: [
+        {
+          kind: 'claude',
+          version: '2.1.200',
+          path: '/usr/bin/claude',
+          authenticated: false,
+          reason: 'versionTooOld',
+          minVersion: '2.1.284',
+        },
+      ],
+    };
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    const claude = within(row)
+      .getByText('tools.claude')
+      .closest('[data-state]');
+    expect(claude).toHaveAttribute('data-state', 'versionTooOld');
+    const hint =
+      'runtimes.tool.versionTooOldHint(tool=tools.claude,version=2.1.200,minVersion=2.1.284,command=claude update)';
+    expect(claude).toHaveAttribute('title', hint);
+    const sheet = await openSheet();
+    const tool = within(sheet).getByTestId('runner-tool-claude');
+    expect(
+      within(tool).getByTestId('runner-tool-claude-too-old'),
+    ).toHaveTextContent(hint);
+    within(tool).getByText('runtimes.tool.versionTooOld');
+    expect(within(tool).queryByText('runtimes.tool.notInstalled')).toBeNull();
+  });
+
   it('says busy with the slots in use, and how long a runtime has been offline', async () => {
     runners = [
       runner('r1', { activeRuns: 1, slots: 1 }),

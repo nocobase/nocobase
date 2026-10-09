@@ -68,6 +68,7 @@ import {
   RunnerVersionCell,
   ToolStateTag,
 } from './runner-cells.js';
+import { useToolStateHint } from './tool-state-hint.js';
 import {
   Table,
   TableBody,
@@ -468,6 +469,7 @@ function ToolTable({
   readonly onLimits: (draft: ToolSlotsDraft) => void;
 }): ReactElement {
   const { t } = useTranslation();
+  const hintOf = useToolStateHint();
   if (tools.length === 0)
     return (
       <p className='text-sm text-muted-foreground'>{t('runtimes.noTools')}</p>
@@ -495,6 +497,10 @@ function ToolTable({
           {tools.map((tool) => {
             const info = runner.tools.find((item) => item.kind === tool);
             const enabled = enabledTools.includes(tool);
+            const state = toolState(
+              { enabledTools, tools: runner.tools },
+              tool,
+            );
             return (
               <TableRow
                 key={tool}
@@ -514,6 +520,14 @@ function ToolTable({
                   {info?.version ? (
                     <div className='truncate text-xs text-muted-foreground'>
                       {t('runtimes.tool.version', { version: info.version })}
+                    </div>
+                  ) : null}
+                  {state === 'versionTooOld' ? (
+                    <div
+                      data-testid={`runner-tool-${tool}-too-old`}
+                      className='text-xs text-amber-700 dark:text-amber-400'
+                    >
+                      {hintOf(state, tool, info)}
                     </div>
                   ) : null}
                   {info?.path ? (
@@ -538,10 +552,8 @@ function ToolTable({
                 </TableCell>
                 <TableCell>
                   <ToolStateTag
-                    state={toolState(
-                      { enabledTools, tools: runner.tools },
-                      tool,
-                    )}
+                    state={state}
+                    hint={hintOf(state, tool, info)}
                   />
                 </TableCell>
                 <TableCell>

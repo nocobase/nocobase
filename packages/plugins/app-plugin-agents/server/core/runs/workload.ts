@@ -11,7 +11,13 @@ import type { AgentTool, RunnerFeature } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import { entryTools, type Agent } from '../../../shared/agents.js';
-import { runsTool, toolLimit, type Runner } from '../../../shared/runners.js';
+import {
+  runsTool,
+  TOOL_UPDATE_COMMANDS,
+  toolLimit,
+  tooOldTool,
+  type Runner,
+} from '../../../shared/runners.js';
 import {
   RUN_ACTIVITY_TEXT_MAX,
   type AgentLoad,
@@ -124,11 +130,29 @@ export function explainWait(
     fitting = fitting.filter((runner) => agent.runnerIds.includes(runner.id));
     if (fitting.length === 0) return wait('runnersOffline');
   }
+  const online = fitting;
   fitting = fitting.filter((runner) =>
     tools.some((each) => runsTool(runner, each)),
   );
-  if (fitting.length === 0)
+  if (fitting.length === 0) {
+    // A tool that is there but too old needs an update on its host, not an installation or a login.
+    for (const each of tools)
+      for (const runner of online) {
+        const old = tooOldTool(runner, each);
+        if (!old) continue;
+        const command = TOOL_UPDATE_COMMANDS[each];
+        return wait('toolVersionTooOld', {
+          tool: each,
+          params: {
+            tool: each,
+            ...(old.version ? { version: old.version } : {}),
+            ...(old.minVersion ? { minVersion: old.minVersion } : {}),
+            ...(command ? { command } : {}),
+          },
+        });
+      }
     return wait('toolUnavailable', { tool, params: tool ? { tool } : {} });
+  }
   fitting = fitting.filter(
     (runner) =>
       runner.trust === 'team' || runner.ownerUserId === run.actorUserId,

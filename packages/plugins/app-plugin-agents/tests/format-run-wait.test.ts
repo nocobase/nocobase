@@ -43,6 +43,16 @@ describe('formatRunWait', () => {
     expect(words('concurrencyFull', { active: 2, limit: 2 })).toBe(
       'Concurrency full (2/2)',
     );
+    expect(
+      words('toolVersionTooOld', {
+        tool: 'claude',
+        version: '2.1.200',
+        minVersion: '2.1.284',
+        command: 'claude update',
+      }),
+    ).toBe(
+      'claude 2.1.200 is too old; 2.1.284 or later is required. Run `claude update` on the runtime',
+    );
     expect(words('toolUnavailable', { tool: 'codex' })).toBe(
       'No runtime has codex signed in',
     );

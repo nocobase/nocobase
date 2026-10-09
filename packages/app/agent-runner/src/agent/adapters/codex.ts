@@ -48,6 +48,7 @@ import type {
 import { RpcConnection, spawnCodexProcess } from './codex/rpc.ts';
 import type { CodexExit, CodexProcess, SpawnCodex } from './codex/rpc.ts';
 import { denialMessage } from './policy-denial.ts';
+import { permissionInputSummary } from './input-summary.ts';
 import {
   Channel,
   capInput,
@@ -514,6 +515,8 @@ class CodexRun {
     extra: Record<string, unknown> = {},
   ): void {
     const capped = capInput(input);
+    // What the denial was about, before capping drops the paths of a large input.
+    const summary = decision.allow ? undefined : permissionInputSummary(input);
     this.emit({
       type: 'permission',
       tool,
@@ -522,6 +525,7 @@ class CodexRun {
         decision: decision.allow ? 'allow' : 'deny',
         ...(decision.reason ? { reason: decision.reason } : {}),
         ...(toolUseId ? { toolUseId } : {}),
+        ...(summary ? { inputSummary: summary } : {}),
         ...extra,
         ...(capped.truncated ? { truncated: true } : {}),
       },

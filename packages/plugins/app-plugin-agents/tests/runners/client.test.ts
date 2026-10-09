@@ -12,7 +12,9 @@ import {
   listedTools,
   runnerActivity,
   runnerTakesAgent,
+  runsTool,
   toolState,
+  tooOldTool,
   type RunnerSummary,
 } from '../../shared/runners.js';
 
@@ -127,6 +129,26 @@ describe('a runner at a glance', () => {
     expect(toolState(runner('r4', { enabledTools: ['pi'] }), 'pi')).toBe(
       'notInstalled',
     );
+  });
+
+  it('tells a tool too old to run from one not installed, and runs none of its work', () => {
+    const tools = [
+      {
+        kind: 'claude' as const,
+        authenticated: true,
+        version: '2.1.200',
+        reason: 'versionTooOld' as const,
+        minVersion: '2.1.284',
+      },
+    ];
+    const old = runner('r1', { tools, enabledTools: null });
+    expect(listedTools(old)).toEqual(['claude']);
+    expect(toolState(old, 'claude')).toBe('versionTooOld');
+    expect(runsTool(old, 'claude')).toBe(false);
+    expect(tooOldTool(old, 'claude')).toMatchObject({ minVersion: '2.1.284' });
+    expect(
+      tooOldTool(runner('r2', { tools, enabledTools: ['codex'] }), 'claude'),
+    ).toBeUndefined();
   });
 
   it('is busy while every slot is taken', () => {

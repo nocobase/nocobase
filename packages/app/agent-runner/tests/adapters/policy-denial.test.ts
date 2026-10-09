@@ -19,7 +19,8 @@ describe('runner policy feedback', () => {
     expect(message).toContain(reason);
     expect(message).toContain('not a user instruction to stop');
     expect(message).toContain(alternative);
-    expect(message).toContain('Continue the task');
+    expect(message).toContain('it does not end the task');
+    expect(message).toContain('still do every other step');
     expect(message).toContain('do not ask for permission');
   });
 

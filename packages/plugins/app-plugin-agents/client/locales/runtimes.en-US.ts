@@ -103,6 +103,11 @@ const runtimesEnUS = {
       signedIn: 'Signed in',
       signedOut: 'Not signed in',
       notInstalled: 'Not installed',
+      versionTooOld: 'Version too old',
+      versionTooOldHint:
+        '{{tool}} {{version}} is too old; {{minVersion}} or later is required. Run `{{command}}` on its host, then restart the runner.',
+      versionTooOldUpgrade:
+        '{{tool}} {{version}} is too old; {{minVersion}} or later is required. Update it on its host, then restart the runner.',
       off: 'Off',
       offHint: 'Off: work for this tool is not sent to this runtime.',
       enableLabel: 'Run {{tool}} on {{name}}',

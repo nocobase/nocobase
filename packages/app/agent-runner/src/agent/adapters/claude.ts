@@ -38,6 +38,8 @@ import type {
 
 import { classifyClaudeFailure } from './classify.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
+import { permissionInputSummary } from './input-summary.ts';
+import type { PermissionInputSummary } from './input-summary.ts';
 import { denialMessage } from './policy-denial.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
@@ -307,14 +309,30 @@ export class ClaudeAdapter implements AgentAdapter {
         ...(version ? { version } : {}),
         path: found,
         authenticated,
+        ...(version !== undefined && !usable
+          ? { reason: 'versionTooOld' as const, minVersion }
+          : {}),
       },
       executable: usable ? { path: found, version } : undefined,
     };
   }
 
   start(session: AdapterSession): AdapterHandle {
-    return new ClaudeRun(session, () => this.resolveExecutable()).handle();
+    return new ClaudeRun(
+      session,
+      () => this.resolveExecutable(),
+      () => this.detect(),
+    ).handle();
   }
+}
+
+/** Why there is no `claude` to run, in words that say what to do about it. */
+export function claudeUnavailableMessage(detection: ToolDetection): string {
+  if (detection.reason === 'versionTooOld')
+    return `Claude Code ${detection.version ?? 'on this runner'} is too old; ${detection.minVersion ?? DEFAULT_MIN_CLAUDE_VERSION} or later is required. Run \`claude update\` on the runner's host, then restart the runner.`;
+  if (detection.path)
+    return `Claude Code at ${detection.path} did not report its version; ${detection.minVersion ?? DEFAULT_MIN_CLAUDE_VERSION} or later is required.`;
+  return `Claude Code ${DEFAULT_MIN_CLAUDE_VERSION} or later is not installed on this runner (no \`claude\` on its PATH).`;
 }
 
 class ClaudeRun {
@@ -331,8 +349,14 @@ class ClaudeRun {
     string,
     { allow: boolean; reason?: string }
   >();
-  private readonly reportedDecisions = new Map<string, boolean>();
+  /** Permission events already emitted, by `<toolUseId>:<source>:<decision>`. */
+  private readonly reported = new Set<string>();
   private readonly toolInputs = new Map<string, unknown>();
+  /** Summaries of the tool inputs, taken before they were capped for the transcript. */
+  private readonly toolSummaries = new Map<
+    string,
+    PermissionInputSummary | undefined
+  >();
   private readonly backgroundTasks = new Set<string>();
   private awaitingIdle = false;
   private permissionChannelFailure?: string;
@@ -356,13 +380,16 @@ class ClaudeRun {
   private readonly resolveExecutable: () => Promise<
     ResolvedExecutable | undefined
   >;
+  private readonly detect: () => Promise<ToolDetection>;
 
   constructor(
     session: AdapterSession,
     resolveExecutable: () => Promise<ResolvedExecutable | undefined>,
+    detect: () => Promise<ToolDetection>,
   ) {
     this.session = session;
     this.resolveExecutable = resolveExecutable;
+    this.detect = detect;
     if (session.abort.aborted) this.stopping = true;
     session.abort.addEventListener('abort', () => void this.stop(), {
       once: true,
@@ -467,16 +494,25 @@ class ClaudeRun {
     return decision;
   }
 
+  /**
+   * Emits one permission event per call, source and decision. `runner` is the runner's policy; `cli` a denial Claude
+   * Code decided itself (its own rules or mode); `diagnostic` a refusal no runner denial explains. A runner denial
+   * and a CLI denial of the same call are both kept, so neither reason hides the other.
+   */
   private report(
     tool: string,
     input: unknown,
     toolUseId: string | undefined,
     decision: { allow: boolean; reason?: string },
+    source: 'runner' | 'cli' | 'diagnostic',
+    summary: PermissionInputSummary | undefined = decision.allow
+      ? undefined
+      : permissionInputSummary(input),
   ) {
     if (toolUseId) {
-      const previous = this.reportedDecisions.get(toolUseId);
-      if (previous === false || previous === decision.allow) return;
-      this.reportedDecisions.set(toolUseId, decision.allow);
+      const key = `${toolUseId}:${source}:${decision.allow ? 'allow' : 'deny'}`;
+      if (this.reported.has(key)) return;
+      this.reported.add(key);
     }
     const capped = capInput(input);
     this.emit({
@@ -487,9 +523,16 @@ class ClaudeRun {
         decision: decision.allow ? 'allow' : 'deny',
         ...(decision.reason ? { reason: decision.reason } : {}),
         ...(toolUseId ? { toolUseId } : {}),
+        source,
+        ...(summary ? { inputSummary: summary } : {}),
         ...(capped.truncated ? { truncated: true } : {}),
       },
     });
+  }
+
+  /** Whether the runner's own policy denied the call: its decision, never what was reported about it. */
+  private runnerDenied(toolUseId: string): boolean {
+    return this.decisions.get(toolUseId)?.allow === false;
   }
 
   /**
@@ -511,7 +554,13 @@ class ClaudeRun {
       hookInput.tool_use_id,
       signal,
     );
-    this.report(hookInput.tool_name, input, hookInput.tool_use_id, decision);
+    this.report(
+      hookInput.tool_name,
+      input,
+      hookInput.tool_use_id,
+      decision,
+      'runner',
+    );
     if (decision.allow) return {};
     return {
       hookSpecificOutput: {
@@ -528,7 +577,7 @@ class ClaudeRun {
     { toolUseID, signal },
   ): Promise<PermissionResult> => {
     const decision = await this.decide(tool, input, toolUseID, signal);
-    this.report(tool, input, toolUseID, decision);
+    this.report(tool, input, toolUseID, decision, 'runner');
     return decision.allow
       ? { behavior: 'allow', updatedInput: input }
       : { behavior: 'deny', message: denialMessage(decision.reason) };
@@ -536,12 +585,18 @@ class ClaudeRun {
 
   // -- the run --------------------------------------------------------------
 
+  private async unavailable(): Promise<string> {
+    return claudeUnavailableMessage(
+      await this.detect().catch((): ToolDetection => ({
+        installed: false,
+        authenticated: false,
+      })),
+    );
+  }
+
   private async buildOptions(): Promise<Options> {
     const executable = await this.resolveExecutable();
-    if (!executable)
-      throw new Error(
-        `Claude Code ${DEFAULT_MIN_CLAUDE_VERSION} or later is not installed on this runner (no \`claude\` on its PATH).`,
-      );
+    if (!executable) throw new Error(await this.unavailable());
     const { session } = this;
     return {
       cwd: session.workDir,
@@ -743,6 +798,10 @@ class ClaudeRun {
             this.toolNames.set(block.id, block.name);
             const capped = capInput(block.input);
             this.toolInputs.set(block.id, capped.input);
+            this.toolSummaries.set(
+              block.id,
+              permissionInputSummary(block.input),
+            );
             this.emit({
               type: 'toolUse',
               tool: block.name,
@@ -771,8 +830,10 @@ class ClaudeRun {
             /The user doesn't want to take this action right now|Tool permission request failed.*(?:Stream closed|AbortError)/s.test(
               capped.text,
             ) &&
-            this.reportedDecisions.get(block.tool_use_id) !== false
+            !this.runnerDenied(block.tool_use_id)
           ) {
+            // Claude Code's user-stop text for a call the runner did not deny: its own rules refused it, or the
+            // permission control channel is gone. Either way the work cannot go on as if it had been answered.
             const reason = `Claude Code refused the tool without a runner denial. The permission control channel may be unavailable or native CLI rules may have denied it; this is not a user instruction to stop. CLI feedback: ${capped.text.slice(0, 1024)}`;
             this.permissionChannelFailure = reason;
             this.report(
@@ -780,6 +841,8 @@ class ClaudeRun {
               this.toolInputs.get(block.tool_use_id),
               block.tool_use_id,
               { allow: false, reason },
+              'diagnostic',
+              this.toolSummaries.get(block.tool_use_id),
             );
           }
           if (!block.is_error && this.decisions.get(block.tool_use_id)?.allow)
@@ -854,7 +917,8 @@ class ClaudeRun {
         });
         return;
       case 'permission_denied':
-        // Denials Claude Code decided itself (deny rules, mode); ours are reported already.
+        // Denials Claude Code decided itself (deny rules, mode); the runner's own are reported already.
+        if (this.runnerDenied(message.tool_use_id)) return;
         this.report(
           this.toolNames.get(message.tool_use_id) ?? message.tool_name,
           this.toolInputs.get(message.tool_use_id),
@@ -863,6 +927,8 @@ class ClaudeRun {
             allow: false,
             reason: message.decision_reason ?? message.message,
           },
+          'cli',
+          this.toolSummaries.get(message.tool_use_id),
         );
         return;
       case 'background_tasks_changed':
@@ -888,12 +954,20 @@ class ClaudeRun {
 
   private onResult(message: SDKResultMessage): void {
     // The result list also covers SDK denials that emitted no permission_denied frame.
-    for (const denial of message.permission_denials ?? [])
-      this.report(denial.tool_name, denial.tool_input, denial.tool_use_id, {
-        allow: false,
-        reason:
-          'Claude Code denied this call outside the runner policy callback; consult the CLI permission rules and control-channel diagnostics.',
-      });
+    for (const denial of message.permission_denials ?? []) {
+      if (this.runnerDenied(denial.tool_use_id)) continue;
+      this.report(
+        denial.tool_name,
+        denial.tool_input,
+        denial.tool_use_id,
+        {
+          allow: false,
+          reason:
+            'Claude Code denied this call outside the runner policy callback; consult the CLI permission rules and control-channel diagnostics.',
+        },
+        'cli',
+      );
+    }
     this.lastResult = message;
     this.sessionId = message.session_id;
     this.acknowledge(

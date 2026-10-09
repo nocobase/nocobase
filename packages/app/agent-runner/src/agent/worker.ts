@@ -380,8 +380,12 @@ export class RunWorker {
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
   private recordEvent(event: AdapterEvent): void {
-    const denial = permissionDenialLog(event, this.redactor);
-    if (denial) this.deps.log(`run ${this.runId}: ${denial}`);
+    const denial = permissionDenialLog(
+      event,
+      this.redactor,
+      `run ${this.runId}: `,
+    );
+    if (denial) this.deps.log(denial);
     if (event.type === 'input') {
       const inputId = event.meta?.inputId;
       if (typeof inputId === 'string' && this.inputs.has(inputId)) {

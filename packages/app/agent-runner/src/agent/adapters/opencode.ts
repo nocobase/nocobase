@@ -31,6 +31,7 @@ import type {
   OpencodeEvent,
   PermissionRule,
 } from './opencode/client.ts';
+import { permissionInputSummary } from './input-summary.ts';
 import { classifyOpencodeFailure } from './opencode/classify.ts';
 import type { OpencodeFailureSignal } from './opencode/classify.ts';
 import { launchServer } from './opencode/server.ts';
@@ -917,6 +918,8 @@ class OpencodeRun {
     const decision = await this.decide(tool, input, action, resources);
     if (this.finished || this.stopping) return;
     const capped = capInput(input);
+    // What the denial was about, before capping drops the paths of a large input.
+    const summary = decision.allow ? undefined : permissionInputSummary(input);
     this.emit({
       type: 'permission',
       tool,
@@ -925,6 +928,7 @@ class OpencodeRun {
         decision: decision.allow ? 'allow' : 'deny',
         ...(decision.reason ? { reason: decision.reason } : {}),
         ...(toolUseId ? { toolUseId } : {}),
+        ...(summary ? { inputSummary: summary } : {}),
         action,
         ...(resources.length ? { resources } : {}),
         ...(sid !== this.sessionId ? { childSessionId: sid } : {}),

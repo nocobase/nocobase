@@ -110,13 +110,28 @@ describe('detect and executable', () => {
     expect(path.isAbsolute(detected.path!)).toBe(true);
   });
 
-  it('reports a claude older than the minimum as not installed, with its version', async () => {
+  it('reports a claude older than the minimum as too old, with its version and the minimum', async () => {
     const adapter = adapterWith('1.0.0', dir);
-    expect(await adapter.detect()).toMatchObject({
+    expect(await adapter.detect()).toEqual({
       installed: false,
       version: '1.0.0',
+      path: path.join(dir, 'claude'),
+      authenticated: true,
+      reason: 'versionTooOld',
+      minVersion: DEFAULT_MIN_CLAUDE_VERSION,
     });
     expect(await adapter.resolveExecutable()).toBeUndefined();
+  });
+
+  it('says a too-old claude needs `claude update`, not that it is missing', async () => {
+    const handle = adapterWith('2.1.200', dir).start(session());
+    const outcome = await handle.result;
+    expect(outcome.error?.message).toBe(
+      `Claude Code 2.1.200 is too old; ${DEFAULT_MIN_CLAUDE_VERSION} or later is required. Run \`claude update\` on the runner's host, then restart the runner.`,
+    );
+    expect(outcome.error?.message).not.toContain('not installed');
+    expect(outcome.error?.message).not.toContain('PATH');
+    expect(calls).toHaveLength(0);
   });
 
   it('reports a missing claude and the login state', async () => {
@@ -663,23 +678,35 @@ describe('permissions', () => {
     ]);
   });
 
+  const STOP_TEXT =
+    "The user doesn't want to take this action right now. STOP what you are doing and wait for the user to tell you how to proceed.";
+  const nativeDenial = (id: string) =>
+    ({
+      type: 'system',
+      subtype: 'permission_denied',
+      tool_name: 'Read',
+      tool_use_id: id,
+      decision_reason: 'deny rule in settings',
+      message: 'denied',
+      uuid: `u-${id}`,
+      session_id: SESSION_ID,
+    }) as never;
+  const readCall = (id: string) =>
+    assistant([
+      {
+        type: 'tool_use',
+        id,
+        name: 'Read',
+        input: { file_path: '/work/log' },
+      },
+    ]);
+
   it('reports a default STOP without a callback as an infrastructure failure', async () => {
     setScript(
       replay([
         init(),
-        assistant([
-          {
-            type: 'tool_use',
-            id: 'lost',
-            name: 'Read',
-            input: { file_path: '/work/log' },
-          },
-        ]),
-        toolResult(
-          'lost',
-          "The user doesn't want to take this action right now. STOP what you are doing and wait for the user to tell you how to proceed.",
-          true,
-        ),
+        readCall('lost'),
+        toolResult('lost', STOP_TEXT, true),
         result({
           permission_denials: [
             {
@@ -699,7 +726,17 @@ describe('permissions', () => {
         input: { file_path: '/work/log' },
         meta: {
           decision: 'deny',
+          source: 'diagnostic',
           reason: expect.stringContaining('without a runner denial'),
+          inputSummary: { file_path: '/work/log' },
+        },
+      },
+      {
+        tool: 'Read',
+        meta: {
+          decision: 'deny',
+          source: 'cli',
+          reason: expect.stringContaining('outside the runner policy callback'),
         },
       },
     ]);
@@ -707,6 +744,136 @@ describe('permissions', () => {
       exit: 'error',
       error: { reason: 'toolProcess' },
     });
+  });
+
+  it.each([
+    [
+      'before',
+      [
+        init(),
+        readCall('n1'),
+        nativeDenial('n1'),
+        toolResult('n1', STOP_TEXT, true),
+        result(),
+      ],
+      ['cli', 'diagnostic'],
+    ],
+    [
+      'after',
+      [
+        init(),
+        readCall('n1'),
+        toolResult('n1', STOP_TEXT, true),
+        nativeDenial('n1'),
+        result(),
+      ],
+      ['diagnostic', 'cli'],
+    ],
+  ])(
+    'fails a default STOP the runner never denied when the native denial arrives %s it',
+    async (_order, script, sources) => {
+      setScript(replay(script as never));
+      const handle = adapterWith('9.0.0', dir).start(session());
+      const events = await collect(handle.events);
+      const denials = events.filter((e) => e.type === 'permission');
+      expect(denials.map((e) => e.meta?.source)).toEqual(sources);
+      expect(denials.find((e) => e.meta?.source === 'cli')).toMatchObject({
+        tool: 'Read',
+        meta: {
+          reason: 'deny rule in settings',
+          inputSummary: { file_path: '/work/log' },
+        },
+      });
+      expect(await handle.result).toMatchObject({
+        exit: 'error',
+        error: {
+          reason: 'toolProcess',
+          message: expect.stringContaining('not a user instruction to stop'),
+        },
+      });
+    },
+  );
+
+  it('keeps a runner denial as the only reason and completes when the work goes on', async () => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      yield readCall('r1');
+      expect(await ctx.callTool('Read', { file_path: '/work/log' }, 'r1')).toBe(
+        'deny',
+      );
+      // Claude Code reports the hook's denial as its own as well.
+      yield nativeDenial('r1');
+      yield toolResult('r1', ctx.toolFeedback[0] ?? '', true);
+      expect(await ctx.callTool('Read', { file_path: 'log' }, 'r2')).toBe(
+        'allow',
+      );
+      yield toolResult('r2', 'contents');
+      yield result({
+        permission_denials: [
+          {
+            tool_name: 'Read',
+            tool_use_id: 'r1',
+            tool_input: { file_path: '/work/log' },
+          },
+        ],
+      });
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        permission: async (_tool, input) =>
+          input.file_path === '/work/log'
+            ? { deny: 'Read outside the work directory: /work/log' }
+            : 'allow',
+      }),
+    );
+    const events = await collect(handle.events);
+    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
+      {
+        meta: {
+          decision: 'deny',
+          source: 'runner',
+          reason: 'Read outside the work directory: /work/log',
+        },
+      },
+      { meta: { decision: 'allow', source: 'runner' } },
+    ]);
+    expect((await handle.result).exit).toBe('completed');
+  });
+
+  it('summarizes a large Write by its path, before the input is capped', async () => {
+    const body = '正文🙂'.repeat(20_000);
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      yield assistant([
+        {
+          type: 'tool_use',
+          id: 'w1',
+          name: 'Write',
+          input: { file_path: '/outside/big.txt', content: body },
+        },
+      ]);
+      await ctx.callTool(
+        'Write',
+        { file_path: '/outside/big.txt', content: body },
+        'w1',
+      );
+      yield result();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ permission: async () => ({ deny: 'outside' }) }),
+    );
+    const events = await collect(handle.events);
+    const denial = events.find((e) => e.type === 'permission')!;
+    expect(denial.meta).toMatchObject({
+      truncated: true,
+      inputSummary: {
+        fields: ['file_path', 'content'],
+        file_path: '/outside/big.txt',
+      },
+    });
+    expect(JSON.stringify(denial.meta?.inputSummary)).not.toContain('正文');
   });
 
   it('records result-only CLI denials without losing the input or duplicating earlier denials', async () => {
@@ -732,7 +899,9 @@ describe('permissions', () => {
         input: { file_path: '/work/log' },
         meta: {
           decision: 'deny',
+          source: 'cli',
           reason: expect.stringContaining('outside the runner policy callback'),
+          inputSummary: { file_path: '/work/log' },
         },
       },
     ]);

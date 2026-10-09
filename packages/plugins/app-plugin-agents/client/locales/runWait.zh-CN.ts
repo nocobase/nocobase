@@ -8,6 +8,8 @@ const runWaitZhCN: RunWaitLocale = {
       delayed: '计划于 {{until}} 开始',
       noRunnerOnline: '没有在线的运行环境',
       runnersOffline: '它的运行环境都不在线',
+      toolVersionTooOld:
+        '{{tool}} {{version}} 太旧，需要 {{minVersion}} 或更高，请在运行环境上运行 `{{command}}`',
       toolUnavailable: '没有运行环境登录了 {{tool}}',
       noSharedRunner: '在线的只有别人的运行环境',
       missingFeatures: '没有运行环境支持 {{features}}',

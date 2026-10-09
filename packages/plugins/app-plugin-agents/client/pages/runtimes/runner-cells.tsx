@@ -28,6 +28,7 @@ import {
 } from '../../components/ui/popover.js';
 import { useFormatters } from '../../lib/format.js';
 import { upgradeCommand } from '../../lib/install.js';
+import { useToolStateHint } from './tool-state-hint.js';
 
 const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
   online: 'green',
@@ -112,22 +113,22 @@ export function RunnerStatusCell({
 const TOOL_STATE_TONE: Readonly<Record<ToolState, Tone>> = {
   off: 'grey',
   notInstalled: 'amber',
+  versionTooOld: 'amber',
   signedOut: 'amber',
   signedIn: 'green',
 };
 
 export function ToolStateTag({
   state,
+  hint,
 }: {
   readonly state: ToolState;
+  /** Shown on hover; the label alone otherwise. */
+  readonly hint?: string;
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <AgTag
-      tone={TOOL_STATE_TONE[state]}
-      dot
-      title={state === 'off' ? t('runtimes.tool.offHint') : undefined}
-    >
+    <AgTag tone={TOOL_STATE_TONE[state]} dot title={hint}>
       {t(`runtimes.tool.${state}`)}
     </AgTag>
   );
@@ -143,6 +144,7 @@ export function RunnerToolsCell({
   readonly runner: Pick<Runner, 'enabledTools' | 'tools'>;
 }): ReactElement {
   const { t } = useTranslation();
+  const hintOf = useToolStateHint();
   const tools = listedTools(runner);
   if (tools.length === 0)
     return (
@@ -157,16 +159,24 @@ export function RunnerToolsCell({
     >
       {tools.map((tool) => {
         const state = toolState(runner, tool);
+        const label =
+          (state === 'versionTooOld'
+            ? hintOf(
+                state,
+                tool,
+                runner.tools.find((item) => item.kind === tool),
+              )
+            : undefined) ?? t(`runtimes.tool.${state}`);
         return (
           <li key={tool}>
             <AgTag
               tone={TOOL_STATE_TONE[state]}
               dot
               data-state={state}
-              title={t(`runtimes.tool.${state}`)}
+              title={label}
             >
               {t(`tools.${tool}`)}
-              <span className='sr-only'>{t(`runtimes.tool.${state}`)}</span>
+              <span className='sr-only'>{label}</span>
             </AgTag>
           </li>
         );

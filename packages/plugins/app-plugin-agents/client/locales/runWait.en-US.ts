@@ -9,6 +9,8 @@ const runWaitEnUS = {
       delayed: 'Scheduled for {{until}}',
       noRunnerOnline: 'No runtime online',
       runnersOffline: 'Its runtimes are offline',
+      toolVersionTooOld:
+        '{{tool}} {{version}} is too old; {{minVersion}} or later is required. Run `{{command}}` on the runtime',
       toolUnavailable: 'No runtime has {{tool}} signed in',
       noSharedRunner: 'Only other people’s runtimes are online',
       missingFeatures: 'No runtime supports {{features}}',

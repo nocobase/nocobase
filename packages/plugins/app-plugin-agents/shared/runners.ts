@@ -229,14 +229,36 @@ export function toolEnabled(
   return runner.enabledTools === null || runner.enabledTools.includes(tool);
 }
 
-/** Whether `runner` can run `tool`'s work: it is enabled there, installed and signed in. */
+/** Whether `runner` can run `tool`'s work: it is enabled there, installed, usable and signed in. */
 export function runsTool(
   runner: Pick<Runner, 'enabledTools' | 'tools'>,
   tool: AgentTool,
 ): boolean {
   return (
     toolEnabled(runner, tool) &&
-    runner.tools.some((item) => item.kind === tool && item.authenticated)
+    runner.tools.some(
+      (item) =>
+        item.kind === tool && item.authenticated && item.reason === undefined,
+    )
+  );
+}
+
+/**
+ * The command that updates a coding tool on its host, for the tools whose runner says how; absent for the others,
+ * whose words then name no command.
+ */
+export const TOOL_UPDATE_COMMANDS: Readonly<
+  Partial<Record<AgentTool, string>>
+> = { claude: 'claude update' };
+
+/** The tool `runner` has, enabled, but in a version too old for the runner to drive; undefined when it has none. */
+export function tooOldTool(
+  runner: Pick<Runner, 'enabledTools' | 'tools'>,
+  tool: AgentTool,
+): ToolInfo | undefined {
+  if (!toolEnabled(runner, tool)) return undefined;
+  return runner.tools.find(
+    (item) => item.kind === tool && item.reason === 'versionTooOld',
   );
 }
 
@@ -248,9 +270,13 @@ export function jobKindsOf(runner: Pick<Runner, 'features'>): string[] {
 }
 
 /** The state of one of a runner's coding tools, as a page shows it. */
-export type ToolState = 'off' | 'notInstalled' | 'signedOut' | 'signedIn';
+export type ToolState =
+  'off' | 'notInstalled' | 'versionTooOld' | 'signedOut' | 'signedIn';
 
-/** Off when people turned it off here; otherwise whether the runner has it installed and signed in. */
+/**
+ * Off when people turned it off here; otherwise whether the runner has it installed, in a version it drives, and
+ * signed in.
+ */
 export function toolState(
   runner: Pick<Runner, 'enabledTools' | 'tools'>,
   tool: AgentTool,
@@ -258,6 +284,7 @@ export function toolState(
   if (!toolEnabled(runner, tool)) return 'off';
   const info = runner.tools.find((item) => item.kind === tool);
   if (!info) return 'notInstalled';
+  if (info.reason === 'versionTooOld') return 'versionTooOld';
   return info.authenticated ? 'signedIn' : 'signedOut';
 }
 

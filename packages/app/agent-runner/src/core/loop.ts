@@ -120,10 +120,17 @@ export async function detectTools(
     const detected = await adapter
       .detect()
       .catch(() => ({ installed: false, authenticated: false }));
-    if (!detected.installed) continue;
+    // A tool that was found but cannot run here is listed with why, and never as signed in, so an application that
+    // does not know `reason` dispatches nothing to it either.
+    const reason = 'reason' in detected ? detected.reason : undefined;
+    if (!detected.installed && reason === undefined) continue;
     tools.push({
       kind,
-      authenticated: detected.authenticated,
+      authenticated: detected.installed && detected.authenticated,
+      ...(reason !== undefined ? { reason } : {}),
+      ...('minVersion' in detected && detected.minVersion !== undefined
+        ? { minVersion: detected.minVersion }
+        : {}),
       ...('version' in detected && detected.version !== undefined
         ? { version: detected.version }
         : {}),
@@ -329,6 +336,11 @@ export class RunnerDaemon {
     this.gcTimer.unref();
 
     this.tools = await detectTools(this.options.adapters);
+    for (const tool of this.tools)
+      if (tool.reason === 'versionTooOld')
+        log(
+          `${tool.kind} ${tool.version ?? ''} is too old and takes no runs here; ${tool.minVersion ?? 'a newer version'} or later is required${tool.kind === 'claude' ? ' (run `claude update`, then restart the runner)' : ''}.`,
+        );
     for (const link of this.links) {
       await this.heartbeat(link);
       link.heartbeatTimer = setInterval(

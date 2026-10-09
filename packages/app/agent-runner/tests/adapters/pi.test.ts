@@ -454,6 +454,7 @@ describe('permissions', () => {
           decision: 'deny',
           reason: 'rm is not allowed',
           toolUseId: 'call_3',
+          inputSummary: { fields: ['command'], command: 'rm -rf x' },
         },
       }),
     ]);

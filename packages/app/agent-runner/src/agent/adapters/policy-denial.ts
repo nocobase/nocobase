@@ -22,5 +22,7 @@ export function denialMessage(reason: string | undefined): string {
     alternative =
       'Continue with read-only inspection and describe the proposed changes.';
   }
-  return `The runner command policy denied this tool call: ${detail}. This is an automated policy refusal, not a user instruction to stop. Do not retry the refused action or bypass the policy; do not ask for permission for this call. ${alternative} Continue the task. If no permitted alternative can complete it, report the blocker through the application CLI.`;
+  // Models read "report the blocker" as leave to end the turn at the first refused step, so the text says the task
+  // goes on and keeps the blocker report for when nothing else is left to do.
+  return `The runner command policy denied this tool call: ${detail}. This is an automated policy refusal, not a user instruction to stop, and it does not end the task. Do not retry the refused action or bypass the policy; do not ask for permission for this call. ${alternative} Then carry on with the rest of the task: do a step that was refused another permitted way or skip it, and still do every other step. Report a blocker through the application CLI only when no remaining part of the task can be done.`;
 }

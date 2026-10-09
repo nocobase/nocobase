@@ -14,6 +14,7 @@ import type {
   FailureReason,
   RunEventType,
   RunnerFeature,
+  ToolUnavailableReason,
 } from '../../protocol/index.ts';
 
 export type { FailureReason, RunEventType, RunnerFeature };
@@ -92,6 +93,9 @@ export interface ToolDetection {
   version?: string;
   path?: string;
   authenticated: boolean;
+  /** Why a tool that was found is not installed for the runner, such as a version below `minVersion`. */
+  reason?: ToolUnavailableReason;
+  minVersion?: string;
 }
 
 export interface AdapterSession {

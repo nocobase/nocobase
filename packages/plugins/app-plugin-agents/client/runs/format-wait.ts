@@ -35,6 +35,7 @@ export const BLOCKING_RUN_WAIT_REASONS: readonly string[] = [
   'agentArchived',
   'noRunnerOnline',
   'runnersOffline',
+  'toolVersionTooOld',
   'toolUnavailable',
   'noSharedRunner',
   'missingFeatures',
@@ -60,6 +61,9 @@ const NAMES = [
   'used',
   'runners',
   'detail',
+  'version',
+  'minVersion',
+  'command',
 ] as const;
 
 export function formatRunWait(

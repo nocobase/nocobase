@@ -229,6 +229,52 @@ describe('explainWait', () => {
     expect(explainWait(run, context).params).toBeUndefined();
   });
 
+  it('says a tool too old to run needs an update, with the versions and the command', () => {
+    const old = runner({
+      tools: [
+        {
+          kind: 'claude',
+          authenticated: false,
+          version: '2.1.200',
+          reason: 'versionTooOld',
+          minVersion: '2.1.284',
+        },
+      ],
+    });
+    expect(explainWait(run, { ...context, runners: [old] })).toMatchObject({
+      reason: 'toolVersionTooOld',
+      tool: 'claude',
+      params: {
+        tool: 'claude',
+        version: '2.1.200',
+        minVersion: '2.1.284',
+        command: 'claude update',
+      },
+    });
+    // Signed in and too old still runs nothing; turned off, it is no reason.
+    expect(
+      explainWait(run, {
+        ...context,
+        runners: [
+          runner({
+            tools: [{ ...old.tools[0]!, authenticated: true }],
+          }),
+        ],
+      }).reason,
+    ).toBe('toolVersionTooOld');
+    expect(
+      explainWait(run, {
+        ...context,
+        runners: [{ ...old, enabledTools: ['codex'] }],
+      }).reason,
+    ).toBe('toolUnavailable');
+    // A runner that runs the tool takes the run whatever another one has.
+    expect(
+      explainWait(run, { ...context, runners: [old, runner({ id: 'r2' })] })
+        .reason,
+    ).toBe('next');
+  });
+
   it('follows the claim rules in order', () => {
     expect(explainWait(run, { ...context, agent: null }).reason).toBe(
       'agentArchived',

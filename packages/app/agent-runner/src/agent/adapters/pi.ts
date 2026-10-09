@@ -36,6 +36,7 @@ import {
 } from './pi/extension.ts';
 import type { PermissionAnswer } from './pi/extension.ts';
 import { denialMessage } from './policy-denial.ts';
+import { permissionInputSummary } from './input-summary.ts';
 import { classifyPiFailure, contentText } from './pi/protocol.ts';
 import type {
   PiMessage,
@@ -669,6 +670,8 @@ class PiRun {
   ): void {
     if (decision.allow && READ_ONLY_TOOLS.has(tool)) return;
     const capped = capInput(input);
+    // What the denial was about, before capping drops the paths of a large input.
+    const summary = decision.allow ? undefined : permissionInputSummary(input);
     this.emit({
       type: 'permission',
       tool,
@@ -677,6 +680,7 @@ class PiRun {
         decision: decision.allow ? 'allow' : 'deny',
         ...(decision.reason ? { reason: decision.reason } : {}),
         ...(toolUseId ? { toolUseId } : {}),
+        ...(summary ? { inputSummary: summary } : {}),
         ...(capped.truncated ? { truncated: true } : {}),
       },
     });

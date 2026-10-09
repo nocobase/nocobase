@@ -38,12 +38,27 @@ import {
   type RunnerFeature,
 } from './version.js';
 
-/** A coding tool found on the runner's host. */
+/**
+ * Why a coding tool found on the runner's host cannot take work there. `versionTooOld`: its version is below the
+ * oldest the runner drives (`ToolInfo.minVersion`).
+ */
+export const TOOL_UNAVAILABLE_REASONS = ['versionTooOld'] as const;
+
+export type ToolUnavailableReason = (typeof TOOL_UNAVAILABLE_REASONS)[number];
+
+/**
+ * A coding tool found on the runner's host. One with a `reason` is listed so people see why it takes no work; the
+ * runner reports it with `authenticated: false` as well, so an application that does not know `reason` still never
+ * dispatches to it.
+ */
 export interface ToolInfo {
   readonly kind: AgentTool;
   readonly version?: string;
   readonly path?: string;
   readonly authenticated: boolean;
+  readonly reason?: ToolUnavailableReason;
+  /** With `versionTooOld`: the oldest version the runner drives. */
+  readonly minVersion?: string;
 }
 
 export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
@@ -51,6 +66,8 @@ export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
   version: z.string().optional(),
   path: z.string().optional(),
   authenticated: z.boolean(),
+  reason: z.enum(TOOL_UNAVAILABLE_REASONS).optional(),
+  minVersion: z.string().max(64).optional(),
 });
 
 /**
