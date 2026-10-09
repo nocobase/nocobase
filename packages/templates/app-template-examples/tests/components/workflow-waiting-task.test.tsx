@@ -256,12 +256,68 @@ it('focuses the decision field after a delayed invalid-decision response re-enab
   });
   await waitFor(() => {
     expect(decision).toBeEnabled();
-    expect(focus).toHaveBeenCalled();
-    expect(focusWhileDisabled).not.toContain(true);
     expect(decision).toHaveFocus();
+    expect(focus).toHaveBeenCalled();
   });
+  expect(focusWhileDisabled).not.toContain(true);
   focus.mockRestore();
   expect(request).toHaveBeenCalledWith(
     expect.objectContaining({ method: 'POST' }),
   );
 });
+
+it.each(['submitting', 'submitted'] as const)(
+  'does not focus an immutable decision when a failed submission refreshes the task as %s',
+  async (status) => {
+    let rejectSubmission!: (error: Error) => void;
+    const submission = new Promise<never>((_, reject) => {
+      rejectSubmission = reject;
+    });
+    let refreshed = false;
+    request.mockImplementation(async ({ method }: { method?: string } = {}) => {
+      if (method === 'POST') return submission;
+      return {
+        data: refreshed
+          ? { ...task, status, decision: 'approved', confirmedBy: 'Admin' }
+          : task,
+        meta: { currentReviewer: { id: 'user-1', name: 'Admin' } },
+      };
+    });
+    await mount();
+    const decision = await screen.findByRole('combobox', { name: 'Decision' });
+    await userEvent.click(decision);
+    await userEvent.click(
+      await screen.findByRole('option', { name: 'Approved' }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Submit decision' }));
+    await waitFor(() => expect(decision).toBeDisabled());
+    const focus = vi.spyOn(decision, 'focus');
+    try {
+      await act(async () => {
+        refreshed = true;
+        rejectSubmission(
+          new ApiClientError('Invalid decision', {
+            status: 400,
+            reason: 'INVALID_INPUT',
+            method: 'POST',
+            url: '/api/quotationReviewTasks/1/submit',
+          }),
+        );
+      });
+      expect(
+        await screen.findByText(enUS.workflowTasks.status[status]),
+      ).toBeVisible();
+      if (status === 'submitting') {
+        expect(
+          screen.getByRole('button', { name: 'Submit decision' }),
+        ).toBeEnabled();
+        expect(decision).toBeDisabled();
+      } else {
+        expect(screen.queryByRole('combobox', { name: 'Decision' })).toBeNull();
+      }
+      expect(focus).not.toHaveBeenCalled();
+    } finally {
+      focus.mockRestore();
+    }
+  },
+);

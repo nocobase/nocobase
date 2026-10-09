@@ -3,7 +3,6 @@ import { useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
-import { AIEmployeeEntry } from '../components/ai-employee-entry.js';
 import { Breadcrumbs } from '#components/breadcrumbs';
 import { EMPTY_ARRAY } from '#lib/constants';
 
@@ -65,45 +64,42 @@ export function AppLayout({
   return (
     // The shell owns the business route tree used by its pages and navigation.
     <RouteTreeProvider routes={routeTree}>
-      {/* Examples owns the AI employee demonstration; its global entry wraps only the signed-in shell. */}
-      <AIEmployeeEntry>
-        <PageBreadcrumbProvider>
-          <AppSidebarProvider>
-            <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
-              <NavigationMenu
-                items={menuItems}
-                label={navigationLabel}
-                selectedKey={selectedKey}
+      <PageBreadcrumbProvider>
+        <AppSidebarProvider>
+          <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
+            <NavigationMenu
+              items={menuItems}
+              label={navigationLabel}
+              selectedKey={selectedKey}
+            />
+          </AppSidebar>
+          <div className='flex min-w-0 flex-1 flex-col'>
+            <LayoutHeader className='sticky top-0 z-40 justify-between'>
+              <div className='flex min-w-0 items-center gap-3'>
+                <AppSidebarToggle />
+                <div className='md:hidden'>
+                  <AppBrand />
+                </div>
+                <div className='h-5 w-px shrink-0 bg-border' />
+                {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
+                <Breadcrumbs denied={denied} />
+              </div>
+              <HeaderActions
+                showSettings={
+                  navigationPages(settingsNavigation.items).length > 0
+                }
               />
-            </AppSidebar>
-            <div className='flex min-w-0 flex-1 flex-col'>
-              <LayoutHeader className='sticky top-0 z-40 justify-between'>
-                <div className='flex min-w-0 items-center gap-3'>
-                  <AppSidebarToggle />
-                  <div className='md:hidden'>
-                    <AppBrand />
-                  </div>
-                  <div className='h-5 w-px shrink-0 bg-border' />
-                  {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
-                  <Breadcrumbs denied={denied} />
-                </div>
-                <HeaderActions
-                  showSettings={
-                    navigationPages(settingsNavigation.items).length > 0
-                  }
-                />
-              </LayoutHeader>
-              <main className='relative min-w-0 flex-1 overflow-hidden'>
-                {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
-              moved by the page's scrolling nor stretched by its height. */}
-                <div className='h-full overflow-y-auto'>
-                  <Outlet />
-                </div>
-              </main>
-            </div>
-          </AppSidebarProvider>
-        </PageBreadcrumbProvider>
-      </AIEmployeeEntry>
+            </LayoutHeader>
+            <main className='relative min-w-0 flex-1 overflow-hidden'>
+              {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+            moved by the page's scrolling nor stretched by its height. */}
+              <div className='h-full overflow-y-auto'>
+                <Outlet />
+              </div>
+            </main>
+          </div>
+        </AppSidebarProvider>
+      </PageBreadcrumbProvider>
     </RouteTreeProvider>
   );
 }

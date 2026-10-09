@@ -1,5 +1,7 @@
 # @nocobase/app-plugin-ai-employee
 
+> **Deprecated.** This plugin is no longer developed, and the application templates no longer install it. An application that already depends on it keeps working on its current release; do not add it to a new application.
+
 Publishable NocoBase App plugin that owns the application-specific AI employee runtime: Hono routes and authentication, database collections and repositories, conversation orchestration, agents, built-in employees/tools/skills, file services, and resource loading order.
 
 The package depends on `@nocobase/ai-employee` for framework-neutral contracts, repository ports, managers, resource loaders, provider implementations, and helpers. The dependency is one-way; the core package does not import this plugin.

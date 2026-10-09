@@ -84,22 +84,6 @@ notification:
     #   provider: dingtalk-webhook
     #   webhookUrl: https://oapi.dingtalk.com/robot/send?access_token=replace-with-the-token
 
-# Declarative LLM services are loaded from application config, keyed by service name.
-# The server reads this when it starts: restart it after editing, which `pnpm dev` does on its own.
-# Keep the key out of this file. Write it into config.yml with
-# `pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY`,
-# or map an injected environment variable onto that path in server/config/ai.ts.
-# ai:
-#   llmServices:
-#     openai:
-#       title: OpenAI
-#       provider: openai
-#       enabledModels:
-#         - label: GPT-4.1
-#           value: gpt-4.1
-#       enabled: true
-#       sort: 10
-
 # DB_DIALECT, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_SSL and DB_FILENAME override the main
 # connection's fields from the environment.
 database:
