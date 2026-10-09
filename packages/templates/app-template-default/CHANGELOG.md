@@ -1,5 +1,30 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.58
+
+### Minor Changes
+
+- d86a77c: Deprecate `@nocobase/app-plugin-ai-employee` and stop installing it in the application templates
+
+  The plugin is deprecated and no longer developed; its README says so. Default and Examples no longer depend on `@nocobase/app-plugin-ai-employee` or `@nocobase/ai-employee`, register the plugin in `client/plugins.ts`, `server/plugins.ts` and `cli/plugins.ts`, or ship `server/config/ai.ts` and the commented `ai` section of `config.example.yml`. Examples also drops its AI employee demonstration: the global AI entry around `AppLayout`, the `nocobase-ai` and `nocobase-ai-employee-example-tasks-page` extensions, the **AI employee tasks** homepage link, and `@nocobase/app-plugin-ai-employee-example`.
+
+  The application development Skill no longer recommends the plugin or documents its `ai-employee` commands, and the upgrade Skill describes what removing it involves.
+
+  An existing application keeps the plugin unless it removes it. An upgrade that follows the template asks first: an application that configured an LLM service or has AI employees, conversations or an `ai/` directory keeps the plugin, its registrations and its configuration, and the plugin's current release keeps working there. Removing it unregisters the plugin but leaves its tables and data in the database.
+
+### Patch Changes
+
+- 1408643: Disable the Workflow plugin by default while retaining its dependency, configuration, and example sources for explicit opt-in use. Remove inactive workflow example entry points and register their schedules only when the plugin is enabled.
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- 1408643: Keep the shared Vitest configuration aligned across application templates while temporarily excluding Workflow-specific tests. Preserve the test sources for re-enabling them later.
+- Updated dependencies [487921c]
+- Updated dependencies [1408643]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.15
+  - @nocobase/app-cli@1.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.21
+
 ## 1.0.0-beta.57
 
 ### Patch Changes
