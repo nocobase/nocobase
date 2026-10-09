@@ -5,8 +5,8 @@
 // Only an installation (lib/install.ts) updates: the new version's standalone tarball is downloaded with the runner's
 // key, checked against its SHA-256, unpacked beside the running one, and `current` is switched to it; the previous
 // version stays until the next update, so a bad one can be switched back by hand. The process then has to restart:
-// the daemon does that between runs when a service supervises it (it exits, and launchd or systemd starts the new
-// `current`); the `update` command restarts the service or the background daemon itself.
+// the daemon does that between runs when a service supervises it (it exits with `RESTART_EXIT_CODE`, and launchd or
+// systemd starts the new `current`); the `update` command restarts the service or the background daemon itself.
 import {
   applyUpdate as applyAt,
   latestArtifact,
@@ -21,6 +21,12 @@ import { runnerHost } from '../host.ts';
 import { currentTarget, type DistArtifact } from '../protocol/index.ts';
 
 export { isNewer, type UpdateTarget } from '@nocobase/app-cli-client/install';
+
+/**
+ * How the daemon's process exits once it stopped after updating itself: not 0, so a service that restarts only what
+ * failed starts the new version too.
+ */
+export const RESTART_EXIT_CODE = 75;
 
 /** The runner the application serves for this machine. */
 export async function latestRunner(

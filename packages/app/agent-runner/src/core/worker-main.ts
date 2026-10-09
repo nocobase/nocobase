@@ -8,6 +8,7 @@ import { readConnection, readSettings } from '../lib/config.ts';
 import { runnerPaths, readJson } from '../lib/home.ts';
 import { JobPayloadSchema, RunPayloadSchema } from '../protocol/index.ts';
 import { JobWorker } from './job-worker.ts';
+import { killLeftovers } from './process-tree.ts';
 import {
   jobRecordKey,
   recordPath,
@@ -107,12 +108,26 @@ async function main(): Promise<number> {
   return 0;
 }
 
+/**
+ * Stops whatever the run left running below this worker, in any process group (a development server, a test watcher,
+ * the coding tool's own server), before the worker exits: once it has exited, they would be adopted by init and no
+ * longer be found below it.
+ */
+async function exit(code: number): Promise<never> {
+  const left = await killLeftovers(process.pid, { graceMs: 2_000 }).catch(
+    () => ({ processes: 0, groups: 0 }),
+  );
+  if (left.processes > 0)
+    log(`worker: stopped ${left.processes} process(es) the run left behind`);
+  process.exit(code);
+}
+
 main().then(
-  (code) => process.exit(code),
+  (code) => exit(code),
   (error: unknown) => {
     log(
       `worker: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
     );
-    process.exit(1);
+    return exit(1);
   },
 );
