@@ -3,8 +3,9 @@
  * cancelling and retrying, and reading runs and their transcripts. Who may read or change a run is decided by the
  * callers (the admin routes, the application); this service checks only that the person who wakes an agent may wake it.
  *
- * Work is keyed by (agent, subject, thread). New work for a key joins the run already working on it while it can
- * still be told (dispatched, or running with input), else the run waiting for it (queued), else starts a new run.
+ * Work is keyed by (agent, subject, thread). New work for a key joins the run already working on it as the same person
+ * while it can still be told (dispatched, or running with input), else that person's run waiting for it (queued), else
+ * starts a new run. Runs of one key working as different people are claimed one at a time (`claim.ts`).
  */
 import {
   ProtocolError,
@@ -46,7 +47,7 @@ import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { asJson, cleanList, jsonObject } from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
-import { serves } from './claim.js';
+import type { ClaimEligibility } from './eligibility.js';
 import {
   createRunRequestService,
   insertRunRequest,
@@ -288,9 +289,9 @@ export interface RunServiceDeps extends TransitionDeps {
   /** The runners and the jobs they hold. */
   readonly runners: WorkloadRunners & {
     find(conn: DatabaseConnection, id: string): Promise<Runner | null>;
-    /** The runners online now, which work run as a person who asked may go to. */
-    online(conn: DatabaseConnection): Promise<Runner[]>;
   };
+  /** Whether a runner would take work run as a person, for work someone asks to run as themselves. */
+  readonly eligibility: Pick<ClaimEligibility, 'canClaim'>;
   /** Names of people, for the lists of run requests. */
   readonly people: Pick<People, 'names'>;
 }
@@ -355,6 +356,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
       },
     });
     unit.emit({ type: 'run.input', runId, inputId: id });
+    await runsRepo(unit.conn).updateMany({
+      filter: { id: runId, status: 'queued' },
+      // New input may change the scopes its variables come from: the next claim tells again.
+      values: { teamOnlyVariables: null },
+    });
     return id;
   }
 
@@ -433,6 +439,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         workDir: null,
         directoryKey: null,
         claimFailures: 0,
+        teamOnlyVariables: null,
         payloadFingerprint: null,
         createdAt: now,
         updatedAt: now,
@@ -511,9 +518,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
       subjectId: work.subject.id,
       threadScope: work.threadScope,
     };
-    const open = (
-      await runsOfKey(unit.conn, key, ['queued', ...ACTIVE])
-    ).filter((run) => run.actorUserId === work.actorUserId);
+    // Only into work done as the same person: merged into another's run, it would borrow their identity, or wait
+    // for a runner that never takes it.
+    const open = await runsOfKey(
+      unit.conn,
+      key,
+      ['queued', ...ACTIVE],
+      work.actorUserId,
+    );
     const working = open.find(
       (run) =>
         run.status === 'dispatched' ||
@@ -576,11 +588,12 @@ export function createRunService(deps: RunServiceDeps): RunService {
     requires: readonly string[],
   ): Promise<void> {
     if (agent.type !== 'runner') return;
-    const runners = await deps.runners.online(unit.conn);
+    // By the claim's own rules, the agent's variables included; the subject's are the claim's to check.
     if (
-      !runners.some((runner) =>
-        serves(runner, agent, userId, requires as RunnerFeature[]),
-      )
+      !(await deps.eligibility.canClaim(unit.conn, agent, {
+        actorUserId: userId,
+        requires: requires as RunnerFeature[],
+      }))
     )
       throw precondition(
         'NO_RUNNER_AVAILABLE',
@@ -796,7 +809,12 @@ export function createRunService(deps: RunServiceDeps): RunService {
           );
         const agent = await requireInvocable(unit, run.agentId, byUserId);
         await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
-        const open = await runsOfKey(unit.conn, run, ['queued', ...ACTIVE]);
+        const open = await runsOfKey(
+          unit.conn,
+          run,
+          ['queued', ...ACTIVE],
+          byUserId,
+        );
         if (open.length > 0)
           throw precondition(
             'AGENT_BUSY',

@@ -1,7 +1,7 @@
-name: Release Beta
+name: V3 Release Beta
 
-# Release prereleases from develop: consume changesets, assign X.Y.0-beta.N versions, and publish them under the beta
-# dist-tag. Versioning happens on an isolated release branch so develop remains available while the release is checked.
+# Release prereleases from v3-develop: consume changesets, assign X.Y.0-beta.N versions, and publish them under the beta
+# dist-tag. Versioning happens on an isolated release branch so v3-develop remains available while the release is checked.
 
 on:
   workflow_dispatch:
@@ -44,10 +44,10 @@ jobs:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
 
-      - name: Check out develop
+      - name: Check out v3-develop
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: v3-develop
           path: release-source
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -65,16 +65,16 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify develop is in pre mode
+      - name: Verify v3-develop is in pre mode
         run: |
           if [ ! -f .changeset/pre.json ]; then
-            echo "::error::develop is not in pre mode. Run changeset pre enter beta locally and commit it first."
+            echo "::error::v3-develop is not in pre mode. Run changeset pre enter beta locally and commit it first."
             exit 1
           fi
           MODE=$(node -p "require('./.changeset/pre.json').mode")
@@ -211,7 +211,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Download release source state
@@ -314,7 +314,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Download release source state
@@ -359,7 +359,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [default, examples, hub]
+        template: [default, examples]
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -456,7 +456,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Download release source state
@@ -530,7 +530,7 @@ jobs:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           owner: nocobase
-          repositories: nocobase3
+          repositories: nocobase
           permission-contents: write
           permission-pull-requests: write
           permission-workflows: write
@@ -539,7 +539,7 @@ jobs:
         if: '!inputs.dry_run'
         env:
           RELEASE_TOKEN: ${{ steps.release_token.outputs.token }}
-        run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase3.git"
+        run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase.git"
 
       # Use full refspecs because the release branch and tag intentionally share a name for a short time.
       - name: Tag and push release branch
@@ -600,9 +600,9 @@ jobs:
         if: '!inputs.dry_run'
         run: git push origin --tags
 
-      # Keep the release commit's ancestry by merging instead of squashing. A conflict leaves the branch available for
-      # manual resolution rather than overriding changes that reached develop during the release.
-      - name: Merge back into develop
+      # The tag preserves the exact tested candidate; squash its PR to follow the repository's merge policy.
+      # Conflicts leave the candidate branch available for manual resolution.
+      - name: Merge back into v3-develop
         if: '!inputs.dry_run'
         id: merge
         env:
@@ -614,17 +614,17 @@ jobs:
           PR_URL=$(gh pr create \
             --title "chore: release $RELEASE_BATCH [skip ci]" \
             --body "Prerelease \`$RELEASE_BATCH\` published to npm under the \`beta\` dist-tag. Per-package versions are in the workflow summary." \
-            --base develop \
+            --base v3-develop \
             --head "$RELEASE_BRANCH")
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge release $RELEASE_BATCH into develop [skip ci]" \
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge release $RELEASE_BATCH into v3-develop [skip ci]" \
             --body "current app-template-default version: $TEMPLATE_VERSION"
           RC=$?
           set -e
           if [ $RC -ne 0 ]; then
-            echo "::warning::Failed to merge the PR back into develop; conflicts need manual work: $PR_URL"
+            echo "::warning::Failed to merge the PR back into v3-develop; conflicts need manual work: $PR_URL"
             echo "merged=false" >> "$GITHUB_OUTPUT"
           else
             echo "merged=true" >> "$GITHUB_OUTPUT"
@@ -633,10 +633,10 @@ jobs:
       - name: Notify merge failure
         if: "!inputs.dry_run && steps.merge.outputs.merged == 'false'"
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 预览版发布成功，但 PR 合回失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -644,7 +644,7 @@ jobs:
           CONTENT: |
             版本 **${{ needs.prepare.outputs.batch }}** 已成功发布到 npm（dist-tag `beta`）。
 
-            但版本提交合回 `develop` 时发生冲突，需要人工解决：
+            但版本提交合回 `v3-develop` 时发生冲突，需要人工解决：
             ${{ steps.merge.outputs.url }}
 
             发版分支 `${{ needs.prepare.outputs.release_branch }}` 已保留，解决冲突后合并即可。
@@ -658,10 +658,10 @@ jobs:
       - name: Notify success
         if: "!inputs.dry_run && steps.merge.outputs.merged == 'true'"
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 预览版发布
           STATUS: success
           STATUS_TEXT_SUCCESS: 发布成功
@@ -690,7 +690,7 @@ jobs:
 
       - name: Notify failure
         env:
-          WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK }}
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
           TITLE: NocoBase 3 预览版发布失败
@@ -709,7 +709,7 @@ jobs:
       !cancelled() && !inputs.dry_run
       && needs.release.outputs.tag != ''
       && (needs.release.result == 'success' || needs.release.outputs.merged == 'false')
-    uses: ./.github/workflows/github-release.yml
+    uses: ./.github/workflows/v3-github-release.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
     secrets:

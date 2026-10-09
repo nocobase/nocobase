@@ -17,8 +17,9 @@ const { VariablesPanel } =
   await import('../../client/components/variables/variables-panel.js');
 
 const AT = '2026-10-01T09:00:00.000Z';
-const variable = (name: string) => ({
+const variable = (name: string, teamRunnersOnly = false) => ({
   name,
+  teamRunnersOnly,
   updatedAt: AT,
   updatedById: 'u1',
   updatedByName: 'Alice',
@@ -34,7 +35,7 @@ describe('variables of several scopes', () => {
       'agents/variables/project/p1': () => [variable('API_URL')],
       'agents/variables/workdir/w1': () => [
         variable('API_URL'),
-        variable('SHOP_KEY'),
+        variable('SHOP_KEY', true),
       ],
       'POST agents/variables/project/p1/reveal': () => [
         { name: 'API_URL', value: 'https://project' },
@@ -44,6 +45,7 @@ describe('variables of several scopes', () => {
         { name: 'SHOP_KEY', value: 'k-1' },
       ],
       'PUT agents/variables/workdir/w1/NEW_KEY': () => null,
+      'PUT agents/variables/workdir/w1/SHOP_KEY': () => null,
     });
   });
 
@@ -64,7 +66,9 @@ describe('variables of several scopes', () => {
     expect(rows.map((row) => row.textContent)).toEqual([
       expect.stringContaining('API_URLThe whole project'),
       expect.stringContaining('API_URLWorking directory shop'),
-      expect.stringContaining('SHOP_KEYWorking directory shop'),
+      expect.stringContaining(
+        'SHOP_KEYenvVars.teamRunnersOnlyBadgeWorking directory shop',
+      ),
     ]);
     expect(screen.getByText('A working directory wins')).toBeInTheDocument();
 
@@ -114,6 +118,51 @@ describe('variables of several scopes', () => {
     );
     expect(callsTo('POST', 'agents/variables/workdir/w1/reveal')).toHaveLength(
       1,
+    );
+  });
+
+  it('marks a variable for team runtimes only, and changes the mark without replacing the value', async () => {
+    renderRoute(
+      <VariablesPanel
+        scopes={SCOPES}
+        canEdit
+        title='Variables'
+        description='For runs here'
+      />,
+      '/',
+      '/',
+    );
+    const table = await screen.findByRole('table', { name: 'Variables' });
+    const shopKey = within(table)
+      .getAllByRole('row')
+      .find((row) => row.textContent?.includes('SHOP_KEY'))!;
+    expect(
+      within(shopKey).getByText('envVars.teamRunnersOnlyBadge'),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      within(shopKey).getByRole('button', {
+        name: 'envVars.actions(name=SHOP_KEY)',
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'envVars.edit' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    const mark = within(dialog).getByRole('checkbox', {
+      name: 'envVars.teamRunnersOnly',
+    });
+    expect(mark).toBeChecked();
+    await userEvent.click(mark);
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'actions.save' }),
+    );
+    await waitFor(() =>
+      expect(
+        callsTo('PUT', 'agents/variables/workdir/w1/SHOP_KEY').map(
+          (call) => call.json,
+        ),
+      ).toEqual([{ teamRunnersOnly: false }]),
     );
   });
 });

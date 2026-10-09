@@ -118,6 +118,7 @@ import {
 import {
   createBriefPreviewer,
   createBriefSectionRegistry,
+  createClaimEligibility,
   createClaimService,
   createRepoAccessRegistry,
   createRunMountRegistry,
@@ -134,6 +135,7 @@ import {
   type AgentCli,
   type Availability,
   type BriefPreviewer,
+  type ClaimEligibility,
   type ClaimService,
   type RunnerReports,
   type RepoAccessRegistry,
@@ -203,6 +205,11 @@ export interface Agents {
    * its model), and how many of its runs have not finished.
    */
   readonly availability: Availability;
+  /**
+   * Whether a runner would actually take an agent's work done as a person, by the claim's rules: trust, features and
+   * whether it may receive the work's variables. For deciding before a run exists; call it outside a transaction.
+   */
+  readonly eligibility: ClaimEligibility;
   /** Who runners register with: the application's id and name. */
   readonly app: RunApp;
   /** The application's CLI (`agents.cli`, resolved): what runs talk to it with and what the install script installs. */
@@ -369,6 +376,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     onError,
   });
   const actions = createAgentActionCatalog();
+  const scopes = createScopeKinds();
   const variables = createVariableService({
     tx,
     ids,
@@ -415,8 +423,13 @@ export function createAgents(deps: AgentsDeps): Agents {
       },
     },
   });
+  const eligibility = createClaimEligibility({
+    runners,
+    variables,
+  });
   const availability = createAvailability({
     runners,
+    eligibility,
     openRuns: openCounts,
     models: gateway,
   });
@@ -430,9 +443,9 @@ export function createAgents(deps: AgentsDeps): Agents {
     runners: {
       all: (conn) => runners.all(conn),
       find: (conn, id) => runners.find(conn, id),
-      online: (conn) => runners.online(conn),
       jobsByRunner: (conn) => slots.jobsByRunner(conn),
     },
+    eligibility,
     people,
   });
   const sections = createBriefSectionRegistry();
@@ -592,6 +605,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     agents,
     availability,
+    eligibility,
     app,
     cli,
     runners,
@@ -624,7 +638,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     mounts,
     repoAccess,
     people,
-    scopes: createScopeKinds(),
+    scopes,
     subjects,
     gate,
     actions,

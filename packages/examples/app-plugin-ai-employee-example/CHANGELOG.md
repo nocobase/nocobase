@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-ai-employee-example
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
+- Updated dependencies [bb8484b]
+- Updated dependencies [dc91aab]
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/app-plugin-ai-employee@3.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/ai-employee@0.2.0-beta.8
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

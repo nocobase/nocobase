@@ -19,6 +19,9 @@
     "lib": "#lib",
     "hooks": "#hooks"
   },
+  "registries": {
+    "@nocobase": "https://ui.nocobase.com/r/{name}.json"
+  },
   "menuColor": "default",
   "menuAccent": "subtle"
 }

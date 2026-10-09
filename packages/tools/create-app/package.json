@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/create-app",
-  "version": "0.1.0-beta.28",
+  "version": "0.1.0-beta.29",
   "description": "Create a NocoBase 3 application.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -48,7 +48,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/tools/create-app"
   },
   "license": "Apache-2.0"

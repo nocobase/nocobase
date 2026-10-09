@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-mail-example",
   "displayName": "Mail Provider Example App Plugin",
   "description": "An offline Mail example with three mock Provider types, account management, templates, signatures, labels, all mail, sync logs, and simulated delivery.",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

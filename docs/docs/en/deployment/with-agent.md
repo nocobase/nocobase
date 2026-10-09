@@ -27,7 +27,7 @@ Applications normally include `nocobase-deployment` under `.agents/skills/`; pub
 For app-installer installations, install the global Skill on the machine running the Agent:
 
 ```bash
-npx skills add nocobase/nocobase3 --skill nocobase-app-installer -g
+npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-app-installer --skill nocobase-app-installer -g
 ```
 
 Open a new Agent session after installation. For a local Agent using SSH, install the Skill locally; for an Agent running directly on the server, install it there. Do not let two sessions manage the same installation directory simultaneously.

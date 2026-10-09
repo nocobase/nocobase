@@ -1,7 +1,8 @@
 /**
  * Adding a variable (`target.name === null`), in the scope chosen in the dialog when the panel lists several, or
- * replacing one's value, and showing revealed values. The value field starts empty: stored values never reach the
- * browser except through the audited reveal.
+ * replacing one's value or whether only team runtimes receive it, and showing revealed values. The value field starts
+ * empty: stored values never reach the browser except through the audited reveal, and an empty value when replacing
+ * keeps the stored one.
  *
  * Mirrors NocoProject's `nocoproject/client/pages/np/agents/detail/env-dialogs.tsx`. Closing it with a name or value
  * typed asks first (NP-200).
@@ -23,6 +24,7 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { errorText, useNotify } from '../../hooks/use-notify.js';
 import { valueTooLong } from '../../lib/text.js';
 import { Button } from '../ui/button.js';
+import { Checkbox } from '../ui/checkbox.js';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +35,7 @@ import {
 } from '../ui/dialog.js';
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
@@ -64,11 +67,15 @@ export function VariableDialog({
   onSaved,
 }: {
   readonly scopes: readonly VariableScopeOption[];
-  /** `at`: the scope's position; `fixed`: it may not be changed (replacing a value). */
+  /**
+   * `at`: the scope's position; `fixed`: it may not be changed (replacing a value); `teamRunnersOnly`: what the
+   * variable being replaced says.
+   */
   readonly target: {
     readonly name: string | null;
     readonly at: number;
     readonly fixed: boolean;
+    readonly teamRunnersOnly?: boolean;
   } | null;
   readonly existingNames: (at: number) => readonly string[];
   readonly onClose: () => void;
@@ -102,6 +109,7 @@ export function VariableDialog({
               initialAt={target.at}
               fixedScope={target.fixed}
               fixedName={target.name}
+              initialTeamRunnersOnly={target.teamRunnersOnly ?? false}
               existingNames={existingNames}
               onCancel={requestClose}
               onClose={onClose}
@@ -119,6 +127,7 @@ function VariableForm({
   initialAt,
   fixedScope,
   fixedName,
+  initialTeamRunnersOnly,
   existingNames,
   onCancel,
   onClose,
@@ -128,6 +137,7 @@ function VariableForm({
   readonly initialAt: number;
   readonly fixedScope: boolean;
   readonly fixedName: string | null;
+  readonly initialTeamRunnersOnly: boolean;
   readonly existingNames: (at: number) => readonly string[];
   /** Cancel: asks first when something was typed. */
   readonly onCancel: () => void;
@@ -146,13 +156,18 @@ function VariableForm({
   }));
   const [name, setName] = useState(fixedName ?? '');
   const [value, setValue] = useState('');
+  const [teamRunnersOnly, setTeamRunnersOnly] = useState(
+    initialTeamRunnersOnly,
+  );
   const [nameError, setNameError] = useState<string>();
   const [valueError, setValueError] = useState<string>();
   const [saving, setSaving] = useState(false);
   // Why saving failed when the server cannot store variables at all; shown in the dialog, not only as a toast.
   const [saveError, setSaveError] = useState<string>();
   const markSaved = useUnsavedChanges(
-    value !== '' || (fixedName === null && name.trim() !== ''),
+    value !== '' ||
+      teamRunnersOnly !== initialTeamRunnersOnly ||
+      (fixedName === null && name.trim() !== ''),
   );
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -167,7 +182,14 @@ function VariableForm({
     if (problem || tooLong) return;
     setSaving(true);
     try {
-      await api.setVariable(scope.scope, scope.scopeId, trimmed, value);
+      // Replacing with an empty value keeps the stored one: only whether team runtimes alone receive it changes.
+      await api.setVariable(
+        scope.scope,
+        scope.scopeId,
+        trimmed,
+        fixedName !== null && value === '' ? undefined : value,
+        { teamRunnersOnly },
+      );
       notify.success(t('envVars.saved', { name: trimmed }));
       markSaved();
       onSaved(at);
@@ -244,7 +266,26 @@ function VariableForm({
             aria-invalid={valueError ? true : undefined}
             onChange={(event) => setValue(event.target.value)}
           />
-          {valueError ? <FieldError>{valueError}</FieldError> : null}
+          {valueError ? (
+            <FieldError>{valueError}</FieldError>
+          ) : fixedName !== null ? (
+            <FieldDescription>{t('envVars.keepValueHint')}</FieldDescription>
+          ) : null}
+        </Field>
+        <Field orientation='horizontal'>
+          <Checkbox
+            id='ag-env-team-only'
+            checked={teamRunnersOnly}
+            onCheckedChange={(checked) => setTeamRunnersOnly(checked === true)}
+          />
+          <FieldContent>
+            <FieldLabel htmlFor='ag-env-team-only'>
+              {t('envVars.teamRunnersOnly')}
+            </FieldLabel>
+            <FieldDescription>
+              {t('envVars.teamRunnersOnlyHint')}
+            </FieldDescription>
+          </FieldContent>
         </Field>
         {saveError ? (
           <Field data-invalid>

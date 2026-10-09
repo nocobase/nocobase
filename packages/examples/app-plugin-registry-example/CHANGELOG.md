@@ -1,5 +1,20 @@
 # @nocobase/app-plugin-registry-example
 
+## 0.0.2-beta.7
+
+### Patch Changes
+
+- bde3b87: Prepare every plugin with client code for shadcn installation using package-local imports, a generation stylesheet, and the NocoBase registry configuration, without requiring the registry publishing capability.
+
+  Align the Registry example's shadcn setup with source and published package imports so generated components stay inside the plugin.
+
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
+- Updated dependencies [bb8484b]
+  - @nocobase/app-client@2.0.0-beta.2
+
 ## 0.0.2-beta.6
 
 ### Patch Changes

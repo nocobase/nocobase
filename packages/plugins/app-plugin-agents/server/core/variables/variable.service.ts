@@ -16,6 +16,7 @@ import {
   VARIABLE_NAME_PATTERN,
   VARIABLE_VALUE_MAX_BYTES,
   type Variable,
+  type VariableRef,
   type VariableAudit,
   type VariableAuditAction,
   type VariableScope,
@@ -28,6 +29,8 @@ import type { IdSource } from '../../kernel/ids.js';
 import type { People } from '../../kernel/people.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { stringArray } from '../../kernel/values.js';
+import { JobSecretsNotAllowed } from '../../jobs/spec.js';
+import { runnersRepo } from '../../runners/runner.store.js';
 
 interface SecretRecord {
   readonly id: string;
@@ -35,6 +38,7 @@ interface SecretRecord {
   readonly scopeId: string;
   readonly name: string;
   readonly valueEncrypted: string;
+  readonly teamRunnersOnly?: boolean | number | null;
   readonly createdById: string | null;
   readonly updatedById: string | null;
   readonly createdAt: string;
@@ -70,12 +74,16 @@ export interface VariableTarget {
 
 export interface VariableService {
   list(target: VariableTarget): Promise<Variable[]>;
-  /** Creates or replaces a variable. */
+  /**
+   * Creates or replaces a variable. `value` may be left out to change only `teamRunnersOnly` of one that exists;
+   * `teamRunnersOnly` left out keeps what it was (off for a new one).
+   */
   set(
     target: VariableTarget,
     name: string,
-    value: string,
+    value: string | undefined,
     userId: string | null,
+    options?: { readonly teamRunnersOnly?: boolean },
   ): Promise<void>;
   remove(
     target: VariableTarget,
@@ -98,6 +106,19 @@ export interface VariableService {
     targets: readonly VariableTarget[],
   ): Promise<string[]>;
   /**
+   * The variables of `targets`, merged in order as a run gets them, that only team runners may receive: by the scope
+   * whose value the run would get.
+   */
+  teamOnly(
+    conn: DatabaseConnection,
+    targets: readonly VariableTarget[],
+  ): Promise<VariableRef[]>;
+  /** Those of `targets` that hold any variable, in order: the scopes a run's variables would come from. */
+  holding(
+    conn: DatabaseConnection,
+    targets: readonly VariableTarget[],
+  ): Promise<VariableTarget[]>;
+  /**
    * For a claim: the variables of `targets` merged in order (a later target's value replaces an earlier one's),
    * opened, and recorded as delivered for the run.
    */
@@ -108,7 +129,8 @@ export interface VariableService {
   ): Promise<EnvVar[]>;
   /**
    * For a job's claim: the values of the named variables, by `scope`, `scopeId` and `name` joined with NUL, recorded
-   * as delivered for the job. A variable that is not set is left out.
+   * as delivered for the job. A variable that is not set is left out. Throws `JobSecretsNotAllowed` before opening
+   * any value if a referenced variable is for team runners only and the stored runner is not a team runner.
    */
   forJob(
     conn: DatabaseConnection,
@@ -135,6 +157,37 @@ export interface VariableServiceDeps {
       readonly byUserId: string | null;
     },
   ) => Promise<void>;
+}
+
+/** The variables named in a JSON column, such as `agRuns.teamOnlyVariables`; anything else reads as none. */
+export function variableRefs(value: unknown): VariableRef[] {
+  const parsed: unknown =
+    typeof value === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(value) as unknown;
+          } catch {
+            return null;
+          }
+        })()
+      : value;
+  if (!Array.isArray(parsed)) return [];
+  return parsed.flatMap((item: unknown): VariableRef[] => {
+    if (!item || typeof item !== 'object') return [];
+    const { scope, scopeId, name } = item as Record<string, unknown>;
+    return typeof scope === 'string' &&
+      typeof scopeId === 'string' &&
+      typeof name === 'string'
+      ? [{ scope, scopeId, name }]
+      : [];
+  });
+}
+
+/** Variables as a person reads them in a wait or a notice: `NPM_TOKEN (agent 42), API_KEY (workdir 7)`. */
+export function describeVariables(variables: readonly VariableRef[]): string {
+  return variables
+    .map((each) => `${each.name} (${each.scope} ${each.scopeId})`)
+    .join(', ');
 }
 
 /** What a variable's value is bound to: moved to another scope or name, it no longer opens. */
@@ -210,6 +263,7 @@ export function createVariableService(
       );
       return records.map((record) => ({
         name: record.name,
+        teamRunnersOnly: Boolean(record.teamRunnersOnly),
         updatedAt: record.updatedAt,
         updatedById: record.updatedById,
         updatedByName: record.updatedById
@@ -218,19 +272,29 @@ export function createVariableService(
       }));
     },
 
-    set: (target, name, value, userId) =>
+    set: (target, name, value, userId, options = {}) =>
       tx.run(async ({ conn }) => {
-        checkVariable(name, value, cli);
-        const sealed = box.seal(value, variableAad({ ...target, name }));
-        const now = clock.now().toISOString();
         const existing = await secrets(conn).findOne({
           filter: { scope: target.scope, scopeId: target.scopeId, name },
         });
+        if (value === undefined && !existing)
+          throw invalid('A new variable needs a value.', {
+            reason: 'valueRequired',
+          });
+        if (value !== undefined) checkVariable(name, value, cli);
+        const sealed =
+          value === undefined
+            ? undefined
+            : box.seal(value, variableAad({ ...target, name }));
+        const now = clock.now().toISOString();
         if (existing)
           await secrets(conn).updateMany({
             filter: { id: existing.id },
             values: {
-              valueEncrypted: sealed,
+              ...(sealed === undefined ? {} : { valueEncrypted: sealed }),
+              ...(options.teamRunnersOnly === undefined
+                ? {}
+                : { teamRunnersOnly: options.teamRunnersOnly }),
               updatedById: userId,
               updatedAt: now,
             },
@@ -242,7 +306,8 @@ export function createVariableService(
               scope: target.scope,
               scopeId: target.scopeId,
               name,
-              valueEncrypted: sealed,
+              valueEncrypted: sealed!,
+              teamRunnersOnly: options.teamRunnersOnly ?? false,
               createdById: userId,
               updatedById: userId,
               createdAt: now,
@@ -326,6 +391,33 @@ export function createVariableService(
       return [...names].sort();
     },
 
+    async teamOnly(conn, targets) {
+      const merged = new Map<string, VariableRef & { only: boolean }>();
+      for (const target of targets)
+        for (const record of await of(conn, target))
+          merged.set(record.name, {
+            scope: target.scope,
+            scopeId: target.scopeId,
+            name: record.name,
+            only: Boolean(record.teamRunnersOnly),
+          });
+      return [...merged.values()]
+        .filter((variable) => variable.only)
+        .map(({ only: _only, ...variable }) => variable);
+    },
+
+    async holding(conn, targets) {
+      const held: VariableTarget[] = [];
+      for (const target of targets)
+        if (
+          (await secrets(conn).count({
+            filter: { scope: target.scope, scopeId: target.scopeId },
+          })) > 0
+        )
+          held.push(target);
+      return held;
+    },
+
     async forRun(conn, targets, delivery) {
       const merged = new Map<string, string>();
       for (const target of targets) {
@@ -345,6 +437,8 @@ export function createVariableService(
     async forJob(conn, refs, delivery) {
       const values = new Map<string, string>();
       const byTarget = new Map<string, typeof refs>();
+      const selected: { target: VariableTarget; records: SecretRecord[] }[] =
+        [];
       for (const ref of refs) {
         const key = `${ref.scope}\u0000${ref.scopeId}`;
         byTarget.set(key, [...(byTarget.get(key) ?? []), ref]);
@@ -356,6 +450,19 @@ export function createVariableService(
           names.has(record.name),
         );
         if (records.length === 0) continue;
+        selected.push({ target, records });
+      }
+      if (
+        selected.some(({ records }) =>
+          records.some((record) => record.teamRunnersOnly),
+        )
+      ) {
+        const runner = await runnersRepo(conn).findOne({
+          filter: { id: delivery.runnerId },
+        });
+        if (runner?.trust !== 'team') throw new JobSecretsNotAllowed();
+      }
+      for (const { target, records } of selected) {
         for (const record of records)
           values.set(
             `${target.scope}\u0000${target.scopeId}\u0000${record.name}`,

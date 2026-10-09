@@ -165,7 +165,11 @@ function includeTemplateFile(
   }
   if (
     relativePath === 'components.json' ||
-    relativePath === 'client/styles.css' ||
+    relativePath === 'client/styles.css'
+  ) {
+    return hasBrowserCode(capabilities);
+  }
+  if (
     relativePath === 'registry.config.json' ||
     relativePath.startsWith('registry/')
   ) {
@@ -506,7 +510,7 @@ async function renderManifest(
     devDependencies['@types/node'] = 'catalog:';
   // `@types/react` is not a peer, so it stays. `react` itself is declared once, as a peer.
   if (react) devDependencies['@types/react'] = 'catalog:';
-  if (capabilities.registry) {
+  if (browserCode) {
     devDependencies.shadcn = 'catalog:';
     devDependencies.tailwindcss = 'catalog:';
     devDependencies['tw-animate-css'] = 'catalog:';
@@ -746,7 +750,10 @@ function renderReadme(
     selected.length > 0
       ? selected.map((value) => `- \`${value}\``).join('\n')
       : '- Package foundation only';
-  return `# ${context.packageName}\n\n${context.description}\n\n## Generated capabilities\n\n${list}\n\nImplement only the public behavior this plugin owns. Keep declarations, exports, dependencies, tests, README, and Plugin Skills aligned when capabilities change. Every concrete Server Route must own and test its authentication and authorization boundary.\n\n## Verification\n\n\`\`\`bash\npnpm --filter ${context.packageName} lint\npnpm --filter ${context.packageName} typecheck\npnpm --filter ${context.packageName} test\npnpm --filter ${context.packageName} build\n\`\`\`\n`;
+  const clientUi = hasBrowserCode(capabilities)
+    ? `\n\n## Adding UI components\n\nRun shadcn from this plugin's directory. \`components.json\`, the generation stylesheet and tooling are included independently of the \`registry\` recipe-publishing capability.\n\n\`\`\`bash\npnpm exec shadcn add @nocobase/permission-editor --dry-run\npnpm exec shadcn add @nocobase/permission-editor\n\`\`\`\n\nKeep the generated \`#components/*\` imports: \`package.json#imports\` resolves development sources, and \`publishConfig.imports\` binds every published condition to \`dist/client\`. No TypeScript paths or host Vite alias is required. Review added client value dependencies and declare them as peers, keep exported types explicit for declarations, and run this plugin's checks before rendering it in the consuming application.`
+    : '';
+  return `# ${context.packageName}\n\n${context.description}\n\n## Generated capabilities\n\n${list}\n\nImplement only the public behavior this plugin owns. Keep declarations, exports, dependencies, tests, README, and Plugin Skills aligned when capabilities change. Every concrete Server Route must own and test its authentication and authorization boundary.${clientUi}\n\n## Verification\n\n\`\`\`bash\npnpm --filter ${context.packageName} lint\npnpm --filter ${context.packageName} typecheck\npnpm --filter ${context.packageName} test\npnpm --filter ${context.packageName} build\n\`\`\`\n`;
 }
 
 function renderSkill(

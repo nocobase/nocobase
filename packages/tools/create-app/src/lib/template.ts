@@ -3,14 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
 
-/**
- * v3 packages are published to the self-hosted registry rather than the public npm. Drop this default once they are
- * published to the public registry as well.
- *
- * Note this is the registry the *template* is downloaded from. It is unrelated to the registry that served this
- * package itself, which `pnpm create` resolves before any of this code runs.
- */
-export const DEFAULT_REGISTRY = 'https://npm.nocobase.ai';
+/** The public npm registry that carries NocoBase packages and templates. */
+export const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
 
 /**
  * What a template needs scaffolding around it, which is not the same for every template.

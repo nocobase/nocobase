@@ -1,5 +1,11 @@
 # @nocobase/dev-config
 
+## 0.1.0-beta.19
+
+### Patch Changes
+
+- bb8484b: Support CDN_BASE_URL for frontend asset URLs in application and Docker source builds. Add resolveAssetUrl for shipped static files, migrate template logos, and document its distinction from runtime application URLs.
+
 ## 0.1.0-beta.18
 
 ### Patch Changes

@@ -27,7 +27,7 @@ Hub 需要专业版授权。没有 Hub 时，单个应用可优先选择 app-ins
 用 app-installer 安装应用或 Hub 时，在 Agent 运行的机器安装全局 Skill：
 
 ```bash
-npx skills add nocobase/nocobase3 --skill nocobase-app-installer -g
+npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-app-installer --skill nocobase-app-installer -g
 ```
 
 安装后重新开启 Agent 会话。本机 Agent 通过 SSH 部署时，Skill 安装在本机；直接在服务器运行 Agent 时，安装在服务器。不要同时让两个会话操作同一个安装目录。

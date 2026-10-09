@@ -105,7 +105,7 @@ test('shared database code and dependency or CI inputs select every database', (
     '.pnpmfile.cjs',
     'pnpmfile.cjs',
     'patches/knex.patch',
-    '.github/workflows/quality.yml',
+    '.github/workflows/v3-quality.yml',
     'scripts/select-db-integration-matrix.mjs',
     'tests/scripts/select-db-integration-matrix.test.mjs',
   ]) {
@@ -121,7 +121,7 @@ test('unrelated paths and empty changes skip the matrix', () => {
       'AGENTS.md',
       'packages/app/app-client/src/index.ts',
       'packages/libs/db-postgres-extra/src/index.ts',
-      '.github/workflows/release-beta.yml',
+      '.github/workflows/v3-release-beta.yml',
     ]),
     [],
   );
@@ -226,7 +226,7 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
 
 test('the actual Quality gate only accepts successful tests or an explicitly planned skip', () => {
   const workflow = readFileSync(
-    path.join(root, '.github/workflows/quality.yml'),
+    path.join(root, '.github/workflows/v3-quality.yml'),
     'utf8',
   );
   const gate = workflow.slice(

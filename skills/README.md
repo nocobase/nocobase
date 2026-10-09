@@ -16,9 +16,7 @@ Each is used against the published packages, which is what users do, or against 
 
 ## Where the packages come from
 
-NocoBase 3 publishes its packages to `https://npm.nocobase.ai`, not to the public npm, where `@nocobase/create-app` and `@nocobase/app-installer` answer 404. Both Skills therefore name the registry on the command that fetches the first package, `npm_config_registry=… pnpm create @nocobase/app` and `npx --registry=… @nocobase/app-installer`, and nothing needs configuring beforehand. `pnpm create` takes no `--registry` of its own — pnpm 11 rejects one before `create` as an unknown option, and passes one after the package name to `create-app` — so the registry goes in the environment of that one command. From there the tools carry the registry themselves: `create-app` installs from it and writes `@nocobase:registry=https://npm.nocobase.ai/` into the new project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too, and app-installer does the same for every Hub release it builds. The user's own pnpm and npm configuration is not changed.
-
-The Skills write the registry as `${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}`. `NOCOBASE_REGISTRY` is unset for users; `pnpm unreleased:env` sets it, which is what lets the same commands install the unreleased checkout.
+NocoBase 3 publishes its packages to the public npm registry. Both Skills keep the registry local to the command and write it as `${NOCOBASE_REGISTRY:-https://registry.npmjs.org}`. `NOCOBASE_REGISTRY` is normally unset; `pnpm unreleased:env` sets it to the local snapshot registry, and a private installation can set it to its own source. `create-app` records a non-public registry for the `@nocobase` scope in the generated project's `.npmrc`, while public npm needs no override. The user's own pnpm and npm configuration is not changed.
 
 ## nocobase-create-app
 
@@ -30,10 +28,10 @@ The Skills write the registry as `${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}`
 ### Install the Skill
 
 ```bash
-npx skills add nocobase/nocobase3 --skill nocobase-create-app -g
+npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-create-app --skill nocobase-create-app -g
 ```
 
-`--skill` is required. The `skills` CLI reads this whole directory, and without it would offer every Skill here at once. The others install the same way with their own name, `nocobase-plugin-development` for an agent working in a fork or another checkout, which this checkout links already. Add `-a claude-code`, or another agent's name, to install for one agent only.
+The full tree URL pins both `v3-develop` and the Skill directory; `--skill` names the selection explicitly. The others install the same way by replacing the last path segment and the `--skill` value, such as `nocobase-plugin-development` for an agent working in a fork or another checkout, which this checkout links already. Add `-a claude-code`, or another agent's name, to install for one agent only.
 
 Agents load Skills when a session starts, so start a new session after installing.
 
@@ -56,7 +54,7 @@ It never asks for a database password in the conversation. For a database other 
 The Skill runs nothing you cannot run yourself:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry=https://npm.nocobase.ai pnpm create @nocobase/app my-app
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init
 pnpm nocobase config check
@@ -85,7 +83,7 @@ On the server that will run the application:
 ### Install the Skill
 
 ```bash
-npx skills add nocobase/nocobase3 --skill nocobase-app-installer -g
+npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-app-installer --skill nocobase-app-installer -g
 ```
 
 ### Ask the agent
@@ -105,8 +103,8 @@ Later, in the installation directory, ask it to check, upgrade or roll back. It 
 ### Without an agent
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/hub --template hub --origin https://apps.example.com
+npx --yes @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
+npx --yes @nocobase/app-installer install /srv/nocobase/hub --template hub --origin https://apps.example.com
 ```
 
 `upgrade`, `rollback` and `status` take `--dir` with the installation directory; an archive installation upgrades with `--archive` and the new archive. The package README, `packages/tools/app-installer/README.md`, documents every flag, the directory layout and the exit codes.
@@ -115,7 +113,7 @@ npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/noco
 
 Use this to test a change before it is released: a change to a Skill, or to a package it drives, such as `create-app`, `app-installer`, a template or `app-cli`. The checkout is published to a local npm registry on your machine, and a shell is pointed at it, so the Skills' unchanged commands install the unreleased code.
 
-A global Skill is released by merging it into `develop`, while packages are released by `release-beta`. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
+A global Skill is released by merging it into `v3-develop`, while packages are released by `release-beta`. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
 
 ### Requirements
 
@@ -156,7 +154,7 @@ The second command must print `http://127.0.0.1:4873/`. `-s` keeps pnpm's own `$
 
 `unreleased:env` prints the same variables `unreleased:create` and `unreleased:smoke` run with, including `NOCOBASE_REGISTRY` and a session-only store and cache. Setting a few of them by hand is not enough, and fails silently:
 
-- A snapshot carries the same version numbers as the last release until one is cut. A package resolved from `https://npm.nocobase.ai/` looks identical to pnpm, so a partly configured shell produces an application that mixes a new template with old packages, and nothing reports it. The symptoms are a `config.yml` created before `config init` ran, no `.npmrc`, and a `pnpm nocobase` command reported as not found.
+- A snapshot carries the same version numbers as the last release until one is cut. A package resolved from public npm looks identical to pnpm, so a partly configured shell produces an application that mixes a new template with published packages, and nothing reports it. The symptoms are a `config.yml` created before `config init` ran, no private-registry entry in `.npmrc`, and a `pnpm nocobase` command reported as not found.
 - `pnpm config set @nocobase:registry …` saves the scoped registry to `auth.ini` in pnpm's global configuration directory, `~/Library/Preferences/pnpm` on macOS. `PNPM_CONFIG_USERCONFIG` does not replace that file, and only `XDG_CONFIG_HOME` moves the directory, so the command sets it for the whole shell. Tools that keep their own settings there, such as `gh`, will not find them until you open a new shell.
 
 If the shell uses an HTTP proxy, keep `127.0.0.1` in `NO_PROXY` so the local npm registry is reached directly.
@@ -176,7 +174,7 @@ Ask exactly as in the published case. A snapshot install can be told apart from 
 - `node_modules/@nocobase/app-cli/dist/commands/config/` contains `init.js`, `check.js` and `set.js`.
 - An installation made by app-installer records `"registry": "http://127.0.0.1:4873"` in its `installer.json`. A Hub needs its port and the App Host port 13010 free; to keep an installation off your own pm2 processes, export a short `PM2_HOME`, such as `/tmp/nb-pm2`, before starting the agent. An archive to install comes from an application created with `pnpm unreleased:create` and built there with `pnpm build --tar`.
 
-To look at what the local npm registry serves, query it with `curl`. In a shell without the variables above, a scoped registry in your own configuration overrides `npm view --registry`, and the answer comes from `https://npm.nocobase.ai/` instead:
+To look at what the local npm registry serves, query it with `curl`. In a shell without the variables above, a scoped registry in your own configuration can override `npm view --registry`, so use the registry URL directly:
 
 ```bash
 curl -s http://127.0.0.1:4873/@nocobase%2fcreate-app

@@ -1033,7 +1033,7 @@ const issueShape = {
   number: z.number().int(),
   identifier: z
     .string()
-    .meta({ description: '`PREFIX-number`, such as `PM-12`.' }),
+    .meta({ description: '`PREFIX-number`, such as `PM-1`.' }),
   title: z.string(),
   description: z.string().meta({ description: 'Markdown.' }),
   statusKey: z.string(),
@@ -1556,6 +1556,13 @@ export const IntakeAiJobSchema: z.ZodType<IntakeAiJob> = z
         phase: z.enum(['queued', 'working']),
         by: z.string().nullable(),
         waitReason: z.string().nullable(),
+        waitParams: z
+          .record(
+            z.string(),
+            z.union([z.string(), z.number(), z.array(z.string())]),
+          )
+          .nullable()
+          .optional(),
         activity: z.string().nullable(),
         since: dateTime.nullable(),
       })

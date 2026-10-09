@@ -690,6 +690,39 @@ describe('run requests', () => {
     });
   });
 
+  it('refuses to run work as the person who asked when only a runner the claim would pass over is online', async () => {
+    await setUp();
+    await h.services.variables.set(
+      { scope: 'agent', scopeId: agentId },
+      'API_TOKEN',
+      'synthetic-test-value',
+      'owner',
+      { teamRunnersOnly: true },
+    );
+    await h.registerRunner({
+      name: 'bob-laptop',
+      trust: 'ownerOnly',
+      ownerUserId: BOB,
+    });
+    // Bob's own runner fits the agent, but the agent's variable is for team runners only.
+    await expect(bobAsks('Mine.', { execution: 'mine' })).rejects.toMatchObject(
+      { code: 'NO_RUNNER_AVAILABLE' },
+    );
+    const asked = await bobAsks('Later.');
+    await expect(
+      h.services.runs.requests.runAsRequester(
+        asked.outcome === 'pending' ? asked.requestId : '',
+        BOB,
+      ),
+    ).rejects.toMatchObject({ code: 'NO_RUNNER_AVAILABLE' });
+    expect(await runsOn()).toEqual([]);
+
+    await h.registerRunner({ name: 'team', trust: 'team' });
+    expect((await bobAsks('Mine.', { execution: 'mine' })).outcome).toBe(
+      'created',
+    );
+  });
+
   it('withdraws a request for the person who asked, and lists requests for the people in them', async () => {
     await setUp();
     const first = await bobAsks('One.');

@@ -288,7 +288,7 @@ it('installs a real registry item, builds and packs a generated plugin, and load
     const plugin = await createPlugin({
       repoRoot: root,
       name: 'published-registry-acceptance',
-      capabilities: ['client.components', 'registry'],
+      capabilities: ['client.components'],
       install: false,
     });
     const directory = plugin.targetDirectory;
