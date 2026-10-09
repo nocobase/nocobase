@@ -724,8 +724,15 @@ export default function MailAccountsPage({
                       defaultValue: 'Email address',
                     }),
                     username: t('settings.providers.username', {
-                      defaultValue: 'Username',
+                      defaultValue: 'Username (optional)',
                     }),
+                    usernameDescription: t(
+                      'settings.providers.usernameDescription',
+                      {
+                        defaultValue:
+                          'Usually your email address. Leave blank to use the email address you entered.',
+                      },
+                    ),
                     password: t('settings.providers.password', {
                       defaultValue: 'Password',
                     }),

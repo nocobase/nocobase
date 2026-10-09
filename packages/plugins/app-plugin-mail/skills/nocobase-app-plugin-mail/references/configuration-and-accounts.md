@@ -94,6 +94,8 @@ Official references: [Gmail API quotas and quota-increase guidance](https://deve
 
 For IMAP/SMTP, `secure: true` means TLS from connection start; STARTTLS endpoints use the service's prescribed settings. TLS certificate verification defaults to enabled. Mail validates both endpoints before saving account credentials. Use the provider-required app password or authorization code where applicable.
 
+The connection form's Username is the shared IMAP and SMTP login name, not the sender's display name. It is optional: an omitted, empty, or whitespace-only value uses the entered mailbox address. A supplied login name is trimmed without changing case or requiring email syntax. Mailbox address and password remain required.
+
 Provider secrets, endpoints and allowed OAuth `scopes` live in `mail.providers`. The top-level `MAIL_*` overrides below do not create per-provider credential environment mappings. Do not assume generic `${NAME}` interpolation in YAML; use the target application's supported server configuration mechanism. In applications generated from the OSS default template, merge `mailEnvironmentMappings` into the application-owned mappings in `server/environment.ts`. Keep actual secrets in private server configuration, out of committed examples and client bundles, and restart after changing configuration.
 
 ## Connect and manage accounts

@@ -496,7 +496,7 @@ export interface MailConnectAccountInput {
   readonly provider: MailProviderIdentity;
   readonly address: string;
   readonly displayName?: string;
-  readonly username: string;
+  readonly username?: string;
   readonly password: string;
   readonly initialSyncReceivedAfter: string;
 }

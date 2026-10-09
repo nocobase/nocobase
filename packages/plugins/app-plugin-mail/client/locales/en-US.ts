@@ -353,7 +353,9 @@ const enUS = {
       configurationRequired:
         'Ask an administrator to configure this mail provider first',
       emailAddress: 'Email address',
-      username: 'Username',
+      username: 'Username (optional)',
+      usernameDescription:
+        'Usually your email address. Leave blank to use the email address you entered.',
       password: 'Password',
       displayName: 'Sender name (optional)',
     },
