@@ -1,6 +1,6 @@
 # ServiceToken and Provider examples
 
-Use these examples after [Services, tokens, and Providers](services.md) identifies the container and lifecycle as the right design. The snippets follow the current `@nocobase/service-provider` and `@nocobase/app-server` APIs on `develop`: Tokens use object identity, singleton factories are synchronous, Server plugins require an absolute `baseDir`, and the App drives Provider lifecycle methods.
+Use these examples after [Services, tokens, and Providers](services.md) identifies the container and lifecycle as the right design. The snippets follow the current `@nocobase/service-provider` and `@nocobase/app-server` APIs on `v3-develop`: Tokens use object identity, singleton factories are synchronous, Server plugins require an absolute `baseDir`, and the App drives Provider lifecycle methods.
 
 ## ServiceToken patterns
 

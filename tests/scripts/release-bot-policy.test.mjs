@@ -106,7 +106,7 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
         'merge',
         'https://github.com/nocobase/nocobase/pull/1',
       ]);
-      assert.ok(args.includes('--merge'), name);
+      assert.ok(args.includes('--squash'), name);
       const subjectIndex = args.indexOf('--subject');
       assert.notEqual(subjectIndex, -1, name);
       assert.match(args[subjectIndex + 1], /\[skip ci\]$/u, name);

@@ -13,7 +13,7 @@ Each installation lives in a directory of its own, with its own port and pm2 pro
 - Node.js 24 or later. `--template` also needs pnpm 11 or later.
 - pm2 4.3 or later, installed globally (`npm install -g pm2`), to start the application. A copy fetched through `npx` does not work, because `pm2 startup` writes a boot service that names pm2's own path.
 
-NocoBase 3 packages are published to `https://npm.nocobase.ai` rather than the public npm registry, so every command below names that registry for `npx`. Add `--yes` before `--registry` to skip npx's own install prompt, as a script or an agent has to. The suggestions in an error, and the examples in `--help`, are written the same way and run as they are.
+NocoBase 3 packages are published to the public npm registry. The commands below use `--yes` to skip npx's own install prompt. `--registry` or `NOCOBASE_REGISTRY` selects a private registry when needed; the installer records that registry in `installer.json`, so later commands for an existing installation keep using its original source.
 
 `--template` builds the Hub on the machine it runs on, which takes several minutes; give `install` and `upgrade` a timeout to match when a script or an agent runs them.
 
@@ -31,36 +31,36 @@ scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz
 ## Install
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/hub --template hub --origin https://apps.example.com
+npx --yes @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
+npx --yes @nocobase/app-installer install /srv/nocobase/hub --template hub --origin https://apps.example.com
 ```
 
 The target must be new or empty. Before writing anything, the command also checks that the port is free — naming a free one when it is not — that no pm2 process already uses the name (`pm2 start` on a taken name would restart that process with this installation's configuration rather than start a new one), and that every variable named by `--set-from-env` is set. It then unpacks the archive, or resolves the template version and builds it in a temporary build directory, into a release directory; writes the configuration; applies the database migrations; and starts the application with pm2, waiting until its health check answers or pm2 reports the process as crashed. Anything it wrote is removed again if it fails before the application is switched on, so running it again starts clean — with `--keep-source`, the build directory is kept for inspection and has to be removed before retrying.
 
 Ctrl-C (or SIGTERM) stops the step that is running and lets that cleanup happen; a second one exits at once.
 
-| Flag               | Default                     | Purpose                                                                                                                                                |
-| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--dir`            |                             | The target, as the other commands name it; the same as the directory argument.                                                                         |
-| `--archive`        |                             | The deployment archive to install, by local path. Give this or `--template`.                                                                           |
-| `--template`       |                             | `hub`, or `hub@<version or dist-tag>` (`latest` by default), to build the published Hub here. Give this or `--archive`.                                |
-| `--origin`         | `http://HOST:PORT`          | Public origin without the base path. Set it before exposing the application.                                                                           |
-| `--base-path`      | the server's, `/main`       | Where the application is mounted, such as `/crm`, or `/` for the origin root; `/hub` for a Hub, from the template or an archive. Written to `app.env`. |
-| `--host`, `--port` | `127.0.0.1`, `13000`        | Where the application listens. Keep the loopback default behind a reverse proxy; give each installation its own port.                                  |
-| `--dialect`        | `sqlite`                    | Database. Anything else needs `--set`; an archive must carry `@nocobase/db-<dialect>`, a template build adds it.                                       |
-| `--set`            |                             | `key=value` passed to `nocobase config set`, repeatable. Values are YAML scalars.                                                                      |
-| `--set-from-env`   |                             | `key=VARIABLE` read from the environment, repeatable. Use it for passwords.                                                                            |
-| `--registry`       | `https://npm.nocobase.ai`   | Registry for the template, NocoBase packages and suggested commands; `NOCOBASE_REGISTRY` also sets it.                                                 |
-| `--name`           | `nocobase-<directory name>` | pm2 process name.                                                                                                                                      |
-| `--no-start`       |                             | Install without starting; the result names the command that starts it.                                                                                 |
-| `--health-timeout` | `180`                       | Seconds to wait for the health check.                                                                                                                  |
-| `--keep-source`    |                             | With `--template`, keep the build directory, with the sources and development dependencies, even on failure.                                           |
-| `--json`           |                             | Print one JSON result on stdout. Progress always goes to stderr.                                                                                       |
+| Flag               | Default                      | Purpose                                                                                                                                                |
+| ------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--dir`            |                              | The target, as the other commands name it; the same as the directory argument.                                                                         |
+| `--archive`        |                              | The deployment archive to install, by local path. Give this or `--template`.                                                                           |
+| `--template`       |                              | `hub`, or `hub@<version or dist-tag>` (`latest` by default), to build the published Hub here. Give this or `--archive`.                                |
+| `--origin`         | `http://HOST:PORT`           | Public origin without the base path. Set it before exposing the application.                                                                           |
+| `--base-path`      | the server's, `/main`        | Where the application is mounted, such as `/crm`, or `/` for the origin root; `/hub` for a Hub, from the template or an archive. Written to `app.env`. |
+| `--host`, `--port` | `127.0.0.1`, `13000`         | Where the application listens. Keep the loopback default behind a reverse proxy; give each installation its own port.                                  |
+| `--dialect`        | `sqlite`                     | Database. Anything else needs `--set`; an archive must carry `@nocobase/db-<dialect>`, a template build adds it.                                       |
+| `--set`            |                              | `key=value` passed to `nocobase config set`, repeatable. Values are YAML scalars.                                                                      |
+| `--set-from-env`   |                              | `key=VARIABLE` read from the environment, repeatable. Use it for passwords.                                                                            |
+| `--registry`       | `https://registry.npmjs.org` | Registry for the template, NocoBase packages and suggested commands; `NOCOBASE_REGISTRY` also sets it.                                                 |
+| `--name`           | `nocobase-<directory name>`  | pm2 process name.                                                                                                                                      |
+| `--no-start`       |                              | Install without starting; the result names the command that starts it.                                                                                 |
+| `--health-timeout` | `180`                        | Seconds to wait for the health check.                                                                                                                  |
+| `--keep-source`    |                              | With `--template`, keep the build directory, with the sources and development dependencies, even on failure.                                           |
+| `--json`           |                              | Print one JSON result on stdout. Progress always goes to stderr.                                                                                       |
 
 A PostgreSQL Hub, with the password taken from the environment:
 
 ```bash
-HUB_DB_PASSWORD=... npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/hub \
+HUB_DB_PASSWORD=... npx --yes @nocobase/app-installer install /srv/nocobase/hub \
   --template hub --origin https://apps.example.com --dialect postgres \
   --set database.connections.main.host=db.internal \
   --set database.connections.main.username=hub \
@@ -74,8 +74,8 @@ Afterwards, run `pm2 startup` once and execute the command it prints so pm2 rest
 ## Upgrade
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/hub
+npx --yes @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
+npx --yes @nocobase/app-installer upgrade --dir /srv/nocobase/hub
 ```
 
 An upgrade takes the kind of source the install did. An archive installation moves to the archive given with `--archive`, which must hold the same application (its package name owns the migration history) and not an older version; an archive from before relocatable builds must also have been built for the path `app.env` mounts. A template installation moves to `latest`, or to the version or dist-tag given with `--to`.
@@ -107,7 +107,7 @@ When the machine's Node major changes, a release's native modules no longer load
 ## Rollback
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer rollback --dir /srv/nocobase/crm
+npx --yes @nocobase/app-installer rollback --dir /srv/nocobase/crm
 ```
 
 Returns to the release the last upgrade came from, or to `--to`, which takes a release id or a version (the newest build of it) among the releases on disk. When the upgrade being undone applied migrations, the SQLite databases are restored from the backup taken before it, which discards whatever was written since; `--no-restore` keeps the current databases instead. An external database is never in a backup, so nothing is restored for it and the command says so: restore it from your own backup. Rolling back never runs migrations backwards. A release built for another Node major is refused, since its native modules would not load; the error says how to get one that does.
@@ -119,7 +119,7 @@ If an upgrade or rollback is interrupted while the application is down, `install
 ## Status
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv/nocobase/crm
+npx --yes @nocobase/app-installer status --dir /srv/nocobase/crm
 ```
 
 Reports the application, its source, the running release with its version and build time, its `endpoints` — the public URL and origin, and the host and port it listens on — whether it answers its health check, the pm2 process, the releases on disk and their size, and whether the machine's Node major still matches the one the release was built for. For a template installation it also asks the registry whether a newer version is published (`--offline` skips that). It changes nothing, and does not start the pm2 daemon when it is not running.

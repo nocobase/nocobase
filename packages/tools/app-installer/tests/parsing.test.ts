@@ -18,7 +18,11 @@ import { waitForHealthy } from '../src/lib/health.ts';
 import { createPm2, parseJlist, type Pm2 } from '../src/lib/pm2.ts';
 import { checkPm2, checkPnpm } from '../src/lib/prechecks.ts';
 import { InstallerError } from '../src/lib/errors.ts';
-import { resolveTemplateVersion, type FetchLike } from '../src/lib/registry.ts';
+import {
+  defaultRegistry,
+  resolveTemplateVersion,
+  type FetchLike,
+} from '../src/lib/registry.ts';
 import {
   driverSpecifier,
   driversFor,
@@ -100,6 +104,17 @@ describe('resolveTemplateVersion', () => {
     expect(requested).toBe(
       'https://registry.test/@nocobase%2fapp-template-hub',
     );
+  });
+});
+
+describe('defaultRegistry', () => {
+  it('uses public npm unless an internal registry is configured', () => {
+    expect(defaultRegistry({})).toBe('https://registry.npmjs.org');
+    expect(
+      defaultRegistry({
+        NOCOBASE_REGISTRY: ' https://registry.internal.example/ ',
+      }),
+    ).toBe('https://registry.internal.example/');
   });
 });
 
@@ -302,11 +317,11 @@ describe('suggested commands', () => {
     );
     expect(
       installerCommand('status', {
-        registry: 'https://npm.nocobase.ai',
+        registry: 'https://registry.internal.example',
         version: 'latest',
       }),
     ).toBe(
-      'npx --yes --registry=https://npm.nocobase.ai @nocobase/app-installer@latest status',
+      'npx --yes --registry=https://registry.internal.example @nocobase/app-installer@latest status',
     );
   });
 

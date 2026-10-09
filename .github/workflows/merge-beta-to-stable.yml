@@ -182,7 +182,7 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --subject "chore: merge promoted versions into v3-main [skip ci]"
+          gh pr merge "$PR_URL" --squash --subject "chore: merge promoted versions into v3-main [skip ci]"
           RC=$?
           set -e
           if [ $RC -ne 0 ]; then
@@ -226,7 +226,7 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge promoted versions back into v3-develop [skip ci]"
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge promoted versions back into v3-develop [skip ci]"
           RC2=$?
           set -e
           if [ $RC2 -ne 0 ]; then
@@ -241,7 +241,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 v3-develop 合入 v3-main 失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -263,7 +263,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 已合入 v3-main，但同步回 v3-develop 失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -288,7 +288,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 v3-develop 已合入 v3-main
           STATUS: success
           STATUS_TEXT_SUCCESS: 待发布

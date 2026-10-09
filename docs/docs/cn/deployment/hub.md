@@ -72,28 +72,6 @@ docker compose logs --tail=100 hub
 
 修改 `config.yml` 后，执行 `docker compose up -d --force-recreate hub` 使其生效。升级 Hub 时，更新 `.env` 中的 `HUB_IMAGE`，然后执行 `docker compose pull hub && docker compose up -d hub`。
 
-### 用 app-installer 安装
-
-不使用 Docker 且不修改 Hub 源码时，可以用 app-installer 在 Node.js 服务器上安装 Hub。服务器需要 Node.js 24、pnpm 11 以及全局安装的 pm2 4.3 或更高版本（`npm install -g pm2`；不要使用通过 `npx` 临时下载的 pm2）。NocoBase 3 的包发布在 `https://npm.nocobase.ai`，需要通过 `--registry` 指定：
-
-```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/hub --template hub --origin https://apps.example.com
-```
-
-app-installer 在服务器上构建 Hub，生成包含随机密钥的 `config.yml`，执行数据库迁移，通过 pm2 启动 Hub，并等待健康检查通过，整个过程需要几分钟。默认监听 `127.0.0.1:13000`，使用 SQLite；使用其他数据库时，通过 `--dialect` 和 `--set` 指定连接参数，密码通过 `--set-from-env` 从环境变量读取。安装完成后执行 `pm2 startup`，再以 sudo 执行其输出的命令，服务器重启后 pm2 会自动启动 Hub。
-
-后续的升级、回滚和状态查询：
-
-```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/hub
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer rollback --dir /srv/nocobase/hub
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv/nocobase/hub
-```
-
-升级前，app-installer 会说明停机范围和备份内容并请求确认；升级失败时自动回滚到原版本。完整参数见 `--help`。
-
-修改过源码的 Hub 是一个普通的应用项目：按[手动部署：独立运行](./standalone)构建部署包后，通过 `--archive` 安装，并将运行时的 `APP_BASE_PATH` 设为 `/hub`。
-
 ### 反向代理与首次登录
 
 按[HTTPS 与反向代理](./configuration#https-与反向代理)将整个域名转发至 `http://127.0.0.1:13000`，并在 Nginx 的 `server` 配置中增加 `client_max_body_size 260m;`。这个上限只为管理界面的上传：管理界面一次上传整个归档，最大 256 MiB；`hub deploy` 和 `hub upload` 按 8 MiB 分段续传，归档最大 2 GiB，只要求反向代理放行 8 MiB 的请求。

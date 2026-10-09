@@ -26,6 +26,8 @@ on:
     secrets:
       NOCOBASE_APP_PRIVATE_KEY:
         required: true
+      PRO_NPM_REGISTRY:
+        required: true
       RELEASE_RESULT_FEISHU_WEBHOOK_URL:
         required: false
 
@@ -82,6 +84,18 @@ jobs:
           version: 11.7.0
           run_install: false
 
+      - name: Validate the Pro npm registry
+        env:
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node -e '
+            const value = process.env.PRO_NPM_REGISTRY?.trim();
+            if (!value) { console.error("::error::PRO_NPM_REGISTRY is not configured"); process.exit(1); }
+            let registry;
+            try { registry = new URL(value); } catch { console.error("::error::PRO_NPM_REGISTRY is not a valid URL"); process.exit(1); }
+            if (registry.hostname === "registry.npmjs.org") { console.error("::error::Commercial packages must not use public npm"); process.exit(1); }
+          '
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -92,7 +106,7 @@ jobs:
           test -f .changeset/pre.json || { echo '::error::Pro develop is not in pre mode'; exit 1; }
           test "$(node -p "require('./.changeset/pre.json').mode")" = pre || { echo '::error::Pro develop has an invalid pre mode'; exit 1; }
 
-      - name: Freeze the promoted OSS main snapshot and install
+      - name: Freeze the promoted OSS v3-main snapshot and install
         id: oss
         env:
           OSS_SHA: ${{ inputs.oss_sha }}
@@ -240,7 +254,7 @@ jobs:
           git push --force origin "$SYNC"
           PR_URL=$(gh pr create --repo nocobase/nocobase3-pro \
             --title 'chore: sync promoted versions back to develop' \
-            --body "Sync stable versions back to develop, re-enter prerelease mode, and restore OSS develop commit \`$DEVELOP_OSS_SHA\`." \
+            --body "Sync stable versions back to develop, re-enter prerelease mode, and restore the OSS v3-develop commit \`$DEVELOP_OSS_SHA\`." \
             --base develop --head "$SYNC")
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
           gh pr merge --repo nocobase/nocobase3-pro "$PR_URL" --merge --delete-branch
@@ -251,7 +265,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: ${{ secrets.PRO_NPM_REGISTRY }}
           TITLE: NocoBase 3 Pro develop 已合入 main
           STATUS: success
           STATUS_TEXT_SUCCESS: 待发布

@@ -1,6 +1,6 @@
 # Client Service, Context, and Routed Tabs Examples
 
-Use these examples when the shorter Client references do not show enough implementation detail. They follow the current `ClientApplication`, authorization Client, React Router, and shadcn/base-nova APIs on `develop`; adapt package names, resource identities, copy, and event topics to the owning plugin.
+Use these examples when the shorter Client references do not show enough implementation detail. They follow the current `ClientApplication`, authorization Client, React Router, and shadcn/base-nova APIs on `v3-develop`; adapt package names, resource identities, copy, and event topics to the owning plugin.
 
 ## Application-scoped Client service with typed options
 

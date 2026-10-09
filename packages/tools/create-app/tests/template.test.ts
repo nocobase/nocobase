@@ -236,12 +236,8 @@ describe('isTemplateAlias', () => {
 });
 
 describe('DEFAULT_REGISTRY', () => {
-  /**
-   * `pnpm create` resolves this package from whichever registry the user configured, but the template lives only on
-   * the self-hosted one. The two are independent, and this default is what makes the documented invocation work.
-   */
-  it('points at the self-hosted registry that carries the v3 packages', () => {
-    expect(DEFAULT_REGISTRY).toBe('https://npm.nocobase.ai');
+  it('points at the public npm registry', () => {
+    expect(DEFAULT_REGISTRY).toBe('https://registry.npmjs.org');
   });
 });
 

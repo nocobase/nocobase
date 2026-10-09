@@ -31,7 +31,7 @@ on:
         type: boolean
         default: false
       oss_sha:
-        description: 'Exact OSS stable release commit'
+        description: 'Exact OSS v3-main stable release commit'
         type: string
         required: true
       dry_run:
@@ -39,6 +39,8 @@ on:
         default: false
     secrets:
       NOCOBASE_APP_PRIVATE_KEY:
+        required: true
+      PRO_NPM_REGISTRY:
         required: true
       PRO_NPM_TOKEN:
         required: true
@@ -105,11 +107,23 @@ jobs:
           version: 11.7.0
           run_install: false
 
+      - name: Validate the Pro npm registry
+        env:
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node -e '
+            const value = process.env.PRO_NPM_REGISTRY?.trim();
+            if (!value) { console.error("::error::PRO_NPM_REGISTRY is not configured"); process.exit(1); }
+            let registry;
+            try { registry = new URL(value); } catch { console.error("::error::PRO_NPM_REGISTRY is not a valid URL"); process.exit(1); }
+            if (registry.hostname === "registry.npmjs.org") { console.error("::error::Commercial packages must not use public npm"); process.exit(1); }
+          '
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: https://npm.nocobase.ai
+          registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
 
       - name: Verify stable release inputs
         env:
@@ -130,7 +144,7 @@ jobs:
         run: |
           if [ "$KEEP_LATEST" = true ]; then echo 'value=legacy' >> "$GITHUB_OUTPUT"; else echo 'value=latest' >> "$GITHUB_OUTPUT"; fi
 
-      - name: Freeze the OSS main snapshot and install
+      - name: Freeze the OSS v3-main snapshot and install
         id: oss
         env:
           OSS_SHA: ${{ inputs.oss_sha }}
@@ -226,11 +240,12 @@ jobs:
         id: publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
           TAG: ${{ steps.release.outputs.name }}
           DIST_TAG: ${{ steps.disttag.outputs.value }}
         run: |
           git tag --points-at HEAD | sort > "$RUNNER_TEMP/pro-tags-before.txt"
-          node ./scripts/publish-commercial-packages.mjs --registry https://npm.nocobase.ai --tag "$DIST_TAG"
+          node ./scripts/publish-commercial-packages.mjs --registry "$PRO_NPM_REGISTRY" --tag "$DIST_TAG"
           git tag --points-at HEAD | sort > "$RUNNER_TEMP/pro-tags-after.txt"
           NEW_TAGS=$(comm -13 "$RUNNER_TEMP/pro-tags-before.txt" "$RUNNER_TEMP/pro-tags-after.txt")
           if [ -z "$NEW_TAGS" ]; then
@@ -288,7 +303,8 @@ jobs:
           TAG: ${{ steps.release.outputs.name }}
         run: |
           node ./vendor/nocobase3/scripts/release-notes.mjs "$TAG" > "$RUNNER_TEMP/pro-release-notes.raw.md"
-          sed 's#https://github.com/nocobase/nocobase3/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' "$RUNNER_TEMP/pro-release-notes.raw.md" > "$RUNNER_TEMP/pro-release-notes.md"
+          sed -e 's#https://github.com/nocobase/nocobase3/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' \
+              -e 's#https://github.com/nocobase/nocobase/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' "$RUNNER_TEMP/pro-release-notes.raw.md" > "$RUNNER_TEMP/pro-release-notes.md"
           TITLE="${TAG##*/}"
           if gh release view --repo nocobase/nocobase3-pro "$TAG" > /dev/null 2>&1; then
             gh release edit --repo nocobase/nocobase3-pro "$TAG" --title "$TITLE" --notes-file "$RUNNER_TEMP/pro-release-notes.md" --latest
@@ -302,7 +318,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: ${{ secrets.PRO_NPM_REGISTRY }}
           TITLE: NocoBase 3 Pro 稳定版发布
           STATUS: success
           STATUS_TEXT_SUCCESS: 发布成功
