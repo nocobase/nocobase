@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { describeMigration } from '@nocobase/app-testing/server';
 
-describeMigration('202610080001_ag_add_run_secrets_refused', {
+describeMigration('202610090001_ag_add_run_secrets_refused', {
   sources: [
     {
       packageName: '@nocobase/app-plugin-agents',
