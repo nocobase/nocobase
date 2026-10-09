@@ -72,6 +72,7 @@ import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
 import {
   agentCwd,
+  agentWritableRoots,
   PREPARE_STEPS,
   PrepareError,
   type PrepareContext,
@@ -652,6 +653,7 @@ export class RunWorker {
       this.lastActivity = Date.now();
       const handle = adapter.start({
         workDir: cwd,
+        writableRoots: agentWritableRoots(context.dirs, cwd),
         prompt,
         systemPrompt: system,
         ...(payload.tool.model === undefined

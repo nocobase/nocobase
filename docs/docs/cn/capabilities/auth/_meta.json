@@ -2,17 +2,24 @@
   {
     "type": "file",
     "name": "index",
-    "label": "认证概览"
-  },
-  {
-    "type": "file",
-    "name": "quick-start",
-    "label": "快速开始"
+    "label": "概览"
   },
   {
     "type": "dir",
-    "collapsed": true,
-    "name": "development",
-    "label": "使用 Agent 开发"
+    "name": "methods",
+    "label": "认证方式",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "custom",
+    "label": "自定义",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "高级使用",
+    "collapsed": true
   }
 ]

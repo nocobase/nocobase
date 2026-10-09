@@ -93,8 +93,11 @@ export interface RunnerService {
   /** 404 when absent. */
   get(id: string): Promise<Runner>;
   update(id: string, patch: RunnerPatch): Promise<Runner>;
-  /** Revokes the runner and every key it has. The runs it holds go back to the queue (the runs service). */
-  revoke(id: string): Promise<Runner>;
+  /**
+   * Revokes the runner and every key it has. The runs it holds go back to the queue (the runs service). When `by` is
+   * someone other than its owner, the owner is told (`runner_revoked`).
+   */
+  revoke(id: string, options?: { readonly by?: string }): Promise<Runner>;
   /** Deletes a revoked runner and its keys; `CONFLICT` while it is not revoked. Its past runs keep their `runnerId`. */
   remove(id: string): Promise<void>;
   /** Marks online (and `upgrade_required`) runners not seen since `before` offline; returns their ids. */
@@ -481,9 +484,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         return require(conn, id);
       }),
 
-    revoke: (id) =>
+    revoke: (id, options) =>
       tx.run(async ({ conn, emit }) => {
-        await require(conn, id);
+        const runner = await require(conn, id);
         const now = clock.now().toISOString();
         await runnersRepo(conn).updateMany({
           filter: { id },
@@ -494,6 +497,27 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             f.and([f.string('runnerId').eq(id), f.date('revokedAt').empty()]),
           values: { revokedAt: now },
         });
+        const by = options?.by;
+        if (by && runner.ownerUserId && runner.ownerUserId !== by) {
+          const byName =
+            (await deps.people?.names(conn, [by]))?.get(by) ?? null;
+          emit({
+            type: 'notice',
+            notice: {
+              key: `runners:runner-revoked:${runner.id}`,
+              type: 'runner_revoked',
+              userIds: [runner.ownerUserId],
+              subject: { kind: 'runner', id: runner.id, label: runner.name },
+              title: `${runner.name} was revoked`,
+              body: `${byName ?? 'A manager of runners'} revoked your runner ${runner.name}. It takes no more work; register it again to use it.`,
+              params: {
+                runnerName: runner.name,
+                revokedByUserId: by,
+                revokedByName: byName,
+              },
+            },
+          });
+        }
         emit({ type: 'runner.changed', runnerId: id });
         return require(conn, id);
       }),

@@ -77,8 +77,6 @@ describe('app client routes', () => {
       { name: 'routeChildPageOnboarding', authorizedAs: null },
       { name: 'routeChildPageRenewal', authorizedAs: null },
       { name: 'articles', authorizedAs: null },
-      { name: 'workflowWaitingTasks', authorizedAs: null },
-      { name: 'workflowWaitingTask', authorizedAs: null },
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },

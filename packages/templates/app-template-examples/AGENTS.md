@@ -10,6 +10,8 @@ This application is based on `@nocobase/app-template-default` and provides runna
 
 Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories and mounted under Settings. Keep these product integrations aligned with Default.
 
+The Workflow plugin is retained as a dependency but is disabled by default in Client, Server, and CLI. Its configuration and example sources are retained for explicit opt-in use.
+
 ## Load the development skills
 
 `pnpm install` runs `pnpm nocobase skills sync` through the application's `postinstall` hook. If `.agents/skills/nocobase-app-development/` is missing, install dependencies from the application root; if install scripts were disabled or synchronized Skills are stale, run `pnpm nocobase skills sync` explicitly.
@@ -437,7 +439,3 @@ Navigation groups retain their expanded or collapsed state while the navigation 
 `runtime.paths`, configuration context `paths`, and `app.paths` share one resolved `AppPaths` object. Use `paths.storage('...')`, `paths.database('...')`, or the corresponding directory fields. `AppPathOptions` is input only; application path policies run before the final object is created and configuration is loaded. Standalone entries declare the deployment root in `server/runtime.ts` so the server and CLI share persistent storage outside the compiled code directory.
 
 `server/app.ts` calls `createAppFromRuntime(runtime)` to transfer configuration, paths, mode and Host logging policy and bind `runtime.app`. Keep Provider, middleware and route registration explicit and ordered; `startApplicationInScope` owns startup and shutdown binding.
-
-## Examples AI employee entry
-
-Examples wraps `AppLayout` in `client/components/ai-employee-entry.tsx`, the global AI employee entry: `NocoBaseAIRootProvider`, an `AIChatProvider` bound to the global controller, `AIChatFloatingTrigger` and a `ChatSurface` that opens as a side panel and expands into a dialog. Its components come from `client/extensions/nocobase-ai`, the AI Employee plugin's application-owned Registry item. Any signed-in page starts an AI employee task in it with `useGlobalAIChatController().triggerTask()` or `AIEmployeeShortcut`, as `client/extensions/nocobase-ai-employee-example-tasks-page/` does; do not mount a second `NocoBaseAIRootProvider` or global chat in a page. Settings and Dev layouts do not carry the entry. This shell addition is product-specific and stays in Examples. Both items translate in the namespace of the plugin they came with, whose locale files that plugin loads, as the file plugin's items do; reword their text with an `overrides` block in `client/locales/`.

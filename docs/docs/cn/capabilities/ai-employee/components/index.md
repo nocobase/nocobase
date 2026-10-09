@@ -10,7 +10,7 @@ AI 员工插件提供名为 `nocobase-ai` 的 Registry 源码项。把它安装�
 
 ## 先装好运行时
 
-默认模板已经在 `client/plugins.ts` 中注册 AI 员工插件，但 Registry 本身不包含自动发现的 `extension.ts`，也不会自动挂载 React Provider。安装 Registry 后，在这个目录中创建应用自己的包装组件：
+`@nocobase/app-plugin-ai-employee` is deprecated, and current Default and Examples templates no longer install or register it. This guide applies to existing applications that retain the plugin and its configuration. Verify its registrations in `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts` before using the components. The Registry item does not include an automatically discovered `extension.ts` or mount React Providers; after installing it, create an application-owned wrapper in that directory:
 
 ```tsx
 import type { PropsWithChildren } from 'react';

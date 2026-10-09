@@ -7,8 +7,6 @@ import {
   defineClientPlugins,
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
-import aiEmployee from '@nocobase/app-plugin-ai-employee/client';
-import aiEmployeeExample from '@nocobase/app-plugin-ai-employee-example/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
@@ -23,7 +21,6 @@ import lifecycleExample from '@nocobase/app-plugin-lifecycle-example/client';
 import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/client';
 import routesExample from '@nocobase/app-plugin-routes-example/client';
 import i18n from '@nocobase/app-plugin-i18n/client';
-import workflow from '@nocobase/app-plugin-workflow/client';
 import notification from '@nocobase/app-plugin-notification/client';
 import repositoryExample from '@nocobase/app-plugin-repository-example/client';
 import scheduler from '@nocobase/app-plugin-scheduler/client';
@@ -35,8 +32,6 @@ import apiKeys from '@nocobase/app-plugin-api-keys/client';
 // list; removing its entry and its import disables it.
 const clientPlugins: AppClientPlugins = defineClientPlugins([
   authentication(),
-  aiEmployee(),
-  aiEmployeeExample(),
   authorization(),
   defaultAccess(),
   sharingRules(),
@@ -54,7 +49,6 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   lifecycleExample(),
   officeFlowsExample(),
   routesExample(),
-  workflow(),
   notification(),
   repositoryExample(),
   file(),
