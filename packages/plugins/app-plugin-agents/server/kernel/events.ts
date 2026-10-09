@@ -44,6 +44,9 @@ export interface AgentsNotice {
   readonly params: Readonly<Record<string, string | number | null>>;
 }
 
+/** @deprecated Use `AgentsNotice`: notices also cover work waiting for confirmation. */
+export type RunnerNotice = AgentsNotice;
+
 /**
  * A run request (`shared/runs.ts`) was made (`created`, for its responsible to confirm), or settled: `confirmed` (its
  * `runId` the run it went into), `rejected`, `withdrawn` (also when its asker ran it as themselves, `runId` set),
