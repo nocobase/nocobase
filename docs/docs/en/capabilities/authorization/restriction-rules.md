@@ -1,14 +1,33 @@
 ---
 title: 'Restriction rules'
-description: 'Keep granted and shared data within a required boundary.'
+description: 'Narrow existing permissions with business conditions.'
 ---
 
 # Restriction rules
 
-A restriction describes records still allowed. “Non-confidential” retains public records and excludes confidential ones; do not accidentally select the records you intend to prohibit as the allowed scope.
+Restriction rules apply more specific conditions to records accessible through jobs and sharing. For example, a collaborator responsible for purchases up to CNY 2,000 can have a corresponding limit on their viewing scope.
 
-In Settings → Authorization → Restriction rules, select affected subjects, resource, action and scope. Validate using an ordinary user with broad positive access or sharing; excluded records must remain inaccessible.
+## Example: view orders within a budget
 
-Business rules limit the selected operation branch. If an invariant must cover every operation and direct collection access, tell the AI agent explicitly so the developer applies a collection-level restriction. Nested relation targets also require explicit design; ordinary target collection restrictions do not automatically protect relation writes.
+```text
+Alice's purchasing collaboration covers orders up to CNY 2,000.
+Configure a restriction for her View orders action that allows records with amounts less than or equal to CNY 2,000.
+Apply the restriction to viewing access obtained from permission sets, default scope, and sharing.
+Let administrators select the appropriate amount scope in Settings.
+```
 
-A limit that must survive leaving a team cannot be assigned only to that team. A coordinator with a direct manager role may need a direct restriction too. Unrestricted administrators bypass these constraints, so use ordinary accounts for verification.
+In Settings → Authorization → Restriction Rules, select Alice, the order-viewing action, and the amount scope. The selected condition describes allowed records: orders up to CNY 2,000.
+
+![Configure Alice's order-viewing budget limit](../../../cn/capabilities/authorization/assets/restriction-rule.png)
+
+### View the result
+
+Alice's list retains accessible orders whose amounts meet the condition, including the shared PO-2026-004 for CNY 1,550.
+
+![Accessible orders whose amounts meet the restriction](../../../cn/capabilities/authorization/assets/restricted-orders.png)
+
+## Set conditions for responsibilities
+
+The application provides conditions such as amount and business status. Confidential workflows can similarly allow only non-confidential records. Restrictions narrow existing scopes and express business boundaries that must apply consistently.
+
+Viewing, editing, and approval are separate actions. Specify which actions the requirement covers. Collection-wide restrictions and complex relationship conditions are further development topics.

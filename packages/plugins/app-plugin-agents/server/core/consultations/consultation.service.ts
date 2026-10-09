@@ -35,6 +35,7 @@ import type {
   SubjectAssembly,
   SubjectBinding,
 } from '../runs/index.js';
+import { queuedRun } from '../runs/index.js';
 import { findRunRecord, type RunRecord } from '../runs/run.store.js';
 import {
   consultationContext,
@@ -308,29 +309,33 @@ export function createConsultationService(
           `Consultations go ${CONSULT_MAX_DEPTH} levels deep at most: answer with what you know.`,
         );
       const asker = await findAgent(conn, parent.agentId);
-      const enqueued = await deps.runs.enqueue({
-        agentId: target.id,
-        subject: { kind: CONSULTATION_SUBJECT, id: parent.id },
-        threadScope: callId.slice(0, 64),
-        actorUserId: parent.actorUserId,
-        ownerUserId: parent.ownerUserId,
-        parentRunId: parent.id,
-        maxAttempts: 1,
-        input: {
-          type: 'custom',
-          actor: {
-            kind: 'agent',
-            id: parent.agentId,
-            name: asker?.name ?? parent.agentId,
+      const enqueued = queuedRun(
+        await deps.runs.enqueue({
+          agentId: target.id,
+          subject: { kind: CONSULTATION_SUBJECT, id: parent.id },
+          threadScope: callId.slice(0, 64),
+          actorUserId: parent.actorUserId,
+          // The question is the asking run's doing: its chain of work goes on.
+          causedByRunId: parent.id,
+          ownerUserId: parent.ownerUserId,
+          parentRunId: parent.id,
+          maxAttempts: 1,
+          input: {
+            type: 'custom',
+            actor: {
+              kind: 'agent',
+              id: parent.agentId,
+              name: asker?.name ?? parent.agentId,
+            },
+            text: questionText(request.question, request.context),
+            payload: {
+              trigger: CONSULTATION_TRIGGER,
+              question: request.question,
+              ...(request.context ? { context: request.context } : {}),
+            },
           },
-          text: questionText(request.question, request.context),
-          payload: {
-            trigger: CONSULTATION_TRIGGER,
-            question: request.question,
-            ...(request.context ? { context: request.context } : {}),
-          },
-        },
-      });
+        }),
+      );
       return { runId: enqueued.runId, agent: target };
     },
   };
