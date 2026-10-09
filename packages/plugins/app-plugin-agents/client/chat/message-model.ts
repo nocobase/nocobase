@@ -310,6 +310,16 @@ export function noticeText(
         name: agentName(notice.agentId),
         own: agentName(notice.fromAgentId),
       });
+    case 'switchedToOnline':
+      return t('chat.notice.switchedToOnline', {
+        name: agentName(notice.agentId),
+        own: agentName(notice.fromAgentId),
+      });
+    case 'onlineFallbackUnavailable':
+      return t('chat.notice.onlineFallbackUnavailable', {
+        own: agentName(notice.fromAgentId),
+        reason: t(`chat.availability.${notice.reason}`),
+      });
     case 'switchedBack':
       return t('chat.notice.switchedBack', { name: agentName(notice.agentId) });
     case 'runFailed':

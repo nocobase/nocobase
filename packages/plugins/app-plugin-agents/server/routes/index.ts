@@ -23,6 +23,7 @@ import {
   type AuthorizationEnv,
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import { loggingToken } from '@nocobase/app-server/logging';
 import {
   defineApiRoutes,
   type AppApiRouteContribution,
@@ -136,6 +137,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       createRunnersAdminRoutes(
         services,
         person as unknown as MiddlewareHandler<RunnersAdminEnv>,
+        {
+          logger: container.has(loggingToken)
+            ? container.resolve(loggingToken).getLogger('security')
+            : undefined,
+        },
       ),
     );
     router.route('/agents', createRunRoutes(services));

@@ -91,17 +91,15 @@ jobs:
 
       - name: Publish
         if: >-
-          vars.V3_ASSET_DEPLOY_ENABLED == 'true' && (
           github.event_name == 'workflow_dispatch' && inputs.publish ||
           github.event_name == 'push' && github.ref == 'refs/heads/v3-develop'
-          )
         working-directory: docs
         env:
           DOCS_ALI_OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
           DOCS_ALI_OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}
-          DOCS_ALI_OSS_BUCKET: ${{ secrets.DOCS_ALI_OSS_BUCKET }}
-          DOCS_ALI_OSS_REGION: ${{ secrets.DOCS_ALI_OSS_REGION }}
-          DOCS_ALI_CDN_DOMAIN: ${{ secrets.DOCS_ALI_CDN_DOMAIN }}
+          DOCS_ALI_OSS_BUCKET: ${{ secrets.V3_DOCS_ALI_OSS_BUCKET }}
+          DOCS_ALI_OSS_REGION: ${{ secrets.V3_DOCS_ALI_OSS_REGION }}
+          DOCS_ALI_CDN_DOMAIN: ${{ secrets.V3_DOCS_ALI_CDN_DOMAIN }}
           # ossutil reads the credentials from these names rather than the DOCS_-prefixed ones.
           OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
           OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}

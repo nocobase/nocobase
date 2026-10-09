@@ -58,13 +58,17 @@ const agentChatZhCN: AgentChatLocale = {
       noRunner: '{{name}} 暂时没有在线的运行环境',
       modelUnavailable: '{{name}} 的模型不可用，请联系管理员',
       kept: '消息已保存，它能回复时会处理。',
-      fallback: '这条对话改用系统默认',
-      usingDefault: '这条对话临时使用系统默认的 {{name}}。',
+      fallback: '这条对话改用其他 Agent',
+      usingDefault: '这条对话暂时由 {{name}} 代替 {{own}} 回答。',
       restore: '切回 {{own}}',
     },
     notice: {
       switchedToDefault:
         '已临时改用系统默认的 {{name}}，等 {{own}} 恢复后可以切回。',
+      switchedToOnline:
+        '{{own}} 现在没有你能用的运行环境，先由 {{name}} 回答，等 {{own}} 恢复后可以切回。',
+      onlineFallbackUnavailable:
+        '在线兜底 Agent 暂时无法回答（{{reason}}），这条对话仍由 {{own}} 等待可用的运行环境。',
       switchedBack: '已切回 {{name}}。',
       runFailed: 'Agent 没有回复就停止了。',
       runFailedReason: 'Agent 没有回复就停止了：{{reason}}',

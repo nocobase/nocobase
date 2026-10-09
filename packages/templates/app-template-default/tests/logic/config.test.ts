@@ -187,7 +187,7 @@ describe('application config', () => {
     expect(runtime.config.get('session.stores.redis.host')).toBe('127.0.0.1');
     expect(runtime.config.get('logging.console.pretty')).toBe(false);
     expect(runtime.config.get('session.cookie.secure')).toBe(true);
-    expect(runtime.config.get('workflow.production')).toBe(true);
+    expect(runtime.config.get('workflow')).toBeUndefined();
     delete runtime.env.APP_SERVER_PORT;
     delete runtime.env.APP_SERVER_START_LOG;
     await runtime.config.reload();

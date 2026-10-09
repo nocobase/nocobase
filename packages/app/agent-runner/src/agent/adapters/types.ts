@@ -97,6 +97,12 @@ export interface ToolDetection {
 export interface AdapterSession {
   /** Absolute path the agent works in (the checked-out worktree). */
   workDir: string;
+  /**
+   * Directories besides `workDir` the agent writes: the run's other working directories, and each repository's own Git
+   * directory, which a worktree keeps outside its working tree. A tool that sandboxes itself must let the agent write
+   * them; a tool without a sandbox ignores them.
+   */
+  writableRoots?: readonly string[];
   /** The first user message of the run. */
   prompt: string;
   /** The rendered brief (system, task, context, agent layers joined). */

@@ -21,11 +21,6 @@
   },
   {
     "type": "file",
-    "name": "workflow",
-    "label": "4. Add an approval flow"
-  },
-  {
-    "type": "file",
     "name": "notifications",
     "label": "5. Send notifications"
   },
