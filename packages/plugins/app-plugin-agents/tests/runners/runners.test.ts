@@ -35,7 +35,10 @@ describe('runners', () => {
 
   it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
     h = await createHarness();
-    const agentId = await h.createAgent({ access: 'users', userIds: ['owner'] });
+    const agentId = await h.createAgent({
+      access: 'users',
+      userIds: ['owner'],
+    });
     const agentBefore = await h.services.agents.get(agentId);
     const first = await h.registerRunner();
     const other = await h.registerRunner({
