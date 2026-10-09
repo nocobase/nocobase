@@ -384,7 +384,7 @@ function TrendChart({
             <YAxis
               tickLine={false}
               axisLine={false}
-              width={56}
+              width='auto'
               tickFormatter={format}
             />
             <ChartTooltip

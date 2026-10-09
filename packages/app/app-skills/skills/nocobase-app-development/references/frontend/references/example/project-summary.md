@@ -15,18 +15,18 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { AlertCircleIcon, RefreshCwIcon } from 'lucide-react';
 import { type ReactElement, useEffect, useRef, useState } from 'react';
 
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Alert, AlertAction, AlertDescription } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
 import {
   Card,
   CardAction,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+} from '#components/ui/card';
+import { Skeleton } from '#components/ui/skeleton';
+import { Spinner } from '#components/ui/spinner';
 
 import { ProjectStatusBadge } from './status-badge.js';
 import type { Project } from './types.js';

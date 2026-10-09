@@ -39,29 +39,29 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from '#components/ui/alert-dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '#components/ui/avatar';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '#components/ui/dropdown-menu';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Toggle } from '@/components/ui/toggle';
+} from '#components/ui/popover';
+import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
+import { Toggle } from '#components/ui/toggle';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 import { cn } from 'cn';
 
 import {

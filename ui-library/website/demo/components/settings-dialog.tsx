@@ -8,13 +8,13 @@ import {
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 
 import {
   SettingsDialog,
   SettingsDialogSection,
   type SettingsDialogGroup,
-} from '@/components/settings-dialog';
+} from '#components/settings-dialog';
 
 const GROUPS: readonly SettingsDialogGroup[] = [
   {

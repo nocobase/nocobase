@@ -11,7 +11,7 @@ import {
 } from 'react';
 
 import type { FileRecord, FileUploadFieldProps } from '../types';
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import { FileThumbnail } from './file-thumbnail';
 
 type UploadItem = {

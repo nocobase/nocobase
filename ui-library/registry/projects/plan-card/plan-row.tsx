@@ -28,7 +28,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from '#components/ui/collapsible';
 import { cn } from 'cn';
 
 import { MarkdownView } from '../../components/markdown-view.js';

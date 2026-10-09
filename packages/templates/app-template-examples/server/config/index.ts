@@ -1,3 +1,4 @@
+import mail from './mail.js';
 import {
   defaultAppConfigs,
   type AppConfigFactory,
@@ -50,6 +51,7 @@ const defaultConfigs: AppConfigFactory<{
   ai: ReturnType<typeof ai>;
   workflow: ReturnType<typeof workflow>;
   users: ReturnType<typeof users>;
+  mail: ReturnType<typeof mail>;
 }> = defaultAppConfigs({
   auth,
   authorization,
@@ -74,6 +76,7 @@ const defaultConfigs: AppConfigFactory<{
   ai,
   workflow,
   users,
+  mail,
 });
 
 export default defaultConfigs;

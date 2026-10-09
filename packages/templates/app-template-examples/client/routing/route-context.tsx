@@ -8,7 +8,7 @@ import {
   type ReactElement,
 } from 'react';
 
-import { EMPTY_ARRAY } from '@/lib/constants';
+import { EMPTY_ARRAY } from '#lib/constants';
 
 import { matchRouteTree } from './route-navigation.js';
 

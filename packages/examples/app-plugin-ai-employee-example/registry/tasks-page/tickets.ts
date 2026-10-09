@@ -1,4 +1,4 @@
-import type { AIWorkContextItem } from '@/extensions/nocobase-ai';
+import type { AIWorkContextItem } from '#extensions/nocobase-ai';
 
 export type TicketPriority = 'high' | 'normal' | 'low';
 export type TicketStatus = 'open' | 'pending';

@@ -1,6 +1,6 @@
 # Forms and validation
 
-Forms use react-hook-form, zod 4 and `@hookform/resolvers/zod`, the `Field` family from `@/components/ui/field` for structure, and the input components in `@/components/ui/` for controls. The template ships `input`, `label` and `select`; add `field` and every other control before using it (`yes n | pnpm exec shadcn add field textarea checkbox`, then format the created files, as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes). The layout rules for these components are in the skill's [`rules/forms.md`](../shadcn/rules/forms.md); this document covers binding them to react-hook-form and zod.
+Forms use react-hook-form, zod 4 and `@hookform/resolvers/zod`, the `Field` family from `#components/ui/field` for structure, and the input components in `#components/ui/` for controls. The template ships `input`, `label` and `select`; add `field` and every other control before using it (`yes n | pnpm exec shadcn add field textarea checkbox`, then format the created files, as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes). The layout rules for these components are in the skill's [`rules/forms.md`](../shadcn/rules/forms.md); this document covers binding them to react-hook-form and zod.
 
 - A form component handles only fields, validation and submission; the title, the button area, and opening and closing belong to the container (`RouteDialog`, a page, a settings card). Creating and editing share one form component.
 - Put the form component in the feature folder (`client/pages/<feature>/<feature>-form.tsx`); move it to `client/components/` only when several features use it.
@@ -101,7 +101,7 @@ The demo form `client/pages/projects/project-settings-form.tsx` ([`example/setti
 
 - Spread `{...field}`, then add `id` and `aria-invalid`; write input attributes as usual, for example `type='email'` and `autoComplete='off'`.
 - Put a character-count hint in `FieldDescription`, computed from `field.value.length`.
-- For prefixes or suffixes (icons, units, buttons), use `InputGroup`, `InputGroupInput`, `InputGroupTextarea` and `InputGroupAddon` from `@/components/ui/input-group`; the control spreads `{...field}` the same way.
+- For prefixes or suffixes (icons, units, buttons), use `InputGroup`, `InputGroupInput`, `InputGroupTextarea` and `InputGroupAddon` from `#components/ui/input-group`; the control spreads `{...field}` the same way.
 
 ### Checkbox and Switch
 
@@ -153,7 +153,7 @@ Labels go above inputs (guideline T3.2): ordinary fields use the default `vertic
 ### Other controls
 
 - The registry also has `NativeSelect`, `Slider`, `InputOTP`, `ToggleGroup` and more (for `Combobox`, see "Choosing a related record"); the skill's forms rules say when each fits, for example `ToggleGroup` for two to seven options. Before wiring a component into `Controller`, confirm the controlled prop and the callback arguments with `pnpm exec shadcn docs <name>` and the source the CLI wrote: Base UI components often use different prop names from the Radix versions.
-- For dates, use the application's own `DatePicker` from `@/components/date-picker`. If it does not exist yet, compose it there from the `calendar` and `popover` primitives as shadcn's Date Picker guide does (`pnpm exec shadcn docs date-picker`), with `date-fns` for formatting, rather than inline in a page. Give it `value: Date | undefined`, `onChange(date)`, `id` for the label and a `date-fns` `locale`; it accepts neither `ref` nor `aria-invalid`, so `FieldError` below it carries the error. It formats the trigger and the calendar in English unless it gets a `date-fns` locale, so map the interface language to one:
+- For dates, use the application's own `DatePicker` from `#components/date-picker`. If it does not exist yet, compose it there from the `calendar` and `popover` primitives as shadcn's Date Picker guide does (`pnpm exec shadcn docs date-picker`), with `date-fns` for formatting, rather than inline in a page. Give it `value: Date | undefined`, `onChange(date)`, `id` for the label and a `date-fns` `locale`; it accepts neither `ref` nor `aria-invalid`, so `FieldError` below it carries the error. It formats the trigger and the calendar in English unless it gets a `date-fns` locale, so map the interface language to one:
 
 ```tsx
 // client/pages/projects/project-due-date-picker.tsx
@@ -161,7 +161,7 @@ import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import { enUS, zhCN } from 'date-fns/locale';
 import type { ReactElement } from 'react';
 
-import { DatePicker } from '@/components/date-picker';
+import { DatePicker } from '#components/date-picker';
 
 export interface ProjectDueDatePickerProps {
   readonly id: string;
@@ -243,14 +243,14 @@ import { type ReactElement, useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Checkbox } from '@/components/ui/checkbox';
+import { Checkbox } from '#components/ui/checkbox';
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+} from '#components/ui/field';
+import { Input } from '#components/ui/input';
 
 export interface ProjectReminderFormProps {
   readonly formId: string;

@@ -1,5 +1,5 @@
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
 import { useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
@@ -13,8 +13,8 @@ import {
   RefreshCw,
   SlidersHorizontal,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '#components/ui/button';
+import { Badge } from '#components/ui/badge';
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '#components/ui/table';
 
 type NumericValue = string | number | null;
 const fields = [

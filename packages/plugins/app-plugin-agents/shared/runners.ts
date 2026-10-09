@@ -9,6 +9,8 @@ import {
   type RunnerPolicy,
   type RunStatus,
   type ToolInfo,
+  type ToolLoad,
+  type ToolSlots,
 } from '@nocobase/agent-protocol';
 
 import { entryTools, type AgentModelEntry } from './agents.js';
@@ -62,6 +64,18 @@ export interface Runner {
   readonly status: RunnerStatus;
   /** Its slots, shared by runs and jobs. */
   readonly slots: number;
+  /**
+   * How many runs of each coding tool it may hold at once, beside `slots` (`{ claude: 2, codex: 1 }`); a tool left
+   * out, or every tool when null or absent, is bounded by `slots` only. Set on the web or on registration (`--slots`).
+   * Optional so a runner built by other code than this plugin's server needs none; the server always sets it.
+   */
+  readonly toolSlots?: ToolSlots | null;
+  /**
+   * What it last reported per coding tool for the tools its own settings limit: how many runs of each it holds at most
+   * and could take now, across every application it serves. Null or absent when it reported none (unknown: read as
+   * room left).
+   */
+  readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
    * without a model. Off for every runner until someone turns it on; a job also needs the runner to report the job's
@@ -123,6 +137,11 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   /** Jobs it holds now. */
   readonly activeJobs: number;
   /**
+   * The runs it holds now, by the coding tool each runs with; a tool it runs nothing of is left out. Absent when
+   * unknown (a summary built by other code than this plugin's server): no use per tool is shown.
+   */
+  readonly activeByTool?: Readonly<Partial<Record<AgentTool, number>>>;
+  /**
    * What it takes work for, by what people configured and what it reported (for agent runs: the agents whose tool is
    * enabled and signed in here, that are not limited to other runners, and that its owner's policy lets in).
    */
@@ -150,6 +169,8 @@ export interface RunnerPatch {
   readonly name?: string;
   readonly trust?: RunnerTrust;
   readonly slots?: number;
+  /** Limits per coding tool; null, or a tool left out, for none of its own (bounded by `slots`). */
+  readonly toolSlots?: ToolSlots | null;
   /** null offers every tool the runner reports. */
   readonly enabledTools?: readonly AgentTool[] | null;
   readonly acceptJobs?: boolean;
@@ -165,6 +186,11 @@ export interface RegistrationTokenInput {
    * runner. A runner registered with an explicit `--slots` keeps its own number.
    */
   readonly slots?: number | null;
+  /**
+   * The limits per coding tool the runner that registers with this token gets; omitted or null for none. A runner
+   * registered with its own limits per tool (`--slots claude=2`) keeps its own.
+   */
+  readonly toolSlots?: ToolSlots | null;
 }
 
 /** A one-time registration token; `token` is shown only in this answer. */
@@ -174,6 +200,8 @@ export interface RegistrationToken {
   readonly trust: RunnerTrust;
   readonly enabledTools: readonly AgentTool[] | null;
   readonly slots: number | null;
+  /** Absent from tokens made before limits per tool, or built by other code: none. */
+  readonly toolSlots?: ToolSlots | null;
   readonly expiresAt: string;
 }
 
@@ -253,6 +281,42 @@ export function runnerActivity(
   return runner.activeRuns + runner.activeJobs >= runner.slots
     ? 'busy'
     : 'online';
+}
+
+/** How many runs of `tool` the runner may hold at once: its limit for the tool, never above its total slots. */
+export function toolLimit(
+  runner: Pick<Runner, 'slots' | 'toolSlots'>,
+  tool: AgentTool,
+): number {
+  const own = runner.toolSlots?.[tool];
+  return own === undefined ? runner.slots : Math.min(own, runner.slots);
+}
+
+/** One coding tool's use of a runner's slots, as a page shows it. */
+export interface ToolUsage {
+  readonly tool: AgentTool;
+  /** Runs of it the runner holds now, for this application. */
+  readonly used: number;
+  /** Its limit (`toolLimit`). */
+  readonly limit: number;
+  /** Whether the limit is its own (`toolSlots`) rather than the runner's total. */
+  readonly limited: boolean;
+}
+
+/**
+ * The coding tools worth showing a runner's use of, in the protocol's order: those with a limit of their own and those
+ * it runs something of now. Empty for a runner without limits per tool that runs nothing.
+ */
+export function toolUsage(
+  runner: Pick<RunnerSummary, 'slots' | 'toolSlots' | 'activeByTool'>,
+): ToolUsage[] {
+  return AGENT_TOOLS.flatMap((tool) => {
+    const used = runner.activeByTool?.[tool] ?? 0;
+    const limited = runner.toolSlots?.[tool] !== undefined;
+    return limited || used > 0
+      ? [{ tool, used, limit: toolLimit(runner, tool), limited }]
+      : [];
+  });
 }
 
 /** An agent as far as where it may run is concerned (the agents plugin's `Agent` fits). */

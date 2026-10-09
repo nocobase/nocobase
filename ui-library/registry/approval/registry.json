@@ -1,0 +1,88 @@
+{
+  "items": [
+    {
+      "name": "approval-ui",
+      "type": "registry:block",
+      "title": "Approval UI",
+      "description": "Presentational approval components: a request's progress through its stages with vote tallies, its history, the route a new request would take, parallel branches as a whole, a notice's receipts, and a bar of the actions the person may take.",
+      "meta": {
+        "group": "Approval",
+        "iframeHeight": 760
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["alert", "badge", "button", "dropdown-menu"],
+      "docs": "Pure presentation: map your approval data into the shapes in types.ts (ApprovalStep, ApprovalTimelineLine, ApprovalRoute, ApprovalBranch, ApprovalReceipt, ApprovalBarAction) with translated labels, name people through ApprovalUiProvider, and merge locales/ into your locale resources.",
+      "files": [
+        {
+          "path": "approval-ui/index.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-approval-ui/index.ts"
+        },
+        {
+          "path": "approval-ui/types.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-approval-ui/types.ts"
+        },
+        {
+          "path": "approval-ui/approval-ui-context.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-approval-ui/approval-ui-context.ts"
+        },
+        {
+          "path": "approval-ui/approval-ui-provider.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-approval-ui/approval-ui-provider.tsx"
+        },
+        {
+          "path": "approval-ui/use-approval-ui.ts",
+          "type": "registry:hook",
+          "target": "client/extensions/nocobase-approval-ui/use-approval-ui.ts"
+        },
+        {
+          "path": "approval-ui/approval-timeline.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-approval-ui/approval-timeline.tsx"
+        },
+        {
+          "path": "approval-ui/approval-progress.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-approval-ui/approval-progress.tsx"
+        },
+        {
+          "path": "approval-ui/approval-route-preview.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-approval-ui/approval-route-preview.tsx"
+        },
+        {
+          "path": "approval-ui/approval-action-bar.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-approval-ui/approval-action-bar.tsx"
+        },
+        {
+          "path": "approval-ui/approval-branches.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-approval-ui/approval-branches.tsx"
+        },
+        {
+          "path": "approval-ui/approval-receipts.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-approval-ui/approval-receipts.tsx"
+        },
+        {
+          "path": "approval-ui/locales/en-US.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-approval-ui/locales/en-US.ts"
+        },
+        {
+          "path": "approval-ui/locales/zh-CN.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-approval-ui/locales/zh-CN.ts"
+        }
+      ]
+    }
+  ]
+}

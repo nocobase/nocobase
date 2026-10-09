@@ -1,4 +1,4 @@
-import { PageContainer } from '@/components/page-container';
+import { PageContainer } from '#components/page-container';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   ArrowUpRight,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 
 const examples = [
   { key: 'routeOverlays', path: '/route-overlays', icon: PanelsTopLeft },

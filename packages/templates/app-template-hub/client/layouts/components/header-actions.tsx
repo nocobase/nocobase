@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
   TooltipContent,
   TooltipProvider,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 
 import { ThemeSettings } from '../../theme/index.js';
 import { UserMenu } from './user-menu.js';

@@ -18,9 +18,9 @@ import {
 } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { PageHeader } from '#components/page-header';
+import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import type { InboxAction } from './inbox-actions.js';

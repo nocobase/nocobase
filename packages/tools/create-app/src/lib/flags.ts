@@ -104,7 +104,7 @@ export function formatHelp(binary: string): string {
     `  $ ${binary} crm --template-tag=beta`,
     '',
     'NOTES',
-    '  The template is downloaded from https://npm.nocobase.ai by default.',
+    '  The template is downloaded from https://registry.npmjs.org by default.',
     '  Override it with --registry, or set the NOCOBASE_REGISTRY environment variable.',
     '',
     '  The generated app is not configured yet. Configure it inside the app directory with:',

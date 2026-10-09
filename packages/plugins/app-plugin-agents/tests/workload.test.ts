@@ -160,6 +160,8 @@ describe('explainWait', () => {
       features: ['checkout'],
       tools: [{ kind: 'claude', authenticated: true }],
       enabledTools: null,
+      toolSlots: null,
+      toolLoad: null,
       ...patch,
     }) as Runner;
   const run = {
@@ -219,6 +221,59 @@ describe('explainWait', () => {
     expect(
       explainWait(run, { ...context, runnerUsed: new Map([['r1', 2]]) }).reason,
     ).toBe('runnersBusy');
+    expect(
+      explainWait(run, {
+        ...context,
+        runners: [runner({ toolSlots: { claude: 1 } })],
+        runnerUsed: new Map([['r1', 1]]),
+        runnerToolUsed: new Map([['r1', { claude: 1 }]]),
+      }),
+    ).toMatchObject({ reason: 'toolSlotsFull', tool: 'claude' });
+    // Full by what the runner reported across its applications, though it runs nothing of this one's.
+    expect(
+      explainWait(run, {
+        ...context,
+        runners: [runner({ toolLoad: { claude: { slots: 2, free: 0 } } })],
+      }).reason,
+    ).toBe('toolSlotsFull');
+    // A runner built without the fields for limits per tool has none.
+    const { toolSlots: _toolSlots, toolLoad: _toolLoad, ...older } = runner();
+    expect(
+      explainWait(run, { ...context, runners: [older as Runner] }).reason,
+    ).toBe('next');
+    // A full machine reads as the machine's slots, whatever its tools say.
+    expect(
+      explainWait(run, {
+        ...context,
+        runners: [runner({ toolSlots: { claude: 1 } })],
+        runnerUsed: new Map([['r1', 2]]),
+        runnerToolUsed: new Map([['r1', { claude: 1 }]]),
+      }).reason,
+    ).toBe('runnersBusy');
+    // Another of the agent's tools still has room.
+    expect(
+      explainWait(run, {
+        ...context,
+        agent: {
+          ...agent,
+          modelEntries: [
+            { tool: 'claude', model: null },
+            { tool: 'codex', model: null },
+          ],
+        } as unknown as Agent,
+        runners: [
+          runner({
+            toolSlots: { claude: 1 },
+            tools: [
+              { kind: 'claude', authenticated: true },
+              { kind: 'codex', authenticated: true },
+            ],
+          }),
+        ],
+        runnerUsed: new Map([['r1', 1]]),
+        runnerToolUsed: new Map([['r1', { claude: 1 }]]),
+      }).reason,
+    ).toBe('next');
     expect(
       explainWait(
         { ...run, claimFailures: 1, failureDetail: 'No repo.' },

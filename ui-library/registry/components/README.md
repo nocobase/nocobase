@@ -13,7 +13,7 @@ Single components that pages are built from. Each is its own item, installs into
 | `kanban`           | `kanban.tsx`                                                            | `KanbanProvider`, `KanbanBoard`, `KanbanHeader`, `KanbanCards`, `KanbanCard`                                                                                                                                                                                     |
 | `property-fields`  | `property-fields.tsx`                                                   | `PropertyCard`, `PropertyRow`, `PropertySelect`, `PropertyMultiSelect`, `PropertyDate`, `PropertyNumber`, `PersonValue`, `AgentIcon`, `PeopleAvatars`                                                                                                            |
 | `rich-text-editor` | `rich-text-editor.tsx`, with `rich-text-markdown.ts`                    | `RichTextEditor`, `RichTextToolbar`, `RichTextToolbarButton`, `RichTextInlineTools`, `RichTextBlockTools`, `RichTextToolbarSeparator`, `RichTextDefaultToolbar`; `richTextExtensions`, `mergeExtensions`, `MarkdownMention`, `ComposerKeys`, `roundTripMarkdown` |
-| `markdown-view`    | `markdown-view.tsx`                                                     | `MarkdownView`                                                                                                                                                                                                                                                   |
+| `markdown-view`    | `markdown-view.tsx`, with `remark-cjk-autolink.ts`                      | `MarkdownView`; `remarkCjkAutolink`                                                                                                                                                                                                                              |
 | `comment-thread`   | `comment-thread.tsx`                                                    | `CommentTimeline`, `ThreadCard`, `TimelineActivity`, `ActorAvatar`, `CommentComposer`                                                                                                                                                                            |
 | `attachment-list`  | `attachment-list.tsx`                                                   | `AttachmentList`, `PendingAttachments`, `AttachmentPanel`                                                                                                                                                                                                        |
 
@@ -24,8 +24,8 @@ Single components that pages are built from. Each is its own item, installs into
 `PageContainer` renders a `section` with the full width, the responsive padding (`p-6 md:p-8`) and the spacing between sections (`space-y-6`). It accepts every `section` prop, and `className` is merged with `cn`, so it can override the defaults. `PageHeader` renders the page's only `h1`, an optional `description`, and `actions` aligned to the right from the `sm` breakpoint up.
 
 ```tsx
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
 
 export default function OrdersPage() {
   return (
@@ -48,8 +48,8 @@ A page renders one `PageContainer`. Content that renders inside another page —
 The three ways a child route presents itself over the page that opened it, each at a URL of its own. The application owns the routes: declare each overlay as a child route of its page, render an `Outlet` in that page, and return the overlay from the child route's component.
 
 ```tsx
-import { RouteDialog } from '@/components/route-dialog';
-import { useRouteOverlay } from '@/components/use-route-overlay';
+import { RouteDialog } from '#components/route-dialog';
+import { useRouteOverlay } from '#components/use-route-overlay';
 
 function CancelButton() {
   const { close, isClosing } = useRouteOverlay();
@@ -87,7 +87,7 @@ The overlays' close button names itself with `useTranslation()` from `@nocobase/
 
 ## In a plugin
 
-`page-header` has no `@/` imports and compiles in a plugin as installed. The others import `cn` from the `cn` package, which stays as it is, and most of them also import primitives as `@/components/ui/<name>` — `route-dialog` and `route-drawer` the `button` and `dialog` ones, and `rich-text-editor` the `toggle` one; rewrite those imports to relative `.js` paths, as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes.
+`page-header` has no `#` imports and compiles in a plugin as installed. The others import `cn` from the `cn` package, which stays as it is, and most of them also import primitives as `#components/ui/<name>` — `route-dialog` and `route-drawer` the `button` and `dialog` ones, and `rich-text-editor` the `toggle` one. Keep these imports unchanged. Align the plugin's `package.json#imports` and `components.json` prefixes so the imports resolve to local source files during development and compiled `dist/client` files in the published package, using `publishConfig.imports` as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes.
 
 ## Rich text editor
 
@@ -129,6 +129,10 @@ const EXTENSIONS = [Timestamp];
 ```
 
 `roundTripMarkdown(markdown, extensions)` runs Markdown through the same schema without a view, which is what saving an untouched draft would send. Every word comes from `labels` (`RichTextLabels`, English by default).
+
+## Markdown view
+
+`markdown-view` renders GitHub-flavoured Markdown with `remark-gfm` followed by `remarkCjkAutolink` from `remark-cjk-autolink.ts`. GFM ends a bare URL only at whitespace or `<`, so in Chinese or Japanese text it swallows what follows: `PR：https://example.com/pull/8（分支 x）` would link `…/pull/8（分支`. The plugin ends a bare `https://…` or `www.…` link at the first Han, kana or Hangul character or full-width punctuation mark, trims the trailing punctuation GFM would have trimmed, and turns the rest back into text, linking any bare URL the rest contains. A URL written as `<https://…>` or `[text](https://…)` is left whole, which is how to link a URL that really contains CJK characters. Pass it to any other `react-markdown` you render the same text with.
 
 ## Kanban
 

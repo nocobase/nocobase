@@ -42,6 +42,7 @@ import {
   RunnerPolicySchema,
   TIMINGS,
   ToolInfoSchema,
+  type ClaimRequest,
   type ClaimResponse,
   type HeartbeatRequest,
   type HeartbeatResponse,
@@ -306,12 +307,14 @@ export function createRunnerRoutes(
     },
   );
 
-  // Runs and jobs share the runner's slots: jobs first (they are short and people wait on them), then runs.
-  const claimWork = async (runner: Runner, free: number) => {
+  // Runs and jobs share the runner's slots: jobs first (they are short and people wait on them), then runs. Jobs run
+  // no coding tool, so only runs are bounded by the runner's room per tool.
+  const claimWork = async (runner: Runner, request: ClaimRequest) => {
+    const { free } = request;
     const jobs = await services.jobs.runner.claim(runner, free);
     const runs =
       free - jobs.length > 0
-        ? await services.claims.claim(runner, free - jobs.length)
+        ? await services.claims.claim(runner, free - jobs.length, request.tools)
         : [];
     return { runs, jobs };
   };
@@ -350,8 +353,9 @@ export function createRunnerRoutes(
         if (wait) await pause(pollTimeoutMs, context.req.raw.signal);
         return context.json({ data: { runs: [] } satisfies ClaimResponse });
       }
-      const { free } = parseApiInput(ClaimRequestSchema, await jsonOf(context));
-      let work = await claimWork(runner, free);
+      const request = parseApiInput(ClaimRequestSchema, await jsonOf(context));
+      const { free } = request;
+      let work = await claimWork(runner, request);
       if (
         work.runs.length === 0 &&
         work.jobs.length === 0 &&
@@ -364,7 +368,7 @@ export function createRunnerRoutes(
         );
         if (outcome !== 'aborted')
           // The runner may have been revoked while it waited.
-          work = await claimWork(await authenticate(context, true), free);
+          work = await claimWork(await authenticate(context, true), request);
       }
       // A runner of protocol 3 is never handed a job (it announces no job feature), so `jobs` stays out of its answer.
       const response: ClaimResponse =

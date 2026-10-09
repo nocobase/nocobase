@@ -5,7 +5,7 @@ import {
   resolveFilePreviewKind,
   resolveOfficeOpenXmlFormat,
   resolveOfficeEmbedUrl,
-} from '../../registry/component-ui/lib/file-preview.js';
+} from '../../.registry-test-app/client/extensions/nocobase-file-component-ui/lib/file-preview.js';
 import type { FileRecord } from '../../client/index.js';
 
 function fileRecord(overrides: Partial<FileRecord> = {}): FileRecord {

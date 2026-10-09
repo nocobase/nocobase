@@ -6,6 +6,9 @@
  * is guessed from its id only as a default: it can be changed on any row, before the model is checked too, and each
  * row's Test checks the model as its kind, saying when it looks like a model of another kind instead. The form scrolls
  * between a fixed header and footer. Who only reads services sees the same form, unchangeable.
+ *
+ * For an OpenCode base URL the form says which provider type serves which of its model families; the session
+ * header is sent automatically.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +16,7 @@ import { FlaskConicalIcon, PlusIcon, RefreshCwIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import {
+  isOpenCodeUrl,
   MODEL_PROVIDERS,
   providerOf,
   type ModelCheck,
@@ -355,6 +359,12 @@ function ServiceForm({
             onChange={(event) => setKey(event.target.value)}
           />
         </Field>
+
+        {isOpenCodeUrl(url.trim()) ? (
+          <p role='note' className='text-sm text-muted-foreground'>
+            {t('services.connection.openCodeHint')}
+          </p>
+        ) : null}
 
         {canManage ? (
           <div className='flex flex-wrap items-center gap-3'>

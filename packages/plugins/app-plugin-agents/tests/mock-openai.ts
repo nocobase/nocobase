@@ -5,7 +5,7 @@
  * shape, with Jina's `usage.total_tokens`), so the model gateway and the model services run against the real AI SDK
  * providers without a real model or key.
  */
-import { createServer, type Server } from 'node:http';
+import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 export interface MockRequest {
@@ -47,6 +47,17 @@ export interface MockOpenAI {
   /** The embedding and rerank requests, as sent. */
   readonly embeddings: Record<string, unknown>[];
   readonly reranks: Record<string, unknown>[];
+  /** Every request's method, path and headers, in order. */
+  readonly seen: {
+    readonly method: string;
+    readonly path: string;
+    readonly headers: IncomingHttpHeaders;
+  }[];
+  /**
+   * A header every request must carry, as OpenCode Go asks for `x-opencode-session`: without it the server answers
+   * 400 with OpenCode's message, except for `GET /models`. None when null.
+   */
+  requireHeader(name: string | null): void;
   /** Answers the next completions, in order; the last one repeats. */
   answer(...answers: MockAnswer[]): void;
   close(): Promise<void>;
@@ -70,11 +81,33 @@ export async function startMockOpenAI(): Promise<MockOpenAI> {
   const requests: MockRequest[] = [];
   const embeddings: Record<string, unknown>[] = [];
   const reranks: Record<string, unknown>[] = [];
+  const seen: MockOpenAI['seen'] = [];
+  let required: string | null = null;
   let queue: MockAnswer[] = [{ text: ['Hello.'] }];
   const server: Server = createServer((request, response) => {
     const chunks: Buffer[] = [];
     request.on('data', (data: Buffer) => chunks.push(data));
     request.on('end', () => {
+      seen.push({
+        method: request.method ?? '',
+        path: request.url ?? '',
+        headers: request.headers,
+      });
+      if (
+        required &&
+        request.method !== 'GET' &&
+        request.headers[required] === undefined
+      ) {
+        response.writeHead(400, { 'content-type': 'application/json' });
+        response.end(
+          JSON.stringify({
+            error: {
+              message: `Request is missing ${required} and cannot be routed efficiently.`,
+            },
+          }),
+        );
+        return;
+      }
       if (request.method === 'GET' && request.url?.endsWith('/models')) {
         if (request.headers.authorization === 'Bearer bad-key') {
           response.writeHead(401, { 'content-type': 'application/json' });
@@ -260,6 +293,10 @@ export async function startMockOpenAI(): Promise<MockOpenAI> {
     requests,
     embeddings,
     reranks,
+    seen,
+    requireHeader(name) {
+      required = name?.toLowerCase() ?? null;
+    },
     answer(...answers) {
       queue = answers;
     },

@@ -54,6 +54,29 @@ export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
 });
 
 /**
+ * How many runs of each coding tool a runner may hold at once, beside its total slots: `{ claude: 2, codex: 1 }`. A tool
+ * left out has no limit of its own and is bounded by the total only; a limit above the total is bounded by the total.
+ * Jobs use no coding tool and count against the total only.
+ */
+export type ToolSlots = Readonly<Partial<Record<AgentTool, number>>>;
+
+export const ToolSlotsSchema: z.ZodType<ToolSlots> = z.partialRecord(
+  AgentToolSchema,
+  z.number().int().positive().max(64),
+);
+
+/** How many runs of one coding tool a runner holds at most (`slots`) and could take now (`free`). */
+export interface ToolLoad {
+  readonly slots: number;
+  readonly free: number;
+}
+
+export const ToolLoadSchema: z.ZodType<ToolLoad> = z.object({
+  slots: z.number().int().nonnegative(),
+  free: z.number().int().nonnegative(),
+});
+
+/**
  * A runner does not choose its trust level: the person who created the registration token did (`team` or
  * `ownerOnly`, with the token's creator as the runner's owner), and people change it on the server afterwards. What a
  * runner offers is reported, never configured: its system, its features and its coding tools with whether each is
@@ -78,6 +101,8 @@ export interface RegisterRequest {
   readonly tools: readonly ToolInfo[];
   /** How many runs it may hold at once; absent to take its registration token's (else 1). */
   readonly slots?: number;
+  /** Its own limits per coding tool (`ToolSlots`); absent to take its registration token's (else none). */
+  readonly toolSlots?: ToolSlots;
   /** What its owner's local policy lets it take (protocol 7); absent for anything. */
   readonly policy?: RunnerPolicy;
 }
@@ -94,6 +119,7 @@ export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
   features: z.array(RunnerFeatureSchema),
   tools: z.array(ToolInfoSchema),
   slots: z.number().int().positive().max(64).optional(),
+  toolSlots: ToolSlotsSchema.optional(),
   policy: RunnerPolicySchema.optional(),
 });
 
@@ -110,6 +136,8 @@ export interface RegisterResponse {
   readonly serverTime: string;
   /** The slots the application gave it: its own `slots` when it sent them, else its registration token's, else 1. */
   readonly slots?: number;
+  /** The limits per coding tool the application gave it: its own when it sent them, else its registration token's. */
+  readonly toolSlots?: ToolSlots;
 }
 
 export const RegisterResponseSchema: z.ZodType<RegisterResponse> = z.object({
@@ -121,6 +149,7 @@ export const RegisterResponseSchema: z.ZodType<RegisterResponse> = z.object({
   leaseRenewMs: z.number().int().positive(),
   serverTime: z.string(),
   slots: z.number().int().positive().optional(),
+  toolSlots: ToolSlotsSchema.optional(),
 });
 
 export interface ActiveRun {
@@ -146,8 +175,16 @@ export interface HeartbeatRequest {
   readonly active: readonly ActiveRun[];
   /** The jobs the runner is holding (protocol 4); a runner that takes none leaves it out. */
   readonly jobs?: readonly ActiveJob[];
-  /** Slots are shared by runs and jobs. */
-  readonly load: { readonly slots: number; readonly free: number };
+  /**
+   * Slots are shared by runs and jobs. `tools` holds, for each coding tool it has a limit for, how many runs of it the
+   * runner holds at most and could take now, across every application it serves; absent from runners that keep no
+   * limits per tool.
+   */
+  readonly load: {
+    readonly slots: number;
+    readonly free: number;
+    readonly tools?: Readonly<Partial<Record<AgentTool, ToolLoad>>>;
+  };
   /** What its owner's local policy lets it take now (protocol 7); absent for anything. */
   readonly policy?: RunnerPolicy;
 }
@@ -162,6 +199,7 @@ export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
   load: z.object({
     slots: z.number().int().nonnegative(),
     free: z.number().int().nonnegative(),
+    tools: z.partialRecord(AgentToolSchema, ToolLoadSchema).optional(),
   }),
   policy: RunnerPolicySchema.optional(),
 });
@@ -249,10 +287,18 @@ export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
 export interface ClaimRequest {
   /** How many runs and jobs together the runner can take now. */
   readonly free: number;
+  /**
+   * How many runs of each coding tool it can take now, for the tools it keeps a limit for; a tool left out is bounded
+   * by `free` only. Absent from runners that keep no limits per tool.
+   */
+  readonly tools?: Readonly<Partial<Record<AgentTool, number>>>;
 }
 
 export const ClaimRequestSchema: z.ZodType<ClaimRequest> = z.object({
   free: z.number().int().nonnegative().max(64),
+  tools: z
+    .partialRecord(AgentToolSchema, z.number().int().nonnegative().max(64))
+    .optional(),
 });
 
 /**

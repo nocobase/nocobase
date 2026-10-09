@@ -8,7 +8,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { createMemoryRouter, Outlet, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
-import { BackButton } from '@/components/back-button';
+import { BackButton } from '#components/back-button';
 
 import enUS from '../../client/locales/en-US.js';
 

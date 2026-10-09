@@ -7,9 +7,9 @@ import test from 'node:test';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const releases = [
-  'release-beta.yml',
-  'release-stable.yml',
-  'merge-beta-to-stable.yml',
+  'v3-release-beta.yml',
+  'v3-release-stable.yml',
+  'v3-merge-beta-to-stable.yml',
 ];
 const identity =
   'nocobase[bot] <179432756+nocobase[bot]@users.noreply.github.com>';
@@ -38,9 +38,9 @@ test('release candidates and sync commits use the verified NocoBase bot identity
   let count = 0;
   for (const name of [
     ...releases,
-    'pro-release-beta.yml',
-    'pro-release-stable.yml',
-    'pro-promote-to-stable.yml',
+    'v3-pro-release-beta.yml',
+    'v3-pro-release-stable.yml',
+    'v3-pro-promote-to-stable.yml',
   ]) {
     const source = workflow(name);
     const configurations = source.matchAll(
@@ -94,19 +94,19 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
         env: {
           ...process.env,
           PATH: `${directory}${path.delimiter}${process.env.PATH}`,
-          PR_URL: 'https://github.com/nocobase/nocobase3/pull/1',
+          PR_URL: 'https://github.com/nocobase/nocobase/pull/1',
           RELEASE_BATCH: '2026-09-22.1',
           BATCH: '2026-09-22.1',
-          RELEASE_BASE: 'main',
+          RELEASE_BASE: 'v3-main',
         },
       });
       const args = JSON.parse(output);
       assert.deepEqual(args.slice(0, 3), [
         'pr',
         'merge',
-        'https://github.com/nocobase/nocobase3/pull/1',
+        'https://github.com/nocobase/nocobase/pull/1',
       ]);
-      assert.ok(args.includes('--merge'), name);
+      assert.ok(args.includes('--squash'), name);
       const subjectIndex = args.indexOf('--subject');
       assert.notEqual(subjectIndex, -1, name);
       assert.match(args[subjectIndex + 1], /\[skip ci\]$/u, name);
@@ -126,7 +126,7 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
     assert.ok(tokenStep, name);
     assert.match(tokenStep, /if: '!inputs\.dry_run'/u, name);
     assert.match(tokenStep, /uses: actions\/create-github-app-token@v2/u, name);
-    assert.match(tokenStep, /repositories: nocobase3\n/u, name);
+    assert.match(tokenStep, /repositories: nocobase\n/u, name);
     assert.match(tokenStep, /permission-contents: write/u, name);
     assert.match(tokenStep, /permission-pull-requests: write/u, name);
     assert.match(tokenStep, /permission-workflows: write/u, name);
@@ -144,7 +144,7 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
     );
     assert.match(
       source,
-      /git remote set-url origin "https:\/\/x-access-token:\$\{RELEASE_TOKEN\}@github\.com\/nocobase\/nocobase3\.git"/u,
+      /git remote set-url origin "https:\/\/x-access-token:\$\{RELEASE_TOKEN\}@github\.com\/nocobase\/nocobase\.git"/u,
       name,
     );
     assert.doesNotMatch(
@@ -173,7 +173,7 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
 });
 
 test('GitHub Releases use the App and receive its private key through workflow_call', () => {
-  const source = workflow('github-release.yml');
+  const source = workflow('v3-github-release.yml');
   assert.match(
     source,
     /    secrets:\n      NOCOBASE_APP_PRIVATE_KEY:\n        required: true/u,
@@ -184,7 +184,7 @@ test('GitHub Releases use the App and receive its private key through workflow_c
     /GH_TOKEN: \$\{\{ steps\.release_token\.outputs\.token \}\}/u,
   );
   assert.doesNotMatch(source, /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/u);
-  for (const name of ['release-beta.yml', 'release-stable.yml']) {
+  for (const name of ['v3-release-beta.yml', 'v3-release-stable.yml']) {
     const caller = workflow(name)
       .split('\n  github-release:')[1]
       .split(/\n  [a-z][\w-]*:/u)[0];

@@ -148,9 +148,9 @@ import {
   useResolvedPath,
 } from 'react-router';
 
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { buttonVariants } from '@/components/ui/button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { buttonVariants } from '#components/ui/button';
 import { cn } from 'cn';
 
 export default function ProjectReportsPage(): ReactElement {
@@ -221,7 +221,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '#components/ui/card';
 
 // Tab content renders inside the parent page's PageContainer; do not wrap it in another PageContainer.
 export default function ProjectReportsSummary(): ReactElement {
@@ -430,10 +430,10 @@ import {
   useResolvedPath,
 } from 'react-router';
 
-import { Loading } from '@/components/loading';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { buttonVariants } from '@/components/ui/button';
+import { Loading } from '#components/loading';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { buttonVariants } from '#components/ui/button';
 import { cn } from 'cn';
 
 export default function ProjectReportsPage(): ReactElement {
@@ -549,10 +549,10 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { Outlet } from 'react-router';
 
-import { BackButton } from '@/components/back-button';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { RouteChildPage } from '@/components/route-child-page';
+import { BackButton } from '#components/back-button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { RouteChildPage } from '#components/route-child-page';
 
 export default function ProjectImportPage(): ReactElement {
   const { t } = useTranslation();

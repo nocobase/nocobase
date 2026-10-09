@@ -62,6 +62,19 @@ The agents' chat: a side panel beside the content area with the conversation, li
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
 - After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
 
+## Approval
+
+### approval-ui
+
+Presentational approval components: a request's progress through its stages with vote tallies, its history, the route a new request would take, parallel branches as a whole, a notice's receipts, and a bar of the actions the person may take.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/approval-ui`
+- Installs to: `client/extensions/nocobase-approval-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/approval-ui-demo` (`pnpm exec shadcn view @nocobase/approval-ui-demo`)
+- After installing: Pure presentation: map your approval data into the shapes in types.ts (ApprovalStep, ApprovalTimelineLine, ApprovalRoute, ApprovalBranch, ApprovalReceipt, ApprovalBarAction) with translated labels, name people through ApprovalUiProvider, and merge locales/ into your locale resources.
+
 ## Authentication
 
 ### auth-forms
@@ -151,10 +164,10 @@ Markdown rendered as compact prose for descriptions and comments, with mention c
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/markdown-view`
-- Installs to: `client/components/markdown-view.tsx`
+- Installs to: `client/components/markdown-view.tsx`, `client/components/remark-cjk-autolink.ts`
 - Plugin dependencies: none
 - Example: `@nocobase/markdown-view-demo` (`pnpm exec shadcn view @nocobase/markdown-view-demo`)
-- After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind.
+- After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind. remarkCjkAutolink ends a bare URL at CJK text or full-width punctuation; add it after remark-gfm wherever else you render the same Markdown.
 
 ### comment-thread
 
@@ -226,7 +239,7 @@ A header button linking to the inbox, with an amber badge for what waits on the 
 - Installs to: `client/components/inbox-button.tsx`, `client/components/inbox-badge.ts`
 - Plugin dependencies: none
 - Example: `@nocobase/inbox-button-demo` (`pnpm exec shadcn view @nocobase/inbox-button-demo`)
-- After installing: Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from @/components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.
+- After installing: Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from #components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.
 
 ## Page layout
 

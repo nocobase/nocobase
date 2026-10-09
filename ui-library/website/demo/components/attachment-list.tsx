@@ -4,7 +4,7 @@ import {
   AttachmentPanel,
   PendingAttachments,
   type AttachmentFile,
-} from '@/components/attachment-list';
+} from '#components/attachment-list';
 
 const IMAGE =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="%2393c5fd"/></svg>';

@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 
 export interface EditablePanelProps {
   readonly children?: ReactNode;

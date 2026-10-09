@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '#components/ui/tooltip';
 
 import { InboxButtonDemo } from './inbox-button.js';
 import { InboxDemoPage } from './inbox.js';

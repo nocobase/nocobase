@@ -174,10 +174,12 @@
     "@nocobase/app-plugin-file-example": "workspace:^",
     "@nocobase/app-plugin-i18n": "workspace:^",
     "@nocobase/app-plugin-jobs-example": "workspace:^",
+    "@nocobase/app-plugin-lifecycle-example": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-plugin-notification-example": "workspace:^",
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
     "@nocobase/app-plugin-notification-providers": "workspace:^",
+    "@nocobase/app-plugin-office-flows-example": "workspace:^",
     "@nocobase/app-plugin-queue-example": "workspace:^",
     "@nocobase/app-plugin-realtime-example": "workspace:^",
     "@nocobase/app-plugin-repository-example": "workspace:^",
@@ -203,11 +205,22 @@
     "@nocobase/authorization": "workspace:^",
     "@nocobase/queue": "workspace:^",
     "@nocobase/jobs": "workspace:^",
+    "@nocobase/lifecycle": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
     "@nocobase/ai-employee": "workspace:^",
-    "@nocobase/app-cli": "workspace:^"
+    "@nocobase/app-cli": "workspace:^",
+    "@nocobase/app-plugin-mail": "workspace:^",
+    "@nocobase/app-plugin-mail-example": "workspace:^"
   },
   "description": "Runnable NocoBase 3 examples for application development.",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "imports": {
+    "#components/*": "./client/components/*.js",
+    "#hooks/*": "./client/hooks/*.js",
+    "#lib/*": "./client/lib/*.js",
+    "#extensions/*": "./client/extensions/*.js",
+    "#extensions/nocobase-ai": "./client/extensions/nocobase-ai/index.ts",
+    "#pages/*": "./client/pages/*.js"
+  }
 }

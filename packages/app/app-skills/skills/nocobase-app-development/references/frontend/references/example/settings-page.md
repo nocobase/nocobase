@@ -16,19 +16,19 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { AlertCircleIcon } from 'lucide-react';
 import { type ReactElement, useEffect, useState } from 'react';
 
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Alert, AlertAction, AlertDescription } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '#components/ui/card';
+import { Skeleton } from '#components/ui/skeleton';
 
 import { ProjectMembersCard } from './members-card.js';
 

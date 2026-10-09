@@ -37,7 +37,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '#components/ui/select';
 
 import { PROJECT_STATUSES, type ProjectStatus } from './types.js';
 
@@ -229,7 +229,7 @@ Merge class names with `cn()` from the `cn` package (`import { cn } from 'cn'`),
 
 ## 8. Buttons
 
-`Button` (`@/components/ui/button`); `pnpm exec shadcn docs button` lists its variants and sizes. Which variant a button takes:
+`Button` (`#components/ui/button`); `pnpm exec shadcn docs button` lists its variants and sizes. Which variant a button takes:
 
 | `variant`     | Purpose                                             |
 | ------------- | --------------------------------------------------- |
@@ -247,12 +247,12 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { RefreshCwIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 
 export function RefreshButton({
   onRefresh,
@@ -280,7 +280,7 @@ export function RefreshButton({
 }
 ```
 
-- A `Tooltip` in a page works without a Provider and appears after 600ms of hovering by default. To show it immediately, as the header does, wrap it in `TooltipProvider` (`@/components/ui/tooltip`; this application's wrapper sets `delay` to 0).
+- A `Tooltip` in a page works without a Provider and appears after 600ms of hovering by default. To show it immediately, as the header does, wrap it in `TooltipProvider` (`#components/ui/tooltip`; this application's wrapper sets `delay` to 0).
 - A disabled button does not respond to mouse events, so a tooltip explaining why it is disabled (guideline I7) goes on a `span` around it:
 
 ```tsx
@@ -289,12 +289,12 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { Trash2Icon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 
 /** A delete the user may not run yet; `reason` is the translated explanation. */
 export function DeleteProjectButton({
@@ -320,7 +320,7 @@ export function DeleteProjectButton({
 
 ## 9. Badge
 
-`Badge` (`@/components/ui/badge`, added with `yes n | pnpm exec shadcn add badge`); `pnpm exec shadcn docs badge` lists its variants.
+`Badge` (`#components/ui/badge`, added with `yes n | pnpm exec shadcn add badge`); `pnpm exec shadcn docs badge` lists its variants.
 
 - Status data needs text; do not rely on color alone to tell values apart.
 - Make each enum (for example project status) one component, shared by the list and the detail view (`ProjectStatusBadge`, see [`i18n.md`](i18n.md)).
@@ -348,7 +348,7 @@ export function DeleteProjectButton({
 ## 13. Loading, empty, and error states
 
 - Every view that loads data needs these three states (for the four list states, see [`table.md`](table.md); for how to handle loading and errors, see [`api.md`](api.md)).
-- Components: `Loading` (`@/components/loading`, the shared loading indicator) and `Spinner` (a small loading indicator in a button or toolbar) ship with the template; `Skeleton` (a skeleton screen that preserves the layout), `Empty` (empty state) and `Alert` (error message) are added with `yes n | pnpm exec shadcn add skeleton empty alert`.
+- Components: `Loading` (`#components/loading`, the shared loading indicator) and `Spinner` (a small loading indicator in a button or toolbar) ship with the template; `Skeleton` (a skeleton screen that preserves the layout), `Empty` (empty state) and `Alert` (error message) are added with `yes n | pnpm exec shadcn add skeleton empty alert`.
 - Put loading feedback inside the surface that is loading. A page-level loading indicator rendered for a dialog's content appears behind the dialog, not inside it.
 
 ## 14. Verification

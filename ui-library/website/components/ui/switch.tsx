@@ -1,5 +1,6 @@
 import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
 import { cn } from 'cn';
+import type { ReactElement } from 'react';
 
 function Switch({
   className,
@@ -7,7 +8,7 @@ function Switch({
   ...props
 }: SwitchPrimitive.Root.Props & {
   size?: 'sm' | 'default';
-}) {
+}): ReactElement {
   return (
     <SwitchPrimitive.Root
       data-slot='switch'

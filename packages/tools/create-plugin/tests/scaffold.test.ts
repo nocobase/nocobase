@@ -1,13 +1,18 @@
+import { spawnSync } from 'node:child_process';
 import {
   mkdir,
   mkdtemp,
   readFile,
   readdir,
   rm,
+  symlink,
   writeFile,
 } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { PluginCapability } from '../src/lib/capabilities.ts';
@@ -65,6 +70,47 @@ async function listFiles(
 }
 
 describe('createPlugin', () => {
+  it('resolves package imports to development sources without compiler aliases', async () => {
+    const result = await createWith(['client.components']);
+    const root = result.targetDirectory;
+    const source = path.join(root, 'client/components/probe.ts');
+    await writeFile(source, 'export const probe: string = "local";\n');
+
+    const config = JSON.parse(
+      await readFile(path.join(root, 'tsconfig.json'), 'utf8'),
+    ) as { compilerOptions: { customConditions: string[]; paths?: unknown } };
+    expect(config.compilerOptions.paths).toBeUndefined();
+    expect(
+      ts.resolveModuleName(
+        '#components/probe',
+        path.join(root, 'client/index.ts'),
+        {
+          module: ts.ModuleKind.NodeNext,
+          moduleResolution: ts.ModuleResolutionKind.NodeNext,
+          customConditions: config.compilerOptions.customConditions,
+        },
+        ts.sys,
+      ).resolvedModule?.resolvedFileName,
+    ).toBe(source);
+    const shadcn = JSON.parse(
+      await readFile(path.join(root, 'components.json'), 'utf8'),
+    ) as { aliases: { ui: string }; registries: Record<string, string> };
+    expect(shadcn.aliases.ui).toBe('#components/ui');
+    expect(shadcn.registries['@nocobase']).toBe(
+      'https://ui.nocobase.com/r/{name}.json',
+    );
+    const manifest = JSON.parse(
+      await readFile(path.join(root, 'package.json'), 'utf8'),
+    ) as { devDependencies: Record<string, string>; nocobase?: unknown };
+    expect(manifest.devDependencies).toMatchObject({
+      shadcn: 'catalog:',
+      tailwindcss: 'catalog:',
+      'tw-animate-css': 'catalog:',
+    });
+    expect(manifest.nocobase).toBeUndefined();
+    expect(result.files).not.toContain('registry.config.json');
+  });
+
   it.each([
     ['database', 'database/README.md', 'client/'],
     ['server.service-providers', 'server/providers/index.ts', 'server/routes/'],
@@ -412,7 +458,7 @@ describe('createPlugin', () => {
       await readFile(path.join(result.targetDirectory, 'package.json'), 'utf8'),
     ) as { devDependencies?: Record<string, string> };
     const test = await readFile(
-      path.join(result.targetDirectory, 'tests/database.test.ts'),
+      path.join(result.targetDirectory, 'tests/database/migrations.test.ts'),
       'utf8',
     );
     expect(manifest.devDependencies).toHaveProperty(
@@ -458,16 +504,73 @@ describe('createPlugin', () => {
     expect(vitestConfig).toContain("exclude: ['tests/client/**']");
   });
 
-  it('adds no page-test setup to a plugin without client code', async () => {
+  it('runs a plugin without client code on the Node preset alone', async () => {
     const result = await createWith(['server.routes']);
     const manifest = JSON.parse(
       await readFile(path.join(result.targetDirectory, 'package.json'), 'utf8'),
     ) as { devDependencies: Record<string, string> };
+    const vitestConfig = await readFile(
+      path.join(result.targetDirectory, 'vitest.config.ts'),
+      'utf8',
+    );
 
     expect(manifest.devDependencies).not.toHaveProperty(
       '@testing-library/react',
     );
     expect(manifest.devDependencies).not.toHaveProperty('jsdom');
+    // The Node preset carries the shared timeouts a database test needs; Vitest's own 5-second default is too short.
+    expect(vitestConfig).toContain('createNodeVitestConfig');
+    expect(vitestConfig).not.toContain('createReactVitestConfig');
+    expect(vitestConfig).toContain("include: ['tests/**/*.test.{ts,tsx}']");
+  });
+
+  it('executes TSX tests in a generated Node-only plugin', async () => {
+    const result = await createWith(['server.routes']);
+    await symlink(
+      fileURLToPath(new URL('../node_modules', import.meta.url)),
+      path.join(result.targetDirectory, 'node_modules'),
+      'junction',
+    );
+    const testPath = 'tests/project/node-discovery.test.tsx';
+    await mkdir(path.join(result.targetDirectory, 'tests/project'));
+    await writeFile(
+      path.join(result.targetDirectory, testPath),
+      `import { expect, it } from 'vitest';
+it('runs TSX tests under Node', () => {
+  expect(typeof process.versions.node).toBe('string');
+  expect(typeof document).toBe('undefined');
+});
+`,
+    );
+    const require = createRequire(import.meta.url);
+    const run = spawnSync(
+      process.execPath,
+      [
+        path.join(
+          path.dirname(require.resolve('vitest/package.json')),
+          'vitest.mjs',
+        ),
+        'run',
+        testPath,
+        '--reporter=json',
+      ],
+      { cwd: result.targetDirectory, encoding: 'utf8', timeout: 20_000 },
+    );
+
+    expect(run.error).toBeUndefined();
+    expect({ status: run.status, stderr: run.stderr }).toEqual({
+      status: 0,
+      stderr: '',
+    });
+    expect(JSON.parse(run.stdout)).toMatchObject({
+      numTotalTests: 1,
+      numPassedTests: 1,
+    });
+  });
+
+  it('adds no Vitest configuration to a plugin without tests', async () => {
+    const result = await createWith(['skills']);
+
     await expect(
       readFile(path.join(result.targetDirectory, 'vitest.config.ts'), 'utf8'),
     ).rejects.toThrow();
@@ -608,7 +711,7 @@ describe('createPlugin', () => {
       'utf8',
     );
     const test = await readFile(
-      path.join(result.targetDirectory, 'tests/cli.test.ts'),
+      path.join(result.targetDirectory, 'tests/cli/info.test.ts'),
       'utf8',
     );
 

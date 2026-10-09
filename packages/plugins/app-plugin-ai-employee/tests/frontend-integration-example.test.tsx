@@ -165,7 +165,7 @@ function executeExample(
   const exports: { default?: ComponentType } = {};
   const requireExample = (name: string) => {
     if (name === 'react/jsx-runtime') return jsxRuntime;
-    if (name === '@/extensions/nocobase-ai') return extension;
+    if (name === '#extensions/nocobase-ai') return extension;
     throw new Error(`Unexpected documentation import: ${name}`);
   };
   const evaluate = new Function('require', 'exports', outputText) as (

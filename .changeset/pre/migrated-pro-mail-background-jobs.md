@@ -1,0 +1,5 @@
+---
+'@nocobase/app-plugin-mail': minor
+---
+
+Run mailbox synchronization and scheduled sending on the application's jobs service instead of `@nocobase/queue`. Mail submits its tasks to its own executor on the `@nocobase/app-plugin-mail` scope, starts consuming when the application starts, and lets running tasks finish before it shuts down. The application must compose `JobExecutorServiceProvider` from `@nocobase/app-server/jobs` and a `jobs` configuration, as the default template does; without it, Mail refuses to start and says what to add. `mail.jobs`, or its override `MAIL_JOBS`, names the `jobs` configuration the tasks run on, so Mail can have its own `concurrency` or backend; left out, they follow `jobs.default`, and a name that `jobs` does not define stops the application from starting. `@nocobase/jobs` replaces `@nocobase/queue` as a peer dependency. Deployments with more than one instance need a `redis` jobs configuration. Tasks still waiting in a queue connection are not moved: synchronization runs are recovered by maintenance, but let a `redis` or `database` queue connection drain scheduled messages before upgrading.

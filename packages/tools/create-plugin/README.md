@@ -74,3 +74,20 @@ JSON mode emits one document on stdout for both success and failure, in the same
 Generated Server declarations include the required absolute `baseDir`, calculated relative to `import.meta.dirname`. All filesystem contributions resolve against it. Keep source and published Server exports aligned so development loads source contributions and installed or built plugins load compiled contributions.
 
 Plugins with the `database` capability run `nocobase-db-manifests` after TypeScript compilation. This command comes from `@nocobase/dev-config` and seals each migrations or seeds directory with `.manifest.json`. Run it after any JavaScript rewriting, keep generated manifests in the published `dist`, and clean stale output when removing or renaming task files.
+
+## Installing client UI with shadcn
+
+Every plugin with client code includes `components.json`, `client/styles.css`, shadcn tooling, and the `@nocobase` registry. Selecting `registry` is needed only to publish the plugin's own editable source recipes. A component-only plugin can install UI directly:
+
+```bash
+pnpm plugin:create feature-card --with client.components
+cd packages/plugins/app-plugin-feature-card
+pnpm exec shadcn add @nocobase/permission-editor --dry-run
+pnpm exec shadcn add @nocobase/permission-editor
+pnpm typecheck
+pnpm build
+```
+
+Within this source repository, copy NocoBase registry items from their canonical sources to retain workspace dependency ranges; the commands above show the remote workflow for a consuming plugin. See `ui-library/USAGE.md` for application and plugin installation, dependencies, translations, and local registry verification.
+
+The CLI writes package-local `#components/*`, `#hooks/*`, `#lib/*`, and `#extensions/*` imports using `components.json`. The generated manifest resolves development sources and compiled defaults; `tsconfig.json` selects `development`, while `publishConfig.imports` replaces all published targets with unconditional `dist/client` paths. No TypeScript `paths`, host Vite alias, or post-install import rewrite is needed. Keep client value dependencies as peers and exported declarations explicitly typed; newly fetched upstream primitives may need type annotations independently of their imports.

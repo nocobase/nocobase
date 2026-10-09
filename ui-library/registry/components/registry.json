@@ -267,12 +267,17 @@
         "react-markdown@^10.1.0",
         "remark-gfm@^4.0.1"
       ],
-      "docs": "Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind.",
+      "docs": "Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind. remarkCjkAutolink ends a bare URL at CJK text or full-width punctuation; add it after remark-gfm wherever else you render the same Markdown.",
       "files": [
         {
           "path": "markdown-view.tsx",
           "type": "registry:component",
           "target": "client/components/markdown-view.tsx"
+        },
+        {
+          "path": "remark-cjk-autolink.ts",
+          "type": "registry:lib",
+          "target": "client/components/remark-cjk-autolink.ts"
         }
       ]
     },

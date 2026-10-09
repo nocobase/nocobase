@@ -1,23 +1,23 @@
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '#components/ui/empty';
+import { Label } from '#components/ui/label';
+import { Skeleton } from '#components/ui/skeleton';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+} from '#components/ui/select';
+import { Textarea } from '#components/ui/textarea';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

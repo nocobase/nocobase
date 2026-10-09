@@ -13,11 +13,14 @@
   "iconLibrary": "lucide",
   "rtl": false,
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "components": "#components",
+    "utils": "#lib/utils",
+    "ui": "#components/ui",
+    "lib": "#lib",
+    "hooks": "#hooks"
+  },
+  "registries": {
+    "@nocobase": "https://ui.nocobase.com/r/{name}.json"
   },
   "menuColor": "default",
   "menuAccent": "subtle"

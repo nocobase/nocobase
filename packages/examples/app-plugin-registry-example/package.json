@@ -31,6 +31,12 @@
         "types": "./dist/client/route-contracts.d.ts",
         "import": "./dist/client/route-contracts.js"
       }
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js",
+      "#hooks/*": "./dist/client/hooks/*.js",
+      "#lib/*": "./dist/client/lib/*.js",
+      "#extensions/*": "./dist/client/extensions/*.js"
     }
   },
   "files": [
@@ -86,5 +92,23 @@
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "react": "^19.0.0"
+  },
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./dist/client/components/*.js"
+    },
+    "#hooks/*": {
+      "development": "./client/hooks/*.js",
+      "default": "./dist/client/hooks/*.js"
+    },
+    "#lib/*": {
+      "development": "./client/lib/*.js",
+      "default": "./dist/client/lib/*.js"
+    },
+    "#extensions/*": {
+      "development": "./client/extensions/*.js",
+      "default": "./dist/client/extensions/*.js"
+    }
   }
 }

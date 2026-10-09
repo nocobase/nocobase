@@ -3,7 +3,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 
-import { PasswordResetRequestForm } from '@/extensions/nocobase-auth-forms/password-reset-request-form';
+import { PasswordResetRequestForm } from '#extensions/nocobase-auth-forms/password-reset-request-form';
 
 import { AuthPage } from './shared.js';
 

@@ -39,7 +39,8 @@
     "eslint": "catalog:",
     "publint": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "yaml": "catalog:"
   },
   "publishConfig": {
     "access": "public"

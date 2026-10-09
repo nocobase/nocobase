@@ -142,7 +142,7 @@ import {
   ChatInline,
   NocoBaseAIRootProvider,
   useAI,
-} from '@/extensions/nocobase-ai';
+} from '#extensions/nocobase-ai';
 
 function ConfiguredChat() {
   const {
@@ -234,7 +234,7 @@ import {
   ChatSurfaceActions,
   useAIChatController,
   useAIChatControllerState,
-} from '@/extensions/nocobase-ai';
+} from '#extensions/nocobase-ai';
 
 // Rendered where the readiness gate above returns its chat.
 function FloatingChat() {
@@ -391,7 +391,7 @@ const formRef = useAIForm({
 });
 ```
 
-Attach the returned ref to the visible form. `applyReactHookFormValues` is the shipped react-hook-form adapter, imported from `@/extensions/nocobase-ai/adapters/react-hook-form` — it is not part of the extension's `index.ts`, so importing it from the package root fails to compile.
+Attach the returned ref to the visible form. `applyReactHookFormValues` is the shipped react-hook-form adapter, imported from `#extensions/nocobase-ai/adapters/react-hook-form` — it is not part of the extension's `index.ts`, so importing it from the package root fails to compile.
 
 `useAIForm` returns a ref and nothing else. Registering the form does not put it in the conversation, and there is no context handle to pass along, so a chat on the same page still sees nothing until the form is referenced. Build the reference yourself, scope it around the chat, and send it through one of the entry points in [Page context](#page-context):
 

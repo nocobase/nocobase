@@ -52,24 +52,24 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+} from '#components/ui/alert-dialog';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
+import { Checkbox } from '#components/ui/checkbox';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+} from '#components/ui/collapsible';
+import { Input } from '#components/ui/input';
+import { Textarea } from '#components/ui/textarea';
 import { cn } from 'cn';
 
-import { IssueCard, type IssueCardLink } from '@/components/issue-card';
+import { IssueCard, type IssueCardLink } from '#components/issue-card';
 import {
   IssueStatusBadge,
   type IssueTableColor,
-} from '@/components/issue-table';
+} from '#components/issue-table';
 import {
   AttachmentList,
   type AttachmentFile,

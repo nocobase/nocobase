@@ -211,6 +211,12 @@ export interface GenerateRequest {
   readonly signal?: AbortSignal;
 }
 
+/** `ModelGateway.languageModel`'s options. */
+export interface LanguageModelOptions {
+  /** The session id its calls send; a new one for the model when absent. */
+  readonly session?: string | null;
+}
+
 /** Where models come from: online agents' runs and the application's own model calls. */
 export interface ModelGateway {
   /** The enabled services that offer at least one model of `kind` (`chat` by default), with those models. */
@@ -219,8 +225,14 @@ export interface ModelGateway {
   check(ref: ModelRef): Promise<ModelCheck>;
   /** One model call, streamed; throws `ModelError`. */
   stream(request: ModelRequest): AsyncIterable<ModelEvent>;
-  /** The chat model of an enabled service, for an online run's agent loop (`executor.ts`); throws `ModelError`. */
-  languageModel(ref: ModelRef): Promise<LanguageModel>;
+  /**
+   * The chat model of an enabled service, for an online run's agent loop (`executor.ts`); throws `ModelError`. Every
+   * call it makes sends `session` under the service's session header, if it names one: the run's conversation's.
+   */
+  languageModel(
+    ref: ModelRef,
+    options?: LanguageModelOptions,
+  ): Promise<LanguageModel>;
   /** Embeds texts with an embedding model; throws `ModelError`. Recorded as `embedding` use. */
   embed(request: EmbedRequest): Promise<EmbedResult>;
   /** Orders documents with a rerank model; throws `ModelError`. Recorded as `rerank` use. */
@@ -800,10 +812,10 @@ export function createModelGateway(
       }
     },
     stream,
-    async languageModel(ref) {
+    async languageModel(ref, options) {
       const connection = await source.connectionFor(ref);
       try {
-        return languageModel(connection, ref.model);
+        return languageModel(connection, ref.model, options?.session);
       } catch (error) {
         throw classify(error);
       }

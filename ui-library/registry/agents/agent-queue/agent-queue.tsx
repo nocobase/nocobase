@@ -25,16 +25,16 @@ import {
   type ReactNode,
 } from 'react';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '#components/ui/avatar';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { Toggle } from '@/components/ui/toggle';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+} from '#components/ui/collapsible';
+import { Toggle } from '#components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
 import { cn } from 'cn';
 
 import {

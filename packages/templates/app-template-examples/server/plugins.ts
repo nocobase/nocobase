@@ -1,3 +1,5 @@
+import mail from '@nocobase/app-plugin-mail/server';
+import mailExample from '@nocobase/app-plugin-mail-example/server';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/server';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/server';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/server';
@@ -13,6 +15,8 @@ import databaseExplorer from '@nocobase/app-plugin-database-explorer/server';
 import databaseExample from '@nocobase/app-plugin-database-example/server';
 import i18n from '@nocobase/app-plugin-i18n/server';
 import jobsExample from '@nocobase/app-plugin-jobs-example/server';
+import lifecycleExample from '@nocobase/app-plugin-lifecycle-example/server';
+import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/server';
 import notification from '@nocobase/app-plugin-notification/server';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/server';
 import notificationProviders from '@nocobase/app-plugin-notification-providers/server';
@@ -56,6 +60,8 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   queueExample,
   realtimeExample,
   jobsExample,
+  lifecycleExample,
+  officeFlowsExample,
   routesExample,
   serviceProviderExample,
   workflow,
@@ -64,6 +70,8 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   file,
   fileExample,
   scheduler,
+  mail,
+  mailExample,
 ]);
 
 export default serverPlugins;
