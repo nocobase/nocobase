@@ -71,7 +71,7 @@ import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
-import { ensurePnpmStore } from '../core/pnpm-store.ts';
+import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
 import {
   agentCwd,
   agentWritableRoots,
@@ -157,7 +157,7 @@ export function workspaceNotes(options: {
   }
   if (options.pnpmStoreDir !== undefined)
     lines.push(
-      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\` or \`--package-import-method\`, so dependencies are cloned or copied from it instead of downloaded again. Never change the store's files; use \`pnpm patch\` to change a dependency.`,
+      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\` or \`--package-import-method\`, so dependencies are cloned or copied from it, never hard-linked, instead of downloaded again. Never change the store's files; use \`pnpm patch\` to change a dependency.`,
     );
   if (options.skillsDir !== undefined)
     lines.push(
@@ -569,6 +569,7 @@ export class RunWorker {
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
+    const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
     const env = buildAgentEnv({
       source: process.env,
@@ -576,6 +577,7 @@ export class RunWorker {
       ...(home === undefined ? {} : { home }),
       tmpDir,
       pnpmStoreDir,
+      pnpmImportMethod: importMethod,
       hooksDir: deps.paths.hooksDir,
       ...(process.env[PROCESS_TAG_ENV] === undefined
         ? {}

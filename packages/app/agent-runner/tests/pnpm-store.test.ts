@@ -21,8 +21,11 @@ import { RunnerDaemon } from '../src/core/loop.ts';
 import { isInside } from '../src/core/command-policy.ts';
 import {
   ensurePnpmStore,
+  pnpmImportMethod,
   pnpmStoreEnv,
+  probeReflink,
   pruneCommand,
+  type PnpmImportMethod,
   prunePnpmStore,
 } from '../src/core/pnpm-store.ts';
 import { readConnections, readSettings } from '../src/lib/config.ts';
@@ -67,6 +70,7 @@ describe('the shared pnpm store', () => {
         npm_config_package_import_method: 'hardlink',
       },
       pnpmStoreDir: '/w/.pnpm-store',
+      pnpmImportMethod: 'clone',
       workspace: {
         env: [
           { name: 'pnpm_config_store_dir', value: '/x' },
@@ -83,17 +87,56 @@ describe('the shared pnpm store', () => {
     expect(env).toMatchObject({
       pnpm_config_store_dir: '/w/.pnpm-store',
       npm_config_store_dir: '/w/.pnpm-store',
-      pnpm_config_package_import_method: 'clone-or-copy',
-      npm_config_package_import_method: 'clone-or-copy',
+      pnpm_config_package_import_method: 'clone',
+      npm_config_package_import_method: 'clone',
     });
     expect(env.PNPM_CONFIG_STORE_DIR).toBeUndefined();
     expect(env.NPM_CONFIG_PACKAGE_IMPORT_METHOD).toBeUndefined();
-    expect(pnpmStoreEnv('/s')).toEqual({
+    // Without a probed method, a copy: never pnpm's fallback to hard links.
+    expect(
+      buildAgentEnv({ source: {}, pnpmStoreDir: '/s' })
+        .pnpm_config_package_import_method,
+    ).toBe('copy');
+    expect(pnpmStoreEnv('/s', 'copy')).toEqual({
       pnpm_config_store_dir: '/s',
       npm_config_store_dir: '/s',
-      pnpm_config_package_import_method: 'clone-or-copy',
-      npm_config_package_import_method: 'clone-or-copy',
+      pnpm_config_package_import_method: 'copy',
+      npm_config_package_import_method: 'copy',
     });
+  });
+
+  it('is imported with clone where the work root clones, with copy otherwise, probed once', async () => {
+    const probed: string[] = [];
+    const clones = (result: boolean) => (workRoot: string) => {
+      probed.push(workRoot);
+      return Promise.resolve(result);
+    };
+    const other = (name: string) =>
+      runnerPaths(path.join(root, 'home'), path.join(root, name));
+    expect(await pnpmImportMethod(other('reflink'), clones(true))).toBe(
+      'clone',
+    );
+    expect(await pnpmImportMethod(other('reflink'), clones(false))).toBe(
+      'clone',
+    );
+    expect(await pnpmImportMethod(other('ext4'), clones(false))).toBe('copy');
+    expect(
+      await pnpmImportMethod(other('broken'), () =>
+        Promise.reject(new Error('EACCES')),
+      ),
+    ).toBe('copy');
+    expect(probed).toEqual([
+      path.join(root, 'reflink'),
+      path.join(root, 'ext4'),
+    ]);
+    // The real probe answers either way, and leaves nothing in the work root but the root itself. A Mac's temporary
+    // directory is on APFS, which clones.
+    const real = await probeReflink(paths.workRoot);
+    if (process.platform === 'darwin') expect(real).toBe(true);
+    else expect(typeof real).toBe('boolean');
+    expect(readdirSync(paths.workRoot)).toEqual([]);
+    expect(await probeReflink(paths.workRoot, 'linux')).toBeTypeOf('boolean');
+    expect(readdirSync(paths.workRoot)).toEqual([]);
   });
 
   it("is pruned from the runner's own empty directory, named on the command line, with an environment built from nothing", () => {
@@ -177,9 +220,9 @@ describe('the shared pnpm store', () => {
       const env = {
         PATH: process.env.PATH ?? '',
         HOME: path.join(root, 'user-home'),
-        ...pnpmStoreEnv(storeDir),
+        ...pnpmStoreEnv(storeDir, 'copy'),
       };
-      const install = (name: string): string => {
+      const install = (name: string, method: PnpmImportMethod): string => {
         const dir = path.join(paths.workRoot, 'app', name);
         mkdirSync(dir, { recursive: true });
         writeFileSync(path.join(dir, 'pnpm-workspace.yaml'), 'packages: []\n');
@@ -193,16 +236,17 @@ describe('the shared pnpm store', () => {
         );
         execFileSync('pnpm', ['install', '--offline'], {
           cwd: dir,
-          env,
+          env: { ...env, ...pnpmStoreEnv(storeDir, method) },
           stdio: 'ignore',
         });
         return dir;
       };
 
-      const first = install('first-app');
+      // What this machine probes to (`clone` on APFS, `copy` on ext4), and `copy`: neither hard-links.
+      const first = install('first-app', await pnpmImportMethod(paths));
       const stored = storeFiles(storeDir);
       expect(stored).not.toEqual([]);
-      const second = install('second-app');
+      const second = install('second-app', 'copy');
       expect(storeFiles(storeDir)).toEqual(stored);
       for (const dir of [first, second])
         expect(

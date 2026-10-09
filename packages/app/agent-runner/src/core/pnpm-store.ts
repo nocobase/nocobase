@@ -16,12 +16,14 @@
 // half-written file, and pnpm checks a stored file against its recorded integrity before importing it again
 // (`verify-store-integrity`, on by default).
 //
-// Runs import packages with `clone-or-copy`, never with hard links (pnpm's default falls back to them): a hard link is
-// the store's own file, so an agent editing a file under `node_modules` in place would change it for every task on the
-// machine, other applications' included, already installed or not. A clone (APFS, Btrfs, XFS with reflink, ZFS with
-// block cloning) is a copy on write and costs no space until it is written; elsewhere, such as on ext4, each working
-// directory gets a full copy of its dependencies, which is what a working directory held before the store was shared;
-// the store still saves the download.
+// Runs never import packages as hard links: a hard link is the store's own file, so an agent editing a file under
+// `node_modules` in place would change it for every task on the machine, other applications' included, already
+// installed or not. pnpm's own fallbacks (`auto`, and `clone-or-copy` too) end in hard links where the file system
+// cannot clone, so the runner picks the method itself (`pnpmImportMethod`): it probes once whether the work root's file
+// system clones (`probeReflink`), and runs import with `clone` where that works (APFS, Btrfs, XFS with reflink, ZFS with block cloning: a copy on
+// write that costs no space until it is written) and with `copy` elsewhere, such as on ext4, where each working
+// directory holds a full copy of its dependencies, as it did before the store was shared; the store still saves the
+// download.
 //
 // The store grows with every version anything installed. `prunePnpmStore` removes what no project links anymore; the
 // daemon runs it in its garbage collection, after working directories were removed, and only while no run is active,
@@ -33,13 +35,21 @@
 // (`RunnerPaths.toolCwd`), names the store on its command line and gets an environment built from nothing
 // (`runnerPnpmEnv`).
 import { execFile } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { constants, existsSync } from 'node:fs';
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  rm,
+  statfs,
+  writeFile,
+} from 'node:fs/promises';
+import path from 'node:path';
 
 import type { RunnerPaths } from '../lib/home.ts';
 
 /** How a run's pnpm imports a package from the store into `node_modules`: never as a hard link. */
-export const PNPM_IMPORT_METHOD = 'clone-or-copy';
+export type PnpmImportMethod = 'clone' | 'copy';
 
 /**
  * The variables the runner sets for every pnpm a run starts, which a run cannot override: the store, and how packages
@@ -52,14 +62,74 @@ export const PNPM_STORE_ENV: readonly string[] = [
   'npm_config_package_import_method',
 ];
 
-/** The environment that points a run's pnpm at `storeDir` and imports packages from it without hard links. */
-export function pnpmStoreEnv(storeDir: string): Record<string, string> {
+/** The environment that points a run's pnpm at `storeDir` and imports packages from it with `method`. */
+export function pnpmStoreEnv(
+  storeDir: string,
+  method: PnpmImportMethod,
+): Record<string, string> {
   return {
     pnpm_config_store_dir: storeDir,
     npm_config_store_dir: storeDir,
-    pnpm_config_package_import_method: PNPM_IMPORT_METHOD,
-    npm_config_package_import_method: PNPM_IMPORT_METHOD,
+    pnpm_config_package_import_method: method,
+    npm_config_package_import_method: method,
   };
+}
+
+/**
+ * Whether the file system holding `workRoot` clones files the way pnpm's `clone` does (FICLONE on Linux, clonefile on
+ * macOS), so that `clone` will not fail.
+ *
+ * On Linux, copies a small file with `COPYFILE_FICLONE_FORCE`, which fails rather than falling back, in a directory of
+ * the runner's own there (a leading dot, so no collection takes it for an application's, and outside every directory a
+ * run may write). Node cannot force a clone on macOS (`ENOSYS`), and `cp -c` falls back to a copy silently, so there
+ * the work root clones when it is on the same kind of file system as `/`: APFS, which every APFS volume can clone, and
+ * which macOS has required for its system volume since 10.14; an HFS+ or exFAT volume cannot.
+ */
+export async function probeReflink(
+  workRoot: string,
+  platform: NodeJS.Platform = process.platform,
+): Promise<boolean> {
+  await mkdir(workRoot, { recursive: true, mode: 0o700 });
+  if (platform === 'darwin') {
+    const [work, system] = await Promise.all([statfs(workRoot), statfs('/')]);
+    return work.type === system.type;
+  }
+  const dir = await mkdtemp(path.join(workRoot, '.reflink-probe-'));
+  try {
+    const source = path.join(dir, 'source');
+    await writeFile(source, 'reflink probe\n');
+    await copyFile(
+      source,
+      path.join(dir, 'clone'),
+      constants.COPYFILE_FICLONE_FORCE,
+    );
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+const importMethods = new Map<string, Promise<PnpmImportMethod>>();
+
+/**
+ * How runs import packages on this machine: `clone` where the work root's file system clones, `copy` otherwise, or
+ * when the probe fails. Probed once per work root.
+ */
+export function pnpmImportMethod(
+  paths: RunnerPaths,
+  probe: (workRoot: string) => Promise<boolean> = probeReflink,
+): Promise<PnpmImportMethod> {
+  let method = importMethods.get(paths.workRoot);
+  if (method === undefined) {
+    method = probe(paths.workRoot).then(
+      (clones): PnpmImportMethod => (clones ? 'clone' : 'copy'),
+      (): PnpmImportMethod => 'copy',
+    );
+    importMethods.set(paths.workRoot, method);
+  }
+  return method;
 }
 
 /** Creates the shared store, so a sandbox can be opened onto it before pnpm first writes there. */
