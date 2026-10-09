@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Job } from '../../shared/jobs.js';
 import type { JobChange } from '../../server/jobs/index.js';
+import { JobSecretsNotAllowed } from '../../server/tokens.js';
 import { testSecrets } from '../harness.js';
 import {
   createHarness,
@@ -410,6 +411,38 @@ describe('jobs', () => {
       );
     },
   );
+
+  it('lets a custom secret source reject a runner without failing the job or blocking the queue', async () => {
+    await setUp();
+    h.services.jobs.provideSecrets({
+      open: () => Promise.reject(new JobSecretsNotAllowed()),
+    });
+    const restricted = await enqueue({
+      priority: -1,
+      spec: {
+        ...buildSpec,
+        env: [
+          {
+            name: 'TOKEN',
+            secret: { scope: 'workdir', scopeId: 'repo1', name: 'TOKEN' },
+          },
+        ],
+      },
+    });
+    const jobs = h.services.tx.read().repository('agJobs');
+    const before = await jobs.findOne({ filter: { id: restricted.id } });
+    const allowed = await enqueue();
+    const personal = await jobRunner({
+      trust: 'ownerOnly',
+      ownerUserId: 'owner',
+    });
+    expect(
+      (await claimJobs(personal)).map((payload) => payload.job.id),
+    ).toEqual([allowed.id]);
+    expect(await jobs.findOne({ filter: { id: restricted.id } })).toEqual(
+      before,
+    );
+  });
 
   it('prepares the spec at claim, and fails a job that cannot be prepared', async () => {
     await setUp();
