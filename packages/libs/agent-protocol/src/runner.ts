@@ -57,7 +57,7 @@ const capabilityIdentifier = (max: number) =>
     .string()
     .min(1)
     .max(max)
-    .regex(/^[a-zA-Z0-9][a-zA-Z0-9._:/+-]*$/)
+    .regex(/^[a-zA-Z0-9][a-zA-Z0-9._:@/+-]*$/)
     .refine(
       (value) => !value.includes('://') && modelRedactor.text(value) === value,
       'Invalid capability identifier',
@@ -103,15 +103,38 @@ export interface ToolInfo extends ToolCapabilities {
   readonly authenticated: boolean;
 }
 
-export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
+const toolInfoFields = {
   kind: AgentToolSchema,
   version: z.string().optional(),
   path: z.string().optional(),
   authenticated: z.boolean(),
+};
+
+export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
+  ...toolInfoFields,
   models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
   modelsDetectedAt: z.iso.datetime().optional(),
   modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
   modelsDetectionError: ModelsDetectionErrorSchema.optional(),
+});
+
+/** Keep a runner connected when an independently released sender reports unfamiliar advisory capabilities. */
+export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z.object({
+  ...toolInfoFields,
+  models: z
+    .unknown()
+    .transform((value) => {
+      if (!Array.isArray(value)) return undefined;
+      return (value as unknown[]).slice(0, MAX_TOOL_MODELS).flatMap((model) => {
+        const parsed = ToolModelSchema.safeParse(model);
+        return parsed.success ? [parsed.data] : [];
+      });
+    })
+    .optional(),
+  modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
+  modelsDetectionStatus:
+    ModelsDetectionStatusSchema.optional().catch(undefined),
+  modelsDetectionError: ModelsDetectionErrorSchema.optional().catch(undefined),
 });
 
 /**
@@ -178,7 +201,7 @@ export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
   protocolVersion: z.number().int(),
   features: z.array(RunnerFeatureSchema),
-  tools: z.array(ToolInfoSchema),
+  tools: z.array(ReportedToolInfoSchema),
   slots: z.number().int().positive().max(64).optional(),
   toolSlots: ToolSlotsSchema.optional(),
   policy: RunnerPolicySchema.optional(),
@@ -254,7 +277,7 @@ export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
   version: z.string().max(64),
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
   features: z.array(RunnerFeatureSchema),
-  tools: z.array(ToolInfoSchema),
+  tools: z.array(ReportedToolInfoSchema),
   active: z.array(ActiveRunSchema),
   jobs: z.array(ActiveJobSchema).optional(),
   load: z.object({

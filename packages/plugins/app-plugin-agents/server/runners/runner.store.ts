@@ -6,7 +6,7 @@ import {
   AGENT_TOOLS,
   RunnerPolicySchema,
   ToolLoadSchema,
-  ToolInfoSchema,
+  ReportedToolInfoSchema,
   ToolSlotsSchema,
   type AgentTool,
   type RunnerFeature,
@@ -94,7 +94,7 @@ export function registrationTokensRepo(
 function toolList(value: unknown): ToolInfo[] {
   const list = Array.isArray(value) ? (value as unknown[]) : [];
   return list.flatMap((item) => {
-    const parsed = ToolInfoSchema.safeParse(item);
+    const parsed = ReportedToolInfoSchema.safeParse(item);
     return parsed.success ? [parsed.data] : [];
   });
 }

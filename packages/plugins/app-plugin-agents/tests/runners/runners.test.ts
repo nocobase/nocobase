@@ -150,6 +150,74 @@ describe('runners', () => {
     expect(await h.services.agents.get(agentId)).toEqual(agentBefore);
   });
 
+  it('discards invalid capability suggestions without disrupting registration, heartbeats or claims', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('owner', {
+      trust: 'team',
+    });
+    const reported = {
+      kind: 'claude',
+      authenticated: true,
+      models: [
+        { id: 'https://private.example/model' },
+        { id: 'sk-1' + 'x'.repeat(48) },
+        { id: 'invalid model id' },
+        {
+          id: 'claude-sonnet-4@20250514',
+          config: { token: 'must-be-stripped' },
+        },
+      ],
+      modelsDetectedAt: 'invalid-date',
+      modelsDetectionStatus: 'future-status',
+      modelsDetectionError: 'future-error',
+    };
+    const registered = await h.request('POST', '/agents/runners/register', {
+      body: { ...registration(token.token), tools: [reported] },
+    });
+    expect(registered.status).toBe(200);
+    const runnerId = registered.body.data.runnerId as string;
+    const key = registered.body.data.runnerKey as string;
+    const expected = [
+      {
+        kind: 'claude',
+        authenticated: true,
+        models: [{ id: 'claude-sonnet-4@20250514' }],
+      },
+    ];
+    expect((await h.services.runners.get(runnerId)).tools).toEqual(expected);
+    const beat = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: key,
+      body: {
+        ...heartbeat,
+        tools: [{ ...reported, modelsDetectionStatus: 'failed' }],
+      },
+    });
+    expect(beat.status).toBe(200);
+    expect((await h.services.runners.get(runnerId)).tools).toEqual([
+      { ...expected[0], modelsDetectionStatus: 'failed' },
+    ]);
+    const runId = await h.enqueue(await h.createAgent());
+    const claimed = await h.request('POST', '/agents/runners/claim', {
+      runnerKey: key,
+      body: { free: 1 },
+    });
+    expect(claimed.status).toBe(200);
+    expect(claimed.body.data.runs).toEqual([
+      expect.objectContaining({ run: expect.objectContaining({ id: runId }) }),
+    ]);
+    expect(
+      (
+        await h.request('POST', '/agents/runners/heartbeat', {
+          runnerKey: key,
+          body: {
+            ...heartbeat,
+            tools: [{ kind: 'claude', authenticated: 'yes' }],
+          },
+        })
+      ).status,
+    ).toBe(400);
+  });
+
   it('registers once with a one-time token, keeping its trust, owner and reported tools', async () => {
     h = await createHarness();
     const token = await h.services.runners.createRegistrationToken('alice', {

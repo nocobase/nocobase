@@ -159,3 +159,9 @@ it('bounds and deduplicates identifiers and efforts without forwarding arbitrary
   expect(models[1]?.efforts).toHaveLength(MAX_MODEL_EFFORTS);
   expect(JSON.stringify(models)).not.toContain('private');
 });
+
+it('retains versioned model identifiers', () => {
+  expect(boundedModels([{ id: 'claude-sonnet-4@20250514' }])).toEqual([
+    { id: 'claude-sonnet-4@20250514' },
+  ]);
+});

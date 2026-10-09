@@ -6,6 +6,7 @@ import {
   MAX_MODEL_EFFORTS,
   MAX_EFFORT_LENGTH,
   ToolInfoSchema,
+  ReportedToolInfoSchema,
   PROTOCOL_VERSION,
 } from '../src/index.js';
 
@@ -20,6 +21,59 @@ const capabilities = {
 };
 
 describe('tool capabilities within protocol 7', () => {
+  it('accepts versioned model identifiers in both outgoing and reported capabilities', () => {
+    const tool = {
+      ...legacy,
+      models: [{ id: 'claude-sonnet-4@20250514' }],
+    };
+    expect(ToolInfoSchema.parse(tool).models).toEqual(tool.models);
+    expect(ReportedToolInfoSchema.parse(tool).models).toEqual(tool.models);
+  });
+
+  it('discards invalid advisory fields while retaining valid models and strict base fields', () => {
+    const tool = {
+      ...legacy,
+      models: [
+        null,
+        { id: 'https://private.example/model' },
+        { id: 'sk-1' + 'x'.repeat(48) },
+        { id: 'model', efforts: ['bad effort'] },
+        { id: 'gpt-6-sol', config: { token: 'must-be-stripped' } },
+      ],
+      modelsDetectedAt: 'yesterday',
+      modelsDetectionStatus: 'future-status',
+      modelsDetectionError: 'future-error',
+    };
+    expect(ReportedToolInfoSchema.parse(tool)).toEqual({
+      ...legacy,
+      models: [{ id: 'gpt-6-sol' }],
+    });
+    expect(ToolInfoSchema.safeParse(tool).success).toBe(false);
+    expect(
+      ReportedToolInfoSchema.safeParse({ ...tool, authenticated: 'yes' })
+        .success,
+    ).toBe(false);
+    expect(
+      ReportedToolInfoSchema.safeParse({ ...tool, kind: 'unknown-tool' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('bounds received suggestions and ignores malformed capability containers', () => {
+    expect(
+      ReportedToolInfoSchema.parse({
+        ...legacy,
+        models: Array.from({ length: MAX_TOOL_MODELS + 1 }, (_, n) => ({
+          id: `model${n}`,
+        })),
+      }).models,
+    ).toHaveLength(MAX_TOOL_MODELS);
+    expect(
+      ReportedToolInfoSchema.parse({ ...legacy, models: 'invalid' }).models,
+    ).toBeUndefined();
+    expect(ReportedToolInfoSchema.parse(legacy)).toEqual(legacy);
+  });
+
   it('accepts legacy tools and lets legacy receivers strip the optional additions', () => {
     expect(PROTOCOL_VERSION).toBe(7);
     expect(ToolInfoSchema.parse(legacy)).toEqual(legacy);

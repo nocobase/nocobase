@@ -13,7 +13,7 @@ function identifier(value: unknown, max: number): value is string {
     typeof value === 'string' &&
     value.length > 0 &&
     value.length <= max &&
-    /^[a-zA-Z0-9][a-zA-Z0-9._:/+-]*$/.test(value) &&
+    /^[a-zA-Z0-9][a-zA-Z0-9._:@/+-]*$/.test(value) &&
     !value.includes('://') &&
     redactor.text(value) === value
   );
