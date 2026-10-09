@@ -1,5 +1,5 @@
 import { Link2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
 import type { MailProviderView } from '../mail-client.js';
@@ -17,6 +17,7 @@ export interface MailAccountConnectorLabels {
   readonly configurationRequired: string;
   readonly emailAddress?: string;
   readonly username?: string;
+  readonly usernameDescription?: string;
   readonly password?: string;
   readonly displayName?: string;
 }
@@ -53,6 +54,7 @@ export function MailAccountConnector({
   onConnect,
   onConnectCredentials,
 }: MailAccountConnectorProps): ReactElement {
+  const usernameDescriptionId = useId();
   const [selectedKey, setSelectedKey] = useState('');
   const [address, setAddress] = useState('');
   const [username, setUsername] = useState(credentialDefaults?.username ?? '');
@@ -74,7 +76,6 @@ export function MailAccountConnector({
   const usesCredentials = selectedProvider?.connection === 'credentials';
   const credentialsReady =
     address.trim().length > 0 &&
-    username.trim().length > 0 &&
     password.length > 0 &&
     onConnectCredentials !== undefined;
 
@@ -141,14 +142,24 @@ export function MailAccountConnector({
               value={address}
             />
           </label>
-          <label className='grid gap-2 text-sm font-medium'>
-            <span>{labels.username ?? 'Username'}</span>
-            <Input
-              autoComplete='username'
-              onChange={(event) => setUsername(event.target.value)}
-              value={username}
-            />
-          </label>
+          <div className='grid gap-2'>
+            <label className='grid gap-2 text-sm font-medium'>
+              <span>{labels.username ?? 'Username (optional)'}</span>
+              <Input
+                aria-describedby={usernameDescriptionId}
+                autoComplete='username'
+                onChange={(event) => setUsername(event.target.value)}
+                value={username}
+              />
+            </label>
+            <p
+              className='text-xs text-muted-foreground'
+              id={usernameDescriptionId}
+            >
+              {labels.usernameDescription ??
+                'Usually your email address. Leave blank to use the email address you entered.'}
+            </p>
+          </div>
           <label className='grid gap-2 text-sm font-medium'>
             <span>{labels.password ?? 'Password'}</span>
             <Input
