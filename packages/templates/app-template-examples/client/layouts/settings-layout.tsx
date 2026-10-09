@@ -8,6 +8,14 @@ import { PageBreadcrumbProvider } from '@nocobase/app-client';
 
 import { Breadcrumbs } from '#components/breadcrumbs';
 import { Loading } from '#components/loading';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from '#components/ui/select';
 import { EMPTY_ARRAY } from '#lib/constants';
 
 import { renderRouteTree } from '../routing/route-tree.js';
@@ -138,26 +146,41 @@ export function SettingsLayout({
                     defaultValue: `${copy.title} page`,
                   })}
                 </label>
-                <select
-                  id='surface-page'
-                  className='m-3 h-9 w-[calc(100%-1.5rem)] min-w-0 rounded-xl border border-border/70 bg-background px-3 text-sm md:hidden'
+                <Select
+                  items={visible.map((route) => ({
+                    value: route.path,
+                    label: t(route.navigation!.title, {
+                      ns: route.packageName,
+                      defaultValue: route.navigation!.title,
+                    }),
+                  }))}
                   value={
                     visible.find((route) => routeKey(route) === selectedKey)
-                      ?.path ?? ''
+                      ?.path ?? null
                   }
-                  onChange={(event) => {
-                    void navigate(event.target.value);
+                  onValueChange={(value) => {
+                    if (value) void navigate(value);
                   }}
                 >
-                  {visible.map((route) => (
-                    <option key={routeKey(route)} value={route.path}>
-                      {t(route.navigation!.title, {
-                        ns: route.packageName,
-                        defaultValue: route.navigation!.title,
-                      })}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    id='surface-page'
+                    className='m-3 w-[calc(100%-1.5rem)] min-w-0 md:hidden'
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {visible.map((route) => (
+                        <SelectItem key={routeKey(route)} value={route.path}>
+                          {t(route.navigation!.title, {
+                            ns: route.packageName,
+                            defaultValue: route.navigation!.title,
+                          })}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 <Routes>
                   {renderRouteTree(routeTree, copy.pathPrefix)}
                   {renderRouteTree(routes, copy.pathPrefix)}
