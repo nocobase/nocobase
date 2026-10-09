@@ -35,7 +35,7 @@ jobs:
       - name: Dispatch on v3-develop
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKFLOW_FILE: db-tests.yml
+          WORKFLOW_FILE: v3-db-tests.yml
           DISPATCH_INPUTS: ${{ toJSON(inputs) }}
         run: >
           printf '%s' "$DISPATCH_INPUTS" \
@@ -58,4 +58,4 @@ jobs:
           DIALECT: ${{ matrix.dialect }}
         run: |
           jq -n --arg dialect "$DIALECT" '{ref: "v3-develop", inputs: {dialect: $dialect, filter: ""}}' \
-            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/db-tests.yml/dispatches" --input -
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/v3-db-tests.yml/dispatches" --input -
