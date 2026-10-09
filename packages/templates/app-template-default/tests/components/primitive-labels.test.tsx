@@ -9,6 +9,8 @@ import { describe, expect, it } from 'vitest';
 import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '#components/ui/sheet';
 import { Spinner } from '#components/ui/spinner';
+import { BrandSpinner } from '#components/brand-spinner';
+import { Loading } from '#components/loading';
 import { createToastManager, Toaster } from '#components/ui/toast';
 
 import zhCN from '../../client/locales/zh-CN.js';
@@ -68,6 +70,19 @@ describe('labels built into the shipped primitives', () => {
     // Base UI keeps the close button aria-hidden until the toast list is expanded, so find it by its label.
     const [close] = await screen.findAllByLabelText(zhCN.actions.close);
     expect(close).toHaveAttribute('data-slot', 'toast-close');
+  });
+
+  it('labels brand loading and allows decorative inline indicators', () => {
+    const { rerender } = render(<BrandSpinner />, { wrapper: I18n });
+    expect(
+      screen.getByRole('status', { name: zhCN['status.loading'] }),
+    ).toBeVisible();
+    rerender(<BrandSpinner aria-hidden='true' />);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    rerender(<Loading label='正在加载客户' />);
+    expect(
+      screen.getByRole('status', { name: '正在加载客户' }),
+    ).toHaveTextContent('正在加载客户');
   });
 
   it('labels the Spinner through status.loading', () => {

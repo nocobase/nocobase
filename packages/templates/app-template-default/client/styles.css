@@ -8,6 +8,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* The stationary brand and a constant orbit read as loading at every size. */
+@keyframes nocobase-loading-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.nocobase-loading-orbit {
+  transform-origin: 32px 32px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nocobase-loading-orbit {
+    animation: nocobase-loading-orbit 1.1s linear infinite;
+  }
+}
+
 @theme {
   --font-heading: var(--font-sans);
   /* These names are implemented below as runtime-variable utilities. */
@@ -119,4 +134,211 @@
    any layer so it outranks the component's z-50 utility. */
 [data-slot='toast-viewport'] {
   z-index: 100;
+}
+
+/* Application-wide interaction and badge treatment, outside generated primitives. */
+@layer base {
+  :is(
+      button,
+      [role='button'],
+      [role='menuitem'],
+      [role='option'],
+      [role='tab'],
+      [role='checkbox'],
+      [role='radio'],
+      [role='switch'],
+      [role='combobox'],
+      a[href]
+    ):not(:disabled):not([aria-disabled='true']):not([data-disabled]) {
+    cursor: pointer;
+  }
+}
+
+[data-slot='badge'] {
+  border-radius: var(--radius-md);
+  min-height: calc(var(--spacing) * 7);
+  height: auto;
+  padding-inline: calc(var(--spacing) * 2.5);
+  line-height: 1.4;
+}
+
+/* Shared overlay treatment lives outside generated shadcn primitives. */
+:is(
+  [data-slot='dialog-overlay'],
+  [data-slot='alert-dialog-overlay'],
+  [data-slot='sheet-overlay']
+) {
+  background: var(--overlay-backdrop);
+  backdrop-filter: none;
+}
+:is(
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'],
+  [data-slot='route-overlay-content']
+) {
+  border: 1px solid var(--border);
+  box-shadow: var(--overlay-shadow);
+}
+:is([data-slot='dialog-content'], [data-slot='alert-dialog-content']) {
+  padding: calc(var(--spacing) * 6);
+  gap: calc(var(--spacing) * 5);
+  border-radius: var(--radius-xl);
+  max-width: min(calc(100vw - 2rem), var(--container-lg));
+}
+[data-slot='route-overlay-content'][data-presentation='dialog'] {
+  border-radius: var(--radius-xl);
+}
+:is([data-slot='dialog-title'], [data-slot='alert-dialog-title']) {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.4;
+}
+:is([data-slot='dialog-description'], [data-slot='alert-dialog-description']) {
+  line-height: 1.65;
+}
+:is([data-slot='dialog-footer'], [data-slot='alert-dialog-footer']) {
+  margin-inline: calc(var(--spacing) * -6);
+  margin-bottom: calc(var(--spacing) * -6);
+  padding: calc(var(--spacing) * 4) calc(var(--spacing) * 6);
+  gap: calc(var(--spacing) * 3);
+  background: color-mix(in srgb, var(--muted) 30%, var(--popover));
+}
+:is(
+    [data-slot='dialog-footer'],
+    [data-slot='alert-dialog-footer'],
+    [data-slot='route-overlay-footer']
+  )
+  > button {
+  min-height: calc(var(--spacing) * 10);
+  padding-inline: calc(var(--spacing) * 4);
+}
+[data-slot='dialog-content'] > [data-slot='dialog-close'] {
+  top: calc(var(--spacing) * 4);
+  right: calc(var(--spacing) * 4);
+}
+[data-slot='dialog-header'] {
+  padding-right: calc(var(--spacing) * 8);
+}
+[data-slot='alert-dialog-media'] {
+  border-radius: var(--radius-lg);
+  width: calc(var(--spacing) * 12);
+  height: calc(var(--spacing) * 12);
+}
+[data-slot='alert'] {
+  padding: calc(var(--spacing) * 4);
+  row-gap: calc(var(--spacing) * 1.5);
+  column-gap: calc(var(--spacing) * 3);
+  border-radius: var(--radius-lg);
+}
+[data-slot='alert'][data-tone='info'] {
+  background: color-mix(in srgb, var(--primary) 5%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+}
+[data-slot='alert'][data-tone='info'] > svg {
+  color: var(--primary);
+}
+[data-slot='alert-action'] {
+  top: calc(var(--spacing) * 4);
+  right: calc(var(--spacing) * 4);
+}
+[data-slot='toast'] {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+[data-slot='toast-content'] {
+  padding: calc(var(--spacing) * 4);
+  align-items: center;
+  gap: calc(var(--spacing) * 3);
+}
+[data-slot='toast-viewport'] {
+  width: 22rem;
+  max-width: calc(100vw - 2rem);
+}
+[data-slot='toast-content']:has([data-slot='toast-description']:not(:empty)) {
+  align-items: flex-start;
+}
+:is([data-slot='toast-title'], [data-slot='toast-description']) {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+[data-slot='toast-close'] {
+  width: calc(var(--spacing) * 6);
+  height: calc(var(--spacing) * 6);
+  opacity: 0.55;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+[data-slot='toast-close']:is(:hover, :focus-visible) {
+  opacity: 1;
+}
+
+[data-slot='toast-icon'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--spacing) * 7);
+  height: calc(var(--spacing) * 7);
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: var(--primary);
+}
+[data-slot='toast-icon']:has(.lucide-circle-check) {
+  background: var(--status-success-background);
+  color: var(--status-success);
+}
+[data-slot='toast-icon']:has(.lucide-octagon-x) {
+  background: color-mix(in srgb, var(--destructive) 10%, var(--popover));
+  color: var(--destructive);
+}
+[data-slot='toast-icon']:has(.lucide-triangle-alert) {
+  background: var(--status-warning-background);
+  color: var(--status-warning);
+}
+[data-slot='alert'].text-destructive {
+  background: color-mix(in srgb, var(--destructive) 5%, var(--card));
+  border-color: color-mix(in srgb, var(--destructive) 20%, var(--border));
+}
+[data-slot='alert-dialog-content'][data-size='sm'] {
+  max-width: min(calc(100vw - 2rem), var(--container-sm));
+}
+[data-slot='alert-dialog-header']:has([data-slot='alert-dialog-media']) {
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: calc(var(--spacing) * 4);
+  align-items: start;
+  justify-items: start;
+  text-align: left;
+}
+[data-slot='alert-dialog-header'] > [data-slot='alert-dialog-media'] {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  margin-bottom: 0;
+}
+[data-slot='alert-dialog-header']:has([data-slot='alert-dialog-media'])
+  > :is(
+    [data-slot='alert-dialog-title'],
+    [data-slot='alert-dialog-description']
+  ) {
+  grid-column: 2;
+}
+[data-slot='alert']:has([data-slot='alert-action']) {
+  padding-right: calc(var(--spacing) * 24);
+}
+:is([data-slot='dialog-content'], [data-slot='alert-dialog-content']) {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+[data-slot='route-overlay-content'][data-presentation='dialog'] {
+  max-width: min(calc(100vw - 2rem), var(--container-2xl));
+  max-height: calc(100dvh - 2rem);
+}
+
+/* Compact content can stay dense while the primary navigation remains comfortable.
+   The primitive's important icon-mode sizes still control the collapsed rail. */
+:root[data-theme='compact'] .app-navigation [data-slot='sidebar-menu-button'] {
+  height: calc(var(--spacing) * 12);
+  padding-inline: calc(var(--spacing) * 4);
+}
+:root[data-theme='compact'] .app-navigation [data-slot='sidebar-menu'] {
+  gap: calc(var(--spacing) * 1.5);
 }

@@ -94,6 +94,36 @@ async function setup(children: ReactNode, path = '/') {
 }
 
 describe('shell translations', () => {
+  it('navigates settings with the shadcn page selector', async () => {
+    const secondPage: AppClientRegisteredRoute = {
+      ...route,
+      id: 'notifications',
+      name: 'notifications',
+      path: '/settings/notifications',
+      navigation: { title: 'Notifications' },
+    };
+    await setup(
+      <Routes>
+        <Route
+          path='/settings/*'
+          element={<SettingsLayout routeTree={[route, secondPage]} />}
+        />
+      </Routes>,
+      route.path,
+    );
+    const user = userEvent.setup();
+    const selector = screen.getByRole('combobox', { name: 'Settings page' });
+    expect(selector).toHaveTextContent('Preferences');
+    await user.click(selector);
+    await user.click(
+      await screen.findByRole('option', { name: 'Notifications' }),
+    );
+    expect(selector).toHaveTextContent('Notifications');
+    expect(
+      screen.getByRole('navigation', { name: 'Breadcrumb' }),
+    ).toHaveTextContent('Notifications');
+  });
+
   it('updates header, footer, tooltips and accessible labels without remounting', async () => {
     const runtime = await setup(<AppLayout routes={[overview]} />);
     // The header's trail, where a tagline used to be.

@@ -133,6 +133,8 @@ Style with the semantic Tailwind tokens — `bg-background`, `text-foreground`, 
 
 **Visual consistency is a whole-application property.** Match the surrounding code's spacing, typography, and component choices. If a change genuinely calls for a different look, change the application's design tokens in `client/theme/themes/*.css` so every page moves together. Never restyle only the part you are working on — a page that looks different from the rest is a defect, not a customization.
 
+The default brand palette and density live in `client/theme/themes/*.css`; shared hover/cursor and Badge geometry live in `client/styles.css`, outside generated shadcn primitives. For semantic status labels, use `StatusBadge` from `client/components/status-badge.tsx` with `neutral`, `info`, `warning`, or `success`; choose the tone by meaning and keep the visible status text. Reuse these shared components and tokens in new pages so template upgrades can carry the design consistently.
+
 **Follow the UI guidelines.** `.agents/skills/nocobase-app-development/references/frontend/ui-guidelines.md` sets the conventions every page follows, among them the page header and the single placement of the primary action, empty states, row actions behind one "…" menu, dates picked from a `Calendar` in a `Popover` rather than a native date input, and medium-width drawers; the frontend workflow says how much of it to read for a change.
 
 ### Server routes
@@ -430,3 +432,7 @@ Navigation groups retain their expanded or collapsed state while the navigation 
 `runtime.paths`, configuration context `paths`, and `app.paths` share one resolved `AppPaths` object. Use `paths.storage('...')`, `paths.database('...')`, or the corresponding directory fields. `AppPathOptions` is input only; application path policies run before the final object is created and configuration is loaded. Standalone entries declare the deployment root in `server/runtime.ts` so the server and CLI share persistent storage outside the compiled code directory.
 
 `server/app.ts` calls `createAppFromRuntime(runtime)` to transfer configuration, paths, mode and Host logging policy and bind `runtime.app`. Keep Provider, middleware and route registration explicit and ordered; `startApplicationInScope` owns startup and shutdown binding.
+
+## Branded loading
+
+Use `Loading` for page or panel waits and `Spinner` (the shadcn-compatible adapter to `BrandSpinner`) for inline pending actions, uploads, and refresh indicators. Both share the stable NocoBase mark and orbit animation; do not introduce independent Lucide spinners for application loading. Keep skeletons for content placeholders and progress bars for determinate progress. `index.html` has the matching pre-JavaScript mark and must stay visually consistent. All animations respect reduced motion.

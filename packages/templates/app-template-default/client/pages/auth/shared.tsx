@@ -49,7 +49,7 @@ export function AuthPage({
   );
 }
 
-// The brand panel is deliberately dark in both color modes, so it uses fixed neutrals rather than theme tokens.
+// The brand panel stays dark in both color modes; its dedicated palette belongs to the theme presets.
 function BrandPanel(): ReactElement {
   const { t } = useTranslation();
   const features = [
@@ -68,10 +68,11 @@ function BrandPanel(): ReactElement {
   ];
 
   return (
-    <div className='relative grid h-full place-items-center overflow-hidden bg-neutral-950 p-12 text-white'>
-      <div className='pointer-events-none absolute inset-0 [background-image:linear-gradient(currentColor_1px,transparent_1px),linear-gradient(90deg,currentColor_1px,transparent_1px)] [background-size:48px_48px] opacity-[0.08]' />
+    <div className='relative grid h-full place-items-center overflow-hidden bg-(--auth-brand-background) p-12 text-white'>
+      <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_srgb,var(--primary)_22%,transparent),transparent_65%)]' />
+      <div className='pointer-events-none absolute inset-0 [background-image:linear-gradient(currentColor_1px,transparent_1px),linear-gradient(90deg,currentColor_1px,transparent_1px)] [background-size:64px_64px] opacity-[0.025]' />
       <div className='relative w-full max-w-xl'>
-        <p className='text-xs font-semibold tracking-[0.16em] text-white/55 uppercase'>
+        <p className='text-xs font-semibold tracking-[0.16em] text-(--auth-brand-highlight) uppercase'>
           {t('auth.platform')}
         </p>
         <h2 className='mt-4 text-5xl leading-[1.05] font-semibold tracking-[-0.045em]'>
@@ -81,26 +82,26 @@ function BrandPanel(): ReactElement {
           <br />
           {t('auth.marketingTitleThird')}
         </h2>
-        <p className='mt-5 text-sm leading-6 text-white/60'>
+        <p className='mt-5 text-sm leading-6 text-(--auth-brand-muted)'>
           {t('auth.marketingDescription')}
         </p>
-        <div className='mt-8 overflow-hidden rounded-2xl bg-white text-neutral-950 shadow-2xl'>
+        <div className='mt-8 overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-white shadow-lg backdrop-blur-sm'>
           <div className='space-y-5 p-6'>
             {features.map(({ description, icon: Icon, id, title }) => (
               <div className='flex gap-4' key={id}>
-                <span className='grid size-11 shrink-0 place-items-center rounded-xl bg-neutral-100 text-neutral-700'>
+                <span className='grid size-11 shrink-0 place-items-center rounded-xl bg-(--auth-brand-highlight)/10 text-(--auth-brand-highlight)'>
                   <Icon aria-hidden='true' className='size-5' />
                 </span>
                 <div>
                   <p className='font-semibold'>{title}</p>
-                  <p className='mt-1 text-sm leading-6 text-neutral-500'>
+                  <p className='mt-1 text-sm leading-6 text-(--auth-brand-muted)'>
                     {description}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-          <div className='flex items-center gap-3 bg-neutral-100 px-6 py-4 text-sm font-medium text-neutral-600'>
+          <div className='flex items-center gap-3 border-t border-white/10 bg-white/3 px-6 py-4 text-sm font-medium text-(--auth-brand-muted)'>
             <Blocks aria-hidden='true' className='size-4' />
             <span>{t('auth.marketingFooter')}</span>
           </div>

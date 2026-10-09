@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#171717" />
+    <meta name="theme-color" content="#002ad1" />
     <meta name="description" content="NocoBase administration console" />
     <meta data-rh="true" property="og:image" content="/assets/logo-mark.png" />
     <meta data-rh="true" name="twitter:image" content="/assets/logo-mark.png" />
@@ -16,16 +16,27 @@
         align-items: center;
         justify-content: center;
         background: oklch(0.985 0 0);
-        color: oklch(0.18 0 0);
+        color: #002ad1;
+        flex-direction: column;
+        gap: 0.75rem;
+        font:
+          14px system-ui,
+          sans-serif;
       }
 
       .app-bootstrap-loading [data-slot='loading-indicator'] {
-        width: 1.75rem;
-        height: 1.75rem;
-        opacity: 0;
-        animation:
-          app-bootstrap-reveal 0s 200ms forwards,
-          app-bootstrap-spin 1s linear 200ms infinite;
+        width: 3rem;
+        height: 3rem;
+      }
+      .app-bootstrap-loading .brand-face {
+        fill: oklch(0.985 0 0);
+      }
+      .app-bootstrap-loading .nocobase-loading-orbit {
+        transform-origin: 32px 32px;
+        animation: app-bootstrap-spin 1.1s linear infinite;
+      }
+      .app-bootstrap-loading span {
+        color: oklch(0.556 0 0);
       }
 
       html,
@@ -48,14 +59,21 @@
       @media (prefers-color-scheme: dark) {
         .app-bootstrap-loading {
           background: oklch(0.145 0 0);
-          color: oklch(0.9 0 0);
+          color: #8ca9ff;
         }
       }
 
+      @media (prefers-color-scheme: dark) {
+        .app-bootstrap-loading .brand-face {
+          fill: oklch(0.145 0 0);
+        }
+        .app-bootstrap-loading span {
+          color: oklch(0.708 0 0);
+        }
+      }
       @media (prefers-reduced-motion: reduce) {
-        .app-bootstrap-loading [data-slot='loading-indicator'] {
+        .app-bootstrap-loading .nocobase-loading-orbit {
           animation: none;
-          opacity: 0.65;
         }
       }
     </style>
@@ -71,18 +89,42 @@
       >
         <svg
           data-slot="loading-indicator"
-          viewBox="0 0 24 24"
+          viewBox="0 0 64 64"
           fill="none"
           aria-hidden="true"
         >
-          <path
-            d="M21 12a9 9 0 1 1-6.219-8.56"
+          <circle
+            cx="32"
+            cy="32"
+            r="28"
             stroke="currentColor"
             stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+            opacity=".12"
           />
+          <g class="nocobase-loading-orbit">
+            <path
+              d="M32 4a28 28 0 0 1 28 28"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+          </g>
+          <g
+            transform="translate(11 9) scale(.66)"
+            stroke="currentColor"
+            stroke-linejoin="round"
+            stroke-width="1.8"
+          >
+            <path
+              d="M7 31 27 19 57 37V50L47 56 37 50 27 56 7 44Z"
+              fill="currentColor"
+            />
+            <path d="M17 25 37 13 47 19 27 31Z" class="brand-face" />
+            <path d="M17 25 27 31V44L17 38Z" class="brand-face" />
+            <path d="M27 31 47 19V32L27 44Z" class="brand-face" />
+          </g>
         </svg>
+        <span>Loading application…</span>
       </div>
     </div>
     <script type="module" src="/client/index.tsx"></script>

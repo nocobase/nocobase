@@ -1,6 +1,7 @@
+import { BrandSpinner } from '#components/brand-spinner';
 import { messageKey } from '../lib/message-key.js';
 import { useTranslation } from '@nocobase/i18n/client';
-import { LoaderCircle, RotateCcw, Trash2, UploadCloud, X } from 'lucide-react';
+import { RotateCcw, Trash2, UploadCloud, X } from 'lucide-react';
 import {
   useEffect,
   useRef,
@@ -289,8 +290,7 @@ export function FileUploadField(
           <div key={item.key} className='w-36 rounded-md border p-2'>
             <div className='flex h-20 items-center justify-center overflow-hidden rounded-sm bg-muted/30'>
               {item.status === 'uploading' ? (
-                <LoaderCircle
-                  className='animate-spin'
+                <BrandSpinner
                   aria-label={t('files.uploading', {
                     defaultValue: 'Uploading',
                   })}
