@@ -26,6 +26,9 @@
 // (`<cache>/worktrees/<name>/`), not in the work directory. They are fetched with the repository's credential, sent only
 // to the repository's own host. A new worktree initializes every submodule, recursively; an existing one only those not
 // initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation.
+//
+// Cloning, fetching and the submodules' update are retried where they fail for a passing cause, and abort a stalled
+// transfer instead of hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -54,6 +57,12 @@ import type {
   WorkspaceDir,
 } from '../protocol/index.ts';
 import { isInside } from './command-policy.ts';
+import {
+  GIT_LOW_SPEED_CONFIG,
+  GitNetworkError,
+  retryGit,
+  type GitRetryOptions,
+} from './git-retry.ts';
 import { allowPush, installGitHooks } from './push-guard.ts';
 import { isAlive } from './supervisor.ts';
 
@@ -196,12 +205,16 @@ export function lockCache(cache: string): Promise<Lock> {
 
 /**
  * Creates the repository's bare cache or fetches every branch into it, with the host's git credentials or `auth`.
- * `extra` refspecs are fetched in the same call, such as a tag a job names.
+ * `extra` refspecs are fetched in the same call, such as a tag a job names. Both are retried as `retry` says.
  */
 export async function updateCache(
   paths: RunnerPaths,
   url: string,
-  options: { auth?: GitAuth; extra?: readonly string[] } = {},
+  options: {
+    auth?: GitAuth;
+    extra?: readonly string[];
+    retry?: GitRetryOptions;
+  } = {},
 ): Promise<string> {
   const cache = cachePath(paths, url);
   const env = gitAuthEnv(options.auth);
@@ -209,20 +222,38 @@ export async function updateCache(
   try {
     if (!existsSync(cache)) {
       await mkdir(paths.reposDir, { recursive: true, mode: 0o700 });
-      await git(['clone', '--bare', '--quiet', url, cache], undefined, env);
+      await retryGit(
+        `git clone ${url}`,
+        async () => {
+          // A clone cut off may leave a partial cache behind.
+          await rm(cache, { recursive: true, force: true });
+          await git(
+            [...GIT_LOW_SPEED_CONFIG, 'clone', '--bare', '--quiet', url, cache],
+            undefined,
+            env,
+          );
+        },
+        options.retry,
+      );
     }
     await installGitHooks(path.join(cache, 'hooks'));
-    await git(
-      [
-        'fetch',
-        '--prune',
-        '--quiet',
-        'origin',
-        '+refs/heads/*:refs/remotes/origin/*',
-        ...(options.extra ?? []),
-      ],
-      cache,
-      env,
+    await retryGit(
+      `git fetch ${url}`,
+      () =>
+        git(
+          [
+            ...GIT_LOW_SPEED_CONFIG,
+            'fetch',
+            '--prune',
+            '--quiet',
+            'origin',
+            '+refs/heads/*:refs/remotes/origin/*',
+            ...(options.extra ?? []),
+          ],
+          cache,
+          env,
+        ),
+      options.retry,
     );
     return cache;
   } finally {
@@ -386,11 +417,17 @@ function httpOrigin(url: string): string | undefined {
 
 /**
  * Initializes the worktree's submodules as its `.gitmodules` lists them: every one, recursively, when `all`; otherwise
- * only the top-level ones not initialized yet (with theirs). Returns the paths it initialized.
+ * only the top-level ones not initialized yet (with theirs). Returns the paths it initialized. The update is retried as
+ * `retry` says; one that keeps failing on the network is a `GitNetworkError`.
  */
 export async function initSubmodules(
   dir: string,
-  options: { all: boolean; url: string; auth?: GitAuth },
+  options: {
+    all: boolean;
+    url: string;
+    auth?: GitAuth;
+    retry?: GitRetryOptions;
+  },
 ): Promise<string[]> {
   if (!existsSync(path.join(dir, '.gitmodules'))) return [];
   const failed = (step: string, error: unknown): CheckoutError =>
@@ -412,18 +449,26 @@ export async function initSubmodules(
   if (selected.length === 0) return [];
   const origin = httpOrigin(options.url);
   try {
-    await git(
-      [
-        'submodule',
-        'update',
-        '--init',
-        '--recursive',
-        ...(options.all ? [] : ['--', ...selected]),
-      ],
-      dir,
-      origin === undefined ? {} : gitAuthEnv(options.auth, origin),
+    // `-c` reaches the clones and fetches the update runs (GIT_CONFIG_PARAMETERS), so a stalled one gives up too.
+    await retryGit(
+      `git submodule update in ${options.url}`,
+      () =>
+        git(
+          [
+            ...GIT_LOW_SPEED_CONFIG,
+            'submodule',
+            'update',
+            '--init',
+            '--recursive',
+            ...(options.all ? [] : ['--', ...selected]),
+          ],
+          dir,
+          origin === undefined ? {} : gitAuthEnv(options.auth, origin),
+        ),
+      options.retry,
     );
   } catch (error) {
+    if (error instanceof GitNetworkError) throw error;
     throw failed('initializing', error);
   }
   return selected;
@@ -506,6 +551,8 @@ export interface PrepareDirsOptions {
   credentials?: readonly RepoCredential[];
   lockTimeoutMs?: number;
   log?: (message: string) => void;
+  /** How cloning, fetching and the submodules' update are retried. */
+  retry?: GitRetryOptions;
 }
 
 /**
@@ -592,11 +639,10 @@ export async function prepareDirs(
         credential === undefined
           ? undefined
           : { username: credential.username, token: credential.password };
-      const cache = await updateCache(
-        paths,
-        entry.url,
-        auth === undefined ? {} : { auth },
-      );
+      const cache = await updateCache(paths, entry.url, {
+        ...(auth === undefined ? {} : { auth }),
+        ...(options.retry === undefined ? {} : { retry: options.retry }),
+      });
       const created = await ensureWorktree(cache, dir, entry);
       const gitDir = await git(['rev-parse', '--absolute-git-dir'], dir);
       await allowPush(gitDir, entry.url, entry.branch);
@@ -604,6 +650,7 @@ export async function prepareDirs(
         all: created,
         url: entry.url,
         ...(auth === undefined ? {} : { auth }),
+        ...(options.retry === undefined ? {} : { retry: options.retry }),
       });
       if (submodules.length > 0)
         options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
@@ -659,6 +706,7 @@ export interface CheckoutOptions {
   clean?: boolean;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
+  retry?: GitRetryOptions;
 }
 
 /** Locks the subject's work directory and prepares every working directory. The caller releases it. */
