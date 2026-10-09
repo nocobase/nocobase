@@ -10,7 +10,7 @@ import {
 
 const workspace = {
   runId: 'r1',
-  workDir: '/home/runner/.nocobase-runner-work/acme/PM-1',
+  workDir: '/home/runner/.nocobase-runner-work/acme/issue-1',
   sizeBytes: 2048,
   unpushed: false,
   lastUsedAt: '2026-10-09T00:00:00.000Z',
