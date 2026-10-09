@@ -512,7 +512,10 @@ export class RunWorker {
         this.spool.push({
           type: 'error',
           content: detail,
-          meta: { phase: step.name },
+          meta: {
+            ...(error instanceof PrepareError ? error.meta : {}),
+            phase: step.name,
+          },
         });
         return this.finishFailed(
           error instanceof PrepareError ? error.reason : step.failure,

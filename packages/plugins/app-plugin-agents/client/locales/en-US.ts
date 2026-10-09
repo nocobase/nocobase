@@ -647,6 +647,8 @@ const pages = {
     modelUnavailable: 'The agent’s model is not available.',
     stepLimit: 'The agent called tools too many times without answering.',
     policyRefused: 'No runtime’s policy lets it take this work.',
+    prepareNetwork:
+      'The runtime could not reach the repository host while preparing the run.',
     unknown: 'The run failed.',
   },
 };

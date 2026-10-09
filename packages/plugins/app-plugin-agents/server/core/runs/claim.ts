@@ -37,6 +37,7 @@
  * mounts.
  */
 import {
+  ANNOUNCED_FAILURES,
   type AgentTool,
   policyAllowsAgent,
   policyAllowsRepo,
@@ -682,6 +683,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         leaseExpiresAt,
         requires,
         firstSeq: (last ? Number(last.seq) : 0) + 1,
+        acceptedFailures: Object.keys(ANNOUNCED_FAILURES),
       },
       app: deps.app,
       subject: {

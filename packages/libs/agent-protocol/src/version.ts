@@ -47,6 +47,9 @@ import { z } from 'zod';
  * The names of the variables a runner provides (`variables` on register and heartbeat) were added the same way, for
  * the application to show which runners offer what a run asks for by name (`RunWorkspace.passthrough`). A runner fails
  * a run whose passthrough names it does not provide before the agent starts; the server does not choose runners by them.
+ *
+ * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
+ * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
  */
 export const PROTOCOL_VERSION = 7;
 
