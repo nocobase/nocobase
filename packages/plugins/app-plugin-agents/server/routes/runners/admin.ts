@@ -3,10 +3,13 @@
  * and registration tokens. Every route is behind the guard the route contribution passes (a signed-in user and their
  * authorization context); what each caller may do is checked here.
  *
- * - `agents.runners` read/manage: every runner; adding a team runner, changing, revoking and deleting any runner.
- *   Anyone signed in may add a personal runner and manage their own runners, including sharing one with the team and
- *   choosing which coding tools it runs. Reading agents (`agents.agents` read) also shows every runner, to pick where
- *   an agent runs.
+ * - `agents.runners` read/manage: every runner; adding a team runner, and revoking and deleting any runner. Revoking
+ *   someone else's runner is an emergency measure: its owner is told, and the server log records who did it.
+ * - Changing a runner (its name, slots, coding tools, policy and trust) is its owner's alone, because the runner is
+ *   their machine with their tools' sign-ins and credentials: a manager who could share it with the team would send
+ *   everyone's work there. A runner without an owner (its owner's account is gone) is changed by managers of runners,
+ *   or nobody could. Anyone signed in may add a personal runner and change their own, including sharing it with the
+ *   team. Reading agents (`agents.agents` read) also shows every runner, to pick where an agent runs.
  * - A runner's page: whoever sees a runner sees which agents it takes (`takes`), what it holds now
  *   (`GET /agents/runners/:runnerId/work`: its runs as the caller may see them, then its jobs) and its latest runs
  *   (`GET /agents/runners/:runnerId/runs`). What identifies its machine (its host name, where its tools are installed)
@@ -80,11 +83,19 @@ export function createAdminRoutes(
     404,
     'The runner does not exist, or the caller may not see it.',
   );
-  const manageErrors = {
+  const editErrors = {
     ...apiErrorResponses,
     403: apiErrorResponse(
       403,
-      "Only the runner's owner or a manager of runners (`agents.runners` manage) may change it.",
+      "Only the runner's owner may change it; a manager of runners (`agents.runners` manage) only when it has no owner.",
+    ),
+    404: notVisible,
+  };
+  const revokeErrors = {
+    ...apiErrorResponses,
+    403: apiErrorResponse(
+      403,
+      "Only the runner's owner or a manager of runners (`agents.runners` manage) may revoke or delete it.",
     ),
     404: notVisible,
   };
@@ -115,15 +126,17 @@ export function createAdminRoutes(
     runner: Runner,
   ): Promise<{
     readonly see: boolean;
-    readonly manage: boolean;
+    readonly edit: boolean;
+    readonly revoke: boolean;
     readonly machine: boolean;
   }> => {
     const who = caller(context);
     const own = runner.ownerUserId === who.userId;
-    const manage = own || (await who.can('agents.runners', 'manage'));
-    const see = manage || (await seesEveryRunner(who));
-    const machine = manage || (see && (await mayUseAgents(who)));
-    return { see, manage, machine };
+    const revoke = own || (await who.can('agents.runners', 'manage'));
+    const edit = own || (runner.ownerUserId === null && revoke);
+    const see = revoke || (await seesEveryRunner(who));
+    const machine = revoke || (see && (await mayUseAgents(who)));
+    return { see, edit, revoke, machine };
   };
 
   /** The agents each runner takes. */
@@ -147,8 +160,9 @@ export function createAdminRoutes(
       activeJobs: held.jobs,
       activeByTool: held.byTool ?? {},
       takes: takes.get(runner.id) ?? [],
-      canManage: rights.manage,
-      canChangeTrust: rights.manage,
+      canManage: rights.edit,
+      canChangeTrust: rights.edit,
+      canRevoke: rights.revoke,
       updateVersion:
         (await upgradeFor(services.dist, runner))?.latestVersion ?? null,
       requiredProtocol: { min: MIN_PROTOCOL_VERSION, max: PROTOCOL_VERSION },
@@ -156,7 +170,8 @@ export function createAdminRoutes(
     };
   };
 
-  const manageableRunner = async (
+  /** The runner named in the path if the caller may change it: 404 when they may not see it, 403 when not theirs. */
+  const editableRunner = async (
     context: Context<AdminEnv>,
   ): Promise<Runner> => {
     const runner = await services.runners.get(
@@ -164,9 +179,27 @@ export function createAdminRoutes(
     );
     const rights = await runnerRights(context, runner);
     if (!rights.see) throw notFound('Runner');
-    if (!rights.manage)
+    if (!rights.edit)
       throw forbidden(
-        "Only the runner's owner or a manager of runners may change it.",
+        runner.ownerUserId === null
+          ? 'Only a manager of runners may change a runner without an owner.'
+          : "Only the runner's owner may change it.",
+      );
+    return runner;
+  };
+
+  /** The runner named in the path if the caller may revoke or delete it: 404 when they may not see it, else 403. */
+  const revocableRunner = async (
+    context: Context<AdminEnv>,
+  ): Promise<Runner> => {
+    const runner = await services.runners.get(
+      context.req.param('runnerId') ?? '',
+    );
+    const rights = await runnerRights(context, runner);
+    if (!rights.see) throw notFound('Runner');
+    if (!rights.revoke)
+      throw forbidden(
+        "Only the runner's owner or a manager of runners may revoke or delete it.",
       );
     return runner;
   };
@@ -367,11 +400,13 @@ export function createAdminRoutes(
         args: ['runnerId'],
         flags: { runnerId: { name: 'runtime' } },
       }),
-      responses: { 200: dataResponse(RunnerSchema), ...manageErrors },
+      description:
+        "Its owner's alone, a manager of runners (`agents.runners` manage) included; a runner without an owner is changed by managers of runners.",
+      responses: { 200: dataResponse(RunnerSchema), ...editErrors },
     }),
     runnerParam,
     async (context, next) => {
-      context.set('runnerToManage', await manageableRunner(context));
+      context.set('runnerToManage', await editableRunner(context));
       await next();
     },
     apiValidator('json', RunnerPatchInput),
@@ -398,13 +433,18 @@ export function createAdminRoutes(
           'Revoke this runtime? It stops taking work and must register again.',
       }),
       description:
-        'Revokes the runner and its keys; the runs and jobs it held go back to the queue.',
-      responses: { 200: dataResponse(RunnerSchema), ...manageErrors },
+        "Revokes the runner and its keys; the runs and jobs it held go back to the queue. Its owner or a manager of runners (`agents.runners` manage); a manager revoking someone else's runner tells its owner.",
+      responses: { 200: dataResponse(RunnerSchema), ...revokeErrors },
     }),
     runnerParam,
     async (context) => {
-      const runner = await manageableRunner(context);
-      const revoked = await services.runners.revoke(runner.id);
+      const runner = await revocableRunner(context);
+      const by = caller(context).userId;
+      const revoked = await services.runners.revoke(runner.id, { by });
+      if (runner.ownerUserId !== null && runner.ownerUserId !== by)
+        console.info(
+          `Agents runner ${runner.id} ("${runner.name}") of user ${runner.ownerUserId} was revoked by manager of runners ${by}.`,
+        );
       // What it held goes back to the queue now rather than at the next sweep.
       await services.sweeper.sweep();
       return context.json({ data: revoked });
@@ -426,7 +466,7 @@ export function createAdminRoutes(
       description: 'Deletes a revoked runner; its past runs keep its id.',
       responses: {
         204: emptyResponse(),
-        ...manageErrors,
+        ...revokeErrors,
         400: apiErrorResponse(
           400,
           'The runner is not revoked (`RUNNER_NOT_REVOKED`).',
@@ -435,7 +475,7 @@ export function createAdminRoutes(
     }),
     runnerParam,
     async (context) => {
-      const runner = await manageableRunner(context);
+      const runner = await revocableRunner(context);
       await services.runners.remove(runner.id);
       return context.body(null, 204);
     },

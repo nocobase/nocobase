@@ -76,7 +76,7 @@ const runtimesZhCN: RuntimesLocale = {
       runs: '最近的运行',
       runsEmpty: '还没有运行。',
       runsFailed: '无法加载它的运行。',
-      readOnly: '只有它的所有者或运行环境管理员可以修改。',
+      readOnly: '只有它的所有者可以修改。',
       owner: '所有者 {{name}}',
     },
     status: {

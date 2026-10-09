@@ -1339,6 +1339,7 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
+    canRevoke: z.boolean(),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),
