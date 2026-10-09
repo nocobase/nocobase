@@ -23,7 +23,7 @@ jobs:
       - name: Dispatch on v3-develop
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKFLOW_FILE: pro-release-beta.yml
+          WORKFLOW_FILE: v3-pro-release-beta.yml
           DISPATCH_INPUTS: ${{ toJSON(inputs) }}
         run: >
           printf '%s' "$DISPATCH_INPUTS" \
