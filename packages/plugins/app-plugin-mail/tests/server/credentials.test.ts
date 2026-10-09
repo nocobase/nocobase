@@ -109,26 +109,55 @@ describe('Mail OAuth persistence', () => {
     const vault = new DatabaseMailCredentialVault(database, 30, 5);
     const secondVault = new DatabaseMailCredentialVault(database, 30, 5);
     const reference = await vault.put({ token: 'expired' });
+    const gate = Promise.withResolvers<void>();
     const refresh = vi.fn(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      await gate.promise;
       return { token: 'fresh' };
     });
-
-    await expect(
-      Promise.all([
-        vault.getOrRefresh(
-          reference,
-          (value: { token: string }) => value.token === 'fresh',
-          refresh,
-        ),
-        secondVault.getOrRefresh(
-          reference,
-          (value: { token: string }) => value.token === 'fresh',
-          refresh,
-        ),
-      ]),
-    ).resolves.toEqual([{ token: 'fresh' }, { token: 'fresh' }]);
-    expect(refresh).toHaveBeenCalledTimes(1);
+    const epoch = Date.now();
+    // Mock only Date; real heartbeat timers and database I/O may take any amount of wall time.
+    vi.setSystemTime(epoch);
+    const results = Promise.allSettled([
+      vault.getOrRefresh(
+        reference,
+        (value: { token: string }) => value.token === 'fresh',
+        refresh,
+      ),
+      secondVault.getOrRefresh(
+        reference,
+        (value: { token: string }) => value.token === 'fresh',
+        refresh,
+      ),
+    ]);
+    try {
+      await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+      for (const elapsed of [20, 40, 60, 80]) {
+        vi.setSystemTime(epoch + elapsed);
+        // Advance again only after the database confirms renewal, always before the current lease expires.
+        await expect
+          .poll(async () => {
+            const row = await database
+              .query()
+              .selectFrom<Row>('mailCredentials')
+              .select('refreshLeaseExpiresAt')
+              .where('reference', '=', reference)
+              .executeTakeFirstOrThrow();
+            return row.refreshLeaseExpiresAt;
+          })
+          .toBe(new Date(epoch + elapsed + 30).toISOString());
+      }
+      expect(refresh).toHaveBeenCalledTimes(1);
+      gate.resolve();
+      await expect(results).resolves.toEqual([
+        { status: 'fulfilled', value: { token: 'fresh' } },
+        { status: 'fulfilled', value: { token: 'fresh' } },
+      ]);
+      expect(refresh).toHaveBeenCalledTimes(1);
+    } finally {
+      gate.resolve();
+      await results;
+      vi.useRealTimers();
+    }
   });
 
   it('aborts a refresh that never completes and releases its local flight', async () => {
