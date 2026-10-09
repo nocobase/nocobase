@@ -31,7 +31,13 @@ NocoBase 3 publishes its packages to the public npm registry. Both Skills keep t
 npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-create-app --skill nocobase-create-app -g
 ```
 
-The full tree URL pins both `v3-develop` and the Skill directory; `--skill` names the selection explicitly. The others install the same way by replacing the last path segment and the `--skill` value, such as `nocobase-plugin-development` for an agent working in a fork or another checkout, which this checkout links already. Add `-a claude-code`, or another agent's name, to install for one agent only.
+The full tree URL pins both `v3-develop` and the Skill directory; `--skill` names the selection explicitly. A bare `nocobase/nocobase` source follows the repository's default branch, `main`, which maintains the v1/v2 line, so use the full URL for NocoBase 3. The [skills CLI source parser](https://github.com/vercel-labs/skills/blob/main/src/source-parser.ts) supports this branch and directory syntax. Add `-a claude-code`, or another agent's name, to install for one agent only.
+
+For an agent working in a fork or another checkout, install the plugin development Skill explicitly; this source checkout links it already:
+
+```bash
+npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-plugin-development --skill nocobase-plugin-development -g
+```
 
 Agents load Skills when a session starts, so start a new session after installing.
 
@@ -113,7 +119,7 @@ npx --yes @nocobase/app-installer install /srv/nocobase/hub --template hub --ori
 
 Use this to test a change before it is released: a change to a Skill, or to a package it drives, such as `create-app`, `app-installer`, a template or `app-cli`. The checkout is published to a local npm registry on your machine, and a shell is pointed at it, so the Skills' unchanged commands install the unreleased code.
 
-A global Skill is released by merging it into `v3-develop`, while packages are released by `release-beta`. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
+A global Skill is released by merging it into `v3-develop`, while packages are released by the `v3-release-beta.yml` workflow. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
 
 ### Requirements
 
