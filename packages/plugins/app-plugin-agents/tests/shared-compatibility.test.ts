@@ -2,10 +2,8 @@ import { expect, expectTypeOf, it } from 'vitest';
 
 import { VariableSchema } from '../server/routes/schemas.js';
 import type {
-  AgentsNotice,
   EnqueueRequest,
   EnqueueResult,
-  RunnerNotice,
   RunEnqueued,
   RunService,
 } from '../server/tokens.js';
@@ -37,10 +35,6 @@ it('accepts a wait constructed without variable details', () => {
 it('accepts variable metadata without a team-only mark', () => {
   expect(VariableSchema.parse(variable)).toEqual(variable);
   expect(variable.teamRunnersOnly ?? false).toBe(false);
-});
-
-it('preserves the previous notice import for application listeners', () => {
-  expectTypeOf<RunnerNotice>().toEqualTypeOf<AgentsNotice>();
 });
 
 async function enqueueApplicationWork(

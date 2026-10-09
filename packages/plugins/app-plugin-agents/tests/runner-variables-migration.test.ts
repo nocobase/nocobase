@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { describeMigration } from '@nocobase/app-testing/server';
 
-describeMigration('202610090004_ag_add_runner_variables', {
+describeMigration('202610090005_ag_add_runner_variables', {
   sources: [
     {
       packageName: '@nocobase/app-plugin-agents',
