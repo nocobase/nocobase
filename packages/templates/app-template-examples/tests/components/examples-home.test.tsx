@@ -58,7 +58,6 @@ it.each(['en-US', 'zh-CN'])(
       '/demo/template-print-example',
       '/demo/routes-example',
       '/demo/notification-example',
-      '/demo/ai-employee-example',
     ]);
   },
 );

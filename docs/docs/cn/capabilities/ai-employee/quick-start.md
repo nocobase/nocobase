@@ -6,6 +6,12 @@ keywords: 'NocoBase,AI 员工,快速开始,config.yml,LLM,全局对话'
 
 # 快速开始
 
+:::warning Deprecated plugin
+
+`@nocobase/app-plugin-ai-employee` is deprecated. This guide applies to existing AI-enabled applications that retain the plugin, its Client, Server and CLI registrations, and `server/config/ai.ts`. Current Default and Examples templates no longer install or configure it, so creating a new application does not satisfy these prerequisites. Keep an existing integration when the application uses AI; removing the plugin does not delete its database tables or data.
+
+:::
+
 这条路径使用 NocoBase 内置的 AI 员工和前端组件，不要求你先编写自己的员工。先在第一次启动前用 CLI 从内置 Provider 获取真实模型 ID，再完成服务初始化、最小调用测试和聊天入口配置。
 
 ## 前置条件
