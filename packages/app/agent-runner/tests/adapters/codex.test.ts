@@ -1,8 +1,15 @@
-import { chmod, mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readdir,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { CodexAdapter } from '../../src/agent/adapters/codex.ts';
 import { classifyCodexFailure } from '../../src/agent/adapters/codex/classify.ts';
@@ -150,6 +157,107 @@ function item(
 }
 
 describe('detect', () => {
+  it('excludes daemon credentials and project configuration and removes its temporary directory', async () => {
+    vi.stubEnv('OPENAI_API_KEY', 'daemon-only-test-value');
+    vi.stubEnv('CODEX_API_KEY', 'daemon-only-test-value');
+    try {
+      const { adapter, spawn } = adapterWith(async (fake) => {
+        expect(fake.options.env.OPENAI_API_KEY).toBeUndefined();
+        expect(fake.options.env.CODEX_API_KEY).toBeUndefined();
+        expect(fake.options.env.PATH).toBe(process.env.PATH);
+        expect(fake.options.cwd).not.toBe(process.cwd());
+        expect(await readdir(fake.options.cwd)).toEqual([]);
+        fake.respond(await fake.nextRequest('initialize'), {});
+        fake.respond(await fake.nextRequest('model/list'), {
+          data: [],
+          nextCursor: null,
+        });
+      });
+      await adapter.detectModels(new AbortController().signal);
+      await expect(
+        readdir(spawn.processes[0]!.options.cwd),
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+  it('lists models and advertised efforts across pages, closing the discovery process', async () => {
+    const { adapter, spawn } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), { userAgent: 'test' });
+      await fake.next((message) => message.method === 'initialized');
+      fake.respond(await fake.nextRequest('model/list'), {
+        data: [
+          {
+            id: 'display-id',
+            model: 'gpt-6-sol',
+            supportedReasoningEfforts: [
+              { reasoningEffort: 'high', description: 'private metadata' },
+            ],
+          },
+        ],
+        nextCursor: 'page2',
+      });
+      const second = await fake.nextRequest('model/list');
+      expect(second.params).toMatchObject({ cursor: 'page2' });
+      fake.respond(second, {
+        data: [{ model: 'gpt-other' }],
+        nextCursor: null,
+      });
+    });
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'gpt-6-sol', efforts: ['high'] }, { id: 'gpt-other' }],
+    });
+    expect(spawn.processes[0]?.exited).toBe(true);
+    expect(
+      spawn.processes[0]?.received.some(
+        (message) => message.method === 'thread/start',
+      ),
+    ).toBe(false);
+  });
+
+  it.each([-32601, -32603])(
+    'distinguishes an unsupported method from failure (%s)',
+    async (code) => {
+      const { adapter, spawn } = adapterWith(async (fake) => {
+        fake.respond(await fake.nextRequest('initialize'), {});
+        const request = await fake.nextRequest('model/list');
+        fake.emit({
+          id: request.id,
+          error: { code, message: '/private/config secret=never-upload' },
+        });
+      });
+      const result = await adapter.detectModels(new AbortController().signal);
+      expect(result.modelsDetectionStatus).toBe(
+        code === -32601 ? 'unsupported' : 'failed',
+      );
+      expect(JSON.stringify(result)).not.toContain('never-upload');
+      expect(spawn.processes[0]?.exited).toBe(true);
+      await expect(
+        readdir(spawn.processes[0]!.options.cwd),
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+    },
+  );
+
+  it('kills discovery when aborted', async () => {
+    const { adapter, spawn } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), {});
+    });
+    const controller = new AbortController();
+    const result = adapter.detectModels(controller.signal);
+    while (
+      !spawn.processes[0]?.received.some(
+        (message) => message.method === 'model/list',
+      )
+    )
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    controller.abort();
+    expect(await result).toMatchObject({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection timed out',
+    });
+    expect(spawn.processes[0]?.signals).toContain('SIGKILL');
+  });
   it('reports the installed version and login state', async () => {
     const adapter = new CodexAdapter({
       searchPath: binDir,

@@ -1,7 +1,9 @@
 // The runner daemon: one per machine (a pid file guards it), serving every application it is registered with.
 //
-// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories. Then,
-// until it stops:
+// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories, then
+// does so every six hours; once that removed one, it prunes the shared pnpm store (pnpm-store.ts) as soon as no run is
+// active and every outstanding claim has finished starting its workers, claiming nothing until the prune is done.
+// Failed pruning stays due, with five minutes between idle attempts. Then, until it stops:
 //
 // - heartbeat, per application, every 15 s: reports the tools, that application's active runs and the free slots; the
 //   answer names the runs whose cancel was requested, and the supervisor makes sure their workers stop;
@@ -22,7 +24,8 @@
 //
 // Self-update: a heartbeat answer may name a newer runner the application serves (`upgrade`). A daemon started by
 // its service from an installation (`selfUpdate`) stops claiming, waits for its runs to end, installs the new version
-// (update.ts) and stops; the service starts the new version. Any other daemon only logs the notice.
+// (update.ts) and stops, and its process exits with `exitCode`; the service starts the new version. Any other daemon
+// only logs the notice.
 import { rm } from 'node:fs/promises';
 
 import type { AgentAdapter } from '../agent/adapters/types.ts';
@@ -52,6 +55,7 @@ import {
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
 import { gcWorkspaces } from './checkout.ts';
+import { prunePnpmStore } from './pnpm-store.ts';
 import { installGitHooks } from './push-guard.ts';
 import {
   isAlive,
@@ -68,8 +72,14 @@ import {
   type IsolationConfig,
   type PolicyReport,
 } from './local-policy.ts';
-import { applyUpdate, isNewer, type UpdateTarget } from './update.ts';
+import {
+  applyUpdate,
+  isNewer,
+  RESTART_EXIT_CODE,
+  type UpdateTarget,
+} from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
+import { ToolCapabilitiesCache } from './tool-capabilities.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
 export function runnerVersion(): string {
@@ -93,6 +103,7 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
 const UNSUPPORTED = 'PROTOCOL_UNSUPPORTED';
 const GC_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const PRUNE_RETRY_MS = 5 * 60_000;
 
 export interface DaemonPid {
   pid: number;
@@ -150,6 +161,8 @@ export interface DaemonOptions {
   log: (message: string) => void;
   /** Overrides the client built for a registration, by its key; for tests. */
   clients?: ReadonlyMap<string, ApiClient>;
+  /** Replaces `prunePnpmStore`; for tests. */
+  pruneStore?: typeof prunePnpmStore;
   /** Why an isolation configuration cannot be had here (isolation.ts); for tests. */
   isolationProblem?: (config: IsolationConfig) => Promise<string | undefined>;
   /** Update between runs when an application serves a newer runner; without it, upgrade notices are only logged. */
@@ -187,6 +200,7 @@ export class RunnerDaemon {
   private slotFreed: (() => void) | undefined;
   private gcTimer: NodeJS.Timeout | undefined;
   private tools: ToolInfo[] = [];
+  private capabilities?: ToolCapabilitiesCache;
   private claimLoop: Promise<void> | undefined;
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
@@ -194,6 +208,14 @@ export class RunnerDaemon {
   /** A newer runner to install once no run is left; claiming pauses meanwhile. */
   private pendingUpdate: { link: AppLink; target: UpdateTarget } | undefined;
   private updating = false;
+  /** The shared pnpm store is being pruned; claiming pauses meanwhile. */
+  private pruning = false;
+  /** Claims remain active through policy checks and worker startup, so pruning cannot overlap a received lease. */
+  private claimsInFlight = 0;
+  /** Working directories were removed since the store was last pruned. */
+  private pruneDue = false;
+  /** Failed pruning is retried at the next idle opportunity after this time. */
+  private pruneRetryAt = 0;
   private readonly failedUpdates = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
@@ -220,8 +242,14 @@ export class RunnerDaemon {
       onExit: () => {
         this.slotFreed?.();
         void this.updateWhenIdle();
+        void this.pruneStore();
       },
     });
+  }
+
+  /** How the process exits once the daemon has stopped: `RESTART_EXIT_CODE` when it updated itself, 0 otherwise. */
+  get exitCode(): number {
+    return this.updatedTo === undefined ? 0 : RESTART_EXIT_CODE;
   }
 
   get activeRuns(): string[] {
@@ -318,6 +346,10 @@ export class RunnerDaemon {
     this.gcTimer.unref();
 
     this.tools = await detectTools(this.options.adapters);
+    this.capabilities = new ToolCapabilitiesCache(
+      this.options.adapters,
+      this.tools,
+    );
     for (const link of this.links) {
       await this.heartbeat(link);
       link.heartbeatTimer = setInterval(
@@ -339,6 +371,7 @@ export class RunnerDaemon {
     this.stopped ??= (async () => {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
+      await this.capabilities?.stop();
       this.slotFreed?.();
       for (const link of this.links)
         if (link.heartbeatTimer !== undefined)
@@ -383,11 +416,55 @@ export class RunnerDaemon {
 
   private async collectGarbage(): Promise<void> {
     try {
-      await gcWorkspaces({ paths: this.options.paths, log: this.options.log });
+      const removed = await gcWorkspaces({
+        paths: this.options.paths,
+        log: this.options.log,
+      });
+      if (removed.length > 0) this.pruneDue = true;
     } catch (error) {
       this.options.log(
         `gc: ${error instanceof Error ? error.message : String(error)}`,
       );
+    }
+    await this.pruneStore();
+  }
+
+  /**
+   * Prunes only when neither workers nor claims are active: a received claim can start an install before its files
+   * are linked. Claims finish policy checks and start workers under the same exclusion, without delaying their
+   * leases. Pending cleanup is retried after the last claim or worker ends, or at the next collection; failures wait
+   * five minutes before another idle attempt.
+   */
+  async pruneStore(): Promise<void> {
+    if (
+      !this.pruneDue ||
+      this.pruning ||
+      this.claimsInFlight > 0 ||
+      this.supervisor.size > 0 ||
+      Date.now() < this.pruneRetryAt ||
+      this.stopping.signal.aborted
+    )
+      return;
+    this.pruning = true;
+    try {
+      const pruned = await (this.options.pruneStore ?? prunePnpmStore)({
+        paths: this.options.paths,
+        log: this.options.log,
+      });
+      if (pruned) {
+        this.pruneDue = false;
+        this.pruneRetryAt = 0;
+      } else {
+        this.pruneRetryAt = Date.now() + PRUNE_RETRY_MS;
+      }
+    } catch (error) {
+      this.pruneRetryAt = Date.now() + PRUNE_RETRY_MS;
+      this.options.log(
+        `gc: pruning the shared pnpm store failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      this.pruning = false;
+      this.slotFreed?.();
     }
   }
 
@@ -401,6 +478,7 @@ export class RunnerDaemon {
   }
 
   async heartbeat(link: AppLink): Promise<void> {
+    this.capabilities?.refresh();
     if (this.stopping.signal.aborted || link.revoked) return;
     const { log } = this.options;
     const held = [...this.supervisor.runs.values()].filter(
@@ -417,7 +495,7 @@ export class RunnerDaemon {
           product: runnerHost().product,
           features: policy.features,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
-          tools: this.tools,
+          tools: this.capabilities?.tools ?? this.tools,
           active: runs.map((run) => ({
             runId: run.runId,
             pid: run.pid,
@@ -560,6 +638,22 @@ export class RunnerDaemon {
     free: number,
     wait: boolean,
   ): Promise<number> {
+    if (this.pruning || this.stopping.signal.aborted) return 0;
+    this.claimsInFlight += 1;
+    try {
+      return await this.claimAndStart(link, free, wait);
+    } finally {
+      this.claimsInFlight -= 1;
+      await this.pruneStore();
+    }
+  }
+
+  /** Receives leases and starts their workers while `claimFrom` excludes pruning. */
+  private async claimAndStart(
+    link: AppLink,
+    free: number,
+    wait: boolean,
+  ): Promise<number> {
     const pollTimeout =
       this.timings.pollTimeoutMs ?? link.connection.registration.pollTimeoutMs;
     const response: ClaimResponse = await link.client.post(
@@ -671,7 +765,11 @@ export class RunnerDaemon {
         await delay(fallback, this.stopping.signal);
         continue;
       }
-      if (this.slots - this.supervisor.size <= 0 || this.pendingUpdate) {
+      if (
+        this.slots - this.supervisor.size <= 0 ||
+        this.pendingUpdate ||
+        this.pruning
+      ) {
         await new Promise<void>((resolve) => {
           this.slotFreed = resolve;
         });

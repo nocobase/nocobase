@@ -1,6 +1,7 @@
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
 import {
   existsSync,
+  chmodSync,
   mkdirSync,
   readFileSync,
   statSync,
@@ -97,6 +98,44 @@ describe('runner end to end', () => {
     daemon();
     await waitFor(() => server.lastHeartbeat(), 10_000, 'a heartbeat');
     expect(server.lastHeartbeat()?.load).toEqual({ slots: 1, free: 1 });
+  });
+
+  it('reports the installed Pi model table on a later heartbeat while continuing to claim', async () => {
+    const toolDir = path.join(scratch, 'tools');
+    mkdirSync(toolDir);
+    const pi = path.join(toolDir, 'pi');
+    writeFileSync(
+      pi,
+      '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "0.99.2"; else printf "provider model context max-out thinking images\\nopenai gpt-6-sol 200K 64K yes yes\\n"; fi\n',
+    );
+    chmodSync(pi, 0o755);
+    const realEnv = {
+      ...env,
+      NOCOBASE_RUNNER_ADAPTER: '',
+      PATH: toolDir,
+      HOME: home,
+    };
+    const started = startDaemon(realEnv);
+    daemons.push(started);
+    await waitFor(
+      () =>
+        server
+          .lastHeartbeat()
+          ?.tools.some(
+            (tool) =>
+              tool.kind === 'pi' && tool.modelsDetectionStatus === 'detected',
+          ),
+      10_000,
+      'Pi model capabilities',
+    );
+    expect(
+      server.lastHeartbeat()?.tools.find((tool) => tool.kind === 'pi')?.models,
+    ).toEqual([{ id: 'openai/gpt-6-sol' }]);
+    await waitFor(
+      () => ([...server.runners.values()][0]?.claims ?? 0) > 0,
+      10_000,
+      'claims during capability detection',
+    );
   });
 
   it('claims, checks out, starts, streams events, pushes and completes', async () => {
