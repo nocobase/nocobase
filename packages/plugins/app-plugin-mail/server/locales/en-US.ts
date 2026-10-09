@@ -6,6 +6,8 @@ const enUS = {
     idempotencyConflict:
       'The idempotency key is already associated with another request.',
     invalidRequest: 'The mail request is invalid.',
+    accountCredentialsInvalid:
+      'Mailbox authentication failed. Check your login name and password or authorization code, and confirm that IMAP/SMTP is enabled. Gmail and other services may require an app password.',
     requestFailed: 'The mail request could not be completed.',
     providerRateLimited:
       'The mail service is receiving too many requests. Try again later.',
