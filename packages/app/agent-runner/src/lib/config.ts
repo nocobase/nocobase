@@ -49,7 +49,7 @@ export interface RunnerSettings {
   serviceLabel?: string;
   /**
    * How much of the disk holding the working directories to keep free (`register --min-free-disk 20G`,
-   * `config set min-free-disk 10%`): below it, the runner removes what it may (core/workspaces.ts). Absent for
+   * `config set min-free-disk 10%`): below it, the runner warns what is left to remove (core/workspaces.ts). Absent for
    * `DEFAULT_MIN_FREE_DISK`, null when the owner turned it off.
    */
   minFreeDisk?: FreeSpace | null;

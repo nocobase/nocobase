@@ -346,7 +346,7 @@ export class RunnerDaemon {
     );
     if (await dropWorkspaceLimit(paths).catch(() => false))
       log(
-        'settings: workspace-limit no longer applies and was removed; the runner now keeps part of the disk free instead (min-free-disk, 10% unless set)',
+        'settings: workspace-limit no longer applies and was removed; the runner now watches the free space on the disk instead (min-free-disk, 5G unless set)',
       );
 
     const recovered = await recoverOrphans({

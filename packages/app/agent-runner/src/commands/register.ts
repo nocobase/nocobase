@@ -91,7 +91,7 @@ export default class Register extends RunnerCommand {
     }),
     'min-free-disk': Flags.string({
       description:
-        'How much of the disk holding the working directories to keep free: a size (20G), a share of the disk (10%, the default), or off. Below it, the runner removes directories whose work is over first, then pushed ones least recently used; never unpushed work.',
+        'How much of the disk holding the working directories to keep free: a size (5G, the default), a share of the disk (10%), or off. Below it, the runner warns which directories are left for `gc` to remove.',
     }),
     force: Flags.boolean({
       description:

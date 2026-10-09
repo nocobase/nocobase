@@ -136,6 +136,32 @@ describe('cleaning up working directories', () => {
     expect(existsSync(ongoing)).toBe(true);
   });
 
+  it('on a low disk removes only what is over, and says what is left for gc to pick', async () => {
+    server.workspaceReporting = { intervalMs: 60_000 };
+    server.workspaceAnswer = { remove: ['run-1'], keep: ['run-2'] };
+    const ended = workspace('TASK-1', 'run-1');
+    const ongoing = workspace('TASK-2', 'run-2');
+    // More than any disk has free.
+    await cli(['config', 'set', 'min-free-disk', '99.9%'], env);
+    const applied = await cli(['gc', '--apply', '--json'], env);
+    expect(applied.code).toBe(0);
+    const { low, workspaces } = json(applied.stdout).result;
+    expect(low).toBe(true);
+    expect(existsSync(ended)).toBe(false);
+    expect(existsSync(ongoing)).toBe(true);
+    expect(workspaces.find((item) => item.subject === 'TASK-2')?.action).toBe(
+      'keep',
+    );
+    const text = await cli(['gc'], env);
+    expect(text.stdout).toContain(
+      '1 pushed working directory whose work goes on',
+    );
+    expect(text.stdout).toContain('`nocobase-runner gc`');
+    // Picked by subject, it goes.
+    await cli(['gc', '--subject', 'TASK-2', '--apply'], env);
+    expect(existsSync(ongoing)).toBe(false);
+  });
+
   it('picks by subject, and lists the status as unknown when the application predates reports', async () => {
     const picked = workspace('TASK-81', 'run-81');
     const other = workspace('TASK-82', 'run-82');
@@ -151,7 +177,7 @@ describe('cleaning up working directories', () => {
     expect(existsSync(other)).toBe(true);
   });
 
-  it('keeps the free space to keep in the settings, 10% unless set', async () => {
+  it('keeps the free space to keep in the settings, 5G unless set', async () => {
     const settingsFile = path.join(home, 'settings.json');
     const stored = () =>
       JSON.parse(readFileSync(settingsFile, 'utf8')) as {
@@ -160,9 +186,7 @@ describe('cleaning up working directories', () => {
       };
     expect(stored()).not.toHaveProperty('minFreeDisk');
     const byDefault = json((await cli(['gc', '--json'], env)).stdout).result;
-    expect(byDefault.minFreeBytes).toBe(
-      Math.ceil(((byDefault.disk?.totalBytes ?? 0) * 10) / 100),
-    );
+    expect(byDefault.minFreeBytes).toBe(5 * 1024 ** 3);
     const set = await cli(
       ['config', 'set', 'min-free-disk', '20G', '--json'],
       env,

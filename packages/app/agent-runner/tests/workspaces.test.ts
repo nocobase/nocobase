@@ -370,79 +370,74 @@ describe('working directories', () => {
     }
   });
 
-  it('removes nothing on its own without an application that answers, unless the disk is low', async () => {
-    const older = await finishedRun('TASK-1', 'run-1');
-    const newer = await finishedRun('TASK-2', 'run-2');
-    const threshold = { percent: 10 };
-    expect(
-      (
-        await collectWorkspaces({
-          paths,
-          threshold,
-          readDisk: fakeDisk(50 * GB),
-        })
-      ).removed,
-    ).toEqual([]);
-    // No threshold, or a file system that cannot say: nothing goes for want of space.
-    expect(
-      (
-        await collectWorkspaces({
-          paths,
-          threshold: null,
-          readDisk: fakeDisk(0),
-        })
-      ).removed,
-    ).toEqual([]);
-    expect(
-      (
-        await collectWorkspaces({
-          paths,
-          threshold,
-          readDisk: () => Promise.resolve(undefined),
-        })
-      ).removed,
-    ).toEqual([]);
-    // 5 GB free of the 10 GB kept, and each directory frees 6 GB: the least recently used goes, and the file system,
-    // asked again, says that was enough.
-    const disk = fakeDisk(5 * GB, [older.workDir, newer.workDir], 6 * GB);
-    const result = await collectWorkspaces({
+  it('removes nothing on its own without an application that answers, even on a low disk, and warns once', async () => {
+    await finishedRun('TASK-1', 'run-1');
+    await finishedRun('TASK-2', 'run-2');
+    const threshold = { bytes: 5 * GB };
+    const logs: string[] = [];
+    const log = (message: string) => logs.push(message);
+    const roomy = await collectWorkspaces({
       paths,
       threshold,
-      readDisk: disk,
+      readDisk: fakeDisk(50 * GB),
+      log,
     });
-    expect(result.removed).toEqual([
-      { workDir: older.workDir, reason: 'lowDisk' },
-    ]);
-    expect(existsSync(newer.workDir)).toBe(true);
-    expect(result.disk).toEqual({ freeBytes: 11 * GB, totalBytes: 100 * GB });
+    expect(roomy.removed).toEqual([]);
+    expect(roomy.low).toBe(false);
+    // No threshold, or a file system that cannot say: no warning either.
+    for (const options of [
+      { threshold: null, readDisk: fakeDisk(0) },
+      { threshold, readDisk: () => Promise.resolve(undefined) },
+    ])
+      expect((await collectWorkspaces({ paths, log, ...options })).low).toBe(
+        false,
+      );
+    expect(logs.filter((line) => line.includes('is low'))).toEqual([]);
+
+    const low = await collectWorkspaces({
+      paths,
+      threshold,
+      readDisk: fakeDisk(GB),
+      log,
+    });
+    expect(low.removed).toEqual([]);
+    expect(low.low).toBe(true);
+    const warnings = logs.filter((line) => line.includes('is low'));
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('2 pushed working directories');
+    expect(warnings[0]).toContain('0 with unpushed work');
+    expect(warnings[0]).toContain('`nocobase-runner gc`');
   });
 
-  it('removes pushed directories until enough is free, never unpushed or busy ones, and says when it is still low', async () => {
-    const older = await finishedRun('TASK-1', 'run-1');
-    const unpushed = await finishedRun('TASK-2', 'run-2', (dir) =>
+  it('on a low disk removes only what the application settled, least recently used first, never work that goes on', async () => {
+    const settledOld = await finishedRun('TASK-1', 'run-1');
+    const ongoing = await finishedRun('TASK-2', 'run-2');
+    const unpushed = await finishedRun('TASK-3', 'run-3', (dir) =>
       writeFileSync(path.join(dir, 'notes.md'), 'draft\n'),
     );
-    const busy = await finishedRun('TASK-3', 'run-3');
-    const newer = await finishedRun('TASK-4', 'run-4');
-    const lock = await acquireLock(`${busy.workDir}.lock`);
+    const settledNew = await finishedRun('TASK-4', 'run-4');
+    const { reporters } = reporter({
+      remove: ['run-4', 'run-1'],
+      keep: ['run-2', 'run-3'],
+    });
     const logs: string[] = [];
-    try {
-      const result = await collectWorkspaces({
-        paths,
-        threshold: { bytes: 50 * GB },
-        readDisk: fakeDisk(0),
-        log: (message) => logs.push(message),
-      });
-      expect(result.removed).toEqual([
-        { workDir: older.workDir, reason: 'lowDisk' },
-        { workDir: newer.workDir, reason: 'lowDisk' },
-      ]);
-      expect(existsSync(unpushed.workDir)).toBe(true);
-      expect(existsSync(busy.workDir)).toBe(true);
-      expect(logs.join('\n')).toContain('the disk is still low');
-    } finally {
-      await lock.release();
-    }
+    const result = await collectWorkspaces({
+      paths,
+      reporters,
+      threshold: { bytes: 5 * GB },
+      readDisk: fakeDisk(0),
+      log: (message) => logs.push(message),
+    });
+    expect(result.removed).toEqual([
+      { workDir: settledOld.workDir, reason: 'ended' },
+      { workDir: settledNew.workDir, reason: 'ended' },
+    ]);
+    expect(existsSync(ongoing.workDir)).toBe(true);
+    expect(existsSync(unpushed.workDir)).toBe(true);
+    const warnings = logs.filter((line) => line.includes('is low'));
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('1 pushed working directory whose');
+    expect(warnings[0]).toContain('1 with unpushed work');
   });
 
   it('leaves the shared pnpm store under the work root alone', async () => {
@@ -496,26 +491,25 @@ describe('what goes', () => {
   const removed = (plan: ReturnType<typeof planRemovals>) =>
     plan.remove.map((item) => `${item.entry.subjectKey}:${item.reason}`);
 
-  it('removes ended work, and spares pushed directories least recently used first for a low disk, never unpushed or busy ones', () => {
+  it('removes ended work least recently used first, never unpushed or busy ones, and nothing else', () => {
     const entries = [
       entry('old-unpushed', { unpushed: true }),
       entry('old'),
       entry('busy', { inUse: true }),
       entry('active', { status: 'active' }),
+      entry('ended-newer', {
+        status: 'ended',
+        lastUsedAt: '2026-12-01T00:00:00.000Z',
+      }),
       entry('ended', { status: 'ended' }),
       entry('ended-unpushed', { status: 'ended', unpushed: true }),
       entry('newest'),
     ];
     const plan = planRemovals(entries);
-    expect(removed(plan)).toEqual(['ended:ended']);
+    expect(removed(plan)).toEqual(['ended:ended', 'ended-newer:ended']);
     expect(
       plan.kept.map((item) => `${item.entry.subjectKey}:${item.reason}`),
     ).toEqual(['ended-unpushed:unpushed']);
-    expect(plan.spare.map((item) => item.subjectKey)).toEqual([
-      'old',
-      'active',
-      'newest',
-    ]);
   });
 
   it('picks by filters instead, and removes unpushed work only when forced', () => {

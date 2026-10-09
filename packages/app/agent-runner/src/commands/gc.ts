@@ -16,10 +16,9 @@ import {
 import { RUNNER_ROUTES, WorkspacesResponseSchema } from '../protocol/index.ts';
 import {
   applyStatuses,
-  lowOnDisk,
+  lowDiskWarning,
   planRemovals,
   readDisk,
-  relieveDiskPressure,
   removePlanned,
   scanWorkspaces,
   workspaceDisk,
@@ -37,12 +36,9 @@ interface GcWorkspace {
   unpushed: boolean;
   inUse: boolean;
   lastUsedAt: string;
-  /**
-   * What this command does, or would do, with it: `removeWhileLow` while the disk is low, removed in order until enough
-   * is free.
-   */
-  action: 'remove' | 'removeWhileLow' | 'keep';
-  /** Why: its work is over, the disk is low, picked by the filters; or kept because a run holds it or it has unpushed work. */
+  /** What this command does, or would do, with it. */
+  action: 'remove' | 'keep';
+  /** Why: its work is over, or picked by the filters; or kept because a run holds it or it has unpushed work. */
   reason: string | null;
   /** With `--apply`: whether it was removed. */
   removed?: boolean;
@@ -68,7 +64,7 @@ export default class Gc extends RunnerCommand {
     'Lists every working directory with its application, subject, whether the application says its work is over, ' +
     'whether it holds unpushed work (changes not committed, or commits the remote lacks), and when it was last used, ' +
     'with the free space on the disk holding them and what the runner keeps free (min-free-disk). Without filters, the ' +
-    'directories whose work is over may go, and then, while less than that is free, pushed ones least recently used. ' +
+    'directories whose work is over may go; pushed ones whose work goes on only when picked, also while the disk is low. ' +
     'With filters, the directories every filter matches. Nothing is removed without --apply, a directory a run holds ' +
     'never is, and one with unpushed work only with --force.';
   static override examples: string[] = [
@@ -158,22 +154,8 @@ export default class Gc extends RunnerCommand {
         if (kept !== undefined)
           decided.set(entry.workDir, { action: 'keep', reason: kept });
       }
-      const relieved = await relieveDiskPressure(this.paths, plan.spare, {
-        threshold,
-      });
-      for (const entry of relieved.removed) {
-        removed.set(entry.workDir, true);
-        decided.set(entry.workDir, { action: 'remove', reason: 'lowDisk' });
-      }
-      for (const item of relieved.kept)
-        decided.set(item.workDir, { action: 'keep', reason: item.reason });
-      after = relieved.disk;
-    } else if (lowOnDisk(before, threshold))
-      for (const entry of plan.spare)
-        decided.set(entry.workDir, {
-          action: 'removeWhileLow',
-          reason: 'lowDisk',
-        });
+      after = await readDisk(this.paths.workRoot);
+    }
     const workspaces: GcWorkspace[] = entries
       .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt))
       .map((entry) => ({
@@ -203,18 +185,21 @@ export default class Gc extends RunnerCommand {
             ? apply
               ? `removed (${item.reason})`
               : `would remove (${item.reason})`
-            : item.action === 'removeWhileLow'
-              ? 'would remove while the disk is low'
-              : item.reason === null
-                ? ''
-                : `kept (${item.reason})`,
+            : item.reason === null
+              ? ''
+              : `kept (${item.reason})`,
         ]
           .filter((part) => part !== '')
           .join('  '),
       );
     for (const item of unreachable)
       this.log(`${item.app}: could not ask which work is over: ${item.error}`);
-    const low = lowOnDisk(after, threshold);
+    const warning = lowDiskWarning(
+      entries.filter((entry) => removed.get(entry.workDir) !== true),
+      after,
+      threshold,
+    );
+    const low = warning !== undefined;
     const keep =
       threshold === null
         ? 'no free space is kept (min-free-disk off)'
@@ -224,6 +209,8 @@ export default class Gc extends RunnerCommand {
         ? `The free space on the disk is unknown; ${keep}.${apply ? '' : ' Nothing was removed; add --apply.'}`
         : `${formatSize(after.freeBytes)} free of ${formatSize(after.totalBytes)}; ${keep}${low ? ', and less than that is free' : ''}.${apply ? '' : ' Nothing was removed; add --apply.'}`,
     );
+    if (warning !== undefined)
+      this.log(`${warning.charAt(0).toUpperCase()}${warning.slice(1)}`);
     return {
       applied: apply,
       disk:

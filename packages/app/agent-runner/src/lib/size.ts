@@ -54,7 +54,7 @@ export type FreeSpace =
   { readonly bytes: number } | { readonly percent: number };
 
 /** Kept free unless the owner says otherwise (`config set min-free-disk`). */
-export const DEFAULT_MIN_FREE_DISK: FreeSpace = { percent: 10 };
+export const DEFAULT_MIN_FREE_DISK: FreeSpace = { bytes: 5 * 1024 ** 3 };
 
 /** `20G`, `512M` or `10%`; `off` or `none` for no threshold (null). */
 export function parseFreeSpace(text: string, what: string): FreeSpace | null {

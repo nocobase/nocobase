@@ -16,9 +16,9 @@ export default class ConfigSet extends RunnerCommand {
   static override summary: string = 'Change a runner setting.';
   static override description: string =
     '`min-free-disk` is how much of the disk holding the working directories to keep free: a size (20G, 512M), a ' +
-    `share of the disk (10%), or off; ${formatFreeSpace(DEFAULT_MIN_FREE_DISK)} by default. Below it, the runner ` +
-    'removes directories whose work is over first, then pushed ones least recently used, until enough is free, and ' +
-    'never unpushed work. A running runner reads it at its next collection.';
+    `share of the disk (10%), or off; ${formatFreeSpace(DEFAULT_MIN_FREE_DISK)} by default. The runner removes only ` +
+    'directories whose work is over on its own; below the threshold it warns which are left for `gc` to remove. A ' +
+    'running runner reads it at its next collection.';
   static override examples: string[] = [
     '<%= config.bin %> config set min-free-disk 20G',
     '<%= config.bin %> config set min-free-disk 10%',
