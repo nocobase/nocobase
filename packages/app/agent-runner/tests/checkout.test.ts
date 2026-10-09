@@ -554,6 +554,47 @@ describe('checkout', () => {
     },
   );
 
+  it('pushes and resumes with common local Git preferences without removing them', async () => {
+    const options = {
+      paths,
+      appKey: 'app',
+      subjectKey: 'local-preferences',
+      dirs: [repo('local-preferences')],
+    };
+    const work = await checkout(options);
+    const entry = work.repos[0]!;
+    const preferences = [
+      ['pull.rebase', 'true'],
+      ['push.default', 'simple'],
+      ['push.autoSetupRemote', 'true'],
+      ['rerere.enabled', 'true'],
+      ['commit.gpgsign', 'false'],
+      ['core.sparseCheckout', 'false'],
+      ['core.sparseCheckoutCone', 'false'],
+      [
+        `branch.${entry.branch}.vscode-merge-base`,
+        git(['rev-parse', 'HEAD'], entry.dir),
+      ],
+    ] as const;
+    for (const [key, value] of preferences)
+      git(['config', key, value], entry.dir);
+    git(
+      [...COMMIT, 'commit', '-q', '--allow-empty', '-m', 'task work'],
+      entry.dir,
+    );
+    expect((await reportRepos(work.repos, { push: true }))[0]?.pushed).toBe(
+      true,
+    );
+    await work.release();
+    const resumed = await checkout(options);
+    for (const [key, value] of preferences)
+      expect(git(['config', '--get', key], entry.dir)).toBe(value);
+    expect((await reportRepos(resumed.repos, { push: true }))[0]?.pushed).toBe(
+      true,
+    );
+    await resumed.release();
+  });
+
   it('refreshes legacy and clone permissions without trusting their old local files', async () => {
     const first = await checkout({
       paths,
@@ -711,6 +752,108 @@ describe('checkout', () => {
       publishSeed(root);
     });
     afterEach(() => vi.unstubAllEnvs());
+
+    it.each(['rebase', 'merge', 'checkout', 'none'])(
+      'pushes and resumes after initialization copies the %s submodule update policy',
+      async (update) => {
+        const seed = path.join(root, 'origin-repo-seed');
+        git(
+          [
+            'config',
+            '--file',
+            '.gitmodules',
+            'submodule.vendor/sub.update',
+            update,
+          ],
+          seed,
+        );
+        git(['add', '.gitmodules'], seed);
+        git([...COMMIT, 'commit', '-q', '-m', 'submodule update policy'], seed);
+        publishSeed(root);
+        const options = {
+          paths,
+          appKey: 'app',
+          subjectKey: 'submodule-update-policy',
+          dirs: [repo('submodule-update-policy')],
+        };
+        const work = await checkout(options);
+        const entry = work.repos[0]!;
+        expect(
+          git(['config', '--get', 'submodule.vendor/sub.update'], entry.dir),
+        ).toBe(update);
+        expect(existsSync(path.join(entry.dir, 'vendor/sub/README.md'))).toBe(
+          true,
+        );
+        for (const [key, value] of [
+          ['branch', 'main'],
+          ['ignore', 'dirty'],
+          ['fetchRecurseSubmodules', 'false'],
+        ]) {
+          git(['config', `submodule.vendor/sub.${key}`, value!], entry.dir);
+        }
+        git(
+          [...COMMIT, 'commit', '-q', '--allow-empty', '-m', 'task work'],
+          entry.dir,
+        );
+        const head = git(['rev-parse', 'HEAD'], entry.dir);
+        expect(
+          (await reportRepos(work.repos, { push: true }))[0],
+        ).toMatchObject({ pushed: true, headSha: head });
+        expect(
+          git(
+            ['rev-parse', `refs/heads/${entry.branch}`],
+            remote.slice('file://'.length),
+          ),
+        ).toBe(head);
+        await work.release();
+
+        const resumed = await checkout(options);
+        expect(git(['rev-parse', 'HEAD'], entry.dir)).toBe(head);
+        expect(
+          git(['config', '--get', 'submodule.vendor/sub.update'], entry.dir),
+        ).toBe(update);
+        expect(
+          (await reportRepos(resumed.repos, { push: true }))[0]?.pushed,
+        ).toBe(true);
+        await resumed.release();
+      },
+    );
+
+    it('rejects a custom local submodule update command before push or resume', async () => {
+      const options = {
+        paths,
+        appKey: 'app',
+        subjectKey: 'submodule-update-command',
+        dirs: [repo('submodule-update-command')],
+      };
+      const work = await checkout(options);
+      const entry = work.repos[0]!;
+      const marker = path.join(root, 'submodule-update-executed');
+      git(
+        ['config', 'submodule.vendor/sub.update', `!touch '${marker}'`],
+        entry.dir,
+      );
+      const logs: string[] = [];
+      expect(
+        (
+          await reportRepos(work.repos, {
+            push: true,
+            log: (message) => logs.push(message),
+          })
+        )[0]?.headSha,
+      ).toBe('');
+      expect(logs.join('\n')).toContain(
+        'unsafe or unsupported Git configuration submodule.vendor/sub.update',
+      );
+      await work.release();
+      await expect(checkout(options)).rejects.toThrow(
+        /unsafe or unsupported Git configuration submodule\.vendor\/sub\.update/u,
+      );
+      expect(existsSync(marker)).toBe(false);
+      expect(existsSync(path.join(entry.dir, 'vendor/sub/README.md'))).toBe(
+        true,
+      );
+    });
 
     it('rejects unsafe submodule config before launching any child Git on resume', async () => {
       const options = {

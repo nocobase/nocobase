@@ -15,12 +15,16 @@ export interface TaskGitContext {
 // Overrides below neutralize the explicitly listed executable settings. Multi-valued URL rewrites and includes
 // cannot reliably be erased with -c; reject those (and unknown settings) before invoking Git in the checkout.
 const SAFE_KEYS = [
-  /^core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|symlinks|autocrlf|safecrlf|eol|hooksPath|fsmonitor|sshCommand)$/iu,
+  /^core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|symlinks|autocrlf|safecrlf|eol|hooksPath|fsmonitor|sshCommand|sparsecheckout|sparsecheckoutcone)$/iu,
   /^user\.(name|email)$/iu,
   /^remote\.[^.]+\.(url|pushurl|fetch)$/iu,
-  /^branch\..+\.(remote|merge|rebase)$/iu,
-  /^submodule\..+\.(url|active)$/iu,
+  /^branch\..+\.(remote|merge|rebase|vscode-merge-base)$/iu,
+  /^submodule\..+\.(url|active|update|branch|ignore|fetchrecursesubmodules)$/iu,
   /^submodule\.active$/iu,
+  /^pull\.rebase$/iu,
+  /^push\.(default|autosetupremote)$/iu,
+  /^rerere\.enabled$/iu,
+  /^commit\.gpgsign$/iu,
   /^credential\.helper$/iu,
   /^extensions\.objectformat$/iu,
   /^gc\.(auto|pruneexpire)$/iu,
@@ -96,7 +100,17 @@ async function checkConfig(
       );
       if (isInside(context.dir, target)) continue;
     }
-    if (!SAFE_KEYS.some((pattern) => pattern.test(key)))
+    // Git copies standard update policies from .gitmodules during initialization; custom commands remain unsafe.
+    const customSubmoduleUpdate =
+      /^submodule\..+\.update$/iu.test(key) &&
+      entry
+        .slice(key.length + 1)
+        .trimStart()
+        .startsWith('!');
+    if (
+      customSubmoduleUpdate ||
+      !SAFE_KEYS.some((pattern) => pattern.test(key))
+    )
       throw new CheckoutError(
         `${config}: unsafe or unsupported Git configuration ${key}; remove it before resuming or pushing`,
       );
@@ -189,6 +203,7 @@ export async function taskGit(
   const gitDir = await taskGitDir(context);
   await checkMetadata(gitDir, context);
   // The cache is runner-owned. Retain its host credential helper, never one supplied by the task's config.
+  // --get-urlmatch returns only the last matching helper if the host config contains several.
   const trustedHelpers = await git(
     ['config', '--get-urlmatch', 'credential.helper', context.url],
     context.cache,
