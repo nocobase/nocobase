@@ -5,14 +5,21 @@
     "label": "Overview"
   },
   {
-    "type": "file",
-    "name": "quick-start",
-    "label": "Quick start"
+    "type": "dir",
+    "name": "methods",
+    "label": "Authentication methods",
+    "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
-    "name": "development",
-    "label": "Develop with an Agent"
+    "name": "custom",
+    "label": "Customization",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Advanced usage",
+    "collapsed": true
   }
 ]
