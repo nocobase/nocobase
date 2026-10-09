@@ -7,11 +7,11 @@
  * (for the agents' and runners' counts and the busy subjects), the runners, the active jobs, the agents, the open
  * runs' inputs, and the newest event of each held run of the kind (at most one per runner slot).
  */
-import type { RunnerFeature } from '@nocobase/agent-protocol';
+import type { AgentTool, RunnerFeature } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import { entryTools, type Agent } from '../../../shared/agents.js';
-import { runsTool, type Runner } from '../../../shared/runners.js';
+import { runsTool, toolLimit, type Runner } from '../../../shared/runners.js';
 import {
   RUN_ACTIVITY_TEXT_MAX,
   type AgentLoad,
@@ -66,6 +66,11 @@ export interface WaitContext {
   readonly runners: readonly Runner[];
   /** Runs and jobs each runner holds now, by runner id. */
   readonly runnerUsed: ReadonlyMap<string, number>;
+  /** The runs each runner holds now by coding tool, by runner id; absent for a runner that holds none. */
+  readonly runnerToolUsed?: ReadonlyMap<
+    string,
+    Readonly<Partial<Record<AgentTool, number>>>
+  >;
   /** Runs the agent holds now. */
   readonly agentActive: number;
   /** Whether a run of the same (agent, subject, thread) is held now. */
@@ -133,12 +138,25 @@ export function explainWait(
   if (context.sameWorkActive) return wait('sameWorkActive');
   if (context.agentActive >= agent.maxConcurrentRuns)
     return wait('concurrencyFull');
+  const free = withFeatures.filter(
+    (runner) => (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
+  );
+  if (free.length === 0) return wait('runnersBusy');
+  // A tool has room on a runner below its limit here and while the runner last said it could take more of it.
+  const hasRoom = (runner: Runner, each: AgentTool): boolean =>
+    (context.runnerToolUsed?.get(runner.id)?.[each] ?? 0) <
+      toolLimit(runner, each) && (runner.toolLoad?.[each]?.free ?? 1) > 0;
   if (
-    withFeatures.every(
-      (runner) => (context.runnerUsed.get(runner.id) ?? 0) >= runner.slots,
+    free.every(
+      (runner) =>
+        !tools.some((each) => runsTool(runner, each) && hasRoom(runner, each)),
     )
   )
-    return wait('runnersBusy');
+    return wait('toolSlotsFull', {
+      tool:
+        tools.find((each) => free.some((runner) => runsTool(runner, each))) ??
+        null,
+    });
   if (Number(run.claimFailures) > 0)
     return wait('setupRetrying', { detail: run.failureDetail });
   return wait('next');
@@ -225,11 +243,19 @@ export async function readWorkload(
   const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 
   const runnerUsed = new Map<string, number>();
+  const runnerToolUsed = new Map<string, Partial<Record<AgentTool, number>>>();
   const agentActive = new Map<string, number>();
   const busyKeys = new Set<string>();
   for (const run of held) {
-    if (run.runnerId)
+    if (run.runnerId) {
       runnerUsed.set(run.runnerId, (runnerUsed.get(run.runnerId) ?? 0) + 1);
+      const tool = run.tool as AgentTool | null;
+      if (tool) {
+        const counts = runnerToolUsed.get(run.runnerId) ?? {};
+        counts[tool] = (counts[tool] ?? 0) + 1;
+        runnerToolUsed.set(run.runnerId, counts);
+      }
+    }
     agentActive.set(run.agentId, (agentActive.get(run.agentId) ?? 0) + 1);
     busyKeys.add(keyOf(run));
   }
@@ -304,6 +330,7 @@ export async function readWorkload(
                 agent: agentById.get(run.agentId) ?? null,
                 runners: online,
                 runnerUsed,
+                runnerToolUsed,
                 agentActive: agentActive.get(run.agentId) ?? 0,
                 sameWorkActive: busyKeys.has(keyOf(record)),
               },

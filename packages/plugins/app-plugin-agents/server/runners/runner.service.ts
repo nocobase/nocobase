@@ -3,7 +3,8 @@
  * (name, trust, slots, which coding tools it may run, revocation). What a runner has (its system, features and coding
  * tools, each with whether it is signed in) and what its owner's local policy lets it take (`policy`) is what it
  * reports, never configured here; which of its tools it is offered work for is chosen on the web (`enabledTools`,
- * carried over from the registration token, as are its slots unless the runner names its own).
+ * carried over from the registration token, as are its slots and its limits per coding tool unless the runner names
+ * its own).
  *
  * A runner speaking a protocol this application does not serve is not turned away: it registers and stays connected
  * as `upgrade_required`, is given no work (claims want `online`), and its owner is told once per protocol
@@ -56,6 +57,8 @@ import {
   runnersRepo,
   storedPolicy,
   storedToolChoice,
+  storedToolLoad,
+  storedToolSlots,
   toRunner,
 } from './runner.store.js';
 
@@ -187,6 +190,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         const enabledTools = storedToolChoice(input.enabledTools);
         const expiresAt = later(now, REGISTRATION_TOKEN_TTL_MS);
         const slots = input.slots ?? null;
+        const toolSlots = storedToolSlots(input.toolSlots);
         await registrationTokensRepo(conn).createOne({
           values: {
             id,
@@ -195,13 +199,22 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             trust,
             enabledTools,
             slots,
+            toolSlots: asJson(toolSlots),
             expiresAt,
             usedAt: null,
             runnerId: null,
             createdAt: now.toISOString(),
           },
         });
-        return { id, token, trust, enabledTools, slots, expiresAt };
+        return {
+          id,
+          token,
+          trust,
+          enabledTools,
+          slots,
+          toolSlots,
+          expiresAt,
+        };
       }),
 
     register: (request) =>
@@ -235,6 +248,11 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         // The runner's explicit `--slots`, else the token's, else 1.
         const slots =
           request.slots ?? (token.slots === null ? 1 : Number(token.slots));
+        // Its own limits per tool when it sent them, else the token's.
+        const toolSlots =
+          request.toolSlots === undefined
+            ? storedToolSlots(token.toolSlots)
+            : storedToolSlots(request.toolSlots);
         await runnersRepo(conn).createOne({
           values: {
             id: runnerId,
@@ -252,6 +270,8 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             ownerUserId: token.createdById,
             status,
             slots,
+            toolSlots: asJson(toolSlots),
+            load: null,
             acceptJobs: false,
             policy: asJson(storedPolicy(request.policy)),
             lastSeenAt: nowText,
@@ -287,6 +307,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           leaseRenewMs: TIMINGS.leaseRenewMs,
           serverTime: nowText,
           slots,
+          ...(toolSlots ? { toolSlots } : {}),
         };
       }),
 
@@ -392,6 +413,8 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             features: cleanList(request.features),
             tools: request.tools,
             policy: asJson(policy),
+            // What it holds per tool across every application: read for why a run waits, so it changes nothing else.
+            load: asJson(storedToolLoad(request.load.tools ?? null)),
             lastSeenAt: now,
             updatedAt: changed ? now : runner.updatedAt,
           },
@@ -441,6 +464,8 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         if (patch.name !== undefined) values.name = patch.name;
         if (patch.trust !== undefined) values.trust = patch.trust;
         if (patch.slots !== undefined) values.slots = patch.slots;
+        if (patch.toolSlots !== undefined)
+          values.toolSlots = asJson(storedToolSlots(patch.toolSlots));
         if (patch.enabledTools !== undefined)
           values.enabledTools = storedToolChoice(patch.enabledTools);
         if (patch.acceptJobs !== undefined)

@@ -42,6 +42,8 @@ import { AgentQueue } from '#extensions/nocobase-agent-queue/agent-queue';
 
 The item does not translate. Every word comes from `labels`, which defaults to `defaultAgentQueueLabels` in English. Give it an `AgentQueueLabels` from your own locale resources; placeholders use single braces (`{count}`), which the item fills in and i18next leaves alone, so the object can be read with `t('agentQueue', { returnObjects: true })`.
 
+`queue.reasons.toolSlotsFull` describes a runtime with room overall but no room for the run's tool. It is optional for existing label objects and falls back to the English default. Add a translated string using `{tool}`, for example "{tool} 的并发槽位已满". Applications upgrading the agents plugin must merge the `toolSlotsFull` reason in `types.ts` and the corresponding `labels.ts` and `model.ts` changes into their installed copy; updating the plugin or this registry does not update copied source.
+
 ## Customizing
 
 The installed copy is yours: change the lane order in `agentQueueLanes`, the colours in `agent-queue.tsx`, or what a lane shows.

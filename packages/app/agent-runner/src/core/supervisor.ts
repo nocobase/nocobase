@@ -24,6 +24,7 @@ import { delay, ApiError, type ApiClient } from '../lib/http.ts';
 import {
   RUNNER_ROUTES,
   routePath,
+  type AgentTool,
   type JobPayload,
   type RunPayload,
 } from '../protocol/index.ts';
@@ -191,6 +192,8 @@ export interface SupervisedRun {
   runId: string;
   /** Set for a job. */
   jobId?: string;
+  /** The coding tool a run runs with; none for a job, or for a run recovered from an earlier daemon. */
+  tool?: AgentTool;
   appKey: string;
   pid: number;
   startedAt: string;
@@ -221,8 +224,8 @@ export class Supervisor {
     return this.runs.size;
   }
 
-  spawn(appKey: string, payload: RunPayload): Promise<SupervisedRun> {
-    return this.start(
+  async spawn(appKey: string, payload: RunPayload): Promise<SupervisedRun> {
+    const supervised = await this.start(
       {
         runId: payload.run.id,
         appKey,
@@ -231,6 +234,15 @@ export class Supervisor {
       },
       { appKey, payload, timings: this.options.timings },
     );
+    supervised.tool = payload.tool.kind;
+    return supervised;
+  }
+
+  /** How many runs of `tool` it supervises now. */
+  heldOf(tool: AgentTool): number {
+    let count = 0;
+    for (const run of this.runs.values()) if (run.tool === tool) count += 1;
+    return count;
   }
 
   /** Runs a claimed job in a worker of its own, like a run. */

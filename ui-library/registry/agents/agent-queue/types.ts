@@ -23,6 +23,7 @@ export type AgentQueueWaitReason =
   | 'sameWorkActive'
   | 'concurrencyFull'
   | 'runnersBusy'
+  | 'toolSlotsFull'
   | 'setupRetrying'
   | 'next';
 
@@ -34,7 +35,7 @@ export interface AgentQueueWait {
   readonly agentPosition: number;
   /** For `delayed`. */
   readonly until?: string | null;
-  /** For `toolUnavailable`. */
+  /** For `toolUnavailable` or `toolSlotsFull`. */
   readonly tool?: string | null;
   /** For `missingFeatures`. */
   readonly missing: readonly string[];

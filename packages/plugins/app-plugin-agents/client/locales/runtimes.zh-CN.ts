@@ -13,6 +13,27 @@ const runtimesZhCN: RuntimesLocale = {
     revokedList_one: '{{count}} 个已吊销的运行环境',
     revokedList_other: '{{count}} 个已吊销的运行环境',
     lastSeen: '最近在线 {{time}}',
+    toolUsage: {
+      label: '各编码工具的运行数',
+      item: '{{tool}} {{used}}/{{limit}}',
+    },
+    toolSlots: {
+      label: '按编码工具限制',
+      hint: '每个编码工具同时运行的上限，比如订阅会话数较少的工具可以设得小一些。留空则只受最大并发数限制。',
+      none: '不限',
+      invalid: '请输入 1 到 64 之间的整数，或留空。',
+      inputLabel: '{{tool}} 同时运行上限',
+      overTotal:
+        '{{tools}} 的上限高于最大并发数（{{slots}}），实际最多同时运行 {{slots}} 个。',
+      noneChecked: '先在上面勾选编码工具，再为它设置上限。',
+    },
+    toolTable: {
+      tool: '工具',
+      enabled: '启用',
+      state: '状态',
+      limit: '同时上限',
+      active: '当前',
+    },
     activity: {
       online: '在线 {{active}}/{{slots}}',
       busy: '忙碌 {{active}}/{{slots}}',
@@ -44,12 +65,14 @@ const runtimesZhCN: RuntimesLocale = {
       sharing: '共享',
       version: '版本',
       lastSeen: '最近在线',
-      slots: '最大并发运行数',
+      slots: '最大并发数',
     },
     detail: {
       general: '常规',
       tools: '工具',
-      toolsDescription: '它上报的编码工具。关闭的工具的工作不会派到这里。',
+      toolsDescription:
+        '它上报的编码工具。关闭的工具的工作不会派到这里。开关和上限点「保存」后一起生效。',
+      version: 'runner {{version}}',
       runs: '最近的运行',
       runsEmpty: '还没有运行。',
       runsFailed: '无法加载它的运行。',
@@ -83,10 +106,6 @@ const runtimesZhCN: RuntimesLocale = {
       offHint: '已关闭：这个工具的工作不会派到这个运行环境。',
       enableLabel: '在 {{name}} 上运行 {{tool}}',
       version: '版本 {{version}}',
-      switched: {
-        on: '已在 {{name}} 上开启 {{tool}}',
-        off: '已在 {{name}} 上关闭 {{tool}}',
-      },
     },
     trust: {
       label: '为谁工作',
@@ -139,7 +158,8 @@ const runtimesZhCN: RuntimesLocale = {
     title: '添加运行环境',
     description:
       '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。',
-    createCredential: '创建凭证',
+    createCredential: '生成安装命令',
+    advanced: '高级：按编码工具限制',
     run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI（无需 Node.js），注册 runner 并设置为登录后自动启动：',
     installed: '已经装好 nocobase-runner？改为注册它：',
     unsupported: 'runner 暂不支持 Windows，请使用 macOS、Linux 或 WSL。',
@@ -154,6 +174,7 @@ const runtimesZhCN: RuntimesLocale = {
     slots: '最大并发数',
     slotsHint: '这个运行环境同时运行的数量。之后可以随时在运行环境页面修改。',
     tokenSlots: '最大并发数：{{slots}}。',
+    tokenToolSlots: '按编码工具：{{limits}}。',
     connected: '{{name}} 已连接。',
     done: '完成',
     system: {

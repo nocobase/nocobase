@@ -39,6 +39,10 @@ import { z } from 'zod';
  * (`/api/agents/runners`, `/api/agents/dist`) with `{ data }` answers and the standard error body (before any release,
  * so no runner of an earlier version is served at other addresses), and a repository's first commit (`RepoDir.initial`: a run that checks out an empty
  * repository on its default branch and may push it). Nothing of version 6 changed otherwise.
+ *
+ * Limits per coding tool (`ToolSlots` on register, `load.tools` on heartbeat, `tools` on claim) were added within
+ * version 7 as optional fields: a server that does not know them ignores them, and a runner that does not send them is
+ * bounded by its total slots only.
  */
 export const PROTOCOL_VERSION = 7;
 

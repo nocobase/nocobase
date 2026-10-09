@@ -20,6 +20,7 @@ import {
   type JobPayload,
   type JobResult,
   type JobStatus,
+  type ClaimRequest,
   type RegisterRequest,
   type RunEvent,
   type RunInput,
@@ -39,6 +40,8 @@ export interface FakeRunner {
   revoked: boolean;
   /** How many claims and heartbeats it sent, answered or not. */
   claims: number;
+  /** What its claims asked for. */
+  claimBodies: ClaimRequest[];
   heartbeatsSent: number;
   /** The protocol header of its last request. */
   protocolHeader?: string;
@@ -428,6 +431,7 @@ export class FakeServer {
         heartbeats: [],
         revoked: false,
         claims: 0,
+        claimBodies: [],
         heartbeatsSent: 0,
       };
       this.runners.set(id, runner);
@@ -523,7 +527,8 @@ export class FakeServer {
     app.post(RUNNER_ROUTES.claim, async (c) => {
       const runner = c.get('runner' as never) as FakeRunner;
       runner.claims += 1;
-      const body = (await c.req.json()) as { free: number };
+      const body = (await c.req.json()) as ClaimRequest;
+      runner.claimBodies.push(body);
       if (this.unsupported === 'verdict') return ok(c, { runs: [] });
       const runs: RunPayload[] = [];
       const jobs: JobPayload[] = [];
