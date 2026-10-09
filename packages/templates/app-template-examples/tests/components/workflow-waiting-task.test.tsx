@@ -256,10 +256,10 @@ it('focuses the decision field after a delayed invalid-decision response re-enab
   });
   await waitFor(() => {
     expect(decision).toBeEnabled();
-    expect(decision).toHaveFocus();
     expect(focus).toHaveBeenCalled();
+    expect(focusWhileDisabled).not.toContain(true);
+    expect(decision).toHaveFocus();
   });
-  expect(focusWhileDisabled).not.toContain(true);
   focus.mockRestore();
   expect(request).toHaveBeenCalledWith(
     expect.objectContaining({ method: 'POST' }),
