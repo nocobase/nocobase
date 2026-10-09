@@ -2,7 +2,8 @@
 //
 // On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories, then
 // does so every six hours; once that removed one, it prunes the shared pnpm store (pnpm-store.ts) as soon as no run is
-// active, claiming nothing until the prune is done. Then, until it stops:
+// active and every outstanding claim has finished starting its workers, claiming nothing until the prune is done.
+// Failed pruning stays due, with five minutes between idle attempts. Then, until it stops:
 //
 // - heartbeat, per application, every 15 s: reports the tools, that application's active runs and the free slots; the
 //   answer names the runs whose cancel was requested, and the supervisor makes sure their workers stop;
@@ -101,6 +102,7 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
 const UNSUPPORTED = 'PROTOCOL_UNSUPPORTED';
 const GC_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const PRUNE_RETRY_MS = 5 * 60_000;
 
 export interface DaemonPid {
   pid: number;
@@ -206,8 +208,12 @@ export class RunnerDaemon {
   private updating = false;
   /** The shared pnpm store is being pruned; claiming pauses meanwhile. */
   private pruning = false;
+  /** Claims remain active through policy checks and worker startup, so pruning cannot overlap a received lease. */
+  private claimsInFlight = 0;
   /** Working directories were removed since the store was last pruned. */
   private pruneDue = false;
+  /** Failed pruning is retried at the next idle opportunity after this time. */
+  private pruneRetryAt = 0;
   private readonly failedUpdates = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
@@ -417,25 +423,38 @@ export class RunnerDaemon {
   }
 
   /**
-   * Prunes the shared pnpm store once working directories were removed, and only while no run is active: an install
-   * in progress holds files that no project links yet, which a prune would take. Left due when runs are active, for
-   * the run that ends last (`onExit`) or the next collection.
+   * Prunes only when neither workers nor claims are active: a received claim can start an install before its files
+   * are linked. Claims finish policy checks and start workers under the same exclusion, without delaying their
+   * leases. Pending cleanup is retried after the last claim or worker ends, or at the next collection; failures wait
+   * five minutes before another idle attempt.
    */
   async pruneStore(): Promise<void> {
     if (
       !this.pruneDue ||
       this.pruning ||
+      this.claimsInFlight > 0 ||
       this.supervisor.size > 0 ||
+      Date.now() < this.pruneRetryAt ||
       this.stopping.signal.aborted
     )
       return;
     this.pruning = true;
     try {
-      await (this.options.pruneStore ?? prunePnpmStore)({
+      const pruned = await (this.options.pruneStore ?? prunePnpmStore)({
         paths: this.options.paths,
         log: this.options.log,
       });
-      this.pruneDue = false;
+      if (pruned) {
+        this.pruneDue = false;
+        this.pruneRetryAt = 0;
+      } else {
+        this.pruneRetryAt = Date.now() + PRUNE_RETRY_MS;
+      }
+    } catch (error) {
+      this.pruneRetryAt = Date.now() + PRUNE_RETRY_MS;
+      this.options.log(
+        `gc: pruning the shared pnpm store failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       this.pruning = false;
       this.slotFreed?.();
@@ -607,6 +626,22 @@ export class RunnerDaemon {
 
   /** Asks one application for up to `free` runs and starts them. Returns how many it got. */
   private async claimFrom(
+    link: AppLink,
+    free: number,
+    wait: boolean,
+  ): Promise<number> {
+    if (this.pruning || this.stopping.signal.aborted) return 0;
+    this.claimsInFlight += 1;
+    try {
+      return await this.claimAndStart(link, free, wait);
+    } finally {
+      this.claimsInFlight -= 1;
+      await this.pruneStore();
+    }
+  }
+
+  /** Receives leases and starts their workers while `claimFrom` excludes pruning. */
+  private async claimAndStart(
     link: AppLink,
     free: number,
     wait: boolean,

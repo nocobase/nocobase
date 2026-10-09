@@ -81,15 +81,15 @@ describe('the shared pnpm store', () => {
   });
 
   it("is writable in a sandboxing tool's session", () => {
-    expect(agentWritableRoots([], '/w/PM-1/repo', ['/w/.pnpm-store'])).toEqual([
-      '/w/.pnpm-store',
-    ]);
+    expect(
+      agentWritableRoots([], '/w/task-a/repo', ['/w/.pnpm-store']),
+    ).toEqual(['/w/.pnpm-store']);
   });
 
   it('is what the agent is told to install with, instead of a store of its own', () => {
     const notes = workspaceNotes({
-      workDir: '/w/PM-1',
-      cwd: '/w/PM-1',
+      workDir: '/w/task-a',
+      cwd: '/w/task-a',
       dirs: [],
       cli: 'acme',
       pnpmStoreDir: '/w/.pnpm-store',
@@ -99,8 +99,8 @@ describe('the shared pnpm store', () => {
     expect(notes).toContain('never edit them in place');
     expect(
       workspaceNotes({
-        workDir: '/w/PM-1',
-        cwd: '/w/PM-1',
+        workDir: '/w/task-a',
+        cwd: '/w/task-a',
         dirs: [],
         cli: 'a',
       }),
@@ -111,6 +111,8 @@ describe('the shared pnpm store', () => {
     'adds nothing when a second project installs the same package, and is pruned once neither links it',
     async () => {
       const storeDir = await ensurePnpmStore(paths);
+      // A temp directory may be inside this checkout; keep its projects out of the parent workspace.
+      writeFileSync(path.join(root, 'pnpm-workspace.yaml'), 'packages: []\n');
       // A package from a local tarball: it goes through the store like a registry package, without the network.
       const source = path.join(root, 'pkg');
       mkdirSync(source, { recursive: true });
@@ -132,6 +134,7 @@ describe('the shared pnpm store', () => {
       const install = (name: string): string => {
         const dir = path.join(paths.workRoot, 'app', name);
         mkdirSync(dir, { recursive: true });
+        writeFileSync(path.join(dir, 'pnpm-workspace.yaml'), 'packages: []\n');
         writeFileSync(
           path.join(dir, 'package.json'),
           JSON.stringify({
@@ -148,10 +151,10 @@ describe('the shared pnpm store', () => {
         return dir;
       };
 
-      const first = install('PM-1');
+      const first = install('first-app');
       const stored = storeFiles(storeDir);
       expect(stored).not.toEqual([]);
-      const second = install('PM-2');
+      const second = install('second-app');
       expect(storeFiles(storeDir)).toEqual(stored);
       for (const dir of [first, second])
         expect(
@@ -245,7 +248,7 @@ describe('pruning by the daemon', () => {
   };
 
   it('prunes the store when the collection removed a working directory', async () => {
-    const workDir = abandoned('PM-1');
+    const workDir = abandoned('abandoned-task');
     const paths = runnerPaths(home, `${home}-work`);
     await ensurePnpmStore(paths);
     const pruned: string[] = [];
