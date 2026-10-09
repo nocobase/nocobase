@@ -118,8 +118,9 @@ export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
  * providers' own model lists whenever one ships: Anthropic's models overview
  * (https://platform.claude.com/docs/en/about-claude/models/overview) and OpenAI's
  * (https://developers.openai.com/api/docs/models). Claude Code keeps its `opus` / `sonnet` / `haiku` aliases, which
- * follow the newest model of each family, followed by the full ids; OpenCode names a model `provider/model`; Codex and
- * Pi take the bare id. Last checked on 2026-10-09.
+ * follow the newest model of each family, followed by the full ids; OpenCode and Pi name a model `provider/model` so
+ * providers with the same model id stay distinct; Codex takes the bare id. Last checked on 2026-10-09. Keep commonly
+ * used earlier models as suggestions too; this list does not establish availability on any runner.
  */
 export const TOOL_MODEL_SUGGESTIONS: Readonly<
   Record<AgentTool, readonly string[]>
@@ -129,6 +130,8 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
     'sonnet',
     'haiku',
     'claude-opus-5-5',
+    'claude-sonnet-5-5',
+    'claude-haiku-5-5',
     'claude-sonnet-5',
     'claude-haiku-4-5',
     'claude-fable-5-1',
@@ -136,6 +139,8 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
   codex: ['gpt-6.1-sol', 'gpt-6-astra', 'gpt-6-luna'],
   opencode: [
     'anthropic/claude-opus-5-5',
+    'anthropic/claude-sonnet-5-5',
+    'anthropic/claude-haiku-5-5',
     'anthropic/claude-sonnet-5',
     'anthropic/claude-haiku-4-5',
     'anthropic/claude-fable-5-1',
@@ -144,13 +149,15 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
     'openai/gpt-6-luna',
   ],
   pi: [
-    'claude-opus-5-5',
-    'claude-sonnet-5',
-    'claude-haiku-4-5',
-    'claude-fable-5-1',
-    'gpt-6.1-sol',
-    'gpt-6-astra',
-    'gpt-6-luna',
+    'anthropic/claude-opus-5-5',
+    'anthropic/claude-sonnet-5-5',
+    'anthropic/claude-haiku-5-5',
+    'anthropic/claude-sonnet-5',
+    'anthropic/claude-haiku-4-5',
+    'anthropic/claude-fable-5-1',
+    'openai/gpt-6.1-sol',
+    'openai/gpt-6-astra',
+    'openai/gpt-6-luna',
   ],
 };
 
