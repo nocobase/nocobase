@@ -24,6 +24,8 @@ const foundation = [
   'tsconfig.json',
 ] as const;
 
+const clientUiFiles = ['client/styles.css', 'components.json'] as const;
+
 const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
   database: [
     'database/README.md',
@@ -73,6 +75,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'vitest.config.ts',
   ],
   'client.routes': [
+    ...clientUiFiles,
     'client/index.ts',
     'client/plugin.ts',
     'client/routes.ts',
@@ -80,11 +83,13 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'vitest.config.ts',
   ],
   'client.components': [
+    ...clientUiFiles,
     'client/components/plugin-component.tsx',
     'tests/client/component.test.tsx',
     'vitest.config.ts',
   ],
   'client.react-providers': [
+    ...clientUiFiles,
     'client/components/provider.tsx',
     'client/contexts.ts',
     'client/index.ts',
@@ -94,6 +99,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'vitest.config.ts',
   ],
   'client.service-providers': [
+    ...clientUiFiles,
     'client/providers/__NOCOBASE_SHORT_NAME__.ts',
     'client/providers/index.ts',
     'client/index.ts',
@@ -102,6 +108,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'vitest.config.ts',
   ],
   'client.locales': [
+    ...clientUiFiles,
     'client/index.ts',
     'client/locales/en-US.ts',
     'client/locales/index.ts',

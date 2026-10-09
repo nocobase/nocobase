@@ -7,6 +7,8 @@ export {
   type EffectContext,
   type EffectDefinition,
   type EffectRetry,
+  type EnterStateHook,
+  type EnterStateHookContext,
   type FromStates,
   type GuardVerdict,
   type Lifecycle,

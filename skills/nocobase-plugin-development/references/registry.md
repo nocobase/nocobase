@@ -32,7 +32,7 @@ Select Registry support explicitly when creating a plugin:
 pnpm plugin:create feature-card --with registry
 ```
 
-This capability creates the Registry configuration, a minimal component item, package scripts, publishing metadata, and the plugin-local shadcn setup needed for runtime UI. Remove placeholder content and model each real item around the API it delivers.
+This capability creates the Registry configuration, a minimal component item, package scripts, and publishing metadata. Runtime shadcn setup is separate from recipe publishing: inspect the plugin's local configuration and follow [Client components](client-components.md) when it is missing. Remove placeholder content and model each real item around the API it delivers.
 
 Do not add Registry support when consumers should not own editable source.
 

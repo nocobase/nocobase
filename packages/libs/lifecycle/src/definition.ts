@@ -102,6 +102,31 @@ export type StateHook<T extends LifecycleTypes> = (
   context: StateHookContext<T>,
 ) => void | Promise<void>;
 
+/** What an `onEnterState` hook receives: a state hook's context, and a way to finish the entry. */
+export interface EnterStateHookContext<
+  T extends LifecycleTypes,
+> extends StateHookContext<T> {
+  /**
+   * Queues transactional work to run once every entry hook of the state
+   * being entered, the state's own and the lifecycle's, has run and the
+   * entry's effect runs are registered. Callbacks run before the commit, in
+   * the order they were queued; one that throws rolls the whole entry back,
+   * its log and effects included. One that moves the record on through `tx`
+   * ends a stay that has begun, unlike a hook doing so, which ends it before
+   * it begins: the state's `onEnter` effects are queued and still run, but
+   * their continuations are dropped, since the stay they served is over. The
+   * callbacks queued after it do not run; none runs when a hook has already
+   * moved the record on. Only a hook may queue work, while it runs: a
+   * callback, or anything run after the hooks, may not.
+   */
+  afterEntry(callback: () => void | Promise<void>): void;
+}
+
+/** A hook run on entering a state; a {@link StateHook} serves as one too. */
+export type EnterStateHook<T extends LifecycleTypes> = (
+  context: EnterStateHookContext<T>,
+) => void | Promise<void>;
+
 export interface EffectContext<T extends LifecycleTypes> {
   /** The record as it is when the attempt starts. */
   readonly record: T['record'];
@@ -187,7 +212,7 @@ export interface StateDefinition<
   /** Anything a page or a diagram wants: a colour, an icon. */
   readonly meta?: JsonObject;
   /** Run before the lifecycle's `onEnterState` hooks for this state. */
-  readonly onEnterState?: OneOrMany<StateHook<T>>;
+  readonly onEnterState?: OneOrMany<EnterStateHook<T>>;
   /** Run before the lifecycle's `onLeaveState` hooks for this state. A final state has none. */
   readonly onLeaveState?: OneOrMany<StateHook<T>>;
 }
@@ -354,7 +379,7 @@ export interface LifecycleDefinition<T extends LifecycleTypes> {
    * what a hook set up for one stay is torn down and set up anew.
    */
   readonly onEnterState?: Partial<
-    Readonly<Record<T['state'], OneOrMany<StateHook<T>>>>
+    Readonly<Record<T['state'], OneOrMany<EnterStateHook<T>>>>
   >;
   /**
    * Hooks run inside the transaction of every transition leaving the state,
@@ -412,7 +437,7 @@ export interface Lifecycle<T extends LifecycleTypes> {
   readonly parameters: ParametersOf<T>;
   readonly transitions: ReadonlyMap<string, LifecycleTransition<T>>;
   readonly onEnter: ReadonlyMap<T['state'], readonly EffectDefinition<T>[]>;
-  readonly onEnterState: ReadonlyMap<T['state'], readonly StateHook<T>[]>;
+  readonly onEnterState: ReadonlyMap<T['state'], readonly EnterStateHook<T>[]>;
   readonly onLeaveState: ReadonlyMap<T['state'], readonly StateHook<T>[]>;
   readonly triggers: ReadonlyMap<string, LifecycleTrigger<T>>;
   /** Every effect by name, from transitions and `onEnter`. */
@@ -503,7 +528,7 @@ export function defineLifecycle<T extends LifecycleTypes>(
   const states = new Set<T['state']>();
   const stateInfo = new Map<T['state'], LifecycleState<T['state']>>();
   const ownHooks = {
-    onEnterState: new Map<T['state'], readonly StateHook<T>[]>(),
+    onEnterState: new Map<T['state'], readonly EnterStateHook<T>[]>(),
     onLeaveState: new Map<T['state'], readonly StateHook<T>[]>(),
   };
   for (const entry of definition.states) {
@@ -649,18 +674,19 @@ export function defineLifecycle<T extends LifecycleTypes>(
     onEnter.set(state, entered ?? []);
   }
 
-  const hooks = (
-    declared: LifecycleDefinition<T>['onEnterState'],
+  const hooks = <H>(
+    declared: Partial<Readonly<Record<T['state'], OneOrMany<H>>>> | undefined,
+    own: ReadonlyMap<T['state'], readonly H[]>,
     where: 'onEnterState' | 'onLeaveState',
-  ): Map<T['state'], readonly StateHook<T>[]> => {
+  ): Map<T['state'], readonly H[]> => {
     // A state's own hooks first: what the state itself does on entering or
     // leaving, before what the lifecycle adds to it.
-    const result = new Map<T['state'], readonly StateHook<T>[]>();
-    for (const [state, own] of ownHooks[where])
-      result.set(state, Object.freeze([...own]));
+    const result = new Map<T['state'], readonly H[]>();
+    for (const [state, hooksOfState] of own)
+      result.set(state, Object.freeze([...hooksOfState]));
     for (const [state, given] of Object.entries(declared ?? {}) as [
       T['state'],
-      OneOrMany<StateHook<T>> | undefined,
+      OneOrMany<H> | undefined,
     ][]) {
       known(state, where);
       if (given === undefined) continue;
@@ -676,8 +702,16 @@ export function defineLifecycle<T extends LifecycleTypes>(
     }
     return result;
   };
-  const onEnterState = hooks(definition.onEnterState, 'onEnterState');
-  const onLeaveState = hooks(definition.onLeaveState, 'onLeaveState');
+  const onEnterState = hooks(
+    definition.onEnterState,
+    ownHooks.onEnterState,
+    'onEnterState',
+  );
+  const onLeaveState = hooks(
+    definition.onLeaveState,
+    ownHooks.onLeaveState,
+    'onLeaveState',
+  );
 
   for (const effect of effects.values())
     for (const next of [effect.onSuccess, effect.onFailure])

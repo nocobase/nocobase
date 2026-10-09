@@ -2,6 +2,7 @@ import {
   describeLifecycle,
   type EffectDefinition,
   type EffectRetry,
+  type EnterStateHookContext,
   type Lifecycle,
   type LifecycleDescription,
   type StateHookContext,
@@ -372,6 +373,39 @@ interface Decision {
 
 /** One hook, or `onTransition`, run in a transition's transaction. */
 type Step = () => void | Promise<void>;
+
+/**
+ * The work an entry's hooks queue with `afterEntry()`. It takes work only
+ * while they run: once they finish, or one throws, it is closed, so work
+ * queued later — by a callback, or through a context kept past its hook —
+ * is refused instead of silently never running.
+ */
+class EntryWork {
+  private readonly steps: Step[] = [];
+  private closed = false;
+
+  public readonly queue = (callback: Step): void => {
+    if (this.closed)
+      throw new Error(
+        'afterEntry() queues work only while an onEnterState hook runs.',
+      );
+    this.steps.push(callback);
+  };
+
+  public close(): readonly Step[] {
+    this.closed = true;
+    return this.steps;
+  }
+
+  /** Runs the entry's hooks, and closes the queue however they end. */
+  public async during<R>(hooks: Promise<R>): Promise<R> {
+    try {
+      return await hooks;
+    } finally {
+      this.close();
+    }
+  }
+}
 
 const silent: LifecycleLogger = { warn: () => {}, error: () => {} };
 
@@ -1009,7 +1043,8 @@ export class LifecycleRuntime {
           : undefined,
       );
       const hooks = lifecycle.onEnterState.get(state) ?? [];
-      const context: StateHookContext<LifecycleTypes> = Object.freeze({
+      const entryWork = new EntryWork();
+      const context: EnterStateHookContext<LifecycleTypes> = Object.freeze({
         lifecycle: name,
         record,
         previous: null,
@@ -1025,17 +1060,20 @@ export class LifecycleRuntime {
         ) as ServicesOf<LifecycleTypes>,
         tx: this.scope(store, now),
         now,
+        afterEntry: entryWork.queue,
       });
       // A hook that moves the new record on through tx ends its stay in the
       // initial state: the hooks after it and that state's effects are skipped.
-      const moved = await this.runSteps(
-        store,
-        lifecycle,
-        record.id,
-        hooks.map(
-          (hook): Step =>
-            () =>
-              hook(context),
+      const moved = await entryWork.during(
+        this.runSteps(
+          store,
+          lifecycle,
+          record.id,
+          hooks.map(
+            (hook): Step =>
+              () =>
+                hook(context),
+          ),
         ),
       );
       const created: Decision = moved
@@ -1044,21 +1082,20 @@ export class LifecycleRuntime {
             written: record,
             movedOn: true,
           }
-        : {
-            result: {
-              record,
+        : await this.enterWith(
+            store,
+            lifecycle,
+            record,
+            entry,
+            await this.owe(
+              store,
+              lifecycle,
               entry,
-              effectRuns: await this.owe(
-                store,
-                lifecycle,
-                entry,
-                lifecycle.onEnter.get(state) ?? [],
-                true,
-              ),
-            },
-            written: record,
-            movedOn: false,
-          };
+              lifecycle.onEnter.get(state) ?? [],
+              true,
+            ),
+            entryWork,
+          );
       outcome.created = created;
       return created.result;
     }, joining(options.transaction));
@@ -2341,6 +2378,13 @@ export class LifecycleRuntime {
       tx: this.scope(store, now),
       now,
     });
+    // Only the entered state's hooks may finish the entry: leave hooks and
+    // onTransition get no afterEntry().
+    const entryWork = new EntryWork();
+    const entering: EnterStateHookContext<LifecycleTypes> = Object.freeze({
+      ...hook,
+      afterEntry: entryWork.queue,
+    });
     const definition = lifecycle.transitions.get(transition)?.definition;
     const steps: Step[] = [
       ...(lifecycle.onLeaveState.get(plan.from) ?? []).map(
@@ -2376,13 +2420,15 @@ export class LifecycleRuntime {
       ...(lifecycle.onEnterState.get(plan.to) ?? []).map(
         (enter): Step =>
           () =>
-            enter(hook),
+            enter(entering),
       ),
     ];
     // A hook or onTransition that fires this record onward through tx has
     // ended the stay this transition began: what is left of the transition
     // would set up, owe and announce a state the record is no longer in.
-    const moved = await this.runSteps(store, lifecycle, id, steps);
+    const moved = await entryWork.during(
+      this.runSteps(store, lifecycle, id, steps),
+    );
     // The transition itself still happened, so its own effects are owed;
     // only the entered state's onEnter effects belong to the stay that ended.
     if (moved)
@@ -2417,10 +2463,41 @@ export class LifecycleRuntime {
         true,
       )),
     ];
+    return this.enterWith(
+      store,
+      lifecycle,
+      record,
+      entry,
+      effectRuns,
+      entryWork,
+    );
+  }
+
+  /**
+   * Completes an entry whose hooks left the record in the state it entered:
+   * the work they queued with their context's `afterEntry()` runs now that
+   * the entry's effect runs are registered. A callback that moves the record
+   * on ends a stay that has begun: its runs stay queued, bound to that stay,
+   * and the record is reported as it then is.
+   */
+  private async enterWith(
+    store: LifecycleStore,
+    lifecycle: Lifecycle<LifecycleTypes>,
+    record: LifecycleRecord,
+    entry: TransitionEntry,
+    effectRuns: readonly EffectRun[],
+    entryWork: EntryWork,
+  ): Promise<Decision> {
+    const moved = await this.runSteps(
+      store,
+      lifecycle,
+      record.id,
+      entryWork.close(),
+    );
     return {
-      result: { record, entry, effectRuns },
+      result: { record: moved ?? record, entry, effectRuns },
       written: record,
-      movedOn: false,
+      movedOn: moved !== undefined,
     };
   }
 

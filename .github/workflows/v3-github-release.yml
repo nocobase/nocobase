@@ -1,12 +1,8 @@
-name: GitHub Release
+name: V3 GitHub Release
 
-# 为聚合 tag（release-beta/YYYY-MM-DD.N 或 release/YYYY-MM-DD.N）建 GitHub Release。
-#
-# 发版 commit 上挂着这批发布的全部信息：聚合 tag，以及 changeset publish 为每个
-# **真正发布成功**的 package 打的 name@version tag。所以「发了哪些包」不需要另存
-# 一份清单，`git tag --points-at` 读回来就是。
-#
-# 只读 git，不改任何东西。失败了重跑一次即可，也可以事后手动补建历史 release。
+# Create a GitHub Release for a release-beta/* or release/* aggregate tag.
+# Package tags on the same commit identify the packages that were actually published.
+# Reading those tags is repeatable and lets failed GitHub Release creation be retried.
 #
 # The release workflows call this explicitly after publication. It does not depend on tag events or commit-message
 # CI skipping, and a manual dispatch can recover a failed GitHub Release without republishing packages.
@@ -37,8 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      # 要 fetch-depth: 0 加 tag —— 渲染 release notes 要读 tag 指向的那个
-      # commit 里的 CHANGELOG，浅克隆读不到。
+      # Release notes read changelogs at the tagged commit, so fetch complete history.
       - name: Check out the repository
         uses: actions/checkout@v4
         with:
@@ -69,11 +64,11 @@ jobs:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           owner: nocobase
-          repositories: nocobase3
+          repositories: nocobase
           permission-contents: write
 
-      # beta 标 prerelease 且不抢 GitHub Latest；stable 才是 Latest。
-      # 已存在就更新 —— 重跑安全，事后补建也安全。
+      # Keep the main repository's Latest release unchanged for both v3 channels.
+      # Existing releases are updated so this job can be retried independently.
       - name: Create or update the GitHub Release
         env:
           GH_TOKEN: ${{ steps.release_token.outputs.token }}
@@ -81,7 +76,7 @@ jobs:
         run: |
           case "$TAG" in
             release-beta/*) FLAGS=(--prerelease --latest=false) ;;
-            release/*)      FLAGS=(--latest) ;;
+            release/*)      FLAGS=(--latest=false) ;;
             *)
               echo "::error::$TAG is not an aggregate release tag"
               exit 1
