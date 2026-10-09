@@ -105,10 +105,8 @@ jobs:
 
       - name: Publish to OSS
         if: >-
-          vars.V3_ASSET_DEPLOY_ENABLED == 'true' && (
           (github.event_name == 'push' && github.ref == 'refs/heads/v3-develop') ||
           (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/v3-develop')
-          )
         env:
           UI_LIBRARY_ALI_OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
           UI_LIBRARY_ALI_OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}
