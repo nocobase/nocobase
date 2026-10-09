@@ -48,6 +48,7 @@ import {
   UserRoleScopeParams,
   AcceptInvitationInput,
   InvitationParams,
+  ResendInvitationQuery,
   InvitationTokenInput,
   InviteUsersInput,
   PreferenceInput,
@@ -132,6 +133,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         operationId: 'usersInviteUsers',
         ...cliRoute({
           command: 'user invitation create',
+          columns: ['email', 'outcome', 'emailSent', 'inviteUrl'],
           examples: ['user invitation create --emails ann@example.com'],
         }),
         description:
@@ -188,10 +190,12 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', InvitationParams),
+      apiValidator('query', ResendInvitationQuery),
       async (context) => {
         const { invitationId } = context.req.valid('param');
         return context.json({
           data: await users.resendInvitation(invitationId, {
+            sendEmail: context.req.valid('query').sendEmail !== 'false',
             origin: new URL(context.req.url).origin,
           }),
         });

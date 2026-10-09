@@ -142,8 +142,8 @@ export interface InviteUsersInput {
 }
 
 /**
- * - `invited`: a link went out; when sending failed, the link is returned once
- *   for the inviter to forward.
+ * - `invited`: a link was generated and is returned once for the inviter to forward,
+ *   whether or not an email was sent.
  * - `existingUser`: the address already has an account and nothing was sent;
  *   the caller decides what that account gets.
  */
@@ -221,10 +221,10 @@ export interface UserManagementService {
     readonly invitedBy?: string;
   }): Promise<UserInvitation[]>;
   getInvitation(id: string): Promise<UserInvitation | undefined>;
-  /** Sends a pending invitation again with a new link and a new period. */
+  /** Rotates a pending invitation's link and period; emails it unless sendEmail is false. */
   resendInvitation(
     id: string,
-    input?: { readonly origin?: string },
+    input?: { readonly origin?: string; readonly sendEmail?: boolean },
   ): Promise<UserInvitationResult>;
   revokeInvitation(id: string): Promise<void>;
   lookupInvitation(token: string): Promise<PublicUserInvitation>;

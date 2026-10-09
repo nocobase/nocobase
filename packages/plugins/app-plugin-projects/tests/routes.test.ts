@@ -144,6 +144,37 @@ const call = (path: string, init: RequestInit & { role?: string } = {}) => {
 };
 
 describe('the /api/projects guard', () => {
+  it('validates and forwards the mail-free invitation option', async () => {
+    await h.services.invitations.create(
+      h.viewer('alice', 'admin'),
+      { emails: ['new@example.test'] },
+      'https://example.test',
+    );
+    const id = h.invitations.rows[0]?.id ?? '';
+    const resend = vi.spyOn(h.invitations, 'resendInvitation');
+    const response = await call(`/invitations/${id}/resend?sendEmail=false`, {
+      method: 'POST',
+      role: 'admin',
+    });
+    expect(response.status).toBe(200);
+    expect(resend).toHaveBeenCalledWith(id, {
+      origin: 'http://localhost',
+      sendEmail: false,
+    });
+    expect(await response.json()).toMatchObject({
+      data: { inviteUrl: expect.stringContaining('/invite/') },
+    });
+    expect(
+      (
+        await call(`/invitations/${id}/resend?sendEmail=no`, {
+          method: 'POST',
+          role: 'admin',
+        })
+      ).status,
+    ).toBe(400);
+    expect(resend).toHaveBeenCalledTimes(1);
+  });
+
   it('refuses anonymous callers and leaves other routes alone', async () => {
     const paths = [
       '/me',

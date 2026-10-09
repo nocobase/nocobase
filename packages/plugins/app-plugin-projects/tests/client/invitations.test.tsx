@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import type { Invitation } from '../../shared/invitations.js';
-import { clientMocks, me, resetApi } from './fake-client.js';
+import { api, clientMocks, me, resetApi } from './fake-client.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -36,6 +36,48 @@ beforeEach(() => {
   });
 });
 afterEach(cleanup);
+
+it.each([true, false])(
+  'shows a copyable new link when sendEmail is %s',
+  async (sendEmail) => {
+    const user = userEvent.setup();
+    const url = 'https://example.test/invite/new-token';
+    api.routes[`projects/invitations/i1/resend?sendEmail=${sendEmail}`] =
+      () => ({
+        data: {
+          email: invitation.email,
+          outcome: 'invited',
+          emailSent: sendEmail,
+          inviteUrl: url,
+        },
+      });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <InvitationsSection />
+      </QueryClientProvider>,
+    );
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'invitations.actionsFor(email=ann@example.com)',
+      }),
+    );
+    await user.click(
+      await screen.findByRole('menuitem', {
+        name: sendEmail ? 'invitations.resend' : 'invitations.copyNewLink',
+      }),
+    );
+    expect(await screen.findByDisplayValue(url)).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'invitations.copyLink' }),
+    );
+    expect(await navigator.clipboard.readText()).toBe(url);
+    if (!sendEmail)
+      expect(screen.getByText('invitations.linkReady')).toBeInTheDocument();
+  },
+);
 
 it('keeps a row menu open when the list changes underneath it', async () => {
   const client = new QueryClient({

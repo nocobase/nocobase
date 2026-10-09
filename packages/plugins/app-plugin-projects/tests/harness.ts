@@ -313,6 +313,7 @@ function createFakeInvitations(database: DatabaseManager): FakeInvitations & {
           outcome: 'invited',
           invitationId: id,
           emailSent: true,
+          inviteUrl: `https://example.test/invite/${id}`,
         });
       }
       return results;

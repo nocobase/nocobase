@@ -16,6 +16,7 @@ import {
   BoundedListMeta,
   CreateInvitationsBody,
   InvitationParams,
+  ResendInvitationQuery,
   InvitationResultSchema,
   InvitationResultsSchema,
   InvitationSchema,
@@ -105,12 +106,14 @@ export function createInvitationRoutes(
       },
     }),
     apiValidator('param', InvitationParams),
+    apiValidator('query', ResendInvitationQuery),
     async (context) =>
       context.json({
         data: await invitations.resend(
           viewerOf(context),
           context.req.valid('param').invitationId,
           origin(context.req.url),
+          context.req.valid('query').sendEmail !== 'false',
         ),
       }),
   );

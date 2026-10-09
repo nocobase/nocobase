@@ -76,6 +76,8 @@ a stable `409 ALREADY_EXISTS` instead of exposing a database error.
 
 The invitation list holds pending and expired invitations only, so it is not paged. `lookup` and `accept` need no session: the token in the body is the credential.
 
+Creating or resending an invitation returns `inviteUrl` even when email delivery succeeds. The link is returned only with the operation that generates it; list responses never expose it, and storage contains only its hash. Resend rotates the token, invalidates the previous link and renews its seven-day validity. Pass `sendEmail=false` in the resend query to generate a new link without email. The generated `user invitation create` and `user invitation resend` CLI commands return the same results; use `user invitation resend --invitation <id> --send-email false` for a link without email.
+
 Each route is described, with its parameters, request and response schemas and error statuses, in the application's API document at `/api/swagger/docs` (JSON at `/api/swagger`, served to a signed-in user or a valid API key), under the `Users` tag with operation ids such as `usersDisableUser`.
 
 The list accepts `page`, `pageSize` (default 20, capped at 100), `q` (name, username or email), `status`, and `roleScope` with `role`. Every input is validated: an unknown body field or an invalid value answers `400 INVALID_ARGUMENT` with reason `INVALID_INPUT`. Failures use the standard error body; branch on `error.reason`:

@@ -99,7 +99,7 @@ const zhCN: UsersResource = {
     sent: '邀请已发送。',
     done: '完成',
     link: '邀请链接',
-    copy: '复制链接',
+    copy: '复制邀请链接',
     copied: '已复制',
     copyFailed: '无法复制链接。',
     outcome: {
@@ -119,6 +119,9 @@ const zhCN: UsersResource = {
     expired: '已过期',
     notSent: '未发出',
     resend: '重新发送',
+    copyNewLink: '复制新链接',
+    linkReady: '新链接已生成',
+    newLinkDescription: '旧链接已失效，请复制并分享下方的新链接。',
     revoke: '撤销',
     actionsFor: '发给 {{email}} 的邀请的操作',
     resent: '邀请已重新发送。',

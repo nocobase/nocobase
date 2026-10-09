@@ -189,8 +189,10 @@ function roleValues(value: UserRoleValue): readonly string[] {
 /** One row per address; a link that could not be emailed is shown once, with a copy button. */
 export function InviteResults({
   results,
+  linkOnly = false,
 }: {
   readonly results: readonly UserInvitationResult[];
+  readonly linkOnly?: boolean;
 }): ReactElement {
   const { t } = useTranslation(NS);
   return (
@@ -202,16 +204,18 @@ export function InviteResults({
             <Badge
               variant='secondary'
               className={
-                result.outcome === 'invited' && !result.emailSent
+                result.outcome === 'invited' && !result.emailSent && !linkOnly
                   ? 'bg-destructive/10 text-destructive'
                   : undefined
               }
             >
-              {result.outcome === 'existingUser'
-                ? t('invite.outcome.existingUser')
-                : result.emailSent
-                  ? t('invite.outcome.sent')
-                  : t('invite.outcome.notSent')}
+              {linkOnly
+                ? t('invitations.linkReady')
+                : result.outcome === 'existingUser'
+                  ? t('invite.outcome.existingUser')
+                  : result.emailSent
+                    ? t('invite.outcome.sent')
+                    : t('invite.outcome.notSent')}
             </Badge>
           </div>
           {result.outcome === 'invited' && result.inviteUrl ? (
@@ -247,11 +251,12 @@ function CopyLink({ url }: { readonly url: string }): ReactElement {
       <Button
         type='button'
         variant='outline'
-        size='icon'
+        size='sm'
         aria-label={copied ? t('invite.copied') : t('invite.copy')}
         onClick={() => void copy()}
       >
         {copied ? <Check /> : <Copy />}
+        {copied ? t('invite.copied') : t('invite.copy')}
       </Button>
     </div>
   );

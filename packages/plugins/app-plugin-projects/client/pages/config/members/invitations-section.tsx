@@ -2,7 +2,12 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useToaster } from '@nocobase/app-client';
-import { MoreHorizontalIcon, SendIcon, Trash2Icon } from 'lucide-react';
+import {
+  CopyIcon,
+  MoreHorizontalIcon,
+  SendIcon,
+  Trash2Icon,
+} from 'lucide-react';
 import { type ReactElement, useMemo, useState } from 'react';
 
 import { DataTable } from '../../../components/data-table.js';
@@ -57,6 +62,7 @@ export function InvitationsSection(): ReactElement | null {
   const format = usePmFormatters();
   const [revoking, setRevoking] = useState<Invitation | null>(null);
   const [resent, setResent] = useState<InvitationResult | null>(null);
+  const [linkOnly, setLinkOnly] = useState(false);
   const invitations = useQuery({
     queryKey: pmKeys.invitations,
     queryFn: () => api.invitations(),
@@ -66,15 +72,24 @@ export function InvitationsSection(): ReactElement | null {
   const failed = (error: unknown) => notify.error(error);
 
   const resend = useMutation({
-    mutationFn: (invitation: Invitation) => api.resendInvitation(invitation.id),
-    onSuccess: (result) => {
-      if (result.emailSent === false) {
+    mutationFn: ({
+      invitation,
+      sendEmail,
+    }: {
+      invitation: Invitation;
+      sendEmail: boolean;
+    }) => api.resendInvitation(invitation.id, sendEmail),
+    onSuccess: (result, { sendEmail }) => {
+      setLinkOnly(!sendEmail);
+      if (result.inviteUrl) setResent(result);
+      if (sendEmail && result.emailSent === false) {
         void toaster.show({
           type: 'warning',
           title: t('invitations.outcome.notSent'),
         });
         setResent(result);
-      } else notify.success(t('invitations.resent', { email: result.email }));
+      } else if (sendEmail)
+        notify.success(t('invitations.resent', { email: result.email }));
     },
     onError: failed,
     onSettled: refresh,
@@ -166,10 +181,27 @@ export function InvitationsSection(): ReactElement | null {
               <DropdownMenuContent align='end' className='w-auto min-w-40'>
                 <DropdownMenuItem
                   disabled={resending}
-                  onClick={() => resendInvitation(row.original)}
+                  onClick={() =>
+                    resendInvitation({
+                      invitation: row.original,
+                      sendEmail: true,
+                    })
+                  }
                 >
                   <SendIcon />
                   {t('invitations.resend')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={resending}
+                  onClick={() =>
+                    resendInvitation({
+                      invitation: row.original,
+                      sendEmail: false,
+                    })
+                  }
+                >
+                  <CopyIcon />
+                  {t('invitations.copyNewLink')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -255,7 +287,12 @@ export function InvitationsSection(): ReactElement | null {
           <DialogHeader>
             <DialogTitle>{t('invitations.linkTitle')}</DialogTitle>
           </DialogHeader>
-          {resent ? <InviteResults results={[resent]} /> : null}
+          <p className='text-sm text-muted-foreground'>
+            {t('invitations.newLinkDescription')}
+          </p>
+          {resent ? (
+            <InviteResults results={[resent]} linkOnly={linkOnly} />
+          ) : null}
           <DialogFooter>
             <Button type='button' onClick={() => setResent(null)}>
               {t('invitations.done')}

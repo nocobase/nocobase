@@ -116,6 +116,8 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 
 ## Verification
 
+Invitation create/resend results include `inviteUrl` whether email delivery succeeds or fails. `resendInvitation(id, { sendEmail: false })` generates a new link without sending email; the HTTP resend endpoint accepts `?sendEmail=false`. Every resend invalidates the previous link and renews its seven-day validity. List responses never expose tokens or links. The users page offers “Copy new link” for this operation, then displays the new link for copying.
+
 - A role without `access` on page `users` cannot navigate to the page.
 - Anonymous API requests return `401`; authenticated requests without the
   requested `user` action return `403`.

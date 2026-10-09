@@ -9,6 +9,7 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
+  deriveCliCommands,
   findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
   generateApiDocument,
@@ -28,6 +29,62 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it.each(['anonymous', 'forbidden', 'allowed'] as const)(
+    'guards link rotation for %s callers',
+    async (mode) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication(mode, service),
+      );
+      const response = await router.request(
+        '/users/invitations/invitation-1/resend?sendEmail=false',
+        { method: 'POST' },
+      );
+      expect(response.status).toBe(
+        mode === 'anonymous' ? 401 : mode === 'forbidden' ? 403 : 200,
+      );
+      if (mode === 'allowed') {
+        expect(service.resendInvitation).toHaveBeenCalledWith('invitation-1', {
+          origin: 'http://localhost',
+          sendEmail: false,
+        });
+        expect(await response.json()).toMatchObject({
+          data: {
+            inviteUrl: 'https://example.test/invite/new-token',
+            emailSent: true,
+          },
+        });
+      } else expect(service.resendInvitation).not.toHaveBeenCalled();
+    },
+  );
+
+  it('defaults to sending mail and rejects invalid sendEmail options', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    expect(
+      (
+        await router.request('/users/invitations/invitation-1/resend', {
+          method: 'POST',
+        })
+      ).status,
+    ).toBe(200);
+    expect(service.resendInvitation).toHaveBeenCalledWith('invitation-1', {
+      origin: 'http://localhost',
+      sendEmail: true,
+    });
+    expect(
+      (
+        await router.request(
+          '/users/invitations/invitation-1/resend?sendEmail=no',
+          { method: 'POST' },
+        )
+      ).status,
+    ).toBe(400);
+    expect(service.resendInvitation).toHaveBeenCalledTimes(1);
+  });
+
   it('serves the invitee without a session but guards invitation management', async () => {
     const service = userService();
     const router = await apiRoutes.createRouter(
@@ -520,6 +577,28 @@ describe('@nocobase/app-plugin-users API routes', () => {
     const document = await generateApiDocument(router, {
       info: { title: 'Test', version: '1.0.0' },
     });
+    const manifest = deriveCliCommands(document, {
+      kind: 'person',
+      userId: 'admin-1',
+      displayName: 'Admin',
+    });
+    expect(
+      manifest.commands.find(
+        (command) => command.id === 'user:invitation:create',
+      )?.output.columns,
+    ).toContain('inviteUrl');
+    expect(
+      manifest.commands.find(
+        (command) => command.id === 'user:invitation:resend',
+      )?.parameters,
+    ).toContainEqual(
+      expect.objectContaining({
+        name: 'send-email',
+        in: 'query',
+        field: 'sendEmail',
+        required: false,
+      }),
+    );
     const operationIds = Object.values(document.paths ?? {}).flatMap((item) =>
       Object.values(item ?? {}).map(
         (operation) => (operation as { operationId?: string }).operationId,
@@ -643,6 +722,7 @@ function userService(): UserManagementService {
         outcome: 'invited' as const,
         invitationId: 'invitation-1',
         emailSent: true,
+        inviteUrl: 'https://example.test/invite/new-token',
       }),
     ),
     revokeInvitation: vi.fn(() => Promise.resolve()),

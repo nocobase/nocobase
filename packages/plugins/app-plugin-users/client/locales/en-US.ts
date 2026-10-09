@@ -105,7 +105,7 @@ const enUS = {
     sent: 'Invitations sent.',
     done: 'Done',
     link: 'Invitation link',
-    copy: 'Copy link',
+    copy: 'Copy invitation link',
     copied: 'Copied',
     copyFailed: 'Could not copy the link.',
     outcome: {
@@ -125,6 +125,10 @@ const enUS = {
     expired: 'Expired',
     notSent: 'Not sent',
     resend: 'Send again',
+    copyNewLink: 'Copy new link',
+    linkReady: 'New link ready',
+    newLinkDescription:
+      'The previous link no longer works. Copy and share the new link below.',
     revoke: 'Revoke',
     actionsFor: 'Actions for invitation to {{email}}',
     resent: 'Invitation sent again.',

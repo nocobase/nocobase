@@ -156,6 +156,7 @@ export default function UsersPage(): ReactElement {
   const [inviting, setInviting] = useState(false);
   const [invitations, setInvitations] = useState<readonly UserInvitation[]>([]);
   const [resent, setResent] = useState<UserInvitationResult>();
+  const [linkOnly, setLinkOnly] = useState(false);
   const [assignment, setAssignment] = useState<{
     user: ManagedUser;
     scope: UserRoleScopeOption;
@@ -603,9 +604,13 @@ export default function UsersPage(): ReactElement {
         <InvitationsPanel
           invitations={invitations}
           busy={busy}
-          onResend={(invitation) =>
+          onResend={(invitation, sendEmail = true) =>
             void perform(async () => {
-              const result = await users.resendInvitation(invitation.id);
+              const result = await users.resendInvitation(
+                invitation.id,
+                sendEmail,
+              );
+              setLinkOnly(!sendEmail);
               if (result.outcome === 'invited' && result.inviteUrl)
                 setResent(result);
               else
@@ -653,9 +658,14 @@ export default function UsersPage(): ReactElement {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t('invitations.resend')}</DialogTitle>
+              <DialogTitle>
+                {t(linkOnly ? 'invitations.copyNewLink' : 'invitations.resend')}
+              </DialogTitle>
             </DialogHeader>
-            <InviteResults results={[resent]} />
+            <p className='text-sm text-muted-foreground'>
+              {t('invitations.newLinkDescription')}
+            </p>
+            <InviteResults results={[resent]} linkOnly={linkOnly} />
             <DialogFooter>
               <Button onClick={() => setResent(undefined)}>
                 {t('invite.done')}

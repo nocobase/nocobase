@@ -239,9 +239,12 @@ export class UsersClient {
     );
   }
 
-  resendInvitation(invitationId: string): Promise<UserInvitationResult> {
+  resendInvitation(
+    invitationId: string,
+    sendEmail: boolean = true,
+  ): Promise<UserInvitationResult> {
     return this.send<UserInvitationResult>(
-      `users/invitations/${encodeURIComponent(invitationId)}/resend`,
+      `users/invitations/${encodeURIComponent(invitationId)}/resend?sendEmail=${sendEmail}`,
       'POST',
     );
   }

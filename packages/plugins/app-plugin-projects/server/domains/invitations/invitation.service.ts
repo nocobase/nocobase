@@ -66,7 +66,12 @@ export interface InvitationService {
     input: CreateInvitationsRequest,
     origin: string,
   ): Promise<InvitationResult[]>;
-  resend(viewer: Viewer, id: string, origin: string): Promise<InvitationResult>;
+  resend(
+    viewer: Viewer,
+    id: string,
+    origin: string,
+    sendEmail?: boolean,
+  ): Promise<InvitationResult>;
   revoke(viewer: Viewer, id: string): Promise<void>;
   /** An invitation was accepted: registered with the user management plugin's `onInvitationAccepted`. */
   accepted(context: UserInvitationAcceptedContext): Promise<void>;
@@ -244,11 +249,11 @@ export function createInvitationService(
       );
     },
 
-    async resend(viewer, id, origin) {
+    async resend(viewer, id, origin, sendEmail = true) {
       await managed(viewer, id);
       return sentResult(
         await fromUsers(() =>
-          deps.invitations.resendInvitation(id, { origin }),
+          deps.invitations.resendInvitation(id, { origin, sendEmail }),
         ),
       );
     },

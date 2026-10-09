@@ -16,6 +16,8 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { InvitationEmail } from '../server/invitations/mail.js';
+import { hashToken } from '../server/invitations/rules.js';
+import { findInvitation } from '../server/invitations/store.js';
 import {
   createUserManagementService,
   createUserRoleScopeRegistry,
@@ -107,6 +109,7 @@ describe('user invitations', () => {
         email: 'new@example.com',
         outcome: 'invited',
         emailSent: true,
+        inviteUrl: expect.stringContaining(`${ORIGIN}/main/invite/`),
       }),
       { email: 'ann@example.com', outcome: 'existingUser', userId: 'ann' },
     ]);
@@ -265,7 +268,11 @@ describe('user invitations', () => {
     const [invitation] = await service.listInvitations();
     const id = invitation?.id ?? '';
 
-    await service.resendInvitation(id, { origin: ORIGIN });
+    const result = await service.resendInvitation(id, { origin: ORIGIN });
+    expect(result).toMatchObject({
+      emailSent: true,
+      inviteUrl: `${ORIGIN}/main/invite/${tokenOf(mail[1] as InvitationEmail)}`,
+    });
     await expect(
       service.lookupInvitation(tokenOf(mail[0] as InvitationEmail)),
     ).rejects.toMatchObject({ code: 'INVITATION_NOT_FOUND' });
@@ -277,6 +284,48 @@ describe('user invitations', () => {
     await expect(service.revokeInvitation(id)).rejects.toMatchObject({
       code: 'INVITATION_CLOSED',
     });
+  });
+
+  it('rotates a link without email, rejects the old token and stores only the hash', async () => {
+    await service.invite({
+      emails: ['new@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+    const [invitation] = await service.listInvitations();
+    const id = invitation?.id ?? '';
+    const oldToken = tokenOf(mail[0] as InvitationEmail);
+    const result = await service.resendInvitation(id, {
+      origin: ORIGIN,
+      sendEmail: false,
+    });
+    expect(result.outcome).toBe('invited');
+    if (result.outcome !== 'invited') throw new Error('Expected an invitation');
+    expect(result.emailSent).toBe(false);
+    const token = result.inviteUrl?.split('/').at(-1) ?? '';
+    expect(token).not.toBe(oldToken);
+    expect(token).not.toBe('');
+    expect(mail).toHaveLength(1);
+    await expect(service.lookupInvitation(oldToken)).rejects.toMatchObject({
+      code: 'INVITATION_NOT_FOUND',
+    });
+    await expect(service.lookupInvitation(token)).resolves.toMatchObject({
+      email: 'new@example.com',
+    });
+    const row = await findInvitation(database.connection(), { id });
+    expect(row).toMatchObject({
+      tokenHash: hashToken(token),
+      sentAt: null,
+      sendError: null,
+    });
+    expect(JSON.stringify(row)).not.toContain(token);
+    expect(JSON.stringify(await service.listInvitations())).not.toContain(
+      token,
+    );
+    await service.revokeInvitation(id);
+    await expect(
+      service.resendInvitation(id, { origin: ORIGIN, sendEmail: false }),
+    ).rejects.toMatchObject({ code: 'INVITATION_CLOSED' });
   });
 
   it('refuses invalid addresses and unknown role scopes', async () => {

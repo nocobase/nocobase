@@ -1,5 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { MoreHorizontal, Send, Trash2 } from 'lucide-react';
+import { Copy, MoreHorizontal, Send, Trash2 } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 
 import type { UserInvitation } from '../user-client.js';
@@ -42,7 +42,7 @@ export function InvitationsPanel({
 }: {
   readonly invitations: readonly UserInvitation[];
   readonly busy: boolean;
-  readonly onResend: (invitation: UserInvitation) => void;
+  readonly onResend: (invitation: UserInvitation, sendEmail?: boolean) => void;
   readonly onRevoke: (invitation: UserInvitation) => void;
 }): ReactElement {
   const { t, i18n } = useTranslation(NS);
@@ -120,6 +120,12 @@ export function InvitationsPanel({
                         <DropdownMenuItem onClick={() => onResend(invitation)}>
                           <Send />
                           {t('invitations.resend')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onResend(invitation, false)}
+                        >
+                          <Copy />
+                          {t('invitations.copyNewLink')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

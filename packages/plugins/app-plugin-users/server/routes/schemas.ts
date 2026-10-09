@@ -272,6 +272,16 @@ export const UserInvitationSchema: z.ZodType<UserInvitation> = z
   })
   .meta({ ref: 'UsersInvitation' });
 
+export const ResendInvitationQuery: z.ZodObject<
+  { sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>> },
+  z.core.$strip
+> = z.object({
+  sendEmail: z.enum(['true', 'false']).optional().meta({
+    description:
+      'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
+  }),
+});
+
 export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
   .discriminatedUnion('outcome', [
     z.object({
@@ -281,7 +291,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Returned once when sending failed, for the inviter to forward.',
+          'Returned for every new invitation link, whether or not email was sent.',
       }),
     }),
     z.object({

@@ -408,6 +408,11 @@ const pages = {
     projectsHint: 'Invitees join these projects as members.',
     projectsPlaceholder: 'Choose projects',
     resend: 'Send again',
+    copyNewLink: 'Copy new link',
+    linkReady: 'New link ready',
+    newLinkDescription:
+      'The previous link no longer works. Copy and share the new link below.',
+    copyLink: 'Copy invitation link',
     resent: 'Invitation sent again to {{email}}',
     resultsLabel: 'Invitation results',
     revoke: 'Revoke',

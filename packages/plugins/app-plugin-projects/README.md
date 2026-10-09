@@ -151,6 +151,8 @@ issueIds)` those of them a person follows. An application's board of work joins 
 
 Everything is under `/api/projects` and needs a session (401 otherwise). Responses are `{ data }`, lists `{ data, meta }`; inputs are validated (400 `INVALID_INPUT`, domain `app`, with `fieldViolations`; JSON bodies are strict). Fixed segments come before `/{projectId}`.
 
+Invitation create/resend results include `inviteUrl` even after successful email delivery. `POST /api/projects/invitations/{invitationId}/resend?sendEmail=false` generates a fresh link without sending email and immediately invalidates the old link. The member settings offer “Copy new link” and show the new URL for copying. Permission checks remain the same as resend; invitation lists never include links.
+
 | Method and path                                                                    | What it does                                                |
 | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `GET /me`                                                                          | The caller with their permissions                           |

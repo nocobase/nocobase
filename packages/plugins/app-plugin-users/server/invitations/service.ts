@@ -6,8 +6,8 @@
  * - An address may hold several pending invitations, each with its own link, roles and data. Accepting any one of them
  *   accepts them all, in one transaction: the account is created with the accepted invitation's roles, and the
  *   `onInvitationAccepted` handlers run once per invitation, so what each inviter attached takes effect.
- * - Only the token's hash is stored. Emails are submitted after the rows commit; when submitting fails, the inviter
- *   gets the link once, to forward by hand, and the row keeps the error.
+ * - Only the token's hash is stored. Emails are submitted after the rows commit; the inviter always gets the link
+ *   once, to forward by hand, and the row keeps any delivery error.
  */
 import { randomUUID } from 'node:crypto';
 
@@ -121,6 +121,7 @@ export function createInvitationManager(
   async function deliver(
     outgoing: readonly Outgoing[],
     origin: string | undefined,
+    sendEmail: boolean = true,
   ): Promise<UserInvitationResult[]> {
     const base = linkBase(origin);
     const connection = database.connection();
@@ -129,30 +130,31 @@ export function createInvitationManager(
       const url = `${base}/invite/${token}`;
       let error: string | null = null;
       try {
-        await options.mailer.send(
-          buildInvitationEmail({
-            to: row.email,
-            appTitle: options.site.appTitle,
-            inviterName: await nameOf(row.invitedById),
-            summary: row.summary,
-            url,
-            expiresAt: new Date(row.expiresAt),
-            idempotencyKey: `user-invitation:${hashToken(token)}`,
-          }),
-        );
+        if (sendEmail)
+          await options.mailer.send(
+            buildInvitationEmail({
+              to: row.email,
+              appTitle: options.site.appTitle,
+              inviterName: await nameOf(row.invitedById),
+              summary: row.summary,
+              url,
+              expiresAt: new Date(row.expiresAt),
+              idempotencyKey: `user-invitation:${hashToken(token)}`,
+            }),
+          );
       } catch (cause) {
         error = cause instanceof Error ? cause.message : String(cause);
       }
       await updateInvitation(connection, row.id, {
-        sentAt: error ? null : new Date().toISOString(),
+        sentAt: sendEmail && !error ? new Date().toISOString() : null,
         sendError: error ? error.slice(0, 1000) : null,
       });
       results.push({
         email: row.email,
         outcome: 'invited',
         invitationId: row.id,
-        emailSent: !error,
-        ...(error ? { inviteUrl: url } : {}),
+        emailSent: sendEmail && !error,
+        inviteUrl: url,
       });
     }
     return results;
@@ -244,6 +246,7 @@ export function createInvitationManager(
     },
 
     async resendInvitation(id, input = {}) {
+      linkBase(input.origin);
       const outgoing = await database.transaction(async (connection) => {
         const row = await findInvitation(connection, { id });
         if (!row) throw notFound();
@@ -260,7 +263,7 @@ export function createInvitationManager(
         await updateInvitation(connection, id, { tokenHash: hash, expiresAt });
         return { row: { ...row, tokenHash: hash, expiresAt }, token };
       });
-      const [result] = await deliver([outgoing], input.origin);
+      const [result] = await deliver([outgoing], input.origin, input.sendEmail);
       return result;
     },
 

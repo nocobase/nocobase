@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createHarness, type Harness } from '../harness.js';
 
@@ -42,7 +42,12 @@ describe('inviting', () => {
       [apollo],
     );
     expect(results).toEqual([
-      { email: 'new@example.com', outcome: 'invited', emailSent: true },
+      {
+        email: 'new@example.com',
+        outcome: 'invited',
+        emailSent: true,
+        inviteUrl: expect.stringContaining('/invite/'),
+      },
       { email: 'alice@example.com', outcome: 'added' },
     ]);
     expect(h.invitations.rows[0]).toMatchObject({
@@ -79,6 +84,30 @@ describe('inviting', () => {
 });
 
 describe('managing invitations', () => {
+  it('forwards mail-free rotation only for an invitation the viewer can manage', async () => {
+    await invite(h.viewer('admin', 'admin'), ['new@example.com'], [apollo]);
+    const id = h.invitations.rows[0]?.id ?? '';
+    const resend = vi.spyOn(h.invitations, 'resendInvitation');
+    await expect(
+      h.services.invitations.resend(h.viewer('lead'), id, ORIGIN, false),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(resend).not.toHaveBeenCalled();
+    await expect(
+      h.services.invitations.resend(
+        h.viewer('admin', 'admin'),
+        id,
+        ORIGIN,
+        false,
+      ),
+    ).resolves.toMatchObject({
+      inviteUrl: expect.stringContaining('/invite/'),
+    });
+    expect(resend).toHaveBeenCalledWith(id, {
+      origin: ORIGIN,
+      sendEmail: false,
+    });
+  });
+
   it('shows a lead their own invitations and a manager every one', async () => {
     await invite(h.viewer('lead'), ['one@example.com'], [apollo]);
     await invite(h.viewer('admin', 'admin'), ['two@example.com'], [zeus]);
