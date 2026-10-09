@@ -5,7 +5,6 @@
  * models. The efforts offered are the row's tool's or the online ones. The first row is the default. Rows are added,
  * removed and moved up or down; an online agent may remove its last row and wait for a model, a runner agent may not.
  */
-import { Autocomplete } from '@base-ui/react';
 import { type AgentTool } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -39,7 +38,13 @@ import { EffortSelect, ToolSelect } from './agent-fields.js';
 import { ModelFields } from './agent-type.js';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
-import { InputGroup, InputGroupInput } from './ui/input-group.js';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from './ui/combobox.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip.js';
 
 function ModelSources({
@@ -52,11 +57,13 @@ function ModelSources({
     (runner) => runner.available,
   ).length;
   return (
-    <span className='ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground'>
-      {suggestion.builtIn ? <span>{t('modelEntries.builtIn')}</span> : null}
+    <span className='ml-auto inline-flex shrink-0 items-center gap-1'>
+      {suggestion.builtIn ? (
+        <Badge variant='secondary'>{t('modelEntries.builtIn')}</Badge>
+      ) : null}
       {suggestion.runners.length > 0 ? (
         <Tooltip>
-          <TooltipTrigger render={<span />}>
+          <TooltipTrigger render={<Badge variant='outline' />}>
             {t('modelEntries.availableRunners', { count: available })}
           </TooltipTrigger>
           <TooltipContent>
@@ -106,49 +113,37 @@ export function ModelInput({
     suggestions.map((suggestion) => [suggestion.id, suggestion]),
   );
   return (
-    <Autocomplete.Root
+    // The typed text is the value: selecting it keeps a model that is not suggested from being reset when the list closes.
+    <Combobox<string>
       items={suggestions.map((suggestion) => suggestion.id)}
-      value={value}
+      value={value || null}
+      inputValue={value}
+      onValueChange={(next) => onChange(next ?? '')}
+      onInputValueChange={(next) => onChange(next)}
       openOnInputClick
       disabled={disabled}
-      onValueChange={(next: string) => onChange(next)}
     >
-      <InputGroup className='w-full'>
-        <Autocomplete.Input
-          id={id}
-          render={<InputGroupInput disabled={disabled} />}
-          placeholder={placeholder}
-          aria-label={ariaLabel}
-          title={t('modelEntries.suggestions')}
-        />
-      </InputGroup>
-      <Autocomplete.Portal>
-        <Autocomplete.Positioner
-          side='bottom'
-          sideOffset={6}
-          align='start'
-          className='isolate z-50'
-        >
-          <Autocomplete.Popup
-            data-slot='combobox-content'
-            className='max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95'
-          >
-            <Autocomplete.List className='max-h-72 scroll-py-1 overflow-y-auto overscroll-contain p-1 data-empty:p-0'>
-              {(item: string) => (
-                <Autocomplete.Item
-                  key={item}
-                  value={item}
-                  className='relative flex w-full cursor-default items-center gap-2 rounded-md px-1.5 py-1 font-mono text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground'
-                >
-                  <span className='min-w-0 break-all'>{item}</span>
-                  <ModelSources suggestion={byId.get(item)!} />
-                </Autocomplete.Item>
-              )}
-            </Autocomplete.List>
-          </Autocomplete.Popup>
-        </Autocomplete.Positioner>
-      </Autocomplete.Portal>
-    </Autocomplete.Root>
+      <ComboboxInput
+        id={id}
+        className='w-full'
+        disabled={disabled}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        title={t('modelEntries.suggestions')}
+      />
+      <ComboboxContent className='min-w-72'>
+        <ComboboxList>
+          {(item: string) => (
+            <ComboboxItem key={item} value={item}>
+              <span title={item} className='min-w-0 flex-1 truncate font-mono'>
+                {item}
+              </span>
+              <ModelSources suggestion={byId.get(item)!} />
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }
 

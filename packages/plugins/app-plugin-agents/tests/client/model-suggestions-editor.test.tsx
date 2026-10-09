@@ -129,6 +129,36 @@ describe('model suggestions in the Agent editor', () => {
     },
   );
 
+  it('lists built-in models on one line in a popup at least as wide as a model id needs', async () => {
+    const runtime = await createTestI18nRuntime({
+      namespaces: { [NS]: locales },
+    });
+    const user = userEvent.setup();
+    render(
+      <TestI18nProvider runtime={runtime} namespace={NS}>
+        <Editor initial={newEntryDraft({ tool: 'claude' })} save={vi.fn()} />
+      </TestI18nProvider>,
+    );
+    await user.click(screen.getByRole('combobox', { name: 'Model' }));
+    const option = await screen.findByRole('option', {
+      name: /claude-opus-5-5/,
+    });
+    const id = within(option).getByText('claude-opus-5-5');
+    expect(id).toHaveAttribute('title', 'claude-opus-5-5');
+    expect(id).toHaveClass('truncate');
+    expect(within(option).getByText('Built-in')).toHaveAttribute(
+      'data-slot',
+      'badge',
+    );
+    expect(option.closest('[data-slot="combobox-content"]')).toHaveClass(
+      'min-w-72',
+    );
+    await user.click(option);
+    expect(screen.getByRole('combobox', { name: 'Model' })).toHaveValue(
+      'claude-opus-5-5',
+    );
+  });
+
   it('keeps an existing model and effort when a report arrives, and keeps manual input possible', async () => {
     const runtime = await createTestI18nRuntime({
       namespaces: { [NS]: locales },
