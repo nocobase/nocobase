@@ -20,6 +20,8 @@ import type {
   Runner,
   RunnerStatus,
   RunnerTrust,
+  RunnerWorkspace,
+  RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import { jsonObject, stringArray } from '../kernel/values.js';
 
@@ -43,6 +45,7 @@ export interface RunnerRecord {
   readonly load: unknown;
   readonly acceptJobs: boolean;
   readonly policy: unknown;
+  readonly workspaceUsage?: unknown;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -156,6 +159,61 @@ export function storedPolicy(value: unknown): RunnerPolicy | null {
     : policy;
 }
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+function storedWorkspace(value: unknown): RunnerWorkspace | null {
+  const item = jsonObject(value);
+  if (
+    typeof item.runId !== 'string' ||
+    typeof item.workDir !== 'string' ||
+    !isFiniteNumber(item.sizeBytes)
+  )
+    return null;
+  const text = (field: unknown): string | null =>
+    typeof field === 'string' ? field : null;
+  return {
+    runId: item.runId,
+    workDir: item.workDir,
+    sizeBytes: item.sizeBytes,
+    unpushed: item.unpushed === true,
+    lastUsedAt: text(item.lastUsedAt) ?? '',
+    subjectKind: text(item.subjectKind),
+    subjectId: text(item.subjectId),
+    settled: typeof item.settled === 'boolean' ? item.settled : null,
+  };
+}
+
+/** A runner's last workspace report as stored: null when it never reported one. */
+export function storedWorkspaceUsage(
+  value: unknown,
+): RunnerWorkspaceUsage | null {
+  if (value === null || value === undefined) return null;
+  const usage = jsonObject(value);
+  if (!isFiniteNumber(usage.totalBytes) || typeof usage.measuredAt !== 'string')
+    return null;
+  const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
+    .map(storedWorkspace)
+    .filter((item): item is RunnerWorkspace => item !== null);
+  const count = (field: unknown, fallback: number): number =>
+    isFiniteNumber(field) ? field : fallback;
+  return {
+    totalBytes: usage.totalBytes,
+    appBytes: count(
+      usage.appBytes,
+      workspaces.reduce((total, item) => total + item.sizeBytes, 0),
+    ),
+    count: count(usage.count, workspaces.length),
+    unpushedCount: count(
+      usage.unpushedCount,
+      workspaces.filter((item) => item.unpushed).length,
+    ),
+    limitBytes: isFiniteNumber(usage.limitBytes) ? usage.limitBytes : null,
+    measuredAt: usage.measuredAt,
+    workspaces,
+  };
+}
+
 export function toRunner(
   record: RunnerRecord,
   ownerName: string | null = null,
@@ -181,6 +239,7 @@ export function toRunner(
     toolLoad: storedToolLoad(record.load),
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
+    workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

@@ -16,7 +16,8 @@
 // each cache. A lock whose owner is dead is taken over.
 //
 // GC removes a subject's work directory 7 days after a run that ended with every branch pushed, and any work directory
-// not used for 30 days.
+// not used for 30 days. The application's word that the work is over, and the owner's size limit, remove others
+// (workspaces.ts).
 //
 // A repository the run carries a credential for (`workspace.git.credentials`, a short-lived token) is fetched with it,
 // and the agent's git pushes with it through a credential helper (env.ts); it is never written to disk. Without one,
@@ -259,6 +260,12 @@ export interface WorkspaceMeta {
   endedAt?: string;
   /** Every branch was pushed when the last run ended. */
   pushed?: boolean;
+  /** The last run that worked here, which the application is asked about (core/workspaces.ts). */
+  lastRunId?: string;
+  /** What the directory took on disk when last measured (`measuredAt`), and whether it held unpushed work then. */
+  sizeBytes?: number;
+  unpushed?: boolean;
+  measuredAt?: string;
 }
 
 export function metaPath(workDir: string): string {
@@ -636,6 +643,8 @@ export interface PrepareDirsOptions {
   log?: (message: string) => void;
   /** How cloning, fetching and the submodules' update are retried. */
   retry?: GitRetryOptions;
+  /** The run preparing them, recorded as the last run that worked here. */
+  runId?: string;
 }
 
 /**
@@ -776,6 +785,13 @@ export async function prepareDirs(
       })),
       prepared: [...prepared],
       lastUsedAt: new Date().toISOString(),
+      ...(options.runId ?? meta?.lastRunId
+        ? { lastRunId: options.runId ?? meta?.lastRunId }
+        : {}),
+      // Measured again once the run is over (core/workspaces.ts); what it took before stands in until then.
+      ...(meta?.sizeBytes === undefined ? {} : { sizeBytes: meta.sizeBytes }),
+      ...(meta?.unpushed === undefined ? {} : { unpushed: meta.unpushed }),
+      ...(meta?.measuredAt === undefined ? {} : { measuredAt: meta.measuredAt }),
     } satisfies WorkspaceMeta);
     return { dirs, release };
   } catch (error) {
@@ -894,6 +910,14 @@ export async function reportRepos(
         );
       }
     }
+    // The push went to the URL rather than to `origin`, which leaves the tracking ref behind; bring it along so the
+    // checkout itself says what the remote has (core/workspaces.ts counts commits no remote-tracking ref has).
+    if (pushed)
+      await taskGitOk(repo, [
+        'update-ref',
+        `refs/remotes/origin/${repo.branch}`,
+        headSha,
+      ]).catch(() => false);
     reports.push({ url: repo.url, branch: repo.branch, pushed, headSha });
   }
   return reports;
@@ -942,6 +966,23 @@ export interface GcOptions {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * Removes a subject's work directory, and a legacy worktree's record in its cache. The caller holds the workspace lock.
+ */
+export async function removeWorkspace(
+  workDir: string,
+  meta: Pick<WorkspaceMeta, 'repos'>,
+): Promise<void> {
+  for (const repo of meta.repos) {
+    const dir = path.join(workDir, repo.path);
+    if (existsSync(repo.cache))
+      await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+  }
+  await rm(workDir, { recursive: true, force: true });
+  for (const repo of meta.repos)
+    if (existsSync(repo.cache)) await gitOk(['worktree', 'prune'], repo.cache);
+}
+
 /** Removes the work directories the retention rules let go. Returns the removed directories. */
 export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
   const { paths } = options;
@@ -982,15 +1023,7 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
       continue;
     }
     try {
-      for (const repo of meta.repos) {
-        const dir = path.join(workDir, repo.path);
-        if (existsSync(repo.cache))
-          await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
-      }
-      await rm(workDir, { recursive: true, force: true });
-      for (const repo of meta.repos)
-        if (existsSync(repo.cache))
-          await gitOk(['worktree', 'prune'], repo.cache);
+      await removeWorkspace(workDir, meta);
       removed.push(workDir);
       options.log?.(`gc: removed ${workDir}`);
     } finally {

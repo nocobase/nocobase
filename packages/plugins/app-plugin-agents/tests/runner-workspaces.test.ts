@@ -1,0 +1,175 @@
+/**
+ * A runner's working directories: the heartbeat announces that reports are accepted, and a report is answered with the
+ * runs whose subject's work is over (`remove`) or goes on (`keep`), as the subject's binding says. Only the runner's
+ * own runs are answered for, and the report is kept on the runner for the runtimes pages.
+ */
+import { RUNNER_ROUTES, WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import {
+  api,
+  claim,
+  createHarness,
+  type Harness,
+  type RegisteredRunner,
+} from './harness.js';
+
+const GB = 1024 ** 3;
+
+const workspace = (runId: string, sizeBytes: number, unpushed = false) => ({
+  runId,
+  workDir: `/home/runner/.nocobase-runner-work/acme/${runId}`,
+  sizeBytes,
+  unpushed,
+  lastUsedAt: '2026-10-01T00:00:00.000Z',
+});
+
+describe("a runner's working directories", () => {
+  let h: Harness;
+  afterEach(async () => {
+    await h?.close();
+  });
+
+  const report = (runner: RegisteredRunner, body: unknown) =>
+    h.request('POST', api(RUNNER_ROUTES.workspaces), {
+      runnerKey: runner.key,
+      body,
+    });
+
+  /** A runner holding one run on each of `subjects`; the run ids in that order. */
+  const runnerWithRuns = async (
+    subjects: readonly string[],
+  ): Promise<{ runner: RegisteredRunner; runIds: string[] }> => {
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner({ slots: subjects.length });
+    const runIds: string[] = [];
+    for (const subject of subjects) {
+      runIds.push(await h.enqueue(agentId, subject));
+      await claim(h, runner, 1);
+    }
+    return { runner, runIds };
+  };
+
+  it('announces in the heartbeat answer that reports are accepted', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const response = await h.request('POST', api(RUNNER_ROUTES.heartbeat), {
+      runnerKey: runner.key,
+      body: {
+        version: '0.1.0',
+        features: ['input', 'checkout'],
+        tools: [{ kind: 'claude', authenticated: true }],
+        active: [],
+        load: { slots: 1, free: 1 },
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(response.body.data.workspaces).toEqual({
+      intervalMs: WORKSPACE_REPORT_INTERVAL_MS,
+    });
+  });
+
+  it('answers which runs belong to subjects whose work is over, as the binding says', async () => {
+    h = await createHarness();
+    h.settled = new Set(['1']);
+    const { runner, runIds } = await runnerWithRuns(['1', '2']);
+    const [ended, ongoing] = runIds;
+    const response = await report(runner, {
+      workspaces: [workspace(ended, 2 * GB), workspace(ongoing, 3 * GB, true)],
+      limitBytes: 40 * GB,
+      totalBytes: 64 * GB,
+    });
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual({ remove: [ended], keep: [ongoing] });
+  });
+
+  it('keeps the report on the runner, largest first, with each subject and what was decided', async () => {
+    h = await createHarness();
+    h.settled = new Set(['1']);
+    const { runner, runIds } = await runnerWithRuns(['1', '2']);
+    const [ended, ongoing] = runIds;
+    await report(runner, {
+      workspaces: [workspace(ended, 2 * GB), workspace(ongoing, 3 * GB, true)],
+      limitBytes: 40 * GB,
+      totalBytes: 64 * GB,
+    });
+    const shown = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}`,
+      { user: 'owner' },
+    );
+    expect(shown.body.data.workspaceUsage).toMatchObject({
+      totalBytes: 64 * GB,
+      appBytes: 5 * GB,
+      count: 2,
+      unpushedCount: 1,
+      limitBytes: 40 * GB,
+      measuredAt: '2026-10-01T00:00:00.000Z',
+      workspaces: [
+        {
+          runId: ongoing,
+          sizeBytes: 3 * GB,
+          unpushed: true,
+          subjectKind: 'sample',
+          subjectId: '2',
+          settled: false,
+        },
+        {
+          runId: ended,
+          sizeBytes: 2 * GB,
+          unpushed: false,
+          subjectKind: 'sample',
+          subjectId: '1',
+          settled: true,
+        },
+      ],
+    });
+  });
+
+  it('decides nothing for a subject kind whose binding cannot say', async () => {
+    h = await createHarness();
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    const response = await report(runner, {
+      workspaces: [workspace(runIds[0], GB)],
+    });
+    expect(response.body.data).toEqual({ remove: [], keep: [] });
+    const shown = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}`,
+      { user: 'owner' },
+    );
+    expect(shown.body.data.workspaceUsage).toMatchObject({
+      limitBytes: null,
+      workspaces: [{ runId: runIds[0], settled: null }],
+    });
+  });
+
+  it("answers only for the runner's own runs", async () => {
+    h = await createHarness();
+    h.settled = new Set(['1']);
+    const { runIds } = await runnerWithRuns(['1']);
+    const other = await h.registerRunner({ name: 'other' });
+    const response = await report(other, {
+      workspaces: [workspace(runIds[0], GB), workspace('unknown', GB)],
+    });
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual({ remove: [], keep: [] });
+  });
+
+  it('refuses a report without a runner key', async () => {
+    h = await createHarness();
+    const response = await h.request('POST', api(RUNNER_ROUTES.workspaces), {
+      body: { workspaces: [] },
+    });
+    expect(response.status).toBe(401);
+  });
+
+  it('refuses a report that is not one', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const response = await report(runner, {
+      workspaces: [{ runId: 'r1', sizeBytes: -1 }],
+    });
+    expect(response.status).toBe(400);
+  });
+});

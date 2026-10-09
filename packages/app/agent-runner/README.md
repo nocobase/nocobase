@@ -12,6 +12,8 @@ nocobase-runner start [--foreground] [--slots 2] [--agent-home isolated|real]
 nocobase-runner status | logs [-f] [--run <id>] | stop
 nocobase-runner service install [--label <label>] | uninstall    # a launchd agent (macOS) or a systemd user unit (Linux)
 nocobase-runner update [--check] [--auto on|off]
+nocobase-runner gc [--apply] [--ended] [--older-than 14d] [--subject <key>] [--force]
+nocobase-runner config set workspace-limit 40G|off
 nocobase-runner uninstall [--purge] [--dry-run]
 nocobase-runner unregister --server https://app.example.com
 ```
@@ -29,6 +31,12 @@ The runner reports each coding tool it finds, with its version and whether it is
 ### Where things are
 
 The runner keeps its state in `~/.nocobase-runner` (0700, or wherever `NOCOBASE_RUNNER_HOME` says): settings, one registration per application in `apps/`, each registration's runner key in `credentials/` (0600), run records, event spools, logs, bare repository caches, installed CLIs, skill and mount bundles, the push guard hook, and `policy.json`. Agents work elsewhere, in `~/.nocobase-runner-work/<app>/<subject>/` (`NOCOBASE_RUNNER_WORK_ROOT`), each work directory holding the run's worktrees and `.nocobase-runner/` with the agent's home, its TMPDIR, the CLI shim, the run's skills (`plugin/`) and the workspace record. Build jobs work in `~/.nocobase-runner-work/.jobs/<app>/<jobId>/`, removed when each ends.
+
+### Cleaning up working directories
+
+A subject's working directory stays until something removes it. The runner removes one 7 days after a run that ended with every branch pushed, and any not used for 30 days. Beyond that, an application that accepts workspace reports (its heartbeat answer carries `workspaces`) is told every 10 minutes about each of its working directories: the last run that worked there (`lastRunId` in the workspace record), its size on disk, whether it holds unpushed work and when it was last used (`POST /api/agents/runners/workspaces`). It answers which of those runs belong to subjects whose work is over, and the runner removes those directories. Unpushed work means changes not committed (untracked files included), or commits no remote-tracking ref has; whether a branch was merged is never judged from the default branch's history, so a branch merged with a squash counts as done once the application says so. A directory with unpushed work is kept and reported as unpushed, and one a run holds is never touched.
+
+`nocobase-runner register --workspace-limit 40G` or `nocobase-runner config set workspace-limit 40G` caps what the working directories take together, across every application. Over the cap, the runner removes the directories whose work is over first, then the ones with nothing unpushed, least recently used first, and logs when only unpushed or busy directories are left. `nocobase-runner gc` lists every working directory with its size, application, subject, what the application says about it, its unpushed state and last use, and what would be removed; `--apply` removes it. `--ended`, `--older-than` and `--subject` pick directories instead of the default rules, and `--force` also removes picked directories with unpushed work. A directory's size and unpushed state are measured after a run used it, or once a day, and kept in its workspace record.
 
 ### Repository isolation
 

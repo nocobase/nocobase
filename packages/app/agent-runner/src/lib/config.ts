@@ -46,6 +46,11 @@ export interface RunnerSettings {
   autoUpdate: boolean;
   /** The label of the service `service install` set up, so `uninstall` finds it. */
   serviceLabel?: string;
+  /**
+   * The most bytes the working directories may take, across every application (`register --workspace-limit 40G`,
+   * `config set workspace-limit 40G`); absent for no limit. Over it, the runner removes what it may (core/workspaces.ts).
+   */
+  workspaceLimit?: number;
 }
 
 export interface AppRegistration {
@@ -89,6 +94,11 @@ export async function readSettings(
     autoUpdate: stored?.autoUpdate !== false,
     ...(typeof stored?.serviceLabel === 'string' && stored.serviceLabel !== ''
       ? { serviceLabel: stored.serviceLabel }
+      : {}),
+    ...(typeof stored?.workspaceLimit === 'number' &&
+    Number.isSafeInteger(stored.workspaceLimit) &&
+    stored.workspaceLimit > 0
+      ? { workspaceLimit: stored.workspaceLimit }
       : {}),
   };
 }

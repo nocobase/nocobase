@@ -71,6 +71,10 @@ export interface Timings {
   cancelGraceMs?: number;
   /** SIGTERM to SIGKILL. */
   killGraceMs?: number;
+  /** How often the daemon checks whether working directories are due for collection. */
+  gcTickMs?: number;
+  /** How often working directories are collected, unless an application asks for sooner. */
+  collectIntervalMs?: number;
 }
 
 /** What a worker reads from its stdin: a run, or a job (`kind: 'job'`). */
