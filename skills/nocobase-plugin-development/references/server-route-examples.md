@@ -437,65 +437,58 @@ export default plugin;
 
 ## Test the production contributions
 
-Call each exported contribution's real `createRouter()` with a complete `AppPluginApplication`. The following focused test uses the real `Auth` class with an in-memory SQLite connection and substitutes only `getSession()` to select anonymous behavior without unsafe partial-class casts.
+Call each exported contribution's real `createRouter()` with a complete `AppPluginApplication`. The following focused test uses the real `Auth` class with a database provided by `createDatabaseTest()` and substitutes only `getSession()` to select anonymous behavior without unsafe partial-class casts.
 
 ```ts
-// tests/routes.test.ts
+// tests/server/routes.test.ts
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
 import { createConfigPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-import { createDatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, vi } from 'vitest';
 
-import { apiRoutes } from '../server/routes/api.js';
-import { rootRoutes } from '../server/routes/root.js';
-import { orderServiceToken } from '../server/tokens.js';
+import { apiRoutes } from '../../server/routes/api.js';
+import { rootRoutes } from '../../server/routes/root.js';
+import { orderServiceToken } from '../../server/tokens.js';
+
+const test = createDatabaseTest();
 
 describe('order Route contributions', () => {
-  it('owns both authentication boundaries without middleware bleed', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
+  test('owns both authentication boundaries without middleware bleed', async ({ connection }) => {
+    const authentication = new Auth({
+      connection,
+      baseURL: 'http://example.test',
+      secret: 'route-example-test-secret-at-least-32-characters',
     });
-    try {
-      const authentication = new Auth({
-        connection: database.connection(),
-        baseURL: 'http://example.test',
-        secret: 'route-example-test-secret-at-least-32-characters',
-      });
-      vi.spyOn(authentication, 'getSession').mockResolvedValue(null);
+    vi.spyOn(authentication, 'getSession').mockResolvedValue(null);
 
-      const container = new ServiceContainer();
-      container.instance(authenticationToken, authentication);
-      container.instance(orderServiceToken, {
-        list: async () => [{ id: 'order-1', reference: 'SO-1000' }],
-        create: async (input) => ({ id: 'order-2', ...input }),
-      });
+    const container = new ServiceContainer();
+    container.instance(authenticationToken, authentication);
+    container.instance(orderServiceToken, {
+      list: async () => [{ id: 'order-1', reference: 'SO-1000' }],
+      create: async (input) => ({ id: 'order-2', ...input }),
+    });
 
-      const application = new Hono();
-      const app: AppPluginApplication = {
-        appName: 'main',
-        publicBasePath: '',
-        config: { app: { name: 'main', publicBasePath: '' } },
-        paths: createConfigPaths({ rootDir: '/tmp/order-route-example' }),
-        router: application,
-        container,
-      };
-      application.route('/api', await apiRoutes.createRouter(app));
-      application.route('/', await rootRoutes.createRouter(app));
-      application.get('/api/laterPlugin', (context) => context.text('later'));
+    const application = new Hono();
+    const app: AppPluginApplication = {
+      appName: 'main',
+      publicBasePath: '',
+      config: { app: { name: 'main', publicBasePath: '' } },
+      paths: createConfigPaths({ rootDir: '/tmp/order-route-example' }),
+      router: application,
+      container,
+    };
+    application.route('/api', await apiRoutes.createRouter(app));
+    application.route('/', await rootRoutes.createRouter(app));
+    application.get('/api/laterPlugin', (context) => context.text('later'));
 
-      expect((await application.request('/api/orders')).status).toBe(401);
-      expect((await application.request('/orders/export')).status).toBe(401);
-      await expect(
-        (await application.request('/api/laterPlugin')).text(),
-      ).resolves.toBe('later');
-    } finally {
-      await database.destroy();
-    }
+    expect((await application.request('/api/orders')).status).toBe(401);
+    expect((await application.request('/orders/export')).status).toBe(401);
+    await expect(
+      (await application.request('/api/laterPlugin')).text(),
+    ).resolves.toBe('later');
   });
 });
 ```
@@ -510,7 +503,7 @@ Add focused tests for authenticated success, `403` with `error.reason` `AUTHORIZ
 
 - Runnable Root and API contribution implementations (`packages/examples/app-plugin-routes-example/server/routes`)
 - Production `createRouter()` contribution tests and middleware-leak check (`packages/examples/app-plugin-routes-example/tests/routes.test.ts`)
-- Typed real-`Auth` test fixture backed by SQLite (`packages/examples/app-plugin-repository-example/tests/helpers.ts`)
+- Typed real-`Auth` test fixture on the selected test database (`packages/examples/app-plugin-repository-example/tests/helpers.ts`)
 - Authentication middleware and `AuthEnv` (`packages/plugins/app-plugin-authentication/server/auth.ts`)
 - Authorization middleware, error mapping, and protected handlers (`packages/plugins/app-plugin-authorization/server/routes/authorization.ts`)
 - Route contribution contracts (`packages/app/app-server/src/router/routes.ts`)

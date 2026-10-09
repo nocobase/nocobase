@@ -21,6 +21,11 @@
   },
   {
     "type": "file",
+    "name": "testing",
+    "label": "Testing"
+  },
+  {
+    "type": "file",
     "name": "skills",
     "label": "Teaching AI to use your plugin"
   },

@@ -2,6 +2,30 @@
 
 Use this reference to select checks for the changed behavior and its target App integration. Plugin tests belong in the plugin-root `tests/` directory and use `*.test.ts` or `*.test.tsx`; they must stay out of published build output.
 
+## Choose the fixture and environment
+
+Declare `@nocobase/app-testing` in `devDependencies`. Application and plugin tests import its entries instead of importing `@nocobase/db-testing` or `@nocobase/app-cli/testing` directly. Pure functions and isolated services can still use Vitest and explicit dependencies without starting an application.
+
+| Subject | Entry and fixture | Environment and location |
+| --- | --- | --- |
+| A page using application hooks, plugin services or translations | `@nocobase/app-testing/client`: `renderWithApp()`, `answerApi()` | jsdom, `tests/client/` |
+| A service or production router needing a database | `@nocobase/app-testing/server`: `createDatabaseTest()` | Node, `tests/server/` |
+| A migration or seed | `@nocobase/app-testing/server`: `describeMigration()` or `createDatabaseTest()` | Node, `tests/database/` |
+| Real login, installed plugins and permission boundaries | `@nocobase/app-testing/server`: `createAppTest()` | Node, `tests/server/` |
+| A command | `@nocobase/app-testing/cli`: `bindAppCommand()`, `runAppCommand()`; add `createTestAppConfig()` and `bindTestAppCommand()` when it opens an application | Node, `tests/cli/` |
+
+The generated `vitest.config.ts` selects environments by directory through projects. Keep helpers and fixture applications in `tests/helpers/` and `tests/fixtures/`, and package/build checks in `tests/project/`. An older plugin follows its existing layout until it is migrated; inspect its configuration rather than moving one test into a directory the runner does not select.
+
+When a published `@nocobase/app-testing/client` reports that `useLocation()` has no Router despite `renderWithApp()`, check the React preset's `test.server.deps.inline`: the fixture, plugin clients and app-client files must share Vite's router module with the page. For a preset without that rule, add `/@nocobase\/(?:app-client\/|app-plugin-[^/]+\/(?:dist\/)?client\/|app-testing\/(?:dist\/)?src\/client\/)/u` to the local inline list. Keep the match limited to the client runtime, plugin clients and fixture files; do not inline server/database fixtures or add a second Router. This uses Vitest's existing configuration and works with already published packages.
+
+Database fixtures use SQLite by default and the dialect selected by `NOCOBASE_TEST_DB_DIALECT` otherwise. Never choose a driver, an in-memory filename, or dialect-specific SQL in a business test. Supply migration sources and assert logical schema with `expectCollection()`. `createDatabaseTest()` resets schema between tests by default; `createAppTest()` shares one started application per file by default, so use `scope: 'test'` when tests need independent application data. Manually created `createTestApp()` and `createTestAppConfig()` values need `close()` and `dispose()` in `finally`; Vitest fixtures handle their own cleanup.
+
+For whole-application tests, pass `createServer` from a fixture application's `server/standalone.ts` or test in the target application's suite. That runtime must actually register the plugin and its authentication/authorization dependencies. Sign in with `signIn()` from `@nocobase/app-plugin-authentication/testing`; use seeded or test-created accounts with known grants to check anonymous, denied and allowed access. See the application test in `packages/templates/app-template-examples/tests/logic/authorization-session.test.ts` and the API examples in `packages/tools/app-testing/README.md`.
+
+For pages, `renderWithApp(ui, { plugins: [plugin()], namespace, route, fetch: answerApi(handler) })` starts the real client services, providers and strict translations. Use the plugin factory's declaration to load its own locales; use `namespaces` for application-owned or additional resources. Keep `useApiClient()`, `useService()`, `useTranslation()` and `useToaster()` real. Substitute an external service through `services` and leave out the plugin whose service it replaces. Record API calls with a `vi.fn()` handler, return a `Response` for a non-200 status, and explicitly reject unexpected requests; returning nothing from a handler produces a successful `null` body. Assert notifications through the returned `toasts()`. The helper owns a memory router: render `Routes` and child `Route` elements inside it rather than adding another router. It does not enforce the host's route declarations or `authz`; verify those through the host application too. See [the page example](client-examples.md#behavior-test-for-redirect-query-and-access-fallback).
+
+`renderWithApp()` also accepts `server: testApp` and a sign-in session's `cookie` to call a real server in process. The client entry is jsdom-safe, but importing a Node server fixture into jsdom is not automatically safe: run server/database fixtures under Node and choose an appropriate separate browser or mixed-environment setup for a full page-to-server test. Reserve browser tests for browser behavior, layout and end-to-end navigation; real authentication and databases alone do not require Playwright.
+
 ## Select observable checks
 
 | Changed surface           | Verify                                                                                                                    |

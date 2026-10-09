@@ -2,58 +2,53 @@
 // `useCan`, formats with `useLocale`, raises a toast and opens a child-route `RouteDialog`. The page under test is
 // defined in this file so the template has one to run; in an application, import the real page and its child routes
 // instead and keep the setup below.
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
-import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { useCan } from '@nocobase/app-plugin-authorization/client';
-import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import {
-  TestI18nProvider,
-  createTestI18nRuntime,
-} from '@nocobase/i18n/testing';
-import { render, screen, waitFor } from '@testing-library/react';
+  apiClientToken,
+  ApiClientError,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
+import {
+  AuthenticationProvider,
+  authenticationClientToken,
+  useAuthentication,
+} from '@nocobase/app-plugin-authentication/client';
+import {
+  AuthorizationClient,
+  authorizationClientToken,
+  useCan,
+  type AuthorizationSnapshot,
+} from '@nocobase/app-plugin-authorization/client';
+import {
+  answerApi,
+  renderWithApp,
+  type ApiCall,
+} from '@nocobase/app-testing/client';
+import { useLocale, useTranslation } from '@nocobase/i18n/client';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type ReactElement, type ReactNode, useEffect, useState } from 'react';
-import { createMemoryRouter, Link, Outlet, RouterProvider } from 'react-router';
+import { type ReactElement, useEffect, useState } from 'react';
+import { Link, Outlet, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RouteDialog } from '#components/route-dialog';
 import { Button } from '#components/ui/button';
 import { useRouteOverlay } from '#components/use-route-overlay';
 
+import packageMetadata from '../../package.json' with { type: 'json' };
 import enUS from '../../client/locales/en-US.js';
 
-// `vi.mock` factories run before this file's imports and code, so everything a factory uses is created here.
-const { api, toaster, permission, refresh } = vi.hoisted(() => ({
-  // One object for the whole file: a new one per call would restart every effect that depends on `api`.
-  api: { request: vi.fn() },
-  // One toaster too, so a test asserts what `show` was called with rather than how Base UI renders it.
-  toaster: { show: vi.fn(), close: vi.fn() },
-  // What `useCan` returns; a test sets `can`, `isPending` or `error` before rendering.
-  permission: {
-    can: true,
-    isPending: false,
-    error: undefined as unknown,
-  },
-  refresh: vi.fn(),
-}));
-
-vi.mock('@nocobase/app-client', async (original) => ({
-  // Keep the real module, so `ApiClientError` stays the class the page checks with `instanceof`.
-  ...(await original<typeof import('@nocobase/app-client')>()),
-  useApiClient: () => api,
-  useToaster: () => toaster,
-}));
-vi.mock('@nocobase/app-plugin-authentication/client', () => ({
-  useAuthentication: () => ({ refresh }),
-}));
-vi.mock('@nocobase/app-plugin-authorization/client', () => ({
-  useCan: () => ({
-    can: permission.can,
-    isPending: permission.isPending,
-    error: permission.error,
-    retry: vi.fn(),
-  }),
-}));
+// Substitute the authentication service at its token, keeping the real provider and hooks.
+// Authentication itself is covered by server tests that sign in through the application's real routes.
+const getSession = vi.fn(async () => ({ data: null }));
+let permissions: AuthorizationSnapshot;
+let itemsResponse: unknown;
+const api = vi.fn(({ method, path }: ApiCall) => {
+  if (method === 'GET' && path === 'authorization/permissions')
+    return { data: permissions };
+  if (method === 'GET' && path === 'items') return itemsResponse;
+  return new Response(null, { status: 404 });
+});
 
 // The inline page's own copy. A real page finds its keys in `client/locales/`; this one brings them, merged over the
 // application's so the dialog's close button and the shared `status.*` keys resolve as they would there.
@@ -73,18 +68,6 @@ const copy = {
     },
   },
 };
-
-// The real runtime, strict: a key the resources lack fails the test instead of rendering as text.
-const runtime = await createTestI18nRuntime({
-  application: {
-    namespace: '@nocobase/app-template-default',
-    resources: { ...enUS, ...copy },
-  },
-});
-
-function I18n({ children }: { readonly children: ReactNode }): ReactElement {
-  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
-}
 
 interface Item {
   readonly id: number;
@@ -195,56 +178,85 @@ function NewItemPage(): ReactElement {
   );
 }
 
-/** The page as the application routes it: the list at /items with the create dialog as its child route. */
-function renderAt(url: string) {
-  const router = createMemoryRouter(
-    [
-      {
-        path: '/items',
-        element: <ItemsPage />,
-        children: [{ path: 'new', element: <NewItemPage /> }],
+/** renderWithApp owns the router; declare the page and its child routes inside it. */
+function LocationProbe(): ReactElement {
+  const location = useLocation();
+  return <span data-testid='location'>{location.pathname}</span>;
+}
+
+async function renderAt(route: string) {
+  return renderWithApp(
+    <AuthenticationProvider>
+      <LocationProbe />
+      <Routes>
+        <Route path='/items' element={<ItemsPage />}>
+          <Route path='new' element={<NewItemPage />} />
+        </Route>
+      </Routes>
+    </AuthenticationProvider>,
+    {
+      route,
+      namespace: packageMetadata.name,
+      namespaces: { [packageMetadata.name]: { ...enUS, ...copy } },
+      fetch: answerApi(api),
+      // These services replace the corresponding plugins for this focused page test. Do not register both.
+      services: (app) => {
+        app.container.instance(authenticationClientToken, { getSession });
+        app.container.singleton(
+          authorizationClientToken,
+          (resolver) =>
+            new AuthorizationClient(resolver.resolve(apiClientToken)),
+        );
       },
-    ],
-    { initialEntries: [url] },
+    },
   );
-  render(<RouterProvider router={router} />, { wrapper: I18n });
-  return router;
 }
 
 describe('page test harness', () => {
   beforeEach(() => {
-    api.request.mockReset();
-    toaster.show.mockReset();
-    permission.can = true;
-    permission.isPending = false;
-    permission.error = undefined;
-    refresh.mockReset();
+    api.mockClear();
+    getSession.mockClear();
+    permissions = {
+      unrestricted: false,
+      permissions: [
+        { resource: { type: 'composite', id: 'items' }, actions: ['create'] },
+      ],
+    };
+    itemsResponse = { data: [] };
   });
 
   it('loads the list with the request the page is expected to send', async () => {
-    api.request.mockResolvedValue({
+    itemsResponse = {
       data: [{ id: 1, name: 'Alpha', updatedAt: '2026-01-02T00:00:00Z' }],
+    };
+    await renderAt('/items');
+
+    expect(await screen.findByText(/Alpha/)).toBeInTheDocument();
+    expect(api).toHaveBeenCalledWith({ method: 'GET', path: 'items' });
+  });
+
+  it('shows loading until the API answers', async () => {
+    let respond!: (value: unknown) => void;
+    itemsResponse = new Promise((resolve) => {
+      respond = resolve;
     });
-    renderAt('/items');
+    await renderAt('/items');
 
     expect(screen.getByRole('status')).toHaveTextContent(
       enUS['status.loading'],
     );
+    respond({
+      data: [{ id: 1, name: 'Alpha', updatedAt: '2026-01-02T00:00:00Z' }],
+    });
     expect(await screen.findByText(/Alpha/)).toBeInTheDocument();
-    expect(api.request).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'items' }),
-    );
   });
 
   it('explains a 403 without offering a retry', async () => {
-    api.request.mockRejectedValue(
-      new ApiClientError('Forbidden', {
-        status: 403,
-        method: 'GET',
-        url: '/api/items',
-      }),
+    itemsResponse = Response.json(
+      { error: { message: 'Forbidden' } },
+      { status: 403 },
     );
-    renderAt('/items');
+    await renderAt('/items');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       copy.items.error.forbidden,
@@ -255,14 +267,11 @@ describe('page test harness', () => {
   });
 
   it('treats a 401 as an ended session, not as a failure to retry', async () => {
-    api.request.mockRejectedValue(
-      new ApiClientError('Unauthorized', {
-        status: 401,
-        method: 'GET',
-        url: '/api/items',
-      }),
+    itemsResponse = Response.json(
+      { error: { message: 'Unauthorized' } },
+      { status: 401 },
     );
-    renderAt('/items');
+    await renderAt('/items');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       copy['status.sessionExpired'],
@@ -270,36 +279,40 @@ describe('page test harness', () => {
     expect(
       screen.queryByRole('button', { name: enUS['status.retry'] }),
     ).not.toBeInTheDocument();
+    await waitFor(() => expect(getSession).toHaveBeenCalledTimes(1));
     await userEvent.click(
       screen.getByRole('button', { name: copy.actions.signInAgain }),
     );
-    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(getSession).toHaveBeenCalledTimes(2);
   });
 
   it('shows the create action only with permission', async () => {
-    api.request.mockResolvedValue({ data: [] });
-    renderAt('/items');
+    await renderAt('/items');
 
-    // A Button rendered as a Link (nativeButton={false}) is announced as a button, so query it by that role.
+    // A Button rendered as a Link is announced as a button.
     expect(
       await screen.findByRole('button', { name: copy.items.create.action }),
     ).toHaveAttribute('href', '/items/new');
+    expect(api).toHaveBeenCalledWith({
+      method: 'GET',
+      path: 'authorization/permissions',
+    });
   });
 
   it('hides the create action without permission', async () => {
-    permission.can = false;
-    api.request.mockResolvedValue({ data: [] });
-    renderAt('/items');
+    permissions = { unrestricted: false, permissions: [] };
+    const { app } = await renderAt('/items');
 
-    await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
+    await act(async () => {
+      await app.container.resolve(authorizationClientToken).snapshot();
+    });
     expect(
       screen.queryByRole('button', { name: copy.items.create.action }),
     ).not.toBeInTheDocument();
   });
 
   it('opens the create dialog from its URL and closes it back to the list', async () => {
-    api.request.mockResolvedValue({ data: [] });
-    const router = renderAt('/items/new');
+    const view = await renderAt('/items/new');
 
     expect(
       await screen.findByRole('dialog', { name: copy.items.create.title }),
@@ -308,11 +321,15 @@ describe('page test harness', () => {
       screen.getByRole('button', { name: copy.actions.create }),
     );
 
-    expect(toaster.show).toHaveBeenCalledWith({
-      type: 'success',
-      title: copy.items.create.success,
-    });
-    await waitFor(() => expect(router.state.location.pathname).toBe('/items'));
+    expect(view.toasts()).toEqual([
+      expect.objectContaining({
+        type: 'success',
+        title: copy.items.create.success,
+      }),
+    ]);
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(/^\/items$/),
+    );
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });

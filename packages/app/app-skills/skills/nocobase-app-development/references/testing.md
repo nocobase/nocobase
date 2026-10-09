@@ -14,6 +14,22 @@ tests/playwright/   Browser tests against a running application at APP_URL (Play
 
 Templates ship their tests into generated applications. Keep them runnable from the application root after scaffolding: read application identity from `package.json`, resolve application paths relative to the test file, and import dependencies through their published package exports. Do not depend on a monorepo checkout, a fixed template directory name, or a particular pnpm store layout. Run the affected test files in the generated application as well as in the template when changing these contracts.
 
+## Choose a test fixture
+
+Application tests take their fixtures from `@nocobase/app-testing` in `devDependencies`, rather than importing `@nocobase/db-testing` or `@nocobase/app-cli/testing` directly:
+
+| Subject                                                | Entry and fixture                                                                                                                                               |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Page, application hooks, translations, client services | `@nocobase/app-testing/client`: `renderWithApp()`, `answerApi()`                                                                                                |
+| Real application, sign-in and permissions              | `@nocobase/app-testing/server`: `createAppTest()`                                                                                                               |
+| Database-backed service or router                      | `@nocobase/app-testing/server`: `createDatabaseTest()`                                                                                                          |
+| Migration                                              | `@nocobase/app-testing/server`: `describeMigration()`                                                                                                           |
+| CLI command                                            | `@nocobase/app-testing/cli`: `bindAppCommand()`, `runAppCommand()`; `bindTestAppCommand()` and `createTestAppConfig()` for a command that opens the application |
+
+Use ordinary Vitest tests with explicit dependencies for pure functions and isolated domain logic. Run pages under jsdom and server, database and CLI fixtures under Node. Current templates retain `tests/components/` and `tests/logic/`; their server tests select Node with `// @vitest-environment node`. Follow the application's actual Vitest configuration. A new plugin instead uses projects selecting `tests/client/`, `tests/server/`, `tests/database/` and `tests/cli/` by directory. Do not copy its paths into an application without also adapting the configuration.
+
+Real authentication and a real database do not require a browser: use `createAppTest()` for API boundaries and [frontend tests](frontend/references/testing.md) for page behavior. Use Playwright for browser-only behavior and complete navigation flows.
+
 ## What to test, by change
 
 | You changed      | Test at least                                                                                                                     |
@@ -54,23 +70,30 @@ Do not add a `registerRoutes(router, ...)` helper just to make a route testable.
 To check a route's authentication and permission boundaries as a user meets them, start the application itself on test databases with `@nocobase/app-testing/server` and sign in through its own sign-in route with `@nocobase/app-plugin-authentication/testing`:
 
 ```ts
+// @vitest-environment node
 import {
   DEFAULT_ADMIN_CREDENTIALS,
   signIn,
 } from '@nocobase/app-plugin-authentication/testing';
 import { createAppTest } from '@nocobase/app-testing/server';
+import { expect } from 'vitest';
 import { createStandaloneServer } from '../../server/standalone.ts';
 
-const test = createAppTest({ createServer: createStandaloneServer });
+const test = createAppTest({
+  createServer: createStandaloneServer,
+  config: { auth: { secret: 'test-only-auth-secret-at-least-32-characters' } },
+});
 
-test('lists orders for an administrator only', async ({ testApp, request }) => {
+test('requires a session to list orders', async ({ testApp, request }) => {
   expect((await request('/orders')).status).toBe(401);
   const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
   expect((await admin.fetch('/orders')).status).toBe(200);
 });
 ```
 
-The application starts as `pnpm start` starts it and installs its migrations and seeds on start; one application serves the test file. A user other than the administrator is one a seed of the application created, signed in the same way.
+The application starts as `pnpm start` starts it and installs its migrations and seeds on start; one application serves the test file by default. Tests in that file share rows, so use `scope: 'test'` for fresh applications and databases per test, or arrange and clean up each case's data explicitly. A user other than the administrator is one the application seeds or the test creates through its supported account API, signed in the same way; add a `403` case with an account that lacks the required grant. The two assertions above cover only anonymous and administrator access.
+
+The fixture shuts down the application and removes its databases and temporary storage. When using `createTestApp()` directly, call `close()` in `finally`. Provision every connection the test may write with `connections`; connections left out retain their application configuration. The application's config loader must honor the supplied `configPath`, as the templates do.
 
 ### The API document
 
@@ -111,7 +134,7 @@ A test never chooses its database: it does not import a `@nocobase/db-<dialect>`
 
 ## Testing the frontend
 
-Component tests, the route test and translation checks are described in [frontend tests](frontend/references/testing.md), including a minimal component test that renders with the real i18n runtime from `@nocobase/i18n/testing`. Do not mock `@nocobase/i18n/client`: a mocked `t` hides misspelt keys and wrong namespaces.
+Component tests, route tests and translation checks are described in [frontend tests](frontend/references/testing.md), including a page rendered with `renderWithApp()`, the application's locale resources and real application hooks. For an isolated translated primitive that needs no application services, `TestI18nProvider` from `@nocobase/i18n/testing` remains sufficient. Do not mock `@nocobase/i18n/client`: a mocked `t` hides misspelt keys and wrong namespaces.
 
 ## Testing migrations
 
