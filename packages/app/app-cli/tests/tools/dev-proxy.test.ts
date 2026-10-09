@@ -2,6 +2,7 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import http, { type IncomingMessage } from 'node:http';
 import net, { type Socket } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -10,6 +11,7 @@ import { runInNewContext } from 'node:vm';
 
 import {
   createServer as createViteServer,
+  type InlineConfig,
   type ServerOptions,
   type ViteDevServer,
 } from 'vite';
@@ -19,6 +21,8 @@ import {
   DEFAULT_APP_BASE_PATH,
   normalizeBasePath,
 } from '@nocobase/app-server/support';
+import { AppConfig } from '@nocobase/app-server/config';
+import { spaRootRoutes } from '@nocobase/app-server/spa';
 
 import { resolveDevTrustedOrigins } from '../../src/tools/scripts/dev/trusted-origins.mjs';
 
@@ -49,6 +53,8 @@ type DevProxy = ServerOptions['proxy'];
 
 const backends: TestBackend[] = [];
 const viteServers: ViteDevServer[] = [];
+const viteCacheDirs: string[] = [];
+const htmlRoots: string[] = [];
 const devEntrySource = readFileSync(
   new URL('../../src/tools/scripts/dev/index.mjs', import.meta.url),
   'utf8',
@@ -56,6 +62,16 @@ const devEntrySource = readFileSync(
 
 afterEach(async () => {
   await Promise.all(viteServers.splice(0).map((server) => server.close()));
+  await Promise.all(
+    viteCacheDirs
+      .splice(0)
+      .map((dir) => rm(dir, { recursive: true, force: true })),
+  );
+  await Promise.all(
+    htmlRoots
+      .splice(0)
+      .map((root) => rm(root, { recursive: true, force: true })),
+  );
   await Promise.all(
     backends.splice(0).map(async ({ server, upgradedSockets }) => {
       upgradedSockets.forEach((socket) => socket.destroy());
@@ -444,10 +460,19 @@ async function startBackend(): Promise<TestBackend> {
   return backend;
 }
 
-async function startVite(proxy: DevProxy): Promise<string> {
+async function startVite(
+  proxy: DevProxy,
+  htmlOptions?: Pick<InlineConfig, 'root' | 'plugins'>,
+): Promise<string> {
+  const cacheDir = path.join(
+    tmpdir(),
+    `nocobase-dev-proxy-test-${randomUUID()}`,
+  );
+  viteCacheDirs.push(cacheDir);
   const server = await createViteServer({
-    appType: 'custom',
-    cacheDir: path.join(tmpdir(), `nocobase-dev-proxy-test-${randomUUID()}`),
+    appType: htmlOptions ? 'spa' : 'custom',
+    ...(htmlOptions ? { ...htmlOptions, base: '/main/' } : {}),
+    cacheDir,
     configFile: false,
     logLevel: 'silent',
     optimizeDeps: { include: [], noDiscovery: true },
@@ -825,5 +850,102 @@ describe('the proxy-mode client configuration', () => {
     await expect(
       (plugin?.transformIndexHtml as () => Promise<unknown>)(),
     ).rejects.toThrow('served no client configuration');
+  });
+});
+
+describe('development HTML revalidation with Vite', () => {
+  async function createHtmlRoot(): Promise<string> {
+    const root = await mkdtemp(path.join(tmpdir(), 'nocobase-dev-html-'));
+    htmlRoots.push(root);
+    await writeFile(
+      path.join(root, 'index.html'),
+      '<html lang="en-US"><head></head><body>fixture</body></html>',
+    );
+    return root;
+  }
+
+  it('refreshes standalone public configuration with a previously cached Vite ETag', async () => {
+    const root = await createHtmlRoot();
+    const viteUrl = await startVite(undefined, {
+      root,
+    });
+    const vitePage = await fetch(`${viteUrl}/main/`);
+    const etag = vitePage.headers.get('etag');
+    expect(etag).toBeTruthy();
+    await vitePage.text();
+    const config = new AppConfig();
+    await config.loadAll();
+    config.mergeDefaults({
+      app: { name: 'main', internalBasePath: '/main', version: 'fixture-old' },
+      spa: { viteDevUrl: viteUrl, indexPath: '/unused' },
+    });
+    config.defineSections(
+      new Map([['app', { validators: [], public: ['version'], env: {} }]]),
+    );
+    const router = await spaRootRoutes.createRouter({
+      config,
+      mode: 'standalone',
+      publicBasePath: '/main',
+      paths: { rootDir: root },
+    });
+    expect(
+      await (await router.request('http://localhost/main/')).text(),
+    ).toContain('fixture-old');
+    config.mergeDefaults({ app: { version: 'fixture-new' } });
+    const response = await router.request('http://localhost/main/', {
+      headers: { accept: 'text/html', 'if-none-match': etag! },
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.has('etag')).toBe(false);
+    expect(response.headers.has('last-modified')).toBe(false);
+    expect(response.headers.get('cache-control')).toBe('no-cache');
+    expect(await response.text()).toContain('"version":"fixture-new"');
+  });
+
+  it('revalidates remote HTML against the configuration after Vite transforms it', async () => {
+    let version = 'fixture-old';
+    const remoteHeaders: http.IncomingHttpHeaders[] = [];
+    const server = http.createServer((request, response) => {
+      remoteHeaders.push(request.headers);
+      response.setHeader('content-type', 'text/html');
+      response.end(
+        `<html><head><script id="nocobase-runtime-config" type="application/json">${JSON.stringify({ version: 1, config: {}, public: { app: { version } } })}</script></head></html>`,
+      );
+    });
+    const backend: TestBackend = {
+      server,
+      url: '',
+      httpRequests: [],
+      upgrades: [],
+      upgradedSockets: [],
+    };
+    backends.push(backend);
+    backend.url = await listen(server);
+    const viteUrl = await startVite(undefined, {
+      root: await createHtmlRoot(),
+      plugins: [createDevClientConfigPlugin('/main', backend.url)!],
+    });
+    const url = `${viteUrl}/main/`;
+    const first = await fetch(url);
+    const oldEtag = first.headers.get('etag');
+    expect(oldEtag).toBeTruthy();
+    expect(await first.text()).toContain('fixture-old');
+    version = 'fixture-new';
+    const changed = await fetch(url, {
+      headers: { 'if-none-match': oldEtag! },
+    });
+    expect(changed.status).toBe(200);
+    expect(await changed.text()).toContain('"version":"fixture-new"');
+    const newEtag = changed.headers.get('etag');
+    expect(newEtag).toBeTruthy();
+    expect(newEtag).not.toBe(oldEtag);
+    const unchanged = await fetch(url, {
+      headers: { 'if-none-match': newEtag! },
+    });
+    expect(unchanged.status).toBe(304);
+    expect(remoteHeaders).toHaveLength(3);
+    expect(
+      remoteHeaders.every((headers) => headers['if-none-match'] === undefined),
+    ).toBe(true);
   });
 });

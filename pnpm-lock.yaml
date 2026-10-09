@@ -5819,15 +5819,9 @@ importers:
 
   packages/templates/app-template-default:
     dependencies:
-      '@nocobase/ai-employee':
-        specifier: workspace:^
-        version: link:../../libs/ai-employee
       '@nocobase/app-cli':
         specifier: workspace:^
         version: link:../../app/app-cli
-      '@nocobase/app-plugin-ai-employee':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-ai-employee
       '@nocobase/app-plugin-api-keys':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-api-keys
@@ -6147,18 +6141,9 @@ importers:
 
   packages/templates/app-template-examples:
     dependencies:
-      '@nocobase/ai-employee':
-        specifier: workspace:^
-        version: link:../../libs/ai-employee
       '@nocobase/app-cli':
         specifier: workspace:^
         version: link:../../app/app-cli
-      '@nocobase/app-plugin-ai-employee':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-ai-employee
-      '@nocobase/app-plugin-ai-employee-example':
-        specifier: workspace:^
-        version: link:../../examples/app-plugin-ai-employee-example
       '@nocobase/app-plugin-api-keys':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-api-keys
