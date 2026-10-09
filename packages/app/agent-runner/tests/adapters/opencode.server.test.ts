@@ -108,13 +108,25 @@ describe('launchServer', () => {
 
   it('stops what ignores SIGTERM in the group of a server that exits on it while closing', async () => {
     const { bin, dir } = await script(
+      `exec ${JSON.stringify(process.execPath)} "$PWD/server.mjs"`,
+    );
+    // The server starts a child in its own group that ignores SIGTERM, and says it listens only once the child is
+    // ready, so the close finds both in place: the server exits with 0 on the SIGTERM, the child stays.
+    await writeFile(
+      path.join(dir, 'server.mjs'),
       [
-        // A child in the server's group that ignores SIGTERM; the server itself exits on it.
-        'sh -c \'trap "" TERM; while true; do sleep 1; done\' &',
-        'echo $! > "$PWD/child"',
-        "trap 'exit 0' TERM",
-        'echo "server listening on http://127.0.0.1:4571"',
-        'while true; do sleep 1; done',
+        "import { spawn } from 'node:child_process';",
+        "import { writeFileSync } from 'node:fs';",
+        'const child = spawn(process.execPath, [',
+        "  '-e',",
+        "  \"process.on('SIGTERM', () => {}); process.stdout.write('ready\\\\n'); setInterval(() => {}, 1000);\",",
+        "], { stdio: ['ignore', 'pipe', 'ignore'] });",
+        "child.stdout.once('data', () => {",
+        "  writeFileSync('child', String(child.pid));",
+        "  process.on('SIGTERM', () => process.exit(0));",
+        "  console.log('server listening on http://127.0.0.1:4571');",
+        '});',
+        'setInterval(() => {}, 1000);',
       ].join('\n'),
     );
     const server = await launchServer({
@@ -126,8 +138,8 @@ describe('launchServer', () => {
       (await readFile(path.join(dir, 'child'), 'utf8')).trim(),
     );
     expect(alive(child)).toBe(true);
-    await server.close(500);
-    expect(await server.exited).toMatchObject({ code: 0 });
+    await server.close(2_000);
+    expect(await server.exited).toMatchObject({ code: 0, signal: null });
     await waitUntil(() => !alive(child));
     expect(alive(child)).toBe(false);
   });
