@@ -459,6 +459,8 @@ export interface MessageMetadata {
   readonly runEventSeq?: number;
   /** A system message: what happened. */
   readonly notice?: ConversationNotice;
+  /** An earlier online fallback failure no longer applies after availability recovered or changed. */
+  readonly onlineFallbackResolved?: boolean;
   /** The id the browser gave a message it sent, echoed so it can replace its optimistic copy. */
   readonly clientId?: string;
   /**

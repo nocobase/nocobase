@@ -8,4 +8,6 @@ Runner availability uses the same claim eligibility as execution, including requ
 
 The configured online fallback is available for automatic and manual switching only while an enabled model service offers its default answering model. If that model becomes unavailable, new and existing conversations retain the original runner agent and record a system notice explaining why the online fallback cannot answer.
 
+Repeated messages during the same fallback failure keep a single explanatory notice. A changed failure reason or a failure after availability recovers records a new notice.
+
 Consumer behavior changes: a conversation's `mode` now follows its current agent when switching or restoring, rather than remaining fixed for its lifetime. Switching between runner and online agents clears the selected model. Clients should read the returned conversation's `mode` after each switch.

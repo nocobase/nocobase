@@ -1245,6 +1245,7 @@ const messageObject = z.object({
     agentId: z.string().optional(),
     runEventSeq: z.number().int().optional(),
     notice: notice.optional(),
+    onlineFallbackResolved: z.boolean().optional(),
     clientId: z.string().optional(),
     streaming: z.boolean().optional(),
     interrupted: z.boolean().optional(),

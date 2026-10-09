@@ -596,6 +596,48 @@ export function createConversationService(
     return (await deps.people.names(conn, [userId])).get(userId) ?? userId;
   }
 
+  /** Remember the last fallback failure in the transcript, across requests and application restarts. */
+  async function fallbackFailureNotice(
+    unit: Tx,
+    record: ConversationRecord,
+    value: Extract<
+      ConversationNotice,
+      { code: 'onlineFallbackUnavailable' }
+    > | null,
+  ): Promise<void> {
+    const previous = await messagesRepo(unit.conn).findOne({
+      filter: (f) =>
+        f.and([
+          f.string('conversationId').eq(record.id),
+          f.string('role').eq('system'),
+          f
+            .json('metadata')
+            .path(['notice', 'code'])
+            .eq('onlineFallbackUnavailable'),
+        ]),
+      sort: (sort) => sort.field('seq').desc(),
+    });
+    const metadata = previous ? metadataOf(previous) : null;
+    const last = metadata?.notice;
+    if (
+      value &&
+      !metadata?.onlineFallbackResolved &&
+      last?.code === 'onlineFallbackUnavailable' &&
+      last.fromAgentId === value.fromAgentId &&
+      last.reason === value.reason
+    )
+      return;
+    if (previous && !metadata?.onlineFallbackResolved)
+      await messagesRepo(unit.conn).updateMany({
+        filter: { id: previous.id },
+        values: {
+          metadata: asJson({ ...metadata, onlineFallbackResolved: true }),
+          updatedAt: now(),
+        },
+      });
+    if (value) await notice(unit, record, value);
+  }
+
   /** The run input a user message becomes: its text, its files, and its page context marked as data. */
   function inputText(message: MessageRecord): string {
     const view = toMessage(message);
@@ -1093,6 +1135,10 @@ export function createConversationService(
       : null;
     const sent = await tx.run(async (unit) => {
       let record = await lockOwned(unit, userId, id);
+      let fallbackFailure: Extract<
+        ConversationNotice,
+        { code: 'onlineFallbackUnavailable' }
+      > | null = null;
       // A concurrent switch owns its new binding; do not apply a decision made for the previous one.
       if (
         replacement &&
@@ -1127,13 +1173,14 @@ export function createConversationService(
           current?.revision === agent?.revision &&
           replacement.availability.reason
         ) {
-          await notice(unit, record, {
+          fallbackFailure = {
             code: 'onlineFallbackUnavailable',
             fromAgentId: record.agentId,
             reason: replacement.availability.reason,
-          });
+          };
         }
       }
+      await fallbackFailureNotice(unit, record, fallbackFailure);
       const at = now();
       if (record.archivedAt || (record.titleSource === 'auto' && !record.title))
         await conversationsRepo(unit.conn).updateMany({

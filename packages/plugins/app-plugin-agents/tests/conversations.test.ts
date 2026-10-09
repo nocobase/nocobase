@@ -1194,6 +1194,133 @@ describe('conversations', () => {
     ]);
   });
 
+  it('suppresses repeated fallback failures across concurrent sends and unrelated notices, then reports changed reasons and renewed outages', async () => {
+    h = await createHarness();
+    const lead = await h.createAgent();
+    const assistant = await onlineAssistant();
+    await h.services.online.services.update(assistant.service, {
+      enabled: false,
+    });
+    await h.services.chat.updateSettings('owner', {
+      onlineFallbackAgentId: assistant.id,
+    });
+    const conversation = await h.services.conversations.create(BOB, {
+      agentId: lead,
+    });
+    const failures = async () =>
+      (
+        await h.services.conversations.messages(BOB, conversation.id, {})
+      ).items.filter(
+        (message) =>
+          message.metadata.notice?.code === 'onlineFallbackUnavailable',
+      );
+    expect(await failures()).toHaveLength(1);
+    await Promise.all(
+      ['First question', 'Second question'].map((content) =>
+        h.services.conversations.send(BOB, conversation.id, { content }),
+      ),
+    );
+    await h.services.tx.run((unit) =>
+      h.services.conversations.deliver(unit, conversation.id, {
+        notice: { code: 'news', type: 'update', title: 'An unrelated update.' },
+      }),
+    );
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Third question',
+    });
+    expect(await failures()).toHaveLength(1);
+    expect(
+      (
+        await h.services.conversations.messages(BOB, conversation.id, {})
+      ).items.filter((message) => message.role === 'user'),
+    ).toHaveLength(3);
+
+    await h.services.agents.archive(assistant.id, 'owner');
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'The reason changed',
+    });
+    expect(
+      (await failures()).map((message) => message.metadata.notice),
+    ).toEqual([
+      {
+        code: 'onlineFallbackUnavailable',
+        fromAgentId: lead,
+        reason: 'modelUnavailable',
+      },
+      {
+        code: 'onlineFallbackUnavailable',
+        fromAgentId: lead,
+        reason: 'agentArchived',
+      },
+    ]);
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Still archived',
+    });
+    expect(await failures()).toHaveLength(2);
+
+    await h.services.agents.restore(assistant.id, 'owner');
+    await h.services.online.services.update(assistant.service, {
+      enabled: true,
+    });
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: BOB });
+    const recovered = await h.services.conversations.send(
+      BOB,
+      conversation.id,
+      { content: 'A runner is available again' },
+    );
+    expect(recovered.conversation.availability.online).toBe(true);
+    await h.services.online.services.update(assistant.service, {
+      enabled: false,
+    });
+    h.clock.advance(TIMINGS.offlineAfterMs + 1);
+    await h.sweep();
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Unavailable again',
+    });
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Still unavailable',
+    });
+    expect(await failures()).toHaveLength(3);
+    expect((await failures()).at(-1)?.metadata.notice).toMatchObject({
+      reason: 'modelUnavailable',
+    });
+  });
+
+  it('reports the same fallback failure again after the runner recovers', async () => {
+    h = await createHarness();
+    const lead = await h.createAgent();
+    const assistant = await onlineAssistant();
+    await h.services.online.services.update(assistant.service, {
+      enabled: false,
+    });
+    await h.services.chat.updateSettings('owner', {
+      onlineFallbackAgentId: assistant.id,
+    });
+    const conversation = await h.services.conversations.create(BOB, {
+      agentId: lead,
+    });
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: BOB });
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Recovered',
+    });
+    h.clock.advance(TIMINGS.offlineAfterMs + 1);
+    await h.sweep();
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Outage again',
+    });
+    await h.services.conversations.send(BOB, conversation.id, {
+      content: 'Same outage',
+    });
+    expect(
+      (
+        await h.services.conversations.messages(BOB, conversation.id, {})
+      ).items.filter(
+        (message) =>
+          message.metadata.notice?.code === 'onlineFallbackUnavailable',
+      ),
+    ).toHaveLength(2);
+  });
+
   it('skips an unavailable runner system default when manually falling back', async () => {
     h = await createHarness();
     const lead = await h.createAgent();
