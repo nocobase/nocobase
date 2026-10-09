@@ -63,7 +63,7 @@ export function renderTable(
   ].join('\n');
 }
 
-/** An object's fields, one per line: scalars as they are, anything else on one line. */
+/** An object's fields: compact scalars, with structured values fully expanded for copying. */
 export function renderFields(data: Readonly<Record<string, unknown>>): string {
   const entries = Object.entries(data).filter(
     ([, value]) => value !== undefined,
@@ -71,7 +71,13 @@ export function renderFields(data: Readonly<Record<string, unknown>>): string {
   if (entries.length === 0) return '(empty)';
   const width = Math.max(...entries.map(([key]) => key.length));
   return entries
-    .map(([key, value]) => `${key.padEnd(width)}  ${cell(value)}`)
+    .map(([key, value]) => {
+      const text =
+        value !== null && typeof value === 'object'
+          ? JSON.stringify(value, null, 2)
+          : cell(value);
+      return `${key.padEnd(width)}  ${text.replace(/\n/gu, `\n${' '.repeat(width + 2)}`)}`;
+    })
     .join('\n');
 }
 
