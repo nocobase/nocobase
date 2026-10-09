@@ -24,6 +24,7 @@ import {
 } from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
 import { getDocumentRoot, normalizeLocalStoragePath, resolveSafePath } from '../storages/local';
+import { registerUploadedFile } from '../uploaded-file';
 
 const ACTIVE_CONTENT_MIMETYPES = new Set([
   'application/pdf',
@@ -213,6 +214,13 @@ async function multipart(ctx: Context, next: Next) {
 
   const values = storageInstance.getFileData(file, ctx.request.body);
 
+  registerUploadedFile(ctx, {
+    collectionName: ctx.db.getCollection(ctx.action.resourceName).name,
+    path: values.path,
+    filename: values.filename,
+    storageId: storage.id,
+  });
+
   ctx.action.mergeParams({
     values: {
       ...values,
@@ -229,6 +237,11 @@ export async function createMiddleware(ctx: Context, next: Next) {
   const collection = ctx.db.getCollection(resourceName);
 
   if (collection?.options?.template !== 'file' || !['upload', 'create', 'update'].includes(actionName)) {
+    return next();
+  }
+
+  // Metadata edits must keep the record's existing storage, including after the default storage changes.
+  if (actionName === 'update') {
     return next();
   }
 

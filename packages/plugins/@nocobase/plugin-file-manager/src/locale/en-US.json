@@ -1,4 +1,6 @@
 {
+  "Cloud file records must be created by uploading a file.": "Cloud file records must be created by uploading a file.",
+  "File storage location cannot be changed.": "File storage location cannot be changed.",
   "Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.": "Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.",
   "Access base URL": "Access base URL",
   "Aliyun OSS": "Aliyun OSS",
