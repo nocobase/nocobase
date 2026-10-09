@@ -567,7 +567,10 @@ export class RunWorker {
         this.spool.push({
           type: 'error',
           content: detail,
-          meta: { phase: step.name },
+          meta: {
+            ...(error instanceof PrepareError ? error.meta : {}),
+            phase: step.name,
+          },
         });
         if (this.ending !== undefined) return this.finishEnding();
         return this.finishFailed(

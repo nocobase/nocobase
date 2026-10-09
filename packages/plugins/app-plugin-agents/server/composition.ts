@@ -449,6 +449,8 @@ export function createAgents(deps: AgentsDeps): Agents {
       find: (conn, id) => runners.find(conn, id),
       jobsByRunner: (conn) => slots.jobsByRunner(conn),
     },
+    eligibility,
+    people,
   });
   const sections = createBriefSectionRegistry();
   const mounts = createRunMountRegistry();
@@ -509,6 +511,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runners,
     runs: createSweeper({ ...transitions, tx, ids, runners }),
     jobs,
+    requests: runs.requests,
   });
   // Jobs open the stored variables they name here.
   jobs.provideSecrets({

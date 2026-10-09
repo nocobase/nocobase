@@ -674,6 +674,12 @@ export interface RunHeader {
    * with events an earlier attempt, possibly on another runner, already stored.
    */
   readonly firstSeq: number;
+  /**
+   * The failure reasons added within protocol 7 (`ANNOUNCED_FAILURES`) the application accepts on `fail`, such as
+   * `prepareNetwork`. Absent from an application that predates them, which the runner tells such a failure by its
+   * fallback (`acceptedFailure`). Plain strings, so a runner reads a header that names a reason it does not know.
+   */
+  readonly acceptedFailures?: readonly string[];
 }
 
 export const RunHeaderSchema: z.ZodType<RunHeader> = z.object({
@@ -685,6 +691,7 @@ export const RunHeaderSchema: z.ZodType<RunHeader> = z.object({
   leaseExpiresAt: z.string(),
   requires: z.array(RunnerFeatureSchema),
   firstSeq: z.number().int().positive(),
+  acceptedFailures: z.array(z.string().max(64)).max(64).optional(),
 });
 
 /**

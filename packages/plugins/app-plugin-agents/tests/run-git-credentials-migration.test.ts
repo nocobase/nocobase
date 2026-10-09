@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { describeMigration } from '@nocobase/app-testing/server';
 
-describeMigration('202610090002_ag_add_run_git_credentials', {
+describeMigration('202610090003_ag_add_run_git_credentials', {
   sources: [
     {
       packageName: '@nocobase/app-plugin-agents',

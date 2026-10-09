@@ -10,7 +10,7 @@ import {
  * repository at the end of a run (`agRunRepos.failureReason` and `failureDetail`, null when it pushed or did not try).
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202610090002_ag_add_run_git_credentials',
+  name: '202610090003_ag_add_run_git_credentials',
 
   async up({ builder }: MigrationContext): Promise<void> {
     await builder.alterCollection('agRuns', (collection) => {

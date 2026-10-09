@@ -8,7 +8,7 @@
  *
  * A runner speaking a protocol this application does not serve is not turned away: it registers and stays connected
  * as `upgrade_required`, is given no work (claims want `online`), and its owner is told once per protocol
- * (`runner_upgrade_required`, a `RunnerNotice`); once it connects again speaking a protocol this application serves,
+ * (`runner_upgrade_required`, an `AgentsNotice`); once it connects again speaking a protocol this application serves,
  * the notice is cleared (`notice.cleared`). A runner whose owner can no longer act (an account disabled or
  * deleted, as the application's people directory says) is refused with `RUNNER_OWNER_DISABLED` until they can again.
  *
@@ -44,7 +44,7 @@ import {
   hashCredential,
 } from '../kernel/crypto.js';
 import { notFound, precondition } from '../kernel/errors.js';
-import type { RunnerNotice } from '../kernel/events.js';
+import type { AgentsNotice } from '../kernel/events.js';
 import type { IdSource } from '../kernel/ids.js';
 import type { People } from '../kernel/people.js';
 import type { TxRunner } from '../kernel/tx.js';
@@ -147,7 +147,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
 
   /** Tells the runner's owner it needs an upgrade; once per runner and protocol. */
   const noticeUpgrade = async (
-    emit: (event: { type: 'notice'; notice: RunnerNotice }) => void,
+    emit: (event: { type: 'notice'; notice: AgentsNotice }) => void,
     runner: Runner,
   ): Promise<void> => {
     if (!runner.ownerUserId) return;

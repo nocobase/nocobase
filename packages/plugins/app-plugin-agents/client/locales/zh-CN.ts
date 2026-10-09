@@ -622,6 +622,7 @@ const zhCN: AgentsResource = {
     modelUnavailable: 'Agent 的模型不可用。',
     stepLimit: 'Agent 调用工具次数过多，仍未作答。',
     policyRefused: '没有运行环境的策略允许接这项工作。',
+    prepareNetwork: '准备运行时运行环境无法连接到仓库所在的服务器。',
     repoAccessUnavailable: '暂时无法签发仓库凭据，运行会重试。',
     repoAccessDenied: '应用拒绝为运行的某个仓库签发凭据。',
     unknown: '运行失败。',

@@ -13,6 +13,7 @@ import type {
   RepoAuthSource,
   WorkspaceLock,
 } from '../../core/checkout.ts';
+import type { GitRetryOptions } from '../../core/git-retry.ts';
 import type { PlacedMount } from '../mounts.ts';
 import type { SpoolEvent } from '../../core/events.ts';
 
@@ -30,6 +31,8 @@ export interface PrepareContext {
   readonly onRelease: (release: () => Promise<void>) => void;
   /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
   readonly gitAuth?: RepoAuthSource;
+  /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
+  readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;
   /** The run's working directories, the primary one first; empty when the run names none. */
   dirs: PreparedDir[];
@@ -51,14 +54,20 @@ export interface PrepareStep {
   run(context: PrepareContext): Promise<void>;
 }
 
-/** A step's failure with its own reason. */
+/** A step's failure with its own reason, and what its error event records besides the step (`meta`). */
 export class PrepareError extends Error {
   override name = 'PrepareError';
   readonly reason: FailureReason;
+  readonly meta: Readonly<Record<string, unknown>>;
 
-  constructor(reason: FailureReason, message: string) {
+  constructor(
+    reason: FailureReason,
+    message: string,
+    meta: Readonly<Record<string, unknown>> = {},
+  ) {
     super(message);
     this.reason = reason;
+    this.meta = meta;
   }
 }
 

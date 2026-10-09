@@ -49,7 +49,15 @@ export interface Run {
   readonly parentRunId: string | null;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
   readonly actorUserId: string;
+  /**
+   * Who the chain of work the run belongs to started with: the person whose action woke the agent, or for work a run
+   * caused, that run's source. The actor when they started it themselves.
+   */
+  readonly requestedByUserId: string;
+  /** Who confirmed the run request the run was queued from (`RunRequest`); null for work its actor started. */
+  readonly confirmedByUserId: string | null;
   readonly ownerUserId: string | null;
   readonly requires: readonly RunnerFeature[];
   readonly acceptsInput: boolean;
@@ -275,4 +283,83 @@ export interface WorkloadQuery {
   readonly subjectKind: string;
   /** At most this many runs (200 by default, at most 1000). */
   readonly limit?: number;
+}
+
+/**
+ * What a run request can be: `pending` until the responsible confirms it (`confirmed`, queued as them) or rejects it
+ * (`rejected`), the requester withdraws it (`withdrawn`, also when they run it as themselves), it is handed to a new
+ * responsible (`superseded`), or nobody settles it in time (`expired`). Only a pending request changes.
+ */
+export const RUN_REQUEST_STATUSES = [
+  'pending',
+  'confirmed',
+  'rejected',
+  'withdrawn',
+  'expired',
+  'superseded',
+] as const;
+
+export type RunRequestStatus = (typeof RUN_REQUEST_STATUSES)[number];
+
+/** How work someone asks of an agent is run (`EnqueueRequest.execution`). */
+export const RUN_EXECUTIONS = ['auto', 'mine'] as const;
+
+/**
+ * `auto`: as the subject's responsible, once they confirm it when someone else asked; `mine`: as the person who asked,
+ * at once, on a runner they may use (their own, or a team runner).
+ */
+export type RunExecution = (typeof RUN_EXECUTIONS)[number];
+
+/** The input of a run request, as it was when asked: what confirming it runs. */
+export interface RunRequestInput {
+  readonly type: RunInputType;
+  readonly actor: {
+    readonly kind: ActorKind;
+    readonly id: string;
+    readonly name: string;
+  };
+  readonly text: string;
+  readonly payload: unknown;
+}
+
+/**
+ * Work someone asked of an agent on a subject another person answers for (its responsible: an issue's owner, say). It
+ * runs only once the responsible confirms it, as them, or when the person who asked runs it as themselves.
+ */
+export interface RunRequest {
+  readonly id: string;
+  readonly agentId: string;
+  readonly subject: { readonly kind: string; readonly id: string };
+  readonly threadScope: string;
+  /** Who answers for the subject: the only person who may confirm or reject the request. */
+  readonly responsibleUserId: string;
+  /** Who the chain of work started with: the only person who may withdraw it or run it as themselves. */
+  readonly requestedByUserId: string;
+  readonly ownerUserId: string | null;
+  /** The moment the work was not to be claimed before (`EnqueueRequest.fireAt`); null for as soon as it runs. */
+  readonly fireAt: string | null;
+  /** Attempts its run may take; null for the agent's default. */
+  readonly maxAttempts: number | null;
+  readonly input: RunRequestInput;
+  readonly status: RunRequestStatus;
+  /** Who settled it (confirmed, rejected, withdrew or handed it on); null while pending, and when it expired. */
+  readonly settledById: string | null;
+  readonly settledAt: string | null;
+  /** Why it was rejected or handed on, when someone said. */
+  readonly note: string | null;
+  readonly expiresAt: string;
+  /** The run it went into: on confirming, or when the requester ran it as themselves. */
+  readonly runId: string | null;
+  /** The request that took over when the subject's responsible changed. */
+  readonly supersededById: string | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** A run request as people's lists show it: with the names of its agent and of the people in it. */
+export interface RunRequestItem extends RunRequest {
+  /** Null when the agent was deleted. */
+  readonly agentName: string | null;
+  readonly responsibleName: string | null;
+  readonly requestedByName: string | null;
 }

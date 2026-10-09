@@ -117,6 +117,13 @@ export const FAILURE_REASONS = [
    */
   'policyRefused',
   /**
+   * Preparing the run's working directories failed on the network (a TLS handshake cut off, a connection reset or timed
+   * out, a name that did not resolve, an HTTP 5xx or 429) after the runner retried it locally. Retried: the run goes
+   * back to the queue. A runner sends it only to an application that announces it (`RunHeader.acceptedFailures`), and
+   * `checkoutFailed` otherwise.
+   */
+  'prepareNetwork',
+  /**
    * A repository's credential could not be had for the run's checkout because the application's code host is
    * unavailable or slow just now (protocol 8, `REPO_ACCESS_UNAVAILABLE`). Retried.
    */
@@ -140,9 +147,31 @@ export const RETRYABLE_FAILURES: readonly FailureReason[] = [
   'cliUnavailable',
   'toolNetwork',
   'toolRateLimit',
+  'prepareNetwork',
   'repoAccessUnavailable',
 ];
 
 export function isRetryable(reason: FailureReason): boolean {
   return RETRYABLE_FAILURES.includes(reason);
+}
+
+/**
+ * Failure reasons added within protocol 7, each with the reason a runner reports instead to an application that does
+ * not announce it in `RunHeader.acceptedFailures`.
+ */
+export const ANNOUNCED_FAILURES: Readonly<
+  Partial<Record<FailureReason, FailureReason>>
+> = {
+  prepareNetwork: 'checkoutFailed',
+};
+
+/** `reason` if the application accepts it (`accepted`, from `RunHeader.acceptedFailures`), else its fallback. */
+export function acceptedFailure(
+  reason: FailureReason,
+  accepted: readonly string[] | undefined,
+): FailureReason {
+  const fallback = ANNOUNCED_FAILURES[reason];
+  if (fallback === undefined || accepted?.includes(reason) === true)
+    return reason;
+  return fallback;
 }

@@ -54,6 +54,7 @@ import { createAdminRoutes, type AdminEnv } from '../server/routes/admin.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import { createModelRoutes } from '../server/online/routes.js';
 import { createRunRoutes } from '../server/routes/run.js';
+import { createRunRequestRoutes } from '../server/routes/run-requests.js';
 import { createRosterRoutes } from '../server/routes/roster.js';
 import {
   createAdminRoutes as createRunnersAdminRoutes,
@@ -91,6 +92,7 @@ export interface Harness {
     readonly failed: number;
     readonly cancelled: number;
     readonly jobs: { requeued: number; failed: number; cancelled: number };
+    readonly requestsExpired: number;
   }>;
   readonly clock: FakeClock;
   /** Where the contents of skills' files are stored. */
@@ -439,6 +441,7 @@ export async function createHarness(
     }),
   );
   app.route('/agents', createRunRoutes(services));
+  app.route('/agents', createRunRequestRoutes(services, guard));
   app.route('/agents', createRosterRoutes(services, guard));
   app.route('/agents', createChatRoutes(services, guard, personOrRun));
   app.route('/agents', createModelRoutes(services, guard));
