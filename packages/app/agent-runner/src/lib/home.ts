@@ -17,6 +17,7 @@
 //   ~/.nocobase-runner/skills/<app>/<slug>/<hash>/ skill bundles fetched for runs, by content hash
 //   ~/.nocobase-runner/locks/<sha1>.lock           one lock per directory used in place (one run at a time in it)
 //   ~/.nocobase-runner/hooks/pre-push              the push guard every agent's git runs
+//   ~/.nocobase-runner/push-allow/<sha256>         push permissions keyed by a checkout's real Git directory
 //
 // The work root, where agents work: `~/.nocobase-runner-work`, or `<NOCOBASE_RUNNER_HOME>-work`.
 // `NOCOBASE_RUNNER_WORK_ROOT` moves it.
@@ -87,6 +88,7 @@ export interface RunnerPaths {
   mountsDir: string;
   locksDir: string;
   hooksDir: string;
+  pushAllowDir: string;
   workRoot: string;
 }
 
@@ -111,6 +113,7 @@ export function runnerPaths(
     mountsDir: path.join(home, 'mounts'),
     locksDir: path.join(home, 'locks'),
     hooksDir: path.join(home, 'hooks'),
+    pushAllowDir: path.join(home, 'push-allow'),
     workRoot: work,
   };
 }

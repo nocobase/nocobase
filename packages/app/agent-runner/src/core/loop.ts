@@ -288,7 +288,7 @@ export class RunnerDaemon {
       pid: process.pid,
       startedAt: new Date().toISOString(),
     } satisfies DaemonPid);
-    await installGitHooks(paths.hooksDir);
+    await installGitHooks(paths.hooksDir, paths.pushAllowDir);
     log(
       `runner ${this.options.settings.name} starting for ${this.links
         .map(

@@ -758,6 +758,11 @@ export class RunWorker {
     }
     const reports = await reportRepos(repos, {
       push,
+      ...(this.payload.workspace.git?.credentials === undefined
+        ? {}
+        : {
+            credentials: this.payload.workspace.git.credentials,
+          }),
       log: this.deps.log,
     });
     await markWorkspaceEnded(
