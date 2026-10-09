@@ -212,12 +212,24 @@ describe('explainWait', () => {
     expect(
       explainWait({ ...run, requires: ['checkout', 'secrets'] }, context),
     ).toMatchObject({ reason: 'missingFeatures', missing: ['secrets'] });
+    const teamOnlyVariables = [{ scope: 'agent', scopeId: 'a1', name: 'KEY' }];
+    // Only personal runners fit a run with a team-only variable; a team runner would take it.
     expect(
       explainWait(
-        { ...run, secretsRefusedBy: ['r1'] },
-        { ...context, sameWorkActive: true },
-      ).reason,
-    ).toBe('secretsNotAllowed');
+        { ...run, teamOnlyVariables },
+        {
+          ...context,
+          runners: [runner({ trust: 'ownerOnly', ownerUserId: 'bob' })],
+          sameWorkActive: true,
+        },
+      ),
+    ).toMatchObject({
+      reason: 'secretsNotAllowed',
+      variables: teamOnlyVariables,
+    });
+    expect(explainWait({ ...run, teamOnlyVariables }, context).reason).toBe(
+      'next',
+    );
     expect(explainWait(run, { ...context, sameWorkActive: true }).reason).toBe(
       'sameWorkActive',
     );

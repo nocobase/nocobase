@@ -12,6 +12,8 @@ import type {
   RunStatus,
 } from '@nocobase/agent-protocol';
 
+import type { VariableRef } from './variables.js';
+
 /** The run subject kind of a consultation: an online agent asking another a question (`ask_agent`). */
 export const CONSULTATION_SUBJECT = 'consultation';
 
@@ -139,8 +141,8 @@ export interface RunEventPage {
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
  * - `missingFeatures`: the runners that could take it lack what it needs (`missing`).
- * - `secretsNotAllowed`: the runners that could take it are personal ones whose owners may not receive its variables:
- *   they may not change a scope the variables come from (the agent's, a working directory's, the subject's).
+ * - `secretsNotAllowed`: some of its variables are for team runners only (`variables` names them), and the runners
+ *   that could take it are personal ones.
  * - `sameWorkActive`: the agent is already working on the same subject and thread; this run follows.
  * - `concurrencyFull`: the agent has as many runs held as it may have at once.
  * - `runnersBusy`: every runner that could take it has its slots full (the machine's slots).
@@ -186,6 +188,8 @@ export interface RunWait {
   readonly missing: readonly RunnerFeature[];
   /** For `setupRetrying`: why preparing it failed. */
   readonly detail: string | null;
+  /** For `secretsNotAllowed`: the variables that ask for a team runner, by scope. */
+  readonly variables: readonly VariableRef[];
 }
 
 /** The newest thing a held run reported, for a one-line "last activity". */

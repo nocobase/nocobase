@@ -124,7 +124,6 @@ import {
   createRunMountRegistry,
   createRunnerReports,
   createRunService,
-  createSecretTrust,
   createAvailability,
   createSubjectRegistry,
   createRunnerView,
@@ -143,7 +142,6 @@ import {
   type RunMountRegistry,
   type RunnerView,
   type RunService,
-  type SecretTrust,
   type SubjectRegistry,
 } from './core/runs/index.js';
 
@@ -261,11 +259,6 @@ export interface Agents {
    * application registers, with who may see and change what is kept there.
    */
   readonly scopes: ScopeKindRegistry;
-  /**
-   * Which runners may receive a run's variables: team runners, and personal ones whose owner may change every scope
-   * they come from. The application says who may edit an agent besides its owner (`setAgentEditors`).
-   */
-  readonly secretTrust: SecretTrust;
   /** Where the domain a run works on plugs in its context and hears how runs end. */
   readonly subjects: SubjectRegistry;
   /** Which business actions each caller holds, as the application says (`gate.set`). */
@@ -384,7 +377,6 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const actions = createAgentActionCatalog();
   const scopes = createScopeKinds();
-  const secretTrust = createSecretTrust({ scopes });
   const variables = createVariableService({
     tx,
     ids,
@@ -434,9 +426,6 @@ export function createAgents(deps: AgentsDeps): Agents {
   const eligibility = createClaimEligibility({
     runners,
     variables,
-    secretTrust,
-    onError: (error) =>
-      onError('Agents could not check variable access.', error),
   });
   const availability = createAvailability({
     runners,
@@ -449,7 +438,6 @@ export function createAgents(deps: AgentsDeps): Agents {
     tx,
     ids,
     agents,
-    eligibility,
     cliName: cli.name,
     appName: app.name,
     runners: {
@@ -496,7 +484,6 @@ export function createAgents(deps: AgentsDeps): Agents {
     app,
     cli,
     secrets,
-    secretTrust,
     onlineSkills: onlineSkills.list,
     consultations,
     onClaimFailure: (runId, error) =>
@@ -649,7 +636,6 @@ export function createAgents(deps: AgentsDeps): Agents {
     repoAccess,
     people,
     scopes,
-    secretTrust,
     subjects,
     gate,
     actions,

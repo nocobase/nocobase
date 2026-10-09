@@ -132,7 +132,7 @@ export async function requeueRun(
       ]),
     values: {
       status: 'queued',
-      secretsRefusedBy: null,
+      teamOnlyVariables: null,
       runnerId: null,
       attempt: Number(run.attempt) + 1,
       availableAt,

@@ -15,24 +15,21 @@ const waitOf = async (id: string) =>
     (run) => run.id === id,
   )?.wait?.reason;
 
-it('skips a candidate whose authorization throws and takes the next run, with one refusal notice', async () => {
+const markTeamOnly = (scope: string, scopeId: string, name: string) =>
+  h.services.variables.set({ scope, scopeId }, name, 'synthetic', 'owner', {
+    teamRunnersOnly: true,
+  });
+
+it('passes over a team-only run on a personal runner and takes the next one, telling people once', async () => {
   h = await createHarness();
   const secretAgent = await h.createAgent();
   const plainAgent = await h.createAgent();
-  await h.services.variables.set(
-    { scope: 'agent', scopeId: secretAgent },
-    'TOKEN',
-    'synthetic',
-    'owner',
-  );
+  await markTeamOnly('agent', secretAgent, 'TOKEN');
   const refused = await h.enqueue(secretAgent, '1', { actorUserId: 'bob' });
   const next = await h.enqueue(plainAgent, '2', { actorUserId: 'bob' });
   const runner = await h.registerRunner({
     trust: 'ownerOnly',
     ownerUserId: 'bob',
-  });
-  h.services.secretTrust.setAgentEditors(async () => {
-    throw new Error('Authorization unavailable');
   });
   const notices: string[] = [];
   h.services.events.on('notice', ({ notice }) => {
@@ -47,14 +44,9 @@ it('skips a candidate whose authorization throws and takes the next run, with on
   expect(notices).toHaveLength(1);
 });
 
-it('gives back a delivery whose permission check throws, restores fields, and discards prepared git access', async () => {
+it('leaves a refused run as it was queued and discards the git access prepared for it', async () => {
   h = await createHarness();
   const agentId = await h.createAgent();
-  h.services.scopes.register({
-    key: 'team',
-    title: { key: 'team', ns: 'test' },
-    access: async () => ({ visible: true, manage: true }),
-  });
   h.scopes = [{ scope: 'team', scopeId: '1' }];
   h.dirs = [
     {
@@ -65,7 +57,7 @@ it('gives back a delivery whose permission check throws, restores fields, and di
       path: 'repo',
     },
   ];
-  await h.services.variables.set(h.scopes[0], 'TOKEN', 'synthetic', 'owner');
+  await markTeamOnly('team', '1', 'TOKEN');
   const id = await h.enqueue(agentId);
   const before = (await findRunRecord(h.services.tx.read(), id))!;
   const runner = await h.registerRunner({
@@ -88,10 +80,6 @@ it('gives back a delivery whose permission check throws, restores fields, and di
     }),
     discard,
   });
-  const check = h.services.secretTrust.mayReceive.bind(h.services.secretTrust);
-  vi.spyOn(h.services.secretTrust, 'mayReceive')
-    .mockImplementationOnce(check)
-    .mockRejectedValueOnce(new Error('Scope lookup unavailable'));
   expect(await claim(h, runner)).toEqual([]);
   const after = (await findRunRecord(h.services.tx.read(), id))!;
   for (const field of [
@@ -102,6 +90,7 @@ it('gives back a delivery whose permission check throws, restores fields, and di
     'requires',
     'payloadFingerprint',
     'directoryKey',
+    'runnerId',
   ] as const)
     expect(after[field]).toEqual(before[field]);
   expect(after.status).toBe('queued');
@@ -116,56 +105,16 @@ it('gives back a delivery whose permission check throws, restores fields, and di
       (input) => !input.deliveredAt,
     ),
   ).toBe(true);
-  const tokens = await h.services.tx
-    .read()
-    .repository<{ revokedAt: string | null }>('agRunTokens')
-    .findMany({ filter: { runId: id } });
-  expect(tokens).not.toHaveLength(0);
-  expect(tokens.every((token) => token.revokedAt !== null)).toBe(true);
+  // The transaction rolled back: no run token was left behind.
+  expect(
+    await h.services.tx
+      .read()
+      .repository('agRunTokens')
+      .findMany({ filter: { runId: id } }),
+  ).toHaveLength(0);
 });
 
-it('never opens a scope that first gains variables after the held scope snapshot', async () => {
-  h = await createHarness();
-  const agentId = await h.createAgent();
-  h.scopes = [{ scope: 'team', scopeId: 'untrusted' }];
-  await h.services.variables.set(
-    { scope: 'agent', scopeId: agentId },
-    'OWN_TOKEN',
-    'own',
-    'owner',
-  );
-  await h.enqueue(agentId);
-  const runner = await h.registerRunner({
-    trust: 'ownerOnly',
-    ownerUserId: 'owner',
-  });
-  const check = h.services.secretTrust.mayReceive.bind(h.services.secretTrust);
-  let calls = 0;
-  vi.spyOn(h.services.secretTrust, 'mayReceive').mockImplementation(
-    async (conn, who, targets) => {
-      const allowed = await check(conn, who, targets);
-      if (++calls === 2)
-        await h.services.variables.set(
-          h.scopes[0],
-          'LATE_TOKEN',
-          'late',
-          'owner',
-        );
-      return allowed;
-    },
-  );
-  const [payload] = await claim(h, runner);
-  expect(
-    payload.workspace.env.map((value: { name: string }) => value.name),
-  ).toEqual(['OWN_TOKEN']);
-  expect(
-    (await h.services.variables.audits(h.scopes[0])).some(
-      (audit) => audit.action === 'deliver',
-    ),
-  ).toBe(false);
-});
-
-it('does no assembly or permission query while the runner has no slots', async () => {
+it('does no assembly while the runner has no slots', async () => {
   h = await createHarness();
   const agentId = await h.createAgent();
   const runner = await h.registerRunner({
@@ -180,10 +129,10 @@ it('does no assembly or permission query while the runner has no slots', async (
     h.services.subjects.get('sample')!.context,
     'assemble',
   );
-  const trust = vi.spyOn(h.services.secretTrust, 'mayReceive');
+  const teamOnly = vi.spyOn(h.services.variables, 'teamOnly');
   expect(await claim(h, runner)).toEqual([]);
   expect(assemble).not.toHaveBeenCalled();
-  expect(trust).not.toHaveBeenCalled();
+  expect(teamOnly).not.toHaveBeenCalled();
 });
 
 it('reuses the online runner snapshot across availability checks and skips variables when tools cannot fit', async () => {
@@ -202,19 +151,19 @@ it('reuses the online runner snapshot across availability checks and skips varia
   expect(holding).not.toHaveBeenCalled();
 });
 
-it('rejects enqueue when only an untrusted personal runner is configured, but allows an offline team runner', async () => {
+it('queues team-only work whatever runners exist, and answers mayQueue for callers that ask first', async () => {
   h = await createHarness();
   const agentId = await h.createAgent();
-  await h.services.variables.set(
-    { scope: 'agent', scopeId: agentId },
-    'TOKEN',
-    'synthetic',
-    'owner',
-  );
+  await markTeamOnly('agent', agentId, 'TOKEN');
+  const agent = await h.services.agents.get(agentId);
+  const asBob = { actorUserId: 'bob' };
   await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'bob' });
-  await expect(
-    h.enqueue(agentId, '1', { actorUserId: 'bob' }),
-  ).rejects.toMatchObject({ code: 'SECRETS_NOT_ALLOWED' });
+  expect(
+    await h.services.eligibility.mayQueue(h.services.tx.read(), agent, asBob),
+  ).toBe(false);
+  const queued = await h.enqueue(agentId, '1', { actorUserId: 'bob' });
+  expect((await h.services.runs.get(queued)).status).toBe('queued');
+  // An offline team runner could still take it later.
   const team = await h.registerRunner();
   await h.services.tx
     .read()
@@ -224,37 +173,8 @@ it('rejects enqueue when only an untrusted personal runner is configured, but al
       values: { status: 'offline' },
     });
   expect(
-    (
-      await h.services.runs.get(
-        await h.enqueue(agentId, '1', { actorUserId: 'bob' }),
-      )
-    ).status,
-  ).toBe('queued');
-});
-
-it('rechecks permission errors in eligibility without blocking the other fitting runners', async () => {
-  h = await createHarness();
-  const agentId = await h.createAgent();
-  await h.services.variables.set(
-    { scope: 'agent', scopeId: agentId },
-    'TOKEN',
-    'synthetic',
-    'owner',
-  );
-  await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'bob' });
-  const team = await h.registerRunner();
-  h.services.secretTrust.setAgentEditors(async () => {
-    throw new Error('Permission failure');
-  });
-  expect(
-    (
-      await h.services.eligibility.runnersFor(
-        h.services.tx.read(),
-        await h.services.agents.get(agentId),
-        { actorUserId: 'bob' },
-      )
-    ).map((runner) => runner.id),
-  ).toEqual([team.runnerId]);
+    await h.services.eligibility.mayQueue(h.services.tx.read(), agent, asBob),
+  ).toBe(true);
 });
 
 it('retries in its actor identity even when another identity has queued work on the same key', async () => {
@@ -268,24 +188,27 @@ it('retries in its actor identity even when another identity has queued work on 
   expect(retry.status).toBe('queued');
 });
 
-it('clears stale refusal records when new inputs arrive and when a dispatched run is requeued', async () => {
+it('clears the team-only variables noted on a run when new input arrives, when it is taken and when it is requeued', async () => {
   h = await createHarness();
   const agentId = await h.createAgent();
   const id = await h.enqueue(agentId);
-  await runsRepo(h.services.tx.read()).updateMany({
-    filter: { id },
-    values: { secretsRefusedBy: ['old'] },
-  });
+  const note = () =>
+    runsRepo(h.services.tx.read()).updateMany({
+      filter: { id },
+      values: {
+        teamOnlyVariables: [{ scope: 'agent', scopeId: agentId, name: 'OLD' }],
+      },
+    });
+  const noted = async () =>
+    (await findRunRecord(h.services.tx.read(), id))?.teamOnlyVariables ?? null;
+  await note();
   await h.enqueue(agentId);
-  expect(
-    (await findRunRecord(h.services.tx.read(), id))?.secretsRefusedBy,
-  ).toBeNull();
+  expect(await noted()).toBeNull();
+  await note();
   const runner = await h.registerRunner();
   await claim(h, runner);
-  await runsRepo(h.services.tx.read()).updateMany({
-    filter: { id },
-    values: { secretsRefusedBy: ['old'] },
-  });
+  expect(await noted()).toBeNull();
+  await note();
   await h.services.tx.run(async (unit) => {
     await requeueRun(
       unit,
@@ -294,7 +217,5 @@ it('clears stale refusal records when new inputs arrive and when a dispatched ru
       'runnerOffline',
     );
   });
-  expect(
-    (await findRunRecord(h.services.tx.read(), id))?.secretsRefusedBy,
-  ).toBeNull();
+  expect(await noted()).toBeNull();
 });

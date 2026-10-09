@@ -254,7 +254,7 @@ const plansZhCN: typeof plansEnUS = {
       concurrencyFull: 'Agent 正在忙，排队等待中…',
       sameWorkActive: '等待 Agent 处理完上一个请求…',
       setupRetrying: '正在重新准备…',
-      secretsNotAllowed: '此执行机无权接收变量，请使用可信执行机。',
+      secretsNotAllowed: '部分变量仅限团队运行环境，等待团队运行环境…',
     },
     waitsHint: '现在没有在线的运行环境，请求会排队，等有运行环境连上后开始。',
     unavailable: {

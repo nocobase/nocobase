@@ -23,11 +23,6 @@ export {
   type EligibilityRequest,
 } from './eligibility.js';
 export {
-  createSecretTrust,
-  type AgentEditors,
-  type SecretTrust,
-} from './secret-trust.js';
-export {
   createBriefSectionRegistry,
   createRepoAccessRegistry,
   createRunMountRegistry,

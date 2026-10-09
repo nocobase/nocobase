@@ -6,9 +6,10 @@
  * team or belongs to the person who woke the agent, its features cover what the run requires (worked out from the
  * payload: checkouts, directories, skills, secrets), its owner's local policy (`Runner.policy`) lets it take the
  * agent's runs on the run's subject and repositories, and it has a free slot. A working directory that is a directory
- * on one runner pins the run to that runner, one run at a time per directory. A run with variables goes only to a team
- * runner or to a personal one whose owner may change every scope they come from (`secret-trust.ts`); a personal runner
- * that may not is noted on the run (`secretsRefusedBy`), so its wait says why.
+ * on one runner pins the run to that runner, one run at a time per directory. A run's variables go to the runner that
+ * takes it, personal ones included, unless one of them is for team runners only (`teamRunnersOnly`): then only a team
+ * runner takes the run, and the variables that asked for one are noted on it (`teamOnlyVariables`), so its wait says
+ * which.
  *
  * A slot is free for a run when the runner's total has room and so does the coding tool it runs with: the tool's limit
  * (`Runner.toolSlots`, never above the total) over the runs of that tool the runner holds here, and what the runner
@@ -16,13 +17,8 @@
  * agent's entries whose tool the runner runs and has room for, so an agent listing two tools runs with the second while
  * the first is full; a run none of whose tools has room is passed over for the runs behind it.
  *
- * Variables are opened last. The transaction works out which scopes the run's variables come from, from the payload it
- * assembles with the run's own inputs; once it commits, the runner's owner is asked again whether they may receive
- * those very scopes, and only then are the values opened, audited as delivered and put in the payload. Asking after the
- * commit is what lets the scope kinds and the application's authorization read on connections of their own (SQLite's
- * one connection is the transaction's while it runs), and nothing else happens between that answer and the delivery.
- * A runner refused at that point gives the run back as if it had never taken it (`giveBack`). A personal runner is also
- * asked before the transaction, with the run's pending inputs, so a run it would be refused is not taken at all.
+ * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
+ * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked.
  *
  * A claim is one transaction per run. It first writes the agent's row (`lockAgentForClaim`): on databases with row
  * locks, concurrent claims for the same agent wait there, so the concurrency count read next is current. The run is
@@ -42,7 +38,6 @@
 import {
   type AgentTool,
   policyAllowsAgent,
-  type EnvVar,
   policyAllowsRepo,
   policyAllowsSubject,
   TIMINGS,
@@ -74,7 +69,7 @@ import { notFound } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import { runSecretsKey, type SecretMemory } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { cleanList, covers, stringArray } from '../../kernel/values.js';
+import { cleanList, covers } from '../../kernel/values.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
 import {
   consultSection,
@@ -89,7 +84,13 @@ import {
 } from '../brief/index.js';
 import { cliPackageFor } from './cli-package.js';
 import type { SkillService, SkillTarget } from '../skills/index.js';
-import type { VariableService, VariableTarget } from '../variables/index.js';
+import {
+  describeVariables,
+  variableRefs,
+  type VariableService,
+  type VariableTarget,
+} from '../variables/index.js';
+import type { VariableRef } from '../../../shared/variables.js';
 import {
   mountsFor,
   prepareExtensions,
@@ -110,7 +111,6 @@ import {
 import { MAX_CLAIM_FAILURES, toolPolicyFor, type AgentCli } from './policy.js';
 import { mintRunToken } from './run-tokens.js';
 import { runsHeldByTool } from './runner-view.js';
-import type { SecretTrust } from './secret-trust.js';
 import {
   ACTIVE,
   countActive,
@@ -123,11 +123,10 @@ import {
   sessionsRepo,
   toInput,
   toRun,
-  unmarkDelivered,
   type RunRecord,
 } from './run.store.js';
-import { finishRun, revokeTokens, type TransitionDeps } from './transitions.js';
-import { consumeReset, restoreReset, saveBrief } from './workspace.store.js';
+import { finishRun, type TransitionDeps } from './transitions.js';
+import { consumeReset, saveBrief } from './workspace.store.js';
 
 /** Queued runs looked at per claim, oldest first by priority. */
 const CANDIDATES = 50;
@@ -216,8 +215,6 @@ export interface ClaimDeps extends TransitionDeps {
   readonly repoAccess?: RepoAccessRegistry;
   /** Remembers the secrets a claim hands out, so what the run reports is redacted of them (`kernel/redaction.ts`). */
   readonly secrets?: SecretMemory;
-  /** Which runners may receive a run's variables. */
-  readonly secretTrust: Pick<SecretTrust, 'mayReceive'>;
   /** Skills every online run gets besides its own, such as the CLI's (`online.skills`). */
   readonly onlineSkills?: () => readonly BriefSkill[];
   /** The agents an online run may consult, and how deep in a consultation it is (`consultations`); none without. */
@@ -247,6 +244,14 @@ class NotForThisRunner extends Error {
   }
 }
 
+/** The run gets variables only team runners may receive, and this runner is a personal one. */
+class TeamRunnersOnly extends NotForThisRunner {
+  public constructor(public readonly variables: readonly VariableRef[]) {
+    super();
+    this.name = 'TeamRunnersOnly';
+  }
+}
+
 /** What a runner said it can still take of each coding tool during one claim, counted down as runs are handed out. */
 interface ToolRoom {
   has(tool: AgentTool): boolean;
@@ -271,22 +276,6 @@ function toolRoom(
 type Attempt =
   | { readonly kind: 'claimed'; readonly payload: RunPayload }
   | { readonly kind: 'skipped' };
-
-/** What a taken run still needs once the claim's transaction committed: its variables, and what to undo without them. */
-interface Taken {
-  readonly runId: string;
-  readonly payload: RunPayload;
-  /** Where its variables come from, in merge order; the ones that hold any. */
-  readonly held: readonly VariableTarget[];
-  /** The run token and repository credentials the payload carries, for redaction. */
-  readonly secrets: readonly string[];
-  /** The inputs the claim marked delivered, and whether it used up a workspace reset. */
-  readonly inputIds: readonly string[];
-  readonly clean: boolean;
-  /** The run as it was queued, for `giveBack`. */
-  readonly queued: RunRecord;
-  readonly prepared: Prepared;
-}
 
 /**
  * The entry `runner` takes a run of `agent` with: the first whose tool it has enabled, installed and signed in. Null
@@ -487,10 +476,6 @@ interface Assembled {
   readonly requires: readonly RunnerFeature[];
   readonly directoryKey: string | null;
   readonly entry: RunnerModelEntry;
-  readonly variables: readonly VariableTarget[];
-  readonly held: readonly VariableTarget[];
-  readonly secrets: readonly string[];
-  readonly clean: boolean;
 }
 
 const DIRECTORY_KEY_SEPARATOR = '\n';
@@ -595,9 +580,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       ...payloadRequires(dirs, skills.length, names.length),
     ]) as RunnerFeature[];
     if (!covers(runner.features, requires)) throw new NotForThisRunner();
-    // Opened once the transaction committed and the runner's owner may still receive them (`deliver`).
-    const held =
-      names.length > 0 ? await deps.variables.holding(conn, variables) : [];
+    // A variable for team runners only keeps a personal runner off the run.
+    if (names.length > 0 && runner.trust !== 'team') {
+      const teamOnly = await deps.variables.teamOnly(conn, variables);
+      if (teamOnly.length > 0) throw new TeamRunnersOnly(teamOnly);
+    }
+    const env =
+      names.length > 0
+        ? await deps.variables.forRun(conn, variables, {
+            runId: run.id,
+            runnerId: runner.id,
+          })
+        : [];
     const nowText = clock.now().toISOString();
     const clean = await consumeReset(
       conn,
@@ -628,10 +622,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       },
       prepared,
     );
-    const secrets = [
+    deps.secrets?.remember(runSecretsKey(run.id), [
+      ...env.map((variable) => variable.value),
       token.value,
       ...(git?.credentials ?? []).map((credential) => credential.password),
-    ];
+    ]);
     const last = await eventsRepo(conn).findOne({
       filter: { runId: run.id },
       sort: (sort) => sort.field('seq').desc(),
@@ -705,7 +700,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       inputs,
       workspace: {
         dirs,
-        env: [],
+        env,
         ...(clean ? { clean: true } : {}),
         ...(git ? { git } : {}),
       },
@@ -737,89 +732,35 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       requires,
       directoryKey,
       entry,
-      variables,
-      held,
-      secrets,
-      clean,
     };
   }
 
   /**
-   * Whether `runner` would be refused the run's variables, asked before the claim's transaction with the run's pending
-   * inputs, so that a run it would be refused is not taken. Only a hint: the claim asks again, after its transaction,
-   * about the scopes the payload it assembled actually uses (`deliver`). A run whose subject cannot be assembled is not
-   * refused here; its claim reports the failure.
+   * Notes on a queued run which of its variables kept a personal runner off it, and tells its actor and owner the first
+   * time; nothing when that is what it says already.
    */
-  async function refusesSecrets(
-    runner: Runner,
-    agent: Agent,
+  async function noteTeamOnly(
     candidate: RunRecord,
-  ): Promise<boolean> {
-    if (runner.trust === 'team') return false;
-    const conn = tx.read();
-    const binding = deps.subjects.get(candidate.subjectKind);
-    if (!binding) return false;
-    let held: VariableTarget[];
-    try {
-      const assembly = await binding.context.assemble(conn, {
-        run: toRun(candidate),
-        agent,
-        runner,
-        inputs: (await pendingInputs(conn, candidate.id)).map(toInput),
-        cli: deps.cli.name,
-        appName: deps.app.name,
-        dialect: 'cli',
-      });
-      held = await deps.variables.holding(
-        conn,
-        variableTargets(agent, assembly),
-      );
-    } catch {
-      return false;
-    }
-    return !(await mayReceive(runner, held, candidate.id));
-  }
-
-  async function mayReceive(
-    runner: Runner,
-    held: readonly VariableTarget[],
-    runId: string,
-  ): Promise<boolean> {
-    try {
-      return await deps.secretTrust.mayReceive(tx.read(), runner, held);
-    } catch (error) {
-      deps.onClaimFailure?.(runId, error);
-      return false;
-    }
-  }
-
-  /** Notes on a queued run that `runner` left it for its variables, or that it no longer does. */
-  async function noteRefusal(
-    candidate: RunRecord,
-    runnerId: string,
-    refused: boolean,
+    variables: readonly VariableRef[],
   ): Promise<void> {
-    if (stringArray(candidate.secretsRefusedBy).includes(runnerId) === refused)
-      return;
+    const same = (value: unknown) =>
+      JSON.stringify(variableRefs(value)) === JSON.stringify(variables);
+    if (same(candidate.teamOnlyVariables)) return;
     await tx.run(async (unit) => {
       const run = await findRunRecord(unit.conn, candidate.id);
-      if (!run || run.status !== 'queued') return;
-      const before = stringArray(run.secretsRefusedBy);
-      if (before.includes(runnerId) === refused) return;
-      const after = refused
-        ? [...before, runnerId]
-        : before.filter((id) => id !== runnerId);
+      if (!run || run.status !== 'queued' || same(run.teamOnlyVariables))
+        return;
       await runsRepo(unit.conn).updateMany({
         filter: (f) =>
           f.and([f.string('id').eq(run.id), f.string('status').eq('queued')]),
-        values: { secretsRefusedBy: after.length > 0 ? after : null },
+        values: { teamOnlyVariables: variables.map((each) => ({ ...each })) },
       });
       unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
-      if (refused)
+      if (variableRefs(run.teamOnlyVariables).length === 0)
         unit.emit({
           type: 'notice',
           notice: {
-            key: `run-secrets:${run.id}:${runnerId}`,
+            key: `run-secrets:${run.id}`,
             type: 'run_secrets_not_allowed',
             userIds: [
               ...new Set(
@@ -829,9 +770,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
               ),
             ],
             subject: { kind: 'run', id: run.id, label: run.id },
-            title: 'A run needs a trusted runtime',
-            body: 'This runtime cannot receive the run variables. Use a trusted team runtime or ask a scope manager to execute.',
-            params: { runId: run.id, runnerId, agentId: run.agentId },
+            title: 'A run waits for a team runtime',
+            body: `Some of its variables are for team runtimes only: ${describeVariables(variables)}.`,
+            params: {
+              runId: run.id,
+              agentId: run.agentId,
+              variables: describeVariables(variables),
+            },
           },
         });
     });
@@ -853,10 +798,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       (await runsOfKey(conn, candidate, ACTIVE)).length > 0
     )
       return { kind: 'skipped' };
-    if (await refusesSecrets(runner, agent, candidate)) {
-      await noteRefusal(candidate, runner.id, true);
-      return { kind: 'skipped' };
-    }
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
     const prepared = await prepareExtensions(
       toRun(candidate),
@@ -865,9 +806,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       (error) => deps.onClaimFailure?.(candidate.id, error),
       deps.repoAccess,
     );
-    let taken: Taken | null;
+    let taken: RunPayload | null;
     try {
-      taken = await tx.run(async (unit): Promise<Taken | null> => {
+      taken = await tx.run(async (unit): Promise<RunPayload | null> => {
         const { conn } = unit;
         const now = clock.now();
         const nowText = now.toISOString();
@@ -942,126 +883,33 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             modelService: null,
             model: assembled.entry.model,
             effort: assembled.entry.effort ?? null,
+            teamOnlyVariables: null,
           },
         });
         unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
-        return {
-          runId: run.id,
-          payload: assembled.payload,
-          held: assembled.held,
-          secrets: assembled.secrets,
-          inputIds: pending
-            .filter((input) => !input.deliveredAt)
-            .map((input) => input.id),
-          clean: assembled.clean,
-          queued: candidate,
-          prepared,
-        };
+        if (variableRefs(candidate.teamOnlyVariables).length > 0)
+          unit.emit({
+            type: 'notice.cleared',
+            notice: {
+              type: 'run_secrets_not_allowed',
+              subject: { kind: 'run', id: run.id, label: run.id },
+            },
+          });
+        return assembled.payload;
       });
     } catch (error) {
       await discardRepoAccess(candidate, prepared);
+      if (error instanceof TeamRunnersOnly) {
+        await noteTeamOnly(candidate, error.variables);
+        return { kind: 'skipped' };
+      }
       throw error;
     }
     if (!taken) {
       await discardRepoAccess(candidate, prepared);
       return { kind: 'skipped' };
     }
-    return deliver(runner, taken);
-  }
-
-  /**
-   * Hands a taken run its variables, after the claim's transaction committed: only when the runner may receive every
-   * scope they come from, asked now, with nothing else between the answer and the delivery. Otherwise, or when they
-   * cannot be opened, the run is given back.
-   */
-  async function deliver(runner: Runner, taken: Taken): Promise<Attempt> {
-    if (!(await mayReceive(runner, taken.held, taken.runId))) {
-      await giveBack(runner, taken);
-      await noteRefusal(taken.queued, runner.id, true);
-      return { kind: 'skipped' };
-    }
-    let env: EnvVar[] = [];
-    try {
-      if (taken.held.length > 0)
-        env = await tx.run(({ conn: unit }) =>
-          deps.variables.forRun(unit, taken.held, {
-            runId: taken.runId,
-            runnerId: runner.id,
-          }),
-        );
-    } catch (error) {
-      await giveBack(runner, taken);
-      throw new AssemblyError(
-        error instanceof Error ? error.message : String(error),
-        error,
-      );
-    }
-    await tx.run(async ({ conn, emit }) => {
-      await runsRepo(conn).updateMany({
-        filter: { id: taken.runId, status: 'dispatched', runnerId: runner.id },
-        values: { secretsRefusedBy: null },
-      });
-      if (stringArray(taken.queued.secretsRefusedBy).length > 0)
-        emit({
-          type: 'notice.cleared',
-          notice: {
-            type: 'run_secrets_not_allowed',
-            subject: { kind: 'run', id: taken.runId, label: taken.runId },
-          },
-        });
-    });
-    deps.secrets?.remember(runSecretsKey(taken.runId), [
-      ...env.map((variable) => variable.value),
-      ...taken.secrets,
-    ]);
-    return {
-      kind: 'claimed',
-      payload: {
-        ...taken.payload,
-        workspace: { ...taken.payload.workspace, env },
-      },
-    };
-  }
-
-  /**
-   * Puts a run `runner` took back in the queue as it was before the claim, while the runner still holds it: its inputs
-   * undelivered, its token revoked, and a workspace reset it used up ready for the next claim. The runner never got the
-   * payload, so the attempt is not counted.
-   */
-  async function giveBack(runner: Runner, taken: Taken): Promise<void> {
-    await tx.run(async (unit) => {
-      const now = clock.now().toISOString();
-      const back = await runsRepo(unit.conn).updateMany({
-        filter: (f) =>
-          f.and([
-            f.string('id').eq(taken.runId),
-            f.string('status').eq('dispatched'),
-            f.string('runnerId').eq(runner.id),
-          ]),
-        values: {
-          status: 'queued',
-          runnerId: null,
-          leaseExpiresAt: null,
-          dispatchedAt: null,
-          lastActivityAt: taken.queued.lastActivityAt,
-          availableAt: taken.queued.availableAt,
-          directoryKey: taken.queued.directoryKey,
-          tool: taken.queued.tool,
-          modelService: taken.queued.modelService,
-          model: taken.queued.model,
-          effort: taken.queued.effort,
-          requires: taken.queued.requires,
-          payloadFingerprint: taken.queued.payloadFingerprint,
-          updatedAt: now,
-        },
-      });
-      if (back.updatedCount !== 1) return;
-      await unmarkDelivered(unit.conn, taken.inputIds);
-      await revokeTokens(unit, taken.runId, now);
-      if (taken.clean) await restoreReset(unit.conn, taken.runId);
-      unit.emit({ type: 'run.changed', runId: taken.runId, status: 'queued' });
-    });
-    await discardRepoAccess(taken.queued, taken.prepared);
+    return { kind: 'claimed', payload: taken };
   }
 
   async function discardRepoAccess(

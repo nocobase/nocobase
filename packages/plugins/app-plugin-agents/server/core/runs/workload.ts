@@ -22,7 +22,8 @@ import {
   type WorkloadRun,
 } from '../../../shared/runs.js';
 import type { Clock } from '../../kernel/clock.js';
-import { covers, stringArray } from '../../kernel/values.js';
+import { covers } from '../../kernel/values.js';
+import { describeVariables, variableRefs } from '../variables/index.js';
 import { listAgents } from '../agents/index.js';
 import {
   ACTIVE,
@@ -81,7 +82,7 @@ type WaitFacts = Pick<
   RunRecord,
   'actorUserId' | 'availableAt' | 'claimFailures' | 'failureDetail'
 > &
-  Partial<Pick<RunRecord, 'secretsRefusedBy'>> & {
+  Partial<Pick<RunRecord, 'teamOnlyVariables'>> & {
     readonly requires: readonly RunnerFeature[];
   };
 
@@ -94,6 +95,7 @@ const wait = (
   tool: null,
   missing: [],
   detail: null,
+  variables: [],
   ...extra,
 });
 
@@ -138,10 +140,17 @@ export function explainWait(
       missing: run.requires.filter((feature) => !offered.has(feature)),
     });
   }
-  // The personal runners that found their owner may not receive the run's variables (`claim.ts`).
-  const refused = new Set(stringArray(run.secretsRefusedBy));
-  const trusted = withFeatures.filter((runner) => !refused.has(runner.id));
-  if (trusted.length === 0) return wait('secretsNotAllowed');
+  // Variables for team runners only, as the last claim by a personal runner found them (`claim.ts`).
+  const teamOnly = variableRefs(run.teamOnlyVariables);
+  const trusted =
+    teamOnly.length > 0
+      ? withFeatures.filter((runner) => runner.trust === 'team')
+      : withFeatures;
+  if (trusted.length === 0)
+    return wait('secretsNotAllowed', {
+      variables: teamOnly,
+      detail: `Team runtimes only: ${describeVariables(teamOnly)}`,
+    });
   if (context.sameWorkActive) return wait('sameWorkActive');
   if (context.agentActive >= agent.maxConcurrentRuns)
     return wait('concurrencyFull');

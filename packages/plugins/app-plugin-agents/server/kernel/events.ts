@@ -13,8 +13,9 @@ import type { JobStatus, RunStatus } from '@nocobase/agent-protocol';
  *   serve, so it gets no work until it is upgraded; to its owner. `params`: `runnerName`, `runnerVersion`,
  *   `protocolVersion` (the runner's), `minProtocolVersion` and `maxProtocolVersion` (the application's),
  *   `latestVersion` (the runner the application serves for its platform, or null).
- * - `run_secrets_not_allowed` (subject `run`): a runner is refused the run's variables, including when access lookup
- *   fails; to its actor and owner. `params`: `runId`, `runnerId`, `agentId`. Cleared when a claim is delivered.
+ * - `run_secrets_not_allowed` (subject `run`): a personal runner left a run because some of its variables are for team
+ *   runners only; to its actor and owner. `params`: `runId`, `agentId`, `variables` (the variables, in words). Cleared
+ *   when a runner takes the run.
  */
 export interface RunnerNotice {
   /** Stable for the same news: delivering it twice tells people once. */

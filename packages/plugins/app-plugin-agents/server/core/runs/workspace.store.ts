@@ -128,14 +128,3 @@ export async function consumeReset(
   });
   return result.updatedCount > 0;
 }
-
-/** Makes the resets `runId` used up wait again: its claim gave the run back. */
-export async function restoreReset(
-  conn: DatabaseConnection,
-  runId: string,
-): Promise<void> {
-  await resetsRepo(conn).updateMany({
-    filter: { consumedByRunId: runId },
-    values: { consumedByRunId: null, consumedAt: null },
-  });
-}

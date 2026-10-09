@@ -62,8 +62,8 @@ export interface RunRecord {
   readonly directoryKey: string | null;
   readonly claimFailures: number;
   readonly payloadFingerprint: string | null;
-  /** The personal runners that left it queued because their owner may not receive its variables. */
-  readonly secretsRefusedBy?: JsonColumn;
+  /** While queued: the variables for team runners only that kept a personal runner off it (`VariableRef[]`). */
+  readonly teamOnlyVariables?: JsonColumn;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -306,18 +306,6 @@ export async function markDelivered(
         f.date('deliveredAt').empty(),
       ]),
     values: { deliveredAt: now },
-  });
-}
-
-/** Marks inputs undelivered again: a claim that gave its run back never handed them over. */
-export async function unmarkDelivered(
-  conn: DatabaseConnection,
-  inputIds: readonly string[],
-): Promise<void> {
-  if (inputIds.length === 0) return;
-  await inputsRepo(conn).updateMany({
-    filter: (f) => f.or(inputIds.map((id) => f.string('id').eq(id))),
-    values: { deliveredAt: null },
   });
 }
 

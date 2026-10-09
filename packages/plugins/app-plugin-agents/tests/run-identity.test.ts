@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
 
 /**
- * Work done as different people on one subject: it is queued as separate runs, claimed one at a time, and its
- * variables reach only runners whose owner may change where they are kept. `owner` owns every agent here.
+ * Work done as different people on one subject: it is queued as separate runs and claimed one at a time. Its variables
+ * go to the runner that takes it, unless one is for team runners only. `owner` owns every agent here.
  */
 describe('runs as their actors', () => {
   let h: Harness;
@@ -118,189 +118,168 @@ describe('runs as their actors', () => {
   describe('with variables', () => {
     const env = (payload: { workspace: { env: { name: string }[] } }) =>
       payload.workspace.env.map((variable) => variable.name);
-
-    it("hands the agent's variables to a team runner and its owner's runner only", async () => {
-      h = await createHarness();
-      const agentId = await h.createAgent();
-      await h.services.variables.set(
-        { scope: 'agent', scopeId: agentId },
-        'API_TOKEN',
-        'secret',
-        'owner',
-      );
-
-      // Bob's personal runner may not receive the owner's variables: his run waits, and says why.
-      const theirs = await comment('bob', 'Have a look.', agentId);
-      const bobRunner = await h.registerRunner({
-        trust: 'ownerOnly',
-        ownerUserId: 'bob',
-      });
-      expect(await claim(h, bobRunner)).toEqual([]);
-      expect((await h.services.runs.get(theirs.runId)).status).toBe('queued');
-      expect(await waitOf(theirs.runId)).toBe('secretsNotAllowed');
-      expect(
-        (
-          await h.services.variables.audits({
-            scope: 'agent',
-            scopeId: agentId,
-          })
-        ).filter((audit) => audit.action === 'deliver'),
-      ).toEqual([]);
-
-      // A team runner takes it as before, with the variables.
-      const team = await h.registerRunner();
-      const [shared] = await claim(h, team);
-      expect(shared.run.id).toBe(theirs.runId);
-      expect(shared.workspace.env).toEqual([
-        { name: 'API_TOKEN', value: 'secret' },
-      ]);
-
-      // The owner's personal runner takes the owner's run, with the variables.
-      const mine = await h.services.runs.enqueue({
+    const asBob = (agentId: string, subjectId = '1') =>
+      h.services.runs.enqueue({
         agentId,
-        subject: { kind: 'sample', id: '2' },
-        actorUserId: 'owner',
+        subject: { kind: 'sample', id: subjectId },
+        actorUserId: 'bob',
         input: {
           type: 'comment',
-          actor: { kind: 'user', id: 'owner', name: 'owner' },
-          text: 'Fix it.',
+          actor: { kind: 'user', id: 'bob', name: 'bob' },
+          text: 'Have a look.',
         },
       });
-      const ownerRunner = await h.registerRunner({
-        trust: 'ownerOnly',
-        ownerUserId: 'owner',
-      });
-      const [own] = await claim(h, ownerRunner);
-      expect(own.run.id).toBe(mine.runId);
-      expect(env(own)).toEqual(['API_TOKEN']);
-    });
+    const delivered = async (scope: string, scopeId: string) =>
+      (await h.services.variables.audits({ scope, scopeId })).filter(
+        (audit) => audit.action === 'deliver',
+      );
 
-    it('hands them to the runner of someone the application lets edit the agent', async () => {
+    it('hands the variables to the runner that takes the run, personal ones included', async () => {
       h = await createHarness();
       const agentId = await h.createAgent();
       await h.services.variables.set(
         { scope: 'agent', scopeId: agentId },
-        'API_TOKEN',
-        'secret',
+        'NPM_TOKEN',
+        'shared',
         'owner',
       );
-      const theirs = await comment('bob', 'Have a look.', agentId);
+      // Bob may use the owner's agent, so his own runner gets its token.
+      const theirs = await asBob(agentId);
+      const bobRunner = await h.registerRunner({
+        trust: 'ownerOnly',
+        ownerUserId: 'bob',
+      });
+      const [payload] = await claim(h, bobRunner);
+      expect(payload.run.id).toBe(theirs.runId);
+      expect(payload.workspace.env).toEqual([
+        { name: 'NPM_TOKEN', value: 'shared' },
+      ]);
+      expect(await delivered('agent', agentId)).toHaveLength(1);
+    });
+
+    it('keeps a run with a team-only variable off personal runners, and says which', async () => {
+      h = await createHarness();
+      const agentId = await h.createAgent();
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: agentId },
+        'NPM_TOKEN',
+        'shared',
+        'owner',
+      );
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: agentId },
+        'DEPLOY_KEY',
+        'secret',
+        'owner',
+        { teamRunnersOnly: true },
+      );
+      const notices: string[] = [];
+      h.services.events.on('notice', ({ notice }) => {
+        notices.push(notice.type);
+      });
+
+      // Bob's own runner leaves bob's run: it waits for a team runner and names the variable.
+      const theirs = await asBob(agentId);
       const bobRunner = await h.registerRunner({
         trust: 'ownerOnly',
         ownerUserId: 'bob',
       });
       expect(await claim(h, bobRunner)).toEqual([]);
-
-      const release = h.services.secretTrust.setAgentEditors((_agent, userId) =>
-        Promise.resolve(userId === 'bob'),
-      );
-      const [payload] = await claim(h, bobRunner);
-      expect(payload.run.id).toBe(theirs.runId);
-      expect(env(payload)).toEqual(['API_TOKEN']);
-      release();
-    });
-
-    it("checks every scope the variables come from, by the scope's own rules", async () => {
-      h = await createHarness();
-      const agentId = await h.createAgent();
-      const managers = new Set<string>();
-      h.services.scopes.register({
-        key: 'team',
-        title: { key: 'scopes.team', ns: 'test' },
-        access: (_scopeId, userId) =>
-          Promise.resolve({ visible: true, manage: managers.has(userId) }),
+      expect(await claim(h, bobRunner)).toEqual([]);
+      const wait = (
+        await h.services.runs.workload({ subjectKind: 'sample' })
+      ).runs.find((run) => run.id === theirs.runId)?.wait;
+      expect(wait).toMatchObject({
+        reason: 'secretsNotAllowed',
+        variables: [{ scope: 'agent', scopeId: agentId, name: 'DEPLOY_KEY' }],
       });
-      h.scopes = [{ scope: 'team', scopeId: 't-1' }];
-      await h.services.variables.set(
-        { scope: 'team', scopeId: 't-1' },
-        'TEAM_TOKEN',
-        'team',
-        'owner',
-      );
+      expect(wait?.detail).toContain('DEPLOY_KEY');
+      expect(notices).toEqual(['run_secrets_not_allowed']);
+      expect(await delivered('agent', agentId)).toEqual([]);
+
+      // The owner's own runner too: the mark is about the variable, not about who asks.
       const mine = await comment('owner', 'Fix it.', agentId);
       const ownerRunner = await h.registerRunner({
         trust: 'ownerOnly',
         ownerUserId: 'owner',
       });
-
-      // The agent's owner may not change the team's variables, so not on a runner of their own either.
       expect(await claim(h, ownerRunner)).toEqual([]);
-      expect(await waitOf(mine.runId)).toBe('secretsNotAllowed');
 
-      managers.add('owner');
-      const [payload] = await claim(h, ownerRunner);
-      expect(payload.run.id).toBe(mine.runId);
-      expect(env(payload)).toEqual(['TEAM_TOKEN']);
+      // A team runner takes both, with every variable.
+      const team = await h.registerRunner({ slots: 4 });
+      const payloads = await claim(h, team, 4);
+      expect(payloads.map((payload) => payload.run.id)).toEqual([theirs.runId]);
+      expect(env(payloads[0]).sort()).toEqual(['DEPLOY_KEY', 'NPM_TOKEN']);
+      expect(await waitOf(mine.runId)).toBe('sameWorkActive');
     });
 
-    it('gives a run back untouched when its runner is refused the variables at delivery', async () => {
+    it('goes by the value a run gets: a team-only one the agent replaces does not count', async () => {
       h = await createHarness();
       const agentId = await h.createAgent();
-      let mayManage = true;
-      h.services.scopes.register({
-        key: 'team',
-        title: { key: 'scopes.team', ns: 'test' },
-        access: () => Promise.resolve({ visible: true, manage: mayManage }),
-      });
       h.scopes = [{ scope: 'team', scopeId: 't-1' }];
       await h.services.variables.set(
         { scope: 'team', scopeId: 't-1' },
-        'TEAM_TOKEN',
+        'API_TOKEN',
         'team',
         'owner',
+        { teamRunnersOnly: true },
       );
-      const mine = await comment('owner', 'Fix it.', agentId);
-      const reset = await h.request(
-        'POST',
-        '/agents/workspaces/sample/1/reset',
-        { user: 'owner' },
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: agentId },
+        'API_TOKEN',
+        'agent',
+        'owner',
       );
-      expect(reset.status).toBe(204);
+      await comment('owner', 'Fix it.', agentId);
       const ownerRunner = await h.registerRunner({
         trust: 'ownerOnly',
         ownerUserId: 'owner',
       });
-      // Taken away while the claim prepares, after the runner was found fit.
-      const release = h.services.briefs.sections.register({
-        key: 'revoke',
-        prepare: () => {
-          mayManage = false;
-          return Promise.resolve(null);
-        },
-        section: () => null,
-      });
-
-      expect(await claim(h, ownerRunner)).toEqual([]);
-      const back = await h.services.runs.get(mine.runId);
-      expect(back).toMatchObject({
-        status: 'queued',
-        runnerId: null,
-        attempt: 1,
-      });
-      expect(await waitOf(mine.runId)).toBe('secretsNotAllowed');
-      expect(
-        (
-          await h.services.variables.audits({ scope: 'team', scopeId: 't-1' })
-        ).filter((audit) => audit.action === 'deliver'),
-      ).toEqual([]);
-      const tokens = await h.database
-        .connection()
-        .repository<{ revokedAt: string | null }>('agRunTokens')
-        .findMany({ filter: { runId: mine.runId } });
-      expect(tokens.length).toBeGreaterThan(0);
-      expect(tokens.every((token) => token.revokedAt !== null)).toBe(true);
-
-      // Allowed again: the next claim gets the same input and the reset the first one used up.
-      release();
-      mayManage = true;
       const [payload] = await claim(h, ownerRunner);
-      expect(payload.run).toMatchObject({ id: mine.runId, attempt: 1 });
+      expect(payload.workspace.env).toEqual([
+        { name: 'API_TOKEN', value: 'agent' },
+      ]);
+    });
+
+    it('changes only the mark when no value is given, and refuses a new variable without one', async () => {
+      h = await createHarness();
+      const agentId = await h.createAgent();
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: agentId },
+        'API_TOKEN',
+        'kept',
+        'owner',
+      );
+      const path = `/agents/variables/agent/${agentId}`;
+      const manager = { user: 'owner', can: ['agents.agents/manage'] };
+      const marked = await h.request('PUT', `${path}/API_TOKEN`, {
+        ...manager,
+        body: { teamRunnersOnly: true },
+      });
+      expect(marked.status).toBe(200);
+      expect(marked.body.data).toMatchObject({
+        name: 'API_TOKEN',
+        teamRunnersOnly: true,
+      });
       expect(
-        payload.inputs.map((input: { text: string }) => input.text),
-      ).toEqual(['Fix it.']);
-      expect(payload.workspace.clean).toBe(true);
-      expect(env(payload)).toEqual(['TEAM_TOKEN']);
-      expect(await waitOf(mine.runId)).toBeUndefined();
+        await h.services.variables.reveal(
+          { scope: 'agent', scopeId: agentId },
+          'owner',
+        ),
+      ).toEqual([{ name: 'API_TOKEN', value: 'kept' }]);
+      // Replacing the value keeps the mark.
+      await h.request('PUT', `${path}/API_TOKEN`, {
+        ...manager,
+        body: { value: 'new' },
+      });
+      expect(
+        await h.services.variables.list({ scope: 'agent', scopeId: agentId }),
+      ).toMatchObject([{ name: 'API_TOKEN', teamRunnersOnly: true }]);
+      const missing = await h.request('PUT', `${path}/OTHER`, {
+        ...manager,
+        body: { teamRunnersOnly: true },
+      });
+      expect(missing.status).toBe(400);
     });
 
     it('leaves a run without variables to personal runners as before', async () => {
@@ -318,14 +297,15 @@ describe('runs as their actors', () => {
   });
 
   describe('eligibility', () => {
-    it('counts only the runners that would take the work, variables included', async () => {
+    it('counts only the runners that would take the work, team-only variables included', async () => {
       h = await createHarness();
       const agentId = await h.createAgent();
       await h.services.variables.set(
         { scope: 'agent', scopeId: agentId },
-        'API_TOKEN',
+        'DEPLOY_KEY',
         'secret',
         'owner',
+        { teamRunnersOnly: true },
       );
       const agent = await h.services.agents.get(agentId);
       const conn = h.services.tx.read();
@@ -333,19 +313,18 @@ describe('runs as their actors', () => {
         trust: 'ownerOnly',
         ownerUserId: 'bob',
       });
-      await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'owner' });
       const online = async (userId: string) =>
         (await h.services.availability(conn, [agent], userId)).get(agentId)
           ?.online;
+      const asBob = { actorUserId: 'bob' };
 
-      // Bob's own runner may not receive the owner's variables; the owner's runner takes only the owner's work.
-      expect(
-        await h.services.eligibility.canClaim(conn, agent, {
-          actorUserId: 'bob',
-        }),
-      ).toBe(false);
+      expect(await h.services.eligibility.canClaim(conn, agent, asBob)).toBe(
+        false,
+      );
+      expect(await h.services.eligibility.mayQueue(conn, agent, asBob)).toBe(
+        false,
+      );
       expect(await online('bob')).toBe(false);
-      expect(await online('owner')).toBe(true);
       // Without a person, as before: some runner has the tool.
       expect(
         (await h.services.availability(conn, [agent])).get(agentId),
@@ -356,43 +335,41 @@ describe('runs as their actors', () => {
       expect(
         roster.body.data.find((each: { id: string }) => each.id === agentId),
       ).toMatchObject({ online: false });
+      expect(await h.services.eligibility.teamOnly(conn, agent, {})).toEqual([
+        { scope: 'agent', scopeId: agentId, name: 'DEPLOY_KEY' },
+      ]);
 
-      // Allowed the variables, or a team runner: the work would be taken.
-      const release = h.services.secretTrust.setAgentEditors((_agent, userId) =>
-        Promise.resolve(userId === 'bob'),
-      );
-      expect(
-        (
-          await h.services.eligibility.runnersFor(conn, agent, {
-            actorUserId: 'bob',
-          })
-        ).map((runner) => runner.id),
-      ).toEqual([bobRunner.runnerId]);
-      release();
+      // A team runner would take it; without the mark, bob's own runner would too.
       const team = await h.registerRunner();
       expect(
-        (
-          await h.services.eligibility.runnersFor(conn, agent, {
-            actorUserId: 'bob',
-          })
-        ).map((runner) => runner.id),
+        (await h.services.eligibility.runnersFor(conn, agent, asBob)).map(
+          (runner) => runner.id,
+        ),
       ).toEqual([team.runnerId]);
       expect(await online('bob')).toBe(true);
+      await h.services.variables.set(
+        { scope: 'agent', scopeId: agentId },
+        'DEPLOY_KEY',
+        undefined,
+        'owner',
+        { teamRunnersOnly: false },
+      );
+      expect(
+        (await h.services.eligibility.runnersFor(conn, agent, asBob))
+          .map((runner) => runner.id)
+          .sort(),
+      ).toEqual([bobRunner.runnerId, team.runnerId].sort());
     });
 
     it('checks the scopes and features the caller names, as the claim would', async () => {
       h = await createHarness();
       const agentId = await h.createAgent();
-      h.services.scopes.register({
-        key: 'team',
-        title: { key: 'scopes.team', ns: 'test' },
-        access: () => Promise.resolve({ visible: true, manage: false }),
-      });
       await h.services.variables.set(
         { scope: 'team', scopeId: 't-1' },
         'TEAM_TOKEN',
         'team',
         'owner',
+        { teamRunnersOnly: true },
       );
       const agent = await h.services.agents.get(agentId);
       const conn = h.services.tx.read();

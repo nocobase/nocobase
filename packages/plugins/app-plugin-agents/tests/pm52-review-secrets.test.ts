@@ -1,20 +1,19 @@
 import { afterEach, expect, it } from 'vitest';
+
 import { claim, createHarness, type Harness } from './harness.js';
 
+/**
+ * The PM-52 review's cases, under the rule that a variable marked for team runners only keeps a run off personal
+ * runners: the mark is read in the claim's own transaction, from the payload assembled with the run's real inputs.
+ */
 let h: Harness;
 afterEach(async () => {
   await h?.close();
 });
 
-it('does not deliver after scope management access is revoked before the claim transaction', async () => {
+it('does not deliver a variable marked team-only just before the claim transaction', async () => {
   h = await createHarness();
   const agentId = await h.createAgent();
-  let mayManage = true;
-  h.services.scopes.register({
-    key: 'team',
-    title: { key: 'scopes.team', ns: 'test' },
-    access: async () => ({ visible: true, manage: mayManage }),
-  });
   h.scopes = [{ scope: 'team', scopeId: 't-1' }];
   await h.services.variables.set(
     h.scopes[0],
@@ -27,32 +26,41 @@ it('does not deliver after scope management access is revoked before the claim t
     trust: 'ownerOnly',
     ownerUserId: 'owner',
   });
+  let marked = false;
   h.services.briefs.sections.register({
-    key: 'review-revoke',
+    key: 'review-mark',
     prepare: async () => {
-      mayManage = false;
+      await h.services.variables.set(
+        h.scopes[0],
+        'REVIEW_TOKEN',
+        undefined,
+        'owner',
+        { teamRunnersOnly: true },
+      );
+      marked = true;
       return null;
     },
     section: () => null,
   });
   const delivered = await claim(h, runner);
-  expect(mayManage).toBe(false);
+  expect(marked).toBe(true);
   expect(delivered).toEqual([]);
+  expect(
+    (await h.services.variables.audits(h.scopes[0])).some(
+      (audit) => audit.action === 'deliver',
+    ),
+  ).toBe(false);
 });
 
-it('claims an authorized scope selected by the real run inputs', async () => {
+it('decides by the scope the real run inputs select', async () => {
   h = await createHarness();
   const agentId = await h.createAgent();
-  h.services.scopes.register({
-    key: 'team',
-    title: { key: 'scopes.team', ns: 'test' },
-    access: async () => ({ visible: true, manage: true }),
-  });
   await h.services.variables.set(
     { scope: 'team', scopeId: 't-1' },
     'REVIEW_TOKEN',
     'synthetic-test-value',
     'owner',
+    { teamRunnersOnly: true },
   );
   const provider = h.services.subjects.get('sample')!.context;
   const assemble = provider.assemble.bind(provider);
@@ -61,9 +69,13 @@ it('claims an authorized scope selected by the real run inputs', async () => {
     scopes: context.inputs.length ? [{ scope: 'team', scopeId: 't-1' }] : [],
   });
   await h.enqueue(agentId);
-  const runner = await h.registerRunner({
+  const personal = await h.registerRunner({
     trust: 'ownerOnly',
     ownerUserId: 'owner',
   });
-  expect((await claim(h, runner)).length).toBe(1);
+  expect(await claim(h, personal)).toEqual([]);
+  const [payload] = await claim(h, await h.registerRunner());
+  expect(payload.workspace.env).toEqual([
+    { name: 'REVIEW_TOKEN', value: 'synthetic-test-value' },
+  ]);
 });

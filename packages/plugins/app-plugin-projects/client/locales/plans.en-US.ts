@@ -262,7 +262,7 @@ const plansEnUS = {
       sameWorkActive: 'Waiting for the agent to finish the request before…',
       setupRetrying: 'Preparing the work again…',
       secretsNotAllowed:
-        'This runtime cannot receive the variables. Use a trusted runtime.',
+        'Some variables are for team runtimes only; waiting for a team runtime…',
     },
     waitsHint:
       'No runtime is online right now: a request waits until one connects.',

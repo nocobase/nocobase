@@ -151,7 +151,7 @@ export const defaultAgentQueueLabels: AgentQueueLabels = {
       toolSlotsFull: 'Every fitting runtime has its {tool} slots full',
       setupRetrying: 'Preparing it failed; retrying',
       secretsNotAllowed:
-        'This runtime cannot receive the variables; use a trusted runtime',
+        'Some of its variables are for team runtimes only, and no team runtime fits',
       next: 'Next for a free runtime',
     },
   },
