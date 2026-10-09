@@ -188,8 +188,8 @@ export interface RunWait {
   readonly missing: readonly RunnerFeature[];
   /** For `setupRetrying`: why preparing it failed. */
   readonly detail: string | null;
-  /** For `secretsNotAllowed`: the variables that ask for a team runner, by scope. */
-  readonly variables: readonly VariableRef[];
+  /** For `secretsNotAllowed`: the variables that ask for a team runner, by scope; absent when not provided. */
+  readonly variables?: readonly VariableRef[];
 }
 
 /** The newest thing a held run reported, for a one-line "last activity". */

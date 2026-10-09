@@ -20,8 +20,8 @@ export type VariableScope = string;
 
 export interface Variable {
   readonly name: string;
-  /** Only team runners receive it: a run that gets it waits for one (`secretsNotAllowed`). */
-  readonly teamRunnersOnly: boolean;
+  /** Only team runners receive it: a run that gets it waits for one (`secretsNotAllowed`); absent means false. */
+  readonly teamRunnersOnly?: boolean;
   readonly updatedAt: string;
   readonly updatedById: string | null;
   readonly updatedByName: string | null;

@@ -615,7 +615,7 @@ export const RunBriefSchema: z.ZodType<RunBrief> = z.object({
 export const VariableSchema: z.ZodType<Variable> = z
   .object({
     name: z.string(),
-    teamRunnersOnly: z.boolean().meta({
+    teamRunnersOnly: z.boolean().optional().meta({
       description:
         'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
     }),
