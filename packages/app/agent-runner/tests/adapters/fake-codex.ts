@@ -105,6 +105,29 @@ export class FakeCodex implements CodexProcess {
     this.emit({ id: request.id, result });
   }
 
+  /** Accept runtime feedback and report that the agent consumed it. */
+  async acceptPolicyFeedback(): Promise<string> {
+    const request = await this.nextRequest('turn/steer');
+    const params = request.params as {
+      threadId: string;
+      expectedTurnId: string;
+      clientUserMessageId: string;
+      input: { text: string }[];
+    };
+    this.respond(request, { turnId: params.expectedTurnId });
+    this.notify('item/completed', {
+      threadId: params.threadId,
+      turnId: params.expectedTurnId,
+      item: {
+        type: 'userMessage',
+        id: 'policy-feedback',
+        clientId: params.clientUserMessageId,
+        content: params.input,
+      },
+    });
+    return params.input[0]!.text;
+  }
+
   notify(method: string, params: unknown): void {
     this.emit({ method, params });
   }
@@ -182,6 +205,10 @@ export async function replay(
         await fake.next((m) => m.method === message.method);
       } else if (message.id !== undefined) {
         answers.set(message.id, await fake.nextAnswer(message.id));
+        // Historical recordings predate model-facing policy feedback. Consume
+        // the additional steer without inventing a recorded model response.
+        if ((message.result as { decision?: string })?.decision === 'decline')
+          await fake.acceptPolicyFeedback();
       }
       continue;
     }

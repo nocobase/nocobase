@@ -38,6 +38,7 @@ import type {
 
 import { classifyClaudeFailure } from './classify.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
+import { denialMessage } from './policy-denial.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
   AdapterEvent,
@@ -228,10 +229,7 @@ function normalizeDecision(decision: PermissionDecision): {
   return { allow: false, reason: decision.deny };
 }
 
-/** What the model reads when the policy denies a tool call. */
-export function denialMessage(reason: string | undefined): string {
-  return `The runner policy denied this tool call${reason ? `: ${reason}` : ''}. This decision is final and nobody can grant it during this run, so do not ask for permission. Continue the task without this call, or use an allowed alternative.`;
-}
+export { denialMessage } from './policy-denial.ts';
 
 // ---------------------------------------------------------------------------
 // Adapter
@@ -460,11 +458,9 @@ class ClaudeRun {
 
   /**
    * Runs before Claude Code's own permission rules, so a policy denial
-   * cannot be bypassed by allow rules in project settings. A denial is
-   * answered with 'ask', which hands the call to canUseTool: that path
-   * returns the reason to the model as a plain permission denial (a hook
-   * 'deny' reaches the model as a "hook error", which models read as a
-   * request to ask for permission and stop).
+   * cannot be bypassed by allow rules in project settings. Deny here so
+   * permissionDecisionReason reaches the model directly; routing through
+   * 'ask' and canUseTool can replace it with Claude Code's user-stop text.
    */
   private readonly preToolUse: HookCallback = async (hookInput) => {
     if (hookInput.hook_event_name !== 'PreToolUse') return {};
@@ -475,11 +471,12 @@ class ClaudeRun {
       hookInput.tool_use_id,
     );
     if (decision.allow) return {};
+    this.report(hookInput.tool_name, input, hookInput.tool_use_id, decision);
     return {
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
-        permissionDecision: 'ask',
-        permissionDecisionReason: decision.reason,
+        permissionDecision: 'deny',
+        permissionDecisionReason: denialMessage(decision.reason),
       },
     };
   };

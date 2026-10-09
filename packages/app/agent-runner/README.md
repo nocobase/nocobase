@@ -40,6 +40,8 @@ Every tool call goes through the run's policy (`src/core/command-policy.ts`): co
 
 The policy reads shell commands, it does not sandbox them: an agent allowed to run an interpreter or a build script can do anything the runner's user can. True isolation needs a separate OS user or a container per run.
 
+A tool refusal is an automated runner policy decision, not a person's instruction to stop. Every adapter sends the reason and a permitted alternative to the model, and records the reason in a `permission` event. Claude receives it directly from the `PreToolUse` denial; OpenCode and Pi receive a rejection message. Codex approval replies have no reason field, so the adapter sends runtime feedback through `turn/steer`, carrying it into the next turn if the active turn has ended. The agent should continue using allowed tools and paths, or report a blocker through the application CLI when no permitted alternative completes the task.
+
 ### Development
 
 `src/core/` is the daemon, the claim loop, the supervisor, leases, the event spool, checkouts, jobs, the local policy and isolation; `src/agent/` is agent runs: the coding tools' adapters, the run worker and the preparation of a run's workspace, skills, mounts, home, environment, CLI and credentials; `src/commands/` the commands; `src/host.ts` the command the runner runs as.

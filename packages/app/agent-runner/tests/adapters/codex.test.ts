@@ -301,6 +301,9 @@ describe('permissions', () => {
       expect((await fake.nextAnswer(7)).result).toEqual({
         decision: 'decline',
       });
+      expect(await fake.acceptPolicyFeedback()).toContain(
+        'outside the work directory',
+      );
       item(fake, 'completed', { ...change, status: 'declined' });
       completeTurn(fake);
     });
@@ -361,6 +364,7 @@ describe('permissions', () => {
         permissions: {},
         scope: 'turn',
       });
+      await fake.acceptPolicyFeedback();
       fake.emit({ id: 9, method: 'item/tool/call', params: {} });
       expect((await fake.nextAnswer(9)).error?.message).toMatch(
         /Unsupported request/,
@@ -409,6 +413,9 @@ describe('permissions', () => {
       expect((await fake.nextAnswer(3)).result).toEqual({
         decision: 'decline',
       });
+      expect(await fake.acceptPolicyFeedback()).toContain(
+        'Policy error: broken',
+      );
       completeTurn(fake);
     });
     const handle = adapter.start(
@@ -423,6 +430,113 @@ describe('permissions', () => {
       decision: 'deny',
       reason: 'Policy error: broken',
     });
+  });
+
+  it('delivers the refusal reason and continues with an allowed command', async () => {
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake);
+      fake.emit({
+        id: 10,
+        method: 'item/commandExecution/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'outside',
+          command: 'cat ../full-test.log',
+        },
+      });
+      expect((await fake.nextAnswer(10)).result).toEqual({
+        decision: 'decline',
+      });
+      const feedback = await fake.acceptPolicyFeedback();
+      expect(feedback).toContain('outside the work directory');
+      expect(feedback).toContain('not a user instruction to stop');
+      expect(feedback).toContain('inside the working directories');
+      fake.emit({
+        id: 11,
+        method: 'item/commandExecution/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'inside',
+          command: 'cat full-test.log',
+        },
+      });
+      expect((await fake.nextAnswer(11)).result).toEqual({
+        decision: 'accept',
+      });
+      completeTurn(fake);
+    });
+    const handle = adapter.start(
+      session({
+        permission: async (_tool, input) =>
+          String(input.command).includes('../')
+            ? { deny: 'cat outside the work directory: ../full-test.log' }
+            : 'allow',
+      }),
+    );
+    const events = await drain(handle);
+    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
+      {
+        meta: {
+          decision: 'deny',
+          reason: 'cat outside the work directory: ../full-test.log',
+        },
+      },
+      { meta: { decision: 'allow' } },
+    ]);
+    expect((await handle.result).exit).toBe('completed');
+  });
+
+  it('retains policy feedback when the denied call ends the active turn', async () => {
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake);
+      fake.emit({
+        id: 12,
+        method: 'item/commandExecution/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'outside',
+          command: 'cat ../full-test.log',
+        },
+      });
+      expect((await fake.nextAnswer(12)).result).toEqual({
+        decision: 'decline',
+      });
+      const feedback = await fake.nextRequest('turn/steer');
+      completeTurn(fake);
+      fake.emit({
+        id: feedback.id,
+        error: { code: -32000, message: 'Turn ended' },
+      });
+      const next = await fake.nextRequest('turn/start');
+      expect(next.params).toMatchObject({
+        input: [
+          expect.objectContaining({
+            text: expect.stringContaining('not a user instruction to stop'),
+          }),
+        ],
+      });
+      fake.respond(next, {
+        turn: { id: 'turn-2', status: 'inProgress', error: null },
+      });
+      item(fake, 'completed', {
+        type: 'userMessage',
+        id: 'feedback',
+        clientId: (next.params as { clientUserMessageId: string })
+          .clientUserMessageId,
+        content: [],
+      });
+      completeTurn(fake, 'turn-2');
+    });
+    const handle = adapter.start(
+      session({
+        permission: async () => ({ deny: 'outside the work directory' }),
+      }),
+    );
+    await drain(handle);
+    expect((await handle.result).exit).toBe('completed');
   });
 });
 

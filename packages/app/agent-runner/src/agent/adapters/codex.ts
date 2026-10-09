@@ -47,6 +47,7 @@ import type {
 } from './codex/protocol.ts';
 import { RpcConnection, spawnCodexProcess } from './codex/rpc.ts';
 import type { CodexExit, CodexProcess, SpawnCodex } from './codex/rpc.ts';
+import { denialMessage } from './policy-denial.ts';
 import {
   Channel,
   capInput,
@@ -534,6 +535,20 @@ class CodexRun {
     return { command: unwrapShell(command), ...(cwd ? { cwd } : {}) };
   }
 
+  /** Approval replies have no message field; deliver the reason as runtime feedback. */
+  private explainDenial(
+    tool: string,
+    toolUseId: string | undefined,
+    decision: { allow: boolean; reason?: string },
+  ): void {
+    if (decision.allow) return;
+    // Do not await the steer while the app-server is waiting for its approval
+    // reply. The existing input queue retains feedback across turn boundaries.
+    void this.steer(
+      `Runner policy feedback for ${tool}${toolUseId ? ` (tool call ${toolUseId})` : ''}: ${denialMessage(decision.reason)}`,
+    );
+  }
+
   private async decideChanges(
     changes: { path: string; kind: string }[],
   ): Promise<{ allow: boolean; reason?: string }> {
@@ -581,6 +596,7 @@ class CodexRun {
         const decision = await this.decide('shell', input);
         this.reviewedItems.add(p.itemId);
         this.report('shell', input, p.itemId, decision);
+        this.explainDenial('shell', p.itemId, decision);
         return { decision: decision.allow ? 'accept' : 'decline' };
       }
       case 'item/fileChange/requestApproval': {
@@ -594,31 +610,40 @@ class CodexRun {
           : await this.decideChanges(changes);
         this.reviewedItems.add(p.itemId);
         this.report('edit', { changes }, p.itemId, decision);
+        this.explainDenial('edit', p.itemId, decision);
         return { decision: decision.allow ? 'accept' : 'decline' };
       }
       case 'item/permissions/requestApproval': {
         const p = params as PermissionsApprovalParams;
+        const decision = {
+          allow: false,
+          reason: 'Agent runs do not widen the sandbox',
+        };
         this.report(
           'requestPermissions',
           { permissions: p.permissions, reason: p.reason },
           p.itemId,
-          {
-            allow: false,
-            reason: 'Agent runs do not widen the sandbox',
-          },
+          decision,
         );
+        this.explainDenial('requestPermissions', p.itemId, decision);
         return { permissions: {}, scope: 'turn' };
       }
       case 'mcpServer/elicitation/request': {
         const p = params as { serverName?: string; message?: string };
+        const decision = {
+          allow: false,
+          reason: 'MCP elicitations cannot be answered in agent runs',
+        };
         this.report(
           `mcp__${p.serverName ?? 'unknown'}`,
           { message: p.message },
           undefined,
-          {
-            allow: false,
-            reason: 'MCP elicitations cannot be answered in agent runs',
-          },
+          decision,
+        );
+        this.explainDenial(
+          `mcp__${p.serverName ?? 'unknown'}`,
+          undefined,
+          decision,
         );
         return { action: 'decline', content: null, _meta: null };
       }

@@ -8,7 +8,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -16,6 +16,7 @@ import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ClaudeAdapter } from '../../src/agent/adapters/claude.ts';
+import { createPolicy } from '../../src/core/command-policy.ts';
 import type {
   AdapterEvent,
   AdapterHandle,
@@ -199,4 +200,57 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
     expect(result.exit).toBe('aborted');
     expect(elapsed).toBeLessThan(5000);
   }, 120_000);
+
+  it('continues inside the workspace after an outside-file read is denied', async () => {
+    const root = await repo();
+    const workDir = path.join(root, 'work');
+    await mkdir(workDir);
+    await writeFile(path.join(root, 'full-test.log'), 'outside fixture');
+    const policy = createPolicy({
+      workDir,
+      policy: {
+        permissionMode: 'acceptEdits',
+        allowedCommands: ['^cat\\b', '^printf\\b'],
+        deniedPatterns: [],
+        idleTimeoutMs: 60_000,
+      },
+    });
+    const handle = adapter.start(
+      sessionFor(
+        workDir,
+        'First use Read to read ../full-test.log. Then create result.txt in the working directory containing exactly "done" and reply "done".',
+        {
+          permission: async (tool, input) => {
+            const decision = policy(tool, input);
+            return decision.decision === 'allow'
+              ? 'allow'
+              : { deny: decision.reason };
+          },
+        },
+      ),
+    );
+    const events = await drain(handle);
+    await save('outside-file-denial');
+    const denialIndex = events.findIndex(
+      (e) =>
+        e.type === 'permission' &&
+        e.meta?.decision === 'deny' &&
+        String(e.meta.reason).includes('outside the work directory'),
+    );
+    expect(denialIndex).toBeGreaterThanOrEqual(0);
+    expect(
+      events.slice(denialIndex + 1).some((e) => e.type === 'toolUse'),
+    ).toBe(true);
+    expect(
+      events.some(
+        (e) =>
+          e.type === 'toolResult' &&
+          String(e.output).includes('not a user instruction to stop'),
+      ),
+    ).toBe(true);
+    expect(
+      (await readFile(path.join(workDir, 'result.txt'), 'utf8')).trim(),
+    ).toBe('done');
+    expect((await handle.result).exit).toBe('completed');
+  }, 240_000);
 });

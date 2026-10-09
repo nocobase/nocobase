@@ -96,10 +96,7 @@ export function normalizeDecision(decision: PermissionDecision): Decision {
   return { allow: false, reason: decision.deny };
 }
 
-/** What the model reads when the policy denies a tool call. */
-export function denialMessage(reason: string | undefined): string {
-  return `The runner policy denied this tool call${reason ? `: ${reason}` : ''}. This decision is final and nobody can grant it during this run, so do not ask for permission. Continue the task without this call, or use an allowed alternative.`;
-}
+export { denialMessage } from '../policy-denial.ts';
 
 export function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;

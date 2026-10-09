@@ -16,6 +16,7 @@ import type {
   PermissionCheck,
 } from '../../src/agent/adapters/types.ts';
 import { calls, replay, setScript } from './fake-sdk.ts';
+import { createPolicy } from '../../src/core/command-policy.ts';
 import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
 
 vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
@@ -392,7 +393,7 @@ describe('permissions', () => {
     };
   }
 
-  it('the hook hands a policy denial to canUseTool, even when rules would allow it', async () => {
+  it('the hook denies directly with model-facing guidance, even when rules would allow it', async () => {
     setScript(replay([init(), result()]));
     adapterWith('9.0.0', dir).start(
       session({ permission: async () => ({ deny: 'nope' }) }),
@@ -415,10 +416,73 @@ describe('permissions', () => {
     expect(out).toEqual({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
-        permissionDecision: 'ask',
-        permissionDecisionReason: 'nope',
+        permissionDecision: 'deny',
+        permissionDecisionReason: denialMessage('nope'),
       },
     });
+  });
+
+  it('continues with an allowed file after an outside-workspace read is refused', async () => {
+    const policy = createPolicy({
+      workDir: dir,
+      policy: {
+        permissionMode: 'acceptEdits',
+        allowedCommands: [],
+        deniedPatterns: [],
+        idleTimeoutMs: 1000,
+      },
+    });
+    const feedback: string[] = [];
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield init();
+      expect(
+        await ctx.callTool(
+          'Read',
+          { file_path: '../full-test.log' },
+          'outside',
+        ),
+      ).toBe('deny');
+      feedback.push(...ctx.toolFeedback);
+      expect(feedback[0]).toContain('outside the work directory');
+      expect(feedback[0]).toContain('not a user instruction to stop');
+      expect(feedback[0]).toContain('inside the working directories');
+      expect(
+        await ctx.callTool(
+          'Write',
+          { file_path: 'full-test.log', content: 'regenerated' },
+          'inside',
+        ),
+      ).toBe('allow');
+      yield toolResult('inside', 'File created');
+      yield result({
+        result: 'Completed using full-test.log inside the workspace',
+      });
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        workDir: dir,
+        permission: async (tool, input) => {
+          const decision = policy(tool, input);
+          return decision.decision === 'allow'
+            ? 'allow'
+            : { deny: decision.reason };
+        },
+      }),
+    );
+    const events = await collect(handle.events);
+    expect((await handle.result).exit).toBe('completed');
+    expect(feedback[0]).not.toContain("The user doesn't want");
+    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
+      {
+        tool: 'Read',
+        meta: {
+          decision: 'deny',
+          reason: 'Read outside the work directory: ../full-test.log',
+        },
+      },
+      { tool: 'Write', meta: { decision: 'allow' } },
+    ]);
   });
 
   it('denies through the hook and records the reason', async () => {

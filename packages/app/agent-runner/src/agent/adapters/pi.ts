@@ -35,6 +35,7 @@ import {
   parsePermissionRequest,
 } from './pi/extension.ts';
 import type { PermissionAnswer } from './pi/extension.ts';
+import { denialMessage } from './policy-denial.ts';
 import { classifyPiFailure, contentText } from './pi/protocol.ts';
 import type {
   PiMessage,
@@ -163,10 +164,7 @@ export function normalizeDecision(decision: PermissionDecision): {
   return { allow: false, reason: decision.deny };
 }
 
-/** What the model reads when the policy denies a tool call. */
-export function denialMessage(reason: string | undefined): string {
-  return `The runner policy denied this tool call${reason ? `: ${reason}` : ''}. This decision is final and nobody can grant it during this run, so do not ask for permission. Continue the task without this call, or use an allowed alternative.`;
-}
+export { denialMessage } from './policy-denial.ts';
 
 // ---------------------------------------------------------------------------
 // Adapter

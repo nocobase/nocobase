@@ -355,6 +355,55 @@ describe('session setup', () => {
 });
 
 describe('permissions', () => {
+  it('continues with an allowed read after an outside-workspace refusal', async () => {
+    const fake = new FakeOpencode({
+      script: [
+        ...begin(),
+        ...step(1),
+        ...toolCall('outside', 'read', { path: '../full-test.log' }),
+        ask('deny-outside', 'outside', 'read', ['../full-test.log']),
+        stepEnd(1, 'tool-calls'),
+        ...step(2),
+        ...toolCall('inside', 'read', { path: 'full-test.log' }),
+        ask('allow-inside', 'inside', 'read', ['full-test.log']),
+        succeeded,
+      ],
+    });
+    const handle = adapterFor(fake).start(
+      session({
+        permission: async (_tool, input) =>
+          String(input.path).startsWith('../')
+            ? { deny: 'Read outside the work directory: ../full-test.log' }
+            : 'allow',
+      }),
+    );
+    const events = await collect(handle.events);
+    const refusal = fake.requestsTo(
+      'POST',
+      /\/permission\/deny-outside\/reply$/,
+    )[0]!.body;
+    expect(refusal).toMatchObject({
+      decision: 'reject',
+      message: expect.stringContaining('not a user instruction to stop'),
+    });
+    expect((refusal as { message: string }).message).toContain(
+      'inside the working directories',
+    );
+    expect(
+      fake.requestsTo('POST', /\/permission\/allow-inside\/reply$/)[0]!.body,
+    ).toMatchObject({ decision: 'once' });
+    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
+      {
+        meta: {
+          decision: 'deny',
+          reason: 'Read outside the work directory: ../full-test.log',
+        },
+      },
+      { meta: { decision: 'allow' } },
+    ]);
+    expect((await handle.result).exit).toBe('completed');
+  });
+
   it('rejects a denied call with the reason for the model', async () => {
     const fake = new FakeOpencode({
       script: [

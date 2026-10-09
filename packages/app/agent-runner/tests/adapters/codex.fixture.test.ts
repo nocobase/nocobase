@@ -144,7 +144,9 @@ it('replays a recorded run with a denial and a steer', async () => {
     (e) => e.type === 'toolResult' && e.meta?.status === 'declined',
   );
   expect(declined?.meta?.isError).toBe(true);
-  expect(events.filter((e) => e.type === 'input')).toMatchObject([
+  expect(
+    events.filter((e) => e.type === 'input' && e.meta?.inputId),
+  ).toMatchObject([
     { content: 'also create world.txt', meta: { inputId: 'in-1' } },
   ]);
   // The input event follows the first tool call, which carried the steer.
