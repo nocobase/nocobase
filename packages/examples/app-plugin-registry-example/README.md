@@ -22,10 +22,9 @@ that best represents their public API.
 | `client/extensions/<target>/**` | Application | Not overwritten by plugin upgrades       | Expected and supported           |
 | `client/components/ui/**`       | Application | Managed by the application               | Expected and supported           |
 
-The plugin runtime and an installed Registry item may each contain or consume
-their own shadcn source. The runtime page imports the plugin-local Button. The
-installed page and component import the application's Button through
-`@/components/ui/button`.
+The plugin runtime and an installed Registry item may each contain or consume their own shadcn source. The runtime page imports the plugin-local Button. The installed page and component import the receiving package's Button through `#components/ui/button`.
+
+The plugin's `components.json` uses the same `#` prefixes as `package.json#imports`. Its NodeNext tsconfig selects `development` sources, and `publishConfig.imports` makes packed plugins resolve `dist/client` in every host condition. Run shadcn from this package to add a primitive; keep generated imports unchanged. The application templates resolve these prefixes to their own sources, so neither scene needs a build-tool alias. See `ui-library/USAGE.md` from the repository root for installation and dependency ownership.
 
 ## Package structure
 
@@ -130,7 +129,7 @@ pnpm registry materialize \
 Then import it from application code:
 
 ```tsx
-import { EditablePanel } from '@/extensions/nocobase-registry-example-component-ui';
+import { EditablePanel } from '#extensions/nocobase-registry-example-component-ui/index';
 
 export function CustomerSummary() {
   return (
@@ -175,7 +174,7 @@ Wrap the appropriate application subtree:
 ```tsx
 import type { ReactNode } from 'react';
 
-import { ExampleUiProvider } from '@/extensions/nocobase-registry-example-provider-ui';
+import { ExampleUiProvider } from '#extensions/nocobase-registry-example-provider-ui/index';
 
 export function FeatureProviders({ children }: { children: ReactNode }) {
   return (
@@ -189,7 +188,7 @@ export function FeatureProviders({ children }: { children: ReactNode }) {
 Consume the context from a descendant:
 
 ```tsx
-import { useExampleUi } from '@/extensions/nocobase-registry-example-provider-ui';
+import { useExampleUi } from '#extensions/nocobase-registry-example-provider-ui/index';
 
 export function DensityControl() {
   const { density, setDensity } = useExampleUi();

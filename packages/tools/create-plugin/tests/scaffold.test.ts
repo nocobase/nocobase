@@ -71,7 +71,7 @@ async function listFiles(
 
 describe('createPlugin', () => {
   it('resolves package imports to development sources without compiler aliases', async () => {
-    const result = await createWith(['client.components', 'registry']);
+    const result = await createWith(['client.components']);
     const root = result.targetDirectory;
     const source = path.join(root, 'client/components/probe.ts');
     await writeFile(source, 'export const probe: string = "local";\n');
@@ -94,8 +94,21 @@ describe('createPlugin', () => {
     ).toBe(source);
     const shadcn = JSON.parse(
       await readFile(path.join(root, 'components.json'), 'utf8'),
-    ) as { aliases: { ui: string } };
+    ) as { aliases: { ui: string }; registries: Record<string, string> };
     expect(shadcn.aliases.ui).toBe('#components/ui');
+    expect(shadcn.registries['@nocobase']).toBe(
+      'https://ui.nocobase.com/r/{name}.json',
+    );
+    const manifest = JSON.parse(
+      await readFile(path.join(root, 'package.json'), 'utf8'),
+    ) as { devDependencies: Record<string, string>; nocobase?: unknown };
+    expect(manifest.devDependencies).toMatchObject({
+      shadcn: 'catalog:',
+      tailwindcss: 'catalog:',
+      'tw-animate-css': 'catalog:',
+    });
+    expect(manifest.nocobase).toBeUndefined();
+    expect(result.files).not.toContain('registry.config.json');
   });
 
   it.each([

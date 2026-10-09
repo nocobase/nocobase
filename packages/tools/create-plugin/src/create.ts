@@ -119,12 +119,9 @@ function capabilityReason(file: string): string {
     file === 'tests/client/react-provider.test.tsx'
   )
     return 'client.react-providers';
-  if (
-    file.startsWith('registry/') ||
-    file === 'registry.config.json' ||
-    file === 'components.json' ||
-    file === 'client/styles.css'
-  )
+  if (file === 'components.json' || file === 'client/styles.css')
+    return 'derived-client-ui';
+  if (file.startsWith('registry/') || file === 'registry.config.json')
     return 'registry';
   if (file.startsWith('skills/')) return 'skills';
   if (file === 'client/index.ts' || file === 'client/plugin.ts')

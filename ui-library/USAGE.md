@@ -4,7 +4,7 @@ The UI Library publishes NocoBase business components as a [shadcn registry](htt
 
 ## Before you start
 
-- **Declare the registry in `components.json`.** The three application templates already contain this entry. A plugin created by `pnpm plugin:create` does not, so add it there:
+- **Declare the registry in `components.json`.** The three application templates and newly generated plugins with client code contain this entry. Add it to an older plugin when missing:
 
   ```json
   {
@@ -53,12 +53,23 @@ An application created from one of the templates already contains the `page-cont
 
 A plugin compiles `client/` with `tsc` using NodeNext resolution and publishes the output as `dist/`, which the installing application resolves again. Package imports keep each component bound to the package that owns it, including when an application builds a compiled plugin.
 
-1. **Install it.** Declare the registry in the plugin's `components.json` and run the same command from the plugin's directory. For a plugin in this repository, copy the item instead, as [Inside this repository](#inside-this-repository) describes. A component lands in the plugin's `client/components/` and a block in its `client/extensions/nocobase-<item>/`, with any missing primitive in `client/components/ui/`. You may move a block's directory, for example to `client/components/<item>/`, as long as it stays under `client/`.
+1. **Install it.** Plugins generated with client code include `components.json`, the generation stylesheet, and shadcn tooling even without the `registry` capability, which publishes the plugin's own recipes. Run the command from the plugin's directory. For a plugin in this repository, copy the item instead, as [Inside this repository](#inside-this-repository) describes. A component lands in the plugin's `client/components/` and a block in its `client/extensions/nocobase-<item>/`, with any missing primitive in `client/components/ui/`. You may move a block's directory, for example to `client/components/<item>/`, as long as it stays under `client/`.
 2. **Keep package imports aligned with the plugin build.** New plugins generated with client code declare `#components/*`, `#hooks/*`, `#lib/*` and `#extensions/*` in `package.json#imports`. Their `development` targets point to `client/**/*.js` (resolved to TypeScript sources by development tooling), their `default` targets point to `dist/client/**/*.js`, and `tsconfig.json` selects the `development` condition. `publishConfig.imports` replaces these with unconditional `dist/client/**/*.js` targets when pnpm packs the plugin, so a consuming application's development mode also loads published files. Older plugins need the same mappings before installing an item; do not add a host-global Vite alias or rewrite the component after installation. An extension imported by directory name needs an exact mapping to its `index.js`.
 
 3. **Declare the dependencies as peers.** shadcn adds packages to `dependencies`, but a plugin's client imports belong in `peerDependencies`: the installing application resolves them and provides one shared copy. For `@nocobase/app-plugin-*` packages and `@nocobase/i18n` this is also a matter of correctness, since a second copy of either breaks at runtime, and `pnpm peers:check` rejects them in `dependencies`.
 4. **Add the translations to the plugin's own locales.** Under a plugin's route, keys resolve in the plugin's namespace first and fall back to the application's, so put the item's keys in the plugin's `client/locales/` rather than relying on the application to have them: spread a block's `locales/` files, and add the keys a component's README lists. The item's own files compile under the plugin's declaration build as they are, but the plugin's merged `en-US.ts` needs the explicit type the item's README shows: `isolatedDeclarations` cannot infer an object built with a spread and fails with `TS9015`. A plugin without `client/locales/` yet sets them up as the [plugin i18n reference](../.agents/skills/nocobase-plugin-development/references/i18n.md) describes.
-5. **Check it.** Keep the component private unless the plugin deliberately exports it. Run the plugin's `lint`, `typecheck`, `test`, and `build`, which also check the explicit export types that declaration builds require, then render the item in an application that installs the plugin.
+5. **Check it.** Keep the component private unless the plugin deliberately exports it. Run the plugin's `lint`, `typecheck`, `test`, and `build`, which also check the explicit export types that declaration builds require, then render the item in an application that installs the plugin. Registry sources and the maintained primitives are annotated for plugin declaration output; a newly fetched upstream primitive may still need explicit export types. That is separate from import resolution: keep the generated `#` imports unchanged.
+
+For example, a standalone plugin with the NocoBase registry configured installs a component with several primitive imports using:
+
+```bash
+pnpm exec shadcn add @nocobase/permission-editor --dry-run
+pnpm exec shadcn add @nocobase/permission-editor
+pnpm typecheck
+pnpm build
+```
+
+The same item's imports resolve the application's sources when installed into an application and the plugin's own sources or compiled files when installed into a plugin. `pnpm --filter @nocobase/create-plugin test` exercises this workflow against a local registry build in a generated component-only plugin, then packs it and renders the compiled component from an isolated host with conflicting host `#components/*` mappings. The test serves maintained primitives locally and resolves locked dependencies offline; it verifies source and published resolution without depending on the public registry's availability.
 
 ## Inside this repository
 
