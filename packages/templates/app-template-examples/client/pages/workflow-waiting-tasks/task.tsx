@@ -80,16 +80,24 @@ export default function WorkflowWaitingTaskPage(): ReactElement {
     'status' in query.error &&
     query.error.status === 404;
   useEffect(() => {
-    if (!saving && focusDecisionAfterSaveRef.current) {
-      // Select propagates its disabled state through an internal store. Let its trigger commit the enabled state
-      // before focusing it, including when that store update schedules another render.
-      const frame = requestAnimationFrame(() => {
-        focusDecisionAfterSaveRef.current = false;
-        decisionRef.current?.focus();
-      });
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [saving]);
+    if (saving || !focusDecisionAfterSaveRef.current) return;
+    focusDecisionAfterSaveRef.current = false;
+    const trigger = decisionRef.current;
+    if (!trigger || !canSubmit || retryable) return;
+    // Select can commit its disabled store state after the page's saving state.
+    const focusWhenEnabled = () => {
+      if (trigger.disabled) return;
+      observer.disconnect();
+      trigger.focus();
+    };
+    const observer = new MutationObserver(focusWhenEnabled);
+    observer.observe(trigger, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+    });
+    focusWhenEnabled();
+    return () => observer.disconnect();
+  }, [saving, canSubmit, retryable]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

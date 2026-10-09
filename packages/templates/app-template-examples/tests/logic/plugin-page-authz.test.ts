@@ -8,8 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import clientPlugins from '../../client/plugins.js';
 
-// The plugins whose pages the permission workspace offers as page grants. The AI employee settings are granted under
-// System management instead, one settings item per page.
+// The plugins whose pages the permission workspace offers as page grants.
 const PAGE_GRANT_PLUGINS = [
   '@nocobase/app-plugin-users',
   '@nocobase/app-plugin-notification',
@@ -41,28 +40,6 @@ describe('plugin page authorization', () => {
     expect(new Set(granted.map((route) => route.packageName))).toEqual(
       new Set(PAGE_GRANT_PLUGINS),
     );
-  });
-
-  it('checks a System management settings item on every AI employee settings page', () => {
-    const resolved = resolveAppClientContributions(
-      clientPlugins.plugins.map((plugin) => ({
-        packageName: plugin.packageName,
-        source: 'plugin' as const,
-        routes: plugin.routes,
-      })),
-    );
-    const pages = entryPages(resolved.settingsRouteTree).filter(
-      (route) => route.packageName === '@nocobase/app-plugin-ai-employee',
-    );
-    expect(pages.length).toBeGreaterThan(0);
-    for (const page of pages)
-      expect({ id: page.id, authz: page.authz }).toMatchObject({
-        id: page.id,
-        authz: {
-          resource: { type: 'settings', id: expect.stringMatching(/^ai\./) },
-          action: 'read',
-        },
-      });
   });
 });
 

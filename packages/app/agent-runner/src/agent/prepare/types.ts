@@ -56,6 +56,22 @@ export class PrepareError extends Error {
   }
 }
 
+/**
+ * What the agent writes besides `cwd`, for a tool's own sandbox (`AdapterSession.writableRoots`): the other working
+ * directories, and each repository worktree's own Git directory (`<cache>/worktrees/<name>`), which holds its index,
+ * HEAD and submodules. Never the cache itself, which every subject's worktrees share.
+ */
+export function agentWritableRoots(
+  dirs: readonly PreparedDir[],
+  cwd: string,
+): string[] {
+  const roots = dirs.flatMap((dir) => [
+    dir.dir,
+    ...(dir.repo === undefined ? [] : [dir.repo.gitDir]),
+  ]);
+  return [...new Set(roots)].filter((root) => root !== cwd);
+}
+
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */
 export function agentCwd(context: PrepareContext): string {
   const primary = context.dirs[0];

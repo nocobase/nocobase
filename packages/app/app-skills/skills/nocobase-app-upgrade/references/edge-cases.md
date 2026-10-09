@@ -69,6 +69,8 @@ A target release that drops `@nocobase/app-plugin-install` leaves an upgrading a
 
 A target release that drops `@nocobase/app-plugin-notification-provider` is the case where removing a plugin is not enough on its own: the application has to provide the toaster the plugin used to, or four plugins' pages report nothing. Follow [Notifications and the application toaster](#notifications-and-the-application-toaster) rather than removing only the registration.
 
+A target release that drops `@nocobase/app-plugin-ai-employee` deprecates it rather than replacing it, so [review its usage](#review-a-removed-plugins-usage) before removing anything. Its footprint is wider than a registration: `@nocobase/app-plugin-ai-employee` and `@nocobase/ai-employee` in `package.json`, its entries in all three composition roots, `server/config/ai.ts` and its `ai` key in `server/config/index.ts`, an `ai` section in `config.yml`, an application `ai/` directory of employees, tools and skills, and in an Examples application the global AI entry around `AppLayout`, `client/extensions/nocobase-ai`, and `@nocobase/app-plugin-ai-employee-example` with its tasks page. An application that configured an LLM service or has AI employees, conversations or `ai/` resources keeps all of it as application-owned code, which the plugin's current release still supports; one with none removes them together. Removal leaves the plugin's tables and data in the database.
+
 ## `client/plugins.ts`, `server/plugins.ts`, `cli/plugins.ts`
 
 Composition roots: the template registers what it ships, `pnpm nocobase plugin register` appends what the user installed. Both sides append to the same region, which is exactly what a text merge gets wrong. Merge them as sets of registrations:
