@@ -1884,9 +1884,6 @@ export function FieldForm(props: FieldFormProps) {
       }
       values.name = generatedFieldNameRef.current;
       applyItemDefaults(values, fieldConfigureItems);
-      if ((fieldInterface?.isAssociation || configure?.isAssociation) && !get(values, 'source')) {
-        set(values, 'source', props.collection.name);
-      }
     } else if (!values.reverseField && fieldInterfaceOptions?.default?.reverseField) {
       values.autoCreateReverseField = false;
       values.reverseField = cloneDeep(fieldInterfaceOptions.default.reverseField);
@@ -1898,16 +1895,7 @@ export function FieldForm(props: FieldFormProps) {
       );
     }
     return values;
-  }, [
-    configure?.isAssociation,
-    fieldConfigureItems,
-    fieldInterface?.isAssociation,
-    fieldInterfaceOptions,
-    props.collection.name,
-    props.collection.title,
-    props.field,
-    t,
-  ]);
+  }, [fieldConfigureItems, fieldInterfaceOptions, props.collection.name, props.collection.title, props.field, t]);
   const initialValuesKey = useMemo(
     () =>
       buildInitialValuesKey({
@@ -2042,9 +2030,6 @@ export function FieldForm(props: FieldFormProps) {
       };
       const nextValues = toInitialValues(nextOptions, undefined, t);
       applyItemDefaults(nextValues, nextConfigure?.items || []);
-      if ((nextFieldInterface?.isAssociation || nextConfigure?.isAssociation) && !get(nextValues, 'source')) {
-        set(nextValues, 'source', props.collection.name);
-      }
       if (currentTitle) {
         set(nextValues, 'uiSchema.title', currentTitle);
       }
