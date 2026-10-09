@@ -719,6 +719,8 @@ describe('Eager loading tree', () => {
       ],
     });
 
+    await db.prepare();
+
     const queryInterface = db.sequelize.getQueryInterface();
     await queryInterface.createTable(Operator.getTableNameWithSchema(), {
       id: { type: DataTypes.INTEGER },
