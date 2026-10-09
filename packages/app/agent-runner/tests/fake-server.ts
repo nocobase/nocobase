@@ -147,6 +147,27 @@ export class FakeServer {
   readonly skillBundles = new Map<string, SkillBundle>();
   /** How many times each skill was fetched. */
   readonly skillFetches = new Map<string, number>();
+  /**
+   * Answers `RUNNER_ROUTES.gitCredential` for a run's `RunGit.onDemand` URL: a credential, or an error reason (with its
+   * HTTP status) to answer instead. Unset answers a new synthetic credential each time, valid for an hour.
+   */
+  gitCredential:
+    | ((request: {
+        runId: string;
+        attempt: number;
+        url: string;
+        refresh: boolean;
+      }) =>
+        | { username: string; password: string; expiresAt: string }
+        | { status: number; reason: string; message?: string })
+    | undefined;
+  /** Every credential request, in order. */
+  readonly gitCredentialRequests: {
+    runId: string;
+    attempt: number;
+    url: string;
+    refresh: boolean;
+  }[] = [];
   /** Mount bundles by name, served at `RUNNER_ROUTES.mount`. */
   readonly mountBundles = new Map<string, MountBundle>();
   /** How many times each mount was fetched. */
@@ -802,6 +823,36 @@ export class FakeServer {
       if (bundle === undefined) return error(c, 404, 'NOT_FOUND');
       this.skillFetches.set(slug, (this.skillFetches.get(slug) ?? 0) + 1);
       return ok(c, bundle);
+    });
+
+    app.post('/api/agents/runners/runs/:runId/gitCredentials', async (c) => {
+      const run = owned(c);
+      if (run instanceof Response) return run;
+      const body = (await c.req.json()) as {
+        attempt: number;
+        url: string;
+        refresh?: boolean;
+      };
+      if (!active(run)) return error(c, 400, 'RUN_NOT_ACTIVE');
+      if (body.attempt !== run.payload.run.attempt)
+        return error(c, 409, 'LEASE_LOST');
+      if (!(run.payload.workspace.git?.onDemand ?? []).includes(body.url))
+        return error(c, 400, 'INVALID_REQUEST');
+      const request = {
+        runId: run.payload.run.id,
+        attempt: body.attempt,
+        url: body.url,
+        refresh: body.refresh === true,
+      };
+      this.gitCredentialRequests.push(request);
+      const answer = this.gitCredential?.(request) ?? {
+        username: 'x-access-token',
+        password: `ghs_synthetic${String(this.gitCredentialRequests.length).padStart(36, '0')}`,
+        expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      };
+      if ('reason' in answer)
+        return error(c, answer.status, answer.reason, answer.message);
+      return ok(c, answer);
     });
 
     app.get('/api/agents/runners/runs/:runId/mounts/:name', (c) => {

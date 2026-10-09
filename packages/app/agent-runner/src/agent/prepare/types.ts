@@ -8,7 +8,11 @@ import type { SkillsPlacement } from '../adapters/types.ts';
 import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import type { ApiClient } from '../../lib/http.ts';
-import type { PreparedDir, WorkspaceLock } from '../../core/checkout.ts';
+import type {
+  PreparedDir,
+  RepoAuthSource,
+  WorkspaceLock,
+} from '../../core/checkout.ts';
 import type { PlacedMount } from '../mounts.ts';
 import type { SpoolEvent } from '../../core/events.ts';
 
@@ -24,6 +28,8 @@ export interface PrepareContext {
   readonly event: (event: SpoolEvent) => void;
   /** Called, last first, when the run ends, prepared or not. */
   readonly onRelease: (release: () => Promise<void>) => void;
+  /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
+  readonly gitAuth?: RepoAuthSource;
   workspace?: WorkspaceLock;
   /** The run's working directories, the primary one first; empty when the run names none. */
   dirs: PreparedDir[];

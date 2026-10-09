@@ -88,6 +88,8 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'jobs.build',
   // Mounts (runner/mounts.ts): directories of files the application places beside the agent.
   'mounts',
+  // Repository credentials asked for whenever git needs one (agent/git-credentials.ts).
+  'gitCredentials',
 ];
 
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);

@@ -3,8 +3,8 @@
 // is held for this run alone. Each gets a `checkout` event saying whether it was prepared fresh for the subject.
 import path from 'node:path';
 
-import { prepareDirs } from '../../core/checkout.ts';
-import type { PrepareStep } from './types.ts';
+import { prepareDirs, RepoAccessFailure } from '../../core/checkout.ts';
+import { PrepareError, type PrepareStep } from './types.ts';
 
 export const dirsStep: PrepareStep = {
   name: 'dirs',
@@ -18,10 +18,18 @@ export const dirsStep: PrepareStep = {
       subjectKey: context.payload.subject.key,
       workDir,
       dirs: context.payload.workspace.dirs,
-      ...(context.payload.workspace.git?.credentials
-        ? { credentials: context.payload.workspace.git.credentials }
-        : {}),
+      ...(context.gitAuth === undefined ? {} : { auth: context.gitAuth }),
       log: context.log,
+    }).catch((error: unknown) => {
+      // A repository whose credential the application could not issue says why, so the run is retried or not.
+      if (error instanceof RepoAccessFailure && error.kind !== 'leaseLost')
+        throw new PrepareError(
+          error.kind === 'denied'
+            ? 'repoAccessDenied'
+            : 'repoAccessUnavailable',
+          error.message,
+        );
+      throw error;
     });
     context.onRelease(() => prepared.release());
     context.dirs = prepared.dirs;

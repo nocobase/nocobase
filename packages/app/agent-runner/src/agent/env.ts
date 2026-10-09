@@ -7,14 +7,32 @@
 // directory), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
 // git the agent runs uses the runner's hooks (push-guard.ts) whatever the repository configures. With the run's git
 // (`workspace.git`): the commit author and committer (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), the trailers the
-// `prepare-commit-msg` hook adds, and for each repository with a short-lived credential a credential helper scoped to
-// its URL that answers with it from the environment. The credential lives only in the agent's environment, never on
-// disk; the push guard still decides what may be pushed.
+// `prepare-commit-msg` hook adds, and for each repository with a credential (`credentialHelper`) the runner's
+// credential helper scoped to its URL, which asks the worker for it (git-credentials.ts), after an empty helper that
+// clears every helper configured elsewhere for that URL. The credential itself is never in the environment or on disk:
+// only where the helper finds the worker (a socket path and the run's nonce). `GIT_TERMINAL_PROMPT=0` makes git fail
+// rather than ask a person when there is none. The push guard still decides what may be pushed.
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { RUN_CREDENTIALS_ENV, type RunWorkspace } from '../protocol/index.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
+import {
+  CREDENTIAL_NONCE_ENV,
+  CREDENTIAL_SOCKET_ENV,
+  helperCommand,
+} from './git-credentials.ts';
+
+/** Where the agent's git asks for the run's repository credentials. */
+export interface CredentialHelperOptions {
+  /** The helper script (`installCredentialHelper`). */
+  helper: string;
+  /** `serveGitCredentials`. */
+  socket: string;
+  nonce: string;
+  /** The repository URLs it answers for, in the broker's order: the helper names one by its index. */
+  urls: readonly string[];
+}
 
 // USER: Claude Code's macOS keychain login lookup fails without it.
 export const ENV_WHITELIST: readonly string[] = [
@@ -39,6 +57,8 @@ export interface BuildEnvOptions {
   tmpDir?: string;
   /** The push guard's hooks directory. */
   hooksDir?: string;
+  /** The run's repository credentials, through the runner's helper. */
+  credentialHelper?: CredentialHelperOptions;
 }
 
 /** Names a run may not set: the runner's own, and what it sets itself. */
@@ -90,17 +110,19 @@ export function buildAgentEnv(
     env[TRAILERS_ENV] = git.trailers
       .map((trailer) => trailer.replace(/[\r\n]+/gu, ' '))
       .join('\n');
-  for (const [index, credential] of (git?.credentials ?? []).entries()) {
-    const user = `NOCOBASE_RUNNER_GIT_USERNAME_${index}`;
-    const password = `NOCOBASE_RUNNER_GIT_PASSWORD_${index}`;
-    env[user] = credential.username;
-    env[password] = credential.password;
-    // An empty helper first clears the helpers configured elsewhere for this URL, then the run's answers.
-    config.push([`credential.${credential.url}.helper`, '']);
-    config.push([
-      `credential.${credential.url}.helper`,
-      `!f() { test "$1" = get || exit 0; echo "username=$${user}"; echo "password=$${password}"; }; f`,
-    ]);
+  const helper = options.credentialHelper;
+  if (helper !== undefined && helper.urls.length > 0) {
+    env[CREDENTIAL_SOCKET_ENV] = helper.socket;
+    env[CREDENTIAL_NONCE_ENV] = helper.nonce;
+    env.GIT_TERMINAL_PROMPT = '0';
+    for (const [index, url] of helper.urls.entries()) {
+      // An empty helper first clears the helpers configured elsewhere for this URL, then the runner's.
+      config.push([`credential.${url}.helper`, '']);
+      config.push([
+        `credential.${url}.helper`,
+        helperCommand(helper.helper, index),
+      ]);
+    }
   }
   if (config.length > 0) {
     env.GIT_CONFIG_COUNT = String(config.length);

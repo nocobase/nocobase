@@ -20,9 +20,14 @@
 // - no event for `idleTimeoutMs`: abort the tool and `fail(idleTimeout)`.
 //
 // Nothing leaves the worker unredacted (`runSecrets`): every event is redacted as it is spooled, and so are the
-// summary, the failure detail and the worker's log lines. The redactor removes the values of the secrets the run was
-// given (its variables, the passthrough values taken from this host, its CLI credential's tokens, the runner key) and
-// the common secret patterns of `@nocobase/agent-protocol`.
+// summary, the failure detail, the repositories' push failures and the worker's log lines. The redactor removes the
+// values of the secrets the run was given (its variables, the passthrough values taken from this host, its CLI
+// credential's tokens, the runner key, and every repository credential as the broker gets it) and the common secret
+// patterns of `@nocobase/agent-protocol`.
+//
+// The run's repository credentials (`workspace.git`) are kept by a broker in this process (git-credentials.ts), which
+// the checkout, the agent's git (through the runner's credential helper and a socket only this worker serves) and the
+// end-of-run push all ask; it is closed, and the socket removed, when the run ends or is no longer this runner's.
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -67,6 +72,12 @@ import {
 import { credentialsGuard, deleteRunCredentials } from './credentials.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv } from './env.ts';
+import {
+  GitCredentialBroker,
+  installCredentialHelper,
+  serveGitCredentials,
+  type CredentialServer,
+} from './git-credentials.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
@@ -217,6 +228,39 @@ export function runSecrets(
   return secrets;
 }
 
+/** A redactor that takes in secrets the run is given later, such as a repository credential issued on demand. */
+export class GrowingRedactor implements Redactor {
+  private current: Redactor;
+
+  constructor(initial: Redactor) {
+    this.current = initial;
+  }
+
+  get secrets(): readonly string[] {
+    return this.current.secrets;
+  }
+
+  add(secrets: Iterable<string | null | undefined>): void {
+    this.current = this.current.with(secrets);
+  }
+
+  text(text: string): string {
+    return this.current.text(text);
+  }
+
+  optional(text: string | undefined): string | undefined {
+    return this.current.optional(text);
+  }
+
+  value<T>(value: T): T {
+    return this.current.value(value);
+  }
+
+  with(secrets: Iterable<string | null | undefined>): Redactor {
+    return this.current.with(secrets);
+  }
+}
+
 function failureReason(result: AdapterResult): {
   reason: FailureReason;
   detail: string;
@@ -234,7 +278,9 @@ export class RunWorker {
   private readonly timings: Timings;
   private readonly deps: WorkerDeps;
   private readonly client: ApiClient;
-  private readonly redactor: Redactor;
+  private readonly redactor: GrowingRedactor;
+  private readonly broker: GitCredentialBroker | undefined;
+  private credentialServer: CredentialServer | undefined;
   private readonly runId: string;
   private readonly record: RunRecord;
   private readonly spool: EventSpool;
@@ -265,7 +311,9 @@ export class RunWorker {
   ) {
     this.payload = payload;
     this.timings = timings;
-    this.redactor = createRedactor(runSecrets(payload, deps.connection));
+    this.redactor = new GrowingRedactor(
+      createRedactor(runSecrets(payload, deps.connection)),
+    );
     const redact = this.redactor;
     this.deps = {
       ...deps,
@@ -300,6 +348,21 @@ export class RunWorker {
         this.absorb(response.cancelRequested, response.inputs),
       onLost: (error) => this.end({ kind: 'lost', code: error.reason }),
     });
+    const git = payload.workspace.git;
+    this.broker =
+      (git?.onDemand?.length ?? 0) > 0 || (git?.credentials?.length ?? 0) > 0
+        ? new GitCredentialBroker({
+            client: this.client,
+            runId: this.runId,
+            attempt: payload.run.attempt,
+            ...(git?.onDemand ? { onDemand: git.onDemand } : {}),
+            ...(git?.credentials ? { credentials: git.credentials } : {}),
+            onSecret: (secret) => this.redactor.add([secret]),
+            onLost: (code) => this.end({ kind: 'lost', code }),
+            event: (event) => this.spool.push(event),
+            log: this.deps.log,
+          })
+        : undefined;
     for (const input of payload.inputs) this.inputs.set(input.id, input);
   }
 
@@ -442,6 +505,8 @@ export class RunWorker {
       );
     } finally {
       this.lease.stop();
+      this.broker?.close();
+      await this.credentialServer?.close().catch(() => undefined);
       if (this.statusTimer !== undefined) clearInterval(this.statusTimer);
       if (this.idleTimer !== undefined) clearInterval(this.idleTimer);
       this.spool.stop();
@@ -481,6 +546,7 @@ export class RunWorker {
       log: deps.log,
       event: (event) => this.spool.push(event),
       onRelease: (release) => this.releases.push(release),
+      ...(this.broker === undefined ? {} : { gitAuth: this.broker }),
       dirs: [],
     };
     this.prepared = context;
@@ -503,6 +569,7 @@ export class RunWorker {
           content: detail,
           meta: { phase: step.name },
         });
+        if (this.ending !== undefined) return this.finishEnding();
         return this.finishFailed(
           error instanceof PrepareError ? error.reason : step.failure,
           detail,
@@ -558,12 +625,30 @@ export class RunWorker {
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
     const cwd = agentCwd(context);
+    if (this.broker !== undefined && this.broker.urls.length > 0) {
+      this.credentialServer = await serveGitCredentials(
+        this.broker,
+        deps.paths.home,
+      );
+    }
+    const credentialHelper =
+      this.broker !== undefined && this.credentialServer !== undefined
+        ? {
+            helper: await installCredentialHelper(
+              path.join(deps.paths.home, 'helpers'),
+            ),
+            socket: this.credentialServer.socket,
+            nonce: this.credentialServer.nonce,
+            urls: this.broker.urls,
+          }
+        : undefined;
     const env = buildAgentEnv({
       source: process.env,
       binDir,
       ...(home === undefined ? {} : { home }),
       tmpDir,
       hooksDir: deps.paths.hooksDir,
+      ...(credentialHelper === undefined ? {} : { credentialHelper }),
       localVariables: registration.variables,
       workspace: payload.workspace,
     });
@@ -756,10 +841,23 @@ export class RunWorker {
       await markWorkspaceEnded(workDir, true);
       return [];
     }
-    const reports = await reportRepos(repos, {
-      push,
-      log: this.deps.log,
-    });
+    const reports = (
+      await reportRepos(repos, {
+        push,
+        ...(this.broker === undefined ? {} : { auth: this.broker }),
+        log: this.deps.log,
+      })
+    ).map((report) =>
+      report.failure === undefined
+        ? report
+        : {
+            ...report,
+            failure: {
+              reason: report.failure.reason,
+              message: this.redactor.text(report.failure.message),
+            },
+          },
+    );
     await markWorkspaceEnded(
       workDir,
       reports.every((report) => report.pushed),

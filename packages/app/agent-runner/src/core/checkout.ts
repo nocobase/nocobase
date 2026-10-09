@@ -17,9 +17,11 @@
 // GC removes a subject's work directory 7 days after a run that ended with every branch pushed, and any work directory
 // not used for 30 days.
 //
-// A repository the run carries a credential for (`workspace.git.credentials`, a short-lived token) is fetched with it,
-// and the agent's git pushes with it through a credential helper (env.ts); it is never written to disk. Without one,
-// the host's own git credentials are used.
+// A repository the run carries a credential for (`workspace.git.credentials`, or `onDemand`: see
+// agent/git-credentials.ts) is fetched and pushed with the credential its `RepoAuthSource` gives, never with the host's
+// own git credentials, and with one fresh credential again when the remote refuses the first (`withRepoAuth`); the
+// agent's git gets it through a credential helper (env.ts). It is never written to disk. Without one, the host's own
+// git credentials are used.
 //
 // A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
 // sandbox of its tool: a worktree's Git metadata, the submodules' `modules/` among it, lives in the cache
@@ -48,8 +50,8 @@ import {
   type RunnerPaths,
 } from '../lib/home.ts';
 import type {
-  RepoCredential,
   RepoDir,
+  RepoPushFailure,
   RepoReport,
   WorkspaceDir,
 } from '../protocol/index.ts';
@@ -71,7 +73,8 @@ export interface GitAuth {
 
 /**
  * The environment that gives one git invocation an `Authorization` header, through `GIT_CONFIG_*` so the token is in
- * neither the command line nor any configuration file.
+ * neither the command line nor any configuration file. It also empties the credential helpers the host configures, so
+ * a refused token fails the invocation instead of falling back to the host's own credentials.
  */
 export function gitAuthEnv(
   auth: GitAuth | undefined,
@@ -83,11 +86,62 @@ export function gitAuthEnv(
     `${auth.username ?? 'x-access-token'}:${auth.token}`,
   ).toString('base64');
   return {
-    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_COUNT: '2',
     GIT_CONFIG_KEY_0:
       scope === undefined ? 'http.extraHeader' : `http.${scope}.extraHeader`,
     GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
+    GIT_CONFIG_KEY_1: 'credential.helper',
+    GIT_CONFIG_VALUE_1: '',
   };
+}
+
+/** Why a repository's credential could not be had (agent/git-credentials.ts). */
+export class RepoAccessFailure extends Error {
+  override name = 'RepoAccessFailure';
+  /** `unavailable`: try again later; `denied`: the application will not issue one; `leaseLost`: the run is over here. */
+  readonly kind: 'unavailable' | 'denied' | 'leaseLost';
+
+  constructor(kind: 'unavailable' | 'denied' | 'leaseLost', message: string) {
+    super(message);
+    this.kind = kind;
+  }
+}
+
+/** Where the runner's own git gets a repository's credential from. */
+export interface RepoAuthSource {
+  /** Whether it answers for `url`; for such a URL nothing else is used, not even the host's credentials. */
+  covers(url: string): boolean;
+  /** Throws `RepoAccessFailure`. `refresh` asks for a new credential rather than the one held. */
+  get(url: string, options?: { refresh?: boolean }): Promise<GitAuth>;
+  /** The remote refused `auth`; true when it was the credential held, which is now forgotten. */
+  erase(url: string, auth: GitAuth): boolean;
+}
+
+/** Whether git failed because the remote refused its credential. */
+export function isAuthFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Authentication failed|Invalid username or (?:password|token)|could not read Username|could not read Password|The requested URL returned error: 40[13]|HTTP Basic: Access denied|terminal prompts disabled/iu.test(
+    message,
+  );
+}
+
+/**
+ * Runs `operation` with `url`'s credential from `source`, and once more with a fresh one when the remote refused the
+ * first. Without a source that answers for `url`, runs it without one (the host's credentials).
+ */
+export async function withRepoAuth<T>(
+  source: RepoAuthSource | undefined,
+  url: string,
+  operation: (auth: GitAuth | undefined) => Promise<T>,
+): Promise<T> {
+  if (source === undefined || !source.covers(url)) return operation(undefined);
+  const auth = await source.get(url);
+  try {
+    return await operation(auth);
+  } catch (error) {
+    if (!isAuthFailure(error) || !source.erase(url, auth)) throw error;
+    return operation(await source.get(url, { refresh: true }));
+  }
 }
 
 export async function git(
@@ -502,8 +556,8 @@ export interface PrepareDirsOptions {
   /** Locked by the caller. */
   workDir: string;
   dirs: readonly WorkspaceDir[];
-  /** Short-lived credentials by repository URL (`workspace.git.credentials`). */
-  credentials?: readonly RepoCredential[];
+  /** The run's repository credentials (`workspace.git`). */
+  auth?: RepoAuthSource;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
 }
@@ -585,26 +639,19 @@ export async function prepareDirs(
       options.log?.(
         `checkout: ${entry.url} -> ${entry.path} (${entry.branch})`,
       );
-      const credential = options.credentials?.find(
-        (item) => item.url === entry.url,
-      );
-      const auth: GitAuth | undefined =
-        credential === undefined
-          ? undefined
-          : { username: credential.username, token: credential.password };
-      const cache = await updateCache(
-        paths,
-        entry.url,
-        auth === undefined ? {} : { auth },
+      const cache = await withRepoAuth(options.auth, entry.url, (auth) =>
+        updateCache(paths, entry.url, auth === undefined ? {} : { auth }),
       );
       const created = await ensureWorktree(cache, dir, entry);
       const gitDir = await git(['rev-parse', '--absolute-git-dir'], dir);
       await allowPush(gitDir, entry.url, entry.branch);
-      const submodules = await initSubmodules(dir, {
-        all: created,
-        url: entry.url,
-        ...(auth === undefined ? {} : { auth }),
-      });
+      const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
+        initSubmodules(dir, {
+          all: created,
+          url: entry.url,
+          ...(auth === undefined ? {} : { auth }),
+        }),
+      );
       if (submodules.length > 0)
         options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
@@ -691,23 +738,55 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
   }
 }
 
-/** Pushes each branch that has commits the remote lacks and reports where every repository stands. */
+/** Why a push failed, as `RepoReport.failure` names it. */
+export function pushFailureOf(error: unknown): RepoPushFailure {
+  if (error instanceof RepoAccessFailure)
+    return error.kind === 'leaseLost'
+      ? 'leaseLost'
+      : error.kind === 'denied'
+        ? 'credentialDenied'
+        : 'credentialUnavailable';
+  if (isAuthFailure(error)) return 'authFailed';
+  const message = error instanceof Error ? error.message : String(error);
+  if (
+    /\[rejected\]|\[remote rejected\]|pre-push hook declined|nocobase-runner:|protected branch|non-fast-forward/iu.test(
+      message,
+    )
+  )
+    return 'rejected';
+  return 'error';
+}
+
+/**
+ * Pushes each branch that has commits the remote lacks and reports where every repository stands; a push that failed
+ * says why (`RepoReport.failure`). With `auth`, a repository it answers for is reached with its credential only: once
+ * the run is no longer this runner's, nothing is pushed.
+ */
 export async function reportRepos(
   repos: readonly CheckedOutRepo[],
-  options: { push: boolean; log?: (message: string) => void },
+  options: {
+    push: boolean;
+    auth?: RepoAuthSource;
+    log?: (message: string) => void;
+  },
 ): Promise<RepoReport[]> {
   const reports: RepoReport[] = [];
   for (const repo of repos) {
     const headSha = await git(['rev-parse', 'HEAD'], repo.dir).catch(() => '');
+    const scoped = (auth: GitAuth | undefined) => gitAuthEnv(auth, repo.url);
     const remoteSha = async (): Promise<string> =>
       (
-        await git(
-          ['ls-remote', 'origin', `refs/heads/${repo.branch}`],
-          repo.dir,
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          git(
+            ['ls-remote', 'origin', `refs/heads/${repo.branch}`],
+            repo.dir,
+            scoped(auth),
+          ),
         ).catch(() => '')
       ).split(/\s+/)[0] ?? '';
     const remote = await remoteSha();
     let pushed = headSha !== '' && remote === headSha;
+    let failure: RepoReport['failure'];
     // Work to push: commits on top of the default branch, or a branch the remote already has and HEAD moved past.
     const base = await git(
       ['rev-parse', `origin/${repo.defaultBranch}`],
@@ -716,18 +795,30 @@ export async function reportRepos(
     const hasWork = headSha !== '' && (headSha !== base || remote !== '');
     if (options.push && !pushed && hasWork) {
       try {
-        await git(
-          ['push', '--quiet', 'origin', `HEAD:refs/heads/${repo.branch}`],
-          repo.dir,
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          git(
+            ['push', '--quiet', 'origin', `HEAD:refs/heads/${repo.branch}`],
+            repo.dir,
+            scoped(auth),
+          ),
         );
         pushed = (await remoteSha()) === headSha;
       } catch (error) {
-        options.log?.(
-          `push: ${repo.url} ${repo.branch}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        failure = {
+          reason: pushFailureOf(error),
+          message: message.slice(0, 2000),
+        };
+        options.log?.(`push: ${repo.url} ${repo.branch}: ${message}`);
       }
     }
-    reports.push({ url: repo.url, branch: repo.branch, pushed, headSha });
+    reports.push({
+      url: repo.url,
+      branch: repo.branch,
+      pushed,
+      headSha,
+      ...(failure === undefined ? {} : { failure }),
+    });
   }
   return reports;
 }
