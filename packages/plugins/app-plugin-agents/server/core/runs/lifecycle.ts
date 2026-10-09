@@ -214,6 +214,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         branch: repo.branch,
         pushed: repo.pushed,
         headSha: repo.headSha ?? null,
+        failureReason: repo.failure?.reason ?? null,
+        failureDetail:
+          repo.failure === undefined
+            ? null
+            : redactorOf(run.id).text(repo.failure.message).slice(0, 2000),
         updatedAt: now,
       };
       if (existing)

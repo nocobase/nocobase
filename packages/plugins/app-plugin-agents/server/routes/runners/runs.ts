@@ -1,6 +1,6 @@
 /**
  * A run's endpoints on the runner protocol (`RUNNER_ROUTES` `runs/:runId/*`): its lease, start, events, status,
- * ending reports, cancellation acknowledgement, and the skills and mounts it gets, mounted under
+ * ending reports, cancellation acknowledgement, the skills and mounts it gets and its repositories' credentials, mounted under
  * `/api/agents/runners/runs` behind the runner's key (`routes/runners/runner.ts`). Every answer is `{ data }`.
  */
 import {
@@ -10,6 +10,8 @@ import {
   EventsResponseSchema,
   FailRequestSchema,
   FinishResponseSchema,
+  GitCredentialRequestSchema,
+  GitCredentialSchema,
   LeaseRequestSchema,
   LeaseResponseSchema,
   MountBundleSchema,
@@ -19,6 +21,7 @@ import {
   StatusResponseSchema,
 } from '@nocobase/agent-protocol';
 import {
+  apiErrorResponse,
   apiValidator,
   dataResponse,
   cliRoute,
@@ -60,7 +63,10 @@ function report(
 
 export function mountRunnerRunRoutes(
   router: Hono<RunnerEnv>,
-  services: Pick<Agents, 'reports' | 'claims' | 'skills' | 'mounts' | 'tx'>,
+  services: Pick<
+    Agents,
+    'reports' | 'claims' | 'skills' | 'mounts' | 'tx' | 'gitCredentials'
+  >,
 ): void {
   const runParam = apiValidator('param', RunParams);
   router.post(
@@ -204,6 +210,47 @@ export function mountRunnerRunRoutes(
       if (!bundle) throw notFound('Mount');
       return context.json({ data: bundle });
     },
+  );
+  // A credential for one of the run's on-demand repositories, while the runner holds this attempt of the run.
+  router.post(
+    '/:runId/gitCredentials',
+    describeRoute({
+      tags,
+      summary: "Get a credential for one of a run's repositories",
+      operationId: 'agentsRunnerGetRunGitCredential',
+      description:
+        'A short-lived credential the application issues for one of the repositories the claim listed in `RunGit.onDemand`, compared exactly, while the runner holds the named attempt of the run under a live lease (the `gitCredentials` feature). `refresh` asks for a new credential after the remote refused the last one. The credential is never stored.',
+      // Runner protocol: only a runner calls it.
+      ...cliRoute(false),
+      security: runnerKeySecurity,
+      parameters: [protocolHeader],
+      responses: {
+        200: dataResponse(GitCredentialSchema),
+        ...heldWorkErrors,
+        403: apiErrorResponse(
+          403,
+          'Another runner holds the run (`RUN_NOT_OWNED`), or the application will not issue a credential for the repository (`REPO_ACCESS_DENIED`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'The run is no longer this runner’s: the lease was lost or ran out, or another attempt took it (`LEASE_LOST`).',
+        ),
+        503: apiErrorResponse(
+          503,
+          'The application cannot issue a credential just now, such as when its code host is unavailable or slow (`REPO_ACCESS_UNAVAILABLE`); ask again later.',
+        ),
+      },
+    }),
+    runParam,
+    apiValidator('json', GitCredentialRequestSchema),
+    async (context) =>
+      context.json({
+        data: await services.gitCredentials.issue(
+          context.get('runner'),
+          context.req.valid('param').runId,
+          context.req.valid('json'),
+        ),
+      }),
   );
   router.post(
     '/:runId/cancelAck',
