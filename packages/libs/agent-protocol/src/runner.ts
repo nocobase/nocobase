@@ -22,6 +22,10 @@ import {
 import { DIST_PRODUCT_PATTERN } from './dist.js';
 import { RunnerPolicySchema, type RunnerPolicy } from './policy.js';
 import {
+  WorkspaceReportingSchema,
+  type WorkspaceReporting,
+} from './workspaces.js';
+import {
   RunAppSchema,
   RunInputSchema,
   RunPayloadSchema,
@@ -255,6 +259,8 @@ export interface HeartbeatResponse {
     readonly cancelRequested: readonly string[];
     readonly release: readonly string[];
   };
+  /** The application accepts reports of the runner's working directories (`workspaces.ts`); absent when it does not. */
+  readonly workspaces?: WorkspaceReporting;
 }
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
@@ -282,6 +288,7 @@ export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
       release: z.array(z.string()),
     })
     .optional(),
+  workspaces: WorkspaceReportingSchema.optional(),
 });
 
 export interface ClaimRequest {

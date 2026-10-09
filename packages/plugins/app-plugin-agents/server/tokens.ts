@@ -108,6 +108,7 @@ export type {
   SubjectFacts,
   SubjectRegistry,
   SubjectReports,
+  SubjectWorkspaces,
   SubjectScope,
   WorkSink,
 } from './core/runs/index.js';
