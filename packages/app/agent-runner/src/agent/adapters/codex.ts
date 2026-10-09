@@ -26,7 +26,7 @@
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access, mkdir } from 'node:fs/promises';
+import { access, mkdir, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
@@ -363,31 +363,67 @@ interface Steer {
  */
 export const CODEX_AGENTS_DIR = '.agents';
 
-/** The `.agents` directory of each of the run's working trees, `workDir` first. Never one outside them. */
-export function codexAgentsDirs(session: AdapterSession): string[] {
-  const trees = [session.workDir, ...(session.workingTrees ?? [])];
-  return [...new Set(trees.map((tree) => path.join(tree, CODEX_AGENTS_DIR)))];
+/** Creates missing `.agents` directories and accepts only real directories inside the run's working trees. */
+export async function codexAgentsDirs(
+  session: AdapterSession,
+): Promise<string[]> {
+  const trees = [
+    ...new Set([session.workDir, ...(session.workingTrees ?? [])]),
+  ];
+  const allowed = await Promise.all(trees.map((tree) => realpath(tree)));
+  const dirs: string[] = [];
+  for (const tree of allowed) {
+    const dir = path.join(tree, CODEX_AGENTS_DIR);
+    try {
+      // A sandbox cannot open a missing root. Do this before starting Codex, without replacing existing paths.
+      await mkdir(dir);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    }
+    let target: string;
+    try {
+      target = await realpath(dir);
+    } catch (error) {
+      throw new Error(
+        `Refusing Codex writable root ${dir}: .agents must resolve to an existing directory`,
+        { cause: error },
+      );
+    }
+    if (
+      !allowed.some((root) => {
+        const relative = path.relative(root, target);
+        return (
+          relative === '' ||
+          (relative !== '..' &&
+            !relative.startsWith(`..${path.sep}`) &&
+            !path.isAbsolute(relative))
+        );
+      })
+    )
+      throw new Error(
+        `Refusing Codex writable root ${dir}: .agents resolves outside the run's working directories`,
+      );
+    if (!(await stat(target)).isDirectory())
+      throw new Error(
+        `Refusing Codex writable root ${dir}: .agents is not a directory`,
+      );
+    // Use the canonical target so replacing a link later cannot redirect this sandbox root elsewhere.
+    dirs.push(target);
+  }
+  return [...new Set(dirs)];
 }
 
 /** What the sandbox lets the agent write: the work directory, the session's writable roots and their `.agents`. */
-export function codexWritableRoots(session: AdapterSession): string[] {
+export async function codexWritableRoots(
+  session: AdapterSession,
+): Promise<string[]> {
   return [
     ...new Set([
       session.workDir,
       ...(session.writableRoots ?? []),
-      ...codexAgentsDirs(session),
+      ...(await codexAgentsDirs(session)),
     ]),
   ];
-}
-
-/**
- * Creates each `.agents` the sandbox opens, outside it: a writable root that does not exist is not opened, and creating
- * it from inside is what the sandbox refuses. Best effort: one that exists already, or whose tree is gone, is left as it is.
- */
-async function createAgentsDirs(session: AdapterSession): Promise<void> {
-  await Promise.all(
-    codexAgentsDirs(session).map((dir) => mkdir(dir).catch(() => undefined)),
-  );
 }
 
 class CodexRun {
@@ -561,7 +597,7 @@ class CodexRun {
       : undefined;
     const sandboxPolicy: SandboxPolicy = {
       type: 'workspaceWrite',
-      writableRoots: codexWritableRoots(session),
+      writableRoots: await codexWritableRoots(session),
       networkAccess: true,
       excludeTmpdirEnvVar: false,
       excludeSlashTmp: false,
@@ -1109,7 +1145,7 @@ class CodexRun {
             : 'Codex is not installed (codex executable not found)',
         );
       }
-      await createAgentsDirs(this.session);
+      await codexAgentsDirs(this.session);
       // A stop or a dead process ends the run even while still connecting.
       const connecting = this.connect(detection.path ?? 'codex');
       connecting.catch(() => {

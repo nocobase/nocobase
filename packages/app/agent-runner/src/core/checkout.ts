@@ -535,14 +535,22 @@ export async function initSubmodules(
 /** The submodules initialized in the worktree `dir`, nested ones included, as absolute paths. */
 export async function listSubmodules(dir: string): Promise<string[]> {
   if (!existsSync(path.join(dir, '.gitmodules'))) return [];
-  const status = await git(['submodule', 'status', '--recursive'], dir);
-  // `-<sha> <path>` is a submodule not initialized, which has no working tree yet.
-  return status
-    .split('\n')
-    .filter((line) => line !== '' && !line.startsWith('-'))
-    .map((line) => line.slice(1).trim().split(/\s+/)[1] ?? '')
+  // `foreach` visits only checked-out submodules; `displaypath` is relative to this top-level worktree even in recursion.
+  // The ./ prefix and NUL terminator preserve leading/trailing whitespace through git()'s trim().
+  const listed = await git(
+    [
+      'submodule',
+      'foreach',
+      '--quiet',
+      '--recursive',
+      'printf "%s\\0" "./$displaypath"',
+    ],
+    dir,
+  );
+  return listed
+    .split('\0')
     .filter((entry) => entry !== '')
-    .map((entry) => path.join(dir, entry));
+    .map((entry) => path.resolve(dir, entry));
 }
 
 /** The subject's working directory, locked for one run. */
