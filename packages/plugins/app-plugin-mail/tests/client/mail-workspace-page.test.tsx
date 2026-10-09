@@ -174,7 +174,10 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       .mockClear()
       .mockImplementation(async () => structuredClone(providers));
     render(<MailWorkspacePage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    // The button appears before accounts and provider capabilities finish loading.
+    await waitFor(() => expect(compose).toBeEnabled());
+    fireEvent.click(compose);
     await waitFor(() => expect(mail.listIdentities).toHaveBeenCalled());
     await act(async () => {});
     const identities = mail.listIdentities.mock.calls.length;
@@ -1736,8 +1739,9 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       .getByRole('heading', { name: 'IMAP message' })
       .closest('section');
     if (!conversation) throw new Error('Missing conversation view');
-    fireEvent.click(
+    fireEvent.keyDown(
       within(conversation).getByRole('button', { name: 'More actions' }),
+      { key: 'ArrowDown' },
     );
     const menu = await screen.findByRole('menu', {}, { timeout: 3000 });
     expect(

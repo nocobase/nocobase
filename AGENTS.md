@@ -319,16 +319,17 @@ When you do add an entry, record what breaks without it rather than only the pac
 
 The current entries:
 
-| Package                      | What breaks when a second copy exists                                                                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@nocobase/service-provider` | `ServiceContainer` keys its `Map` by the token object itself, so two `createServiceToken` calls with the same name produce two keys that never match                     |
-| `@nocobase/app-server`       | Exports the tokens every server plugin resolves against, such as `queueServiceToken` and `driveManagerToken`                                                             |
-| `@nocobase/db`               | Exports `databaseManagerToken` and migration identity                                                                                                                    |
-| `@nocobase/app-client`       | Exports React contexts plus the identity-keyed `apiClientToken`, `realtimeClientToken` and `toasterToken`                                                                |
-| `@nocobase/app-cli`          | `AppCommand` reads the application the runner located and the runtimes it tracks, so a plugin command built on a second copy runs under another version of that contract |
-| `@nocobase/i18n`             | Exports the React contexts backing the i18n runtime                                                                                                                      |
-| `@nocobase/queue`            | Plugins receive the host-owned `QueueService` and type their published declarations against it, so a second copy describes that service with another contract version    |
-| any `@nocobase/app-plugin-*` | Plugins export tokens for one another, such as `authenticationToken` and `notificationServiceToken`                                                                      |
+| Package                      | What breaks when a second copy exists                                                                                                                                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@nocobase/service-provider` | `ServiceContainer` keys its `Map` by the token object itself, so two `createServiceToken` calls with the same name produce two keys that never match                                                                                               |
+| `@nocobase/app-server`       | Exports the tokens every server plugin resolves against, such as `queueServiceToken` and `driveManagerToken`                                                                                                                                       |
+| `@nocobase/db`               | Exports `databaseManagerToken` and migration identity                                                                                                                                                                                              |
+| `@nocobase/app-client`       | Exports React contexts plus the identity-keyed `apiClientToken`, `realtimeClientToken` and `toasterToken`                                                                                                                                          |
+| `@nocobase/app-cli`          | `AppCommand` reads the application the runner located and the runtimes it tracks, so a plugin command built on a second copy runs under another version of that contract                                                                           |
+| `@nocobase/i18n`             | Exports the React contexts backing the i18n runtime                                                                                                                                                                                                |
+| `@nocobase/queue`            | Plugins receive the host-owned `QueueService` and type their published declarations against it, so a second copy describes that service with another contract version                                                                              |
+| `@nocobase/lifecycle`        | A `LifecycleRuntime` is shared between plugins through `addGuard()`, and `EffectFailure` and `LifecycleError` are recognised with `instanceof`, so a second copy neither registers into the runtime it is handed nor recognises the other's errors |
+| any `@nocobase/app-plugin-*` | Plugins export tokens for one another, such as `authenticationToken` and `notificationServiceToken`                                                                                                                                                |
 
 ### Why a second copy is worth this much trouble
 

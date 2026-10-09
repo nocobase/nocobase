@@ -1535,6 +1535,91 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/examples/app-plugin-lifecycle-example:
+    dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/app-client':
+        specifier: workspace:^
+        version: link:../../app/app-client
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
+      '@nocobase/lifecycle':
+        specifier: workspace:^
+        version: link:../../libs/lifecycle
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/examples/app-plugin-mail-example:
     dependencies:
       '@nocobase/app-client':
@@ -1662,6 +1747,91 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/examples/app-plugin-office-flows-example:
+    dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/app-client':
+        specifier: workspace:^
+        version: link:../../app/app-client
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
+      '@nocobase/lifecycle':
+        specifier: workspace:^
+        version: link:../../libs/lifecycle
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -2928,6 +3098,58 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/libs/lifecycle:
+    dependencies:
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../db
+    devDependencies:
+      '@nocobase/db-testing':
+        specifier: workspace:*
+        version: link:../db-testing
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@nocobase/jobs':
+        specifier: workspace:*
+        version: link:../jobs
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -5982,6 +6204,9 @@ importers:
       '@nocobase/app-plugin-jobs-example':
         specifier: workspace:^
         version: link:../../examples/app-plugin-jobs-example
+      '@nocobase/app-plugin-lifecycle-example':
+        specifier: workspace:^
+        version: link:../../examples/app-plugin-lifecycle-example
       '@nocobase/app-plugin-mail':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-mail
@@ -6000,6 +6225,9 @@ importers:
       '@nocobase/app-plugin-notification-providers':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-notification-providers
+      '@nocobase/app-plugin-office-flows-example':
+        specifier: workspace:^
+        version: link:../../examples/app-plugin-office-flows-example
       '@nocobase/app-plugin-queue-example':
         specifier: workspace:^
         version: link:../../examples/app-plugin-queue-example
@@ -6054,6 +6282,9 @@ importers:
       '@nocobase/jobs':
         specifier: workspace:^
         version: link:../../libs/jobs
+      '@nocobase/lifecycle':
+        specifier: workspace:^
+        version: link:../../libs/lifecycle
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
