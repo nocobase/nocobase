@@ -65,6 +65,7 @@ async function drain(handle: AdapterHandle): Promise<AdapterEvent[]> {
 async function handshake(
   fake: FakeCodex,
   turnId = 'turn-1',
+  reasoningEffort?: string,
 ): Promise<Record<string, unknown>> {
   fake.respond(await fake.nextRequest('initialize'), {
     userAgent: 'test',
@@ -73,7 +74,11 @@ async function handshake(
   const thread = await fake.next(
     (m) => m.method === 'thread/start' || m.method === 'thread/resume',
   );
-  fake.respond(thread, { thread: { id: 'thread-1' }, model: 'gpt-test' });
+  fake.respond(thread, {
+    thread: { id: 'thread-1' },
+    model: 'gpt-test',
+    reasoningEffort,
+  });
   const turn = await fake.nextRequest('turn/start');
   fake.respond(turn, {
     turn: { id: turnId, status: 'inProgress', error: null },
@@ -84,6 +89,41 @@ async function handshake(
   });
   return turn.params as Record<string, unknown>;
 }
+
+describe('reported execution settings', () => {
+  it('reports only tool-returned thread effort and its source', async () => {
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake, 'turn-1', 'medium');
+      completeTurn(fake);
+    });
+    const events = await drain(adapter.start(session()));
+    expect(events.find((event) => event.content === 'started')).toMatchObject({
+      tool: 'codex',
+      meta: { execution: { effort: 'medium', source: 'codex.thread/start' } },
+    });
+    expect(events.some((event) => event.content === 'executionSettings')).toBe(
+      false,
+    );
+  });
+
+  it('marks actual effort unreported after a per-turn override, rather than copying the request', async () => {
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake, 'turn-1', 'medium');
+      completeTurn(fake);
+    });
+    const events = await drain(
+      adapter.start(session({ effort: 'high', resumeSessionId: 'thread-1' })),
+    );
+    expect(events.find((event) => event.content === 'started')).toMatchObject({
+      meta: { execution: { effort: 'medium', source: 'codex.thread/resume' } },
+    });
+    expect(
+      events.find((event) => event.content === 'executionSettings'),
+    ).toMatchObject({
+      meta: { execution: { effort: null, source: 'codex.turn/start' } },
+    });
+  });
+});
 
 function completeTurn(
   fake: FakeCodex,

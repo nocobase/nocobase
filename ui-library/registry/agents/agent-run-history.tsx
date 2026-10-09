@@ -78,6 +78,10 @@ export interface AgentRunExecution {
   readonly model?: string | null;
   readonly actualModels?: readonly string[];
   readonly effort?: string | null;
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+  readonly machineHidden?: boolean;
 }
 
 export interface RunExecutionLabels {
@@ -92,19 +96,29 @@ export interface RunExecutionLabels {
   readonly effort: string;
   readonly attempt: string;
   readonly changedRunner: string;
+  readonly hiddenRunner?: string;
+  readonly actualEffort?: string;
+  readonly unreportedEffort?: string;
+  readonly effortSource?: string;
+  readonly effortChangedAt?: string;
 }
 
 const defaultRunExecutionLabels: RunExecutionLabels = {
   unknownRunner: 'Unknown runtime',
-  unknownModel: 'Unknown model',
-  defaultModel: 'Default model',
-  defaultActual: 'Default (actual: {model})',
-  specifiedActual: '{requested} (actual: {model})',
+  unknownModel: 'Actual model not reported',
+  defaultModel: 'Requested model: default (legacy)',
+  defaultActual: 'Legacy default (actual: {model})',
+  specifiedActual: 'Requested model: {requested} (actual: {model})',
   owner: 'owned by {name}',
-  defaultEffort: 'Default reasoning effort',
-  effort: 'Reasoning: {effort}',
+  defaultEffort: 'Requested reasoning: default',
+  effort: 'Requested reasoning: {effort}',
   attempt: 'Attempt {attempt}',
   changedRunner: 'Runtime changed',
+  hiddenRunner: 'Team runtime',
+  actualEffort: 'Actual reasoning: {effort}',
+  unreportedEffort: 'Actual reasoning not reported',
+  effortSource: 'Source: {source}',
+  effortChangedAt: 'Changed: {at}',
 };
 
 export interface AgentRunHistoryLabels {
@@ -203,17 +217,24 @@ function executionModel(
   short = false,
 ): string {
   const actual = execution.actualModels?.join(', ');
-  if (short) return actual || execution.model || labels.unknownModel;
+  if (short) return actual || labels.unknownModel;
   if (!execution.model)
     return actual
       ? fillLabel(labels.defaultActual, { model: actual })
-      : labels.defaultModel;
-  return actual && actual !== execution.model
-    ? fillLabel(labels.specifiedActual, {
-        requested: execution.model,
-        model: actual,
-      })
-    : execution.model;
+      : `${labels.defaultModel} (${labels.unknownModel})`;
+  return fillLabel(labels.specifiedActual, {
+    requested: execution.model,
+    model: actual || labels.unknownModel,
+  });
+}
+
+function executionRunner(
+  execution: AgentRunExecution,
+  labels: RunExecutionLabels,
+): string {
+  return execution.machineHidden
+    ? (labels.hiddenRunner ?? defaultRunExecutionLabels.hiddenRunner!)
+    : execution.runnerName || execution.runnerId || labels.unknownRunner;
 }
 
 /** A complete execution heading; the owner and tool version come from the historical snapshot. */
@@ -227,8 +248,9 @@ export function RunExecutionSummary({
   return (
     <span className='text-xs text-muted-foreground' data-testid='run-execution'>
       {[
-        execution.runnerName || execution.runnerId || labels.unknownRunner,
-        execution.runnerOwnerName || execution.runnerOwnerUserId
+        executionRunner(execution, labels),
+        !execution.machineHidden &&
+        (execution.runnerOwnerName || execution.runnerOwnerUserId)
           ? fillLabel(labels.owner, {
               name: execution.runnerOwnerName || execution.runnerOwnerUserId!,
             })
@@ -240,6 +262,26 @@ export function RunExecutionSummary({
         execution.effort
           ? fillLabel(labels.effort, { effort: execution.effort })
           : labels.defaultEffort,
+        execution.actualEffort
+          ? fillLabel(
+              labels.actualEffort ?? defaultRunExecutionLabels.actualEffort!,
+              { effort: execution.actualEffort },
+            )
+          : (labels.unreportedEffort ??
+            defaultRunExecutionLabels.unreportedEffort!),
+        execution.actualEffortSource
+          ? fillLabel(
+              labels.effortSource ?? defaultRunExecutionLabels.effortSource!,
+              { source: execution.actualEffortSource },
+            )
+          : null,
+        execution.actualEffortAt
+          ? fillLabel(
+              labels.effortChangedAt ??
+                defaultRunExecutionLabels.effortChangedAt!,
+              { at: execution.actualEffortAt },
+            )
+          : null,
       ]
         .filter(Boolean)
         .join(' · ')}
@@ -259,7 +301,7 @@ export function RunExecutionBadge({
   readonly onOpen?: () => void;
   readonly labels?: RunExecutionLabels;
 }): ReactElement {
-  const text = `${execution.runnerName || execution.runnerId || labels.unknownRunner} · ${executionModel(execution, labels, true)}`;
+  const text = `${executionRunner(execution, labels)} · ${executionModel(execution, labels, true)}`;
   const className =
     'inline-flex rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground';
   if (href)

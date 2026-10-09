@@ -1,7 +1,7 @@
 /** Updates execution facts in the same transaction as the claim, report or state transition. */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { RunExecution } from '../../../shared/runs.js';
+import type { RunExecution, RunEffortReport } from '../../../shared/runs.js';
 import {
   findRunRecord,
   runsRepo,
@@ -21,14 +21,46 @@ export async function recordActualModels(
   conn: DatabaseConnection,
   run: RunRecord,
   usage: readonly { readonly tool: string; readonly model?: string | null }[],
-  observedAt: string,
+  _observedAt: string,
+  effortReports: readonly RunEffortReport[] = [],
+  locked = false,
 ): Promise<void> {
-  if (usage.length === 0) return;
-  // Serialize concurrent reports before reading and replacing the JSON snapshot.
-  await runsRepo(conn).updateMany({
-    filter: { id: run.id },
-    values: { lastActivityAt: observedAt },
-  });
+  const previous = toExecutions(run.executionHistory).find(
+    (item) =>
+      item.attempt === Number(run.attempt) && item.runnerId === run.runnerId,
+  );
+  if (!previous) return;
+  const models = [
+    ...new Set(
+      usage
+        .filter(
+          (item) =>
+            item.tool === (previous.tool ?? 'online') && item.model?.trim(),
+        )
+        .map((item) => item.model!.trim()),
+    ),
+  ];
+  const hasEffortChange = (execution: RunExecution): boolean => {
+    let last = execution.effortReports?.at(-1);
+    return effortReports.some((report) => {
+      if (last && report.at < last.at) return false;
+      const changed =
+        !last || last.effort !== report.effort || last.source !== report.source;
+      last = report;
+      return changed;
+    });
+  };
+  if (
+    models.every((model) => previous.actualModels.includes(model)) &&
+    !hasEffortChange(previous)
+  )
+    return;
+  // Lock only when there are new facts. Event batches already hold the row through their activity update.
+  if (!locked)
+    await runsRepo(conn).updateMany({
+      filter: { id: run.id },
+      values: { id: run.id },
+    });
   const current = await findRunRecord(conn, run.id);
   if (!current) return;
   const executions = toExecutions(current.executionHistory);
@@ -37,17 +69,32 @@ export async function recordActualModels(
   );
   const execution = executions[index];
   if (!execution || execution.runnerId !== run.runnerId) return;
-  const primary = execution.tool ?? 'online';
-  const actualModels = [
-    ...new Set([
-      ...execution.actualModels,
-      ...usage
-        .filter((item) => item.tool === primary && item.model?.trim())
-        .map((item) => item.model!.trim()),
-    ]),
-  ];
-  if (actualModels.length === execution.actualModels.length) return;
-  executions[index] = { ...execution, actualModels };
+  const actualModels = [...new Set([...execution.actualModels, ...models])];
+  if (
+    actualModels.length === execution.actualModels.length &&
+    !hasEffortChange(execution)
+  )
+    return;
+  const reports = [...(execution.effortReports ?? [])];
+  for (const report of effortReports) {
+    const last = reports.at(-1);
+    if (last && report.at < last.at) continue;
+    if (!last || last.effort !== report.effort || last.source !== report.source)
+      reports.push(report);
+  }
+  const latest = reports.at(-1);
+  executions[index] = {
+    ...execution,
+    actualModels,
+    ...(latest
+      ? {
+          effortReports: reports,
+          actualEffort: latest.effort,
+          actualEffortSource: latest.source,
+          actualEffortAt: latest.at,
+        }
+      : {}),
+  };
   await runsRepo(conn).updateMany({
     filter: { id: run.id },
     values: { executionHistory: executions },

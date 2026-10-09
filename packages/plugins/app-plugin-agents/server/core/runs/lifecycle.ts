@@ -24,6 +24,8 @@ import {
   type Usage,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
+import { z } from 'zod';
+import type { RunEffortReport } from '../../../shared/runs.js';
 
 import { ONLINE_TOOL } from '../../../shared/reports.js';
 import type { Runner } from '../../../shared/runners.js';
@@ -54,6 +56,11 @@ import {
   type RunRecord,
 } from './run.store.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
+
+const executionReport = z.object({
+  effort: z.string().trim().min(1).max(200).nullable(),
+  source: z.string().trim().min(1).max(200),
+});
 
 export interface RunnerReports {
   /** Resolves while `runner` holds the run; `LEASE_LOST`, `RUN_NOT_ACTIVE` or `RUN_NOT_OWNED` otherwise. */
@@ -359,6 +366,8 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         const redact = redactorOf(run.id);
         let accepted = 0;
         let lastSeq = 0;
+        const reportedUsage: Usage[] = [];
+        const efforts: RunEffortReport[] = [];
         for (const event of request.events) {
           lastSeq = Math.max(lastSeq, event.seq);
           if (stored.has(event.seq)) continue;
@@ -404,14 +413,25 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             const usage = UsageSchema.array().safeParse(
               jsonObject(redact.value(event.meta)).usage,
             );
-            if (usage.success)
-              await recordActualModels(conn, run, usage.data, now);
+            if (usage.success) reportedUsage.push(...usage.data);
+          }
+          if (event.type === 'status' && event.tool === run.tool) {
+            const meta = jsonObject(redact.value(event.meta));
+            const report = executionReport.safeParse(meta.execution);
+            if (report.success)
+              efforts.push({
+                ...report.data,
+                at: Number.isNaN(Date.parse(event.at))
+                  ? now
+                  : new Date(event.at).toISOString(),
+              });
           }
         }
         await runsRepo(conn).updateMany({
           filter: { id: run.id },
           values: { lastActivityAt: now },
         });
+        await recordActualModels(conn, run, reportedUsage, now, efforts, true);
         if (accepted > 0)
           unit.emit({ type: 'run.events', runId: run.id, lastSeq });
         return {

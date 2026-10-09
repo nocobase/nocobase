@@ -67,6 +67,11 @@ export type {
 } from './online/index.js';
 export { commandRef, dialectOf } from './core/runs/ports.js';
 export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './core/runs/execution-view.js';
+export {
   RUN_CREDENTIAL,
   runIdentityOf,
   type RunCredentialData,

@@ -76,12 +76,40 @@ describe('writing comments', () => {
       type: 'agent',
       agentName: 'Coder',
       runId: 'run2',
-      execution,
+      execution: {
+        ...execution,
+        runnerName: null,
+        runnerOwnerName: null,
+        machineHidden: true,
+      },
     });
     const detail = await h.services.issueQueries.detail(alice(), issue.id);
     expect(
       detail.activities.find((item) => item.action === 'comment_added')?.via,
     ).toMatchObject({ runId: 'run2', execution });
+    expect(detail.threads[0]?.root.source?.execution).toMatchObject(execution);
+    const outsider = await h.services.issueQueries.detail(bob(), issue.id);
+    const hidden = {
+      runnerName: null,
+      runnerOwnerName: null,
+      runnerTrust: null,
+      machineHidden: true,
+      actualModels: ['actual-model'],
+    };
+    expect(
+      outsider.activities.find((item) => item.action === 'comment_added')?.via
+        ?.execution,
+    ).toMatchObject(hidden);
+    expect(outsider.threads[0]?.root.source?.execution).toMatchObject(hidden);
+    expect(
+      (await h.services.commentQueries.threads(bob(), issue.id, {})).data[0]
+        ?.root.source?.execution,
+    ).toMatchObject(hidden);
+    const manager = { ...bob(), seesExecutionMachine: () => true };
+    expect(
+      (await h.services.issueQueries.detail(manager, issue.id)).threads[0]?.root
+        .source?.execution,
+    ).toMatchObject(execution);
     await h.services.comments.remove(alice(), written.comment.id);
     const after = await h.services.issueQueries.detail(alice(), issue.id);
     expect(after.threads[0]?.root.source).toBeNull();

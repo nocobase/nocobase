@@ -431,6 +431,14 @@ class CodexRun {
       sandboxPolicy,
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
+    if (effort && EFFORTS.has(effort))
+      this.emit({
+        type: 'status',
+        tool: 'codex',
+        content: 'executionSettings',
+        // turn/start does not return the resolved effort. Its request cannot stand in for a report.
+        meta: { execution: { effort: null, source: 'codex.turn/start' } },
+      });
     // The first input of a turn is its user message; the rest ride along.
     for (const steer of inputs.slice(1)) this.acknowledge(steer.clientId);
     if (this.turnRunning && !this.activeTurnId) {
@@ -1083,8 +1091,15 @@ class CodexRun {
         sessionId: thread.thread.id,
         model: thread.model,
         ...(thread.reasoningEffort ? { effort: thread.reasoningEffort } : {}),
+        execution: {
+          effort: thread.reasoningEffort ?? null,
+          source: session.resumeSessionId
+            ? 'codex.thread/resume'
+            : 'codex.thread/start',
+        },
         ...(session.resumeSessionId ? { resumed: true } : {}),
       },
+      tool: 'codex',
     });
     if (this.stopping) return;
     const prompt: Steer = {

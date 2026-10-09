@@ -1,5 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
+import { recordActualModels } from '../server/core/runs/execution.js';
+import { findRunRecord } from '../server/core/runs/run.store.js';
 
 describe('execution history', () => {
   let h: Harness;
@@ -161,7 +163,11 @@ describe('execution history', () => {
     await h.services.reports.complete({ id: runner.runnerId }, runId, {
       summary: '',
       handledInputIds: await handledInputIds(runId),
-      usage: [usage('legacy-real')],
+      usage: [
+        usage('legacy-real'),
+        usage('legacy-real'),
+        usage('helper', 'claude'),
+      ],
     });
     await h.database
       .connection()
@@ -182,6 +188,198 @@ describe('execution history', () => {
     expect(
       (await h.services.runs.list({ subjectKind: 'sample' }))[0]?.actualModels,
     ).toEqual(['legacy-real']);
+  });
+
+  it('separates requested effort from primary-tool reports and preserves changes with source and time', async () => {
+    h = await createHarness();
+    const agent = await h.createAgent({
+      modelEntries: [{ tool: 'codex', model: 'requested', effort: 'high' }],
+    });
+    const runner = await h.registerRunner({
+      tools: [{ kind: 'codex', authenticated: true }],
+    });
+    const runId = await h.enqueue(agent);
+    await claim(h, runner);
+    expect((await h.services.runs.get(runId)).actualEffort).toBeNull();
+    const at = h.clock.now().toISOString();
+    await h.services.reports.events({ id: runner.runnerId }, runId, {
+      events: [
+        {
+          seq: 1,
+          type: 'status',
+          tool: 'claude',
+          at,
+          meta: { execution: { effort: 'max', source: 'helper' } },
+        },
+        {
+          seq: 2,
+          type: 'status',
+          tool: 'codex',
+          at,
+          meta: {
+            execution: { effort: 'medium', source: 'codex.thread/start' },
+          },
+        },
+      ],
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      effort: 'high',
+      actualEffort: 'medium',
+      actualEffortSource: 'codex.thread/start',
+      actualEffortAt: at,
+    });
+    h.clock.advance(1000);
+    const changed = h.clock.now().toISOString();
+    await h.services.reports.events({ id: runner.runnerId }, runId, {
+      events: [
+        {
+          seq: 3,
+          type: 'status',
+          tool: 'codex',
+          at: changed,
+          meta: { execution: { effort: null, source: 'codex.turn/start' } },
+        },
+        {
+          seq: 4,
+          type: 'status',
+          tool: 'codex',
+          at: changed,
+          meta: { effort: 'high' },
+        },
+      ],
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      actualEffort: null,
+      actualEffortSource: 'codex.turn/start',
+      actualEffortAt: changed,
+      executions: [
+        {
+          effortReports: [
+            { effort: 'medium', source: 'codex.thread/start', at },
+            { effort: null, source: 'codex.turn/start', at: changed },
+          ],
+        },
+      ],
+    });
+    // Duplicate resends and delayed older facts cannot restore a value that the tool stopped reporting.
+    await h.services.reports.events({ id: runner.runnerId }, runId, {
+      events: [
+        {
+          seq: 5,
+          type: 'status',
+          tool: 'codex',
+          at,
+          meta: {
+            execution: { effort: 'medium', source: 'codex.thread/start' },
+          },
+        },
+      ],
+    });
+    expect((await h.services.runs.get(runId)).actualEffort).toBeNull();
+  });
+
+  it('skips snapshot reads and writes for repeated or helper model usage', async () => {
+    h = await createHarness();
+    const agent = await h.createAgent({
+      modelEntries: [{ tool: 'codex', model: 'requested' }],
+    });
+    const runner = await h.registerRunner({
+      tools: [{ kind: 'codex', authenticated: true }],
+    });
+    const runId = await h.enqueue(agent);
+    await claim(h, runner);
+    await h.services.reports.events({ id: runner.runnerId }, runId, {
+      events: [
+        {
+          seq: 1,
+          type: 'usage',
+          at: h.clock.now().toISOString(),
+          meta: { usage: [usage('actual')] },
+        },
+      ],
+    });
+    const conn = h.database.connection();
+    const record = (await findRunRecord(conn, runId))!;
+    const repository = vi.spyOn(conn, 'repository');
+    try {
+      await recordActualModels(
+        conn,
+        record,
+        [usage('actual'), usage('helper', 'claude')],
+        h.clock.now().toISOString(),
+      );
+      expect(repository).not.toHaveBeenCalled();
+    } finally {
+      repository.mockRestore();
+    }
+  });
+
+  it('does not create a phantom attempt when assembly rolls back', async () => {
+    h = await createHarness();
+    const agent = await h.createAgent();
+    const runner = await h.registerRunner();
+    const runId = await h.enqueue(agent);
+    h.failAssembly = true;
+    expect(await claim(h, runner)).toEqual([]);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      attempt: 1,
+      executions: [],
+    });
+    h.failAssembly = false;
+    await claim(h, runner);
+    expect((await h.services.runs.get(runId)).executions).toHaveLength(1);
+  });
+
+  it('protects all attempts and flat machine fields in lists, details and mutation responses', async () => {
+    h = await createHarness();
+    const agent = await h.createAgent({
+      modelEntries: [{ tool: 'codex', model: 'requested' }],
+    });
+    const runner = await h.registerRunner({
+      name: 'private-hostname',
+      ownerUserId: 'alice',
+      tools: [{ kind: 'codex', authenticated: true }],
+    });
+    const runId = await h.enqueue(agent);
+    await claim(h, runner);
+    const hidden = {
+      runnerName: null,
+      runnerOwnerName: null,
+      machineHidden: true,
+      executions: [
+        {
+          runnerName: null,
+          runnerOwnerName: null,
+          runnerTrust: null,
+          machineHidden: true,
+        },
+      ],
+    };
+    const owner = await h.request('GET', `/agents/runs/${runId}`, {
+      user: 'alice',
+      can: ['agents.agents/read'],
+    });
+    expect(owner.body.data.runnerName).toBe('private-hostname');
+    const manager = await h.request('GET', `/agents/runs/${runId}`, {
+      user: 'manager',
+      can: ['agents.agents/read', 'agents.runners/manage'],
+    });
+    expect(manager.body.data.runnerName).toBe('private-hostname');
+    const outsider = await h.request('GET', `/agents/runs/${runId}`, {
+      user: 'owner',
+    });
+    expect(outsider.status).toBe(200);
+    expect(outsider.body.data).toMatchObject(hidden);
+    const list = await h.request('GET', '/agents/runs', { user: 'owner' });
+    expect(list.body.data[0]).toMatchObject(hidden);
+    const cancelled = await h.request('POST', `/agents/runs/${runId}/cancel`, {
+      user: 'owner',
+    });
+    expect(cancelled.body.data).toMatchObject(hidden);
+    expect((await h.services.runs.get(runId)).runnerName).toBe(
+      'private-hostname',
+    );
   });
 
   it('records online holders and their reported model without a fictitious machine owner', async () => {

@@ -403,28 +403,40 @@ export function createRunService(deps: RunServiceDeps): RunService {
   /** Legacy runs have no snapshots; report their known primary-tool models without inventing attempt boundaries. */
   async function readRuns(records: readonly RunRecord[]): Promise<Run[]> {
     const runs = records.map(toRun);
-    const legacy = runs.filter((run) => run.executions?.length === 0);
+    const legacy = runs.filter(
+      (run) =>
+        run.executions?.length === 0 &&
+        (run.dispatchedAt !== null ||
+          run.tool !== null ||
+          run.modelService !== null),
+    );
     if (legacy.length === 0) return runs;
     const usage = await usageRepo(tx.read()).findMany({
-      filter: (f) => f.or(legacy.map((run) => f.string('runId').eq(run.id))),
+      select: (select) => select.fields('runId', 'tool', 'model'),
+      distinct: ['runId', 'tool', 'model'],
+      filter: (f) =>
+        f.and([
+          f.string('model').ne(null),
+          f.or(
+            legacy.map((run) =>
+              f.and([
+                f.string('runId').eq(run.id),
+                f.string('tool').eq(run.tool ?? 'online'),
+              ]),
+            ),
+          ),
+        ]),
     });
+    const models = new Map<string, string[]>();
+    for (const row of usage)
+      if (row.model)
+        models.set(row.runId, [...(models.get(row.runId) ?? []), row.model]);
     return runs.map((run) =>
       run.executions?.length
         ? run
         : {
             ...run,
-            actualModels: [
-              ...new Set(
-                usage
-                  .filter(
-                    (row) =>
-                      row.runId === run.id &&
-                      row.tool === (run.tool ?? 'online') &&
-                      row.model,
-                  )
-                  .map((row) => row.model!),
-              ),
-            ],
+            actualModels: models.get(run.id) ?? [],
           },
     );
   }

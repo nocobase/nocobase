@@ -61,7 +61,13 @@ import type { AgentsVocabulary } from '../../shared/vocabulary.js';
 import type { Agents } from '../composition.js';
 import { AgentInputSchema, AgentPatchSchema } from '../core/agents/index.js';
 import { ModelPricesSchema } from '../core/reports/index.js';
-import { countActive, hasTool, onlineEntryOf } from '../core/runs/index.js';
+import {
+  countActive,
+  hasTool,
+  onlineEntryOf,
+  runForViewer,
+  type RunMachineViewer,
+} from '../core/runs/index.js';
 import {
   SkillIdsSchema,
   SkillImportSchema,
@@ -1290,6 +1296,23 @@ export function createAdminRoutes(
   const noRun = notFoundAs('The run');
   const runVisibility =
     "The caller sees the runs they started or own, and every run but a private subject's (a conversation) with `agents.agents` read.";
+  const machineViewer = async (
+    context: Context<AdminEnv>,
+  ): Promise<RunMachineViewer> => {
+    const who = caller(context);
+    const manage = await who.can('agents.runners', 'manage');
+    const see =
+      manage ||
+      (await who.can('agents.runners', 'read')) ||
+      (await who.can('agents.agents', 'read'));
+    const uses =
+      see &&
+      !manage &&
+      (await services.agents.list()).some((agent) =>
+        services.agents.mayInvoke(agent, who.userId),
+      );
+    return { userId: who.userId, seesMachines: manage || uses };
+  };
   /** Only a caller who may see the run of the path (or, with `manage`, act on it) goes on. */
   const runAccess =
     (action: SettingsAction): MiddlewareHandler<AdminEnv> =>
@@ -1345,10 +1368,11 @@ export function createAdminRoutes(
       });
       const page = runs.slice(0, query.pageSize);
       const last = page.at(-1);
+      const viewer = await machineViewer(context);
       return context.json({
-        data: page.filter(
-          (run) => involves(run, who.userId) || !isPrivate(run),
-        ),
+        data: page
+          .filter((run) => involves(run, who.userId) || !isPrivate(run))
+          .map((run) => runForViewer(run, viewer)),
         meta:
           runs.length > query.pageSize && last
             ? {
@@ -1384,7 +1408,10 @@ export function createAdminRoutes(
     runParam,
     async (context) =>
       context.json({
-        data: await services.runs.detail(context.req.valid('param').runId),
+        data: runForViewer(
+          await services.runs.detail(context.req.valid('param').runId),
+          await machineViewer(context),
+        ),
       }),
   );
   router.get(
@@ -1484,9 +1511,12 @@ export function createAdminRoutes(
     runParam,
     async (context) =>
       context.json({
-        data: await services.runs.cancel(
-          context.req.valid('param').runId,
-          caller(context).userId,
+        data: runForViewer(
+          await services.runs.cancel(
+            context.req.valid('param').runId,
+            caller(context).userId,
+          ),
+          await machineViewer(context),
         ),
       }),
   );
@@ -1518,9 +1548,12 @@ export function createAdminRoutes(
     runParam,
     async (context) =>
       context.json({
-        data: await services.runs.retry(
-          context.req.valid('param').runId,
-          caller(context).userId,
+        data: runForViewer(
+          await services.runs.retry(
+            context.req.valid('param').runId,
+            caller(context).userId,
+          ),
+          await machineViewer(context),
         ),
       }),
   );

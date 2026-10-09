@@ -587,11 +587,16 @@ export interface ActivityExecution {
   readonly runnerName?: string | null;
   readonly runnerOwnerUserId?: string | null;
   readonly runnerOwnerName?: string | null;
+  readonly runnerTrust?: 'team' | 'ownerOnly' | null;
+  readonly machineHidden?: boolean;
   readonly tool?: string | null;
   readonly toolVersion?: string | null;
   readonly model?: string | null;
   readonly actualModels?: readonly string[];
   readonly effort?: string | null;
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
 }
 
 /**

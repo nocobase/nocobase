@@ -82,6 +82,7 @@ import {
   PLAN_STATUSES,
   PLAN_UNDO_OPS,
   type ActivityVia,
+  type ActivityExecution,
   type CreatePlanRequest,
   type EditPlanRequest,
   type Plan,
@@ -948,18 +949,25 @@ const MentionRefSchema: z.ZodType<MentionRef> = z.object({
   id: z.string(),
 });
 
-const ActivityExecutionSchema = z.object({
-  attempt: z.number().int(),
-  runnerId: z.string(),
-  runnerName: z.string().nullable().optional(),
-  runnerOwnerUserId: z.string().nullable().optional(),
-  runnerOwnerName: z.string().nullable().optional(),
-  tool: z.string().nullable().optional(),
-  toolVersion: z.string().nullable().optional(),
-  model: z.string().nullable().optional(),
-  actualModels: z.array(z.string()).optional(),
-  effort: z.string().nullable().optional(),
-});
+const ActivityExecutionSchema: z.ZodType<ActivityExecution> = z
+  .object({
+    attempt: z.number().int(),
+    runnerId: z.string(),
+    runnerName: z.string().nullable().optional(),
+    runnerOwnerUserId: z.string().nullable().optional(),
+    runnerOwnerName: z.string().nullable().optional(),
+    runnerTrust: z.enum(['team', 'ownerOnly']).nullable().optional(),
+    machineHidden: z.boolean().optional(),
+    tool: z.string().nullable().optional(),
+    toolVersion: z.string().nullable().optional(),
+    model: z.string().nullable().optional(),
+    actualModels: z.array(z.string()).optional(),
+    effort: z.string().nullable().optional(),
+    actualEffort: z.string().nullable().optional(),
+    actualEffortSource: z.string().nullable().optional(),
+    actualEffortAt: dateTime.nullable().optional(),
+  })
+  .meta({ ref: 'ProjectsActivityExecution' });
 
 const ActivityViaSchema: z.ZodType<ActivityVia> = z
   .object({

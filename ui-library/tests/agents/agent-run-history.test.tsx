@@ -35,12 +35,12 @@ describe('run execution display', () => {
   it('shows runtime, owner, tool version, actual default model and effort in the header and list', () => {
     const { unmount } = render(<RunHeader run={run} />);
     expect(screen.getByTestId('run-execution')).toHaveTextContent(
-      'dev-1 · owned by Alice · codex 1.2.3 · Default (actual: actual-model) · Reasoning: high',
+      'dev-1 · owned by Alice · codex 1.2.3 · Legacy default (actual: actual-model) · Requested reasoning: high · Actual reasoning not reported',
     );
     unmount();
     render(<AgentRunHistory runs={[run]} />);
     expect(screen.getByTestId('run-execution')).toHaveTextContent(
-      'Default (actual: actual-model)',
+      'Legacy default (actual: actual-model)',
     );
   });
 
@@ -137,7 +137,11 @@ describe('run execution display', () => {
             specifiedActual: '{requested}（实际：{model}）',
             owner: '{name} 的执行机',
             defaultEffort: '默认思考强度',
-            effort: '思考强度：{effort}',
+            effort: '请求思考强度：{effort}',
+            actualEffort: '实际思考强度：{effort}',
+            unreportedEffort: '实际值未报告',
+            effortSource: '来源：{source}',
+            effortChangedAt: '变化时间：{at}',
             attempt: '第 {attempt} 次尝试',
             changedRunner: '执行机已更换',
           },
@@ -149,6 +153,51 @@ describe('run execution display', () => {
     );
     expect(screen.getByTestId('run-execution')).toHaveTextContent(
       'Alice 的执行机',
+    );
+  });
+
+  it('does not present requested values as actual values and hides machine identifiers', () => {
+    const unknown = {
+      ...execution,
+      model: 'requested',
+      actualModels: [],
+      machineHidden: true,
+    };
+    const { unmount } = render(<RunExecutionBadge execution={unknown} />);
+    expect(
+      screen.getByText('Team runtime · Actual model not reported'),
+    ).toBeVisible();
+    expect(screen.queryByText(/requested|dev-1|Alice|r1/)).toBeNull();
+    unmount();
+    render(<RunHeader run={{ ...run, executions: [unknown] }} />);
+    expect(screen.getByTestId('run-execution')).toHaveTextContent(
+      'Requested model: requested (actual: Actual model not reported)',
+    );
+    expect(screen.getByTestId('run-execution')).toHaveTextContent(
+      'Requested reasoning: high · Actual reasoning not reported',
+    );
+  });
+
+  it('labels requested and reported values even when they match, with report source and change time', () => {
+    render(
+      <RunHeader
+        run={{
+          ...run,
+          execution: {
+            ...execution,
+            model: 'actual-model',
+            actualEffort: 'high',
+            actualEffortSource: 'codex.thread/start',
+            actualEffortAt: '2026-10-09T00:00:00Z',
+          },
+        }}
+      />,
+    );
+    expect(screen.getByTestId('run-execution')).toHaveTextContent(
+      'Requested model: actual-model (actual: actual-model)',
+    );
+    expect(screen.getByTestId('run-execution')).toHaveTextContent(
+      'Requested reasoning: high · Actual reasoning: high · Source: codex.thread/start · Changed: 2026-10-09T00:00:00Z',
     );
   });
 });

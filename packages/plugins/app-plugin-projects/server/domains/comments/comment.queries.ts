@@ -70,6 +70,7 @@ export async function mapComments(
   kinds: KindRegistry,
   records: readonly CommentRecord[],
   attachments?: CommentAttachments,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): Promise<IssueComment[]> {
   const name = await kinds.nameAll(conn, [
     ...records.map((row) => ({ type: row.authorType, id: row.authorId })),
@@ -107,7 +108,11 @@ export async function mapComments(
       rootId: row.rootId,
       source: deleted
         ? null
-        : splitVia({ ...origin, via: row.via }, (id) => name('agent', id)).via,
+        : splitVia(
+            { ...origin, via: row.via },
+            (id) => name('agent', id),
+            viewer,
+          ).via,
       via:
         row.via === 'cli' || row.via === 'api_key' || row.via === 'agent'
           ? row.via
@@ -133,6 +138,7 @@ export async function threadPage(
   issueId: string,
   options: { readonly cursor?: string; readonly limit?: number } = {},
   attachments?: CommentAttachments,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): Promise<ThreadPage> {
   const limit = pageLimit(
     options.limit,
@@ -162,6 +168,7 @@ export async function threadPage(
     kinds,
     [...roots, ...replies],
     attachments,
+    viewer,
   );
   const byId = new Map(mapped.map((comment) => [comment.id, comment]));
   const data: CommentThread[] = roots.map((root) => ({
@@ -205,6 +212,7 @@ export function createCommentQueries(deps: {
         issue.id,
         options,
         deps.attachments?.(),
+        viewer,
       );
     },
     async mentionCandidates(viewer, input) {

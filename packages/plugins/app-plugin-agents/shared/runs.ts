@@ -19,6 +19,13 @@ export const CONSULTATION_SUBJECT = 'consultation';
 export const CONSULT_MAX_DEPTH = 2;
 
 /** Execution facts captured at claim time, retained even after a retry releases its holder. */
+export interface RunEffortReport {
+  readonly effort: string | null;
+  /** The tool response that reported the value, never the requested configuration. */
+  readonly source: string;
+  readonly at: string;
+}
+
 export interface RunExecution {
   readonly attempt: number;
   readonly runnerId: string;
@@ -33,7 +40,14 @@ export interface RunExecution {
   readonly model: string | null;
   /** Models reported by this attempt's primary tool, excluding other tools' usage. */
   readonly actualModels: readonly string[];
+  /** Requested effort, never evidence of what the tool used. */
   readonly effort: string | null;
+  readonly effortReports?: readonly RunEffortReport[];
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+  /** Machine fields were removed for this reader. */
+  readonly machineHidden?: boolean;
   readonly dispatchedAt: string;
   readonly finishedAt: string | null;
   readonly failureReason: string | null;
@@ -54,6 +68,10 @@ export interface Run {
   readonly runnerOwnerName?: string | null;
   readonly toolVersion?: string | null;
   readonly actualModels?: readonly string[];
+  readonly actualEffort?: string | null;
+  readonly actualEffortSource?: string | null;
+  readonly actualEffortAt?: string | null;
+  readonly machineHidden?: boolean;
   /**
    * The entry of the agent's list it works with (`AgentModelEntry`): a runner run's coding tool and model (null: the
    * tool's default), set when a runner claims it; an online run's model service and model, set when it is claimed (a
