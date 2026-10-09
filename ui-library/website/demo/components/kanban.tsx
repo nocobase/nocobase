@@ -7,7 +7,7 @@ import {
   KanbanHeader,
   KanbanProvider,
   type KanbanMove,
-} from '@/components/kanban';
+} from '#components/kanban';
 
 interface Task {
   readonly id: string;

@@ -47,6 +47,10 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
     '@nocobase/queue',
     'types the host-owned QueueService that plugins resolve from queueServiceToken',
   ],
+  [
+    '@nocobase/lifecycle',
+    'a LifecycleRuntime is shared between plugins through addGuard(), and EffectFailure and LifecycleError are recognised with instanceof, so a second copy neither registers into the runtime it is handed nor recognises the errors thrown by the other',
+  ],
 ]);
 
 // Packages a guest reaches only through the host that wraps them, so it declares them in no dependency field at all.

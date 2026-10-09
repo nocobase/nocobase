@@ -6,8 +6,8 @@ import {
   TimelineActivity,
   type CommentItem,
   type CommentTimelineEntry,
-} from '@/components/comment-thread';
-import { MarkdownView } from '@/components/markdown-view';
+} from '#components/comment-thread';
+import { MarkdownView } from '#components/markdown-view';
 
 const ago = (minutes: number) =>
   new Date(Date.now() - minutes * 60_000).toISOString();

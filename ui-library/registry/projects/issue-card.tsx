@@ -14,8 +14,8 @@ import type {
 } from 'react';
 
 import { useTranslation } from '@nocobase/i18n/client';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '#components/ui/badge';
+import { Skeleton } from '#components/ui/skeleton';
 import { cn } from 'cn';
 
 import {
@@ -25,7 +25,7 @@ import {
   type IssueTableColor,
   type IssueTablePerson,
   type IssueTablePriority,
-} from '@/components/issue-table';
+} from '#components/issue-table';
 
 export interface IssueCardIssue {
   readonly id: string;

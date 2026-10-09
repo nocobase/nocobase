@@ -6,6 +6,12 @@ import type {
 } from '@nocobase/db';
 import { rawRows } from '@nocobase/db';
 import { MssqlSchemaInspector } from './inspectors/mssql.js';
+import {
+  enqueueRequest,
+  chompRequests,
+  type RequestConnection,
+  type SqlRequest,
+} from './request-queue.js';
 
 import type { MssqlConnectionConfig } from './config.js';
 export type { MssqlConnectionConfig } from './config.js';
@@ -246,6 +252,17 @@ export const mssqlDriver: DatabaseDriverDefinition<
   createKnexClient: (_config, baseClient) => {
     if (!baseClient) return 'mssql';
     class MssqlClientWithDriver extends baseClient {
+      _enqueueRequest(
+        request: SqlRequest,
+        connection: RequestConnection,
+      ): void {
+        enqueueRequest(request, connection);
+      }
+
+      _chomp(connection: RequestConnection): void {
+        chompRequests(connection);
+      }
+
       _driver(): unknown {
         return Tedious;
       }

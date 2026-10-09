@@ -15,6 +15,8 @@ import {
   RunnerPolicySchema,
   RunStatusSchema,
   ToolInfoSchema,
+  ToolLoadSchema,
+  ToolSlotsSchema,
   type RunEvent,
   type RunStatus,
 } from '@nocobase/agent-protocol';
@@ -296,6 +298,10 @@ export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
     name: z.string().trim().min(1).max(200),
     trust: z.enum(RUNNER_TRUST),
     slots: z.number().int().min(1).max(64),
+    toolSlots: ToolSlotsSchema.nullable().meta({
+      description:
+        'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
+    }),
     enabledTools: z.array(AgentToolSchema).max(AGENT_TOOLS.length).nullable(),
     acceptJobs: z.boolean(),
   })
@@ -313,6 +319,10 @@ export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
     slots: z.number().int().min(1).max(64).nullable().optional().meta({
       description:
         "How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.",
+    }),
+    toolSlots: ToolSlotsSchema.nullable().optional().meta({
+      description:
+        "How many runs of each coding tool the runner takes at once; omitted or null for no limits per tool. A runner's own limits per tool (`--slots claude=2`) override it.",
     }),
   });
 
@@ -1277,6 +1287,14 @@ const runnerObject = z.object({
   ownerName: z.string().nullable(),
   status: z.enum(RUNNER_STATUSES),
   slots: z.number().int(),
+  toolSlots: ToolSlotsSchema.nullable().meta({
+    description:
+      'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
+  }),
+  toolLoad: z.partialRecord(AgentToolSchema, ToolLoadSchema).nullable().meta({
+    description:
+      'What it last reported per coding tool it limits on its own side, across every application it serves: how many runs of each it holds at most and could take now.',
+  }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),
   lastSeenAt: dateTime.nullable(),
@@ -1300,6 +1318,10 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
     }),
     activeRuns: z.number().int(),
     activeJobs: z.number().int(),
+    activeByTool: z.partialRecord(AgentToolSchema, z.number().int()).meta({
+      description:
+        'The runs it holds now by the coding tool each runs with; a tool it runs nothing of is left out.',
+    }),
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
@@ -1345,6 +1367,7 @@ export const RegistrationTokenSchema: z.ZodType<RegistrationToken> = z.object({
   trust: z.enum(RUNNER_TRUST),
   enabledTools: z.array(AgentToolSchema).nullable(),
   slots: z.number().int().nullable(),
+  toolSlots: ToolSlotsSchema.nullable(),
   expiresAt: dateTime,
 });
 

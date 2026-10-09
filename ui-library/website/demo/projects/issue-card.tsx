@@ -5,9 +5,9 @@ import {
   IssueCard,
   IssueCardSkeleton,
   type IssueCardIssue,
-} from '@/components/issue-card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from '#components/issue-card';
+import { Badge } from '#components/ui/badge';
+import { Button } from '#components/ui/button';
 
 const daysFromNow = (days: number): string => {
   const date = new Date(Date.now() + days * 86_400_000);

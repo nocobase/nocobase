@@ -141,7 +141,9 @@ export interface RunEventPage {
  * - `missingFeatures`: the runners that could take it lack what it needs (`missing`).
  * - `sameWorkActive`: the agent is already working on the same subject and thread; this run follows.
  * - `concurrencyFull`: the agent has as many runs held as it may have at once.
- * - `runnersBusy`: every runner that could take it has its slots full.
+ * - `runnersBusy`: every runner that could take it has its slots full (the machine's slots).
+ * - `toolSlotsFull`: a runner that could take it has a free slot, but none has room for any of the agent's coding tools
+ *   (`Runner.toolSlots`); `tool` names the one that is full.
  * - `setupRetrying`: preparing it failed and is tried again (`detail` says why).
  * - `next`: nothing holds it; the next free runner that asks takes it.
  */
@@ -156,6 +158,7 @@ export const RUN_WAIT_REASONS = [
   'sameWorkActive',
   'concurrencyFull',
   'runnersBusy',
+  'toolSlotsFull',
   'setupRetrying',
   'next',
 ] as const;
@@ -171,7 +174,10 @@ export interface RunWait {
   readonly agentPosition: number;
   /** When a delayed run may be claimed. */
   readonly until: string | null;
-  /** For `toolUnavailable`: the agent's default coding tool (its first entry's); any of its tools would do. */
+  /**
+   * For `toolUnavailable`: the agent's default coding tool (its first entry's); any of its tools would do. For
+   * `toolSlotsFull`: the first of the agent's tools the free runners run, all of whose slots are taken.
+   */
   readonly tool: AgentTool | null;
   /** For `missingFeatures`: what no fitting runner has. */
   readonly missing: readonly RunnerFeature[];

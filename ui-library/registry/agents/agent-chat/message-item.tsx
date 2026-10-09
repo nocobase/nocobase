@@ -18,7 +18,7 @@ import type { ConversationMessage } from '@nocobase/app-plugin-agents/shared/con
 import { AlertCircleIcon, RotateCcwIcon } from 'lucide-react';
 import { useContext, type ReactElement, type ReactNode } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import { cn } from 'cn';
 
 import { ChatMarkdown } from './chat-markdown.js';

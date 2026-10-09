@@ -13,13 +13,13 @@ import {
   useParams,
 } from 'react-router';
 
-import { ChatPanel } from '@/extensions/nocobase-agent-chat/chat-panel';
-import { ChatConversationPage } from '@/extensions/nocobase-agent-chat/conversation-page';
+import { ChatPanel } from '#extensions/nocobase-agent-chat/chat-panel';
+import { ChatConversationPage } from '#extensions/nocobase-agent-chat/conversation-page';
 import {
   AskAgentButton,
   ChatFloatingButton,
   ChatHeaderButton,
-} from '@/extensions/nocobase-agent-chat/launchers';
+} from '#extensions/nocobase-agent-chat/launchers';
 
 const ISSUE = { kind: 'issue', id: 'pm-12', label: 'PM-12 Welcome tour' };
 

@@ -51,9 +51,9 @@ const examples = declared.filter(
   ({ item }) => item.type === 'registry:example',
 );
 
-/** `@/<target without client/ and extension>`: how an application imports a file an item installed. */
+/** `#<target without client/ and extension>`: how an application imports a file an item installed. */
 const importPath = (target: string): string =>
-  `@/${target.replace(/^client\//u, '').replace(/\.tsx?$/u, '')}`;
+  `#${target.replace(/^client\//u, '').replace(/\.tsx?$/u, '')}`;
 
 const packageName = (dependency: string): string =>
   dependency.slice(0, dependency.lastIndexOf('@'));
@@ -117,11 +117,11 @@ describe('example items', () => {
               ),
               `${file.path} imports ${specifier}`,
             ).toBe(true);
-          } else if (specifier.startsWith('@/components/ui/')) {
+          } else if (specifier.startsWith('#components/ui/')) {
             expect(registryDependencies).toContain(
-              specifier.slice('@/components/ui/'.length),
+              specifier.slice('#components/ui/'.length),
             );
-          } else if (specifier.startsWith('@/')) {
+          } else if (specifier.startsWith('#')) {
             // A shared file, such as use-route-overlay, is installed by more than one item; any of them will do.
             const owners = installedBy.get(specifier) ?? [];
             expect(

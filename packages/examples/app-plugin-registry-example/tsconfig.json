@@ -3,9 +3,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist",
-    "paths": {
-      "@/*": ["./client/*"]
-    }
+    "customConditions": ["development"]
   },
   "include": ["client/**/*.ts", "client/**/*.tsx"],
   "exclude": ["tests"]

@@ -1,10 +1,7 @@
 import { EXIT_INVALID, InstallerError } from './errors.ts';
 
-/**
- * While NocoBase 3 publishes only to its own registry, that is the default; `--registry` and `NOCOBASE_REGISTRY`
- * override it, the same way they do for `create-app`.
- */
-export const FALLBACK_REGISTRY = 'https://npm.nocobase.ai';
+/** The public npm registry is the default; `--registry` and `NOCOBASE_REGISTRY` may select a private registry. */
+export const FALLBACK_REGISTRY = 'https://registry.npmjs.org';
 
 export function defaultRegistry(env: NodeJS.ProcessEnv = process.env): string {
   return env.NOCOBASE_REGISTRY?.trim() || FALLBACK_REGISTRY;

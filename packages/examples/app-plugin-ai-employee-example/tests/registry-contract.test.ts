@@ -61,7 +61,7 @@ describe('AI employee example Registry contract', () => {
 
   it('reaches the chat only through the application-owned nocobase-ai item', () => {
     const page = read('registry/tasks-page/pages/ai-employee-tasks-page.tsx');
-    expect(page).toContain("from '@/extensions/nocobase-ai'");
+    expect(page).toContain("from '#extensions/nocobase-ai'");
     expect(page).not.toContain('@nocobase/app-plugin-ai-employee/');
   });
 });

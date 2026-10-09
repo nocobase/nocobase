@@ -84,6 +84,13 @@ function includeTemplateFile(
   if (relativePath === 'vitest.config.template.ts') {
     return hasPageTests(capabilities);
   }
+  // A plugin with tests but no client code still gets the shared Node preset, whose timeouts a database test needs.
+  if (relativePath === 'vitest.config.node.template.ts') {
+    return (
+      !hasPageTests(capabilities) &&
+      (hasServerPlugin(capabilities) || capabilities.cli)
+    );
+  }
   if (
     relativePath === 'client/index.ts' ||
     relativePath === 'client/plugin.ts'
@@ -95,13 +102,13 @@ function includeTemplateFile(
   }
   if (
     relativePath.startsWith('client/providers/') ||
-    relativePath === 'tests/client-service-provider.test.ts'
+    relativePath === 'tests/client/service-provider.test.ts'
   ) {
     return capabilities.client.serviceProviders;
   }
   if (
     relativePath === 'client/routes.ts' ||
-    relativePath === 'tests/client.test.ts'
+    relativePath === 'tests/client/routes.test.ts'
   ) {
     return capabilities.client.routes;
   }
@@ -109,13 +116,13 @@ function includeTemplateFile(
     relativePath.startsWith('client/react-providers/') ||
     relativePath === 'client/contexts.ts' ||
     relativePath === 'client/components/provider.tsx' ||
-    relativePath === 'tests/client-react-provider.test.tsx'
+    relativePath === 'tests/client/react-provider.test.tsx'
   ) {
     return capabilities.client.reactProviders;
   }
   if (
     relativePath === 'client/components/plugin-component.tsx' ||
-    relativePath === 'tests/component.test.tsx'
+    relativePath === 'tests/client/component.test.tsx'
   ) {
     return capabilities.client.components;
   }
@@ -123,7 +130,7 @@ function includeTemplateFile(
   if (
     relativePath === 'server/index.ts' ||
     relativePath === 'server/plugin.ts' ||
-    relativePath === 'tests/plugin.test.ts'
+    relativePath === 'tests/server/plugin.test.ts'
   ) {
     return hasServerPlugin(capabilities);
   }
@@ -134,37 +141,44 @@ function includeTemplateFile(
     relativePath.startsWith('server/providers/') ||
     relativePath.startsWith('server/services/') ||
     relativePath === 'server/tokens.ts' ||
-    relativePath === 'tests/server-provider.test.ts'
+    relativePath === 'tests/server/service-provider.test.ts'
   ) {
     return capabilities.server.serviceProviders;
   }
   if (
     relativePath === 'server/routes/index.ts' ||
-    relativePath === 'tests/routes.test.ts'
+    relativePath === 'tests/server/routes.test.ts'
   ) {
     return capabilities.server.routes;
   }
   if (
     relativePath.startsWith('server/jobs/') ||
-    relativePath === 'tests/jobs.test.ts'
+    relativePath === 'tests/server/jobs.test.ts'
   ) {
     return capabilities.server.jobs;
   }
   if (
     relativePath.startsWith('database/') ||
-    relativePath === 'tests/database.test.ts'
+    relativePath.startsWith('tests/database/')
   ) {
     return capabilities.database;
   }
   if (
     relativePath === 'components.json' ||
-    relativePath === 'client/styles.css' ||
+    relativePath === 'client/styles.css'
+  ) {
+    return hasBrowserCode(capabilities);
+  }
+  if (
     relativePath === 'registry.config.json' ||
     relativePath.startsWith('registry/')
   ) {
     return capabilities.registry;
   }
-  if (relativePath.startsWith('cli/') || relativePath === 'tests/cli.test.ts') {
+  if (
+    relativePath.startsWith('cli/') ||
+    relativePath.startsWith('tests/cli/')
+  ) {
     return capabilities.cli;
   }
   if (relativePath.startsWith('skills/')) return capabilities.skills;
@@ -182,6 +196,7 @@ function outputPathForTemplateFile(relativePath: string): string {
     case 'package.template.json':
       return 'package.json';
     case 'vitest.config.template.ts':
+    case 'vitest.config.node.template.ts':
       return 'vitest.config.ts';
     default:
       return relativePath;
@@ -495,7 +510,7 @@ async function renderManifest(
     devDependencies['@types/node'] = 'catalog:';
   // `@types/react` is not a peer, so it stays. `react` itself is declared once, as a peer.
   if (react) devDependencies['@types/react'] = 'catalog:';
-  if (capabilities.registry) {
+  if (browserCode) {
     devDependencies.shadcn = 'catalog:';
     devDependencies.tailwindcss = 'catalog:';
     devDependencies['tw-animate-css'] = 'catalog:';
@@ -522,6 +537,19 @@ async function renderManifest(
     ...(serverPlugin ? { engines: { node: '>=24.0.0' } } : {}),
     sideEffects: false,
     exports,
+    ...(browserCode
+      ? {
+          imports: Object.fromEntries(
+            ['components', 'hooks', 'lib', 'extensions'].map((directory) => [
+              `#${directory}/*`,
+              {
+                development: `./client/${directory}/*.js`,
+                default: `./dist/client/${directory}/*.js`,
+              },
+            ]),
+          ),
+        }
+      : {}),
     files,
     ...(capabilities.registry
       ? {
@@ -530,7 +558,20 @@ async function renderManifest(
           },
         }
       : {}),
-    publishConfig: { access: 'public', exports: publishExports },
+    publishConfig: {
+      access: 'public',
+      exports: publishExports,
+      ...(browserCode
+        ? {
+            imports: Object.fromEntries(
+              ['components', 'hooks', 'lib', 'extensions'].map((directory) => [
+                `#${directory}/*`,
+                `./dist/client/${directory}/*.js`,
+              ]),
+            ),
+          }
+        : {}),
+    },
     scripts,
     ...(Object.keys(dependencies).length > 0
       ? { dependencies: sortByKey(dependencies) }
@@ -567,7 +608,7 @@ function renderTsconfig(capabilities: PluginCapabilities): string {
           lib: ['ES2022', 'DOM', 'DOM.Iterable'],
         }
       : {}),
-    ...(browserCode ? { paths: { '@/*': ['./client/*'] } } : {}),
+    ...(browserCode ? { customConditions: ['development'] } : {}),
     rootDir: '.',
     outDir: 'dist',
   };
@@ -683,7 +724,7 @@ function renderPluginTest(
   ]
     .filter(Boolean)
     .join('\n');
-  return `import { describe, expect, it } from 'vitest';\n\nimport plugin from '../server/index.js';\n\ndescribe(${literal(context.packageName)}, () => {\n  it('declares only its selected Server capabilities', () => {\n    expect(plugin).toMatchObject({\n      packageName: ${literal(context.packageName)},\n${checks}\n    });\n  });\n});\n`;
+  return `import { describe, expect, it } from 'vitest';\n\nimport plugin from '../../server/index.js';\n\ndescribe(${literal(context.packageName)}, () => {\n  it('declares only its selected Server capabilities', () => {\n    expect(plugin).toMatchObject({\n      packageName: ${literal(context.packageName)},\n${checks}\n    });\n  });\n});\n`;
 }
 
 function renderReadme(
@@ -709,7 +750,10 @@ function renderReadme(
     selected.length > 0
       ? selected.map((value) => `- \`${value}\``).join('\n')
       : '- Package foundation only';
-  return `# ${context.packageName}\n\n${context.description}\n\n## Generated capabilities\n\n${list}\n\nImplement only the public behavior this plugin owns. Keep declarations, exports, dependencies, tests, README, and Plugin Skills aligned when capabilities change. Every concrete Server Route must own and test its authentication and authorization boundary.\n\n## Verification\n\n\`\`\`bash\npnpm --filter ${context.packageName} lint\npnpm --filter ${context.packageName} typecheck\npnpm --filter ${context.packageName} test\npnpm --filter ${context.packageName} build\n\`\`\`\n`;
+  const clientUi = hasBrowserCode(capabilities)
+    ? `\n\n## Adding UI components\n\nRun shadcn from this plugin's directory. \`components.json\`, the generation stylesheet and tooling are included independently of the \`registry\` recipe-publishing capability.\n\n\`\`\`bash\npnpm exec shadcn add @nocobase/permission-editor --dry-run\npnpm exec shadcn add @nocobase/permission-editor\n\`\`\`\n\nKeep the generated \`#components/*\` imports: \`package.json#imports\` resolves development sources, and \`publishConfig.imports\` binds every published condition to \`dist/client\`. No TypeScript paths or host Vite alias is required. Review added client value dependencies and declare them as peers, keep exported types explicit for declarations, and run this plugin's checks before rendering it in the consuming application.`
+    : '';
+  return `# ${context.packageName}\n\n${context.description}\n\n## Generated capabilities\n\n${list}\n\nImplement only the public behavior this plugin owns. Keep declarations, exports, dependencies, tests, README, and Plugin Skills aligned when capabilities change. Every concrete Server Route must own and test its authentication and authorization boundary.${clientUi}\n\n## Verification\n\n\`\`\`bash\npnpm --filter ${context.packageName} lint\npnpm --filter ${context.packageName} typecheck\npnpm --filter ${context.packageName} test\npnpm --filter ${context.packageName} build\n\`\`\`\n`;
 }
 
 function renderSkill(
@@ -802,7 +846,7 @@ export async function renderTemplate(options: {
                 ? renderClientPlugin(options.context, options.capabilities)
                 : file.outputPath === 'server/plugin.ts'
                   ? renderServerPlugin(options.context, options.capabilities)
-                  : file.outputPath === 'tests/plugin.test.ts'
+                  : file.outputPath === 'tests/server/plugin.test.ts'
                     ? renderPluginTest(options.context, options.capabilities)
                     : file.outputPath.startsWith('skills/')
                       ? renderSkill(options.context, options.capabilities)

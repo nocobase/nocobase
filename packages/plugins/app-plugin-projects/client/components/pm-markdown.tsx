@@ -4,6 +4,7 @@ import Markdown, { defaultUrlTransform, type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { MENTION_KIND_PATTERN } from '../lib/mentions.js';
+import { remarkCjkAutolink } from '../lib/remark-cjk-autolink.js';
 import { cn } from 'cn';
 
 import type { TocHeading } from './pm-markdown-toc.js';
@@ -170,7 +171,7 @@ export function PmMarkdown({
   return (
     <div className={cn('min-w-0 text-sm wrap-anywhere', className)}>
       <Markdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkCjkAutolink]}
         urlTransform={urlTransform}
         components={components}
       >

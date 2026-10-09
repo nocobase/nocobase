@@ -12,15 +12,15 @@ Use this reference for plugin-owned pages, React Providers, reusable component e
 | Internal component        | Another module inside the plugin                 | Plugin implementation                     |
 | Registry component        | Target App after materialization                 | App                                       |
 
-This ownership determines which import aliases, UI primitives, locales, dependencies, exports, tests, and upgrade rules apply.
+This ownership determines which package imports, UI primitives, locales, dependencies, exports, tests, and upgrade rules apply.
 
 ## Start common UI with shadcn/ui
 
 Before implementing buttons, inputs, forms, selects, dialogs, sheets, tables, tabs, tooltips, dropdown menus, and similar common patterns, check shadcn/ui and generate the matching primitive into the plugin. Use ordinary semantic HTML for document structure and Tailwind utilities for composition, but do not hand-build a duplicate interactive primitive when shadcn provides one.
 
-shadcn/ui distributes source rather than a shared NocoBase runtime package. Runtime UI used by a plugin belongs to that plugin under `client/components/ui/`, is published with the plugin, and must not import the target App's `client/components/ui/`. Registry items use a different ownership model: once materialized, their source belongs to the App and may import the App's `@/components/ui/*`.
+shadcn/ui distributes source rather than a shared NocoBase runtime package. Runtime UI used by a plugin belongs to that plugin under `client/components/ui/`, is published with the plugin, and resolves through that plugin's `package.json#imports`. Registry items use a different ownership model: once installed, their source belongs to the receiving package and resolves its own `#components/ui/*` mappings.
 
-When a plugin first needs shadcn components, add a plugin-local `components.json` using the repository's `base-nova` style:
+Inspect the plugin's `components.json`, `package.json#imports`, `publishConfig.imports`, and `tsconfig.json` before generation. When a plugin lacks shadcn setup, use the following package-local configuration with the repository's `base-nova` style:
 
 ```json
 {
@@ -38,11 +38,14 @@ When a plugin first needs shadcn components, add a plugin-local `components.json
   "iconLibrary": "lucide",
   "rtl": false,
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "components": "#components",
+    "utils": "#lib/utils",
+    "ui": "#components/ui",
+    "lib": "#lib",
+    "hooks": "#hooks"
+  },
+  "registries": {
+    "@nocobase": "https://ui.nocobase.com/r/{name}.json"
   },
   "menuColor": "default",
   "menuAccent": "subtle"
@@ -59,19 +62,40 @@ Provide the generation entrypoint at `client/styles.css`:
 /* Generation entrypoint only. The host application owns the theme tokens. */
 ```
 
-Point the plugin's TypeScript alias at its own Client source so the CLI can generate files:
+Declare the package's source and compiled targets in `package.json`:
 
 ```json
 {
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./client/*"]
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./dist/client/components/*.js"
+    },
+    "#hooks/*": {
+      "development": "./client/hooks/*.js",
+      "default": "./dist/client/hooks/*.js"
+    },
+    "#lib/*": {
+      "development": "./client/lib/*.js",
+      "default": "./dist/client/lib/*.js"
+    },
+    "#extensions/*": {
+      "development": "./client/extensions/*.js",
+      "default": "./dist/client/extensions/*.js"
+    }
+  },
+  "publishConfig": {
+    "imports": {
+      "#components/*": "./dist/client/components/*.js",
+      "#hooks/*": "./dist/client/hooks/*.js",
+      "#lib/*": "./dist/client/lib/*.js",
+      "#extensions/*": "./dist/client/extensions/*.js"
     }
   }
 }
 ```
 
-The alias supports generation and local type resolution only. TypeScript does not rewrite it in emitted JavaScript, and a target App's `@/` alias points to that App rather than to a compiled plugin. After generation, change every runtime internal import to an explicit relative `.js` path, including imports from `client/components/ui/` and `client/lib/`.
+Keep existing `publishConfig` fields when adding these mappings. Set `compilerOptions.customConditions` to `["development"]` in the plugin's NodeNext tsconfig so shadcn and TypeScript find the source files. TypeScript resolves the `.js` targets to `.ts` or `.tsx` sources and leaves the `#` import in emitted JavaScript; pnpm replaces the published mappings with unconditional `dist/client` targets, including when the consuming application selects `development`. No TS `paths` or Vite alias is needed, and installed imports need no rewrite. An import of a directory needs an exact mapping to its `index.js`.
 
 Keep `shadcn`, `tailwindcss`, and `tw-animate-css` in `devDependencies`. Put packages imported as values by the generated Client source in `peerDependencies`, commonly `@base-ui/react`, `class-variance-authority`, `cn`, and `lucide-react` when used. Generated primitives import `cn` from the `cn` package, which stays a package import; do not add `clsx` or `tailwind-merge`. Use the workspace catalog entries and remove generated dependencies that the retained source does not import.
 
@@ -88,7 +112,7 @@ Do not use `--overwrite` over customized primitives without reviewing and accept
 
 Generated shadcn source targets application source by default. Before treating it as plugin runtime source:
 
-- Replace `@/` imports with relative `.js` imports that remain valid below `dist/client/`.
+- Preserve generated package-local `#` imports. Keep hand-written relative imports explicit with `.js` extensions.
 - Give exported components, functions, constants, props, and default parameters explicit types suitable for declaration output.
 - Preserve accessible names, focus behavior, disabled state, keyboard interaction, and theme-responsive classes.
 - Remove unused generated files and peer dependencies.
@@ -107,7 +131,7 @@ When a plugin needs the application's page structure or route overlays, copy the
 | Route dialog or drawer                 | `route-dialog`, `route-drawer` | `route-dialog.tsx` or `route-drawer.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts` |
 | Covering child page                    | `route-child-page`             | `route-child-page.tsx`                                                                        |
 
-Copy every file an item lists: `route-dialog` and `route-drawer` share `route-overlay.tsx` and the one Context `use-route-overlay.ts` declares, so a plugin that uses both keeps a single copy of each. `page-header` compiles as copied. The others import `cn` from the `cn` package, which stays as it is, and the overlays also import the `button` and `dialog` primitives as `@/components/ui/<name>`; rewrite those to relative `.js` paths to the plugin's own primitives, generating missing primitives with the workflow above. Declare the packages each item lists in `dependencies` as peers. Keep these copies private unless an approved public export is required.
+Copy every file an item lists: `route-dialog` and `route-drawer` share `route-overlay.tsx` and the one Context `use-route-overlay.ts` declares, so a plugin that uses both keeps a single copy of each. Their imports remain unchanged: `cn` comes from the `cn` package and `#components/ui/<name>` resolves the plugin's own primitives through its package mappings. Generate missing primitives with the workflow above. Declare the packages each item lists in `dependencies` as peers. Keep these copies private unless an approved public export is required.
 
 The way back from a page below another one is not a UI Library item: copy `BackButton` from an application template's `client/components/back-button.tsx`, such as `packages/templates/app-template-default/client/components/back-button.tsx`, into the plugin's `client/components/` the same way.
 

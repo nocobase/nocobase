@@ -23,8 +23,6 @@ After generation, use the pnpm version specified by the project's `package.json`
 For manual creation, run the command from the application directory’s parent. This example uses an empty directory named `my-app`:
 
 ```bash
-# Configure the internal registry
-pnpm config set @nocobase:registry https://npm.nocobase.ai/
 # Allow newly published versions and create the application
 PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 ```
@@ -33,13 +31,7 @@ PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 
 The command downloads the template, generates the project and configuration, installs dependencies, and synchronizes plugin development guidance. Wait for completion before continuing.
 
-The first command configures the internal registry for `@nocobase` packages. The second sets `minimumReleaseAge` to `0` for this creation process so it can download newly published versions.
-
-Once the package is officially published to the public npm registry, the creation command will simply be:
-
-```bash
-pnpm create @nocobase/app my-app
-```
+NocoBase packages are published to the public npm registry. `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` applies only to this creation process and lets it download newly published versions.
 
 Creation stops at a project that is ready to configure. It writes no `config.yml`; the next step does.
 

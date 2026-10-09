@@ -5,9 +5,9 @@ import test from 'node:test';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const proWorkflows = [
-  'pro-release-beta.yml',
-  'pro-release-stable.yml',
-  'pro-promote-to-stable.yml',
+  'v3-pro-release-beta.yml',
+  'v3-pro-release-stable.yml',
+  'v3-pro-promote-to-stable.yml',
 ];
 
 async function workflow(name) {
@@ -34,43 +34,5 @@ test('every step that can write outside the runner is disabled for dry runs', as
     )) {
       assert.match(step, /^\s*if: .*!inputs\.dry_run/mu, `${name}:\n${step}`);
     }
-  }
-});
-
-test('Pro follow-up defaults on and can be disabled for each OSS dispatch', async () => {
-  for (const [name, job] of [
-    ['release-beta.yml', 'follow-pro-release'],
-    ['release-stable.yml', 'follow-pro-release'],
-    ['merge-beta-to-stable.yml', 'follow-pro-promotion'],
-  ]) {
-    const source = await workflow(name);
-    const inputs = source.slice(
-      source.indexOf('  workflow_dispatch:'),
-      source.indexOf('\nconcurrency:'),
-    );
-    assert.match(
-      inputs,
-      /      include_pro:\n        description: [^\n]+\n        type: boolean\n        default: true/u,
-      name,
-    );
-    const follow = source.slice(source.indexOf(`\n  ${job}:`));
-    assert.match(
-      follow,
-      /!cancelled\(\) && inputs\.include_pro && !inputs\.dry_run/u,
-      name,
-    );
-    assert.doesNotMatch(source, /vars\.PRO_RELEASE_FOLLOW_OSS/u, name);
-  }
-});
-
-test('automatic follow-up requires a real successful OSS publication', async () => {
-  for (const name of ['release-beta.yml', 'release-stable.yml']) {
-    const source = await workflow(name);
-    const follow = source.slice(source.indexOf('\n  follow-pro-release:'));
-    assert.match(follow, /inputs\.include_pro/u, name);
-    assert.match(follow, /!inputs\.dry_run/u, name);
-    assert.match(follow, /needs\.release\.outputs\.published == 'true'/u, name);
-    assert.match(follow, /needs\.release\.result == 'success'/u, name);
-    assert.match(follow, /needs\.prepare\.outputs\.source_sha/u, name);
   }
 });

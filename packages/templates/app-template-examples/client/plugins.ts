@@ -1,3 +1,5 @@
+import mail from '@nocobase/app-plugin-mail/client';
+import mailExample from '@nocobase/app-plugin-mail-example/client';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/client';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/client';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/client';
@@ -17,6 +19,8 @@ import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
 import notificationExample from '@nocobase/app-plugin-notification-example/client';
 import jobsExample from '@nocobase/app-plugin-jobs-example/client';
+import lifecycleExample from '@nocobase/app-plugin-lifecycle-example/client';
+import officeFlowsExample from '@nocobase/app-plugin-office-flows-example/client';
 import routesExample from '@nocobase/app-plugin-routes-example/client';
 import i18n from '@nocobase/app-plugin-i18n/client';
 import workflow from '@nocobase/app-plugin-workflow/client';
@@ -47,6 +51,8 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   notificationInApp(),
   notificationExample(),
   jobsExample(),
+  lifecycleExample(),
+  officeFlowsExample(),
   routesExample(),
   workflow(),
   notification(),
@@ -54,6 +60,8 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   fileExample(),
   scheduler(),
+  mail(),
+  mailExample(),
 ]);
 
 export default clientPlugins;

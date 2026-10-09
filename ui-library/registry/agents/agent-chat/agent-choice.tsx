@@ -11,7 +11,7 @@ import type { OnlineModelEntry } from '@nocobase/app-plugin-agents/shared/agents
 import type { ChatAgent } from '@nocobase/app-plugin-agents/shared/conversations';
 import type { ReactElement } from 'react';
 
-import { AgentPicker } from '@/components/agent-picker';
+import { AgentPicker } from '#components/agent-picker';
 
 import { useAgentPickerLabels } from './chat-i18n.js';
 import { ModelPicker } from './model-picker.js';

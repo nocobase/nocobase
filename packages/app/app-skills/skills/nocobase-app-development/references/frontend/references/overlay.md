@@ -23,7 +23,7 @@ This document shows how to write overlays. For the rules on choosing and stackin
 - Stacking: a drawer can open dialogs and confirmation dialogs on top of it; a dialog can open only a confirmation dialog on top of it. Esc and clicking the backdrop close only the topmost layer (guideline I1).
 - This table replaces the overlay table of the shadcn skill, which gives record details to `Sheet` ([section 3 of `shadcn.md`](shadcn.md#3-where-this-application-departs-from-the-skill)).
 
-Component locations: `@/components/route-dialog`, `@/components/route-drawer`, `@/components/use-route-overlay`, `@/components/ui/alert-dialog`, `@/components/ui/sheet`. The last two are not in the template; add them with `yes n | pnpm exec shadcn add alert-dialog sheet` ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
+Component locations: `#components/route-dialog`, `#components/route-drawer`, `#components/use-route-overlay`, `#components/ui/alert-dialog`, `#components/ui/sheet`. The last two are not in the template; add them with `yes n | pnpm exec shadcn add alert-dialog sheet` ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
 
 ## 2. Overlays as child routes
 
@@ -171,8 +171,8 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useCallback, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 
-import { RouteDialog } from '@/components/route-dialog';
-import { useRouteOverlay } from '@/components/use-route-overlay';
+import { RouteDialog } from '#components/route-dialog';
+import { useRouteOverlay } from '#components/use-route-overlay';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -182,7 +182,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '#components/ui/alert-dialog';
 
 import { ProjectForm } from '../project-form.js';
 import type { ProjectEditOutletContext } from '../types.js';
@@ -310,7 +310,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { InfoIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '#components/ui/button';
 import {
   Sheet,
   SheetClose,
@@ -320,7 +320,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
+} from '#components/ui/sheet';
 
 import { PROJECT_STATUSES } from './types.js';
 
@@ -371,7 +371,7 @@ The details below describe `sheet.tsx` as the registry writes it today; the file
 
 ## 6. Plain dialogs: sizes and scrolling
 
-A `Dialog` from `@/components/ui/dialog` defaults to `sm:max-w-sm` and grows with its content without limit. Give it the width guideline I1 assigns to what it holds, and when its content can outgrow the screen, cap its height with the one idiom `max-h-[calc(100dvh-2rem)]` and scroll only its body, so the header and the footer's buttons stay in view (guideline A4):
+A `Dialog` from `#components/ui/dialog` defaults to `sm:max-w-sm` and grows with its content without limit. Give it the width guideline I1 assigns to what it holds, and when its content can outgrow the screen, cap its height with the one idiom `max-h-[calc(100dvh-2rem)]` and scroll only its body, so the header and the footer's buttons stay in view (guideline A4):
 
 ```tsx
 // A small form: 1–4 fields, the width alone.

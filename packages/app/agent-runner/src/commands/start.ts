@@ -15,6 +15,7 @@ import { ensureHome } from '../lib/home.ts';
 import { detectInstallation } from '../lib/install.ts';
 import { delay } from '../lib/http.ts';
 import { selfCommand } from '../lib/self.ts';
+import { parseSlotsFlag } from '../lib/slots.ts';
 import { runnerCommandLine } from '../host.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, RunnerDaemon } from '../core/loop.ts';
@@ -35,16 +36,15 @@ export default class Start extends RunnerCommand {
     `\`${runnerCommandLine('stop')}\` stops it. One daemon serves every application this runner is registered with.`;
   static override flags: {
     foreground: Interfaces.BooleanFlag<boolean>;
-    slots: Interfaces.OptionFlag<number | undefined>;
+    slots: Interfaces.OptionFlag<string | undefined>;
     'agent-home': Interfaces.OptionFlag<string | undefined>;
   } = {
     foreground: Flags.boolean({
       description: 'Run in this terminal until interrupted.',
     }),
-    slots: Flags.integer({
-      description: 'How many runs at once. Defaults to the registered number.',
-      min: 1,
-      max: 32,
+    slots: Flags.string({
+      description:
+        'How many runs at once, for this start: a total (3), limits per coding tool (claude=2,codex=1), or both. Defaults to the registered ones.',
     }),
     'agent-home': Flags.string({
       description:
@@ -56,6 +56,8 @@ export default class Start extends RunnerCommand {
 
   async run(): Promise<{ pid: number }> {
     const { flags } = await this.parse(Start);
+    const slotsFlag =
+      flags.slots === undefined ? {} : parseSlotsFlag(flags.slots);
     const paths = this.paths;
     const connections = await readConnections(paths);
     if (connections.length === 0) {
@@ -91,9 +93,7 @@ export default class Start extends RunnerCommand {
           ...args,
           'start',
           '--foreground',
-          ...(flags.slots === undefined
-            ? []
-            : ['--slots', String(flags.slots)]),
+          ...(flags.slots === undefined ? [] : ['--slots', flags.slots]),
         ],
         { detached: true, stdio: ['ignore', fd, fd], env: process.env },
       );
@@ -134,7 +134,10 @@ export default class Start extends RunnerCommand {
       settings,
       connections,
       adapters: loadAdapters(),
-      ...(flags.slots === undefined ? {} : { slots: flags.slots }),
+      ...(slotsFlag.slots === undefined ? {} : { slots: slotsFlag.slots }),
+      ...(slotsFlag.toolSlots === undefined
+        ? {}
+        : { toolSlots: slotsFlag.toolSlots }),
       timings: timingsFromEnv(),
       log,
       ...(selfUpdate === undefined ? {} : { selfUpdate }),

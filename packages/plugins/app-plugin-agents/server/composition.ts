@@ -129,6 +129,7 @@ import {
   createSweeper,
   resolveAgentCli,
   runsHeldBy,
+  runsHeldByTool,
   openCounts,
   type AgentCli,
   type Availability,
@@ -321,7 +322,7 @@ export function createAgents(deps: AgentsDeps): Agents {
 
   const people = createPeople();
   const dist = createDistService(deps.dist);
-  const slots = createSlots(runsHeldBy);
+  const slots = createSlots(runsHeldBy, runsHeldByTool);
   const runners = createRunnerService({
     tx,
     ids,

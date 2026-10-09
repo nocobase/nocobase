@@ -193,5 +193,12 @@
     "@nocobase/repository-input": "workspace:^",
     "@nocobase/app-cli": "workspace:^"
   },
-  "description": "NocoBase 3 application template with the standard product capabilities."
+  "description": "NocoBase 3 application template with the standard product capabilities.",
+  "imports": {
+    "#components/*": "./client/components/*.js",
+    "#hooks/*": "./client/hooks/*.js",
+    "#lib/*": "./client/lib/*.js",
+    "#extensions/*": "./client/extensions/*.js",
+    "#pages/*": "./client/pages/*.js"
+  }
 }

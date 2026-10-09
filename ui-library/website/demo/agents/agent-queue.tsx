@@ -1,11 +1,11 @@
 import { useState, type ReactElement } from 'react';
 
-import { AgentQueue } from '@/extensions/nocobase-agent-queue/agent-queue';
+import { AgentQueue } from '#extensions/nocobase-agent-queue/agent-queue';
 import type {
   AgentQueueData,
   AgentQueueEntry,
   AgentQueueRow,
-} from '@/extensions/nocobase-agent-queue/types';
+} from '#extensions/nocobase-agent-queue/types';
 
 const VIEWER = 'u-me';
 const ago = (seconds: number) =>

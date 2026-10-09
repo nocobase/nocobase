@@ -1,7 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { RouteDialog } from '@/components/route-dialog';
-import { useRouteOverlay } from '@/components/use-route-overlay';
-import { Button } from '@/components/ui/button';
+import { RouteDialog } from '#components/route-dialog';
+import { useRouteOverlay } from '#components/use-route-overlay';
+import { Button } from '#components/ui/button';
 
 function CloseAction() {
   const { t } = useTranslation();

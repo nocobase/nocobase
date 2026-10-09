@@ -10,16 +10,16 @@ import {
   useParams,
 } from 'react-router';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '#components/ui/button';
+import { Input } from '#components/ui/input';
+import { Label } from '#components/ui/label';
 
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { RouteChildPage } from '@/components/route-child-page';
-import { RouteDialog } from '@/components/route-dialog';
-import { RouteDrawer } from '@/components/route-drawer';
-import { useRouteOverlay } from '@/components/use-route-overlay';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { RouteChildPage } from '#components/route-child-page';
+import { RouteDialog } from '#components/route-dialog';
+import { RouteDrawer } from '#components/route-drawer';
+import { useRouteOverlay } from '#components/use-route-overlay';
 
 interface Order {
   readonly id: string;

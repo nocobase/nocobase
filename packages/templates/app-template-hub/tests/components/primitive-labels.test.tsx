@@ -6,10 +6,10 @@ import { act, render, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { Spinner } from '@/components/ui/spinner';
-import { createToastManager, Toaster } from '@/components/ui/toast';
+import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle } from '#components/ui/sheet';
+import { Spinner } from '#components/ui/spinner';
+import { createToastManager, Toaster } from '#components/ui/toast';
 
 import zhCN from '../../client/locales/zh-CN.js';
 

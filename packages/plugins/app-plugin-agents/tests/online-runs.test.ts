@@ -438,6 +438,37 @@ describe('online runs', () => {
     ).toMatchObject({ modelService: 'mock', model: 'm1' });
   });
 
+  it('sends one session id for every run of a conversation, and another for another conversation', async () => {
+    h = await createHarness();
+    const port = fakePort([say('One.')]);
+    const sessions: (string | null | undefined)[] = [];
+    await answerWith({
+      ...port,
+      languageModel(ref, options) {
+        sessions.push(options?.session);
+        return port.languageModel(ref, options);
+      },
+    });
+    const agentId = await onlineAgent();
+    const first = await converse(agentId, 'Hello?');
+    await executor.drain();
+    await h.services.conversations.send(ALICE, first.id, {
+      content: 'Again?',
+    });
+    await executor.drain();
+    await converse(agentId, 'New one.');
+    await executor.drain();
+    expect(sessions).toHaveLength(3);
+    expect(sessions[0]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
+    );
+    expect(sessions[1]).toBe(sessions[0]);
+    expect(sessions[2]).not.toBe(sessions[0]);
+    // A hash: it names neither the conversation nor the agent.
+    expect(sessions[0]).not.toContain(first.id);
+    expect(sessions[0]).not.toContain(agentId);
+  });
+
   it('starts a conversation on the model chosen before its first message', async () => {
     h = await createHarness();
     const port = fakePort([say('Hi.')]);

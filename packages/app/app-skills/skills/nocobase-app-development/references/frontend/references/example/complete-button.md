@@ -14,8 +14,8 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { CheckIcon } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 
 import type { Project } from './types.js';
 

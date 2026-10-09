@@ -3,7 +3,7 @@ import {
   type AppClientReactProviderDefinition,
 } from '@nocobase/app-client/plugins';
 
-import { Toaster } from '@/components/ui/toast';
+import { Toaster } from '#components/ui/toast';
 
 import { AppThemeProvider } from './theme/theme-provider.js';
 

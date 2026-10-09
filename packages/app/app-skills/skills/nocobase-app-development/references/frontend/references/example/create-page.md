@@ -12,12 +12,12 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useOutletContext } from 'react-router';
 
-import { BackButton } from '@/components/back-button';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { RouteChildPage } from '@/components/route-child-page';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { BackButton } from '#components/back-button';
+import { PageContainer } from '#components/page-container';
+import { PageHeader } from '#components/page-header';
+import { RouteChildPage } from '#components/route-child-page';
+import { Button } from '#components/ui/button';
+import { Spinner } from '#components/ui/spinner';
 
 import { ProjectForm } from './project-form.js';
 import type { ProjectsOutletContext } from './types.js';

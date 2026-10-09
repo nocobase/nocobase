@@ -204,7 +204,7 @@ import {
 import {
   FileUploadField,
   FileList,
-} from '@/extensions/nocobase-file-component-ui';
+} from '#extensions/nocobase-file-component-ui';
 
 export function InvoiceAttachments(): ReactElement {
   const manager = useService(clientFileRepositoryManagerToken);

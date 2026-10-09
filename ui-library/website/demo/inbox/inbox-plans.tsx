@@ -1,8 +1,8 @@
 import { ClipboardListIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { InboxDetailHeader } from '@/extensions/nocobase-inbox/inbox-detail';
+import { Button } from '#components/ui/button';
+import { InboxDetailHeader } from '#extensions/nocobase-inbox/inbox-detail';
 import { cn } from 'cn';
 
 import { demoPlans } from './inbox-data.js';

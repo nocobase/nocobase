@@ -95,5 +95,6 @@ export { cliPackageFor, type AgentCliSource } from './cli-package.js';
 export {
   createRunnerView,
   runsHeldBy,
+  runsHeldByTool,
   type RunnerView,
 } from './runner-view.js';

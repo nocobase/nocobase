@@ -6,7 +6,7 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from '@/components/ui/input-group';
+} from '#components/ui/input-group';
 
 export interface PasswordInputProps extends Omit<
   ComponentProps<'input'>,

@@ -5,7 +5,9 @@
 //
 // - heartbeat, per application, every 15 s: reports the tools, that application's active runs and the free slots; the
 //   answer names the runs whose cancel was requested, and the supervisor makes sure their workers stop;
-// - claim: while a slot is free, asks for work. The slots are shared by every application. With one application the
+// - claim: while a slot is free, asks for work. The slots are shared by every application, and so are the limits per
+//   coding tool (`settings.toolSlots`): each claim says how many runs of each limited tool the runner can still take
+//   (`ClaimRequest.tools`), and the heartbeat reports them (`load.tools`). With one application the
 //   claim long-polls (`POST /api/agents/runners/claim?wait=true`, held up to 25 s); an empty answer that came back early means the
 //   server does not hold the poll, so the loop waits out the rest of the 15 s fallback interval. With several, the
 //   claims rotate across them without waiting, starting each round with the application after the one that last had
@@ -44,6 +46,8 @@ import {
   routePath,
   type RunnerFeature,
   type ToolInfo,
+  type ToolLoad,
+  type ToolSlots,
   type AgentTool,
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
@@ -140,6 +144,8 @@ export interface DaemonOptions {
   connections: readonly AppConnection[];
   adapters: Map<AgentTool, AgentAdapter>;
   slots?: number;
+  /** Limits per coding tool for this start; the settings' otherwise. */
+  toolSlots?: ToolSlots;
   timings?: Timings;
   log: (message: string) => void;
   /** Overrides the client built for a registration, by its key; for tests. */
@@ -175,6 +181,7 @@ export class RunnerDaemon {
   private readonly links: AppLink[];
   private readonly timings: Timings;
   private readonly slots: number;
+  private readonly toolSlots: ToolSlots;
   private readonly supervisor: Supervisor;
   private readonly stopping = new AbortController();
   private slotFreed: (() => void) | undefined;
@@ -204,6 +211,7 @@ export class RunnerDaemon {
     }));
     this.timings = options.timings ?? {};
     this.slots = Math.max(1, options.slots ?? options.settings.slots);
+    this.toolSlots = options.toolSlots ?? options.settings.toolSlots ?? {};
     this.supervisor = new Supervisor({
       paths: options.paths,
       clientFor: (key) => this.links.find((link) => link.key === key)?.client,
@@ -218,6 +226,29 @@ export class RunnerDaemon {
 
   get activeRuns(): string[] {
     return [...this.supervisor.runs.keys()];
+  }
+
+  /** The coding tools it keeps a limit of their own for. */
+  private get limitedTools(): AgentTool[] {
+    return (Object.keys(this.toolSlots) as AgentTool[]).filter(
+      (tool) => this.toolSlots[tool] !== undefined,
+    );
+  }
+
+  /** How many runs of `tool` it holds at most: its limit, never above the total. */
+  private toolLimit(tool: AgentTool): number {
+    return Math.min(this.toolSlots[tool] ?? this.slots, this.slots);
+  }
+
+  /** How many runs of each limited tool it could take now, across every application. */
+  toolRoom(): Partial<Record<AgentTool, number>> {
+    const room: Partial<Record<AgentTool, number>> = {};
+    for (const tool of this.limitedTools)
+      room[tool] = Math.max(
+        0,
+        this.toolLimit(tool) - this.supervisor.heldOf(tool),
+      );
+    return room;
   }
 
   private get live(): AppLink[] {
@@ -264,7 +295,9 @@ export class RunnerDaemon {
           (link) =>
             `${link.connection.registration.app.name || link.key} (${link.connection.registration.runnerId})`,
         )
-        .join(', ')}; ${this.slots} slot(s)`,
+        .join(
+          ', ',
+        )}; ${this.slots} slot(s)${this.limitedTools.length > 0 ? ` (${this.limitedTools.map((tool) => `${tool} ${this.toolLimit(tool)}`).join(', ')})` : ''}`,
     );
 
     const recovered = await recoverOrphans({
@@ -398,6 +431,19 @@ export class RunnerDaemon {
           load: {
             slots: this.slots,
             free: Math.max(0, this.slots - this.supervisor.size),
+            ...(this.limitedTools.length > 0
+              ? {
+                  tools: Object.fromEntries(
+                    Object.entries(this.toolRoom()).map(([tool, free]) => [
+                      tool,
+                      {
+                        slots: this.toolLimit(tool as AgentTool),
+                        free,
+                      } satisfies ToolLoad,
+                    ]),
+                  ),
+                }
+              : {}),
           },
         },
         HeartbeatResponseSchema,
@@ -518,7 +564,10 @@ export class RunnerDaemon {
       this.timings.pollTimeoutMs ?? link.connection.registration.pollTimeoutMs;
     const response: ClaimResponse = await link.client.post(
       RUNNER_ROUTES.claim,
-      { free },
+      {
+        free,
+        ...(this.limitedTools.length > 0 ? { tools: this.toolRoom() } : {}),
+      },
       ClaimResponseSchema,
       {
         ...(wait ? { query: { wait: 'true' } } : {}),
@@ -578,6 +627,16 @@ export class RunnerDaemon {
           .catch(() => undefined);
         continue;
       }
+      // An application that does not know limits per tool may hand over a run of a full tool: it runs all the same.
+      const limit = this.toolSlots[payload.tool.kind];
+      if (
+        limit !== undefined &&
+        this.supervisor.heldOf(payload.tool.kind) >=
+          this.toolLimit(payload.tool.kind)
+      )
+        this.options.log(
+          `run ${payload.run.id}: ${payload.tool.kind} is over its limit of ${this.toolLimit(payload.tool.kind)}; ${link.key} does not apply limits per tool`,
+        );
       try {
         await this.supervisor.spawn(link.key, payload);
       } catch (error) {

@@ -87,7 +87,6 @@ export default createAppViteConfig(async (environment) => {
     },
     resolve: {
       dedupe: ['react', 'react-dom', 'react-router'],
-      alias: [{ find: '@', replacement: path.resolve(__dirname, './client') }],
     },
   };
 });

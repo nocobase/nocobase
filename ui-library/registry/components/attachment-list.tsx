@@ -34,9 +34,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+} from '#components/ui/alert-dialog';
+import { Button } from '#components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
 import { cn } from 'cn';
 
 export interface AttachmentFile {

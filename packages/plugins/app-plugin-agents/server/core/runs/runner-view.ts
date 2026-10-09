@@ -4,6 +4,7 @@
  * subject's link of a private kind's run the viewer is not part of. `runnerForViewer` leaves out what identifies a
  * runner's machine for those who may not see it.
  */
+import type { AgentTool } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import {
@@ -37,6 +38,29 @@ export async function runsHeldBy(
   for (const run of held)
     if (run.runnerId)
       counts.set(run.runnerId, (counts.get(run.runnerId) ?? 0) + 1);
+  return counts;
+}
+
+/**
+ * The runs `runnerId` holds now, by the coding tool each runs with (set when it was claimed); a tool it runs nothing of
+ * is left out. A tool's limit (`Runner.toolSlots`) counts them.
+ */
+export async function runsHeldByTool(
+  conn: DatabaseConnection,
+  runnerId: string,
+): Promise<Partial<Record<AgentTool, number>>> {
+  const held = await runsRepo(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('runnerId').eq(runnerId),
+        f.or(ACTIVE.map((status) => f.string('status').eq(status))),
+      ]),
+  });
+  const counts: Partial<Record<AgentTool, number>> = {};
+  for (const run of held) {
+    const tool = run.tool as AgentTool | null;
+    if (tool) counts[tool] = (counts[tool] ?? 0) + 1;
+  }
   return counts;
 }
 

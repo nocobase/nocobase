@@ -250,6 +250,7 @@ const plansZhCN: typeof plansEnUS = {
       runnersOffline: '等待 Agent 的运行环境上线…',
       toolUnavailable: '等待编码工具已登录的运行环境…',
       runnersBusy: '运行环境都在忙，排队等待中…',
+      toolSlotsFull: '编码工具的并发已满，排队等待中…',
       concurrencyFull: 'Agent 正在忙，排队等待中…',
       sameWorkActive: '等待 Agent 处理完上一个请求…',
       setupRetrying: '正在重新准备…',

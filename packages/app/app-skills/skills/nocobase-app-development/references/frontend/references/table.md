@@ -6,7 +6,7 @@ This document uses `client/pages/projects/index.tsx` as its example; the complet
 
 ## 1. Choosing a table component
 
-Build every list with `DataTable` (`@/components/data-table`, built on TanStack Table) and its companions in `client/components/data-table/`: `DataTableColumnHeader` (a sortable column header), `DataTablePagination` (the pagination bar) and `DataTableViewOptions` (the "Toggle columns" menu). They are the application's own: before the first list, build them in that directory from the `button`, `dropdown-menu`, `select` and `table` primitives and `@tanstack/react-table` (in `devDependencies`), following shadcn's [Data Table guide](https://ui.shadcn.com/docs/components/data-table) and giving `DataTable` the props of [section 2](#2-datatable-props). Do not write a list from scratch with `Table`. The one exception is server-side pagination below. A short list of records inside a card, such as a dashboard's, is a `DataTable` too, with plain headers and `pagination={false}` (guideline T5.3); in an ordinary `CardContent` it lines up with the card's title by itself ("Table in a card" in ["Common layouts" of `styling.md`](styling.md#common-layouts); [`example/project-dashboard.md`](example/project-dashboard.md)).
+Build every list with `DataTable` (`#components/data-table`, built on TanStack Table) and its companions in `client/components/data-table/`: `DataTableColumnHeader` (a sortable column header), `DataTablePagination` (the pagination bar) and `DataTableViewOptions` (the "Toggle columns" menu). They are the application's own: before the first list, build them in that directory from the `button`, `dropdown-menu`, `select` and `table` primitives and `@tanstack/react-table` (in `devDependencies`), following shadcn's [Data Table guide](https://ui.shadcn.com/docs/components/data-table) and giving `DataTable` the props of [section 2](#2-datatable-props). Do not write a list from scratch with `Table`. The one exception is server-side pagination below. A short list of records inside a card, such as a dashboard's, is a `DataTable` too, with plain headers and `pagination={false}` (guideline T5.3); in an ordinary `CardContent` it lines up with the card's title by itself ("Table in a card" in ["Common layouts" of `styling.md`](styling.md#common-layouts); [`example/project-dashboard.md`](example/project-dashboard.md)).
 
 | Scenario                                                                                                | What to use                                                                                                                      |
 | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -173,7 +173,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
 
-import { Checkbox } from '@/components/ui/checkbox';
+import { Checkbox } from '#components/ui/checkbox';
 
 import type { Project } from './types.js';
 

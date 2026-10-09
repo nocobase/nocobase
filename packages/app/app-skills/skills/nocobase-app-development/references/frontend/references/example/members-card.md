@@ -18,9 +18,9 @@ import { type ReactElement, useMemo } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { SessionExpiredAlert } from '@/components/session-expired-alert';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { SessionExpiredAlert } from '#components/session-expired-alert';
+import { Alert, AlertDescription } from '#components/ui/alert';
+import { Button } from '#components/ui/button';
 import {
   Card,
   CardContent,
@@ -28,20 +28,20 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Field, FieldError, FieldGroup } from '@/components/ui/field';
+} from '#components/ui/card';
+import { Field, FieldError, FieldGroup } from '#components/ui/field';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from '@/components/ui/input-group';
-import { Spinner } from '@/components/ui/spinner';
+} from '#components/ui/input-group';
+import { Spinner } from '#components/ui/spinner';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '#components/ui/tooltip';
 
 const MAX_MEMBERS = 10;
 

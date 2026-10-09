@@ -5,10 +5,14 @@
 import {
   AGENT_TOOLS,
   RunnerPolicySchema,
+  ToolLoadSchema,
+  ToolSlotsSchema,
   type AgentTool,
   type RunnerFeature,
   type RunnerPolicy,
   type ToolInfo,
+  type ToolLoad,
+  type ToolSlots,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 
@@ -35,6 +39,8 @@ export interface RunnerRecord {
   readonly ownerUserId: string | null;
   readonly status: RunnerStatus;
   readonly slots: number;
+  readonly toolSlots: unknown;
+  readonly load: unknown;
   readonly acceptJobs: boolean;
   readonly policy: unknown;
   readonly lastSeenAt: string | null;
@@ -59,6 +65,7 @@ export interface RegistrationTokenRecord {
   readonly trust: RunnerTrust;
   readonly enabledTools: readonly unknown[] | null;
   readonly slots: number | null;
+  readonly toolSlots: unknown;
   readonly expiresAt: string;
   readonly usedAt: string | null;
   readonly runnerId: string | null;
@@ -106,6 +113,36 @@ export function storedToolChoice(value: unknown): AgentTool[] | null {
   return list && list.length === AGENT_TOOLS.length ? null : list;
 }
 
+/**
+ * Limits per coding tool as stored: the known tools in the protocol's order, each a whole number from 1 to 64; null
+ * when none is left, so "no limits per tool" has one form.
+ */
+export function storedToolSlots(value: unknown): ToolSlots | null {
+  if (value === null || value === undefined) return null;
+  const object = jsonObject(value);
+  const slots: Partial<Record<AgentTool, number>> = {};
+  for (const tool of AGENT_TOOLS) {
+    const parsed = ToolSlotsSchema.safeParse({ [tool]: object[tool] });
+    if (parsed.success && parsed.data[tool] !== undefined)
+      slots[tool] = parsed.data[tool];
+  }
+  return Object.keys(slots).length > 0 ? slots : null;
+}
+
+/** A runner's reported load per coding tool as stored: the known tools only; null for none. */
+export function storedToolLoad(
+  value: unknown,
+): Partial<Record<AgentTool, ToolLoad>> | null {
+  if (value === null || value === undefined) return null;
+  const object = jsonObject(value);
+  const load: Partial<Record<AgentTool, ToolLoad>> = {};
+  for (const tool of AGENT_TOOLS) {
+    const parsed = ToolLoadSchema.safeParse(object[tool]);
+    if (parsed.success) load[tool] = parsed.data;
+  }
+  return Object.keys(load).length > 0 ? load : null;
+}
+
 /** A reported policy as stored: null for none (the runner takes anything its owner registered it for). */
 export function storedPolicy(value: unknown): RunnerPolicy | null {
   if (value === null || value === undefined) return null;
@@ -140,6 +177,8 @@ export function toRunner(
     ownerName,
     status: record.status,
     slots: Number(record.slots),
+    toolSlots: storedToolSlots(record.toolSlots),
+    toolLoad: storedToolLoad(record.load),
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     lastSeenAt: record.lastSeenAt,

@@ -32,7 +32,7 @@
  *   (`conversations.consultation`). It ends within `consult.timeoutMs` and `consult.tokenBudget`, and is aborted with
  *   the run that asked.
  */
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 import {
   jsonSchema,
@@ -90,6 +90,26 @@ import {
 import { cliCommand, type CommandSurface } from './cli-command.js';
 import { onlineTools, type OnlineSkill } from './sandbox.js';
 import { errorOutput, type ServerTool } from './tools.js';
+
+/**
+ * The session id a run's model calls send in the session header an OpenCode base URL requires
+ * (`x-opencode-session`): the same for every run of one conversation — its subject and thread — so the provider
+ * routes and caches it as one, and a hash, so it names neither.
+ */
+export function sessionOf(
+  run: Pick<ServerClaim['run'], 'subject' | 'threadScope'>,
+): string {
+  const hex = createHash('sha256')
+    .update([run.subject.kind, run.subject.id, run.threadScope].join('\n'))
+    .digest('hex');
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join('-');
+}
 
 /** Model calls a run may make before it fails `stepLimit`. */
 export const DEFAULT_MAX_STEPS = 16;
@@ -494,10 +514,10 @@ export function createServerExecutor(
       );
       let languageModel: LanguageModel;
       try {
-        languageModel = await deps.gateway.languageModel({
-          modelService: model.modelService,
-          model: model.model,
-        });
+        languageModel = await deps.gateway.languageModel(
+          { modelService: model.modelService, model: model.model },
+          { session: sessionOf(run) },
+        );
       } catch (error) {
         throw modelFailure(error);
       }

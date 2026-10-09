@@ -8,8 +8,8 @@ import { NamespaceScope } from '@nocobase/i18n/client';
 import { type ReactElement, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import { Loading } from '@/components/loading';
-import { Button } from '@/components/ui/button';
+import { Loading } from '#components/loading';
+import { Button } from '#components/ui/button';
 
 export interface ClientRouteProps {
   readonly route: AppClientRegisteredRoute;

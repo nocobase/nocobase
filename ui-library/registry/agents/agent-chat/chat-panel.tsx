@@ -16,7 +16,7 @@ import {
 } from '@nocobase/app-plugin-agents/client/chat';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
