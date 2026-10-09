@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { VariableSchema } from '../server/routes/schemas.js';
-import type { RunWait } from '../shared/runs.js';
+import type { RunRepo, RunWait } from '../shared/runs.js';
 import type { Variable } from '../shared/variables.js';
 
 // Checked by tsconfig.type-tests.json as well as Vitest: applications may still construct the previous shapes.
@@ -21,6 +22,28 @@ const variable: Variable = {
   updatedById: null,
   updatedByName: null,
 };
+
+// Applications can keep their existing repository view schemas while adopting the new plugin.
+const legacyRepoSchema: z.ZodType<RunRepo> = z.object({
+  url: z.string(),
+  branch: z.string(),
+  pushed: z.boolean(),
+  headSha: z.string().nullable(),
+  updatedAt: z.string(),
+});
+
+const repo: RunRepo = {
+  url: 'https://github.com/acme/app.git',
+  branch: 'agent/PM-1',
+  pushed: true,
+  headSha: null,
+  updatedAt: '2026-10-09T00:00:00.000Z',
+};
+
+it('accepts legacy repository reports and schemas without push failure details', () => {
+  expect(legacyRepoSchema.parse(repo)).toEqual(repo);
+  expect(repo.failure ?? null).toBeNull();
+});
 
 it('accepts a wait constructed without variable details', () => {
   expect(wait.variables ?? []).toEqual([]);
