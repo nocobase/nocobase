@@ -1,8 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { agentWritableRoots } from '../src/agent/prepare/index.ts';
+import { isInside } from '../src/core/command-policy.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
   acquireLock,
@@ -13,7 +15,7 @@ import {
   subjectWorkDir,
   markDirsPrepared,
 } from '../src/core/checkout.ts';
-import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 
 const COMMIT = [
   '-c',
@@ -198,6 +200,128 @@ describe('checkout', () => {
       }),
     ).toContain("only from the run's own checkouts");
     await work.release();
+  });
+
+  describe('submodules', () => {
+    let sub: string;
+
+    beforeEach(() => {
+      // Git refuses file:// submodules unless told otherwise; real repositories are fetched over the network.
+      vi.stubEnv('GIT_CONFIG_COUNT', '1');
+      vi.stubEnv('GIT_CONFIG_KEY_0', 'protocol.file.allow');
+      vi.stubEnv('GIT_CONFIG_VALUE_0', 'always');
+      sub = makeRemote(root, 'sub-repo');
+      const seed = path.join(root, 'origin-repo-seed');
+      git(['submodule', 'add', '--quiet', sub, 'vendor/sub'], seed);
+      git(['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'sub'], seed);
+      publishSeed(root);
+    });
+    afterEach(() => vi.unstubAllEnvs());
+
+    it('initializes them in a new worktree, with their metadata in its own git directory', async () => {
+      const work = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'PM-20',
+        dirs: [repo('PM-20')],
+      });
+      const dir = path.join(work.workDir, 'app');
+      const gitDir = work.repos[0]!.gitDir;
+      expect(existsSync(path.join(dir, 'vendor/sub/README.md'))).toBe(true);
+      expect(gitDir).toBe(
+        path.join(work.repos[0]!.cache, 'worktrees', path.basename(gitDir)),
+      );
+      expect(
+        git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
+      ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
+      await work.release();
+    });
+
+    it('initializes only the missing ones when a worktree is resumed, keeping where the agent moved the others', async () => {
+      const first = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'PM-21',
+        dirs: [repo('PM-21')],
+      });
+      const dir = path.join(first.workDir, 'app');
+      const subDir = path.join(dir, 'vendor/sub');
+      git([...COMMIT, 'commit', '-q', '--allow-empty', '-m', 'moved'], subDir);
+      const moved = git(['rev-parse', 'HEAD'], subDir);
+      await first.release();
+
+      const second = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'PM-21',
+        dirs: [repo('PM-21')],
+      });
+      expect(git(['rev-parse', 'HEAD'], subDir)).toBe(moved);
+      git(['submodule', 'deinit', '--quiet', '--force', 'vendor/sub'], dir);
+      expect(existsSync(path.join(subDir, 'README.md'))).toBe(false);
+      await second.release();
+
+      const third = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'PM-21',
+        dirs: [repo('PM-21')],
+      });
+      expect(existsSync(path.join(subDir, 'README.md'))).toBe(true);
+      await third.release();
+    });
+
+    it('fails the preparation when a submodule cannot be fetched', async () => {
+      const seed = path.join(root, 'origin-repo-seed');
+      git(
+        [
+          'config',
+          '--file',
+          '.gitmodules',
+          'submodule.vendor/sub.url',
+          `file://${path.join(root, 'missing.git')}`,
+        ],
+        seed,
+      );
+      git(['add', '.gitmodules'], seed);
+      git(['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'gone'], seed);
+      publishSeed(root);
+      await expect(
+        checkout({
+          paths,
+          appKey: 'app',
+          subjectKey: 'PM-22',
+          dirs: [repo('PM-22')],
+        }),
+      ).rejects.toThrow(/initializing its submodules failed: .*vendor\/sub/s);
+    });
+
+    it('gives each subject a git directory of its own, apart from the shared cache', async () => {
+      const a = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'PM-23',
+        dirs: [repo('PM-23')],
+      });
+      const b = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'PM-24',
+        dirs: [repo('PM-24')],
+      });
+      const rootsA = agentWritableRoots(a.dirs, a.workDir);
+      const rootsB = agentWritableRoots(b.dirs, b.workDir);
+      expect(rootsA).toEqual([a.repos[0]!.dir, a.repos[0]!.gitDir]);
+      for (const root of rootsA) {
+        expect(isInside(root, b.repos[0]!.gitDir)).toBe(false);
+        expect(isInside(root, b.repos[0]!.dir)).toBe(false);
+        expect(isInside(root, a.repos[0]!.cache)).toBe(false);
+      }
+      for (const root of rootsB)
+        expect(isInside(root, a.repos[0]!.gitDir)).toBe(false);
+      await a.release();
+      await b.release();
+    });
   });
 
   it('refuses a repository path outside the work directory', async () => {
