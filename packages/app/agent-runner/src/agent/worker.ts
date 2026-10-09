@@ -70,6 +70,7 @@ import { buildAgentEnv } from './env.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
+import { ensurePnpmStore } from '../core/pnpm-store.ts';
 import {
   agentCwd,
   agentWritableRoots,
@@ -132,6 +133,8 @@ export function workspaceNotes(options: {
   tool?: AgentTool;
   /** Directories of files the application placed for this run, with what each holds. */
   mounts?: readonly { readonly dir: string; readonly note?: string }[];
+  /** The pnpm store every run on this machine shares. */
+  pnpmStoreDir?: string;
 }): string {
   const { workDir, cwd, dirs } = options;
   const lines = [
@@ -151,6 +154,10 @@ export function workspaceNotes(options: {
     }
     lines.push('Keep every file you write inside these directories.');
   }
+  if (options.pnpmStoreDir !== undefined)
+    lines.push(
+      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\`, so dependencies are linked from it instead of copied into your directory. Files under \`node_modules\` are links into that store, shared with other tasks: never edit them in place; use \`pnpm patch\` to change a dependency.`,
+    );
   if (options.skillsDir !== undefined)
     lines.push(
       `Your skills are in ${options.skillsDir}, one directory each with its SKILL.md; read a skill's SKILL.md when its description fits what you are doing.`,
@@ -560,12 +567,14 @@ export class RunWorker {
           );
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    const pnpmStoreDir = await ensurePnpmStore(deps.paths);
     const cwd = agentCwd(context);
     const env = buildAgentEnv({
       source: process.env,
       binDir,
       ...(home === undefined ? {} : { home }),
       tmpDir,
+      pnpmStoreDir,
       hooksDir: deps.paths.hooksDir,
       localVariables: registration.variables,
       workspace: payload.workspace,
@@ -630,6 +639,7 @@ export class RunWorker {
           ? {}
           : { skillsDir: context.skills.dir }),
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
+        pnpmStoreDir,
       }),
       init,
     );
@@ -642,7 +652,7 @@ export class RunWorker {
       this.lastActivity = Date.now();
       const handle = adapter.start({
         workDir: cwd,
-        writableRoots: agentWritableRoots(context.dirs, cwd),
+        writableRoots: agentWritableRoots(context.dirs, cwd, [pnpmStoreDir]),
         prompt,
         systemPrompt: system,
         ...(payload.tool.model === undefined

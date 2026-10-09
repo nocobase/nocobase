@@ -1,7 +1,8 @@
 // The runner daemon: one per machine (a pid file guards it), serving every application it is registered with.
 //
-// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories. Then,
-// until it stops:
+// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories, then
+// does so every six hours; once that removed one, it prunes the shared pnpm store (pnpm-store.ts) as soon as no run is
+// active, claiming nothing until the prune is done. Then, until it stops:
 //
 // - heartbeat, per application, every 15 s: reports the tools, that application's active runs and the free slots; the
 //   answer names the runs whose cancel was requested, and the supervisor makes sure their workers stop;
@@ -52,6 +53,7 @@ import {
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
 import { gcWorkspaces } from './checkout.ts';
+import { prunePnpmStore } from './pnpm-store.ts';
 import { installGitHooks } from './push-guard.ts';
 import {
   isAlive,
@@ -150,6 +152,8 @@ export interface DaemonOptions {
   log: (message: string) => void;
   /** Overrides the client built for a registration, by its key; for tests. */
   clients?: ReadonlyMap<string, ApiClient>;
+  /** Replaces `prunePnpmStore`; for tests. */
+  pruneStore?: typeof prunePnpmStore;
   /** Why an isolation configuration cannot be had here (isolation.ts); for tests. */
   isolationProblem?: (config: IsolationConfig) => Promise<string | undefined>;
   /** Update between runs when an application serves a newer runner; without it, upgrade notices are only logged. */
@@ -194,6 +198,10 @@ export class RunnerDaemon {
   /** A newer runner to install once no run is left; claiming pauses meanwhile. */
   private pendingUpdate: { link: AppLink; target: UpdateTarget } | undefined;
   private updating = false;
+  /** The shared pnpm store is being pruned; claiming pauses meanwhile. */
+  private pruning = false;
+  /** Working directories were removed since the store was last pruned. */
+  private pruneDue = false;
   private readonly failedUpdates = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
@@ -220,6 +228,7 @@ export class RunnerDaemon {
       onExit: () => {
         this.slotFreed?.();
         void this.updateWhenIdle();
+        void this.pruneStore();
       },
     });
   }
@@ -383,11 +392,42 @@ export class RunnerDaemon {
 
   private async collectGarbage(): Promise<void> {
     try {
-      await gcWorkspaces({ paths: this.options.paths, log: this.options.log });
+      const removed = await gcWorkspaces({
+        paths: this.options.paths,
+        log: this.options.log,
+      });
+      if (removed.length > 0) this.pruneDue = true;
     } catch (error) {
       this.options.log(
         `gc: ${error instanceof Error ? error.message : String(error)}`,
       );
+    }
+    await this.pruneStore();
+  }
+
+  /**
+   * Prunes the shared pnpm store once working directories were removed, and only while no run is active: an install
+   * in progress holds files that no project links yet, which a prune would take. Left due when runs are active, for
+   * the run that ends last (`onExit`) or the next collection.
+   */
+  async pruneStore(): Promise<void> {
+    if (
+      !this.pruneDue ||
+      this.pruning ||
+      this.supervisor.size > 0 ||
+      this.stopping.signal.aborted
+    )
+      return;
+    this.pruning = true;
+    try {
+      await (this.options.pruneStore ?? prunePnpmStore)({
+        paths: this.options.paths,
+        log: this.options.log,
+      });
+      this.pruneDue = false;
+    } finally {
+      this.pruning = false;
+      this.slotFreed?.();
     }
   }
 
@@ -671,7 +711,11 @@ export class RunnerDaemon {
         await delay(fallback, this.stopping.signal);
         continue;
       }
-      if (this.slots - this.supervisor.size <= 0 || this.pendingUpdate) {
+      if (
+        this.slots - this.supervisor.size <= 0 ||
+        this.pendingUpdate ||
+        this.pruning
+      ) {
         await new Promise<void>((resolve) => {
           this.slotFreed = resolve;
         });

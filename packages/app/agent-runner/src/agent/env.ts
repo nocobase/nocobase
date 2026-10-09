@@ -4,7 +4,7 @@
 // reaches the application's CLI only through its credentials file.
 //
 // The runner then sets what it owns: HOME (the agent's home, see agent-home.ts), TMPDIR (inside the working
-// directory), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
+// directory), the machine's shared pnpm store (core/pnpm-store.ts), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
 // git the agent runs uses the runner's hooks (push-guard.ts) whatever the repository configures. With the run's git
 // (`workspace.git`): the commit author and committer (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), the trailers the
 // `prepare-commit-msg` hook adds, and for each repository with a short-lived credential a credential helper scoped to
@@ -14,6 +14,7 @@ import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { RUN_CREDENTIALS_ENV, type RunWorkspace } from '../protocol/index.ts';
+import { PNPM_STORE_ENV, pnpmStoreEnv } from '../core/pnpm-store.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
 
 // USER: Claude Code's macOS keychain login lookup fails without it.
@@ -37,6 +38,8 @@ export interface BuildEnvOptions {
   /** The agent's HOME; the runner's own when absent. */
   home?: string;
   tmpDir?: string;
+  /** The pnpm store every run on this machine shares. */
+  pnpmStoreDir?: string;
   /** The push guard's hooks directory. */
   hooksDir?: string;
 }
@@ -48,6 +51,7 @@ function forbidden(name: string): boolean {
       name,
     ) ||
     ['PATH', 'HOME', 'TMPDIR'].includes(name) ||
+    PNPM_STORE_ENV.includes(name.toLowerCase()) ||
     !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
   );
 }
@@ -76,6 +80,8 @@ export function buildAgentEnv(
         : `${options.binDir}${path.delimiter}${env.PATH}`;
   if (options.home !== undefined) env.HOME = options.home;
   if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
+  if (options.pnpmStoreDir !== undefined)
+    Object.assign(env, pnpmStoreEnv(options.pnpmStoreDir));
   const config: [string, string][] = [];
   if (options.hooksDir !== undefined)
     config.push(['core.hooksPath', options.hooksDir]);
