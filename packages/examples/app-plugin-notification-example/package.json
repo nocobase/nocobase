@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification-example",
   "displayName": "Notification Example App Plugin",
   "description": "A task assignment example that persists tasks and sends in-app notifications.",
-  "version": "1.0.0-beta.5",
+  "version": "1.0.0-beta.6",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
