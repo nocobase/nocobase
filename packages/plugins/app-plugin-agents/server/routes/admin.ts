@@ -1436,7 +1436,7 @@ export function createAdminRoutes(
         flags: { runId: { name: 'run' }, pageSize: { name: 'limit' } },
         columns: ['seq', 'at', 'type', 'tool'],
       }),
-      description: `The run's transcript as JSON pages, in order: a page holds the events after \`after\` (a \`seq\`), up to \`pageSize\`. Not a stream: to follow a run, ask again with \`after\` set to \`meta.lastSeq\`, when the run's realtime topic announces a change. ${runVisibility}`,
+      description: `The run's transcript as JSON pages, in order: a page holds the events after \`after\` (a \`seq\`), up to \`pageSize\`. Repeat \`type\` to filter raw event types before paging; omit it for all events. Keep the same types while paging. Not a stream: to follow a run, ask again with \`after\` set to \`meta.lastSeq\`, when the run's realtime topic announces a change. ${runVisibility}`,
       responses: {
         200: listResponse(RunEventItemSchema, SeqPageMetaSchema),
         404: noRun,
@@ -1446,7 +1446,7 @@ export function createAdminRoutes(
     runParam,
     apiValidator('query', RunEventsQuery),
     async (context) => {
-      const { after, pageSize, pageToken } = context.req.valid('query');
+      const { after, pageSize, pageToken, type } = context.req.valid('query');
       const from =
         pageToken === undefined
           ? (after ?? 0)
@@ -1455,6 +1455,7 @@ export function createAdminRoutes(
         context.req.valid('param').runId,
         from,
         pageSize,
+        type,
       );
       return context.json({
         data: page.events,

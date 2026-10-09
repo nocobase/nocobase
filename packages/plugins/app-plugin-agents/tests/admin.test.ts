@@ -612,6 +612,90 @@ describe('admin API', () => {
     ]);
   });
 
+  it('filters raw event types before paging and preserves access checks', async () => {
+    h = await createHarness();
+    const runId = await h.enqueue(await h.createAgent(), '1', {
+      actorUserId: 'bob',
+    });
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    const types = [
+      'status',
+      'text',
+      'toolUse',
+      'input',
+      'permission',
+      'text',
+      'error',
+      'usage',
+    ] as const;
+    const stored = await h.request(
+      'POST',
+      `/agents/runners/runs/${runId}/events`,
+      {
+        runnerKey: runner.key,
+        body: {
+          events: types.map((type, index) => ({
+            seq: index + 1,
+            at: 'x',
+            type,
+            content: `e${index + 1}`,
+          })),
+        },
+      },
+    );
+    expect(stored.status).toBe(200);
+    const base = `/agents/runs/${runId}/events`;
+    const filtered = `${base}?type=text&type=input&type=text&pageSize=2`;
+    const first = await h.request('GET', filtered, { user: 'bob' });
+    expect(first.status).toBe(200);
+    expect(first.body.data.map((row: { seq: number }) => row.seq)).toEqual([
+      2, 4,
+    ]);
+    expect(first.body.meta.lastSeq).toBe(4);
+    const next = await h.request(
+      'GET',
+      `${filtered}&pageToken=${first.body.meta.nextPageToken}`,
+      { user: 'bob' },
+    );
+    expect(next.body.data.map((row: { seq: number }) => row.seq)).toEqual([6]);
+    expect(next.body.meta).toEqual({ lastSeq: 6 });
+    const empty = await h.request('GET', `${base}?type=text&after=6`, {
+      user: 'bob',
+    });
+    expect(empty.body).toEqual({ data: [], meta: { lastSeq: 6 } });
+    const single = await h.request('GET', `${base}?type=permission`, {
+      user: 'bob',
+    });
+    expect(single.body.data.map((row: { seq: number }) => row.seq)).toEqual([
+      5,
+    ]);
+    const all = await h.request('GET', base, { user: 'bob' });
+    expect(all.body.data).toHaveLength(types.length);
+    expect(
+      (await h.services.runs.events(runId, 0, 2, ['text'])).events.map(
+        (row) => row.seq,
+      ),
+    ).toEqual([2, 6]);
+    expect(
+      (await h.services.runs.events(runId, 0, 100, [])).events,
+    ).toHaveLength(types.length);
+    for (const query of ['type=tools', 'type=', 'type=text&type=unknown']) {
+      expect(
+        (await h.request('GET', `${base}?${query}`, { user: 'bob' })).status,
+      ).toBe(400);
+    }
+    expect((await h.request('GET', filtered)).status).toBe(401);
+    expect((await h.request('GET', filtered, { user: 'carol' })).status).toBe(
+      404,
+    );
+    // Invisible runs remain hidden before filter validation.
+    expect(
+      (await h.request('GET', `${base}?type=unknown`, { user: 'carol' }))
+        .status,
+    ).toBe(404);
+  });
+
   it("lets a personal runner's owner share it with the team", async () => {
     h = await createHarness();
     const runner = await h.registerRunner({

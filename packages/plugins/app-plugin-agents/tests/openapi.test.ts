@@ -10,6 +10,7 @@ import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   findApiDocumentSchemaProblems,
+  deriveAllCliCommands,
   findUndeclaredApiRoutes,
   generateApiDocument,
   inspectApiRoutes,
@@ -88,6 +89,33 @@ describe('agents API document', () => {
     expect(routes.filter((route) => route.hidden)).toEqual([]);
     expect(routes.length).toBeGreaterThanOrEqual(97);
     expect(operations()).toHaveLength(routes.length);
+  });
+
+  it('derives repeatable raw event type flags from the query schema', () => {
+    const command = deriveAllCliCommands(document).find(
+      (entry) => entry.id === 'run:events',
+    );
+    expect(command?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'type',
+          type: 'string[]',
+          required: false,
+          enum: [
+            'text',
+            'thinking',
+            'toolUse',
+            'toolResult',
+            'permission',
+            'input',
+            'checkout',
+            'status',
+            'error',
+            'usage',
+          ],
+        }),
+      ]),
+    );
   });
 
   it('has sound schemas', () => {

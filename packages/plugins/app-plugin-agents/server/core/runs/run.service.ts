@@ -229,7 +229,12 @@ export interface RunService {
    * Whoever calls decides what of it a person may see.
    */
   workload(query: WorkloadQuery): Promise<Workload>;
-  events(runId: string, afterSeq: number, limit: number): Promise<RunEventPage>;
+  events(
+    runId: string,
+    afterSeq: number,
+    limit: number,
+    types?: readonly RunEventType[],
+  ): Promise<RunEventPage>;
   /** The run a run token belongs to; `RUN_TOKEN_INVALID` otherwise. */
   authenticateToken(value: string): Promise<RunTokenIdentity>;
   self(identity: RunTokenIdentity): Promise<RunSelf>;
@@ -950,12 +955,18 @@ export function createRunService(deps: RunServiceDeps): RunService {
       return readWorkload(tx.read(), clock, deps.runners, query);
     },
 
-    async events(runId, afterSeq, limit) {
+    async events(runId, afterSeq, limit, types) {
       const conn = tx.read();
       await require(conn, runId);
       const rows = await eventsRepo(conn).findMany({
         filter: (f) =>
-          f.and([f.string('runId').eq(runId), f.number('seq').gt(afterSeq)]),
+          f.and([
+            f.string('runId').eq(runId),
+            f.number('seq').gt(afterSeq),
+            ...(types?.length
+              ? [f.or(types.map((type) => f.string('type').eq(type)))]
+              : []),
+          ]),
         sort: (sort) => sort.field('seq').asc(),
         limit: Math.min(Math.max(limit, 1), 1000),
       });
