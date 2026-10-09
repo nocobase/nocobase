@@ -357,8 +357,7 @@ function believable(
       },
     ];
   });
-  const text = (key: string) =>
-    isText(raw[key]) ? { [key]: raw[key] } : {};
+  const text = (key: string) => (isText(raw[key]) ? { [key]: raw[key] } : {});
   return {
     ...text('appKey'),
     subjectKey: raw.subjectKey,
