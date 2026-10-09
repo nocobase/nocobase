@@ -25,7 +25,10 @@
 // sandbox of its tool: a worktree's Git metadata, the submodules' `modules/` among it, lives in the cache
 // (`<cache>/worktrees/<name>/`), not in the work directory. They are fetched with the repository's credential, sent only
 // to the repository's own host. A new worktree initializes every submodule, recursively; an existing one only those not
-// initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation.
+// initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation, and what it was
+// initializing is recorded in the worktree's own Git directory (`SUBMODULES_PENDING`) until an update succeeds: a
+// later preparation of the same worktree finishes it, nested submodules included, even though the top-level ones
+// already look initialized. The agent never ran in between, so there is no state of its to keep.
 //
 // Cloning, fetching and the submodules' update are retried where they fail for a passing cause, and abort a stalled
 // transfer instead of hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
@@ -415,10 +418,41 @@ function httpOrigin(url: string): string | undefined {
   }
 }
 
+/** The submodules an update that failed was initializing, in the worktree's own Git directory. */
+export const SUBMODULES_PENDING = 'nocobase-runner-submodules.json';
+
+interface PendingSubmodules {
+  /** Every submodule, recursively. */
+  readonly all: boolean;
+  /** Otherwise these top-level ones, with theirs. */
+  readonly paths: readonly string[];
+}
+
+async function readPending(
+  file: string,
+): Promise<PendingSubmodules | undefined> {
+  try {
+    const value = JSON.parse(
+      await readFile(file, 'utf8'),
+    ) as Partial<PendingSubmodules>;
+    return {
+      all: value.all === true,
+      paths: Array.isArray(value.paths)
+        ? value.paths.filter(
+            (entry): entry is string => typeof entry === 'string',
+          )
+        : [],
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Initializes the worktree's submodules as its `.gitmodules` lists them: every one, recursively, when `all`; otherwise
- * only the top-level ones not initialized yet (with theirs). Returns the paths it initialized. The update is retried as
- * `retry` says; one that keeps failing on the network is a `GitNetworkError`.
+ * only the top-level ones not initialized yet (with theirs), and those an earlier update left unfinished
+ * (`SUBMODULES_PENDING`). Returns the paths it initialized. The update is retried as `retry` says; one that keeps
+ * failing on the network is a `GitNetworkError`.
  */
 export async function initSubmodules(
   dir: string,
@@ -435,18 +469,39 @@ export async function initSubmodules(
       `${options.url}: ${step} its submodules failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   let status: string;
+  let pendingFile: string;
   try {
     status = await git(['submodule', 'status'], dir);
+    pendingFile = path.join(
+      await git(['rev-parse', '--absolute-git-dir'], dir),
+      SUBMODULES_PENDING,
+    );
   } catch (error) {
     throw failed('reading', error);
   }
+  const pending = await readPending(pendingFile);
+  const all = options.all || pending?.all === true;
   // `-<sha> <path>` is a submodule not initialized; ` `, `+` and `U` are initialized ones.
-  const selected = status
+  const listed = status
     .split('\n')
-    .filter((line) => line !== '' && (options.all || line.startsWith('-')))
-    .map((line) => line.slice(1).trim().split(/\s+/)[1] ?? '')
-    .filter((entry) => entry !== '');
-  if (selected.length === 0) return [];
+    .filter((line) => line !== '')
+    .map((line) => ({
+      missing: line.startsWith('-'),
+      path: line.slice(1).trim().split(/\s+/)[1] ?? '',
+    }))
+    .filter((entry) => entry.path !== '');
+  const unfinished = new Set(pending?.paths ?? []);
+  const selected = listed
+    .filter((entry) => all || entry.missing || unfinished.has(entry.path))
+    .map((entry) => entry.path);
+  if (selected.length === 0) {
+    await rm(pendingFile, { force: true });
+    return [];
+  }
+  await writeFile(
+    pendingFile,
+    JSON.stringify({ all, paths: selected } satisfies PendingSubmodules),
+  );
   const origin = httpOrigin(options.url);
   try {
     // `-c` reaches the clones and fetches the update runs (GIT_CONFIG_PARAMETERS), so a stalled one gives up too.
@@ -460,7 +515,7 @@ export async function initSubmodules(
             'update',
             '--init',
             '--recursive',
-            ...(options.all ? [] : ['--', ...selected]),
+            ...(all ? [] : ['--', ...selected]),
           ],
           dir,
           origin === undefined ? {} : gitAuthEnv(options.auth, origin),
@@ -471,6 +526,7 @@ export async function initSubmodules(
     if (error instanceof GitNetworkError) throw error;
     throw failed('initializing', error);
   }
+  await rm(pendingFile, { force: true });
   return selected;
 }
 

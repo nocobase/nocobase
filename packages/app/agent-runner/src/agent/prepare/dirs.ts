@@ -4,7 +4,9 @@
 //
 // Cloning, fetching and the submodules' update are retried on this runner when they fail for a passing cause, each
 // retry a `status` event. One that keeps failing fails the run `prepareNetwork`, which the application queues again,
-// or `checkoutFailed` for an application that does not announce it (`RunHeader.acceptedFailures`).
+// or `checkoutFailed` for an application that does not announce it (`RunHeader.acceptedFailures`). Any failure that
+// comes after a retry, such as credentials refused once the network came back, records how many retries were made and
+// the last error.
 import path from 'node:path';
 
 import { prepareDirs } from '../../core/checkout.ts';
@@ -20,6 +22,7 @@ async function prepare(
   context: PrepareContext,
   workDir: string,
 ): ReturnType<typeof prepareDirs> {
+  let retries = 0;
   try {
     return await prepareDirs({
       paths: context.paths,
@@ -34,6 +37,7 @@ async function prepare(
       retry: {
         ...context.gitRetry,
         onRetry: (retry) => {
+          retries += 1;
           const seconds = Math.round(retry.delayMs / 1000);
           context.log(
             `checkout: ${retry.operation} failed on the network; retry ${retry.attempt} in ${seconds}s: ${retry.error}`,
@@ -53,11 +57,18 @@ async function prepare(
       },
     });
   } catch (error) {
-    if (!(error instanceof GitNetworkError)) throw error;
+    if (error instanceof GitNetworkError)
+      throw new PrepareError(
+        acceptedFailure('prepareNetwork', context.payload.run.acceptedFailures),
+        error.message,
+        { retries, lastError: error.lastError },
+      );
+    if (retries === 0) throw error;
+    const message = error instanceof Error ? error.message : String(error);
     throw new PrepareError(
-      acceptedFailure('prepareNetwork', context.payload.run.acceptedFailures),
-      error.message,
-      { retries: error.retries, lastError: error.lastError },
+      'checkoutFailed',
+      `${message}\n(after ${retries} ${retries === 1 ? 'retry' : 'retries'} on this runner)`,
+      { retries, lastError: message },
     );
   }
 }

@@ -2,8 +2,10 @@
 //
 // Only a failure whose message names a passing cause is retried: a TLS handshake cut off, a connection reset, refused
 // or timed out, a transfer that stalled (`http.lowSpeedLimit`/`Time`, which every network call sets, so a stalled
-// transfer fails rather than hangs), a name that did not resolve, an HTTP 5xx or 429. A repository that does not exist
-// or credentials the host refuses fail at once, with a hint of what to fix. Each retry waits longer: 2, 5 and 15
+// transfer fails rather than hangs), a name that did not resolve, an HTTP 5xx or 429. A repository that does not exist,
+// credentials the host refuses, a certificate this runner does not trust, or any other HTTP 4xx fail at once, with a
+// hint of what to fix where the message names the cause; so does a failure that names no passing cause, since git and
+// curl wrap both kinds in the same `RPC failed; curl <n>` lines. Each retry waits longer: 2, 5 and 15
 // seconds by default. When every retry fails the same way the error is a `GitNetworkError`, which the run reports as
 // `prepareNetwork` so the application queues it again.
 import { delay } from '../lib/http.ts';
@@ -19,8 +21,11 @@ export const GIT_LOW_SPEED_CONFIG: readonly string[] = [
 /** The waits before each retry, in milliseconds: three retries after the first attempt. */
 export const GIT_RETRY_DELAYS_MS: readonly number[] = [2_000, 5_000, 15_000];
 
-/** Failures the host decided: retrying cannot help, the configuration has to change. Checked first. */
-const PERMANENT: readonly { pattern: RegExp; hint: string }[] = [
+/**
+ * Failures the host or this runner's configuration decided: retrying cannot help, the configuration has to change.
+ * Checked first, so a permanent cause wins over the wrapping that also comes with passing ones.
+ */
+const PERMANENT: readonly { pattern: RegExp; hint?: string }[] = [
   {
     pattern:
       /repository ['"]?.*['"]? not found|returned error: 404|\bhttp 404\b|does not appear to be a git repository/iu,
@@ -31,20 +36,27 @@ const PERMANENT: readonly { pattern: RegExp; hint: string }[] = [
       /authentication failed|returned error: 40[13]|\bhttp 40[13]\b|permission denied \(publickey|could not read (username|password)|terminal prompts disabled|invalid username or password|access denied/iu,
     hint: 'The host refused the credentials: check the git credentials on this runner (a token or an SSH key), or the repository credential the application issues.',
   },
+  {
+    pattern:
+      /certificate|ssl peer|ssh remote key was not ok|self[- ]signed|unable to get local issuer|host key verification failed/iu,
+    hint: "This runner does not trust the host's certificate or key: install the CA the host's certificate chains to (SSL_CERT_FILE, or git's http.sslCAInfo), or add the host's SSH key to known_hosts.",
+  },
+  // Any other refusal of the request, such as 413; 408 and 429 pass.
+  { pattern: /returned error: 4(?!08|29)\d\d|\bhttp 4(?!08|29)\d\d\b/iu },
 ];
 
 /** Failures that pass on their own. */
 const TRANSIENT: readonly RegExp[] = [
   // TLS cut off: gnutls (Debian's git) and OpenSSL.
-  /gnutls_handshake\(\) failed|tls connection was non-properly terminated|ssl_error_syscall|ssl_connect|unexpected eof while reading|ssl[_ ]read/iu,
+  /gnutls_handshake\(\) failed|tls connection was non-properly terminated|gnutls recv error|ssl_error_syscall|unexpected eof while reading/iu,
   // Connections reset, refused, dropped or timed out.
   /connection reset|connection timed out|connection refused|operation timed out|timed out after|failed to connect to|couldn't connect to server|connection closed by|broken pipe/iu,
   // Transfers cut off or stalled (the latter is `http.lowSpeedLimit` giving up).
-  /operation too slow|early eof|the remote end hung up unexpectedly|unexpected disconnect while reading sideband|transfer closed with outstanding read data|rpc failed|http\/2 stream \d+ was not closed cleanly|curl \d+ /iu,
+  /operation too slow|early eof|the remote end hung up unexpectedly|unexpected disconnect while reading sideband|transfer closed with outstanding read data|http\/2 stream \d+ was not closed cleanly/iu,
   // DNS.
   /could not resolve host|could not resolve hostname|temporary failure in name resolution|name or service not known|no address associated with hostname/iu,
   // The host is overloaded or limiting this client.
-  /returned error: (5\d\d|429)|\bhttp (5\d\d|429)\b|\b(502 bad gateway|503 service unavailable|504 gateway time-?out|429 too many requests)\b/iu,
+  /returned error: (5\d\d|429|408)|\bhttp (5\d\d|429|408)\b|\b(502 bad gateway|503 service unavailable|504 gateway time-?out|429 too many requests)\b/iu,
 ];
 
 export type GitFailureKind = 'transient' | 'permanent';
