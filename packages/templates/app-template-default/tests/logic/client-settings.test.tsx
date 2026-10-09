@@ -23,6 +23,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { MemoryRouter, Outlet, useParams } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -559,9 +560,11 @@ describe('settings centre', () => {
     renderSettings('/settings/authorization/permission-sets');
     await screen.findByText('Permission Sets page');
 
-    fireEvent.change(screen.getByLabelText('Settings page'), {
-      target: { value: '/settings/workflow' },
-    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: 'Settings page' }));
+    await user.click(
+      await screen.findByRole('option', { name: 'Workflow General' }),
+    );
 
     expect(await screen.findByText('Workflow General page')).toBeVisible();
   });
