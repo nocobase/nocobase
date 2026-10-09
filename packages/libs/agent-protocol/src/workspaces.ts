@@ -6,8 +6,8 @@
  * a branch merged with a squash is not in the default branch's history, and a subject may be reopened. So it reports
  * each directory with the last run that worked in it, and the application, which knows the run's subject, answers
  * which of those runs belong to subjects whose work has ended. The runner removes those directories, unless they hold
- * something that was never pushed, and the application keeps what the runner reported to show how much space they
- * take.
+ * something that was never pushed, and the application keeps what the runner reported, with the free space on the disk
+ * that holds them.
  *
  * Added within protocol 7 as a capability rather than a version: an application that accepts reports says so in every
  * heartbeat answer (`HeartbeatResponse.workspaces`), and a runner reports only to an application that does. A runner
@@ -27,8 +27,8 @@ export interface WorkspaceReport {
   readonly runId: string;
   /** Where the directory is on the runner, absolute. */
   readonly workDir: string;
-  /** What the directory takes on disk, as last measured. */
-  readonly sizeBytes: number;
+  /** What the directory took on disk. Runners no longer measure it and leave it out; earlier ones sent it. */
+  readonly sizeBytes?: number;
   /**
    * The directory holds work that may not be on the remote: changes not committed, or commits past what the runner
    * last saw the remote task branch hold. Such a directory is never removed on the application's word.
@@ -41,25 +41,36 @@ export interface WorkspaceReport {
 export const WorkspaceReportSchema: z.ZodType<WorkspaceReport> = z.object({
   runId: z.string().min(1).max(64),
   workDir: z.string().min(1).max(4096),
-  sizeBytes: z.number().int().nonnegative(),
+  sizeBytes: z.number().int().nonnegative().optional(),
   unpushed: z.boolean(),
   lastUsedAt: z.string().max(64),
+});
+
+/** The disk holding the runner's working directories, as the file system reports it. */
+export interface WorkspaceDisk {
+  readonly freeBytes: number;
+  readonly totalBytes: number;
+  /** What the runner's owner keeps free on it; below it, the runner removes directories that may go. Absent for none. */
+  readonly minFreeBytes?: number;
+}
+
+export const WorkspaceDiskSchema: z.ZodType<WorkspaceDisk> = z.object({
+  freeBytes: z.number().int().nonnegative(),
+  totalBytes: z.number().int().nonnegative(),
+  minFreeBytes: z.number().int().nonnegative().optional(),
 });
 
 /** `POST RUNNER_ROUTES.workspaces`: the runner's working directories for this application. */
 export interface WorkspacesRequest {
   /** Every working directory the runner keeps for this application; empty when it keeps none. */
   readonly workspaces: readonly WorkspaceReport[];
-  /** The total size the runner's owner allows its working directories (across every application); absent for no limit. */
-  readonly limitBytes?: number;
-  /** What every working directory takes, across every application the runner serves. */
-  readonly totalBytes?: number;
+  /** The disk holding them; absent when the runner cannot tell. */
+  readonly disk?: WorkspaceDisk;
 }
 
 export const WorkspacesRequestSchema: z.ZodType<WorkspacesRequest> = z.object({
   workspaces: z.array(WorkspaceReportSchema).max(MAX_WORKSPACES_PER_REPORT),
-  limitBytes: z.number().int().positive().optional(),
-  totalBytes: z.number().int().nonnegative().optional(),
+  disk: WorkspaceDiskSchema.optional(),
 });
 
 export interface WorkspacesResponse {

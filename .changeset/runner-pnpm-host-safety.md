@@ -1,0 +1,5 @@
+---
+'@nocobase/agent-runner': patch
+---
+
+Run the runner's own pnpm outside every directory an agent can write, and stop sharing store files with working directories through hard links. `pnpm store prune` used to start in the shared store, which agents may write, so a `package.json` naming another `packageManager`, a `pnpm-workspace.yaml` moving the store or an `.npmrc` left there could make the runner download and run another pnpm or prune elsewhere; it now starts in the runner's own empty `~/.nocobase-runner/tools/cwd/`, names the store with `--store-dir`, turns off switching pnpm versions and passes only PATH, HOME and LANG from the runner's environment. Runs now install with `package-import-method=clone-or-copy`, which a run cannot override, so an agent editing a file under `node_modules` no longer changes the store's copy for every other task: APFS, Btrfs, XFS with reflink and ZFS with block cloning clone files at next to no cost, while ext4 copies them, so each working directory there holds a full copy of its dependencies again and the store still saves the download.

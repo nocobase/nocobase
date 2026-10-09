@@ -33,6 +33,8 @@ import { rm } from 'node:fs/promises';
 
 import type { AgentAdapter } from '../agent/adapters/types.ts';
 import {
+  dropWorkspaceLimit,
+  minFreeDisk,
   readSettings,
   runnerClient,
   type AppConnection,
@@ -342,6 +344,10 @@ export class RunnerDaemon {
           ', ',
         )}; ${this.slots} slot(s)${this.limitedTools.length > 0 ? ` (${this.limitedTools.map((tool) => `${tool} ${this.toolLimit(tool)}`).join(', ')})` : ''}`,
     );
+    if (await dropWorkspaceLimit(paths).catch(() => false))
+      log(
+        'settings: workspace-limit no longer applies and was removed; the runner now keeps part of the disk free instead (min-free-disk, 10% unless set)',
+      );
 
     const recovered = await recoverOrphans({
       paths,
@@ -472,9 +478,7 @@ export class RunnerDaemon {
           paths,
           reporters,
           log,
-          ...(settings.workspaceLimit === undefined
-            ? {}
-            : { limitBytes: settings.workspaceLimit }),
+          threshold: minFreeDisk(settings),
         });
         if (collected.removed.length > 0) this.pruneDue = true;
       } catch (error) {

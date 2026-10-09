@@ -1,25 +1,28 @@
 // What the runner keeps in its work root, and when a working directory may go.
 //
 // The runner's record of each subject's working directory (`<work root>/<app>/<subjectKey>/`, kept out of the agent's
-// reach by checkout.ts) holds the last run that worked there (`lastRunId`) and, once measured, what it takes on disk
-// and whether it holds unpushed work (`hasUnpushedWork`): changes not committed, or a HEAD past both where the runner
-// started the checkout and what it last saw the remote task branch hold. It is never judged from the default branch's
-// history, so a branch merged with a squash is not unpushed once it was pushed. A directory is measured again only
-// after a run used it, or once a day.
+// reach by checkout.ts) holds the last run that worked there (`lastRunId`) and whether it holds unpushed work
+// (`hasUnpushedWork`): changes not committed, or a HEAD past both where the runner started the checkout and what it
+// last saw the remote task branch hold. It is never judged from the default branch's history, so a branch merged with
+// a squash is not unpushed once it was pushed. A directory is checked again only after a run used it.
 //
 // The runner cannot tell on its own when the work on a subject is over. An application that accepts reports
 // (`HeartbeatResponse.workspaces`) is told about each of its directories and answers which runs belong to subjects
-// whose work is over (`WorkspacesResponse.remove`); those directories go. Beside that, the owner may cap what every
-// directory takes together (`RunnerSettings.workspaceLimit`): over it, the directories whose work is over go first,
-// then those with nothing unpushed, least recently used first. A directory a run holds (its lock is taken) is never
-// touched, and one with unpushed work is only ever removed when a person forces it (`nocobase-runner gc --force`).
+// whose work is over (`WorkspacesResponse.remove`); those directories go. Beside that, the runner keeps part of the
+// disk holding them free (`RunnerSettings.minFreeDisk`, 10% by default): below it, the directories whose work is over
+// go first, then those with nothing unpushed, least recently used first, the file system asked again after each until
+// enough is free. Disk pressure is read from the file system (`statfs`) rather than by measuring directories, which
+// meant reading every file under every `node_modules`. A directory a run holds (its lock is taken) is never touched,
+// and one with unpushed work is only ever removed when a person forces it (`nocobase-runner gc --force`).
 import { existsSync } from 'node:fs';
-import { lstat, readdir, readFile, stat } from 'node:fs/promises';
+import { readdir, readFile, stat, statfs } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { RunnerPaths } from '../lib/home.ts';
+import { minFreeBytes, type FreeSpace } from '../lib/size.ts';
 import {
   MAX_WORKSPACES_PER_REPORT,
+  type WorkspaceDisk,
   type WorkspacesRequest,
   type WorkspacesResponse,
 } from '../protocol/index.ts';
@@ -36,9 +39,6 @@ import { isAlive } from './supervisor.ts';
 
 export { hasUnpushedWork } from './checkout.ts';
 
-/** How long a measurement stands when nothing used the directory since. */
-const REMEASURE_MS = 24 * 60 * 60 * 1000;
-
 /** What the application said about a directory's last run. */
 export type WorkspaceStatus = 'ended' | 'active' | 'unknown';
 
@@ -48,7 +48,6 @@ export interface WorkspaceEntry {
   readonly subjectKey: string;
   readonly lastRunId?: string;
   readonly lastUsedAt: string;
-  readonly sizeBytes: number;
   readonly unpushed: boolean;
   /** A run holds it now. */
   readonly inUse: boolean;
@@ -94,34 +93,10 @@ async function isLocked(workDir: string): Promise<boolean> {
 }
 
 /**
- * Bytes on disk under `dir` that removing it frees: symbolic links are not followed, and a file with other hard links
- * (a package linked from the shared pnpm store, say) counts nothing, since its bytes stay with the other links.
+ * The directory with its unpushed state, checked again when a run used it since the last check, and recorded unless a
+ * run started meanwhile. A directory a run holds keeps what was last recorded.
  */
-export async function diskUsage(dir: string): Promise<number> {
-  let total = 0;
-  const pending = [dir];
-  while (pending.length > 0) {
-    const current = pending.pop()!;
-    const entries = await readdir(current, { withFileTypes: true }).catch(
-      () => [],
-    );
-    for (const entry of entries) {
-      const file = path.join(current, entry.name);
-      const info = await lstat(file).catch(() => undefined);
-      if (info === undefined) continue;
-      if (info.isDirectory()) pending.push(file);
-      else if (info.nlink > 1) continue;
-      total += info.blocks > 0 ? info.blocks * 512 : info.size;
-    }
-  }
-  return total;
-}
-
-/**
- * The directory with its size and unpushed state, measured again when a run used it since the last measurement (or a
- * day passed), and recorded unless a run started meanwhile. A directory a run holds is measured but not recorded.
- */
-export async function measureWorkspace(
+export async function inspectWorkspace(
   paths: RunnerPaths,
   workDir: string,
   meta: WorkspaceMeta,
@@ -129,22 +104,17 @@ export async function measureWorkspace(
 ): Promise<WorkspaceEntry> {
   const now = options.now ?? Date.now();
   const inUse = await isLocked(workDir);
-  const measuredAt =
+  const checkedAt =
     meta.measuredAt === undefined ? Number.NaN : Date.parse(meta.measuredAt);
   const stale =
     options.force === true ||
-    meta.sizeBytes === undefined ||
     meta.unpushed === undefined ||
-    !Number.isFinite(measuredAt) ||
-    Date.parse(meta.lastUsedAt) >= measuredAt ||
-    now - measuredAt > REMEASURE_MS;
-  let sizeBytes = meta.sizeBytes ?? 0;
+    !Number.isFinite(checkedAt) ||
+    Date.parse(meta.lastUsedAt) >= checkedAt;
   let unpushed = meta.unpushed ?? false;
-  if (stale || inUse) sizeBytes = await diskUsage(workDir);
   if (stale && !inUse) {
     unpushed = await hasUnpushedWork(workDir, meta, options.log);
-    await recordMeasurement(paths, workDir, meta, {
-      sizeBytes,
+    await recordCheck(paths, workDir, meta, {
       unpushed,
       measuredAt: new Date(now).toISOString(),
     });
@@ -155,19 +125,18 @@ export async function measureWorkspace(
     subjectKey: meta.subjectKey,
     ...(meta.lastRunId === undefined ? {} : { lastRunId: meta.lastRunId }),
     lastUsedAt: meta.lastUsedAt,
-    sizeBytes,
     unpushed,
     inUse,
     status: 'unknown',
   };
 }
 
-/** Writes a measurement into the record, unless a run used the directory since it was read. */
-async function recordMeasurement(
+/** Writes a check into the record, unless a run used the directory since it was read. */
+async function recordCheck(
   paths: RunnerPaths,
   workDir: string,
   read: WorkspaceMeta,
-  measurement: Pick<WorkspaceMeta, 'sizeBytes' | 'unpushed' | 'measuredAt'>,
+  check: Pick<WorkspaceMeta, 'unpushed' | 'measuredAt'>,
 ): Promise<void> {
   let lock: Lock;
   try {
@@ -178,13 +147,13 @@ async function recordMeasurement(
   try {
     const current = await readWorkspaceMeta(paths, workDir);
     if (current === undefined || current.lastUsedAt !== read.lastUsedAt) return;
-    await writeWorkspaceMeta(paths, workDir, { ...current, ...measurement });
+    await writeWorkspaceMeta(paths, workDir, { ...current, ...check });
   } finally {
     await lock.release();
   }
 }
 
-/** Every working directory, measured. */
+/** Every working directory, checked. */
 export async function scanWorkspaces(
   paths: RunnerPaths,
   options: {
@@ -195,15 +164,72 @@ export async function scanWorkspaces(
 ): Promise<WorkspaceEntry[]> {
   const entries: WorkspaceEntry[] = [];
   for (const { workDir, meta } of await listWorkspaceDirs(paths))
-    entries.push(await measureWorkspace(paths, workDir, meta, options));
+    entries.push(await inspectWorkspace(paths, workDir, meta, options));
   return entries;
 }
 
-/** What one application is told: its directories that a run worked in, most recently used first. */
+/** Free and total bytes of a file system, as `statfs` reports them for a path on it. */
+export interface DiskSpace {
+  readonly freeBytes: number;
+  readonly totalBytes: number;
+}
+
+/** Reads the disk holding `dir`; tests replace it. */
+export type ReadDisk = (dir: string) => Promise<DiskSpace | undefined>;
+
+/**
+ * The disk holding `dir`, or the directory it will be created in: what an unprivileged user may still write (`bavail`),
+ * of its total. Undefined when the file system cannot say.
+ */
+export async function readDisk(dir: string): Promise<DiskSpace | undefined> {
+  for (let current = path.resolve(dir); ; current = path.dirname(current)) {
+    try {
+      const info = await statfs(current);
+      return {
+        freeBytes: info.bavail * info.bsize,
+        totalBytes: info.blocks * info.bsize,
+      };
+    } catch (error) {
+      if (
+        (error as NodeJS.ErrnoException).code !== 'ENOENT' ||
+        path.dirname(current) === current
+      )
+        return undefined;
+    }
+  }
+}
+
+/** The disk as the application is told about it, with the bytes the owner keeps free. */
+export function workspaceDisk(
+  disk: DiskSpace,
+  threshold: FreeSpace | null,
+): WorkspaceDisk {
+  return {
+    freeBytes: Math.max(0, Math.floor(disk.freeBytes)),
+    totalBytes: Math.max(0, Math.floor(disk.totalBytes)),
+    ...(threshold === null
+      ? {}
+      : { minFreeBytes: minFreeBytes(threshold, disk.totalBytes) }),
+  };
+}
+
+/** Whether less than `threshold` is free on `disk`; never without a threshold or a disk that says. */
+export function lowOnDisk(
+  disk: DiskSpace | undefined,
+  threshold: FreeSpace | null,
+): boolean {
+  return (
+    disk !== undefined &&
+    threshold !== null &&
+    disk.freeBytes < minFreeBytes(threshold, disk.totalBytes)
+  );
+}
+
+/** What one application is told: its directories that a run worked in, most recently used first, and the disk. */
 export function workspacesRequest(
   entries: readonly WorkspaceEntry[],
   appKey: string,
-  limitBytes: number | undefined,
+  disk: WorkspaceDisk | undefined,
 ): WorkspacesRequest {
   const workspaces = entries
     .filter((entry) => entry.appKey === appKey && entry.lastRunId !== undefined)
@@ -212,15 +238,10 @@ export function workspacesRequest(
     .map((entry) => ({
       runId: entry.lastRunId!,
       workDir: entry.workDir,
-      sizeBytes: entry.sizeBytes,
       unpushed: entry.unpushed,
       lastUsedAt: entry.lastUsedAt,
     }));
-  return {
-    workspaces,
-    ...(limitBytes === undefined ? {} : { limitBytes }),
-    totalBytes: entries.reduce((total, entry) => total + entry.sizeBytes, 0),
-  };
+  return { workspaces, ...(disk === undefined ? {} : { disk }) };
 }
 
 /** Records on each of `appKey`'s directories what the application answered about its last run. */
@@ -250,15 +271,13 @@ export interface WorkspaceFilters {
 
 export interface PlanOptions {
   readonly now?: number;
-  /** The total the directories may take; none without it. */
-  readonly limitBytes?: number;
   /** Pick by these instead of the default rules. */
   readonly filters?: WorkspaceFilters;
   /** Remove picked directories with unpushed work too. */
   readonly force?: boolean;
 }
 
-export type PlanReason = 'ended' | 'overLimit' | 'selected';
+export type PlanReason = 'ended' | 'lowDisk' | 'selected';
 
 export interface PlannedRemoval {
   readonly entry: WorkspaceEntry;
@@ -269,11 +288,11 @@ export interface WorkspacePlan {
   readonly remove: PlannedRemoval[];
   /** Picked, but kept: a run holds it, or it has unpushed work. */
   readonly kept: { entry: WorkspaceEntry; reason: 'inUse' | 'unpushed' }[];
-  readonly totalBytes: number;
-  /** What is left once the plan is carried out. */
-  readonly remainingBytes: number;
-  /** Still over the limit afterwards, with only unpushed or held directories left to remove. */
-  readonly overLimit: boolean;
+  /**
+   * What may go too while the disk is low, in order: those with nothing unpushed that no run holds, least recently
+   * used first. Empty with filters.
+   */
+  readonly spare: WorkspaceEntry[];
 }
 
 const filtered = (filters: WorkspaceFilters | undefined): boolean =>
@@ -283,7 +302,7 @@ const filtered = (filters: WorkspaceFilters | undefined): boolean =>
     filters.subject !== undefined);
 
 /**
- * Which directories go. By default: those whose work is over, and then, while the total is over the limit, those with
+ * Which directories go. By default: those whose work is over, and then, while the disk is low (`spare`), those with
  * nothing unpushed, least recently used first. With filters: the directories every filter matches. A directory a run
  * holds is never removed, nor one with unpushed work unless forced.
  */
@@ -292,28 +311,16 @@ export function planRemovals(
   options: PlanOptions = {},
 ): WorkspacePlan {
   const now = options.now ?? Date.now();
-  const totalBytes = entries.reduce(
-    (total, entry) => total + entry.sizeBytes,
-    0,
-  );
   const remove: PlannedRemoval[] = [];
   const kept: WorkspacePlan['kept'] = [];
   const taken = new Set<string>();
-  const pick = (entry: WorkspaceEntry, reason: PlanReason): boolean => {
-    if (taken.has(entry.workDir)) return false;
-    if (entry.inUse) {
-      kept.push({ entry, reason: 'inUse' });
-      taken.add(entry.workDir);
-      return false;
-    }
-    if (entry.unpushed && options.force !== true) {
-      kept.push({ entry, reason: 'unpushed' });
-      taken.add(entry.workDir);
-      return false;
-    }
-    remove.push({ entry, reason });
+  const pick = (entry: WorkspaceEntry, reason: PlanReason): void => {
+    if (taken.has(entry.workDir)) return;
     taken.add(entry.workDir);
-    return true;
+    if (entry.inUse) kept.push({ entry, reason: 'inUse' });
+    else if (entry.unpushed && options.force !== true)
+      kept.push({ entry, reason: 'unpushed' });
+    else remove.push({ entry, reason });
   };
   const filters = options.filters;
   if (filtered(filters)) {
@@ -331,40 +338,20 @@ export function planRemovals(
         continue;
       pick(entry, 'selected');
     }
-  } else {
-    for (const entry of entries)
-      if (entry.status === 'ended') pick(entry, 'ended');
+    return { remove, kept, spare: [] };
   }
-  let remaining =
-    totalBytes -
-    remove.reduce((total, item) => total + item.entry.sizeBytes, 0);
-  if (options.limitBytes !== undefined && remaining > options.limitBytes) {
-    const candidates = entries
-      .filter(
-        (entry) => !taken.has(entry.workDir) && !entry.inUse && !entry.unpushed,
-      )
-      .sort(
-        (a, b) =>
-          Number(b.status === 'ended') - Number(a.status === 'ended') ||
-          Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt),
-      );
-    for (const entry of candidates) {
-      if (remaining <= options.limitBytes) break;
-      if (pick(entry, 'overLimit')) remaining -= entry.sizeBytes;
-    }
-  }
-  return {
-    remove,
-    kept,
-    totalBytes,
-    remainingBytes: remaining,
-    overLimit:
-      options.limitBytes !== undefined && remaining > options.limitBytes,
-  };
+  for (const entry of entries)
+    if (entry.status === 'ended') pick(entry, 'ended');
+  const spare = entries
+    .filter(
+      (entry) => !taken.has(entry.workDir) && !entry.inUse && !entry.unpushed,
+    )
+    .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt));
+  return { remove, kept, spare };
 }
 
 /**
- * Removes a planned directory, under its lock: unless a run took it, or used it since it was measured, or (not forced)
+ * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or (not forced)
  * it has unpushed work now. Returns why it was kept, or undefined when it was removed.
  */
 export async function removePlanned(
@@ -403,15 +390,59 @@ export async function removePlanned(
   }
 }
 
+export interface RelieveOptions {
+  readonly threshold: FreeSpace | null;
+  readonly readDisk?: ReadDisk;
+  readonly log?: (message: string) => void;
+}
+
+export interface RelieveResult {
+  readonly removed: WorkspaceEntry[];
+  readonly kept: { workDir: string; reason: string }[];
+  /** The disk once done; undefined when it cannot be read. */
+  readonly disk: DiskSpace | undefined;
+  /** Still below the threshold, with nothing left that may go. */
+  readonly low: boolean;
+}
+
+/**
+ * Removes `spare` directories in order while less than `threshold` is free on the disk holding the work root, asking
+ * the file system again after each.
+ */
+export async function relieveDiskPressure(
+  paths: RunnerPaths,
+  spare: readonly WorkspaceEntry[],
+  options: RelieveOptions,
+): Promise<RelieveResult> {
+  const read = options.readDisk ?? readDisk;
+  const removed: WorkspaceEntry[] = [];
+  const kept: RelieveResult['kept'] = [];
+  let disk = await read(paths.workRoot);
+  for (const entry of spare) {
+    if (!lowOnDisk(disk, options.threshold)) break;
+    const why = await removePlanned(
+      paths,
+      entry,
+      options.log === undefined ? {} : { log: options.log },
+    );
+    if (why === undefined) removed.push(entry);
+    else kept.push({ workDir: entry.workDir, reason: why });
+    disk = await read(paths.workRoot);
+  }
+  return { removed, kept, disk, low: lowOnDisk(disk, options.threshold) };
+}
+
 export interface CollectOptions {
   readonly paths: RunnerPaths;
   readonly now?: number;
-  readonly limitBytes?: number;
+  /** What to keep free on the disk holding the work root; null for nothing. */
+  readonly threshold?: FreeSpace | null;
   /** For each application that accepts reports, by its registration key: sends one. */
   readonly reporters?: ReadonlyMap<
     string,
     (request: WorkspacesRequest) => Promise<WorkspacesResponse>
   >;
+  readonly readDisk?: ReadDisk;
   readonly log?: (message: string) => void;
 }
 
@@ -420,25 +451,29 @@ export interface CollectResult {
   readonly kept: { workDir: string; reason: string }[];
   readonly entries: WorkspaceEntry[];
   readonly plan: WorkspacePlan;
+  readonly disk: DiskSpace | undefined;
 }
 
 /**
- * One pass: measures every directory, reports each application's to it when it accepts reports, and removes what the
- * default rules let go.
+ * One pass: checks every directory, reports each application's to it when it accepts reports, removes what the default
+ * rules let go, and then, while the disk is low, what else may go.
  */
 export async function collectWorkspaces(
   options: CollectOptions,
 ): Promise<CollectResult> {
-  const { log } = options;
-  const entries = await scanWorkspaces(options.paths, {
+  const { log, paths } = options;
+  const threshold = options.threshold ?? null;
+  const read = options.readDisk ?? readDisk;
+  const entries = await scanWorkspaces(paths, {
     ...(options.now === undefined ? {} : { now: options.now }),
     ...(log === undefined ? {} : { log }),
   });
+  const before = await read(paths.workRoot);
+  const disk =
+    before === undefined ? undefined : workspaceDisk(before, threshold);
   for (const [appKey, report] of options.reporters ?? []) {
     try {
-      const response = await report(
-        workspacesRequest(entries, appKey, options.limitBytes),
-      );
+      const response = await report(workspacesRequest(entries, appKey, disk));
       applyStatuses(entries, appKey, response);
     } catch (error) {
       log?.(
@@ -448,9 +483,6 @@ export async function collectWorkspaces(
   }
   const plan = planRemovals(entries, {
     ...(options.now === undefined ? {} : { now: options.now }),
-    ...(options.limitBytes === undefined
-      ? {}
-      : { limitBytes: options.limitBytes }),
   });
   const removed: CollectResult['removed'] = [];
   const kept: CollectResult['kept'] = plan.kept.map(({ entry, reason }) => ({
@@ -459,15 +491,13 @@ export async function collectWorkspaces(
   }));
   for (const { entry, reason } of plan.remove) {
     const why = await removePlanned(
-      options.paths,
+      paths,
       entry,
       log === undefined ? {} : { log },
     );
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
-      log?.(
-        `workspaces: removed ${entry.workDir} (${reason === 'ended' ? 'its work is over' : 'over the workspace limit'})`,
-      );
+      log?.(`workspaces: removed ${entry.workDir} (its work is over)`);
     } else kept.push({ workDir: entry.workDir, reason: why });
   }
   for (const item of plan.kept)
@@ -475,9 +505,19 @@ export async function collectWorkspaces(
       log?.(
         `workspaces: kept ${item.entry.workDir}: its work is over, but it holds work that was never pushed`,
       );
-  if (plan.overLimit)
+  const relieved = await relieveDiskPressure(paths, plan.spare, {
+    threshold,
+    readDisk: read,
+    ...(log === undefined ? {} : { log }),
+  });
+  for (const entry of relieved.removed) {
+    removed.push({ workDir: entry.workDir, reason: 'lowDisk' });
+    log?.(`workspaces: removed ${entry.workDir} (the disk is low)`);
+  }
+  kept.push(...relieved.kept);
+  if (relieved.low)
     log?.(
-      `workspaces: still over the workspace limit; what is left holds unpushed work or is in use`,
+      'workspaces: the disk is still low; what is left holds unpushed work or is in use',
     );
-  return { removed, kept, entries, plan };
+  return { removed, kept, entries, plan, disk: relieved.disk };
 }

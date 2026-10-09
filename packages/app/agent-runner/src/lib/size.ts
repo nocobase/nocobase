@@ -48,3 +48,50 @@ export function parseAge(text: string, what: string): number {
   ];
   return Number(match[1]) * unit;
 }
+
+/** How much of the disk holding the working directories to keep free: a number of bytes, or a share of the disk. */
+export type FreeSpace =
+  { readonly bytes: number } | { readonly percent: number };
+
+/** Kept free unless the owner says otherwise (`config set min-free-disk`). */
+export const DEFAULT_MIN_FREE_DISK: FreeSpace = { percent: 10 };
+
+/** `20G`, `512M` or `10%`; `off` or `none` for no threshold (null). */
+export function parseFreeSpace(text: string, what: string): FreeSpace | null {
+  const value = text.trim();
+  const percent = /^(\d+(?:\.\d+)?)\s*%$/u.exec(value);
+  if (percent !== null) {
+    const share = Number(percent[1]);
+    if (!(share > 0 && share < 100))
+      throw new UsageError(
+        `${what} must be a share of the disk between 0% and 100%, such as 10%; got ${text}.`,
+      );
+    return { percent: share };
+  }
+  if (value.includes('%'))
+    throw new UsageError(
+      `${what} must be a size such as 20G, a share of the disk such as 10%, or off; got ${text}.`,
+    );
+  try {
+    const bytes = parseSize(value, what);
+    return bytes === undefined ? null : { bytes };
+  } catch {
+    throw new UsageError(
+      `${what} must be a size such as 20G, a share of the disk such as 10%, or off; got ${text || 'nothing'}.`,
+    );
+  }
+}
+
+/** The bytes `threshold` keeps free on a disk of `totalBytes`. */
+export function minFreeBytes(threshold: FreeSpace, totalBytes: number): number {
+  return 'bytes' in threshold
+    ? threshold.bytes
+    : Math.ceil((totalBytes * threshold.percent) / 100);
+}
+
+/** `20 GB`, `10%`. */
+export function formatFreeSpace(threshold: FreeSpace): string {
+  return 'bytes' in threshold
+    ? formatSize(threshold.bytes)
+    : `${threshold.percent}%`;
+}

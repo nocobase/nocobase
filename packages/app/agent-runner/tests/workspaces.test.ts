@@ -1,12 +1,6 @@
-// Collecting working directories: what is measured and counted as unpushed, which directories the application's word
-// and the owner's limit remove, and which are never removed.
-import {
-  existsSync,
-  linkSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+// Collecting working directories: what is counted as unpushed, which directories the application's word and a low disk
+// remove, and which are never removed.
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -26,19 +20,51 @@ import {
 import { isInside } from '../src/core/command-policy.ts';
 import {
   collectWorkspaces,
-  diskUsage,
+  lowOnDisk,
   planRemovals,
+  readDisk,
   scanWorkspaces,
+  workspaceDisk,
   workspacesRequest,
+  type ReadDisk,
   type WorkspaceEntry,
 } from '../src/core/workspaces.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
-import { formatSize, parseAge, parseSize } from '../src/lib/size.ts';
+import {
+  formatFreeSpace,
+  formatSize,
+  minFreeBytes,
+  parseAge,
+  parseFreeSpace,
+  parseSize,
+} from '../src/lib/size.ts';
 import type {
   WorkspacesRequest,
   WorkspacesResponse,
 } from '../src/protocol/index.ts';
 import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+
+const GB = 1024 ** 3;
+
+/** A 100 GB disk with `free` free, and `perRemoval` more for each of `dirs` that is gone. */
+const fakeDisk = (
+  free: number,
+  dirs: readonly string[] = [],
+  perRemoval = 0,
+): ReadDisk & { reads: number } => {
+  const read = Object.assign(
+    () => {
+      read.reads += 1;
+      return Promise.resolve({
+        totalBytes: 100 * GB,
+        freeBytes:
+          free + dirs.filter((dir) => !existsSync(dir)).length * perRemoval,
+      });
+    },
+    { reads: 0 },
+  );
+  return read;
+};
 
 const COMMIT = [
   '-c',
@@ -119,7 +145,7 @@ describe('working directories', () => {
     return { requests, reporters: new Map([['acme', report]]) };
   };
 
-  it('records the last run, and measures size and unpushed work once the run is over', async () => {
+  it('records the last run, and checks unpushed work once the run is over', async () => {
     const done = await finishedRun('TASK-1', 'run-1', (dir) =>
       commit(dir, 'a.txt'),
     );
@@ -133,11 +159,9 @@ describe('working directories', () => {
       unpushed: false,
       inUse: false,
     });
-    expect(entry.sizeBytes).toBeGreaterThan(0);
-    expect(meta(done.workDir)).toMatchObject({
-      sizeBytes: entry.sizeBytes,
-      unpushed: false,
-    });
+    expect(entry).not.toHaveProperty('sizeBytes');
+    expect(meta(done.workDir)).toMatchObject({ unpushed: false });
+    expect(meta(done.workDir).measuredAt).toBeDefined();
   });
 
   it('counts uncommitted changes, untracked files included, as unpushed', async () => {
@@ -218,7 +242,12 @@ describe('working directories', () => {
     const [entry] = await scanWorkspaces(paths, { force: true });
     expect(entry.unpushed).toBe(true);
     const { reporters } = reporter({ remove: ['run-1'] });
-    const result = await collectWorkspaces({ paths, reporters, limitBytes: 1 });
+    const result = await collectWorkspaces({
+      paths,
+      reporters,
+      threshold: { percent: 50 },
+      readDisk: fakeDisk(0),
+    });
     expect(result.removed).toEqual([]);
     expect(existsSync(done.workDir)).toBe(true);
   });
@@ -285,10 +314,15 @@ describe('working directories', () => {
     const result = await collectWorkspaces({
       paths,
       reporters,
-      limitBytes: 1024 ** 4,
+      threshold: { percent: 10 },
+      readDisk: fakeDisk(50 * GB),
     });
     expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ limitBytes: 1024 ** 4 });
+    expect(requests[0]?.disk).toEqual({
+      freeBytes: 50 * GB,
+      totalBytes: 100 * GB,
+      minFreeBytes: 10 * GB,
+    });
     expect(
       requests[0]?.workspaces.map(({ runId, workDir, unpushed }) => ({
         runId,
@@ -336,16 +370,79 @@ describe('working directories', () => {
     }
   });
 
-  it('removes nothing on its own without an application that answers, unless over the limit', async () => {
+  it('removes nothing on its own without an application that answers, unless the disk is low', async () => {
     const older = await finishedRun('TASK-1', 'run-1');
     const newer = await finishedRun('TASK-2', 'run-2');
-    expect((await collectWorkspaces({ paths })).removed).toEqual([]);
-    const result = await collectWorkspaces({ paths, limitBytes: 1 });
-    // Over a limit nothing can meet, every pushed directory goes, least recently used first.
-    expect(result.removed.map((item) => item.workDir)).toEqual([
-      older.workDir,
-      newer.workDir,
+    const threshold = { percent: 10 };
+    expect(
+      (
+        await collectWorkspaces({
+          paths,
+          threshold,
+          readDisk: fakeDisk(50 * GB),
+        })
+      ).removed,
+    ).toEqual([]);
+    // No threshold, or a file system that cannot say: nothing goes for want of space.
+    expect(
+      (
+        await collectWorkspaces({
+          paths,
+          threshold: null,
+          readDisk: fakeDisk(0),
+        })
+      ).removed,
+    ).toEqual([]);
+    expect(
+      (
+        await collectWorkspaces({
+          paths,
+          threshold,
+          readDisk: () => Promise.resolve(undefined),
+        })
+      ).removed,
+    ).toEqual([]);
+    // 5 GB free of the 10 GB kept, and each directory frees 6 GB: the least recently used goes, and the file system,
+    // asked again, says that was enough.
+    const disk = fakeDisk(5 * GB, [older.workDir, newer.workDir], 6 * GB);
+    const result = await collectWorkspaces({
+      paths,
+      threshold,
+      readDisk: disk,
+    });
+    expect(result.removed).toEqual([
+      { workDir: older.workDir, reason: 'lowDisk' },
     ]);
+    expect(existsSync(newer.workDir)).toBe(true);
+    expect(result.disk).toEqual({ freeBytes: 11 * GB, totalBytes: 100 * GB });
+  });
+
+  it('removes pushed directories until enough is free, never unpushed or busy ones, and says when it is still low', async () => {
+    const older = await finishedRun('TASK-1', 'run-1');
+    const unpushed = await finishedRun('TASK-2', 'run-2', (dir) =>
+      writeFileSync(path.join(dir, 'notes.md'), 'draft\n'),
+    );
+    const busy = await finishedRun('TASK-3', 'run-3');
+    const newer = await finishedRun('TASK-4', 'run-4');
+    const lock = await acquireLock(`${busy.workDir}.lock`);
+    const logs: string[] = [];
+    try {
+      const result = await collectWorkspaces({
+        paths,
+        threshold: { bytes: 50 * GB },
+        readDisk: fakeDisk(0),
+        log: (message) => logs.push(message),
+      });
+      expect(result.removed).toEqual([
+        { workDir: older.workDir, reason: 'lowDisk' },
+        { workDir: newer.workDir, reason: 'lowDisk' },
+      ]);
+      expect(existsSync(unpushed.workDir)).toBe(true);
+      expect(existsSync(busy.workDir)).toBe(true);
+      expect(logs.join('\n')).toContain('the disk is still low');
+    } finally {
+      await lock.release();
+    }
   });
 
   it('leaves the shared pnpm store under the work root alone', async () => {
@@ -355,7 +452,11 @@ describe('working directories', () => {
     expect(await scanWorkspaces(paths)).toEqual([]);
     const day = 24 * 60 * 60 * 1000;
     await gcWorkspaces({ paths, now: Date.now() + 365 * day });
-    await collectWorkspaces({ paths, limitBytes: 1 });
+    await collectWorkspaces({
+      paths,
+      threshold: { percent: 99 },
+      readDisk: fakeDisk(0),
+    });
     expect(existsSync(path.join(store, 'pkg'))).toBe(true);
   });
 
@@ -363,12 +464,11 @@ describe('working directories', () => {
     await finishedRun('TASK-1', 'run-1');
     const entries = await scanWorkspaces(paths);
     const request = workspacesRequest(entries, 'acme', undefined);
-    expect(request).not.toHaveProperty('limitBytes');
+    expect(request).not.toHaveProperty('disk');
     expect(request.workspaces).toEqual([
       {
         runId: 'run-1',
         workDir: entries[0]?.workDir,
-        sizeBytes: entries[0]?.sizeBytes,
         unpushed: false,
         lastUsedAt: entries[0]?.lastUsedAt,
       },
@@ -378,11 +478,9 @@ describe('working directories', () => {
 });
 
 describe('what goes', () => {
-  const GB = 1024 ** 3;
   let day = 0;
   const entry = (
     subjectKey: string,
-    sizeGb: number,
     options: Partial<WorkspaceEntry> = {},
   ): WorkspaceEntry => ({
     workDir: `/work/acme/${subjectKey}`,
@@ -390,7 +488,6 @@ describe('what goes', () => {
     subjectKey,
     lastRunId: `run-${subjectKey}`,
     lastUsedAt: new Date(Date.UTC(2026, 9, 1 + (day += 1))).toISOString(),
-    sizeBytes: sizeGb * GB,
     unpushed: false,
     inUse: false,
     status: 'unknown',
@@ -399,46 +496,34 @@ describe('what goes', () => {
   const removed = (plan: ReturnType<typeof planRemovals>) =>
     plan.remove.map((item) => `${item.entry.subjectKey}:${item.reason}`);
 
-  it('removes ended work first, then pushed directories least recently used, never unpushed or busy ones', () => {
+  it('removes ended work, and spares pushed directories least recently used first for a low disk, never unpushed or busy ones', () => {
     const entries = [
-      entry('old-unpushed', 10, { unpushed: true }),
-      entry('old', 5),
-      entry('busy', 5, { inUse: true }),
-      entry('active', 5, { status: 'active' }),
-      entry('ended', 5, { status: 'ended' }),
-      entry('ended-unpushed', 5, { status: 'ended', unpushed: true }),
-      entry('newest', 5),
+      entry('old-unpushed', { unpushed: true }),
+      entry('old'),
+      entry('busy', { inUse: true }),
+      entry('active', { status: 'active' }),
+      entry('ended', { status: 'ended' }),
+      entry('ended-unpushed', { status: 'ended', unpushed: true }),
+      entry('newest'),
     ];
-    const plan = planRemovals(entries, { limitBytes: 15 * GB });
-    expect(removed(plan)).toEqual([
-      'ended:ended',
-      'old:overLimit',
-      'active:overLimit',
-      'newest:overLimit',
-    ]);
+    const plan = planRemovals(entries);
+    expect(removed(plan)).toEqual(['ended:ended']);
     expect(
       plan.kept.map((item) => `${item.entry.subjectKey}:${item.reason}`),
     ).toEqual(['ended-unpushed:unpushed']);
-    expect(plan.totalBytes).toBe(40 * GB);
-    expect(plan.remainingBytes).toBe(20 * GB);
-    expect(plan.overLimit).toBe(true);
-  });
-
-  it('removes only ended work while under the limit', () => {
-    const plan = planRemovals(
-      [entry('a', 1), entry('b', 1, { status: 'ended' })],
-      { limitBytes: 10 * GB },
-    );
-    expect(removed(plan)).toEqual(['b:ended']);
-    expect(plan.overLimit).toBe(false);
+    expect(plan.spare.map((item) => item.subjectKey)).toEqual([
+      'old',
+      'active',
+      'newest',
+    ]);
   });
 
   it('picks by filters instead, and removes unpushed work only when forced', () => {
     const now = Date.UTC(2026, 11, 1);
     const entries = [
-      entry('TASK-81', 1, { unpushed: true }),
-      entry('TASK-82', 1),
-      entry('TASK-83', 1, { lastUsedAt: new Date(now).toISOString() }),
+      entry('TASK-81', { unpushed: true }),
+      entry('TASK-82'),
+      entry('TASK-83', { lastUsedAt: new Date(now).toISOString() }),
     ];
     expect(
       removed(planRemovals(entries, { now, filters: { subject: 'TASK-81' } })),
@@ -466,22 +551,36 @@ describe('what goes', () => {
   });
 });
 
-describe('disk usage', () => {
-  it('counts what removing a directory frees, not files linked from elsewhere', async () => {
-    const root = tempDir('nocobase-runner-du-');
+describe('the disk', () => {
+  it('is read from the file system, without measuring any directory', async () => {
+    const root = tempDir('nocobase-runner-disk-');
     try {
-      const dir = path.join(root, 'work');
-      mkdirSync(dir);
-      writeFileSync(path.join(dir, 'own.txt'), 'x'.repeat(64 * 1024));
-      const before = await diskUsage(dir);
-      // A package file the shared store also links.
-      writeFileSync(path.join(root, 'stored.txt'), 'y'.repeat(256 * 1024));
-      linkSync(path.join(root, 'stored.txt'), path.join(dir, 'linked.txt'));
-      expect(await diskUsage(dir)).toBe(before);
-      expect(before).toBeGreaterThanOrEqual(64 * 1024);
+      const disk = await readDisk(root);
+      expect(disk?.totalBytes).toBeGreaterThan(0);
+      expect(disk?.freeBytes).toBeGreaterThanOrEqual(0);
+      expect(disk?.freeBytes).toBeLessThanOrEqual(disk?.totalBytes ?? 0);
+      // A work root not created yet: the disk it will be created on.
+      expect(
+        (await readDisk(path.join(root, 'missing', 'work')))?.totalBytes,
+      ).toBe(disk?.totalBytes);
     } finally {
       removeDir(root);
     }
+  });
+
+  it('is low below the threshold, in bytes or as a share of the disk', () => {
+    const disk = { freeBytes: 8 * GB, totalBytes: 100 * GB };
+    expect(lowOnDisk(disk, { percent: 10 })).toBe(true);
+    expect(lowOnDisk(disk, { percent: 5 })).toBe(false);
+    expect(lowOnDisk(disk, { bytes: 9 * GB })).toBe(true);
+    expect(lowOnDisk(disk, null)).toBe(false);
+    expect(lowOnDisk(undefined, { percent: 10 })).toBe(false);
+    expect(workspaceDisk(disk, { percent: 10 })).toEqual({
+      freeBytes: 8 * GB,
+      totalBytes: 100 * GB,
+      minFreeBytes: 10 * GB,
+    });
+    expect(workspaceDisk(disk, null)).not.toHaveProperty('minFreeBytes');
   });
 });
 
@@ -495,5 +594,15 @@ describe('sizes', () => {
     expect(parseAge('14d', 'age')).toBe(14 * 86_400_000);
     expect(formatSize(64.2 * 1024 ** 3)).toBe('64.2 GB');
     expect(formatSize(0)).toBe('0 B');
+    expect(parseFreeSpace('20G', 'min')).toEqual({ bytes: 20 * GB });
+    expect(parseFreeSpace('10%', 'min')).toEqual({ percent: 10 });
+    expect(parseFreeSpace('2.5 %', 'min')).toEqual({ percent: 2.5 });
+    expect(parseFreeSpace('off', 'min')).toBeNull();
+    expect(() => parseFreeSpace('100%', 'min')).toThrow(/10%/u);
+    expect(() => parseFreeSpace('lots', 'min')).toThrow(/20G/u);
+    expect(minFreeBytes({ percent: 10 }, 200 * GB)).toBe(20 * GB);
+    expect(minFreeBytes({ bytes: GB }, 200 * GB)).toBe(GB);
+    expect(formatFreeSpace({ percent: 10 })).toBe('10%');
+    expect(formatFreeSpace({ bytes: 20 * GB })).toBe('20.0 GB');
   });
 });

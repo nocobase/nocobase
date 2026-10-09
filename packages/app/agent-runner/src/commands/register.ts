@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { loadAdapters } from '../agent/adapters/registry.ts';
-import { parseSize } from '../lib/size.ts';
+import { parseFreeSpace } from '../lib/size.ts';
 import { RunnerCommand, UsageError } from '../lib/command.ts';
 import {
   appKey,
@@ -65,7 +65,7 @@ export default class Register extends RunnerCommand {
     name: Interfaces.OptionFlag<string | undefined>;
     slots: Interfaces.OptionFlag<string | undefined>;
     cli: Interfaces.OptionFlag<string[] | undefined>;
-    'workspace-limit': Interfaces.OptionFlag<string | undefined>;
+    'min-free-disk': Interfaces.OptionFlag<string | undefined>;
     force: Interfaces.BooleanFlag<boolean>;
   } = {
     server: Flags.string({
@@ -89,9 +89,9 @@ export default class Register extends RunnerCommand {
         'Use a local application CLI instead of installing the one a run names: <name>=<path>. Repeatable.',
       multiple: true,
     }),
-    'workspace-limit': Flags.string({
+    'min-free-disk': Flags.string({
       description:
-        'The most disk the working directories may take, across every application (40G, 512M, or off). Over it, the runner removes directories whose work is over first, then pushed ones least recently used; never unpushed work.',
+        'How much of the disk holding the working directories to keep free: a size (20G), a share of the disk (10%, the default), or off. Below it, the runner removes directories whose work is over first, then pushed ones least recently used; never unpushed work.',
     }),
     force: Flags.boolean({
       description:
@@ -112,11 +112,11 @@ export default class Register extends RunnerCommand {
     );
     const settings = await readSettings(this.paths);
     if (flags.name !== undefined) settings.name = flags.name;
-    if (flags['workspace-limit'] !== undefined) {
-      const limit = parseSize(flags['workspace-limit'], '--workspace-limit');
-      if (limit === undefined) delete settings.workspaceLimit;
-      else settings.workspaceLimit = limit;
-    }
+    if (flags['min-free-disk'] !== undefined)
+      settings.minFreeDisk = parseFreeSpace(
+        flags['min-free-disk'],
+        '--min-free-disk',
+      );
     const slotsFlag =
       flags.slots === undefined ? {} : parseSlotsFlag(flags.slots);
     if (slotsFlag.slots !== undefined) settings.slots = slotsFlag.slots;

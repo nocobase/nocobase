@@ -5,7 +5,7 @@
  * own runs are answered for, so a runner cannot learn about, or have removed, what another runner worked on.
  *
  * The report is kept on the runner (`agRunners.workspaceUsage`) for the runtimes pages, with what was decided for each
- * directory. Whether a branch was merged is never judged here; the binding decides from the application's own records,
+ * directory and the free space on the disk holding them. Whether a branch was merged is never judged here; the binding decides from the application's own records,
  * so a branch merged with a squash counts once its subject's work is over.
  */
 import {
@@ -163,7 +163,6 @@ export function createRunnerWorkspaces(
         workspaces.push({
           runId: workspace.runId,
           workDir: workspace.workDir,
-          sizeBytes: workspace.sizeBytes,
           unpushed: workspace.unpushed,
           lastUsedAt: workspace.lastUsedAt,
           subjectKind: run?.subjectKind ?? null,
@@ -171,18 +170,21 @@ export function createRunnerWorkspaces(
           settled: ended,
         });
       }
-      workspaces.sort((a, b) => b.sizeBytes - a.sizeBytes);
-      const appBytes = workspaces.reduce(
-        (total, workspace) => total + workspace.sizeBytes,
-        0,
+      workspaces.sort(
+        (a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt),
       );
       const usage: RunnerWorkspaceUsage = {
-        totalBytes: Math.max(request.totalBytes ?? appBytes, appBytes),
-        appBytes,
+        disk:
+          request.disk === undefined
+            ? null
+            : {
+                freeBytes: request.disk.freeBytes,
+                totalBytes: request.disk.totalBytes,
+                minFreeBytes: request.disk.minFreeBytes ?? null,
+              },
         count: workspaces.length,
         unpushedCount: workspaces.filter((workspace) => workspace.unpushed)
           .length,
-        limitBytes: request.limitBytes ?? null,
         measuredAt: clock.now().toISOString(),
         workspaces,
       };

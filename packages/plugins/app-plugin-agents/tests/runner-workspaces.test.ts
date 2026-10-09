@@ -20,13 +20,18 @@ import { runnerForViewer } from '../server/core/runs/runner-view.js';
 
 const GB = 1024 ** 3;
 
-const workspace = (runId: string, sizeBytes: number, unpushed = false) => ({
+const workspace = (runId: string, unpushed = false, day = 1) => ({
   runId,
   workDir: `/home/runner/.nocobase-runner-work/acme/${runId}`,
-  sizeBytes,
   unpushed,
-  lastUsedAt: '2026-10-01T00:00:00.000Z',
+  lastUsedAt: `2026-10-0${day}T00:00:00.000Z`,
 });
+
+const disk = {
+  freeBytes: 20 * GB,
+  totalBytes: 200 * GB,
+  minFreeBytes: 20 * GB,
+};
 
 describe("a runner's working directories", () => {
   let h: Harness;
@@ -87,38 +92,37 @@ describe("a runner's working directories", () => {
     const { runner, runIds } = await runnerWithRuns(['1', '2']);
     const [ended, ongoing] = runIds;
     const response = await report(runner, {
-      workspaces: [workspace(ended, 2 * GB), workspace(ongoing, 3 * GB, true)],
-      limitBytes: 40 * GB,
-      totalBytes: 64 * GB,
+      workspaces: [workspace(ended), workspace(ongoing, true)],
+      disk,
     });
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual({ remove: [ended], keep: [ongoing] });
   });
 
-  it('keeps the report on the runner, largest first, with each subject and what was decided', async () => {
+  it('keeps the report on the runner, most recently used first, with each subject, what was decided and the disk', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);
     const { runner, runIds } = await runnerWithRuns(['1', '2']);
     const [ended, ongoing] = runIds;
     await report(runner, {
-      workspaces: [workspace(ended, 2 * GB), workspace(ongoing, 3 * GB, true)],
-      limitBytes: 40 * GB,
-      totalBytes: 64 * GB,
+      // An earlier runner still sends each directory's size, which is no longer kept.
+      workspaces: [
+        { ...workspace(ended), sizeBytes: 2 * GB },
+        workspace(ongoing, true, 2),
+      ],
+      disk,
     });
     const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
       user: 'owner',
     });
     expect(shown.body.data.workspaceUsage).toMatchObject({
-      totalBytes: 64 * GB,
-      appBytes: 5 * GB,
+      disk,
       count: 2,
       unpushedCount: 1,
-      limitBytes: 40 * GB,
       measuredAt: '2026-10-01T00:00:00.000Z',
       workspaces: [
         {
           runId: ongoing,
-          sizeBytes: 3 * GB,
           unpushed: true,
           subjectKind: 'sample',
           subjectId: '2',
@@ -126,7 +130,6 @@ describe("a runner's working directories", () => {
         },
         {
           runId: ended,
-          sizeBytes: 2 * GB,
           unpushed: false,
           subjectKind: 'sample',
           subjectId: '1',
@@ -140,13 +143,16 @@ describe("a runner's working directories", () => {
     h = await createHarness();
     h.settled = new Set(['1']);
     const { runner, runIds } = await runnerWithRuns(['1']);
-    await report(runner, { workspaces: [workspace(runIds[0], GB)] });
+    await report(runner, { workspaces: [workspace(runIds[0])], disk });
     const stored = await h.services.runners.get(runner.runnerId);
     expect(
       runnerForViewer(stored, true).workspaceUsage?.workspaces,
     ).toHaveLength(1);
+    expect(
+      runnerForViewer(stored, true).workspaceUsage?.workspaces[0],
+    ).not.toHaveProperty('sizeBytes');
     expect(runnerForViewer(stored, false).workspaceUsage).toMatchObject({
-      appBytes: GB,
+      disk,
       count: 1,
       workspaces: [],
     });
@@ -156,14 +162,14 @@ describe("a runner's working directories", () => {
     h = await createHarness();
     const { runner, runIds } = await runnerWithRuns(['1']);
     const response = await report(runner, {
-      workspaces: [workspace(runIds[0], GB)],
+      workspaces: [workspace(runIds[0])],
     });
     expect(response.body.data).toEqual({ remove: [], keep: [] });
     const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
       user: 'owner',
     });
     expect(shown.body.data.workspaceUsage).toMatchObject({
-      limitBytes: null,
+      disk: null,
       workspaces: [{ runId: runIds[0], settled: null }],
     });
   });
@@ -175,7 +181,7 @@ describe("a runner's working directories", () => {
     // New work on the same subject, still queued.
     await h.enqueue(await h.createAgent({ name: 'Another' }), '1');
     const response = await report(runner, {
-      workspaces: [workspace(runIds[0], GB)],
+      workspaces: [workspace(runIds[0])],
     });
     expect(response.body.data).toEqual({ remove: [], keep: [runIds[0]] });
   });
@@ -186,7 +192,7 @@ describe("a runner's working directories", () => {
     const { runIds } = await runnerWithRuns(['1']);
     const other = await h.registerRunner({ name: 'other' });
     const response = await report(other, {
-      workspaces: [workspace(runIds[0], GB), workspace('unknown', GB)],
+      workspaces: [workspace(runIds[0]), workspace('unknown')],
     });
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual({ remove: [], keep: [] });

@@ -284,8 +284,7 @@ export interface WorkspaceMeta {
   pushed?: boolean;
   /** The last run that worked here, which the application is asked about (core/workspaces.ts). */
   lastRunId?: string;
-  /** What the directory took on disk when last measured (`measuredAt`), and whether it held unpushed work then. */
-  sizeBytes?: number;
+  /** Whether the directory held unpushed work when last checked (`measuredAt`). */
   unpushed?: boolean;
   measuredAt?: string;
   /**
@@ -369,9 +368,6 @@ function believable(
     ...text('endedAt'),
     ...text('lastRunId'),
     ...text('measuredAt'),
-    ...(typeof raw.sizeBytes === 'number' && raw.sizeBytes >= 0
-      ? { sizeBytes: raw.sizeBytes }
-      : {}),
     ...(typeof raw.unpushed === 'boolean' ? { unpushed: raw.unpushed } : {}),
     ...(legacy
       ? { legacy: true as const }
@@ -989,8 +985,7 @@ export async function prepareDirs(
       ...((options.runId ?? meta?.lastRunId)
         ? { lastRunId: options.runId ?? meta?.lastRunId }
         : {}),
-      // Measured again once the run is over (core/workspaces.ts); what it took before stands in until then.
-      ...(meta?.sizeBytes === undefined ? {} : { sizeBytes: meta.sizeBytes }),
+      // Checked again once the run is over (core/workspaces.ts); what it held before stands in until then.
       ...(meta?.unpushed === undefined ? {} : { unpushed: meta.unpushed }),
       ...(meta?.measuredAt === undefined
         ? {}

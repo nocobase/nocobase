@@ -89,8 +89,8 @@ export interface Runner {
    */
   readonly policy: RunnerPolicy | null;
   /**
-   * The working directories it keeps for this application and the disk they take, as it last reported them. Null or
-   * absent when it never reported any (a runner that does not report, or one that has not yet).
+   * The working directories it keeps for this application and the free space on the disk holding them, as it last
+   * reported them. Null or absent when it never reported any (a runner that does not report, or one that has not yet).
    */
   readonly workspaceUsage?: RunnerWorkspaceUsage | null;
   readonly lastSeenAt: string | null;
@@ -100,20 +100,24 @@ export interface Runner {
 
 /** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
 export interface RunnerWorkspaceUsage {
-  /** What every working directory on the runner takes, across every application it serves. */
-  readonly totalBytes: number;
-  /** What this application's take. */
-  readonly appBytes: number;
+  /** The disk holding the runner's working directories; null when it did not say. */
+  readonly disk: RunnerWorkspaceDisk | null;
   /** How many it keeps for this application. */
   readonly count: number;
   /** How many of those hold work that was never pushed, and are never removed on the application's word. */
   readonly unpushedCount: number;
-  /** The total its owner allows; null for no limit. */
-  readonly limitBytes: number | null;
   /** When it reported them. */
   readonly measuredAt: string;
-  /** This application's, largest first. */
+  /** This application's, most recently used first. */
   readonly workspaces: readonly RunnerWorkspace[];
+}
+
+/** The disk holding a runner's working directories, as it reported it. */
+export interface RunnerWorkspaceDisk {
+  readonly freeBytes: number;
+  readonly totalBytes: number;
+  /** What its owner keeps free; below it, the runner removes directories that may go. Null for nothing. */
+  readonly minFreeBytes: number | null;
 }
 
 /** One working directory a runner keeps for this application. */
@@ -122,7 +126,6 @@ export interface RunnerWorkspace {
   readonly runId: string;
   /** Where it is on the runner. */
   readonly workDir: string;
-  readonly sizeBytes: number;
   /** It holds changes not committed, or commits the remote task branch lacks. */
   readonly unpushed: boolean;
   readonly lastUsedAt: string;

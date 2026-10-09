@@ -1382,7 +1382,6 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
 const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
   runId: z.string().meta({ description: 'The last run that worked in it.' }),
   workDir: z.string().meta({ description: 'Where it is on the runner.' }),
-  sizeBytes: z.number().int(),
   unpushed: z.boolean().meta({
     description:
       "It holds changes not committed, or commits the remote task branch lacks; never removed on the application's word.",
@@ -1398,18 +1397,26 @@ const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
 
 const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
   .object({
-    totalBytes: z.number().int().meta({
-      description:
-        'What every working directory on the runner takes, across every application it serves.',
-    }),
-    appBytes: z.number().int(),
+    disk: z
+      .object({
+        freeBytes: z.number().int(),
+        totalBytes: z.number().int(),
+        minFreeBytes: z.number().int().nullable().meta({
+          description:
+            "What the runner's owner keeps free; below it, the runner removes directories that may go. Null for nothing.",
+        }),
+      })
+      .nullable()
+      .meta({
+        description:
+          "The disk holding the runner's working directories; null when it did not say.",
+      }),
     count: z.number().int(),
     unpushedCount: z.number().int(),
-    limitBytes: z.number().int().nullable(),
     measuredAt: dateTime,
     workspaces: z.array(RunnerWorkspaceSchema).meta({
       description:
-        "This application's, largest first; empty for a caller who may not see the runner's machine.",
+        "This application's, most recently used first; empty for a caller who may not see the runner's machine.",
     }),
   })
   .meta({ ref: 'AgentsRunnerWorkspaceUsage' });
@@ -1447,7 +1454,7 @@ const runnerObject = z.object({
   policy: RunnerPolicySchema.nullable(),
   workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
     description:
-      'The working directories it keeps for this application and the disk they take, as it last reported them; null or absent before it reports.',
+      'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
   }),
   lastSeenAt: dateTime.nullable(),
   createdAt: dateTime,

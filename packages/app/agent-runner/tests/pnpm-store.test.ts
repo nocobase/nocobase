@@ -18,9 +18,11 @@ import { agentWritableRoots } from '../src/agent/prepare/index.ts';
 import { workspaceNotes } from '../src/agent/worker.ts';
 import { workspaceRecordPath } from '../src/core/checkout.ts';
 import { RunnerDaemon } from '../src/core/loop.ts';
+import { isInside } from '../src/core/command-policy.ts';
 import {
   ensurePnpmStore,
   pnpmStoreEnv,
+  pruneCommand,
   prunePnpmStore,
 } from '../src/core/pnpm-store.ts';
 import { readConnections, readSettings } from '../src/lib/config.ts';
@@ -57,26 +59,71 @@ describe('the shared pnpm store', () => {
     expect(statSync(paths.pnpmStoreDir).isDirectory()).toBe(true);
   });
 
-  it("is named in the agent's environment for every pnpm, and a run cannot point it elsewhere", () => {
+  it("is named in the agent's environment for every pnpm, imported without hard links, and a run cannot change either", () => {
     const env = buildAgentEnv({
-      source: { PATH: '/bin', npm_config_store_dir: '/real' },
+      source: {
+        PATH: '/bin',
+        npm_config_store_dir: '/real',
+        npm_config_package_import_method: 'hardlink',
+      },
       pnpmStoreDir: '/w/.pnpm-store',
       workspace: {
         env: [
           { name: 'pnpm_config_store_dir', value: '/x' },
           { name: 'PNPM_CONFIG_STORE_DIR', value: '/x' },
+          { name: 'pnpm_config_package_import_method', value: 'hardlink' },
+          { name: 'NPM_CONFIG_PACKAGE_IMPORT_METHOD', value: 'hardlink' },
         ],
-        passthrough: ['npm_config_store_dir'],
+        passthrough: [
+          'npm_config_store_dir',
+          'npm_config_package_import_method',
+        ],
       },
     });
     expect(env).toMatchObject({
       pnpm_config_store_dir: '/w/.pnpm-store',
       npm_config_store_dir: '/w/.pnpm-store',
+      pnpm_config_package_import_method: 'clone-or-copy',
+      npm_config_package_import_method: 'clone-or-copy',
     });
     expect(env.PNPM_CONFIG_STORE_DIR).toBeUndefined();
+    expect(env.NPM_CONFIG_PACKAGE_IMPORT_METHOD).toBeUndefined();
     expect(pnpmStoreEnv('/s')).toEqual({
       pnpm_config_store_dir: '/s',
       npm_config_store_dir: '/s',
+      pnpm_config_package_import_method: 'clone-or-copy',
+      npm_config_package_import_method: 'clone-or-copy',
+    });
+  });
+
+  it("is pruned from the runner's own empty directory, named on the command line, with an environment built from nothing", () => {
+    const command = pruneCommand(paths, {
+      PATH: '/bin',
+      HOME: '/home/runner',
+      npm_config_registry: 'http://attacker.invalid/',
+      NPM_CONFIG_STORE_DIR: '/evil',
+      pnpm_config_store_dir: '/evil',
+      PNPM_HOME: '/evil',
+      COREPACK_HOME: '/evil',
+      COREPACK_ENABLE_STRICT: '0',
+    });
+    expect(command.cwd).toBe(paths.toolCwd);
+    // Neither the store nor anything else agents write is where pnpm starts or looks for settings.
+    expect(isInside(paths.workRoot, command.cwd)).toBe(false);
+    expect(isInside(paths.pnpmStoreDir, command.cwd)).toBe(false);
+    expect(isInside(paths.home, command.cwd)).toBe(true);
+    expect(command.args).toEqual([
+      'store',
+      'prune',
+      '--store-dir',
+      paths.pnpmStoreDir,
+    ]);
+    expect(command.env).toEqual({
+      PATH: '/bin',
+      HOME: '/home/runner',
+      pnpm_config_pm_on_fail: 'ignore',
+      pnpm_config_manage_package_manager_versions: 'false',
+      npm_config_manage_package_manager_versions: 'false',
     });
   });
 
@@ -96,7 +143,8 @@ describe('the shared pnpm store', () => {
     });
     expect(notes).toContain('/w/.pnpm-store');
     expect(notes).toContain('without `--store-dir`');
-    expect(notes).toContain('never edit them in place');
+    expect(notes).toContain('cloned or copied');
+    expect(notes).toContain('`pnpm patch`');
     expect(
       workspaceNotes({
         workDir: '/w/task-a',
@@ -163,6 +211,12 @@ describe('the shared pnpm store', () => {
             'utf8',
           ),
         ).toBe('export default 42;\n');
+      // Imported as a clone or a copy: a file of its own, not the store's file under another name.
+      for (const dir of [first, second])
+        expect(
+          statSync(path.join(dir, 'node_modules', 'shared-dep', 'index.js'))
+            .nlink,
+        ).toBe(1);
       // Neither project keeps a store of its own.
       expect(existsSync(path.join(first, '.pnpm-store'))).toBe(false);
       expect(existsSync(path.join(second, '.pnpm-store'))).toBe(false);
@@ -173,8 +227,32 @@ describe('the shared pnpm store', () => {
       expect(linked).not.toEqual([]);
       removeDir(first);
       removeDir(second);
-      expect(await prunePnpmStore({ paths, source: env })).toBe(true);
+      // What an agent may leave in the store, which it can write: settings that would move the store, make pnpm download
+      // and run another version of itself, or fetch from another registry. None of them is read.
+      const elsewhere = path.join(root, 'elsewhere');
+      writeFileSync(
+        path.join(storeDir, 'package.json'),
+        JSON.stringify({ packageManager: 'pnpm@9.0.0-does-not-exist' }),
+      );
+      writeFileSync(
+        path.join(storeDir, 'pnpm-workspace.yaml'),
+        `packages: []\nstoreDir: ${JSON.stringify(elsewhere)}\n`,
+      );
+      writeFileSync(
+        path.join(storeDir, '.npmrc'),
+        'registry=http://127.0.0.1:9/\n',
+      );
+      const logs: string[] = [];
+      expect(
+        await prunePnpmStore({
+          paths,
+          source: { ...env, pnpm_config_store_dir: elsewhere },
+          log: (message) => logs.push(message),
+        }),
+      ).toBe(true);
+      expect(logs.join('\n')).toContain('pruned the shared pnpm store');
       for (const file of linked) expect(existsSync(file)).toBe(false);
+      expect(existsSync(elsewhere)).toBe(false);
     },
     120_000,
   );

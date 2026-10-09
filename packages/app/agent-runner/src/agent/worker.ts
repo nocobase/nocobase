@@ -157,7 +157,7 @@ export function workspaceNotes(options: {
   }
   if (options.pnpmStoreDir !== undefined)
     lines.push(
-      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\`, so dependencies are linked from it instead of copied into your directory. Files under \`node_modules\` are links into that store, shared with other tasks: never edit them in place; use \`pnpm patch\` to change a dependency.`,
+      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\` or \`--package-import-method\`, so dependencies are cloned or copied from it instead of downloaded again. Never change the store's files; use \`pnpm patch\` to change a dependency.`,
     );
   if (options.skillsDir !== undefined)
     lines.push(

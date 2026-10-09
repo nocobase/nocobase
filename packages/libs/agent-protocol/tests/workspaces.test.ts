@@ -11,7 +11,6 @@ import {
 const workspace = {
   runId: 'r1',
   workDir: '/home/runner/.nocobase-runner-work/acme/issue-1',
-  sizeBytes: 2048,
   unpushed: false,
   lastUsedAt: '2026-10-09T00:00:00.000Z',
 };
@@ -25,10 +24,22 @@ describe('workspace reports', () => {
     expect(
       WorkspacesRequestSchema.parse({
         workspaces: [workspace],
-        limitBytes: 40 * 1024 ** 3,
-        totalBytes: 2048,
+        disk: {
+          freeBytes: 20 * 1024 ** 3,
+          totalBytes: 200 * 1024 ** 3,
+          minFreeBytes: 20 * 1024 ** 3,
+        },
       }),
-    ).toMatchObject({ workspaces: [workspace] });
+    ).toMatchObject({
+      workspaces: [workspace],
+      disk: { freeBytes: 20 * 1024 ** 3 },
+    });
+    // An earlier runner still sends each directory's size.
+    expect(
+      WorkspacesRequestSchema.parse({
+        workspaces: [{ ...workspace, sizeBytes: 2048 }],
+      }).workspaces[0],
+    ).toMatchObject({ sizeBytes: 2048 });
     expect(WorkspacesRequestSchema.safeParse({ workspaces: [] }).success).toBe(
       true,
     );
