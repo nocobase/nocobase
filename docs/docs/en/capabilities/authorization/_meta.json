@@ -33,10 +33,5 @@
     "type": "file",
     "name": "inspector",
     "label": "Inspect permission results"
-  },
-  {
-    "type": "file",
-    "name": "develop-with-ai",
-    "label": "Describe permissions to AI"
   }
 ]
