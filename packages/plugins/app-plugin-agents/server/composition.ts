@@ -472,6 +472,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     list: () => [...builtInSkills.values()],
   };
   const claims = createClaimService({
+    people,
     sections,
     mounts,
     repoAccess,

@@ -10,7 +10,8 @@
 // or its key from a variable is detected as it will run.
 //
 // The runner then sets what it owns: HOME (the agent's home, see agent-home.ts), TMPDIR (inside the working
-// directory), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
+// directory), the run's process tag (`AGENT_RUN_PROCESS_TAG`, which marks what the tool starts as the run's, see
+// core/process-tree.ts), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
 // git the agent runs uses the runner's hooks (push-guard.ts) whatever the repository configures. With the run's git
 // (`workspace.git`): the commit author and committer (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), the trailers the
 // `prepare-commit-msg` hook adds, and for each repository with a short-lived credential a credential helper scoped to
@@ -24,6 +25,7 @@ import {
   RUN_CREDENTIALS_ENV,
   type RunWorkspace,
 } from '../protocol/index.ts';
+import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
 
 /** The proxy variables, in both cases: tools read either. Their values may hold a user and password. */
@@ -74,6 +76,8 @@ export interface BuildEnvOptions {
   tmpDir?: string;
   /** The push guard's hooks directory. */
   hooksDir?: string;
+  /** The run's process tag (core/process-tree.ts), which marks what the tool starts as the run's. */
+  processTag?: string;
 }
 
 /** Names a run may not set and the runner's owner may not pass: the runner's own, and what it sets itself. */
@@ -160,6 +164,8 @@ export function buildAgentEnv(
         : `${options.binDir}${path.delimiter}${env.PATH}`;
   if (options.home !== undefined) env.HOME = options.home;
   if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
+  if (options.processTag !== undefined)
+    env[PROCESS_TAG_ENV] = options.processTag;
   const config: [string, string][] = [];
   if (options.hooksDir !== undefined)
     config.push(['core.hooksPath', options.hooksDir]);

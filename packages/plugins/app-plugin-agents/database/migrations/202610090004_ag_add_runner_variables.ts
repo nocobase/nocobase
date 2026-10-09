@@ -11,7 +11,7 @@ import {
  * a JSON array of names), null for a runner that reported none.
  */
 const migration: MigrationDefinition = defineMigration({
-  name: '202610090003_ag_add_runner_variables',
+  name: '202610090004_ag_add_runner_variables',
 
   async up({ builder }: MigrationContext): Promise<void> {
     await builder.createCollection('agRunnerVariables', (collection) => {

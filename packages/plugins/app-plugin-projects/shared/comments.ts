@@ -6,6 +6,7 @@
 import type { Attachment } from './attachments.js';
 import type { Page } from './common.js';
 import type { NameText } from './kinds.js';
+import type { ActivityVia } from './plans.js';
 
 export const REACTION_EMOJIS = [
   '👍',
@@ -67,6 +68,8 @@ export interface IssueComment {
   readonly rootId: string;
   /** How a person wrote it when not by hand in the browser (`agent`: an agent wrote it for them, or their plan did). */
   readonly via: 'cli' | 'api_key' | 'agent' | null;
+  /** The originating run and attempt, when recorded by the application. Kept separate from the transport `via`. */
+  readonly source?: ActivityVia | null;
   readonly createdAt: string;
   readonly editedAt: string | null;
   readonly deleted: boolean;

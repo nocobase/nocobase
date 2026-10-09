@@ -377,6 +377,36 @@ describe('agent environment', () => {
     });
   });
 
+  it('keeps the process tag under runner control alongside passed and local variables', () => {
+    const source = {
+      HTTPS_PROXY: 'http://proxy:3128',
+      CUSTOM_KEY: 'shell-key',
+      AGENT_RUN_PROCESS_TAG: 'daemon-tag',
+    };
+    const passEnv = ['CUSTOM_KEY', 'AGENT_RUN_PROCESS_TAG'];
+    const localVariables = { PROVIDER_KEY: 'local-key' };
+    expect(
+      buildAgentEnv({
+        source,
+        passEnv,
+        localVariables,
+        processTag: 'run-tag',
+        workspace: {
+          passthrough: ['PROVIDER_KEY'],
+          env: [{ name: 'AGENT_RUN_PROCESS_TAG', value: 'untrusted-tag' }],
+        },
+      }),
+    ).toEqual({
+      HTTPS_PROXY: 'http://proxy:3128',
+      CUSTOM_KEY: 'shell-key',
+      PROVIDER_KEY: 'local-key',
+      AGENT_RUN_PROCESS_TAG: 'run-tag',
+    });
+    expect(detectionEnv(source, passEnv, localVariables)).not.toHaveProperty(
+      'AGENT_RUN_PROCESS_TAG',
+    );
+  });
+
   it('provides a passthrough name only from the local variables or --pass-env, and names the missing ones', () => {
     const source = { PATH: '/bin', PI_KEY: 'from-env', STRAY: 'stray' };
     const workspace = {

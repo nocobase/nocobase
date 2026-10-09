@@ -87,6 +87,8 @@ import {
   RUN_REQUEST_STATUSES,
   type Run,
   type RunDetail,
+  type RunExecutionSnapshot,
+  type RunEffortReport,
   type RunRequest,
   type RunRequestItem,
   type RunRequestStatus,
@@ -777,10 +779,59 @@ export const SkillAttachmentsSchema: z.ZodType<{ skillIds: string[] }> =
   z.object({ skillIds: z.array(z.string()) });
 
 // Runs.
+const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
+  .object({
+    effort: z.string().nullable().meta({
+      description:
+        'A tool-reported effort; null means the tool did not report the current value.',
+    }),
+    source: z.string().meta({
+      description:
+        'The tool response that supplied the value, never a request setting.',
+    }),
+    at: dateTime.meta({ description: 'When this reported value changed.' }),
+  })
+  .meta({ ref: 'AgentsRunEffortReport' });
+
+export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
+  .object({
+    attempt: z.number().int(),
+    runnerId: z.string(),
+    runnerName: z.string().nullable(),
+    runnerOwnerUserId: z.string().nullable(),
+    runnerOwnerName: z.string().nullable(),
+    runnerTrust: z.enum(['team', 'ownerOnly']).nullable(),
+    tool: z.string().nullable(),
+    toolVersion: z.string().nullable(),
+    modelService: z.string().nullable(),
+    model: z.string().nullable(),
+    actualModels: z.array(z.string()),
+    effort: z.string().nullable(),
+    effortReports: z.array(RunEffortReportSchema).optional(),
+    actualEffortObservedAt: dateTime.optional(),
+    actualEffort: z.string().nullable().optional(),
+    actualEffortSource: z.string().nullable().optional(),
+    actualEffortAt: dateTime.nullable().optional(),
+    machineHidden: z.boolean().optional(),
+    dispatchedAt: dateTime,
+    finishedAt: dateTime.nullable(),
+    failureReason: z.string().nullable(),
+  })
+  .meta({ ref: 'AgentsRunExecutionSnapshot' });
 const runObject = z.object({
   id: z.string(),
   agentId: z.string(),
   agentType: z.enum(['online', 'runner']),
+  executions: z.array(RunExecutionSnapshotSchema).optional(),
+  runnerName: z.string().nullable().optional(),
+  runnerOwnerUserId: z.string().nullable().optional(),
+  runnerOwnerName: z.string().nullable().optional(),
+  toolVersion: z.string().nullable().optional(),
+  actualModels: z.array(z.string()).optional(),
+  actualEffort: z.string().nullable().optional(),
+  actualEffortSource: z.string().nullable().optional(),
+  actualEffortAt: dateTime.nullable().optional(),
+  machineHidden: z.boolean().optional(),
   runnerId: z.string().nullable().meta({
     description:
       'The runner holding it; `server:<instance>` for an online run held by an application instance.',
