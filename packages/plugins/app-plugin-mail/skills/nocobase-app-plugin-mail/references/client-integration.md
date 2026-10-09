@@ -40,6 +40,8 @@ Import `resolveAppUrl` from `@nocobase/app-client` for application-owned links. 
 
 Separately configure `mail.oauthReturnUrl: /mail/accounts` so OAuth success and failure return to the registered production page. This server configuration is independent of the component property; the return page consumes the authorization result and reloads accounts. Registering a path only in Dev routes or passing a link does not put that page in a production build.
 
+A production startup warning flags the known development-only return destination without changing it or creating a route. It is an observability reminder, not proof that a custom route exists. Keep the return path free of the deployment prefix, register the page in production with the authentication/permission contract above, and verify both success and failure flows; the existing `MailAccountsPage` already handles those result parameters.
+
 ## Business records and templates
 
 Pass the allowed record values through `templateVariables` when embedding the workspace:

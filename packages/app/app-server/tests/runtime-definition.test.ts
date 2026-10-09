@@ -39,6 +39,24 @@ describe('application runtime definition', () => {
     },
   );
 
+  it.each(['production', 'development', 'test', undefined])(
+    'exposes only the application runtime NODE_ENV to providers: %s',
+    async (value) => {
+      const original = process.env.NODE_ENV;
+      try {
+        process.env.NODE_ENV = 'ambient-host-environment';
+        const runtime = await resolveAppRuntime(createDefinition(), {
+          ...createScope(createAppRoot()),
+          env: { NODE_ENV: value },
+        });
+        expect(createAppFromRuntime(runtime).nodeEnv).toBe(value);
+      } finally {
+        if (original === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = original;
+      }
+    },
+  );
+
   it('assembles configuration before application creation and preserves it on reload', async () => {
     let deploymentLabel: string | undefined = 'deployment';
     const callback = vi.fn();

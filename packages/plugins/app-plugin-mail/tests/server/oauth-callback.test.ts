@@ -120,18 +120,57 @@ describe('Mail OAuth callback route', () => {
       code: 'code-1',
     });
   });
+  it.each([
+    ['', 'success'],
+    ['', 'failure'],
+    ['/main', 'success'],
+    ['/main', 'failure'],
+  ] as const)(
+    'returns to the configured application page under %s after %s without leaking provider errors',
+    async (publicBasePath, result) => {
+      const completeAuthorization = vi.fn<MailService['completeAuthorization']>(
+        async () => {
+          if (result === 'failure') throw new Error('private-provider-error');
+          return {
+            id: 'authorized-account',
+            userId: 'user-1',
+            provider: { type: 'gmail', name: 'google' },
+            address: 'user@example.test',
+            scopes: [],
+            status: 'active',
+          };
+        },
+      );
+      const router = await createRouter(
+        service({ completeAuthorization }),
+        DEFAULT_MAIL_OAUTH_CALLBACK_PATH,
+        '/mail/accounts?source=connect&mailAuthorization=old',
+        publicBasePath,
+      );
+      const response = await router.request(
+        '/mail/oauth/callback?state=state-1&code=private-provider-code',
+      );
+      expect(response.status).toBe(302);
+      expect(response.headers.get('location')).toBe(
+        `${publicBasePath}/mail/accounts?source=connect&mailAuthorization=${result}`,
+      );
+      expect(response.headers.get('location')).not.toContain('private-');
+      expect(completeAuthorization).toHaveBeenCalledOnce();
+    },
+  );
 });
 
 async function createRouter(
   mail: MailService,
   oauthCallbackUrl: string = DEFAULT_MAIL_OAUTH_CALLBACK_PATH,
   oauthReturnUrl?: string,
+  publicBasePath: string = '/test',
 ): Promise<Hono> {
   const container = new ServiceContainer();
   container.instance(mailServiceToken, mail);
   const contribution = await mailOAuthCallbackRoutes.createRouter({
     appName: 'test',
-    publicBasePath: '/test',
+    publicBasePath,
     config: { get: () => ({ oauthCallbackUrl, oauthReturnUrl }) },
     paths: createAppPaths({ rootDir: '/missing' }),
     router: new Hono(),

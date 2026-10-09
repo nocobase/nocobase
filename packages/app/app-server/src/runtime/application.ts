@@ -21,6 +21,7 @@ export function createAppFromRuntime(runtime: AppRuntimeContext): Application {
   const app = new Application<ApplicationConfig>({
     config: runtime.config,
     mode: runtime.mode,
+    nodeEnv: runtime.env.NODE_ENV,
     strictStartup: runtime.env.NOCOBASE_STRICT_STARTUP === 'true',
     paths: runtime.paths,
     runtimeLogging: runtime.scope.logging,
