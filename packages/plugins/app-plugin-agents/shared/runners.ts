@@ -126,8 +126,8 @@ export interface RunnerRecentRun {
 
 /**
  * A runner in the list, with what the viewer may do with it. What identifies its machine (the host name, the tools'
- * executable paths) is shown only to those who may manage it (`canManage`): `hostname` is null and the tools carry no
- * `path` for everyone else.
+ * executable paths) is shown only to its owner, the managers of runners and anyone who may wake an agent: `hostname`
+ * is null and the tools carry no `path` for everyone else.
  */
 export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   /** Null when the viewer may not manage it. */
@@ -147,8 +147,8 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
    */
   readonly takes: readonly RunnerWorkTarget[];
   /**
-   * The viewer may change it (its name, slots, coding tools and policy): its owner, or a manager of runners when it has
-   * no owner. A manager of runners does not change someone else's runner.
+   * The viewer may change it (its name, slots, coding tools and policy): its owner, or a manager of runners once its
+   * owner can no longer act (none recorded, or disabled or deleted). A manager does not change someone else's runner.
    */
   readonly canManage: boolean;
   /** The viewer may switch it between personal and team: whoever may change it (`canManage`). */

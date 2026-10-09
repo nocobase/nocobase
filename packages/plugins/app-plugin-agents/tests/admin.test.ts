@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AGENT_LAYER_PREFIX } from '../server/core/brief/index.js';
 import type { RunnerNotice } from '../server/tokens.js';
@@ -277,6 +277,7 @@ describe('admin API', () => {
     await claim(h, runner);
     const notices: RunnerNotice[] = [];
     h.services.events.on('notice', (event) => notices.push(event.notice));
+    const logged = vi.spyOn(console, 'info').mockImplementation(() => {});
     const revoked = await h.request(
       'POST',
       `/agents/runners/${runner.runnerId}/revoke`,
@@ -302,6 +303,17 @@ describe('admin API', () => {
         params: expect.objectContaining({ revokedByUserId: 'alice' }),
       }),
     ]);
+    // And the record says who revoked whose runner.
+    expect(logged).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        event: 'agents.runner.revoked',
+        runnerId: runner.runnerId,
+        ownerUserId: 'owner',
+        actorId: 'alice',
+      }),
+    );
+    logged.mockRestore();
   });
 
   it('tells nobody when an owner revokes their own runner', async () => {
@@ -364,6 +376,51 @@ describe('admin API', () => {
     });
     expect(owner.status).toBe(200);
     expect(owner.body.data).toMatchObject({ name: 'renamed', slots: 2 });
+  });
+
+  it('lets a manager of runners change a runner whose owner can no longer act', async () => {
+    h = await createHarness();
+    const disabled = new Set<string>(['bob']);
+    h.services.people.provide({
+      names: () => Promise.resolve(new Map()),
+      list: () => Promise.resolve([]),
+      inactive: (_conn, ids) =>
+        Promise.resolve(new Set(ids.filter((id) => disabled.has(id)))),
+    });
+    const runner = await h.registerRunner({ ownerUserId: 'bob' });
+    const path = `/agents/runners/${runner.runnerId}`;
+    const listed = await h.request('GET', '/agents/runners', {
+      user: 'alice',
+      can: ADMIN,
+    });
+    expect(listed.body.data).toEqual([
+      expect.objectContaining({
+        id: runner.runnerId,
+        canManage: true,
+        canChangeTrust: true,
+      }),
+    ]);
+    const reader = await h.request('PATCH', path, {
+      user: 'carol',
+      can: ['agents.runners/read'],
+      body: { slots: 3 },
+    });
+    expect(reader.status).toBe(403);
+    const manager = await h.request('PATCH', path, {
+      user: 'alice',
+      can: ADMIN,
+      body: { slots: 3 },
+    });
+    expect(manager.status).toBe(200);
+    expect(manager.body.data).toMatchObject({ slots: 3 });
+    // Once the owner can act again, the runner is theirs alone again.
+    disabled.clear();
+    const again = await h.request('PATCH', path, {
+      user: 'alice',
+      can: ADMIN,
+      body: { slots: 4 },
+    });
+    expect(again.status).toBe(403);
   });
 
   it('lets a manager of runners change a runner without an owner', async () => {

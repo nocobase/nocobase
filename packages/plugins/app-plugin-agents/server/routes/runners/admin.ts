@@ -7,8 +7,9 @@
  *   someone else's runner is an emergency measure: its owner is told, and the server log records who did it.
  * - Changing a runner (its name, slots, coding tools, policy and trust) is its owner's alone, because the runner is
  *   their machine with their tools' sign-ins and credentials: a manager who could share it with the team would send
- *   everyone's work there. A runner without an owner (its owner's account is gone) is changed by managers of runners,
- *   or nobody could. Anyone signed in may add a personal runner and change their own, including sharing it with the
+ *   everyone's work there. A runner whose owner can no longer act (no owner recorded, or an owner the application's
+ *   directory reports disabled or deleted, `people.inactive`) is changed by managers of runners, or nobody could.
+ *   Anyone signed in may add a personal runner and change their own, including sharing it with the
  *   team. Reading agents (`agents.agents` read) also shows every runner, to pick where an agent runs.
  * - A runner's page: whoever sees a runner sees which agents it takes (`takes`), what it holds now
  *   (`GET /agents/runners/:runnerId/work`: its runs as the caller may see them, then its jobs) and its latest runs
@@ -70,13 +71,27 @@ function caller(context: Context<AdminEnv>): AdminCaller {
   return context.get('caller');
 }
 
+/** Where a manager revoking someone else's runner is recorded: the application's logger. */
+export interface AdminAuditLogger {
+  info(details: Readonly<Record<string, unknown>>, message: string): void;
+}
+
+export interface AdminRoutesOptions {
+  /** Without one, the record goes to the console. */
+  readonly logger?: AdminAuditLogger;
+}
+
 /**
  * `guard` authenticates the request and sets `caller`; the route contribution installs the real one, tests a fake.
  */
 export function createAdminRoutes(
   services: Agents,
   guard: MiddlewareHandler<AdminEnv>,
+  options: AdminRoutesOptions = {},
 ): Hono<AdminEnv> {
+  const audit: AdminAuditLogger = options.logger ?? {
+    info: (details, message) => console.info(message, details),
+  };
   const router = domainRouter<AdminEnv>();
   const runnerParam = apiValidator('param', RunnerParams);
   const notVisible = apiErrorResponse(
@@ -87,7 +102,7 @@ export function createAdminRoutes(
     ...apiErrorResponses,
     403: apiErrorResponse(
       403,
-      "Only the runner's owner may change it; a manager of runners (`agents.runners` manage) only when it has no owner.",
+      "Only the runner's owner may change it; a manager of runners (`agents.runners` manage) only once its owner can no longer act.",
     ),
     404: notVisible,
   };
@@ -120,6 +135,13 @@ export function createAdminRoutes(
     return found;
   };
 
+  /** Whether nobody can act as the runner's owner: none recorded, or one the directory reports disabled or deleted. */
+  const ownerGone = async (runner: Runner): Promise<boolean> =>
+    runner.ownerUserId === null ||
+    (
+      await services.people.inactive(services.tx.read(), [runner.ownerUserId])
+    ).has(runner.ownerUserId);
+
   /** What the caller may do with a runner, or 404 when they may not see it. */
   const runnerRights = async (
     context: Context<AdminEnv>,
@@ -133,7 +155,7 @@ export function createAdminRoutes(
     const who = caller(context);
     const own = runner.ownerUserId === who.userId;
     const revoke = own || (await who.can('agents.runners', 'manage'));
-    const edit = own || (runner.ownerUserId === null && revoke);
+    const edit = own || (revoke && (await ownerGone(runner)));
     const see = revoke || (await seesEveryRunner(who));
     const machine = revoke || (see && (await mayUseAgents(who)));
     return { see, edit, revoke, machine };
@@ -181,9 +203,7 @@ export function createAdminRoutes(
     if (!rights.see) throw notFound('Runner');
     if (!rights.edit)
       throw forbidden(
-        runner.ownerUserId === null
-          ? 'Only a manager of runners may change a runner without an owner.'
-          : "Only the runner's owner may change it.",
+        "Only the runner's owner may change it; a manager of runners only once its owner can no longer act.",
       );
     return runner;
   };
@@ -401,7 +421,7 @@ export function createAdminRoutes(
         flags: { runnerId: { name: 'runtime' } },
       }),
       description:
-        "Its owner's alone, a manager of runners (`agents.runners` manage) included; a runner without an owner is changed by managers of runners.",
+        "Its owner's alone, a manager of runners (`agents.runners` manage) included; a runner whose owner can no longer act (none recorded, or disabled or deleted) is changed by managers of runners.",
       responses: { 200: dataResponse(RunnerSchema), ...editErrors },
     }),
     runnerParam,
@@ -442,8 +462,15 @@ export function createAdminRoutes(
       const by = caller(context).userId;
       const revoked = await services.runners.revoke(runner.id, { by });
       if (runner.ownerUserId !== null && runner.ownerUserId !== by)
-        console.info(
-          `Agents runner ${runner.id} ("${runner.name}") of user ${runner.ownerUserId} was revoked by manager of runners ${by}.`,
+        audit.info(
+          {
+            event: 'agents.runner.revoked',
+            runnerId: runner.id,
+            runnerName: runner.name,
+            ownerUserId: runner.ownerUserId,
+            actorId: by,
+          },
+          "A manager of runners revoked someone else's runner.",
         );
       // What it held goes back to the queue now rather than at the next sweep.
       await services.sweeper.sweep();
