@@ -1,5 +1,16 @@
 # @nocobase/app-template-hub
 
+## 1.0.0-beta.48
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- 1408643: Keep the shared Vitest configuration aligned across application templates while temporarily excluding Workflow-specific tests. Preserve the test sources for re-enabling them later.
+- Updated dependencies [487921c]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-cli@1.0.0-beta.15
+
 ## 1.0.0-beta.47
 
 ### Patch Changes

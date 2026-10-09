@@ -61,6 +61,8 @@ export interface AgentChatLocale {
     };
     readonly notice: {
       readonly switchedToDefault: string;
+      readonly switchedToOnline: string;
+      readonly onlineFallbackUnavailable: string;
       readonly switchedBack: string;
       readonly runFailed: string;
       readonly runFailedReason: string;
@@ -271,14 +273,18 @@ const agentChatEnUS: AgentChatLocale = {
       modelUnavailable:
         'The model of {{name}} is not available; ask an administrator',
       kept: 'Your messages are kept and answered once it can answer.',
-      fallback: 'Use the system default here',
+      fallback: 'Use another agent here',
       usingDefault:
-        'This conversation uses {{name}}, the system default, for now.',
+        'This conversation temporarily uses {{name}} in place of {{own}}.',
       restore: 'Switch back to {{own}}',
     },
     notice: {
       switchedToDefault:
         'Switched to {{name}}, the system default, until {{own}} is back.',
+      switchedToOnline:
+        '{{own}} has no runner for you now, so {{name}} answers until {{own}} is back.',
+      onlineFallbackUnavailable:
+        'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runner.',
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',

@@ -21,11 +21,6 @@
   },
   {
     "type": "file",
-    "name": "workflow",
-    "label": "4. 接一条审批流"
-  },
-  {
-    "type": "file",
     "name": "notifications",
     "label": "5. 发通知"
   },
