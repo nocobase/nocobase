@@ -29,6 +29,7 @@ function agent(overrides: Partial<ChatAgent> & Pick<ChatAgent, 'id'>) {
     personal: false,
     isSystemDefault: false,
     isMyDefault: false,
+    fallbackAgentId: null,
     availability: online,
     ...overrides,
   } satisfies ChatAgent;

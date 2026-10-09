@@ -21,13 +21,17 @@ const chatEnUS = {
       modelUnavailable: 'Model unavailable',
     },
     offline: {
-      fallbackDone: 'This conversation now uses the system default',
+      fallbackDone: 'This conversation now uses another agent',
       restoreDone: 'Switched back',
       newSession: 'The agent starts a new session and reads this conversation.',
     },
     notice: {
       switchedToDefault:
         'Switched to {{name}}, the system default, until {{own}} is back.',
+      switchedToOnline:
+        '{{own}} has no runner for you now, so {{name}} answers until {{own}} is back.',
+      onlineFallbackUnavailable:
+        'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runner.',
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',
@@ -64,6 +68,12 @@ const chatEnUS = {
       none: 'None',
       unknown: 'An agent you cannot see',
       saved: 'System default chat agent saved',
+      onlineFallback: {
+        title: 'Online fallback agent',
+        description:
+          'Answers in place of a runner agent that has no runner for the person: new conversations with that agent start here, and a runner conversation may switch to it.',
+        saved: 'Online fallback agent saved',
+      },
     },
   },
   chatProfile: {

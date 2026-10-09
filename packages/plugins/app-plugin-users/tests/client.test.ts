@@ -146,6 +146,7 @@ describe('@nocobase/app-plugin-users Client routes', () => {
       ]),
     );
   });
+  // The first page import transforms its UI dependencies; allow for that cold load during parallel CI runs.
   it('mounts one protected Settings page at a relative path', async () => {
     const registration = users({ mount: 'settings', path: '/users' });
     expect(registration.serviceProviders).toEqual([]);
@@ -163,7 +164,7 @@ describe('@nocobase/app-plugin-users Client routes', () => {
     await expect(
       registration.routes[0]?.routes[0]?.componentLoader(),
     ).resolves.toMatchObject({ default: expect.any(Function) });
-  });
+  }, 15_000);
 
   it('serves the invitation page to visitors without a session', async () => {
     const registration = users({ mount: 'settings' });

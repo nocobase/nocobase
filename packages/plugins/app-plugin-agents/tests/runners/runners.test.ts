@@ -4,7 +4,7 @@ import {
 } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { RunnerNotice } from '../../server/tokens.js';
+import type { AgentsNotice } from '../../server/tokens.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const registration = (token: string) => ({
@@ -496,7 +496,7 @@ describe('runners', () => {
 
   it('keeps a runner of an unsupported protocol connected as upgrade_required, gives it no work, and tells its owner once', async () => {
     h = await createHarness();
-    const notices: RunnerNotice[] = [];
+    const notices: AgentsNotice[] = [];
     h.services.events.on('notice', (event) => notices.push(event.notice));
     const cleared: unknown[] = [];
     h.services.events.on('notice.cleared', (event) =>

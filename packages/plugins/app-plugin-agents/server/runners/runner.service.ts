@@ -8,7 +8,7 @@
  *
  * A runner speaking a protocol this application does not serve is not turned away: it registers and stays connected
  * as `upgrade_required`, is given no work (claims want `online`), and its owner is told once per protocol
- * (`runner_upgrade_required`, a `RunnerNotice`); once it connects again speaking a protocol this application serves,
+ * (`runner_upgrade_required`, an `AgentsNotice`); once it connects again speaking a protocol this application serves,
  * the notice is cleared (`notice.cleared`). A runner whose owner can no longer act (an account disabled or
  * deleted, as the application's people directory says) is refused with `RUNNER_OWNER_DISABLED` until they can again.
  *
@@ -45,7 +45,7 @@ import {
   hashCredential,
 } from '../kernel/crypto.js';
 import { notFound, precondition } from '../kernel/errors.js';
-import type { RunnerNotice } from '../kernel/events.js';
+import type { AgentsNotice } from '../kernel/events.js';
 import type { IdSource } from '../kernel/ids.js';
 import type { People } from '../kernel/people.js';
 import type { TxRunner } from '../kernel/tx.js';
@@ -93,8 +93,11 @@ export interface RunnerService {
   /** 404 when absent. */
   get(id: string): Promise<Runner>;
   update(id: string, patch: RunnerPatch): Promise<Runner>;
-  /** Revokes the runner and every key it has. The runs it holds go back to the queue (the runs service). */
-  revoke(id: string): Promise<Runner>;
+  /**
+   * Revokes the runner and every key it has. The runs it holds go back to the queue (the runs service). When `by` is
+   * someone other than its owner, the owner is told (`runner_revoked`).
+   */
+  revoke(id: string, options?: { readonly by?: string }): Promise<Runner>;
   /** Deletes a revoked runner and its keys; `CONFLICT` while it is not revoked. Its past runs keep their `runnerId`. */
   remove(id: string): Promise<void>;
   /** Marks online (and `upgrade_required`) runners not seen since `before` offline; returns their ids. */
@@ -145,7 +148,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
 
   /** Tells the runner's owner it needs an upgrade; once per runner and protocol. */
   const noticeUpgrade = async (
-    emit: (event: { type: 'notice'; notice: RunnerNotice }) => void,
+    emit: (event: { type: 'notice'; notice: AgentsNotice }) => void,
     runner: Runner,
   ): Promise<void> => {
     if (!runner.ownerUserId) return;
@@ -480,9 +483,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         return require(conn, id);
       }),
 
-    revoke: (id) =>
+    revoke: (id, options) =>
       tx.run(async ({ conn, emit }) => {
-        await require(conn, id);
+        const runner = await require(conn, id);
         const now = clock.now().toISOString();
         await runnersRepo(conn).updateMany({
           filter: { id },
@@ -493,6 +496,27 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             f.and([f.string('runnerId').eq(id), f.date('revokedAt').empty()]),
           values: { revokedAt: now },
         });
+        const by = options?.by;
+        if (by && runner.ownerUserId && runner.ownerUserId !== by) {
+          const byName =
+            (await deps.people?.names(conn, [by]))?.get(by) ?? null;
+          emit({
+            type: 'notice',
+            notice: {
+              key: `runners:runner-revoked:${runner.id}`,
+              type: 'runner_revoked',
+              userIds: [runner.ownerUserId],
+              subject: { kind: 'runner', id: runner.id, label: runner.name },
+              title: `${runner.name} was revoked`,
+              body: `${byName ?? 'A manager of runners'} revoked your runner ${runner.name}. It takes no more work; register it again to use it.`,
+              params: {
+                runnerName: runner.name,
+                revokedByUserId: by,
+                revokedByName: byName,
+              },
+            },
+          });
+        }
         emit({ type: 'runner.changed', runnerId: id });
         return require(conn, id);
       }),

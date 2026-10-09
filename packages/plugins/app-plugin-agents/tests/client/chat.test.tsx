@@ -84,6 +84,7 @@ function chatAgent(id: string, overrides: Partial<ChatAgent> = {}): ChatAgent {
     isSystemDefault: false,
     isMyDefault: false,
     availability: { online: true, reason: null, onlineRunners: 1 },
+    fallbackAgentId: null,
     ...overrides,
   };
 }

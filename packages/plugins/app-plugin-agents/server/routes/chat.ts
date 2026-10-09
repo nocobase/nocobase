@@ -54,6 +54,7 @@ import {
   AgentPresetSchema,
   AgentSchema,
   ChatAgentSchema,
+  ChatSettingsSchema,
   ChatAttachmentContentQuery,
   ChatAttachmentParams,
   ChatDefaultAgentSchema,
@@ -530,7 +531,7 @@ export function createChatRoutes(
       },
       summary: 'Switch a conversation to the default agent',
       description:
-        'Continues the conversation with the default chat agent while its own agent cannot answer.',
+        'Continues the conversation with the default chat agent while its own agent cannot answer; a runner conversation whose default is not a runner agent continues with the online fallback agent.',
       conflict: 'The conversation cannot fall back',
     },
     restore: {
@@ -679,7 +680,7 @@ export function createChatRoutes(
       operationId: 'agentsGetChatSettings',
       ...cliRoute({ command: 'conversation settings get' }),
       responses: {
-        200: dataResponse(ChatDefaultAgentSchema),
+        200: dataResponse(ChatSettingsSchema),
         ...apiErrorResponses,
       },
     }),
@@ -699,12 +700,15 @@ export function createChatRoutes(
       operationId: 'agentsUpdateChatSettings',
       ...cliRoute({
         command: 'conversation settings update',
-        flags: { defaultAgentId: { name: 'default-agent' } },
+        flags: {
+          defaultAgentId: { name: 'default-agent' },
+          onlineFallbackAgentId: { name: 'online-fallback-agent' },
+        },
       }),
       description:
-        "Sets the team's default chat agent. Needs `agents.agents` manage.",
+        "Sets the team's default chat agent and the online agent that answers in place of a runner agent with no runner for the person. Needs `agents.agents` manage.",
       responses: {
-        200: dataResponse(ChatDefaultAgentSchema),
+        200: dataResponse(ChatSettingsSchema),
         ...apiErrorResponses,
       },
     }),

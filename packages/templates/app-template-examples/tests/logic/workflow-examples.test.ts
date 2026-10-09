@@ -15,7 +15,7 @@ import {
   NODE_RUN_STATUS,
   workflowServiceToken,
 } from '@nocobase/app-plugin-workflow/server';
-import { afterAll, beforeAll, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import {
   createStandaloneServer,
   type StandaloneServer,
@@ -25,6 +25,36 @@ import { calculateReport } from '../../workflows/example-analytics-report/server
 import { saveReport } from '../../workflows/example-analytics-report/server/save-report.js';
 import { calculateQuotation } from '../../workflows/example-quotation-routing/server/calculate.js';
 import { requireDate } from '../../workflows/example-analytics-report/server/metrics.js';
+
+// Workflow examples explicitly opt in; the template's default runtime keeps them disabled.
+vi.mock('../../server/plugins.js', async (importOriginal) => {
+  const { default: plugins } =
+    await importOriginal<typeof import('../../server/plugins.js')>();
+  const { default: workflow } =
+    await import('@nocobase/app-plugin-workflow/server');
+  return { default: { plugins: [...plugins.plugins, workflow] } };
+});
+vi.mock('../../server/routes/index.js', async (importOriginal) => {
+  const routes =
+    await importOriginal<typeof import('../../server/routes/index.js')>();
+  return {
+    ...routes,
+    default: [...routes.default, routes.quotationReviewTaskRoutes],
+  };
+});
+vi.mock('../../server/config/index.js', async (importOriginal) => {
+  const { default: configs } =
+    await importOriginal<typeof import('../../server/config/index.js')>();
+  const { default: workflow } = await import('../../server/config/workflow.js');
+  const configure = Object.assign(
+    (context: Parameters<typeof configs>[0]) => ({
+      ...configs(context),
+      workflow: workflow(context),
+    }),
+    { sections: configs.sections },
+  );
+  return { default: configure };
+});
 
 const root = path.resolve(import.meta.dirname, '../..');
 const temporary = mkdtempSync(path.join(root, '.workflow-examples-'));

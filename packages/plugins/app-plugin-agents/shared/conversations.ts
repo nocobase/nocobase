@@ -6,9 +6,9 @@
  * ## Model
  *
  * - A **conversation** belongs to one person (its owner) and is bound to one agent. Its **mode** is the type of the agent
- *   it was started with (`online`: a model on the server answers in seconds; `runner`: a coding agent on a runner) and stays
- *   so for its whole life: it never moves to an agent of the other type. A person who needs the other kind of agent
- *   starts another conversation. Only the owner reads its content:
+ *   it answers with now (`online`: a model on the server answers in seconds; `runner`: a coding agent on a runner). It
+ *   changes only while a runner conversation uses the online fallback agent in its agent's place (see Availability); a
+ *   person who needs the other kind of agent otherwise starts another conversation. Only the owner reads its content:
  *   the API answers 404 to everyone else, administrators included, and the runs a conversation starts are hidden from
  *   anyone the run does not involve. Administrators see usage only.
  * - A **message** is what the owner sent (`user`), what the agent replied (`assistant`), or a notice the server wrote
@@ -26,7 +26,13 @@
  *   summary. Switching the conversation's agent (to the system default and back) starts a new session every time.
  * - **Availability**: a message is always saved. When the agent is archived, the owner may no longer use it, or no
  *   online, signed-in runner may run it, the conversation reports `offline` with the reason; the owner may switch the
- *   conversation to the system default agent and later switch back.
+ *   conversation to the system default agent and later switch back. A runner conversation may also switch to the online
+ *   fallback agent (`ChatSettings.onlineFallbackAgentId`), and a conversation started with a runner agent that no runner
+ *   may run for its owner now (including claim's feature and team-only variable restrictions) starts on that
+ *   agent in its place, as if switched. Existing runner conversations check again on each message and transfer
+ *   unanswered queued messages when switching. Manual fallback skips an unavailable system default, and restoring
+ *   requires the original agent to be available again. The owner is the one answerable for their conversation, so none of this waits
+ *   for anyone's confirmation.
  * - **Titles**: the first message's first `CONVERSATION_TITLE_AUTO_CHARS` characters (`auto`), until the agent sets one
  *   of at most `CONVERSATION_TITLE_AGENT_MAX` characters (`agent`), which it may do until the owner renames the
  *   conversation (`user`); after that the agent's attempts answer `CONVERSATION_CONFLICT` with `reason: 'titleLocked'`.
@@ -262,7 +268,7 @@ export interface ChatAvailability {
   readonly onlineRunners: number;
 }
 
-/** A conversation's mode: the type of its agent, for its whole life (`AgentType`). */
+/** A conversation's mode: the type of the agent it answers with now (`AgentType`). */
 export type ConversationMode = 'online' | 'runner';
 
 /** The conversation's open run: queued, waiting for a runner, or working. */
@@ -281,12 +287,12 @@ export interface ConversationSummary {
   readonly titleSource: TitleSource;
   readonly category: ConversationCategory;
   readonly source: ConversationSource;
-  /** `online` or `runner`, for the conversation's whole life. */
+  /** `online` or `runner`: the type of `agent`. */
   readonly mode: ConversationMode;
   readonly agent: ConversationAgent;
   /**
-   * While the conversation uses the system default agent in place of its own (`fallback`): the agent it switches back
-   * to. Null otherwise.
+   * While the conversation uses the system default or the online fallback agent in place of its own (`fallback`, or a
+   * new conversation whose runner agent could not run): the agent it switches back to. Null otherwise.
    */
   readonly fallbackFrom: ConversationAgent | null;
   /**
@@ -336,9 +342,12 @@ export interface ConversationDetail extends ConversationSummary {
   readonly availability: ChatAvailability;
   /** An online conversation: the entries of its agent's list the owner may choose from, in order; empty otherwise. */
   readonly models: readonly ChatModelChoice[];
-  /** The system default agent may take over (`POST …/fallback`). */
+  /**
+   * Another agent may take over (`POST …/fallback`): an available system default of the conversation's mode, else,
+   * for a runner conversation, the online fallback agent (`ChatSettings.onlineFallbackAgentId`).
+   */
   readonly canFallback: boolean;
-  /** The conversation is on the system default and its own agent may take it back (`POST …/restore`). */
+  /** The conversation uses another agent and its original agent can answer again (`POST …/restore`). */
   readonly canRestore: boolean;
 }
 
@@ -359,6 +368,18 @@ export type ConversationNotice =
       readonly code: 'switchedToDefault';
       readonly agentId: string;
       readonly fromAgentId: string;
+    }
+  /** The conversation now uses the online fallback agent in place of its runner agent, until switched back. */
+  | {
+      readonly code: 'switchedToOnline';
+      readonly agentId: string;
+      readonly fromAgentId: string;
+    }
+  /** The configured online fallback cannot answer; the conversation stays with its runner agent. */
+  | {
+      readonly code: 'onlineFallbackUnavailable';
+      readonly fromAgentId: string;
+      readonly reason: OfflineReason;
     }
   /** The conversation is back on its own agent. */
   | {
@@ -438,6 +459,8 @@ export interface MessageMetadata {
   readonly runEventSeq?: number;
   /** A system message: what happened. */
   readonly notice?: ConversationNotice;
+  /** An earlier online fallback failure no longer applies after availability recovered or changed. */
+  readonly onlineFallbackResolved?: boolean;
   /** The id the browser gave a message it sent, echoed so it can replace its optimistic copy. */
   readonly clientId?: string;
   /**
@@ -555,8 +578,8 @@ export const CONVERSATION_CONFLICTS = [
   /** The agent tried to set the title after the owner renamed the conversation. */
   'titleLocked',
   /**
-   * `fallback`: the conversation already uses the system default, or none is set or usable, or it is of the other type
-   * (a conversation keeps its mode).
+   * `fallback`: the conversation already uses another agent in place of its own, or no system default of its mode and,
+   * for a runner conversation, no online fallback agent is set or usable.
    */
   'noFallback',
   /** `restore`: the conversation is not on the system default, or its own agent is still unavailable. */
@@ -588,10 +611,12 @@ export interface ConversationPage {
 /** `POST conversations`. Creating starts no run; the first message does. */
 export interface CreateConversationRequest {
   /**
-   * The agent to chat with, which the person must be allowed to wake; its type is the conversation's mode for good.
+   * The agent to chat with, which the person must be allowed to wake; its type becomes the conversation's initial mode.
    * Without one: the person's default online agent
    * (`ChatPreferences.defaultAgentId`) while they may still wake it, else the system default
-   * (`ChatSettings.defaultAgentId`), else `CONVERSATION_CONFLICT` `noChatAgent`.
+   * (`ChatSettings.defaultAgentId`), else `CONVERSATION_CONFLICT` `noChatAgent`. A runner agent that no runner may
+   * run for the person now is replaced by the online fallback agent (`ChatSettings.onlineFallbackAgentId`) when one is
+   * set and usable, without `model`; the conversation starts on it with `fallbackFrom` naming the runner agent.
    */
   readonly agentId?: string;
   /** An explicit title (`user`); otherwise the first message gives one. */
@@ -640,7 +665,7 @@ export interface MessagePage {
   readonly lastSeq: number;
 }
 
-/** `POST messages`. */
+/** `POST messages`: an unavailable runner may first switch to the configured usable online fallback agent. */
 export interface SendMessageRequest {
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
   readonly content: string;
@@ -709,6 +734,11 @@ export interface ChatAgent {
   readonly isSystemDefault: boolean;
   readonly isMyDefault: boolean;
   readonly availability: ChatAvailability;
+  /**
+   * A runner agent that no runner may run for the person now: the online agent a new conversation with it starts on
+   * instead (`ChatSettings.onlineFallbackAgentId`). Null otherwise.
+   */
+  readonly fallbackAgentId: string | null;
 }
 
 /**
@@ -735,6 +765,11 @@ export type ChatPreferencesPatch = Partial<ChatPreferences>;
 export interface ChatSettings {
   /** The agent new conversations go to when a person has no default of their own; null when none is set. */
   readonly defaultAgentId: string | null;
+  /**
+   * The online agent that answers in place of a runner agent no runner may run for the person now: a new conversation
+   * with that runner agent starts on it, and a runner conversation may switch to it. Null when none is set.
+   */
+  readonly onlineFallbackAgentId: string | null;
 }
 
 export type ChatSettingsPatch = Partial<ChatSettings>;
