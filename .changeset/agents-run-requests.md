@@ -25,5 +25,5 @@ Add run requests to the agents plugin: when someone other than the person who an
 - The sweeper's report gains `requestsExpired`.
 - Work is merged or appended only into runs with the same `actorUserId`, including `mine`, `runAsMe` and confirmed requests.
 - Subjects can bind `responsibleUserId(conn, subjectId)` to recheck current responsibility when confirming or rejecting. Without a resolver, applications must reassign requests when responsibility changes. A reassignment that has no usable responsible expires the request, notifies its requester and preserves execution as the requester.
-- `auto` requests require the requester's own agent permission. Identical pending snapshots reuse the existing request without renewing its expiry or emitting another creation event. Run request mutation routes declare concurrent settlement errors (409).
+- `auto` requests require the requester's own agent permission. Identical pending snapshots reuse the existing request without renewing its expiry or emitting another creation event, including when database drivers return attempt counts as strings or equivalent scheduling times in different representations. Run request mutation routes declare concurrent settlement errors (409).
 - `@nocobase/agent-protocol` adds the error reasons `RUN_REQUEST_NOT_FOUND`, `RUN_REQUEST_SETTLED` and `NO_RUNNER_AVAILABLE`.

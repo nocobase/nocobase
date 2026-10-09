@@ -150,6 +150,8 @@ export async function insertRunRequest(
   request: NewRunRequest,
 ): Promise<RunRequest> {
   const now = deps.clock.now();
+  const fireAt =
+    request.fireAt === null ? null : new Date(request.fireAt).getTime();
   // Serializes retries for this agent; duplicate input never creates another inbox entry or renews its expiry.
   await lockAgentForClaim(unit.conn, request.agentId, now.toISOString());
   const pending = await runRequestsRepo(unit.conn).findMany({
@@ -172,8 +174,10 @@ export async function insertRunRequest(
         stringArray(record.requires),
         cleanList([...request.requires]),
       ) &&
-      record.fireAt === request.fireAt &&
-      record.maxAttempts === request.maxAttempts &&
+      (record.fireAt === null ? null : new Date(record.fireAt).getTime()) ===
+        fireAt &&
+      (record.maxAttempts === null ? null : Number(record.maxAttempts)) ===
+        request.maxAttempts &&
       record.inputType === request.input.type &&
       record.inputActorKind === request.input.actor.kind &&
       record.inputActorId === request.input.actor.id &&

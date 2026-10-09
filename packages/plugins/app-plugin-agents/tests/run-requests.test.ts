@@ -1,8 +1,13 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import type { DatabaseConnection } from '@nocobase/db';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { AgentsEvent } from '../server/kernel/events.js';
 import { RUN_REQUEST_TTL_MS } from '../server/core/runs/index.js';
 import type { EnqueueRequest } from '../server/core/runs/index.js';
+import {
+  insertRunRequest,
+  runRequestsRepo,
+} from '../server/core/runs/run-requests.js';
 import {
   claim,
   createHarness,
@@ -504,6 +509,76 @@ describe('run requests', () => {
       await bobAsks('Same.', { input: comment(BOB, 'Same.', { a: 1, b: 2 }) }),
     ).not.toEqual(first);
   });
+
+  it.each([
+    { representation: 'numeric strings', dateObject: false, attempts: '3' },
+    { representation: 'Date objects', dateObject: true, attempts: 3 },
+    { representation: 'equivalent timestamps', dateObject: false, attempts: 3 },
+    {
+      representation: 'both Date objects and numeric strings',
+      dateObject: true,
+      attempts: '3',
+    },
+  ])(
+    'reuses a pending snapshot when the database returns $representation',
+    async ({ representation, dateObject, attempts }) => {
+      await setUp();
+      const fireAt = new Date(h.clock.now().getTime() + 60_000).toISOString();
+      const first = await bobAsks('Scheduled.', { fireAt, maxAttempts: 3 });
+      const id = first.outcome === 'pending' ? first.requestId : '';
+      const stored = await runRequestsRepo(h.database.connection()).findOne({
+        filter: { id },
+      });
+      expect(stored).not.toBeNull();
+      // Simulate driver representations at the repository boundary without changing the stored snapshot.
+      const raw = {
+        ...stored!,
+        maxAttempts: attempts,
+        fireAt: dateObject
+          ? new Date(fireAt)
+          : representation === 'equivalent timestamps'
+            ? fireAt.replace('.000Z', '+00:00')
+            : fireAt,
+      };
+      const createOne = vi.fn();
+      const conn = {
+        repository: vi
+          .fn()
+          .mockReturnValueOnce({ updateMany: vi.fn() })
+          .mockReturnValueOnce({
+            findMany: vi.fn().mockResolvedValue([raw]),
+            createOne,
+          }),
+      } as unknown as DatabaseConnection;
+      const emit = vi.fn();
+      const next = vi.fn();
+      h.clock.advance(1_000);
+      const repeated = await insertRunRequest(
+        { conn, emit },
+        { ids: { next }, clock: h.clock },
+        {
+          agentId,
+          subject: { kind: 'sample', id: '1' },
+          threadScope: 'main',
+          responsibleUserId: ALICE,
+          requestedByUserId: BOB,
+          ownerUserId: null,
+          priority: 0,
+          requires: [],
+          fireAt,
+          maxAttempts: 3,
+          input: comment(BOB, 'Scheduled.'),
+        },
+      );
+      expect(repeated.id).toBe(id);
+      expect(repeated.expiresAt).toBe(stored!.expiresAt);
+      expect(repeated.maxAttempts).toBe(3);
+      expect(createOne).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+      expect(emit).not.toHaveBeenCalled();
+      expect(events.map((event) => event.type)).toEqual(['runRequest.created']);
+    },
+  );
 
   it('hands pending requests to a new responsible, and the old one can no longer confirm them', async () => {
     await setUp();
