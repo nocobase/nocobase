@@ -359,7 +359,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [default, examples, hub]
+        template: [default, examples]
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4

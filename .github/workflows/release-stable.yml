@@ -416,7 +416,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [default, examples, hub]
+        template: [default, examples]
     defaults:
       run:
         working-directory: release-source

@@ -103,6 +103,10 @@ test('installer smoke covers the Default archive instead of publishing or instal
   );
   assert.doesNotMatch(smoke, /app-template-hub|--source template|schedule:/u);
   assert.match(quality, /template: \[default, examples\]/u);
+  for (const name of ['release-beta', 'release-stable']) {
+    assert.match(workflow(name), /template: \[default, examples\]/u);
+    assert.doesNotMatch(workflow(name), /template: \[[^\n]*\bhub\b/u);
+  }
   assert.match(
     quality,
     /uses: \.\/\.github\/workflows\/app-installer-smoke\.yml/u,
