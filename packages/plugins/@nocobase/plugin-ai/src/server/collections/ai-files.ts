@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   migrationRules: ['schema-only', 'skip'],
+  asStrategyResource: true,
   name: 'aiFiles',
   dataCategory: 'business',
   createdBy: true,
