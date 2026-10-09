@@ -271,6 +271,35 @@ describe('run lifecycle', () => {
     ]);
   });
 
+  it('queues a run again when preparing it failed on the network, but not when the checkout failed', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    expect(first.run.acceptedFailures).toContain('prepareNetwork');
+    const failed = await post(runner, runId, 'fail', {
+      reason: 'prepareNetwork',
+      detail: 'git fetch failed on the network after 3 retries on this runner',
+    });
+    expect(failed.body.data).toMatchObject({ status: 'queued' });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      attempt: 2,
+      runnerId: null,
+    });
+    h.clock.advance(60_000);
+    const [again] = await claim(h, runner);
+    expect(again.run).toMatchObject({ id: runId, attempt: 2 });
+    const final = await post(runner, runId, 'fail', {
+      reason: 'checkoutFailed',
+    });
+    expect(final.body.data).toEqual({ status: 'failed' });
+    expect(h.finished.map((run) => [run.status, run.failureReason])).toEqual([
+      ['failed', 'checkoutFailed'],
+    ]);
+  });
+
   it('fails a non-retryable failure at once', async () => {
     h = await createHarness();
     const { runner, runId } = await claimed();
