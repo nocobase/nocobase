@@ -5,11 +5,12 @@
 //
 // Each repository URL has one bare cache, `~/.nocobase-runner/repos/<sha1(url)>.git`, fetched into
 // `refs/remotes/origin/*`. Each subject of each application has one long-lived work directory,
-// `<work root>/<app>/<subjectKey>/`, and every repository is a worktree of its cache at `<workDir>/<repo.path>` on the
-// run's branch (`agent/<key>`). A later run of the same subject finds the worktree and keeps working in it; nothing is
-// reset. Every worktree gets the push guard (push-guard.ts): it may push only that branch, to that repository. A run
+// `<work root>/<app>/<subjectKey>/`, and every new repository is a reference clone at `<workDir>/<repo.path>` on the
+// run's branch (`agent/<key>`). Git metadata stays inside that directory; only existing objects are borrowed from the
+// cache, whose automatic GC is disabled. A later run finds the clone (or a legacy worktree) and keeps working; nothing is
+// reset. Every checkout gets the push guard (push-guard.ts): it may push only that branch, to that repository. A run
 // never works on the default branch, except the one run that makes an empty repository's first commit
-// (`RepoDir.initial`): its worktree starts on the default branch with no parent, and that branch is the one it pushes.
+// (`RepoDir.initial`): its checkout starts on the default branch with no parent, and that branch is the one it pushes.
 //
 // Locks are directories created with mkdir, which is atomic, holding the owner's pid: one for each subject, one for
 // each cache. A lock whose owner is dead is taken over.
@@ -22,9 +23,9 @@
 // the host's own git credentials are used.
 //
 // A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
-// sandbox of its tool: a worktree's Git metadata, the submodules' `modules/` among it, lives in the cache
-// (`<cache>/worktrees/<name>/`), not in the work directory. They are fetched with the repository's credential, sent only
-// to the repository's own host. A new worktree initializes every submodule, recursively; an existing one only those not
+// sandbox of its tool. New checkouts keep their Git metadata (including submodule `modules/`) in their own `.git`;
+// legacy worktrees keep it under `<cache>/worktrees/<name>/`. They are fetched with the repository's credential, sent
+// only to the repository's own host. A new checkout initializes every submodule, recursively; an existing one only those not
 // initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation.
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -169,7 +170,7 @@ export async function acquireLock(
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Caches and worktrees
+// Caches and checkouts
 
 export function cachePath(paths: RunnerPaths, url: string): string {
   return path.join(
@@ -189,7 +190,7 @@ export function subjectWorkDir(
 /** The runner's own files in a working directory: the agent's home, tmp, the CLI shim and the workspace record. */
 export const RUNNER_DIR = '.nocobase-runner';
 
-/** Locks a repository's cache (fetching into it, adding or removing its worktrees). */
+/** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */
 export function lockCache(cache: string): Promise<Lock> {
   return acquireLock(`${cache}.lock`, { timeoutMs: 120_000 });
 }
@@ -211,6 +212,10 @@ export async function updateCache(
       await mkdir(paths.reposDir, { recursive: true, mode: 0o700 });
       await git(['clone', '--bare', '--quiet', url, cache], undefined, env);
     }
+    // Reference clones borrow objects even after their refs disappear from the cache. Never prune those objects.
+    await git(['config', 'gc.auto', '0'], cache);
+    await git(['config', 'gc.pruneExpire', 'never'], cache);
+    await git(['config', 'maintenance.auto', 'false'], cache);
     await installGitHooks(path.join(cache, 'hooks'));
     await git(
       [
@@ -238,7 +243,7 @@ export interface CheckedOutRepo {
   /** Absolute. */
   dir: string;
   cache: string;
-  /** The worktree's own Git directory (`<cache>/worktrees/<name>`), outside `dir`. */
+  /** The clone's `.git`, or a legacy worktree's own directory under the cache. */
   gitDir: string;
 }
 
@@ -249,7 +254,7 @@ export interface PreparedDir {
   dir: string;
   primary: boolean;
   /**
-   * Prepared for this subject by this run: a worktree just created, or a directory no run has finished in yet. It
+   * Prepared for this subject by this run: a checkout just created, or a directory no run has finished in yet. It
    * stays fresh, and its initialization prompt is given again, until `markDirsPrepared` records a run that finished.
    */
   fresh: boolean;
@@ -290,23 +295,37 @@ export function metaPath(workDir: string): string {
   return path.join(workDir, RUNNER_DIR, 'workspace.json');
 }
 
-async function addWorktree(
+async function addClone(
   cache: string,
   dir: string,
   repo: RepoDir,
 ): Promise<void> {
-  await git(['worktree', 'prune'], cache);
-  const local = await gitOk(
-    ['show-ref', '--verify', '--quiet', `refs/heads/${repo.branch}`],
+  await git([
+    'clone',
+    '--quiet',
+    '--shared',
+    '--reference',
     cache,
+    '--no-checkout',
+    cache,
+    dir,
+  ]);
+  // The cache fetches into remote-tracking refs, rather than updating its original local branches.
+  await git(
+    [
+      'fetch',
+      '--quiet',
+      '--prune',
+      cache,
+      '+refs/remotes/origin/*:refs/remotes/origin/*',
+    ],
+    dir,
   );
-  if (local) {
-    await git(['worktree', 'add', '--quiet', dir, repo.branch], cache);
-    return;
-  }
+  await git(['remote', 'set-url', 'origin', repo.url], dir);
+  await installGitHooks(path.join(dir, '.git', 'hooks'));
   const remote = await gitOk(
     ['show-ref', '--verify', '--quiet', `refs/remotes/origin/${repo.branch}`],
-    cache,
+    dir,
   );
   const base = remote
     ? `origin/${repo.branch}`
@@ -314,27 +333,24 @@ async function addWorktree(
   if (
     !(await gitOk(
       ['rev-parse', '--verify', '--quiet', `${base}^{commit}`],
-      cache,
+      dir,
     ))
   ) {
     // An empty repository whose first commit this run makes: the default branch starts with no parent.
     if (repo.initial === true) {
-      await git(
-        ['worktree', 'add', '--quiet', '--orphan', '-b', repo.branch, dir],
-        cache,
-      );
+      await git(['symbolic-ref', 'HEAD', `refs/heads/${repo.branch}`], dir);
       return;
     }
     throw new CheckoutError(`${repo.url} has no branch ${repo.defaultBranch}`);
   }
   await git(
-    ['worktree', 'add', '--quiet', '--no-track', '-b', repo.branch, dir, base],
-    cache,
+    ['checkout', '--quiet', '--no-track', '-B', repo.branch, base],
+    dir,
   );
 }
 
-/** Makes `dir` a worktree of `cache` on the repository's branch; true when it had to be created. */
-async function ensureWorktree(
+/** Creates a reference clone, or resumes the existing clone/worktree without resetting its work. */
+async function ensureCheckout(
   cache: string,
   dir: string,
   repo: RepoDir,
@@ -343,6 +359,25 @@ async function ensureWorktree(
     existsSync(dir) &&
     (await gitOk(['rev-parse', '--is-inside-work-tree'], dir))
   ) {
+    // Refresh the clone's tracking refs without moving its branch or touching uncommitted work. Legacy worktrees
+    // share these refs with the cache, which updateCache already refreshed.
+    if ((await stat(path.join(dir, '.git'))).isDirectory()) {
+      const lock = await lockCache(cache);
+      try {
+        await git(
+          [
+            'fetch',
+            '--quiet',
+            '--prune',
+            cache,
+            '+refs/remotes/origin/*:refs/remotes/origin/*',
+          ],
+          dir,
+        );
+      } finally {
+        await lock.release();
+      }
+    }
     const current = await git(
       ['symbolic-ref', '--quiet', '--short', 'HEAD'],
       dir,
@@ -368,7 +403,15 @@ async function ensureWorktree(
     await rm(dir, { recursive: true, force: true });
   }
   await mkdir(path.dirname(dir), { recursive: true });
-  await addWorktree(cache, dir, repo);
+  const lock = await lockCache(cache);
+  try {
+    await addClone(cache, dir, repo);
+  } catch (error) {
+    await rm(dir, { recursive: true, force: true });
+    throw error;
+  } finally {
+    await lock.release();
+  }
   return true;
 }
 
@@ -509,7 +552,7 @@ export interface PrepareDirsOptions {
 }
 
 /**
- * Prepares every working directory: a repository is checked out (a bare cache and a long-lived worktree on its branch,
+ * Prepares every working directory: a repository is checked out (a bare cache and a long-lived clone on its branch,
  * with the push guard); a directory used in place must exist, is locked for the run, and is not checked out or
  * branched. A directory counts as fresh until a run of the subject finishes in it (`markDirsPrepared`), so a run that
  * dies before doing what the initialization prompt asks leaves it for the next attempt. The result's `release` gives
@@ -597,7 +640,7 @@ export async function prepareDirs(
         entry.url,
         auth === undefined ? {} : { auth },
       );
-      const created = await ensureWorktree(cache, dir, entry);
+      const created = await ensureCheckout(cache, dir, entry);
       const gitDir = await git(['rev-parse', '--absolute-git-dir'], dir);
       await allowPush(gitDir, entry.url, entry.branch);
       const submodules = await initSubmodules(dir, {
@@ -617,7 +660,7 @@ export async function prepareDirs(
         gitDir,
       };
       const key = preparedKey(entry);
-      // A worktree created again (removed by GC, say) needs its initialization again.
+      // A checkout created again (removed by GC, say) needs its initialization again.
       if (created) prepared.delete(key);
       dirs.push({
         kind: 'repo',

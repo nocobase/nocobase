@@ -58,8 +58,8 @@ export class PrepareError extends Error {
 
 /**
  * What the agent writes besides `cwd`, for a tool's own sandbox (`AdapterSession.writableRoots`): the other working
- * directories, and each repository worktree's own Git directory (`<cache>/worktrees/<name>`), which holds its index,
- * HEAD and submodules. Never the cache itself, which every subject's worktrees share.
+ * directories, and each checkout's own Git directory: `.git` inside new clones, or `<cache>/worktrees/<name>` for
+ * legacy worktrees. These hold the index, HEAD and submodules. Never the shared cache itself.
  */
 export function agentWritableRoots(
   dirs: readonly PreparedDir[],

@@ -1,5 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -46,7 +52,7 @@ describe('checkout', () => {
     path: 'app',
   });
 
-  it('creates a worktree on the subject branch from a bare cache, and reuses it', async () => {
+  it('creates a reference clone on the subject branch with local metadata, and reuses it', async () => {
     const first = await checkout({
       paths,
       appKey: 'app',
@@ -60,6 +66,17 @@ describe('checkout', () => {
     expect(
       git(['rev-parse', '--is-bare-repository'], first.repos[0]?.cache),
     ).toBe('true');
+    expect(first.repos[0]!.gitDir).toBe(path.join(dir, '.git'));
+    expect(
+      readFileSync(
+        path.join(dir, '.git/objects/info/alternates'),
+        'utf8',
+      ).trim(),
+    ).toBe(path.join(first.repos[0]!.cache, 'objects'));
+    expect(git(['config', 'gc.auto'], first.repos[0]!.cache)).toBe('0');
+    expect(git(['config', 'gc.pruneExpire'], first.repos[0]!.cache)).toBe(
+      'never',
+    );
     writeFileSync(path.join(dir, 'work.txt'), 'in progress');
     await first.release();
 
@@ -71,6 +88,110 @@ describe('checkout', () => {
     });
     expect(existsSync(path.join(second.workDir, 'app', 'work.txt'))).toBe(true);
     await second.release();
+  });
+
+  it('keeps new objects and refs local during commits and rebase, independently of a concurrent subject', async () => {
+    const a = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-30',
+      dirs: [repo('PM-30')],
+    });
+    const b = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-31',
+      dirs: [repo('PM-31')],
+    });
+    const dir = a.repos[0]!.dir;
+    const other = git(['rev-parse', 'HEAD'], b.repos[0]!.dir);
+    writeFileSync(path.join(dir, 'a.txt'), 'a');
+    git(['add', '.'], dir);
+    git([...COMMIT, 'commit', '-q', '-m', 'a'], dir);
+    const sha = git(['rev-parse', 'HEAD'], dir);
+    expect(
+      existsSync(path.join(dir, '.git/objects', sha.slice(0, 2), sha.slice(2))),
+    ).toBe(true);
+    expect(
+      existsSync(
+        path.join(a.repos[0]!.cache, 'objects', sha.slice(0, 2), sha.slice(2)),
+      ),
+    ).toBe(false);
+    git(['checkout', '-q', '-b', 'local-base', other], dir);
+    git([...COMMIT, 'commit', '-q', '--allow-empty', '-m', 'new base'], dir);
+    git([...COMMIT, 'rebase', 'local-base', 'agent/PM-30'], dir);
+    expect(git(['rev-parse', 'HEAD'], b.repos[0]!.dir)).toBe(other);
+    expect(
+      existsSync(path.join(a.repos[0]!.cache, 'refs/heads/agent/PM-30')),
+    ).toBe(false);
+    await a.release();
+    await b.release();
+  });
+
+  it('uses the fetched default branch for new clones and refreshes tracking refs when resuming without resetting work', async () => {
+    const first = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-33',
+      dirs: [repo('PM-33')],
+    });
+    const dir = first.repos[0]!.dir;
+    const head = git(['rev-parse', 'HEAD'], dir);
+    writeFileSync(path.join(dir, 'pending.txt'), 'keep');
+    await first.release();
+    const seed = path.join(root, 'origin-repo-seed');
+    writeFileSync(path.join(seed, 'upstream.txt'), 'new');
+    git(['add', '.'], seed);
+    git([...COMMIT, 'commit', '-q', '-m', 'upstream'], seed);
+    publishSeed(root);
+    const next = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-34',
+      dirs: [repo('PM-34')],
+    });
+    expect(existsSync(path.join(next.repos[0]!.dir, 'upstream.txt'))).toBe(
+      true,
+    );
+    await next.release();
+    const resumed = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-33',
+      dirs: [repo('PM-33')],
+    });
+    expect(git(['rev-parse', 'origin/main'], dir)).toBe(
+      git(['rev-parse', 'HEAD'], seed),
+    );
+    expect(git(['rev-parse', 'HEAD'], dir)).toBe(head);
+    expect(readFileSync(path.join(dir, 'pending.txt'), 'utf8')).toBe('keep');
+    await resumed.release();
+  });
+
+  it('resumes legacy worktrees without losing uncommitted work', async () => {
+    const first = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-32',
+      dirs: [repo('PM-32')],
+    });
+    const cache = first.repos[0]!.cache;
+    const legacy = path.join(first.workDir, 'legacy');
+    git(
+      ['worktree', 'add', '-q', '-b', 'agent/legacy', legacy, 'origin/main'],
+      cache,
+    );
+    writeFileSync(path.join(legacy, 'pending.txt'), 'keep');
+    await first.release();
+    const resumed = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-32',
+      dirs: [{ ...repo('legacy'), path: 'legacy' }],
+    });
+    expect(readFileSync(path.join(legacy, 'pending.txt'), 'utf8')).toBe('keep');
+    expect(resumed.repos[0]!.gitDir).toContain(path.join(cache, 'worktrees'));
+    await resumed.release();
   });
 
   it('pushes a branch with commits and reports it', async () => {
@@ -218,7 +339,7 @@ describe('checkout', () => {
     });
     afterEach(() => vi.unstubAllEnvs());
 
-    it('initializes them in a new worktree, with their metadata in its own git directory', async () => {
+    it('initializes them in a new clone, with their metadata in its own git directory', async () => {
       const work = await checkout({
         paths,
         appKey: 'app',
@@ -228,16 +349,14 @@ describe('checkout', () => {
       const dir = path.join(work.workDir, 'app');
       const gitDir = work.repos[0]!.gitDir;
       expect(existsSync(path.join(dir, 'vendor/sub/README.md'))).toBe(true);
-      expect(gitDir).toBe(
-        path.join(work.repos[0]!.cache, 'worktrees', path.basename(gitDir)),
-      );
+      expect(gitDir).toBe(path.join(dir, '.git'));
       expect(
         git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
       ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
       await work.release();
     });
 
-    it('initializes only the missing ones when a worktree is resumed, keeping where the agent moved the others', async () => {
+    it('initializes only the missing ones when a clone is resumed, keeping where the agent moved the others', async () => {
       const first = await checkout({
         paths,
         appKey: 'app',
