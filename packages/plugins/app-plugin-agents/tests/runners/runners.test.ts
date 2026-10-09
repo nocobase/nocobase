@@ -33,6 +33,120 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ access: 'users', userIds: ['owner'] });
+    const agentBefore = await h.services.agents.get(agentId);
+    const first = await h.registerRunner();
+    const other = await h.registerRunner({
+      tools: [
+        {
+          kind: 'pi',
+          authenticated: true,
+          models: [{ id: 'other-model' }],
+          modelsDetectionStatus: 'detected',
+        },
+      ],
+    });
+    const reported = {
+      kind: 'pi',
+      authenticated: true,
+      path: '/private/bin/pi',
+      models: [
+        {
+          id: 'gpt-6-sol',
+          efforts: ['high'],
+          config: { token: 'must-be-stripped' },
+        },
+      ],
+      modelsDetectedAt: '2026-10-09T10:00:00.000Z',
+      modelsDetectionStatus: 'detected',
+    };
+    const response = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: first.key,
+      body: {
+        ...heartbeat,
+        tools: [
+          reported,
+          {
+            kind: 'claude',
+            authenticated: true,
+            modelsDetectionStatus: 'unsupported',
+          },
+        ],
+      },
+    });
+    expect(response.status).toBe(200);
+    const stored = await h.services.runners.get(first.runnerId);
+    expect(stored.tools[0]).toMatchObject({
+      models: [{ id: 'gpt-6-sol', efforts: ['high'] }],
+      modelsDetectedAt: reported.modelsDetectedAt,
+    });
+    expect(JSON.stringify(stored.tools)).not.toContain('must-be-stripped');
+    const reader = await h.request('GET', `/agents/runners/${first.runnerId}`, {
+      user: 'reader',
+      can: ['agents.agents/read'],
+    });
+    expect(reader.status).toBe(200);
+    expect(reader.body.data.tools).toEqual([
+      {
+        kind: 'pi',
+        authenticated: true,
+        models: [{ id: 'gpt-6-sol', efforts: ['high'] }],
+        modelsDetectedAt: reported.modelsDetectedAt,
+        modelsDetectionStatus: 'detected',
+      },
+      {
+        kind: 'claude',
+        authenticated: true,
+        modelsDetectionStatus: 'unsupported',
+      },
+    ]);
+    expect(reader.body.data.hostname).toBeNull();
+    expect(JSON.stringify(reader.body.data)).not.toContain('/private');
+    const denied = await h.request('GET', `/agents/runners/${first.runnerId}`, {
+      user: 'stranger',
+    });
+    expect(denied.status).toBe(404);
+    expect(
+      (await h.services.runners.get(other.runnerId)).tools[0]?.models,
+    ).toEqual([{ id: 'other-model' }]);
+    expect(
+      (
+        await h.request('POST', '/agents/runners/heartbeat', {
+          runnerKey: first.key,
+          body: {
+            ...heartbeat,
+            tools: [
+              {
+                kind: 'pi',
+                authenticated: true,
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Model listing command failed',
+              },
+            ],
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await h.services.runners.get(first.runnerId)).tools[0]?.models,
+    ).toBeUndefined();
+    expect(
+      (
+        await h.request('POST', '/agents/runners/heartbeat', {
+          runnerKey: first.key,
+          body: heartbeat,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await h.services.runners.get(first.runnerId)).tools[0]
+        ?.modelsDetectionStatus,
+    ).toBeUndefined();
+    expect(await h.services.agents.get(agentId)).toEqual(agentBefore);
+  });
+
   it('registers once with a one-time token, keeping its trust, owner and reported tools', async () => {
     h = await createHarness();
     const token = await h.services.runners.createRegistrationToken('alice', {

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_MIN_PI_VERSION,
   PiAdapter,
+  parsePiModels,
   denialMessage,
 } from '../../src/agent/adapters/pi.ts';
 import { JsonlSplitter } from '../../src/agent/adapters/pi/util.ts';
@@ -58,6 +59,49 @@ const settled = [
 ];
 
 describe('detect', () => {
+  it('parses the available model table and leaves per-model effort levels unknown', () => {
+    expect(parsePiModels(MODELS_TABLE)).toEqual([{ id: 'claude-sonnet-4-5' }]);
+    expect(
+      parsePiModels(
+        'provider model context max-out thinking images\r\nopenai gpt-6-sol 200K 64K yes yes\r\nopenai gpt-6-sol 200K 64K yes yes',
+      ),
+    ).toEqual([{ id: 'gpt-6-sol' }]);
+    expect(() => parsePiModels('unexpected configuration dump')).toThrow();
+  });
+
+  it('detects fresh models, command failures, empty results and malformed output', async () => {
+    let output = MODELS_TABLE;
+    let code = 0;
+    const adapter = new PiAdapter({
+      searchPath: await fakePiDir(),
+      exec: (_file, args) =>
+        Promise.resolve(
+          args[0] === '--version'
+            ? { code: 0, stdout: '0.99.2' }
+            : { code, stdout: output },
+        ),
+    });
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'claude-sonnet-4-5' }],
+    });
+    code = 1;
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model listing command failed',
+    });
+    code = 0;
+    output = 'No models available. Use /login or set an API key.';
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [],
+    });
+    output = 'token=private';
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Invalid model listing response',
+    });
+  });
   it('reports the installed version and whether a model has credentials', async () => {
     const dir = await fakePiDir();
     const calls: string[][] = [];

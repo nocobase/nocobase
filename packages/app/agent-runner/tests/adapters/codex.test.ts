@@ -110,6 +110,80 @@ function item(
 }
 
 describe('detect', () => {
+  it('lists models and advertised efforts across pages, closing the discovery process', async () => {
+    const { adapter, spawn } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), { userAgent: 'test' });
+      await fake.next((message) => message.method === 'initialized');
+      fake.respond(await fake.nextRequest('model/list'), {
+        data: [
+          {
+            id: 'display-id',
+            model: 'gpt-6-sol',
+            supportedReasoningEfforts: [
+              { reasoningEffort: 'high', description: 'private metadata' },
+            ],
+          },
+        ],
+        nextCursor: 'page2',
+      });
+      const second = await fake.nextRequest('model/list');
+      expect(second.params).toMatchObject({ cursor: 'page2' });
+      fake.respond(second, {
+        data: [{ model: 'gpt-other' }],
+        nextCursor: null,
+      });
+    });
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'gpt-6-sol', efforts: ['high'] }, { id: 'gpt-other' }],
+    });
+    expect(spawn.processes[0]?.exited).toBe(true);
+    expect(
+      spawn.processes[0]?.received.some(
+        (message) => message.method === 'thread/start',
+      ),
+    ).toBe(false);
+  });
+
+  it.each([-32601, -32603])(
+    'distinguishes an unsupported method from failure (%s)',
+    async (code) => {
+      const { adapter, spawn } = adapterWith(async (fake) => {
+        fake.respond(await fake.nextRequest('initialize'), {});
+        const request = await fake.nextRequest('model/list');
+        fake.emit({
+          id: request.id,
+          error: { code, message: '/private/config secret=never-upload' },
+        });
+      });
+      const result = await adapter.detectModels(new AbortController().signal);
+      expect(result.modelsDetectionStatus).toBe(
+        code === -32601 ? 'unsupported' : 'failed',
+      );
+      expect(JSON.stringify(result)).not.toContain('never-upload');
+      expect(spawn.processes[0]?.exited).toBe(true);
+    },
+  );
+
+  it('kills discovery when aborted', async () => {
+    const { adapter, spawn } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), {});
+    });
+    const controller = new AbortController();
+    const result = adapter.detectModels(controller.signal);
+    while (
+      !spawn.processes[0]?.received.some(
+        (message) => message.method === 'model/list',
+      )
+    )
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    controller.abort();
+    expect(await result).toMatchObject({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection timed out',
+    });
+    expect(spawn.processes[0]?.signals).toContain('SIGKILL');
+  });
   it('reports the installed version and login state', async () => {
     const adapter = new CodexAdapter({
       searchPath: binDir,

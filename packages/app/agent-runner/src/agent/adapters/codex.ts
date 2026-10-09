@@ -28,6 +28,11 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
+import {
+  MAX_TOOL_MODELS,
+  type ToolCapabilities,
+} from '@nocobase/agent-protocol';
+import { boundedModels } from './models.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
@@ -45,7 +50,7 @@ import type {
   TurnError,
   UserTextInput,
 } from './codex/protocol.ts';
-import { RpcConnection, spawnCodexProcess } from './codex/rpc.ts';
+import { RpcConnection, RpcError, spawnCodexProcess } from './codex/rpc.ts';
 import type { CodexExit, CodexProcess, SpawnCodex } from './codex/rpc.ts';
 import {
   Channel,
@@ -87,6 +92,14 @@ const CLIENT_INFO = {
   title: 'NocoBase runner',
   version: '1',
 };
+
+interface ModelListPage {
+  data: {
+    model: string;
+    supportedReasoningEfforts?: { reasoningEffort: string }[];
+  }[];
+  nextCursor?: string | null;
+}
 
 export interface ExecResult {
   code: number;
@@ -202,6 +215,93 @@ export class CodexAdapter implements AgentAdapter {
   detect(): Promise<ToolDetection> {
     this.detection ??= this.runDetection();
     return this.detection;
+  }
+
+  async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
+    const detection = await this.detect();
+    if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
+    const proc = this.options.spawn({
+      command: detection.path,
+      args: [
+        '-c',
+        'allow_login_shell=false',
+        'app-server',
+        '--listen',
+        'stdio://',
+      ],
+      cwd: process.cwd(),
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(
+          (entry): entry is [string, string] => entry[1] !== undefined,
+        ),
+      ),
+    });
+    const rpc = new RpcConnection(proc, {
+      notification() {},
+      request: () => Promise.resolve({}),
+    });
+    proc.onExit(() => rpc.close(new Error('Model detection failed')));
+    const abort = () => {
+      rpc.close(new Error('Model detection timed out'));
+      proc.kill('SIGKILL');
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) abort();
+    try {
+      await rpc.request('initialize', {
+        clientInfo: CLIENT_INFO,
+        capabilities: { experimentalApi: false },
+      });
+      rpc.notify('initialized');
+      const models: { id: unknown; efforts?: unknown[] }[] = [];
+      let cursor: string | null = null;
+      const cursors = new Set<string>();
+      do {
+        // https://github.com/openai/codex/tree/main/codex-rs/app-server-protocol
+        const page: ModelListPage = await rpc.request<ModelListPage>(
+          'model/list',
+          { cursor, limit: 100, includeHidden: false },
+        );
+        if (!Array.isArray(page.data))
+          return {
+            modelsDetectionStatus: 'failed',
+            modelsDetectionError: 'Invalid model listing response',
+          };
+        models.push(
+          ...page.data.map((model) => ({
+            id: model.model,
+            efforts: model.supportedReasoningEfforts?.map(
+              (effort) => effort.reasoningEffort,
+            ),
+          })),
+        );
+        cursor = page.nextCursor ?? null;
+        if (cursor && cursors.has(cursor))
+          return {
+            modelsDetectionStatus: 'failed',
+            modelsDetectionError: 'Invalid model listing response',
+          };
+        if (cursor) cursors.add(cursor);
+      } while (cursor && models.length < MAX_TOOL_MODELS);
+      return {
+        modelsDetectionStatus: 'detected',
+        models: boundedModels(models),
+      };
+    } catch (error) {
+      return error instanceof RpcError && error.code === -32601
+        ? { modelsDetectionStatus: 'unsupported' }
+        : {
+            modelsDetectionStatus: 'failed',
+            modelsDetectionError: signal.aborted
+              ? 'Model detection timed out'
+              : 'Model detection failed',
+          };
+    } finally {
+      signal.removeEventListener('abort', abort);
+      rpc.close(new Error('Model discovery finished'));
+      proc.end();
+      proc.kill('SIGKILL');
+    }
   }
 
   private async runDetection(): Promise<ToolDetection> {
