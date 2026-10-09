@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { legacyMetaPath } from '../src/core/checkout.ts';
+import { workspaceRecordPath } from '../src/core/checkout.ts';
 import { RunnerDaemon, type DaemonOptions } from '../src/core/loop.ts';
 import { readConnections, readSettings } from '../src/lib/config.ts';
 import { runnerPaths } from '../src/lib/home.ts';
@@ -61,9 +61,11 @@ describe('claiming and pruning the shared store', () => {
 
   const abandoned = () => {
     const dir = path.join(`${home}-work`, 'app', 'abandoned-task');
-    mkdirSync(path.dirname(legacyMetaPath(dir)), { recursive: true });
+    const record = workspaceRecordPath(runnerPaths(home, `${home}-work`), dir);
+    mkdirSync(dir, { recursive: true });
+    mkdirSync(path.dirname(record), { recursive: true });
     writeFileSync(
-      legacyMetaPath(dir),
+      record,
       JSON.stringify({
         subjectKey: 'abandoned-task',
         repos: [],

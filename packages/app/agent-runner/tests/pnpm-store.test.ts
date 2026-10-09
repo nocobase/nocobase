@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildAgentEnv } from '../src/agent/env.ts';
 import { agentWritableRoots } from '../src/agent/prepare/index.ts';
 import { workspaceNotes } from '../src/agent/worker.ts';
-import { legacyMetaPath } from '../src/core/checkout.ts';
+import { workspaceRecordPath } from '../src/core/checkout.ts';
 import { RunnerDaemon } from '../src/core/loop.ts';
 import {
   ensurePnpmStore,
@@ -235,9 +235,14 @@ describe('pruning by the daemon', () => {
   /** A working directory unused for 40 days, which the collection removes. */
   const abandoned = (subject: string): string => {
     const workDir = path.join(`${home}-work`, 'app', subject);
-    mkdirSync(path.dirname(legacyMetaPath(workDir)), { recursive: true });
+    const record = workspaceRecordPath(
+      runnerPaths(home, `${home}-work`),
+      workDir,
+    );
+    mkdirSync(workDir, { recursive: true });
+    mkdirSync(path.dirname(record), { recursive: true });
     writeFileSync(
-      legacyMetaPath(workDir),
+      record,
       JSON.stringify({
         subjectKey: subject,
         repos: [],

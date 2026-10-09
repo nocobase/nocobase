@@ -1,9 +1,9 @@
 // The runner daemon: one per machine (a pid file guards it), serving every application it is registered with.
 //
-// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories, then
-// does so every six hours; once that removed one, it prunes the shared pnpm store (pnpm-store.ts) as soon as no run is
-// active and every outstanding claim has finished starting its workers, claiming nothing until the prune is done.
-// Failed pruning stays due, with five minutes between idle attempts. Then, until it stops:
+// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories. Once a
+// collection removed one, it prunes the shared pnpm store (pnpm-store.ts) as soon as no run is active and every
+// outstanding claim has finished starting its workers, claiming nothing until the prune is done. Failed pruning stays
+// due, with five minutes between idle attempts. Then, until it stops:
 //
 // - heartbeat, per application, every 15 s: reports the tools, that application's active runs and the free slots; the
 //   answer names the runs whose cancel was requested, and the supervisor makes sure their workers stop;
@@ -64,8 +64,8 @@ import {
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
 import { gcWorkspaces } from './checkout.ts';
-import { collectWorkspaces } from './workspaces.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
+import { collectWorkspaces } from './workspaces.ts';
 import { installGitHooks } from './push-guard.ts';
 import {
   isAlive,
@@ -451,7 +451,8 @@ export class RunnerDaemon {
       this.lastCollect = Date.now();
       const { paths, log } = this.options;
       try {
-        const retired = await gcWorkspaces({ paths, log });
+        const expired = await gcWorkspaces({ paths, log });
+        if (expired.length > 0) this.pruneDue = true;
         const settings = await readSettings(paths);
         const reporters = new Map<
           string,
@@ -475,9 +476,7 @@ export class RunnerDaemon {
             ? {}
             : { limitBytes: settings.workspaceLimit }),
         });
-        // Removed working directories leave packages in the shared pnpm store that nothing links any more.
-        if (retired.length > 0 || collected.removed.length > 0)
-          this.pruneDue = true;
+        if (collected.removed.length > 0) this.pruneDue = true;
       } catch (error) {
         log(`gc: ${error instanceof Error ? error.message : String(error)}`);
       }

@@ -64,7 +64,8 @@ export async function listWorkspaceDirs(
     () => [],
   );
   for (const app of apps) {
-    if (!app.isDirectory()) continue;
+    // `.pnpm-store`, `.jobs`: the runner's own, never an application's (`safeName` gives none a leading dot).
+    if (!app.isDirectory() || app.name.startsWith('.')) continue;
     const appDir = path.join(paths.workRoot, app.name);
     for (const entry of await readdir(appDir, { withFileTypes: true }).catch(
       () => [],
