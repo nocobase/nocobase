@@ -1,6 +1,12 @@
 // Collecting working directories: what is measured and counted as unpushed, which directories the application's word
 // and the owner's limit remove, and which are never removed.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  linkSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -20,6 +26,7 @@ import {
 import { isInside } from '../src/core/command-policy.ts';
 import {
   collectWorkspaces,
+  diskUsage,
   planRemovals,
   scanWorkspaces,
   workspacesRequest,
@@ -341,6 +348,17 @@ describe('working directories', () => {
     ]);
   });
 
+  it('leaves the shared pnpm store under the work root alone', async () => {
+    const store = path.join(paths.pnpmStoreDir, 'v10', 'files');
+    mkdirSync(store, { recursive: true });
+    writeFileSync(path.join(store, 'pkg'), 'x');
+    expect(await scanWorkspaces(paths)).toEqual([]);
+    const day = 24 * 60 * 60 * 1000;
+    await gcWorkspaces({ paths, now: Date.now() + 365 * day });
+    await collectWorkspaces({ paths, limitBytes: 1 });
+    expect(existsSync(path.join(store, 'pkg'))).toBe(true);
+  });
+
   it('describes a directory for the application by its last run', async () => {
     await finishedRun('TASK-1', 'run-1');
     const entries = await scanWorkspaces(paths);
@@ -445,6 +463,25 @@ describe('what goes', () => {
     expect(
       removed(planRemovals(entries, { now, filters: { ended: true } })),
     ).toEqual([]);
+  });
+});
+
+describe('disk usage', () => {
+  it('counts what removing a directory frees, not files linked from elsewhere', async () => {
+    const root = tempDir('nocobase-runner-du-');
+    try {
+      const dir = path.join(root, 'work');
+      mkdirSync(dir);
+      writeFileSync(path.join(dir, 'own.txt'), 'x'.repeat(64 * 1024));
+      const before = await diskUsage(dir);
+      // A package file the shared store also links.
+      writeFileSync(path.join(root, 'stored.txt'), 'y'.repeat(256 * 1024));
+      linkSync(path.join(root, 'stored.txt'), path.join(dir, 'linked.txt'));
+      expect(await diskUsage(dir)).toBe(before);
+      expect(before).toBeGreaterThanOrEqual(64 * 1024);
+    } finally {
+      removeDir(root);
+    }
   });
 });
 

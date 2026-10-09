@@ -51,7 +51,7 @@ export interface Runner {
   readonly product: string | null;
   readonly protocolVersion: number;
   readonly features: readonly RunnerFeature[];
-  /** What the runner reported: each coding tool with its version and whether it is signed in. */
+  /** What the runner reported: version, sign-in and optional advisory model capabilities. Never edits Agent configuration. */
   readonly tools: readonly ToolInfo[];
   /**
    * The coding tools people let this runner run, chosen on the web; null offers every tool it reports. A tool left

@@ -92,9 +92,11 @@ async function isLocked(workDir: string): Promise<boolean> {
   return age <= 5_000;
 }
 
-/** Bytes on disk under `dir`, as `du` counts them: symbolic links not followed, a hard-linked file once. */
+/**
+ * Bytes on disk under `dir` that removing it frees: symbolic links are not followed, and a file with other hard links
+ * (a package linked from the shared pnpm store, say) counts nothing, since its bytes stay with the other links.
+ */
 export async function diskUsage(dir: string): Promise<number> {
-  const seen = new Set<string>();
   let total = 0;
   const pending = [dir];
   while (pending.length > 0) {
@@ -107,11 +109,7 @@ export async function diskUsage(dir: string): Promise<number> {
       const info = await lstat(file).catch(() => undefined);
       if (info === undefined) continue;
       if (info.isDirectory()) pending.push(file);
-      const inode = `${info.dev}:${info.ino}`;
-      if (info.nlink > 1) {
-        if (seen.has(inode)) continue;
-        seen.add(inode);
-      }
+      else if (info.nlink > 1) continue;
       total += info.blocks > 0 ? info.blocks * 512 : info.size;
     }
   }

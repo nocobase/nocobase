@@ -24,6 +24,7 @@
 // `NOCOBASE_RUNNER_WORK_ROOT` moves it.
 //
 //   ~/.nocobase-runner-work/<app>/<subjectKey>/   one long-lived working directory per subject
+//   ~/.nocobase-runner-work/.pnpm-store/          the pnpm store every run shares (core/pnpm-store.ts)
 //     .nocobase-runner/                           the runner's per-workspace files: the agent's home, tmp, bin and
 //                                                 the run's skills (`plugin/skills/`)
 import {
@@ -92,6 +93,7 @@ export interface RunnerPaths {
   pushAllowDir: string;
   workspacesDir: string;
   workRoot: string;
+  pnpmStoreDir: string;
 }
 
 export function runnerPaths(
@@ -118,6 +120,7 @@ export function runnerPaths(
     pushAllowDir: path.join(home, 'push-allow'),
     workspacesDir: path.join(home, 'workspaces'),
     workRoot: work,
+    pnpmStoreDir: path.join(work, '.pnpm-store'),
   };
 }
 
