@@ -45,7 +45,7 @@ export async function releaseIfFree(
 ): Promise<void> {
   if (issue.deletedAt || (await catalogs.terminal(issue))) return;
   if ((await blockersOf(tx.conn, catalogs, issue)).length > 0) return;
-  await deps.triggers().onUnblocked?.(tx, { issue, releasedBy });
+  await deps.triggers().onUnblocked?.(tx, { issue, releasedBy, actor });
   tx.emit({ type: 'issue.changed', issueId: issue.id });
   tx.emit({
     type: 'issue.dependencyReleased',
@@ -106,10 +106,12 @@ async function join(
       parent,
       stage: null,
       childIssueIds: children.map((child) => child.id),
+      actor,
     });
-    await deps
-      .issues()
-      .fireEvent(tx, parent.id, 'subtasks.done', { issueId: finished.id });
+    await deps.issues().fireEvent(tx, parent.id, 'subtasks.done', {
+      issueId: finished.id,
+      actor,
+    });
     return;
   }
   if (finished.stage === null || finished.deletedAt) return;
@@ -120,6 +122,7 @@ async function join(
       parent,
       stage: finished.stage,
       childIssueIds: stage.map((child) => child.id),
+      actor,
     });
   }
 }

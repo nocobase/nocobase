@@ -30,6 +30,9 @@ import {
   type SkillBundle,
   type StartRequest,
   type UpgradeNotice,
+  type WorkspaceReporting,
+  type WorkspacesRequest,
+  type WorkspacesResponse,
 } from '../src/protocol/index.ts';
 
 export interface FakeRunner {
@@ -187,6 +190,13 @@ export class FakeServer {
   uploadStatus: number | undefined;
   /** The slots the registration token carries; registration answers the runner's own, else these, else 1. */
   tokenSlots: number | undefined;
+  /**
+   * While set, heartbeat answers announce workspace reports and the workspaces route answers `workspaceAnswer`;
+   * otherwise the route does not exist, as on an application that predates it.
+   */
+  workspaceReporting: WorkspaceReporting | undefined;
+  workspaceAnswer: WorkspacesResponse = { remove: [], keep: [] };
+  readonly workspaceReports: WorkspacesRequest[] = [];
   private readonly jobQueue: string[] = [];
   private readonly queue: string[] = [];
   private readonly waiters = new Set<() => void>();
@@ -530,7 +540,17 @@ export class FakeServer {
         cancelRequested,
         release: [],
         ...(jobs ? { jobs } : {}),
+        ...(this.workspaceReporting === undefined
+          ? {}
+          : { workspaces: this.workspaceReporting }),
       });
+    });
+
+    app.post(RUNNER_ROUTES.workspaces, async (c) => {
+      if (this.workspaceReporting === undefined)
+        return error(c, 404, 'ROUTE_NOT_FOUND');
+      this.workspaceReports.push((await c.req.json()) as WorkspacesRequest);
+      return ok(c, this.workspaceAnswer);
     });
 
     app.get(DIST_ROUTES.file, (c) => {

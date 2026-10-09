@@ -2,6 +2,8 @@
 // reaches its application through the CLI a run names (`RunPayload.cli`).
 import type { Command } from '@oclif/core';
 
+import ConfigSet from './commands/config/set.ts';
+import Gc from './commands/gc.ts';
 import Logs from './commands/logs.ts';
 import Register from './commands/register.ts';
 import ServiceInstall from './commands/service/install.ts';
@@ -20,6 +22,8 @@ export const COMMANDS: Record<string, Command.Class> = {
   stop: Stop,
   status: Status,
   logs: Logs,
+  gc: Gc,
+  'config:set': ConfigSet,
   'service:install': ServiceInstall,
   'service:uninstall': ServiceUninstall,
   update: Update,

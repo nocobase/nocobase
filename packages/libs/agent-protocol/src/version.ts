@@ -44,6 +44,9 @@ import { z } from 'zod';
  * version 7 as optional fields: a server that does not know them ignores them, and a runner that does not send them is
  * bounded by its total slots only.
  *
+ * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
+ * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
+ *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
  *

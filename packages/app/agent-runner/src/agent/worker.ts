@@ -82,6 +82,7 @@ import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
+import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
 import {
   agentCwd,
   agentWritableRoots,
@@ -144,6 +145,8 @@ export function workspaceNotes(options: {
   tool?: AgentTool;
   /** Directories of files the application placed for this run, with what each holds. */
   mounts?: readonly { readonly dir: string; readonly note?: string }[];
+  /** The pnpm store every run on this machine shares. */
+  pnpmStoreDir?: string;
 }): string {
   const { workDir, cwd, dirs } = options;
   const lines = [
@@ -163,6 +166,10 @@ export function workspaceNotes(options: {
     }
     lines.push('Keep every file you write inside these directories.');
   }
+  if (options.pnpmStoreDir !== undefined)
+    lines.push(
+      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\` or \`--package-import-method\`, so dependencies are cloned or copied from it, never hard-linked, instead of downloaded again. Never change the store's files; use \`pnpm patch\` to change a dependency.`,
+    );
   if (options.skillsDir !== undefined)
     lines.push(
       `Your skills are in ${options.skillsDir}, one directory each with its SKILL.md; read a skill's SKILL.md when its description fits what you are doing.`,
@@ -628,6 +635,8 @@ export class RunWorker {
           );
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    const pnpmStoreDir = await ensurePnpmStore(deps.paths);
+    const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
     if (this.broker !== undefined && this.broker.urls.length > 0) {
       this.credentialServer = await serveGitCredentials(
@@ -651,6 +660,8 @@ export class RunWorker {
       binDir,
       ...(home === undefined ? {} : { home }),
       tmpDir,
+      pnpmStoreDir,
+      pnpmImportMethod: importMethod,
       hooksDir: deps.paths.hooksDir,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),
       ...(process.env[PROCESS_TAG_ENV] === undefined
@@ -719,6 +730,7 @@ export class RunWorker {
           ? {}
           : { skillsDir: context.skills.dir }),
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
+        pnpmStoreDir,
       }),
       init,
     );
@@ -731,7 +743,7 @@ export class RunWorker {
       this.lastActivity = Date.now();
       const handle = adapter.start({
         workDir: cwd,
-        writableRoots: agentWritableRoots(context.dirs, cwd),
+        writableRoots: agentWritableRoots(context.dirs, cwd, [pnpmStoreDir]),
         prompt,
         systemPrompt: system,
         ...(payload.tool.model === undefined
@@ -845,7 +857,7 @@ export class RunWorker {
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir === undefined) return [];
     if (repos.length === 0) {
-      await markWorkspaceEnded(workDir, true);
+      await markWorkspaceEnded(this.deps.paths, workDir, []);
       return [];
     }
     const reports = (
@@ -865,10 +877,7 @@ export class RunWorker {
             },
           },
     );
-    await markWorkspaceEnded(
-      workDir,
-      reports.every((report) => report.pushed),
-    );
+    await markWorkspaceEnded(this.deps.paths, workDir, reports);
     return reports;
   }
 
@@ -878,7 +887,11 @@ export class RunWorker {
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir !== undefined)
-      await markDirsPrepared(workDir, this.prepared?.dirs ?? []);
+      await markDirsPrepared(
+        this.deps.paths,
+        workDir,
+        this.prepared?.dirs ?? [],
+      );
     await this.drainEvents();
     if (this.ending !== undefined) return this.finishEnding();
     try {

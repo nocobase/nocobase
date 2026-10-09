@@ -4,8 +4,9 @@
 // reaches the application's CLI only through its credentials file.
 //
 // The runner then sets what it owns: HOME (the agent's home, see agent-home.ts), TMPDIR (inside the working
-// directory), the run's process tag (`AGENT_RUN_PROCESS_TAG`, which marks what the tool starts as the run's, see
-// core/process-tree.ts), the application CLI's directory first on PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
+// directory), the machine's shared pnpm store (core/pnpm-store.ts), the run's process tag (`AGENT_RUN_PROCESS_TAG`,
+// which marks what the tool starts as the run's, see core/process-tree.ts), the application CLI's directory first on
+// PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
 // git the agent runs uses the runner's hooks (push-guard.ts) whatever the repository configures. With the run's git
 // (`workspace.git`): the commit author and committer (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), the trailers the
 // `prepare-commit-msg` hook adds, and for each repository with a credential (`credentialHelper`) the runner's
@@ -17,6 +18,11 @@ import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { RUN_CREDENTIALS_ENV, type RunWorkspace } from '../protocol/index.ts';
+import {
+  PNPM_STORE_ENV,
+  pnpmStoreEnv,
+  type PnpmImportMethod,
+} from '../core/pnpm-store.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
 import {
@@ -57,6 +63,10 @@ export interface BuildEnvOptions {
   /** The agent's HOME; the runner's own when absent. */
   home?: string;
   tmpDir?: string;
+  /** The pnpm store every run on this machine shares. */
+  pnpmStoreDir?: string;
+  /** How pnpm imports packages from that store (`pnpmImportMethod`); `copy` when absent. */
+  pnpmImportMethod?: PnpmImportMethod;
   /** The push guard's hooks directory. */
   hooksDir?: string;
   /** The run's repository credentials, through the runner's helper. */
@@ -72,6 +82,7 @@ function forbidden(name: string): boolean {
       name,
     ) ||
     ['PATH', 'HOME', 'TMPDIR'].includes(name) ||
+    PNPM_STORE_ENV.includes(name.toLowerCase()) ||
     !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
   );
 }
@@ -100,6 +111,11 @@ export function buildAgentEnv(
         : `${options.binDir}${path.delimiter}${env.PATH}`;
   if (options.home !== undefined) env.HOME = options.home;
   if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
+  if (options.pnpmStoreDir !== undefined)
+    Object.assign(
+      env,
+      pnpmStoreEnv(options.pnpmStoreDir, options.pnpmImportMethod ?? 'copy'),
+    );
   if (options.processTag !== undefined)
     env[PROCESS_TAG_ENV] = options.processTag;
   const config: [string, string][] = [];

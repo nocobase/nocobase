@@ -2,6 +2,7 @@
 // helper against a real git, and the runner's own git against a git server over HTTP that refuses a credential once it
 // is no longer valid, as GitHub does with an expired installation token.
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -363,6 +364,7 @@ describe('the runner’s own git with credentials on demand', () => {
   /** The repository each password was issued for. */
   const issuedFor = new Map<string, string>();
   let issuedCount = 0;
+  let hostHelperMarker: string;
 
   beforeEach(async () => {
     root = tempDir('nocobase-runner-git-http-');
@@ -379,9 +381,10 @@ describe('the runner’s own git with credentials on demand', () => {
     );
     // A host credential helper that would answer with the host's own credential: never used for these repositories.
     const globalConfig = path.join(root, 'gitconfig');
+    hostHelperMarker = path.join(root, 'host-helper-executed');
     await writeFile(
       globalConfig,
-      '[credential]\n\thelper = "!f() { echo username=host; echo password=host-own-secret; }; f"\n',
+      `[credential]\n\thelper = "!f() { echo called > '${hostHelperMarker}'; echo username=host; echo password=host-own-secret; }; f"\n`,
     );
     vi.stubEnv('GIT_CONFIG_GLOBAL', globalConfig);
   });
@@ -475,6 +478,11 @@ describe('the runner’s own git with credentials on demand', () => {
       expect(remote.presented.length).toBeGreaterThan(0);
       for (const { repo, password } of remote.presented)
         expect(issuedFor.get(password)).toBe(repo);
+      expect(existsSync(hostHelperMarker)).toBe(false);
+      for (const [index, repo] of result.repos.entries())
+        expect(hostGit(['rev-parse', `origin/${repo.branch}`], repo.dir)).toBe(
+          reports[index]!.headSha,
+        );
     } finally {
       await result.release();
     }
@@ -526,6 +534,50 @@ describe('the runner’s own git with credentials on demand', () => {
       expect(
         remote.presented.some((each) => each.password === 'host-own-secret'),
       ).toBe(false);
+      expect(existsSync(hostHelperMarker)).toBe(false);
+    } finally {
+      await result.release();
+    }
+  });
+
+  it('pushes with refreshed run credentials through the task Git boundary despite checkout helper, monitor and remote overrides', async () => {
+    const { broker } = brokerFor([remote.url('app')]);
+    const result = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'PM-1',
+      dirs: dirsOf('app'),
+      auth: broker,
+    });
+    try {
+      const repo = result.repos[0]!;
+      commit(repo.dir);
+      const marker = path.join(root, 'task-config-executed');
+      for (const key of [
+        'credential.helper',
+        'core.fsmonitor',
+        'core.sshCommand',
+      ])
+        hostGit(['config', key, `!echo called > '${marker}'`], repo.dir);
+      hostGit(['config', 'remote.origin.pushurl', remote.url('lib')], repo.dir);
+      valid.clear();
+      const [report] = await reportRepos(result.repos, {
+        push: true,
+        auth: broker,
+      });
+      expect(report).toMatchObject({ pushed: true });
+      expect(report?.failure).toBeUndefined();
+      expect(existsSync(marker)).toBe(false);
+      expect(existsSync(hostHelperMarker)).toBe(false);
+      expect(
+        remote.presented.every(({ repo: name }) => name === 'app.git'),
+      ).toBe(true);
+      expect(
+        hostGit(
+          ['-c', 'core.fsmonitor=false', 'rev-parse', `origin/${repo.branch}`],
+          repo.dir,
+        ),
+      ).toBe(report?.headSha);
     } finally {
       await result.release();
     }

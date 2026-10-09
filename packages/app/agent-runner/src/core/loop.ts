@@ -1,7 +1,9 @@
 // The runner daemon: one per machine (a pid file guards it), serving every application it is registered with.
 //
-// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories. Then,
-// until it stops:
+// On start it recovers the runs a previous daemon left behind (supervisor.ts) and collects old work directories. Once a
+// collection removed one, it prunes the shared pnpm store (pnpm-store.ts) as soon as no run is active and every
+// outstanding claim has finished starting its workers, claiming nothing until the prune is done. Failed pruning stays
+// due, with five minutes between idle attempts. Then, until it stops:
 //
 // - heartbeat, per application, every 15 s: reports the tools, that application's active runs and the free slots; the
 //   answer names the runs whose cancel was requested, and the supervisor makes sure their workers stop;
@@ -12,6 +14,9 @@
 //   server does not hold the poll, so the loop waits out the rest of the 15 s fallback interval. With several, the
 //   claims rotate across them without waiting, starting each round with the application after the one that last had
 //   work, and a round that found nothing waits a few seconds.
+//
+// - collect working directories, every 10 minutes: the retention rules, then a report to every application whose
+//   heartbeat answer accepts one, removing what it says is over and what is over the owner's limit (workspaces.ts).
 //
 // A revoked runner key ends that application's loops; the daemon stops when no application is left.
 //
@@ -28,6 +33,9 @@ import { rm } from 'node:fs/promises';
 
 import type { AgentAdapter } from '../agent/adapters/types.ts';
 import {
+  dropWorkspaceLimit,
+  minFreeDisk,
+  readSettings,
   runnerClient,
   type AppConnection,
   type RunnerSettings,
@@ -44,6 +52,11 @@ import {
   type ClaimResponse,
   HeartbeatResponseSchema,
   RUNNER_ROUTES,
+  WORKSPACE_REPORT_INTERVAL_MS,
+  WorkspacesResponseSchema,
+  type WorkspaceReporting,
+  type WorkspacesRequest,
+  type WorkspacesResponse,
   routePath,
   type RunnerFeature,
   type ToolInfo,
@@ -53,6 +66,8 @@ import {
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
 import { gcWorkspaces } from './checkout.ts';
+import { prunePnpmStore } from './pnpm-store.ts';
+import { collectWorkspaces } from './workspaces.ts';
 import { installGitHooks } from './push-guard.ts';
 import {
   isAlive,
@@ -76,6 +91,7 @@ import {
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
+import { ToolCapabilitiesCache } from './tool-capabilities.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
 export function runnerVersion(): string {
@@ -100,7 +116,9 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
 
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
 const UNSUPPORTED = 'PROTOCOL_UNSUPPORTED';
-const GC_INTERVAL_MS = 6 * 60 * 60 * 1000;
+/** How often the daemon looks at whether to collect working directories; it collects every `collectIntervalMs`. */
+const GC_TICK_MS = 60_000;
+const PRUNE_RETRY_MS = 5 * 60_000;
 
 export interface DaemonPid {
   pid: number;
@@ -158,6 +176,8 @@ export interface DaemonOptions {
   log: (message: string) => void;
   /** Overrides the client built for a registration, by its key; for tests. */
   clients?: ReadonlyMap<string, ApiClient>;
+  /** Replaces `prunePnpmStore`; for tests. */
+  pruneStore?: typeof prunePnpmStore;
   /** Why an isolation configuration cannot be had here (isolation.ts); for tests. */
   isolationProblem?: (config: IsolationConfig) => Promise<string | undefined>;
   /** Update between runs when an application serves a newer runner; without it, upgrade notices are only logged. */
@@ -182,6 +202,8 @@ interface AppLink {
   heartbeatTimer?: NodeJS.Timeout;
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
+  /** The application accepts reports of the working directories (its last heartbeat answer said so). */
+  workspaceReporting?: WorkspaceReporting;
 }
 
 export class RunnerDaemon {
@@ -194,7 +216,10 @@ export class RunnerDaemon {
   private readonly stopping = new AbortController();
   private slotFreed: (() => void) | undefined;
   private gcTimer: NodeJS.Timeout | undefined;
+  private lastCollect = 0;
+  private collecting: Promise<void> | undefined;
   private tools: ToolInfo[] = [];
+  private capabilities?: ToolCapabilitiesCache;
   private claimLoop: Promise<void> | undefined;
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
@@ -202,6 +227,14 @@ export class RunnerDaemon {
   /** A newer runner to install once no run is left; claiming pauses meanwhile. */
   private pendingUpdate: { link: AppLink; target: UpdateTarget } | undefined;
   private updating = false;
+  /** The shared pnpm store is being pruned; claiming pauses meanwhile. */
+  private pruning = false;
+  /** Claims remain active through policy checks and worker startup, so pruning cannot overlap a received lease. */
+  private claimsInFlight = 0;
+  /** Working directories were removed since the store was last pruned. */
+  private pruneDue = false;
+  /** Failed pruning is retried at the next idle opportunity after this time. */
+  private pruneRetryAt = 0;
   private readonly failedUpdates = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
@@ -228,6 +261,7 @@ export class RunnerDaemon {
       onExit: () => {
         this.slotFreed?.();
         void this.updateWhenIdle();
+        void this.pruneStore();
       },
     });
   }
@@ -301,7 +335,7 @@ export class RunnerDaemon {
       pid: process.pid,
       startedAt: new Date().toISOString(),
     } satisfies DaemonPid);
-    await installGitHooks(paths.hooksDir);
+    await installGitHooks(paths.hooksDir, paths.pushAllowDir);
     log(
       `runner ${this.options.settings.name} starting for ${this.links
         .map(
@@ -312,6 +346,10 @@ export class RunnerDaemon {
           ', ',
         )}; ${this.slots} slot(s)${this.limitedTools.length > 0 ? ` (${this.limitedTools.map((tool) => `${tool} ${this.toolLimit(tool)}`).join(', ')})` : ''}`,
     );
+    if (await dropWorkspaceLimit(paths).catch(() => false))
+      log(
+        'settings: workspace-limit no longer applies and was removed; the runner now watches the free space on the disk instead (min-free-disk, 5G unless set)',
+      );
 
     const recovered = await recoverOrphans({
       paths,
@@ -323,14 +361,11 @@ export class RunnerDaemon {
       log(
         `recovered ${recovered.length} orphaned run(s): ${recovered.join(', ')}`,
       );
-    void this.collectGarbage();
-    this.gcTimer = setInterval(
-      () => void this.collectGarbage(),
-      GC_INTERVAL_MS,
-    );
-    this.gcTimer.unref();
-
     this.tools = await detectTools(this.options.adapters);
+    this.capabilities = new ToolCapabilitiesCache(
+      this.options.adapters,
+      this.tools,
+    );
     for (const link of this.links) {
       await this.heartbeat(link);
       link.heartbeatTimer = setInterval(
@@ -339,6 +374,13 @@ export class RunnerDaemon {
           link.connection.registration.heartbeatIntervalMs,
       );
     }
+    // After the first heartbeats, which say which applications accept workspace reports.
+    void this.collectGarbage();
+    this.gcTimer = setInterval(() => {
+      if (Date.now() - this.lastCollect >= this.collectIntervalMs)
+        void this.collectGarbage();
+    }, this.timings.gcTickMs ?? GC_TICK_MS);
+    this.gcTimer.unref();
     this.claimLoop = this.claim();
   }
 
@@ -352,6 +394,7 @@ export class RunnerDaemon {
     this.stopped ??= (async () => {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
+      await this.capabilities?.stop();
       this.slotFreed?.();
       for (const link of this.links)
         if (link.heartbeatTimer !== undefined)
@@ -394,13 +437,100 @@ export class RunnerDaemon {
     return report;
   }
 
-  private async collectGarbage(): Promise<void> {
+  /** How often working directories are collected: every 10 minutes, or sooner when an application asks. */
+  private get collectIntervalMs(): number {
+    return Math.min(
+      this.timings.collectIntervalMs ?? WORKSPACE_REPORT_INTERVAL_MS,
+      ...this.live.flatMap((link) =>
+        link.workspaceReporting === undefined
+          ? []
+          : [link.workspaceReporting.intervalMs],
+      ),
+    );
+  }
+
+  /**
+   * Collects working directories: the retention rules (7 days after a run that pushed everything, 30 days unused), then
+   * a report to every application that accepts one, removing what it says is over and what is over the owner's limit
+   * (core/workspaces.ts).
+   */
+  collectGarbage(): Promise<void> {
+    this.collecting ??= (async () => {
+      this.lastCollect = Date.now();
+      const { paths, log } = this.options;
+      try {
+        const expired = await gcWorkspaces({ paths, log });
+        if (expired.length > 0) this.pruneDue = true;
+        const settings = await readSettings(paths);
+        const reporters = new Map<
+          string,
+          (request: WorkspacesRequest) => Promise<WorkspacesResponse>
+        >();
+        for (const link of this.live)
+          if (link.workspaceReporting !== undefined && !link.upgradeRequired)
+            reporters.set(link.key, (request) =>
+              link.client.post(
+                RUNNER_ROUTES.workspaces,
+                request,
+                WorkspacesResponseSchema,
+                { timeoutMs: 60_000 },
+              ),
+            );
+        const collected = await collectWorkspaces({
+          paths,
+          reporters,
+          log,
+          threshold: minFreeDisk(settings),
+        });
+        if (collected.removed.length > 0) this.pruneDue = true;
+      } catch (error) {
+        log(`gc: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      try {
+        await this.pruneStore();
+      } finally {
+        this.collecting = undefined;
+      }
+    })();
+    return this.collecting;
+  }
+
+  /**
+   * Prunes only when neither workers nor claims are active: a received claim can start an install before its files
+   * are linked. Claims finish policy checks and start workers under the same exclusion, without delaying their
+   * leases. Pending cleanup is retried after the last claim or worker ends, or at the next collection; failures wait
+   * five minutes before another idle attempt.
+   */
+  async pruneStore(): Promise<void> {
+    if (
+      !this.pruneDue ||
+      this.pruning ||
+      this.claimsInFlight > 0 ||
+      this.supervisor.size > 0 ||
+      Date.now() < this.pruneRetryAt ||
+      this.stopping.signal.aborted
+    )
+      return;
+    this.pruning = true;
     try {
-      await gcWorkspaces({ paths: this.options.paths, log: this.options.log });
+      const pruned = await (this.options.pruneStore ?? prunePnpmStore)({
+        paths: this.options.paths,
+        log: this.options.log,
+      });
+      if (pruned) {
+        this.pruneDue = false;
+        this.pruneRetryAt = 0;
+      } else {
+        this.pruneRetryAt = Date.now() + PRUNE_RETRY_MS;
+      }
     } catch (error) {
+      this.pruneRetryAt = Date.now() + PRUNE_RETRY_MS;
       this.options.log(
-        `gc: ${error instanceof Error ? error.message : String(error)}`,
+        `gc: pruning the shared pnpm store failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+    } finally {
+      this.pruning = false;
+      this.slotFreed?.();
     }
   }
 
@@ -414,6 +544,7 @@ export class RunnerDaemon {
   }
 
   async heartbeat(link: AppLink): Promise<void> {
+    this.capabilities?.refresh();
     if (this.stopping.signal.aborted || link.revoked) return;
     const { log } = this.options;
     const held = [...this.supervisor.runs.values()].filter(
@@ -430,7 +561,7 @@ export class RunnerDaemon {
           product: runnerHost().product,
           features: policy.features,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
-          tools: this.tools,
+          tools: this.capabilities?.tools ?? this.tools,
           active: runs.map((run) => ({
             runId: run.runId,
             pid: run.pid,
@@ -467,6 +598,7 @@ export class RunnerDaemon {
         response.compatibility !== undefined,
         response.compatibility?.message,
       );
+      link.workspaceReporting = response.workspaces;
       if (response.upgrade !== undefined)
         this.noticeUpgrade(link, response.upgrade);
       for (const runId of response.cancelRequested)
@@ -569,6 +701,22 @@ export class RunnerDaemon {
 
   /** Asks one application for up to `free` runs and starts them. Returns how many it got. */
   private async claimFrom(
+    link: AppLink,
+    free: number,
+    wait: boolean,
+  ): Promise<number> {
+    if (this.pruning || this.stopping.signal.aborted) return 0;
+    this.claimsInFlight += 1;
+    try {
+      return await this.claimAndStart(link, free, wait);
+    } finally {
+      this.claimsInFlight -= 1;
+      await this.pruneStore();
+    }
+  }
+
+  /** Receives leases and starts their workers while `claimFrom` excludes pruning. */
+  private async claimAndStart(
     link: AppLink,
     free: number,
     wait: boolean,
@@ -684,7 +832,11 @@ export class RunnerDaemon {
         await delay(fallback, this.stopping.signal);
         continue;
       }
-      if (this.slots - this.supervisor.size <= 0 || this.pendingUpdate) {
+      if (
+        this.slots - this.supervisor.size <= 0 ||
+        this.pendingUpdate ||
+        this.pruning
+      ) {
         await new Promise<void>((resolve) => {
           this.slotFreed = resolve;
         });
