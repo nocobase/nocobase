@@ -27,7 +27,6 @@
 // legacy worktrees keep it under `<cache>/worktrees/<name>/`. They are fetched with the repository's credential, sent
 // only to the repository's own host. A new checkout initializes every submodule, recursively; an existing one only those not
 // initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation.
-import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import {
@@ -39,7 +38,6 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { delay } from '../lib/http.ts';
 import {
@@ -57,77 +55,15 @@ import type {
 import { isInside } from './command-policy.ts';
 import { allowPush, installGitHooks } from './push-guard.ts';
 import { isAlive } from './supervisor.ts';
+import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
+import {
+  taskGit,
+  taskGitDir,
+  taskGitOk,
+  type TaskGitContext,
+} from './task-git.ts';
 
-const run = promisify(execFile);
-
-export class CheckoutError extends Error {
-  override name = 'CheckoutError';
-}
-
-/** An HTTPS token git fetches with, for one invocation (a job's `repo.auth`). */
-export interface GitAuth {
-  readonly username?: string;
-  readonly token: string;
-}
-
-/**
- * The environment that gives one git invocation an `Authorization` header, through `GIT_CONFIG_*` so the token is in
- * neither the command line nor any configuration file.
- */
-export function gitAuthEnv(
-  auth: GitAuth | undefined,
-  /** Send it only to URLs under this prefix (`http.<url>.extraHeader`); without one, to every URL the invocation reaches. */
-  scope?: string,
-): Record<string, string> {
-  if (auth === undefined) return {};
-  const basic = Buffer.from(
-    `${auth.username ?? 'x-access-token'}:${auth.token}`,
-  ).toString('base64');
-  return {
-    GIT_CONFIG_COUNT: '1',
-    GIT_CONFIG_KEY_0:
-      scope === undefined ? 'http.extraHeader' : `http.${scope}.extraHeader`,
-    GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
-  };
-}
-
-export async function git(
-  args: string[],
-  cwd?: string,
-  env: Record<string, string> = {},
-): Promise<string> {
-  try {
-    const { stdout } = await run('git', args, {
-      cwd,
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-        GIT_ASKPASS: 'echo',
-        ...env,
-      },
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    return stdout.trim();
-  } catch (error) {
-    const stderr = (error as { stderr?: string }).stderr?.trim();
-    throw new CheckoutError(
-      `git ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,
-    );
-  }
-}
-
-export async function gitOk(
-  args: string[],
-  cwd?: string,
-  env: Record<string, string> = {},
-): Promise<boolean> {
-  try {
-    await git(args, cwd, env);
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Locks
@@ -210,13 +146,17 @@ export async function updateCache(
   try {
     if (!existsSync(cache)) {
       await mkdir(paths.reposDir, { recursive: true, mode: 0o700 });
-      await git(['clone', '--bare', '--quiet', url, cache], undefined, env);
+      await git(
+        ['clone', '--bare', '--quiet', url, cache],
+        paths.reposDir,
+        env,
+      );
     }
     // Reference clones borrow objects even after their refs disappear from the cache. Never prune those objects.
     await git(['config', 'gc.auto', '0'], cache);
     await git(['config', 'gc.pruneExpire', 'never'], cache);
     await git(['config', 'maintenance.auto', 'false'], cache);
-    await installGitHooks(path.join(cache, 'hooks'));
+    await installGitHooks(path.join(cache, 'hooks'), paths.pushAllowDir);
     await git(
       [
         'fetch',
@@ -300,53 +240,77 @@ async function addClone(
   dir: string,
   repo: RepoDir,
 ): Promise<void> {
-  await git([
-    'clone',
-    '--quiet',
-    '--shared',
-    '--reference',
-    cache,
-    '--no-checkout',
-    cache,
-    dir,
-  ]);
-  // The cache fetches into remote-tracking refs, rather than updating its original local branches.
+  const context = { cache, dir, url: repo.url };
   await git(
     [
-      'fetch',
+      'clone',
       '--quiet',
-      '--prune',
+      '--shared',
+      '--reference',
       cache,
-      '+refs/remotes/origin/*:refs/remotes/origin/*',
+      '--no-checkout',
+      cache,
+      dir,
     ],
-    dir,
+    cache,
   );
-  await git(['remote', 'set-url', 'origin', repo.url], dir);
-  await installGitHooks(path.join(dir, '.git', 'hooks'));
-  const remote = await gitOk(
-    ['show-ref', '--verify', '--quiet', `refs/remotes/origin/${repo.branch}`],
-    dir,
-  );
+  // The cache fetches into remote-tracking refs, rather than updating its original local branches.
+  await taskGit(context, [
+    'fetch',
+    '--quiet',
+    '--prune',
+    cache,
+    '+refs/remotes/origin/*:refs/remotes/origin/*',
+  ]);
+  await taskGit(context, ['remote', 'set-url', 'origin', repo.url]);
+  const remote = await taskGitOk(context, [
+    'show-ref',
+    '--verify',
+    '--quiet',
+    `refs/remotes/origin/${repo.branch}`,
+  ]);
   const base = remote
     ? `origin/${repo.branch}`
     : `origin/${repo.defaultBranch}`;
   if (
-    !(await gitOk(
-      ['rev-parse', '--verify', '--quiet', `${base}^{commit}`],
-      dir,
-    ))
+    !(await taskGitOk(context, [
+      'rev-parse',
+      '--verify',
+      '--quiet',
+      `${base}^{commit}`,
+    ]))
   ) {
     // An empty repository whose first commit this run makes: the default branch starts with no parent.
     if (repo.initial === true) {
-      await git(['symbolic-ref', 'HEAD', `refs/heads/${repo.branch}`], dir);
+      await taskGit(context, [
+        'symbolic-ref',
+        'HEAD',
+        `refs/heads/${repo.branch}`,
+      ]);
       return;
     }
     throw new CheckoutError(`${repo.url} has no branch ${repo.defaultBranch}`);
   }
-  await git(
-    ['checkout', '--quiet', '--no-track', '-B', repo.branch, base],
-    dir,
-  );
+  await taskGit(context, [
+    'checkout',
+    '--quiet',
+    '--no-track',
+    '-B',
+    repo.branch,
+    base,
+  ]);
+  // A clone initially imports the cache's HEAD branch, which the cache does not update on subsequent fetches.
+  // Keep only the task branch locally; upstream bases are available as the refreshed origin/* tracking refs.
+  for (const branch of (
+    await taskGit(context, [
+      'for-each-ref',
+      '--format=%(refname:short)',
+      'refs/heads/',
+    ])
+  ).split('\n')) {
+    if (branch !== '' && branch !== repo.branch)
+      await taskGit(context, ['branch', '-D', '--', branch]);
+  }
 }
 
 /** Creates a reference clone, or resumes the existing clone/worktree without resetting its work. */
@@ -355,43 +319,46 @@ async function ensureCheckout(
   dir: string,
   repo: RepoDir,
 ): Promise<boolean> {
+  const context = { cache, dir, url: repo.url };
   if (
     existsSync(dir) &&
-    (await gitOk(['rev-parse', '--is-inside-work-tree'], dir))
+    existsSync(path.join(dir, '.git')) &&
+    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']))
   ) {
     // Refresh the clone's tracking refs without moving its branch or touching uncommitted work. Legacy worktrees
     // share these refs with the cache, which updateCache already refreshed.
     if ((await stat(path.join(dir, '.git'))).isDirectory()) {
       const lock = await lockCache(cache);
       try {
-        await git(
-          [
-            'fetch',
-            '--quiet',
-            '--prune',
-            cache,
-            '+refs/remotes/origin/*:refs/remotes/origin/*',
-          ],
-          dir,
-        );
+        await taskGit(context, [
+          'fetch',
+          '--quiet',
+          '--prune',
+          cache,
+          '+refs/remotes/origin/*:refs/remotes/origin/*',
+        ]);
       } finally {
         await lock.release();
       }
     }
-    const current = await git(
-      ['symbolic-ref', '--quiet', '--short', 'HEAD'],
-      dir,
-    ).catch(() => '');
+    const current = await taskGit(context, [
+      'symbolic-ref',
+      '--quiet',
+      '--short',
+      'HEAD',
+    ]).catch(() => '');
     if (current !== repo.branch) {
-      const exists = await gitOk(
-        ['show-ref', '--verify', '--quiet', `refs/heads/${repo.branch}`],
-        dir,
-      );
-      await git(
+      const exists = await taskGitOk(context, [
+        'show-ref',
+        '--verify',
+        '--quiet',
+        `refs/heads/${repo.branch}`,
+      ]);
+      await taskGit(
+        context,
         exists
           ? ['checkout', '--quiet', repo.branch]
           : ['checkout', '--quiet', '-b', repo.branch],
-        dir,
       );
     }
     return false;
@@ -433,16 +400,32 @@ function httpOrigin(url: string): string | undefined {
  */
 export async function initSubmodules(
   dir: string,
-  options: { all: boolean; url: string; auth?: GitAuth },
+  options: { all: boolean; url: string; cache: string; auth?: GitAuth },
 ): Promise<string[]> {
+  const context: TaskGitContext = {
+    dir,
+    cache: options.cache,
+    url: options.url,
+  };
   if (!existsSync(path.join(dir, '.gitmodules'))) return [];
+  if (
+    (await taskGit(context, [
+      'config',
+      '--local',
+      '--get',
+      'remote.origin.url',
+    ])) !== options.url
+  )
+    throw new CheckoutError(
+      `${options.url}: submodules require the original origin URL; restore it before resuming`,
+    );
   const failed = (step: string, error: unknown): CheckoutError =>
     new CheckoutError(
       `${options.url}: ${step} its submodules failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   let status: string;
   try {
-    status = await git(['submodule', 'status'], dir);
+    status = await taskGit(context, ['submodule', 'status']);
   } catch (error) {
     throw failed('reading', error);
   }
@@ -455,15 +438,16 @@ export async function initSubmodules(
   if (selected.length === 0) return [];
   const origin = httpOrigin(options.url);
   try {
-    await git(
+    await taskGit(
+      context,
       [
         'submodule',
         'update',
         '--init',
         '--recursive',
+        '--checkout',
         ...(options.all ? [] : ['--', ...selected]),
       ],
-      dir,
       origin === undefined ? {} : gitAuthEnv(options.auth, origin),
     );
   } catch (error) {
@@ -641,11 +625,15 @@ export async function prepareDirs(
         auth === undefined ? {} : { auth },
       );
       const created = await ensureCheckout(cache, dir, entry);
-      const gitDir = await git(['rev-parse', '--absolute-git-dir'], dir);
-      await allowPush(gitDir, entry.url, entry.branch);
+      const gitDir = await taskGitDir({ dir, cache, url: entry.url });
+      // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
+      if (isInside(dir, gitDir))
+        await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
+      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir);
       const submodules = await initSubmodules(dir, {
         all: created,
         url: entry.url,
+        cache,
         ...(auth === undefined ? {} : { auth }),
       });
       if (submodules.length > 0)
@@ -737,31 +725,63 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
 /** Pushes each branch that has commits the remote lacks and reports where every repository stands. */
 export async function reportRepos(
   repos: readonly CheckedOutRepo[],
-  options: { push: boolean; log?: (message: string) => void },
+  options: {
+    push: boolean;
+    credentials?: readonly RepoCredential[];
+    log?: (message: string) => void;
+  },
 ): Promise<RepoReport[]> {
   const reports: RepoReport[] = [];
   for (const repo of repos) {
-    const headSha = await git(['rev-parse', 'HEAD'], repo.dir).catch(() => '');
+    const credential = options.credentials?.find(
+      (item) => item.url === repo.url,
+    );
+    const env = gitAuthEnv(
+      credential === undefined
+        ? undefined
+        : {
+            username: credential.username,
+            token: credential.password,
+          },
+      httpOrigin(repo.url),
+    );
+    let headSha: string;
+    try {
+      headSha = await taskGit(repo, ['rev-parse', 'HEAD']);
+    } catch (error) {
+      options.log?.(
+        `report: ${repo.url}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      reports.push({
+        url: repo.url,
+        branch: repo.branch,
+        pushed: false,
+        headSha: '',
+      });
+      continue;
+    }
     const remoteSha = async (): Promise<string> =>
       (
-        await git(
-          ['ls-remote', 'origin', `refs/heads/${repo.branch}`],
-          repo.dir,
+        await taskGit(
+          repo,
+          ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
+          env,
         ).catch(() => '')
       ).split(/\s+/)[0] ?? '';
     const remote = await remoteSha();
     let pushed = headSha !== '' && remote === headSha;
     // Work to push: commits on top of the default branch, or a branch the remote already has and HEAD moved past.
-    const base = await git(
-      ['rev-parse', `origin/${repo.defaultBranch}`],
-      repo.dir,
-    ).catch(() => '');
+    const base = await taskGit(repo, [
+      'rev-parse',
+      `origin/${repo.defaultBranch}`,
+    ]).catch(() => '');
     const hasWork = headSha !== '' && (headSha !== base || remote !== '');
     if (options.push && !pushed && hasWork) {
       try {
-        await git(
-          ['push', '--quiet', 'origin', `HEAD:refs/heads/${repo.branch}`],
-          repo.dir,
+        await taskGit(
+          repo,
+          ['push', '--quiet', '--', repo.url, `HEAD:refs/heads/${repo.branch}`],
+          env,
         );
         pushed = (await remoteSha()) === headSha;
       } catch (error) {
