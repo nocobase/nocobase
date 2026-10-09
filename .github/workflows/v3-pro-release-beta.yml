@@ -26,6 +26,8 @@ on:
     secrets:
       NOCOBASE_APP_PRIVATE_KEY:
         required: true
+      PRO_NPM_REGISTRY:
+        required: true
       PRO_NPM_TOKEN:
         required: true
       RELEASE_RESULT_FEISHU_WEBHOOK_URL:
@@ -75,11 +77,23 @@ jobs:
           version: 11.7.0
           run_install: false
 
+      - name: Validate the Pro npm registry
+        env:
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node -e '
+            const value = process.env.PRO_NPM_REGISTRY?.trim();
+            if (!value) { console.error("::error::PRO_NPM_REGISTRY is not configured"); process.exit(1); }
+            let registry;
+            try { registry = new URL(value); } catch { console.error("::error::PRO_NPM_REGISTRY is not a valid URL"); process.exit(1); }
+            if (registry.hostname === "registry.npmjs.org") { console.error("::error::Commercial packages must not use public npm"); process.exit(1); }
+          '
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: https://npm.nocobase.ai
+          registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
 
       - name: Inspect prerelease state
         id: release_state
@@ -95,7 +109,7 @@ jobs:
             echo 'release=true' >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Freeze the OSS develop snapshot and install
+      - name: Freeze the OSS v3-develop snapshot and install
         if: steps.release_state.outputs.release == 'true'
         id: oss
         env:
@@ -182,18 +196,20 @@ jobs:
         if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
-        run: node ./scripts/publish-commercial-packages.mjs --registry https://npm.nocobase.ai --tag beta
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: node ./scripts/publish-commercial-packages.mjs --registry "$PRO_NPM_REGISTRY" --tag beta
 
       - name: Point beta at this release and push package tags
         if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
         run: |
           node ./vendor/nocobase3/scripts/list-package-versions.mjs --released-specs "$RUNNER_TEMP/pro-versions-before.json" > "$RUNNER_TEMP/pro-released-specs.txt"
           FAILED=0
           while IFS= read -r SPEC; do
             [ -n "$SPEC" ] || continue
-            npm dist-tag add "$SPEC" beta || FAILED=1
+            npm dist-tag add "$SPEC" beta --registry "$PRO_NPM_REGISTRY" || FAILED=1
           done < "$RUNNER_TEMP/pro-released-specs.txt"
           test "$FAILED" = 0 || { echo '::error::One or more Pro beta dist-tags could not be updated'; exit 1; }
           git push origin --tags
@@ -218,7 +234,8 @@ jobs:
           TAG: ${{ steps.branch.outputs.name }}
         run: |
           node ./vendor/nocobase3/scripts/release-notes.mjs "$TAG" > "$RUNNER_TEMP/pro-release-notes.raw.md"
-          sed 's#https://github.com/nocobase/nocobase3/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' "$RUNNER_TEMP/pro-release-notes.raw.md" > "$RUNNER_TEMP/pro-release-notes.md"
+          sed -e 's#https://github.com/nocobase/nocobase3/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' \
+              -e 's#https://github.com/nocobase/nocobase/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' "$RUNNER_TEMP/pro-release-notes.raw.md" > "$RUNNER_TEMP/pro-release-notes.md"
           TITLE="${TAG##*/}"
           if gh release view --repo nocobase/nocobase3-pro "$TAG" > /dev/null 2>&1; then
             gh release edit --repo nocobase/nocobase3-pro "$TAG" --title "$TITLE" --notes-file "$RUNNER_TEMP/pro-release-notes.md" --prerelease --latest=false
@@ -232,7 +249,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: nocobase/nocobase3-pro
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: ${{ secrets.PRO_NPM_REGISTRY }}
           TITLE: NocoBase 3 Pro 预览版发布
           STATUS: success
           STATUS_TEXT_SUCCESS: 发布成功

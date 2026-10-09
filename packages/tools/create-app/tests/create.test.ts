@@ -92,9 +92,8 @@ describe('JSON creation flow', () => {
     await expect(readFile(path.join(root, 'crm/config.yml'))).rejects.toThrow();
     expect(stdout).not.toContain('secret');
     await expect(readFile(path.join(root, 'crm/.env'))).rejects.toThrow();
-    // The registry the templates came from has to survive into the project, or the next `pnpm add @nocobase/…` the
-    // user runs resolves against the public npm.
-    expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).toContain(
+    // Public npm needs no scoped override in the generated project.
+    expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).not.toContain(
       '@nocobase:registry=',
     );
   });

@@ -60,6 +60,7 @@ describe('runInstaller', () => {
       .split('\n')
       .filter((line) => line.trim().startsWith('$ '));
     expect(examples.length).toBeGreaterThan(1);
+    expect(result.stdout).toContain('https://registry.npmjs.org');
     for (const line of examples) {
       expect(line).toMatch(
         /\$ npx --yes --registry=\S+ @nocobase\/app-installer@\S+ /u,

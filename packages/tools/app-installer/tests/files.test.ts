@@ -331,7 +331,7 @@ describe('installer.json', () => {
     templateKind: 'app',
     source: { kind: 'archive' },
     name: 'nocobase-crm',
-    registry: 'https://npm.nocobase.ai',
+    registry: 'https://registry.internal.example',
     dialect: 'sqlite',
     drivers: [],
     current: id,

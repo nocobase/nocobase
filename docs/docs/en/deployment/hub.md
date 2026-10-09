@@ -72,28 +72,6 @@ docker compose logs --tail=100 hub
 
 After editing `config.yml`, run `docker compose up -d --force-recreate hub` to apply it. To upgrade Hub, update `HUB_IMAGE` in `.env` and run `docker compose pull hub && docker compose up -d hub`.
 
-### Install with app-installer
-
-Without Docker, and without changes to Hub's source, Hub can be installed on a Node.js server with app-installer. The server requires Node.js 24, pnpm 11 and a globally installed pm2 4.3 or later (`npm install -g pm2`; do not use a pm2 fetched through `npx`). NocoBase 3 packages are published to `https://npm.nocobase.ai`, which is specified with `--registry`:
-
-```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/hub --template hub --origin https://apps.example.com
-```
-
-app-installer builds Hub on the server, generates a `config.yml` with random secrets, runs the database migrations, starts Hub under pm2 and waits for the health check to pass; the process takes several minutes. By default it listens on `127.0.0.1:13000` and uses SQLite. For another database, specify the connection settings with `--dialect` and `--set`, and read the password from an environment variable with `--set-from-env`. After installation, run `pm2 startup` and then the command it prints with sudo, so that pm2 starts Hub after a server reboot.
-
-Subsequent upgrades, rollbacks and status queries:
-
-```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/hub
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer rollback --dir /srv/nocobase/hub
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv/nocobase/hub
-```
-
-Before an upgrade, app-installer states the downtime scope and backup contents and requests confirmation; a failed upgrade is rolled back to the original version automatically. The complete list of flags is available through `--help`.
-
-A Hub with modified source is an ordinary application project: build its archive as described in [Manual: standalone](./standalone), install it with `--archive`, and set the runtime `APP_BASE_PATH` to `/hub`.
-
 ### Reverse proxy and first sign-in
 
 Forward the entire domain to `http://127.0.0.1:13000` as described in [HTTPS and reverse proxy](./configuration#https-and-reverse-proxy), and add `client_max_body_size 260m;` to the Nginx `server` block. That limit is for the management console, which uploads a whole archive of up to 256 MiB in one request; `hub deploy` and `hub upload` send an archive of up to 2 GiB in resumable 8 MiB chunks and need the proxy to allow only 8 MiB.

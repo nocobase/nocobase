@@ -29,7 +29,7 @@ const sharedFiles = new Set([
   '.npmrc',
   '.pnpmfile.cjs',
   'pnpmfile.cjs',
-  '.github/workflows/quality.yml',
+  '.github/workflows/v3-quality.yml',
   'scripts/select-db-integration-matrix.mjs',
   'tests/scripts/select-db-integration-matrix.test.mjs',
 ]);

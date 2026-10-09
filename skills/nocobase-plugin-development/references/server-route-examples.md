@@ -1,6 +1,6 @@
 # Server Route examples
 
-Use these examples when the concise rules in [Server development](./server.md) are not enough. They follow the current NocoBase v3 `defineApiRoutes()`, `defineRootRoutes()`, `Auth`, and `AppAuthorization` contracts on `develop`.
+Use these examples when the concise rules in [Server development](./server.md) are not enough. They follow the current NocoBase v3 `defineApiRoutes()`, `defineRootRoutes()`, `Auth`, and `AppAuthorization` contracts on `v3-develop`.
 
 ## Choose the mount scope first
 

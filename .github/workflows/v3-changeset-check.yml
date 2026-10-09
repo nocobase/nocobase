@@ -2,7 +2,7 @@ name: V3 Changeset Check
 
 # Validate changeset syntax and require coverage for files that enter published packages.
 # The release:skip label records intentional exceptions. Prerelease state is expected on
-# v3-develop; guard-main.yml rejects it only on pull requests targeting v3-main.
+# v3-develop; v3-guard-main.yml rejects it only on pull requests targeting v3-main.
 
 on:
   pull_request:

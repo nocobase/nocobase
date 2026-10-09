@@ -23,8 +23,6 @@ pnpm --version
 如果手动创建，可以在终端从应用目录的父目录执行。比如已经准备好的空目录名为 `my-app`：
 
 ```bash
-# 配置内部包源
-pnpm config set @nocobase:registry https://npm.nocobase.ai/
 # 允许下载刚发布的版本，并创建应用
 PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 ```
@@ -33,13 +31,7 @@ PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
 
 命令会下载应用模板、生成项目和配置文件、安装依赖，并同步插件的开发指引。等待终端显示完成，再进入下一步。
 
-当前使用内部包源，第一条命令为 `@nocobase` 包配置下载地址。第二条命令将此次创建进程的 `minimumReleaseAge` 设为 `0`，允许下载刚发布的版本。
-
-正式发布到公共 npm 包源后，创建命令只需：
-
-```bash
-pnpm create @nocobase/app my-app
-```
+NocoBase 包发布在公共 npm 包源。`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` 只对本次创建进程生效，用于下载刚发布的版本。
 
 创建命令到此为止，得到的是一个可以配置的项目。它不会生成 `config.yml`，下一步才会。
 

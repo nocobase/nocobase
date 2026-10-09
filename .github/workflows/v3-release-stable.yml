@@ -81,7 +81,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Install dependencies
@@ -105,7 +105,7 @@ jobs:
           BRANCH: ${{ inputs.branch }}
         run: |
           if [ "$BRANCH" = "v3-develop" ]; then
-            echo "::error::Use release-beta.yml to release from v3-develop"
+            echo "::error::Use v3-release-beta.yml to release from v3-develop"
             exit 1
           fi
 
@@ -285,7 +285,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Install dependencies
@@ -393,7 +393,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Install dependencies
@@ -416,7 +416,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [default, examples, hub]
+        template: [default, examples]
     defaults:
       run:
         working-directory: release-source
@@ -536,7 +536,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Install dependencies
@@ -672,7 +672,7 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge release $BATCH into $RELEASE_BASE [skip ci]" \
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge release $BATCH into $RELEASE_BASE [skip ci]" \
             --body "current app-template-default version: $TEMPLATE_VERSION"
           RC=$?
           set -e
@@ -736,7 +736,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 稳定版发布成功，但 PR 合回失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -757,7 +757,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 稳定版已发布，但同步到 v3-develop 需要人工处理
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -779,7 +779,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 稳定版发布
           STATUS: success
           STATUS_TEXT_SUCCESS: 发布成功
@@ -843,7 +843,7 @@ jobs:
       !cancelled() && !inputs.dry_run
       && needs.release.outputs.tag != ''
       && (needs.release.result == 'success' || needs.release.outputs.merged == 'false')
-    uses: ./.github/workflows/github-release.yml
+    uses: ./.github/workflows/v3-github-release.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
     secrets:

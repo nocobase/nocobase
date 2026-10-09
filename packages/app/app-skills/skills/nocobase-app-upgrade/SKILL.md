@@ -50,7 +50,7 @@ If `nocobase.templatePackage` is missing, use the confirmed package name for `TE
 ## 3. Fetch both releases
 
 ```bash
-REGISTRY=https://npm.nocobase.ai
+REGISTRY=https://registry.npmjs.org
 TEMPLATE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
 TARGET=<target version>

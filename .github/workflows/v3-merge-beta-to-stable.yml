@@ -2,7 +2,7 @@ name: V3 Merge Beta to Stable
 
 # Promote v3-develop versions on a temporary branch, merge into v3-main, then sync
 # back to v3-develop and re-enter prerelease mode. This does not publish to npm.
-# Run release-stable.yml separately; publication checks package versions against
+# Run v3-release-stable.yml separately; publication checks package versions against
 # the registry, so it does not depend on pending changesets still being present.
 #
 # The NocoBase App owns pushes and PR merges. App writes can trigger workflows, so every generated candidate,
@@ -123,7 +123,7 @@ jobs:
           {
             echo "### Pending release"
             echo
-            echo "Run \`release-stable.yml\` after this is merged to publish:"
+            echo "Run \`v3-release-stable.yml\` after this is merged to publish:"
             echo
             echo "| Package | Version |"
             echo "| --- | --- |"
@@ -176,13 +176,13 @@ jobs:
         run: |
           PR_URL=$(gh pr create \
             --title "chore: promote prerelease versions [skip ci]" \
-            --body "Promoted the prerelease: version numbers no longer carry the \`-beta\` suffix. **Not published to npm yet** — run \`release-stable.yml\` after merging, which is what tags the release and creates its GitHub Release. Per-package versions are in the workflow summary." \
+            --body "Promoted the prerelease: version numbers no longer carry the \`-beta\` suffix. **Not published to npm yet** — run \`v3-release-stable.yml\` after merging, which is what tags the release and creates its GitHub Release. Per-package versions are in the workflow summary." \
             --base v3-main \
             --head "${{ steps.branch.outputs.name }}")
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --subject "chore: merge promoted versions into v3-main [skip ci]"
+          gh pr merge "$PR_URL" --squash --subject "chore: merge promoted versions into v3-main [skip ci]"
           RC=$?
           set -e
           if [ $RC -ne 0 ]; then
@@ -226,7 +226,7 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge promoted versions back into v3-develop [skip ci]"
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge promoted versions back into v3-develop [skip ci]"
           RC2=$?
           set -e
           if [ $RC2 -ne 0 ]; then
@@ -241,7 +241,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 v3-develop 合入 v3-main 失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -263,7 +263,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 已合入 v3-main，但同步回 v3-develop 失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -288,7 +288,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 v3-develop 已合入 v3-main
           STATUS: success
           STATUS_TEXT_SUCCESS: 待发布
@@ -297,7 +297,7 @@ jobs:
           CONTENT: |
             `v3-develop` 已合入 `v3-main`，版本号不再带 `-beta` 后缀，`v3-develop` 已重新进入 pre 模式。
 
-            **尚未发布到 npm。** 点 `release-stable.yml` 完成发布（输入保持默认）。
+            **尚未发布到 npm。** 点 `v3-release-stable.yml` 完成发布（输入保持默认）。
 
             待发布的 package：
         run: ./scripts/feishu-notify.sh

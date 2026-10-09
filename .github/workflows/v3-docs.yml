@@ -11,14 +11,14 @@ on:
       - v3-develop
     paths:
       - 'docs/**'
-      - '.github/workflows/docs.yml'
+      - '.github/workflows/v3-docs.yml'
   pull_request:
     branches:
       - v3-develop
       - v3-main
     paths:
       - 'docs/**'
-      - '.github/workflows/docs.yml'
+      - '.github/workflows/v3-docs.yml'
   workflow_dispatch:
     inputs:
       publish:

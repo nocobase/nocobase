@@ -1,4 +1,4 @@
-name: Database tests
+name: V3 Database tests
 
 # Runs the tests of every package that takes its database from @nocobase/db-testing, directly or through
 # @nocobase/app-testing, on a dialect other than the default. Pull requests run them on SQLite through Quality's Test

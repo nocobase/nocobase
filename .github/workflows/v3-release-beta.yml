@@ -65,7 +65,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Install dependencies
@@ -211,7 +211,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Download release source state
@@ -314,7 +314,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Download release source state
@@ -359,7 +359,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [default, examples, hub]
+        template: [default, examples]
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -456,7 +456,7 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: release-source/pnpm-lock.yaml
-          registry-url: https://npm.nocobase.ai
+          registry-url: https://registry.npmjs.org
           scope: '@nocobase'
 
       - name: Download release source state
@@ -600,8 +600,8 @@ jobs:
         if: '!inputs.dry_run'
         run: git push origin --tags
 
-      # Keep the release commit's ancestry by merging instead of squashing. A conflict leaves the branch available for
-      # manual resolution rather than overriding changes that reached v3-develop during the release.
+      # The tag preserves the exact tested candidate; squash its PR to follow the repository's merge policy.
+      # Conflicts leave the candidate branch available for manual resolution.
       - name: Merge back into v3-develop
         if: '!inputs.dry_run'
         id: merge
@@ -619,7 +619,7 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge release $RELEASE_BATCH into v3-develop [skip ci]" \
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge release $RELEASE_BATCH into v3-develop [skip ci]" \
             --body "current app-template-default version: $TEMPLATE_VERSION"
           RC=$?
           set -e
@@ -636,7 +636,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 预览版发布成功，但 PR 合回失败
           STATUS: failure
           STATUS_TEXT_FAILURE: 需要人工介入
@@ -661,7 +661,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          REGISTRY_URL: https://npm.nocobase.ai
+          REGISTRY_URL: https://registry.npmjs.org
           TITLE: NocoBase 3 预览版发布
           STATUS: success
           STATUS_TEXT_SUCCESS: 发布成功
@@ -709,7 +709,7 @@ jobs:
       !cancelled() && !inputs.dry_run
       && needs.release.outputs.tag != ''
       && (needs.release.result == 'success' || needs.release.outputs.merged == 'false')
-    uses: ./.github/workflows/github-release.yml
+    uses: ./.github/workflows/v3-github-release.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
     secrets:
