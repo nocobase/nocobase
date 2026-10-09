@@ -3,8 +3,9 @@
  * cancelling and retrying, and reading runs and their transcripts. Who may read or change a run is decided by the
  * callers (the admin routes, the application); this service checks only that the person who wakes an agent may wake it.
  *
- * Work is keyed by (agent, subject, thread). New work for a key joins the run already working on it while it can
- * still be told (dispatched, or running with input), else the run waiting for it (queued), else starts a new run.
+ * Work is keyed by (agent, subject, thread). New work for a key joins the run already working on it as the same person
+ * while it can still be told (dispatched, or running with input), else that person's run waiting for it (queued), else
+ * starts a new run. Runs of one key working as different people are claimed one at a time (`claim.ts`).
  */
 import {
   ProtocolError,
@@ -265,6 +266,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
       },
     });
     unit.emit({ type: 'run.input', runId, inputId: id });
+    await runsRepo(unit.conn).updateMany({
+      filter: { id: runId, status: 'queued' },
+      // New input may change the scopes its variables come from: the next claim tells again.
+      values: { teamOnlyVariables: null },
+    });
     return id;
   }
 
@@ -339,6 +345,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         workDir: null,
         directoryKey: null,
         claimFailures: 0,
+        teamOnlyVariables: null,
         payloadFingerprint: null,
         createdAt: now,
         updatedAt: now,
@@ -416,7 +423,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
           subjectId: request.subject.id,
           threadScope: request.threadScope ?? DEFAULT_THREAD,
         };
-        const open = await runsOfKey(unit.conn, key, ['queued', ...ACTIVE]);
+        // Only into work done as the same person: merged into another's run, it would borrow their identity, or wait
+        // for a runner that never takes it.
+        const open = await runsOfKey(
+          unit.conn,
+          key,
+          ['queued', ...ACTIVE],
+          request.actorUserId,
+        );
         const working = open.find(
           (run) =>
             run.status === 'dispatched' ||
@@ -546,7 +560,12 @@ export function createRunService(deps: RunServiceDeps): RunService {
           );
         const agent = await requireInvocable(unit, run.agentId, byUserId);
         await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
-        const open = await runsOfKey(unit.conn, run, ['queued', ...ACTIVE]);
+        const open = await runsOfKey(
+          unit.conn,
+          run,
+          ['queued', ...ACTIVE],
+          byUserId,
+        );
         if (open.length > 0)
           throw precondition(
             'AGENT_BUSY',

@@ -85,6 +85,7 @@ import type {
 } from './registry.js';
 import {
   checkSpecInput,
+  JobSecretsNotAllowed,
   runnerSpec,
   secretRefsOf,
   timeoutSecOf,
@@ -175,6 +176,8 @@ export interface JobRunnerReports {
 /**
  * Where the stored variables a job names are opened, as the application provides it (the agents plugin's variables).
  * Each value is keyed `scope\u0000scopeId\u0000name`; a name it does not hold is left out. It records the delivery.
+ * Throw `JobSecretsNotAllowed` when a personal runner asks for a team-only variable: the claim rolls back and the job
+ * stays queued without counting a preparation failure.
  */
 export interface JobSecretSource {
   open(
@@ -443,6 +446,7 @@ export function createJobService(deps: JobServiceDeps): JobService {
       try {
         assembled = await assemble(unit, job, runner, leaseExpiresAt);
       } catch (error) {
+        if (error instanceof JobSecretsNotAllowed) throw new NotForThisRunner();
         if (error instanceof NotForThisRunner) throw error;
         throw new PrepareError(
           error instanceof Error ? error.message : String(error),

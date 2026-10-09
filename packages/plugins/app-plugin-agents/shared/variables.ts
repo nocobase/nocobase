@@ -6,6 +6,10 @@
  * Variables are set on an agent, on a working directory (`workdir`), or on a scope the application registers (the
  * group a run's subject belongs to, say), and a run gets them merged: the subject's scopes < its working directories <
  * the agent, a later scope replacing an earlier one's value.
+ *
+ * A run's variables go to whichever runner takes it, including a personal runner of whoever may use the agent: sharing
+ * an agent shares the tokens it works with. A variable marked `teamRunnersOnly` keeps a run that gets it off personal
+ * runners: only a team runner takes such a run.
  */
 
 /** The scopes this plugin knows; the application registers the others (`GET agents/vocabulary` lists them). */
@@ -16,9 +20,18 @@ export type VariableScope = string;
 
 export interface Variable {
   readonly name: string;
+  /** Only team runners receive it: a run that gets it waits for one (`secretsNotAllowed`); absent means false. */
+  readonly teamRunnersOnly?: boolean;
   readonly updatedAt: string;
   readonly updatedById: string | null;
   readonly updatedByName: string | null;
+}
+
+/** A variable named by where it is kept, such as one that asks for a team runner. */
+export interface VariableRef {
+  readonly scope: VariableScope;
+  readonly scopeId: string;
+  readonly name: string;
 }
 
 export interface VariableValue {

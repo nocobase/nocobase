@@ -58,9 +58,11 @@ export function createRosterRoutes(
             (agent.type === 'online' && hasDefault)) &&
           services.agents.mayInvoke(agent, userId),
       );
+      // Whether a runner would take the caller's work: theirs, or a team runner allowed the agent's variables.
       const availability = await services.availability(
         services.tx.read(),
         agents,
+        userId,
       );
       const data = agents.map((agent): AvailableAgent => ({
         id: agent.id,
