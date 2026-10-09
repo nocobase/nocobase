@@ -1,0 +1,29 @@
+# This default-branch entry dispatches the implementation from the isolated v3 branch.
+name: V3 Merge Beta to Stable
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: compute versions and run checks without pushing any branch"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: write
+jobs:
+  dispatch:
+    name: Run the v3 implementation
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch on v3-develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_FILE: merge-beta-to-stable.yml
+          DISPATCH_INPUTS: ${{ toJSON(inputs) }}
+        run: >
+          printf '%s' "$DISPATCH_INPUTS" \
+            | jq '{ref: "v3-develop", inputs: with_entries(.value |= tostring)}' \
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_FILE/dispatches" --input -
+          echo "Dispatched $WORKFLOW_FILE on v3-develop. Check that workflow run for its result." >>
+          "$GITHUB_STEP_SUMMARY"
