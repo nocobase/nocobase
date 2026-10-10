@@ -52,7 +52,7 @@ describe('IssueDependencies', () => {
     expect(container.querySelector('[data-slot="issue-section"]')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Dependency' }));
     const search = await screen.findByRole('combobox', {
-      name: 'Add a blocker',
+      name: 'Add a relationship',
     });
     expect(document.activeElement).toBe(search);
     expect(screen.getByRole('region', { name: 'Dependencies' })).toBeTruthy();
@@ -64,7 +64,7 @@ describe('IssueDependencies', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 
-  it('removes a blocker, and offers nothing to change without onAdd', () => {
+  it('removes a blocker, and offers nothing to change without onAdd', async () => {
     const onRemove = vi.fn(() => Promise.resolve());
     const blocker = {
       id: 'd2',
@@ -85,7 +85,7 @@ describe('IssueDependencies', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Remove PM-2' }));
-    expect(onRemove).toHaveBeenCalledWith(blocker);
+    await waitFor(() => expect(onRemove).toHaveBeenCalledWith(blocker));
     rerender(
       <IssueDependencies
         blockedBy={[blocker]}

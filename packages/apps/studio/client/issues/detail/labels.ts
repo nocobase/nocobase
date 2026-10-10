@@ -36,6 +36,7 @@ export interface IssuePageWording {
 
 export function useIssuePageWording(): IssuePageWording {
   const { t } = useTranslation(PROJECTS_NS);
+  const { t: appT } = useTranslation();
   return useMemo(
     () => ({
       t,
@@ -144,7 +145,13 @@ export function useIssuePageWording(): IssuePageWording {
           blocks: t('dependencies.blocks'),
           related: t('dependencies.related'),
           remove: t('dependencies.remove', keep('identifier')),
-          add: t('dependencies.add'),
+          add: appT('issuesPage.relationships.add'),
+          type: appT('issuesPage.relationships.type'),
+          prerequisite: appT('issuesPage.relationships.prerequisite'),
+          hint: appT('issuesPage.relationships.hint'),
+          changeType: appT('issuesPage.relationships.changeType'),
+          toRelated: appT('issuesPage.relationships.toRelated'),
+          toBlocker: appT('issuesPage.relationships.toBlocker'),
           addPlaceholder: t('dependencies.addPlaceholder'),
           addLabel: t('issueAdd.label'),
           addDependency: t('issueAdd.dependency'),
@@ -189,6 +196,6 @@ export function useIssuePageWording(): IssuePageWording {
         },
       },
     }),
-    [t],
+    [t, appT],
   );
 }

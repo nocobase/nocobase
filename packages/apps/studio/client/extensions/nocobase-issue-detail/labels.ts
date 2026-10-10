@@ -62,6 +62,12 @@ export interface IssueDetailLabels {
     readonly addLabel: string;
     readonly addDependency: string;
     readonly searchEmpty: string;
+    readonly type: string;
+    readonly prerequisite: string;
+    readonly hint: string;
+    readonly changeType: string;
+    readonly toRelated: string;
+    readonly toBlocker: string;
   };
   readonly labelColors: {
     readonly open: string;
@@ -139,11 +145,17 @@ export const defaultIssueDetailLabels: IssueDetailLabels = {
     blocks: 'Blocks',
     related: 'Related',
     remove: 'Remove {identifier}',
-    add: 'Add a blocker',
+    add: 'Add a relationship',
     addPlaceholder: 'Search issues…',
     addLabel: 'Add:',
     addDependency: 'Dependency',
     searchEmpty: 'No issues found',
+    type: 'Relationship type',
+    prerequisite: 'Prerequisite (wait for it)',
+    hint: 'A prerequisite holds this issue until it finishes. Related issues do not block each other.',
+    changeType: 'Change relationship with {identifier}',
+    toRelated: 'Change to related',
+    toBlocker: 'Make a prerequisite (this issue waits)',
   },
   labelColors: {
     open: 'Change label colors',
