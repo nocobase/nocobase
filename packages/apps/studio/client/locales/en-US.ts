@@ -13,6 +13,9 @@ import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
   overrides: {
+    '@nocobase/app-plugin-projects': {
+      status: { todo: 'Todo', in_progress: 'In progress' },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -965,9 +968,12 @@ const enUS = {
   studioAgents: {
     principalKinds: { agent: 'Agent' },
     workflowTemplates: {
-      software: 'Software development',
+      software: 'Owner-approved development',
       softwareDescription:
-        'The Solution designer analyses and proposes in Analysis; the Proposal reviewer reviews the proposal and passes it on or sends it back, to UI review (前端评审) when it changes the interface, where the Frontend designer passes it on or sends it back; the issue’s executor works in In progress and the Code reviewer comments on the pull request in In review. An issue moves to Done once its pull requests are merged. To capture lessons into the knowledge base, add a Retrospective rule to Done.',
+        'The owner approves every design before development starts. In Analysis an agent writes a proposal, and the owner approves it or sends it back in Proposal review; the executor then implements it and opens a pull request; In review notifies the owner to review and merge, and an AI code review can be added. Suits work with a wide impact, where a person should decide the direction.',
+      aiReviewed: 'AI-reviewed development',
+      aiReviewedDescription:
+        'Agents review both the design and the code, and the owner is asked only for decisions a person has to make. In Analysis the solution designer writes a proposal; the proposal reviewer reviews it, and the frontend designer also reviews any UI changes; once approved, a developer agent implements it and opens a pull request; the code reviewer posts a final report, and the owner merges after reading it. The issue moves to Done when its pull requests are merged. Suits most development work.',
     },
     /**
      * The 软件开发 (software) template's owner notices, for its notifyOwner rules to name as
@@ -988,6 +994,9 @@ const enUS = {
       designLabel: 'Design first',
       designHint:
         'The agent analyses and submits a design proposal; development starts once you approve it.',
+      aiDesignLabel: 'Design first',
+      aiDesignHint:
+        'The agent analyses and submits a design proposal; development starts once the agents approve it.',
     },
     subjects: { issue: 'Issue', project: 'Project', intake: 'Intake with AI' },
     triggers: {

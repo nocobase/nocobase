@@ -115,17 +115,17 @@ test.describe('settings', () => {
     });
     await create.getByRole('textbox', { name: '名称' }).fill(name);
     await expect(create.getByRole('combobox', { name: '基于' })).toContainText(
-      '软件开发',
+      'AI 评审开发',
     );
     await create.getByRole('button', { name: '创建' }).click();
     await expect(page).toHaveURL(/\/config\/workflows\/\d+/);
     const workflowId = new URL(page.url()).pathname.split('/').pop() ?? '';
 
     const transition = page.getByRole('button', {
-      name: '从 进行中 到 已完成',
+      name: '从 开发中 到 已完成',
     });
     await page.getByRole('button', { name: '编辑', exact: true }).click();
-    // Copied from Software development: a person moves it to Done, with no approval.
+    // Copied from AI-reviewed development: a person moves it to Done, with no approval.
     await expect(transition).toHaveText('人');
 
     await page.getByRole('button', { name: '进入“受阻”时' }).click();

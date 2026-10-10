@@ -10,6 +10,7 @@
  * | `suggestExecutor` | the issue's owner gets a suggestion card in their inbox ("‹Agent› is suggested for PM-12"):     |
  * |                   | Accept makes `agentId` the executor and starts its work, Dismiss drops it                       |
  *
+ * `defaultAgentId` fills an unassigned executor on status entry; existing agent and human executors take precedence.
  * `runAgent` acts for whoever moved the issue (the owner, when the system or an agent moved it). When that person may
  * not wake the agent, the owner gets a suggestion instead. The loop guard defaults to `STAGE_RUN_LIMIT` actual runs
  * per issue and status within `STAGE_RUN_WINDOW_HOURS` hours, configurable on each rule. It guards against agents and
@@ -345,12 +346,17 @@ export function createStageRules(deps: {
     validate: (config) => [
       ...unknownFields(config, [
         'agentId',
+        'defaultAgentId',
         'instruction',
         'assign',
         'maxRuns',
         'windowHours',
       ]),
       ...agentIdIssues(config.agentId, false),
+      ...agentIdIssues(config.defaultAgentId, false).map((issue) => ({
+        ...issue,
+        path: 'defaultAgentId',
+      })),
       ...instructionIssues(config.instruction),
       ...positiveIntegerIssues(config, 'maxRuns'),
       ...positiveIntegerIssues(config, 'windowHours'),
@@ -367,6 +373,8 @@ export function createStageRules(deps: {
           config.assign === false
             ? `Creates a run for agent ${agentId}, without making it the executor`
             : `Sets agent ${agentId} as the executor (without the owner's confirmation) and creates a run`;
+      else if (textOf(config.defaultAgentId))
+        summary += `, assigning agent ${textOf(config.defaultAgentId)} on status entry only when no executor is assigned`;
       return {
         summary: `${summary}${instruction ? ', with a stage instruction' : ''}. At most ${Number(config.maxRuns ?? STAGE_RUN_LIMIT)} runs per ${Number(config.windowHours ?? STAGE_RUN_WINDOW_HOURS)} hours from agent or system moves; a person's move always runs.`,
         attention: true,
@@ -384,7 +392,8 @@ export function createStageRules(deps: {
       const preset = textOf(config.agentId);
       const agentId =
         preset ??
-        (issue.executor?.type === AGENT_KIND ? issue.executor.id : null);
+        (issue.executor?.type === AGENT_KIND ? issue.executor.id : null) ??
+        (issue.executor === null ? textOf(config.defaultAgentId) : null);
       if (!agentId) return report(entry, RUN_AGENT, skip('noAgentExecutor'));
       const agent = await deps.agents.agents.findWorkable(tx.conn, agentId);
       if (!agent)

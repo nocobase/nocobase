@@ -9,6 +9,7 @@ import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RUN_LAYOUT } from '../../server/knowledge/mount.js';
+import { makeRoot, runRoleAgentsSeed } from '../agents/role-agents.js';
 
 import {
   createBridgeHarness,
@@ -161,6 +162,8 @@ describe('a run on an issue', () => {
   });
 
   it('does not ask an analysis run to capture learnings', async () => {
+    await makeRoot(h, 'root');
+    await runRoleAgentsSeed(h);
     const issue = await h.projects.issues.create(h.viewer('bob'), {
       title: 'Why are lists slow?',
       projectId,

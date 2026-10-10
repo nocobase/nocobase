@@ -13,6 +13,9 @@ import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
   overrides: {
+    '@nocobase/app-plugin-projects': {
+      status: { todo: '待开始', in_progress: '开发中' },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -893,9 +896,12 @@ const zhCN: AppResource = {
   studioAgents: {
     principalKinds: { agent: 'Agent' },
     workflowTemplates: {
-      software: '软件开发',
+      software: '人工审批开发',
       softwareDescription:
-        '方案设计在分析中分析并提交方案；方案评审评审方案并推进或退回，涉及界面改动的先进入前端评审（UI review），由前端设计推进或退回；任务的执行者在进行中开发，代码评审在代码评审中评论 Pull request。任务的 Pull request 全部合并后变为已完成。如需把经验沉淀到知识库，请在已完成中添加“复盘”规则。',
+        '方案必须由负责人批准才能开始开发。分析中由 agent 出方案，负责人在方案评审中批准或退回；开发中由执行者实现并开 PR；代码评审阶段通知负责人审核合并，可以另外加上 AI 代码评审。适合影响面大、需要人把关方向的任务。',
+      aiReviewed: 'AI 评审开发',
+      aiReviewedDescription:
+        '方案和代码都先由 AI 评审，只有需要人决定的事才找负责人。分析中由方案设计出方案；方案评审由 AI 评审，涉及界面的再经前端评审；通过后进入开发中，由开发 agent 实现并开 PR；代码评审由 AI 给出最终报告，负责人看报告后合并，合并后自动完成。适合大多数开发任务。',
     },
     templateMessages: {
       inReview:
@@ -908,6 +914,8 @@ const zhCN: AppResource = {
       developHint: '适合范围清楚的小改动：Agent 直接开始实现。',
       designLabel: '先出方案',
       designHint: 'Agent 先分析并提交方案，你批准后再开发。',
+      aiDesignLabel: '先出方案',
+      aiDesignHint: 'Agent 先分析并提交方案，AI 评审通过后再开发。',
     },
     subjects: { issue: '任务', project: '项目', intake: 'AI 整理需求' },
     triggers: {

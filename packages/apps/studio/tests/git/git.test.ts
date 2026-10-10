@@ -292,8 +292,8 @@ describe('design first', () => {
         decisionKey: `design:${issue.id}`,
         outcome: 'approved',
       });
-    // Proposal review runs the proposal reviewer beside the owner's card, without making it the executor.
-    expect((await runsOf(issue.id)).map((item) => item.agentId)).toContain(
+    // Owner approval waits for a person without automatically starting a proposal reviewer.
+    expect((await runsOf(issue.id)).map((item) => item.agentId)).not.toContain(
       ROLE_AGENT_IDS.proposalReviewer,
     );
     expect((await detail(issue)).executor).toEqual({

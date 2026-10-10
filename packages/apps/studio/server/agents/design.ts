@@ -35,6 +35,7 @@ import type { StudioInboxPort } from '../inbox/port.js';
 import { ISSUE_SUBJECT, PROJECTS_SOURCE } from '../inbox/projects.js';
 import { systemViewer } from '../previews/sources.js';
 import { translated } from './commands/permissions.js';
+import { AI_REVIEW_TEMPLATE_KEY } from './catalog/workflow-templates.js';
 
 type DesignProjects = Pick<
   Projects,
@@ -310,6 +311,27 @@ export function createDesignService(deps: DesignDeps) {
             systemViewer(),
             event.issueId,
           );
+          const conn = projects().tx.read();
+          const project = issue.projectId
+            ? await conn
+                .repository<{ id: string; workflowId: string | null }>(
+                  'pmProjects',
+                )
+                .findOne({ filter: { id: issue.projectId } })
+            : null;
+          const workflow = await conn
+            .repository<{
+              id: string;
+              isDefault: boolean;
+              builtInKey: string | null;
+            }>('pmWorkflows')
+            .findOne({
+              filter: project?.workflowId
+                ? { id: project.workflowId }
+                : { isDefault: true },
+            });
+          // Agent review asks the owner only when a reviewer explicitly needs a human decision.
+          if (workflow?.builtInKey === AI_REVIEW_TEMPLATE_KEY) return;
           const proposal = await latestProposal(issue.id);
           // A card still waiting from an earlier review is replaced.
           await port.resolve({

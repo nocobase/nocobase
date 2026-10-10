@@ -3,7 +3,7 @@
  * runner or a coding agent: it registers through the runner protocol (`@nocobase/agent-protocol`), claims the run an
  * issue's agent was woken for, and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
  */
-import { Api } from './fixtures.ts';
+import { Api, unique } from './fixtures.ts';
 
 /** `PROTOCOL_VERSION` and `HEADERS` of `@nocobase/agent-protocol` (`packages/libs/agent-protocol/src/version.ts`). */
 const PROTOCOL_VERSION = 5;
@@ -175,11 +175,32 @@ export class FakeRunner {
     options: { ownerUserId: string; projectId?: string },
   ): Promise<Issue> {
     await this.designerCapacity();
+    // Human approval tests use the owner-approved workflow explicitly; the default uses agent review.
+    let projectId = options.projectId;
+    if (!projectId) {
+      const workflows =
+        await this.api.get<{ id: string; builtInKey: string | null }[]>(
+          'projects/workflows',
+        );
+      const workflow = workflows.find(
+        (entry) => entry.builtInKey === 'software',
+      );
+      if (!workflow)
+        throw new Error(
+          'The owner-approved workflow is required for a human design decision.',
+        );
+      const project = await this.api.post<{ id: string }>('projects', {
+        name: `人工方案审批 ${unique()}`,
+        visibility: 'everyone',
+        workflowId: workflow.id,
+      });
+      projectId = project.id;
+    }
     const issue = await this.api.post<Issue>('projects/issues', {
       title,
       statusKey: 'analysis',
       ownerUserId: options.ownerUserId,
-      ...(options.projectId ? { projectId: options.projectId } : {}),
+      projectId,
       executor: { type: 'agent', id: await this.agent() },
     });
     const token = await this.claim(issue.identifier);

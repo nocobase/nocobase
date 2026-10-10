@@ -1,6 +1,11 @@
 import type { AppServerResource } from './en-US.js';
 
 const zhCN: AppServerResource = {
+  overrides: {
+    '@nocobase/app-plugin-projects': {
+      status: { todo: '待开始', in_progress: '开发中' },
+    },
+  },
   knowledge: {
     manual: {
       updated: '手册：已更新 <slug>, <slug>',
@@ -13,7 +18,7 @@ const zhCN: AppServerResource = {
   studioAgents: {
     templateMessages: {
       inReview:
-        '审阅改动并合并它的 Pull request：合并后任务会变为已完成（如有必填检查项，需先勾选）。也可以附上评论，把任务退回进行中。',
+        '审阅改动并合并它的 Pull request：合并后任务会变为已完成（如有必填检查项，需先勾选）。也可以附上评论，把任务退回开发中。',
     },
   },
 };

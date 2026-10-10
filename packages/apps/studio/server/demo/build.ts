@@ -4,7 +4,7 @@
  * agents and runtimes through the agents plugin, knowledge through the knowledge plugin. The work items therefore carry
  * identifiers, activity and inbox notices like any other.
  *
- * The demo adds no workflow of its own: it adds its review checklist to In review of the installed Software development
+ * The demo adds no workflow of its own: it adds its review checklist to In review of the installed default
  * workflow (`addReviewChecklist`, which leaves a workflow that has the items alone), and its projects use the default
  * workflow.
  *
@@ -135,8 +135,8 @@ async function configureAssistant(
 }
 
 /**
- * Adds the demo's review checklist to In review of the Software development workflow (or of the default workflow
- * without it), through the workflow service as an administrator would. Items it has already are left as they are, so
+ * Adds the demo's review checklist to In review of the default workflow (falling back to the owner-approved workflow),
+ * through the workflow service as an administrator would. Items it has already are left as they are, so
  * running it again changes nothing. False when there is no such workflow.
  */
 export async function addReviewChecklist(
@@ -145,8 +145,8 @@ export async function addReviewChecklist(
 ): Promise<boolean> {
   const rows = await projects.workflows.list(admin);
   const target =
-    rows.find((row) => row.builtInKey === SOFTWARE_TEMPLATE_KEY) ??
-    rows.find((row) => row.isDefault);
+    rows.find((row) => row.isDefault) ??
+    rows.find((row) => row.builtInKey === SOFTWARE_TEMPLATE_KEY);
   if (!target) return false;
   const status = target.definition.states.find(
     (state) => state.key === REVIEW_STATUS,
@@ -269,11 +269,11 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
     created('labels');
   }
 
-  // The review checklist, on the installed Software development workflow every demo project uses.
+  // The review checklist, on the default workflow every demo project uses.
   const reviewChecklist = await addReviewChecklist(projects, admin);
   if (!reviewChecklist)
     warn(
-      'The demo review checklist was not added: there is no Software development or default workflow',
+      'The demo review checklist was not added: there is no default or owner-approved workflow',
       null,
     );
 
