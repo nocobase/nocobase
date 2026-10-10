@@ -129,11 +129,12 @@ const IN_REVIEW = 'in_review';
 
 /** Settles an issue's failed-run cards once it moves to review or finishes; returns what stops it. */
 export function settleFailedRunCards(
+  agents: Pick<Agents, 'events' | 'runs'>,
   projects: () => Pick<Projects, 'events' | 'issueContext' | 'tx'>,
   port: () => StudioInboxPort | undefined,
   onError: (error: unknown) => void,
 ): () => void {
-  return projects().events.on('issue.updated', (event) => {
+  const stopIssueUpdates = projects().events.on('issue.updated', (event) => {
     const status = event.changes.status;
     const inbox = port();
     if (!status || !inbox) return;
@@ -154,4 +155,20 @@ export function settleFailedRunCards(
       });
     })().catch(onError);
   });
+  const stopRunChanges = agents.events.on('run.changed', (event) => {
+    void (async () => {
+      const run = await agents.runs.get(event.runId);
+      if (!run.retryOfRunId || run.subject.kind !== ISSUE_SUBJECT) return;
+      const inbox = port();
+      if (!inbox) return;
+      await inbox.resolve({
+        ...runFailedDecision(run.retryOfRunId),
+        outcome: 'retried',
+      });
+    })().catch(onError);
+  });
+  return () => {
+    stopIssueUpdates();
+    stopRunChanges();
+  };
 }
