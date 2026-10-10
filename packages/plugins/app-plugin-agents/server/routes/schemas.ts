@@ -1464,6 +1464,10 @@ const runnerObject = z.object({
   protocolVersion: z.number().int(),
   features: z.array(RunnerFeatureSchema),
   tools: z.array(ToolInfoSchema),
+  toolsRefreshRequestId: z.string().nullable().optional().meta({
+    description:
+      'Pending tool status refresh request; null or absent when no detection is pending.',
+  }),
   enabledTools: z.array(AgentToolSchema).nullable(),
   trust: z.enum(RUNNER_TRUST),
   ownerUserId: z.string().nullable(),

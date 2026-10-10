@@ -39,6 +39,8 @@ export interface RunnerRecord {
   readonly protocolVersion: number;
   readonly features: readonly unknown[];
   readonly tools: readonly unknown[];
+  /** Pending tool detection request; null or absent when none. */
+  readonly toolsRefreshRequestId?: string | null;
   readonly enabledTools: readonly unknown[] | null;
   readonly trust: RunnerTrust;
   readonly ownerUserId: string | null;
@@ -249,6 +251,7 @@ export function toRunner(
     protocolVersion: Number(record.protocolVersion),
     features: stringArray(record.features) as RunnerFeature[],
     tools: toolList(record.tools),
+    toolsRefreshRequestId: record.toolsRefreshRequestId ?? null,
     enabledTools: enabledToolList(record.enabledTools),
     trust: record.trust,
     ownerUserId: record.ownerUserId,

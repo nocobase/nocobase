@@ -158,6 +158,7 @@ export class FakeServer {
   readonly mountFetches = new Map<string, number>();
   /** Sent with every heartbeat answer while set. */
   upgrade: UpgradeNotice | undefined;
+  toolsRefreshRequestId?: string;
   /**
    * While set, the server cannot work with the runner's protocol: `verdict` answers heartbeats with `compatibility`
    * and claims with no work, as a current server does; `refuse` answers both `PROTOCOL_UNSUPPORTED`, as an older one.
@@ -513,6 +514,7 @@ export class FakeServer {
         )
         .map(([id]) => id);
       return ok(c, {
+        toolsRefreshRequestId: this.toolsRefreshRequestId,
         ok: true,
         serverTime: new Date().toISOString(),
         ...(this.upgrade === undefined ? {} : { upgrade: this.upgrade }),

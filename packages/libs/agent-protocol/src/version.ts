@@ -81,6 +81,7 @@ export function isProtocolSupported(version: number): boolean {
  * - `archives`: installs the application's CLI from a standalone tarball the application serves (`CliPackage` of
  *   kind `archive`).
  * - `jobs.build`: executes build jobs (`jobs.ts`, `jobFeature`).
+ * - `tools.refresh`: accepts a tool detection request on heartbeat and acknowledges the fresh report.
  * - `mounts`: places the run's mounts (`RunPayload.mounts`) in its work directory before the agent starts.
  */
 export const RUNNER_FEATURES = [
@@ -94,6 +95,7 @@ export const RUNNER_FEATURES = [
   'archives',
   'jobs.build',
   'mounts',
+  'tools.refresh',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];

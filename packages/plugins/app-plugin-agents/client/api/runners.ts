@@ -58,6 +58,10 @@ export class RunnersApi {
     return this.send(id(runnerId), 'PATCH', patch);
   }
 
+  public refreshRunnerStatus(runnerId: string): Promise<Runner> {
+    return this.send(`${id(runnerId)}/refreshStatus`, 'POST');
+  }
+
   public revokeRunner(runnerId: string): Promise<Runner> {
     return this.send(`${id(runnerId)}/revoke`, 'POST');
   }

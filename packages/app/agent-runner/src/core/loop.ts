@@ -105,6 +105,7 @@ export function runnerVersion(): string {
 
 /** What every runner of this version can do, before adapter features. */
 export const BASE_FEATURES: readonly RunnerFeature[] = [
+  'tools.refresh',
   'input',
   'checkout',
   'directories',
@@ -119,6 +120,7 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
 
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
 const UNSUPPORTED = 'PROTOCOL_UNSUPPORTED';
+const TOOL_DETECTION_INTERVAL_MS = 10 * 60_000;
 /** How often the daemon looks at whether to collect working directories; it collects every `collectIntervalMs`. */
 const GC_TICK_MS = 60_000;
 const PRUNE_RETRY_MS = 5 * 60_000;
@@ -205,14 +207,17 @@ interface AppLink {
   /** The application cannot work with this runner's protocol: heartbeats only, no claims. */
   upgradeRequired: boolean;
   heartbeatTimer?: NodeJS.Timeout;
+  heartbeatRunning?: boolean;
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
-  /** Detection is cached only for this application and refreshed when its effective variables change. */
+  /** The last request detected successfully, kept until the server acknowledges its report. */
+  toolsRefreshCompletedId?: string;
   /**
    * What was detected for this application in the environment its runs get, by a digest of that environment: its
    * tools, and their model capabilities, refreshed in the background (`ToolCapabilitiesCache`).
    */
   detection?: {
+    detectedAt: number;
     key: string;
     tools: Promise<ToolInfo[]>;
     capabilities: Promise<ToolCapabilitiesCache>;
@@ -455,6 +460,7 @@ export class RunnerDaemon {
    */
   private async environmentOf(
     link: AppLink,
+    force: boolean = false,
   ): Promise<{ variables: string[]; tools: ToolInfo[] }> {
     const stored = await readConnection(link.key, this.options.paths).catch(
       () => undefined,
@@ -473,13 +479,18 @@ export class RunnerDaemon {
         ),
       )
       .digest('hex');
-    if (link.detection?.key !== key) {
+    if (
+      force ||
+      link.detection?.key !== key ||
+      Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS
+    ) {
       const previous = link.detection;
       const adapters =
         this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
         this.options.adapters;
       const tools = detectTools(adapters);
       link.detection = {
+        detectedAt: Date.now(),
         key,
         tools,
         capabilities: tools.then(
@@ -604,7 +615,9 @@ export class RunnerDaemon {
   }
 
   async heartbeat(link: AppLink): Promise<void> {
-    if (this.stopping.signal.aborted || link.revoked) return;
+    if (this.stopping.signal.aborted || link.revoked || link.heartbeatRunning)
+      return;
+    link.heartbeatRunning = true;
     const { log } = this.options;
     const held = [...this.supervisor.runs.values()].filter(
       (run) => run.appKey === link.key,
@@ -623,6 +636,9 @@ export class RunnerDaemon {
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
           variables,
           tools,
+          ...(link.toolsRefreshCompletedId
+            ? { toolsRefreshCompletedId: link.toolsRefreshCompletedId }
+            : {}),
           active: runs.map((run) => ({
             runId: run.runId,
             pid: run.pid,
@@ -660,6 +676,15 @@ export class RunnerDaemon {
         response.compatibility?.message,
       );
       link.workspaceReporting = response.workspaces;
+      if (!response.toolsRefreshRequestId)
+        link.toolsRefreshCompletedId = undefined;
+      if (
+        response.toolsRefreshRequestId &&
+        response.toolsRefreshRequestId !== link.toolsRefreshCompletedId
+      ) {
+        await this.environmentOf(link, true);
+        link.toolsRefreshCompletedId = response.toolsRefreshRequestId;
+      }
       if (response.upgrade !== undefined)
         this.noticeUpgrade(link, response.upgrade);
       for (const runId of response.cancelRequested)
@@ -681,6 +706,8 @@ export class RunnerDaemon {
       log(
         `${link.key}: heartbeat failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+    } finally {
+      link.heartbeatRunning = false;
     }
   }
 
@@ -782,6 +809,13 @@ export class RunnerDaemon {
     free: number,
     wait: boolean,
   ): Promise<number> {
+    if (
+      !link.detection ||
+      Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS
+    ) {
+      await this.environmentOf(link);
+      await this.heartbeat(link);
+    }
     const pollTimeout =
       this.timings.pollTimeoutMs ?? link.connection.registration.pollTimeoutMs;
     const response: ClaimResponse = await link.client.post(

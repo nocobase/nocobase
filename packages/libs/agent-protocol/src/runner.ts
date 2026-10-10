@@ -298,6 +298,8 @@ export const ActiveRunSchema: z.ZodType<ActiveRun> = z.object({
 
 /** What a runner reports every `heartbeatIntervalMs`: what it offers now, and the runs and jobs it holds. */
 export interface HeartbeatRequest {
+  /** The refresh request whose newly detected tools this heartbeat reports. */
+  readonly toolsRefreshCompletedId?: string;
   readonly version: string;
   /** As in `RegisterRequest`: the product the runner runs as. */
   readonly product?: string;
@@ -324,6 +326,7 @@ export interface HeartbeatRequest {
 }
 
 export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
+  toolsRefreshCompletedId: z.string().min(1).max(64).optional(),
   version: z.string().max(64),
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
   features: z.array(RunnerFeatureSchema),
@@ -376,6 +379,8 @@ export const UpgradeRequiredSchema: z.ZodType<UpgradeRequired> = z.object({
 });
 
 export interface HeartbeatResponse {
+  /** Re-detect tools and acknowledge this request in a heartbeat with the new report. */
+  readonly toolsRefreshRequestId?: string;
   readonly ok: true;
   readonly serverTime: string;
   readonly upgrade?: UpgradeNotice;
@@ -395,6 +400,7 @@ export interface HeartbeatResponse {
 }
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
+  toolsRefreshRequestId: z.string().min(1).max(64).optional(),
   ok: z.literal(true),
   serverTime: z.string(),
   upgrade: z
