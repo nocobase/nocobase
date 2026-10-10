@@ -13,6 +13,8 @@ import {
   SYSTEM_KIND,
   USER_KIND,
   type ExecutorCandidate,
+  type ExecutorTool,
+  type ExecutorAvailability,
   type KindInfo,
   type KindTitle,
   type NameText,
@@ -23,6 +25,18 @@ import type { IssueWorkHandler } from './work.js';
 
 /** What a kind that may execute issues answers. */
 export interface ExecutorDirectory {
+  /** Both methods are required to offer tool selection. Mark the effective default with isDefault for the current user. */
+  tools?(
+    conn: DatabaseConnection,
+    id: string,
+    userId: string,
+  ): Promise<readonly ExecutorTool[]>;
+  availability?(
+    conn: DatabaseConnection,
+    id: string,
+    tool: string,
+    userId: string,
+  ): Promise<ExecutorAvailability>;
   /** 400 unless `id` exists, may execute issues, and `userId` may give it work. */
   require(conn: DatabaseConnection, id: string, userId: string): Promise<void>;
   /** Whether an issue owned by `ownerUserId` may keep `id` as its executor. */

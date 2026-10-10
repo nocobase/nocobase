@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import type { IssueDetail } from '../../../../shared/issues.js';
+import type { IssueDetail, Executor } from '../../../../shared/issues.js';
 import type { ExecutorOption } from '../../../components/pm-executor-select.js';
 import { startingExecutor } from '../../../lib/kinds.js';
 import type { StartRequest } from './start-dialog.js';
@@ -10,7 +10,7 @@ export interface ConfirmedUpdate {
   /** Applies a change, asking "Start now?" first when it would start an executor of another kind working. */
   readonly apply: (changes: IssueChanges) => void;
   readonly startRequest: StartRequest | null;
-  readonly decide: (start: boolean) => void;
+  readonly decide: (start: boolean, executor?: Executor) => void;
   readonly cancel: () => void;
 }
 
@@ -58,6 +58,7 @@ export function useConfirmedUpdate({
       changes,
       request: {
         kind: next.type,
+        executor: next,
         names: [name],
         identifier: issue.identifier,
       },
@@ -67,10 +68,14 @@ export function useConfirmedUpdate({
   return {
     apply,
     startRequest: pending?.request ?? null,
-    decide: (start) => {
+    decide: (start, executor) => {
       if (!pending) return;
       setPending(null);
-      update.mutate({ ...pending.changes, start });
+      update.mutate({
+        ...pending.changes,
+        ...(executor ? { executor } : {}),
+        start,
+      });
     },
     cancel: () => setPending(null),
   };

@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from './ui/select.js';
 import { PmKindIcon } from './pm-kind-icon.js';
+import { PmExecutorToolSelect } from './pm-executor-tool-select.js';
+import { PmExecutorToolStatus } from './pm-executor-tool-status.js';
 
 /**
  * A principal of another registered kind the picker offers; `note` explains why it cannot be chosen (and disables it)
@@ -95,86 +97,100 @@ export function PmExecutorSelect({
   const current = items.find((item) => item.value === selected);
 
   return (
-    <Select
-      items={items}
-      value={selected}
-      disabled={disabled}
-      onValueChange={(next) => {
-        if (next !== null && next !== selected) onChange(decode(next));
-      }}
-    >
-      <SelectTrigger
-        id={id}
-        aria-label={ariaLabel}
-        title={selected === NONE ? undefined : current?.label}
-        className={cn('w-full', className)}
-      >
-        <SelectValue className='min-w-0'>
-          {(key: string) => {
-            const item = items.find((entry) => entry.value === key);
-            if (!item || key === NONE)
-              return (
-                <span className='text-muted-foreground'>
-                  —<span className='sr-only'>{t('executor.none')}</span>
-                </span>
-              );
-            const kind = kindOf(key);
-            // A person's name stands alone; initials beside it say nothing more.
-            if (kind === 'user')
-              return <span className='truncate'>{item.label}</span>;
-            return (
-              <span className='inline-flex max-w-full min-w-0 items-center gap-1.5'>
-                <Avatar
-                  size='sm'
-                  aria-hidden='true'
-                  className={cn(
-                    'size-4',
-                    kind === 'system'
-                      ? 'after:border-dashed after:border-muted-foreground/50'
-                      : 'rounded-md after:rounded-md',
-                  )}
-                >
-                  <AvatarFallback
-                    className={
-                      kind === 'system'
-                        ? 'bg-transparent text-muted-foreground'
-                        : `rounded-md ${PM_OTHER_KIND_CLASS}`
-                    }
-                  >
-                    <PmKindIcon kind={kind} className='size-2.5' />
-                  </AvatarFallback>
-                </Avatar>
-                <span className='truncate'>{item.label}</span>
-              </span>
-            );
+    <div className='space-y-1'>
+      <div className='flex items-center gap-2'>
+        <Select
+          items={items}
+          value={selected}
+          disabled={disabled}
+          onValueChange={(next) => {
+            if (next !== null && next !== selected) onChange(decode(next));
           }}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-        {items.map((item) => (
-          <SelectItem
-            key={item.value}
-            value={item.value}
-            disabled={item.option?.disabled === true && item.value !== selected}
-            className='[&>span:first-child]:min-w-0 [&>span:first-child]:shrink'
+        >
+          <SelectTrigger
+            id={id}
+            aria-label={ariaLabel}
+            title={selected === NONE ? undefined : current?.label}
+            className={cn('w-full', className)}
           >
-            {item.value === NONE ? (
-              item.label
-            ) : (
-              <span className='flex min-w-0 items-center gap-2'>
-                <ItemIcon kind={kindOf(item.value)} />
-                <span className='min-w-0'>{item.label}</span>
-                {item.option?.note ? (
-                  <span className='shrink-0 text-xs text-muted-foreground'>
-                    {item.option.note}
+            <SelectValue className='min-w-0'>
+              {(key: string) => {
+                const item = items.find((entry) => entry.value === key);
+                if (!item || key === NONE)
+                  return (
+                    <span className='text-muted-foreground'>
+                      —<span className='sr-only'>{t('executor.none')}</span>
+                    </span>
+                  );
+                const kind = kindOf(key);
+                // A person's name stands alone; initials beside it say nothing more.
+                if (kind === 'user')
+                  return <span className='truncate'>{item.label}</span>;
+                return (
+                  <span className='inline-flex max-w-full min-w-0 items-center gap-1.5'>
+                    <Avatar
+                      size='sm'
+                      aria-hidden='true'
+                      className={cn(
+                        'size-4',
+                        kind === 'system'
+                          ? 'after:border-dashed after:border-muted-foreground/50'
+                          : 'rounded-md after:rounded-md',
+                      )}
+                    >
+                      <AvatarFallback
+                        className={
+                          kind === 'system'
+                            ? 'bg-transparent text-muted-foreground'
+                            : `rounded-md ${PM_OTHER_KIND_CLASS}`
+                        }
+                      >
+                        <PmKindIcon kind={kind} className='size-2.5' />
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className='truncate'>{item.label}</span>
                   </span>
-                ) : null}
-              </span>
-            )}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+                );
+              }}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+            {items.map((item) => (
+              <SelectItem
+                key={item.value}
+                value={item.value}
+                disabled={
+                  item.option?.disabled === true && item.value !== selected
+                }
+                className='[&>span:first-child]:min-w-0 [&>span:first-child]:shrink'
+              >
+                {item.value === NONE ? (
+                  item.label
+                ) : (
+                  <span className='flex min-w-0 items-center gap-2'>
+                    <ItemIcon kind={kindOf(item.value)} />
+                    <span className='min-w-0'>{item.label}</span>
+                    {item.option?.note ? (
+                      <span className='shrink-0 text-xs text-muted-foreground'>
+                        {item.option.note}
+                      </span>
+                    ) : null}
+                  </span>
+                )}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {value ? (
+          <PmExecutorToolSelect
+            executor={value}
+            onChange={onChange}
+            disabled={disabled}
+          />
+        ) : null}
+      </div>
+      <PmExecutorToolStatus executor={value} />
+    </div>
   );
 }
 

@@ -27,7 +27,12 @@ export interface Executor {
   /** A kind's key. */
   readonly type: string;
   readonly id: string;
+  /** A variant supplied by the executor's kind; null explicitly clears it. */
+  readonly tool?: string | null;
+  readonly toolSource?: ExecutorToolSource;
 }
+
+export type ExecutorToolSource = 'explicit' | 'rule' | 'default';
 
 export interface Issue {
   readonly id: string;

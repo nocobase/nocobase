@@ -4,6 +4,11 @@
  * application passes in stays its own.
  */
 import { withNamespace } from '@nocobase/i18n/client';
+import { PmExecutorSelect as BaseExecutorSelect } from './components/pm-executor-select.js';
+export {
+  useExecutorTools,
+  type ExecutorToolsState,
+} from './hooks/use-executor-tools.js';
 
 export {
   StatusRuleTypesContext,
@@ -51,6 +56,9 @@ import { WorkflowSelect as BaseWorkflowSelect } from './pages/projects/workflow-
 
 const bound = <T>(component: T): T =>
   withNamespace(ACCESS_NAMESPACE, component as never) as T;
+
+export const PmExecutorSelect: typeof BaseExecutorSelect =
+  bound(BaseExecutorSelect);
 
 export const DataTable: typeof BaseDataTable = bound(BaseDataTable);
 /** A compact text area for long text that expands on demand, such as a status rule's instruction in its editor. */

@@ -288,6 +288,18 @@ visibility (`useProjectMembership`), working directories (`useProjectResources`,
 what the server would refuse (`client/lib/permissions.ts` mirrors its rules); the server still checks every request.
 Open pages refresh when the server announces a change on the `pm:changes` realtime topic.
 
+## Executor tools and comment handoffs
+
+An executor accepts `{ type, id, tool?, toolSource? }`, including through the generated `issue create` and `issue update` CLI (`--executor type=bot,id=worker,tool=codex`) and plan `issue.update` rows. Tool sources are `explicit`, `rule`, or `default`; supplying a tool without a source records `explicit`. Changing the principal clears the tool unless the same request supplies one; omitting the tool for the same principal preserves it, and `tool: null` clears it. A tool-only update records `executor_changed` with the old and new executor and passes `start: false` to work handlers.
+
+A kind's `executor` directory may implement `tools(conn, id, userId)` returning `{ id, name, model, isDefault? }[]` and `availability(conn, id, tool, userId)` returning `{ status: 'available' | 'unavailable', runnerName, reason }`. Both must be present to offer tool selection. The kind marks its effective default for the current user with `isDefault: true`; it owns that selection policy, including availability-based ordering. A sole tool is an unambiguous default without the marker. The authenticated `GET /executors/{type}/{executorId}/tools` and `/availability?tool=…` endpoints check the caller's right to assign the principal. The plugin has no dependency on any particular executor runtime.
+
+When `executor.tool` is absent or null, `useExecutorTools` previews the resolved default's name, model and availability. Its `resolvedExecutor` includes the concrete tool and `toolSource: 'default'`; `StartDialog` submits that value with either confirmation button, so the saved tool matches the preview. Selecting “Default tool” clears the explicit choice before resolving it again. With multiple tools and no unique default marker, the confirmation asks for a tool and disables starting until a preview can be shown; it never guesses from list order. Applications with their own confirmation UI should submit `resolvedExecutor` too.
+
+Applications composing an issue detail or board use `useExecutorTools` from `client/issues` or `client/kit`, and may reuse `PmExecutorSelect` from `client/kit`. `StartDialog` receives `StartRequest.executor`, shows its tool, model and availability, and allows changing the tool before deciding; its `onDecide(start, executor?)` passes the selected executor to `useConfirmedUpdate().decide` or `useBoardMove().decide`. New issue and sub-issue forms use the same controls. Applications own their copied detail/sidebar and activity components and must map executor tool fields through them.
+
+Comment creation accepts `handoff: { type, id, tool } | { none: true }` and `persist?: boolean`; `useIssueCommentActions().create` forwards them. A transient handoff changes only the comment's work target. With `persist: true`, the caller also needs issue edit permission and the executor assignment joins the comment transaction with `start: false`. `CommentChange` forwards the original handoff and persist values to the selected kind's `IssueWorkHandler.onCommentCreated`; the application decides whom to wake. `{ none: true }` stores a `/note` comment and reaches no work handlers, including for replies or mentions. Persisting requires an executor target, so it cannot be combined with `none`.
+
 ## Layout
 
 - `shared/`: types and constants the server and the client share.

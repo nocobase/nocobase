@@ -174,6 +174,147 @@ describe('the /api/projects guard', () => {
   });
 });
 
+describe('executor tools and comment handoffs over HTTP', () => {
+  function registerBot(): void {
+    h.services.kinds.add({
+      key: 'bot',
+      executor: {
+        require: (_conn, _id, userId) => {
+          expect(userId).toBe('alice');
+          return Promise.resolve();
+        },
+        canKeep: () => Promise.resolve(true),
+        tools: () =>
+          Promise.resolve([
+            { id: 'codex', name: 'Codex', model: 'model-one', isDefault: true },
+          ]),
+        availability: (_conn, _id, tool, userId) => {
+          expect([tool, userId]).toEqual(['codex', 'alice']);
+          return Promise.resolve({
+            status: 'available',
+            runnerName: 'Lima',
+            reason: null,
+          });
+        },
+      },
+    });
+  }
+
+  it('authenticates tool reads, documents models, and writes tool sources', async () => {
+    registerBot();
+    expect((await call('/executors/bot/b1/tools')).status).toBe(401);
+    expect(
+      (await call('/executors/bot/b1/availability?tool=codex')).status,
+    ).toBe(401);
+    const tools = await call('/executors/bot/b1/tools', { role: 'member' });
+    expect(await tools.json()).toMatchObject({
+      data: [{ id: 'codex', model: 'model-one', isDefault: true }],
+    });
+    const availability = await call(
+      '/executors/bot/b1/availability?tool=codex',
+      { role: 'member' },
+    );
+    expect(await availability.json()).toMatchObject({
+      data: { status: 'available', runnerName: 'Lima' },
+    });
+    const result = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Tools',
+        executor: { type: 'bot', id: 'b1', tool: 'codex' },
+      }),
+    });
+    expect(result.status).toBe(201);
+    const { data } = (await result.json()) as {
+      data: { id: string; revision: number; executor: unknown };
+    };
+    expect(data.executor).toEqual({
+      type: 'bot',
+      id: 'b1',
+      tool: 'codex',
+      toolSource: 'explicit',
+    });
+    const updated = await call(`/issues/${data.id}`, {
+      role: 'member',
+      method: 'PATCH',
+      body: JSON.stringify({
+        revision: data.revision,
+        executor: { type: 'bot', id: 'b2' },
+      }),
+    });
+    expect(await updated.json()).toMatchObject({
+      data: { issue: { executor: { type: 'bot', id: 'b2' } } },
+    });
+    const detail = await call(`/issues/${data.id}`, { role: 'member' });
+    expect(
+      ((await detail.json()) as { data: { executor: unknown } }).data.executor,
+    ).toEqual({ type: 'bot', id: 'b2' });
+  });
+
+  it('allows a transient handoff but requires edit permission to persist it', async () => {
+    registerBot();
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Handoff',
+    });
+    const permissions = permissionsOf('member', 'alice');
+    vi.spyOn(
+      container.resolve(projectsAccessToken),
+      'permissionsOf',
+    ).mockResolvedValue({
+      ...permissions,
+      scopes: { ...permissions.scopes, 'pm.issues/edit': 'none' },
+    });
+    const handoff = { type: 'bot', id: 'b1', tool: 'codex' };
+    const post = (persist: boolean) =>
+      call(`/issues/${issue.id}/comments`, {
+        role: 'member',
+        method: 'POST',
+        body: JSON.stringify({ content: 'Work', handoff, persist }),
+      });
+    expect((await post(false)).status).toBe(201);
+    const denied = await post(true);
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toMatchObject({
+      error: { reason: 'FORBIDDEN', domain: 'projects' },
+    });
+    expect(
+      (await h.services.issueQueries.detail(h.viewer('alice'), issue.id))
+        .executor,
+    ).toBeNull();
+  });
+
+  it('accepts none as a note and rejects malformed tool and source inputs', async () => {
+    registerBot();
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Handoff',
+    });
+    const note = await call(`/issues/${issue.id}/comments`, {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ content: 'Only a note', handoff: { none: true } }),
+    });
+    expect(note.status).toBe(201);
+    expect(await note.json()).toMatchObject({
+      data: { comment: { note: true }, triggered: [] },
+    });
+    for (const executor of [
+      { type: 'bot', id: 'b1', tool: '' },
+      { type: 'bot', id: 'b1', tool: 'codex', toolSource: 'unknown' },
+    ]) {
+      expect(
+        (
+          await call(`/issues/${issue.id}`, {
+            role: 'member',
+            method: 'PATCH',
+            body: JSON.stringify({ revision: issue.revision, executor }),
+          })
+        ).status,
+      ).toBe(400);
+    }
+  });
+});
+
 describe('scoped keys and API key identities', () => {
   it('serves a scoped key the business API, but not intake or plans', async () => {
     const headers = { 'x-test-scoped': 'yes' };

@@ -3,7 +3,11 @@
  * application's default role for new members, so an account the administrator creates can start working without
  * further setup; roles are kept and assigned by the application (`projectsAccessToken`).
  */
-import type { ExecutorCandidate } from '../../../shared/kinds.js';
+import type {
+  ExecutorCandidate,
+  ExecutorTool,
+  ExecutorAvailability,
+} from '../../../shared/kinds.js';
 import type { ApiKeyActor, Me, Member } from '../../../shared/members.js';
 import type { Viewer } from '../../access/viewer.js';
 import { isUniqueViolation } from '../../kernel/db.js';
@@ -36,6 +40,17 @@ export interface MemberService {
   apiKeyActors(): Promise<ApiKeyActor[]>;
   /** The executors of other kinds (agents, say) the viewer may give work to. */
   executors(viewer: Viewer): Promise<ExecutorCandidate[]>;
+  executorTools(
+    viewer: Viewer,
+    type: string,
+    id: string,
+  ): Promise<readonly ExecutorTool[]>;
+  executorAvailability(
+    viewer: Viewer,
+    type: string,
+    id: string,
+    tool: string,
+  ): Promise<ExecutorAvailability | null>;
 }
 
 export function createMemberService(deps: {
@@ -107,6 +122,22 @@ export function createMemberService(deps: {
 
     executors(viewer) {
       return deps.kinds.executorCandidates(deps.tx.read(), viewer.userId);
+    },
+    async executorTools(viewer, type, id) {
+      const conn = deps.tx.read();
+      await deps.kinds.requireExecutor(conn, type, id, viewer.userId);
+      const directory = deps.kinds.get(type)?.executor;
+      return directory?.tools && directory.availability
+        ? directory.tools(conn, id, viewer.userId)
+        : [];
+    },
+    async executorAvailability(viewer, type, id, tool) {
+      const conn = deps.tx.read();
+      await deps.kinds.requireExecutor(conn, type, id, viewer.userId);
+      const directory = deps.kinds.get(type)?.executor;
+      return directory?.tools && directory.availability
+        ? directory.availability(conn, id, tool, viewer.userId)
+        : null;
     },
   };
 }

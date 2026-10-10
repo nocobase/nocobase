@@ -261,6 +261,7 @@ function Body({
     if (starting) {
       setStartRequest({
         kind: starting.type,
+        executor: starting,
         names: [
           others.find(
             (option) =>
@@ -273,7 +274,10 @@ function Body({
     void create();
   }
 
-  async function create(start?: boolean): Promise<void> {
+  async function create(
+    start?: boolean,
+    selectedExecutor: Executor | null = executor,
+  ): Promise<void> {
     const trimmed = title.trim();
     const stageValue = stage.trim();
     setFormError(undefined);
@@ -285,7 +289,7 @@ function Body({
         parentIssueId: parent.data?.id ?? issueId,
         ...(stageValue ? { stage: Number(stageValue) } : {}),
         ...(blockedBy.length > 0 ? { blockedBy } : {}),
-        ...(executor ? { executor } : {}),
+        ...(selectedExecutor ? { executor: selectedExecutor } : {}),
         ...(start === false ? { start } : {}),
       });
       notify.success(t('issueForm.created', { identifier: issue.identifier }));
@@ -387,9 +391,9 @@ function Body({
       <StartDialog
         request={startRequest}
         onCancel={() => setStartRequest(null)}
-        onDecide={(start) => {
+        onDecide={(start, selectedExecutor) => {
           setStartRequest(null);
-          void create(start);
+          void create(start, selectedExecutor);
         }}
       />
     </form>

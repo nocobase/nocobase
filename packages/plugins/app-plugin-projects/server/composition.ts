@@ -261,6 +261,13 @@ export function createProjects(deps: ProjectsDeps): Projects {
     activity,
     kinds,
     triggers,
+    assign: (outer, viewer, issue, executor) =>
+      issues.update(
+        viewer,
+        issue.id,
+        { executor, revision: issue.revision, start: false },
+        outer,
+      ),
     attachments: () => attachments.links,
   });
   const commentQueries = createCommentQueries({

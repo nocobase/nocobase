@@ -120,7 +120,7 @@ const req = (kind: Kind): Field => ({ kind, required: true });
 const ISSUE_HINT =
   'name the issue with "issue": "<id or identifier>" or {"ref": "<ref of an earlier row>"}';
 const EXECUTOR_HINT =
-  'use "executor": {"type": "user" | "agent", "id": "<id>"}, or null for nobody';
+  'use "executor": {"type": "<kind>", "id": "<id>", "tool"?: "<tool>", "toolSource"?: "explicit" | "rule" | "default"}, or null for nobody';
 
 /** The right field for a guessed one. */
 const GUESSES: Readonly<Record<string, string>> = {
@@ -187,7 +187,15 @@ function fits(kind: Kind, value: unknown): boolean {
         (isRecord(value) &&
           typeof value.type === 'string' &&
           typeof value.id === 'string' &&
-          Object.keys(value).length === 2)
+          (value.tool === undefined ||
+            value.tool === null ||
+            typeof value.tool === 'string') &&
+          (value.toolSource === undefined ||
+            (typeof value.toolSource === 'string' &&
+              ['explicit', 'rule', 'default'].includes(value.toolSource))) &&
+          Object.keys(value).every((key) =>
+            ['type', 'id', 'tool', 'toolSource'].includes(key),
+          ))
       );
     case 'object':
       return isRecord(value);
@@ -370,12 +378,7 @@ export async function issueFields(
     fields.map((field) => {
       if (field === 'labelIds') return [field, labels];
       if (field === 'executor')
-        return [
-          field,
-          issue.executor
-            ? { type: issue.executor.type, id: issue.executor.id }
-            : null,
-        ];
+        return [field, issue.executor ? { ...issue.executor } : null];
       return [field, record[field] ?? null];
     }),
   );

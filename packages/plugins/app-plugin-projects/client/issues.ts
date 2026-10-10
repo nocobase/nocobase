@@ -62,6 +62,10 @@ export {
 export type { StartRequest } from './pages/issues/detail/start-dialog.js';
 export type { ExecutorOption } from './components/pm-executor-select.js';
 export {
+  useExecutorTools,
+  type ExecutorToolsState,
+} from './hooks/use-executor-tools.js';
+export {
   canCreateIssues,
   canDeleteIssues,
   canEditIssues,

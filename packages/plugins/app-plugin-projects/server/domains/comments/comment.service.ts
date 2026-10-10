@@ -15,7 +15,8 @@ import {
   type ThreadResolution,
   type UpdateCommentRequest,
 } from '../../../shared/comments.js';
-import type { Issue } from '../../../shared/issues.js';
+import type { Issue, Executor } from '../../../shared/issues.js';
+import { requireEditor } from '../issues/issue.access.js';
 import { requireAction, type Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
 import type { Actor } from '../../kernel/actor.js';
@@ -88,6 +89,12 @@ export interface CommentDeps {
   readonly activity: ActivityRecorder;
   readonly kinds: KindRegistry;
   readonly triggers: () => IssueTriggers;
+  readonly assign?: (
+    tx: Tx,
+    viewer: Viewer,
+    issue: Issue,
+    executor: Executor,
+  ) => Promise<Issue>;
   /** Comments' files; a comment takes none when left out. */
   readonly attachments?: () => CommentAttachments;
 }
@@ -164,6 +171,8 @@ export function createCommentService(deps: CommentDeps): CommentService {
       readonly content: string;
       readonly parentId?: string | null;
       readonly attachmentIds?: unknown;
+      readonly handoff?: CreateCommentRequest['handoff'];
+      readonly persist?: boolean;
     },
     options: {
       readonly kind?: string;
@@ -174,7 +183,11 @@ export function createCommentService(deps: CommentDeps): CommentService {
       readonly viewer?: Viewer;
     },
   ) {
-    const content = contentOf(input);
+    const rawContent = contentOf(input);
+    const content =
+      input.handoff && 'none' in input.handoff && !isNote(rawContent)
+        ? `/note\n\n${rawContent}`
+        : rawContent;
     let parent: CommentRecord | undefined;
     if (input.parentId) {
       parent = await findComment(tx.conn, input.parentId);
@@ -240,6 +253,8 @@ export function createCommentService(deps: CommentDeps): CommentService {
         parent: parentComment,
         actor,
         mentions: refs,
+        ...(input.handoff === undefined ? {} : { handoff: input.handoff }),
+        ...(input.persist === undefined ? {} : { persist: input.persist }),
       });
     tx.emit({ type: 'issue.changed', issueId: issue.id });
     tx.emit({
@@ -281,8 +296,38 @@ export function createCommentService(deps: CommentDeps): CommentService {
   return {
     create(viewer, issueIdOrKey, input) {
       return deps.tx.run(async (tx) => {
-        const issue = await requireVisibleIssue(tx.conn, viewer, issueIdOrKey);
+        let issue = await requireVisibleIssue(tx.conn, viewer, issueIdOrKey);
         requireCommenter(viewer);
+        if (input.persist) requireEditor(viewer);
+        if (input.persist && (!input.handoff || 'none' in input.handoff))
+          throw invalid(
+            'INVALID_HANDOFF',
+            'persist requires a handoff executor.',
+          );
+        if (input.handoff && !('none' in input.handoff)) {
+          await deps.kinds.requireExecutor(
+            tx.conn,
+            input.handoff.type,
+            input.handoff.id,
+            viewer.userId,
+          );
+          if (input.handoff.type === 'user')
+            throw invalid('INVALID_HANDOFF', 'A person has no executor tool.');
+          if (
+            typeof input.handoff.tool !== 'string' ||
+            !input.handoff.tool.trim() ||
+            input.handoff.tool.length > 128
+          )
+            throw invalid('INVALID_HANDOFF', 'handoff.tool is required.');
+          if (input.persist) {
+            if (!deps.assign)
+              throw invalid(
+                'INVALID_HANDOFF',
+                'Persisting a handoff is unavailable.',
+              );
+            issue = await deps.assign(tx, viewer, issue, input.handoff);
+          }
+        }
         const attachmentIds = (input as { attachmentIds?: unknown })
           .attachmentIds;
         if (Array.isArray(attachmentIds) && attachmentIds.length > 0)

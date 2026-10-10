@@ -255,8 +255,11 @@ export function kindTriggers(
     },
 
     async onCommentCreated(tx, change) {
+      if (change.handoff && 'none' in change.handoff) return [];
       const concerned = handlersOf(kinds, [
-        change.issue.executor?.type,
+        change.handoff && !('none' in change.handoff)
+          ? change.handoff.type
+          : change.issue.executor?.type,
         change.parent?.authorType,
         ...change.mentions.map((ref) => ref.kind),
       ]);

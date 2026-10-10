@@ -109,7 +109,37 @@ async function executor(
     input.id,
     ctx.viewer.userId,
   );
-  return { type: input.type, id: input.id };
+  if (
+    input.tool !== undefined &&
+    input.tool !== null &&
+    (typeof input.tool !== 'string' ||
+      !input.tool.trim() ||
+      input.tool.length > 128)
+  )
+    throw invalid(
+      'INVALID_EXECUTOR',
+      'executor.tool must be a nonempty string or null.',
+    );
+  if (
+    input.toolSource !== undefined &&
+    !['explicit', 'rule', 'default'].includes(input.toolSource)
+  )
+    throw invalid(
+      'INVALID_EXECUTOR',
+      'executor.toolSource must be explicit, rule or default.',
+    );
+  if (input.type === 'user' && input.tool)
+    throw invalid('INVALID_EXECUTOR', 'A person has no executor tool.');
+  return {
+    type: input.type,
+    id: input.id,
+    ...(input.tool !== undefined ? { tool: input.tool } : {}),
+    ...(input.tool
+      ? { toolSource: input.toolSource ?? 'explicit' }
+      : input.toolSource === undefined
+        ? {}
+        : { toolSource: input.toolSource }),
+  };
 }
 
 /**
@@ -409,7 +439,20 @@ export async function resolveUpdate(
     }
   }
   let next = before.executor;
-  if (patch.executor !== undefined) next = await executor(ctx, patch.executor);
+  if (patch.executor !== undefined) {
+    next = await executor(ctx, patch.executor);
+    if (
+      next &&
+      next.type === before.executor?.type &&
+      next.id === before.executor.id &&
+      next.tool === undefined
+    )
+      next = { ...before.executor, ...next };
+    if (next && !next.tool) {
+      const { toolSource: _source, ...withoutSource } = next;
+      next = withoutSource;
+    }
+  }
   // A new owner who may not give work to the executor's kind cannot keep it as executor.
   const ownerUserId = values.ownerUserId ?? before.ownerUserId;
   const keep = next ? ctx.kinds.get(next.type)?.executor : undefined;
@@ -420,10 +463,16 @@ export async function resolveUpdate(
   if (dropped) next = null;
   if (
     next?.type !== before.executor?.type ||
-    next?.id !== before.executor?.id
+    next?.id !== before.executor?.id ||
+    (next?.tool ?? null) !== (before.executor?.tool ?? null) ||
+    next?.toolSource !== before.executor?.toolSource
   ) {
     values.executorType = next?.type ?? null;
     values.executorId = next?.id ?? null;
+    values.executorTool = next?.tool ?? null;
+    values.executorToolSource = next?.tool
+      ? (next.toolSource ?? 'explicit')
+      : null;
     activities.push({
       action: 'executor_changed',
       details: {

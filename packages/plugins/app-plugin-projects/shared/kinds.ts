@@ -40,3 +40,18 @@ export interface ExecutorCandidate {
   /** Work it is doing or has queued. */
   readonly busy?: number;
 }
+
+/** A kind-owned executor variant; models are configured by the application. */
+export interface ExecutorTool {
+  readonly id: string;
+  readonly name: string;
+  readonly model: string | null;
+  /** The effective default resolved by the kind for this executor and current user. */
+  readonly isDefault?: boolean;
+}
+
+export interface ExecutorAvailability {
+  readonly status: 'available' | 'unavailable';
+  readonly runnerName: string | null;
+  readonly reason: string | null;
+}

@@ -45,6 +45,12 @@ The NocoBase UI Library presents these headless entries; install an item rather 
 
 ## Prerequisites
 
+For execution previews, a kind's tool list marks its effective default for the current user with `isDefault: true`; a sole tool needs no marker. The kind owns the default policy. `useExecutorTools` queries the default's availability even when no tool was explicitly chosen, and exposes `resolvedExecutor` with the concrete tool and `toolSource: 'default'`. Submit that value from an application-owned confirmation. `StartDialog` already does so with either button, including after switching back to “Default tool”. Multiple tools without a unique default require an explicit choice before starting; no tool capability still hides the controls.
+
+Executors may include `tool` and `toolSource` (`explicit`, `rule`, `default`). Changing their type or id clears the tool unless the same request provides one; changing only the tool records activity and never starts an assignment. A kind offers tools by implementing both `executor.tools(conn, id, userId)` and `executor.availability(conn, id, tool, userId)`. Applications use `useExecutorTools` from `client/issues` or `client/kit`, or the shared `PmExecutorSelect` from `client/kit`; the model is display-only. Pass `StartRequest.executor` to `StartDialog` and forward both `onDecide(start, executor?)` arguments to `useConfirmedUpdate().decide` or `useBoardMove().decide` so a tool chosen in confirmation is saved.
+
+Comment creation and `useIssueCommentActions().create` accept `handoff: { type, id, tool } | { none: true }` and `persist`. A transient target is forwarded to the kind's comment work handler. Persisting also requires issue edit permission and changes the executor in the comment transaction with `start: false`; the comment handler alone starts its work. `none` writes a note and wakes nobody, even through mentions or replies. Persist requires a target. Update an application's own issue sidebar, activity mapping and copied UI Library components when adopting these fields; updating this package does not replace those copies.
+
 The App must register `@nocobase/app-plugin-authentication`, `@nocobase/app-plugin-authorization` and
 `@nocobase/app-plugin-users` (whose invitations the member settings use) before this plugin, and bind
 `projectsAccessToken` from one of its own providers. The roles seed still creates `pm-*` permission sets with composite

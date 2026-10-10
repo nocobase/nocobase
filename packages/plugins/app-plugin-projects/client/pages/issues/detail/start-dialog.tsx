@@ -12,8 +12,13 @@ import {
   DialogTitle,
 } from '../../../components/ui/dialog.js';
 import { useKindLabel } from '../../../lib/kinds.js';
+import type { Executor } from '../../../../shared/issues.js';
+import { PmExecutorToolStatus } from '../../../components/pm-executor-tool-status.js';
+import { useExecutorTools } from '../../../hooks/use-executor-tools.js';
+import { PmExecutorToolSelect } from '../../../components/pm-executor-tool-select.js';
 
 export interface StartRequest {
+  readonly executor?: Executor;
   /** The kind of the executor the change hands the issue to (`agent`). */
   readonly kind: string;
   /** Who would start working. */
@@ -33,15 +38,25 @@ export function StartDialog({
   onCancel,
 }: {
   readonly request: StartRequest | null;
-  readonly onDecide: (start: boolean) => void;
+  readonly onDecide: (start: boolean, executor?: Executor) => void;
   readonly onCancel: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   const kindLabel = useKindLabel();
   // The last request stays rendered while the dialog animates closed, so the text does not flicker.
   const [shown, setShown] = useState<StartRequest | null>(request);
-  if (request && request !== shown) setShown(request);
+  const [previous, setPrevious] = useState(request);
+  if (request && request !== previous) {
+    setPrevious(request);
+    setShown(request);
+  }
   const kind = shown ? kindLabel(shown.kind) : '';
+  const toolState = useExecutorTools(shown?.executor ?? null);
+  function decide(start: boolean): void {
+    if (shown?.executor)
+      onDecide(start, toolState.resolvedExecutor ?? shown.executor);
+    else onDecide(start);
+  }
 
   return (
     <Dialog
@@ -73,15 +88,37 @@ export function StartDialog({
                   aria-hidden='true'
                 />
                 {name}
+                {toolState.selected || shown?.executor?.tool
+                  ? ` · ${toolState.selected?.name ?? shown?.executor?.tool}`
+                  : null}
               </li>
             ))}
           </ul>
+          {shown?.executor ? (
+            <>
+              <PmExecutorToolSelect
+                executor={shown.executor}
+                onChange={(executor) => setShown({ ...shown, executor })}
+              />
+              <PmExecutorToolStatus executor={shown.executor} />
+            </>
+          ) : null}
         </div>
         <DialogFooter>
-          <Button variant='outline' onClick={() => onDecide(false)}>
+          <Button variant='outline' onClick={() => decide(false)}>
             {t('start.later')}
           </Button>
-          <Button onClick={() => onDecide(true)}>{t('start.start')}</Button>
+          <Button
+            disabled={Boolean(
+              shown?.executor &&
+              ((toolState.loading && !toolState.availability) ||
+                (toolState.tools.length > 0 && !toolState.selected) ||
+                toolState.error),
+            )}
+            onClick={() => decide(true)}
+          >
+            {t('start.start')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
