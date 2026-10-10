@@ -1,3 +1,4 @@
+import type { Auth } from '@nocobase/app-plugin-authentication';
 import {
   apiErrorResponse,
   apiErrorResponses,
@@ -8,7 +9,9 @@ import {
   emptyResponse,
   listResponse,
 } from '@nocobase/app-server/router';
-import type { Hono } from 'hono';
+import type { Context, Hono } from 'hono';
+
+import { forbidden } from '../../kernel/errors.js';
 
 import { viewerOf, type ViewerEnv } from '../../access/request.js';
 import { boundedList, domainRouter, tags } from '../../kernel/http.js';
@@ -29,6 +32,7 @@ const access =
 /** `/api/projects/invitations`: list, invite several addresses, send again, revoke. */
 export function createInvitationRoutes(
   invitations: InvitationService,
+  authentication: Pick<Auth, 'isScopedSession'>,
 ): Hono<ViewerEnv> {
   const routes = domainRouter<ViewerEnv>();
   const origin = (url: string) => new URL(url).origin;
@@ -74,19 +78,24 @@ export function createInvitationRoutes(
       },
     }),
     apiValidator('json', CreateInvitationsBody),
-    async (context) =>
-      context.json(
+    async (context) => {
+      const canReturnLink = await canCreateUser(context, authentication);
+      const results = await invitations.create(
+        viewerOf(context),
+        context.req.valid('json'),
+        origin(context.req.url),
+      );
+      return context.json(
         {
           data: {
-            results: await invitations.create(
-              viewerOf(context),
-              context.req.valid('json'),
-              origin(context.req.url),
+            results: results.map((result) =>
+              canReturnLink ? result : { ...result, inviteUrl: undefined },
             ),
           },
         },
         201,
-      ),
+      );
+    },
   );
   routes.post(
     '/:invitationId/resend',
@@ -107,15 +116,23 @@ export function createInvitationRoutes(
     }),
     apiValidator('param', InvitationParams),
     apiValidator('query', ResendInvitationQuery),
-    async (context) =>
-      context.json({
-        data: await invitations.resend(
-          viewerOf(context),
-          context.req.valid('param').invitationId,
-          origin(context.req.url),
-          context.req.valid('query').sendEmail !== 'false',
-        ),
-      }),
+    async (context) => {
+      const sendEmail = context.req.valid('query').sendEmail !== 'false';
+      const canReturnLink = await canCreateUser(context, authentication);
+      if (!sendEmail && !canReturnLink)
+        throw forbidden(
+          'Retrieving a registration link requires global user creation and role assignment permissions.',
+        );
+      const result = await invitations.resend(
+        viewerOf(context),
+        context.req.valid('param').invitationId,
+        origin(context.req.url),
+        sendEmail,
+      );
+      return context.json({
+        data: canReturnLink ? result : { ...result, inviteUrl: undefined },
+      });
+    },
   );
   routes.delete(
     '/:invitationId',
@@ -145,4 +162,20 @@ export function createInvitationRoutes(
     },
   );
   return routes;
+}
+
+/** Project invitations must not grant the ability to choose passwords for arbitrary global email identities. */
+async function canCreateUser(
+  context: Context<ViewerEnv>,
+  authentication: Pick<Auth, 'isScopedSession'>,
+): Promise<boolean> {
+  const auth = context.get('auth');
+  if (!auth || (await authentication.isScopedSession(auth, context.req.raw)))
+    return false;
+  const authz = context.get('authz');
+  const resource = { type: 'user', id: '*' };
+  return (
+    (await authz.can({ resource, action: 'create' })) &&
+    (await authz.can({ resource, action: 'assign-role' }))
+  );
 }

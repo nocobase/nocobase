@@ -383,7 +383,7 @@ const pages = {
     outcome: {
       added: '已有账号，已加入项目',
       alreadyMember: '已是成员',
-      notSent: '邮件未发出，请复制链接转发',
+      notSent: '邮件未发送',
       sent: '邮件已发送',
     },
     pending: '等待接受',

@@ -399,7 +399,7 @@ const pages = {
     outcome: {
       added: 'Has an account — added to the projects',
       alreadyMember: 'Already a member',
-      notSent: 'Email not sent — copy the link',
+      notSent: 'Email not sent',
       sent: 'Email sent',
     },
     pending: 'Waiting',

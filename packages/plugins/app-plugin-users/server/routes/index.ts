@@ -162,6 +162,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         const { emails, roleScopes } = context.req.valid('json');
         if (roleScopes) await requireUserAction(context, '*', 'assign-role');
         const invitedBy = context.get('authz').identity.principal.id;
+        const canReturnLink = await canCreateUser(context);
         const results = await users.invite({
           emails,
           invitedBy,
@@ -171,7 +172,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         logSecurityEvent(securityLogger, context, 'user.invite', invitedBy, {
           invited: results.length,
         });
-        return context.json({ data: results }, 201);
+        return context.json(
+          {
+            data: results.map((result) =>
+              canReturnLink ? result : { ...result, inviteUrl: undefined },
+            ),
+          },
+          201,
+        );
       },
     );
 
@@ -212,14 +220,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           invitation.invitedBy.id ===
           context.get('authz').identity.principal.id;
         // Plugin-owned credentials must be retrieved through their domain's authorization checks.
-        const canReturnLink = own && Object.keys(invitation.data).length === 0;
+        const canReturnLink =
+          own &&
+          Object.keys(invitation.data).length === 0 &&
+          (await canCreateUser(context));
         if (!canReturnLink && !sendEmail)
           throw new ApiError({
             status: 'PERMISSION_DENIED',
             domain: 'users',
             reason: 'INVITATION_LINK_FORBIDDEN',
             message:
-              'Retrieve this link as its inviter through the application that created the invitation.',
+              'Retrieving a registration link requires global user creation and role assignment permissions, and the original inviter in the originating application.',
           });
         if (own && Object.keys(invitation.roleScopes).length > 0)
           await requireUserAction(context, '*', 'assign-role');
@@ -619,6 +630,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     invitations.post(
       '/accept',
+      authentication.optional(),
       describeRoute({
         tags,
         summary: 'Accept an invitation',
@@ -641,7 +653,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ),
         },
       }),
-      authentication.optional(),
       apiValidator('json', AcceptInvitationInput),
       async (context) => {
         const auth = context.get('auth');
@@ -909,6 +920,18 @@ function allowed(
     );
     await next();
   });
+}
+
+/** A registration link lets its holder choose the invited account's password, just like creating a user. */
+async function canCreateUser(context: {
+  get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
+}): Promise<boolean> {
+  const authz = context.get('authz');
+  const resource = { type: 'user', id: '*' };
+  return (
+    (await authz.can({ resource, action: 'create' })) &&
+    (await authz.can({ resource, action: 'assign-role' }))
+  );
 }
 
 async function requireUserAction(

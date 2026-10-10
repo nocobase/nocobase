@@ -70,3 +70,27 @@ it('requests a fresh link without mail from the existing invitation menu', async
   );
   expect(resend).toHaveBeenCalledWith(invitation, false);
 });
+
+it.each(['en-US', 'zh-CN'])(
+  'reports failed delivery without unavailable copy instructions in %s',
+  async (locale) => {
+    await renderWithApp(
+      <InviteResults
+        results={[
+          {
+            email: 'new@example.test',
+            outcome: 'invited',
+            invitationId: 'i1',
+            emailSent: false,
+          },
+        ]}
+      />,
+      { plugins: [users()], locale },
+    );
+    expect(
+      screen.getByText(locale === 'zh-CN' ? '邮件未发送' : 'Email not sent'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  },
+);

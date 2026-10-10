@@ -55,7 +55,7 @@ export interface CreateUserManagementServiceOptions {
    */
   readonly permissionSets?: PermissionSetsApi<DatabaseConnection>;
   readonly onRoleScopesChanged?: (userId: string) => void | Promise<void>;
-  /** Sends invitation emails; without one every send fails and the inviter forwards the link. */
+  /** Sends invitation emails; without one every send fails. Only authorized account creators may retrieve links over HTTP. */
   readonly mailer?: InvitationMailer;
   /** Where invitation links point; without it, links start at the origin each caller passes. */
   readonly site?: InvitationSite;

@@ -37,7 +37,7 @@ const MAX_EMAILS = 50;
 
 /**
  * Invites several addresses at once. With `roleScopes`, the inviter also chooses what the new accounts hold. After
- * sending, the dialog shows each address's outcome, and a link that could not be emailed, once, to copy.
+ * sending, the dialog shows each address's outcome and any registration link the caller is authorized to retrieve.
  */
 export function InviteDialog({
   roleScopes,
@@ -186,7 +186,7 @@ function roleValues(value: UserRoleValue): readonly string[] {
   return typeof value === 'string' ? (value ? [value] : []) : value;
 }
 
-/** One row per address; a link that could not be emailed is shown once, with a copy button. */
+/** One row per address; authorized registration links are shown once, with a copy button. */
 export function InviteResults({
   results,
   linkOnly = false,

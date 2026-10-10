@@ -45,8 +45,8 @@ export interface InviteProjectOption {
 /**
  * "Invite members": several addresses at once (one per line, or separated by commas or spaces) and the projects the
  * invitees join as members. Owner/admin may leave the projects empty; a project lead chooses among the projects they
- * lead (`projects` is already narrowed to those). After sending, the dialog shows each address's outcome; an address
- * whose email could not be sent shows its link to copy and forward.
+ * lead (`projects` is already narrowed to those). After sending, the dialog shows each address's outcome and any
+ * registration link the caller is authorized to retrieve.
  */
 export function InviteDialog({
   open,

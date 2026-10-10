@@ -607,8 +607,8 @@ export default function UsersPage(): ReactElement {
           canCopyLink={(invitation) =>
             invitation.invitedBy.id === session?.user.id &&
             Object.keys(invitation.data).length === 0 &&
-            (Object.keys(invitation.roleScopes).length === 0 ||
-              globalCapabilities['assign-role'])
+            globalCapabilities.create &&
+            globalCapabilities['assign-role']
           }
           onResend={(invitation, sendEmail = true) => {
             perform(async () => {

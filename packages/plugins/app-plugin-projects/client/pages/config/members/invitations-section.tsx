@@ -1,3 +1,4 @@
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -58,6 +59,14 @@ export function InvitationsSection(): ReactElement | null {
   const { t } = useTranslation();
   const api = usePmApi();
   const viewer = useViewer();
+  const { can: canCreateUser } = useCan({
+    resource: { type: 'user', id: '*' },
+    action: 'create',
+  });
+  const { can: canAssignRole } = useCan({
+    resource: { type: 'user', id: '*' },
+    action: 'assign-role',
+  });
   const notify = useNotify();
   const toaster = useToaster();
   const queryClient = useQueryClient();
@@ -192,7 +201,9 @@ export function InvitationsSection(): ReactElement | null {
                   <SendIcon />
                   {t('invitations.resend')}
                 </DropdownMenuItem>
-                {row.original.invitedBy.userId === viewer?.userId ? (
+                {row.original.invitedBy.userId === viewer?.userId &&
+                canCreateUser &&
+                canAssignRole ? (
                   <DropdownMenuItem
                     disabled={resending}
                     onClick={() =>
@@ -220,7 +231,15 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [t, format, resending, resendInvitation, viewer?.userId],
+    [
+      t,
+      format,
+      resending,
+      resendInvitation,
+      viewer?.userId,
+      canCreateUser,
+      canAssignRole,
+    ],
   );
 
   const rows = invitations.data;

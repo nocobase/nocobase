@@ -142,8 +142,8 @@ export interface InviteUsersInput {
 }
 
 /**
- * - `invited`: a link was generated and is returned once for the inviter to forward,
- *   whether or not an email was sent.
+ * - `invited`: a link was generated and is returned to trusted server callers. HTTP callers need global user create and
+ *   assign-role permissions to receive this registration credential, whether or not an email was sent.
  * - `existingUser`: the address already has an account and nothing was sent;
  *   the caller decides what that account gets.
  */

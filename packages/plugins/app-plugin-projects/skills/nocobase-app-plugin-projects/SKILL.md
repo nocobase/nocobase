@@ -61,6 +61,7 @@ grants from before roles moved to the App; the App converts them (for example, `
   `permissionsOf` says which for each request. Settings items (`pm.general`, `pm.labels`, `pm.workflows`: read,
   update; `pm.members`: read, invite, assign, define-roles) are registered by the plugin. Creating an issue needs `pm.issues` `create`, not `edit`. `GET /api/projects/me` returns what the caller
   holds.
+- A project lead can invite by email, but retrieving a registration link requires global `user/create` and `user/assign-role` permissions and an unscoped person credential. The server omits `inviteUrl` without them, even if email delivery fails, and rejects `sendEmail=false` before rotating the token. Copying a renewed link also requires being the original inviter and retaining access to every remaining project.
 - Issue updates need the `revision` the caller read; a stale revision is 409 `REVISION_CONFLICT` (`ABORTED`).
 - An issue cannot be created in a terminal status, and moving it to another project needs a status that project's
   workflow has. A status change the workflow does not allow for the caller is 400 `TRANSITION_NOT_ALLOWED`.

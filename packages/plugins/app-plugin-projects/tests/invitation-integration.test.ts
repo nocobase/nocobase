@@ -11,7 +11,10 @@ import {
 import { createAppTest } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 
-import { createInvitationServer } from './helpers/invitation-app.js';
+import {
+  createInvitationServer,
+  invitationMailboxToken,
+} from './helpers/invitation-app.js';
 import type { InvitationResult } from '../shared/invitations.js';
 import type { ProjectDetail } from '../shared/projects.js';
 
@@ -237,4 +240,125 @@ test('rotates project links only through their domain and never accepts an old o
     userManagementServiceToken,
   );
   expect((await users.getInvitation(invitation.id))?.status).toBe('revoked');
+});
+
+test('keeps project leads from registering another email while preserving recipient acceptance and later membership', async ({
+  testApp,
+  request,
+}) => {
+  const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  const password = 'test-invitation-password';
+  const leadEmail = 'project-lead@example.test';
+  await readData(
+    await admin.fetch(
+      '/users',
+      post({ name: 'Lead', email: leadEmail, password }),
+    ),
+    201,
+  );
+  const lead = await signIn(testApp, { email: leadEmail, password });
+  const project = await readData<ProjectDetail>(
+    await lead.fetch(
+      '/projects',
+      post({ name: 'Lead project', visibility: 'members' }),
+    ),
+    201,
+  );
+  const privateProject = await readData<ProjectDetail>(
+    await admin.fetch(
+      '/projects',
+      post({ name: 'Private project', visibility: 'members' }),
+    ),
+    201,
+  );
+  const mailbox = testApp.application.container.resolve(invitationMailboxToken);
+  const users = testApp.application.container.resolve(
+    userManagementServiceToken,
+  );
+  const email = 'victim@example.test';
+  // The attacker has project management access, but not global account creation access.
+  expect(
+    (await lead.fetch('/users', post({ name: 'Victim', email, password })))
+      .status,
+  ).toBe(403);
+  expect(
+    (
+      await request(
+        '/auth/sign-up/email',
+        post({ name: 'Victim', email, password }),
+      )
+    ).status,
+  ).toBe(400);
+  for (const emailSent of [true, false]) {
+    mailbox.fail = !emailSent;
+    const created = await readData<{ results: InvitationResult[] }>(
+      await lead.fetch(
+        '/projects/invitations',
+        post({ emails: [email], projectIds: [project.id] }),
+      ),
+      201,
+    );
+    expect(created.results).toEqual([{ email, outcome: 'invited', emailSent }]);
+    const invitations = await users.listInvitations({
+      invitedBy: lead.user.id,
+    });
+    const invitation = invitations[0];
+    if (!invitation) throw new Error('Missing invitation');
+    const resent = await readData<InvitationResult>(
+      await lead.fetch(
+        `/projects/invitations/${invitation.id}/resend`,
+        post({}),
+      ),
+    );
+    expect(resent).toEqual({ email, outcome: 'invited', emailSent });
+    const copy = await lead.fetch(
+      `/projects/invitations/${invitation.id}/resend?sendEmail=false`,
+      post({}),
+    );
+    expect(copy.status).toBe(403);
+    expect((await users.list({ search: email })).items).toEqual([]);
+  }
+  mailbox.fail = false;
+  const first = (await users.listInvitations({ invitedBy: lead.user.id }))[0];
+  if (!first) throw new Error('Missing invitation');
+  await readData(
+    await lead.fetch(`/projects/invitations/${first.id}/resend`, post({})),
+  );
+  // Only the recipient's mail contains this credential. A refused copy must not rotate it.
+  const token = /\/invite\/([\w-]+)/u.exec(
+    mailbox.messages.get(email) ?? '',
+  )?.[1];
+  if (!token) throw new Error('Missing emailed token');
+  expect(
+    (
+      await lead.fetch(
+        `/projects/invitations/${first.id}/resend?sendEmail=false`,
+        post({}),
+      )
+    ).status,
+  ).toBe(403);
+  await readData(
+    await request(
+      '/users/invitations/accept',
+      post({ token, name: 'Recipient', password }),
+    ),
+  );
+  const recipient = await signIn(testApp, { email, password });
+  expect((await recipient.fetch(`/projects/${project.id}`)).status).toBe(200);
+  expect((await recipient.fetch(`/projects/${privateProject.id}`)).status).toBe(
+    404,
+  );
+  // Once the real recipient owns the account, the pre-existing direct-add behavior still works.
+  const joined = await readData<{ results: InvitationResult[] }>(
+    await admin.fetch(
+      '/projects/invitations',
+      post({ emails: [email], projectIds: [privateProject.id] }),
+    ),
+    201,
+  );
+  expect(joined.results).toEqual([{ email, outcome: 'added' }]);
+  expect((await recipient.fetch(`/projects/${privateProject.id}`)).status).toBe(
+    200,
+  );
+  expect((await lead.fetch(`/projects/${privateProject.id}`)).status).toBe(404);
 });

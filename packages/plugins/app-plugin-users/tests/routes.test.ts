@@ -29,6 +29,66 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it.each([
+    { canCreateUsers: false, canAssignRoles: true },
+    { canCreateUsers: true, canAssignRoles: false },
+    { canCreateUsers: false, canAssignRoles: false },
+  ])(
+    'keeps registration credentials private without both user creation permissions: %j',
+    async (permissions) => {
+      for (const emailSent of [true, false]) {
+        const service = userService();
+        const result = {
+          email: 'victim@example.test',
+          outcome: 'invited' as const,
+          invitationId: 'invitation-1',
+          emailSent,
+          inviteUrl: 'https://example.test/invite/registration-secret',
+        };
+        vi.mocked(service.invite).mockResolvedValue([result]);
+        vi.mocked(service.resendInvitation).mockResolvedValue(result);
+        const router = await apiRoutes.createRouter(
+          createApplication('allowed', service, permissions),
+        );
+        const created = await router.request('/users/invitations', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ emails: [result.email] }),
+        });
+        expect(created.status).toBe(201);
+        expect(await created.json()).toEqual({
+          data: [
+            {
+              email: result.email,
+              outcome: result.outcome,
+              invitationId: result.invitationId,
+              emailSent,
+            },
+          ],
+        });
+        const resent = await router.request(
+          '/users/invitations/invitation-1/resend',
+          { method: 'POST' },
+        );
+        expect(resent.status).toBe(200);
+        expect(await resent.json()).toEqual({
+          data: {
+            email: result.email,
+            outcome: result.outcome,
+            invitationId: result.invitationId,
+            emailSent,
+          },
+        });
+        const copy = await router.request(
+          '/users/invitations/invitation-1/resend?sendEmail=false',
+          { method: 'POST' },
+        );
+        expect(copy.status).toBe(403);
+        expect(service.resendInvitation).toHaveBeenCalledTimes(1);
+      }
+    },
+  );
+
   it.each(['anonymous', 'forbidden', 'allowed'] as const)(
     'guards link rotation for %s callers',
     async (mode) => {
@@ -821,6 +881,8 @@ function createApplication(
       readonly resource: { readonly type: string; readonly id: string };
       readonly action: string;
     }) => Promise<void>;
+    readonly canCreateUsers?: boolean;
+    readonly canAssignRoles?: boolean;
     readonly authenticatedUserId?: string;
     readonly scopedSession?: boolean;
     readonly logger?: { info: ReturnType<typeof vi.fn> };
@@ -849,6 +911,13 @@ function createApplication(
     middleware: () => async (context, next) => {
       context.set('authz', {
         identity: { principal: { type: 'user', id: 'admin-1' } },
+        can: ({ action }: { action: string }) =>
+          Promise.resolve(
+            mode === 'allowed' &&
+              (action === 'create'
+                ? options.canCreateUsers !== false
+                : options.canAssignRoles !== false),
+          ),
         require:
           options.requireAction ??
           (() =>

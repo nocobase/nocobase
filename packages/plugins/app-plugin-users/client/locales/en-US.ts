@@ -110,7 +110,7 @@ const enUS = {
     copyFailed: 'Could not copy the link.',
     outcome: {
       sent: 'Email sent',
-      notSent: 'Email not sent: copy the link below',
+      notSent: 'Email not sent',
       existingUser: 'Already has an account',
     },
   },
@@ -168,7 +168,7 @@ const enUS = {
   },
   errors: {
     INVITATION_LINK_FORBIDDEN:
-      'This link can only be copied by its inviter in the application that created the invitation.',
+      'Only the original inviter with global user creation and role assignment permissions can copy this link in the application that created it.',
     SELF_DELETE_NOT_ALLOWED: 'You cannot delete your own account.',
     LAST_ASSIGNMENT:
       'This user is the last one holding a permission set that must stay assigned.',

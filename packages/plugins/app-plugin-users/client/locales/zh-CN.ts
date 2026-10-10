@@ -104,7 +104,7 @@ const zhCN: UsersResource = {
     copyFailed: '无法复制链接。',
     outcome: {
       sent: '邮件已发送',
-      notSent: '邮件未发出，请复制下方链接转发',
+      notSent: '邮件未发送',
       existingUser: '已有账号',
     },
   },
@@ -158,7 +158,8 @@ const zhCN: UsersResource = {
     },
   },
   errors: {
-    INVITATION_LINK_FORBIDDEN: '此链接只能由邀请发起人在创建邀请的应用中复制。',
+    INVITATION_LINK_FORBIDDEN:
+      '只有拥有全局用户创建和角色分配权限的邀请发起人，才能在创建邀请的应用中复制此链接。',
     SELF_DELETE_NOT_ALLOWED: '不能删除当前登录的账号。',
     LAST_ASSIGNMENT: '该用户是某个必须保留分配的权限集的最后持有者。',
     USER_HAS_APPS: '该用户名下还有应用，请先移交或删除应用。',

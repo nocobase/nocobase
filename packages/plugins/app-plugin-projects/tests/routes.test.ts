@@ -44,6 +44,11 @@ function fakeAuthorization(): { middleware(): MiddlewareHandler } {
     middleware: () => async (context, next) => {
       const role = context.req.header('x-test-role') ?? 'none';
       context.set('authz', {
+        can: ({ action }: { action: string }) =>
+          Promise.resolve(
+            role === 'admin' &&
+              context.req.header('x-deny-user-action') !== action,
+          ),
         identity: {
           principal: { type: 'user', id: 'alice' },
           subjects: [{ type: 'test-role', id: role }],
@@ -144,6 +149,108 @@ const call = (path: string, init: RequestInit & { role?: string } = {}) => {
 };
 
 describe('the /api/projects guard', () => {
+  it.each([true, false])(
+    'never gives project leads registration tokens when emailSent=%s',
+    async (emailSent) => {
+      const project = await h.services.projects.create(h.viewer('alice'), {
+        name: 'Owned project',
+      });
+      const original = h.invitations.invite.bind(h.invitations);
+      // The fixture service controls email delivery; routes and project authorization remain production code.
+      vi.spyOn(h.invitations, 'invite').mockImplementation(async (input) =>
+        (await original(input)).map((result) =>
+          result.outcome === 'invited' ? { ...result, emailSent } : result,
+        ),
+      );
+      const response = await call('/invitations', {
+        role: 'member',
+        method: 'POST',
+        body: JSON.stringify({
+          emails: ['victim@example.test'],
+          projectIds: [project.id],
+        }),
+      });
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({
+        data: {
+          results: [
+            { email: 'victim@example.test', outcome: 'invited', emailSent },
+          ],
+        },
+      });
+      const id = h.invitations.rows[0]?.id ?? '';
+      const resend = vi
+        .spyOn(h.invitations, 'resendInvitation')
+        .mockResolvedValue({
+          email: 'victim@example.test',
+          outcome: 'invited',
+          invitationId: id,
+          emailSent,
+          inviteUrl: 'https://example.test/invite/registration-secret',
+        });
+      const resent = await call(`/invitations/${id}/resend`, {
+        role: 'member',
+        method: 'POST',
+      });
+      expect(resent.status).toBe(200);
+      expect(await resent.json()).toEqual({
+        data: { email: 'victim@example.test', outcome: 'invited', emailSent },
+      });
+      const copy = await call(`/invitations/${id}/resend?sendEmail=false`, {
+        role: 'member',
+        method: 'POST',
+      });
+      expect(copy.status).toBe(403);
+      expect(resend).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(['create', 'assign-role'])(
+    'also requires global user %s permission for project administrators',
+    async (action) => {
+      await h.services.invitations.create(
+        h.viewer('alice', 'admin'),
+        { emails: ['new@example.test'] },
+        'https://example.test',
+      );
+      const id = h.invitations.rows[0]?.id ?? '';
+      const resend = vi.spyOn(h.invitations, 'resendInvitation');
+      const response = await call(`/invitations/${id}/resend?sendEmail=false`, {
+        role: 'admin',
+        method: 'POST',
+        headers: { 'x-deny-user-action': action },
+      });
+      expect(response.status).toBe(403);
+      expect(resend).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps scoped credentials email-only even when their user can create accounts', async () => {
+    const response = await call('/invitations', {
+      role: 'admin',
+      method: 'POST',
+      headers: { 'x-test-scoped': 'yes' },
+      body: JSON.stringify({ emails: ['scoped@example.test'] }),
+    });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({
+      data: {
+        results: [
+          { email: 'scoped@example.test', outcome: 'invited', emailSent: true },
+        ],
+      },
+    });
+    const id = h.invitations.rows[0]?.id ?? '';
+    const resend = vi.spyOn(h.invitations, 'resendInvitation');
+    const copy = await call(`/invitations/${id}/resend?sendEmail=false`, {
+      role: 'admin',
+      method: 'POST',
+      headers: { 'x-test-scoped': 'yes' },
+    });
+    expect(copy.status).toBe(403);
+    expect(resend).not.toHaveBeenCalled();
+  });
+
   it('validates and forwards the mail-free invitation option', async () => {
     await h.services.invitations.create(
       h.viewer('alice', 'admin'),

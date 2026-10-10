@@ -12,6 +12,7 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
   clientMocks.authorization(),
 );
 
+const { useCan } = await import('@nocobase/app-plugin-authorization/client');
 const { InvitationsSection } =
   await import('../../client/pages/config/members/invitations-section.js');
 const { pmKeys } = await import('../../client/api/keys.js');
@@ -29,6 +30,12 @@ const invitation: Invitation = {
 
 let invitations: Invitation[];
 beforeEach(() => {
+  vi.mocked(useCan).mockReturnValue({
+    can: true,
+    isPending: false,
+    error: undefined,
+    retry: vi.fn(),
+  });
   invitations = [invitation];
   resetApi({
     'projects/me': () => ({ data: me('admin') }),
@@ -165,3 +172,34 @@ it('reports failed delivery without offering a missing link for another inviter'
     screen.queryByRole('button', { name: 'invitations.copyLink' }),
   ).toBeNull();
 });
+
+it.each(['create', 'assign-role'])(
+  'hides copy when the inviter lacks user %s permission but keeps email resend',
+  async (denied) => {
+    vi.mocked(useCan).mockImplementation((check) => ({
+      can: check !== 'unrestricted' && check?.action !== denied,
+      isPending: false,
+      error: undefined,
+      retry: vi.fn(),
+    }));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <InvitationsSection />
+      </QueryClientProvider>,
+    );
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'invitations.actionsFor(email=ann@example.com)',
+      }),
+    );
+    expect(
+      await screen.findByRole('menuitem', { name: 'invitations.resend' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: 'invitations.copyNewLink' }),
+    ).not.toBeInTheDocument();
+  },
+);

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
 
 import authentication, {
   defineAuthConfig,
@@ -29,17 +30,54 @@ import {
   resolveAppRuntime,
   startApplicationInScope,
 } from '@nocobase/app-server/runtime';
-import { ServiceProvider } from '@nocobase/service-provider';
+import {
+  ServiceProvider,
+  createServiceToken,
+  type ServiceToken,
+} from '@nocobase/service-provider';
 
 import projects from '../../server/plugin.js';
 import { projectsAccessToken } from '../../server/tokens.js';
 import { permissionsOf } from '../permissions.js';
+
+/** A test mailbox is the only substituted transport; accounts, permissions and invitation handlers are real. */
+export interface InvitationMailbox {
+  readonly messages: Map<string, string>;
+  fail: boolean;
+}
+export const invitationMailboxToken: ServiceToken<InvitationMailbox> =
+  createServiceToken<InvitationMailbox>('test:invitation-mailbox');
 
 /** The fixture application owns project roles; authentication, authorization and invitations use the real plugins. */
 class ProjectAccessProvider extends ServiceProvider<AppPluginApplication> {
   readonly name = 'invitation-test-project-access';
 
   override register(): void {
+    const mailbox: InvitationMailbox = { messages: new Map(), fail: false };
+    this.app.container.instance(invitationMailboxToken, mailbox);
+    this.app.container.instance(notificationServiceToken, {
+      send: async (input) => {
+        if (mailbox.fail) throw new Error('SMTP unavailable');
+        const email = input.messages['system-email'] as {
+          to: string;
+          text: string;
+        };
+        mailbox.messages.set(email.to, email.text);
+        return {
+          notificationId: input.idempotencyKey,
+          idempotencyKey: input.idempotencyKey,
+          deduplicated: false,
+          status: 'completed',
+          deliveries: [],
+        };
+      },
+      getByIdempotencyKey: async () => undefined,
+      getNotification: async () => undefined,
+      retryDelivery: async () => {
+        throw new Error('Not used by invitations');
+      },
+      onStatusChanged: () => () => {},
+    });
     const authz = this.app.container.resolve(authorizationToken);
     this.app.container.instance(projectsAccessToken, {
       permissionsOf: async (identity) => {
@@ -75,6 +113,9 @@ const appRuntime = defineAppRuntime({
     database: defineAppDatabaseConfig(() => ({
       default: 'main',
       connections: {},
+    })),
+    notification: defineAppConfig(() => ({
+      channels: { 'system-email': { provider: 'test-email', type: 'email' } },
     })),
     snowflake: defineAppConfig(() => ({ workerId: 1 })),
     auth: defineAuthConfig({

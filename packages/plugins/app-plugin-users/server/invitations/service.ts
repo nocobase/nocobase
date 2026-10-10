@@ -5,8 +5,8 @@
  *   what that account gets.
  * - Each invitation's token authorizes only that invitation's roles and data. Other invitations for the same address
  *   need their own tokens; an existing account must also authenticate before accepting an invitation.
- * - Only the token's hash is stored. Emails are submitted after the rows commit; the inviter always gets the link
- *   once, to forward by hand, and the row keeps any delivery error.
+ * - Only the token's hash is stored. Emails are submitted after the rows commit; trusted server callers receive the generated link
+ *   once. HTTP endpoints disclose this registration credential only with global user creation permissions.
  */
 import { randomUUID } from 'node:crypto';
 
