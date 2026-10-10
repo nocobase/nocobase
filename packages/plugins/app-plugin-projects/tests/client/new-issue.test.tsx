@@ -48,11 +48,15 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const renderNewIssue = (search = '?tab=manual') =>
-  renderAt(`/issues/new${search}`, [
-    { path: '/issues/new', element: <NewIssuePage /> },
-    { path: '*', element: <p>list</p> },
-  ]);
+const renderNewIssue = (search = '?tab=manual', history: string[] = []) =>
+  renderAt(
+    `/issues/new${search}`,
+    [
+      { path: '/issues/new', element: <NewIssuePage /> },
+      { path: '*', element: <p>list</p> },
+    ],
+    history,
+  );
 
 const location = () => screen.getByTestId('location').textContent;
 
@@ -154,11 +158,37 @@ describe('files on a new issue', () => {
     api.calls
       .filter((call) => call.method === 'DELETE')
       .map((call) => call.path);
+  const discarded = () =>
+    calls('POST', 'projects/attachments/discard').map((call) => call.json);
+  /** A create answered when the test says so. */
+  const deferredCreate = () => {
+    let answer = () => undefined as void;
+    api.routes['POST projects/issues'] = (request) =>
+      new Promise((resolve) => {
+        answer = () => {
+          created.push(request.json);
+          resolve({ data: { id: 'i1', identifier: 'PM-1' } });
+        };
+      });
+    return { answer: () => answer() };
+  };
+  const uploaded = async (dialog: HTMLElement) => {
+    const list = await within(dialog).findByRole('list', {
+      name: 'attachments.pending',
+    });
+    await waitFor(() =>
+      expect(list.querySelectorAll('img')).toHaveLength(
+        list.querySelectorAll('li').length,
+      ),
+    );
+    return list;
+  };
 
   beforeEach(() => {
     created.length = 0;
     api.routes['POST projects/attachments'] = () => stored('f1');
     api.routes['DELETE projects/attachments/f1'] = () => undefined;
+    api.routes['POST projects/attachments/discard'] = () => undefined;
     api.routes['POST projects/issues'] = (request) => {
       created.push(request.json);
       return { data: { id: 'i1', identifier: 'PM-1' } };
@@ -294,19 +324,101 @@ describe('files on a new issue', () => {
     uploads.finish();
   });
 
-  it('counts files alone as unsaved, and deletes them when the form is discarded', async () => {
+  it('counts files alone as unsaved, and discards them when the form is discarded', async () => {
     renderNewIssue();
     const dialog = await screen.findByRole('dialog');
     paste(dialog, [screenshot()]);
-    const list = await within(dialog).findByRole('list', {
-      name: 'attachments.pending',
-    });
-    await waitFor(() => expect(list.querySelector('img')).not.toBeNull());
+    await uploaded(dialog);
 
     fireEvent.click(within(dialog).getByText('actions.cancel'));
     fireEvent.click(await screen.findByText('unsavedChanges.discard'));
     await waitFor(() => expect(location()).not.toContain('/issues/new'));
-    await waitFor(() => expect(deleted()).toEqual(['projects/attachments/f1']));
+    // Through discard, which deletes only uploads still attached to nothing, never a file one by one.
+    await waitFor(() =>
+      expect(discarded()).toEqual([{ attachmentIds: ['f1'] }]),
+    );
+    expect(deleted()).toEqual([]);
+  });
+
+  it('cancels an upload on its way when the form is discarded, and discards only what finished', async () => {
+    renderNewIssue();
+    const dialog = await screen.findByRole('dialog');
+    paste(dialog, [screenshot()]);
+    await uploaded(dialog);
+    // The second upload never finishes.
+    api.routes['POST projects/attachments'] = () => new Promise(() => {});
+    paste(dialog, [screenshot()]);
+    await within(dialog).findByLabelText(/^attachments\.uploading/u);
+    const request = api.request.mock.calls.at(-1)?.[0] as {
+      signal?: AbortSignal;
+    };
+
+    fireEvent.click(within(dialog).getByText('actions.cancel'));
+    fireEvent.click(await screen.findByText('unsavedChanges.discard'));
+    await waitFor(() => expect(location()).not.toContain('/issues/new'));
+    expect(request.signal?.aborted).toBe(true);
+    await waitFor(() =>
+      expect(discarded()).toEqual([{ attachmentIds: ['f1'] }]),
+    );
+  });
+
+  it('discards nothing when the page is left while the create is on its way', async () => {
+    const pending = deferredCreate();
+    renderNewIssue('?tab=manual', ['/issues']);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('issueForm.titleLabel'), {
+      target: { value: 'Broken login' },
+    });
+    paste(dialog, [screenshot()]);
+    await uploaded(dialog);
+    fireEvent.click(within(dialog).getByText('common.create'));
+    await waitFor(() =>
+      expect(calls('POST', 'projects/issues')).toHaveLength(1),
+    );
+
+    // The browser's Back, which no close button guards; the server may have attached the files already.
+    fireEvent.click(screen.getByTestId('history-back'));
+    const discard = screen.queryByText('unsavedChanges.discard');
+    if (discard) fireEvent.click(discard);
+    await waitFor(() => expect(location()).toBe('/issues'));
+    pending.answer();
+    await waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({ attachmentIds: ['f1'] });
+    expect(discarded()).toEqual([]);
+    expect(deleted()).toEqual([]);
+  });
+
+  it('holds the files as they are while the issue is being created', async () => {
+    const pending = deferredCreate();
+    const dialog = await openForm();
+    paste(dialog, [screenshot()]);
+    const list = await uploaded(dialog);
+    fireEvent.click(within(dialog).getByText('common.create'));
+    await waitFor(() =>
+      expect(calls('POST', 'projects/issues')).toHaveLength(1),
+    );
+
+    paste(dialog, [screenshot()]);
+    fireEvent.drop(within(dialog).getByText('attachments.attach'), {
+      dataTransfer: { files: [screenshot()], types: ['Files'] },
+    });
+    expect(
+      within(list)
+        .getByLabelText(/^attachments\.remove/u)
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      within(dialog)
+        .getByText('attachments.attach')
+        .closest('button')
+        ?.hasAttribute('disabled'),
+    ).toBe(true);
+    expect(calls('POST', 'projects/attachments')).toHaveLength(1);
+
+    pending.answer();
+    await waitFor(() => expect(location()).toBe('/issues/i1'));
+    expect(created[0]).toMatchObject({ attachmentIds: ['f1'] });
+    expect(discarded()).toEqual([]);
   });
 
   it('keeps the files after a failed create, for another try', async () => {

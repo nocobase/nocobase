@@ -25,6 +25,7 @@
  * | `GET /attachments/{attachmentId}`        |                          | 200 `{ data: Attachment }`                       |
  * | `GET /attachments/{attachmentId}/content`| `?download=true` to save | the bytes; safe images inline, others saved      |
  * | `DELETE /attachments/{attachmentId}`     |                          | 204                                              |
+ * | `POST /attachments/discard`              | `{ attachmentIds }`      | 204, the caller's unsent uploads deleted         |
  * | `GET /issues/{issueId}/attachments`      |                          | `{ data: Attachment[], meta: { total } }`        |
  * | `POST /issues/{issueId}/attachments`     | multipart, one `file`    | 201 `{ data: Attachment }`, attached to it       |
  *
@@ -93,4 +94,12 @@ export interface Attachment {
   readonly previewable: boolean;
   /** The reader may remove it now (an issue's own file; a comment's files go with the comment). */
   readonly canDelete: boolean;
+}
+
+/**
+ * `POST /attachments/discard`: deletes those of the caller's uploads still attached to nothing, and leaves every other
+ * id alone, so a form throwing its files away cannot delete one a request it sent has attached meanwhile.
+ */
+export interface DiscardAttachmentsRequest {
+  readonly attachmentIds: readonly string[];
 }

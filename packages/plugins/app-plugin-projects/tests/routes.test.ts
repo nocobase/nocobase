@@ -726,6 +726,40 @@ describe('attachments over HTTP', () => {
     });
   });
 
+  it('discards only unsent uploads, keeping one a new issue took meanwhile', async () => {
+    const send = async (name: string) => {
+      const response = await upload(
+        '/attachments',
+        new File([new Uint8Array([137, 80])], name, { type: 'image/png' }),
+      );
+      return ((await response.json()) as { data: { id: string } }).data.id;
+    };
+    const taken = await send('taken.png');
+    const unsent = await send('unsent.png');
+    // The create reached the server before the form, left, discarded its files.
+    const created = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ title: 'Raced', attachmentIds: [taken] }),
+    });
+    const { data: issue } = (await created.json()) as {
+      data: { identifier: string };
+    };
+    const discarded = await call('/attachments/discard', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ attachmentIds: [taken, unsent, 'nope'] }),
+    });
+    expect(discarded.status).toBe(204);
+    const listed = (await (
+      await call(`/issues/${issue.identifier}/attachments`, { role: 'member' })
+    ).json()) as { data: { id: string }[] };
+    expect(listed.data.map((item) => item.id)).toEqual([taken]);
+    expect(
+      (await call(`/attachments/${unsent}`, { role: 'member' })).status,
+    ).toBe(404);
+  });
+
   it('refuses a body that is not one file, and one over the limit', async () => {
     const empty = await router.request('/api/projects/attachments', {
       method: 'POST',

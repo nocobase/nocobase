@@ -16,7 +16,11 @@ import type {
   ApprovalRequest,
   DecideApprovalRequest,
 } from '../../shared/approvals.js';
-import type { Attachment } from '../../shared/attachments.js';
+import {
+  ATTACHMENTS_PER_REQUEST_MAX,
+  type Attachment,
+  type DiscardAttachmentsRequest,
+} from '../../shared/attachments.js';
 import type {
   IssueChecklist,
   UpdateChecklistItemRequest,
@@ -205,6 +209,11 @@ export const IntakeJobParams: z.ZodType<{ jobId: string }> = z.object({
 export const AttachmentParams: z.ZodType<{ attachmentId: string }> = z.object({
   attachmentId: id,
 });
+
+export const DiscardAttachmentsBody: z.ZodType<DiscardAttachmentsRequest> =
+  z.strictObject({
+    attachmentIds: z.array(id).min(1).max(ATTACHMENTS_PER_REQUEST_MAX),
+  });
 
 // Members and mentions
 

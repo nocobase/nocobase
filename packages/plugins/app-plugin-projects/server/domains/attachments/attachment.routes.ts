@@ -36,6 +36,7 @@ import {
   AttachmentParams,
   AttachmentSchema,
   BoundedListMeta,
+  DiscardAttachmentsBody,
   IssueParams,
   singleFileBody,
 } from '../../routes/schemas.js';
@@ -155,6 +156,30 @@ export function createAttachmentRoutes(
         },
         201,
       ),
+  );
+  routes.post(
+    '/discard',
+    describeRoute({
+      tags,
+      summary: 'Discard unsent uploads',
+      operationId: 'projectsDiscardAttachments',
+      // A form's cleanup of what it never sent; `attachment delete` removes one file on the command line.
+      ...cliRoute(false),
+      description:
+        'Deletes those of `attachmentIds` that are the caller’s uploads attached to nothing, and leaves the others alone: one attached meanwhile (sent with a comment or a new issue) is kept.',
+      responses: {
+        204: emptyResponse(),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('json', DiscardAttachmentsBody),
+    async (context) => {
+      await attachments.discard(
+        viewerOf(context),
+        context.req.valid('json').attachmentIds,
+      );
+      return context.body(null, 204);
+    },
   );
   routes.get(
     '/:attachmentId',

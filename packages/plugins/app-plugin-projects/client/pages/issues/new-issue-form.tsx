@@ -62,7 +62,8 @@ const FORM_ID = 'pm-issue-new-form';
  *
  * Files chosen, pasted (a screenshot) or dropped on the description are uploaded at once and become the new issue's own
  * files. Nothing is sent while one still uploads, and the files stay as they are while the issue is being created. A
- * failed create keeps them for another try; closing the form without creating deletes them.
+ * failed create keeps them for another try; leaving the form without creating discards those still attached to
+ * nothing, except while a create is on its way, which may attach them (the server's purge takes any left over).
  */
 export function NewIssueForm({
   onSubmittingChange,
@@ -211,6 +212,8 @@ export function NewIssueForm({
     submittingRef.current = true;
     setSubmitting(true);
     onSubmittingChange(true);
+    // Leaving now (the browser's Back) must not discard files the request may already have attached.
+    if (attachmentIds.length > 0) uploads.setSending(true);
     try {
       const issue = await api.createIssue({
         title: trimmed,
@@ -235,6 +238,8 @@ export function NewIssueForm({
       if (onCreated) onCreated(issue);
       else void navigate(`/issues/${encodeURIComponent(issue.id)}`);
     } catch (error) {
+      // Refused: nothing was attached, so the files are this form's again, for another try or to be discarded.
+      uploads.setSending(false);
       setFormError(errorText(t, error, t('common.requestFailed')));
     } finally {
       submittingRef.current = false;

@@ -550,6 +550,13 @@ export class PmApi {
     return this.send(`projects/attachments/${id(attachmentId)}`, 'DELETE');
   }
 
+  /** Deletes those of the caller's uploads still attached to nothing; attached ones are kept. */
+  public discardAttachments(attachmentIds: readonly string[]): Promise<void> {
+    return this.send('projects/attachments/discard', 'POST', {
+      attachmentIds,
+    });
+  }
+
   private async upload<T>(
     path: string,
     file: File,
