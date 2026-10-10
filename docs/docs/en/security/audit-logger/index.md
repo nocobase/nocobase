@@ -44,7 +44,7 @@ Currently, the following resource operations will be recorded in the audit log:
 
 | Operation        | Description             |
 | ---------------- | ----------------------- |
-| `app:resart`     | Application restart     |
+| `app:restart`    | Application restart     |
 | `app:clearCache` | Clear application cache |
 
 ### Plugin Manager
