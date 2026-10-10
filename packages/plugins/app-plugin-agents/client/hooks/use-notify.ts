@@ -32,6 +32,21 @@ export function errorText(
 ): string {
   if (!(error instanceof ApiClientError)) return fallback;
   if (error.status === 403) return t('common.forbidden');
+  const payload = error.payload;
+  if (payload && typeof payload === 'object' && 'error' in payload) {
+    const body = payload.error;
+    if (body && typeof body === 'object' && 'metadata' in body) {
+      const metadata = body.metadata;
+      if (
+        metadata &&
+        typeof metadata === 'object' &&
+        'reason' in metadata &&
+        (metadata.reason === 'SYSTEM_DEFAULT_REQUIRES_EVERYONE' ||
+          metadata.reason === 'SYSTEM_DEFAULT_ACCESS_RESTRICTED')
+      )
+        return t(`errors.${metadata.reason}`);
+    }
+  }
   if (error.reason)
     return t(`errors.${error.reason}`, {
       defaultValue: error.message || fallback,

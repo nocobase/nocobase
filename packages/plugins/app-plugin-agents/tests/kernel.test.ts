@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { invalid } from '../server/kernel/errors.js';
+import { toApiError } from '../server/kernel/http.js';
 
 import { createSecretsService } from '@nocobase/app-server/secrets';
 
@@ -52,6 +54,29 @@ describe('event content', () => {
     expect(truncateBytes('é'.repeat(4), 5)).toEqual({
       text: 'éé',
       truncated: true,
+    });
+  });
+});
+
+describe('HTTP field errors', () => {
+  it('preserves metadata and maps a service field to a field violation', () => {
+    const error = toApiError(
+      invalid('Choose an online agent.', {
+        field: 'onlineFallbackAgentId',
+        reason: 'wrongType',
+      }),
+    );
+    expect(error).toMatchObject({
+      metadata: { field: 'onlineFallbackAgentId', reason: 'wrongType' },
+      fieldViolations: [
+        {
+          field: 'onlineFallbackAgentId',
+          description: 'Choose an online agent.',
+        },
+      ],
+    });
+    expect(toApiError(invalid('Invalid.'))).toMatchObject({
+      fieldViolations: undefined,
     });
   });
 });

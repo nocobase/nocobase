@@ -323,6 +323,8 @@ export interface AgentPickerProps {
   /** The trigger's id, for a form label. */
   readonly id?: string;
   readonly disabled?: boolean;
+  /** A disabled choice stays visible with this reason; pointer and keyboard selection skip it. */
+  readonly disabledReason?: (agent: ChatAgent) => string | null;
   readonly className?: string;
   readonly align?: 'start' | 'center' | 'end';
   readonly 'data-testid'?: string;
@@ -362,6 +364,7 @@ export function AgentPicker({
   placeholder,
   id,
   disabled,
+  disabledReason,
   className,
   align = 'start',
   'data-testid': testId = 'agent-picker',
@@ -499,26 +502,52 @@ export function AgentPicker({
                   : words.runnerGroup}
               </DropdownMenuLabel>
             ) : null}
-            {group.agents.map((agent) => (
-              <DropdownMenuItem
-                key={agent.id}
-                onClick={() => onSelect(agent.id)}
-                data-agent={agent.id}
-              >
-                <AgentAvatar name={agentName(agent)} size='xs' />
-                <span className='min-w-0 flex-1 truncate'>
-                  {agentName(agent) ?? words.none}
-                </span>
-                <AgentTags agent={agent} labels={words} />
-                <AvailabilityDot
-                  availability={agent.availability}
-                  labels={words}
-                />
-                {!bound && value === agent.id ? (
-                  <CheckIcon className='size-3.5' aria-hidden='true' />
-                ) : null}
-              </DropdownMenuItem>
-            ))}
+            {group.agents.map((agent) => {
+              const reason = disabledReason?.(agent);
+              const content = (
+                <>
+                  <AgentAvatar name={agentName(agent)} size='xs' />
+                  <span className='min-w-0 flex-1 truncate'>
+                    {agentName(agent) ?? words.none}
+                    {reason ? (
+                      <span className='block text-xs font-normal text-muted-foreground whitespace-normal'>
+                        {reason}
+                      </span>
+                    ) : null}
+                  </span>
+                  <AgentTags agent={agent} labels={words} />
+                  <AvailabilityDot
+                    availability={agent.availability}
+                    labels={words}
+                  />
+                  {!bound && value === agent.id ? (
+                    <CheckIcon className='size-3.5' aria-hidden='true' />
+                  ) : null}
+                </>
+              );
+              // Base UI menu items intentionally focus disabled items. A static row keeps the
+              // reason accessible while excluding this choice from arrow and typeahead navigation.
+              return reason ? (
+                <div
+                  key={agent.id}
+                  role='menuitem'
+                  aria-disabled='true'
+                  title={reason}
+                  data-agent={agent.id}
+                  className='flex cursor-not-allowed items-center gap-1.5 rounded-md px-1.5 py-1 text-sm opacity-50'
+                >
+                  {content}
+                </div>
+              ) : (
+                <DropdownMenuItem
+                  key={agent.id}
+                  onClick={() => onSelect(agent.id)}
+                  data-agent={agent.id}
+                >
+                  {content}
+                </DropdownMenuItem>
+              );
+            })}
           </DropdownMenuGroup>
         ))}
         {(showHint ?? toolbar) ? (

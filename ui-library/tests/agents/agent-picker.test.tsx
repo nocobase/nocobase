@@ -1,5 +1,11 @@
 import type { ChatAgent } from '@nocobase/app-plugin-agents/shared/conversations';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -53,6 +59,49 @@ const AGENTS: readonly ChatAgent[] = [
 ];
 
 describe('AgentPicker', () => {
+  it('keeps disabled choices and their reasons visible while skipping pointer and keyboard selection', async () => {
+    const onSelect = vi.fn();
+    render(
+      <AgentPicker
+        agents={AGENTS}
+        value='assistant'
+        onSelect={onSelect}
+        disabledReason={(agent) =>
+          agent.id === 'coder' ? 'Available to everyone only' : null
+        }
+      />,
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Agent: Assistant, Online' }),
+    );
+    const blocked = await screen.findByRole('menuitem', {
+      name: /Coding agent/,
+    });
+    expect(blocked).toHaveAttribute('aria-disabled', 'true');
+    expect(blocked).toHaveAttribute('title', 'Available to everyone only');
+    expect(
+      within(blocked).getByText('Available to everyone only'),
+    ).toBeVisible();
+    await userEvent.keyboard('{Home}');
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', { name: /Assistant/ })).toHaveFocus(),
+    );
+    await userEvent.keyboard('{ArrowDown}');
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', { name: /Reviewer/ })).toHaveFocus(),
+    );
+    await userEvent.keyboard('{Enter}');
+    expect(onSelect).toHaveBeenCalledWith('reviewer');
+    onSelect.mockClear();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Agent: Assistant, Online' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: /Coding agent/ }),
+    );
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('shows the chosen agent with its availability and mode, and lists the agents grouped by mode', async () => {
     const onSelect = vi.fn();
     render(

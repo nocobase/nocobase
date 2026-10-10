@@ -62,6 +62,8 @@ const chatEnUS = {
       runnerHint: 'A coding agent on a runtime',
     },
     settings: {
+      requiresEveryone:
+        'Only agents available to everyone can be the system default.',
       title: 'System default chat agent',
       description:
         'New conversations go to this agent when a person has no default of their own; a conversation may also switch to it while its agent is offline.',

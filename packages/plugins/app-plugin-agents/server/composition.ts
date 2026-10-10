@@ -514,6 +514,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     open: (conn, refs, delivery) => variables.forJob(conn, refs, delivery),
   });
   const chat = createChatSettingsService({ tx, clock, agents });
+  agents.provideDefaults(chat);
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
     tx,

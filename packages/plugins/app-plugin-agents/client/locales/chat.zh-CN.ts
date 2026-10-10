@@ -58,6 +58,7 @@ const chatZhCN: ChatLocale = {
       runnerHint: '在运行环境中运行编码 Agent',
     },
     settings: {
+      requiresEveryone: '仅所有人可用的 Agent 可设为系统默认。',
       title: '系统默认对话 Agent',
       description:
         '成员没有设置自己的默认 Agent 时，新对话交给它；某条对话的 Agent 离线时，也可以临时改用它。',
