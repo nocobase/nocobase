@@ -134,8 +134,6 @@ export function RouteOverlay({
             <DialogOverlay forceRender />
             <DialogPrimitive.Popup
               ref={popupRef}
-              data-slot='route-overlay-content'
-              data-presentation={drawer ? 'drawer' : 'dialog'}
               finalFocus={() => {
                 const previous = previousFocusRef.current;
                 if (parentPopup?.current) {
@@ -155,26 +153,17 @@ export function RouteOverlay({
                 className,
               )}
             >
-              <header
-                data-slot='route-overlay-header'
-                className='flex shrink-0 flex-col gap-2 border-b p-6 pr-14'
-              >
+              <header className='shrink-0 space-y-2 border-b p-4 pr-12'>
                 <DialogTitle>{title}</DialogTitle>
                 {description != null && (
                   <DialogDescription>{description}</DialogDescription>
                 )}
               </header>
-              <div
-                data-slot='route-overlay-body'
-                className='min-h-0 flex-1 overflow-y-auto p-6'
-              >
+              <div className='min-h-0 flex-1 overflow-y-auto p-4'>
                 {children}
               </div>
               {footer != null && (
-                <footer
-                  data-slot='route-overlay-footer'
-                  className='flex shrink-0 flex-wrap justify-end gap-2 border-t bg-muted/30 p-6'
-                >
+                <footer className='flex shrink-0 flex-wrap justify-end gap-2 border-t p-4'>
                   {footer}
                 </footer>
               )}
@@ -183,7 +172,7 @@ export function RouteOverlay({
                   <Button
                     variant='ghost'
                     size='icon-sm'
-                    className='absolute top-4 right-4'
+                    className='absolute top-2 right-2'
                   />
                 }
               >
