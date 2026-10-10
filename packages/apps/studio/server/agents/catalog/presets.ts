@@ -54,6 +54,7 @@ export const PROJECT_LEAD: AgentPresetDefinition = {
   type: 'runner',
   actions: [
     'pm.projects/view',
+    'pm.projects/create',
     'pm.issues/view',
     'pm.issues/create',
     'pm.issues/edit',
@@ -85,6 +86,7 @@ export const PROJECT_ASSISTANT: AgentPresetDefinition = {
   type: 'online',
   actions: [
     'pm.projects/view',
+    'pm.projects/create',
     'pm.issues/view',
     'pm.issues/create',
     'pm.issues/edit',
