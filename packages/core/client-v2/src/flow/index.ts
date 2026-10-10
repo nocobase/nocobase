@@ -24,6 +24,8 @@ import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnosti
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
 
+export const FLOW_ENGINE_LOADED_EVENT = 'flow-engine:loaded';
+
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
   TApp
@@ -40,6 +42,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
     this.flowEngine.registerActions(filterFormActions as any);
+    this.app.eventBus.dispatchEvent(new Event(FLOW_ENGINE_LOADED_EVENT));
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
       DefaultValue,
