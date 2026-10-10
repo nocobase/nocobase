@@ -75,9 +75,9 @@ describe('admin API', () => {
     });
     expect(invalid.status).toBe(400);
     expect(invalid.body.error.reason).toBe('INVALID_INPUT');
-    // Each entry's effort is one its tool takes: Codex has no `max`, Claude Code no `minimal`.
+    // Each entry's effort is one its tool takes: neither Codex nor Claude Code has `minimal`.
     for (const entry of [
-      { tool: 'codex', effort: 'max' },
+      { tool: 'codex', effort: 'minimal' },
       { tool: 'claude', effort: 'minimal' },
     ]) {
       const refused = await h.request('POST', '/agents', {
@@ -98,7 +98,7 @@ describe('admin API', () => {
         can: ADMIN,
         body: {
           modelEntries: [
-            { tool: 'codex', model: 'gpt-5', effort: 'minimal' },
+            { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
             { tool: 'claude', effort: 'max' },
             { tool: 'pi', effort: '' },
           ],
@@ -107,7 +107,7 @@ describe('admin API', () => {
       },
     );
     expect(efforts.body.data.modelEntries).toEqual([
-      { tool: 'codex', model: 'gpt-5', effort: 'minimal' },
+      { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
       { tool: 'claude', model: null, effort: 'max' },
       { tool: 'pi', model: null, effort: null },
     ]);
@@ -152,6 +152,40 @@ describe('admin API', () => {
     expect(deleted.status).toBe(204);
   });
 
+  it('keeps an effort its tool no longer takes until the entry changes it', async () => {
+    h = await createHarness();
+    const id = await h.createAgent({ name: 'Coder' });
+    // Saved while Codex still listed `minimal`.
+    await h.database
+      .connection()
+      .repository('agAgents')
+      .updateOne({
+        filter: { id },
+        values: {
+          modelEntries: [{ tool: 'codex', model: 'gpt-5', effort: 'minimal' }],
+        },
+      });
+    const { revision } = await h.services.agents.get(id);
+    const renamed = await h.request('PATCH', `/agents/${id}`, {
+      user: 'alice',
+      can: ADMIN,
+      body: { name: 'Builder', expectedRevision: revision },
+    });
+    expect(renamed.status).toBe(200);
+    const moved = await h.request('PATCH', `/agents/${id}`, {
+      user: 'alice',
+      can: ADMIN,
+      body: {
+        modelEntries: [{ tool: 'codex', model: 'gpt-6', effort: 'minimal' }],
+        expectedRevision: revision + 1,
+      },
+    });
+    expect(moved.status).toBe(400);
+    expect(moved.body.error.metadata).toMatchObject({
+      reason: 'EFFORT_UNSUPPORTED',
+    });
+  });
+
   it('lists agents with their active runs and the runners online for them', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();
@@ -178,6 +212,13 @@ describe('admin API', () => {
       ['Coder', 1, 1],
       ['Elsewhere', 0, 0],
     ]);
+    // Whether the caller owns each, for the list's order.
+    const owned = await h.request('GET', '/agents', {
+      user: 'owner',
+      can: ['agents.agents/read'],
+    });
+    expect(owned.body.data[0].owned).toBe(true);
+    expect(list.body.data[0].owned).toBe(false);
     // Runners are visible to whoever may read agents, to pick where they run.
     const runners = await h.request('GET', '/agents/runners', {
       user: 'alice',

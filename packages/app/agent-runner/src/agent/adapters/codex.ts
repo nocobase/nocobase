@@ -83,7 +83,6 @@ import type {
 export const DEFAULT_MIN_CODEX_VERSION = '0.158.0';
 
 const EFFORTS = new Set(TOOL_EFFORTS.codex);
-const EFFORT_ALIASES: Readonly<Record<string, string>> = { max: 'xhigh' };
 /** How long a stop waits for the interrupted turn before ending the process. */
 const INTERRUPT_GRACE_MS = 1500;
 /** Shutdown steps: stdin closed, then SIGTERM, then SIGKILL. */
@@ -566,9 +565,7 @@ class CodexRun {
       if (!steer.prompt) this.pendingSteers.set(steer.clientId, steer);
     this.turnRunning = true;
     this.turnSummary = undefined;
-    const effort = session.effort
-      ? (EFFORT_ALIASES[session.effort] ?? session.effort)
-      : undefined;
+    const effort = session.effort || undefined;
     const sandboxPolicy: SandboxPolicy = {
       type: 'workspaceWrite',
       writableRoots: await codexWritableRoots(session),

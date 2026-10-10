@@ -70,7 +70,7 @@ describe('model suggestions in the Agent editor', () => {
       source: '2 runtimes available',
       hint: /Runtime model reports are suggestions/,
       effortLabel: 'Reasoning effort',
-      reported: 'Reported efforts: low, high.',
+      reported: 'Reported efforts you can choose: low, high.',
     },
     {
       locale: 'zh-CN',
@@ -78,7 +78,7 @@ describe('model suggestions in the Agent editor', () => {
       source: '2 台执行机可用',
       hint: /执行机上报的模型仅供建议/,
       effortLabel: '推理强度',
-      reported: '上报的思考强度：low, high。',
+      reported: '可选的上报思考强度：low, high。',
     },
   ])(
     'offers a reported Pi model, its reporting machines and efforts in $locale',
@@ -129,7 +129,7 @@ describe('model suggestions in the Agent editor', () => {
     },
   );
 
-  it('keeps full model titles and allows choosing a built-in suggestion', async () => {
+  it('keeps full model titles and allows choosing a common suggestion, with no built-in badge', async () => {
     const runtime = await createTestI18nRuntime({
       namespaces: { [NS]: locales },
     });
@@ -146,10 +146,8 @@ describe('model suggestions in the Agent editor', () => {
     const id = within(option).getByText('claude-opus-5-5');
     expect(id).toHaveAttribute('title', 'claude-opus-5-5');
     expect(id).toHaveClass('truncate');
-    expect(within(option).getByText('Built-in')).toHaveAttribute(
-      'data-slot',
-      'badge',
-    );
+    expect(within(option).queryByText('Built-in')).toBeNull();
+    expect(option.querySelector('[data-slot="badge"]')).toBeNull();
     await user.click(option);
     expect(screen.getByRole('combobox', { name: 'Model' })).toHaveValue(
       'claude-opus-5-5',
@@ -190,6 +188,51 @@ describe('model suggestions in the Agent editor', () => {
       name: new RegExp(MODEL),
     });
     expect(within(option).getByText(source)).toBeVisible();
+  });
+
+  it('keeps the effort select alone in its cell and lists only selectable reported efforts under the entry', async () => {
+    const runtime = await createTestI18nRuntime({
+      namespaces: { [NS]: locales },
+    });
+    const office = reportingRunner('office', 'Office');
+    render(
+      <TestI18nProvider runtime={runtime} namespace={NS}>
+        <Editor
+          runners={[
+            {
+              ...office,
+              tools: [
+                {
+                  ...office.tools[0]!,
+                  models: [{ id: MODEL, efforts: ['low', 'high', 'turbo'] }],
+                },
+              ],
+            },
+          ]}
+          initial={newEntryDraft({ tool: 'pi', model: MODEL })}
+          save={vi.fn()}
+        />
+      </TestI18nProvider>,
+    );
+    const row = screen.getByTestId('ag-model-entry');
+    const hint = screen.getByText(
+      'Reported efforts you can choose: low, high.',
+    );
+    // The hint is a row of the entry's own, not part of the effort cell, so it cannot lift the select.
+    expect(hint.parentElement).toBe(row);
+    expect(hint).toHaveClass('col-[2/-1]');
+    const effort = within(row).getByRole('combobox', {
+      name: 'Reasoning effort',
+    });
+    expect(hint).not.toContainElement(effort);
+    expect(effort.closest('li > *')?.contains(hint)).toBe(false);
+    const user = userEvent.setup();
+    await user.click(effort);
+    expect(
+      (await screen.findAllByRole('option')).map((option) =>
+        option.textContent?.trim(),
+      ),
+    ).toEqual(['Default', 'Low', 'High']);
   });
 
   it('keeps an existing model and effort when a report arrives, and keeps manual input possible', async () => {

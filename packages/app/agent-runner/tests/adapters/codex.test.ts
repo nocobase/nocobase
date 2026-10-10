@@ -150,6 +150,20 @@ describe('reported execution settings', () => {
       meta: { execution: { effort: null, source: 'codex.turn/start' } },
     });
   });
+
+  it.each([
+    ['max', 'max'],
+    ['ultra', 'ultra'],
+    ['minimal', undefined],
+  ])('passes effort %s to turn/start as %s', async (effort, expected) => {
+    let params: Record<string, unknown> = {};
+    const { adapter } = adapterWith(async (fake) => {
+      params = await handshake(fake);
+      completeTurn(fake);
+    });
+    await drain(adapter.start(session({ effort })));
+    expect(params.effort).toBe(expected);
+  });
 });
 
 function completeTurn(

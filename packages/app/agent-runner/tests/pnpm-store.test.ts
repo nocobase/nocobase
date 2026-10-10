@@ -301,13 +301,26 @@ describe('the shared pnpm store', () => {
     120_000,
   );
 
-  it('is left alone without pnpm on the PATH, or without a store', async () => {
+  it('is pruned with the bundled pnpm on a machine without one', async () => {
+    await ensurePnpmStore(paths);
+    const logs: string[] = [];
+    const ran = await prunePnpmStore({
+      paths,
+      source: { PATH: path.join(root, 'empty'), HOME: root },
+      log: (message) => logs.push(message),
+    });
+    expect(ran).toBe(true);
+    expect(logs.join('\n')).toContain('pruned the shared pnpm store');
+  }, 60_000);
+
+  it('is left alone without a bundled pnpm or one on the PATH, or without a store', async () => {
     const logs: string[] = [];
     expect(await prunePnpmStore({ paths, source: {} })).toBe(false);
     await ensurePnpmStore(paths);
     expect(
       await prunePnpmStore({
         paths,
+        pnpmEntry: null,
         source: { PATH: path.join(root, 'empty') },
         log: (message) => logs.push(message),
       }),

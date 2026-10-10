@@ -58,9 +58,6 @@ function ModelSources({
   ).length;
   return (
     <span className='ml-auto inline-flex shrink-0 flex-nowrap items-center gap-1 whitespace-nowrap'>
-      {suggestion.builtIn ? (
-        <Badge variant='secondary'>{t('modelEntries.builtIn')}</Badge>
-      ) : null}
       {suggestion.runners.length > 0 ? (
         <Tooltip>
           <TooltipTrigger render={<Badge variant='outline' />}>
@@ -292,12 +289,18 @@ export function ModelEntriesEditor({
                     ? { modelService: entry.modelService }
                     : { tool: entry.tool },
                 );
+                const offeredEfforts =
+                  reportedEfforts === undefined
+                    ? allowedEfforts
+                    : allowedEfforts.filter((effort) =>
+                        reportedEfforts.includes(effort),
+                      );
                 return (
                   <li
                     key={entry.key}
                     data-testid='ag-model-entry'
                     aria-label={t('modelEntries.row', { index: index + 1 })}
-                    className={ROW}
+                    className={cn(ROW, 'gap-y-1')}
                   >
                     <div className='flex items-center gap-1.5'>
                       <span className='w-4 text-right text-sm text-muted-foreground tabular-nums'>
@@ -347,35 +350,14 @@ export function ModelEntriesEditor({
                         />
                       </>
                     )}
-                    <div className='flex flex-col gap-1'>
-                      <EffortSelect
-                        id={`${rowId}-effort`}
-                        efforts={
-                          reportedEfforts === undefined
-                            ? allowedEfforts
-                            : allowedEfforts.filter((effort) =>
-                                reportedEfforts.includes(effort),
-                              )
-                        }
-                        value={entry.effort}
-                        disabled={disabled}
-                        ariaLabel={t('agentForm.reasoningEffort')}
-                        onChange={(effort) => replace(index, { effort })}
-                      />
-                      {reportedEfforts !== undefined ? (
-                        <p className='text-xs text-muted-foreground'>
-                          {t('modelEntries.reportedEfforts', {
-                            efforts: reportedEfforts.length
-                              ? reportedEfforts.join(', ')
-                              : t('modelEntries.noReportedEfforts'),
-                          })}
-                          {entry.effort &&
-                          !reportedEfforts.includes(entry.effort)
-                            ? ` ${t('modelEntries.effortNotReported', { effort: entry.effort })}`
-                            : ''}
-                        </p>
-                      ) : null}
-                    </div>
+                    <EffortSelect
+                      id={`${rowId}-effort`}
+                      efforts={offeredEfforts}
+                      value={entry.effort}
+                      disabled={disabled}
+                      ariaLabel={t('agentForm.reasoningEffort')}
+                      onChange={(effort) => replace(index, { effort })}
+                    />
                     <div className='flex items-center'>
                       {type === 'online' && onTest ? (
                         <Button
@@ -429,6 +411,19 @@ export function ModelEntriesEditor({
                         }
                       />
                     </div>
+                    {reportedEfforts !== undefined ? (
+                      // A row of its own under the entry, so the selects of every entry stay on one line.
+                      <p className='col-[2/-1] text-xs text-muted-foreground'>
+                        {t('modelEntries.reportedEfforts', {
+                          efforts: offeredEfforts.length
+                            ? offeredEfforts.join(', ')
+                            : t('modelEntries.noReportedEfforts'),
+                        })}
+                        {entry.effort && !offeredEfforts.includes(entry.effort)
+                          ? ` ${t('modelEntries.effortNotReported', { effort: entry.effort })}`
+                          : ''}
+                      </p>
+                    ) : null}
                   </li>
                 );
               })}

@@ -4,6 +4,7 @@
  * callbacks the way Claude Code does.
  */
 import type {
+  ModelInfo,
   Options,
   SDKMessage,
   SDKUserMessage,
@@ -38,6 +39,15 @@ export function setScript(next: FakeScript): void {
   script = next;
 }
 
+let models: (options: Options) => Promise<ModelInfo[]> = async () => [];
+
+/** What `supportedModels()` answers. */
+export function setSupportedModels(
+  next: (options: Options) => Promise<ModelInfo[]>,
+): void {
+  models = next;
+}
+
 export function replay(messages: readonly SDKMessage[]): FakeScript {
   return async function* (ctx) {
     await ctx.nextInput();
@@ -51,7 +61,10 @@ export function fakeQuery({
 }: {
   prompt: string | AsyncIterable<SDKUserMessage>;
   options?: Options;
-}): AsyncGenerator<SDKMessage, void> & { close(): void } {
+}): AsyncGenerator<SDKMessage, void> & {
+  close(): void;
+  supportedModels(): Promise<ModelInfo[]>;
+} {
   const call: FakeCall = { options, closed: false };
   calls.push(call);
   if (typeof prompt === 'string')
@@ -117,5 +130,6 @@ export function fakeQuery({
     close() {
       call.closed = true;
     },
+    supportedModels: () => models(options),
   });
 }
