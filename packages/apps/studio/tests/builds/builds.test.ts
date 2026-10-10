@@ -1315,6 +1315,7 @@ describe('pull request previews', () => {
     });
     expect(await h.builds!.find('web-pr-9', HEAD1)).toMatchObject({
       superseded: true,
+      state: 'failed',
     });
     await waitFor(
       () => prPreviews(9),
@@ -1338,6 +1339,129 @@ describe('pull request previews', () => {
       (rows) => rows[0]?.deployedSha === HEAD2,
       'the newest head deployed',
     );
+  });
+
+  it('supersedes completed builds without changing their state or allowing late uploads to deploy them', async () => {
+    await issueWithPull('Completed heads', 33, HEAD1);
+    await ensure('web', 'staging');
+    await uploadOnly('web', HEAD1, '1.0.0');
+    const pull = h.github.pull(REPO, 33);
+    pull.head = { ...pull.head, sha: HEAD2 };
+    pull.updated_at = new Date(Date.now() + 1000).toISOString();
+    await report('web', HEAD2, 'failed', { message: 'Compile error.' });
+
+    pull.head = { ...pull.head, sha: MAIN3 };
+    pull.updated_at = new Date(Date.now() + 1000).toISOString();
+    await report('web', MAIN3, 'building');
+
+    expect(await h.builds!.find('web', HEAD1)).toMatchObject({
+      state: 'succeeded',
+      superseded: true,
+    });
+    expect(await h.builds!.find('web', HEAD2)).toMatchObject({
+      state: 'failed',
+      message: 'Compile error.',
+      superseded: true,
+    });
+    expect(await deployFile('web', HEAD1, '1.0.1')).toMatchObject({
+      superseded: true,
+      release: null,
+      deployed: null,
+    });
+    expect(await deployFile('web', HEAD2, '1.0.2')).toMatchObject({
+      superseded: true,
+      release: null,
+      deployed: null,
+    });
+  });
+
+  it.each([
+    ['queued', 'Queued old head', 34, HEAD1, HEAD2],
+    ['building', 'Building old head', 35, MAIN2, MAIN3],
+  ] as const)(
+    'keeps a superseded %s build terminal after a late report',
+    async (oldState, title, number, oldSha, newSha) => {
+      await issueWithPull(title, number, oldSha);
+      await report(`web-pr-${number}`, oldSha, oldState);
+      const pull = h.github.pull(REPO, number);
+      pull.head = { ...pull.head, sha: newSha };
+      pull.updated_at = new Date(Date.now() + 1000).toISOString();
+      await report(`web-pr-${number}`, newSha, 'building');
+
+      expect(await h.builds!.find(`web-pr-${number}`, oldSha)).toMatchObject({
+        state: 'failed',
+        superseded: true,
+      });
+      await report(`web-pr-${number}`, oldSha, 'queued');
+      expect(await h.builds!.find(`web-pr-${number}`, oldSha)).toMatchObject({
+        state: 'failed',
+        superseded: true,
+      });
+      await report(`web-pr-${number}`, oldSha, 'building');
+      expect(await h.builds!.find(`web-pr-${number}`, oldSha)).toMatchObject({
+        state: 'failed',
+        superseded: true,
+      });
+    },
+  );
+
+  it('fails only builds that have been building without a CI update for two hours', async () => {
+    await issueWithPull('Timed out', 21, HEAD1);
+    await issueWithPull('Still building', 22, HEAD2);
+    await issueWithPull('Already finished', 23, MAIN);
+    await issueWithPull('Already failed', 24, FEATURE);
+    await report('web-pr-21', HEAD1, 'building');
+    await report('web-pr-22', HEAD2, 'building');
+    await report('web-pr-23', MAIN, 'succeeded');
+    await report('web-pr-24', FEATURE, 'failed', { message: 'Compile error.' });
+    const finishedPull = h.github.pull(REPO, 23);
+    finishedPull.head = { ...finishedPull.head, sha: STRAY };
+    finishedPull.updated_at = new Date(Date.now() + 1000).toISOString();
+    await report('web-pr-23', STRAY, 'building');
+
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const conn = h.database.connection();
+    await conn.query
+      .updateTable('studioBuilds')
+      .set({ updatedAt: new Date(cutoff.getTime() - 1) })
+      .where('appId', '=', 'web-pr-21')
+      .where('sha', '=', HEAD1)
+      .execute();
+    await conn.query
+      .updateTable('studioBuilds')
+      .set({ updatedAt: new Date(cutoff.getTime() + 1) })
+      .where('appId', '=', 'web-pr-22')
+      .where('sha', '=', HEAD2)
+      .execute();
+    await conn.query
+      .updateTable('studioBuilds')
+      .set({ updatedAt: new Date(cutoff.getTime() - 1) })
+      .where('appId', '=', 'web-pr-23')
+      .where('sha', '=', MAIN)
+      .execute();
+    await conn.query
+      .updateTable('studioBuilds')
+      .set({ updatedAt: new Date(cutoff.getTime() - 1) })
+      .where('appId', '=', 'web-pr-24')
+      .where('sha', '=', FEATURE)
+      .execute();
+
+    expect(await h.builds!.expireStale(cutoff)).toBe(1);
+    expect(await h.builds!.find('web-pr-21', HEAD1)).toMatchObject({
+      state: 'failed',
+      message: 'Build timed out after two hours without a CI update.',
+    });
+    expect(await h.builds!.find('web-pr-22', HEAD2)).toMatchObject({
+      state: 'building',
+    });
+    expect(await h.builds!.find('web-pr-23', MAIN)).toMatchObject({
+      state: 'succeeded',
+      superseded: true,
+    });
+    expect(await h.builds!.find('web-pr-24', FEATURE)).toMatchObject({
+      state: 'failed',
+      message: 'Compile error.',
+    });
   });
 
   it('lists builds by when CI reported them: superseding an older head leaves its time and place', async () => {

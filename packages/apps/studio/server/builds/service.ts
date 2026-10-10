@@ -88,8 +88,10 @@ import {
   buildById,
   buildByRelease,
   buildView,
+  failStaleBuilds,
   findBuild,
   insertBuild,
+  reportBuild,
   repositoryBuilds,
   supersedeOthers,
   updateBuild,
@@ -289,6 +291,8 @@ export type DeployAnswer =
   { readonly ticket: UploadTicket } | { readonly outcome: DeployOutcome };
 
 export interface Builds {
+  /** Marks builds with no CI update before `cutoff` failed. */
+  expireStale(cutoff: Date): Promise<number>;
   report(caller: Caller, input: BuildReport): Promise<BuildView>;
   /** Makes the App in the environment when it is missing; a no-op when it is there. */
   ensure(
@@ -927,6 +931,9 @@ export function createBuilds(deps: BuildsDeps): Builds {
   }
 
   const service: Builds = {
+    async expireStale(cutoff) {
+      return failStaleBuilds(conn(), cutoff);
+    },
     async report(caller, input) {
       if (!BUILD_STATES.includes(input.state as BuildState))
         throw invalid(
@@ -941,7 +948,7 @@ export function createBuilds(deps: BuildsDeps): Builds {
       const { build } = await admit(caller, input, 'upload', {
         appRequired: false,
       });
-      await updateBuild(conn(), build.id, {
+      await reportBuild(conn(), build.id, {
         // An uploaded build stays succeeded: its archive is what counts.
         state: build.releaseId ? 'succeeded' : input.state,
         ...(logsUrl !== null ? { logsUrl } : {}),

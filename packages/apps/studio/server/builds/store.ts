@@ -234,13 +234,59 @@ export async function supersedeOthers(
   appId: string,
   headSha: string,
 ): Promise<number> {
+  return conn.transaction(async (transaction) => {
+    const result = await transaction.query
+      .updateTable(TABLE)
+      .set({ superseded: true, updatedAt: new Date() })
+      .where('pullRequestId', '=', pullRequestId)
+      .where('appId', '=', appId)
+      .where('sha', '!=', headSha)
+      .where('superseded', '=', false)
+      .execute();
+    await transaction.query
+      .updateTable(TABLE)
+      .set({ state: 'failed', updatedAt: new Date() })
+      .where('pullRequestId', '=', pullRequestId)
+      .where('appId', '=', appId)
+      .where('sha', '!=', headSha)
+      .where('superseded', '=', true)
+      .where('state', 'in', ['queued', 'building'])
+      .execute();
+    return Number(
+      (result as unknown as { updatedCount?: number }).updatedCount ?? 0,
+    );
+  });
+}
+
+/** A CI report never reopens a build already superseded by a newer pull request head. */
+export async function reportBuild(
+  conn: DatabaseConnection,
+  id: string,
+  values: Row,
+): Promise<BuildRecord | null> {
+  await conn.query
+    .updateTable(TABLE)
+    .set({ ...values, updatedAt: new Date() })
+    .where('id', '=', id)
+    .where('superseded', '=', false)
+    .execute();
+  return buildById(conn, id);
+}
+
+/** Marks builds with no CI update in the timeout window failed; completed builds are left alone. */
+export async function failStaleBuilds(
+  conn: DatabaseConnection,
+  before: Date,
+): Promise<number> {
   const result = await conn.query
     .updateTable(TABLE)
-    .set({ superseded: true, updatedAt: new Date() })
-    .where('pullRequestId', '=', pullRequestId)
-    .where('appId', '=', appId)
-    .where('sha', '!=', headSha)
-    .where('superseded', '=', false)
+    .set({
+      state: 'failed',
+      message: 'Build timed out after two hours without a CI update.',
+      updatedAt: new Date(),
+    })
+    .where('state', '=', 'building')
+    .where('updatedAt', '<=', before)
     .execute();
   return Number(
     (result as unknown as { updatedCount?: number }).updatedCount ?? 0,
