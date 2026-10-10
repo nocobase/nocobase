@@ -12,6 +12,7 @@
  * | read, download, list                        | seeing the issue (an upload attached to nothing: its uploader)   |
  * | upload                                      | `pm.attachments` `upload`                                        |
  * | attach to an issue                          | `upload`, and `pm.issues` `edit` on the issue                    |
+ * | send with a new issue                       | `upload`, and `pm.issues` `create`                               |
  * | send with a comment                         | `upload`, and `pm.issues` `comment` on the issue                 |
  * | remove an issue's file                      | its uploader (with `edit`), or `moderate-comments` on the issue  |
  * | remove a comment's file                     | deleting the comment                                             |
@@ -24,11 +25,13 @@
  * | `GET /attachments/{attachmentId}`        |                          | 200 `{ data: Attachment }`                       |
  * | `GET /attachments/{attachmentId}/content`| `?download=true` to save | the bytes; safe images inline, others saved      |
  * | `DELETE /attachments/{attachmentId}`     |                          | 204                                              |
+ * | `POST /attachments/discard`              | `{ attachmentIds }`      | 204, the caller's unsent uploads deleted         |
  * | `GET /issues/{issueId}/attachments`      |                          | `{ data: Attachment[], meta: { total } }`        |
  * | `POST /issues/{issueId}/attachments`     | multipart, one `file`    | 201 `{ data: Attachment }`, attached to it       |
  *
  * `POST /issues/{issueId}/comments` takes `attachmentIds` (`CreateCommentRequest`): the caller's own uploads attached
- * to nothing, at most `ATTACHMENTS_PER_REQUEST_MAX`, attached in the comment's transaction. Errors: 400
+ * to nothing, at most `ATTACHMENTS_PER_REQUEST_MAX`, attached in the comment's transaction. `POST /issues` takes them
+ * the same way (`CreateIssueRequest`), as the new issue's own files. Errors: 400
  * `INVALID_ATTACHMENT` (not an upload of the caller's attached to nothing), 400 `FAILED_PRECONDITION`
  * `FILES_UNAVAILABLE` (the application stores no files), 413 `FILE_TOO_LARGE`.
  *
@@ -91,4 +94,12 @@ export interface Attachment {
   readonly previewable: boolean;
   /** The reader may remove it now (an issue's own file; a comment's files go with the comment). */
   readonly canDelete: boolean;
+}
+
+/**
+ * `POST /attachments/discard`: deletes those of the caller's uploads still attached to nothing, and leaves every other
+ * id alone, so a form throwing its files away cannot delete one a request it sent has attached meanwhile.
+ */
+export interface DiscardAttachmentsRequest {
+  readonly attachmentIds: readonly string[];
 }

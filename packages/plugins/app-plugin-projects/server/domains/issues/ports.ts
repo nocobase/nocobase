@@ -90,6 +90,17 @@ export interface IssueApprovals {
   ): Promise<void>;
 }
 
+/** The attachments domain, as a new issue takes the files added to it before it existed (`domains/attachments`). */
+export interface IssueAttachments {
+  /** Attaches the uploader's uploads to the issue; 400 when one is not theirs or already attached, attaching nothing. */
+  attach(
+    tx: Tx,
+    uploader: { readonly type: string; readonly id: string },
+    target: { readonly issueId: string; readonly commentId: null },
+    ids: unknown,
+  ): Promise<readonly { readonly id: string; readonly filename: string }[]>;
+}
+
 export const noApprovals: IssueApprovals = {
   request: () =>
     Promise.reject(

@@ -102,6 +102,7 @@ export {
   ATTACHMENT_SIZE_MB,
   useAttachmentUploads,
   type AttachmentUploads,
+  type AttachmentUploadsOptions,
   type PendingUpload,
 } from './hooks/use-attachment-uploads.js';
 export { useEventTitle } from './lib/workflow-events.js';

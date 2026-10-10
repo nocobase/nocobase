@@ -38,6 +38,11 @@ export interface AttachmentUploads {
   readonly remove: (key: string) => void;
   /** Forgets the files once they were sent, without deleting them. */
   readonly clear: () => void;
+  /**
+   * True while a request carrying the files is on its way: it may attach them at any moment, so unmounting discards
+   * none of them meanwhile. `clear()` once it succeeded, `setSending(false)` once it failed.
+   */
+  readonly setSending: (sending: boolean) => void;
   /** Pasted files (a screenshot, say) are added instead of pasted as text. */
   readonly onPaste: (event: ClipboardEvent) => void;
   readonly onDragOver: (event: DragEvent) => void;
@@ -56,24 +61,51 @@ function named(file: File, index: number): File {
   );
 }
 
+export interface AttachmentUploadsOptions {
+  /**
+   * Discards the finished uploads still held when the component unmounts (a form closed without being sent), instead
+   * of leaving them to the server's purge. Only uploads still attached to nothing are deleted
+   * (`POST /attachments/discard`), and nothing while `setSending(true)` holds them.
+   */
+  readonly discardOnUnmount?: boolean;
+}
+
 /**
- * Files added to a comment before it is sent (`shared/attachments.ts`): each is uploaded as soon as it is added
- * (picked, pasted or dropped), attached to nothing until the comment takes it; at most
+ * Files added to a comment or a new issue before it is sent (`shared/attachments.ts`): each is uploaded as soon as it
+ * is added (picked, pasted or dropped), attached to nothing until the comment or issue takes it; at most
  * `ATTACHMENTS_PER_REQUEST_MAX`, each within the size limit. Taking one back deletes the upload; leaving the page
- * leaves it to the server's purge.
+ * leaves it to the server's purge, unless `discardOnUnmount` deletes it.
  */
-export function useAttachmentUploads(): AttachmentUploads {
+export function useAttachmentUploads(
+  options: AttachmentUploadsOptions = {},
+): AttachmentUploads {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const api = usePmApi();
   const notify = useNotify();
   const [uploads, setUploads] = useState<readonly PendingUpload[]>([]);
   const counterRef = useRef(0);
   const controllersRef = useRef(new Map<string, AbortController>());
+  // What unmounting would discard; `clear()` empties it at once, ahead of a close that unmounts in the same render.
+  const heldRef = useRef<readonly PendingUpload[]>([]);
+  const sendingRef = useRef(false);
+  const discardRef = useRef({ api, discard: options.discardOnUnmount });
+  useEffect(() => {
+    heldRef.current = uploads;
+    discardRef.current = { api, discard: options.discardOnUnmount };
+  });
 
   useEffect(() => {
     const running = controllersRef.current;
     return () => {
       for (const controller of running.values()) controller.abort();
+      const { api: client, discard } = discardRef.current;
+      if (!discard || sendingRef.current) return;
+      const ids = heldRef.current.flatMap((upload) =>
+        upload.attachment ? [upload.attachment.id] : [],
+      );
+      // The server's purge deletes what this leaves behind.
+      if (ids.length > 0)
+        void client.discardAttachments(ids).catch(() => undefined);
     };
   }, []);
 
@@ -147,7 +179,14 @@ export function useAttachmentUploads(): AttachmentUploads {
       if (upload?.attachment)
         void api.removeAttachment(upload.attachment.id).catch(() => undefined);
     },
-    clear: () => setUploads([]),
+    clear: () => {
+      heldRef.current = [];
+      sendingRef.current = false;
+      setUploads([]);
+    },
+    setSending: (sending) => {
+      sendingRef.current = sending;
+    },
     onPaste: (event) => {
       const files = [...event.clipboardData.files];
       if (files.length === 0) return;

@@ -87,7 +87,7 @@ export interface AttachmentService {
   purge(at?: Date): Promise<number>;
 }
 
-/** What the comment and plan services use, inside their transactions. */
+/** What the issue, comment and plan services use, inside their transactions. */
 export interface AttachmentLinks {
   /**
    * Attaches `ids` (checked: 1 to `ATTACHMENTS_PER_REQUEST_MAX` distinct ids of `uploader`'s uploads attached to

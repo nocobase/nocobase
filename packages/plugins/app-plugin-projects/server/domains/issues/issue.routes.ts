@@ -43,6 +43,7 @@ import {
   UpdateIssueBody,
   UpdateIssueResultSchema,
 } from '../../routes/schemas.js';
+import { ATTACHMENT_SIZE_MAX } from '../../../shared/attachments.js';
 import type { IssueQueries } from './issue.queries.js';
 import type { IssueService } from './issue.service.js';
 
@@ -138,15 +139,30 @@ export function createIssueRoutes(deps: {
           labelIds: { name: 'label' },
           description: { contentFile: true },
         },
+        uploads: {
+          attach: {
+            upload: 'projectsUploadAttachment',
+            field: 'attachmentIds',
+            multiple: true,
+            maxBytes: ATTACHMENT_SIZE_MAX,
+            description: `A file to attach to the new issue (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
+          },
+        },
         action: 'pm.issues/create',
-        examples: ['issue create --file issue.json --status todo'],
+        examples: [
+          'issue create --file issue.json --status todo',
+          'issue create --file issue.json --attach screenshot.png',
+        ],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project. The issue starts in `todo` unless `statusKey` names another status it may start in; the caller owns it unless `ownerUserId` says otherwise.',
+        'Needs `create` on `pm.issues` for the issue’s project, and `upload` on `pm.attachments` to send `attachmentIds` (the caller’s uploads attached to nothing, which become the issue’s own files). The issue starts in `todo` unless `statusKey` names another status it may start in; the caller owns it unless `ownerUserId` says otherwise.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
-        400: apiErrorResponse(400, workflowRefused),
+        400: apiErrorResponse(
+          400,
+          `${workflowRefused} Also when an attachment is not an upload of the caller’s attached to nothing (\`INVALID_ATTACHMENT\`).`,
+        ),
       },
     }),
     apiValidator('json', CreateIssueBody),

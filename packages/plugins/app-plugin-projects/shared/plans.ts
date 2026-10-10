@@ -156,6 +156,8 @@ export interface IssueCreateParams {
   readonly dueDate?: string | null;
   readonly blockedBy?: readonly IssueTarget[];
   readonly start?: boolean;
+  /** Uploads of the person executing the plan, attached to nothing; they become the new issue's files. */
+  readonly attachmentIds?: readonly string[];
 }
 
 /** The fields `issue.update` may change; at least one. Changing `statusKey` moves the issue through its workflow. */
