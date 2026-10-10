@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { buildAgentEnv } from '../src/agent/env.ts';
-import { installGitHooks } from '../src/core/push-guard.ts';
+import { installGitHooks } from '../src/core/git-hooks.ts';
 import { removeDir, tempDir } from './helpers.ts';
 
 const run = promisify(execFile);
@@ -68,6 +68,6 @@ describe('the run’s git identity and credentials', () => {
     // Nothing the run started with was written into the repository's configuration.
     const config = await readFile(path.join(repo, '.git', 'config'), 'utf8');
     expect(config).not.toContain('ghs_short_lived');
-    expect(await readdir(hooks)).toEqual(['pre-push', 'prepare-commit-msg']);
+    expect(await readdir(hooks)).toEqual(['prepare-commit-msg']);
   });
 });

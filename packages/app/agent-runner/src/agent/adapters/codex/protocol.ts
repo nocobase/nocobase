@@ -26,13 +26,7 @@ export interface RpcMessage {
 
 export type AskForApproval = 'untrusted' | 'on-request' | 'never';
 
-export type SandboxPolicy = {
-  type: 'workspaceWrite';
-  writableRoots: string[];
-  networkAccess: boolean;
-  excludeTmpdirEnvVar: boolean;
-  excludeSlashTmp: boolean;
-};
+export type SandboxPolicy = { type: 'dangerFullAccess' };
 
 export interface UserTextInput {
   type: 'text';

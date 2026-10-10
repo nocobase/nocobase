@@ -98,18 +98,6 @@ export interface ToolDetection {
 export interface AdapterSession {
   /** Absolute path the agent works in (the checked-out worktree). */
   workDir: string;
-  /**
-   * Directories besides `workDir` the agent writes: the run's other working directories, and each repository's own Git
-   * directory, which a worktree keeps outside its working tree. A tool that sandboxes itself must let the agent write
-   * them; a tool without a sandbox ignores them.
-   */
-  writableRoots?: readonly string[];
-  /**
-   * The run's working trees: every working directory, `workDir` among them, and each submodule checked out in a
-   * repository. A tool whose sandbox protects paths inside a writable root, such as Codex with `.agents`, opens there
-   * what the agent's own commands write; a tool without a sandbox ignores them.
-   */
-  workingTrees?: readonly string[];
   /** The first user message of the run. */
   prompt: string;
   /** The rendered brief (system, task, context, agent layers joined). */
@@ -126,7 +114,10 @@ export interface AdapterSession {
   env: Record<string, string>;
   /** The run's skills, for the adapter to register the way its tool finds skills; none without skills. */
   skills?: SkillsPlacement;
-  /** The runner's tool policy; consulted for every tool call the agent makes. */
+  /**
+   * Answers the tools that ask before a call (OpenCode, Pi). The runner allows every call: it is not a security
+   * boundary. Codex and Claude Code run without asking.
+   */
   permission: PermissionCheck;
   maxTurns?: number;
   /** Aborting it has the same effect as `handle.stop()`. */

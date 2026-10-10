@@ -298,13 +298,6 @@ const zhCN: AgentsResource = {
     none: '这里没有可以授予的能力。',
     notGrantable: '不可授予给 Agent',
     notGrantableBecause: '不可授予给 Agent：{{reason}}',
-    allowedCommands: '允许的命令',
-    allowedCommandsHint:
-      '正则表达式，每行一个；shell 命令必须匹配其中之一。显示的是默认值。',
-    deniedPatterns: '拒绝模式',
-    deniedPatternsHint:
-      '正则表达式，每行一个；匹配的命令即使被允许也会被拒绝。',
-    patternInvalid: '不是有效的正则表达式：{{pattern}}',
     confirmChanges: '对话中代你修改',
     confirmChangesHint:
       '在对话里，Agent 以你的名义修改项目和任务时，哪些改动要先给出计划、由你确认。这不是权限设置：Agent 能改什么，由上面的能力决定。',
@@ -314,10 +307,6 @@ const zhCN: AgentsResource = {
       largerHint:
         '小改动：每轮最多改两个对象，且不涉及完成或关闭任务、更换负责人、指派 Agent 执行、唤醒 Agent、新建项目。',
     },
-  },
-  commandPolicy: {
-    title: '命令策略',
-    hint: 'Agent 在运行环境所在机器上可以执行哪些 shell 命令。',
   },
   placement: {
     title: '运行位置',

@@ -1,14 +1,14 @@
 // Prepares a run's working directories before the agent starts.
 //
 // A `directory` entry is a directory that already exists on this machine: it is used in place (no checkout, no branch,
-// no push guard of the runner's) and locked so one run at a time works in it.
+// no branch) and locked so one run at a time works in it.
 //
 // Each repository URL has one bare cache, `~/.nocobase-runner/repos/<sha1(url)>.git`, fetched into
 // `refs/remotes/origin/*`. Each subject of each application has one long-lived work directory,
 // `<work root>/<app>/<subjectKey>/`, and every new repository is a reference clone at `<workDir>/<repo.path>` on the
 // run's branch (`agent/<key>`). Git metadata stays inside that directory; only existing objects are borrowed from the
 // cache, whose automatic GC is disabled. A later run finds the clone (or a legacy worktree) and keeps working; nothing is
-// reset. Every checkout gets the push guard (push-guard.ts): it may push only that branch, to that repository. A run
+// reset. Every checkout gets the runner's commit hook (git-hooks.ts); nothing limits where an agent pushes. A run
 // never works on the default branch, except the one run that makes an empty repository's first commit
 // (`RepoDir.initial`): its checkout starts on the default branch with no parent, and that branch is the one it pushes.
 //
@@ -62,14 +62,14 @@ import type {
   RepoReport,
   WorkspaceDir,
 } from '../protocol/index.ts';
-import { isInside } from './command-policy.ts';
+import { isInside } from '../lib/paths.ts';
 import {
   GIT_LOW_SPEED_CONFIG,
   GitNetworkError,
   retryGit,
   type GitRetryOptions,
 } from './git-retry.ts';
-import { allowPush, installGitHooks } from './push-guard.ts';
+import { installGitHooks } from './git-hooks.ts';
 import { isAlive } from './supervisor.ts';
 import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 import {
@@ -188,7 +188,7 @@ export function subjectWorkDir(
   return path.join(paths.workRoot, safeName(appKey), safeName(subjectKey));
 }
 
-/** The runner's own files in a working directory: the agent's home, tmp, the CLI shim and the workspace record. */
+/** The runner's own files in a working directory: tmp, Codex's home, the CLI shim and the workspace record. */
 export const RUNNER_DIR = '.nocobase-runner';
 
 /** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */
@@ -233,7 +233,7 @@ export async function updateCache(
     await git(['config', 'gc.auto', '0'], cache);
     await git(['config', 'gc.pruneExpire', 'never'], cache);
     await git(['config', 'maintenance.auto', 'false'], cache);
-    await installGitHooks(path.join(cache, 'hooks'), paths.pushAllowDir);
+    await installGitHooks(path.join(cache, 'hooks'));
     await retryGit(
       `git fetch ${url}`,
       () =>
@@ -910,7 +910,7 @@ export interface PrepareDirsOptions {
 
 /**
  * Prepares every working directory: a repository is checked out (a bare cache and a long-lived clone on its branch,
- * with the push guard); a directory used in place must exist, is locked for the run, and is not checked out or
+ * with the runner's commit hook); a directory used in place must exist, is locked for the run, and is not checked out or
  * branched. A directory counts as fresh until a run of the subject finishes in it (`markDirsPrepared`), so a run that
  * dies before doing what the initialization prompt asks leaves it for the next attempt. The result's `release` gives
  * the directory locks back.
@@ -1056,12 +1056,9 @@ export async function prepareDirs(
           ? { pushedSha: known.pushedSha }
           : {}),
       });
-      // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
+      // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
-        await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
-      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir, {
-        createOnly: initializing,
-      });
+        await installGitHooks(path.join(gitDir, 'hooks'));
       const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
         initSubmodules(dir, {
           all: created,

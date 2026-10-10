@@ -7,6 +7,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -161,13 +162,10 @@ describe('runner end to end', () => {
           'say starting',
           'bash env',
           'bash appcli whoami',
-          'bash cat .app/run.json',
-          `bash cat ${path.join(home, 'credentials', 'test-app.json')}`,
           'bash ls /',
           'read /etc/hosts',
           'write notes.txt hello from the agent',
           `bash ${COMMIT} add notes.txt && ${COMMIT} commit -q -m agent-work`,
-          `bash ${COMMIT} push origin HEAD:main`,
           'say all done',
         ].join('\n'),
       },
@@ -205,7 +203,7 @@ describe('runner end to end', () => {
       },
     });
 
-    // The agent's environment: whitelisted variables and the run's variables, its own HOME and TMPDIR, the push
+    // The agent's environment: whitelisted variables and the run's variables, the real HOME, its own TMPDIR, the push
     // guard as its hooks, nothing else. The variable's value is redacted from the transcript.
     const envOutput = events.find(
       (event) => event.type === 'toolResult' && event.output?.includes('PATH='),
@@ -214,7 +212,9 @@ describe('runner end to end', () => {
     expect(JSON.stringify(events)).not.toContain('secret-value');
     expect(envOutput).not.toContain('should-not-leak');
     expect(envOutput).not.toMatch(/^NOCOBASE_RUNNER_/m);
-    expect(envOutput).toContain(`HOME=${workDir}/.nocobase-runner/home`);
+    // The real home of the user the runner runs as, not one inside the work directory.
+    expect(envOutput).toMatch(/^HOME=/m);
+    expect(envOutput).not.toContain(`HOME=${workDir}`);
     expect(envOutput).toContain(`TMPDIR=${workDir}/.nocobase-runner/tmp`);
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
     expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
@@ -238,26 +238,16 @@ describe('runner end to end', () => {
         token: '[REDACTED]',
         server: server.url,
       },
-      home: `${workDir}/.nocobase-runner/home`,
+      home: os.homedir(),
     });
 
-    // Refusals are in the transcript.
-    const denials = events.filter((event) => event.type === 'permission');
-    expect(denials.map((event) => event.meta?.reason)).toEqual([
-      'The runner keeps credentials there; tools may not touch them.',
-      'The runner keeps credentials there; tools may not touch them.',
-      'ls outside the work directory: /',
-      'Read outside the work directory: /etc/hosts',
-    ]);
-    // The push guard refused a push to main.
+    // Nothing is refused: the runner is not a sandbox, so reading outside the work directory is allowed.
     expect(
-      events.some(
+      events.filter(
         (event) =>
-          event.type === 'toolResult' &&
-          event.output?.includes('may push only the branch agent/PM-7'),
+          event.type === 'permission' && event.meta?.decision !== 'allow',
       ),
-    ).toBe(true);
-
+    ).toEqual([]);
     // The branch reached the remote.
     expect(run.complete?.repos).toEqual([
       expect.objectContaining({

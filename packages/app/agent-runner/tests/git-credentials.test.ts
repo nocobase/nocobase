@@ -24,7 +24,7 @@ import {
   reportRepos,
 } from '../src/core/checkout.ts';
 import type { SpoolEvent } from '../src/core/events.ts';
-import { installGitHooks } from '../src/core/push-guard.ts';
+import { installGitHooks } from '../src/core/git-hooks.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import { ApiError, type ApiClient } from '../src/lib/http.ts';
 import {
