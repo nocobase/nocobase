@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.38",
+  "version": "1.0.0-beta.40",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.38"
+    "defaultTemplateVersion": "1.0.0-beta.40"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -125,7 +125,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/templates/app-template-examples"
   },
   "scripts": {
@@ -159,8 +159,6 @@
   },
   "dependencies": {
     "zod": "catalog:",
-    "@nocobase/app-plugin-ai-employee": "workspace:^",
-    "@nocobase/app-plugin-ai-employee-example": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
@@ -208,7 +206,6 @@
     "@nocobase/lifecycle": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
-    "@nocobase/ai-employee": "workspace:^",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-plugin-mail": "workspace:^",
     "@nocobase/app-plugin-mail-example": "workspace:^"
@@ -220,7 +217,6 @@
     "#hooks/*": "./client/hooks/*.js",
     "#lib/*": "./client/lib/*.js",
     "#extensions/*": "./client/extensions/*.js",
-    "#extensions/nocobase-ai": "./client/extensions/nocobase-ai/index.ts",
     "#pages/*": "./client/pages/*.js"
   }
 }

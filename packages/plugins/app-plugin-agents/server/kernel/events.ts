@@ -4,6 +4,8 @@
  */
 import type { JobStatus, RunStatus } from '@nocobase/agent-protocol';
 
+import type { RunRequest } from '../../shared/runs.js';
+
 /**
  * Something people should hear about, for the application to deliver where its people look (an inbox, say): the
  * plugin decides who and what, the application how. Text is English, for a reader without the application's own
@@ -13,14 +15,27 @@ import type { JobStatus, RunStatus } from '@nocobase/agent-protocol';
  *   serve, so it gets no work until it is upgraded; to its owner. `params`: `runnerName`, `runnerVersion`,
  *   `protocolVersion` (the runner's), `minProtocolVersion` and `maxProtocolVersion` (the application's),
  *   `latestVersion` (the runner the application serves for its platform, or null).
+ * - `run_secrets_not_allowed` (subject `run`): a personal runner left a run because some of its variables are for team
+ *   runners only; to its actor and owner. `params`: `runId`, `agentId`, `variables` (the variables, in words). Cleared
+ *   when a runner takes the run.
+ * - `runner_revoked` (subject `runner`): a manager of runners revoked someone else's runner, so it takes no more work
+ *   until it registers again; to its owner. `params`: `runnerName`, `revokedByUserId`, `revokedByName` (or null).
+ * - `run_request_expired` (subject `runRequest`): a request passed its deadline or cannot be handed to a usable new
+ *   responsible; to the person who asked, who may still run it as themselves
+ *   (`POST /api/agents/runRequests/{requestId}/runAsMe`). `params`: `agentName`, `subjectKind`, `subjectId`, `requestId`,
+ *   `responsibleUserId`, `reason` (`timeout` or `reassignment`).
  */
-export interface RunnerNotice {
+export interface AgentsNotice {
   /** Stable for the same news: delivering it twice tells people once. */
   readonly key: string;
-  readonly type: 'runner_upgrade_required';
+  readonly type:
+    | 'runner_upgrade_required'
+    | 'run_secrets_not_allowed'
+    | 'runner_revoked'
+    | 'run_request_expired';
   readonly userIds: readonly string[];
   readonly subject: {
-    readonly kind: 'runner';
+    readonly kind: 'runner' | 'run' | 'runRequest';
     readonly id: string;
     readonly label: string;
   };
@@ -29,7 +44,23 @@ export interface RunnerNotice {
   readonly params: Readonly<Record<string, string | number | null>>;
 }
 
+/**
+ * A run request (`shared/runs.ts`) was made (`created`, for its responsible to confirm), or settled: `confirmed` (its
+ * `runId` the run it went into), `rejected`, `withdrawn` (also when its asker ran it as themselves, `runId` set),
+ * `superseded` (handed to a new responsible) or `expired`. For the application's inbox and notifications.
+ */
+type RunRequestEvent<T extends string> = {
+  readonly type: T;
+  readonly request: RunRequest;
+};
+
 export type AgentsEvent =
+  | RunRequestEvent<'runRequest.created'>
+  | RunRequestEvent<'runRequest.confirmed'>
+  | RunRequestEvent<'runRequest.rejected'>
+  | RunRequestEvent<'runRequest.withdrawn'>
+  | RunRequestEvent<'runRequest.superseded'>
+  | RunRequestEvent<'runRequest.expired'>
   /** A run entered the queue, or a queued run's input changed what a runner would see. */
   | {
       readonly type: 'run.queued';
@@ -96,15 +127,15 @@ export type AgentsEvent =
       readonly jobId: string;
       readonly lastSeq: number;
     }
-  /** People should hear of something (`RunnerNotice`); the application delivers it. */
-  | { readonly type: 'notice'; readonly notice: RunnerNotice }
+  /** People should hear of something (`AgentsNotice`); the application delivers it. */
+  | { readonly type: 'notice'; readonly notice: AgentsNotice }
   /**
    * What a notice told no longer holds, so the application settles it where people look: for
    * `runner_upgrade_required`, the runner connected again speaking a protocol the application serves.
    */
   | {
       readonly type: 'notice.cleared';
-      readonly notice: Pick<RunnerNotice, 'type' | 'subject'>;
+      readonly notice: Pick<AgentsNotice, 'type' | 'subject'>;
     };
 
 export type AgentsEventType = AgentsEvent['type'];

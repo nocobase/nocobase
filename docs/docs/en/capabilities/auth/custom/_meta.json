@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "Add authentication methods"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "Customize login pages"
+  }
+]

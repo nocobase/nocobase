@@ -61,7 +61,13 @@ import type { AgentsVocabulary } from '../../shared/vocabulary.js';
 import type { Agents } from '../composition.js';
 import { AgentInputSchema, AgentPatchSchema } from '../core/agents/index.js';
 import { ModelPricesSchema } from '../core/reports/index.js';
-import { countActive, hasTool, onlineEntryOf } from '../core/runs/index.js';
+import {
+  countActive,
+  hasTool,
+  onlineEntryOf,
+  runForViewer,
+  type RunMachineViewer,
+} from '../core/runs/index.js';
 import {
   SkillIdsSchema,
   SkillImportSchema,
@@ -639,12 +645,22 @@ export function createAdminRoutes(
             description:
               'The value; stored encrypted and never shown again. Asked for when left out.',
           },
+          teamRunnersOnly: {
+            description:
+              'Only team runners receive it; personal runners leave a run that gets it.',
+          },
+          fromRunner: {
+            description:
+              'Take it from the runner: no value here; the runner that takes the run provides it (`nocobase-runner env set NAME`).',
+          },
         },
         examples: [
           'variable set agent <agent> NPM_TOKEN --value-file token.txt',
+          'variable set agent <agent> DEPLOY_KEY --value-file key.txt --team-runners-only',
+          'variable set agent <agent> OPENAI_API_KEY --from-runner',
         ],
       }),
-      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. Needs the right to change the scope. ${scopeAccess}`,
+      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a team runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. With \`fromRunner\` the variable is a name only: the runner that takes the run provides its value from its own configuration (\`nocobase-runner env set NAME\` or \`--pass-env NAME\`), and a runner that does not fails the run before the agent starts. Needs the right to change the scope. ${scopeAccess}`,
       responses: {
         200: dataResponse(VariableSchema.nullable()),
         404: noScope,
@@ -656,11 +672,20 @@ export function createAdminRoutes(
     async (context) => {
       const target = context.get('target');
       const { variableName } = context.req.valid('param');
+      const body = context.req.valid('json');
       await services.variables.set(
         target,
         variableName,
-        context.req.valid('json').value,
+        body.value,
         caller(context as unknown as Context<AdminEnv>).userId,
+        {
+          ...(body.teamRunnersOnly === undefined
+            ? {}
+            : { teamRunnersOnly: body.teamRunnersOnly }),
+          ...(body.fromRunner === undefined
+            ? {}
+            : { fromRunner: body.fromRunner }),
+        },
       );
       const variable = (await services.variables.list(target)).find(
         (item) => item.name === variableName,
@@ -1290,6 +1315,23 @@ export function createAdminRoutes(
   const noRun = notFoundAs('The run');
   const runVisibility =
     "The caller sees the runs they started or own, and every run but a private subject's (a conversation) with `agents.agents` read.";
+  const machineViewer = async (
+    context: Context<AdminEnv>,
+  ): Promise<RunMachineViewer> => {
+    const who = caller(context);
+    const manage = await who.can('agents.runners', 'manage');
+    const see =
+      manage ||
+      (await who.can('agents.runners', 'read')) ||
+      (await who.can('agents.agents', 'read'));
+    const uses =
+      see &&
+      !manage &&
+      (await services.agents.list()).some((agent) =>
+        services.agents.mayInvoke(agent, who.userId),
+      );
+    return { userId: who.userId, seesMachines: manage || uses };
+  };
   /** Only a caller who may see the run of the path (or, with `manage`, act on it) goes on. */
   const runAccess =
     (action: SettingsAction): MiddlewareHandler<AdminEnv> =>
@@ -1345,10 +1387,11 @@ export function createAdminRoutes(
       });
       const page = runs.slice(0, query.pageSize);
       const last = page.at(-1);
+      const viewer = await machineViewer(context);
       return context.json({
-        data: page.filter(
-          (run) => involves(run, who.userId) || !isPrivate(run),
-        ),
+        data: page
+          .filter((run) => involves(run, who.userId) || !isPrivate(run))
+          .map((run) => runForViewer(run, viewer)),
         meta:
           runs.length > query.pageSize && last
             ? {
@@ -1384,7 +1427,10 @@ export function createAdminRoutes(
     runParam,
     async (context) =>
       context.json({
-        data: await services.runs.detail(context.req.valid('param').runId),
+        data: runForViewer(
+          await services.runs.detail(context.req.valid('param').runId),
+          await machineViewer(context),
+        ),
       }),
   );
   router.get(
@@ -1484,9 +1530,12 @@ export function createAdminRoutes(
     runParam,
     async (context) =>
       context.json({
-        data: await services.runs.cancel(
-          context.req.valid('param').runId,
-          caller(context).userId,
+        data: runForViewer(
+          await services.runs.cancel(
+            context.req.valid('param').runId,
+            caller(context).userId,
+          ),
+          await machineViewer(context),
         ),
       }),
   );
@@ -1518,9 +1567,12 @@ export function createAdminRoutes(
     runParam,
     async (context) =>
       context.json({
-        data: await services.runs.retry(
-          context.req.valid('param').runId,
-          caller(context).userId,
+        data: runForViewer(
+          await services.runs.retry(
+            context.req.valid('param').runId,
+            caller(context).userId,
+          ),
+          await machineViewer(context),
         ),
       }),
   );

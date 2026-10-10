@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/markdown-mermaid",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Mermaid diagrams for fenced code blocks in React Markdown: loaded lazily, strict security, following the page's light or dark theme.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -61,7 +61,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/libs/markdown-mermaid"
   }
 }

@@ -313,7 +313,7 @@ function RunnerTable({
                 {format.relative(runner.lastSeenAt)}
               </TableCell>
               <TableCell onClick={(event) => event.stopPropagation()}>
-                {runner.canManage ? (
+                {runner.canRevoke ? (
                   <RunnerActions
                     runner={runner}
                     onEdit={() => onOpen(runner)}
@@ -357,7 +357,7 @@ function RunnerActions({
         <MoreHorizontalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-auto min-w-40'>
-        {revoked ? null : (
+        {revoked || !runner.canManage ? null : (
           <>
             <DropdownMenuItem onClick={onEdit}>
               {t('runtimes.edit.button')}

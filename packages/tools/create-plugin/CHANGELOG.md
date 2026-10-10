@@ -1,5 +1,32 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- Updated dependencies [a6758ec]
+  - @nocobase/dev-config@0.1.0-beta.20
+
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- 8a05e66: Generated plugins group their tests by the source directory they cover: `tests/client/`, `tests/server/`, `tests/database/` and `tests/cli/`, with `vitest.config.ts` choosing jsdom or Node by directory. The sample tests move and are renamed accordingly (`tests/database.test.ts` is now `tests/database/migrations.test.ts`, `tests/cli.test.ts` is `tests/cli/info.test.ts`). A plugin without client code now gets a `vitest.config.ts` too, running its tests on the shared Node preset, whose 30-second timeouts replace Vitest's 5-second default. The generated `AGENTS.md` describes the layout. The JSON plan now attributes `cli/` files and the database test to their `cli` and `database` capabilities. Existing plugins are unaffected.
+
+### Patch Changes
+
+- bde3b87: Prepare every plugin with client code for shadcn installation using package-local imports, a generation stylesheet, and the NocoBase registry configuration, without requiring the registry publishing capability.
+
+  Align the Registry example's shadcn setup with source and published package imports so generated components stay inside the plugin.
+
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
+- Updated dependencies [bb8484b]
+  - @nocobase/dev-config@0.1.0-beta.19
+
 ## 0.1.0-beta.16
 
 ### Patch Changes

@@ -82,8 +82,19 @@ import {
   type RunnerRecentRun,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerWorkspace,
+  type RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
-import type { Run, RunDetail } from '../../shared/runs.js';
+import {
+  RUN_REQUEST_STATUSES,
+  type Run,
+  type RunDetail,
+  type RunExecutionSnapshot,
+  type RunEffortReport,
+  type RunRequest,
+  type RunRequestItem,
+  type RunRequestStatus,
+} from '../../shared/runs.js';
 import type {
   Skill,
   SkillDetail,
@@ -286,8 +297,23 @@ export const DistTargetQuery: z.ZodType<{
   format?: 'json' | 'env' | undefined;
 }> = z.object({ format: z.enum(['json', 'env']).optional() });
 
-export const VariableValueInput: z.ZodType<{ value: string }> = z.strictObject({
-  value: z.string().max(100_000),
+export const VariableValueInput: z.ZodType<{
+  value?: string;
+  teamRunnersOnly?: boolean;
+  fromRunner?: boolean;
+}> = z.strictObject({
+  value: z.string().max(100_000).optional().meta({
+    description:
+      'The value; required for a new variable, left out to keep the value of one that exists.',
+  }),
+  teamRunnersOnly: z.boolean().optional().meta({
+    description:
+      'Only team runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
+  }),
+  fromRunner: z.boolean().optional().meta({
+    description:
+      'Take it from the runner: no value is kept here, and the runner that takes the run provides it (`nocobase-runner env set NAME`, or `--pass-env NAME`). Leave `value` out.',
+  }),
 });
 
 export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
@@ -605,6 +631,14 @@ export const RunBriefSchema: z.ZodType<RunBrief> = z.object({
 export const VariableSchema: z.ZodType<Variable> = z
   .object({
     name: z.string(),
+    teamRunnersOnly: z.boolean().optional().meta({
+      description:
+        'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
+    }),
+    fromRunner: z.boolean().optional().meta({
+      description:
+        'Taken from the runner: it has no value here, and the runner that takes the run provides it from its own configuration.',
+    }),
     updatedAt: dateTime,
     updatedById: z.string().nullable(),
     updatedByName: z.string().nullable(),
@@ -747,10 +781,59 @@ export const SkillAttachmentsSchema: z.ZodType<{ skillIds: string[] }> =
   z.object({ skillIds: z.array(z.string()) });
 
 // Runs.
+const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
+  .object({
+    effort: z.string().nullable().meta({
+      description:
+        'A tool-reported effort; null means the tool did not report the current value.',
+    }),
+    source: z.string().meta({
+      description:
+        'The tool response that supplied the value, never a request setting.',
+    }),
+    at: dateTime.meta({ description: 'When this reported value changed.' }),
+  })
+  .meta({ ref: 'AgentsRunEffortReport' });
+
+export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
+  .object({
+    attempt: z.number().int(),
+    runnerId: z.string(),
+    runnerName: z.string().nullable(),
+    runnerOwnerUserId: z.string().nullable(),
+    runnerOwnerName: z.string().nullable(),
+    runnerTrust: z.enum(['team', 'ownerOnly']).nullable(),
+    tool: z.string().nullable(),
+    toolVersion: z.string().nullable(),
+    modelService: z.string().nullable(),
+    model: z.string().nullable(),
+    actualModels: z.array(z.string()),
+    effort: z.string().nullable(),
+    effortReports: z.array(RunEffortReportSchema).optional(),
+    actualEffortObservedAt: dateTime.optional(),
+    actualEffort: z.string().nullable().optional(),
+    actualEffortSource: z.string().nullable().optional(),
+    actualEffortAt: dateTime.nullable().optional(),
+    machineHidden: z.boolean().optional(),
+    dispatchedAt: dateTime,
+    finishedAt: dateTime.nullable(),
+    failureReason: z.string().nullable(),
+  })
+  .meta({ ref: 'AgentsRunExecutionSnapshot' });
 const runObject = z.object({
   id: z.string(),
   agentId: z.string(),
   agentType: z.enum(['online', 'runner']),
+  executions: z.array(RunExecutionSnapshotSchema).optional(),
+  runnerName: z.string().nullable().optional(),
+  runnerOwnerUserId: z.string().nullable().optional(),
+  runnerOwnerName: z.string().nullable().optional(),
+  toolVersion: z.string().nullable().optional(),
+  actualModels: z.array(z.string()).optional(),
+  actualEffort: z.string().nullable().optional(),
+  actualEffortSource: z.string().nullable().optional(),
+  actualEffortAt: dateTime.nullable().optional(),
+  machineHidden: z.boolean().optional(),
   runnerId: z.string().nullable().meta({
     description:
       'The runner holding it; `server:<instance>` for an online run held by an application instance.',
@@ -782,7 +865,18 @@ const runObject = z.object({
   }),
   subject: z.object({ kind: z.string(), id: z.string() }),
   threadScope: z.string(),
-  actorUserId: z.string(),
+  actorUserId: z.string().meta({
+    description:
+      'The person the run acts as: their permissions bound it, and only their runners (or team runners) take it.',
+  }),
+  requestedByUserId: z.string().meta({
+    description:
+      'Who the chain of work the run belongs to started with; the actor when they started it themselves.',
+  }),
+  confirmedByUserId: z.string().nullable().meta({
+    description:
+      'Who confirmed the run request the run was queued from; null for work its actor started.',
+  }),
   ownerUserId: z.string().nullable(),
   requires: z.array(RunnerFeatureSchema),
   acceptsInput: z.boolean(),
@@ -1119,6 +1213,16 @@ const notice = z.discriminatedUnion('code', [
     fromAgentId: z.string(),
   }),
   z.object({
+    code: z.literal('switchedToOnline'),
+    agentId: z.string(),
+    fromAgentId: z.string(),
+  }),
+  z.object({
+    code: z.literal('onlineFallbackUnavailable'),
+    fromAgentId: z.string(),
+    reason: z.enum(OFFLINE_REASONS),
+  }),
+  z.object({
     code: z.literal('switchedBack'),
     agentId: z.string(),
     fromAgentId: z.string(),
@@ -1221,6 +1325,7 @@ const messageObject = z.object({
     agentId: z.string().optional(),
     runEventSeq: z.number().int().optional(),
     notice: notice.optional(),
+    onlineFallbackResolved: z.boolean().optional(),
     clientId: z.string().optional(),
     streaming: z.boolean().optional(),
     interrupted: z.boolean().optional(),
@@ -1261,10 +1366,69 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
   isSystemDefault: z.boolean(),
   isMyDefault: z.boolean(),
   availability,
+  fallbackAgentId: z.string().nullable().meta({
+    description:
+      'A runner agent no runner may run for the caller now: the online agent a new conversation with it starts on instead. Null otherwise.',
+  }),
 });
 
-export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences & ChatSettings> =
-  z.object({ defaultAgentId: z.string().nullable() });
+export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
+  defaultAgentId: z.string().nullable(),
+});
+
+export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
+  defaultAgentId: z.string().nullable().meta({
+    description:
+      'The agent new conversations go to when a person has no default of their own.',
+  }),
+  onlineFallbackAgentId: z.string().nullable().meta({
+    description:
+      'The online agent that answers in place of a runner agent no runner may run for the person now.',
+  }),
+});
+
+// A runner's working directories, as it last reported them.
+const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+  runId: z.string().meta({ description: 'The last run that worked in it.' }),
+  workDir: z.string().meta({ description: 'Where it is on the runner.' }),
+  unpushed: z.boolean().meta({
+    description:
+      "It holds changes not committed, or commits the remote task branch lacks; never removed on the application's word.",
+  }),
+  lastUsedAt: z.string(),
+  subjectKind: z.string().nullable(),
+  subjectId: z.string().nullable(),
+  settled: z.boolean().nullable().meta({
+    description:
+      "Its subject's work is over (true), goes on (false), or cannot be told (null).",
+  }),
+});
+
+const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
+  .object({
+    disk: z
+      .object({
+        freeBytes: z.number().int(),
+        totalBytes: z.number().int(),
+        minFreeBytes: z.number().int().nullable().meta({
+          description:
+            "What the runner's owner keeps free; below it, the runner removes directories that may go. Null for nothing.",
+        }),
+      })
+      .nullable()
+      .meta({
+        description:
+          "The disk holding the runner's working directories; null when it did not say.",
+      }),
+    count: z.number().int(),
+    unpushedCount: z.number().int(),
+    measuredAt: dateTime,
+    workspaces: z.array(RunnerWorkspaceSchema).meta({
+      description:
+        "This application's, most recently used first; empty for a caller who may not see the runner's machine.",
+    }),
+  })
+  .meta({ ref: 'AgentsRunnerWorkspaceUsage' });
 
 // Runners, as people manage them.
 const runnerObject = z.object({
@@ -1297,6 +1461,14 @@ const runnerObject = z.object({
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),
+  variables: z.array(z.string()).nullable().optional().meta({
+    description:
+      'The names of the variables it provides to runs that take them from the runner, as it last reported them; null when it reported none. Names only.',
+  }),
+  workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
+    description:
+      'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
+  }),
   lastSeenAt: dateTime.nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
@@ -1325,6 +1497,7 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
+    canRevoke: z.boolean(),
     updateVersion: z.string().nullable(),
     requiredProtocol: z.object({
       min: z.number().int(),
@@ -1389,3 +1562,129 @@ export const RunContextSchema: z.ZodType<Readonly<Record<string, unknown>>> = z
     description:
       "The context the run's subject assembles; its fields depend on the subject kind.",
   });
+
+// Run requests: work someone asked of an agent on a subject another person answers for.
+export const RunRequestParams: z.ZodType<{ requestId: string }> = z.object({
+  requestId: id,
+});
+
+export const RunRequestListQuery: z.ZodType<
+  Paging & {
+    readonly role?: 'responsible' | 'requester' | undefined;
+    readonly status?: RunRequestStatus | undefined;
+    readonly subjectKind?: string | undefined;
+    readonly subjectId?: string | undefined;
+    readonly agentId?: string | undefined;
+  }
+> = z.object({
+  role: z.enum(['responsible', 'requester']).optional().meta({
+    description:
+      '`responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out.',
+  }),
+  status: z.enum(RUN_REQUEST_STATUSES).optional(),
+  subjectKind: id.optional(),
+  subjectId: id.optional(),
+  agentId: id.optional(),
+  pageSize: pageSize(50, 200),
+  pageToken,
+});
+
+export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =
+  z.strictObject({
+    note: z.string().max(2000).optional().meta({
+      description: 'Why, for the person who asked.',
+    }),
+  });
+
+const runRequestObject = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  subject: z.object({ kind: z.string(), id: z.string() }),
+  threadScope: z.string(),
+  responsibleUserId: z.string().meta({
+    description:
+      'Who answers for the subject: the only person who may confirm or reject the request.',
+  }),
+  requestedByUserId: z.string().meta({
+    description:
+      'Who the chain of work started with: the only person who may withdraw the request or run it as themselves.',
+  }),
+  ownerUserId: z.string().nullable(),
+  fireAt: dateTime.nullable().meta({
+    description:
+      'Its run is not claimed before this moment, as it was asked; null for as soon as it runs.',
+  }),
+  maxAttempts: z.number().int().nullable().meta({
+    description: "Attempts its run may take; null for the agent's default.",
+  }),
+  input: z
+    .object({
+      type: z.enum(RUN_INPUT_TYPES),
+      actor: z.object({
+        kind: z.enum(ACTOR_KINDS),
+        id: z.string(),
+        name: z.string(),
+      }),
+      text: z.string(),
+      payload: z.unknown(),
+    })
+    .meta({
+      description:
+        'The input as it was when asked, whatever happened to its source since: what confirming runs.',
+    }),
+  status: z.enum(RUN_REQUEST_STATUSES).meta({
+    description:
+      'Only a `pending` request changes; every other status is final.',
+  }),
+  settledById: z.string().nullable(),
+  settledAt: dateTime.nullable(),
+  note: z.string().nullable(),
+  expiresAt: dateTime,
+  runId: z.string().nullable().meta({
+    description:
+      'The run it went into: on confirming, or when the person who asked ran it as themselves.',
+  }),
+  supersededById: z.string().nullable().meta({
+    description:
+      "The request that took over when the subject's responsible changed.",
+  }),
+  createdAt: dateTime,
+  updatedAt: dateTime,
+});
+
+export const RunRequestSchema: z.ZodType<RunRequest> = runRequestObject.meta({
+  ref: 'AgentsRunRequest',
+});
+
+export const RunRequestItemSchema: z.ZodType<RunRequestItem> = runRequestObject
+  .extend({
+    agentName: z.string().nullable(),
+    responsibleName: z.string().nullable(),
+    requestedByName: z.string().nullable(),
+  })
+  .meta({ ref: 'AgentsRunRequestItem' });
+
+export const RunRequestOutcomeSchema: z.ZodType<{
+  request: RunRequest;
+  run: {
+    runId: string;
+    outcome: 'created' | 'merged' | 'appended';
+    status: RunStatus;
+    inputId: string;
+  };
+}> = z
+  .object({
+    request: RunRequestSchema,
+    run: z.object({
+      runId: z.string(),
+      outcome: z.enum(['created', 'merged', 'appended']).meta({
+        description:
+          '`created` a new run, `merged` into a queued one, `appended` to one a runner holds.',
+      }),
+      status: RunStatusSchema,
+      inputId: z.string().meta({
+        description: "The request's input, as the run received it.",
+      }),
+    }),
+  })
+  .meta({ ref: 'AgentsRunRequestOutcome' });

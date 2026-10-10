@@ -54,6 +54,7 @@ import { createAdminRoutes, type AdminEnv } from '../server/routes/admin.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import { createModelRoutes } from '../server/online/routes.js';
 import { createRunRoutes } from '../server/routes/run.js';
+import { createRunRequestRoutes } from '../server/routes/run-requests.js';
 import { createRosterRoutes } from '../server/routes/roster.js';
 import {
   createAdminRoutes as createRunnersAdminRoutes,
@@ -91,6 +92,7 @@ export interface Harness {
     readonly failed: number;
     readonly cancelled: number;
     readonly jobs: { requeued: number; failed: number; cancelled: number };
+    readonly requestsExpired: number;
   }>;
   readonly clock: FakeClock;
   /** Where the contents of skills' files are stored. */
@@ -106,6 +108,11 @@ export interface Harness {
   readonly finished: Run[];
   /** Makes the fake context provider throw, to test failed assembly. */
   failAssembly: boolean;
+  /**
+   * The samples whose work is over, as the fake subject's `workspaces.settled` says; undefined for a subject kind that
+   * cannot say (no `workspaces` member).
+   */
+  settled: Set<string> | undefined;
   /** The working directories the fake subject has. */
   dirs: SubjectDir[];
   /** The scopes (a registered `team`) whose variables and skills the fake subject's runs get. */
@@ -297,10 +304,12 @@ export async function createHarness(
   const finished: Run[] = [];
   const harness = {
     failAssembly: false,
+    settled: undefined,
     dirs: [],
     scopes: [],
   } as {
     failAssembly: boolean;
+    settled: Set<string> | undefined;
     dirs: SubjectDir[];
     scopes: SubjectScope[];
   };
@@ -355,6 +364,15 @@ export async function createHarness(
         finished.push(run);
         return Promise.resolve();
       },
+    },
+    get workspaces() {
+      const settled = harness.settled;
+      return settled === undefined
+        ? undefined
+        : {
+            settled: (_conn: unknown, ids: readonly string[]) =>
+              Promise.resolve(new Set(ids.filter((id) => settled.has(id)))),
+          };
     },
   });
 
@@ -439,6 +457,7 @@ export async function createHarness(
     }),
   );
   app.route('/agents', createRunRoutes(services));
+  app.route('/agents', createRunRequestRoutes(services, guard));
   app.route('/agents', createRosterRoutes(services, guard));
   app.route('/agents', createChatRoutes(services, guard, personOrRun));
   app.route('/agents', createModelRoutes(services, guard));

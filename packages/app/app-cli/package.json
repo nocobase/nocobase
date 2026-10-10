@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-cli",
-  "version": "1.0.0-beta.14",
+  "version": "1.0.0-beta.15",
   "description": "The NocoBase application command line: runtime commands, plugin management, and the dev and build tooling.",
   "type": "module",
   "license": "Apache-2.0",
@@ -70,7 +70,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/app/app-cli"
   },
   "scripts": {

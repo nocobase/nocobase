@@ -1,5 +1,52 @@
 # @nocobase/app-plugin-ai-employee
 
+## 3.0.0-beta.2
+
+### Patch Changes
+
+- d86a77c: Deprecate `@nocobase/app-plugin-ai-employee` and stop installing it in the application templates
+
+  The plugin is deprecated and no longer developed; its README says so. Default and Examples no longer depend on `@nocobase/app-plugin-ai-employee` or `@nocobase/ai-employee`, register the plugin in `client/plugins.ts`, `server/plugins.ts` and `cli/plugins.ts`, or ship `server/config/ai.ts` and the commented `ai` section of `config.example.yml`. Examples also drops its AI employee demonstration: the global AI entry around `AppLayout`, the `nocobase-ai` and `nocobase-ai-employee-example-tasks-page` extensions, the **AI employee tasks** homepage link, and `@nocobase/app-plugin-ai-employee-example`.
+
+  The application development Skill no longer recommends the plugin or documents its `ai-employee` commands, and the upgrade Skill describes what removing it involves.
+
+  An existing application keeps the plugin unless it removes it. An upgrade that follows the template asks first: an application that configured an LLM service or has AI employees, conversations or an `ai/` directory keeps the plugin, its registrations and its configuration, and the plugin's current release keeps working there. Removing it unregisters the plugin but leaves its tables and data in the database.
+
+- Updated dependencies [487921c]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-cli@1.0.0-beta.15
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/ai-employee@0.2.0-beta.8
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+
+## 3.0.0-beta.1
+
+### Patch Changes
+
+- dc91aab: Use package-local `#` subpath imports in registry recipes, examples and application templates. Configure the same prefixes in `components.json` and `package.json#imports`, and remove build-tool aliases for these paths. Generated plugins resolve development sources locally and published imports from `dist/client`.
+
+  Existing applications and plugins should merge the new `imports` mappings and shadcn prefixes before installing the updated registry recipes. Directory entry points need an explicit mapping to their index file. Existing customized copies remain application-owned and are not overwritten.
+
+- Updated dependencies [bb8484b]
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-cli@1.0.0-beta.14
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/ai-employee@0.2.0-beta.8
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+
 ## 3.0.0-beta.0
 
 ### Major Changes
