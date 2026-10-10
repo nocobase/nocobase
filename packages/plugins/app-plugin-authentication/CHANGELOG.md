@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- 17a183c: Respect the configured public origin during local development instead of overriding it with a loopback address. Explain rejected sign-in origins with actionable English and Chinese messages, and document verification of the browser-facing address and authentication request.
+
 ## 2.0.0-beta.3
 
 ### Minor Changes

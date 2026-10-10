@@ -1,5 +1,18 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.61
+
+### Patch Changes
+
+- e99e1a6: New applications depend on `@nocobase/lifecycle` by default, so plugins that declare it as a peer dependency resolve in production deployments.
+- 42c5cbc: Include the Mail plugin in the default application template with client and server registration and an empty mailbox provider configuration.
+- d515c68: Let nested navigation icons inherit the menu item's text color so idle, hovered and selected icons follow the same state as their labels instead of always using the brand accent.
+- Updated dependencies [17a183c]
+- Updated dependencies [13620d9]
+- Updated dependencies [459c33f]
+  - @nocobase/app-cli@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.4
+
 ## 1.0.0-beta.60
 
 ### Minor Changes

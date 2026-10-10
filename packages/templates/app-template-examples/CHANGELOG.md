@@ -1,5 +1,16 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.43
+
+### Patch Changes
+
+- d515c68: Let nested navigation icons inherit the menu item's text color so idle, hovered and selected icons follow the same state as their labels instead of always using the brand accent.
+- Updated dependencies [17a183c]
+- Updated dependencies [13620d9]
+- Updated dependencies [459c33f]
+  - @nocobase/app-cli@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.4
+
 ## 1.0.0-beta.42
 
 ### Minor Changes
