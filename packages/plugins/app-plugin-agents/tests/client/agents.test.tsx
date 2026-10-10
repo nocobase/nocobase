@@ -434,6 +434,19 @@ describe('agent pages', () => {
     ).toBeInTheDocument();
   });
 
+  it('wraps a long description inside the name column, two lines at most, with the full text on hover', async () => {
+    const long = 'Reviews pull requests '.repeat(20).trim();
+    agents[0] = { ...agents[0]!, description: long };
+    renderPage(<AgentsPage />);
+    const row = await screen.findByTestId('agent-a1');
+    const description = within(row).getByText(long);
+    expect(description).toHaveAttribute('title', long);
+    expect(description).toHaveClass('line-clamp-2', 'break-words');
+    const cell = within(row).getByTestId('agent-name-cell');
+    expect(cell).toHaveClass('max-w-72');
+    expect(cell.closest('td')).toHaveClass('whitespace-normal');
+  });
+
   it("shows a built-in agent's name and description in the viewer's language until someone edits them", async () => {
     agents[0] = {
       ...agents[0]!,

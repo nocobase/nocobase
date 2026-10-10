@@ -263,8 +263,12 @@ function AgentRow({
       className='cursor-pointer'
       onClick={onOpen}
     >
-      <TableCell>
-        <div className='flex min-w-0 items-center gap-2'>
+      <TableCell className='whitespace-normal'>
+        {/* Capped so a long description wraps here instead of pushing the other columns aside. */}
+        <div
+          data-testid='agent-name-cell'
+          className='flex max-w-72 min-w-40 items-center gap-2'
+        >
           <AgentAvatar name={name} size='sm' />
           <div className='min-w-0 leading-tight'>
             <div className='flex min-w-0 items-center gap-2'>
@@ -280,7 +284,10 @@ function AgentRow({
               ) : null}
             </div>
             {description ? (
-              <div className='line-clamp-1 text-xs text-muted-foreground'>
+              <div
+                title={description}
+                className='line-clamp-2 text-xs break-words text-muted-foreground'
+              >
                 {description}
               </div>
             ) : null}
