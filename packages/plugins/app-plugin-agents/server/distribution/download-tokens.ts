@@ -44,7 +44,7 @@ function downloadTokensRepo(
 /** What a request with a download token asks for. */
 export interface DownloadRequest {
   readonly product?: string;
-  /** The platform it resolves or downloads for; absent for the manifest. */
+  /** The platform it resolves or downloads for; absent for the manifest, and for the universal tarball. */
   readonly target?: string;
   /** A tarball download, which counts against the token. */
   readonly download?: boolean;
@@ -117,12 +117,20 @@ export function createDownloadTokenService(
         )
           throw spent();
         const { target } = request;
-        if (target === undefined) return;
-        if (record.target !== null && record.target !== target)
+        if (target === undefined && !request.download) return;
+        if (
+          target !== undefined &&
+          record.target !== null &&
+          record.target !== target
+        )
           throw invalid(
             `This download token is for ${record.target}, not ${target}.`,
           );
-        if (record.target === target && !request.download) return;
+        if (
+          (target === undefined || record.target === target) &&
+          !request.download
+        )
+          return;
         // Binds the platform and counts the download; a concurrent request that changed the row first wins.
         const updated = await tokens.updateMany({
           filter: (f) =>
@@ -131,7 +139,7 @@ export function createDownloadTokenService(
               f.number('downloads').eq(downloads),
             ]),
           values: {
-            target,
+            target: target ?? record.target,
             downloads: request.download ? downloads + 1 : downloads,
           },
         });

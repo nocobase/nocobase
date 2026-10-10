@@ -311,6 +311,9 @@ function InstallStep({
                   <p className='text-sm'>{t('connect.run')}</p>
                   <CommandLine command={command} />
                   <p className='text-xs text-muted-foreground'>
+                    {t('connect.nodeRequired')}
+                  </p>
+                  <p className='text-xs text-muted-foreground'>
                     {t('connect.installed')}
                   </p>
                   <CommandLine command={registerCommand(server, token.token)} />
