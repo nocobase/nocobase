@@ -54,6 +54,10 @@ import { z } from 'zod';
  * Requested tool detection is announced through optional `toolsRefreshSupported` on register and heartbeat.
  * The server stores it as `tools.refresh`; runners omit that enum value on the wire so version 7 receivers accept them.
  *
+ * `RepoDir.initializeIfEmpty` optionally permits a coding run to make the first commit of a verified empty remote.
+ * Older runners ignore it and retain their missing-branch refusal. Unlike `initial`, it never allows a default-branch
+ * update: the runner only grants branch creation after checking all remote refs.
+ *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
  */

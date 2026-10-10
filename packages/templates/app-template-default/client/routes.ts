@@ -10,7 +10,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     // no permission change can leave a user signed in with nowhere to land.
     authz: 'skip',
     auth: 'required',
-    componentLoader: () => import('./pages/home.js'),
+    componentLoader: () => import('./pages/home/index.js'),
     name: 'home',
     navigation: { title: 'navigation.home', icon: Home },
     path: '/',

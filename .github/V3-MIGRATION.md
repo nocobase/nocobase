@@ -2,9 +2,13 @@
 
 NocoBase 3 is maintained in `nocobase/nocobase` on `v3-develop`, with stable promotion to `v3-main`. The repository's default branch is `main`, which continues to maintain the v1/v2 line. See `skills/README.md` for global Skill installation commands that explicitly select the v3 branch and Skill directory.
 
+Regular v3 development branches use `<type>/v3-<name>`, such as `feat/v3-app-installer` or `fix/v3-release-routing`. Quality, changeset, Docs and UI Library checks accept pull requests targeting these branches, with their existing path filters, so stacked pull requests receive the same checks as pull requests targeting `v3-develop` or `v3-main`; pushes continue to run these workflows only on `v3-develop`, and the stable guard continues to run only for pull requests targeting `v3-main`. GitHub Actions expresses the stacked target as the glob `*/v3-*`; for a valid branch under this rule, with a non-empty type and name and no extra slash, that is equivalent to the bot and CI regular expression `/^[^/]+\/v3-[^/]+$/`.
+
 ## Release routing
 
 Executable v3 workflows live directly in `.github/workflows/` and use the `v3-` filename prefix. Their corresponding entries on `main` dispatch the implementation on `v3-develop`. An implementation-only change needs a check that this dispatch still reaches it; input, trigger, or filename changes need a coordinated update of the entry on `main` too.
+
+PR checks are selected from the pull request's workflow context, not from the default branch's workflow inventory. Quality and Changeset have no dispatcher on `main`. The Docs and UI Library entries on `main` accept only manual dispatch and forward it to `v3-develop`; changes to their source-side PR branch filters do not change that entry contract. Keep their filenames, dispatch inputs and destination synchronized when those change.
 
 | Workflow                                                                               | Source and destination                                                                                                                          | Registry or output                                     |
 | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
