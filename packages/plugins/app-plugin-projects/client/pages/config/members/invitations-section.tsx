@@ -1,3 +1,4 @@
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -62,6 +63,11 @@ export function InvitationsSection(): ReactElement | null {
   const toaster = useToaster();
   const queryClient = useQueryClient();
   const format = usePmFormatters();
+  const { can: canCreateUser } = useCan({
+    resource: { type: 'user', id: '*' },
+    action: 'create',
+  });
+  const [manualDelivery, setManualDelivery] = useState(false);
   const [generating, setGenerating] = useState<Invitation | null>(null);
   const [revoking, setRevoking] = useState<Invitation | null>(null);
   const [resent, setResent] = useState<InvitationResult | null>(null);
@@ -78,10 +84,12 @@ export function InvitationsSection(): ReactElement | null {
     mutationFn: ({
       invitation,
       sendEmail,
+      manualDelivery = false,
     }: {
       invitation: Invitation;
       sendEmail: boolean;
-    }) => api.resendInvitation(invitation.id, sendEmail),
+      manualDelivery?: boolean;
+    }) => api.resendInvitation(invitation.id, sendEmail, manualDelivery),
     onSuccess: (result, { sendEmail }) => {
       setLinkOnly(!sendEmail);
       setResent(result.inviteUrl ? result : null);
@@ -196,10 +204,26 @@ export function InvitationsSection(): ReactElement | null {
                 {row.original.invitedBy.userId === viewer?.userId ? (
                   <DropdownMenuItem
                     disabled={resending}
-                    onClick={() => setGenerating(row.original)}
+                    onClick={() => {
+                      setManualDelivery(false);
+                      setGenerating(row.original);
+                    }}
                   >
                     <CopyIcon />
                     {t('invitations.generateLink')}
+                  </DropdownMenuItem>
+                ) : null}
+                {canCreateUser &&
+                row.original.invitedBy.userId === viewer?.userId ? (
+                  <DropdownMenuItem
+                    disabled={resending}
+                    onClick={() => {
+                      setManualDelivery(true);
+                      setGenerating(row.original);
+                    }}
+                  >
+                    <CopyIcon />
+                    {t('invitations.manualLink')}
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuSeparator />
@@ -216,7 +240,7 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [t, format, resending, resendInvitation, viewer?.userId],
+    [t, format, resending, resendInvitation, viewer?.userId, canCreateUser],
   );
 
   const rows = invitations.data;
@@ -255,9 +279,19 @@ export function InvitationsSection(): ReactElement | null {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('invitations.generateLink')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t(
+                manualDelivery
+                  ? 'invitations.manualLink'
+                  : 'invitations.generateLink',
+              )}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('invitations.generateDescription')}
+              {t(
+                manualDelivery
+                  ? 'invitations.manualDescription'
+                  : 'invitations.generateDescription',
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -268,11 +302,16 @@ export function InvitationsSection(): ReactElement | null {
                   resendInvitation({
                     invitation: generating,
                     sendEmail: false,
+                    manualDelivery,
                   });
                 setGenerating(null);
               }}
             >
-              {t('invitations.generateLink')}
+              {t(
+                manualDelivery
+                  ? 'invitations.manualLink'
+                  : 'invitations.generateLink',
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

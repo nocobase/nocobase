@@ -212,3 +212,68 @@ it.each(['create', 'assign-role'])(
     ).toBeInTheDocument();
   },
 );
+
+it('confirms manual delivery separately and sends the privileged option', async () => {
+  const url = 'https://example.test/invite/manual-token';
+  api.routes[
+    'projects/invitations/i1/resend?sendEmail=false&manualDelivery=true'
+  ] = () => ({
+    data: {
+      email: invitation.email,
+      outcome: 'invited',
+      emailSent: false,
+      inviteUrl: url,
+    },
+  });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <InvitationsSection />
+    </QueryClientProvider>,
+  );
+  const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole('button', {
+      name: 'invitations.actionsFor(email=ann@example.com)',
+    }),
+  );
+  await user.click(
+    await screen.findByRole('menuitem', { name: 'invitations.manualLink' }),
+  );
+  expect(screen.getByText('invitations.manualDescription')).toBeInTheDocument();
+  expect(screen.queryByDisplayValue(url)).toBeNull();
+  await user.click(
+    screen.getByRole('button', { name: 'invitations.manualLink' }),
+  );
+  expect(await screen.findByDisplayValue(url)).toBeInTheDocument();
+});
+
+it('hides manual delivery without account creation permission but keeps ordinary copying', async () => {
+  vi.mocked(useCan).mockReturnValue({
+    can: false,
+    isPending: false,
+    error: undefined,
+    retry: vi.fn(),
+  });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <InvitationsSection />
+    </QueryClientProvider>,
+  );
+  await userEvent.click(
+    await screen.findByRole('button', {
+      name: 'invitations.actionsFor(email=ann@example.com)',
+    }),
+  );
+  expect(
+    await screen.findByRole('menuitem', { name: 'invitations.generateLink' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('menuitem', { name: 'invitations.manualLink' }),
+  ).toBeNull();
+});

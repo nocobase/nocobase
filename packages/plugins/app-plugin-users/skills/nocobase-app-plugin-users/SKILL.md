@@ -111,3 +111,9 @@ Configure `app.publicOrigin` and `users.invitations.emailChannel` (default `syst
   synchronization alone proves only that the copy matches this source.
 
 Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Historical user identities are retained but cannot sign in or appear in management lists.
+
+### Manual invitation delivery
+
+If email cannot reach a new recipient, the original inviter may explicitly renew with `sendEmail=false&manualDelivery=true` only when they also hold `create` on `{ type: 'user', id: '*' }`. The originating domain's invitation and role/project checks still apply; scoped credentials cannot use this path. Administrators must verify the recipient outside email and hand the private link only to that person. The UI offers a separate confirmation for this operation. It invalidates all previous links and proofs, allows registration without email, and leaves `emailVerified` false. Existing accounts still have to authenticate. A normal renewal resets the invitation to mailbox verification. CLI resend commands expose `--manual-delivery true --send-email false` through the API schema.
+
+Invitation emails use `notificationService.sendTransient()` so new credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication; the recipient can request a fresh verification email after the cooldown. Historical notification snapshots created by older versions are not rewritten.

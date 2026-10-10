@@ -14,6 +14,7 @@ export interface InvitationRecord {
   readonly invitedById: string;
   readonly expiresAt: string;
   readonly sentAt: string | null;
+  readonly manualDelivery: boolean;
   readonly verificationSentAt: string | null;
   readonly sendError: string | null;
   readonly acceptedUserId: string | null;

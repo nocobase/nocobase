@@ -487,6 +487,81 @@ describe('user invitations', () => {
     });
   });
 
+  it('accepts an administrator-authorized manual link with unavailable email, without claiming mailbox verification', async () => {
+    failMail = true;
+    const [invited] = await service.invite({
+      emails: ['manual@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+    if (invited?.outcome !== 'invited') throw new Error('Expected invitation');
+    const oldToken = invited.inviteUrl?.split('/').at(-1) ?? '';
+    const result = await service.resendInvitation(invited.invitationId, {
+      origin: ORIGIN,
+      sendEmail: false,
+      manualDelivery: true,
+    });
+    if (result.outcome !== 'invited') throw new Error('Expected invitation');
+    const token = result.inviteUrl?.split('/').at(-1) ?? '';
+    expect(await service.lookupInvitation(token)).toMatchObject({
+      emailVerificationRequired: false,
+    });
+    await expect(service.lookupInvitation(oldToken)).rejects.toMatchObject({
+      code: 'INVITATION_NOT_FOUND',
+    });
+    const accepted = await service.acceptInvitation({
+      token,
+      name: 'Manual recipient',
+      password: 'secure-password',
+    });
+    expect(accepted.existingAccount).toBe(false);
+    expect(mail).toHaveLength(0);
+    const user = await database
+      .connection()
+      .query.selectFrom('user')
+      .selectAll()
+      .where('id', '=', accepted.userId)
+      .executeTakeFirst();
+    expect(Boolean(user?.['emailVerified'])).toBe(false);
+    await expect(
+      service.acceptInvitation({
+        token,
+        name: 'Again',
+        password: 'secure-password',
+      }),
+    ).rejects.toMatchObject({ code: 'INVITATION_ACCEPTED' });
+  });
+
+  it('returns a manual invitation to mailbox verification when rotated normally', async () => {
+    const [invited] = await service.invite({
+      emails: ['reset@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+    if (invited?.outcome !== 'invited') throw new Error('Expected invitation');
+    await service.resendInvitation(invited.invitationId, {
+      origin: ORIGIN,
+      sendEmail: false,
+      manualDelivery: true,
+    });
+    const result = await service.resendInvitation(invited.invitationId, {
+      origin: ORIGIN,
+      sendEmail: false,
+    });
+    if (result.outcome !== 'invited') throw new Error('Expected invitation');
+    const token = result.inviteUrl?.split('/').at(-1) ?? '';
+    expect(await service.lookupInvitation(token)).toMatchObject({
+      emailVerificationRequired: true,
+    });
+    await expect(
+      service.acceptInvitation({
+        token,
+        name: 'Recipient',
+        password: 'secure-password',
+      }),
+    ).rejects.toMatchObject({ code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' });
+  });
+
   it('refuses invalid addresses and unknown role scopes', async () => {
     await expect(
       service.invite({ emails: ['nope'], invitedBy: 'ann', origin: ORIGIN }),
@@ -574,7 +649,7 @@ function userAdministration(
           id,
           name: input.name,
           email: input.email,
-          emailVerified: false,
+          emailVerified: input.emailVerified ?? false,
           disabledAt: null,
           createdAt: now,
           updatedAt: now,

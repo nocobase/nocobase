@@ -52,3 +52,7 @@ All messages are validated before persistence. Email and in-app arrays produce o
 This contract replaces the previous configuration and send API without compatibility aliases. Update configuration and callers together before upgrading. The single-Provider migration removes `providerName` from delivery and attempt records; rolling it back restores the columns using Provider identifiers, not the deleted instance names.
 
 See the [integration guide](skills/nocobase-app-plugin-notification/references/integration-and-configuration.md), [sending contract](skills/nocobase-app-plugin-notification/references/sending-notifications.md), and [extension guide](skills/nocobase-app-plugin-notification/references/channel-and-provider-extensions.md). The protected test-send form selects one Channel and shows its message fields.
+
+### Sensitive messages
+
+Use `notificationService.sendTransient({ channel, message })` for a message containing a one-time credential. It validates and prepares the message with the configured channel and submits it once with the provider timeout, without creating notification rows, jobs, retry state, or status events. The result is one provider outcome per recipient; provider diagnostics are replaced with a generic error to avoid leaking credentials. There is no durable idempotency or automatic retry, and a timeout is `submission_unknown`. The caller owns safe recovery, rate limits, and any credential-free audit. The external mail provider and recipient still receive the message.

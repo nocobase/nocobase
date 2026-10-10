@@ -214,6 +214,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             404,
           );
         const sendEmail = context.req.valid('query').sendEmail !== 'false';
+        const manualDelivery =
+          context.req.valid('query').manualDelivery === 'true';
+        if (manualDelivery) await requireUserAction(context, '*', 'create');
         const own =
           invitation.invitedBy.id ===
           context.get('authz').identity.principal.id;
@@ -231,8 +234,16 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           await requireUserAction(context, '*', 'assign-role');
         const result = await users.resendInvitation(invitationId, {
           sendEmail,
+          ...(manualDelivery ? { manualDelivery: true } : {}),
           origin: new URL(context.req.url).origin,
         });
+        if (manualDelivery)
+          logSecurityEvent(
+            securityLogger,
+            context,
+            'user.invitation.manualDelivery',
+            invitationId,
+          );
         return context.json({
           // Failed delivery must not bypass the credential authorization boundary either.
           data: canReturnLink ? result : { ...result, inviteUrl: undefined },
@@ -662,7 +673,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         // The sign-up page's: accepting creates the account from the invitation link.
         ...cliRoute(false),
         description:
-          'The token authorizes only this invitation. Creating an account requires `emailVerificationToken` from the invited mailbox as well as `name` and `password`; an existing account must be signed in as the invited user.',
+          'The token authorizes only this invitation. Creating an account requires `name` and `password`, plus `emailVerificationToken` unless an account administrator explicitly authorized manual delivery; an existing account must be signed in as the invited user.',
         security: [],
         responses: {
           200: dataResponse(AcceptedInvitationSchema),

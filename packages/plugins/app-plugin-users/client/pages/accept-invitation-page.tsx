@@ -245,6 +245,8 @@ function AcceptForm({
     return () => clearTimeout(timer);
   }, [verificationCooling]);
   const [done, setDone] = useState<'signedUp' | 'existing'>();
+  const canRegister =
+    !!emailVerificationToken || invitation.emailVerificationRequired === false;
   const invitedSession =
     session?.user.email.toLowerCase() === invitation.email.toLowerCase();
 
@@ -334,7 +336,7 @@ function AcceptForm({
         <Label htmlFor='invite-email'>{t('accept.email')}</Label>
         <Input id='invite-email' readOnly value={invitation.email} />
       </div>
-      {!invitedSession && emailVerificationToken ? (
+      {!invitedSession && canRegister ? (
         <>
           <div className='space-y-2'>
             <Label htmlFor='invite-name'>{t('accept.name')}</Label>
@@ -360,7 +362,9 @@ function AcceptForm({
           </div>
         </>
       ) : null}
-      {!invitedSession && (!emailVerificationToken || problem) ? (
+      {!invitedSession &&
+      invitation.emailVerificationRequired !== false &&
+      (!emailVerificationToken || problem) ? (
         <div className='space-y-3'>
           <p className='text-sm text-muted-foreground'>
             {t('accept.verifyDescription')}
@@ -413,7 +417,7 @@ function AcceptForm({
           saving ||
           login.isPending ||
           done === 'signedUp' ||
-          (!invitedSession && !emailVerificationToken)
+          (!invitedSession && !canRegister)
         }
       >
         {saving || login.isPending ? (

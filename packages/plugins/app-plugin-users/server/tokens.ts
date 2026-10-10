@@ -163,6 +163,8 @@ export type UserInvitationResult =
 
 /** What the accept page shows to whoever holds the link. */
 export interface PublicUserInvitation {
+  /** False only for a link explicitly authorized for manual delivery by an account administrator. */
+  readonly emailVerificationRequired?: boolean;
   readonly email: string;
   readonly inviterName: string;
   readonly summary: readonly string[];
@@ -226,7 +228,12 @@ export interface UserManagementService {
   /** Rotates a pending invitation's link and period; emails it unless sendEmail is false. */
   resendInvitation(
     id: string,
-    input?: { readonly origin?: string; readonly sendEmail?: boolean },
+    input?: {
+      readonly origin?: string;
+      readonly sendEmail?: boolean;
+      /** Trusted server callers must require user:create before setting this. */
+      readonly manualDelivery?: boolean;
+    },
   ): Promise<UserInvitationResult>;
   revokeInvitation(id: string): Promise<void>;
   lookupInvitation(token: string): Promise<PublicUserInvitation>;

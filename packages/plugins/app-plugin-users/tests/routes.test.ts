@@ -29,6 +29,31 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it.each([true, false])(
+    'requires account creation permission for manual delivery: %s',
+    async (canCreate) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service, {
+          requireAction: async ({ action }) => {
+            if (action === 'create' && !canCreate) throw denied();
+          },
+        }),
+      );
+      const response = await router.request(
+        '/users/invitations/invitation-1/resend?sendEmail=false&manualDelivery=true',
+        { method: 'POST' },
+      );
+      expect(response.status).toBe(canCreate ? 200 : 403);
+      if (canCreate)
+        expect(service.resendInvitation).toHaveBeenCalledWith(
+          'invitation-1',
+          expect.objectContaining({ sendEmail: false, manualDelivery: true }),
+        );
+      else expect(service.resendInvitation).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     { canCreateUsers: false, canAssignRoles: true },
     { canCreateUsers: true, canAssignRoles: false },

@@ -409,6 +409,9 @@ const pages = {
     projectsHint: 'Invitees join these projects as members.',
     projectsPlaceholder: 'Choose projects',
     resend: 'Send again',
+    manualLink: 'Generate manual delivery link',
+    manualDescription:
+      'Confirm the recipient’s identity outside email and hand this private link only to them. This permits account creation without mailbox verification and does not mark their email verified. All previous invitation links stop working.',
     generateLink: 'Generate new link',
     generateDescription:
       'The previous invitation link and its email verification links will stop working. No email will be sent. Copy the new link after generating it.',

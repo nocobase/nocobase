@@ -6,7 +6,8 @@
  * - Each invitation's token authorizes only that invitation's roles and data. Other invitations for the same address
  *   need their own tokens; an existing account must also authenticate before accepting an invitation.
  * - Only token hashes are stored. The shareable link does not prove mailbox ownership; account creation requires
- *   a separate proof delivered only to the invited email address after the transaction commits.
+ *   a separate proof delivered only to the invited email address after the transaction commits, unless an account
+ *   administrator explicitly authorizes manual delivery. Manual delivery does not verify the email address.
  */
 import { randomUUID } from 'node:crypto';
 
@@ -297,6 +298,7 @@ export function createInvitationManager(
               now.getTime() + INVITATION_TTL_MS,
             ).toISOString(),
             sentAt: null,
+            manualDelivery: false,
             verificationSentAt: null,
             sendError: null,
             acceptedUserId: null,
@@ -331,6 +333,12 @@ export function createInvitationManager(
     },
 
     async resendInvitation(id, input = {}) {
+      if (input.manualDelivery && input.sendEmail !== false)
+        throw new UserManagementError(
+          'INVALID_INVITATION',
+          'Manual delivery requires sendEmail=false.',
+          400,
+        );
       linkBase(input.origin);
       const outgoing = await database.transaction(async (connection) => {
         const row = await findInvitation(connection, { id });
@@ -347,6 +355,7 @@ export function createInvitationManager(
         ).toISOString();
         await updateInvitation(connection, id, {
           tokenHash: hash,
+          manualDelivery: input.manualDelivery === true,
           expiresAt,
           verificationSentAt: null,
           sentAt: null,
@@ -389,6 +398,7 @@ export function createInvitationManager(
         }),
       );
       return {
+        emailVerificationRequired: !row.manualDelivery,
         email: row.email,
         inviterName: await nameOf(row.invitedById),
         summary: row.summary,
@@ -425,8 +435,9 @@ export function createInvitationManager(
               })
             : undefined;
           if (
-            !verification ||
-            new Date(verification.expiresAt).getTime() <= Date.now()
+            !row.manualDelivery &&
+            (!verification ||
+              new Date(verification.expiresAt).getTime() <= Date.now())
           )
             throw new UserManagementError(
               'INVITATION_EMAIL_VERIFICATION_REQUIRED',
@@ -436,7 +447,7 @@ export function createInvitationManager(
           const created = await users.withConnection(connection).create({
             name: input.name,
             email: row.email,
-            emailVerified: true,
+            emailVerified: !row.manualDelivery,
             password: input.password,
           });
           userId = created.id;

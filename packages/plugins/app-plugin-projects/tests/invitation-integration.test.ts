@@ -440,6 +440,14 @@ for (const role of ['admin', 'owner']) {
     );
     const pending = (await users.listInvitations({ invitedBy: account.id }))[0];
     if (!pending) throw new Error('Missing invitation');
+    expect(
+      (
+        await session.fetch(
+          `/projects/invitations/${pending.id}/resend?sendEmail=false&manualDelivery=true`,
+          post({}),
+        )
+      ).status,
+    ).toBe(403);
     const rotated = await readData<InvitationResult>(
       await session.fetch(
         `/projects/invitations/${pending.id}/resend?sendEmail=false`,
@@ -464,3 +472,65 @@ for (const role of ['admin', 'owner']) {
     ).toBe(400);
   });
 }
+
+test('an account administrator delivers a project invitation without working email and does not verify its email', async ({
+  testApp,
+  request,
+}) => {
+  const root = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  const mailbox = testApp.application.container.resolve(invitationMailboxToken);
+  mailbox.fail = true;
+  const project = await readData<ProjectDetail>(
+    await root.fetch(
+      '/projects',
+      post({ name: 'Manual delivery', visibility: 'members' }),
+    ),
+    201,
+  );
+  const email = 'manual-recipient@example.test';
+  const oldToken = await invite(root, email, project.id);
+  const users = testApp.application.container.resolve(
+    userManagementServiceToken,
+  );
+  const pending = (await users.listInvitations()).find(
+    (row) => row.email === email,
+  );
+  if (!pending) throw new Error('Missing invitation');
+  const result = await readData<InvitationResult>(
+    await root.fetch(
+      `/projects/invitations/${pending.id}/resend?sendEmail=false&manualDelivery=true`,
+      post({}),
+    ),
+  );
+  const token = result.inviteUrl?.split('/').at(-1);
+  expect(result.emailSent).toBe(false);
+  expect(
+    (await request('/users/invitations/lookup', post({ token: oldToken })))
+      .status,
+  ).toBe(400);
+  expect(
+    await readData(await request('/users/invitations/lookup', post({ token }))),
+  ).toMatchObject({ emailVerificationRequired: false });
+  const password = 'manual-recipient-password';
+  await readData(
+    await request(
+      '/users/invitations/accept',
+      post({ token, name: 'Recipient', password }),
+    ),
+  );
+  const account = (await users.list({ search: email })).items.find(
+    (user) => user.email === email,
+  );
+  expect(account?.emailVerified).toBe(false);
+  const member = await signIn(testApp, { email, password });
+  expect((await member.fetch(`/projects/${project.id}`)).status).toBe(200);
+  expect(mailbox.messages.has(email)).toBe(false);
+  expect(
+    (
+      await request(
+        '/users/invitations/accept',
+        post({ token, name: 'Again', password }),
+      )
+    ).status,
+  ).toBe(400);
+});

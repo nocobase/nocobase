@@ -130,3 +130,9 @@ Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnbl
 
 `GET /api/projects/me` as a signed-in user returns 200 with `permissions`; `POST /api/projects/issues` with a `title` returns 201
 with an identifier such as `PM-1`.
+
+### Manual invitation delivery
+
+If email cannot reach a new recipient, the original inviter may explicitly renew with `sendEmail=false&manualDelivery=true` only when they also hold `create` on `{ type: 'user', id: '*' }`. The originating domain's invitation and role/project checks still apply; scoped credentials cannot use this path. Administrators must verify the recipient outside email and hand the private link only to that person. The UI offers a separate confirmation for this operation. It invalidates all previous links and proofs, allows registration without email, and leaves `emailVerified` false. Existing accounts still have to authenticate. A normal renewal resets the invitation to mailbox verification. CLI resend commands expose `--manual-delivery true --send-email false` through the API schema.
+
+Invitation emails use `notificationService.sendTransient()` so new credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication; the recipient can request a fresh verification email after the cooldown. Historical notification snapshots created by older versions are not rewritten.

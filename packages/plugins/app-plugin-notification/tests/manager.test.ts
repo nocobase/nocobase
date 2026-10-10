@@ -1,3 +1,9 @@
+// @vitest-environment node
+import {
+  createDatabaseNotificationStore,
+  type NotificationStore,
+} from '../server/store.js';
+import { createNotificationTestDatabase } from './helpers/database.js';
 import { createLogger } from '@nocobase/logging';
 import type { DatabaseManager } from '@nocobase/db';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,6 +18,96 @@ import { FakeNotificationStore } from './helpers/fake-notification-store.js';
 import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
 describe('NotificationManager delivery lifecycle', () => {
+  it('delivers a credential with the real database store without retaining any notification rows', async () => {
+    const db = await createNotificationTestDatabase();
+    const send = vi.fn(
+      async (
+        _input: NotificationProviderSendInput,
+      ): Promise<ProviderSendResult> => ({ status: 'accepted' }),
+    );
+    const { manager } = createEmailManagerHarness({
+      send,
+      store: createDatabaseNotificationStore(db.database),
+    });
+    try {
+      await manager.sendTransient({
+        channel: 'email',
+        message: { body: '/invite/token#verification=proof' },
+      });
+      expect(send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: { body: '/invite/token#verification=proof' },
+        }),
+      );
+      for (const table of [
+        'notificationDispatches',
+        'notificationDeliveries',
+        'notificationDeliveryAttempts',
+      ]) {
+        expect(
+          await db.database
+            .connection()
+            .query.selectFrom(table)
+            .selectAll()
+            .execute(),
+        ).toEqual([]);
+      }
+    } finally {
+      await manager.close();
+      await db.destroy();
+    }
+  });
+
+  it.each(['accepted', 'failed', 'submission_unknown'] as const)(
+    'keeps sensitive %s deliveries out of durable storage and sanitizes errors',
+    async (status) => {
+      const secret = '/invite/share-token#verification=private-proof';
+      const send = vi.fn(async (): Promise<ProviderSendResult> =>
+        status === 'accepted'
+          ? { status, providerMessageId: secret }
+          : status === 'failed'
+            ? {
+                status,
+                error: { message: secret },
+                disposition: 'same_provider',
+              }
+            : { status, error: { message: secret } },
+      );
+      const { manager, store } = createEmailManagerHarness({ send });
+      const persist = vi.spyOn(store, 'createOrGetByIdempotency');
+      const results = await manager.sendTransient({
+        channel: 'email',
+        message: { body: secret },
+      });
+      expect(send).toHaveBeenCalledOnce();
+      expect(send.mock.calls[0]).toBeDefined();
+      expect(results[0]?.status).toBe(status);
+      expect(JSON.stringify(results)).not.toContain(secret);
+      expect(persist).not.toHaveBeenCalled();
+      expect(await store.listLogs()).toEqual([]);
+      await manager.close();
+    },
+  );
+
+  it('does not persist sensitive preparation failures', async () => {
+    const send = vi.fn(async () => ({ status: 'accepted' }) as const);
+    const { manager, store } = createEmailManagerHarness({
+      send,
+      prepare: () => {
+        throw new Error('private-proof');
+      },
+    });
+    const result = await manager.sendTransient({
+      channel: 'email',
+      message: { body: 'secret' },
+    });
+    expect(result).toMatchObject([{ status: 'failed' }]);
+    expect(JSON.stringify(result)).not.toContain('private-proof');
+    expect(send).not.toHaveBeenCalled();
+    expect(await store.listLogs()).toEqual([]);
+    await manager.close();
+  });
+
   it('deduplicates repeated sends and rejects reuse with different content', async () => {
     const send = vi.fn(async () => ({ status: 'accepted' }) as const);
     const { manager } = createEmailManagerHarness({ send });
@@ -290,7 +386,7 @@ function createEmailManagerHarness(input: {
     input: NotificationProviderSendInput,
   ) => Promise<ProviderSendResult>;
   readonly capabilities?: NotificationProviderCapabilities;
-  readonly store?: FakeNotificationStore;
+  readonly store?: NotificationStore;
   readonly prepare?: (message: object) => object | Promise<object>;
   readonly retry?: {
     readonly maxAttempts?: number;

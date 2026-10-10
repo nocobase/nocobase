@@ -54,9 +54,13 @@ test('upgrades existing invitations and reverses only the verification schema', 
     tokenHash: 'a'.repeat(64),
     status: 'pending',
     verificationSentAt: null,
+    manualDelivery: false,
   });
   await expect(migrator.rollback()).resolves.toMatchObject({
-    rolledBack: ['202610100001_invitation_email_verification'],
+    rolledBack: [
+      '202610100002_users_manual_invitations',
+      '202610100001_invitation_email_verification',
+    ],
   });
   await expectCollection('userInvitationVerifications').not.toExist();
   await expectCollection('userInvitations').not.toHaveField(

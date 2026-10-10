@@ -118,6 +118,12 @@ export function createInvitationRoutes(
     apiValidator('query', ResendInvitationQuery),
     async (context) => {
       const sendEmail = context.req.valid('query').sendEmail !== 'false';
+      const manualDelivery =
+        context.req.valid('query').manualDelivery === 'true';
+      if (manualDelivery)
+        await context
+          .get('authz')
+          .require({ resource: { type: 'user', id: '*' }, action: 'create' });
       const canReturnLink = await canShareLink(context, authentication);
       if (!sendEmail && !canReturnLink)
         throw forbidden('Scoped credentials cannot retrieve invitation links.');
@@ -126,6 +132,7 @@ export function createInvitationRoutes(
         context.req.valid('param').invitationId,
         origin(context.req.url),
         sendEmail,
+        ...(manualDelivery ? ([true] as const) : []),
       );
       return context.json({
         data: canReturnLink ? result : { ...result, inviteUrl: undefined },

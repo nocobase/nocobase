@@ -56,20 +56,16 @@ class ProjectAccessProvider extends ServiceProvider<AppPluginApplication> {
     const mailbox: InvitationMailbox = { messages: new Map(), fail: false };
     this.app.container.instance(invitationMailboxToken, mailbox);
     this.app.container.instance(notificationServiceToken, {
-      send: async (input) => {
+      send: async () => {
+        throw new Error(
+          'Invitation credentials must not use durable notifications',
+        );
+      },
+      sendTransient: async (input) => {
         if (mailbox.fail) throw new Error('SMTP unavailable');
-        const email = input.messages['system-email'] as {
-          to: string;
-          text: string;
-        };
+        const email = input.message as { to: string; text: string };
         mailbox.messages.set(email.to, email.text);
-        return {
-          notificationId: input.idempotencyKey,
-          idempotencyKey: input.idempotencyKey,
-          deduplicated: false,
-          status: 'completed',
-          deliveries: [],
-        };
+        return [{ status: 'accepted' }];
       },
       getByIdempotencyKey: async () => undefined,
       getNotification: async () => undefined,

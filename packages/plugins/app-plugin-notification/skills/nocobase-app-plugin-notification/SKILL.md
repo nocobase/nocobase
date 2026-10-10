@@ -30,3 +30,7 @@ The test API requires authentication and its test header; submission additionall
 For bulk sends and live configuration changes, establish the intended recipients, Channels, and external effect from the user's authorization. An unknown result may already have reached its recipient; confirm the external effect before creating a new logical send.
 
 Rollback source/configuration through the application's normal deployment process. A submitted notification cannot be recalled by this plugin. Preserve its history and report the observed status. Keep message bodies, recipient snapshots, credentials, and Webhook URLs out of logs and reports.
+
+### Sensitive messages
+
+Use `notificationService.sendTransient({ channel, message })` for a message containing a one-time credential. It validates and prepares the message with the configured channel and submits it once with the provider timeout, without creating notification rows, jobs, retry state, or status events. The result is one provider outcome per recipient; provider diagnostics are replaced with a generic error to avoid leaking credentials. There is no durable idempotency or automatic retry, and a timeout is `submission_unknown`. The caller owns safe recovery, rate limits, and any credential-free audit. The external mail provider and recipient still receive the message.

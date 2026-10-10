@@ -76,6 +76,64 @@ export class ChannelManager {
     return provider ? [{ type: provider.type }] : [];
   }
 
+  /** A one-shot path for credentials: deliberately bypasses storage and retries. */
+  async sendTransient(
+    name: string,
+    input: object,
+  ): Promise<readonly ProviderSendResult[]> {
+    const runtime = this.runtimes.get(name);
+    if (!runtime)
+      throw new Error(`Notification Channel "${name}" is unavailable.`);
+    const { message, recipients } = runtime.channel.validateMessage(input);
+    if (!recipients.length)
+      throw new Error('At least one notification recipient is required.');
+    const notificationId = randomUUID();
+    return Promise.all(
+      recipients.map(async (recipient): Promise<ProviderSendResult> => {
+        const now = new Date().toISOString();
+        const delivery: NotificationDeliveryRecord = {
+          id: randomUUID(),
+          notificationId,
+          channelName: name,
+          channelType: runtime.channel.type,
+          providerType: runtime.provider.type,
+          recipientSnapshot: recipient,
+          messageSnapshot: message,
+          attemptCount: 0,
+          status: 'pending',
+          createdAt: now,
+          updatedAt: now,
+        };
+        const prepared = await this.prepare(runtime.channel, delivery);
+        if (!prepared.ok)
+          return {
+            status: 'failed',
+            disposition: 'never',
+            error: {
+              code: 'TRANSIENT_PREPARATION_FAILED',
+              message: 'Sensitive notification preparation failed.',
+            },
+          };
+        const result = await this.invoke(
+          runtime.provider,
+          prepared.value,
+          delivery,
+          randomUUID(),
+          new Date().toISOString(),
+        );
+        // Providers may echo credentials in diagnostics. Do not expose those errors to callers that persist them.
+        if (result.status === 'accepted') return { status: 'accepted' };
+        const error = {
+          code: 'TRANSIENT_DELIVERY_FAILED',
+          message: 'Sensitive notification was not confirmed by the provider.',
+        };
+        return result.status === 'failed'
+          ? { status: 'failed', disposition: 'never', error }
+          : { status: 'submission_unknown', error };
+      }),
+    );
+  }
+
   async send(
     deliveryId: string,
   ): Promise<NotificationDeliveryRecord | undefined> {

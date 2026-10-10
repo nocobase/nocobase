@@ -30,26 +30,23 @@ export function createNotificationMailer(
     return unconfiguredMailer;
   return {
     async send(email) {
-      const result = await app.container
+      const results = await app.container
         .resolve(notificationServiceToken)
-        .send({
-          idempotencyKey: email.idempotencyKey,
-          source: { type: 'user-invitation' },
-          messages: {
-            [name]: {
-              to: email.to,
-              subject: email.subject,
-              text: email.text,
-              html: email.html,
-            },
+        .sendTransient({
+          channel: name,
+          message: {
+            to: email.to,
+            subject: email.subject,
+            text: email.text,
+            html: email.html,
           },
+        })
+        .catch(() => {
+          throw new Error('The invitation email could not be submitted.');
         });
-      const failed = result.deliveries.find(
-        (delivery) => delivery.status === 'failed',
-      );
-      if (failed)
+      if (results.some((result) => result.status !== 'accepted'))
         throw new Error(
-          failed.error?.message ?? 'The email was not delivered.',
+          'The invitation email was not confirmed by the provider.',
         );
     },
   };

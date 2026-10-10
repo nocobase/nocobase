@@ -27,6 +27,7 @@ import {
   type NotificationStore,
 } from './store.js';
 import type {
+  ProviderSendResult,
   NotificationDeliveryStatusSnapshot,
   NotificationManagerOptions,
   NotificationProviderIdentity,
@@ -319,6 +320,16 @@ export class NotificationManager<
       );
       throw error;
     }
+  }
+
+  /** Credentials must never enter notification snapshots or persistent job payloads. */
+  async sendTransient(input: {
+    readonly channel: string;
+    readonly message: object;
+  }): Promise<readonly ProviderSendResult[]> {
+    await this.activate();
+    await this.ensureRuntime(input.channel);
+    return this.channelManager.sendTransient(input.channel, input.message);
   }
 
   async send(

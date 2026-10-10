@@ -280,9 +280,16 @@ export const UserInvitationSchema: z.ZodType<UserInvitation> = z
   .meta({ ref: 'UsersInvitation' });
 
 export const ResendInvitationQuery: z.ZodObject<
-  { sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>> },
+  {
+    sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+    manualDelivery: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+  },
   z.core.$strip
 > = z.object({
+  manualDelivery: z.enum(['true', 'false']).optional().meta({
+    description:
+      'Requires user:create and sendEmail=false. The administrator verifies the recipient outside email and privately hands over the new link. Does not mark the email verified.',
+  }),
   sendEmail: z.enum(['true', 'false']).optional().meta({
     description:
       'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
@@ -298,7 +305,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Shareable invitation link, returned regardless of email delivery. New accounts additionally require proof sent only to the invited mailbox. Resends require the original inviter and empty plugin data.',
+          'Shareable invitation link, returned regardless of email delivery. Ordinary links additionally require proof sent only to the invited mailbox; explicitly authorized manual delivery links do not. Resends require the original inviter and empty plugin data.',
       }),
     }),
     z.object({
@@ -313,6 +320,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
 
 export const PublicUserInvitationSchema: z.ZodType<PublicUserInvitation> =
   z.object({
+    emailVerificationRequired: z.boolean().optional(),
     email: z.string(),
     inviterName: z.string(),
     summary: z.array(z.string()),

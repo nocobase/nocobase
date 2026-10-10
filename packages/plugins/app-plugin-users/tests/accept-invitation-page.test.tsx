@@ -303,3 +303,44 @@ it('sends mailbox verification for a shared link without exposing registration f
     screen.getByRole('button', { name: 'accept.verifyEmail' }),
   ).toBeDisabled();
 });
+
+it('allows registration from an administrator-authorized manual link without requesting email', async () => {
+  mocks.request.mockImplementation(({ path }: { path: string }) =>
+    Promise.resolve({
+      data: path.endsWith('/lookup')
+        ? {
+            email: 'manual@example.com',
+            inviterName: 'Admin',
+            summary: [],
+            expiresAt: '2099-01-01T00:00:00.000Z',
+            emailVerificationRequired: false,
+          }
+        : { email: 'manual@example.com', existingAccount: false },
+    }),
+  );
+  render(
+    <MemoryRouter initialEntries={['/invite/manual-token']}>
+      <Routes>
+        <Route path='/invite/:token' element={<AcceptInvitationPage />} />
+        <Route path='/' element={<div>Joined</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  fireEvent.change(await screen.findByLabelText('accept.name'), {
+    target: { value: 'Recipient' },
+  });
+  fireEvent.change(screen.getByLabelText('accept.password'), {
+    target: { value: 'manual-password' },
+  });
+  expect(
+    screen.queryByRole('button', { name: 'accept.verifyEmail' }),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'accept.submit' }));
+  await screen.findByText('Joined');
+  expect(mocks.request).toHaveBeenCalledWith(
+    expect.objectContaining({
+      path: 'users/invitations/accept',
+      json: expect.objectContaining({ token: 'manual-token' }),
+    }),
+  );
+});

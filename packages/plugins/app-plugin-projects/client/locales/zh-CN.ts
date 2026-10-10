@@ -393,6 +393,9 @@ const pages = {
     projectsHint: '被邀请人以成员身份加入这些项目。',
     projectsPlaceholder: '选择项目',
     resend: '重新发送',
+    manualLink: '生成人工交付链接',
+    manualDescription:
+      '请通过邮件以外的方式确认收件人身份，并仅向本人私下交付此链接。此操作允许其无需邮箱验证创建账号，但不会将邮箱标记为已验证。所有旧邀请链接将立即失效。',
     generateLink: '生成新链接',
     generateDescription:
       '生成后，旧邀请链接及其邮箱验证链接将立即失效。此次不会发送邮件，请在生成后复制新链接。',

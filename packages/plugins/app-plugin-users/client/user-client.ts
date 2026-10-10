@@ -103,6 +103,8 @@ export type UserInvitationResult =
     };
 
 export interface PublicUserInvitation {
+  /** False only for a link explicitly authorized for manual delivery by an account administrator. */
+  readonly emailVerificationRequired?: boolean;
   readonly email: string;
   readonly inviterName: string;
   readonly summary: readonly string[];
