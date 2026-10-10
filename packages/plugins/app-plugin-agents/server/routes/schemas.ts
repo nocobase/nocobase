@@ -82,6 +82,8 @@ import {
   type RunnerRecentRun,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerWorkspace,
+  type RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import {
   RUN_REQUEST_STATUSES,
@@ -298,6 +300,7 @@ export const DistTargetQuery: z.ZodType<{
 export const VariableValueInput: z.ZodType<{
   value?: string;
   teamRunnersOnly?: boolean;
+  fromRunner?: boolean;
 }> = z.strictObject({
   value: z.string().max(100_000).optional().meta({
     description:
@@ -306,6 +309,10 @@ export const VariableValueInput: z.ZodType<{
   teamRunnersOnly: z.boolean().optional().meta({
     description:
       'Only team runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
+  }),
+  fromRunner: z.boolean().optional().meta({
+    description:
+      'Take it from the runner: no value is kept here, and the runner that takes the run provides it (`nocobase-runner env set NAME`, or `--pass-env NAME`). Leave `value` out.',
   }),
 });
 
@@ -627,6 +634,10 @@ export const VariableSchema: z.ZodType<Variable> = z
     teamRunnersOnly: z.boolean().optional().meta({
       description:
         'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
+    }),
+    fromRunner: z.boolean().optional().meta({
+      description:
+        'Taken from the runner: it has no value here, and the runner that takes the run provides it from its own configuration.',
     }),
     updatedAt: dateTime,
     updatedById: z.string().nullable(),
@@ -1376,6 +1387,49 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
   }),
 });
 
+// A runner's working directories, as it last reported them.
+const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+  runId: z.string().meta({ description: 'The last run that worked in it.' }),
+  workDir: z.string().meta({ description: 'Where it is on the runner.' }),
+  unpushed: z.boolean().meta({
+    description:
+      "It holds changes not committed, or commits the remote task branch lacks; never removed on the application's word.",
+  }),
+  lastUsedAt: z.string(),
+  subjectKind: z.string().nullable(),
+  subjectId: z.string().nullable(),
+  settled: z.boolean().nullable().meta({
+    description:
+      "Its subject's work is over (true), goes on (false), or cannot be told (null).",
+  }),
+});
+
+const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
+  .object({
+    disk: z
+      .object({
+        freeBytes: z.number().int(),
+        totalBytes: z.number().int(),
+        minFreeBytes: z.number().int().nullable().meta({
+          description:
+            "What the runner's owner keeps free; below it, the runner removes directories that may go. Null for nothing.",
+        }),
+      })
+      .nullable()
+      .meta({
+        description:
+          "The disk holding the runner's working directories; null when it did not say.",
+      }),
+    count: z.number().int(),
+    unpushedCount: z.number().int(),
+    measuredAt: dateTime,
+    workspaces: z.array(RunnerWorkspaceSchema).meta({
+      description:
+        "This application's, most recently used first; empty for a caller who may not see the runner's machine.",
+    }),
+  })
+  .meta({ ref: 'AgentsRunnerWorkspaceUsage' });
+
 // Runners, as people manage them.
 const runnerObject = z.object({
   id: z.string(),
@@ -1407,6 +1461,14 @@ const runnerObject = z.object({
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),
+  variables: z.array(z.string()).nullable().optional().meta({
+    description:
+      'The names of the variables it provides to runs that take them from the runner, as it last reported them; null when it reported none. Names only.',
+  }),
+  workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
+    description:
+      'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
+  }),
   lastSeenAt: dateTime.nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,

@@ -21,7 +21,6 @@
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
-import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
@@ -37,6 +36,7 @@ import { withDetectionEnvironment } from './detection.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
+import { detectExec } from './detect-exec.ts';
 import type {
   CommandApprovalParams,
   FileChangeApprovalParams,
@@ -113,8 +113,10 @@ export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
 
 export interface CodexAdapterOptions {
   minVersion?: string;
-  /** PATH searched for `codex`; defaults to the runner's PATH. */
+  /** PATH searched for `codex`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   /** Runs a command for detection; replaceable in tests. */
   exec?: ExecFn;
   /** Starts the app-server; replaceable in tests. */
@@ -124,23 +126,6 @@ export interface CodexAdapterOptions {
 // ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 async function findOnPath(
   name: string,
@@ -196,18 +181,23 @@ function mcpResultText(
 export class CodexAdapter implements AgentAdapter {
   readonly kind = 'codex' as const;
   private readonly options: Required<
-    Omit<CodexAdapterOptions, 'searchPath'>
+    Omit<CodexAdapterOptions, 'searchPath' | 'env'>
   > & {
-    searchPath?: string;
+    searchPath: string;
+    env: NodeJS.ProcessEnv;
   };
+  private readonly detectionEnv?: Record<string, string>;
   private detection?: Promise<ToolDetection>;
 
   constructor(options: CodexAdapterOptions = {}) {
+    const env = options.env ?? process.env;
+    this.detectionEnv = options.env;
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CODEX_VERSION,
-      exec: options.exec ?? defaultExec,
+      exec: options.exec ?? detectExec(options.env),
       spawn: options.spawn ?? spawnCodexProcess,
-      searchPath: options.searchPath,
+      searchPath: options.searchPath ?? env.PATH ?? '',
+      env,
     };
   }
 
@@ -224,104 +214,105 @@ export class CodexAdapter implements AgentAdapter {
     const detection = await this.detect();
     if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
     const binary = detection.path;
-    return withDetectionEnvironment(signal, async (cwd, env) => {
-      const proc = this.options.spawn({
-        command: binary,
-        args: [
-          '-c',
-          'allow_login_shell=false',
-          'app-server',
-          '--listen',
-          'stdio://',
-        ],
-        cwd,
-        env,
-      });
-      const rpc = new RpcConnection(proc, {
-        notification() {},
-        request: () => Promise.resolve({}),
-      });
-      const exited = new Promise<void>((resolve) => {
-        proc.onExit(() => {
-          rpc.close(new Error('Model detection failed'));
-          resolve();
+    return withDetectionEnvironment(
+      signal,
+      async (cwd, env) => {
+        const proc = this.options.spawn({
+          command: binary,
+          args: [
+            '-c',
+            'allow_login_shell=false',
+            'app-server',
+            '--listen',
+            'stdio://',
+          ],
+          cwd,
+          env,
         });
-      });
-      const abort = () => {
-        rpc.close(new Error('Model detection timed out'));
-        proc.kill('SIGKILL');
-      };
-      signal.addEventListener('abort', abort, { once: true });
-      if (signal.aborted) abort();
-      try {
-        await rpc.request('initialize', {
-          clientInfo: CLIENT_INFO,
-          capabilities: { experimentalApi: false },
+        const rpc = new RpcConnection(proc, {
+          notification() {},
+          request: () => Promise.resolve({}),
         });
-        rpc.notify('initialized');
-        const models: { id: unknown; efforts?: unknown[] }[] = [];
-        let cursor: string | null = null;
-        const cursors = new Set<string>();
-        do {
-          // https://github.com/openai/codex/tree/main/codex-rs/app-server-protocol
-          const page: ModelListPage = await rpc.request<ModelListPage>(
-            'model/list',
-            { cursor, limit: 100, includeHidden: false },
-          );
-          if (!Array.isArray(page.data))
-            return {
-              modelsDetectionStatus: 'failed',
-              modelsDetectionError: 'Invalid model listing response',
-            };
-          models.push(
-            ...page.data.map((model) => ({
-              id: model.model,
-              efforts: model.supportedReasoningEfforts?.map(
-                (effort) => effort.reasoningEffort,
-              ),
-            })),
-          );
-          cursor = page.nextCursor ?? null;
-          if (cursor && cursors.has(cursor))
-            return {
-              modelsDetectionStatus: 'failed',
-              modelsDetectionError: 'Invalid model listing response',
-            };
-          if (cursor) cursors.add(cursor);
-        } while (cursor && models.length < MAX_TOOL_MODELS);
-        return {
-          modelsDetectionStatus: 'detected',
-          models: boundedModels(models),
+        const exited = new Promise<void>((resolve) => {
+          proc.onExit(() => {
+            rpc.close(new Error('Model detection failed'));
+            resolve();
+          });
+        });
+        const abort = () => {
+          rpc.close(new Error('Model detection timed out'));
+          proc.kill('SIGKILL');
         };
-      } catch (error) {
-        return error instanceof RpcError && error.code === -32601
-          ? { modelsDetectionStatus: 'unsupported' }
-          : {
-              modelsDetectionStatus: 'failed',
-              modelsDetectionError: signal.aborted
-                ? 'Model detection timed out'
-                : 'Model detection failed',
-            };
-      } finally {
-        signal.removeEventListener('abort', abort);
-        rpc.close(new Error('Model discovery finished'));
-        proc.end();
-        proc.kill('SIGKILL');
-        await exited;
-      }
-    });
+        signal.addEventListener('abort', abort, { once: true });
+        if (signal.aborted) abort();
+        try {
+          await rpc.request('initialize', {
+            clientInfo: CLIENT_INFO,
+            capabilities: { experimentalApi: false },
+          });
+          rpc.notify('initialized');
+          const models: { id: unknown; efforts?: unknown[] }[] = [];
+          let cursor: string | null = null;
+          const cursors = new Set<string>();
+          do {
+            // https://github.com/openai/codex/tree/main/codex-rs/app-server-protocol
+            const page: ModelListPage = await rpc.request<ModelListPage>(
+              'model/list',
+              { cursor, limit: 100, includeHidden: false },
+            );
+            if (!Array.isArray(page.data))
+              return {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Invalid model listing response',
+              };
+            models.push(
+              ...page.data.map((model) => ({
+                id: model.model,
+                efforts: model.supportedReasoningEfforts?.map(
+                  (effort) => effort.reasoningEffort,
+                ),
+              })),
+            );
+            cursor = page.nextCursor ?? null;
+            if (cursor && cursors.has(cursor))
+              return {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Invalid model listing response',
+              };
+            if (cursor) cursors.add(cursor);
+          } while (cursor && models.length < MAX_TOOL_MODELS);
+          return {
+            modelsDetectionStatus: 'detected',
+            models: boundedModels(models),
+          };
+        } catch (error) {
+          return error instanceof RpcError && error.code === -32601
+            ? { modelsDetectionStatus: 'unsupported' }
+            : {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: signal.aborted
+                  ? 'Model detection timed out'
+                  : 'Model detection failed',
+              };
+        } finally {
+          signal.removeEventListener('abort', abort);
+          rpc.close(new Error('Model discovery finished'));
+          proc.end();
+          proc.kill('SIGKILL');
+          await exited;
+        }
+      },
+      this.detectionEnv,
+    );
   }
 
   private async runDetection(): Promise<ToolDetection> {
-    const { exec, minVersion } = this.options;
-    const searchPath = this.options.searchPath ?? process.env.PATH ?? '';
+    const { exec, minVersion, searchPath, env } = this.options;
     const found = await findOnPath('codex', searchPath);
     if (!found) {
       return {
         installed: false,
-        authenticated: Boolean(
-          process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY,
-        ),
+        authenticated: Boolean(env.OPENAI_API_KEY || env.CODEX_API_KEY),
       };
     }
     const v = await exec(found, ['--version']);

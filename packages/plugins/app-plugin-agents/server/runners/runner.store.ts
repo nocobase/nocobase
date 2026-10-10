@@ -5,6 +5,7 @@
 import {
   AGENT_TOOLS,
   RunnerPolicySchema,
+  RunnerVariableNamesSchema,
   ToolLoadSchema,
   ReportedToolInfoSchema,
   ToolSlotsSchema,
@@ -21,6 +22,9 @@ import type {
   Runner,
   RunnerStatus,
   RunnerTrust,
+  RunnerWorkspace,
+  RunnerWorkspaceDisk,
+  RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import { jsonObject, stringArray } from '../kernel/values.js';
 
@@ -44,6 +48,8 @@ export interface RunnerRecord {
   readonly load: unknown;
   readonly acceptJobs: boolean;
   readonly policy: unknown;
+  readonly variables?: unknown;
+  readonly workspaceUsage?: unknown;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -155,6 +161,79 @@ export function storedPolicy(value: unknown): RunnerPolicy | null {
     : policy;
 }
 
+/** Reported variable names as stored: valid names, each once, sorted; null when it reported none. */
+export function storedVariableNames(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  const parsed = RunnerVariableNamesSchema.safeParse(
+    typeof value === 'string' ? safeJson(value) : value,
+  );
+  return parsed.success ? [...new Set(parsed.data)].sort() : null;
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+function storedWorkspace(value: unknown): RunnerWorkspace | null {
+  const item = jsonObject(value);
+  if (typeof item.runId !== 'string' || typeof item.workDir !== 'string')
+    return null;
+  const text = (field: unknown): string | null =>
+    typeof field === 'string' ? field : null;
+  return {
+    runId: item.runId,
+    workDir: item.workDir,
+    unpushed: item.unpushed === true,
+    lastUsedAt: text(item.lastUsedAt) ?? '',
+    subjectKind: text(item.subjectKind),
+    subjectId: text(item.subjectId),
+    settled: typeof item.settled === 'boolean' ? item.settled : null,
+  };
+}
+
+function storedDisk(value: unknown): RunnerWorkspaceDisk | null {
+  if (value === null || value === undefined) return null;
+  const disk = jsonObject(value);
+  if (!isFiniteNumber(disk.freeBytes) || !isFiniteNumber(disk.totalBytes))
+    return null;
+  return {
+    freeBytes: disk.freeBytes,
+    totalBytes: disk.totalBytes,
+    minFreeBytes: isFiniteNumber(disk.minFreeBytes) ? disk.minFreeBytes : null,
+  };
+}
+
+/** A runner's last workspace report as stored: null when it never reported one. */
+export function storedWorkspaceUsage(
+  value: unknown,
+): RunnerWorkspaceUsage | null {
+  if (value === null || value === undefined) return null;
+  const usage = jsonObject(value);
+  if (typeof usage.measuredAt !== 'string') return null;
+  const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
+    .map(storedWorkspace)
+    .filter((item): item is RunnerWorkspace => item !== null);
+  const count = (field: unknown, fallback: number): number =>
+    isFiniteNumber(field) ? field : fallback;
+  return {
+    disk: storedDisk(usage.disk),
+    count: count(usage.count, workspaces.length),
+    unpushedCount: count(
+      usage.unpushedCount,
+      workspaces.filter((item) => item.unpushed).length,
+    ),
+    measuredAt: usage.measuredAt,
+    workspaces,
+  };
+}
+
 export function toRunner(
   record: RunnerRecord,
   ownerName: string | null = null,
@@ -180,6 +259,8 @@ export function toRunner(
     toolLoad: storedToolLoad(record.load),
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
+    variables: storedVariableNames(record.variables),
+    workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

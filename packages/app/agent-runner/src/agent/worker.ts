@@ -21,8 +21,8 @@
 //
 // Nothing leaves the worker unredacted (`runSecrets`): every event is redacted as it is spooled, and so are the
 // summary, the failure detail and the worker's log lines. The redactor removes the values of the secrets the run was
-// given (its variables, the passthrough values taken from this host, its CLI credential's tokens, the runner key) and
-// the common secret patterns of `@nocobase/agent-protocol`.
+// given (its variables, the passthrough values taken from this host, the proxy and `--pass-env` values the runner
+// passes, its CLI credential's tokens, the runner key) and the common secret patterns of `@nocobase/agent-protocol`.
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -66,13 +66,13 @@ import {
 } from '../core/checkout.ts';
 import { credentialsGuard, deleteRunCredentials } from './credentials.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
-import { buildAgentEnv } from './env.ts';
+import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import { permissionDenialLog } from './permission-log.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
-import { ensurePnpmStore } from '../core/pnpm-store.ts';
+import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
 import {
   agentCwd,
   agentWritableRoots,
@@ -158,7 +158,7 @@ export function workspaceNotes(options: {
   }
   if (options.pnpmStoreDir !== undefined)
     lines.push(
-      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\`, so dependencies are linked from it instead of copied into your directory. Files under \`node_modules\` are links into that store, shared with other tasks: never edit them in place; use \`pnpm patch\` to change a dependency.`,
+      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\` or \`--package-import-method\`, so dependencies are cloned or copied from it, never hard-linked, instead of downloaded again. Never change the store's files; use \`pnpm patch\` to change a dependency.`,
     );
   if (options.skillsDir !== undefined)
     lines.push(
@@ -205,18 +205,26 @@ const CREDENTIAL_SECRET = /token|key|secret|password/iu;
 
 /**
  * The secret values a run carries: its variables, the values of the passthrough names as this host has them, the
+ * values the runner passes from its environment (its proxies, which may hold a password, and `--pass-env`), the
  * secret fields of its CLI credential (the run token), and the runner key it was claimed with.
  */
 export function runSecrets(
   payload: Pick<RunPayload, 'workspace' | 'cli'>,
   connection?: Pick<AppConnection, 'runnerKey' | 'registration'>,
   source: NodeJS.ProcessEnv = process.env,
+  passEnv: readonly string[] = [],
 ): string[] {
   const secrets = payload.workspace.env.map((variable) => variable.value);
+  const provided = providedVariables(
+    source,
+    passEnv,
+    connection?.registration.variables,
+  );
   for (const name of payload.workspace.passthrough ?? []) {
-    const value = connection?.registration.variables?.[name] ?? source[name];
+    const value = provided[name];
     if (value !== undefined) secrets.push(value);
   }
+  secrets.push(...environmentSecrets(source, passEnv));
   const content = payload.cli.credential.content;
   if (content !== null && typeof content === 'object')
     for (const [key, value] of Object.entries(content))
@@ -274,7 +282,9 @@ export class RunWorker {
   ) {
     this.payload = payload;
     this.timings = timings;
-    this.redactor = createRedactor(runSecrets(payload, deps.connection));
+    this.redactor = createRedactor(
+      runSecrets(payload, deps.connection, process.env, deps.settings.passEnv),
+    );
     const redact = this.redactor;
     this.deps = {
       ...deps,
@@ -491,6 +501,7 @@ export class RunWorker {
       payload,
       paths: deps.paths,
       registration,
+      passEnv: deps.settings.passEnv ?? [],
       client: this.client,
       tool: payload.tool.kind,
       log: deps.log,
@@ -576,6 +587,7 @@ export class RunWorker {
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
+    const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
     const env = buildAgentEnv({
       source: process.env,
@@ -583,7 +595,11 @@ export class RunWorker {
       ...(home === undefined ? {} : { home }),
       tmpDir,
       pnpmStoreDir,
+      pnpmImportMethod: importMethod,
       hooksDir: deps.paths.hooksDir,
+      ...(deps.settings.passEnv === undefined
+        ? {}
+        : { passEnv: deps.settings.passEnv }),
       ...(process.env[PROCESS_TAG_ENV] === undefined
         ? {}
         : { processTag: process.env[PROCESS_TAG_ENV] }),
@@ -777,17 +793,19 @@ export class RunWorker {
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir === undefined) return [];
     if (repos.length === 0) {
-      await markWorkspaceEnded(workDir, true);
+      await markWorkspaceEnded(this.deps.paths, workDir, []);
       return [];
     }
     const reports = await reportRepos(repos, {
       push,
+      ...(this.payload.workspace.git?.credentials === undefined
+        ? {}
+        : {
+            credentials: this.payload.workspace.git.credentials,
+          }),
       log: this.deps.log,
     });
-    await markWorkspaceEnded(
-      workDir,
-      reports.every((report) => report.pushed),
-    );
+    await markWorkspaceEnded(this.deps.paths, workDir, reports);
     return reports;
   }
 
@@ -797,7 +815,11 @@ export class RunWorker {
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir !== undefined)
-      await markDirsPrepared(workDir, this.prepared?.dirs ?? []);
+      await markDirsPrepared(
+        this.deps.paths,
+        workDir,
+        this.prepared?.dirs ?? [],
+      );
     await this.drainEvents();
     if (this.ending !== undefined) return this.finishEnding();
     try {

@@ -18,6 +18,8 @@ export interface PrepareContext {
   readonly payload: RunPayload;
   readonly paths: RunnerPaths;
   readonly registration: AppRegistration;
+  /** The names the runner's owner passes from its environment (`--pass-env`). */
+  readonly passEnv: readonly string[];
   readonly client: ApiClient;
   readonly tool: AgentTool;
   readonly log: (message: string) => void;
@@ -67,9 +69,10 @@ export class PrepareError extends Error {
 
 /**
  * What the agent writes besides `cwd`, for a tool's own sandbox (`AdapterSession.writableRoots`): the other working
- * directories, each repository worktree's own Git directory (`<cache>/worktrees/<name>`), which holds its index,
- * HEAD and submodules, and `shared`, the directories every run on the machine writes, such as the pnpm store
- * (core/pnpm-store.ts). Never the repository cache itself, which every subject's worktrees share.
+ * directories, each checkout's own Git directory (`.git` inside new clones, or `<cache>/worktrees/<name>` for legacy
+ * worktrees), which holds its index, HEAD and submodules, and `shared`, the directories every run on the machine
+ * writes, such as the pnpm store (core/pnpm-store.ts). Never the shared repository cache itself.
+ * The explicit clone .git root also permits local hooks/config; host-side Git treats both as untrusted (task-git.ts).
  */
 export function agentWritableRoots(
   dirs: readonly PreparedDir[],

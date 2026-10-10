@@ -123,64 +123,73 @@ export type ExecFn = (
 
 export interface PiAdapterOptions {
   minVersion?: string;
-  /** PATH searched for `pi`; defaults to the runner's PATH. */
+  /** PATH searched for `pi`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   exec?: ExecFn;
   spawn?: SpawnFn;
 }
 
-const defaultExec: ExecFn = (file, args, options) =>
-  withDetectionEnvironment(
-    options?.signal,
-    (cwd, env) =>
-      new Promise((resolve) => {
-        let stdout = '';
-        let failed = false;
-        const child = nodeSpawn(file, args, {
-          cwd,
-          env,
-          signal: options?.signal,
-          killSignal: 'SIGKILL',
-          detached: process.platform !== 'win32',
-          timeout: 15_000,
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
-        child.on('error', () => {
-          failed = true;
-        });
-        const kill = () => {
-          if (child.pid === undefined) return;
-          try {
-            if (process.platform === 'win32') child.kill('SIGKILL');
-            else process.kill(-child.pid, 'SIGKILL');
-          } catch {
-            // The process group is already gone.
-          }
-        };
-        child.stdout?.setEncoding('utf8').on('data', (text: string) => {
-          if (
-            Buffer.byteLength(stdout) + Buffer.byteLength(text) >
-            1024 * 1024
-          ) {
+/**
+ * Runs a detection command in `detectionEnv` (the environment a run gets from the runner; the runner's whitelist when
+ * absent), ending its whole process group on timeout or abort.
+ */
+const detectionExec =
+  (detectionEnv?: Record<string, string>): ExecFn =>
+  (file, args, options) =>
+    withDetectionEnvironment(
+      options?.signal,
+      (cwd, env) =>
+        new Promise((resolve) => {
+          let stdout = '';
+          let failed = false;
+          const child = nodeSpawn(file, args, {
+            cwd,
+            env,
+            signal: options?.signal,
+            killSignal: 'SIGKILL',
+            detached: process.platform !== 'win32',
+            timeout: 15_000,
+            stdio: ['ignore', 'pipe', 'pipe'],
+          });
+          child.on('error', () => {
             failed = true;
-            kill();
-          } else stdout += text;
-        });
-        child.stderr?.resume();
-        // spawn's own timeout only signals the direct child; also end descendants holding its pipes.
-        const timer = setTimeout(kill, 15_000);
-        options?.signal?.addEventListener('abort', kill, { once: true });
-        if (options?.signal?.aborted) kill();
-        process.once('exit', kill);
-        child.once('exit', kill);
-        child.once('close', (code) => {
-          clearTimeout(timer);
-          options?.signal?.removeEventListener('abort', kill);
-          process.removeListener('exit', kill);
-          resolve({ code: failed ? 1 : (code ?? 1), stdout });
-        });
-      }),
-  );
+          });
+          const kill = () => {
+            if (child.pid === undefined) return;
+            try {
+              if (process.platform === 'win32') child.kill('SIGKILL');
+              else process.kill(-child.pid, 'SIGKILL');
+            } catch {
+              // The process group is already gone.
+            }
+          };
+          child.stdout?.setEncoding('utf8').on('data', (text: string) => {
+            if (
+              Buffer.byteLength(stdout) + Buffer.byteLength(text) >
+              1024 * 1024
+            ) {
+              failed = true;
+              kill();
+            } else stdout += text;
+          });
+          child.stderr?.resume();
+          // spawn's own timeout only signals the direct child; also end descendants holding its pipes.
+          const timer = setTimeout(kill, 15_000);
+          options?.signal?.addEventListener('abort', kill, { once: true });
+          if (options?.signal?.aborted) kill();
+          process.once('exit', kill);
+          child.once('exit', kill);
+          child.once('close', (code) => {
+            clearTimeout(timer);
+            options?.signal?.removeEventListener('abort', kill);
+            process.removeListener('exit', kill);
+            resolve({ code: failed ? 1 : (code ?? 1), stdout });
+          });
+        }),
+      detectionEnv,
+    );
 
 const defaultSpawn: SpawnFn = (file, args, options) =>
   nodeSpawn(file, args, {
@@ -242,15 +251,16 @@ export { denialMessage } from './policy-denial.ts';
 export class PiAdapter implements AgentAdapter {
   readonly kind = 'pi' as const;
   private readonly minVersion: string;
-  private readonly searchPath?: string;
+  private readonly searchPath: string;
   private readonly exec: ExecFn;
   private readonly spawn: SpawnFn;
   private detection?: Promise<ToolDetection>;
 
   constructor(options: PiAdapterOptions = {}) {
     this.minVersion = options.minVersion ?? DEFAULT_MIN_PI_VERSION;
-    this.searchPath = options.searchPath;
-    this.exec = options.exec ?? defaultExec;
+    this.searchPath =
+      options.searchPath ?? (options.env ?? process.env).PATH ?? '';
+    this.exec = options.exec ?? detectionExec(options.env);
     this.spawn = options.spawn ?? defaultSpawn;
   }
 
@@ -291,7 +301,7 @@ export class PiAdapter implements AgentAdapter {
   }
 
   private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
-    const searchPath = this.searchPath ?? process.env.PATH ?? '';
+    const { searchPath } = this;
     const piPath = await findOnPath('pi', searchPath);
     if (!piPath) return { installed: false, authenticated: false };
     const v = await this.exec(piPath, ['--version'], { signal });

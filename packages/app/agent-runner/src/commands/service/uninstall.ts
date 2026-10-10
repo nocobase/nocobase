@@ -32,6 +32,8 @@ export default class ServiceUninstall extends RunnerCommand {
     const plan = servicePlan({
       paths: this.paths,
       command: selfCommand(),
+      // Only the file and the commands matter here: no value of this shell goes into the answer.
+      env: { PATH: process.env.PATH },
       ...(label === undefined ? {} : { label }),
     });
     if (flags['dry-run']) {
