@@ -43,7 +43,7 @@ The regional comparison formats the same number, USD amount and fixed UTC timest
 
 ## Maintain this template
 
-Keep framework files aligned with Default and Hub: the `package.json` scripts that call `nocobase`, runtime composition mechanisms, the `cli/plugins.ts` composition root, shell, theme and development guidance. Keep the examples homepage, article module, example plugin choices and sample data here. Existing Default installations retain their historical data; follow the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) when removing example registrations.
+Keep framework files aligned with Default: the `package.json` scripts that call `nocobase`, runtime composition mechanisms, the `cli/plugins.ts` composition root, shell, theme and development guidance. Keep the examples homepage, article module, example plugin choices and sample data here. Existing Default installations retain their historical data; follow the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) when removing example registrations.
 
 ## Getting started
 
@@ -423,7 +423,7 @@ For example, `pnpm build --target linux-x64 --node-version 24` produces:
 }
 ```
 
-`nodeMajor` describes the target runtime, not the Node version used to run the build. No target patch version is implied. These fields provide platform and Node ABI checks for Hub deployment; they do not describe system libraries, CPU instruction requirements, or other runtime prerequisites.
+`nodeMajor` describes the target runtime, not the Node version used to run the build. No target patch version is implied. These fields provide platform and Node ABI checks for deployment; they do not describe system libraries, CPU instruction requirements, or other runtime prerequisites.
 
 If your application has no native modules — `pg`, `mysql2`, and `tedious` are all plain JavaScript — no platform-specific binaries need retargeting. The build still records the selected target, and the deployment runtime must satisfy `engines.node`.
 
@@ -451,7 +451,7 @@ Pass the file's path relative to `dist/client/`, with or without a leading slash
 
 #### Packing the build
 
-`pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact you upload to a Hub to deploy this application.
+`pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact `@nocobase/app-installer` installs on a server.
 
 The archive has two levels: `config.example.yml` and `dist/` sit at the root, and the build is inside `dist/`. What `dist/` holds varies with the application; this is the shape:
 
@@ -660,7 +660,7 @@ pnpm nocobase db apply
 
 后端实现位于 `server/providers/numeric-examples-service.ts` 和
 `server/routes/numeric-examples.ts`，页面位于 `client/pages/numeric-examples.tsx`。
-这是 Examples 独有内容，不改变 Default / Hub 模板或数据库运行时。
+这是 Examples 独有内容，不改变 Default 模板或数据库运行时。
 
 ## Numeric types example
 
@@ -686,7 +686,7 @@ Every signed-in user may read these sample records; the endpoint exposes no
 writes or arbitrary collection/query parameters. Row previews are capped at 100;
 aggregates cover the entire selected sample set.
 
-This is Examples-only teaching content, so it does not change Default or Hub.
+This is Examples-only teaching content, so it does not change Default.
 
 ## Runtime paths and application creation
 

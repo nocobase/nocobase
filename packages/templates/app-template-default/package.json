@@ -26,7 +26,6 @@
     "@nocobase/app-websocket": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",
-    "@nocobase/hub-cli": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",

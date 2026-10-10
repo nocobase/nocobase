@@ -16,7 +16,7 @@ const COMMAND_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)*$/;
 /**
  * The topic a plugin package mounts under: its name without the scope and the `app-plugin-` prefix, or, for a package
  * that is not an application plugin, without the `-cli` suffix. `@nocobase/app-plugin-workflow` mounts under
- * `workflow` and `@nocobase/hub-cli` under `hub`.
+ * `workflow` and a `@nocobase/audit-cli` under `audit`.
  */
 export function pluginTopicFor(packageName: string): string {
   const unscoped = packageName.slice(packageName.indexOf('/') + 1);

@@ -80,18 +80,18 @@ Each route is described, with its parameters, request and response schemas and e
 
 The list accepts `page`, `pageSize` (default 20, capped at 100), `q` (name, username or email), `status`, and `roleScope` with `role`. Every input is validated: an unknown body field or an invalid value answers `400 INVALID_ARGUMENT` with reason `INVALID_INPUT`. Failures use the standard error body; branch on `error.reason`:
 
-| Reason                                                                                                                                                                                      | Status                                    | Domain           |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------- |
-| `USER_NOT_FOUND`                                                                                                                                                                            | `404 NOT_FOUND`                           | `users`          |
-| `ROLE_SCOPE_NOT_FOUND`                                                                                                                                                                      | `404` in the path, else `400`             | `users`          |
-| `ROLE_SCOPE_REQUIRED`, `INVALID_ROLE_SCOPE_VALUE`                                                                                                                                           | `400 INVALID_ARGUMENT`                    | `users`          |
-| `SELF_DELETE_NOT_ALLOWED`, `USER_DELETION_NOT_CONFIGURED`, `PROTECTED_ROLE_ASSIGNMENT` and the reasons of an application role scope, such as Hub's `HUB_ADMIN_REQUIRED` and `USER_HAS_APPS` | `400 FAILED_PRECONDITION`                 | `users`          |
-| `INVITATION_NOT_FOUND`: no invitation by that id, or, from `lookup` and `accept`, by that token (`400` with a field violation on `token`)                                                   | `404 NOT_FOUND` or `400 INVALID_ARGUMENT` | `users`          |
-| `INVITATION_EXPIRED`, `INVITATION_ACCEPTED`, `INVITATION_REVOKED`, `INVITATION_CLOSED`                                                                                                      | `400 FAILED_PRECONDITION`                 | `users`          |
-| `INVALID_PREFERENCE_KEY`, `INVALID_PREFERENCE_VALUE`, `TOO_MANY_PREFERENCES`                                                                                                                | `400 INVALID_ARGUMENT`                    | `users`          |
-| `LAST_ASSIGNMENT`                                                                                                                                                                           | `400 FAILED_PRECONDITION`                 | `authorization`  |
-| `USER_EMAIL_CONFLICT`, `USER_USERNAME_CONFLICT`, `USER_IDENTITY_CONFLICT`                                                                                                                   | `409 ALREADY_EXISTS`                      | `authentication` |
-| `PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`                                                                                                                                                   | `400 INVALID_ARGUMENT`                    | `authentication` |
+| Reason                                                                                                                                    | Status                                    | Domain           |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------- |
+| `USER_NOT_FOUND`                                                                                                                          | `404 NOT_FOUND`                           | `users`          |
+| `ROLE_SCOPE_NOT_FOUND`                                                                                                                    | `404` in the path, else `400`             | `users`          |
+| `ROLE_SCOPE_REQUIRED`, `INVALID_ROLE_SCOPE_VALUE`                                                                                         | `400 INVALID_ARGUMENT`                    | `users`          |
+| `SELF_DELETE_NOT_ALLOWED`, `USER_DELETION_NOT_CONFIGURED`, `PROTECTED_ROLE_ASSIGNMENT` and the reasons of an application role scope       | `400 FAILED_PRECONDITION`                 | `users`          |
+| `INVITATION_NOT_FOUND`: no invitation by that id, or, from `lookup` and `accept`, by that token (`400` with a field violation on `token`) | `404 NOT_FOUND` or `400 INVALID_ARGUMENT` | `users`          |
+| `INVITATION_EXPIRED`, `INVITATION_ACCEPTED`, `INVITATION_REVOKED`, `INVITATION_CLOSED`                                                    | `400 FAILED_PRECONDITION`                 | `users`          |
+| `INVALID_PREFERENCE_KEY`, `INVALID_PREFERENCE_VALUE`, `TOO_MANY_PREFERENCES`                                                              | `400 INVALID_ARGUMENT`                    | `users`          |
+| `LAST_ASSIGNMENT`                                                                                                                         | `400 FAILED_PRECONDITION`                 | `authorization`  |
+| `USER_EMAIL_CONFLICT`, `USER_USERNAME_CONFLICT`, `USER_IDENTITY_CONFLICT`                                                                 | `409 ALREADY_EXISTS`                      | `authentication` |
+| `PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`                                                                                                 | `400 INVALID_ARGUMENT`                    | `authentication` |
 
 A role scope reports a refusal by throwing `UserRoleScopeError(reason, message, status)`: `404` answers `NOT_FOUND`, `409` answers `FAILED_PRECONDITION`, and `400` answers `INVALID_ARGUMENT`.
 
@@ -129,12 +129,12 @@ When authorization is installed, the plugin registers the `user` subject type wi
 
 ## Permission-set integration
 
-When the authorization plugin is installed, Users automatically registers the `app` permission-set scope. No application Provider is needed. Set `users.permissionSets: false` in application configuration when providing a replacement scope, as Hub does. Direct assignments remain separate from permissions inherited through authenticated users or other subjects. Protected unrestricted assignments cannot be changed through this scope.
+When the authorization plugin is installed, Users automatically registers the `app` permission-set scope. No application Provider is needed. Set `users.permissionSets: false` in application configuration when providing a replacement scope. Direct assignments remain separate from permissions inherited through authenticated users or other subjects. Protected unrestricted assignments cannot be changed through this scope.
 
 The Settings page uses a searchable selection list for both user creation and the assignment drawer. Changes are saved together; labels use permission-set presentation metadata and update with the client locale while custom titles remain unchanged.
 
 ## User deletion
 
-`DELETE /api/users/:userId?confirm=true` requires the `user/delete` action and the `confirm=true` query parameter, and answers `204`. The service also rejects deleting the acting user. Application role scopes can implement `assertCanDelete(userId, actorId, connection)` and `onDelete(userId, connection)` to protect owned resources and remove credentials in the same transaction. Hub grants deletion only to its Platform Administrator and registers those lifecycle rules; Users does not grant access by default. Failed cleanup rolls back the deletion. Repeating a deletion changes nothing and answers `404 USER_NOT_FOUND`.
+`DELETE /api/users/:userId?confirm=true` requires the `user/delete` action and the `confirm=true` query parameter, and answers `204`. The service also rejects deleting the acting user. Application role scopes can implement `assertCanDelete(userId, actorId, connection)` and `onDelete(userId, connection)` to protect owned resources and remove credentials in the same transaction. Users does not grant access by default. Failed cleanup rolls back the deletion. Repeating a deletion changes nothing and answers `404 USER_NOT_FOUND`.
 
 Deletion removes the user from management lists, revokes sessions and removes sign-in accounts. Authentication retains a disabled identity with `deletedAt` and `deletedBy` for historical attribution; it cannot be re-enabled through user management. Email and username remain reserved. The authenticated deletion route emits a structured `user.delete` security event without credentials. The UI requires confirmation and reports failures through the application's notification host.

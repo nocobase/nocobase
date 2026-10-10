@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Keep client packages out of the server deployment, and make every native binary match the platform being deployed to.

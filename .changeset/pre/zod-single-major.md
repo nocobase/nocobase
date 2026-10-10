@@ -2,7 +2,6 @@
 '@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-template-examples': patch
 '@nocobase/app-template-default': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/ai-employee': patch
 ---
 

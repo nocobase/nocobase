@@ -269,7 +269,7 @@ async function assembleForArguments(
 
   const builtinCommands = await loadCommandFiles(files);
   const plugins = await loadPlugins();
-  // The first word, or the first segment of a colon-joined id: oclif accepts `hub:deploy` as well as `hub deploy`.
+  // The first word, or the first segment of a colon-joined id: oclif accepts `db:apply` as well as `db apply`.
   const [head] = commandWords(argv).split(/[ :]/);
   const selected = selectCliPackages(findPackages(), {
     head: head === '' ? undefined : head,

@@ -1,12 +1,10 @@
 ---
 '@nocobase/app-client': minor
-'@nocobase/app-plugin-hub': major
 '@nocobase/app-plugin-users': major
 '@nocobase/app-plugin-workflow': major
 '@nocobase/app-plugin-ai-employee': major
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 '@nocobase/app-skills': patch
 ---
 

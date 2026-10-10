@@ -6,7 +6,7 @@ Do not create a plugin to add a feature. Plugins are separately published packag
 
 ## Examples template scope
 
-This application is based on `@nocobase/app-template-default` and provides runnable learning examples. Its homepage catalogs the registered demonstrations; article management is application-owned. Reusable plugin examples stay in `packages/examples/` in the source workspace. Keep framework changes aligned with Default and Hub; keep demonstration content and branding local. Use a separate configuration and database, never copy Default's runtime state.
+This application is based on `@nocobase/app-template-default` and provides runnable learning examples. Its homepage catalogs the registered demonstrations; article management is application-owned. Reusable plugin examples stay in `packages/examples/` in the source workspace. Keep framework changes aligned with Default; keep demonstration content and branding local. Use a separate configuration and database, never copy Default's runtime state.
 
 Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories and mounted under Settings. Keep these product integrations aligned with Default.
 
@@ -34,7 +34,7 @@ Read the one page your task needs, not the whole directory.
 
 `.agents/skills/nocobase-app-upgrade/` is a separate Skill for a separate job: merging a newer release of the template this application was generated from. Read it when the task is upgrading the template rather than building a feature, and read it before touching anything — an upgrade done by copying the newest template over this application destroys the work that made it this application.
 
-`.agents/skills/nocobase-deployment/` covers moving this application from source to a production server or a Hub: building for the target platform, what the archive does and does not carry, migrations and business data, production configuration, workflow artifacts after a production build, and what to verify afterwards. Read it before building for deployment, and when an application starts in production but does not work.
+`.agents/skills/nocobase-deployment/` covers moving this application from source to a production server: building for the target platform, what the archive does and does not carry, migrations and business data, production configuration, workflow artifacts after a production build, and what to verify afterwards. Read it before building for deployment, and when an application starts in production but does not work.
 
 ## Where things go
 
@@ -283,7 +283,7 @@ A command this application owns is a file under `cli/commands/` whose path is it
 
 Plugins are registered in `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. Presence in the array enables a plugin and array order is contribution order. A plugin appears in the roots matching what it ships, so a plugin with only commands is listed in `cli/plugins.ts` alone. Bulk Skills synchronization and plugin updates discover plugins from these composition roots.
 
-Mail and Mail Example are registered here with three offline providers in `server/config/mail.ts`. Open `/mail-example` to prepare the demo accounts and messages. These fixtures use `@example.test` addresses and never send mail to external services; keep this example out of Default and Hub applications. The Mail plugin's synchronized Skill describes its public integration contract.
+Mail and Mail Example are registered here with three offline providers in `server/config/mail.ts`. Open `/mail-example` to prepare the demo accounts and messages. These fixtures use `@example.test` addresses and never send mail to external services; keep this example out of Default applications. The Mail plugin's synchronized Skill describes its public integration contract.
 
 Let `pnpm nocobase plugin register` and `pnpm nocobase plugin unregister` add and remove entries. Edit these files by hand only to reorder entries or to pass a plugin its options.
 

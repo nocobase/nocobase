@@ -194,15 +194,15 @@ A composite action composes exactly the grants its definition lists, on any reso
 import { grantBacked } from '@nocobase/authorization/core';
 
 authz.resourceTypes.add({
-  type: 'hub.app',
-  actions: ['read', 'deploy'],
+  type: 'pm.issue',
+  actions: ['read', 'close'],
   authorize: grantBacked({
-    also: (request) => ownsApp(request.principal.id, request.resource.id),
+    also: (request) => ownsIssue(request.principal.id, request.resource.id),
   }),
 });
 ```
 
-This is a record type: it declares its actions and no items, so any record id passes validation and only an undeclared action is denied; the type's `authorize` judges each record. Grants use `id: '*'` to mean every record. `grantBacked()` is the default judgement and permits when a grant without a policy matches. Hub (`hub.app`, `hub.host`), users (`user`), notification and `page` are record types; `settings`, `composite` and `database.collection` are catalog types, which register items and deny any unregistered item or action.
+This is a record type: it declares its actions and no items, so any record id passes validation and only an undeclared action is denied; the type's `authorize` judges each record. Grants use `id: '*'` to mean every record. `grantBacked()` is the default judgement and permits when a grant without a policy matches. Users (`user`), notification and `page` are record types; `settings`, `composite` and `database.collection` are catalog types, which register items and deny any unregistered item or action.
 
 ### Workspace placement: `authz.ui`
 
@@ -221,7 +221,7 @@ authz.ui.defaultSection('report', 'administration');
 | `sections.add({ name, title, parent, order?, extend? })` | A subsection, one level under a top-level section. Without `extend`, a deep-equal re-add is a no-op and anything else throws. With `extend: true`, as a client settings group is extended, the add does nothing when the subsection exists and creates it otherwise; the owner's later add replaces the title and order and throws only if the parents differ. `extend` on a top-level section throws. |
 | `groups.add({ name, title, parent?, order? })`           | A right-side group, nested to any depth.                                                                                                                                                                                                                                                                                                                                                               |
 | `place(ref, { section, group?, order? })`                | Lists a resource, `{ type, id }` or a `CompositeResourceReference`, in a subsection and optionally a group. `order` positions it within the subsection; unordered resources follow in registration order. Placing in a top-level section throws; placing the same resource elsewhere throws.                                                                                                           |
-| `defaultSection(type, section)`                          | Unplaced resources of `type` are listed under `<section>.other`. Types with no default section and no placement are not displayed; `database.collection`, `hub.app` and `user` are such types.                                                                                                                                                                                                         |
+| `defaultSection(type, section)`                          | Unplaced resources of `type` are listed under `<section>.other`. Types with no default section and no placement are not displayed; `database.collection` and `user` are such types.                                                                                                                                                                                                                    |
 
 A placement may name a subsection, group or resource that registers later. Startup validation runs in the provider's `start` hook, after every plugin's `boot`: it reports a placement whose subsection or group is unknown, a placement of an unregistered resource, and any composite data scope whose target type lacks `recordAccess`, throwing in development and logging a warning when `NODE_ENV` is `production`. It also warns about each unplaced composite or settings item, which is then listed under its default section's "Other". Workflow owns `automation` and scheduler extends it, so the owner's title wins whichever boots first. The Pages entry is filled on the client from the route tree, with navigation groups as resource groups in menu order.
 

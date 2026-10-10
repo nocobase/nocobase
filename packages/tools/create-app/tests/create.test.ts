@@ -38,7 +38,7 @@ afterEach(async () => {
   vi.clearAllMocks();
   await rm(root, { recursive: true, force: true });
 });
-async function template(kind = 'app'): Promise<void> {
+async function template(): Promise<void> {
   const directory = await mkdtemp(path.join(root, 'template-'));
   await writeFile(
     path.join(directory, 'package.json'),
@@ -60,7 +60,6 @@ async function template(kind = 'app'): Promise<void> {
     directory,
     name: '@test/template',
     version: '1.0.0',
-    kind,
   });
 }
 const run = (argv: string[]) =>
@@ -138,10 +137,10 @@ describe('JSON creation flow', () => {
     expect(stdout.trim()).not.toContain('\n');
     expect(JSON.parse(stdout)).toMatchObject({ ok: true });
   });
-  it('supports no-install and Hub startup commands', async () => {
-    await template('hub');
+  it('supports no-install and lists the install step first', async () => {
+    await template();
     expect(
-      await run(['crm', '--template', 'hub', '--json', '--no-install']),
+      await run(['crm', '--template', 'examples', '--json', '--no-install']),
     ).toBe(0);
     expect(JSON.parse(stdout)).toMatchObject({
       result: {
@@ -150,8 +149,7 @@ describe('JSON creation flow', () => {
           'pnpm install',
           'pnpm nocobase config init',
           'pnpm nocobase config check',
-          'pnpm build',
-          'pnpm start',
+          'pnpm dev',
         ],
       },
     });
