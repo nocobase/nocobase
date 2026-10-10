@@ -637,6 +637,10 @@ const enUS = {
   'members.description':
     'Everyone who works in projects, with their roles; system administrators hold everything and are not listed.',
   'members.loadFailed': 'Unable to load members',
+  'members.systemAdministratorNote_one':
+    '{{count}} system administrator holds every permission and is not listed above.',
+  'members.systemAdministratorNote_other':
+    '{{count}} system administrators hold every permission and are not listed above.',
   'members.title': 'Members',
   'properties.you': '(you)',
   'roles.actions': 'Actions',

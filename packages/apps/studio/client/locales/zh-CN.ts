@@ -597,6 +597,10 @@ const zhCN: AppResource = {
   'members.description':
     '在项目里工作的人及其角色；系统管理员拥有全部权限，不在这里列出。',
   'members.loadFailed': '无法加载成员',
+  'members.systemAdministratorNote_one':
+    '系统管理员拥有全部权限，共 {{count}} 人，不在以上列出。',
+  'members.systemAdministratorNote_other':
+    '系统管理员拥有全部权限，共 {{count}} 人，不在以上列出。',
   'members.title': '成员',
   'properties.you': '（你）',
   'roles.actions': '操作',

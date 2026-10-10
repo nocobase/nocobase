@@ -47,7 +47,7 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { Role } from '../../../../shared/access.js';
-import { rolePath, roleTitle } from './roles-model.js';
+import { memberNameOf, rolePath, roleTitle } from './roles-model.js';
 import { useRoleError } from './use-role-error.js';
 import { studioKeys, useStudioApi } from '../../../access/api.js';
 import { useNotify } from '../../../access/notify.js';
@@ -252,8 +252,7 @@ export function RolesPanel(): ReactElement {
     [t, canDefine],
   );
 
-  const nameOf = (userId: string): string =>
-    members.data?.find((member) => member.userId === userId)?.name ?? userId;
+  const nameOf = (userId: string): string => memberNameOf(members.data, userId);
 
   let content: ReactElement;
   if (roles.isError && !roles.data) {

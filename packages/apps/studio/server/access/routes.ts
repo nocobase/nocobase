@@ -38,6 +38,7 @@ import {
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
+import { membersListMessage } from '../../shared/access.js';
 import { studioError, studioErrorHandler } from '../http/errors.js';
 import { boundedList } from '../http/input.js';
 import {
@@ -52,6 +53,7 @@ import {
   KeyScopeOptionsSchema,
   MemberParams,
   MemberSchema,
+  MembersMetaSchema,
   OrgApiKeyEventSchema,
   OrgApiKeySchema,
   RoleParams,
@@ -306,10 +308,26 @@ export const accessRoutes: AppApiRouteContribution<Application> =
           columns: ['userId', 'name', 'email', 'roles'],
         }),
         description:
-          'Needs `pm.members` `read`. System administrators and API key identities are not listed.',
-        responses: { 200: listResponse(MemberSchema), ...apiErrorResponses },
+          'Needs `pm.members` `read`. System administrators and API key identities are not listed; `meta.systemAdministratorCount` says how many administrators are not.',
+        responses: {
+          200: listResponse(MemberSchema, MembersMetaSchema),
+          ...apiErrorResponses,
+        },
       }),
-      async (c) => c.json(boundedList(await roles.members(viewer(c)))),
+      async (c) => {
+        const [members, systemAdministratorCount] = await Promise.all([
+          roles.members(viewer(c)),
+          roles.systemAdministratorCount(viewer(c)),
+        ]);
+        return c.json({
+          data: members,
+          meta: {
+            total: members.length,
+            systemAdministratorCount,
+            message: membersListMessage(systemAdministratorCount),
+          },
+        });
+      },
     );
     settings.patch(
       '/members/:userId',

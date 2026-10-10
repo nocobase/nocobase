@@ -602,6 +602,13 @@ describe('the role service', () => {
     ).rejects.toMatchObject({ code: 'SYSTEM_ADMIN' });
   });
 
+  it('counts the system administrators left out of the member list', async () => {
+    await addUser('alice');
+    await expect(
+      access.roles.systemAdministratorCount(await viewer('root')),
+    ).resolves.toBe(1);
+  });
+
   it('lets only an owner grant the owner role', async () => {
     await addUser('alice');
     await addUser('ann');
