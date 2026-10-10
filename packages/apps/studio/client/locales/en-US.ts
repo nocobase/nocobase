@@ -135,6 +135,9 @@ const enUS = {
     },
     send: 'Send',
     setUpModels: 'Add a model service',
+    runnerUnavailable:
+      'No runtime is available for this agent. Add or start a runtime with its coding tool installed and signed in. Messages will wait until a runner is ready.',
+    setUpRunners: 'Set up a runtime',
     sendFailed: 'The message could not be sent. Try again.',
     recent: 'Recent conversations',
     allConversations: 'View all',

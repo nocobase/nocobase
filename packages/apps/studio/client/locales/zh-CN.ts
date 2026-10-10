@@ -128,6 +128,9 @@ const zhCN: AppResource = {
     },
     send: '发送',
     setUpModels: '添加模型服务',
+    runnerUnavailable:
+      '这个 Agent 暂无可用的运行环境。请添加或启动运行环境，并确保对应编码工具已安装、已登录。消息发送后会等待 Runner 就绪。',
+    setUpRunners: '配置运行环境',
     sendFailed: '消息没有发出去，请重试。',
     recent: '最近的对话',
     allConversations: '查看全部',
