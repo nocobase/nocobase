@@ -153,6 +153,8 @@ export type UserInvitationResult =
       readonly outcome: 'invited';
       readonly invitationId: string;
       readonly emailSent: boolean;
+      /** A message the inviter can show when the email could not be sent. */
+      readonly emailError?: string;
       readonly inviteUrl?: string;
     }
   | {

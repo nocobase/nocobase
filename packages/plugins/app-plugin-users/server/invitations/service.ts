@@ -24,7 +24,11 @@ import {
   type UserRoleScope,
   type UserRoleValue,
 } from '../tokens.js';
-import { buildInvitationEmail, type InvitationMailer } from './mail.js';
+import {
+  buildInvitationEmail,
+  NO_EMAIL_CHANNEL_MESSAGE,
+  type InvitationMailer,
+} from './mail.js';
 import {
   INVITATION_TTL_MS,
   hashToken,
@@ -152,6 +156,14 @@ export function createInvitationManager(
         outcome: 'invited',
         invitationId: row.id,
         emailSent: !error,
+        ...(error
+          ? {
+              emailError:
+                error === NO_EMAIL_CHANNEL_MESSAGE
+                  ? error
+                  : '邮件未发送：邮件发送失败',
+            }
+          : {}),
         ...(error ? { inviteUrl: url } : {}),
       });
     }

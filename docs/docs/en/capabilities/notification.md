@@ -24,6 +24,8 @@ Email here means business notifications sent by the application. To connect a pe
 
 ## Before you start
 
+User invitation emails also use notification channels. The Users plugin uses `system-email` by default; configure and enable an email provider such as SMTP at `notification.channels.system-email`. The application templates include an SMTP example in `config.example.yml`. If no usable channel is configured, invitation creation still succeeds and returns “邮件未发送：未配置邮件渠道” with the invitation link for an administrator to forward manually.
+
 The following example uses in-app messages, so you do not need an email service or a group bot. You need:
 
 - **A running NocoBase application**: Your development Agent must be able to read and modify its source code. If you do not have an application yet, follow [Create an app with a Coding Agent](../get-started/create-app-with-agent).
