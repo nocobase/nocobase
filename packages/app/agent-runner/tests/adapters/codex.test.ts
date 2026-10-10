@@ -30,6 +30,7 @@ import type {
   AdapterHandle,
   AdapterSession,
 } from '../../src/agent/adapters/types.ts';
+import { createPolicy } from '../../src/core/command-policy.ts';
 import { fakeSpawn } from './fake-codex.ts';
 import type { FakeCodex } from './fake-codex.ts';
 
@@ -797,6 +798,82 @@ describe('permissions', () => {
       { meta: { decision: 'allow' } },
     ]);
     expect((await handle.result).exit).toBe('completed');
+  });
+
+  it('says why a read-only command with a command off the allowlist never ran, to the model and in its result', async () => {
+    const command =
+      "sed -n '1,220p' registry/markdown-view.tsx; test -d node_modules && echo deps-present || echo deps-missing";
+    const execution = {
+      type: 'commandExecution',
+      id: 'exec-test',
+      command,
+      cwd: '/work',
+      status: 'declined',
+      aggregatedOutput: '',
+      exitCode: null,
+      durationMs: null,
+    };
+    const { adapter } = adapterWith(async (fake) => {
+      await handshake(fake);
+      item(fake, 'started', { ...execution, status: 'inProgress' });
+      fake.emit({
+        id: 20,
+        method: 'item/commandExecution/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'exec-test',
+          command,
+          cwd: '/work',
+        },
+      });
+      expect((await fake.nextAnswer(20)).result).toEqual({
+        decision: 'decline',
+      });
+      const feedback = await fake.acceptPolicyFeedback();
+      expect(feedback).toContain('Command is not in the allowlist: test');
+      expect(feedback).toContain('not a user instruction to stop');
+      item(fake, 'completed', execution);
+      completeTurn(fake);
+    });
+    const policy = createPolicy({
+      workDir: '/work',
+      policy: {
+        permissionMode: 'acceptEdits',
+        allowedCommands: ['^sed\\b', '^echo\\b'],
+        deniedPatterns: [],
+        idleTimeoutMs: 1000,
+      },
+    });
+    const handle = adapter.start(
+      session({
+        permission: async (tool, input) => {
+          const decision = policy(tool, input);
+          return decision.decision === 'allow'
+            ? 'allow'
+            : { deny: decision.reason };
+        },
+      }),
+    );
+    const events = await drain(handle);
+    expect(events.find((e) => e.type === 'permission')).toMatchObject({
+      tool: 'shell',
+      meta: {
+        decision: 'deny',
+        reason: 'Command is not in the allowlist: test',
+        toolUseId: 'exec-test',
+        inputSummary: { command },
+      },
+    });
+    const result = events.find(
+      (e) => e.type === 'toolResult' && e.meta?.toolUseId === 'exec-test',
+    );
+    expect(result?.output).toContain('Command is not in the allowlist: test');
+    expect(result?.meta).toMatchObject({
+      isError: true,
+      status: 'declined',
+      deniedByPolicy: true,
+    });
   });
 
   it('retains policy feedback when the denied call ends the active turn', async () => {

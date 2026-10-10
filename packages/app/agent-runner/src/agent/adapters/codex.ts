@@ -429,6 +429,8 @@ class CodexRun {
 
   private readonly items = new Map<string, ThreadItem>();
   private readonly reviewedItems = new Set<string>();
+  /** What the model was told about each declined item, so its tool result says why it never ran. */
+  private readonly denials = new Map<string, string>();
   private usageBaseline?: TokenUsageBreakdown;
   private usageTotal?: TokenUsageBreakdown;
 
@@ -695,10 +697,13 @@ class CodexRun {
     decision: { allow: boolean; reason?: string },
   ): void {
     if (decision.allow) return;
-    // Do not await the steer while the app-server is waiting for its approval
+    const message = denialMessage(decision.reason);
+    if (toolUseId) this.denials.set(toolUseId, message);
+    // Codex's approval reply carries no message and the declined item completes with empty output, so the reason
+    // reaches the model as runtime feedback. Do not await the steer while the app-server is waiting for its approval
     // reply. The existing input queue retains feedback across turn boundaries.
     void this.steer(
-      `Runner policy feedback for ${tool}${toolUseId ? ` (tool call ${toolUseId})` : ''}: ${denialMessage(decision.reason)}`,
+      `Runner policy feedback for ${tool}${toolUseId ? ` (tool call ${toolUseId})` : ''}: ${message}`,
     );
   }
 
@@ -981,11 +986,18 @@ class CodexRun {
       case 'commandExecution':
         if ('command' in item) {
           void this.checkUnreviewed(item);
-          this.toolResult('shell', item.aggregatedOutput ?? '', item.id, {
-            isError: item.status !== 'completed' || (item.exitCode ?? 0) !== 0,
-            status: item.status,
-            ...(item.exitCode !== null ? { exitCode: item.exitCode } : {}),
-          });
+          this.toolResult(
+            'shell',
+            this.denials.get(item.id) ?? item.aggregatedOutput ?? '',
+            item.id,
+            {
+              isError:
+                item.status !== 'completed' || (item.exitCode ?? 0) !== 0,
+              status: item.status,
+              ...(item.exitCode !== null ? { exitCode: item.exitCode } : {}),
+              ...(this.denials.has(item.id) ? { deniedByPolicy: true } : {}),
+            },
+          );
         }
         break;
       case 'fileChange':
@@ -994,9 +1006,18 @@ class CodexRun {
           void this.checkUnreviewed(item);
           this.toolResult(
             'edit',
-            item.changes.map((c) => `${c.kind.type} ${c.path}`).join('\n'),
+            [
+              ...item.changes.map((c) => `${c.kind.type} ${c.path}`),
+              ...(this.denials.has(item.id)
+                ? [this.denials.get(item.id)!]
+                : []),
+            ].join('\n'),
             item.id,
-            { isError: item.status !== 'completed', status: item.status },
+            {
+              isError: item.status !== 'completed',
+              status: item.status,
+              ...(this.denials.has(item.id) ? { deniedByPolicy: true } : {}),
+            },
           );
         }
         break;
