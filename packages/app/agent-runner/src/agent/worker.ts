@@ -74,6 +74,7 @@ import { createPolicy } from '../core/command-policy.ts';
 import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
 import {
   agentCwd,
+  agentWorkingTrees,
   agentWritableRoots,
   PREPARE_STEPS,
   PrepareError,
@@ -673,6 +674,7 @@ export class RunWorker {
       const handle = adapter.start({
         workDir: cwd,
         writableRoots: agentWritableRoots(context.dirs, cwd, [pnpmStoreDir]),
+        workingTrees: agentWorkingTrees(context.dirs),
         prompt,
         systemPrompt: system,
         ...(payload.tool.model === undefined

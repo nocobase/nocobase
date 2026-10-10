@@ -12,7 +12,10 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { agentWritableRoots } from '../src/agent/prepare/index.ts';
+import {
+  agentWorkingTrees,
+  agentWritableRoots,
+} from '../src/agent/prepare/index.ts';
 import { createPolicy, isInside } from '../src/core/command-policy.ts';
 import { buildAgentEnv } from '../src/agent/env.ts';
 import {
@@ -30,6 +33,7 @@ import {
   SUBMODULES_PENDING,
   subjectWorkDir,
   markDirsPrepared,
+  listSubmodules,
 } from '../src/core/checkout.ts';
 import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 
@@ -949,7 +953,74 @@ describe('checkout', () => {
       expect(
         git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
       ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
+      expect(work.repos[0]!.submodules).toEqual([path.join(dir, 'vendor/sub')]);
+      expect(agentWorkingTrees(work.dirs)).toEqual([
+        dir,
+        path.join(dir, 'vendor/sub'),
+      ]);
       await work.release();
+    });
+
+    it('preserves spaces in recursively checked-out paths and excludes uninitialized submodules', async () => {
+      const nested = makeRemote(root, 'nested-repo');
+      const subSeed = path.join(root, 'sub-repo-seed');
+      git(
+        ['submodule', 'add', '--quiet', nested, 'nested/child space'],
+        subSeed,
+      );
+      git([...COMMIT, 'commit', '-q', '-m', 'nested submodule'], subSeed);
+      publishSeed(root, 'sub-repo');
+      const seed = path.join(root, 'origin-repo-seed');
+      git(['submodule', 'add', '--quiet', sub, 'vendor/sub space'], seed);
+      git(
+        ['submodule', 'add', '--quiet', nested, 'vendor/not initialized'],
+        seed,
+      );
+      git([...COMMIT, 'commit', '-q', '-m', 'submodule paths'], seed);
+      publishSeed(root);
+
+      const work = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'submodule-paths',
+        dirs: [repo('submodule-paths')],
+      });
+      try {
+        const dir = work.repos[0]!.dir;
+        const expected = [
+          path.join(dir, 'vendor/sub'),
+          path.join(dir, 'vendor/sub space'),
+          path.join(dir, 'vendor/sub space/nested/child space'),
+          path.join(dir, 'vendor/not initialized'),
+        ];
+        expect([...work.repos[0]!.submodules].sort()).toEqual(
+          [...expected].sort(),
+        );
+        expect([...agentWorkingTrees(work.dirs)].sort()).toEqual(
+          [dir, ...expected].sort(),
+        );
+        expect(
+          existsSync(
+            path.join(dir, 'vendor/sub space/nested/child space/README.md'),
+          ),
+        ).toBe(true);
+
+        git(
+          [
+            'submodule',
+            'deinit',
+            '--quiet',
+            '--force',
+            'vendor/not initialized',
+          ],
+          dir,
+        );
+        expect((await listSubmodules(dir)).sort()).toEqual(
+          expected.slice(0, 3).sort(),
+        );
+      } finally {
+        await work.release();
+      }
     });
 
     it('initializes only the missing ones when a clone is resumed, keeping where the agent moved the others', async () => {
