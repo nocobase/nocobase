@@ -8,3 +8,5 @@ Studio's `pnpm build` now packs the universal `nocobase-runner` and `nb-studio` 
 `nb-studio` packages are now versioned as `@nocobase/studio-cli` rather than as Studio. An installation that served `nb-studio` packed with `pnpm nocobase cli build` and no `--version` handed out Studio's version, which sorts higher, so `nb-studio update` does not offer the new package there: install `nb-studio` again with the install script.
 
 The agents plugin's documentation describes building the runner and CLI into an application's own build output as an alternative to separate CI artifacts.
+
+`@nocobase/studio-cli` now shares Studio's version line (a `fixed` changesets group), so the `nb-studio` Studio serves keeps the versions earlier Studio builds handed out and `nb-studio update` offers it to existing installations.
