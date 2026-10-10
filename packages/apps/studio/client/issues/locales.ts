@@ -9,6 +9,15 @@ import type { KanbanLabels } from '../components/kanban.js';
 import type { AgentQueueLabels } from '../extensions/nocobase-agent-queue/labels.js';
 
 export const issuesEnUS = {
+  relationships: {
+    add: 'Add a relationship',
+    type: 'Relationship type',
+    prerequisite: 'Prerequisite (wait for it)',
+    hint: 'A prerequisite holds this issue until it finishes. Related issues do not block each other.',
+    changeType: 'Change relationship with {identifier}',
+    toRelated: 'Change to related',
+    toBlocker: 'Make a prerequisite (this issue waits)',
+  },
   title: 'Issues',
   description:
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
@@ -184,6 +193,15 @@ export const issuesEnUS = {
 export type IssuesWording = typeof issuesEnUS;
 
 export const issuesZhCN: IssuesWording = {
+  relationships: {
+    add: '添加关联',
+    type: '关联类型',
+    prerequisite: '前置依赖（等它完成）',
+    hint: '前置依赖完成前，本任务不会开始；相关任务仅作关联，不会互相阻塞。',
+    changeType: '更改与 {identifier} 的关联类型',
+    toRelated: '改为相关',
+    toBlocker: '改为前置依赖（本任务等它完成）',
+  },
   title: '任务',
   description:
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',

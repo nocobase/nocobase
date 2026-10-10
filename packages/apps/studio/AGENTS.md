@@ -147,6 +147,8 @@ Every page in Studio and in the plugins it composes follows the UI guidelines in
 
 The personal settings dialog counts as a settings panel there: its header keeps the action in the title row, and its empty states use the smaller padding.
 
+The issue detail block accepts a relationship type for additions and a callback for changing editable relationships. Studio supplies those callbacks through the projects plugin’s public API in `client/issues/detail/dependency-actions.ts`; the plugin’s `addBlocker` helper is only for prerequisites. Conversion creates the new type before removing the old one and refreshes both endpoints even on failure. If removal fails, both types remain visible and a retry reuses the existing target type. Incoming “Blocks” rows remain read-only: their prerequisite direction belongs to the other issue.
+
 A plugin keeps its own copies of the shadcn primitives in its `client/components/ui/`. When it needs one it lacks, such as `calendar`, copy Studio's `client/components/ui/` file with only its imports made relative and its exports given return types, and declare the packages it imports, such as `react-day-picker`, as peers that Studio provides.
 
 ### Server routes
