@@ -63,6 +63,12 @@ import {
 } from '#components/ui/collapsible';
 import { Input } from '#components/ui/input';
 import { Textarea } from '#components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#components/ui/tooltip';
 import { cn } from 'cn';
 
 import { IssueCard, type IssueCardLink } from '#components/issue-card';
@@ -508,13 +514,15 @@ function useFitsScrollViewport(
   return fits;
 }
 
-/** The page's padding, matching `md:p-6` and `lg:top-6` below, in pixels. */
+/** The page's padding, matching `md:p-6` and `@4xl/issue-detail:top-6` below, in pixels. */
 const LAYOUT_INSET = 24;
 
 /**
  * The frame of a record's page on the application's background: the main column (its cards, such as `IssueSurface`,
- * stacked with the frame's gap) beside a fixed 20rem side column of cards from `lg` up, folded into one column on narrow
- * screens. The side column follows the page while it fits the viewport.
+ * stacked with the frame's gap) beside a fixed 20rem side column of cards once the page's own width reaches `@4xl`
+ * (56rem), folded into one column below it. The threshold follows the page's own width through a container query
+ * rather than the viewport, so it also reacts to a sidebar docked beside the page, such as an AI assistant panel. The
+ * side column follows the page while it fits the viewport.
  */
 export function IssueDetailLayout({
   main,
@@ -532,14 +540,22 @@ export function IssueDetailLayout({
   return (
     <div
       className={cn(
-        'flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 lg:flex-row',
+        '@container/issue-detail flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @4xl/issue-detail:flex-row',
         className,
       )}
       data-slot='issue-detail-layout'
     >
       <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>{main}</div>
-      <aside aria-label={asideLabel} className='lg:w-[20rem] lg:shrink-0'>
-        <div className={cn(fits && 'lg:sticky lg:top-6')} ref={contentRef}>
+      <aside
+        aria-label={asideLabel}
+        className='@4xl/issue-detail:w-[20rem] @4xl/issue-detail:shrink-0'
+      >
+        <div
+          className={cn(
+            fits && '@4xl/issue-detail:sticky @4xl/issue-detail:top-6',
+          )}
+          ref={contentRef}
+        >
           {aside}
         </div>
       </aside>
@@ -606,7 +622,7 @@ export function IssueHeader({
       });
   };
   return (
-    <div className='space-y-2' data-slot='issue-header'>
+    <div className='@container/issue-header space-y-2' data-slot='issue-header'>
       {trail ? <div className='min-w-0'>{trail}</div> : null}
       {parent ? (
         <Link
@@ -1381,7 +1397,11 @@ export function IssueDependencies({
   );
 }
 
-/** Deletes the issue after a confirmation. */
+/**
+ * Deletes the issue after a confirmation. Below `@md` of the nearest named container (the issue header's own width,
+ * not the viewport), only the icon shows, with the label in a tooltip, so a docked panel beside the page does not
+ * squeeze the title out of its row.
+ */
 export function IssueDeleteButton({
   identifier,
   onDelete,
@@ -1395,15 +1415,27 @@ export function IssueDeleteButton({
   const [busy, setBusy] = useState(false);
   return (
     <>
-      <Button
-        variant='ghost'
-        size='sm'
-        className='text-muted-foreground'
-        onClick={() => setOpen(true)}
-      >
-        <Trash2Icon data-icon='inline-start' />
-        {labels.delete}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant='ghost'
+                size='sm'
+                aria-label={labels.delete}
+                className='text-muted-foreground'
+                onClick={() => setOpen(true)}
+              />
+            }
+          >
+            <Trash2Icon data-icon='inline-start' />
+            <span className='hidden @md/issue-header:inline'>
+              {labels.delete}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{labels.delete}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
