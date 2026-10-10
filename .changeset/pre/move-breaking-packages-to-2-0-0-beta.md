@@ -14,7 +14,6 @@
 '@nocobase/app-plugin-authz-sharing-rules': patch
 '@nocobase/app-plugin-database-example': patch
 '@nocobase/app-plugin-database-explorer': patch
-'@nocobase/app-plugin-departments-example': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-file-example': patch
 '@nocobase/app-plugin-i18n': patch

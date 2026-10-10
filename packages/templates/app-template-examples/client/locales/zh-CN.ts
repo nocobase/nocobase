@@ -29,7 +29,7 @@ const zhCN: AppResource = {
     retry: '重试',
     empty: '暂无处理任务。运行报价工作流即可生成任务。',
     noResults: '没有符合筛选条件的任务。',
-    emptyHint: '在自动化设置中运行“Quotation routing”即可生成任务。',
+    emptyHint: '运行“Quotation routing”工作流即可生成任务。',
     clearFiltersHint: '调整报价编号或状态筛选，查看更多任务。',
     clearFilters: '清除筛选',
     quotation: '报价编号',
@@ -192,7 +192,6 @@ const zhCN: AppResource = {
   'auth.marketingFooter': '自由构建，可靠支撑。',
   'status.loading': '加载中',
   'status.loadingPage': '正在加载页面',
-  'status.loadingSettings': '正在加载设置',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
@@ -205,17 +204,6 @@ const zhCN: AppResource = {
   shell: {
     buildFreely: 'AI 自由构建。',
     reliability: '<brand>NocoBase</brand> 保障可靠。',
-  },
-  surface: {
-    backToApp: '返回应用',
-    loading: '正在加载{{title}}',
-    navigation: '{{title}}导航',
-    page: '{{title}}页面',
-  },
-  settings: {
-    title: '设置',
-    emptyTitle: '暂无可用设置',
-    emptyDescription: '没有已启用的插件提供你有权访问的设置页面。',
   },
   routeOverlays: {
     title: '路由弹窗与抽屉',

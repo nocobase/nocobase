@@ -22,7 +22,6 @@ const preinstalled = [
   { group: 'components', item: 'route-drawer' },
   { group: 'components', item: 'route-child-page' },
   { group: 'inbox', item: 'inbox' },
-  { group: 'inbox', item: 'inbox-button' },
 ];
 
 function registryItem(group, name) {

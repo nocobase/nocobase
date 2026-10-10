@@ -87,7 +87,7 @@ client/                  Browser application
 ├── pages/               Your page components
 ├── components/          Your components
 │   └── ui/              shadcn/ui primitives
-├── layouts/             App and Settings layouts
+├── layouts/             App layout
 │   └── components/      Layout containers, navigation, branding and account controls
 ├── routing/             Route rendering, access checks, loading and error UI
 ├── locales/             Your translated strings
@@ -399,13 +399,7 @@ Tests live in `tests/`, never beside the source they cover. Put logic and integr
 
 ### Notification testing
 
-After signing in with the `notification:test` `send` permission, use the
-notification logs settings page to send a real message through the durable
-Notification Manager. The form is generated from safe Channel test metadata;
-Email tests require an address and IM tests use the configured logical target.
-The button remains visible so configuration problems are discoverable. The
-server enforces the `notification:test` `send` permission only when the message
-is submitted.
+With the `notification:test` `send` permission, send a real message through the durable Notification Manager with `POST <APP_BASE_PATH>/api/notifications/testSends`. `GET <APP_BASE_PATH>/api/notifications/testTargets` lists each configured channel and the fields its test takes: Email tests require an address and IM tests use the configured logical target. The server enforces the permission when the message is submitted.
 
 ## API documentation
 
@@ -414,7 +408,7 @@ The application documents every `/api` endpoint it serves — its own routes, ev
 - Swagger UI: `<origin><APP_BASE_PATH>/api/swagger/docs`, such as `http://127.0.0.1:13000/main/api/swagger/docs`
 - JSON: `<origin><APP_BASE_PATH>/api/swagger`
 
-Only a signed-in user or an API key may read them; anyone else gets `401`. Open the Swagger UI in a browser where you are signed in, or, from a script, send an API key created at `<APP_BASE_PATH>/settings/api-keys` in the `x-api-key` header. Swagger UI's **Authorize** button takes a key too and keeps it across reloads.
+Only a signed-in user or an API key may read them; anyone else gets `401`. Open the Swagger UI in a browser where you are signed in, or, from a script, send an API key created with `POST <APP_BASE_PATH>/api/apiKeys` in the `x-api-key` header. Swagger UI's **Authorize** button takes a key too and keeps it across reloads.
 
 ```bash
 curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger

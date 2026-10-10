@@ -74,7 +74,7 @@ The running application describes every `/api` endpoint it serves — its own ro
 curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
 ```
 
-Replace `/main` with the application's `APP_BASE_PATH`. Swagger UI for people is at `<APP_BASE_PATH>/api/swagger/docs`. Reading either needs a signed-in session or an API key, which a user creates at `<APP_BASE_PATH>/settings/api-keys`; without one the routes answer `401`, and an application with no access check registered, such as one without the authentication plugin, answers `404`. Ask the user for a key rather than creating one yourself. [HTTP API design](references/http-api.md#api-documentation) explains how to read the document and how a new route declares itself in it.
+Replace `/main` with the application's `APP_BASE_PATH`. Swagger UI for people is at `<APP_BASE_PATH>/api/swagger/docs`. Reading either needs a signed-in session or an API key, which a signed-in user creates with `POST <APP_BASE_PATH>/api/apiKeys`; without one the routes answer `401`, and an application with no access check registered, such as one without the authentication plugin, answers `404`. Ask the user for a key rather than creating one yourself. [HTTP API design](references/http-api.md#api-documentation) explains how to read the document and how a new route declares itself in it.
 
 ## Removing a direct NocoBase package
 
@@ -141,7 +141,7 @@ Everything else — `client/routing/`, `client/layouts/`, `client/theme/`, the s
 
 When the built-in mechanism genuinely cannot express the requirement, changing that structure is a legitimate answer. Comment what you changed and why the built-in path did not fit, and update the application's `AGENTS.md` in the same change so it still describes the real application. The synchronized NocoBase Skills are package-owned; propose a change to their source package when the shared framework guidance itself is wrong.
 
-When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): the Settings header entry, dev pages inside the App shell, the language submenu, navigation group state, permission refresh and sign-out handling.
+When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): a single App shell with no settings area, the language submenu, navigation group state, permission refresh and sign-out handling.
 
 ## Ownership
 
