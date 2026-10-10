@@ -5,6 +5,8 @@
  * Studio's access errors (404 for an issue the caller may not see, 403 for one they may not edit).
  */
 import type { Viewer } from '@nocobase/app-plugin-projects/server/tokens';
+import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
+import type { Releases } from '@nocobase/app-plugin-releases/server';
 import type { DatabaseManager, Row } from '@nocobase/db';
 
 import type {
@@ -14,16 +16,17 @@ import type {
   PreviewVariableScope,
   PreviewView,
 } from '../../shared/previews.js';
-import { forbidden, invalid, notFound } from '../access/errors.js';
+import { conflict, forbidden, invalid, notFound } from '../access/errors.js';
 import { buildView, findBuild } from '../builds/store.js';
-import {
-  findPullRequestById,
-  linksOfPullRequest,
-  pullRequestsOfIssue,
-} from '../git/store.js';
+import { findPullRequestById, pullRequestsOfIssue } from '../git/store.js';
 import type { IssueAccess } from './access.js';
+import {
+  projectPreviewRecords,
+  previewIssues,
+  visiblePreviewIssue,
+} from './project-selection.js';
 import type { PreviewService } from './service.js';
-import { findIssue, findIssues, type IssueRecord } from './sources.js';
+import { findIssue, type IssueRecord } from './sources.js';
 import {
   livePreviews,
   previewsOfPullRequests,
@@ -32,6 +35,18 @@ import {
 } from './store.js';
 
 export interface PreviewApi {
+  /** Existence only; unlinked Apps are considered only after the route admits the actual credential. */
+  hasProjectPreviews(
+    viewer: Viewer,
+    projectId: string,
+    allowUnlinked?: boolean,
+  ): Promise<boolean>;
+  /** The route admits sessions/unrestricted personal keys before this project and App authorization. */
+  downProject(
+    viewer: Viewer,
+    projectId: string,
+    previewId: string,
+  ): Promise<void>;
   read(viewer: Viewer, issue: string): Promise<IssuePreviews>;
   /** Destroys the previews of the issue's pull requests, or the one `appId` names. */
   down(viewer: Viewer, issue: string, appId?: string): Promise<IssuePreviews>;
@@ -45,10 +60,10 @@ export interface PreviewApi {
     scope: PreviewVariableScope,
     values: Readonly<Record<string, string>>,
   ): Promise<IssuePreviews>;
-  /** The live previews the viewer sees through an issue, of one project when `projectId` is given. */
+  /** Live issue previews globally, or visible previews of the project’s current repository bindings. */
   list(
     viewer: Viewer,
-    filter?: { readonly projectId?: string },
+    filter?: { readonly projectId?: string; readonly allowUnlinked?: boolean },
   ): Promise<PreviewListItem[]>;
 }
 
@@ -70,6 +85,8 @@ export function createPreviewApi(deps: {
   readonly database: Pick<DatabaseManager, 'connection'>;
   readonly previews: () => PreviewService;
   readonly issues: IssueAccess;
+  readonly projects: () => Pick<Projects, 'issueQueries'>;
+  readonly releases: () => Releases;
   /** A release management App's name, for the linked App a preview previews. */
   readonly appName: (appId: string) => Promise<string | null>;
   /** Whether the person may manage release environments, and so save a variable for every preview there. */
@@ -181,8 +198,101 @@ export function createPreviewApi(deps: {
     return found.id;
   }
 
+  async function visibleProject(
+    viewer: Viewer,
+    projectId: string,
+  ): Promise<void> {
+    if (viewer.permissions.scopes['pm.issues/view'] === 'none')
+      throw forbidden('Viewing issues is required.');
+    await deps.projects().issueQueries.statuses(viewer, projectId);
+  }
+
+  async function canApp(
+    viewer: Viewer,
+    record: PreviewRecord,
+    action: 'view' | 'delete',
+  ): Promise<boolean> {
+    const releases = deps.releases();
+    const app = await releases.releases.findApp(record.appId);
+    const ownership =
+      app ??
+      (record.status === 'destroyed'
+        ? { id: record.appId, createdBy: record.createdBy }
+        : null);
+    return (
+      !!ownership &&
+      releases.guard.canApp(
+        await releases.callerForUser(viewer.userId, 'human'),
+        action,
+        ownership,
+      )
+    );
+  }
+
+  async function selection(
+    viewer: Viewer,
+    record: PreviewRecord,
+    allowUnlinked: boolean,
+  ): Promise<{ issue: IssueRecord | null } | null> {
+    const linked = await previewIssues(conn(), record);
+    const issue = await visiblePreviewIssue(deps.issues, viewer, linked);
+    if (issue) return { issue };
+    // A hidden association must never fall through to App permissions.
+    if (
+      linked.length > 0 ||
+      !allowUnlinked ||
+      !(await canApp(viewer, record, 'view'))
+    )
+      return null;
+    return { issue: null };
+  }
+
   return {
     read,
+    async hasProjectPreviews(viewer, projectId, allowUnlinked = false) {
+      await visibleProject(viewer, projectId);
+      for (const record of await projectPreviewRecords(conn(), projectId))
+        if (await selection(viewer, record, allowUnlinked)) return true;
+      return false;
+    },
+    async downProject(viewer, projectId, previewId) {
+      await visibleProject(viewer, projectId);
+      const record = (
+        await projectPreviewRecords(conn(), projectId, true)
+      ).find((item) => item.id === previewId);
+      if (!record) throw notFound('Preview');
+      if ((await previewIssues(conn(), record)).length > 0)
+        throw conflict(
+          'PREVIEW_LINKED',
+          'The pull request is now linked to an issue. Refresh and use the issue preview.',
+        );
+      if (!(await canApp(viewer, record, 'delete'))) {
+        throw forbidden('Deleting this preview App is not allowed.');
+      }
+      if (record.status !== 'destroyed') {
+        // Permission resolution is asynchronous: an association created during it changes the authorized entry point.
+        if ((await previewIssues(conn(), record)).length > 0)
+          throw conflict(
+            'PREVIEW_LINKED',
+            'The pull request is now linked to an issue. Refresh and use the issue preview.',
+          );
+        await deps
+          .previews()
+          .down(record.id, viewer.userId, async (current) => {
+            const belongs = (
+              await projectPreviewRecords(conn(), projectId)
+            ).some((item) => item.id === current.id);
+            if (!belongs) throw notFound('Preview');
+            if (!(await canApp(viewer, current, 'delete')))
+              throw forbidden('Deleting this preview App is not allowed.');
+            if ((await previewIssues(conn(), current)).length > 0)
+              throw conflict(
+                'PREVIEW_LINKED',
+                'The pull request is now linked to an issue. Refresh and use the issue preview.',
+              );
+          });
+      }
+    },
     async down(viewer, key, appId) {
       const issue = await editable(viewer, key);
       for (const record of await recordsOf(issue.id)) {
@@ -217,34 +327,29 @@ export function createPreviewApi(deps: {
       return read(viewer, issue.id);
     },
     async list(viewer, filter = {}) {
-      const previews = await livePreviews(conn());
+      if (filter.projectId) await visibleProject(viewer, filter.projectId);
+      const records = filter.projectId
+        ? await projectPreviewRecords(conn(), filter.projectId)
+        : await livePreviews(conn());
       const items: PreviewListItem[] = [];
-      for (const preview of previews) {
-        if (filter.projectId) {
-          const resource = await conn()
-            .query.selectFrom('pmProjectResources')
-            .select('projectId')
-            .where('id', '=', preview.resourceId)
-            .executeTakeFirst<Row>();
-          if (resource?.projectId !== filter.projectId) continue;
-        }
-        const links = await linksOfPullRequest(conn(), preview.pullRequestId);
-        const issues = await findIssues(
-          conn(),
-          links.map((link) => link.issueId),
+      for (const record of records) {
+        const selected = await selection(
+          viewer,
+          record,
+          !!filter.projectId && filter.allowUnlinked === true,
         );
-        let shown: IssueRecord | null = null;
-        for (const issue of issues)
-          if (!issue.deleted && (await deps.issues.canView(viewer, issue.id))) {
-            shown = issue;
-            break;
-          }
-        if (!shown) continue;
+        if (!selected) continue;
+        const shown = selected.issue;
         items.push({
-          ...(await view(preview, false)),
-          issueId: shown.id,
-          identifier: shown.identifier,
-          title: shown.title,
+          ...(await view(record, false)),
+          repo: record.repo,
+          number: record.number,
+          issueId: shown?.id ?? null,
+          identifier: shown?.identifier ?? null,
+          title: shown?.title ?? null,
+          canDestroy: shown
+            ? await deps.issues.canEdit(viewer, shown.id)
+            : await canApp(viewer, record, 'delete'),
         });
       }
       return items;

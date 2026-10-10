@@ -9,7 +9,7 @@
 import { useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
-import type { ReactElement, ReactNode } from 'react';
+import { useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import type { IssueTableColor } from '@/components/issue-table';
@@ -26,6 +26,15 @@ import type {
   PreviewListItem,
   PreviewStatus,
 } from '../../../shared/previews.js';
+import { UnlinkedPreviewList } from './unlinked-previews.js';
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from '@/components/ui/empty';
+import { MonitorPlayIcon } from 'lucide-react';
 import { EnvironmentRows } from '../../deploys/environments.js';
 import { useProjectEnvironments } from '../../deploys/use-environments.js';
 import {
@@ -69,10 +78,13 @@ export function ProjectReleases(): ReactElement {
   const { t } = useTranslation();
   const { detail: labels } = useProjectPageWording();
   const api = useApiClient();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [loadedPreviews, setLoadedPreviews] = useState(false);
+  if (releases?.hasPreview && !loadedPreviews) setLoadedPreviews(true);
   const previews = useQuery({
     queryKey: previewKeys.project(project.id),
     queryFn: () => readProjectPreviews(api, project.id),
-    enabled: releases?.hasPreview === true,
+    enabled: releases?.hasPreview === true || loadedPreviews,
   });
   const environments = useProjectEnvironments(project.id);
 
@@ -90,9 +102,9 @@ export function ProjectReleases(): ReactElement {
     : { state: 'loading' };
   const previewItem = (preview: PreviewListItem): PreviewItem => ({
     id: preview.id,
-    identifier: preview.identifier,
-    title: preview.title,
-    href: issueHref(preview.identifier),
+    identifier: preview.identifier ?? '',
+    title: preview.title ?? '',
+    href: issueHref(preview.identifier ?? ''),
     status: {
       name: t(`previews.statuses.${preview.status}`),
       color: STATUS_COLOR[preview.status],
@@ -110,13 +122,18 @@ export function ProjectReleases(): ReactElement {
     url: preview.url ? absoluteUrl(preview.url) : null,
   });
   const previewList: Loaded<PreviewItem> = previews.data
-    ? { state: 'ready', items: previews.data.map(previewItem) }
+    ? {
+        state: 'ready',
+        items: previews.data
+          .filter((item) => item.issueId !== null)
+          .map(previewItem),
+      }
     : previews.isError
       ? { state: 'error' }
       : { state: 'loading' };
 
   return (
-    <div className='max-w-3xl space-y-3'>
+    <div ref={contentRef} tabIndex={-1} className='max-w-3xl space-y-3'>
       {environments.data && environments.data.items.length > 0 ? (
         <ProjectSection
           title={t('deploys.environments.title')}
@@ -132,8 +149,33 @@ export function ProjectReleases(): ReactElement {
           labels={labels}
         />
       ) : null}
-      {releases?.hasPreview ? (
+      {(releases?.hasPreview || loadedPreviews) &&
+      (!previews.data ||
+        previews.data.some((item) => item.issueId !== null)) ? (
         <PreviewList list={previewList} link={RouterLink} labels={labels} />
+      ) : null}
+      {previews.data?.some((item) => item.issueId === null) ? (
+        <UnlinkedPreviewList
+          projectId={project.id}
+          onDestroyed={() => contentRef.current?.focus()}
+          items={previews.data.filter((item) => item.issueId === null)}
+        />
+      ) : null}
+      {loadedPreviews &&
+      previews.data?.length === 0 &&
+      !releases?.hasProduction &&
+      environments.data?.items.length === 0 ? (
+        <Empty className='min-h-48 border border-dashed'>
+          <EmptyHeader>
+            <EmptyMedia variant='icon'>
+              <MonitorPlayIcon />
+            </EmptyMedia>
+            <EmptyTitle>{t('previews.projectEmpty')}</EmptyTitle>
+            <EmptyDescription>
+              {t('previews.projectEmptyDescription')}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : null}
     </div>
   );

@@ -424,6 +424,8 @@ const zhCN: AppResource = {
   'errors.INVALID_NAME': '请输入不超过 100 个字符的名称。',
   'errors.APPS_NOT_CREATABLE':
     '只有可以创建应用、或可以部署到所有应用的人，才能让 Studio 创建应用。',
+  'errors.PREVIEW_LINKED':
+    '此 Pull request 已关联任务，请刷新后从任务入口管理预览。',
   'errors.PREVIEW_ENVIRONMENT_UNSUITABLE':
     '预览需要一个能运行上传归档、且未受保护的环境。',
   'errors.UNKNOWN_ENVIRONMENT': '这个环境已不存在。',

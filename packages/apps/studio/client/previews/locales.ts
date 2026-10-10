@@ -4,6 +4,17 @@
  * (`client/locales/*.ts`).
  */
 export const previewsEnUS = {
+  projectEmpty: 'No previews',
+  projectEmptyDescription:
+    'The currently bound repositories have no visible previews. New pull request previews will appear here.',
+  unlinked: 'Pull requests without a linked issue',
+  unlinkedDescription:
+    'Previews of pull requests that are not linked to an issue.',
+  unlinkedDestroyTitle: 'Destroy preview "{{pr}}"?',
+  unlinkedDestroyDescription:
+    'App "{{app}}" and its data will be deleted. CI may create a new preview for the next pull request head.',
+  unlinkedDestroyed: 'Destroyed preview "{{pr}}".',
+  more: 'Actions for {{pr}}',
   entry: 'Preview',
   entryOf: 'Preview of {{app}}',
   loadFailed: 'Could not load the previews.',
@@ -161,6 +172,16 @@ export const previewsEnUS = {
 };
 
 export const previewsZhCN: typeof previewsEnUS = {
+  projectEmpty: '暂无预览',
+  projectEmptyDescription:
+    '当前绑定仓库没有可见的预览，新的 Pull request 预览会显示在这里。',
+  unlinked: '未关联任务的 Pull request',
+  unlinkedDescription: '尚未关联任务的 Pull request 的预览。',
+  unlinkedDestroyTitle: '销毁“{{pr}}”的预览？',
+  unlinkedDestroyDescription:
+    'App“{{app}}”及其数据将被删除，后续新 PR head 的 CI 部署可能再次创建预览。',
+  unlinkedDestroyed: '已销毁“{{pr}}”的预览。',
+  more: '{{pr}} 的操作',
   entry: '预览',
   entryOf: '{{app}} 的预览',
   loadFailed: '无法加载预览',

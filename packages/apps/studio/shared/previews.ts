@@ -23,6 +23,8 @@
  *   previews when that is unambiguous.
  * - `GET /api/previews?projectId=` answers `PreviewListItem[]` (`meta.total`), the previews the caller may see, of one project
  *   when `projectId` is given.
+ * - `POST /api/previews/projects/:projectId/:previewId/down` deletes one unlinked preview App and its data after
+ *   rechecking project, repository membership and App delete permission.
  * - `GET /api/deploys/marks?issueIds=a,b` answers `Record<issueId, DeployMark[]>`.
  * - `GET /api/deploys/projects/:projectId/unreleasedIssues` answers `UnreleasedIssues`, with whether the project's
  *   repositories deploy to production and preview at all.
@@ -153,11 +155,15 @@ export interface IssuePreviews {
   readonly canSetEnvironmentVariables: boolean;
 }
 
-/** A live preview, with the first issue linked to its pull request that the caller sees. */
+/** A live preview with a visible issue, or nullable issue fields for an unlinked project preview. */
 export interface PreviewListItem extends PreviewView {
-  readonly issueId: string;
-  readonly identifier: string;
-  readonly title: string;
+  readonly issueId: string | null;
+  readonly identifier: string | null;
+  readonly title: string | null;
+  readonly canDestroy: boolean;
+  /** Fallback identity when pull request metadata is unavailable. */
+  readonly repo: string;
+  readonly number: number;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -207,7 +213,7 @@ export interface UnreleasedIssues {
   readonly projectId: string;
   /** Whether a repository of the project deploys to production at all; without one nothing is ever "unreleased". */
   readonly hasProduction: boolean;
-  /** Whether a repository of the project previews its issues' pull requests. */
+  /** Whether a currently bound repository has a live preview visible to this caller. */
   readonly hasPreview: boolean;
   readonly items: readonly UnreleasedIssue[];
 }

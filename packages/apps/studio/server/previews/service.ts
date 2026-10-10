@@ -98,7 +98,11 @@ export interface PreviewService extends PreviewPort {
   /** A pull request was stored: an open one's previews follow its head, a merged or closed one's are removed. */
   pullRequestChanged(pullRequestId: string): Promise<void>;
   /** Removes the preview's App and its data; the row stays, `destroyed`, until the pull request's next head. */
-  down(previewId: string, by: string | null): Promise<void>;
+  down(
+    previewId: string,
+    by: string | null,
+    beforeDelete?: (preview: PreviewRecord) => Promise<void>,
+  ): Promise<void>;
   /** Deploys the preview's head again from its uploaded build. */
   retry(previewId: string): Promise<PreviewRecord | null>;
   /** A runner build (the disabled runner method) finished with a release in the preview's App. */
@@ -495,10 +499,16 @@ export function createPreviewService(deps: PreviewServiceDeps): PreviewService {
     }
   }
 
-  async function downNow(preview: PreviewRecord, by: string | null) {
+  async function downNow(
+    preview: PreviewRecord,
+    by: string | null,
+    beforeDelete?: (preview: PreviewRecord) => Promise<void>,
+  ) {
     if (preview.status === 'destroyed') return;
     const releases = deps.releases();
     const app = await releases.releases.findApp(preview.appId);
+    // Recheck caller-specific preconditions after waiting for deployment work and resolving the App.
+    await beforeDelete?.(preview);
     // Only an App made for it (`app ensure`, or Studio itself, as previews were before): one that existed before is
     // never deleted.
     if (
@@ -651,12 +661,12 @@ export function createPreviewService(deps: PreviewServiceDeps): PreviewService {
       return previewWhere(conn(), 'id', preview.id);
     },
 
-    async down(previewId, by) {
+    async down(previewId, by, beforeDelete) {
       const preview = await previewWhere(conn(), 'id', previewId);
       if (!preview) return;
       await locked(keyOf(preview), async () => {
         const current = await previewWhere(conn(), 'id', previewId);
-        if (current) await downNow(current, by);
+        if (current) await downNow(current, by, beforeDelete);
       });
     },
 

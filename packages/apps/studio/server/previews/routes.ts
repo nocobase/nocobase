@@ -67,11 +67,17 @@ import {
   PreviewVariablesInput,
   ProjectEnvironmentsSchema,
   ProjectParams,
+  ProjectPreviewParams,
   ReopenDecisionSchema,
   UnreleasedIssuesSchema,
 } from './schemas.js';
 import { previewsNamed, type PreviewApi } from './api.js';
 import { studioPreviewApiToken } from './token.js';
+
+function allowsUnlinked(context: Context): boolean {
+  const caller = callerOfRequest(context);
+  return caller?.kind === 'user' && !caller.keyScope;
+}
 
 const tags = ['Studio'];
 
@@ -251,6 +257,7 @@ export const previewsRoutes: AppApiRouteContribution<Application> =
             data: await deploys.unreleased(
               c.get('studioViewer'),
               c.req.valid('param').projectId,
+              allowsUnlinked(c),
             ),
           }),
       );
@@ -344,7 +351,7 @@ function previewRouter(deps: {
       summary: 'List live previews',
       operationId: 'previewsListPreviews',
       description:
-        'The live previews of the pull requests linked to issues the caller may see, each with the first such issue, of one project when `projectId` is given. A bounded list; never a first administrator.',
+        'Without `projectId`, the live previews linked to visible issues. For a project the caller sees and may view issues in, previews of its currently bound repository identities, excluding destroyed records. Each has a visible issue or nullable issue fields when no live issue is linked. Hidden issue associations are excluded. Unlinked previews require preview App view permission and a session or unrestricted personal key; runs and restricted keys cannot see them. `canDestroy` reports cleanup permission. A bounded list; never administrator credentials.',
       security: personOrRunSecurity,
       responses: {
         200: listResponse(PreviewListItemSchema),
@@ -369,9 +376,41 @@ function previewRouter(deps: {
       const { projectId } = c.req.valid('query');
       return c.json(
         boundedList(
-          await previews.list(await viewer(c), projectId ? { projectId } : {}),
+          await previews.list(
+            await viewer(c),
+            projectId ? { projectId, allowUnlinked: allowsUnlinked(c) } : {},
+          ),
         ),
       );
+    },
+  );
+  routes.post(
+    '/projects/:projectId/:previewId/down',
+    ...person,
+    describeRoute({
+      tags,
+      summary: 'Destroy an unlinked project preview',
+      operationId: 'previewsDestroyProjectPreview',
+      ...cliRoute(false),
+      description:
+        'For a session or unrestricted personal key with project visibility, issue view and preview App delete permission. Checks current repository membership and refuses previews now linked to a live issue. Deletes the preview App and its data, retaining the destroyed record; repeated requests are harmless.',
+      responses: {
+        200: dataResponse(ProjectPreviewParams),
+        ...apiErrorResponses,
+        404: projectNotFound,
+      },
+    }),
+    apiValidator('param', ProjectPreviewParams),
+    async (c) => {
+      if (!allowsUnlinked(c))
+        throw studioError(
+          'PERMISSION_DENIED',
+          'CREDENTIAL_NOT_ACCEPTED',
+          'Use a session or unrestricted personal key.',
+        );
+      const { projectId, previewId } = c.req.valid('param');
+      await previews.downProject(await viewer(c), projectId, previewId);
+      return c.json({ data: { projectId, previewId } });
     },
   );
   routes.get(

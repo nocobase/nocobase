@@ -450,6 +450,8 @@ const enUS = {
   'errors.INVALID_NAME': 'Enter a name of at most 100 characters.',
   'errors.APPS_NOT_CREATABLE':
     'Only someone who may create Apps, or deploy to every App, has Studio set Apps up.',
+  'errors.PREVIEW_LINKED':
+    'This pull request is now linked to an issue. Refresh and manage its preview from the issue.',
   'errors.PREVIEW_ENVIRONMENT_UNSUITABLE':
     'Previews need an environment that runs uploaded archives and is not protected.',
   'errors.UNKNOWN_ENVIRONMENT': 'The environment no longer exists.',
