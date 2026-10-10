@@ -158,6 +158,8 @@ export class MailAccountRemovalsStore {
         { table: 'mailSignatures', keys: ['id'], filter: accountFilter },
         { table: 'mailIdentities', keys: ['id'], filter: accountFilter },
         { table: 'mailFolders', keys: ['id'], filter: accountFilter },
+        // Drain the unexpired event log in bounded batches before the final cascade.
+        { table: 'mailMessageSyncEvents', keys: ['id'], filter: accountFilter },
       ];
       for (const stage of stages) {
         let selection = query

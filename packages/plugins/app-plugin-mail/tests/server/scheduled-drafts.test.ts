@@ -1,3 +1,4 @@
+import { testId } from '../helpers/test-id.js';
 import {
   createMailTestDatabase,
   destroyMailTestDatabase,
@@ -24,8 +25,8 @@ describe('scheduled draft lifecycle', () => {
   >;
   const actor = { actorId: 'user' };
   const input: MailComposeInput = {
-    accountId: 'account',
-    identityId: 'identity',
+    accountId: testId('account'),
+    identityId: testId('identity'),
     idempotencyKey: 'first',
     to: [{ address: 'to@example.com' }],
     cc: [{ address: 'cc@example.com' }],
@@ -39,7 +40,7 @@ describe('scheduled draft lifecycle', () => {
     database = await createMailTestDatabase();
     store = createDatabaseMailStore(database);
     await store.saveAccount({
-      id: 'account',
+      id: testId('account'),
       userId: 'user',
       provider: { type: 'test', name: 'test' },
       address: 'me@example.com',
@@ -47,17 +48,17 @@ describe('scheduled draft lifecycle', () => {
       scopes: [],
       status: 'active',
     });
-    await store.replaceIdentities('account', [
+    await store.replaceIdentities(testId('account'), [
       {
-        id: 'identity',
-        accountId: 'account',
+        id: testId('identity'),
+        accountId: testId('account'),
         address: 'me@example.com',
         isPrimary: true,
         canSend: true,
       },
     ]);
     await store.commitSyncBatch({
-      accountId: 'account',
+      accountId: testId('account'),
       folders: [
         {
           providerFolderId: 'sent',
@@ -117,7 +118,7 @@ describe('scheduled draft lifecycle', () => {
     });
     expect(send).not.toHaveBeenCalled();
     await store.commitSyncBatch({
-      accountId: 'account',
+      accountId: testId('account'),
       folders: [
         {
           providerFolderId: 'provider-drafts',
@@ -133,7 +134,7 @@ describe('scheduled draft lifecycle', () => {
     expect(
       (
         await store.listMessages('user', {
-          accountIds: ['account'],
+          accountIds: [testId('account')],
           folderIds: ['provider-drafts'],
         })
       ).items,
@@ -154,12 +155,14 @@ describe('scheduled draft lifecycle', () => {
         scheduledAt: '2099-01-01T10:00:00.000Z',
       },
     });
-    expect(await store.getMessage('user', 'account', id)).toMatchObject({
-      text: 'Body',
-      html: '<p>Body</p>',
-      cc: input.cc,
-      bcc: input.bcc,
-    });
+    expect(await store.getMessage('user', testId('account'), id)).toMatchObject(
+      {
+        text: 'Body',
+        html: '<p>Body</p>',
+        cc: input.cc,
+        bcc: input.bcc,
+      },
+    );
     await expect(
       service.saveDraft(actor, {
         ...input,
@@ -175,7 +178,9 @@ describe('scheduled draft lifecycle', () => {
         idempotencyKey: 'duplicate',
       }),
     ).rejects.toThrow(/Cancel/);
-    await expect(store.deleteMessage('account', id)).rejects.toThrow(/Cancel/);
+    await expect(store.deleteMessage(testId('account'), id)).rejects.toThrow(
+      /Cancel/,
+    );
     await expect(
       service.cancelSubmission({ actorId: 'another-user' }, submission.id),
     ).rejects.toThrow(/not found/);
@@ -238,7 +243,7 @@ describe('scheduled draft lifecycle', () => {
       }),
     ).rejects.toThrow(/Cancel/);
     await expect(
-      store.saveMessage('account', {
+      store.saveMessage(testId('account'), {
         providerMessageId: original.providerMessageId,
         providerFolderIds: [MAIL_LOCAL_DRAFT_FOLDER_ID],
         to: input.to,
@@ -256,7 +261,7 @@ describe('scheduled draft lifecycle', () => {
     ).rejects.toThrow(/Cancel/);
     await service.cancelSubmission(actor, queued.id);
     expect(
-      (await store.getMessage('user', 'account', original.id))?.subject,
+      (await store.getMessage('user', testId('account'), original.id))?.subject,
     ).toBe('Latest edits');
   });
 
@@ -336,7 +341,7 @@ describe('scheduled draft lifecycle', () => {
 
   it('preserves uploaded attachments through cancellation and edited resubmission', async () => {
     await store.createOutboundAttachment({
-      id: 'upload',
+      id: testId('upload'),
       userId: 'user',
       fileName: 'file.txt',
       contentType: 'text/plain',
@@ -367,7 +372,10 @@ describe('scheduled draft lifecycle', () => {
       },
       outboundAttachments: {
         open: async () => ({
-          attachment: (await store.getOutboundAttachment('user', 'upload'))!,
+          attachment: (await store.getOutboundAttachment(
+            'user',
+            testId('upload'),
+          ))!,
           stream: new ReadableStream<Uint8Array>({
             start(controller) {
               controller.enqueue(new TextEncoder().encode('data'));
@@ -384,14 +392,14 @@ describe('scheduled draft lifecycle', () => {
     });
     const queued = await attachedOperation.execute(actor, {
       ...input,
-      attachmentIds: ['upload'],
+      attachmentIds: [testId('upload')],
     });
     const scheduled = await store.getScheduledSubmission(queued.id);
     const id = scheduled!.input.draftMessageId!;
-    const draft = await store.getMessage('user', 'account', id);
+    const draft = await store.getMessage('user', testId('account'), id);
     expect(draft?.attachments).toEqual([
       expect.objectContaining({
-        outboundAttachmentId: 'upload',
+        outboundAttachmentId: testId('upload'),
         fileName: 'file.txt',
       }),
     ]);

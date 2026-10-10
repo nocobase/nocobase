@@ -1,3 +1,4 @@
+import { testId } from '../helpers/test-id.js';
 import {
   createMailTestDatabase,
   destroyMailTestDatabase,
@@ -17,7 +18,7 @@ describe('Mail persistence transaction ownership', () => {
     database = await createMailTestDatabase();
     store = createDatabaseMailStore(database);
     await store.saveAccount({
-      id: 'account-1',
+      id: testId('account-1'),
       userId: 'user-1',
       provider: { type: 'test', name: 'test' },
       address: 'sender@example.com',
@@ -35,15 +36,15 @@ describe('Mail persistence transaction ownership', () => {
     'rolls back mailbox changes and checkpoints after a %s',
     async (failure) => {
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         folders: [],
         messages: [message('existing', 'Original subject')],
         deletedProviderMessageIds: [],
         nextCursor: { value: 'original-cursor' },
       });
       const created = await store.createSyncRun({
-        id: 'sync-1',
-        accountId: 'account-1',
+        id: testId('sync-1'),
+        accountId: testId('account-1'),
         requestedBy: 'user-1',
         mode: 'incremental',
         policy: { maxMessages: 100, batchSize: 20 },
@@ -60,7 +61,7 @@ describe('Mail persistence transaction ownership', () => {
 
       if (failure === 'outbox conflict') {
         // Fail the final write, after message, run, and cursor updates.
-        await insertConflictingOutbox('sync:sync-1:1:incremental');
+        await insertConflictingOutbox(`sync:${created.id}:1:incremental`);
       }
       const commit = store.commitSyncStep({
         run: {
@@ -92,10 +93,10 @@ describe('Mail persistence transaction ownership', () => {
       }
 
       expect(await store.getSyncRun(created.id)).toEqual(claimed);
-      expect(await store.getSyncCursor('account-1')).toEqual({
+      expect(await store.getSyncCursor(testId('account-1'))).toEqual({
         value: 'original-cursor',
       });
-      expect(await store.listFolders('account-1')).toEqual([]);
+      expect(await store.listFolders(testId('account-1'))).toEqual([]);
       const mailbox = await store.listMessages('user-1', {});
       expect(mailbox.items).toHaveLength(1);
       expect(mailbox.items[0]).toMatchObject({
@@ -106,13 +107,13 @@ describe('Mail persistence transaction ownership', () => {
   );
 
   it('does not persist a scheduled submission when its outbox write fails', async () => {
-    await insertConflictingOutbox('scheduled-send:submission-1');
+    await insertConflictingOutbox(`scheduled-send:${testId('submission-1')}`);
     const scheduledAt = new Date(Date.now() + 60_000).toISOString();
     await expect(
       store.createScheduledSubmission(
         {
-          id: 'submission-1',
-          accountId: 'account-1',
+          id: testId('submission-1'),
+          accountId: testId('account-1'),
           status: 'pending',
           scheduledAt,
         },
@@ -120,8 +121,8 @@ describe('Mail persistence transaction ownership', () => {
         'fingerprint',
         'user-1',
         {
-          accountId: 'account-1',
-          identityId: 'identity-1',
+          accountId: testId('account-1'),
+          identityId: testId('identity-1'),
           idempotencyKey: 'send-once',
           to: [{ address: 'recipient@example.com' }],
           subject: 'Scheduled mail',
@@ -131,9 +132,14 @@ describe('Mail persistence transaction ownership', () => {
         { ...message('local-draft:scheduled', 'Scheduled mail'), draft: true },
       ),
     ).rejects.toThrow(/unique/i);
-    expect(await store.getScheduledSubmission('submission-1')).toBeUndefined();
     expect(
-      await store.getSubmissionByIdempotencyKey('account-1', 'send-once'),
+      await store.getScheduledSubmission(testId('submission-1')),
+    ).toBeUndefined();
+    expect(
+      await store.getSubmissionByIdempotencyKey(
+        testId('account-1'),
+        'send-once',
+      ),
     ).toBeUndefined();
     expect(await store.listSubmissions('user-1')).toEqual([]);
     expect((await store.listAllMessages({})).items).toEqual([]);
@@ -147,13 +153,13 @@ describe('Mail persistence transaction ownership', () => {
       .query()
       .insertInto('mailOutbox')
       .values({
-        id: 'conflicting-outbox',
+        id: testId('conflicting-outbox'),
         type: 'sendScheduledMail',
-        aggregateId: 'other-submission',
+        aggregateId: testId('other-submission'),
         deduplicationKey,
         payload: JSON.stringify({
           version: 1,
-          submissionId: 'other-submission',
+          submissionId: testId('other-submission'),
         }),
         status: 'pending',
         attempts: 0,

@@ -1,4 +1,10 @@
 import type {
+  MailListMessageSyncEventsInput,
+  MailMessageSyncEventsPage,
+  MailMessagesSyncedListener,
+  MailUnsubscribe,
+} from './message-sync-events.js';
+import type {
   MailAccount,
   MailAccountView,
   MailAttachmentContent,
@@ -51,6 +57,18 @@ import type {
  * `MailProviderDefinition` rather than implementing this service.
  */
 export interface MailService {
+  /** Trusted in-process subscription; register in boot and cancel in shutdown. Never awaits consumer work. */
+  onMessagesSynced(listener: MailMessagesSyncedListener): MailUnsubscribe;
+  /** Committed sync insertions for an actor-owned account, ordered by account sequence. */
+  listMessageSyncEvents(
+    context: MailOperationContext,
+    input: MailListMessageSyncEventsInput,
+  ): Promise<MailMessageSyncEventsPage>;
+  /** Trusted management entry; the caller must authorize mail.management access. */
+  listManagedMessageSyncEvents(
+    context: MailOperationContext,
+    input: MailListMessageSyncEventsInput,
+  ): Promise<MailMessageSyncEventsPage>;
   listProviders(): Promise<readonly MailProviderView[]>;
   startAuthorization(
     context: MailOperationContext,

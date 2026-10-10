@@ -27,6 +27,7 @@ import { createDatabaseMailCredentialVault } from '../credentials.js';
 import { createMailProviderRegistry } from '../registry.js';
 import { createMailRuntime } from '../runtime.js';
 import { DefaultMailService } from '../service.js';
+import { MailMessageSyncNotifier } from '../message-sync-notifier.js';
 import { DriveMailOutboundAttachmentStorage } from '../outbound-attachments.js';
 import {
   MAIL_REALTIME_TOPIC,
@@ -51,6 +52,14 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   public readonly name: string = '@nocobase/app-plugin-mail';
   private realtimeTopic?: RealtimeUserTopic<MailRealtimeEvent>;
   private missingMailConfigWarningLogged = false;
+  private readonly messageSyncNotifier = new MailMessageSyncNotifier({
+    error: (data, message): void => {
+      this.app.container
+        .resolveIfCreated(loggingToken)
+        ?.getLogger()
+        .error(data, message);
+    },
+  });
   private readonly messageChangeNotifier: MailMessageChangeNotifier = {
     notify: (userId) => {
       this.realtimeTopic?.publishFor(userId, { kind: 'mail.changed' });
@@ -101,6 +110,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           .getLogger()
           .child({ module: 'mail' }),
         messageChangeNotifier: this.messageChangeNotifier,
+        messageSyncNotifier: this.messageSyncNotifier,
       }),
     );
     this.app.container.singleton(
@@ -142,6 +152,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
             mailOutboundAttachmentStorageToken,
           ),
           messageChangeNotifier: this.messageChangeNotifier,
+          messageSyncNotifier: this.messageSyncNotifier,
         }),
     );
   }
@@ -230,8 +241,14 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   }
 
   public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(mailRuntimeToken)?.close();
-    this.realtimeTopic?.close();
-    this.realtimeTopic = undefined;
+    // Stop accepting wakeups immediately, even while workers drain or closure rejects.
+    this.messageSyncNotifier.close();
+    try {
+      await this.app.container.resolveIfCreated(mailRuntimeToken)?.close();
+    } finally {
+      const topic = this.realtimeTopic;
+      this.realtimeTopic = undefined;
+      topic?.close();
+    }
   }
 }

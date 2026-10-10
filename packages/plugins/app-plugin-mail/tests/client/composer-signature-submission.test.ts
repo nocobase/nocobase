@@ -1,3 +1,4 @@
+import { testId } from '../helpers/test-id.js';
 import { type DatabaseManager } from '@nocobase/db';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import {
@@ -26,10 +27,10 @@ describe('composer signature submission', () => {
     database = await createMailTestDatabase();
     store = createDatabaseMailStore(database);
     await store.saveAccount(account());
-    await store.replaceIdentities('account-1', [
+    await store.replaceIdentities(testId('account-1'), [
       {
-        id: 'identity-1',
-        accountId: 'account-1',
+        id: testId('identity-1'),
+        accountId: testId('account-1'),
         address: 'sender@example.com',
         isPrimary: true,
         canSend: true,
@@ -53,7 +54,7 @@ describe('composer signature submission', () => {
       const signature = await service.saveSignature(
         { actorId: 'user-1' },
         {
-          accountId: 'account-1',
+          accountId: testId('account-1'),
           name: 'Provider signature',
           isDefault: true,
           text: 'hello from gmail',
@@ -76,8 +77,8 @@ describe('composer signature submission', () => {
         { actorId: 'user-1' },
         {
           ...buildComposerInput(
-            'account-1',
-            'identity-1',
+            testId('account-1'),
+            testId('identity-1'),
             signature.id,
             visible,
             [],
@@ -97,7 +98,7 @@ describe('composer signature submission', () => {
 
 function account(): MailAccount {
   return {
-    id: 'account-1',
+    id: testId('account-1'),
     userId: 'user-1',
     provider: { type: 'test', name: 'test' },
     address: 'sender@example.com',

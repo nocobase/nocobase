@@ -10,6 +10,7 @@ import {
   DatabaseMailCredentialVault,
 } from '../../server/credentials.js';
 import { createDatabaseMailStore } from '../../server/store.js';
+import { testId } from '../helpers/test-id.js';
 
 describe('Mail OAuth persistence', () => {
   let database: DatabaseManager;
@@ -185,7 +186,7 @@ describe('Mail OAuth persistence', () => {
   it('stores an authorized account and its identity atomically', async () => {
     const store = createDatabaseMailStore(database);
     const account = {
-      id: 'account-1',
+      id: testId('account-1'),
       userId: 'user-1',
       provider: { type: 'gmail', name: 'google' },
       address: 'user@example.com',
@@ -194,7 +195,7 @@ describe('Mail OAuth persistence', () => {
       status: 'active' as const,
     };
     const identity = {
-      id: 'duplicate-identity',
+      id: testId('duplicate-identity'),
       accountId: account.id,
       address: account.address,
       isPrimary: true,
@@ -211,7 +212,7 @@ describe('Mail OAuth persistence', () => {
     const store = createDatabaseMailStore(database);
     await store.saveAuthorizedAccount(
       {
-        id: 'account-1',
+        id: testId('account-1'),
         userId: 'user-1',
         provider: { type: 'microsoft', name: 'microsoft-365' },
         address: 'User@Example.com',
@@ -230,7 +231,7 @@ describe('Mail OAuth persistence', () => {
         'provider-subject-1',
       ),
     ).resolves.toMatchObject({
-      id: 'account-1',
+      id: testId('account-1'),
       address: 'user@example.com',
     });
     await expect(
@@ -239,6 +240,6 @@ describe('Mail OAuth persistence', () => {
         [],
         ['USER@EXAMPLE.COM'],
       ),
-    ).resolves.toMatchObject([{ id: 'account-1' }]);
+    ).resolves.toMatchObject([{ id: testId('account-1') }]);
   });
 });

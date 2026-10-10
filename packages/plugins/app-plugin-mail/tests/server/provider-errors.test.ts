@@ -45,6 +45,7 @@ import type {
   NormalizedMailMessage,
 } from '../../shared/mail.js';
 import { createMailTestDatabase } from '../helpers/database.js';
+import { testId } from '../helpers/test-id.js';
 
 function providerError(
   category: MailProviderError['category'],
@@ -313,7 +314,7 @@ describe('Provider response classification', () => {
 
 describe('[API] mail routes answer Provider failures', () => {
   const account: MailAccount = {
-    id: 'account-1',
+    id: testId('account-1'),
     userId: 'alice',
     address: 'alice@example.com',
     provider: { type: 'fixture', name: 'fixture' },

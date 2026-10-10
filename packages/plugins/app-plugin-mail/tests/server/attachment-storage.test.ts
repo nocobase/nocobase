@@ -16,6 +16,7 @@ import {
   createMailTestDatabase,
   destroyMailTestDatabase,
 } from '../helpers/database.js';
+import { testId } from '../helpers/test-id.js';
 
 describe('outbound attachment bytes and metadata', () => {
   let database: DatabaseManager;
@@ -87,7 +88,9 @@ describe('outbound attachment bytes and metadata', () => {
     expect(await readFile(objectPath(row!.key), 'utf8')).toBe('hello');
     disk.getStream.mockClear();
     await expect(storage.open('bob', uploaded.id)).rejects.toThrow('not found');
-    await expect(storage.open('alice', 'missing')).rejects.toThrow('not found');
+    await expect(storage.open('alice', testId('missing'))).rejects.toThrow(
+      'not found',
+    );
     expect(disk.getStream).not.toHaveBeenCalled();
   });
 
