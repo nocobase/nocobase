@@ -177,6 +177,7 @@ function ConfigureBody({
             resourceId: resource.id,
             canManage: view.canManage,
             hasKey: view.key !== null && view.key.status !== 'missing',
+            lastUsedAt: view.key?.lastUsedAt ?? null,
           }}
         />
       </div>

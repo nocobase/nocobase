@@ -109,6 +109,7 @@ import type {
 } from '../../../shared/ci-modes.js';
 import { errorText, useNotify } from '../../access/notify.js';
 import { SettingsCard } from '../../projects/settings/settings-card.js';
+import { CiKeyReplacementDialog } from './key-replacement-dialog.js';
 import { ciPath } from '../ci-query.js';
 import {
   ciModeKeys,
@@ -627,6 +628,7 @@ function KeyLine({ view }: { readonly view: CiConnectionView }): ReactElement {
   const queryClient = useQueryClient();
   const revealing = view.state === 'manual';
   const reveal = useRevealCiKey(view.resourceId);
+  const [confirmReplacement, setConfirmReplacement] = useState(false);
   const rotate = useMutation({
     mutationFn: async () =>
       api.request({ method: 'POST', path: ciPath(view.resourceId, '/rotate') }),
@@ -679,13 +681,10 @@ function KeyLine({ view }: { readonly view: CiConnectionView }): ReactElement {
           <DropdownMenuContent align='end' className='w-auto min-w-40'>
             <DropdownMenuItem
               disabled={key.status !== 'active' && key.status !== 'expired'}
-              onClick={() =>
-                revealing
-                  ? reveal.mutate('rotate', {
-                      onError: (error) => notify.error(error),
-                    })
-                  : rotate.mutate()
-              }
+              onClick={() => {
+                if (revealing) setConfirmReplacement(true);
+                else rotate.mutate();
+              }}
             >
               <RotateCwIcon />
               {revealing
@@ -694,6 +693,19 @@ function KeyLine({ view }: { readonly view: CiConnectionView }): ReactElement {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      ) : null}
+      {revealing ? (
+        <CiKeyReplacementDialog
+          open={confirmReplacement}
+          lastUsedAt={key.lastUsedAt}
+          isPending={reveal.isPending}
+          onOpenChange={setConfirmReplacement}
+          onConfirm={() =>
+            reveal.mutateAsync('rotate', {
+              onError: (error) => notify.error(error),
+            })
+          }
+        />
       ) : null}
       <Dialog
         open={Boolean(reveal.data)}

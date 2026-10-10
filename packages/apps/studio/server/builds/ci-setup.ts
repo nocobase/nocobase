@@ -114,6 +114,7 @@ export interface CiKey {
   readonly id: string;
   readonly name: string;
   readonly expiresAt: string | null;
+  readonly lastUsedAt: string | null;
   readonly status: 'active' | 'disabled' | 'expired';
   /** The Apps it is limited to; `all` when it is not limited. */
   readonly appIds: readonly string[] | 'all';
@@ -1172,12 +1173,14 @@ export function createCiSetup(deps: CiSetupDeps): CiSetup {
                 id: key.id,
                 name: key.name,
                 expiresAt: key.expiresAt,
+                lastUsedAt: key.lastUsedAt,
                 status: key.status,
               }
             : {
                 id: row.keyIdentityId,
                 name: '',
                 expiresAt: null,
+                lastUsedAt: null,
                 status: 'missing',
               }
           : null,

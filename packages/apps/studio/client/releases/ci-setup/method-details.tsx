@@ -6,7 +6,7 @@
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronDownIcon, KeyRoundIcon, Loader2Icon } from 'lucide-react';
-import type { ReactElement, ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { errorText } from '../../access/notify.js';
 import { useRevealCiKey } from './api.js';
 import { CopyButton } from './copy-button.js';
+import { CiKeyReplacementDialog } from './key-replacement-dialog.js';
 
 /** A generated file, command list or prompt: its title, a note beside it, Copy, and its content to fold away. */
 export function CiPreview({
@@ -81,6 +82,7 @@ export interface ManualKeyTarget {
   readonly canManage: boolean;
   /** Whether the repository already has its key, which generating gives a new secret. */
   readonly hasKey: boolean;
+  readonly lastUsedAt?: string | null;
 }
 
 /**
@@ -134,6 +136,7 @@ export function GenerateCiKey({
   readonly secretName: string;
 }): ReactElement {
   const { t } = useTranslation();
+  const [confirmReplacement, setConfirmReplacement] = useState(false);
   const reveal = useRevealCiKey(target.resourceId);
   if (reveal.data)
     return <RevealedCiKey secret={reveal.data} secretName={secretName} />;
@@ -145,7 +148,9 @@ export function GenerateCiKey({
           variant='outline'
           size='sm'
           disabled={!target.canManage || reveal.isPending}
-          onClick={() => reveal.mutate('setup')}
+          onClick={() =>
+            target.hasKey ? setConfirmReplacement(true) : reveal.mutate('setup')
+          }
         >
           {reveal.isPending ? (
             <Loader2Icon data-icon='inline-start' className='animate-spin' />
@@ -156,9 +161,13 @@ export function GenerateCiKey({
         </Button>
       </div>
       {target.hasKey ? (
-        <p className='text-xs text-muted-foreground'>
-          {t('ciSetup.manual.replaces')}
-        </p>
+        <CiKeyReplacementDialog
+          open={confirmReplacement}
+          lastUsedAt={target.lastUsedAt ?? null}
+          isPending={reveal.isPending}
+          onOpenChange={setConfirmReplacement}
+          onConfirm={() => reveal.mutateAsync('setup')}
+        />
       ) : null}
       {!target.canManage ? (
         <p className='text-xs text-muted-foreground'>

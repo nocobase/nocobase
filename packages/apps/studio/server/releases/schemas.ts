@@ -188,6 +188,7 @@ export const CiSetupSchema: z.ZodType<CiSetupView> = z
         id: z.string(),
         name: z.string(),
         expiresAt: z.string().nullable(),
+        lastUsedAt: z.string().nullable(),
         status: z.enum(['active', 'disabled', 'expired', 'missing']),
       })
       .nullable()

@@ -119,6 +119,8 @@ export interface CiKeyView {
   readonly id: string;
   readonly name: string;
   readonly expiresAt: string | null;
+  /** When a CI request last used this key, when known. */
+  readonly lastUsedAt: string | null;
   /** `missing` once the key was deleted. */
   readonly status: 'active' | 'disabled' | 'expired' | 'missing';
 }
