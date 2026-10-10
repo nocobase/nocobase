@@ -15,7 +15,10 @@ import {
 } from '@nocobase/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { InvitationEmail } from '../server/invitations/mail.js';
+import {
+  unconfiguredMailer,
+  type InvitationEmail,
+} from '../server/invitations/mail.js';
 import {
   createUserManagementService,
   createUserRoleScopeRegistry,
@@ -135,7 +138,11 @@ describe('user invitations', () => {
       origin: ORIGIN,
     });
 
-    expect(result).toMatchObject({ outcome: 'invited', emailSent: false });
+    expect(result).toMatchObject({
+      outcome: 'invited',
+      emailSent: false,
+      emailError: '邮件未发送：邮件发送失败',
+    });
     expect(result).toHaveProperty(
       'inviteUrl',
       expect.stringContaining(`${ORIGIN}/main/invite/`),
@@ -143,6 +150,29 @@ describe('user invitations', () => {
     const [row] = await service.listInvitations();
     expect(row?.sentAt).toBeNull();
     expect(JSON.stringify(row)).not.toContain('invite/');
+  });
+
+  it('returns a clear message and the invitation link without a mail channel', async () => {
+    service = createUserManagementService({
+      database,
+      users: userAdministration(database.connection()),
+      roleScopes: createUserRoleScopeRegistry(),
+      mailer: unconfiguredMailer,
+      site: { publicBasePath: '/main', appTitle: 'Acme' },
+    });
+
+    const [result] = await service.invite({
+      emails: ['new@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+
+    expect(result).toMatchObject({
+      outcome: 'invited',
+      emailSent: false,
+      emailError: '邮件未发送：未配置邮件渠道',
+      inviteUrl: expect.stringContaining(`${ORIGIN}/main/invite/`),
+    });
   });
 
   it('shows the invitation to the link and creates the account on acceptance', async () => {

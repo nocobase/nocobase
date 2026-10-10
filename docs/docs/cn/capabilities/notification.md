@@ -24,6 +24,8 @@ keywords: 'NocoBase,通知,站内信,邮件,飞书,钉钉,Agent'
 
 ## 接入前准备
 
+用户邀请邮件也通过通知渠道发送。Users 插件默认使用 `system-email`；需要在 `notification.channels.system-email` 中配置并启用 SMTP 等邮件服务。模板的 `config.example.yml` 提供了 SMTP 配置示例。未配置可用渠道时，创建邀请仍会成功，但结果会包含「邮件未发送：未配置邮件渠道」和邀请链接，供管理员手动转发。
+
 下面的示例使用站内信，不需要邮箱服务或群机器人。开始前需要：
 
 - **一个已启动的 NocoBase 应用**：开发 Agent 能读取和修改应用源码。还没有应用时，先按[用 Coding Agent 创建应用](../get-started/create-app-with-agent)完成创建。

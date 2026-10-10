@@ -279,6 +279,9 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       outcome: z.literal('invited'),
       invitationId: z.string(),
       emailSent: z.boolean(),
+      emailError: z.string().optional().meta({
+        description: 'Shown to the inviter when email delivery failed.',
+      }),
       inviteUrl: z.string().optional().meta({
         description:
           'Returned once when sending failed, for the inviter to forward.',

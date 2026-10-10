@@ -76,8 +76,10 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 `assign-role`, and they are checked like account creation's.
 
 - Emails go through the notification plugin on the Channel named by
-  `users.invitations.emailChannel` (`system-email` by default). Without that
-  Channel, the inviter gets the link to forward by hand.
+  `users.invitations.emailChannel` (`system-email` by default). Without an
+  enabled Channel, the result has `emailSent: false`, an `emailError`, and the
+  link to forward by hand. Show both `emailError` and `inviteUrl` in the
+  application-owned invitation form.
 - Links start at `app.publicOrigin`, or the request origin when it is unset.
 - A link works once, for seven days. Only the token's hash is stored.
 - Server code invites through `UserManagementService.invite`, may attach `data`

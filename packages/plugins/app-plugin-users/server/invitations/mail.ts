@@ -22,10 +22,11 @@ export interface InvitationMailer {
   send(email: InvitationEmail): Promise<void>;
 }
 
+export const NO_EMAIL_CHANNEL_MESSAGE = '邮件未发送：未配置邮件渠道';
+
 /** Used when no channel is configured: every send fails, so the inviter gets the link to forward. */
 export const unconfiguredMailer: InvitationMailer = {
-  send: () =>
-    Promise.reject(new Error('No invitation email channel is configured.')),
+  send: () => Promise.reject(new Error(NO_EMAIL_CHANNEL_MESSAGE)),
 };
 
 type Texts = (typeof enUS)['invitationEmail'];
