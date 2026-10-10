@@ -136,6 +136,8 @@
     "cli",
     "client",
     "server",
+    "shared",
+    "ai/skills",
     "database/tsconfig.json",
     "database/*/migrations/**",
     "database/*/seeds/**",

@@ -1,10 +1,25 @@
 # @nocobase/app-installer
 
-Installs, upgrades and rolls back a NocoBase 3 application on a server, and runs it under pm2. It installs a deployment archive you build in the application project with `pnpm build --tar`: the server unpacks it and runs it, and needs neither the sources nor pnpm.
+Installs, upgrades and rolls back a NocoBase 3 application on a server, and runs it under pm2. Use `--app studio` to download and build the published `@nocobase/studio` application on the server, or `--archive` to unpack a deployment archive built elsewhere with `pnpm build --tar`. Only npm application installs need pnpm (11 or later); neither route needs a repository checkout.
 
 Each installation lives in a directory of its own, with its own port and pm2 process, so one server can run several. Docker remains the other way to run an application.
 
 Earlier versions could also build the published Hub template on the server (`--template hub`). That source is gone: an installation recorded as built from a template is refused with `STATE_UNSUPPORTED`, and stays manageable with the app-installer version that installed it.
+
+## Published applications
+
+```bash
+npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer install /srv/nocobase/studio --app studio --origin https://studio.example.com
+# Equivalent application name: --app @nocobase/studio
+# Select a version or tag: --app studio@beta or --app @nocobase/studio@<version>
+npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer upgrade --dir /srv/nocobase/studio --yes
+```
+
+Bare application names expand to `@nocobase/<name>`. Other publishers use the full scoped name, such as `--app @acme/crm`. Choose exactly one of `--app` and `--archive`; `--template` is not supported. A published application includes its buildable sources, development dependencies, `build` script and `nocobase.templateKind: app`. The installer preserves its package name and version, installs dependencies and builds its deployment archive in a temporary directory, then removes the sources and build dependencies. The application package and dependencies execute their normal install/build scripts, so choose a publisher you trust. A requested database driver must be declared by the application package.
+
+`--registry` (or `NOCOBASE_REGISTRY`) selects the registry used for the application and its dependencies and is saved in `installer.json`. npm and pnpm use the service user's registry credentials. Installing an npm application requires npm and pnpm 11+ on PATH, in addition to Node and pm2. The build needs more memory, disk space and time than unpacking an archive.
+
+An npm installation records `source.kind: app` and the full package name. `upgrade` resolves that package's `latest` tag; `--to <version or tag>` selects another release for that operation, and `--rebuild` rebuilds the installed version for the current server. An install with `@beta` or an exact version does not pin future upgrades: use `--to beta` or `--to <version>` when needed. The installed version is a no-op unless rebuilding or adapting to a changed Node major. Downgrades require rollback. The new build completes while the previous release keeps serving; configuration, SQLite backup, migration, health checks and rollback use the same path as archive upgrades. Archive installations still require `upgrade --archive` and cannot switch source kinds in place.
 
 ## Requirements
 

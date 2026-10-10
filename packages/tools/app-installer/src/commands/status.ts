@@ -148,7 +148,9 @@ export async function status(
     summary: [
       `The application ${state.appName} ${currentRelease?.version ?? '?'} at ${root}`,
       `  Release   ${state.current}${currentRelease ? `, built ${currentRelease.builtAt}` : ''}`,
-      '  Source    deployment archives',
+      state.source.kind === 'app'
+        ? `  Source    npm ${state.source.package}`
+        : '  Source    deployment archives',
       `  URL       ${endpoints.url} (listening on ${endpoints.host}:${endpoints.port ?? `invalid port "${env.APP_SERVER_PORT ?? ''}"`})`,
       `  Health    ${healthy ? 'ok' : 'not answering'} (${url})`,
       `  Process   ${processInfo ? `${processInfo.status}, pid ${processInfo.pid}, ${processInfo.restarts} restarts` : 'not registered with pm2'} (${state.name})`,
