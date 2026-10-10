@@ -55,6 +55,11 @@ export interface MarkdownViewProps {
     code: { readonly language: string | null; readonly source: string },
     block: ReactElement,
   ) => ReactNode;
+  /** Overrides sanitized links; consumers may route application links while keeping the default for others. */
+  readonly renderLink?: (
+    props: ComponentProps<'a'>,
+    fallback: ReactElement,
+  ) => ReactNode;
   /** The icon of a mention chip by its kind; a person by default. */
   readonly mentionIcon?: (kind: string) => ReactNode;
 }
@@ -64,6 +69,7 @@ export function MarkdownView({
   className,
   headingIds,
   renderCodeBlock,
+  renderLink,
   mentionIcon,
 }: MarkdownViewProps): ReactElement {
   let heading = 0;
@@ -86,16 +92,18 @@ export function MarkdownView({
             {children}
           </span>
         );
-      return (
-        <a
-          href={href}
-          target='_blank'
-          rel='noreferrer'
-          className='font-medium text-primary underline underline-offset-4'
-          {...props}
-        >
-          {children}
-        </a>
+      const linkProps: ComponentProps<'a'> = {
+        href,
+        target: '_blank',
+        rel: 'noreferrer',
+        className: 'font-medium text-primary underline underline-offset-4',
+        ...props,
+      };
+      const link = <a {...linkProps}>{children}</a>;
+      return renderLink ? (
+        <>{renderLink({ ...linkProps, children }, link)}</>
+      ) : (
+        link
       );
     },
     p: ({ node: _node, ...props }) => (
