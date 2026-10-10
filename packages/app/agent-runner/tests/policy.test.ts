@@ -3,7 +3,22 @@ import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { prepareAgentHome } from '../src/agent/agent-home.ts';
-import { buildAgentEnv } from '../src/agent/env.ts';
+import {
+  buildAgentEnv,
+  detectionEnv,
+  environmentSecrets,
+  missingVariables,
+  providedNames,
+  providedVariables,
+} from '../src/agent/env.ts';
+import {
+  PrepareError,
+  type PrepareContext,
+} from '../src/agent/prepare/index.ts';
+import {
+  missingVariablesMessage,
+  variablesStep,
+} from '../src/agent/prepare/variables.ts';
 import {
   commandSegments,
   createPolicy,
@@ -332,6 +347,177 @@ describe('agent environment', () => {
       NODE_ENV: 'test',
       NPM_TOKEN: 'npm',
     });
+  });
+
+  it('passes the proxy and CA variables by default, and the --pass-env names always', () => {
+    const env = buildAgentEnv({
+      source: {
+        PATH: '/bin',
+        HTTPS_PROXY: 'http://user:pw@proxy:3128',
+        https_proxy: 'http://proxy:3128',
+        ALL_PROXY: 'socks5://proxy:1080',
+        NO_PROXY: 'localhost,127.0.0.1',
+        SSL_CERT_FILE: '/etc/ca.pem',
+        NODE_EXTRA_CA_CERTS: '/etc/extra.pem',
+        CUSTOM_KEY: 'k',
+        OTHER: 'o',
+        NOCOBASE_RUNNER_HOME: 'no',
+      },
+      passEnv: ['CUSTOM_KEY', 'NOT_SET', 'NOCOBASE_RUNNER_HOME'],
+    });
+    expect(env).toEqual({
+      PATH: '/bin',
+      HTTPS_PROXY: 'http://user:pw@proxy:3128',
+      https_proxy: 'http://proxy:3128',
+      ALL_PROXY: 'socks5://proxy:1080',
+      NO_PROXY: 'localhost,127.0.0.1',
+      SSL_CERT_FILE: '/etc/ca.pem',
+      NODE_EXTRA_CA_CERTS: '/etc/extra.pem',
+      CUSTOM_KEY: 'k',
+    });
+  });
+
+  it('keeps the process tag under runner control alongside passed and local variables', () => {
+    const source = {
+      HTTPS_PROXY: 'http://proxy:3128',
+      CUSTOM_KEY: 'shell-key',
+      AGENT_RUN_PROCESS_TAG: 'daemon-tag',
+    };
+    const passEnv = ['CUSTOM_KEY', 'AGENT_RUN_PROCESS_TAG'];
+    const localVariables = { PROVIDER_KEY: 'local-key' };
+    expect(
+      buildAgentEnv({
+        source,
+        passEnv,
+        localVariables,
+        processTag: 'run-tag',
+        workspace: {
+          passthrough: ['PROVIDER_KEY'],
+          env: [{ name: 'AGENT_RUN_PROCESS_TAG', value: 'untrusted-tag' }],
+        },
+      }),
+    ).toEqual({
+      HTTPS_PROXY: 'http://proxy:3128',
+      CUSTOM_KEY: 'shell-key',
+      PROVIDER_KEY: 'local-key',
+      AGENT_RUN_PROCESS_TAG: 'run-tag',
+    });
+    expect(detectionEnv(source, passEnv, localVariables)).not.toHaveProperty(
+      'AGENT_RUN_PROCESS_TAG',
+    );
+  });
+
+  it('provides a passthrough name only from the local variables or --pass-env, and names the missing ones', () => {
+    const source = { PATH: '/bin', PI_KEY: 'from-env', STRAY: 'stray' };
+    const workspace = {
+      env: [],
+      passthrough: ['NOCOBASE_CPA_API_KEY', 'PI_KEY', 'STRAY'],
+    };
+    const env = buildAgentEnv({
+      source,
+      passEnv: ['PI_KEY'],
+      localVariables: { NOCOBASE_CPA_API_KEY: 'sk-local' },
+      workspace,
+    });
+    expect(env).toEqual({
+      PATH: '/bin',
+      PI_KEY: 'from-env',
+      NOCOBASE_CPA_API_KEY: 'sk-local',
+    });
+    const provided = providedVariables(source, ['PI_KEY'], {
+      NOCOBASE_CPA_API_KEY: 'sk-local',
+    });
+    expect(missingVariables(workspace.passthrough, provided)).toEqual([
+      'STRAY',
+    ]);
+    expect(
+      providedNames(source, ['PI_KEY', 'UNSET'], { LOCAL: 'x', PATH: '/x' }),
+    ).toEqual(['LOCAL', 'PI_KEY']);
+  });
+
+  it("detects tools in what every run gets, and redacts the runner's proxy and passed values", () => {
+    const source = {
+      PATH: '/bin',
+      HOME: '/h',
+      HTTPS_PROXY: 'http://user:secret@proxy:3128',
+      NO_PROXY: 'localhost',
+      OPENAI_API_KEY: 'sk-openai',
+      STRAY: 'stray',
+    };
+    expect(detectionEnv(source, ['OPENAI_API_KEY'])).toEqual({
+      PATH: '/bin',
+      HOME: '/h',
+      HTTPS_PROXY: 'http://user:secret@proxy:3128',
+      NO_PROXY: 'localhost',
+      OPENAI_API_KEY: 'sk-openai',
+    });
+    expect(environmentSecrets(source, ['OPENAI_API_KEY'])).toEqual([
+      'http://user:secret@proxy:3128',
+      'sk-openai',
+    ]);
+  });
+
+  it('fails a run whose passthrough names the runner does not provide, saying how to provide them', async () => {
+    const context = {
+      payload: { workspace: { env: [], dirs: [], passthrough: ['PI_KEY'] } },
+      passEnv: [],
+      registration: { variables: {} },
+    } as unknown as PrepareContext;
+    const failure = await variablesStep.run(context).catch((error) => error);
+    expect(failure).toBeInstanceOf(PrepareError);
+    expect(failure).toMatchObject({ reason: 'setupFailed' });
+    expect((failure as Error).message).toContain(
+      'nocobase-runner env set PI_KEY',
+    );
+    expect((failure as Error).message).toContain('--pass-env PI_KEY');
+    await expect(
+      variablesStep.run({
+        ...context,
+        registration: { variables: { PI_KEY: 'x' } },
+      } as unknown as PrepareContext),
+    ).resolves.toBeUndefined();
+    expect(missingVariablesMessage(['A', 'B'])).toContain('the variables A, B');
+  });
+
+  it('detects with the local keys of one application, with local values overriding passed values', () => {
+    const source = {
+      PATH: '/bin',
+      PROVIDER_KEY: 'shell',
+      UNDECLARED_KEY: 'stray',
+    };
+    expect(
+      detectionEnv(source, ['PROVIDER_KEY'], { PROVIDER_KEY: 'local' }),
+    ).toEqual({ PATH: '/bin', PROVIDER_KEY: 'local' });
+    expect(detectionEnv(source)).toEqual({ PATH: '/bin' });
+  });
+
+  it.each([
+    'NOCOBASE_RUNNER_CUSTOM_KEY',
+    'GIT_CONFIG_COUNT',
+    'PATH',
+    '__proto__',
+    'toString',
+  ])(
+    'does not silently satisfy an unavailable passthrough declaration %s',
+    (name) => {
+      expect(missingVariables([name], {})).toEqual([name]);
+    },
+  );
+
+  it('fails preparation for a reserved passthrough even when an old local configuration contains it', async () => {
+    const name = 'NOCOBASE_RUNNER_CUSTOM_KEY';
+    const context = {
+      payload: { workspace: { env: [], dirs: [], passthrough: [name] } },
+      passEnv: [name],
+      registration: { variables: { [name]: 'unused' } },
+    } as unknown as PrepareContext;
+    await expect(variablesStep.run(context)).rejects.toMatchObject({
+      reason: 'setupFailed',
+      message: expect.stringContaining(`reserved variables ${name}`),
+    });
+    await expect(variablesStep.run(context)).rejects.toThrow(
+      'Remove or rename',
+    );
   });
 
   it('builds an isolated home that links only what the tool needs', async () => {

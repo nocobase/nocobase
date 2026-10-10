@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { loadAdapters } from '../agent/adapters/registry.ts';
+import { providedNames } from '../agent/env.ts';
 import { parseFreeSpace } from '../lib/size.ts';
 import { RunnerCommand, UsageError } from '../lib/command.ts';
 import {
@@ -131,7 +132,11 @@ export default class Register extends RunnerCommand {
         EXIT_CODES.conflict,
       );
     }
-    const adapters = loadAdapters();
+    const adapters = loadAdapters(
+      process.env,
+      settings.passEnv,
+      existing?.registration.variables,
+    );
     // The owner's local policy as it reads before the application is known; the first heartbeat sends its own.
     const policy = await policyReport(
       this.paths,
@@ -156,6 +161,11 @@ export default class Register extends RunnerCommand {
         ? {}
         : { toolSlots: slotsFlag.toolSlots }),
       ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
+      variables: providedNames(
+        process.env,
+        settings.passEnv,
+        existing?.registration.variables,
+      ),
     };
     const client = new ApiClient({ server, headers: {} });
     const response = await client.post(

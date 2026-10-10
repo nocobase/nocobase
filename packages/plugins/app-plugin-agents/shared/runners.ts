@@ -89,6 +89,12 @@ export interface Runner {
    */
   readonly policy: RunnerPolicy | null;
   /**
+   * The names of the variables it provides to a run that asks for them by name (variables kept "from the runner"):
+   * its local variables and the names its owner passes from its environment, as it last reported them. Names only.
+   * Null or absent when it reported none (a runner from before they were reported: unknown).
+   */
+  readonly variables?: readonly string[] | null;
+  /**
    * The working directories it keeps for this application and the free space on the disk holding them, as it last
    * reported them. Null or absent when it never reported any (a runner that does not report, or one that has not yet).
    */

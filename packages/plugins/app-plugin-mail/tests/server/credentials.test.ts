@@ -109,15 +109,20 @@ describe('Mail OAuth persistence', () => {
     const vault = new DatabaseMailCredentialVault(database, 30, 5);
     const secondVault = new DatabaseMailCredentialVault(database, 30, 5);
     const reference = await vault.put({ token: 'expired' });
-    const gate = Promise.withResolvers<void>();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const refresh = vi.fn(async () => {
-      await gate.promise;
+      await gate;
       return { token: 'fresh' };
     });
-    const epoch = Date.now();
-    // Mock only Date; real heartbeat timers and database I/O may take any amount of wall time.
-    vi.setSystemTime(epoch);
-    const results = Promise.allSettled([
+
+    // Keep timers and database IO real, but advance lease time only after each heartbeat has reached storage.
+    // A busy event loop must not expire this synthetic 30 ms lease before its heartbeat can run.
+    const startedAt = Date.now();
+    vi.setSystemTime(startedAt);
+    const pending = Promise.all([
       vault.getOrRefresh(
         reference,
         (value: { token: string }) => value.token === 'fresh',
@@ -131,31 +136,31 @@ describe('Mail OAuth persistence', () => {
     ]);
     try {
       await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-      for (const elapsed of [20, 40, 60, 80]) {
-        vi.setSystemTime(epoch + elapsed);
-        // Advance again only after the database confirms renewal, always before the current lease expires.
-        await expect
-          .poll(async () => {
-            const row = await database
-              .query()
-              .selectFrom<Row>('mailCredentials')
-              .select('refreshLeaseExpiresAt')
-              .where('reference', '=', reference)
-              .executeTakeFirstOrThrow();
-            return row.refreshLeaseExpiresAt;
-          })
-          .toBe(new Date(epoch + elapsed + 30).toISOString());
+      // Move beyond the original deadline, observing each renewal before advancing the clock again.
+      for (const elapsed of [10, 20, 30, 40]) {
+        vi.setSystemTime(startedAt + elapsed);
+        await vi.waitFor(async () => {
+          const row = await database
+            .query()
+            .selectFrom<Row>('mailCredentials')
+            .selectAll()
+            .where('reference', '=', reference)
+            .executeTakeFirstOrThrow();
+          expect(row.refreshLeaseExpiresAt).toBe(
+            new Date(startedAt + elapsed + 30).toISOString(),
+          );
+        });
+        expect(refresh).toHaveBeenCalledTimes(1);
       }
-      expect(refresh).toHaveBeenCalledTimes(1);
-      gate.resolve();
-      await expect(results).resolves.toEqual([
-        { status: 'fulfilled', value: { token: 'fresh' } },
-        { status: 'fulfilled', value: { token: 'fresh' } },
+      release();
+      await expect(pending).resolves.toEqual([
+        { token: 'fresh' },
+        { token: 'fresh' },
       ]);
       expect(refresh).toHaveBeenCalledTimes(1);
     } finally {
-      gate.resolve();
-      await results;
+      release();
+      await Promise.allSettled([pending]);
       vi.useRealTimers();
     }
   });
