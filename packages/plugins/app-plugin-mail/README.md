@@ -24,7 +24,7 @@ import mail from './mail.js';
 // Add `mail: ReturnType<typeof mail>;` to the default config type and `mail,` to defaultAppConfigs({ ... }).
 ```
 
-The plugin can start with built-in defaults when this namespace is absent, but no external Mail provider is available until the application configures one. Keep provider credentials in private server configuration. If the application uses Mail environment overrides, merge the exported `mailEnvironmentMappings` into the application's environment mappings in `server/environment.ts`. The package metadata lists the supported variables, but applications must explicitly map them for the overrides to take effect.
+Register that factory under the `mail` key in the application's `defaultAppConfigs()` composition. The plugin uses built-in defaults when the namespace is absent, but no external Mail provider is available until the application configures one. Keep provider credentials in private server configuration. `mailConfig` declares all seven `MAIL_*` overrides as section-relative environment rules; composing it makes them effective and discoverable with `pnpm nocobase config env`. The legacy `mailEnvironmentMappings` export retains fully prefixed paths for application-level environment providers; do not pass it as a section's `env`.
 
 For Gmail, `mail.providers.<name>.quota` can override per-user and per-project quota pacing using the allocation shown in Google Cloud; otherwise the plugin uses conservative defaults with headroom. Account creation requires an initial-sync date, and the account screen defaults it to one calendar month ago. Direct initial-sync requests must also provide a date boundary. See the Mail Skill references for configuration and quota details.
 

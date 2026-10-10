@@ -54,22 +54,35 @@ export const DEFAULT_MAIL_CONFIG: MailConfig = Object.freeze({
   providers: {},
 });
 
-/** Environment mappings for applications to merge into their environment provider. */
-export const mailEnvironmentMappings: Readonly<
+const mailSectionEnvironmentMappings: Readonly<
   Record<string, EnvironmentMapping>
 > = {
-  MAIL_OAUTH_CALLBACK_URL: envString('mail.oauthCallbackUrl'),
-  MAIL_OAUTH_RETURN_URL: envString('mail.oauthReturnUrl'),
-  MAIL_AUTOMATIC_SYNC_INTERVAL_MS: envInteger('mail.automaticSyncIntervalMs'),
-  MAIL_SYNC_BATCH_SIZE: envInteger('mail.syncBatchSize'),
-  MAIL_PUSH_WEBHOOK_URL: envString('mail.pushWebhookUrl'),
-  MAIL_PUSH_WEBHOOK_SECRET: envString('mail.pushWebhookSecret'),
-  MAIL_JOBS: envString('mail.jobs'),
+  MAIL_OAUTH_CALLBACK_URL: envString('oauthCallbackUrl'),
+  MAIL_OAUTH_RETURN_URL: envString('oauthReturnUrl'),
+  MAIL_AUTOMATIC_SYNC_INTERVAL_MS: envInteger('automaticSyncIntervalMs'),
+  MAIL_SYNC_BATCH_SIZE: envInteger('syncBatchSize'),
+  MAIL_PUSH_WEBHOOK_URL: envString('pushWebhookUrl', { required: false }),
+  MAIL_PUSH_WEBHOOK_SECRET: envString('pushWebhookSecret', {
+    required: false,
+    secret: true,
+  }),
+  MAIL_JOBS: envString('jobs', { required: false }),
 };
+
+/** Fully prefixed mappings for legacy application-level providers; current apps compose mailConfig. */
+export const mailEnvironmentMappings: Readonly<
+  Record<string, EnvironmentMapping>
+> = Object.fromEntries(
+  Object.entries(mailSectionEnvironmentMappings).map(([variable, mapping]) => [
+    variable,
+    { ...mapping, path: `mail.${mapping.path}` },
+  ]),
+);
 
 /** Application-owned default configuration factory for the Mail module. */
 export const mailConfig: AppConfigFactory<MailConfig> = defineAppConfig({
   defaults: DEFAULT_MAIL_CONFIG,
+  env: mailSectionEnvironmentMappings,
 });
 
 /**

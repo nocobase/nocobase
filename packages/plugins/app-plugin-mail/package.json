@@ -142,6 +142,7 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@nocobase/app-testing": "workspace:*",
+    "@nocobase/config": "workspace:*",
     "@playwright/test": "catalog:"
   },
   "repository": {

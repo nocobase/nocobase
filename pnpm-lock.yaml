@@ -4893,6 +4893,9 @@ importers:
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing
+      '@nocobase/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
