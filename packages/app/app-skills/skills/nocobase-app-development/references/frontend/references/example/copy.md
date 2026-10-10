@@ -7,9 +7,9 @@ Rules: [`i18n.md`](../i18n.md). Every key the handbook's examples pass to `t()` 
 ```ts
 // client/locales/en-US.ts (the groups the handbook's examples add; merge them into the existing file)
 const enUS = {
-  // … existing groups
+  ...systemEnUS,
   navigation: {
-    // … existing entries
+    ...systemEnUS.navigation,
     projects: 'Projects',
     projectDashboard: 'Project dashboard',
     projectManagement: 'Project management',
@@ -234,9 +234,9 @@ const enUS = {
 ```ts
 // client/locales/zh-CN.ts (the same groups; the AppResource type checks the structure)
 const zhCN: AppResource = {
-  // … existing groups
+  ...systemZhCN,
   navigation: {
-    // … existing entries
+    ...systemZhCN.navigation,
     projects: '项目',
     projectDashboard: '项目仪表盘',
     projectManagement: '项目管理',

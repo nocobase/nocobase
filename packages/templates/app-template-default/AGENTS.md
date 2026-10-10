@@ -46,7 +46,7 @@ client/pages/             The page component; a folder when a page has children 
 client/components/        Your components
 client/components/ui/     shadcn/ui primitives; add with the CLI, never hand-write or edit
 client/hooks/             Hooks shared across features
-client/locales/           Every user-visible string
+client/locales/           Every user-visible string; system/ holds the template's copy
 client/service-provider.ts Client startup: services that boot with the application
 server/routes/            HTTP endpoints
 server/providers/         Services and their lifecycle
@@ -231,7 +231,7 @@ At runtime, resolve `databaseManagerToken` from the container and use `database.
 
 ### User-facing text
 
-Every string a user reads goes through a translation key. `client/locales/en-US.ts` states the wording and derives the shape that other locales are checked against, so a missing key in `zh-CN.ts` is a compile error. The sign-in pages' copy lives there too, under `auth.*`: the authentication components take their text as props, which the pages in `client/pages/auth/` translate.
+Every string a user reads goes through a translation key. `client/locales/en-US.ts` states the wording and derives the shape that other locales are checked against, so a missing key in `zh-CN.ts` is a compile error. Each application locale file first spreads the template's own copy from `client/locales/system/` — the shell, shared components, and the sign-in pages under `auth.*`, whose components take their text as props that the pages in `client/pages/auth/` translate — and then adds the application's groups. Write the application's copy in `client/locales/en-US.ts` and `zh-CN.ts`, never in `system/`, which a template upgrade replaces. A group written there replaces the system group of the same name, so extend a shared one by spreading it first: `navigation: { ...systemEnUS.navigation, orders: 'Orders' }`.
 
 ```tsx
 const { t } = useTranslation();
