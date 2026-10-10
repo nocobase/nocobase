@@ -9,7 +9,13 @@
 
 import { openView } from '@nocobase/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mobileOpenView, resolveMobileOpenViewInputArgs, resolveMobileOpenViewParams } from '../mobileOpenViewAction';
+import {
+  createMobileOpenView,
+  resolveMobileOpenViewInputArgs,
+  resolveMobileOpenViewParams,
+} from '../mobileOpenViewAction';
+
+const mobileOpenView = createMobileOpenView();
 
 type OpenViewContext = Parameters<typeof resolveMobileOpenViewParams>[0];
 type OpenViewParams = Parameters<typeof resolveMobileOpenViewParams>[1];
@@ -106,6 +112,25 @@ function createContextWithModelInputArgs(inputArgs: Record<string, unknown>, mod
 describe('mobileOpenViewAction', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it.each([false, true])('should preserve existing action extensions (mobile: %s)', async (mobile) => {
+    const handler = vi.fn(async (_ctx: OpenViewContext, params: OpenViewParams) => params);
+    const beforeParamsSave = vi.fn();
+    const uiSchema = { popupTemplateUid: { type: 'string' } };
+    const enhanced = createMobileOpenView({ ...openView, uiSchema, beforeParamsSave, handler });
+    const ctx = mobile ? createMobileLayoutContext({}) : createContext({});
+    const originalInputArgs = ctx.inputArgs;
+    const params = { uid: 'template-popup' };
+
+    expect(enhanced.uiSchema).toBe(uiSchema);
+    expect(enhanced.beforeParamsSave).toBe(beforeParamsSave);
+    expect(await enhanced.handler(ctx, params)).toEqual(
+      mobile ? { ...params, pageModelClass: 'MobileChildPageModel' } : params,
+    );
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0]).toBe(ctx);
+    expect(ctx.inputArgs).toBe(originalInputArgs);
   });
 
   it('should replace the default child page model for mobile route replays', () => {

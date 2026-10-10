@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/utils",
-  "version": "2.2.17",
+  "version": "2.2.22",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@budibase/handlebars-helpers": "0.14.0",
+    "@budibase/handlebars-helpers": "0.14.3",
     "@hapi/topo": "^6.0.0",
     "@rc-component/mini-decimal": "^1.1.0",
     "axios": "^1.7.0",

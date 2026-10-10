@@ -24,6 +24,10 @@ export default {
       autoIncrement: false,
     },
     {
+      type: 'integer',
+      name: 'status',
+    },
+    {
       type: 'belongsTo',
       name: 'execution',
     },
@@ -40,10 +44,6 @@ export default {
       type: 'belongsTo',
       name: 'upstream',
       target: 'jobs',
-    },
-    {
-      type: 'integer',
-      name: 'status',
     },
     {
       type: 'json',

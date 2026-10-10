@@ -172,7 +172,7 @@ export class APIClient {
     if (resource) {
       return this.resource(resource, resourceOf, headers)[action](params);
     }
-    return this.axios.request<T, R, D>(config);
+    return this.axios.request<T, R, D>(config) as Promise<R>;
   }
 
   resource(name: string, of?: any, headers?: RawAxiosRequestHeaders, cancel?: boolean): IResource {

@@ -1,0 +1,61 @@
+# This default-branch entry dispatches the implementation from the isolated v3 branch.
+name: V3 Database tests
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      dialect:
+        description: Database dialect to run the tests on
+        type: choice
+        default: postgres
+        options:
+          - sqlite
+          - postgres
+          - mysql
+          - kingbase
+          - oceanbase
+          - mssql
+          - oracle
+          - dameng
+      filter:
+        description: Package to test, such as @nocobase/app-plugin-scheduler; leave empty for every package that uses
+          @nocobase/db-testing or @nocobase/app-testing
+        type: string
+        default: ""
+permissions:
+  contents: read
+  actions: write
+jobs:
+  dispatch:
+    name: Run the v3 implementation
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch on v3-develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_FILE: v3-db-tests.yml
+          DISPATCH_INPUTS: ${{ toJSON(inputs) }}
+        run: >
+          printf '%s' "$DISPATCH_INPUTS" \
+            | jq '{ref: "v3-develop", inputs: with_entries(.value |= tostring)}' \
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_FILE/dispatches" --input -
+          echo "Dispatched $WORKFLOW_FILE on v3-develop. Check that workflow run for its result." >>
+          "$GITHUB_STEP_SUMMARY"
+  nightly:
+    name: Run nightly v3 database tests (${{ matrix.dialect }})
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: [postgres, mysql]
+    steps:
+      - name: Dispatch the nightly dialect on v3-develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIALECT: ${{ matrix.dialect }}
+        run: |
+          jq -n --arg dialect "$DIALECT" '{ref: "v3-develop", inputs: {dialect: $dialect, filter: ""}}' \
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/v3-db-tests.yml/dispatches" --input -

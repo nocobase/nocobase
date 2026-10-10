@@ -49,6 +49,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
+        defaultHeaders: this.getDefaultHeaders(),
       },
       verbose: false,
       useResponsesApi: true,

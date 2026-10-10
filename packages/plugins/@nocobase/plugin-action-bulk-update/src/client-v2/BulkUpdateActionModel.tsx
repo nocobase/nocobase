@@ -19,6 +19,7 @@ import {
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { NAMESPACE } from './locale';
+import { getUnavailableAssignedFieldNames } from '../validateAssignedValues';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
 const AFTER_SUCCESS_DEFAULT_PARAMS = {
@@ -126,6 +127,10 @@ BulkUpdateActionModel.registerFlow({
         const collection = ctx.collection?.name;
         if (!collection) {
           ctx.message.error(ctx.t('Collection is required to perform this action'));
+          return;
+        }
+        if (getUnavailableAssignedFieldNames(ctx.collection, assignedValues).length) {
+          ctx.message.error(ctx.t('The configured field value is no longer available', { ns: NAMESPACE }));
           return;
         }
         const updateModeParams = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'updateMode') || {};

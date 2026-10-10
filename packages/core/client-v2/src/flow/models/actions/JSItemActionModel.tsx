@@ -37,14 +37,30 @@ export class JSItemActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;
 
   render() {
-    return <div ref={this.context.ref} style={{ display: 'inline-flex', minHeight: 22, alignItems: 'center' }} />;
+    return (
+      <div
+        ref={this.context.ref}
+        style={{
+          display: 'inline-flex',
+          minHeight: 22,
+          minWidth: this.context.flowSettingsEnabled ? this.context.themeToken?.controlHeightLG ?? 40 : undefined,
+          alignItems: 'center',
+        }}
+      />
+    );
   }
 
   renderHiddenInConfig(): React.ReactNode | undefined {
     return (
       <div
         ref={this.context.ref}
-        style={{ display: 'inline-flex', minHeight: 22, alignItems: 'center', opacity: 0.3 }}
+        style={{
+          display: 'inline-flex',
+          minHeight: 22,
+          minWidth: this.context.themeToken?.controlHeightLG ?? 40,
+          alignItems: 'center',
+          opacity: 0.3,
+        }}
       />
     );
   }
@@ -62,7 +78,7 @@ export class JSItemActionModel extends ActionModel {
     }
 
     if (this._mountedOnce && this.context.ref?.current) {
-      void this.applyFlow('jsSettings');
+      this.applyFlow('jsSettings');
     }
     this._mountedOnce = true;
   }

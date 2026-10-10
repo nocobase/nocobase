@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import { AggregateFieldset } from '../components/AggregateFieldset';
 
@@ -178,7 +178,7 @@ describe('AggregateFieldset', () => {
     });
   });
 
-  it('keeps showing fields from an associated collection after the collection field is unmounted', async () => {
+  it('keeps showing fields from an associated collection while the collection selector is hidden', async () => {
     const getForm = renderWithForm({
       config: {
         aggregator: 'count',
@@ -192,6 +192,49 @@ describe('AggregateFieldset', () => {
       expect(screen.getByLabelText('field')).toHaveAttribute('data-collection', 'comments');
       expect(screen.getByTestId('filter')).toHaveAttribute('data-collection', 'comments');
       expect(getForm()?.getFieldValue(['config', 'collection'])).toBe('comments');
+    });
+  });
+
+  it('saves the associated collection and restores aggregate fields when reopening the configuration', async () => {
+    const initialValues = {
+      config: {
+        aggregator: 'count',
+        associated: true,
+        collection: 'comments',
+        association: {
+          name: 'comments',
+          associatedCollection: 'posts',
+          associatedKey: '{{$context.data.id}}',
+        },
+        params: {
+          field: 'id',
+          distinct: true,
+          filter: { id: { $notNull: true } },
+        },
+        precision: 2,
+      },
+    };
+    const getForm = renderWithForm(initialValues);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('field')).toHaveValue('id');
+    });
+
+    let savedValues: typeof initialValues | undefined;
+    await act(async () => {
+      savedValues = await getForm()?.validateFields();
+    });
+
+    expect(savedValues).toEqual(initialValues);
+
+    cleanup();
+    renderWithForm(savedValues);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('field')).toHaveValue('id');
+      expect(screen.getByLabelText('field')).toHaveAttribute('data-collection', 'comments');
+      expect(screen.getByTestId('filter')).toHaveAttribute('data-collection', 'comments');
+      expect(screen.getByRole('checkbox', { name: 'Distinct' })).toBeChecked();
     });
   });
 });

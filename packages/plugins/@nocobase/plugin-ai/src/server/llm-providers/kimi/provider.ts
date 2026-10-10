@@ -48,6 +48,7 @@ export class KimiProvider extends LLMProvider {
       ...(reasoningOptions.modelRequestParams || {}),
       configuration: {
         baseURL: this.getResolvedBaseURL(),
+        defaultHeaders: this.getDefaultHeaders(),
       },
     });
   }
