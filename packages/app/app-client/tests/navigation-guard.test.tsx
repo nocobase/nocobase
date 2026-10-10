@@ -38,6 +38,9 @@ function Editor({ decide }: { readonly decide: () => boolean }): ReactElement {
         onChange={(event) => setDraft(event.target.value)}
       />
       <Link to='/list'>Leave</Link>
+      <button onClick={() => navigate('/list', { replace: true })}>
+        Replace
+      </button>
       <button onClick={() => navigate(-1)}>Back</button>
     </>
   );
@@ -59,6 +62,82 @@ function Example({ decide }: { readonly decide: () => boolean }): ReactElement {
 }
 
 describe('host navigation guards', () => {
+  it.each(['/', '/main', '/main/'])(
+    'recovers rejected traversal between entries sharing an index after a native hash at basename %s',
+    async (basename) => {
+      const prefix = basename.replace(/\/$/, '');
+      window.history.replaceState({ idx: 0 }, '', `${prefix}/home`);
+      const decide = vi.fn(() => false);
+      render(
+        <BrowserRouter basename={basename}>
+          <LocationProbe />
+          <NavigationGuardProvider>
+            <Routes>
+              <Route path='/home' element={<Link to='/list'>Workflows</Link>} />
+              <Route
+                path='/list'
+                element={
+                  <>
+                    <Link to='/edit/first'>First workflow</Link>
+                    <Link to='/edit/second'>Second workflow</Link>
+                  </>
+                }
+              />
+              <Route path='/edit/:id' element={<Editor decide={decide} />} />
+            </Routes>
+          </NavigationGuardProvider>
+        </BrowserRouter>,
+      );
+      fireEvent.click(screen.getByText('Workflows'));
+      fireEvent.click(await screen.findByText('First workflow'));
+      fireEvent.change(await screen.findByRole('textbox', { name: 'Draft' }), {
+        target: { value: 'First draft' },
+      });
+      expect(window.history.state?.idx).toBe(2);
+      act(() => {
+        window.location.hash = 'outside-router';
+      });
+      await waitFor(() => expect(decide).toHaveBeenCalledOnce());
+      await waitFor(() => expect(window.location.hash).toBe(''));
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'First draft',
+      );
+
+      decide.mockReturnValue(true);
+      fireEvent.click(screen.getByText('Leave'));
+      fireEvent.click(await screen.findByText('Second workflow'));
+      fireEvent.change(await screen.findByRole('textbox', { name: 'Draft' }), {
+        target: { value: 'Keep second draft' },
+      });
+      decide.mockReturnValue(false);
+      decide.mockClear();
+      // The native hash entry reset the router index: both editor entries now have idx=2.
+      expect(window.history.state?.idx).toBe(2);
+      act(() => window.history.go(-3));
+      await waitFor(() => expect(decide).toHaveBeenCalledOnce());
+      await waitFor(() =>
+        expect(window.location.pathname).toBe(`${prefix}/edit/second`),
+      );
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Keep second draft',
+      );
+
+      // Restoration must both keep the guard active and release its navigation lock.
+      fireEvent.click(screen.getByText('Leave'));
+      fireEvent.click(screen.getByText('Replace'));
+      expect(decide).toHaveBeenCalledTimes(3);
+      expect(window.location.pathname).toBe(`${prefix}/edit/second`);
+      decide.mockReturnValue(true);
+      fireEvent.click(screen.getByText('Replace'));
+      expect(await screen.findByText('First workflow')).toBeInTheDocument();
+      expect(window.location.pathname).toBe(`${prefix}/list`);
+      fireEvent.click(screen.getByText('First workflow'));
+      expect(await screen.findByRole('textbox', { name: 'Draft' })).toHaveValue(
+        '',
+      );
+    },
+  );
+
   it.each(['/', '/main', '/main/'])(
     'preserves basename %s and checks guards again after rejecting a native hash entry',
     async (basename) => {

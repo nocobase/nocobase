@@ -104,8 +104,13 @@ export function NavigationGuardProvider({
         return;
       }
       const index = historyIndex(navigator);
-      if (accepted.index === undefined || index === undefined) {
-        // Entries outside the router have no reversible delta. Preserve the editor and replace the current URL.
+      if (
+        accepted.index === undefined ||
+        index === undefined ||
+        index === accepted.index
+      ) {
+        // Native entries can restart router indexes, so different locations may share one. With no reversible delta,
+        // preserve the editor and replace the current URL instead of waiting for a traversal that cannot restore it.
         const location = accepted.context.location;
         const pathname =
           location.pathname === '/'
