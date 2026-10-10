@@ -99,7 +99,7 @@ function AgentIntro(): ReactElement {
         <ol className='flex flex-col gap-3'>
           {STEPS.map((step, index) => (
             <li key={step} className='flex gap-3'>
-              <span className='flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground'>
+              <span className='flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary'>
                 {index + 1}
               </span>
               <div className='flex flex-col gap-0.5'>
@@ -114,8 +114,8 @@ function AgentIntro(): ReactElement {
           ))}
         </ol>
       </div>
-      <figure className='flex flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm'>
-        <figcaption className='flex items-center justify-between gap-2 border-b border-border px-4 py-2.5'>
+      <figure className='flex flex-col overflow-hidden rounded-xl border border-primary/10 bg-card shadow-sm'>
+        <figcaption className='flex items-center justify-between gap-2 border-b border-primary/10 px-4 py-2.5'>
           <span className='flex items-center gap-2 text-sm font-medium'>
             <MessageSquareTextIcon
               className='size-4 text-primary'
@@ -132,10 +132,10 @@ function AgentIntro(): ReactElement {
             {copied ? t('home.prompt.copiedShort') : t('home.prompt.copy')}
           </Button>
         </figcaption>
-        <p className='px-4 py-4 text-sm leading-6 whitespace-pre-line'>
+        <p className='bg-primary/5 px-4 py-4 text-sm leading-7 whitespace-pre-line'>
           {example}
         </p>
-        <p className='border-t border-border bg-muted/50 px-4 py-2.5 text-xs text-muted-foreground'>
+        <p className='border-t border-primary/10 px-4 py-2.5 text-xs text-muted-foreground'>
           {t('home.example.hint')}
         </p>
       </figure>

@@ -48,7 +48,7 @@ export function PromptDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='gap-5 sm:max-w-2xl'>
         <DialogHeader className='flex-row items-center gap-3 pr-8'>
-          <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground'>
+          <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary'>
             <Icon className='size-5' aria-hidden />
           </span>
           <div className='flex min-w-0 flex-col gap-1.5'>
