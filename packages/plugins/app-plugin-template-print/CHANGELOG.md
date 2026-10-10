@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-template-print
 
+## 0.0.2-beta.1
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+
 ## 0.0.2-beta.0
 
 ### Patch Changes

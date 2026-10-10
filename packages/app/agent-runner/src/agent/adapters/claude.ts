@@ -18,7 +18,6 @@
  *   so a runner without a recent enough `claude` reports Claude Code
  *   unavailable and is offered no Claude runs.
  */
-import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
@@ -37,6 +36,7 @@ import type {
 } from '@anthropic-ai/claude-agent-sdk';
 
 import { classifyClaudeFailure } from './classify.ts';
+import { detectExec } from './detect-exec.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
@@ -70,8 +70,10 @@ export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
 
 export interface ClaudeAdapterOptions {
   minVersion?: string;
-  /** PATH searched for `claude`; defaults to the runner's PATH. */
+  /** PATH searched for `claude`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   /** Runs a command for detection; replaceable in tests. */
   exec?: ExecFn;
 }
@@ -86,23 +88,6 @@ export interface ResolvedExecutable {
 // ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 function parseVersion(text: string): string | undefined {
   return /(\d+\.\d+\.\d+)/.exec(text)?.[1];
@@ -240,8 +225,8 @@ export function denialMessage(reason: string | undefined): string {
 export class ClaudeAdapter implements AgentAdapter {
   readonly kind = 'claude' as const;
   private readonly options: Required<
-    Omit<ClaudeAdapterOptions, 'searchPath'>
-  > & { searchPath?: string };
+    Omit<ClaudeAdapterOptions, 'searchPath' | 'env'>
+  > & { searchPath: string };
   private detection?: Promise<{
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
@@ -250,8 +235,8 @@ export class ClaudeAdapter implements AgentAdapter {
   constructor(options: ClaudeAdapterOptions = {}) {
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CLAUDE_VERSION,
-      exec: options.exec ?? defaultExec,
-      searchPath: options.searchPath,
+      exec: options.exec ?? detectExec(options.env),
+      searchPath: options.searchPath ?? (options.env ?? process.env).PATH ?? '',
     };
   }
 
@@ -280,8 +265,7 @@ export class ClaudeAdapter implements AgentAdapter {
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }> {
-    const { exec, minVersion } = this.options;
-    const searchPath = this.options.searchPath ?? process.env.PATH ?? '';
+    const { exec, minVersion, searchPath } = this.options;
     const found = await findOnPath('claude', searchPath);
     if (!found)
       return {

@@ -4,6 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { loadAdapters } from '../agent/adapters/registry.ts';
+import { providedNames } from '../agent/env.ts';
+import { parseFreeSpace } from '../lib/size.ts';
 import { RunnerCommand, UsageError } from '../lib/command.ts';
 import {
   appKey,
@@ -64,6 +66,7 @@ export default class Register extends RunnerCommand {
     name: Interfaces.OptionFlag<string | undefined>;
     slots: Interfaces.OptionFlag<string | undefined>;
     cli: Interfaces.OptionFlag<string[] | undefined>;
+    'min-free-disk': Interfaces.OptionFlag<string | undefined>;
     force: Interfaces.BooleanFlag<boolean>;
   } = {
     server: Flags.string({
@@ -87,6 +90,10 @@ export default class Register extends RunnerCommand {
         'Use a local application CLI instead of installing the one a run names: <name>=<path>. Repeatable.',
       multiple: true,
     }),
+    'min-free-disk': Flags.string({
+      description:
+        'How much of the disk holding the working directories to keep free: a size (5G, the default), a share of the disk (10%), or off. Below it, the runner warns which directories are left for `gc` to remove.',
+    }),
     force: Flags.boolean({
       description:
         'Replace an existing registration with the same application.',
@@ -106,6 +113,11 @@ export default class Register extends RunnerCommand {
     );
     const settings = await readSettings(this.paths);
     if (flags.name !== undefined) settings.name = flags.name;
+    if (flags['min-free-disk'] !== undefined)
+      settings.minFreeDisk = parseFreeSpace(
+        flags['min-free-disk'],
+        '--min-free-disk',
+      );
     const slotsFlag =
       flags.slots === undefined ? {} : parseSlotsFlag(flags.slots);
     if (slotsFlag.slots !== undefined) settings.slots = slotsFlag.slots;
@@ -120,7 +132,11 @@ export default class Register extends RunnerCommand {
         EXIT_CODES.conflict,
       );
     }
-    const adapters = loadAdapters();
+    const adapters = loadAdapters(
+      process.env,
+      settings.passEnv,
+      existing?.registration.variables,
+    );
     // The owner's local policy as it reads before the application is known; the first heartbeat sends its own.
     const policy = await policyReport(
       this.paths,
@@ -145,6 +161,11 @@ export default class Register extends RunnerCommand {
         ? {}
         : { toolSlots: slotsFlag.toolSlots }),
       ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
+      variables: providedNames(
+        process.env,
+        settings.passEnv,
+        existing?.registration.variables,
+      ),
     };
     const client = new ApiClient({ server, headers: {} });
     const response = await client.post(

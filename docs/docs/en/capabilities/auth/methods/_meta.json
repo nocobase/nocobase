@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "password",
+    "label": "Password authentication"
+  },
+  {
+    "type": "file",
+    "name": "api-keys",
+    "label": "API keys"
+  }
+]

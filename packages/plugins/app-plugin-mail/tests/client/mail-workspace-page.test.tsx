@@ -973,7 +973,9 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   it('sends mail from the production workspace composer', async () => {
     render(<MailWorkspacePage />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    fireEvent.click(compose);
     await waitFor(() => expect(mail.listIdentities).toHaveBeenCalled());
     expect(
       screen.queryByRole('combobox', { name: 'From' }),

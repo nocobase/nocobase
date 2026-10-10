@@ -60,6 +60,7 @@ export {
   type SubjectFacts,
   type SubjectRegistry,
   type SubjectReports,
+  type SubjectWorkspaces,
   type SubjectScope,
   type WorkSink,
 } from './ports.js';
@@ -85,13 +86,28 @@ export {
 export {
   createRunService,
   DEFAULT_THREAD,
+  queuedRun,
   type EnqueueRequest,
   type EnqueueResult,
   type NewInput,
+  type RunEnqueued,
   type RunFilter,
+  type RunRequestPending,
   type RunService,
 } from './run.service.js';
+export {
+  RUN_REQUEST_TTL_MS,
+  type RequestedRun,
+  type RunRequestFilter,
+  type RunRequestReassignment,
+  type RunRequestService,
+} from './run-requests.js';
 export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
+export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './execution-view.js';
 export {
   createAvailability,
   type AgentAvailability,

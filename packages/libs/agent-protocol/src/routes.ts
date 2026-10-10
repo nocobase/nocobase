@@ -63,6 +63,11 @@ export const RUNNER_ROUTES = {
   jobFail: '/api/agents/runners/jobs/:jobId/fail',
   /** `POST` `{}` → `JobFinishResponse`. */
   jobCancelAck: '/api/agents/runners/jobs/:jobId/cancelAck',
+  /**
+   * `POST` `WorkspacesRequest` → `WorkspacesResponse`: the runner's working directories, and which of them may go
+   * (`workspaces.ts`). Only to an application whose heartbeat answer carries `workspaces`.
+   */
+  workspaces: '/api/agents/runners/workspaces',
 } as const;
 
 /**

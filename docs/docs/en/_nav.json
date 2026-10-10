@@ -4,24 +4,8 @@
     "link": "/get-started/"
   },
   {
-    "text": "Tutorials",
-    "link": "/tutorials/"
-  },
-  {
-    "text": "Development",
-    "link": "/app/"
-  },
-  {
     "text": "Capabilities",
     "link": "/capabilities/"
-  },
-  {
-    "text": "Deployment",
-    "link": "/deployment/"
-  },
-  {
-    "text": "Plugins",
-    "link": "/plugin-development/"
   },
   {
     "text": "Home",
