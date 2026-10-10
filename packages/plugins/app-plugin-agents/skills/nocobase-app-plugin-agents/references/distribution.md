@@ -26,6 +26,17 @@ Each product lands in a directory of its own, with a manifest of every file's SH
 
 The plugin serves `agents.dist.dir` (default `storage/runners/dist`, relative to the App root), channel `agents.dist.channel` (default `stable`). A product's current version is the highest in the channel, unless `agents.dist.versions` pins one. Only files a manifest lists are served. Routes (`DIST_ROUTES` of `@nocobase/agent-protocol`): `GET /api/agents/dist/manifest`, `GET /api/agents/dist/products/<product>/targets/<target>` (`?format=env` for a shell; 404 `PLATFORM_UNSUPPORTED` with the targets there are; the universal tarball answers with the asked target and `universal: true`, `universal=true` in env form), the tarball itself, and `POST /api/agents/dist/downloadTokens`.
 
+### Naming a product on npm instead
+
+`agents.dist.npm` names the npm package and exact version (never a range) of a product, such as `{ nocobase-runner: { package: '@nocobase/agent-runner', version: 1.0.0 } }`. It is used only when `agents.dist.dir` has no current version of that product; a product the directory has is served from it exactly as without the setting. The machine needs Node.js 24 or later already; nothing bundles it on this path.
+
+Only callers that say they understand the answer get it, so an older runner, install script or CLI never sees one:
+
+- The resolve route with `accept=npm` (a comma-separated list) answers `{ kind: 'npm', product, version, package, channel }`, or with `format=env` the lines `kind=npm`, `product=`, `version=`, `package=` and `channel=`. Without it, such a product is 404 as before.
+- A heartbeat answer carries `npmUpgrade` (`latestVersion`, `package`, `channel`, `reason`) instead of `upgrade` only to a runner that declares the `npm` feature (protocol 8) and runs an older version; any other runner is offered no update for that product. The Runtimes page marks only those runners "Upgradable".
+
+An App that builds its runner and CLI into its deployment pins them to the versions it was built with this way, so redeploying it moves every runner to that version.
+
 ## CI and deployment
 
 Build the two products as separate artifacts in CI, one job each (`pnpm nocobase cli build --out output/dist` and `pnpm nocobase cli build --runner --out output/dist`, uploading `output/dist`), and mount or copy each into the deployment's `storage/runners/dist` (or the directory `agents.dist.dir` names), keeping the `<channel>/<product>/` layout. Do not bake them into the App's image: they change on their own schedule and are large. Rebuild the runner whenever `@nocobase/agent-runner` or the agents plugin is upgraded, so runners can update to a version that speaks the App's protocol, and rebuild the CLI whenever the App's `nocobase.cli` or its CLI skills change.
