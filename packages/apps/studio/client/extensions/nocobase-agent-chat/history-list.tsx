@@ -23,6 +23,7 @@ import {
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
+  CheckIcon,
   Maximize2Icon,
   MessagesSquareIcon,
   MoreHorizontalIcon,
@@ -316,6 +317,9 @@ function HistoryRow({
           onClick={onOpen}
         >
           <span className='flex w-full min-w-0 items-center gap-1.5'>
+            {active ? (
+              <CheckIcon className='size-4 shrink-0' aria-hidden='true' />
+            ) : null}
             {item.run ? <Pulse /> : null}
             <span
               className={cn(
