@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -261,6 +262,111 @@ describe('checkout', () => {
     expect(report).toMatchObject({ branch: 'main', pushed: true });
     expect(git(['rev-parse', 'refs/heads/main'], empty)).toBe(report?.headSha);
     await work.release();
+  });
+
+  it('opts into empty initialization, preserves unfinished work, and returns to a task branch after publishing', async () => {
+    const empty = path.join(root, 'automatic.git');
+    git(['init', '--quiet', '--bare', '--initial-branch=main', empty]);
+    const entry = { ...repo('automatic'), url: `file://${empty}` };
+    const options = {
+      paths,
+      appKey: 'app',
+      subjectKey: 'automatic',
+      dirs: [entry],
+    };
+    await expect(checkout(options)).rejects.toThrow(/has no branch main/u);
+    const enabled = {
+      ...options,
+      dirs: [{ ...entry, initializeIfEmpty: true as const }],
+    };
+    const first = await checkout(enabled);
+    const dir = first.repos[0]!.dir;
+    expect(first.repos[0]).toMatchObject({
+      branch: 'main',
+      initializing: true,
+    });
+    writeFileSync(path.join(dir, 'package.json'), '{}');
+    git([...COMMIT, 'add', '.'], dir);
+    git([...COMMIT, 'commit', '-q', '-m', 'Initialize'], dir);
+    const sha = git(['rev-parse', 'HEAD'], dir);
+    writeFileSync(path.join(dir, 'unfinished.txt'), 'keep me');
+    await first.release();
+    const retry = await checkout(enabled);
+    expect(git(['rev-parse', 'HEAD'], dir)).toBe(sha);
+    expect(readFileSync(path.join(dir, 'unfinished.txt'), 'utf8')).toBe(
+      'keep me',
+    );
+    expect(await reportRepos(retry.repos, { push: true })).toEqual([
+      expect.objectContaining({ branch: 'main', pushed: true, headSha: sha }),
+    ]);
+    writeFileSync(path.join(dir, 'another.txt'), 'another change');
+    git([...COMMIT, 'add', '.'], dir);
+    git([...COMMIT, 'commit', '-q', '-m', 'Another change'], dir);
+    expect(git(['rev-parse', 'refs/heads/main'], empty)).toBe(sha);
+    await retry.release();
+    const later = await checkout(enabled);
+    expect(later.repos[0]).toMatchObject({ branch: 'agent/automatic' });
+    expect(later.repos[0]!.initializing).toBeUndefined();
+    expect(git(['rev-parse', 'HEAD'], dir)).not.toBe(sha);
+    await later.release();
+  });
+
+  it('does not grant initial access for a missing branch in a populated repository', async () => {
+    for (const flag of [
+      { initializeIfEmpty: true as const },
+      { initial: true as const },
+    ]) {
+      await expect(
+        checkout({
+          paths,
+          appKey: 'app',
+          subjectKey: 'wrong-base',
+          dirs: [{ ...repo('wrong-base'), defaultBranch: 'missing', ...flag }],
+        }),
+      ).rejects.toThrow(/has no branch missing/u);
+    }
+  });
+
+  it('does not mistake a tag-only repository for an empty one', async () => {
+    git(['tag', 'keep-history', 'main'], fileURLToPath(remote));
+    git(['update-ref', '-d', 'refs/heads/main'], fileURLToPath(remote));
+    await expect(
+      checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'tag-only',
+        dirs: [{ ...repo('tag-only'), initializeIfEmpty: true }],
+      }),
+    ).rejects.toThrow(/has no branch main/u);
+  });
+
+  it('keeps a populated repository on its task branch even when initialization is permitted', async () => {
+    const work = await checkout({
+      paths,
+      appKey: 'app',
+      subjectKey: 'normal',
+      dirs: [{ ...repo('normal'), initializeIfEmpty: true }],
+    });
+    expect(work.repos[0]).toMatchObject({ branch: 'agent/normal' });
+    expect(work.repos[0]!.initializing).toBeUndefined();
+    await work.release();
+  });
+
+  it('does not turn an inaccessible remote into an empty repository', async () => {
+    await expect(
+      checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'unreachable',
+        dirs: [
+          {
+            ...repo('unreachable'),
+            url: `file://${path.join(root, 'absent.git')}`,
+            initializeIfEmpty: true,
+          },
+        ],
+      }),
+    ).rejects.toThrow(/does not appear to be a git repository/u);
   });
 
   it('starts from the remote subject branch when another runner pushed it', async () => {

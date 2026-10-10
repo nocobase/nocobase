@@ -99,7 +99,11 @@ export const dirsStep: PrepareStep = {
           fresh: dir.fresh,
           ...(dir.repo === undefined
             ? {}
-            : { url: dir.repo.url, branch: dir.repo.branch }),
+            : {
+                url: dir.repo.url,
+                branch: dir.repo.branch,
+                ...(dir.repo.initializing ? { initializing: true } : {}),
+              }),
         },
       });
     }
