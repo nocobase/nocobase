@@ -365,7 +365,15 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
         operationId: 'gitListConnections',
         ...cliRoute({
           command: 'git connection list',
-          columns: ['id', 'name', 'kind', 'account', 'webUrl', 'usedBy'],
+          columns: [
+            'id',
+            'name',
+            'kind',
+            'account',
+            'state',
+            'webUrl',
+            'usedBy',
+          ],
         }),
         description:
           'For whoever may read the git settings. A bounded list; credentials are write-only.',
@@ -389,14 +397,16 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           flags: {
             sameAppAs: { name: 'same-app-as' },
             privateKey: { contentFile: true },
-            token: { prompt: true },
+            clientSecret: { contentFile: true },
+            token: { contentFile: true, prompt: true },
+            webhookSecret: { contentFile: true },
           },
           examples: [
-            'git connection create --kind token --name GitHub --account acme --token ghp_...',
+            'git connection create --kind token --name GitHub --account acme --token-file ./token.txt',
           ],
         }),
         description:
-          'For whoever manages the connections. `sameAppAs` adds another installation of an existing app connection, taking its credentials.',
+          'For whoever manages the connections. `sameAppAs` adds another installation of an existing app connection, taking its credentials. A GitHub App is usually created from a manifest instead, in Settings › Git on the web; this creates or updates a connection by hand, with `--token`, `--client-secret`, `--webhook-secret` and `--private-key` each readable from a file with the matching `--*-file` flag instead of the command line.',
         responses: {
           201: dataResponse(GitConnectionSchema, 'Created.'),
           400: hostRefused,
@@ -473,10 +483,13 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           flags: {
             connectionId: { name: 'connection' },
             privateKey: { contentFile: true },
+            clientSecret: { contentFile: true },
+            token: { contentFile: true, prompt: true },
+            webhookSecret: { contentFile: true },
           },
         }),
         description:
-          'For whoever manages the connections. A credential left out stays; null removes it.',
+          'For whoever manages the connections. A credential left out stays; null removes it. `--token`, `--client-secret`, `--webhook-secret` and `--private-key` are each readable from a file with the matching `--*-file` flag instead of the command line.',
         responses: {
           200: dataResponse(GitConnectionSchema),
           400: hostRefused,

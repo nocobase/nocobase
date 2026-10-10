@@ -118,28 +118,28 @@ nb-studio git authorization use-token <connection> --token <string>
 
 Add a connection to a code host
 
-For whoever manages the connections. `sameAppAs` adds another installation of an existing app connection, taking its credentials.
+For whoever manages the connections. `sameAppAs` adds another installation of an existing app connection, taking its credentials. A GitHub App is usually created from a manifest instead, in Settings › Git on the web; this creates or updates a connection by hand, with `--token`, `--client-secret`, `--webhook-secret` and `--private-key` each readable from a file with the matching `--*-file` flag instead of the command line.
 
 ```bash
 nb-studio git connection create
 ```
 
-| Flag                      | Type    | Description                    |
-| ------------------------- | ------- | ------------------------------ |
-| `--provider`              | github  |                                |
-| `--kind`                  | app \\  | token                          |     |
-| `--same-app-as`           | string  |                                |
-| `--name`                  | string  |                                |
-| `--web-url`               | string  |                                |
-| `--account`               | string  |                                |
-| `--app-id`                | string  |                                |
-| `--installation-id`       | string  |                                |
-| `--client-id`             | string  |                                |
-| `--private-key`           | string  | (or --private-key-file <path>) |
-| `--client-secret`         | string  |                                |
-| `--token`                 | string  |                                |
-| `--webhook-secret`        | string  |                                |
-| `--allow-personal-tokens` | boolean |                                |
+| Flag                      | Type    | Description                       |
+| ------------------------- | ------- | --------------------------------- |
+| `--provider`              | github  |                                   |
+| `--kind`                  | app \\  | token                             |     |
+| `--same-app-as`           | string  |                                   |
+| `--name`                  | string  |                                   |
+| `--web-url`               | string  |                                   |
+| `--account`               | string  |                                   |
+| `--app-id`                | string  |                                   |
+| `--installation-id`       | string  |                                   |
+| `--client-id`             | string  |                                   |
+| `--private-key`           | string  | (or --private-key-file <path>)    |
+| `--client-secret`         | string  | (or --client-secret-file <path>)  |
+| `--token`                 | string  | (or --token-file <path>)          |
+| `--webhook-secret`        | string  | (or --webhook-secret-file <path>) |
+| `--allow-personal-tokens` | boolean |                                   |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -150,7 +150,7 @@ nb-studio git connection create
 **Examples:**
 
 ```bash
-nb-studio git connection create --kind token --name GitHub --account acme --token ghp_...
+nb-studio git connection create --kind token --name GitHub --account acme --token-file ./token.txt
 ```
 
 ## git connection delete
@@ -187,7 +187,7 @@ For whoever may read the git settings. A bounded list; credentials are write-onl
 nb-studio git connection list
 ```
 
-**Output:** A list (table columns: `id`, `name`, `kind`, `account`, `webUrl`, `usedBy`); with `--json`, `result.data` is the array and `result.meta` the paging.
+**Output:** A list (table columns: `id`, `name`, `kind`, `account`, `state`, `webUrl`, `usedBy`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
 **Who:** People (a sign-in or an API key).
 
@@ -217,7 +217,7 @@ nb-studio git connection reach <connection>
 
 Update a connection to a code host
 
-For whoever manages the connections. A credential left out stays; null removes it.
+For whoever manages the connections. A credential left out stays; null removes it. `--token`, `--client-secret`, `--webhook-secret` and `--private-key` are each readable from a file with the matching `--*-file` flag instead of the command line.
 
 ```bash
 nb-studio git connection update <connection>
@@ -227,22 +227,22 @@ nb-studio git connection update <connection>
 | ------------ | ----------- |
 | `connection` |             |
 
-| Flag                      | Type    | Description                    |
-| ------------------------- | ------- | ------------------------------ |
-| `--provider`              | github  |                                |
-| `--kind`                  | app \\  | token                          |     |
-| `--same-app-as`           | string  |                                |
-| `--name`                  | string  |                                |
-| `--web-url`               | string  |                                |
-| `--account`               | string  |                                |
-| `--app-id`                | string  |                                |
-| `--installation-id`       | string  |                                |
-| `--client-id`             | string  |                                |
-| `--private-key`           | string  | (or --private-key-file <path>) |
-| `--client-secret`         | string  |                                |
-| `--token`                 | string  |                                |
-| `--webhook-secret`        | string  |                                |
-| `--allow-personal-tokens` | boolean |                                |
+| Flag                      | Type    | Description                       |
+| ------------------------- | ------- | --------------------------------- |
+| `--provider`              | github  |                                   |
+| `--kind`                  | app \\  | token                             |     |
+| `--same-app-as`           | string  |                                   |
+| `--name`                  | string  |                                   |
+| `--web-url`               | string  |                                   |
+| `--account`               | string  |                                   |
+| `--app-id`                | string  |                                   |
+| `--installation-id`       | string  |                                   |
+| `--client-id`             | string  |                                   |
+| `--private-key`           | string  | (or --private-key-file <path>)    |
+| `--client-secret`         | string  | (or --client-secret-file <path>)  |
+| `--token`                 | string  | (or --token-file <path>)          |
+| `--webhook-secret`        | string  | (or --webhook-secret-file <path>) |
+| `--allow-personal-tokens` | boolean |                                   |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

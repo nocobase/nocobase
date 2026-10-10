@@ -10,6 +10,8 @@ import {
   type GitPersonalAuthorization,
 } from '../../shared/git.js';
 
+export { connectionState, type GitConnectionState } from '../../shared/git.js';
+
 export type GitSource =
   | {
       readonly kind: 'app';
@@ -65,33 +67,6 @@ export function gitSources(connections: readonly GitConnection[]): GitSource[] {
       });
   }
   return sources;
-}
-
-/**
- * How a connection is doing, by what Studio has: `notInstalled` is an app Studio created on the host that is not
- * installed anywhere yet; `incomplete` lacks what it cannot work without (an app's private key
- * or installation, a token); `webhookFailing` when its webhook's last delivery could not be verified or processed;
- * `noWebhook` for an app without a webhook secret (changes arrive only by polling); otherwise `ready`.
- */
-export type GitConnectionState =
-  'ready' | 'notInstalled' | 'incomplete' | 'webhookFailing' | 'noWebhook';
-
-export function connectionState(connection: GitConnection): GitConnectionState {
-  if (connection.kind === 'token')
-    return connection.hasToken ? 'ready' : 'incomplete';
-  if (connection.installUrl && !connection.installationId)
-    return 'notInstalled';
-  if (
-    !connection.appId ||
-    !connection.hasPrivateKey ||
-    !connection.installationId
-  )
-    return 'incomplete';
-  const delivery = connection.lastDelivery?.status;
-  if (delivery === 'invalidSignature' || delivery === 'failed')
-    return 'webhookFailing';
-  if (!connection.hasWebhookSecret) return 'noWebhook';
-  return 'ready';
 }
 
 /** The absolute address of a URL the server gave as a path on Studio's origin. */

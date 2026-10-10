@@ -119,7 +119,7 @@ function connection(
   id: string,
   overrides: Partial<GitConnection> = {},
 ): GitConnection {
-  return {
+  const base = {
     id,
     provider: 'github',
     kind: 'app',
@@ -148,7 +148,8 @@ function connection(
     createdAt: AT,
     updatedAt: AT,
     ...overrides,
-  };
+  } as Omit<GitConnection, 'state'>;
+  return { ...base, state: overrides.state ?? connectionState(base) };
 }
 
 const acme = connection('c1', { usedBy: 2, lastReceivedAt: AT });
@@ -396,6 +397,42 @@ describe('Settings › Git', () => {
     ).toBe('{"name":"Studio studio.example.com"}');
     submit.mockRestore();
     form.remove();
+  });
+
+  it('lets a person name the app before creating it on GitHub', async () => {
+    api.status.mockResolvedValue({
+      enabled: true,
+      connections: [],
+      canManage: true,
+      publicOrigin: 'https://studio.example.com',
+    });
+    api.startAppManifest.mockResolvedValue({
+      action: 'https://github.com/settings/apps/new?state=s',
+      manifest: '{"name":"Acme Bot"}',
+      webhookActive: true,
+    });
+    const submit = vi
+      .spyOn(HTMLFormElement.prototype, 'submit')
+      .mockImplementation(() => undefined);
+    render(wrap(<GitSettingsPage />));
+    await addConnection();
+    const dialog = await screen.findByRole('dialog');
+    const create = 'studioGit.providers.github.create';
+    fireEvent.change(within(dialog).getByLabelText(`${create}.name`), {
+      target: { value: 'Acme Bot' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: `${create}.submit` }),
+    );
+    await waitFor(() =>
+      expect(api.startAppManifest).toHaveBeenCalledWith({
+        provider: 'github',
+        organization: null,
+        webUrl: 'https://github.com',
+        name: 'Acme Bot',
+      }),
+    );
+    submit.mockRestore();
   });
 
   it('creates on a GitHub Enterprise Server, and says the webhook starts off when GitHub cannot reach Studio', async () => {

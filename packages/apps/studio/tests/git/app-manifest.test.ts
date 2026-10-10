@@ -106,6 +106,33 @@ describe('the manifest', () => {
     expect(form.manifest).not.toContain('PRIVATE KEY');
   });
 
+  it('names the app what was asked, or Studio’s own address when nothing was', async () => {
+    const named = await h.gitConnections.startAppManifest(
+      'alice',
+      { name: 'Acme Bot' },
+      urls(),
+    );
+    expect((JSON.parse(named.manifest) as { name: string }).name).toBe(
+      'Acme Bot',
+    );
+    const long = await h.gitConnections.startAppManifest(
+      'alice',
+      { name: 'A'.repeat(50) },
+      urls(),
+    );
+    expect((JSON.parse(long.manifest) as { name: string }).name).toBe(
+      'A'.repeat(34),
+    );
+    const blank = await h.gitConnections.startAppManifest(
+      'alice',
+      { name: '   ' },
+      urls(),
+    );
+    expect((JSON.parse(blank.manifest) as { name: string }).name).toBe(
+      'Studio studio.example.com',
+    );
+  });
+
   it('goes to an organization’s settings, and to a GitHub Enterprise Server', async () => {
     const org = await h.gitConnections.startAppManifest(
       'alice',

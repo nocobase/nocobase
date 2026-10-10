@@ -193,6 +193,17 @@ describe('connections', () => {
     expect(await h.gitConnections.choices()).toHaveLength(2);
   });
 
+  it('reports each connection’s state, computed from what it holds', async () => {
+    const app = await appConnection();
+    expect(app.state).toBe('ready');
+    const token = await tokenConnection(h, 'ghp_secret_token');
+    expect(token.state).toBe('ready');
+    const noWebhook = await h.gitConnections.update(app.id, {
+      webhookSecret: null,
+    });
+    expect(noWebhook.state).toBe('noWebhook');
+  });
+
   it('hides every git entry point without a connection, and the issue page shows none', async () => {
     const project = await h.projects.projects.create(alice(), { name: 'Ops' });
     await h.projects.projects.addResource(alice(), project.id, {

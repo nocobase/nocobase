@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import {
   COMMIT_ATTRIBUTIONS,
+  GIT_CONNECTION_STATES,
   GIT_PERSONAL_METHODS,
   GIT_PROVIDERS,
   MARKS_MAX,
@@ -93,6 +94,7 @@ export const StartAppManifestInput = z.strictObject({
   provider: z.enum(GIT_PROVIDERS).optional(),
   organization: z.string().max(39).nullable().optional(),
   webUrl: z.string().max(255).optional(),
+  name: z.string().trim().min(1).max(200).optional(),
 });
 
 export const AppManifestCallbackQuery = z.object({
@@ -324,6 +326,10 @@ export const GitConnectionSchema: z.ZodType<GitConnection> = z
     }),
     createdAt: dateTime(),
     updatedAt: dateTime(),
+    state: z.enum(GIT_CONNECTION_STATES).meta({
+      description:
+        'How the connection is doing: `ready`, `notInstalled` (an app created but not installed anywhere), `incomplete` (missing a credential or installation), `webhookFailing` (the last delivery could not be verified or processed), or `noWebhook` (an app without a webhook secret, polling instead).',
+    }),
   })
   .meta({
     ref: 'StudioGitConnection',
