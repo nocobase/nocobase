@@ -82,6 +82,34 @@ const enUS = {
     reliability: '<brand>NocoBase</brand> keeps it reliable.',
   },
   home: {
+    platform: 'NocoBase · AI-native application platform',
+    pages: {
+      title: 'Build your pages',
+      description: 'Turn your ideas into interfaces that fit your work.',
+      examples:
+        'From tables and forms to dashboards, shape each page around your business.',
+    },
+    data: {
+      title: 'Organize your data',
+      description: 'Give your business a clear, connected data model.',
+      examples:
+        'Define records, fields and relationships so your information works together.',
+    },
+    workflows: {
+      title: 'Connect your workflows',
+      description: 'Keep work moving with consistent business processes.',
+      examples:
+        'Connect approvals, notifications and automated actions to everyday work.',
+    },
+    startTitle: 'Start with one requirement',
+    startDescription:
+      'Tell your AI Agent what you want to achieve and who will use it.',
+    examplePrompt:
+      '“Build a customer management app for our sales team. We need a customer list, contact details and follow-up records, with a clear overview of each opportunity.”',
+    startHint:
+      'Begin with a small, useful flow. Refine the pages, data and rules as your needs become clearer.',
+    foundation:
+      'AI builds freely. NocoBase keeps data, permissions and workflows reliable.',
     title: 'Start building your application',
     description:
       'Describe what you need to your AI Agent, then build pages, data models, and business processes.',

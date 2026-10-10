@@ -78,6 +78,28 @@ const zhCN: AppResource = {
     reliability: '<brand>NocoBase</brand> 保障可靠。',
   },
   home: {
+    platform: 'NocoBase · AI 原生应用平台',
+    pages: {
+      title: '构建业务页面',
+      description: '让想法变成适合你的工作界面。',
+      examples: '从表格、表单到仪表盘，围绕业务搭建每一个页面。',
+    },
+    data: {
+      title: '组织业务数据',
+      description: '建立清晰、相互关联的数据模型。',
+      examples: '定义记录、字段与关联，让分散的信息连成整体。',
+    },
+    workflows: {
+      title: '串联业务流程',
+      description: '用一致的流程，让工作顺畅推进。',
+      examples: '把审批、通知和自动化操作融入日常业务。',
+    },
+    startTitle: '从一个需求开始',
+    startDescription: '告诉 AI 助手，你想解决什么问题、谁会使用这个应用。',
+    examplePrompt:
+      '“为销售团队搭建一个客户管理应用，包含客户列表、联系人信息和跟进记录，并能清楚查看每个商机的进展。”',
+    startHint: '先完成一个实用的小流程，再随着需求逐步完善页面、数据和规则。',
+    foundation: 'AI 自由构建，NocoBase 为数据、权限和流程提供可靠底座。',
     title: '开始构建你的应用',
     description: '向 AI 助手描述你的需求，逐步构建页面、数据模型和业务流程。',
   },
