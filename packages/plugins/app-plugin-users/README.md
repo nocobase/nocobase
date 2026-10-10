@@ -52,26 +52,26 @@ a stable `409 ALREADY_EXISTS` instead of exposing a database error.
 
 ## HTTP API
 
-| Method   | Path                                          | Success                                                                     |
-| -------- | --------------------------------------------- | --------------------------------------------------------------------------- |
-| `GET`    | `/api/users/options`                          | `200 { data }`                                                              |
-| `GET`    | `/api/users`                                  | `200 { data: [...], meta: { page, pageSize, total } }`                      |
-| `POST`   | `/api/users`                                  | `201 { data }`                                                              |
-| `PATCH`  | `/api/users/:userId`                          | `200 { data }`                                                              |
-| `DELETE` | `/api/users/:userId?confirm=true`             | `204`                                                                       |
-| `POST`   | `/api/users/:userId/disable`                  | `200 { data }`                                                              |
-| `POST`   | `/api/users/:userId/enable`                   | `200 { data }`                                                              |
-| `PUT`    | `/api/users/:userId/roleScopes/:scope`        | `200 { data }`                                                              |
-| `POST`   | `/api/users/:userId/resetPassword`            | `204`                                                                       |
-| `POST`   | `/api/users/:userId/revokeSessions`           | `204`                                                                       |
-| `GET`    | `/api/users/invitations`                      | `200 { data: [...], meta: { total } }`                                      |
-| `POST`   | `/api/users/invitations`                      | `201 { data: [...] }`, one result per address                               |
-| `POST`   | `/api/users/invitations/:invitationId/resend` | `200 { data }`                                                              |
-| `DELETE` | `/api/users/invitations/:invitationId`        | `204`, revokes a pending invitation                                         |
-| `POST`   | `/api/users/invitations/lookup`               | `200 { data }`, public, `{ token }`                                         |
-| `POST`   | `/api/users/invitations/accept`               | `200 { data }`, public, `{ token, emailVerificationToken, name, password }` |
+| Method   | Path                                          | Success                                                |
+| -------- | --------------------------------------------- | ------------------------------------------------------ |
+| `GET`    | `/api/users/options`                          | `200 { data }`                                         |
+| `GET`    | `/api/users`                                  | `200 { data: [...], meta: { page, pageSize, total } }` |
+| `POST`   | `/api/users`                                  | `201 { data }`                                         |
+| `PATCH`  | `/api/users/:userId`                          | `200 { data }`                                         |
+| `DELETE` | `/api/users/:userId?confirm=true`             | `204`                                                  |
+| `POST`   | `/api/users/:userId/disable`                  | `200 { data }`                                         |
+| `POST`   | `/api/users/:userId/enable`                   | `200 { data }`                                         |
+| `PUT`    | `/api/users/:userId/roleScopes/:scope`        | `200 { data }`                                         |
+| `POST`   | `/api/users/:userId/resetPassword`            | `204`                                                  |
+| `POST`   | `/api/users/:userId/revokeSessions`           | `204`                                                  |
+| `GET`    | `/api/users/invitations`                      | `200 { data: [...], meta: { total } }`                 |
+| `POST`   | `/api/users/invitations`                      | `201 { data: [...] }`, one result per address          |
+| `POST`   | `/api/users/invitations/:invitationId/resend` | `200 { data }`                                         |
+| `DELETE` | `/api/users/invitations/:invitationId`        | `204`, revokes a pending invitation                    |
+| `POST`   | `/api/users/invitations/lookup`               | `200 { data }`, public, `{ token }`                    |
+| `POST`   | `/api/users/invitations/accept`               | `200 { data }`, public, `{ token, name, password }`    |
 
-The invitation list holds pending and expired invitations only, so it is not paged. `lookup` and `verifyEmail` need no session. New accounts must supply the invitation token and a private mailbox proof to `accept`; existing accounts must authenticate with the invited email.
+The invitation list holds pending and expired invitations only, so it is not paged. `lookup` needs no session. New accounts supply the invitation token, name and password to `accept`; existing accounts must authenticate with the invited email.
 
 Each route is described, with its parameters, request and response schemas and error statuses, in the application's API document at `/api/swagger/docs` (JSON at `/api/swagger`, served to a signed-in user or a valid API key), under the `Users` tag with operation ids such as `usersDisableUser`.
 
@@ -133,18 +133,12 @@ When the authorization plugin is installed, Users automatically registers the `a
 
 Deletion removes the user from management lists, revokes sessions and removes sign-in accounts. Authentication retains a disabled identity with `deletedAt` and `deletedBy` for historical attribution; it cannot be re-enabled through user management. Email and username remain reserved. The authenticated deletion route emits a structured `user.delete` security event without credentials.
 
-## Shareable invitations and mailbox verification
+## Invitation links
 
-Authorized inviters receive `inviteUrl` on creation, regardless of email delivery. An invitation closed or rotated before its queued send returns `emailSent=false` without a link; other recipients still complete. The original inviter can renew with `POST /api/users/invitations/{invitationId}/resend?sendEmail=false`; choosing roles still requires `assign-role`. Plugin invitations must use their domain-authorized endpoint. Other managers can resend email but do not receive links. Invitation lists never expose tokens. Renewal invalidates the previous invitation token and all of its mailbox proofs; acceptance applies only the supplied invitation.
+Authorized inviters receive `inviteUrl` on creation, regardless of email delivery. An invitation closed or rotated before its queued send returns `emailSent=false` without a link; other recipients still complete. The original inviter can renew with `POST /api/users/invitations/{invitationId}/resend?sendEmail=false`; choosing roles still requires `assign-role`. Plugin invitations must use their domain-authorized endpoint. Other managers can resend email but do not receive links. Invitation lists never expose tokens. Renewal invalidates the previous invitation token; acceptance applies only the supplied invitation.
 
-An ordinary shared link alone cannot create an account. New users request a private verification email from the invitation page and open its link to set their name and password. Configure `app.publicOrigin` and the Users email channel: verification URLs never use the request origin, and ordinary copying cannot bypass unavailable email delivery; use the explicitly authorized manual delivery flow below when needed. Existing users sign in with the invited address. Existing pending invitations also need mailbox verification after upgrade.
+New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.
 
-`POST /api/users/invitations/verifyEmail` accepts `{ token }` and returns `{ data: { emailSent } }`, without the proof. Requests are limited to once per minute (`429`, `INVITATION_VERIFICATION_RATE_LIMITED`). Proofs last 15 minutes; earlier unexpired proofs survive a new email request. Only hashes are stored. Missing, expired, or incorrect proofs on new-account acceptance return `400` with `INVITATION_EMAIL_VERIFICATION_REQUIRED`. The email URL fragment `#verification=…` supplies the `emailVerificationToken` submitted in the acceptance body.
+Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
 
-### Manual invitation delivery
-
-If email cannot reach a new recipient, the original inviter may explicitly renew with `sendEmail=false&manualDelivery=true` only when they also hold `create` on `{ type: 'user', id: '*' }`. The originating domain's invitation and role/project checks still apply; scoped credentials cannot use this path. Administrators must verify the recipient outside email and hand the private link only to that person. The UI offers a separate confirmation for this operation. It invalidates all previous links and proofs, allows registration without email, and leaves `emailVerified` false. Existing accounts still have to authenticate. A normal renewal resets the invitation to mailbox verification. CLI resend commands expose `--manual-delivery true --send-email false` through the API schema.
-
-Invitation emails use `notificationService.sendTransient()` so new credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication; the recipient can request a fresh verification email after the cooldown. Historical notification snapshots created by older versions are not rewritten.
-
-Batch invitations send at most five emails concurrently with a shared 30-second mail-delivery budget. Links are returned even when the budget is exhausted: `emailSent=false` also covers an unattempted or uncertain delivery. Timed-out providers may still complete delivery; no automatic retry is scheduled. Recipients can request a fresh verification email from their link.
+Batch invitations send at most five emails concurrently with a shared 30-second mail-delivery budget. Links are returned even when the budget is exhausted: `emailSent=false` also covers an unattempted or uncertain delivery. Timed-out providers may still complete delivery; no automatic retry is scheduled. Authorized inviters can copy the returned link or resend the invitation.

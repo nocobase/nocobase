@@ -71,7 +71,6 @@ export interface InvitationService {
     id: string,
     origin: string,
     sendEmail?: boolean,
-    manualDelivery?: boolean,
   ): Promise<InvitationResult>;
   revoke(viewer: Viewer, id: string): Promise<void>;
   /** An invitation was accepted: registered with the user management plugin's `onInvitationAccepted`. */
@@ -250,7 +249,7 @@ export function createInvitationService(
       );
     },
 
-    async resend(viewer, id, origin, sendEmail = true, manualDelivery = false) {
+    async resend(viewer, id, origin, sendEmail = true) {
       const invitation = await managed(viewer, id);
       const own = invitation.invitedBy.id === viewer.userId;
       if (!own && !sendEmail)
@@ -276,7 +275,6 @@ export function createInvitationService(
           deps.invitations.resendInvitation(id, {
             origin,
             sendEmail,
-            ...(manualDelivery ? { manualDelivery: true } : {}),
           }),
         ),
       );

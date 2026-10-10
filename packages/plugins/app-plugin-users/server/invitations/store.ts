@@ -1,5 +1,5 @@
 /** The `userInvitations` table; only this file reads or writes it. */
-import type { DatabaseConnection, Repository } from '@nocobase/db';
+import type { DatabaseConnection } from '@nocobase/db';
 
 import type { UserRoleValue } from '../tokens.js';
 
@@ -14,8 +14,6 @@ export interface InvitationRecord {
   readonly invitedById: string;
   readonly expiresAt: string;
   readonly sentAt: string | null;
-  readonly manualDelivery: boolean;
-  readonly verificationSentAt: string | null;
   readonly sendError: string | null;
   readonly acceptedUserId: string | null;
   readonly acceptedAt: string | null;
@@ -62,33 +60,6 @@ export async function updateInvitation(
   });
 }
 
-/** Atomically reserves one verification email per minute for the current token. */
-export async function claimVerificationSend(
-  connection: DatabaseConnection,
-  row: InvitationRecord,
-  now: Date,
-): Promise<boolean> {
-  const { updatedCount } = await invitations(connection).updateMany({
-    filter: (f) =>
-      f.and([
-        f.string('id').eq(row.id),
-        f.string('status').eq('pending'),
-        f.string('tokenHash').eq(row.tokenHash),
-        f.or([
-          f.date('verificationSentAt').empty(),
-          f
-            .date('verificationSentAt')
-            .notAfter(new Date(now.getTime() - 60_000)),
-        ]),
-      ]),
-    values: {
-      verificationSentAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    },
-  });
-  return updatedCount > 0;
-}
-
 /** A delayed send must never overwrite the outcome of a rotated or closed invitation. */
 export async function recordInvitationDelivery(
   connection: DatabaseConnection,
@@ -124,21 +95,4 @@ export async function claimInvitation(
     },
   });
   return updatedCount > 0;
-}
-
-/** Independent mailbox proofs: requesting another email must not invalidate one already delivered. */
-export interface InvitationVerificationRecord {
-  readonly id: string;
-  readonly invitationId: string;
-  readonly invitationTokenHash: string;
-  readonly tokenHash: string;
-  readonly expiresAt: string;
-}
-
-export function verifications(
-  connection: DatabaseConnection,
-): Repository<InvitationVerificationRecord> {
-  return connection.repository<InvitationVerificationRecord>(
-    'userInvitationVerifications',
-  );
 }

@@ -23,20 +23,8 @@ const enUS = {
     signOutFailed: 'Could not sign out.',
     existingAccount:
       'This address already has an account. Sign in with it to continue.',
-    verifyDescription:
-      'To create an account, verify this email address using the private link sent to its mailbox. A shared invitation link alone cannot create an account.',
-    verifyEmail: 'Send verification email',
-    verificationSending: 'Sending verification…',
-    verificationSent:
-      'Check your email and open the verification link within 15 minutes. You can request another email after one minute.',
     goToLogin: 'Go to sign in',
     errors: {
-      verificationDelivery:
-        'The verification email could not be sent. Please try again later or contact the administrator.',
-      verificationRateLimited:
-        'Please wait one minute before requesting another verification email.',
-      verificationRequired:
-        'Open a valid verification link sent to the invited mailbox, or request a new one below.',
       notFound: 'This invitation link is not valid.',
       expired: 'This invitation has expired. Ask for a new one.',
       accepted: 'This invitation has already been accepted.',

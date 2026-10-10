@@ -56,8 +56,6 @@ export interface AdministratedUserPage {
 }
 
 export interface CreateAdministratedUserInput {
-  /** Trusted server callers may set this only after verifying possession of the email address. */
-  readonly emailVerified?: boolean;
   readonly name: string;
   readonly username?: string;
   readonly email: string;
@@ -229,7 +227,7 @@ class DefaultUserAdministrationService implements UserAdministrationService {
           name: requiredText(input.name, 'User name'),
           username,
           email,
-          emailVerified: input.emailVerified ?? false,
+          emailVerified: false,
           disabledAt: null,
         },
         { method: 'admin' },

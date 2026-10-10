@@ -16,10 +16,7 @@ import type { ReactElement } from 'react';
 import { Route, Routes } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import {
-  createInvitationServer,
-  invitationMailboxToken,
-} from '../helpers/invitation-app.js';
+import { createInvitationServer } from '../helpers/invitation-app.js';
 import type { InvitationResult } from '../../shared/invitations.js';
 import type { ProjectDetail } from '../../shared/projects.js';
 
@@ -70,7 +67,6 @@ it('returns from real password sign-in to the pending invitation and grants its 
       data: ProjectDetail;
     };
     const tokens: string[] = [];
-    const proofs: string[] = [];
     for (const projectIds of [[], [project.id]]) {
       const response = await admin.fetch(
         '/projects/invitations',
@@ -83,13 +79,6 @@ it('returns from real password sign-in to the pending invitation and grants its 
       const token = data.results[0]?.inviteUrl?.split('/').at(-1);
       if (!token) throw new Error('Missing invitation token.');
       tokens.push(token);
-      proofs.push(
-        /#verification=([\w-]+)/u.exec(
-          server.application.container
-            .resolve(invitationMailboxToken)
-            .messages.get(EMAIL) ?? '',
-        )?.[1] ?? '',
-      );
     }
     // In-process browser transport: preserve the real Set-Cookie headers between requests, including Better Auth's fetches.
     const cookies = new Map<string, string>();
@@ -124,7 +113,7 @@ it('returns from real password sign-in to the pending invitation and grants its 
         plugins: [authentication(), users()],
         namespaces: { '@nocobase/i18n': { status: { loading: 'Loading' } } },
         server: { publicBasePath: server.publicBasePath, fetch: browserFetch },
-        route: `/invite/${tokens[0]}#verification=${proofs[0]}`,
+        route: `/invite/${tokens[0]}`,
       },
     );
     await user.type(await screen.findByLabelText('Name'), 'Invitee');

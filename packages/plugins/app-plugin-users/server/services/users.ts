@@ -55,9 +55,9 @@ export interface CreateUserManagementServiceOptions {
    */
   readonly permissionSets?: PermissionSetsApi<DatabaseConnection>;
   readonly onRoleScopesChanged?: (userId: string) => void | Promise<void>;
-  /** Sends invitation emails; without one, registration requires an explicitly authorized manual-delivery link. */
+  /** Sends invitation emails; without one, authorized inviters deliver links themselves. */
   readonly mailer?: InvitationMailer;
-  /** Mailbox proofs require publicOrigin; shareable links may fall back to the origin each caller passes. */
+  /** Links use publicOrigin when configured, or the origin each caller passes. */
   readonly site?: InvitationSite;
 }
 
@@ -97,8 +97,6 @@ class DefaultUserManagementService implements UserManagementService {
     this.invitations.revokeInvitation(id);
   lookupInvitation: InvitationManager['lookupInvitation'] = (token) =>
     this.invitations.lookupInvitation(token);
-  verifyInvitationEmail: InvitationManager['verifyInvitationEmail'] = (token) =>
-    this.invitations.verifyInvitationEmail(token);
   acceptInvitation: InvitationManager['acceptInvitation'] = (
     input,
     authenticatedUserId,

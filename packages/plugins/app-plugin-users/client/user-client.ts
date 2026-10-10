@@ -103,8 +103,6 @@ export type UserInvitationResult =
     };
 
 export interface PublicUserInvitation {
-  /** False only for a link explicitly authorized for manual delivery by an account administrator. */
-  readonly emailVerificationRequired?: boolean;
   readonly email: string;
   readonly inviterName: string;
   readonly summary: readonly string[];
@@ -112,7 +110,6 @@ export interface PublicUserInvitation {
 }
 
 export interface AcceptUserInvitationInput {
-  readonly emailVerificationToken?: string;
   readonly token: string;
   readonly name: string;
   readonly password: string;
@@ -267,14 +264,7 @@ export class UsersClient {
     });
   }
 
-  /** Public: sends a private proof only to the invited mailbox. */
-  verifyInvitationEmail(
-    token: string,
-  ): Promise<{ readonly emailSent: boolean }> {
-    return this.send('users/invitations/verifyEmail', 'POST', { token });
-  }
-
-  /** Creates a verified account or joins using the matching signed-in account. */
+  /** Creates an unverified account, or accepts from the invited account's authenticated session. */
   acceptInvitation(
     input: AcceptUserInvitationInput,
   ): Promise<AcceptedUserInvitation> {

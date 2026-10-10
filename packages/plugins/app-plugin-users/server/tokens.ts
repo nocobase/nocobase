@@ -143,7 +143,7 @@ export interface InviteUsersInput {
 
 /**
  * - `invited`: a shareable link was generated. Domain-authorized original inviters receive it regardless of
- *   email delivery; creating an account additionally requires proof delivered only to the invited mailbox.
+ *   email delivery. Accepting the link does not verify ownership of the email address.
  * - `existingUser`: the address already has an account and nothing was sent;
  *   the caller decides what that account gets.
  */
@@ -163,8 +163,6 @@ export type UserInvitationResult =
 
 /** What the accept page shows to whoever holds the link. */
 export interface PublicUserInvitation {
-  /** False only for a link explicitly authorized for manual delivery by an account administrator. */
-  readonly emailVerificationRequired?: boolean;
   readonly email: string;
   readonly inviterName: string;
   readonly summary: readonly string[];
@@ -175,8 +173,6 @@ export interface AcceptUserInvitationInput {
   readonly token: string;
   readonly name: string;
   readonly password: string;
-  /** Proof delivered only to the invited mailbox, never returned to the inviter. */
-  readonly emailVerificationToken?: string;
 }
 
 export interface AcceptedUserInvitation {
@@ -231,16 +227,10 @@ export interface UserManagementService {
     input?: {
       readonly origin?: string;
       readonly sendEmail?: boolean;
-      /** Trusted server callers must require user:create before setting this. */
-      readonly manualDelivery?: boolean;
     },
   ): Promise<UserInvitationResult>;
   revokeInvitation(id: string): Promise<void>;
   lookupInvitation(token: string): Promise<PublicUserInvitation>;
-  /** Sends a short-lived mailbox proof without changing the shareable invitation link. */
-  verifyInvitationEmail(
-    token: string,
-  ): Promise<{ readonly emailSent: boolean }>;
   /**
    * Accepts only the invitation identified by the token, in one transaction. An existing account must match
    * authenticatedUserId, which the caller obtains from the authenticated session, never from request input.
@@ -268,9 +258,7 @@ export class UserManagementError extends Error {
       | 'INVITATION_ACCEPTED'
       | 'INVITATION_REVOKED'
       | 'INVITATION_CLOSED'
-      | 'INVITATION_SIGN_IN_REQUIRED'
-      | 'INVITATION_EMAIL_VERIFICATION_REQUIRED'
-      | 'INVITATION_VERIFICATION_RATE_LIMITED',
+      | 'INVITATION_SIGN_IN_REQUIRED',
     message: string,
     readonly status: 400 | 404 | 409 = 400,
   ) {

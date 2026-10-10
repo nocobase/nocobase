@@ -21,18 +21,8 @@ const zhCN: UsersResource = {
     signOut: '退出登录',
     signOutFailed: '退出登录失败。',
     existingAccount: '这个邮箱已有账号，请用它登录后继续。',
-    verifyDescription:
-      '创建账号前，请通过发送到此邮箱的专用链接验证身份。仅持有转发的邀请链接无法创建账号。',
-    verifyEmail: '发送验证邮件',
-    verificationSending: '正在发送验证邮件…',
-    verificationSent:
-      '请查收邮件并在 15 分钟内打开验证链接。一分钟后可以重新发送。',
     goToLogin: '去登录',
     errors: {
-      verificationDelivery: '验证邮件未能发出，请稍后重试或联系管理员。',
-      verificationRateLimited: '请等待一分钟后再申请验证邮件。',
-      verificationRequired:
-        '请打开受邀邮箱中有效的验证链接，或在下方重新申请。',
       notFound: '邀请链接无效。',
       expired: '邀请已过期，请联系邀请人重新发送。',
       accepted: '这个邀请已被接受。',

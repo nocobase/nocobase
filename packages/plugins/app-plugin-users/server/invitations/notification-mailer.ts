@@ -1,9 +1,10 @@
 /**
  * Invitation emails through the notification plugin, on the channel `users.invitations.emailChannel` names
  * (`system-email` by default). A missing or disabled channel, or a delivery the plugin reports as failed, is an error,
- * while domain-authorized inviters can still share the invitation link. New accounts require mailbox verification.
+ * while domain-authorized inviters can still share the invitation link. Accepting a link does not verify the email address.
  */
 import {
+  NotificationTransportUnavailableError,
   notificationServiceToken,
   type NotificationConfig,
 } from '@nocobase/app-plugin-notification/server';
@@ -41,12 +42,15 @@ export function createNotificationMailer(
             html: email.html,
           },
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          if (error instanceof NotificationTransportUnavailableError)
+            throw new Error('The invitation email channel is unavailable.');
           throw new Error('The invitation email could not be submitted.');
         });
-      if (results.some((result) => result.status !== 'accepted'))
+      const failure = results.find((result) => result.status !== 'accepted');
+      if (failure)
         throw new Error(
-          'The invitation email was not confirmed by the provider.',
+          `Invitation email ${failure.status} (${failure.error.category ?? 'unknown'}).`,
         );
     },
   };

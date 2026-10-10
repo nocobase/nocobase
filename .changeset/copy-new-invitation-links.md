@@ -1,20 +1,14 @@
 ---
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-projects': patch
 '@nocobase/app-cli-client': patch
+'@nocobase/app-plugin-notification': patch
 ---
 
-Return invitation links after successful email delivery and let authorized inviters generate a fresh link without sending email. Show copy controls for newly created and resent invitations while invalidating previous links and storing only token hashes.
+Return invitation links after successful email delivery and let authorized original inviters generate a fresh link without sending email. Show copy controls for newly created and resent invitations, confirm rotation, and explain when a concurrent change makes the link unavailable. Keep scalar URLs complete in CLI text output; structured fields retain their compact display.
 
-Keep scalar URLs complete in CLI text output so copied invitation links remain usable. Structured fields retain their compact display; use `--json` for complete nested project invitation results. Invitation creation also keeps the invitation ID visible for subsequent resend or revoke commands.
+Preserve registration through invitation links without requiring an email channel or configured public origin. Links use app.publicOrigin when configured and otherwise the invitation request origin. Acceptance leaves the new account's email unverified. Existing accounts must sign in with the invited identity, and each token accepts only its own invitation. Only token hashes are stored; rotation invalidates the previous link.
 
-Require plugin invitations to retrieve links through their domain-authorized endpoint. Restrict link retrieval to the original inviter, recheck role and project permissions, and keep other managers' email resends free of invitation credentials even on delivery failure. Accept only the invitation whose token was supplied, and require an authenticated matching account when the email already exists, so one invitation cannot redeem another project's pending access.
+Retrieve plugin invitations through their domain-authorized endpoint. Recheck the original inviter's current role and project permissions. Other managers may resend email but do not receive credentials; scoped credentials remain email-only. Renewal ignores deleted projects if at least one remains, checking access to each remaining project, and rejects renewal if all selected projects are gone.
 
-Offer a direct sign-in return path on invitation pages and show copy instructions only when a link is available. Allow invitation renewal for remaining projects after a partial deletion while rechecking access to each remaining project; reject renewal when all originally selected projects are gone.
-
-Describe invitation authentication failures and closed invitations with their actual HTTP responses. Show invitations whose current link has not been emailed with a neutral status, including links intentionally generated without email.
-
-Separate shareable invitation links from private mailbox proofs so ordinary Studio admins, owners, and project leads can copy without global account-creation rights. New accounts require a 15-minute proof sent only to the invited mailbox; existing accounts must authenticate. Store only hashes, limit verification email requests to once per minute per invitation, preserve unexpired proofs across email requests, and invalidate all proofs on invitation rotation or completion. Mark newly verified accounts email-verified through the trusted authentication administration API.
-
-Verification emails require configured `app.publicOrigin` and a working email channel; caller-controlled request origins cannot select a verification URL. Existing invitations need the new email verification step after upgrade. A copied link alone cannot bypass unavailable email delivery for a new account. Confirm old-link invalidation before generating a new link in member settings.
+Send invitation credentials through a transient notification attempt without durable message snapshots, automatic retries or raw provider diagnostics. Preserve safe failure categories and submission status. Batches use at most five concurrent sends and a shared 30-second mail-delivery budget. Recheck each link after sending or exhausting the budget so concurrent closure or rotation does not expose invalid links or discard other recipients and existing-account project updates.

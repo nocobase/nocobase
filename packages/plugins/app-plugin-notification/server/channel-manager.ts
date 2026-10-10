@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { Logger } from '@nocobase/logging';
+import { NOTIFICATION_PROVIDER_ERROR_CATEGORIES } from './types.js';
 
 import type {
   NotificationAttemptRecord,
@@ -104,6 +105,7 @@ export class ChannelManager {
             disposition: 'never',
             error: {
               code: 'TRANSIENT_PREPARATION_FAILED',
+              category: 'channel',
               message: 'Sensitive notification preparation failed.',
             },
           };
@@ -118,6 +120,13 @@ export class ChannelManager {
         if (result.status === 'accepted') return { status: 'accepted' };
         const error = {
           code: 'TRANSIENT_DELIVERY_FAILED',
+          category:
+            result.error.category &&
+            NOTIFICATION_PROVIDER_ERROR_CATEGORIES.includes(
+              result.error.category,
+            )
+              ? result.error.category
+              : ('unknown' as const),
           message: 'Sensitive notification was not confirmed by the provider.',
         };
         return result.status === 'failed'

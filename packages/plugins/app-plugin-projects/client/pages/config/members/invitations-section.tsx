@@ -1,4 +1,3 @@
-import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -63,14 +62,7 @@ export function InvitationsSection(): ReactElement | null {
   const toaster = useToaster();
   const queryClient = useQueryClient();
   const format = usePmFormatters();
-  const { can: canCreateUser } = useCan({
-    resource: { type: 'user', id: '*' },
-    action: 'create',
-  });
-  const [generating, setGenerating] = useState<{
-    invitation: Invitation;
-    manualDelivery: boolean;
-  } | null>(null);
+  const [generating, setGenerating] = useState<Invitation | null>(null);
   const [revoking, setRevoking] = useState<Invitation | null>(null);
   const [resent, setResent] = useState<{
     result: InvitationResult;
@@ -88,15 +80,18 @@ export function InvitationsSection(): ReactElement | null {
     mutationFn: ({
       invitation,
       sendEmail,
-      manualDelivery = false,
     }: {
       invitation: Invitation;
       sendEmail: boolean;
-      manualDelivery?: boolean;
-    }) => api.resendInvitation(invitation.id, sendEmail, manualDelivery),
+    }) => api.resendInvitation(invitation.id, sendEmail),
     onSuccess: (result, { sendEmail }) => {
       setResent(result.inviteUrl ? { result, linkOnly: !sendEmail } : null);
-      if (sendEmail && result.emailSent === false) {
+      if (!sendEmail && !result.inviteUrl) {
+        toaster.show({
+          type: 'warning',
+          title: t('invitations.linkUnavailable'),
+        });
+      } else if (sendEmail && result.emailSent === false) {
         toaster.show({
           type: 'warning',
           title: t('invitations.outcome.notSent'),
@@ -207,30 +202,10 @@ export function InvitationsSection(): ReactElement | null {
                 {row.original.invitedBy.userId === viewer?.userId ? (
                   <DropdownMenuItem
                     disabled={resending}
-                    onClick={() =>
-                      setGenerating({
-                        invitation: row.original,
-                        manualDelivery: false,
-                      })
-                    }
+                    onClick={() => setGenerating(row.original)}
                   >
                     <CopyIcon />
                     {t('invitations.generateLink')}
-                  </DropdownMenuItem>
-                ) : null}
-                {canCreateUser &&
-                row.original.invitedBy.userId === viewer?.userId ? (
-                  <DropdownMenuItem
-                    disabled={resending}
-                    onClick={() =>
-                      setGenerating({
-                        invitation: row.original,
-                        manualDelivery: true,
-                      })
-                    }
-                  >
-                    <CopyIcon />
-                    {t('invitations.manualLink')}
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuSeparator />
@@ -247,15 +222,10 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [t, format, resending, resendInvitation, viewer?.userId, canCreateUser],
+    [t, format, resending, resendInvitation, viewer?.userId],
   );
 
   const rows = invitations.data;
-  const generateLabel = t(
-    generating?.manualDelivery
-      ? 'invitations.manualLink'
-      : 'invitations.generateLink',
-  );
   if (invitations.isError && !rows)
     return (
       <PmLoadError
@@ -291,13 +261,9 @@ export function InvitationsSection(): ReactElement | null {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{generateLabel}</AlertDialogTitle>
+            <AlertDialogTitle>{t('invitations.generateLink')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t(
-                generating?.manualDelivery
-                  ? 'invitations.manualDescription'
-                  : 'invitations.generateDescription',
-              )}
+              {t('invitations.generateDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -306,13 +272,13 @@ export function InvitationsSection(): ReactElement | null {
               onClick={() => {
                 if (generating)
                   resendInvitation({
-                    ...generating,
+                    invitation: generating,
                     sendEmail: false,
                   });
                 setGenerating(null);
               }}
             >
-              {generateLabel}
+              {t('invitations.generateLink')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

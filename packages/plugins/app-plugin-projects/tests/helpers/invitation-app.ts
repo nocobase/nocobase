@@ -44,6 +44,7 @@ import { permissionsOf } from '../permissions.js';
 export interface InvitationMailbox {
   readonly messages: Map<string, string>;
   fail: boolean;
+  failureCategory?: 'recipient' | 'timeout';
 }
 export const invitationMailboxToken: ServiceToken<InvitationMailbox> =
   createServiceToken<InvitationMailbox>('test:invitation-mailbox');
@@ -62,6 +63,16 @@ class ProjectAccessProvider extends ServiceProvider<AppPluginApplication> {
         );
       },
       sendTransient: async (input) => {
+        if (mailbox.failureCategory)
+          return [
+            {
+              status: 'submission_unknown',
+              error: {
+                category: mailbox.failureCategory,
+                message: 'private invitation credential',
+              },
+            },
+          ];
         if (mailbox.fail) throw new Error('SMTP unavailable');
         const email = input.message as { to: string; text: string };
         mailbox.messages.set(email.to, email.text);
@@ -107,7 +118,6 @@ const appRuntime = defineAppRuntime({
   defaultConfigs: defaultAppConfigs({
     app: defineAppConfig(() => ({
       name: 'invitation-tests',
-      publicOrigin: 'http://localhost',
       publicBasePath: '/main',
       internalBasePath: '/main',
       publicApiUrl: '/main/api',
@@ -122,6 +132,7 @@ const appRuntime = defineAppRuntime({
     snowflake: defineAppConfig(() => ({ workerId: 1 })),
     auth: defineAuthConfig({
       defaults: () => ({
+        trustedOrigins: ['http://localhost'],
         secret: 'invitation-integration-test-secret-at-least-32-characters',
         emailAndPassword: { enabled: true, disableSignUp: true },
       }),

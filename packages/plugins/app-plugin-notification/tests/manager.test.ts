@@ -68,10 +68,10 @@ describe('NotificationManager delivery lifecycle', () => {
           : status === 'failed'
             ? {
                 status,
-                error: { message: secret },
+                error: { message: secret, category: 'recipient' },
                 disposition: 'same_provider',
               }
-            : { status, error: { message: secret } },
+            : { status, error: { message: secret, category: 'timeout' } },
       );
       const { manager, store } = createEmailManagerHarness({ send });
       const persist = vi.spyOn(store, 'createOrGetByIdempotency');
@@ -82,6 +82,10 @@ describe('NotificationManager delivery lifecycle', () => {
       expect(send).toHaveBeenCalledOnce();
       expect(send.mock.calls[0]).toBeDefined();
       expect(results[0]?.status).toBe(status);
+      if (status !== 'accepted')
+        expect(results[0]).toMatchObject({
+          error: { category: status === 'failed' ? 'recipient' : 'timeout' },
+        });
       expect(JSON.stringify(results)).not.toContain(secret);
       expect(persist).not.toHaveBeenCalled();
       expect(await store.listLogs()).toEqual([]);
@@ -101,7 +105,9 @@ describe('NotificationManager delivery lifecycle', () => {
       channel: 'email',
       message: { body: 'secret' },
     });
-    expect(result).toMatchObject([{ status: 'failed' }]);
+    expect(result).toMatchObject([
+      { status: 'failed', error: { category: 'channel' } },
+    ]);
     expect(JSON.stringify(result)).not.toContain('private-proof');
     expect(send).not.toHaveBeenCalled();
     expect(await store.listLogs()).toEqual([]);

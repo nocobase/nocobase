@@ -46,23 +46,6 @@ describe('user administration', () => {
     await Promise.all(fixtures.splice(0).map((fixture) => fixture.dispose()));
   });
 
-  it('marks an address verified only when a trusted caller supplies verified proof', async () => {
-    const { users } = await setup();
-    const ordinary = await users.create({
-      name: 'Ordinary',
-      email: 'ordinary@example.test',
-      password: 'secret-password',
-    });
-    const verified = await users.create({
-      name: 'Verified',
-      email: 'verified@example.test',
-      password: 'secret-password',
-      emailVerified: true,
-    });
-    expect(ordinary.emailVerified).toBe(false);
-    expect(verified.emailVerified).toBe(true);
-  });
-
   it('reports stable conflicts for duplicate email and username', async () => {
     const { users, signUp } = await setup();
     await signUp();

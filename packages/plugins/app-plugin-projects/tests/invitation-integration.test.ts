@@ -9,6 +9,7 @@ import {
   type UserInvitation,
 } from '@nocobase/app-plugin-users/server';
 import { createAppTest } from '@nocobase/app-testing/server';
+import { databaseManagerToken } from '@nocobase/db';
 import { expect, vi } from 'vitest';
 import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
 import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
@@ -79,11 +80,6 @@ test('accepts each project invitation through real sessions without consuming or
   const email = 'two-invitations@example.test';
   const password = 'original-invitation-password';
   const firstToken = await invite(admin, email, firstProject.id);
-  const firstProof = /#verification=([\w-]+)/u.exec(
-    testApp.application.container
-      .resolve(invitationMailboxToken)
-      .messages.get(email) ?? '',
-  )?.[1];
   const secondToken = await invite(admin, email, secondProject.id);
   const input = (token: string, nextPassword = password) => ({
     token,
@@ -93,10 +89,7 @@ test('accepts each project invitation through real sessions without consuming or
 
   expect((await request('/projects')).status).toBe(401);
   await readData(
-    await request(
-      '/users/invitations/accept',
-      post({ ...input(firstToken), emailVerificationToken: firstProof }),
-    ),
+    await request('/users/invitations/accept', post(input(firstToken))),
   );
   const invitee = await signIn(testApp, { email, password });
   const firstMembers = await readData<ProjectDetail>(
@@ -252,7 +245,7 @@ test('rotates project links only through their domain and never accepts an old o
   expect((await users.getInvitation(invitation.id))?.status).toBe('revoked');
 });
 
-test('keeps project leads from registering another email while preserving recipient acceptance and later membership', async ({
+test('lets project leads deliver invitations without email while preserving project isolation', async ({
   testApp,
   request,
 }) => {
@@ -285,8 +278,8 @@ test('keeps project leads from registering another email while preserving recipi
   const users = testApp.application.container.resolve(
     userManagementServiceToken,
   );
-  const email = 'victim@example.test';
-  // The attacker has project management access, but not global account creation access.
+  const email = 'recipient@example.test';
+  // Inviting into a managed project does not grant direct account administration access.
   expect(
     (await lead.fetch('/users', post({ name: 'Victim', email, password })))
       .status,
@@ -316,15 +309,6 @@ test('keeps project leads from registering another email while preserving recipi
         inviteUrl: expect.stringContaining('/invite/'),
       },
     ]);
-    const sharedToken = created.results[0]?.inviteUrl?.split('/').at(-1);
-    const forged = await request(
-      '/users/invitations/accept',
-      post({ token: sharedToken, name: 'Impostor', password }),
-    );
-    expect(forged.status).toBe(400);
-    expect(await forged.json()).toMatchObject({
-      error: { reason: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' },
-    });
     const invitations = await users.listInvitations({
       invitedBy: lead.user.id,
     });
@@ -349,21 +333,20 @@ test('keeps project leads from registering another email while preserving recipi
     expect(copy.status).toBe(200);
     expect((await users.list({ search: email })).items).toEqual([]);
   }
-  mailbox.fail = false;
+  mailbox.fail = true;
   const first = (await users.listInvitations({ invitedBy: lead.user.id }))[0];
   if (!first) throw new Error('Missing invitation');
-  await readData(
-    await lead.fetch(`/projects/invitations/${first.id}/resend`, post({})),
+  const copied = await readData<InvitationResult>(
+    await lead.fetch(
+      `/projects/invitations/${first.id}/resend?sendEmail=false`,
+      post({}),
+    ),
   );
-  // Only the mailbox contains the proof; the shareable URL cannot create an email identity.
-  const message = mailbox.messages.get(email) ?? '';
-  const token = /\/invite\/([\w-]+)/u.exec(message)?.[1];
-  const emailVerificationToken = /#verification=([\w-]+)/u.exec(message)?.[1];
-  expect(emailVerificationToken).toBeTruthy();
+  const token = copied.inviteUrl?.split('/').at(-1);
   await readData(
     await request(
       '/users/invitations/accept',
-      post({ token, emailVerificationToken, name: 'Recipient', password }),
+      post({ token, name: 'Recipient', password }),
     ),
   );
   const recipient = await signIn(testApp, { email, password });
@@ -386,93 +369,84 @@ test('keeps project leads from registering another email while preserving recipi
   expect((await lead.fetch(`/projects/${privateProject.id}`)).status).toBe(404);
 });
 
-for (const role of ['admin', 'owner']) {
-  test(`Studio ${role} can copy and rotate invitations without global account creation`, async ({
-    testApp,
-    request,
-  }) => {
-    const root = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
-    const email = `studio-${role}@example.test`;
-    const password = 'studio-role-password';
-    const account = await readData<{ id: string }>(
-      await root.fetch('/users', post({ email, name: role, password })),
-      201,
-    );
-    const authz = testApp.application.container.resolve(authorizationToken);
-    // Studio grants the members setting, not global user/create or user/assign-role.
-    await authz.permissionSets.create({
-      key: role,
-      grants: [
-        {
-          resource: { type: 'settings', id: 'pm.members' },
-          actions: [
-            { action: 'read' },
-            { action: 'invite' },
-            { action: 'assign' },
-            { action: 'define-roles' },
-          ],
-        },
-      ],
-    });
-    await authz.permissionSets.assign({
-      subject: { type: 'user', id: account.id },
-      permissionSet: role,
-    });
-    const session = await signIn(testApp, { email, password });
-    expect(
-      (
-        await session.fetch(
-          '/users',
-          post({ email: 'blocked@example.test', name: 'Blocked', password }),
-        )
-      ).status,
-    ).toBe(403);
-    const created = await readData<{ results: InvitationResult[] }>(
-      await session.fetch(
-        '/projects/invitations',
-        post({ emails: [`recipient-${role}@example.test`] }),
-      ),
-      201,
-    );
-    const oldToken = created.results[0]?.inviteUrl?.split('/').at(-1);
-    expect(oldToken).toBeTruthy();
-    const users = testApp.application.container.resolve(
-      userManagementServiceToken,
-    );
-    const pending = (await users.listInvitations({ invitedBy: account.id }))[0];
-    if (!pending) throw new Error('Missing invitation');
-    expect(
-      (
-        await session.fetch(
-          `/projects/invitations/${pending.id}/resend?sendEmail=false&manualDelivery=true`,
-          post({}),
-        )
-      ).status,
-    ).toBe(403);
-    const rotated = await readData<InvitationResult>(
-      await session.fetch(
-        `/projects/invitations/${pending.id}/resend?sendEmail=false`,
-        post({}),
-      ),
-    );
-    expect(rotated.inviteUrl).toBeTruthy();
-    expect(rotated.emailSent).toBe(false);
-    expect(rotated.inviteUrl).not.toBe(created.results[0]?.inviteUrl);
-    expect(
-      (await request('/users/invitations/lookup', post({ token: oldToken })))
-        .status,
-    ).toBe(400);
-    const sharedToken = rotated.inviteUrl?.split('/').at(-1);
-    expect(
-      (
-        await request(
-          '/users/invitations/accept',
-          post({ token: sharedToken, name: 'Impostor', password }),
-        )
-      ).status,
-    ).toBe(400);
+test('a member inviter can copy and rotate invitations without global account creation', async ({
+  testApp,
+  request,
+}) => {
+  const role = 'member-inviter';
+  const root = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  const email = `studio-${role}@example.test`;
+  const password = 'studio-role-password';
+  const account = await readData<{ id: string }>(
+    await root.fetch('/users', post({ email, name: role, password })),
+    201,
+  );
+  const authz = testApp.application.container.resolve(authorizationToken);
+  // Grant only the members setting, without global user/create or user/assign-role.
+  await authz.permissionSets.create({
+    key: role,
+    grants: [
+      {
+        resource: { type: 'settings', id: 'pm.members' },
+        actions: [
+          { action: 'read' },
+          { action: 'invite' },
+          { action: 'assign' },
+          { action: 'define-roles' },
+        ],
+      },
+    ],
   });
-}
+  await authz.permissionSets.assign({
+    subject: { type: 'user', id: account.id },
+    permissionSet: role,
+  });
+  const session = await signIn(testApp, { email, password });
+  expect(
+    (
+      await session.fetch(
+        '/users',
+        post({ email: 'blocked@example.test', name: 'Blocked', password }),
+      )
+    ).status,
+  ).toBe(403);
+  const created = await readData<{ results: InvitationResult[] }>(
+    await session.fetch(
+      '/projects/invitations',
+      post({ emails: [`recipient-${role}@example.test`] }),
+    ),
+    201,
+  );
+  const oldToken = created.results[0]?.inviteUrl?.split('/').at(-1);
+  expect(oldToken).toBeTruthy();
+  const users = testApp.application.container.resolve(
+    userManagementServiceToken,
+  );
+  const pending = (await users.listInvitations({ invitedBy: account.id }))[0];
+  if (!pending) throw new Error('Missing invitation');
+  const rotated = await readData<InvitationResult>(
+    await session.fetch(
+      `/projects/invitations/${pending.id}/resend?sendEmail=false`,
+      post({}),
+    ),
+  );
+  expect(rotated.inviteUrl).toBeTruthy();
+  expect(rotated.emailSent).toBe(false);
+  expect(rotated.inviteUrl).not.toBe(created.results[0]?.inviteUrl);
+  expect(
+    (await request('/users/invitations/lookup', post({ token: oldToken })))
+      .status,
+  ).toBe(400);
+  const sharedToken = rotated.inviteUrl?.split('/').at(-1);
+  expect(
+    (
+      await request(
+        '/users/invitations/accept',
+        post({ token: sharedToken, name: 'Recipient', password }),
+      )
+    ).status,
+  ).toBe(200);
+});
 
 test('an account administrator delivers a project invitation without working email and does not verify its email', async ({
   testApp,
@@ -499,7 +473,7 @@ test('an account administrator delivers a project invitation without working ema
   if (!pending) throw new Error('Missing invitation');
   const result = await readData<InvitationResult>(
     await root.fetch(
-      `/projects/invitations/${pending.id}/resend?sendEmail=false&manualDelivery=true`,
+      `/projects/invitations/${pending.id}/resend?sendEmail=false`,
       post({}),
     ),
   );
@@ -511,7 +485,7 @@ test('an account administrator delivers a project invitation without working ema
   ).toBe(400);
   expect(
     await readData(await request('/users/invitations/lookup', post({ token }))),
-  ).toMatchObject({ emailVerificationRequired: false });
+  ).toMatchObject({ email });
   const password = 'manual-recipient-password';
   await readData(
     await request(
@@ -648,3 +622,35 @@ for (const action of ['revoke', 'rotate'] as const) {
     );
   });
 }
+
+test('retains safe delivery diagnostics without storing provider messages or invitation credentials', async ({
+  testApp,
+}) => {
+  const mailbox = testApp.application.container.resolve(invitationMailboxToken);
+  const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  for (const category of ['recipient', 'timeout'] as const) {
+    mailbox.failureCategory = category;
+    const email = `diagnostic-${category}@example.test`;
+    const result = await readData<{ results: InvitationResult[] }>(
+      await admin.fetch('/projects/invitations', post({ emails: [email] })),
+      201,
+    );
+    expect(result.results[0]).toMatchObject({
+      emailSent: false,
+      inviteUrl: expect.any(String),
+    });
+    const database =
+      testApp.application.container.resolve(databaseManagerToken);
+    const record = await database
+      .connection()
+      .repository('userInvitations')
+      .findOne({ filter: { email } });
+    expect(record?.sendError).toBe(
+      `Invitation email submission_unknown (${category}).`,
+    );
+    expect(JSON.stringify(record)).not.toContain(
+      'private invitation credential',
+    );
+    expect(JSON.stringify(record)).not.toContain(result.results[0]?.inviteUrl);
+  }
+});

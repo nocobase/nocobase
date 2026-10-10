@@ -33,9 +33,6 @@ const access =
 export function createInvitationRoutes(
   invitations: InvitationService,
   authentication: Pick<Auth, 'isScopedSession'>,
-  securityLogger?: {
-    info(bindings: Readonly<Record<string, unknown>>, message: string): void;
-  },
 ): Hono<ViewerEnv> {
   const routes = domainRouter<ViewerEnv>();
   const origin = (url: string) => new URL(url).origin;
@@ -121,12 +118,6 @@ export function createInvitationRoutes(
     apiValidator('query', ResendInvitationQuery),
     async (context) => {
       const sendEmail = context.req.valid('query').sendEmail !== 'false';
-      const manualDelivery =
-        context.req.valid('query').manualDelivery === 'true';
-      if (manualDelivery)
-        await context
-          .get('authz')
-          .require({ resource: { type: 'user', id: '*' }, action: 'create' });
       const canReturnLink = await canShareLink(context, authentication);
       if (!sendEmail && !canReturnLink)
         throw forbidden('Scoped credentials cannot retrieve invitation links.');
@@ -135,17 +126,7 @@ export function createInvitationRoutes(
         context.req.valid('param').invitationId,
         origin(context.req.url),
         sendEmail,
-        manualDelivery,
       );
-      if (manualDelivery)
-        securityLogger?.info(
-          {
-            event: 'user.invitation.manualDelivery',
-            actorId: viewerOf(context).userId,
-            invitationId: context.req.valid('param').invitationId,
-          },
-          'user.invitation.manualDelivery',
-        );
       return context.json({
         data: canReturnLink ? result : { ...result, inviteUrl: undefined },
       });

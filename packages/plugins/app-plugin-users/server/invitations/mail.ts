@@ -20,7 +20,7 @@ export interface InvitationMailer {
   send(email: InvitationEmail): Promise<void>;
 }
 
-/** Used when no channel is configured: delivery fails; sharing a link still requires mailbox verification before account creation. */
+/** Used when no channel is configured: delivery fails; authorized inviters can deliver the link themselves. */
 export const unconfiguredMailer: InvitationMailer = {
   send: () =>
     Promise.reject(new Error('No invitation email channel is configured.')),

@@ -139,7 +139,6 @@ export const AcceptInvitationInput: z.ZodObject<
     token: z.ZodString;
     name: z.ZodString;
     password: z.ZodString;
-    emailVerificationToken: z.ZodOptional<z.ZodString>;
   },
   z.core.$strict
 > = z.strictObject({
@@ -147,7 +146,6 @@ export const AcceptInvitationInput: z.ZodObject<
   name: nonEmpty,
   // Existing accounts authenticate through their session; account creation still validates password strength.
   password: z.string(),
-  emailVerificationToken: z.string().min(1).max(128).optional(),
 });
 
 export const PreferenceParams: z.ZodObject<
@@ -282,14 +280,9 @@ export const UserInvitationSchema: z.ZodType<UserInvitation> = z
 export const ResendInvitationQuery: z.ZodObject<
   {
     sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
-    manualDelivery: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
   },
   z.core.$strip
 > = z.object({
-  manualDelivery: z.enum(['true', 'false']).optional().meta({
-    description:
-      'Requires user:create and sendEmail=false. The administrator verifies the recipient outside email and privately hands over the new link. Does not mark the email verified.',
-  }),
   sendEmail: z.enum(['true', 'false']).optional().meta({
     description:
       'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
@@ -305,7 +298,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Shareable invitation link, returned regardless of email delivery. Ordinary links additionally require proof sent only to the invited mailbox; explicitly authorized manual delivery links do not. Resends require the original inviter and empty plugin data.',
+          'Shareable invitation link, returned regardless of email delivery. Resends require the original inviter and empty plugin data.',
       }),
     }),
     z.object({
@@ -320,7 +313,6 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
 
 export const PublicUserInvitationSchema: z.ZodType<PublicUserInvitation> =
   z.object({
-    emailVerificationRequired: z.boolean().optional(),
     email: z.string(),
     inviterName: z.string(),
     summary: z.array(z.string()),
@@ -354,8 +346,3 @@ export const UserPreferenceSchema: z.ZodType<{ value: unknown }> = z.object({
 export const InvitationsMeta: z.ZodType<{ total: number }> = z.object({
   total: z.number().int(),
 });
-
-export const InvitationVerificationResultSchema: z.ZodObject<
-  { emailSent: z.ZodBoolean },
-  z.core.$strip
-> = z.object({ emailSent: z.boolean() });

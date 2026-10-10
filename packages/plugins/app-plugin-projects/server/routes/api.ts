@@ -5,7 +5,6 @@
  */
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
-import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ApiError,
@@ -99,13 +98,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     projects.route('/', createMentionRoutes(services.commentQueries));
     projects.route(
       '/invitations',
-      createInvitationRoutes(
-        services.invitations,
-        authentication,
-        container.has(loggingToken)
-          ? container.resolve(loggingToken).getLogger('security')
-          : undefined,
-      ),
+      createInvitationRoutes(services.invitations, authentication),
     );
     projects.route('/settings', createSettingsRoutes(services.settings));
     projects.route('/labels', createLabelRoutes(services.labels));

@@ -155,10 +155,9 @@ export class PmApi {
   public resendInvitation(
     invitationId: string,
     sendEmail: boolean = true,
-    manualDelivery: boolean = false,
   ): Promise<InvitationResult> {
     return this.send(
-      `projects/invitations/${id(invitationId)}/resend?sendEmail=${sendEmail}${manualDelivery ? '&manualDelivery=true' : ''}`,
+      `projects/invitations/${id(invitationId)}/resend?sendEmail=${sendEmail}`,
       'POST',
     );
   }
