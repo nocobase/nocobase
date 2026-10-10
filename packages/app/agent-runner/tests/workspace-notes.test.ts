@@ -26,4 +26,35 @@ describe('workspaceNotes', () => {
       'nocobase-runner:',
     );
   });
+  it('explains first delivery only when the runner verified empty initialization', () => {
+    const repo = {
+      url: 'https://example.com/app.git',
+      branch: 'main',
+      defaultBranch: 'main',
+      primary: true,
+      dir: '/work/PM-1/app',
+      cache: '/cache/app.git',
+      gitDir: '/work/PM-1/app/.git',
+      submodules: [],
+    };
+    const dir = {
+      kind: 'repo' as const,
+      dir: repo.dir,
+      primary: true,
+      fresh: true,
+      key: 'repo',
+      repo,
+    };
+    expect(workspaceNotes({ ...base, dirs: [dir] })).not.toContain(
+      'has no refs',
+    );
+    const notes = workspaceNotes({
+      ...base,
+      dirs: [{ ...dir, repo: { ...repo, initializing: true } }],
+    });
+    expect(notes).toContain('has no refs');
+    expect(notes).toContain('first delivery needs no pull request');
+    expect(notes).toContain('not overwrite a branch created by someone else');
+    expect(notes).toContain('Preserve existing files and commits on a retry');
+  });
 });

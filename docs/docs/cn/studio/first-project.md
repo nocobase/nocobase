@@ -4,10 +4,19 @@
 
 :::danger 目前阻塞点
 
-1. **首次开发前缺少仓库准备提示。** 我们提出创建应用并开始开发，项目主管直接创建并派发初始化任务，没有先提示或引导准备 Git 仓库等代码位置。开发 Agent 启动后才发现没有关联仓库、没有应用源码，任务停在 **Blocked**，首次开发流程中断。
-2. **本地 Studio 缺少公网地址。** 当前 Studio 只在本机访问，GitHub 无法向它发送 Webhook，GitHub 托管的 Actions 也无法访问它的 API，后续 CI 和自动部署接入受阻。此项尚未进入实测，不影响先在本地初始化应用。
+1. **首次开发前缺少仓库准备提示。** 任务已派发，才发现没有关联代码位置，初始化停在 **Blocked**。
+2. **本地 Studio 缺少公网地址。** GitHub Webhook 和托管 Actions 无法访问本地 Studio，后续 CI 接入受阻。
+3. **Developer 缺少 NocoBase 3 初始化指引。** 未提供对应初始化 Skill 或明确步骤，Agent 自行使用了旧版命令。
+4. **Runner 默认拒绝下载执行脚手架。** 即使补充正确命令，初始化仍被权限策略阻止，需要额外配置。
+5. **本地 Studio 无法完成 GitHub App 注册。** 注册配置仍包含 localhost Hook URL，被 GitHub 拒绝，仓库授权无法继续。
 
-这两点分别影响首次开发和后续 CI 接入的连贯性。详细配置与流程改进建议见[本轮待确认问题](./review-notes)。
+这些问题打断了从本地启动、应用初始化到 CI 接入的流程。详细配置与流程改进建议见[本轮待确认问题](./review-notes)。
+
+:::
+
+:::warning 本地补充后继续演示
+
+本轮在本地补建了演示 Git 仓库，并将仓库目录关联到项目的 Runner 代码位置，补充了原初始化任务所需的信息。接下来继续原任务 PM-1，由开发 Agent 初始化应用。GitHub CI 和 Webhook 尚未接入，公网隧道留到 CI 阶段配置。
 
 :::
 
@@ -51,3 +60,30 @@
 执行后，在 **Projects（项目）** 列表中可以看到 Northstar Logistics。打开项目的 **Issues（任务）**，可以查看初始化任务 PM-1 及执行状态。
 
 ![已创建的运输项目](./assets/first-project-created-en.png)
+
+## 补充 GitHub 连接
+
+:::warning 开发前补充 GitHub 配置
+
+本例直接让项目主管创建项目并派发初始化任务，随后发现 GitHub 连接和仓库授权尚未配置。仅关联本地目录，不能让 Studio 自动为 Runner 提供 GitHub 推送凭据，也不能让 Studio 为该项目创建 PR。继续演示前，需要补充 GitHub 连接、仓库授权和项目仓库关联。
+
+:::
+
+Studio 支持以下两种 GitHub 连接方式：
+
+- **GitHub App（本演示采用）**：将 App 安装到 GitHub 账号或组织，并授权指定仓库。项目关联该连接下的仓库后，Studio 可以为 Runner 提供限定仓库的短期推送凭据，并处理 PR。创建连接时由 Studio 引导完成 App 注册，无需编写 App 代码。
+- **Token**：使用 GitHub Token 创建连接。当前此方式不会自动向 Runner 提供推送凭据，还需在 Runner 所在机器配置 Git 凭据，才能完成代码推送。
+
+本演示使用个人账号下的 **northstar-logistics** 仓库，选择 GitHub App 方式，并仅授权该仓库。
+
+打开 **Settings → Git**，点击 **Add connection → GitHub**。
+
+![GitHub 连接入口](./assets/github-settings-empty-en.png)
+
+在连接窗口选择 **My account**，点击 **Create on GitHub**，前往已登录的 GitHub 页面注册 App，并将 App 安装到个人账号。安装时选择 **Only select repositories**，仅授权 **northstar-logistics**。
+
+![使用个人账号创建 GitHub App 连接](./assets/github-connect-my-account-en.png)
+
+本轮使用 localhost 注册 GitHub App 时，GitHub 报错：Hook URL 无法从公网访问，App 注册未完成。虽然 Studio 提示 Webhook 暂不启用、改用轮询，生成的注册配置仍携带 localhost Hook URL，未通过 GitHub 校验。需先解决注册配置或公网地址问题，再继续仓库授权。
+
+![GitHub 拒绝包含 localhost Hook URL 的 App 注册配置](./assets/github-app-localhost-blocked-en.png)

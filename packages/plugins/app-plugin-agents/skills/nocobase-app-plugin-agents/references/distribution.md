@@ -1,6 +1,6 @@
 # Distribution: the CLI and runner tarballs
 
-The App serves two products itself, as standalone tarballs that bundle Node.js, one per platform: its own CLI (the `nocobase.cli.bin` of its `package.json`, such as `acme`) and the runner, `nocobase-runner`. Nothing is published to a registry and a machine needs nothing installed beforehand. The README's "What it does" (Distribution) and "The CLI runs get" sections, and `@nocobase/app-cli`'s README section "The application's own CLI: `cli build` and `cli link`", are the reference.
+The App serves two products itself: its own CLI (the `nocobase.cli.bin` of its `package.json`, such as `acme`) and the runner, `nocobase-runner`, each as standalone tarballs that bundle Node.js, one per platform, or as one universal tarball without Node that runs on the machine's own Node.js 24 or newer on every platform. An App that serves no tarball of a product may instead name the exact npm version to install it from ("Naming a product on npm instead" below), as NocoBase Studio does. The README's "What it does" (Distribution) and "The CLI runs get" sections, and `@nocobase/app-cli`'s README section "The application's own CLI: `cli build` and `cli link`", are the reference.
 
 ## Building
 
@@ -10,6 +10,7 @@ pnpm nocobase cli build --runner     # nocobase-runner, from @nocobase/agent-run
 ```
 
 - `--targets` takes a comma-separated list; the default is `darwin-arm64,darwin-x64,linux-x64,linux-arm64`. Windows is not supported.
+- `--universal` also packs `<product>-v<version>-universal.tar.gz`, which carries no Node.js and runs on the machine's Node.js 24 or newer; without `--targets` it packs only that one (no Node download). The App serves it to every platform without a tarball of its own; one built for the platform wins.
 - Node.js for each target is downloaded from nodejs.org and checked against `SHASUMS256.txt` (cached in `node_modules/.cache/nocobase-cli/node`). `--node-version` picks the version (default: the one running the command). `--host-node` uses this machine's Node.js for its own platform instead of downloading, for a quick local build: `pnpm nocobase cli build --targets darwin-arm64 --host-node`.
 - `--out` (default `storage/runners/dist`), `--channel` (default `stable`), `--version` (default `nocobase.cli.version`, else the App's version; with `--runner`, the runner's), `--skip-build`, `--keep-staging`.
 - The App needs `@nocobase/app-cli-client` in its `devDependencies` for the CLI and `@nocobase/agent-runner` for the runner; `npm`, `pnpm` and `tar` come from the environment.
@@ -23,7 +24,18 @@ Each product lands in a directory of its own, with a manifest of every file's SH
 
 ## Serving
 
-The plugin serves `agents.dist.dir` (default `storage/runners/dist`, relative to the App root), channel `agents.dist.channel` (default `stable`). A product's current version is the highest in the channel, unless `agents.dist.versions` pins one. Only files a manifest lists are served. Routes (`DIST_ROUTES` of `@nocobase/agent-protocol`): `GET /api/agents/dist/manifest`, `GET /api/agents/dist/products/<product>/targets/<target>` (`?format=env` for a shell; 404 `PLATFORM_UNSUPPORTED` with the targets there are), the tarball itself, and `POST /api/agents/dist/downloadTokens`.
+The plugin serves `agents.dist.dir` (default `storage/runners/dist`, relative to the App root), channel `agents.dist.channel` (default `stable`). A product's current version is the highest in the channel, unless `agents.dist.versions` pins one. Only files a manifest lists are served. Routes (`DIST_ROUTES` of `@nocobase/agent-protocol`): `GET /api/agents/dist/manifest`, `GET /api/agents/dist/products/<product>/targets/<target>` (`?format=env` for a shell; 404 `PLATFORM_UNSUPPORTED` with the targets there are; the universal tarball answers with the asked target and `universal: true`, `universal=true` in env form), the tarball itself, and `POST /api/agents/dist/downloadTokens`.
+
+### Naming a product on npm instead
+
+`agents.dist.npm` names the npm package and exact version (never a range) of a product, such as `{ nocobase-runner: { package: '@nocobase/agent-runner', version: 1.0.0 } }`. It is used only when `agents.dist.dir` has no current version of that product; a product the directory has is served from it exactly as without the setting. The machine needs Node.js 24 or later already; nothing bundles it on this path.
+
+Only callers that say they understand the answer get it, so an older runner, install script or CLI never sees one:
+
+- The resolve route with `accept=npm` (a comma-separated list) answers `{ kind: 'npm', product, version, package, channel }`, or with `format=env` the lines `kind=npm`, `product=`, `version=`, `package=` and `channel=`. Without it, such a product is 404 as before.
+- A heartbeat answer carries `npmUpgrade` (`latestVersion`, `package`, `channel`, `reason`) instead of `upgrade` only to a runner that declares the `npm` feature (protocol 8) and runs an older version; any other runner is offered no update for that product. The Runtimes page marks only those runners "Upgradable".
+
+An App that builds its runner and CLI into its deployment pins them to the versions it was built with this way, so redeploying it moves every runner to that version.
 
 ## CI and deployment
 
@@ -43,10 +55,15 @@ curl -fsSL https://app.example.com/api/agents/dist/installScript | sh -s -- --ru
 
 Options: `--prefix`, `--bin-dir`, `--dry-run`; with `--runner`, `--runner-prefix`, `--name`, `--label` and `--no-service` (register only). A token of the other kind fails before anything is installed. An App that serves no CLI still installs the runtime.
 
+For a universal tarball the script checks, before downloading, that `node` on PATH is Node.js 24 or newer and stops with how to install it otherwise; it then links `<prefix>/node` to that `node`. The package's launcher tries `NOCOBASE_NODE`, `<prefix>/node`, `node` on PATH, and a Node an older standalone version in `<prefix>/versions/` still carries, so a runner's user service (launchd, systemd), whose PATH usually has no `node`, starts it. An update to a universal version leaves the Node it ran on in `<prefix>/node` before removing old versions. With `--runner`, a missing `pnpm` only prints a hint to run `corepack enable`.
+
+The script resolves with `accept=npm`. For an npm answer it checks Node.js 24 the same way and that `npm` is on PATH (or `NOCOBASE_NPM` names one), stopping with how to get it otherwise, then runs `npm install --prefix <prefix>/versions/<version>.partial --no-save --no-audit --no-fund --omit=optional <package>@<version>` with the npm configuration (registry, proxy) of the person running it, writes a launcher at `bin/<command>` beside `node_modules`, renames the directory to `<prefix>/versions/<version>` and links `<prefix>/node`. `current`, the command link and the runner's service are then exactly as for a tarball. `--omit=optional` keeps the coding tools' per-platform SDK packages, each carrying a binary the runner never starts, off the machine.
+
 ## Updates
 
-- The runner reports its product and version on every heartbeat; the answer names a newer `nocobase-runner` when the channel serves one for its platform. An installed runner started by its service updates itself between runs; `nocobase-runner update` does it now (`--check` only checks, `--auto on|off` switches automatic updates). The Runtimes page marks such a runner "Upgradable".
+- The runner reports its product and version on every heartbeat; the answer names a newer `nocobase-runner` when the channel serves one for its platform (`upgrade`), or the npm version `agents.dist.npm` pins (`npmUpgrade`, to runners with the `npm` feature). An installed runner started by its service updates itself between runs; `nocobase-runner update` does it now (`--check` only checks, `--auto on|off` switches automatic updates). The Runtimes page marks such a runner "Upgradable".
 - The App's CLI, installed by the script, has `<cli> update`, and says on stderr when a newer version is served.
+- Both ask with `accept=npm` and install an npm answer into `<prefix>/versions/<version>` the way the install script does, with the machine's npm; an installation moves between tarball and npm versions in either direction. The runner and `@nocobase/app-cli-client` depend on exactly the `@nocobase/agent-protocol` they were built with, so an exact npm version speaks one known protocol.
 - A run gets the App's CLI as `agents.cli.package` says: by default the tarball the App serves for the runner's platform (`{ kind: served }`), downloaded once per version. A runner without the `archives` feature, or a platform with no build, falls back to the CLI installed beside it (`preinstalled`). `{ kind: npm, package, version }` names an npm package instead.
 
 ## The npm package as an alternative

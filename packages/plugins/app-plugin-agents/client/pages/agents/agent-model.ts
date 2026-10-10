@@ -226,26 +226,6 @@ export function wholeNumber(
   return value >= min && value <= max ? value : null;
 }
 
-/** One regular expression per line, blank lines dropped. */
-export function patternLines(text: string): string[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-/** The first line that is not a valid regular expression, or null. */
-export function invalidPattern(lines: readonly string[]): string | null {
-  for (const line of lines) {
-    try {
-      new RegExp(line, 'u');
-    } catch {
-      return line;
-    }
-  }
-  return null;
-}
-
 /** Whether two lists hold the same items, in any order. */
 export function sameItems(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((item) => b.includes(item));
