@@ -396,7 +396,10 @@ describe('renderWithApp', () => {
 
       expect(error).toBeInstanceOf(AggregateError);
       expect(error).toMatchObject({
-        cause: cleanupError,
+        cause:
+          stage === 'startup'
+            ? expect.objectContaining({ errors: [primaryError, cleanupError] })
+            : primaryError,
         errors: [
           stage === 'startup'
             ? expect.objectContaining({ errors: [primaryError, cleanupError] })
@@ -404,6 +407,8 @@ describe('renderWithApp', () => {
           cleanupError,
         ],
       });
+      if (!(error instanceof AggregateError)) throw error;
+      expect(error.cause).toBe(error.errors[0]);
       expect(document.getElementById('nocobase-runtime-config')).toBeNull();
       // The test-finished hook must not report the cleanup failure again after this assertion handles it.
     },

@@ -197,6 +197,7 @@ export async function renderWithApp(
 
     const basename = normalizeAppClientBasename(runtime.basename) ?? '/';
     const route = options.route ?? '/';
+    // Memory history stores full paths; Router strips the basename when exposing the location to components.
     const initialEntry = `${trimTrailingSlash(basename)}${route.startsWith('/') ? route : `/${route}`}`;
     const Wrapper = ({ children }: PropsWithChildren): ReactElement => (
       <MemoryRouter basename={basename} initialEntries={[initialEntry]}>
@@ -221,7 +222,8 @@ export async function renderWithApp(
       throw new AggregateError(
         [error, cleanupError],
         'Test application initialization and cleanup both failed.',
-        { cause: cleanupError },
+        // eslint-disable-next-line preserve-caught-error -- Keep the primary failure as the cause; errors retains cleanupError.
+        { cause: error },
       );
     }
     throw error;
