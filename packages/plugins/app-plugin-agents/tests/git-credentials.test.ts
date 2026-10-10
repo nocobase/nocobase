@@ -285,6 +285,157 @@ describe('repository credentials on demand', () => {
     expect(provider.requests).toHaveLength(1);
   });
 
+  describe('when the run changes while the application issues', () => {
+    /** A provider that answers only when the test lets it, with a credential valid for `validMs` from the time asked. */
+    function paused(validMs = 3_600_000) {
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      let asked: () => void = () => undefined;
+      const started = new Promise<void>((resolve) => {
+        asked = resolve;
+      });
+      let count = 0;
+      provide({
+        issue: async () => {
+          count += 1;
+          const expiresAt = new Date(
+            h.clock.now().getTime() + validMs,
+          ).toISOString();
+          asked();
+          await gate;
+          return {
+            username: 'x-access-token',
+            password: `synthetic-late-credential-${count}`,
+            expiresAt,
+          };
+        },
+      });
+      return { release: () => release(), started };
+    }
+
+    const post = (
+      runner: RegisteredRunner,
+      runId: string,
+      action: string,
+      body: unknown,
+    ) =>
+      h.request('POST', `/agents/runners/runs/${runId}/${action}`, {
+        runnerKey: runner.key,
+        body,
+      });
+
+    it('drops the credential when the lease ran out meanwhile', async () => {
+      h = await createHarness();
+      repos(APP);
+      const provider = paused();
+      const { runner, payload } = await claimedOnDemand();
+      const pending = ask(runner, payload.run.id, { attempt: 1, url: APP });
+      await provider.started;
+      h.clock.advance(46_000);
+      provider.release();
+      const answer = await pending;
+      expect([answer.status, answer.body.error?.reason]).toEqual([
+        409,
+        'LEASE_LOST',
+      ]);
+      expect(JSON.stringify(answer.body)).not.toContain('synthetic-late');
+    });
+
+    it('drops the credential when the run completed or was cancelled meanwhile', async () => {
+      for (const end of ['complete', 'cancel'] as const) {
+        h = await createHarness();
+        repos(APP);
+        const provider = paused();
+        const { runner, payload } = await claimedOnDemand();
+        const runId = payload.run.id as string;
+        await post(runner, runId, 'start', start);
+        const pending = ask(runner, runId, { attempt: 1, url: APP });
+        await provider.started;
+        if (end === 'complete')
+          await post(runner, runId, 'complete', {
+            summary: 'Done.',
+            handledInputIds: payload.inputs.map(
+              (input: { id: string }) => input.id,
+            ),
+          });
+        else {
+          await h.services.runs.cancel(runId, 'owner');
+          await post(runner, runId, 'cancelAck', {});
+        }
+        provider.release();
+        const answer = await pending;
+        expect([end, answer.status, answer.body.error?.reason]).toEqual([
+          end,
+          400,
+          'RUN_NOT_ACTIVE',
+        ]);
+        expect(JSON.stringify(answer.body)).not.toContain('synthetic-late');
+        await h.close();
+      }
+    });
+
+    it('drops the credential when another runner took the next attempt meanwhile, and never remembers it for that attempt', async () => {
+      h = await createHarness();
+      repos(APP);
+      const provider = paused();
+      const { runner, payload } = await claimedOnDemand();
+      const runId = payload.run.id as string;
+      await post(runner, runId, 'start', start);
+      const pending = ask(runner, runId, { attempt: 1, url: APP });
+      await provider.started;
+      expect(
+        (await post(runner, runId, 'fail', { reason: 'toolNetwork' })).body.data
+          .status,
+      ).toBe('queued');
+      h.clock.advance(60_000);
+      const other = await h.registerRunner({
+        name: 'other',
+        features: [...FEATURES, 'gitCredentials'],
+      });
+      const [again] = await claim(h, other);
+      expect(again.run.attempt).toBe(2);
+      provider.release();
+      const answer = await pending;
+      expect([answer.status, answer.body.error?.reason]).toEqual([
+        409,
+        'LEASE_LOST',
+      ]);
+      // The dropped credential was not added to the run's redaction: only what was handed out is.
+      await post(other, runId, 'start', start);
+      await post(other, runId, 'events', {
+        events: [
+          {
+            seq: again.run.firstSeq,
+            at: '2026-10-01T00:02:00.000Z',
+            type: 'text',
+            content: 'synthetic-late-credential-1',
+          },
+        ],
+      });
+      const page = await h.services.runs.events(runId, 0, 100);
+      expect(page.events.at(-1)?.content).toBe('synthetic-late-credential-1');
+    });
+
+    it('refuses a credential that expired while it was being issued', async () => {
+      h = await createHarness();
+      repos(APP);
+      const provider = paused(100);
+      const { runner, payload } = await claimedOnDemand();
+      const pending = ask(runner, payload.run.id, { attempt: 1, url: APP });
+      await provider.started;
+      h.clock.advance(500);
+      provider.release();
+      const answer = await pending;
+      expect([answer.status, answer.body.error?.reason]).toEqual([
+        503,
+        'REPO_ACCESS_UNAVAILABLE',
+      ]);
+      expect(JSON.stringify(answer.body)).not.toContain('synthetic-late');
+    });
+  });
+
   it('answers why the application did not issue one: unavailable, denied, slow or broken', async () => {
     h = await createHarness();
     repos(APP);

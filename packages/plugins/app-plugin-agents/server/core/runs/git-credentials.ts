@@ -110,73 +110,110 @@ export function createGitCredentialService(
     return grant;
   }
 
-  return {
-    async issue(runner, runId, request) {
-      await deps.reports.holds(runner, runId);
-      const run = await findRunRecord(deps.tx.read(), runId);
-      if (!run) throw new ProtocolError('RUN_NOT_FOUND', 'No such run.');
-      const now = deps.clock.now();
-      if (Number(run.attempt) !== request.attempt)
-        throw lost(
-          `Attempt ${request.attempt} of the run is over; it is on attempt ${Number(run.attempt)}.`,
-          run.status,
+  /**
+   * The run while `runner` still holds this attempt of it under a live lease and the claim listed `url`; the protocol
+   * reason otherwise. Checked before the application is asked and again once it answered, since issuing may take long
+   * enough for the run to end, be taken back or move to another attempt.
+   */
+  async function held(
+    runner: Pick<Runner, 'id'>,
+    runId: string,
+    request: GitCredentialRequest,
+  ): Promise<RunRecord> {
+    await deps.reports.holds(runner, runId);
+    const run = await findRunRecord(deps.tx.read(), runId);
+    if (!run) throw new ProtocolError('RUN_NOT_FOUND', 'No such run.');
+    if (Number(run.attempt) !== request.attempt)
+      throw lost(
+        `Attempt ${request.attempt} of the run is over; it is on attempt ${Number(run.attempt)}.`,
+        run.status,
+      );
+    if (
+      run.leaseExpiresAt === null ||
+      Date.parse(run.leaseExpiresAt) <= deps.clock.now().getTime()
+    )
+      throw lost('The run’s lease ran out.', run.status);
+    if (!gitCredentialUrls(run).includes(request.url))
+      throw new ProtocolError(
+        'INVALID_REQUEST',
+        'This repository is not one the run asks credentials for on demand.',
+        { url: request.url },
+      );
+    return run;
+  }
+
+  /** The first answer of a provider that issues for the URL; null when none does. */
+  async function ask(
+    run: RunRecord,
+    runner: Pick<Runner, 'id'>,
+    request: GitCredentialRequest,
+  ): Promise<RepoCredentialGrant | null> {
+    const providers = deps.repoAccess
+      .list()
+      .filter((provider) => provider.issue !== undefined);
+    try {
+      for (const provider of providers) {
+        const grant = await withTimeout((signal) =>
+          provider.issue!({
+            run: toRun(run),
+            runnerId: runner.id,
+            attempt: request.attempt,
+            url: request.url,
+            refresh: request.refresh === true,
+            signal,
+          }),
         );
-      if (
-        run.leaseExpiresAt === null ||
-        Date.parse(run.leaseExpiresAt) <= now.getTime()
-      )
-        throw lost('The run’s lease ran out.', run.status);
-      if (!gitCredentialUrls(run).includes(request.url))
+        if (grant) return grant;
+      }
+      return null;
+    } catch (error) {
+      if (error instanceof RepoAccessError)
         throw new ProtocolError(
-          'INVALID_REQUEST',
-          'This repository is not one the run asks credentials for on demand.',
+          error.kind === 'denied'
+            ? 'REPO_ACCESS_DENIED'
+            : 'REPO_ACCESS_UNAVAILABLE',
+          error.message,
           { url: request.url },
         );
+      deps.onError?.(
+        `Agents could not issue a repository credential for run ${run.id}.`,
+        error,
+      );
+      throw new ProtocolError(
+        'REPO_ACCESS_UNAVAILABLE',
+        'The application could not issue a credential for this repository.',
+        { url: request.url },
+      );
+    }
+  }
 
-      const providers = deps.repoAccess
-        .list()
-        .filter((provider) => provider.issue !== undefined);
-      try {
-        for (const provider of providers) {
-          const grant = await withTimeout((signal) =>
-            provider.issue!({
-              run: toRun(run),
-              runnerId: runner.id,
-              attempt: request.attempt,
-              url: request.url,
-              refresh: request.refresh === true,
-              signal,
-            }),
-          );
-          if (!grant) continue;
-          const { username, password, expiresAt } = checked(grant, now);
-          deps.secrets?.add(runSecretsKey(run.id), [password]);
-          return { username, password, expiresAt };
-        }
-      } catch (error) {
-        if (error instanceof RepoAccessError)
-          throw new ProtocolError(
-            error.kind === 'denied'
-              ? 'REPO_ACCESS_DENIED'
-              : 'REPO_ACCESS_UNAVAILABLE',
-            error.message,
-            { url: request.url },
-          );
-        deps.onError?.(
-          `Agents could not issue a repository credential for run ${run.id}.`,
-          error,
+  return {
+    async issue(runner, runId, request) {
+      const run = await held(runner, runId, request);
+      const grant = await ask(run, runner, request);
+      if (!grant)
+        throw new ProtocolError(
+          'REPO_ACCESS_DENIED',
+          'The application issues no credential for this repository.',
+          { url: request.url },
         );
+      // The run may have ended, been taken back or moved to another attempt while the application issued: then the
+      // credential is dropped, never remembered, and the runner told why.
+      await held(runner, runId, request);
+      let valid: RepoCredentialGrant;
+      try {
+        // Checked against the time it came back, not the time it was asked for.
+        valid = checked(grant, deps.clock.now());
+      } catch (error) {
         throw new ProtocolError(
           'REPO_ACCESS_UNAVAILABLE',
-          'The application could not issue a credential for this repository.',
+          error instanceof Error ? error.message : String(error),
           { url: request.url },
         );
       }
-      throw new ProtocolError(
-        'REPO_ACCESS_DENIED',
-        'The application issues no credential for this repository.',
-        { url: request.url },
-      );
+      const { username, password, expiresAt } = valid;
+      deps.secrets?.add(runSecretsKey(run.id), [password]);
+      return { username, password, expiresAt };
     },
   };
 }

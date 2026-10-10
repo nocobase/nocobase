@@ -191,6 +191,30 @@ describe('the credential broker', () => {
     expect(events[0]?.type).toBe('error');
   });
 
+  it('refuses a credential that expired on its way, keeping neither it nor the one held before', async () => {
+    let answer: unknown = issued('token-1', now + HOUR);
+    const { instance, events } = broker(() => answer);
+    await instance.get(APP);
+    // Valid when the application issued it, expired by the time the answer arrives.
+    answer = issued('token-late', now + 100);
+    now += HOUR;
+    await expect(instance.get(APP)).rejects.toMatchObject({
+      kind: 'unavailable',
+    });
+    expect(events.at(-1)?.meta).toEqual({
+      kind: 'gitCredential',
+      url: APP,
+      reason: 'unavailable',
+    });
+    // Nothing is answered from what it had: the next request asks again.
+    answer = { ...issued('token-2', now + HOUR), expiresAt: 'not a time' };
+    await expect(instance.get(APP)).rejects.toMatchObject({
+      kind: 'unavailable',
+    });
+    answer = issued('token-3', now + HOUR);
+    expect((await instance.get(APP)).token).toBe('token-3');
+  });
+
   it('stops once the run is no longer this runner’s, whatever it held', async () => {
     let lose = false;
     const { instance, asked, lost } = broker((_, count) =>

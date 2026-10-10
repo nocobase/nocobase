@@ -206,14 +206,20 @@ export class GitCredentialBroker implements RepoAuthSource {
           `The run is no longer this runner's, so no credential is given for ${url}.`,
         );
       const expiresAt = Date.parse(credential.expiresAt);
+      // A credential that expired on its way here (or names no expiry) is neither kept nor given to git, and the one
+      // held before is not used instead.
+      if (Number.isNaN(expiresAt) || expiresAt <= this.now()) {
+        this.held.delete(url);
+        throw new RepoAccessFailure(
+          'unavailable',
+          `The application issued a credential for ${url} that had already expired when it arrived. Try again in a minute.`,
+        );
+      }
       const auth: GitAuth = {
         username: credential.username,
         token: credential.password,
       };
-      this.held.set(url, {
-        auth,
-        expiresAt: Number.isNaN(expiresAt) ? this.now() : expiresAt,
-      });
+      this.held.set(url, { auth, expiresAt });
       this.stale.delete(url);
       this.options.log?.(
         `git credential: ${url}: issued${refresh ? ' anew' : ''}, valid until ${credential.expiresAt}`,
