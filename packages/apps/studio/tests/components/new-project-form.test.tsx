@@ -735,6 +735,48 @@ describe('the New project wizard', () => {
     });
   });
 
+  it('requires an init agent for a local NocoBase 3 app and excludes a previously typed prompt', async () => {
+    agents.options = [{ value: 'a1', label: 'Coder' }];
+    render(wrap(<NewProjectPage />));
+    fireEvent.change(screen.getByLabelText('projectPage.newProject.name'), {
+      target: { value: 'Local NocoBase' },
+    });
+    next();
+    fireEvent.click(screen.getByText(`${L}.locations.runnerDirectory.title`));
+    await choose('projectPage.newProject.runner', 'Build box');
+    fireEvent.change(screen.getByLabelText('projectPage.newProject.path'), {
+      target: { value: '/srv/support' },
+    });
+    fireEvent.change(screen.getByLabelText(`${L}.prompt.optionalLabel`), {
+      target: { value: 'Custom initialization' },
+    });
+    fireEvent.click(
+      screen.getByRole('switch', {
+        name: 'projectPage.codeLocation.directoryNocobase',
+      }),
+    );
+    expect(screen.queryByLabelText(`${L}.prompt.optionalLabel`)).toBeNull();
+    expect(
+      screen.getByText('projectPage.codeLocation.directoryNocobaseHint'),
+    ).toBeTruthy();
+    expect(create().hasAttribute('disabled')).toBe(true);
+    await chooseAgent('projectPage.newProject.initAgent', 'Coder');
+    await waitFor(() => expect(create().hasAttribute('disabled')).toBe(false));
+    fireEvent.click(create());
+    await waitFor(() => expect(init.create).toHaveBeenCalledOnce());
+    expect(init.create.mock.calls[0]?.[0]).toEqual({
+      name: 'Local NocoBase',
+      workflowId: null,
+      initAgentId: 'a1',
+      codeLocation: 'runnerDirectory',
+      runnerDirectory: {
+        runnerId: 'r1',
+        path: '/srv/support',
+        init: { method: 'nocobase', template: 'default' },
+      },
+    });
+  });
+
   it('starts the code step on the first location available, keeping the person’s choice', async () => {
     render(wrap(<NewProjectPage />));
     fireEvent.change(screen.getByLabelText('projectPage.newProject.name'), {

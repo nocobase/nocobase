@@ -531,13 +531,29 @@ function RunnerDirectoryFields({ state, labels }: FieldsProps): ReactElement {
         />
       </Field>
       <div className='sm:col-span-2'>
-        <InitPromptField
-          id='code-location-init-prompt'
-          optional
-          value={state.prompt}
-          onChange={state.setPrompt}
-          labels={labels}
-        />
+        <Field orientation='horizontal'>
+          <Switch
+            id='code-location-directory-nocobase'
+            checked={state.directoryNocobase}
+            onCheckedChange={state.setDirectoryNocobase}
+          />
+          <FieldLabel htmlFor='code-location-directory-nocobase'>
+            {t('projectPage.codeLocation.directoryNocobase')}
+          </FieldLabel>
+        </Field>
+        {state.directoryNocobase ? (
+          <p className='mt-2 text-sm text-muted-foreground'>
+            {t('projectPage.codeLocation.directoryNocobaseHint')}
+          </p>
+        ) : (
+          <InitPromptField
+            id='code-location-init-prompt'
+            optional
+            value={state.prompt}
+            onChange={state.setPrompt}
+            labels={labels}
+          />
+        )}
       </div>
     </div>
   );

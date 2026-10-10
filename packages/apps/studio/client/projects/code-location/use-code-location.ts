@@ -118,6 +118,7 @@ export function useCodeLocation(host: CodeLocationHost) {
   const [cloneUrl, setCloneUrl] = useState('');
   const [defaultBranch, setDefaultBranch] = useState('');
   const [runnerId, setRunnerId] = useState('');
+  const [directoryNocobase, setDirectoryNocobase] = useState(false);
   const [path, setPath] = useState('');
   const [label, setLabel] = useState('');
 
@@ -212,10 +213,13 @@ export function useCodeLocation(host: CodeLocationHost) {
   const promptInit =
     location === 'newRepo'
       ? method === 'prompt' && Boolean(prompt.trim())
-      : location !== 'none' && Boolean(prompt.trim());
-  // A NocoBase application is scaffolded by the init agent on a runner, with its preview CI connected by Studio.
+      : location !== 'none' &&
+        !(location === 'runnerDirectory' && directoryNocobase) &&
+        Boolean(prompt.trim());
+  // Both locations need an init agent; only a new repository also receives preview CI.
   const nocobaseInit =
-    location === 'newRepo' && method === 'nocobase' && Boolean(connection);
+    (location === 'newRepo' && method === 'nocobase' && Boolean(connection)) ||
+    (location === 'runnerDirectory' && directoryNocobase);
   /** An agent initializes: the init agent is asked for. */
   const agentInit = promptInit || nocobaseInit;
   // What still keeps the form from being complete, the first one in the form's order.
@@ -308,6 +312,11 @@ export function useCodeLocation(host: CodeLocationHost) {
           runnerDirectory: {
             runnerId,
             path: path.trim(),
+            ...(directoryNocobase
+              ? {
+                  init: { method: 'nocobase' as const, template: APP_TEMPLATE },
+                }
+              : {}),
             ...(promptInit ? { initPrompt: prompt.trim() } : {}),
           },
         }
@@ -378,6 +387,8 @@ export function useCodeLocation(host: CodeLocationHost) {
     setDefaultBranch,
     runnerId,
     setRunnerId,
+    directoryNocobase,
+    setDirectoryNocobase,
     path,
     setPath,
     label,

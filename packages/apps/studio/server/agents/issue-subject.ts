@@ -25,7 +25,8 @@ import { sampleValue } from '@nocobase/app-plugin-agents/shared/briefs';
 
 import { ANALYSIS_STATUS } from '../../shared/design.js';
 import { runBranches } from '../git/run-git.js';
-import { initialDirOf } from '../projects-init/store.js';
+import { initialDirOf, initsOfProject } from '../projects-init/store.js';
+import { nocobaseBaseline } from '../projects-init/nocobase-app.js';
 import { ATTACH_ACTION } from './capabilities.js';
 import { PROJECT_SCOPE } from './catalog/scopes.js';
 import {
@@ -60,6 +61,7 @@ export function issueGuidance(
       options.attach
         ? `Files on ${SUBJECT_NOUN} ${key} and its comments are listed in the context with their ids: save one with \`${cli} issue attachment download <file-id>\`. To show a screenshot, a log or another file, add \`--attach <path>\` (repeatable) to the comment and name the file in its text; never attach secrets or personal data.`
         : `Files on ${SUBJECT_NOUN} ${key} and its comments are listed in the context with their ids: save one with \`${cli} issue attachment download <file-id>\`.`,
+      'Before initializing an application, check the project description, selected application baseline, and existing code and AGENTS.md for the intended framework generation, template and package source. A proposal revision (such as v3) is not a framework version. If the target is unspecified or conflicts with existing code, ask for that requirement before installing; do not guess an initializer from a familiar tutorial.',
       'Move the status only to the statuses the task says you may move it to; a move may wait for a person to approve it.',
       options.design
         ? 'When you have submitted the proposal, end your turn. If you are blocked and need a person, say so in a comment and end your turn. Do not wait for an answer: new comments reach you as new input.'
@@ -241,6 +243,13 @@ export function renderIssueContext(context: IssueContext): string {
               : `${repo.path ?? ''} (a directory on one machine)`
           }${index === 0 ? ' [primary]' : ''}`,
       ),
+    );
+  if (context.project?.description?.trim())
+    lines.push(
+      '',
+      '## Project requirements',
+      '',
+      context.project.description.trim(),
     );
   if (context.attachments.length > 0)
     lines.push(
@@ -441,6 +450,19 @@ export function createIssueContextProvider(
         context,
         claim.agent,
       );
+      const baselines = context.project
+        ? (await initsOfProject(conn, context.project.id)).flatMap((init) => {
+            const resource = context.project?.repos.find(
+              (repo) => repo.id === init.resourceId,
+            );
+            if (!init.appTemplate || !resource) return [];
+            return [
+              `## Application requirements for working directory ${JSON.stringify(resource.id)}`,
+              `Location: ${JSON.stringify(resource.type === 'directory' ? resource.path : resource.url)}; application root: ${resource.type === 'directory' ? 'app/' : 'repository root'}.`,
+              nocobaseBaseline(init.appTemplate),
+            ].join('\n\n');
+          })
+        : [];
       return {
         subject: {
           key: context.identifier,
@@ -453,15 +475,15 @@ export function createIssueContextProvider(
           design: isDesignStage(context),
         }),
         task: renderTask(context, claim.inputs),
-        context: initial
-          ? [
-              renderIssueContext(context),
-              initialNote(initial.defaultBranch),
-            ].join('\n\n')
-          : [
-              renderIssueContext(context),
-              ...(initializeIfEmpty ? [EMPTY_REPOSITORY_NOTE] : []),
-            ].join('\n\n'),
+        context: [
+          renderIssueContext(context),
+          ...baselines,
+          ...(initial
+            ? [initialNote(initial.defaultBranch)]
+            : initializeIfEmpty
+              ? [EMPTY_REPOSITORY_NOTE]
+              : []),
+        ].join('\n\n'),
         turn: {
           prompt: agents.briefs.turnPrompt(claim.inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),

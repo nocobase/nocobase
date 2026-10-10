@@ -111,3 +111,29 @@ nb-studio completion fish > ~/.config/fish/completions/studio.fish    # fish
 | `--no-color`       | Plain text                                                                                                           |
 
 A missing argument is asked for in a terminal; without one the command fails with `MISSING_ARGUMENT` and suggestions naming what to pass. A business command's `--json` result is the API's answer, so a script reads `.result.data`; a failure's `.error.code` is the API's reason. Exit codes: 0 ok, 1 general, 2 network, 3 authentication or permission, 4 not found, 5 invalid input, 6 conflict, 7 a plan is required.
+
+## Choosing the application baseline
+
+Before assigning application initialization, record the intended framework generation, template, package source and application directory in the project description. Issue runs receive that description as project requirements. A design proposal's revision (for example, “v3”) does not select a framework version. For existing code, inspect its own `AGENTS.md` and package metadata first; leave a mismatch for the owner to resolve rather than overwriting it.
+
+Studio's project setup supports the NocoBase 3 default template for both new repositories and runner directories. Read `nb-studio docs project setup create` for the current schema. For a local application, the request file can contain:
+
+```json
+{
+  "name": "Support tickets",
+  "description": "NocoBase 3; internal support staff enter tickets.",
+  "codeLocation": "runnerDirectory",
+  "initAgentId": "<initialization-agent-id>",
+  "runnerDirectory": {
+    "runnerId": "<runner-id>",
+    "path": "/srv/support-tickets",
+    "init": { "method": "nocobase", "template": "default" }
+  }
+}
+```
+
+After confirming the intended CLI profile and checking for an existing project, submit it with `nb-studio project setup create --file project.json --profile <profile>`. The equivalent form choice is **Initialize a NocoBase 3 application** under **Directory on a runner**. This creates an initialization issue with fixed `pnpm create @nocobase/app` instructions. The application lives in `app/` inside the selected directory. Existing files must be inspected and preserved. Do not also supply `initPrompt`; that field remains available for custom initialization when no template is selected.
+
+The saved template is included in subsequent issue runs, even after initialization completes or another Agent takes over. It applies only to the linked working directory, not unrelated code in the project. Existing ordinary directories are not automatically classified as NocoBase 3. For those projects, record confirmed requirements in the project description; do not add the same directory again just to change its baseline.
+
+The initializer uses the configured npm registry (public npm by default), honors an explicit `NOCOBASE_REGISTRY` override, and requires Node.js 24 or later and pnpm 11 on the runner. Check the generated application's `nocobase.templatePackage`, `AGENTS.md`, and synchronized local skills; package version numbers alone do not identify the framework generation. Runner download and command permissions remain separate requirements; see [Agent execution](agents.md). If your current identity cannot use project setup, report that limitation and use an authorized setup flow; do not switch identity to bypass it.

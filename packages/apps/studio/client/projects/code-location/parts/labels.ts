@@ -153,7 +153,7 @@ export const defaultNewProjectFormLabels: NewProjectFormLabels = {
   },
   initMethods: {
     nocobase: {
-      title: 'NocoBase app (default template)',
+      title: 'NocoBase 3 app (default template)',
       description:
         'An agent on a runner creates the application with create-app’s default template and pushes it as the first commit.',
     },

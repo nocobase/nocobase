@@ -785,6 +785,7 @@ describe('claims and endings', () => {
       [
         `- Report progress and results as comments on issue ${key} (${comment}). People read the comments, not your terminal.`,
         `- Files on issue ${key} and its comments are listed in the context with their ids: save one with \`nb-studio issue attachment download <file-id>\`.`,
+        '- Before initializing an application, check the project description, selected application baseline, and existing code and AGENTS.md for the intended framework generation, template and package source. A proposal revision (such as v3) is not a framework version. If the target is unspecified or conflicts with existing code, ask for that requirement before installing; do not guess an initializer from a familiar tutorial.',
         '- Move the status only to the statuses the task says you may move it to; a move may wait for a person to approve it.',
         '- When you are done, or blocked and need a person, say so in a comment and end your turn. Do not wait for an answer: new comments reach you as new input.',
         '',
