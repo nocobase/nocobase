@@ -60,8 +60,13 @@ import { z } from 'zod';
  *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
+ *
+ * Version 8 added the `npm` feature: a runner that has it may be told to update from the npm registry
+ * (`HeartbeatResponse.npmUpgrade`) when the application serves no tarball of it. Nothing of version 7 changed, so a
+ * server speaking 8 serves runners speaking 3 to 7 and offers them only what it offered before. The number moved so
+ * that a runner announcing `npm` is refused cleanly by a server that does not know it.
  */
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 8;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -90,6 +95,8 @@ export function isProtocolSupported(version: number): boolean {
  * - `jobs.build`: executes build jobs (`jobs.ts`, `jobFeature`).
  * - `tools.refresh`: accepts a tool detection request on heartbeat and acknowledges the fresh report.
  * - `mounts`: places the run's mounts (`RunPayload.mounts`) in its work directory before the agent starts.
+ * - `npm` (`NPM_UPGRADE_FEATURE`, protocol 8): updates itself from the npm registry when the application names a
+ *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
  */
 export const RUNNER_FEATURES = [
   'input',
@@ -103,9 +110,13 @@ export const RUNNER_FEATURES = [
   'jobs.build',
   'mounts',
   'tools.refresh',
+  'npm',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];
+
+/** The feature with which a runner says it reads `HeartbeatResponse.npmUpgrade`. */
+export const NPM_UPGRADE_FEATURE: RunnerFeature = 'npm';
 
 export const RunnerFeatureSchema: z.ZodType<RunnerFeature> =
   z.enum(RUNNER_FEATURES);

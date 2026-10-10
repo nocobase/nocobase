@@ -172,7 +172,9 @@ const runtimesZhCN: RuntimesLocale = {
       '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。',
     createCredential: '生成安装命令',
     advanced: '高级：按编码工具限制',
-    run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI（无需 Node.js），注册 runner 并设置为登录后自动启动：',
+    run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI，注册 runner 并设置为登录后自动启动：',
+    nodeRequired:
+      '主机需要安装 Node.js 24 或更高版本（可用 node --version 查看）。未安装时命令会停止并说明如何安装。',
     installed: '已经装好 nocobase-runner？改为注册它：',
     unsupported: 'runner 暂不支持 Windows，请使用 macOS、Linux 或 WSL。',
     tokenOnce:

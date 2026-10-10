@@ -11,7 +11,7 @@ const sources: readonly MigrationSource[] = [
   },
 ];
 
-describeMigration('202610100031_ag_add_runner_tool_refresh', {
+describeMigration('202610220021_ag_add_runner_tool_refresh', {
   sources,
   up: async ({ expectCollection }) => {
     await expectCollection('agRunEvents').toHaveIndex(['runId', 'type', 'seq']);
