@@ -6,6 +6,12 @@
  * - By default it installs the CLI alone, with a download token a signed-in person created (such as an application's "Use the application in
  *   your agent" prompt): `curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --token <download token>`,
  *   then tells the person to sign in with `<cli> login --server <server>`.
+ * - With `--api-key-env <variable>` instead of a token it installs the CLI alone with the API key in that environment
+ *   variable, for a machine with no browser and nobody signed in, such as CI that already holds a key among its
+ *   secrets: `… | sh -s -- --api-key-env ACME_API_KEY`. The key never appears in an argument, the output or the
+ *   installation: curl reads it from a 0600 file in the script's temporary directory, redirects are not followed so
+ *   it reaches no other address, and nothing is saved, so the CLI is not signed in afterwards. A key that is not
+ *   accepted fails the script even when the CLI is installed already.
  * - With `--runner` ("Add runtime"'s command) it installs the CLI and the runner, and makes this host a runtime with a
  *   one-time registration token: `… | sh -s -- --runner --server <server> --token <registration token>`. A runtime
  *   gets the CLI too, which its runs use when the runner cannot take the CLI the application serves itself.
@@ -119,14 +125,19 @@ const INSTALL_SCRIPT_TEMPLATE = `#!/bin/sh
 # Installs the @CLI@ CLI this application serves; with --runner, also installs ${RUNNER_PRODUCT}, registers this host
 # with the application as a runtime and starts the runner as a user service. Usage:
 #   curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --token <download token> [options]
+#   curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --api-key-env <variable> [options]
 #   curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --runner --server <url> --token <registration token> [options]
 set -eu
 
 usage() {
   cat <<'USAGE'
 Usage: install.sh --token <token> [--server <url>] [--runner] [options]
+       install.sh --api-key-env <variable> [--server <url>] [options]
 
-  --token <token>         A download token (the CLI alone) or, with --runner, a registration token from "Add runtime"
+  --token <token>         A short-lived download token (the CLI alone) or, with --runner, a registration token from "Add runtime"
+  --api-key-env <name>    Install the CLI alone with the API key in the environment variable <name> (such as one from
+                          your CI's secrets) instead of a token; not with --token or --runner. The key is not saved,
+                          so @CLI@ is not signed in afterwards.
   --server <url>          The application (default: the one this script came from)
   --runner                Also install ${RUNNER_PRODUCT}, register this host as a runtime and start it as a user service
   --prefix <dir>          Where to install @CLI@ (default: ~/.local/share/@CLI@, or NOCOBASE_CLI_INSTALL_DIR)
@@ -145,6 +156,8 @@ cli=@CLI@
 runner_cmd=${RUNNER_PRODUCT}
 server="@DEFAULT_SERVER@"
 token=""
+api_key_env=""
+key_mode=0
 name=""
 prefix="\${NOCOBASE_CLI_INSTALL_DIR:-}"
 runner_prefix="\${NOCOBASE_RUNNER_INSTALL_DIR:-}"
@@ -158,6 +171,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --server) server="\${2:-}"; shift 2 ;;
     --token) token="\${2:-}"; shift 2 ;;
+    --api-key-env) api_key_env="\${2:-}"; key_mode=1; shift 2 ;;
     --runner) runner=1; shift ;;
     --name) name="\${2:-}"; runner_only="$1"; shift 2 ;;
     --prefix) prefix="\${2:-}"; shift 2 ;;
@@ -170,7 +184,7 @@ while [ $# -gt 0 ]; do
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
-if [ -z "$server" ] || [ -z "$token" ]; then
+if [ -z "$server" ] || { [ -z "$token" ] && [ "$key_mode" = 0 ]; }; then
   usage >&2
   exit 2
 fi
@@ -189,17 +203,36 @@ run() {
   fi
 }
 
-# The token says what it is for; the other kind fails here, before anything is installed.
-case "$token" in
-  ${CREDENTIAL_PREFIXES.download}*)
-    [ "$runner" = 0 ] || fail "This is a download token: it installs the $cli CLI only. To make this host a runtime, use the command from Agent team > Runtimes > Add runtime, which has --runner and a registration token."
-    header="${HEADERS.downloadToken}" ;;
-  ${CREDENTIAL_PREFIXES.registration}*)
-    [ "$runner" = 1 ] || fail "This is a runtime registration token: run the command with --runner, as Add runtime shows it. To install the CLI alone, use a download token."
-    header="${HEADERS.registrationToken}" ;;
-  *)
-    if [ "$runner" = 1 ]; then header="${HEADERS.registrationToken}"; else header="${HEADERS.downloadToken}"; fi ;;
-esac
+api_key=""
+header=""
+if [ "$key_mode" = 1 ]; then
+  # The key is read from the environment, never from an argument, so it stays out of the shell history and ps.
+  [ -z "$token" ] || fail "--api-key-env and --token are alternatives: pass one of them."
+  [ "$runner" = 0 ] || fail "--api-key-env installs the $cli CLI only. To make this host a runtime, use the command from Agent team > Runtimes > Add runtime, which has --runner and a registration token."
+  case "$api_key_env" in
+    ''|[0-9]*|*[!A-Za-z0-9_]*) fail "--api-key-env takes the name of an environment variable that holds the API key, such as ACME_API_KEY, not the key itself." ;;
+  esac
+  api_key="$(printenv "$api_key_env")" || fail "$api_key_env is not set: export it with the API key before running this script."
+  [ -n "$api_key" ] || fail "$api_key_env is empty: export it with the API key before running this script."
+  nl='
+'
+  cr="$(printf '\\r')"
+  case "$api_key" in
+    *"$nl"*|*"$cr"*) fail "$api_key_env holds more than one line; it must hold the API key alone." ;;
+  esac
+else
+  # The token says what it is for; the other kind fails here, before anything is installed.
+  case "$token" in
+    ${CREDENTIAL_PREFIXES.download}*)
+      [ "$runner" = 0 ] || fail "This is a download token: it installs the $cli CLI only. To make this host a runtime, use the command from Agent team > Runtimes > Add runtime, which has --runner and a registration token."
+      header="${HEADERS.downloadToken}" ;;
+    ${CREDENTIAL_PREFIXES.registration}*)
+      [ "$runner" = 1 ] || fail "This is a runtime registration token: run the command with --runner, as Add runtime shows it. To install the CLI alone, use a download token."
+      header="${HEADERS.registrationToken}" ;;
+    *)
+      if [ "$runner" = 1 ]; then header="${HEADERS.registrationToken}"; else header="${HEADERS.downloadToken}"; fi ;;
+  esac
+fi
 if [ "$runner" = 0 ] && [ -n "$runner_only" ]; then
   fail "$runner_only applies only with --runner."
 fi
@@ -230,6 +263,23 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT INT TERM
 runner_bin="$runner_prefix/current/bin/$runner_cmd"
 
+if [ "$key_mode" = 1 ]; then
+  # curl reads the key from a config file only this user can read, so it is in no command line; the file goes with
+  # the temporary directory. Inside the quotes, a backslash and a double quote are escaped.
+  escaped="$(printf '%s' "$api_key" | sed 's/[\\\\"]/\\\\&/g')"
+  (umask 077 && printf 'header = "x-api-key: %s"\\n' "$escaped" >"$tmp/auth")
+  unset escaped
+fi
+
+# A request with the credential: the API key from its file, or the token as a header.
+fetch() {
+  if [ "$key_mode" = 1 ]; then
+    curl -K "$tmp/auth" "$@"
+  else
+    curl -H "$header: $token" "$@"
+  fi
+}
+
 # Whether this host already runs an installed runner registered with this application.
 registered() {
   [ -x "$runner_bin" ] && "$runner_bin" status --json 2>/dev/null | grep -F "\\"server\\": \\"$server\\"" >/dev/null
@@ -245,11 +295,14 @@ install_product() {
   dir="$2"
   mode="$3"
   installed=new
-  status="$(curl -sS -o "$tmp/resolve" -w '%{http_code}' \\
-    -H "$header: $token" \\
+  status="$(fetch -sS -o "$tmp/resolve" -w '%{http_code}' \\
     "$server/api/agents/dist/products/$product/targets/$target?format=env")" ||
     fail "Could not reach $server."
-  if [ "$status" = 401 ] && [ "$runner" = 1 ] && registered; then
+  if [ "$key_mode" = 1 ] && { [ "$status" = 401 ] || [ "$status" = 403 ]; }; then
+    # Unlike a used-up download token, a key that is refused is a mistake to report, whatever is installed already.
+    message="$(sed -n 's/.*"message":"\\([^"]*\\)".*/\\1/p' "$tmp/resolve")"
+    fail "$server did not accept the API key in $api_key_env ($status\${message:+: $message}). Check that the key is valid, not expired or revoked; nothing was changed."
+  elif [ "$status" = 401 ] && [ "$runner" = 1 ] && registered; then
     installed=used
     return 0
   elif [ "$status" = 401 ] && [ "$runner" = 0 ] && [ -x "$dir/current/bin/$product" ]; then
@@ -283,7 +336,20 @@ install_product() {
     say "$product $version for $target is already installed in $dest."
   else
     say "Downloading $product $version for $target from $server ..."
-    run curl -fSL --progress-bar -H "$header: $token" -o "$tmp/$product.tar.gz" "$server$url"
+    if [ "$key_mode" = 0 ]; then
+      run curl -fSL --progress-bar -H "$header: $token" -o "$tmp/$product.tar.gz" "$server$url"
+    elif [ "$dry_run" = 1 ]; then
+      say "+ curl -S --progress-bar -K <the API key in $api_key_env> -o $tmp/$product.tar.gz $server$url"
+    else
+      # Redirects are not followed: curl would send the key on to wherever they point.
+      code="$(fetch -S --progress-bar -w '%{http_code}' -o "$tmp/$product.tar.gz" "$server$url")" ||
+        fail "Could not download from $server."
+      case "$code" in
+        200) ;;
+        3??) fail "$server answered the download with a redirect ($code), which is not followed with an API key. Pass --server as the address the application answers at itself." ;;
+        *) fail "$server answered the download with $code." ;;
+      esac
+    fi
     if [ "$dry_run" = 0 ]; then
       actual="$(sha256 "$tmp/$product.tar.gz")"
       [ "$actual" = "$checksum" ] || fail "The download does not match its SHA-256 (expected $checksum, got $actual)."
@@ -356,7 +422,11 @@ case ":$PATH:" in
   *":$bin_dir:"*) ;;
   *) say "Add $bin_dir to your PATH to run $cli from a shell: export PATH=\\"$bin_dir:\\$PATH\\"" ;;
 esac
-if [ "$runner" = 0 ]; then
+if [ "$key_mode" = 1 ]; then
+  say "The API key was used only to download $cli: it is not saved, and $cli is not signed in."
+  say "Next: $cli reads its server and an API key from environment variables (\\"$cli login --help\\" names them). Set them to $server and the key, and check with: $cli whoami --json"
+  say "To keep the key on this machine instead: $cli login --server $server --api-key-stdin < <file with the key>"
+elif [ "$runner" = 0 ]; then
   say "Next: $cli login --server $server"
 fi
 `;
@@ -372,7 +442,7 @@ export function createInstallRoutes(options: InstallRoutesOptions): Hono {
       // Plumbing: piped to a shell by "Add runtime".
       ...cliRoute(false),
       description:
-        'The POSIX shell script behind the one-line installs of the application\'s CLI and the runner (`nocobase-runner`). `curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --token <download token>` installs the CLI alone for the platform and tells the person to sign in; with `--runner` and a registration token from "Add runtime" it also installs the runner, registers the host as a runtime and starts the runner as a user service. A token of the other kind fails before anything is installed. It needs no credential and carries none; the token is an argument to the script. The script defaults `--server` to the address it was requested at.',
+        'The POSIX shell script behind the one-line installs of the application\'s CLI and the runner (`nocobase-runner`). `curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --token <download token>` installs the CLI alone for the platform and tells the person to sign in; `--api-key-env <variable>` instead of `--token` installs it with the API key in that environment variable, which is sent only to this application and not saved; with `--runner` and a registration token from "Add runtime" it also installs the runner, registers the host as a runtime and starts the runner as a user service. A token of the other kind fails before anything is installed. It needs no credential and carries none; the token is an argument to the script, the API key an environment variable. The script defaults `--server` to the address it was requested at.',
       security: [],
       responses: {
         200: {

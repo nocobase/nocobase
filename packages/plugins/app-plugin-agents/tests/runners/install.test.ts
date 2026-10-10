@@ -2,7 +2,8 @@
 /**
  * The install script, run for real against the distribution routes: a stand-in acme tarball is resolved, downloaded,
  * checked and unpacked into a temporary prefix, and the stand-in records what the script asked it to do. By default it
- * installs the CLI alone with a download token; `--runner` ("Add runtime") also registers and starts the runner.
+ * installs the CLI alone with a download token, or with `--api-key-env` an API key; `--runner` ("Add runtime") also
+ * registers and starts the runner.
  */
 import { execFile, execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -75,6 +76,13 @@ let harness: Harness;
 let server: Server;
 let base = '';
 
+/** The API key the test server accepts, with the characters a curl config file has to escape. */
+const apiKey = 'acme_key "quoted" \\back';
+/** What each request carried: its path and its `x-api-key`. */
+const requests: { url: string; apiKey: string | undefined }[] = [];
+/** Answers the tarball downloads with a redirect to another address, when set. */
+let redirectDownloadsTo: string | undefined;
+
 beforeAll(async () => {
   // Each product in a manifest of its own, as `nocobase cli build` writes it.
   const cli = buildStandIn('acme', '0.7.0');
@@ -112,15 +120,33 @@ beforeAll(async () => {
   });
   const app = new Hono();
   app.route('/api', harness.app);
+  // The same application served under a base path, as at `/main`.
+  app.route('/main/api', harness.app);
   app.route('/api/agents/dist', createInstallRoutes({ cli: () => 'acme' }));
   server = createServer((request, response) => {
     void (async () => {
+      const key = request.headers['x-api-key'];
+      requests.push({
+        url: request.url ?? '/',
+        apiKey: typeof key === 'string' ? key : undefined,
+      });
+      if (redirectDownloadsTo && request.url?.includes('/files/')) {
+        response.writeHead(302, {
+          location: `${redirectDownloadsTo}${request.url}`,
+        });
+        response.end();
+        return;
+      }
+      const headers = Object.entries(request.headers).flatMap(
+        ([name, value]) =>
+          typeof value === 'string' ? [[name, value] as [string, string]] : [],
+      );
+      // The harness signs a person in by `x-test-user`; the accepted API key is that person here.
+      if (key === apiKey) headers.push(['x-test-user', 'owner']);
       const answer = await app.fetch(
         new Request(`http://localhost${request.url ?? '/'}`, {
           method: request.method ?? 'GET',
-          headers: Object.entries(request.headers).flatMap(([key, value]) =>
-            typeof value === 'string' ? [[key, value] as [string, string]] : [],
-          ),
+          headers,
         }),
       );
       response.writeHead(answer.status, Object.fromEntries(answer.headers));
@@ -431,6 +457,14 @@ describe('install script', () => {
       expect(result.code).toBe(1);
       expect(result.stderr).toContain('does not match its SHA-256');
       expect(existsSync(path.join(prefix, 'current'))).toBe(false);
+      // The same with an API key.
+      const withKey = await install(
+        ['--server', base, '--api-key-env', 'ACME_CI_KEY', '--prefix', prefix],
+        { ACME_CI_KEY: apiKey },
+      );
+      expect(withKey.code).toBe(1);
+      expect(withKey.stderr).toContain('does not match its SHA-256');
+      expect(existsSync(path.join(prefix, 'current'))).toBe(false);
     } finally {
       writeFileSync(manifestFile, manifest);
     }
@@ -583,5 +617,218 @@ describe('install script, the CLI alone', () => {
     expect(runnerFlag.code).toBe(1);
     expect(runnerFlag.stderr).toContain('--name applies only with --runner.');
     expect(existsSync(prefix)).toBe(false);
+  });
+});
+
+describe('install script, the CLI alone with an API key', () => {
+  const keyEnv = 'ACME_CI_KEY';
+
+  /** Everything a run left behind that a person could read: its output, and every file it wrote. */
+  function leaked(
+    result: { stdout: string; stderr: string },
+    dirs: readonly string[],
+  ): boolean {
+    const files = dirs
+      .filter((dir) => existsSync(dir))
+      .flatMap((dir) =>
+        execFileSync('find', [dir, '-type', 'f'], { encoding: 'utf8' })
+          .split('\n')
+          .filter(Boolean),
+      );
+    return [
+      result.stdout,
+      result.stderr,
+      ...files.map((file) => readFileSync(file, 'latin1')),
+    ].some((text) => text.includes(apiKey) || text.includes('quoted'));
+  }
+
+  it('installs from an empty directory, under a base path, without signing in or registering', async () => {
+    const home = path.join(root, 'key-home');
+    const prefix = path.join(home, 'prefix');
+    const binDir = path.join(home, 'bin');
+    const tmp = path.join(root, 'key-tmp');
+    mkdirSync(tmp, { recursive: true });
+    const log = path.join(root, 'calls.log');
+    rmSync(log, { force: true });
+    requests.length = 0;
+    const result = await install(
+      [
+        '--server',
+        `${base}/main`,
+        '--api-key-env',
+        keyEnv,
+        '--prefix',
+        prefix,
+        '--bin-dir',
+        binDir,
+      ],
+      { [keyEnv]: apiKey, HOME: home, TMPDIR: tmp },
+    );
+    expect(result.stderr).not.toContain('acme install:');
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('Checksum verified.');
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/0.7.0');
+    expect(
+      JSON.parse(readFileSync(path.join(prefix, 'install.json'), 'utf8')),
+    ).toEqual({ prefix, binLink: path.join(binDir, 'acme'), mode: 'cli' });
+    expect(result.stdout).toContain(
+      'The API key was used only to download acme: it is not saved, and acme is not signed in.',
+    );
+    expect(result.stdout).toContain('acme whoami --json');
+    expect(result.stdout).toContain(
+      `acme login --server ${base}/main --api-key-stdin`,
+    );
+    expect(result.stdout).not.toContain('Next: acme login');
+
+    // Two requests, both to the application under its base path and both with the key exactly as it was given.
+    expect(requests.map((request) => request.url)).toEqual([
+      `/main/api/agents/dist/products/acme/targets/${target}?format=env`,
+      `/main/api/agents/dist/products/acme/versions/0.7.0/files/acme-v0.7.0-${target}.tar.gz`,
+    ]);
+    expect(requests.every((request) => request.apiKey === apiKey)).toBe(true);
+    // No runner was run, no sign-in or CLI configuration was written, and the key is nowhere but the environment.
+    expect(existsSync(log)).toBe(false);
+    expect(execFileSync('ls', ['-A', home], { encoding: 'utf8' }).trim()).toBe(
+      'bin\nprefix',
+    );
+    expect(leaked(result, [home, tmp])).toBe(false);
+    expect(execFileSync('ls', ['-A', tmp], { encoding: 'utf8' })).toBe('');
+  });
+
+  it('prints what it would do without the key', async () => {
+    const prefix = path.join(root, 'key-dry');
+    const result = await install(
+      [
+        '--server',
+        base,
+        '--api-key-env',
+        keyEnv,
+        '--prefix',
+        prefix,
+        '--dry-run',
+      ],
+      { [keyEnv]: apiKey },
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain(
+      `+ curl -S --progress-bar -K <the API key in ${keyEnv}>`,
+    );
+    expect(leaked(result, [])).toBe(false);
+    expect(existsSync(prefix)).toBe(false);
+  });
+
+  it('refuses a missing, empty or multi-line key, a key in place of a name, and a token or --runner with it', async () => {
+    const prefix = path.join(root, 'key-refused');
+    const cases: [readonly string[], Record<string, string>, string][] = [
+      [['--api-key-env', keyEnv], {}, `${keyEnv} is not set`],
+      [['--api-key-env', keyEnv], { [keyEnv]: '' }, `${keyEnv} is empty`],
+      [
+        ['--api-key-env', keyEnv],
+        { [keyEnv]: `${apiKey}\nsecond` },
+        'holds more than one line',
+      ],
+      [
+        ['--api-key-env', apiKey],
+        {},
+        'takes the name of an environment variable',
+      ],
+      [['--api-key-env', ''], {}, 'takes the name of an environment variable'],
+      [
+        ['--api-key-env', keyEnv, '--token', 'fgdl_x'],
+        { [keyEnv]: apiKey },
+        '--api-key-env and --token are alternatives',
+      ],
+      [
+        ['--api-key-env', keyEnv, '--runner'],
+        { [keyEnv]: apiKey },
+        '--api-key-env installs the acme CLI only',
+      ],
+    ];
+    for (const [args, env, message] of cases) {
+      requests.length = 0;
+      const result = await install(
+        ['--server', base, ...args, '--prefix', prefix],
+        env,
+      );
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain(message);
+      expect(requests).toEqual([]);
+    }
+    expect(existsSync(prefix)).toBe(false);
+  });
+
+  it('fails on a key that is not accepted, even where the CLI is installed already', async () => {
+    const prefix = path.join(root, 'key-rejected');
+    const fresh = await install(
+      ['--server', base, '--api-key-env', keyEnv, '--prefix', prefix],
+      { [keyEnv]: 'acme_revoked_key' },
+    );
+    expect(fresh.code).toBe(1);
+    expect(fresh.stderr).toContain(
+      `did not accept the API key in ${keyEnv} (401`,
+    );
+    expect(existsSync(prefix)).toBe(false);
+
+    const binDir = path.join(root, 'key-rejected-bin');
+    expect(
+      (
+        await install(
+          [
+            '--server',
+            base,
+            '--api-key-env',
+            keyEnv,
+            '--prefix',
+            prefix,
+            '--bin-dir',
+            binDir,
+          ],
+          { [keyEnv]: apiKey },
+        )
+      ).code,
+    ).toBe(0);
+    const again = await install(
+      [
+        '--server',
+        base,
+        '--api-key-env',
+        keyEnv,
+        '--prefix',
+        prefix,
+        '--bin-dir',
+        binDir,
+      ],
+      { [keyEnv]: 'acme_expired_key' },
+    );
+    expect(again.code).toBe(1);
+    expect(again.stderr).toContain(`did not accept the API key in ${keyEnv}`);
+    expect(again.stdout).not.toContain('is installed');
+  });
+
+  it('does not follow a redirect, so the key reaches no other address', async () => {
+    const elsewhere: (string | undefined)[] = [];
+    const other = createServer((request, response) => {
+      const key = request.headers['x-api-key'];
+      elsewhere.push(typeof key === 'string' ? key : undefined);
+      response.writeHead(200);
+      response.end('not the tarball');
+    });
+    await new Promise<void>((resolve) => other.listen(0, '127.0.0.1', resolve));
+    const address = other.address();
+    redirectDownloadsTo = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+    try {
+      const prefix = path.join(root, 'key-redirected');
+      const result = await install(
+        ['--server', base, '--api-key-env', keyEnv, '--prefix', prefix],
+        { [keyEnv]: apiKey },
+      );
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain('with a redirect (302)');
+      expect(elsewhere).toEqual([]);
+      expect(existsSync(path.join(prefix, 'current'))).toBe(false);
+    } finally {
+      redirectDownloadsTo = undefined;
+      await new Promise((resolve) => other.close(resolve));
+    }
   });
 });

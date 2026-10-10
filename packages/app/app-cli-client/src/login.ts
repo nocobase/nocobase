@@ -78,7 +78,8 @@ export function loginCommand(app: AppCliConfig): Command.Class {
       `Opens ${app.displayName} in the browser, where you approve the code it shows; the CLI then holds a session of ` +
       `its own, renewed while you use it, which it keeps in the system keychain (the macOS Keychain, the Secret ` +
       `Service on Linux or the Windows Credential Manager; where there is none, ~/${app.stateDir}/config.json, 0600, ` +
-      `with a warning). Without a browser, open the address it prints anywhere you are signed in. For CI, create an ` +
+      `with a warning). Without a browser here (--no-browser), open the address it prints on another device where you ` +
+      `are signed in: someone still has to approve it there. For CI and other machines nobody attends, create an ` +
       `API key in the application and pass it on standard input with --api-key-stdin` +
       (app.envPrefix === undefined
         ? '.'

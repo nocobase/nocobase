@@ -334,9 +334,12 @@ describe('agents API document', () => {
       ['POST', '/api/agents/runners/jobs/{jobId}/lease'],
       ['GET', '/api/agents/dist/manifest'],
       ['GET', '/api/agents/dist/installScript'],
-      ['POST', '/api/agents/dist/downloadTokens'],
     ] as const)
       expect(cli(method, path)).toBe(false);
+    // A signed-in person hands a download token to a machine without a browser.
+    expect(cli('POST', '/api/agents/dist/downloadTokens')).toMatchObject({
+      command: 'install-token create',
+    });
     // Every runToken route names the business action a run must hold.
     expect(
       operations().filter(
