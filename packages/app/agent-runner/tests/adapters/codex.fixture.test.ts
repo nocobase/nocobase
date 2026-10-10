@@ -7,11 +7,18 @@
  * - stop: the run is stopped while `sleep 60` waits for approval; the turn
  *   is interrupted.
  */
-import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { beforeAll, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 
 import { CodexAdapter } from '../../src/agent/adapters/codex.ts';
 import type {
@@ -28,9 +35,12 @@ async function fixture(name: string): Promise<TrafficLine[]> {
   ) as TrafficLine[];
 }
 
+let workDir: string;
+let binDir: string;
+
 function session(prompt: string): AdapterSession {
   return {
-    workDir: '/work',
+    workDir,
     prompt,
     systemPrompt: 'brief',
     effort: 'low',
@@ -54,9 +64,19 @@ const installed = {
 beforeAll(async () => {
   // detect() looks for an executable `codex`; a stub stands in for it.
   const bin = await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-bin-'));
+  binDir = bin;
+  workDir = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-work-')),
+  );
   await writeFile(path.join(bin, 'codex'), '#!/bin/sh\n');
   await chmod(path.join(bin, 'codex'), 0o755);
   installed.searchPath = bin;
+});
+
+afterAll(async () => {
+  await Promise.all(
+    [binDir, workDir].map((dir) => rm(dir, { recursive: true, force: true })),
+  );
 });
 
 async function drain(
@@ -97,7 +117,7 @@ it('replays a recorded run with a denial and a steer', async () => {
   expect(fake.options.env).toEqual({ PATH: '/usr/bin' });
   const threadStart = fake.received.find((m) => m.method === 'thread/start');
   expect(threadStart?.params).toMatchObject({
-    cwd: '/work',
+    cwd: workDir,
     approvalPolicy: 'untrusted',
     sandbox: 'workspace-write',
     developerInstructions: 'brief',
@@ -105,7 +125,10 @@ it('replays a recorded run with a denial and a steer', async () => {
   const turnStart = fake.received.find((m) => m.method === 'turn/start');
   expect(turnStart?.params).toMatchObject({
     effort: 'low',
-    sandboxPolicy: { type: 'workspaceWrite', writableRoots: ['/work'] },
+    sandboxPolicy: {
+      type: 'workspaceWrite',
+      writableRoots: [workDir, path.join(workDir, '.agents')],
+    },
   });
   const steer = fake.received.find((m) => m.method === 'turn/steer');
   expect(steer?.params).toMatchObject({

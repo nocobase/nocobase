@@ -222,6 +222,8 @@ export interface AgentSummary extends Agent {
    * may change every agent; others the agents their role's "related" level reaches (the ones they own).
    */
   readonly canEdit: boolean;
+  /** Whether the caller owns it; the list shows the caller's own agents after the ones everyone can use. */
+  readonly owned: boolean;
   /** Whether the caller may wake it, and so make a private copy of it for themselves (`ChatApi.copyAgent`). */
   readonly canCopy: boolean;
 }

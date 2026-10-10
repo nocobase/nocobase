@@ -23,10 +23,11 @@ import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 
-import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
+import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import type {
   CanUseTool,
+  ModelInfo,
   HookCallback,
   Options,
   PermissionResult,
@@ -37,6 +38,8 @@ import type {
 
 import { classifyClaudeFailure } from './classify.ts';
 import { detectExec } from './detect-exec.ts';
+import { withDetectionEnvironment } from './detection.ts';
+import { boundedModels } from './models.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { permissionInputSummary } from './input-summary.ts';
 import type { PermissionInputSummary } from './input-summary.ts';
@@ -228,12 +231,14 @@ export class ClaudeAdapter implements AgentAdapter {
   private readonly options: Required<
     Omit<ClaudeAdapterOptions, 'searchPath' | 'env'>
   > & { searchPath: string };
+  private readonly detectionEnv?: Record<string, string>;
   private detection?: Promise<{
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }>;
 
   constructor(options: ClaudeAdapterOptions = {}) {
+    this.detectionEnv = options.env;
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CLAUDE_VERSION,
       exec: options.exec ?? detectExec(options.env),
@@ -252,6 +257,76 @@ export class ClaudeAdapter implements AgentAdapter {
   /** The `claude` `start()` runs; undefined when there is none recent enough. */
   async resolveExecutable(): Promise<ResolvedExecutable | undefined> {
     return (await this.inspect()).executable;
+  }
+
+  /** Asks Claude Code for its models (`supportedModels()`) without sending a prompt. */
+  async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
+    const executable = await this.resolveExecutable();
+    if (!executable) return { modelsDetectionStatus: 'unsupported' };
+    return withDetectionEnvironment(
+      signal,
+      async (cwd, env) => {
+        const input = new Channel<SDKUserMessage>();
+        const abortController = new AbortController();
+        let onAbort: () => void = () => {};
+        const aborted = new Promise<never>((_resolve, reject) => {
+          onAbort = () => {
+            abortController.abort();
+            reject(new Error('Model detection timed out'));
+          };
+        });
+        aborted.catch(() => {});
+        signal.addEventListener('abort', onAbort, { once: true });
+        if (signal.aborted) onAbort();
+        const q = query({
+          prompt: input,
+          options: {
+            cwd,
+            env,
+            settingSources: [],
+            abortController,
+            pathToClaudeCodeExecutable: executable.path,
+            stderr: () => {},
+          },
+        });
+        try {
+          const models: ModelInfo[] = await Promise.race([
+            q.supportedModels(),
+            aborted,
+          ]);
+          if (!Array.isArray(models))
+            return {
+              modelsDetectionStatus: 'failed',
+              modelsDetectionError: 'Invalid model listing response',
+            };
+          return {
+            modelsDetectionStatus: 'detected',
+            models: boundedModels(
+              models.map((model) => ({
+                // An alias row (`sonnet`) is reported by the model it resolves to.
+                id: model.resolvedModel ?? model.value,
+                efforts:
+                  model.supportsEffort === false
+                    ? []
+                    : model.supportedEffortLevels,
+              })),
+            ),
+          };
+        } catch {
+          return {
+            modelsDetectionStatus: 'failed',
+            modelsDetectionError: signal.aborted
+              ? 'Model detection timed out'
+              : 'Model detection failed',
+          };
+        } finally {
+          signal.removeEventListener('abort', onAbort);
+          input.close();
+          q.close();
+        }
+      },
+      this.detectionEnv,
+    );
   }
 
   private inspect(): Promise<{

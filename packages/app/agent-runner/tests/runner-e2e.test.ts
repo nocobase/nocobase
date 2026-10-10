@@ -218,6 +218,13 @@ describe('runner end to end', () => {
     expect(envOutput).toContain(`TMPDIR=${workDir}/.nocobase-runner/tmp`);
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
     expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
+    // The runner's own Node.js and pnpm are first on PATH, and pnpm keeps to its version.
+    for (const tool of ['node', 'pnpm'])
+      expect(
+        statSync(path.join(workDir, '.nocobase-runner', 'bin', tool)).mode &
+          0o777,
+      ).toBe(0o700);
+    expect(envOutput).toContain('pnpm_config_pm_on_fail=ignore');
 
     // The application's CLI is on the PATH and finds the run's credential, with the server filled in; the run token
     // it read is redacted from the transcript, which stays valid JSON.
@@ -278,6 +285,32 @@ describe('runner end to end', () => {
       5_000,
       'record',
     );
+  });
+
+  it("leaves the machine's Node.js and pnpm to agents with agent-tools system", async () => {
+    expect(
+      (await cli(['config', 'set', 'agent-tools', 'system'], env)).code,
+    ).toBe(0);
+    const run = server.enqueue({
+      prompt: { system: '', session: 'fresh', turn: 'bash env\nsay done' },
+    });
+    daemon();
+    await waitFor(() => run.status === 'completed', 20_000, 'the run to end');
+    const bin = path.join(
+      workDirOf(run.payload.subject.key),
+      '.nocobase-runner',
+      'bin',
+    );
+    expect(existsSync(path.join(bin, 'appcli'))).toBe(true);
+    expect(existsSync(path.join(bin, 'node'))).toBe(false);
+    expect(existsSync(path.join(bin, 'pnpm'))).toBe(false);
+    const envOutput = server
+      .events(run.payload.run.id)
+      .find(
+        (event) =>
+          event.type === 'toolResult' && event.output?.includes('PATH='),
+      )?.output;
+    expect(envOutput).not.toContain('pnpm_config_pm_on_fail');
   });
 
   it("writes a 0600 credentials file for the application's CLI and removes it on cancel", async () => {

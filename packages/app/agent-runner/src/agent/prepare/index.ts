@@ -23,6 +23,7 @@ import { workspaceStep } from './workspace.ts';
 
 export {
   agentCwd,
+  agentWorkingTrees,
   agentWritableRoots,
   PrepareError,
   type PrepareContext,

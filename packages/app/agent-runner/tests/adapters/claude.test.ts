@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -15,7 +15,7 @@ import type {
   AdapterSession,
   PermissionCheck,
 } from '../../src/agent/adapters/types.ts';
-import { calls, replay, setScript } from './fake-sdk.ts';
+import { calls, replay, setScript, setSupportedModels } from './fake-sdk.ts';
 import { createPolicy } from '../../src/core/command-policy.ts';
 import {
   SESSION_ID,
@@ -152,6 +152,108 @@ describe('detect and executable', () => {
 
   it('declares steering', () => {
     expect(new ClaudeAdapter().features()).toEqual(['steer']);
+  });
+});
+
+describe('model detection', () => {
+  it('lists models by their resolved ids with their efforts, without a prompt, and closes the query', async () => {
+    let cwd = '';
+    setSupportedModels(async (options) => {
+      cwd = options.cwd!;
+      return [
+        {
+          value: 'default',
+          resolvedModel: 'claude-sonnet-5',
+          displayName: 'Default',
+          description: '',
+          supportsEffort: true,
+          supportedEffortLevels: ['low', 'high'],
+        },
+        {
+          value: 'opus',
+          resolvedModel: 'claude-opus-5-5',
+          displayName: 'Opus',
+          description: '',
+          supportsEffort: true,
+          supportedEffortLevels: ['low', 'medium', 'high', 'xhigh', 'max'],
+        },
+        {
+          value: 'claude-haiku-4-5',
+          displayName: 'Haiku',
+          description: '',
+          supportsEffort: false,
+        },
+        { value: 'custom', displayName: 'Custom', description: '' },
+      ];
+    });
+    const adapter = new ClaudeAdapter({
+      searchPath: dir,
+      env: { PATH: dir, HOME: '/home/runner' },
+      exec: async (_file, args) =>
+        args[0] === '--version'
+          ? { code: 0, stdout: '9.0.0 (Claude Code)\n' }
+          : { code: 0, stdout: '{"loggedIn":true}' },
+    });
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [
+        { id: 'claude-sonnet-5', efforts: ['low', 'high'] },
+        {
+          id: 'claude-opus-5-5',
+          efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+        },
+        { id: 'claude-haiku-4-5', efforts: [] },
+        { id: 'custom' },
+      ],
+    });
+    expect(calls).toHaveLength(1);
+    const { options, closed } = calls[0]!;
+    expect(closed).toBe(true);
+    expect(options).toMatchObject({
+      settingSources: [],
+      env: { PATH: dir, HOME: '/home/runner' },
+      pathToClaudeCodeExecutable: path.join(dir, 'claude'),
+    });
+    expect(options.cwd).toBe(cwd);
+    await expect(readdir(cwd)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('reports unsupported without a usable claude, without calling the SDK', async () => {
+    const empty = await mkdtemp(path.join(tmpdir(), 'nocobase-runner-empty-'));
+    expect(
+      await adapterWith('9.0.0', empty).detectModels(
+        new AbortController().signal,
+      ),
+    ).toEqual({ modelsDetectionStatus: 'unsupported' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('reports a failure without its message', async () => {
+    setSupportedModels(() =>
+      Promise.reject(new Error('/private/config secret=never-upload')),
+    );
+    const result = await adapterWith('9.0.0', dir).detectModels(
+      new AbortController().signal,
+    );
+    expect(result).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection failed',
+    });
+    expect(calls[0]!.closed).toBe(true);
+  });
+
+  it('stops waiting and aborts the query when aborted', async () => {
+    setSupportedModels(() => new Promise(() => {}));
+    const controller = new AbortController();
+    const result = adapterWith('9.0.0', dir).detectModels(controller.signal);
+    while (calls.length === 0) await new Promise((r) => setTimeout(r, 5));
+    controller.abort();
+    expect(await result).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection timed out',
+    });
+    expect(calls[0]!.options.abortController?.signal.aborted).toBe(true);
+    expect(calls[0]!.closed).toBe(true);
   });
 });
 

@@ -98,7 +98,7 @@ function WakeConfirm({
             {t('workflows.wakeConfirm.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ul className='divide-y rounded-lg border text-sm'>
+        <ul className='min-w-0 divide-y rounded-lg border text-sm'>
           {(attention ?? []).map((entry) => {
             const status = definition.states.find(
               (state) => state.key === entry.statusKey,
@@ -106,10 +106,10 @@ function WakeConfirm({
             return (
               <li
                 key={`${entry.statusKey}:${entry.rule.type}`}
-                className='flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2'
+                className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2'
                 data-wake={entry.statusKey}
               >
-                <span className='font-medium'>
+                <span className='min-w-0 wrap-anywhere font-medium'>
                   {t('workflows.wakeConfirm.entering', {
                     status: name(entry.statusKey),
                   })}
@@ -121,7 +121,7 @@ function WakeConfirm({
                     statusName={name(entry.statusKey)}
                   />
                 ) : (
-                  <span>{entry.summary}</span>
+                  <span className='min-w-0 wrap-anywhere'>{entry.summary}</span>
                 )}
               </li>
             );

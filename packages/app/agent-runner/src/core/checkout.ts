@@ -217,6 +217,8 @@ export interface CheckedOutRepo {
   cache: string;
   /** The clone's `.git`, or a legacy worktree's own directory under the cache. */
   gitDir: string;
+  /** The submodules checked out in `dir`, nested ones included, as absolute paths. */
+  submodules: string[];
 }
 
 /** A working directory as the run uses it. */
@@ -750,6 +752,27 @@ export async function initSubmodules(
   return selected;
 }
 
+/** The submodules initialized in the worktree `dir`, nested ones included, as absolute paths. */
+export async function listSubmodules(dir: string): Promise<string[]> {
+  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
+  // `foreach` visits only checked-out submodules; `displaypath` is relative to this top-level worktree even in recursion.
+  // The ./ prefix and NUL terminator preserve leading/trailing whitespace through git()'s trim().
+  const listed = await git(
+    [
+      'submodule',
+      'foreach',
+      '--quiet',
+      '--recursive',
+      'printf "%s\\0" "./$displaypath"',
+    ],
+    dir,
+  );
+  return listed
+    .split('\0')
+    .filter((entry) => entry !== '')
+    .map((entry) => path.resolve(dir, entry));
+}
+
 /** The subject's working directory, locked for one run. */
 export interface WorkspaceLock {
   workDir: string;
@@ -954,6 +977,7 @@ export async function prepareDirs(
         dir,
         cache,
         gitDir,
+        submodules: await listSubmodules(dir),
       };
       const key = preparedKey(entry);
       // A checkout created again (removed by GC, say) needs its initialization again.
