@@ -1,7 +1,13 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon } from 'lucide-react';
-import { type FormEvent, type ReactElement, useState } from 'react';
+import {
+  type FormEvent,
+  type ReactElement,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
@@ -13,6 +19,7 @@ import {
 import { INITIAL_STATUS, messageText } from '../../../shared/workflows.js';
 import { pmKeys } from '../../api/keys.js';
 import { PmExecutorSelect } from '../../components/pm-executor-select.js';
+import { PmPendingFiles } from '../../components/pm-pending-files.js';
 import { PmRichTextEditor } from '../../components/pm-rich-text-editor.js';
 import { Alert, AlertDescription } from '../../components/ui/alert.js';
 import { Button } from '../../components/ui/button.js';
@@ -27,6 +34,7 @@ import { Input } from '../../components/ui/input.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { useRouteOverlay } from '../../components/use-route-overlay.js';
 import { useUnsavedChanges } from '@nocobase/app-client';
+import { useAttachmentUploads } from '../../hooks/use-attachment-uploads.js';
 import { errorText, useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
 import { useViewer } from '../../hooks/use-viewer.js';
@@ -51,12 +59,19 @@ const FORM_ID = 'pm-issue-new-form';
  * development", starting at the workflow's initial status; otherwise the server starts the issue there. Giving the
  * issue to an agent asks "Start now?" before creating, unless it starts in backlog, where nothing starts. Created, the
  * issue opens. Anything entered counts as unsaved for the enclosing `UnsavedChangesBoundary`.
+ *
+ * Files chosen, pasted (a screenshot) or dropped on the description are uploaded at once and become the new issue's own
+ * files. Nothing is sent while one still uploads, and the files stay as they are while the issue is being created. A
+ * failed create keeps them for another try; closing the form without creating deletes them.
  */
 export function NewIssueForm({
   onSubmittingChange,
+  onUploadingChange,
   onCreated,
 }: {
   readonly onSubmittingChange: (submitting: boolean) => void;
+  /** Whether a file is still uploading, for a submit button outside the form. */
+  readonly onUploadingChange?: (uploading: boolean) => void;
   /** Where to go once created; by default the issue's page. */
   readonly onCreated?: (issue: { readonly id: string }) => void;
 }): ReactElement {
@@ -96,6 +111,21 @@ export function NewIssueForm({
   const [startRequest, setStartRequest] = useState<StartRequest | null>(null);
   const [titleError, setTitleError] = useState<string>();
   const [formError, setFormError] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+  // Read at once by a second press or a paste that comes before the next render.
+  const submittingRef = useRef(false);
+  const uploads = useAttachmentUploads({ discardOnUnmount: true });
+  const { uploading } = uploads;
+  const uploadingChangeRef = useRef(onUploadingChange);
+  useEffect(() => {
+    uploadingChangeRef.current = onUploadingChange;
+  });
+  useEffect(() => {
+    uploadingChangeRef.current?.(uploading);
+  }, [uploading]);
+  const addFiles = (files: File[]): void => {
+    if (!submittingRef.current) uploads.add(files);
+  };
   const owner = ownerUserId ?? viewer?.userId ?? null;
   const starts = useQuery({
     queryKey: pmKeys.starts(projectId),
@@ -127,11 +157,23 @@ export function NewIssueForm({
       chosenStatus !== null ||
       labelIds.length > 0 ||
       startDate !== null ||
-      dueDate !== null,
+      dueDate !== null ||
+      uploads.uploads.length > 0,
   );
+
+  /** Whether the form may be sent now; says why not while a file still uploads. */
+  function ready(): boolean {
+    if (submittingRef.current) return false;
+    if (uploads.uploading) {
+      setFormError(t('issueForm.uploadsPending'));
+      return false;
+    }
+    return true;
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
+    if (!ready()) return;
     const trimmed = title.trim();
     if (!trimmed) {
       setTitleError(t('issueForm.titleRequired'));
@@ -161,8 +203,13 @@ export function NewIssueForm({
   }
 
   async function create(start?: boolean): Promise<void> {
+    // Also reached from the "Start now?" dialog, which a file added meanwhile must not get past.
+    if (!ready()) return;
     const trimmed = title.trim();
+    const attachmentIds = uploads.ids;
     setFormError(undefined);
+    submittingRef.current = true;
+    setSubmitting(true);
     onSubmittingChange(true);
     try {
       const issue = await api.createIssue({
@@ -177,7 +224,10 @@ export function NewIssueForm({
         ...(labelIds.length ? { labelIds } : {}),
         startDate,
         dueDate,
+        ...(attachmentIds.length ? { attachmentIds: [...attachmentIds] } : {}),
       });
+      // The files are the issue's now: closing the form must not delete them.
+      uploads.clear();
       notify.success(t('issueForm.created', { identifier: issue.identifier }));
       void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
       void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
@@ -187,6 +237,8 @@ export function NewIssueForm({
     } catch (error) {
       setFormError(errorText(t, error, t('common.requestFailed')));
     } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
       onSubmittingChange(false);
     }
   }
@@ -214,7 +266,13 @@ export function NewIssueForm({
           />
           {titleError ? <FieldError>{titleError}</FieldError> : null}
         </Field>
-        <Field>
+        <Field
+          onDragOver={uploads.onDragOver}
+          onDrop={(event) => {
+            if (submittingRef.current) event.preventDefault();
+            else uploads.onDrop(event);
+          }}
+        >
           <FieldLabel>{t('issueForm.descriptionLabel')}</FieldLabel>
           <PmRichTextEditor
             value={description}
@@ -224,6 +282,15 @@ export function NewIssueForm({
             mentionPlacement='below'
             contentClassName='min-h-28'
             onChange={setDescription}
+            onFiles={addFiles}
+          />
+          <PmPendingFiles
+            uploads={uploads.uploads}
+            disabled={submitting}
+            onAdd={addFiles}
+            onRemove={(key) => {
+              if (!submittingRef.current) uploads.remove(key);
+            }}
           />
         </Field>
         <div className='grid gap-4 sm:grid-cols-2'>
@@ -371,8 +438,11 @@ export function NewIssueForm({
 
 export function NewIssueFooter({
   submitting,
+  uploading = false,
 }: {
   readonly submitting: boolean;
+  /** A file is still uploading: the issue cannot be created yet. */
+  readonly uploading?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const { close } = useRouteOverlay();
@@ -386,7 +456,7 @@ export function NewIssueFooter({
       >
         {t('actions.cancel')}
       </Button>
-      <Button type='submit' form={FORM_ID} disabled={submitting}>
+      <Button type='submit' form={FORM_ID} disabled={submitting || uploading}>
         {submitting ? <Spinner data-icon='inline-start' /> : null}
         {submitting ? t('common.creating') : t('common.create')}
       </Button>

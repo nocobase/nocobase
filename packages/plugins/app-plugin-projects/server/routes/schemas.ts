@@ -449,6 +449,7 @@ export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
   ...issueFields,
   blockedBy: z.array(id).optional(),
   projectSetup: z.boolean().optional(),
+  attachmentIds: z.array(id).optional(),
 });
 
 /** `PATCH /issues/{issueId}`: without `revision`, the change applies to the issue as it is now. */

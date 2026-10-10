@@ -136,7 +136,7 @@ export function createAttachmentRoutes(
         command: 'attachment upload',
         action: 'pm.attachments/upload',
       }),
-      description: `Needs \`upload\` on \`pm.attachments\`. One file as the \`file\` field of a multipart body, at most ${ATTACHMENT_SIZE_MAX} bytes. The upload is attached to nothing until it is sent with a comment (\`attachmentIds\`); one left so for 24 hours is purged.`,
+      description: `Needs \`upload\` on \`pm.attachments\`. One file as the \`file\` field of a multipart body, at most ${ATTACHMENT_SIZE_MAX} bytes. The upload is attached to nothing until it is sent with a comment or a new issue (\`attachmentIds\`); one left so for 24 hours is purged.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(AttachmentSchema),

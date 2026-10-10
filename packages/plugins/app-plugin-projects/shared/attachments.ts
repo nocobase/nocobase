@@ -12,6 +12,7 @@
  * | read, download, list                        | seeing the issue (an upload attached to nothing: its uploader)   |
  * | upload                                      | `pm.attachments` `upload`                                        |
  * | attach to an issue                          | `upload`, and `pm.issues` `edit` on the issue                    |
+ * | send with a new issue                       | `upload`, and `pm.issues` `create`                               |
  * | send with a comment                         | `upload`, and `pm.issues` `comment` on the issue                 |
  * | remove an issue's file                      | its uploader (with `edit`), or `moderate-comments` on the issue  |
  * | remove a comment's file                     | deleting the comment                                             |
@@ -28,7 +29,8 @@
  * | `POST /issues/{issueId}/attachments`     | multipart, one `file`    | 201 `{ data: Attachment }`, attached to it       |
  *
  * `POST /issues/{issueId}/comments` takes `attachmentIds` (`CreateCommentRequest`): the caller's own uploads attached
- * to nothing, at most `ATTACHMENTS_PER_REQUEST_MAX`, attached in the comment's transaction. Errors: 400
+ * to nothing, at most `ATTACHMENTS_PER_REQUEST_MAX`, attached in the comment's transaction. `POST /issues` takes them
+ * the same way (`CreateIssueRequest`), as the new issue's own files. Errors: 400
  * `INVALID_ATTACHMENT` (not an upload of the caller's attached to nothing), 400 `FAILED_PRECONDITION`
  * `FILES_UNAVAILABLE` (the application stores no files), 413 `FILE_TOO_LARGE`.
  *

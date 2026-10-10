@@ -56,24 +56,48 @@ function named(file: File, index: number): File {
   );
 }
 
+export interface AttachmentUploadsOptions {
+  /**
+   * Deletes the finished uploads still held when the component unmounts (a form closed without being sent), instead
+   * of leaving them to the server's purge. `clear()` first what was sent, so it is kept.
+   */
+  readonly discardOnUnmount?: boolean;
+}
+
 /**
- * Files added to a comment before it is sent (`shared/attachments.ts`): each is uploaded as soon as it is added
- * (picked, pasted or dropped), attached to nothing until the comment takes it; at most
+ * Files added to a comment or a new issue before it is sent (`shared/attachments.ts`): each is uploaded as soon as it
+ * is added (picked, pasted or dropped), attached to nothing until the comment or issue takes it; at most
  * `ATTACHMENTS_PER_REQUEST_MAX`, each within the size limit. Taking one back deletes the upload; leaving the page
- * leaves it to the server's purge.
+ * leaves it to the server's purge, unless `discardOnUnmount` deletes it.
  */
-export function useAttachmentUploads(): AttachmentUploads {
+export function useAttachmentUploads(
+  options: AttachmentUploadsOptions = {},
+): AttachmentUploads {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const api = usePmApi();
   const notify = useNotify();
   const [uploads, setUploads] = useState<readonly PendingUpload[]>([]);
   const counterRef = useRef(0);
   const controllersRef = useRef(new Map<string, AbortController>());
+  // What unmounting would discard; `clear()` empties it at once, ahead of a close that unmounts in the same render.
+  const heldRef = useRef<readonly PendingUpload[]>([]);
+  const discardRef = useRef({ api, discard: options.discardOnUnmount });
+  useEffect(() => {
+    heldRef.current = uploads;
+    discardRef.current = { api, discard: options.discardOnUnmount };
+  });
 
   useEffect(() => {
     const running = controllersRef.current;
     return () => {
       for (const controller of running.values()) controller.abort();
+      const { api: client, discard } = discardRef.current;
+      if (!discard) return;
+      for (const upload of heldRef.current)
+        if (upload.attachment)
+          void client
+            .removeAttachment(upload.attachment.id)
+            .catch(() => undefined);
     };
   }, []);
 
@@ -147,7 +171,10 @@ export function useAttachmentUploads(): AttachmentUploads {
       if (upload?.attachment)
         void api.removeAttachment(upload.attachment.id).catch(() => undefined);
     },
-    clear: () => setUploads([]),
+    clear: () => {
+      heldRef.current = [];
+      setUploads([]);
+    },
     onPaste: (event) => {
       const files = [...event.clipboardData.files];
       if (files.length === 0) return;

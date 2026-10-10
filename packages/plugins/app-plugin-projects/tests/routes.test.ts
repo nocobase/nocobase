@@ -694,6 +694,38 @@ describe('attachments over HTTP', () => {
     expect(h.stored.size).toBe(1);
   });
 
+  it('creates an issue with the files uploaded for it', async () => {
+    const shot = await upload(
+      '/attachments',
+      new File([new Uint8Array([137, 80])], 'screenshot.png', {
+        type: 'image/png',
+      }),
+    );
+    const { data: file } = (await shot.json()) as { data: { id: string } };
+    const created = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ title: 'Broken', attachmentIds: [file.id] }),
+    });
+    expect(created.status).toBe(201);
+    const { data: issue } = (await created.json()) as {
+      data: { identifier: string };
+    };
+    const listed = (await (
+      await call(`/issues/${issue.identifier}/attachments`, { role: 'member' })
+    ).json()) as { data: { id: string }[] };
+    expect(listed.data.map((item) => item.id)).toEqual([file.id]);
+    const again = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ title: 'Again', attachmentIds: [file.id] }),
+    });
+    expect(again.status).toBe(400);
+    expect(await again.json()).toMatchObject({
+      error: { reason: 'INVALID_ATTACHMENT', domain: 'projects' },
+    });
+  });
+
   it('refuses a body that is not one file, and one over the limit', async () => {
     const empty = await router.request('/api/projects/attachments', {
       method: 'POST',

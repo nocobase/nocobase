@@ -265,6 +265,7 @@ const SHAPES = {
     title: req('string'),
     blockedBy: opt('targets'),
     start: opt('boolean'),
+    attachmentIds: opt('strings'),
   },
   'issue.update': {
     issue: req('target'),

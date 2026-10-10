@@ -13,7 +13,7 @@ import type {
   Issue,
   UpdateIssueRequest,
 } from '../../../shared/issues.js';
-import { scopeOf, type Viewer } from '../../access/viewer.js';
+import { requireAction, scopeOf, type Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
 import { SYSTEM_ACTOR, type Actor } from '../../kernel/actor.js';
 import {
@@ -51,6 +51,7 @@ import { moveIssue } from './issue.status.js';
 import {
   isTerminal,
   type IssueApprovals,
+  type IssueAttachments,
   type IssueRelations,
   type IssueTriggers,
 } from './ports.js';
@@ -193,6 +194,8 @@ export interface IssueDeps extends FieldDeps {
   readonly triggers: () => IssueTriggers;
   readonly approvals: () => IssueApprovals;
   readonly relations: () => IssueRelations;
+  /** Where the files sent with a new issue go; without it, a new issue takes no files. */
+  readonly attachments?: () => IssueAttachments;
 }
 
 function eventActor(actor: Actor): EventActor {
@@ -261,6 +264,20 @@ export function createIssueService(deps: IssueDeps): IssueService {
   const service: IssueService = {
     async create(viewer, input) {
       requireCreator(viewer);
+      // Checked here rather than by the route: a plan's `issue.create` row calls this directly.
+      const attachmentIds: unknown = input.attachmentIds;
+      const sendsFiles =
+        Array.isArray(attachmentIds) && attachmentIds.length > 0;
+      if (sendsFiles)
+        requireAction(
+          viewer,
+          'pm.attachments',
+          'upload',
+          'You may not attach files.',
+        );
+      const attachments = deps.attachments?.();
+      if (sendsFiles && !attachments)
+        throw invalid('FILES_UNAVAILABLE', 'This application stores no files.');
       return deps.tx.run(async (tx) => {
         const values = await resolveCreate(
           { ...deps, conn: tx.conn, viewer },
@@ -299,6 +316,24 @@ export function createIssueService(deps: IssueDeps): IssueService {
             values.labelIds,
           );
         await record(tx, id, viewer.actor, 'issue_created', { identifier });
+        // Files added while the issue was being written, uploaded before it existed: refused ones roll it all back.
+        if (
+          attachments &&
+          attachmentIds !== undefined &&
+          attachmentIds !== null
+        ) {
+          const files = await attachments.attach(
+            tx,
+            { type: viewer.actor.type, id: viewer.actor.id ?? viewer.userId },
+            { issueId: id, commentId: null },
+            attachmentIds,
+          );
+          if (files.length > 0)
+            await record(tx, id, viewer.actor, 'attachment_added', {
+              attachmentIds: files.map((file) => file.id),
+              filenames: files.map((file) => file.filename),
+            });
+        }
         // Every issue created in the project from now on waits for this one until it is finished.
         if (values.projectSetup && values.projectId)
           await updateProject(tx.conn, values.projectId, { setupIssueId: id });

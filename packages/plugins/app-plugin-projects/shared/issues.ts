@@ -233,6 +233,11 @@ export interface CreateIssueRequest {
    * for it until it is finished. Only in a project the creator manages that has no unfinished setup issue.
    */
   readonly projectSetup?: boolean;
+  /**
+   * The creator's uploads attached to nothing (`shared/attachments.ts`), attached to the new issue as its own files in
+   * the same transaction; at most `ATTACHMENTS_PER_REQUEST_MAX`. Needs `upload` on `pm.attachments`.
+   */
+  readonly attachmentIds?: readonly string[];
 }
 
 export interface UpdateIssueRequest {

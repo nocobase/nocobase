@@ -875,6 +875,129 @@ describe('direct writes', () => {
   });
 });
 
+describe('files sent with a new issue', () => {
+  const png = () =>
+    new File([new Uint8Array([137, 80, 78, 71])], 'shot.png', {
+      type: 'image/png',
+    });
+  const withoutUpload = (viewer: Viewer): Viewer => ({
+    ...viewer,
+    permissions: {
+      ...viewer.permissions,
+      scopes: { ...viewer.permissions.scopes, 'pm.attachments/upload': 'none' },
+    },
+  });
+
+  it('attaches them on a direct write, as the asker via the agent', async () => {
+    const asker: Viewer = {
+      ...alice(),
+      actor: { type: 'user', id: 'alice', via: 'agent' },
+    };
+    const shot = await h.services.attachments.upload(asker, png());
+    const done = await h.services.plans.create(
+      asker,
+      {
+        title: 'Direct',
+        source: { kind: 'conversation', key: 'conversation:c9' },
+        rows: [
+          {
+            op: 'issue.create',
+            params: { title: 'With a screenshot', attachmentIds: [shot.id] },
+          },
+        ],
+      },
+      { execute: true },
+    );
+    expect(done.status).toBe('executed');
+    const detail = await h.services.issueQueries.detail(
+      alice(),
+      done.rows[0]?.result?.created?.id as string,
+    );
+    expect(detail.attachments.map((file) => file.id)).toEqual([shot.id]);
+  });
+
+  it('attaches them when the plan is executed later, rehearsing without keeping them', async () => {
+    const shot = await h.services.attachments.upload(alice(), png());
+    const created = await h.services.plans.create(
+      alice(),
+      plan([
+        {
+          op: 'issue.create',
+          params: { title: 'Later', attachmentIds: [shot.id] },
+        },
+      ]),
+    );
+    // The rehearsal attached nothing for good.
+    expect(
+      (await h.services.attachments.get(alice(), shot.id)).issueId,
+    ).toBeNull();
+    const executed = await h.services.plans.execute(alice(), created.id, {
+      revision: created.revision,
+    });
+    expect(executed.status).toBe('executed');
+    expect((await h.services.attachments.get(alice(), shot.id)).issueId).toBe(
+      executed.rows[0]?.result?.created?.id,
+    );
+  });
+
+  it('fails as a whole when a file is gone by the time it is executed', async () => {
+    const shot = await h.services.attachments.upload(alice(), png());
+    const created = await h.services.plans.create(
+      alice(),
+      plan([
+        {
+          op: 'issue.create',
+          params: { title: 'Stale file', attachmentIds: [shot.id] },
+        },
+      ]),
+    );
+    // An upload attached to nothing for a day is purged, even while a plan names it.
+    expect(
+      await h.services.attachments.purge(
+        new Date(Date.now() + 25 * 60 * 60 * 1000),
+      ),
+    ).toBe(1);
+    const before = await counts();
+    const failed = await h.services.plans.execute(alice(), created.id, {
+      revision: created.revision,
+    });
+    expect(failed.status).toBe('failed');
+    expect(failed.failure).toMatchObject({
+      code: 'INVALID_ATTACHMENT',
+      rowId: created.rows[0]?.id,
+    });
+    expect(await counts()).toEqual(before);
+  });
+
+  it('fails as a whole when the person executing it may no longer upload', async () => {
+    const shot = await h.services.attachments.upload(alice(), png());
+    const created = await h.services.plans.create(
+      alice(),
+      plan([
+        {
+          op: 'issue.create',
+          params: { title: 'No right', attachmentIds: [shot.id] },
+        },
+      ]),
+    );
+    const before = await counts();
+    const failed = await h.services.plans.execute(
+      withoutUpload(alice()),
+      created.id,
+      { revision: created.revision },
+    );
+    expect(failed.status).toBe('failed');
+    expect(failed.failure).toMatchObject({
+      code: 'FORBIDDEN',
+      rowId: created.rows[0]?.id,
+    });
+    expect(await counts()).toEqual(before);
+    expect(
+      (await h.services.attachments.get(alice(), shot.id)).issueId,
+    ).toBeNull();
+  });
+});
+
 async function executePlan(
   viewer: Viewer,
   rows: readonly PlanRowInput[],

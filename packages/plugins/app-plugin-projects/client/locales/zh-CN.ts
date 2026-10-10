@@ -437,6 +437,7 @@ const pages = {
     projectLabel: '项目',
     titleLabel: '标题',
     titleRequired: '请输入标题。',
+    uploadsPending: '请等待文件上传完成。',
   },
   issues: {
     allStatuses: '全部状态',
