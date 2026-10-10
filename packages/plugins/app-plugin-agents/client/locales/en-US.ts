@@ -170,6 +170,7 @@ const pages = {
       high: 'High',
       xhigh: 'Extra high',
       max: 'Max',
+      ultra: 'Ultra',
     },
     created: 'Created agent {{name}}',
   },

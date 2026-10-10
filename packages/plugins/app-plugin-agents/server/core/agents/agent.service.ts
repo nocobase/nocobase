@@ -353,7 +353,14 @@ async function checkType(
   )
     throw invalid('The same tool and model are listed twice.');
   for (const entry of entries)
-    if (entry.effort && !effortsFor(entry).includes(entry.effort))
+    if (
+      entry.effort &&
+      !effortsFor(entry).includes(entry.effort) &&
+      // An effort saved before its tool dropped it stays until someone changes it.
+      !previous.some(
+        (saved) => sameEntry(saved, entry) && saved.effort === entry.effort,
+      )
+    )
       throw invalid(
         `${isRunnerEntry(entry) ? entry.tool : entry.modelService} takes no reasoning effort ${entry.effort}: use one of ${effortsFor(entry).join(', ')}.`,
         { reason: 'EFFORT_UNSUPPORTED' },

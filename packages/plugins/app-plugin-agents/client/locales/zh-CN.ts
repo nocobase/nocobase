@@ -166,6 +166,7 @@ const zhCN: AgentsResource = {
       high: '高',
       xhigh: '超高',
       max: '最高',
+      ultra: '极致',
     },
     created: '已创建 Agent {{name}}',
   },
