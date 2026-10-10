@@ -45,6 +45,7 @@ export const gitRenderer = defineInboxRenderer<GitModel>({
           },
         ),
         sentence: field(entry, 'title'),
+        sentenceHref: field(entry, 'url'),
       }),
       outcome: (outcome) =>
         t(`studioGit.inbox.outcomes.${outcome}`, { defaultValue: outcome }),

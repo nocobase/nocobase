@@ -39,6 +39,11 @@ import {
 export interface EntryText {
   readonly title: string;
   readonly sentence: string | null;
+  /**
+   * Where the sentence opens, if it names something elsewhere, such as a pull request on GitHub; opened in a new tab.
+   * Rendered only where the sentence sits outside an interactive element, such as the issue page's waiting card.
+   */
+  readonly sentenceHref?: string | null;
 }
 
 /** Whether the viewer may act on a decision now: not at all, not yet known, yes, or no, with why. */
