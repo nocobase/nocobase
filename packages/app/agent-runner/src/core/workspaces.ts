@@ -351,6 +351,48 @@ export async function applyDecisions(
   }
 }
 
+/**
+ * Takes back the removal of each of `appKey`'s ended directories that `response`, a later answer, does not confirm:
+ * one whose matching decision now says the work goes on or cannot tell, one it leaves out, or every one when the answer
+ * never came. Such a directory is no longer ended and loses the decision that let cleanup discard untracked files.
+ */
+export function revokeUnconfirmed(
+  entries: readonly WorkspaceEntry[],
+  appKey: string,
+  response: WorkspacesResponse | undefined,
+): void {
+  const remove = new Set(response?.remove ?? []);
+  const keep = new Set(response?.keep ?? []);
+  for (const entry of entries) {
+    if (entry.appKey !== appKey || entry.status !== 'ended') continue;
+    const matches =
+      response?.decisions?.filter(
+        (item) =>
+          item.reportId === entry.reportId &&
+          item.workDir === entry.workDir &&
+          item.runId === entry.lastRunId &&
+          item.lastUsedAt === entry.lastUsedAt,
+      ) ?? [];
+    const latest = matches.length === 1 ? matches[0] : undefined;
+    const confirmed =
+      latest !== undefined
+        ? latest.settled === true
+        : entry.decision?.settled !== true &&
+          entry.lastRunId !== undefined &&
+          remove.has(entry.lastRunId);
+    if (confirmed) continue;
+    entry.status =
+      latest?.settled === false ||
+      (latest === undefined &&
+        entry.lastRunId !== undefined &&
+        keep.has(entry.lastRunId))
+        ? 'active'
+        : 'unknown';
+    if (latest === undefined) delete entry.decision;
+    else entry.decision = latest;
+  }
+}
+
 /** Which directories to pick, beside the default rules (`nocobase-runner gc`). Every filter given must match. */
 export interface WorkspaceFilters {
   /** Those whose work the application says is over. */
@@ -558,10 +600,19 @@ export async function collectWorkspaces(
         ),
       );
       await applyDecisions(paths, entries, appKey, response, log);
-      // Publish the local check against the prior decision, before attempting deletion. The response is not reused
-      // as new deletion authority: the plan and its locked check keep the original evidence from this pass.
-      if (options.decisionApps?.has(appKey) === true)
-        await report(workspacesRequest(entries, appKey, disk, true));
+      // Publish the local check against the prior decision, before attempting deletion. The answer can only take a
+      // removal back: the plan and its locked check keep the original evidence, so a later answer that no longer says
+      // the work is over cancels it rather than granting anything new.
+      if (options.decisionApps?.has(appKey) === true) {
+        let confirmation: WorkspacesResponse | undefined;
+        try {
+          confirmation = await report(
+            workspacesRequest(entries, appKey, disk, true),
+          );
+        } finally {
+          revokeUnconfirmed(entries, appKey, confirmation);
+        }
+      }
     } catch (error) {
       log?.(
         `${appKey}: workspace report failed: ${error instanceof Error ? error.message : String(error)}`,

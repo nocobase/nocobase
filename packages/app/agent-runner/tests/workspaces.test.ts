@@ -531,6 +531,65 @@ describe('working directories', () => {
     expect(existsSync(ongoing.workDir)).toBe(true);
   });
 
+  it.each([
+    ['says the work goes on', 'active', false],
+    ['cannot tell whether the work is over', 'unknown', undefined],
+    ['never arrives', 'unknown', 'fail'],
+  ] as const)(
+    'keeps a settled directory and its untracked files when the confirming report %s',
+    async (_case, status, second) => {
+      const ended = await finishedRun('TASK-1', 'run-1');
+      const app = path.join(ended.workDir, 'app');
+      const headSha = git(['rev-parse', 'HEAD'], app);
+      const draft = path.join(app, 'draft.md');
+      writeFileSync(draft, 'draft\n');
+      const requests: WorkspacesRequest[] = [];
+      const report = (
+        request: WorkspacesRequest,
+      ): Promise<WorkspacesResponse> => {
+        requests.push(request);
+        if (requests.length > 1 && second === 'fail')
+          return Promise.reject(new Error('offline'));
+        const settled = requests.length === 1 ? true : second;
+        return Promise.resolve({
+          remove: [],
+          keep: settled === false ? ['run-1'] : [],
+          decisions: request.directories?.map((directory) => ({
+            reportId: request.reportId!,
+            workDir: directory.workDir,
+            runId: directory.runId,
+            lastUsedAt: directory.lastUsedAt,
+            ...(settled === undefined ? {} : { settled }),
+            reason:
+              settled === true
+                ? 'settled'
+                : settled === false
+                  ? 'active'
+                  : 'ownershipUnknown',
+            ...(settled === true
+              ? { commits: [{ repository: remote, headSha }] }
+              : {}),
+          })),
+        });
+      };
+      const result = await collectWorkspaces({
+        paths,
+        reporters: new Map([['acme', report]]),
+        decisionApps: new Set(['acme']),
+        readDisk: fakeDisk(50 * GB),
+      });
+      expect(requests).toHaveLength(2);
+      expect(requests[1]?.directories?.[0]?.cleanup).toMatchObject({
+        reason: 'allowed',
+        discardsUntracked: true,
+      });
+      expect(result.removed).toEqual([]);
+      expect(result.entries[0]?.status).toBe(status);
+      expect(existsSync(ended.workDir)).toBe(true);
+      expect(existsSync(draft)).toBe(true);
+    },
+  );
+
   it('collects legacy directories using fresh merged heads while retaining later local commits', async () => {
     const ended = await finishedRun('TASK-1', 'run-1');
     const unpushed = await finishedRun('TASK-2', 'run-2');
