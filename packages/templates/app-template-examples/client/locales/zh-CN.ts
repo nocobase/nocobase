@@ -102,11 +102,11 @@ const zhCN: AppResource = {
   'auth.marketingTitleSecond': 'NocoBase 保障',
   'auth.marketingTitleThird': '可靠运行。',
   'auth.marketingDescription':
-    '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限、工作流与治理。',
+    '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限与治理。',
   'auth.frontend': 'AI 原生前端',
   'auth.frontendDescription': '在灵活的框架上自由构建界面。',
   'auth.foundation': 'NocoBase 基础能力',
-  'auth.foundationDescription': '可靠的数据、访问控制、工作流与治理。',
+  'auth.foundationDescription': '可靠的数据、访问控制与治理。',
   'auth.marketingFooter': '自由构建，可靠支撑。',
   'status.loading': '加载中',
   'status.loadingPage': '正在加载页面',
@@ -314,11 +314,6 @@ const zhCN: AppResource = {
       title: '模板打印',
       description:
         '从授权报价数据生成 DOCX 或 PDF 发票；PDF 转换需要在应用服务器安装 LibreOffice。',
-    },
-    workflows: {
-      title: '工作流示例',
-      description:
-        '体验报价分流、营销日报和失败诊断。打开工作流并启用，按说明填写示例输入，即可查看执行路径与节点结果。',
     },
     routes: {
       title: '应用路由',

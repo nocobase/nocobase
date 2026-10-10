@@ -13,7 +13,7 @@ keywords: 'NocoBase,Service API,trigger,eventKey'
 从工作流插件的服务端入口导入原始 token，再通过应用容器解析：
 
 ```ts
-import { workflowServiceToken } from '@nocobase/app-plugin-workflow/server';
+import { workflowServiceToken } from '@nocobase/app-plugin-dag-flow/server';
 
 if (!app.container.has(workflowServiceToken)) {
   throw new Error('Workflow service is not configured.');
@@ -111,9 +111,9 @@ Durable waiting, approval, loops, and subflows require dedicated lifecycle suppo
 
 | Public entry                           | Exports and purpose                                                                                                                                                     |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@nocobase/app-plugin-workflow`        | `createNodeExpression`, `defineWorkflow`, core Instruction classes, `WorkflowNodeSourceInput`, `NodeExpression`, `ConfigIssue`, `NodeResultSchema`, `WorkflowSourceAst` |
-| `@nocobase/app-plugin-workflow/server` | `WorkflowInstruction`, `WorkflowInstructionClass`, `WorkflowInstructionContext`, `WorkflowInstructionResult`, `workflowServiceToken`                                    |
-| `@nocobase/app-plugin-workflow/build`  | `checkWorkflowPackage`, `buildApplicationWorkflows`                                                                                                                     |
+| `@nocobase/app-plugin-dag-flow`        | `createNodeExpression`, `defineWorkflow`, core Instruction classes, `WorkflowNodeSourceInput`, `NodeExpression`, `ConfigIssue`, `NodeResultSchema`, `WorkflowSourceAst` |
+| `@nocobase/app-plugin-dag-flow/server` | `WorkflowInstruction`, `WorkflowInstructionClass`, `WorkflowInstructionContext`, `WorkflowInstructionResult`, `workflowServiceToken`                                    |
+| `@nocobase/app-plugin-dag-flow/build`  | `checkWorkflowPackage`, `buildApplicationWorkflows`                                                                                                                     |
 
 An Instruction class supplies a stable unique `type`, `branches` (`null` for a sequential node), `create(source)`, and synchronous `validateConfig(unknown)` returning `{ path, message }[]`. Declare `result` when downstream nodes can reference its output. The instance implements async `run()` and, for supported branching lifecycles, `resume()`. `this.config` is the node configuration; custom types must explicitly implement any desired template evaluation rather than assuming Run's argument binding applies automatically. `this.signal` is the cancellation signal; `this.processor.services` provides application service resolution. A completed node returns `{ status: 1, result }` (`1` is RESOLVED); do not import internal status constants through unpublished paths.
 
@@ -132,11 +132,11 @@ import {
   type NodeExpression,
   type NodeResultSchema,
   type WorkflowNodeSourceInput,
-} from '@nocobase/app-plugin-workflow';
+} from '@nocobase/app-plugin-dag-flow';
 import {
   WorkflowInstruction,
   type WorkflowInstructionResult,
-} from '@nocobase/app-plugin-workflow/server';
+} from '@nocobase/app-plugin-dag-flow/server';
 
 type LabelConfig = { label: string };
 
@@ -184,7 +184,7 @@ Create `server/providers/workflow-instructions.ts`:
 
 ```ts
 import type { Application } from '@nocobase/app-server/application';
-import { workflowServiceToken } from '@nocobase/app-plugin-workflow/server';
+import { workflowServiceToken } from '@nocobase/app-plugin-dag-flow/server';
 import { ServiceProvider } from '@nocobase/service-provider';
 
 export default class WorkflowInstructionsProvider extends ServiceProvider<Application> {
@@ -207,7 +207,7 @@ Create `workflows/label-example/workflow.ts`:
 import {
   defineWorkflow,
   type WorkflowSourceAst,
-} from '@nocobase/app-plugin-workflow';
+} from '@nocobase/app-plugin-dag-flow';
 import { LabelInstruction } from '../../workflow-instructions/label.js';
 
 const workflow: WorkflowSourceAst = defineWorkflow({
@@ -234,11 +234,11 @@ import {
   ConditionInstruction,
   RunInstruction,
   TerminateInstruction,
-} from '@nocobase/app-plugin-workflow';
+} from '@nocobase/app-plugin-dag-flow';
 import {
   checkWorkflowPackage,
   buildApplicationWorkflows,
-} from '@nocobase/app-plugin-workflow/build';
+} from '@nocobase/app-plugin-dag-flow/build';
 import { LabelInstruction } from '../server/workflow-instructions/label.ts';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -274,7 +274,7 @@ pnpm exec tsx scripts/check-build-custom-workflows.mjs
 pnpm typecheck
 ```
 
-The script checks the example and builds every workflow under `sourceRoot` with the same map. A supplied map replaces the defaults, so include the core classes and all installed extensions in use. The default `pnpm nocobase workflow check <package>` command knows only core types; use this custom entry for extended workflows. A default-command rejection of an unknown extension does not establish that the extension is invalid.
+The script checks the example and builds every workflow under `sourceRoot` with the same map. A supplied map replaces the defaults, so include the core classes and all installed extensions in use. The default `pnpm nocobase dag-flow check <package>` command knows only core types; use this custom entry for extended workflows. A default-command rejection of an unknown extension does not establish that the extension is invalid.
 
 The example has no runtime resources, so it reads resources from the source tree. For workflows with Run modules or assets, first compile/copy them to `dist/workflows` and change `resourceRoot` to that directory, preserving each workflow's package-relative paths. `buildApplicationWorkflows()` clears `distRoot`: keep it separate from the source tree, compiled resource tree, and other build outputs. Add `.workflow-artifacts/` to the application's ignore file. For production, adapt the application's existing workflow build stage to pass this same map, then install the resulting artifacts in the configured artifact directory after their resources have been read. Do not run the unmodified core-only build stage over custom workflows or let a later build step overwrite the extended artifacts.
 

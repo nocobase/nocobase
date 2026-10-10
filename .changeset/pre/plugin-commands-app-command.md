@@ -1,6 +1,6 @@
 ---
 '@nocobase/app-plugin-scheduler': minor
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-plugin-cli-example': minor
 '@nocobase/create-plugin': minor
 '@nocobase/app-skills': minor

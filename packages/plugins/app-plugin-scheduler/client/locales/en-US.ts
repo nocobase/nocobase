@@ -28,9 +28,7 @@ const enUS = {
       target: 'Target',
       status: 'Status',
     },
-    targets: {
-      workflow: 'Workflow',
-    },
+    targets: {},
     targetStates: {
       ready: 'Ready',
       disabled: 'Disabled',
@@ -93,8 +91,6 @@ const enUS = {
       'target-invalid': 'Execution target is invalid',
       'target-unavailable': 'Execution target is unavailable',
       'invalid-config': 'Invalid target configuration',
-      'invalid-input': 'Invalid workflow input',
-      'artifact-unavailable': 'Workflow artifact is unavailable',
       'dispatch-failed': 'Unable to dispatch execution',
       'execution-timeout': 'Execution timed out',
       'execution-cancelled': 'Execution was cancelled',

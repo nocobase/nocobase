@@ -8,7 +8,7 @@
 '@nocobase/app-plugin-file': minor
 '@nocobase/app-plugin-i18n': minor
 '@nocobase/app-plugin-notification': minor
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-plugin-routes-example': minor
 '@nocobase/create-app': minor
 '@nocobase/dev-config': minor

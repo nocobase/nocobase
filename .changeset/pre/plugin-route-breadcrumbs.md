@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-authorization': patch
 '@nocobase/app-plugin-ai-employee': patch

@@ -381,7 +381,7 @@ pnpm nocobase package remove @nocobase/example --dry-run
 pnpm nocobase package remove @nocobase/example --json
 ```
 
-For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` workflow so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
+For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
 
 After an interrupted or manual removal, make sure the manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. Passing a package already absent from the manifest to `package remove` can clean its recorded historical Skill ownership without uninstalling any other package.
 
@@ -455,7 +455,7 @@ import { resolveAssetUrl } from '@nocobase/app-client';
 <img src={resolveAssetUrl('/assets/logo-mark.png')} alt='Logo' />;
 ```
 
-Pass the file's path relative to `dist/client/`, with or without a leading slash. `resolveAssetUrl` reads `import.meta.env.BASE_URL`, which Vite replaces with the configured `base` during the application build; the browser does not read `CDN_BASE_URL` from the server environment. With an absolute HTTP(S) CDN base it returns the CDN URL, otherwise it falls back to `resolveAppUrl` and the runtime `APP_BASE_PATH`. Already resolved URLs are preserved. Use `resolveAppUrl` for API URLs, page links and runtime-generated resources such as workflow artifacts; the CDN must actually contain a file before it can be served there.
+Pass the file's path relative to `dist/client/`, with or without a leading slash. `resolveAssetUrl` reads `import.meta.env.BASE_URL`, which Vite replaces with the configured `base` during the application build; the browser does not read `CDN_BASE_URL` from the server environment. With an absolute HTTP(S) CDN base it returns the CDN URL, otherwise it falls back to `resolveAppUrl` and the runtime `APP_BASE_PATH`. Already resolved URLs are preserved. Use `resolveAppUrl` for API URLs, page links and runtime-generated resources; the CDN must actually contain a file before it can be served there.
 
 #### Packing the build
 
@@ -603,38 +603,6 @@ Replace `/main` with the application's `APP_BASE_PATH`. An application without t
 ## License
 
 MIT
-
-## Workflow examples
-
-Open **Workflow examples** on the homepage, or **Settings → Automation → Workflows**. The three application-owned packages under `workflows/` are built by `pnpm dev` and `pnpm build`. Enable a definition, open its detail page, choose **Run**, and enter the sample values below. Inspect the run diagram and select a node to see its output, errors, and logs.
-
-| Workflow                        | Sample input                                    | Expected result                                                                    |
-| ------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Example: Quotation routing      | `quotationId: Q-100`, `amountCents: 50000`      | Standard branch, then a review task; the shared summary runs after submission.     |
-| Example: Quotation routing      | `quotationId: Q-100`, `amountCents: 150000`     | Manual follow-up classification, then a review task.                               |
-| Example: Analytics daily report | `date: 2026-09-08`                              | Read four seeded metric rows, calculate totals, and save one report for that date. |
-| Example: Analytics daily report | `date: 2000-01-01`                              | Successful early termination without creating a report.                            |
-| Example: Failure diagnostics    | `reference: DIAG-100`, `simulateFailure: true`  | The execute node fails deliberately; the finish node does not run.                 |
-| Example: Failure diagnostics    | `reference: DIAG-100`, `simulateFailure: false` | A new run completes all three steps.                                               |
-
-Quotation routing exposes an administrator parameter, `reviewThresholdCents`, whose default is `100000`. Amounts at or above the threshold take the follow-up branch. Each run creates one `quotationReviewTasks` row in the application's default database. The diagnostic example has no business writes.
-
-To test the quotation wait, run either sample input and inspect the pending `awaitRoutingConfirmation` node. Then open **Workflow → Waiting tasks** in the application menu, select the new task, choose Approved or Rejected, optionally add a comment, and submit. The task page sends the signed-in reviewer identity with the result through the application's authenticated API. The task detail polls the persisted resume request until the decision is applied or rejected, and offers Refresh to check again. A recorded decision is not yet applied: rejected requests display their reason. The summary node reads `nodeResults.awaitRoutingConfirmation`, including `taskId`, `reviewerId`, `confirmedBy`, `decision`, and `comment`; refresh the workflow run detail to inspect this downstream result. Applied means the wait consumed the decision, not that the whole workflow succeeded. Historical submissions without a request id show that their outcome is unavailable. A task created before its Wait node becomes ready cannot be submitted until that node is pending; a run that has ended leaves the task visible but unavailable.
-
-The report reads `analytics.dailyMetrics` and upserts `exampleDailyReports` in the application's default database by its unique date. With unchanged seed data, `2026-09-08` produces 96,000 impressions, 3,120 clicks, 168 conversions, 93,000 spend cents, 672,000 revenue cents, and 579,000 profit cents. The `saveReport` node output contains the saved report. Repeating the workflow refreshes that date's report instead of inserting duplicates. Reading analytics and writing the report are separate operations, not a cross-database transaction.
-
-After editing a package, check it and regenerate development artifacts, then enable the new revision in the management UI:
-
-```bash
-pnpm nocobase workflow check workflows/example-quotation-routing
-pnpm nocobase workflow check workflows/example-analytics-report
-pnpm nocobase workflow check workflows/example-failure-diagnostics
-pnpm nocobase workflow build
-```
-
-When deploying, keep the workflow artifact disk under the application directory, which is the default local storage layout. The report's run modules import `@nocobase/db` and resolve it from the application's `node_modules`, which an artifact directory outside the application tree cannot reach.
-
-These examples run on demonstration data only. How the workflow plugin versions, enables, and triggers packages, including the `workflowServiceToken.trigger()` contract, is documented in its Skill at `.agents/skills/nocobase-app-plugin-workflow/`; read it before invoking a workflow from application code. A business endpoint that triggers a workflow supplies its own authentication, authorization, and input validation.
 
 ## 数字类型示例
 

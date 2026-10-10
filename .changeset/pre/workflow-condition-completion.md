@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 ---
 
 Save condition nodes as resolved before executing their selected branch, preserving their results when branches wait, fail, or terminate the workflow.

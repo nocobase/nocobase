@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 ---
 
 Run workflow tasks on `@nocobase/jobs` instead of `@nocobase/queue`

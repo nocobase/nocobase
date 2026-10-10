@@ -4,7 +4,7 @@
 '@nocobase/app-template-hub': minor
 '@nocobase/app-plugin-hub': major
 '@nocobase/app-plugin-users': major
-'@nocobase/app-plugin-workflow': major
+'@nocobase/app-plugin-dag-flow': major
 '@nocobase/app-plugin-ai-employee': major
 '@nocobase/app-skills': patch
 ---

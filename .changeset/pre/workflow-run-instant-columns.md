@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 ---
 
 Store run and node-run timestamps as instants, so durations stop reporting a whole time-zone offset

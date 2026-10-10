@@ -28,9 +28,7 @@ const zhCN: SchedulerResource = {
       target: '目标',
       status: '状态',
     },
-    targets: {
-      workflow: '工作流',
-    },
+    targets: {},
     targetStates: {
       ready: '可用',
       disabled: '已停用',
@@ -92,8 +90,6 @@ const zhCN: SchedulerResource = {
       'target-invalid': '执行目标无效',
       'target-unavailable': '执行目标不可用',
       'invalid-config': '目标配置无效',
-      'invalid-input': '工作流输入无效',
-      'artifact-unavailable': '工作流产物不可用',
       'dispatch-failed': '无法派发执行任务',
       'execution-timeout': '执行已超时',
       'execution-cancelled': '执行已取消',

@@ -24,7 +24,7 @@ keywords: 'NocoBase,工作流,快速开始,库存补货'
 
 - 当前目录是一个基于 NocoBase 3 应用模板创建的应用；
 - 应用配置使用根目录的 `config.yml`（如需密钥，请在其中引用环境变量）；
-- 应用已经安装并注册 `@nocobase/app-plugin-workflow`；
+- 应用已经安装并注册 `@nocobase/app-plugin-dag-flow`；
 - 应用已有库存与补货相关的 Collection 或 Service，或者允许 Agent 在确认后补齐；
 - 开发者可以让应用 Agent 读取和修改源码；
 - 业务管理员能够登录应用并进入“自动化”设置。
@@ -105,13 +105,13 @@ workflows/inventory-replenishment/
 要求 Agent 报告实际执行的验证命令和结果，至少包括：
 
 ```bash
-pnpm nocobase workflow check workflows/inventory-replenishment
+pnpm nocobase dag-flow check workflows/inventory-replenishment
 pnpm typecheck
 pnpm test
 pnpm build
 ```
 
-`workflow check` 检查声明式流程本身，但不会加载 Run 节点引用的模块；应用的类型检查、测试和构建负责覆盖这些运行模块。默认应用的正常构建会同时生成 Workflow Artifact。
+`dag-flow check` 检查声明式流程本身，但不会加载 Run 节点引用的模块；应用的类型检查、测试和构建负责覆盖这些运行模块。默认应用的正常构建会同时生成 Workflow Artifact。
 
 启动应用后，确认服务端工作流运行时和队列均已启动。构建产物存在并不等于工作流已经启用。
 

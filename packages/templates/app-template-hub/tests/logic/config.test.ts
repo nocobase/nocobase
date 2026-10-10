@@ -210,7 +210,6 @@ describe('application config', () => {
     expect(runtime.config.get('session.stores.redis.host')).toBe('127.0.0.1');
     expect(runtime.config.get('logging.console.pretty')).toBe(false);
     expect(runtime.config.get('session.cookie.secure')).toBe(true);
-    expect(runtime.config.get('workflow')).toBeUndefined();
     expect(runtime.config.get('notification')).toBeUndefined();
     expect(runtime.config.get('heartbeat')).toBeUndefined();
     delete runtime.env.APP_SERVER_PORT;

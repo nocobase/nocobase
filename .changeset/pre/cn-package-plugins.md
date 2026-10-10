@@ -12,7 +12,7 @@
 '@nocobase/app-plugin-notification-in-app': patch
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-plugin-ai-employee-example': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-departments-example': patch

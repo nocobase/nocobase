@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@nocobase/app-plugin-dag-flow": ["./index.ts"],
+      "@nocobase/app-plugin-dag-flow/server": ["./server/index.ts"]
+    }
+  },
+  "include": [
+    "skill-evals/nocobase3-workflow-manage/fixtures/workflows/valid-quotation/**/*.ts",
+    "skill-evals/nocobase3-workflow-manage/fixtures/workflows/existing-order-fulfillment/**/*.ts"
+  ],
+  "exclude": []
+}

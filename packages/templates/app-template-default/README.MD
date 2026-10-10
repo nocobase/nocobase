@@ -203,7 +203,7 @@ pnpm nocobase package remove @nocobase/example --dry-run
 pnpm nocobase package remove @nocobase/example --json
 ```
 
-For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` workflow so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
+For an ordinary package, the command uses the application's package manager to remove the dependency and update both `package.json` and the lockfile, then removes only the Skill directories recorded as owned by that package. For an `@nocobase/app-plugin-*` package, it reuses the `plugin unregister` steps so Client, Server, and CLI registrations are removed together with the dependency and its Skills. `pnpm nocobase plugin unregister <name>` remains available when the task is specifically expressed as unregistering a plugin.
 
 After an interrupted or manual removal, make sure the manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. Passing a package already absent from the manifest to `package remove` can clean its recorded historical Skill ownership without uninstalling any other package.
 
@@ -277,7 +277,7 @@ import { resolveAssetUrl } from '@nocobase/app-client';
 <img src={resolveAssetUrl('/assets/logo-mark.png')} alt='Logo' />;
 ```
 
-Pass the file's path relative to `dist/client/`, with or without a leading slash. `resolveAssetUrl` reads `import.meta.env.BASE_URL`, which Vite replaces with the configured `base` during the application build; the browser does not read `CDN_BASE_URL` from the server environment. With an absolute HTTP(S) CDN base it returns the CDN URL, otherwise it falls back to `resolveAppUrl` and the runtime `APP_BASE_PATH`. Already resolved URLs are preserved. Use `resolveAppUrl` for API URLs, page links and runtime-generated resources such as workflow artifacts; the CDN must actually contain a file before it can be served there.
+Pass the file's path relative to `dist/client/`, with or without a leading slash. `resolveAssetUrl` reads `import.meta.env.BASE_URL`, which Vite replaces with the configured `base` during the application build; the browser does not read `CDN_BASE_URL` from the server environment. With an absolute HTTP(S) CDN base it returns the CDN URL, otherwise it falls back to `resolveAppUrl` and the runtime `APP_BASE_PATH`. Already resolved URLs are preserved. Use `resolveAppUrl` for API URLs, page links and runtime-generated resources; the CDN must actually contain a file before it can be served there.
 
 #### Packing the build
 

@@ -7,7 +7,7 @@ description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 a
 
 Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md` and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout, configuration variables and Hub publishing commands. The Deployment section of the NocoBase 3 documentation is the reference for command details and platform-specific examples; in the nocobase3 source repository it is `docs/docs/<lang>/deployment/`.
 
-Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, workflow artifacts, and persistence checks below have evidence.
+Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 
 ## Stop and identify the deployment
 
@@ -52,7 +52,7 @@ A `dist/` built for the wrong platform does not need a full rebuild: `pnpm nocob
 
 For templates supporting `CDN_BASE_URL` in `vite.config.ts`, set it before building, for example `CDN_BASE_URL=https://cdn.example.com/my-app/v1/ pnpm build --target linux-x64 --tar`. Use a full HTTPS URL ending in `/`. `pnpm build` reads the process environment before `.env.local` and `.env`; an unset, empty or whitespace-only value keeps `./`, and development ignores it. This sets Vite's build-time `base`: changing it requires rebuilding, not editing `config.yml` or restarting the server. See the application's README for its build entry points.
 
-Upload the static files from `dist/client/` to that prefix with paths preserved, and allow cross-origin module and font requests from the application origin. Keep the complete client tree on the application server and serve HTML through it for runtime configuration injection. Vite-processed assets and static files addressed with `resolveAssetUrl` from `@nocobase/app-client`, including template logos, use the CDN. That helper reads Vite's build-time `BASE_URL` and falls back to the runtime mount path without an absolute CDN base. API/router paths and runtime-generated files such as workflow artifacts keep using `resolveAppUrl` and `APP_BASE_PATH`; pointing them at a CDN does not upload them there. Verify entry scripts, logos, styles, lazy chunks and CSS assets against the chosen prefix; retain older assets while clients still reference them.
+Upload the static files from `dist/client/` to that prefix with paths preserved, and allow cross-origin module and font requests from the application origin. Keep the complete client tree on the application server and serve HTML through it for runtime configuration injection. Vite-processed assets and static files addressed with `resolveAssetUrl` from `@nocobase/app-client`, including template logos, use the CDN. That helper reads Vite's build-time `BASE_URL` and falls back to the runtime mount path without an absolute CDN base. API/router paths and runtime-generated files keep using `resolveAppUrl` and `APP_BASE_PATH`; pointing them at a CDN does not upload them there. Verify entry scripts, logos, styles, lazy chunks and CSS assets against the chosen prefix; retain older assets while clients still reference them.
 
 For a Docker source build, pass `--build-arg CDN_BASE_URL=https://cdn.example.com/my-app/v1/`; the host's `.env` does not enter the build. With `DIST=prebuilt`, configure the earlier `pnpm build` instead. A prebuilt image's build argument or `docker run -e CDN_BASE_URL=...` cannot change the compiled URLs.
 
@@ -76,7 +76,7 @@ Prepare the complete runtime configuration before starting the service. At minim
 - `APP_PUBLIC_ORIGIN` as the external scheme and host without the application path, and `APP_BASE_PATH` as the public mount path, read when the server starts; it defaults to `/main`.
 - `APP_SERVER_HOST` and `APP_SERVER_PORT`, with containers normally listening on `0.0.0.0` and the proxy controlling external exposure.
 - Persistent storage paths, file permissions, service identity, and any external database, object storage, mail, or callback settings.
-- The `jobs` backend, which runs background tasks — Notification deliveries, Workflow runs, plugin jobs — and scheduled jobs, Scheduler's included. Without `jobs.default` they run on the built-in memory adapter, which keeps its state in the process, reads it from `storage/jobs` at startup and writes it back when the service stops: it serves one process, every other process or instance would fire its own copy, and a process that is killed rather than stopped loses what changed since it started. For more than one instance set `jobs.default` to the `redis` configuration and its `connection`; that Redis must persist its data (AOF or RDB) and use `maxmemory-policy noeviction`, and it opens connections per scheduling plugin. Set `jobs.default: memory` to keep a single-instance deployment on memory without the startup warning.
+- The `jobs` backend, which runs background tasks — Notification deliveries, plugin jobs — and scheduled jobs, Scheduler's included. Without `jobs.default` they run on the built-in memory adapter, which keeps its state in the process, reads it from `storage/jobs` at startup and writes it back when the service stops: it serves one process, every other process or instance would fire its own copy, and a process that is killed rather than stopped loses what changed since it started. For more than one instance set `jobs.default` to the `redis` configuration and its `connection`; that Redis must persist its data (AOF or RDB) and use `maxmemory-policy noeviction`, and it opens connections per scheduling plugin. Set `jobs.default: memory` to keep a single-instance deployment on memory without the startup warning.
 - The `queue` backend, when the application or a plugin uses `@nocobase/queue`. Without `queue.default` queues run on the built-in memory configuration, one process, with pending jobs written under `storage/queue` when the service stops. For more than one instance set `queue.default` to the `redis` configuration, under the same Redis requirements; `queue.default: memory` keeps a single instance on memory without the warning.
 - The optional `api` limits for every `/api` request: `api.bodyLimit` (such as `10mb`), `api.timeout` (such as `30s`) and `api.rateLimit` with `max` and `window` (such as `600` per `1m`), all off by default; `API_BODY_LIMIT` and `API_TIMEOUT` set the first two. The rate limit counts per client connection address in each process, so behind a reverse proxy every request shares the proxy's address and one budget, and each instance of a multi-instance deployment counts on its own; size `max` for that, or leave it off and limit at the proxy.
 
@@ -115,12 +115,6 @@ Publishing to a Hub uses the `pnpm nocobase hub` commands, which an application 
 
 Read `.agents/skills/nocobase-hub-cli/SKILL.md`, which that package ships, before publishing: it covers the remote committed in `.nocobase/hub.json`, saving the API key with `hub auth login`, the build, `--config`, waiting, exit codes and retries. The API key is created in Hub, not in the application, and the user saves it with `hub auth login` themselves. Never ask for the key, print it, or put it in `.env` or committed configuration; hub-cli reads no key or Hub address from the environment.
 
-## Handle workflow artifacts after production build
-
-If the application contains DSL workflows or other compiled workflow artifacts, treat the production build as a new artifact set. The workflow definition is compiled into production JavaScript and receives a deployment hash; the development artifact or previous hash may not exist in the production package.
-
-After deployment, check that each workflow's active version points to an artifact present in the production build. If the runtime reports `Workflow Artifact <key>/<hash> is missing`, do not enable the workflow by its database flow ID alone: that keeps the old hash. Enable the pending version by its deployed artifact hash, either with **Enable new version** on the workflow in the management UI or with `POST <APP_BASE_PATH>/api/workflows/<hash>/enable`, then trigger a real business event and inspect the run result. Keep source checking, artifact building, synchronization, enablement, and invocation as separate checks.
-
 ## Verify the deployed application
 
 Collect evidence for each item:
@@ -130,11 +124,11 @@ Collect evidence for each item:
 3. The configured administrator can sign in, and a normal user has the expected server-side permissions.
 4. The application can read and write a known record in the intended database; the database is not an unexpected empty instance.
 5. Upload and download a file if the application uses file storage.
-6. Trigger one representative workflow and confirm its run completes with the expected business result.
+6. Exercise one representative business operation end to end and confirm its expected result.
 7. Restart the service or recreate the container and confirm records, files, configuration, and enabled runtime behavior remain available, including that scheduled jobs keep firing.
 8. In Hub mode, verify every hosted App separately; Hub readiness does not mean every eager App is ready.
 
-Record the exact artifact or image digest, configuration revision, database migration result, workflow artifact hashes, logs checked, and verification time.
+Record the exact artifact or image digest, configuration revision, database migration result, logs checked, and verification time.
 
 ## API documentation in production
 
@@ -156,7 +150,7 @@ Return a concise deployment report with these sections:
 - Source revision and artifact or image digest.
 - Configuration, database, migration and seed status.
 - Deployment operation ID and final status, if Hub is used.
-- Workflow artifact and representative business verification.
+- Representative business verification.
 - Restart or recovery verification.
 - Logs and checks performed.
 - Unresolved risks, skipped checks, and required follow-up.

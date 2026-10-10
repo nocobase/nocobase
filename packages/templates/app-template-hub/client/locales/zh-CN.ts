@@ -47,11 +47,11 @@ const zhCN: AppResource = {
   'auth.marketingTitleSecond': 'NocoBase 保障',
   'auth.marketingTitleThird': '可靠运行。',
   'auth.marketingDescription':
-    '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限、工作流与治理。',
+    '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限与治理。',
   'auth.frontend': 'AI 原生前端',
   'auth.frontendDescription': '在灵活的框架上自由构建界面。',
   'auth.foundation': 'NocoBase 基础能力',
-  'auth.foundationDescription': '可靠的数据、访问控制、工作流与治理。',
+  'auth.foundationDescription': '可靠的数据、访问控制与治理。',
   'auth.marketingFooter': '自由构建，可靠支撑。',
   'status.loading': '加载中',
   'status.loadingPage': '正在加载页面',

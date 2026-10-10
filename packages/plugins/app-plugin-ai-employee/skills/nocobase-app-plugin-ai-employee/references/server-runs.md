@@ -242,7 +242,7 @@ Do not infer HTTP behavior from this return value: `sendMessages` with `stream: 
 
 ## Running unattended
 
-An agent driven from a job, a schedule, a workflow node, or any other caller with nobody watching differs from a chat in four ways. What the surrounding system is — how it schedules, where it writes its result — is its own concern and not this plugin's; what follows is only what this plugin requires of it.
+An agent driven from a job, a schedule, or any other caller with nobody watching differs from a chat in four ways. What the surrounding system is — how it schedules, where it writes its result — is its own concern and not this plugin's; what follows is only what this plugin requires of it.
 
 **Use `invoke()`, not `stream()`.** `stream()` is an async generator: the run advances only while something consumes it, so an unattended caller that forgets to drain it stalls holding an open conversation. `invoke()` runs the loop to completion and returns the result. Use `responseFormat` when the caller needs data rather than prose — it is simpler and more reliable than instructing the model to put its answer somewhere.
 
@@ -387,7 +387,7 @@ A paused run is none of these either: `invoke()` resolves with `interrupt` set r
 - Authorize the user id, the employee username, the session id, tool activation, and conversation access — separately from whatever the prompt says.
 - Create the conversation before the session-bound agent.
 - Keep every context value and tool result serializable.
-- Pass an `AbortSignal` from the surrounding HTTP, workflow, or job cancellation, and call `abort()` only on a service this code owns.
+- Pass an `AbortSignal` from the surrounding HTTP or job cancellation, and call `abort()` only on a service this code owns.
 - Never expose `AgentService` to untrusted request input without an App-owned route policy. It is a server API and is deliberately not a browser one.
 - If conversation creation succeeds and agent creation then fails, do not retry blindly: record the session id, inspect the conversation state, and use an App-owned cleanup or archive path if the product needs one.
 - Dispose App-owned resources when the App service or job lifecycle ends.

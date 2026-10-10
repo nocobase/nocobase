@@ -8,7 +8,7 @@
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
 '@nocobase/app-plugin-notification-providers': patch
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-plugin-cli-example': patch
 '@nocobase/app-plugin-database-example': patch
 '@nocobase/app-plugin-file-example': patch

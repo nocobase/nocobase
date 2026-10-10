@@ -37,8 +37,8 @@ vi.mock('../../client/components/inbox-header-button', () => ({
   InboxHeaderButton: () => null,
 }));
 
-function WorkflowDetailTestPage(): ReactElement {
-  return <h2>Workflow detail {useParams().workflowId}</h2>;
+function ReportDetailTestPage(): ReactElement {
+  return <h2>Report detail {useParams().reportId}</h2>;
 }
 
 // Loading a lazy route and rendering its error boundary can take longer than Testing Library's one-second default on
@@ -132,9 +132,7 @@ describe('settings centre', () => {
     expect(await screen.findByText('Default Access page')).toBeVisible();
     expect(screen.getByRole('navigation', { name: 'Settings' })).toBeVisible();
     expect(screen.getByText('Authorization')).toBeVisible();
-    expect(
-      screen.getByRole('link', { name: 'Workflow General' }),
-    ).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Reports General' })).toBeVisible();
     expect(
       screen.getAllByRole('link', { name: 'Default Access' })[0],
     ).toHaveAttribute('aria-current', 'page');
@@ -188,33 +186,33 @@ describe('settings centre', () => {
   });
 
   it('renders an ungrouped page as a flat row rather than a disclosure', async () => {
-    renderSettings('/settings/workflow');
-    await screen.findByText('Workflow General page');
+    renderSettings('/settings/reports');
+    await screen.findByText('Reports General page');
 
-    const link = screen.getAllByRole('link', { name: 'Workflow General' })[0];
+    const link = screen.getAllByRole('link', { name: 'Reports General' })[0];
     expect(link).toHaveAttribute('aria-current', 'page');
     expect(link.closest('details')).toBeNull();
   });
 
   it('renders a nested detail route inside settings and keeps its parent selected', async () => {
-    renderSettings('/settings/workflow/item-1', undefined, SETTINGS, GROUPS, [
+    renderSettings('/settings/reports/item-1', undefined, SETTINGS, GROUPS, [
       {
         auth: 'required',
         authz: 'skip',
-        id: '@nocobase/app-plugin-test:workflow-detail',
-        name: 'workflow-detail',
+        id: '@nocobase/app-plugin-test:report-detail',
+        name: 'report-detail',
         packageName: '@nocobase/app-plugin-test',
-        path: '/settings/workflow/:workflowId',
+        path: '/settings/reports/:reportId',
         source: 'plugin',
         componentLoader: async () => ({
-          default: WorkflowDetailTestPage,
+          default: ReportDetailTestPage,
         }),
       },
     ]);
 
-    expect(await screen.findByText('Workflow detail item-1')).toBeVisible();
+    expect(await screen.findByText('Report detail item-1')).toBeVisible();
     expect(
-      screen.getAllByRole('link', { name: 'Workflow General' })[0],
+      screen.getAllByRole('link', { name: 'Reports General' })[0],
     ).toHaveAttribute('aria-current', 'page');
   });
 
@@ -468,7 +466,7 @@ describe('settings centre', () => {
         ),
     });
 
-    expect(await screen.findByText('Workflow General page')).toBeVisible();
+    expect(await screen.findByText('Reports General page')).toBeVisible();
     expect(screen.queryByText('Authorization')).not.toBeInTheDocument();
   });
 
@@ -540,8 +538,8 @@ describe('settings centre', () => {
   it('leaves a setting without an access rule visible even when the provider denies everything', async () => {
     renderSettings('/settings', { can: async () => false });
 
-    // `workflow/general` declares no access rule, so reaching the settings centre is the only check it has.
-    expect(await screen.findByText('Workflow General page')).toBeVisible();
+    // `reports/general` declares no access rule, so reaching the settings centre is the only check it has.
+    expect(await screen.findByText('Reports General page')).toBeVisible();
   });
 
   it('keeps ungoverned settings visible when no plugin registered a provider', async () => {
@@ -560,10 +558,10 @@ describe('settings centre', () => {
     await screen.findByText('Permission Sets page');
 
     fireEvent.change(screen.getByLabelText('Settings page'), {
-      target: { value: '/settings/workflow' },
+      target: { value: '/settings/reports' },
     });
 
-    expect(await screen.findByText('Workflow General page')).toBeVisible();
+    expect(await screen.findByText('Reports General page')).toBeVisible();
   });
 
   it('builds nav entries in declaration order, emitting each group once', () => {
@@ -630,7 +628,7 @@ const AUTHORIZATION: AppClientRegisteredSettingGroup = {
 // A group's pages are also in the flat list; that is what the router mounts.
 const SETTINGS: readonly AppClientRegisteredSetting[] = [
   ...AUTHORIZATION.settings,
-  createSetting('workflow', 'Workflow General'),
+  createSetting('reports', 'Reports General'),
 ];
 
 const GROUPS: readonly AppClientRegisteredSettingGroup[] = [AUTHORIZATION];

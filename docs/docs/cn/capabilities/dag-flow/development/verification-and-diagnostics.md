@@ -8,14 +8,14 @@ keywords: 'NocoBase,工作流检查,workflow check,Artifact,诊断'
 
 工作流从源码到运行需要经过定义检查、应用编译、Artifact 构建、运行时加载和版本启用。每个阶段验证的边界不同，不能相互替代。
 
-Commands below run from the initialized application root. `workflow check` is the subcommand name; the complete invocation is `pnpm nocobase workflow check <package>`. For custom node types, use the checker/build entry in [Service API](./service-api.md#custom-instructions), which supplies the extension contracts. Configure the application in `config.yml`.
+Commands below run from the initialized application root. `dag-flow check` is the subcommand name; the complete invocation is `pnpm nocobase dag-flow check <package>`. For custom node types, use the checker/build entry in [Service API](./service-api.md#custom-instructions), which supplies the extension contracts. Configure the application in `config.yml`.
 
 ## 检查工作流定义
 
 在应用根目录运行：
 
 ```bash
-pnpm nocobase workflow check workflows/<workflow-directory>
+pnpm nocobase dag-flow check workflows/<workflow-directory>
 ```
 
 检查按顺序执行五个阶段：
@@ -31,7 +31,7 @@ pnpm nocobase workflow check workflows/<workflow-directory>
 加 `--ir` 可以直接打印编译后的扁平 IR，也就是 Artifact 中 `workflow.json` 承载的那份定义：
 
 ```bash
-pnpm nocobase workflow check workflows/<workflow-directory> --ir
+pnpm nocobase dag-flow check workflows/<workflow-directory> --ir
 ```
 
 ## 检查运行模块和应用集成
@@ -52,7 +52,7 @@ pnpm build
 Artifact 是应用构建后交给运行时加载的不可变工作流版本产物。可以单独构建：
 
 ```bash
-pnpm nocobase workflow build
+pnpm nocobase dag-flow build
 ```
 
 默认应用的正常 `pnpm build` 也包含此步骤。使用源码作为资源单独构建时，Artifact 保留包内 `.ts` 文件；生产构建则收集应用服务端在相同相对路径输出的 `.js` 文件，并对实际产物内容计算摘要。生产 Artifact 的摘要在存储和加载时会重新计算并校验。

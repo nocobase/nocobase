@@ -108,7 +108,7 @@ describe('dispatching a built-in command', () => {
     expect(matchCommandId(['db'], ids)).toBeUndefined();
     expect(matchCommandId([], ids)).toBeUndefined();
     expect(matchCommandId(['--help'], ids)).toBeUndefined();
-    expect(matchCommandId(['workflow', 'build'], ids)).toBeUndefined();
+    expect(matchCommandId(['scheduler', 'sync'], ids)).toBeUndefined();
   });
 });
 
@@ -307,14 +307,14 @@ describe('topic collisions', () => {
         .map((name) => pluginTopicFor(`@nocobase/${name}`)),
     );
 
-    expect(names).toEqual(expect.arrayContaining(['hub', 'i18n', 'workflow']));
+    expect(names).toEqual(expect.arrayContaining(['hub', 'i18n', 'scheduler']));
     expect(names.filter((name) => RESERVED_TOPICS.includes(name))).toEqual([]);
   });
 });
 
 describe('definition validation', () => {
   it('derives the topic from the package name', () => {
-    expect(pluginTopicFor('@nocobase/app-plugin-workflow')).toBe('workflow');
+    expect(pluginTopicFor('@nocobase/app-plugin-scheduler')).toBe('scheduler');
     expect(pluginTopicFor('@acme/app-plugin-audit-log')).toBe('audit-log');
     expect(pluginTopicFor('@acme/reports')).toBe('reports');
   });

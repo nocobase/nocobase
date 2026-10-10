@@ -4,7 +4,7 @@
 '@nocobase/app-plugin-authentication': major
 '@nocobase/app-plugin-hub': major
 '@nocobase/app-plugin-users': major
-'@nocobase/app-plugin-workflow': major
+'@nocobase/app-plugin-dag-flow': major
 '@nocobase/app-server': major
 '@nocobase/app-cli': patch
 '@nocobase/app-host': patch

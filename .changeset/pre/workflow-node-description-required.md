@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 ---
 
 Require meaningful descriptions for every node in workflow authoring guidance and update the DSL examples.

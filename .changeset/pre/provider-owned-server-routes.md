@@ -8,7 +8,7 @@
 '@nocobase/app-plugin-realtime-example': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-plugin-service-provider-example': patch
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-server': minor
 '@nocobase/app-template-default': minor
 '@nocobase/logging': minor

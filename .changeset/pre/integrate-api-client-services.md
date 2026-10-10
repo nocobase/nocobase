@@ -6,7 +6,7 @@
 '@nocobase/app-plugin-i18n': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-template-default': patch

@@ -1237,6 +1237,79 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/examples/app-plugin-dag-flow-example:
+    dependencies:
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-plugin-dag-flow':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-dag-flow
+      '@nocobase/app-plugin-scheduler':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-scheduler
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-authorization
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/caching':
+        specifier: workspace:*
+        version: link:../../libs/caching
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@nocobase/logging':
+        specifier: workspace:*
+        version: link:../../libs/logging
+      '@nocobase/session':
+        specifier: workspace:*
+        version: link:../../libs/session
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.12
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/examples/app-plugin-database-example:
     dependencies:
       '@nocobase/app-server':
@@ -4324,6 +4397,133 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/plugins/app-plugin-dag-flow:
+    dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@nocobase/app-cli':
+        specifier: workspace:^
+        version: link:../../app/app-cli
+      '@nocobase/app-client':
+        specifier: workspace:^
+        version: link:../../app/app-client
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../app-plugin-authorization
+      '@nocobase/app-plugin-scheduler':
+        specifier: workspace:^
+        version: link:../app-plugin-scheduler
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/drive':
+        specifier: workspace:^
+        version: link:../../libs/drive
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
+      '@nocobase/logging':
+        specifier: workspace:^
+        version: link:../../libs/logging
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      '@nocobase/snowflake':
+        specifier: workspace:^
+        version: link:../../libs/snowflake
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.14.0
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.34.52
+      '@xyflow/react':
+        specifier: ^12.11.3
+        version: 12.11.5(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.16)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
+      elkjs:
+        specifier: ^0.10.2
+        version: 0.10.2
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.12
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/db-sqlite':
+        specifier: workspace:*
+        version: link:../../libs/db-sqlite
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.4(@testing-library/dom@10.4.1)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
+      knex:
+        specifier: 'catalog:'
+        version: 3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.0
+
   packages/plugins/app-plugin-database-explorer:
     dependencies:
       '@nocobase/app-client':
@@ -5693,133 +5893,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
-  packages/plugins/app-plugin-workflow:
-    dependencies:
-      '@base-ui/react':
-        specifier: 'catalog:'
-        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@nocobase/app-cli':
-        specifier: workspace:^
-        version: link:../../app/app-cli
-      '@nocobase/app-client':
-        specifier: workspace:^
-        version: link:../../app/app-client
-      '@nocobase/app-plugin-authentication':
-        specifier: workspace:^
-        version: link:../app-plugin-authentication
-      '@nocobase/app-plugin-authorization':
-        specifier: workspace:^
-        version: link:../app-plugin-authorization
-      '@nocobase/app-plugin-scheduler':
-        specifier: workspace:^
-        version: link:../app-plugin-scheduler
-      '@nocobase/app-server':
-        specifier: workspace:^
-        version: link:../../app/app-server
-      '@nocobase/db':
-        specifier: workspace:^
-        version: link:../../libs/db
-      '@nocobase/drive':
-        specifier: workspace:^
-        version: link:../../libs/drive
-      '@nocobase/i18n':
-        specifier: workspace:^
-        version: link:../../libs/i18n
-      '@nocobase/jobs':
-        specifier: workspace:^
-        version: link:../../libs/jobs
-      '@nocobase/logging':
-        specifier: workspace:^
-        version: link:../../libs/logging
-      '@nocobase/service-provider':
-        specifier: workspace:^
-        version: link:../../libs/service-provider
-      '@nocobase/snowflake':
-        specifier: workspace:^
-        version: link:../../libs/snowflake
-      '@oclif/core':
-        specifier: 'catalog:'
-        version: 4.14.0
-      '@sinclair/typebox':
-        specifier: 'catalog:'
-        version: 0.34.52
-      '@xyflow/react':
-        specifier: ^12.11.3
-        version: 12.11.5(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.16)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      cn:
-        specifier: 'catalog:'
-        version: 0.4.0
-      elkjs:
-        specifier: ^0.10.2
-        version: 0.10.2
-      hono:
-        specifier: 'catalog:'
-        version: 4.13.2
-      lucide-react:
-        specifier: 'catalog:'
-        version: 0.487.0(react@19.2.8)
-      react:
-        specifier: 'catalog:'
-        version: 19.2.8
-      react-router:
-        specifier: 'catalog:'
-        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.12
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0)
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.5
-    devDependencies:
-      '@nocobase/app-testing':
-        specifier: workspace:*
-        version: link:../../tools/app-testing
-      '@nocobase/db-sqlite':
-        specifier: workspace:*
-        version: link:../../libs/db-sqlite
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@testing-library/user-event':
-        specifier: 'catalog:'
-        version: 14.6.4(@testing-library/dom@10.4.1)
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.18
-      eslint:
-        specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
-      jsdom:
-        specifier: 'catalog:'
-        version: 30.0.1(@noble/hashes@2.3.0)
-      knex:
-        specifier: 'catalog:'
-        version: 3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.9.6
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.8(react@19.2.8)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
-      yaml:
-        specifier: 'catalog:'
-        version: 2.9.0
-
   packages/pro-plugins/external-db-data-source:
     dependencies:
       '@nocobase/utils':
@@ -5879,9 +5952,6 @@ importers:
       '@nocobase/app-plugin-users':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-users
-      '@nocobase/app-plugin-workflow':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-workflow
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
@@ -6264,9 +6334,6 @@ importers:
       '@nocobase/app-plugin-users':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-users
-      '@nocobase/app-plugin-workflow':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-workflow
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server

@@ -8,11 +8,11 @@ See [server routes](server-routes.md) for mounting, authentication and authoriza
 
 - **Segments are camelCase.** `/apiKeys`, `/permissionSets`, never `/api-keys` or `/api_keys`. Collections are plural nouns.
 - **A plugin's routes start with its namespace:** the package name without `app-plugin-`, in camelCase, in its singular or its plural form, whichever reads as the plugin's main resource. Every resource of the plugin lives under that one namespace. The application's own routes have no namespace: `/orders`.
-- **When the main resource has the plugin's own name, the segment appears once.** The users plugin lists users at `/users` and disables one at `/users/{userId}/disable`, never `/users/users`. The workflow plugin's workflows are `/workflows` and `/workflows/{workflowId}/enable`, and its other resources nest under the same word: `/workflows/runs`, `/workflows/runs/{runId}/nodeRuns`.
+- **When the main resource has the plugin's own name, the segment appears once.** The users plugin lists users at `/users` and disables one at `/users/{userId}/disable`, never `/users/users`.
 - **When the resource word differs from the plugin's, the namespace comes first.** The scheduler plugin lists schedules at `/scheduler/schedules`. `@nocobase/app-plugin-notification-in-app` owns `/notificationInApp/...`.
 - **A plugin mounted through another plugin's dispatcher keeps the host's namespace.** The authorization rule plugins answer under `/authorization/defaultAccess`, `/authorization/sharingRules` and `/authorization/restrictionRules`, because the authorization plugin owns `/authorization` and dispatches to them. Their errors use the host's domain too.
 - **`/swagger`, `/auth` and `/healthz` are reserved** for the generated API documentation, Better Auth and the health check.
-- **Fixed segments go before path parameters.** Hono matches in registration order and the first match wins without warning, so register `/workflows/runs` before `/workflows/:workflowId`. A user-chosen id must then never equal a fixed sibling segment: reject it when the resource is created, with `400 INVALID_ARGUMENT` and a field violation. An AI employee named `roster` would otherwise be unreachable behind `/aiEmployees/roster`.
+- **Fixed segments go before path parameters.** Hono matches in registration order and the first match wins without warning, so register `/orders/archived` before `/orders/:orderId`. A user-chosen id must then never equal a fixed sibling segment: reject it when the resource is created, with `400 INVALID_ARGUMENT` and a field violation. An AI employee named `roster` would otherwise be unreachable behind `/aiEmployees/roster`.
 - **Two routes with the same method and path fail application start.** Hono would otherwise run only the first; parameter names do not distinguish routes, so `/orders/:id` and `/orders/:orderId` are the same route, while `/orders/:orderId` and `/orders/archived` are not.
 - **The client encodes ids.** An id containing `/` or `:` reaches the route encoded and arrives decoded in `context.req.param()`.
 
@@ -48,7 +48,7 @@ The method follows the resource it acts on: `/{collection}/{id}/{verb}` for one 
 
 A custom method answers `200 { data }` when it has a result, `202` when the work continues asynchronously, and `204` with no body when there is nothing to return.
 
-One operation has one URL across the whole system. Enabling a workflow is `POST /workflows/{workflowId}/enable` and nothing else.
+One operation has one URL across the whole system. Disabling a user is `POST /users/{userId}/disable` and nothing else.
 
 ## Responses
 

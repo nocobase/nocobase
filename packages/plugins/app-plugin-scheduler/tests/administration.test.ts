@@ -8,19 +8,19 @@ import { SchedulerAuthorizationProvider } from '../server/authorization.js';
 import routes from '../client/routes.js';
 
 it.each([false, true])(
-  'extends the Automation subsection (workflow booted first: %s)',
-  async (workflowFirst) => {
+  'extends the Automation subsection (its owner booted first: %s)',
+  async (ownerFirst) => {
     const authz = createAppAuthorization({});
-    const workflow = {
+    const owned = {
       name: 'automation',
-      title: { key: 'nav.automation', ns: '@nocobase/app-plugin-workflow' },
+      title: { key: 'nav.automation', ns: '@acme/app-plugin-automation' },
       parent: 'administration',
     };
-    if (workflowFirst) authz.ui.sections.add(workflow);
-    const automation = workflowFirst
-      ? workflow
+    if (ownerFirst) authz.ui.sections.add(owned);
+    const automation = ownerFirst
+      ? owned
       : {
-          ...workflow,
+          ...owned,
           title: {
             key: 'nav.automation',
             ns: '@nocobase/app-plugin-scheduler',

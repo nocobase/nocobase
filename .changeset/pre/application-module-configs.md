@@ -4,7 +4,7 @@
 '@nocobase/app-client': patch
 '@nocobase/app-plugin-ai-employee': minor
 '@nocobase/app-plugin-notification': minor
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-plugin-hub': minor
 '@nocobase/app-plugin-service-provider-example': patch
 '@nocobase/app-template-default': patch

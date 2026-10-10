@@ -6,7 +6,7 @@ keywords: 'AgentServiceFactory,AIConversationsManager,AgentService,createAIEmplo
 
 # 扩展服务端 AI 服务
 
-普通页面应优先使用 `client/extensions/nocobase-ai` 中的组件和现有 `/api/aiEmployee` Transport。工作流适配器、定时任务、应用 Service 或受保护的服务端 Route 需要直接运行 Agent 时，才使用服务端 Factory。
+普通页面应优先使用 `client/extensions/nocobase-ai` 中的组件和现有 `/api/aiEmployee` Transport。定时任务、应用 Service 或受保护的服务端 Route 需要直接运行 Agent 时，才使用服务端 Factory。
 
 `AgentService` 是应用 Server 内部 API，不是浏览器 API。调用方必须自己确定可信 actor、业务授权、取消和重试策略，不能把 Factory 直接暴露给未经校验的请求参数。
 
@@ -96,7 +96,7 @@ const result = await agent.invoke({
 
 ## 无人值守运行
 
-从任务、定时器或工作流里运行 Agent 时，没有人在旁边确认。插件只提供 AI 能力，任务怎么调度、结果写到哪里由调用方决定；下面只是插件对调用方的要求。
+从任务或定时器里运行 Agent 时，没有人在旁边确认。插件只提供 AI 能力，任务怎么调度、结果写到哪里由调用方决定；下面只是插件对调用方的要求。
 
 **用 `invoke()`，不用 `stream()`。** `stream()` 只有被消费时才会推进，无人消费就会停在一个打开的会话上。需要结构化结果时，传 Zod `responseFormat` 并读取 `structuredResponse`。
 

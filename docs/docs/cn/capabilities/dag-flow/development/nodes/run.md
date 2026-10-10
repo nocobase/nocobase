@@ -38,7 +38,7 @@ RunInstruction.create({
 import type {
   WorkflowRunFunction,
   WorkflowRunJsonValue,
-} from '@nocobase/app-plugin-workflow';
+} from '@nocobase/app-plugin-dag-flow';
 
 interface CalculateRiskArgs {
   quotationId?: unknown;

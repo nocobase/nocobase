@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-hub': patch
 ---

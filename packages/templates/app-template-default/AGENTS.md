@@ -34,7 +34,7 @@ Read the one page your task needs, not the whole directory.
 
 `.agents/skills/nocobase-app-upgrade/` is a separate Skill for a separate job: merging a newer release of the template this application was generated from. Read it when the task is upgrading the template rather than building a feature, and read it before touching anything — an upgrade done by copying the newest template over this application destroys the work that made it this application.
 
-`.agents/skills/nocobase-deployment/` covers moving this application from source to a production server or a Hub: building for the target platform, what the archive does and does not carry, migrations and business data, production configuration, workflow artifacts after a production build, and what to verify afterwards. Read it before building for deployment, and when an application starts in production but does not work.
+`.agents/skills/nocobase-deployment/` covers moving this application from source to a production server or a Hub: building for the target platform, what the archive does and does not carry, migrations and business data, production configuration, and what to verify afterwards. Read it before building for deployment, and when an application starts in production but does not work.
 
 ## Where things go
 
@@ -294,15 +294,14 @@ Route overrides must stay lazy, declare a `componentEntry`, and load a default-e
 
 **You are not starting from scratch.** This application ships with NocoBase packages that already solve whole categories of requirement, and packages may publish a Skill explaining how to use them. `pnpm nocobase skills sync` copies Skills from direct `@nocobase/*` dependencies and registered plugins into `.agents/skills/`. Before implementing a feature, check whether an installed and registered plugin already covers it:
 
-| The requirement sounds like                                                                       | Read the Skill for                    |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Approvals, multi-step processes, "when X happens then Y", business rules that outlive one request | `@nocobase/app-plugin-workflow`       |
-| Email, IM, or in-app messages; notifying someone that something happened                          | `@nocobase/app-plugin-notification`   |
-| Roles, permissions, "user A may only see their own records", field-level or row-level access      | `@nocobase/app-plugin-authorization`  |
-| Sign-in, registration, sessions, password reset                                                   | `@nocobase/app-plugin-authentication` |
-| User listing, account state, password reset, and application-owned role assignment                | `@nocobase/app-plugin-users`          |
-| File upload and metadata through Repository                                                       | `@nocobase/app-plugin-file`           |
-| Translated text and language switching                                                            | `@nocobase/app-plugin-i18n`           |
+| The requirement sounds like                                                                  | Read the Skill for                    |
+| -------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Email, IM, or in-app messages; notifying someone that something happened                     | `@nocobase/app-plugin-notification`   |
+| Roles, permissions, "user A may only see their own records", field-level or row-level access | `@nocobase/app-plugin-authorization`  |
+| Sign-in, registration, sessions, password reset                                              | `@nocobase/app-plugin-authentication` |
+| User listing, account state, password reset, and application-owned role assignment           | `@nocobase/app-plugin-users`          |
+| File upload and metadata through Repository                                                  | `@nocobase/app-plugin-file`           |
+| Translated text and language switching                                                       | `@nocobase/app-plugin-i18n`           |
 
 Run `pnpm nocobase skills sync` if `.agents/skills/` is missing or looks out of date, then read the Skill for the plugin you need. It documents that plugin's public entries, the ownership boundary, and how to verify the result — which is faster and more correct than inferring an API from its source.
 
@@ -314,7 +313,7 @@ Building a permission system, a notification sender, or a job scheduler by hand 
 
 Before removing a direct `@nocobase/*` dependency, search application imports, Client/Server/CLI plugin registrations, routes, services, configuration, tests, and build scripts for its package name and public contracts. Migrate or delete those references first. The command below changes dependency metadata and generated Skills; it does not edit application source or configuration, so never use it to remove a capability the application still needs.
 
-Use `pnpm nocobase package remove @nocobase/example`. It invokes the application's package manager so `package.json` and the lockfile stay consistent, then deletes only synchronized Skills recorded as belonging to that package. For an `@nocobase/app-plugin-*` package it delegates to the plugin unregister workflow, removing its Client, Server, and CLI registrations together; `pnpm nocobase plugin unregister <name>` remains a supported plugin-specific entry point. Preview with `--dry-run`, and use `--json` when another tool needs structured output.
+Use `pnpm nocobase package remove @nocobase/example`. It invokes the application's package manager so `package.json` and the lockfile stay consistent, then deletes only synchronized Skills recorded as belonging to that package. For an `@nocobase/app-plugin-*` package it delegates to the plugin unregister command, removing its Client, Server, and CLI registrations together; `pnpm nocobase plugin unregister <name>` remains a supported plugin-specific entry point. Preview with `--dry-run`, and use `--json` when another tool needs structured output.
 
 After an interrupted or manual removal, first confirm the manifest no longer declares the package, then run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. `package remove` may also be passed a package already absent from the manifest to clean recorded historical Skill ownership, and it must not uninstall or clean Skills owned by another package.
 
@@ -356,7 +355,7 @@ Declare such a package in `dependencies` when you write the code; nothing will r
 
 `CDN_BASE_URL` sets Vite's `base` only during a production build: `CDN_BASE_URL=https://cdn.example.com/my-app/v1/ pnpm build`. Use a full HTTPS URL ending in `/`; unset, empty or whitespace-only values keep the default `./`. `pnpm build` reads it from the process environment, then `.env.local`, then `.env`; development ignores it and continues using `APP_BASE_PATH`. It is a build parameter, absent from `config variables` and `dist/variables.json`, with no `config.yml` setting. Changing it requires rebuilding.
 
-Upload the static files from `dist/client/` to that CDN prefix with their directory structure preserved, and enable CORS for the application's origin. Keep `index.html` and the complete client tree on the application server so it can inject runtime configuration into HTML and serve files still addressed there. Use `resolveAssetUrl('/assets/logo.png')` from `@nocobase/app-client` for a file shipped as `dist/client/assets/logo.png`; template logos use this helper. It reads Vite's build-time `BASE_URL`, uses an absolute HTTP(S) CDN base when configured, and otherwise falls back to the runtime mount path. Keep API paths, page links and runtime-generated files such as workflow artifacts on `resolveAppUrl`. Vite does not rewrite arbitrary URL strings. The README's CDN section describes deployment and Docker usage.
+Upload the static files from `dist/client/` to that CDN prefix with their directory structure preserved, and enable CORS for the application's origin. Keep `index.html` and the complete client tree on the application server so it can inject runtime configuration into HTML and serve files still addressed there. Use `resolveAssetUrl('/assets/logo.png')` from `@nocobase/app-client` for a file shipped as `dist/client/assets/logo.png`; template logos use this helper. It reads Vite's build-time `BASE_URL`, uses an absolute HTTP(S) CDN base when configured, and otherwise falls back to the runtime mount path. Keep API paths, page links and runtime-generated files on `resolveAppUrl`. Vite does not rewrite arbitrary URL strings. The README's CDN section describes deployment and Docker usage.
 
 For a Docker source build, pass `--build-arg CDN_BASE_URL=https://cdn.example.com/my-app/v1/`. With `DIST=prebuilt`, set `CDN_BASE_URL` when building `dist/` beforehand. Neither a prebuilt image's build argument nor `docker run -e CDN_BASE_URL=...` can change compiled asset URLs.
 

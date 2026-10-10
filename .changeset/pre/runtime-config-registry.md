@@ -5,7 +5,7 @@
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-notification': minor
 '@nocobase/app-plugin-service-provider-example': patch
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/caching': minor
 '@nocobase/drive': minor
 '@nocobase/snowflake': minor

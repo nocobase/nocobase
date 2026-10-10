@@ -12,7 +12,7 @@
 '@nocobase/app-plugin-routes-example': minor
 '@nocobase/app-plugin-service-provider-example': minor
 '@nocobase/app-plugin-skills-example': minor
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-template-default': minor
 '@nocobase/app-cli': minor
 '@nocobase/create-plugin': minor

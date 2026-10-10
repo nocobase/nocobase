@@ -60,11 +60,11 @@ const schedules = [
     completedCount: 3,
     lastRunAt: '2026-09-01T02:00:00.000Z',
     nextRunAt: '2026-09-02T02:00:00.000Z',
-    targetType: 'workflow',
+    targetType: 'app.customer-sync',
     targetState: 'ready',
     targetSummary: {
       targetLabel: 'Customer sync',
-      description: 'Published workflow',
+      description: 'Published sync job',
       state: 'ready',
     },
   },
@@ -240,7 +240,7 @@ describe('SchedulesPage', () => {
     // A row names its execution target by kind, and carries no description.
     const syncRow = screen.getByText('Daily customer sync').closest('tr');
     expect(syncRow).not.toBeNull();
-    expect(within(syncRow!).getByText('Workflow')).toBeTruthy();
+    expect(within(syncRow!).getByText('app.customer-sync')).toBeTruthy();
     expect(within(syncRow!).queryByText('Customer sync')).toBeNull();
     const cleanupRow = screen.getByText('Archive cleanup').closest('tr');
     expect(cleanupRow).not.toBeNull();
@@ -475,7 +475,7 @@ describe('SchedulesPage', () => {
     expect(screen.queryByText('0 0 2 * * *')).toBeNull();
     expect(screen.getByText('UTC')).toBeTruthy();
     expect(screen.getByText('Trigger count')).toBeTruthy();
-    expect(screen.getByText('Published workflow')).toBeTruthy();
+    expect(screen.getByText('Published sync job')).toBeTruthy();
     expect(screen.queryByText('Target state')).toBeNull();
     expect(screen.queryByText('ready')).toBeNull();
     expect(

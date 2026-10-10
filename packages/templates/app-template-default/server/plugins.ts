@@ -11,7 +11,6 @@ import i18n from '@nocobase/app-plugin-i18n/server';
 import notification from '@nocobase/app-plugin-notification/server';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/server';
 import notificationProviders from '@nocobase/app-plugin-notification-providers/server';
-import workflow from '@nocobase/app-plugin-workflow/server';
 import {
   defineServerPlugins,
   type AppServerPlugins,
@@ -33,7 +32,6 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   notification,
   notificationInApp,
   notificationProviders,
-  workflow,
   file,
   scheduler,
 ]);

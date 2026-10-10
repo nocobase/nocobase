@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 ---
 
 Register the Artifact build as a CLI hook instead of relying on the application's build script

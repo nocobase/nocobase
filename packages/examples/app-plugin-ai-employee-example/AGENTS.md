@@ -69,7 +69,7 @@ A hook command is any executable with its arguments, already split — no shell,
 
 Every route under `/api` follows the HTTP API design in the `nocobase-app-development` Skill, `references/http-api.md` — in an application at `.agents/skills/nocobase-app-development/references/http-api.md`, in the NocoBase repository at `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`. Read it before adding a route. The rules a plugin breaks most often:
 
-- Paths start with this plugin's namespace, its package name without `app-plugin-` in camelCase and in its singular or plural form, and every segment is camelCase: `/notificationInApp/messages/{messageId}/markRead`, `/workflows/runs`. Register fixed segments before a `/:id` sibling.
+- Paths start with this plugin's namespace, its package name without `app-plugin-` in camelCase and in its singular or plural form, and every segment is camelCase: `/notificationInApp/messages/{messageId}/markRead`, `/users/{userId}/disable`. Register fixed segments before a `/:id` sibling.
 - Data endpoints from `defineRepositoryApiRoutes` are `POST /api/{name}/{action}`; an exposure name is a camelCase segment.
 - Standard methods for reading and writing; any other operation is `POST` to `/{collection}/{id}/{verb}`. `GET` never changes data.
 - Success is `{ data }`, or `{ data, meta }` for a list.

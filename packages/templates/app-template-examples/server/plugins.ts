@@ -25,7 +25,6 @@ import queueExample from '@nocobase/app-plugin-queue-example/server';
 import realtimeExample from '@nocobase/app-plugin-realtime-example/server';
 import routesExample from '@nocobase/app-plugin-routes-example/server';
 import serviceProviderExample from '@nocobase/app-plugin-service-provider-example/server';
-import workflow from '@nocobase/app-plugin-workflow/server';
 import skillsExample from '@nocobase/app-plugin-skills-example/server';
 import {
   defineServerPlugins,
@@ -64,7 +63,6 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   officeFlowsExample,
   routesExample,
   serviceProviderExample,
-  workflow,
   skillsExample,
   repositoryExample,
   file,

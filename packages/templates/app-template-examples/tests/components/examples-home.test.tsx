@@ -57,7 +57,6 @@ it.each(['en-US', 'zh-CN'])(
       '/demo/file-repository',
       '/demo/template-print-example',
       '/demo/routes-example',
-      '/demo/settings/workflow/workflows',
       '/demo/notification-example',
       '/demo/ai-employee-example',
     ]);

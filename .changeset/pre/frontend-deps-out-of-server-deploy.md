@@ -6,7 +6,7 @@
 '@nocobase/app-plugin-authorization': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-notification': patch
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-template-default': patch

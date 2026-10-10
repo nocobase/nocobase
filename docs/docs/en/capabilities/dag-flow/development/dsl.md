@@ -25,7 +25,7 @@ export interface FlowContext {
 }
 ```
 
-Import `ContextOf` from `@nocobase/app-plugin-workflow/dsl`. Give handlers explicit return types when their context refers back to the workflow. TypeBox input and parameter schemas supply static surface types; raw JSON Schema retains generic surfaces. These types add no runtime result schemas or validation. Explicit reference lowering retains its separate ordering checks.
+Import `ContextOf` from `@nocobase/app-plugin-dag-flow/dsl`. Give handlers explicit return types when their context refers back to the workflow. TypeBox input and parameter schemas supply static surface types; raw JSON Schema retains generic surfaces. These types add no runtime result schemas or validation. Explicit reference lowering retains its separate ordering checks.
 
 ## Type-only handler imports
 

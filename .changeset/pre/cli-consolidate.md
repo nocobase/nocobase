@@ -3,7 +3,7 @@
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
 '@nocobase/app-template-hub': minor
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-plugin-scheduler': minor
 '@nocobase/app-plugin-cli-example': minor
 '@nocobase/create-app': minor

@@ -1,16 +1,16 @@
 # HTTP API rules for plugins
 
-Every route a plugin contributes with `defineApiRoutes()` follows these rules. They are Google's API design guidelines with custom methods separated by a slash, `/workflows/{workflowId}/enable`, instead of a colon. The application-level source of truth is `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`; this page applies it to plugin development. Root routes from `defineRootRoutes()` answer whatever their protocol requires, such as a payment provider's webhook, and are not bound by these rules.
+Every route a plugin contributes with `defineApiRoutes()` follows these rules. They are Google's API design guidelines with custom methods separated by a slash, `/users/{userId}/disable`, instead of a colon. The application-level source of truth is `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`; this page applies it to plugin development. Root routes from `defineRootRoutes()` answer whatever their protocol requires, such as a payment provider's webhook, and are not bound by these rules.
 
 ## Paths
 
 - **Every segment is camelCase.** `/apiKeys`, never `/api-keys` or `/api_keys`. Collections are plural nouns.
 - **Every route starts with the plugin's namespace:** the package name without `app-plugin-`, in camelCase, in its singular or plural form. All of the plugin's resources live under that one namespace.
-- **When the main resource has the plugin's name, the segment appears once.** The users plugin serves `/users` and `/users/{userId}/disable`, never `/users/users`. The workflow plugin serves `/workflows`, `/workflows/{workflowId}/enable`, `/workflows/runs` and `/workflows/runs/{runId}/nodeRuns`.
+- **When the main resource has the plugin's name, the segment appears once.** The users plugin serves `/users` and `/users/{userId}/disable`, never `/users/users`.
 - **When the resource word differs, it follows the namespace.** The scheduler plugin serves `/scheduler/schedules`; `@nocobase/app-plugin-notification-in-app` serves `/notificationInApp/...`.
 - **A plugin mounted through another plugin's dispatcher keeps the host's namespace.** The authorization rule plugins are registered with `authz.routes.add` and answer under `/authorization/defaultAccess`, `/authorization/sharingRules` and `/authorization/restrictionRules`; their errors use the domain `authorization`.
 - **`/auth`, `/healthz` and `/swagger` are reserved** for Better Auth, the health check and the API documentation.
-- **Register fixed segments before path parameters.** Hono matches in registration order and the first match wins silently, so `/workflows/runs` goes before `/workflows/:workflowId`. A user-chosen id must never equal a fixed sibling segment: reject it at creation with `400 INVALID_ARGUMENT` and a field violation, as the AI employee plugin rejects an employee named `roster` or `templates`.
+- **Register fixed segments before path parameters.** Hono matches in registration order and the first match wins silently, so `/orders/archived` goes before `/orders/:orderId`. A user-chosen id must never equal a fixed sibling segment: reject it at creation with `400 INVALID_ARGUMENT` and a field violation, as the AI employee plugin rejects an employee named `roster` or `templates`.
 - **Do not repeat `/api`** or a deployment base path in the source path; the runtime adds both.
 
 ## Methods

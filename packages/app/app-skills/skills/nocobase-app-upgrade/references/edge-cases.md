@@ -175,7 +175,7 @@ Run `pnpm install`, then `pnpm nocobase --help`, `pnpm build`, and `node dist/cl
 
 ## Notifications and the application toaster
 
-Plugin pages report results through `useToaster()` from `@nocobase/app-client`: the Users, Workflow and AI employee pages and every Hub page. `@nocobase/app-client` renders nothing itself. The application registers a toaster service under `toasterToken` and mounts the `Toaster` component that renders what it forwards; the template does both, in `client/service-provider.ts` and `client/react-providers.ts`. An application missing either half shows no toasts. Nothing throws: without the registration every toast is logged to the browser console instead, and without the mounted `Toaster` nothing says so. A page that reports an error only through a toast, such as Hub's API Keys page opened without the permission, then shows no explanation at all.
+Plugin pages report results through `useToaster()` from `@nocobase/app-client`: the Users and AI employee pages and every Hub page. `@nocobase/app-client` renders nothing itself. The application registers a toaster service under `toasterToken` and mounts the `Toaster` component that renders what it forwards; the template does both, in `client/service-provider.ts` and `client/react-providers.ts`. An application missing either half shows no toasts. Nothing throws: without the registration every toast is logged to the browser console instead, and without the mounted `Toaster` nothing says so. A page that reports an error only through a toast, such as Hub's API Keys page opened without the permission, then shows no explanation at all.
 
 Make these changes together, before the [Finish step](../SKILL.md#8-finish) installs dependencies:
 

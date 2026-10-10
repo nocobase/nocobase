@@ -7,7 +7,7 @@
 '@nocobase/app-plugin-i18n': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
-'@nocobase/app-plugin-workflow': patch
+'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-plugin-routes-example': patch

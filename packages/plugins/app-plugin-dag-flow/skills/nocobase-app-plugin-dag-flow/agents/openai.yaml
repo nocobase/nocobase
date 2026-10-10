@@ -1,0 +1,7 @@
+interface:
+  display_name: 'NocoBase App Plugin Workflow'
+  short_description: 'Choose and build durable NocoBase business workflows'
+  default_prompt: 'Use $nocobase-app-plugin-dag-flow to decide whether these business rules need Workflow, typed code, or both, then implement and verify the supported design.'
+
+policy:
+  allow_implicit_invocation: true

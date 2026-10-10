@@ -29,7 +29,7 @@ import {
   defineWorkflow,
   RunInstruction,
   type WorkflowSourceAst,
-} from '@nocobase/app-plugin-workflow';
+} from '@nocobase/app-plugin-dag-flow';
 
 const workflow: WorkflowSourceAst = defineWorkflow({
   title: '记录报价提交',
@@ -142,7 +142,7 @@ const completeFlow = flow
 
 连续调用 `addNode()` 并保留返回的 builder，才能累积节点类型；它不再返回被添加的节点。`finalize()` 与 `compile()` 校验处理函数的上下文需求，包括分支节点。原变量不会因为单独调用一次 `addNode()` 就自动获得新类型；丢弃 `addNode()` 的返回值后再对原 builder 调用 `finalize()` 会报错，并列出未被编译的节点。
 
-从 `@nocobase/app-plugin-workflow/dsl` 导入 `ContextOf`，在工作流文件中逐项声明共享上下文，让处理函数通过 `import type` 引入：
+从 `@nocobase/app-plugin-dag-flow/dsl` 导入 `ContextOf`，在工作流文件中逐项声明共享上下文，让处理函数通过 `import type` 引入：
 
 ```ts
 export interface FlowContext {

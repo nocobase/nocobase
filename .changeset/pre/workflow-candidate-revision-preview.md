@@ -1,5 +1,5 @@
 ---
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 ---
 
 Let a candidate workflow revision be read before it is enabled

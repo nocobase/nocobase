@@ -62,7 +62,7 @@ describe('LocaleResource', () => {
       language: { label: '语言', switchError: '无法切换语言。' },
       actions: { save: '保存' },
       overrides: {
-        '@nocobase/app-plugin-workflow': { nav: { title: '审批流程' } },
+        '@nocobase/app-plugin-scheduler': { nav: { title: '计划任务' } },
       },
     };
 
@@ -105,7 +105,7 @@ describe('PartialLocaleResource', () => {
   it('accepts an overrides block too', () => {
     const zhCN: PartialLocaleResource<typeof enUS> = {
       overrides: {
-        '@nocobase/app-plugin-workflow': { nav: { title: '审批流程' } },
+        '@nocobase/app-plugin-scheduler': { nav: { title: '计划任务' } },
       },
     };
 

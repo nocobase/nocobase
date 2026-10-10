@@ -39,7 +39,7 @@ Applications, User management, and Roles & permissions as its primary
 navigation. These entries are declared on their owning routes and do not use
 Refine resources as menu metadata. The template
 does not expose the ordinary App Settings centre, notification centre,
-workflows, or example plugins. The notification provider remains available for
+or example plugins. The notification provider remains available for
 in-page operation feedback.
 
 This version uses an in-process deployment runner rather than a separate durable queue worker. If Hub restarts during an operation, the persisted queued/deploying record is marked failed and can be retried manually. It does not yet provide remote Hosts, multiple Hosts or environments, configuration publications, external provider integration, or database migration rollback. Start-first replacement is not a strict zero-downtime guarantee for long-lived connections or incompatible database migrations. Database migration and seed behavior remains part of App startup.

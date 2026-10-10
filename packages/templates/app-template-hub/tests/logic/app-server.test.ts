@@ -272,14 +272,6 @@ describe('app server', () => {
     }
   });
 
-  it('starts without optional plugins or workflow routes', async () => {
-    const app = createTestApp();
-
-    expect(
-      app.router.routes.some((route) => route.path.includes('/workflows')),
-    ).toBe(false);
-  });
-
   it('creates embedded apps from a scope', async () => {
     const app = await createEmbeddedServer(
       await createEmbeddedTestScope({

@@ -5,7 +5,7 @@
 '@nocobase/queue': minor
 '@nocobase/app-server': minor
 '@nocobase/app-client': minor
-'@nocobase/app-plugin-workflow': minor
+'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': minor
 '@nocobase/app-template-hub': patch

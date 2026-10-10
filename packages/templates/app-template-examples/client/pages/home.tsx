@@ -16,7 +16,6 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
-  Workflow,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
@@ -39,7 +38,6 @@ const examples = [
     icon: Printer,
   },
   { key: 'routes', path: '/routes-example', icon: BookOpen },
-  { key: 'workflows', path: '/settings/workflow/workflows', icon: Workflow },
   {
     key: 'notificationTasks',
     path: '/notification-example',
