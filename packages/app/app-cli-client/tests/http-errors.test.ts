@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { errorJsonOf } from '../src/lib/envelope.ts';
+import { asCliError } from '../src/lib/command.ts';
 import { ApiClient } from '../src/lib/http.ts';
 
 describe('API field validation errors', () => {
@@ -41,5 +42,8 @@ describe('API field validation errors', () => {
         { message: 'expiresAt: Must be in the future' },
       ],
     });
+    expect(asCliError(failure).message).toBe(
+      'INVALID_FIELDS: The request contains invalid fields.\nname: Must not be empty\nexpiresAt: Must be in the future',
+    );
   });
 });
