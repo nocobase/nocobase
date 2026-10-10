@@ -300,6 +300,7 @@ export const DistTargetQuery: z.ZodType<{
 export const VariableValueInput: z.ZodType<{
   value?: string;
   teamRunnersOnly?: boolean;
+  fromRunner?: boolean;
 }> = z.strictObject({
   value: z.string().max(100_000).optional().meta({
     description:
@@ -308,6 +309,10 @@ export const VariableValueInput: z.ZodType<{
   teamRunnersOnly: z.boolean().optional().meta({
     description:
       'Only team runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
+  }),
+  fromRunner: z.boolean().optional().meta({
+    description:
+      'Take it from the runner: no value is kept here, and the runner that takes the run provides it (`nocobase-runner env set NAME`, or `--pass-env NAME`). Leave `value` out.',
   }),
 });
 
@@ -629,6 +634,10 @@ export const VariableSchema: z.ZodType<Variable> = z
     teamRunnersOnly: z.boolean().optional().meta({
       description:
         'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
+    }),
+    fromRunner: z.boolean().optional().meta({
+      description:
+        'Taken from the runner: it has no value here, and the runner that takes the run provides it from its own configuration.',
     }),
     updatedAt: dateTime,
     updatedById: z.string().nullable(),
@@ -1452,6 +1461,10 @@ const runnerObject = z.object({
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),
+  variables: z.array(z.string()).nullable().optional().meta({
+    description:
+      'The names of the variables it provides to runs that take them from the runner, as it last reported them; null when it reported none. Names only.',
+  }),
   workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
     description:
       'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',

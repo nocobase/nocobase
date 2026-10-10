@@ -222,7 +222,21 @@ export interface RegisterRequest {
   readonly toolSlots?: ToolSlots;
   /** What its owner's local policy lets it take (protocol 7); absent for anything. */
   readonly policy?: RunnerPolicy;
+  /** The names of the variables it provides to a run that asks for them (`RunnerVariableNamesSchema`); absent for unknown. */
+  readonly variables?: readonly string[];
 }
+
+/** How many variable names a runner reports at most. */
+export const MAX_RUNNER_VARIABLES = 200;
+
+/**
+ * The names of the variables a runner provides to a run that asks for them by name (`RunWorkspace.passthrough`): its
+ * local variables and the names its owner passes from its environment. Names only, never values; a runner from before
+ * they were reported leaves them out.
+ */
+export const RunnerVariableNamesSchema: z.ZodType<readonly string[]> = z
+  .array(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,127}$/u))
+  .max(MAX_RUNNER_VARIABLES);
 
 export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
   registrationToken: z.string().min(1),
@@ -238,6 +252,7 @@ export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
   slots: z.number().int().positive().max(64).optional(),
   toolSlots: ToolSlotsSchema.optional(),
   policy: RunnerPolicySchema.optional(),
+  variables: RunnerVariableNamesSchema.optional(),
 });
 
 export interface RegisterResponse {
@@ -304,6 +319,8 @@ export interface HeartbeatRequest {
   };
   /** What its owner's local policy lets it take now (protocol 7); absent for anything. */
   readonly policy?: RunnerPolicy;
+  /** As in `RegisterRequest`: the names of the variables it provides now. */
+  readonly variables?: readonly string[];
 }
 
 export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
@@ -319,6 +336,7 @@ export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
     tools: z.partialRecord(AgentToolSchema, ToolLoadSchema).optional(),
   }),
   policy: RunnerPolicySchema.optional(),
+  variables: RunnerVariableNamesSchema.optional(),
 });
 
 /**

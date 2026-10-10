@@ -29,10 +29,15 @@
 // its service from an installation (`selfUpdate`) stops claiming, waits for its runs to end, installs the new version
 // (update.ts) and stops, and its process exits with `exitCode`; the service starts the new version. Any other daemon
 // only logs the notice.
+import { createHash } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 
 import type { AgentAdapter } from '../agent/adapters/types.ts';
+import { detectionEnv, providedNames } from '../agent/env.ts';
+import type { loadAdapters } from '../agent/adapters/registry.ts';
 import {
+  readConnection,
+  passEnvNames,
   dropWorkspaceLimit,
   minFreeDisk,
   readSettings,
@@ -167,6 +172,8 @@ export interface DaemonOptions {
   settings: RunnerSettings;
   connections: readonly AppConnection[];
   adapters: Map<AgentTool, AgentAdapter>;
+  /** Fresh adapters for each application's detection environment; the supplied adapters otherwise (tests). */
+  adaptersFor?: typeof loadAdapters;
   slots?: number;
   /** Limits per coding tool for this start; the settings' otherwise. */
   toolSlots?: ToolSlots;
@@ -200,6 +207,16 @@ interface AppLink {
   heartbeatTimer?: NodeJS.Timeout;
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
+  /** Detection is cached only for this application and refreshed when its effective variables change. */
+  /**
+   * What was detected for this application in the environment its runs get, by a digest of that environment: its
+   * tools, and their model capabilities, refreshed in the background (`ToolCapabilitiesCache`).
+   */
+  detection?: {
+    key: string;
+    tools: Promise<ToolInfo[]>;
+    capabilities: Promise<ToolCapabilitiesCache>;
+  };
   /** The application accepts reports of the working directories (its last heartbeat answer said so). */
   workspaceReporting?: WorkspaceReporting;
 }
@@ -216,8 +233,6 @@ export class RunnerDaemon {
   private gcTimer: NodeJS.Timeout | undefined;
   private lastCollect = 0;
   private collecting: Promise<void> | undefined;
-  private tools: ToolInfo[] = [];
-  private capabilities?: ToolCapabilitiesCache;
   private claimLoop: Promise<void> | undefined;
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
@@ -359,11 +374,6 @@ export class RunnerDaemon {
       log(
         `recovered ${recovered.length} orphaned run(s): ${recovered.join(', ')}`,
       );
-    this.tools = await detectTools(this.options.adapters);
-    this.capabilities = new ToolCapabilitiesCache(
-      this.options.adapters,
-      this.tools,
-    );
     for (const link of this.links) {
       await this.heartbeat(link);
       link.heartbeatTimer = setInterval(
@@ -392,7 +402,11 @@ export class RunnerDaemon {
     this.stopped ??= (async () => {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
-      await this.capabilities?.stop();
+      await Promise.allSettled(
+        this.links.map(async (link) =>
+          (await link.detection?.capabilities)?.stop(),
+        ),
+      );
       this.slotFreed?.();
       for (const link of this.links)
         if (link.heartbeatTimer !== undefined)
@@ -433,6 +447,54 @@ export class RunnerDaemon {
       );
     link.policy = report;
     return report;
+  }
+
+  /**
+   * The names this application can request and tools it can use now. Re-read its local variables and the passed
+   * names so changes refresh detection without a restart; cache no detection across applications.
+   */
+  private async environmentOf(
+    link: AppLink,
+  ): Promise<{ variables: string[]; tools: ToolInfo[] }> {
+    const stored = await readConnection(link.key, this.options.paths).catch(
+      () => undefined,
+    );
+    const settings =
+      (await readJson<RunnerSettings>(this.options.paths.settings)) ??
+      this.options.settings;
+    const passEnv = passEnvNames(settings.passEnv);
+    const localVariables = (stored ?? link.connection).registration.variables;
+    const key = createHash('sha256')
+      .update(
+        JSON.stringify(
+          Object.entries(
+            detectionEnv(process.env, passEnv, localVariables),
+          ).sort(([a], [b]) => a.localeCompare(b)),
+        ),
+      )
+      .digest('hex');
+    if (link.detection?.key !== key) {
+      const previous = link.detection;
+      const adapters =
+        this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
+        this.options.adapters;
+      const tools = detectTools(adapters);
+      link.detection = {
+        key,
+        tools,
+        capabilities: tools.then(
+          (detected) => new ToolCapabilitiesCache(adapters, detected),
+        ),
+      };
+      if (previous !== undefined)
+        void previous.capabilities.then((cache) => cache.stop());
+    }
+    const capabilities = await link.detection.capabilities;
+    capabilities.refresh();
+    return {
+      variables: providedNames(process.env, passEnv, localVariables),
+      tools: [...capabilities.tools],
+    };
   }
 
   /** How often working directories are collected: every 10 minutes, or sooner when an application asks. */
@@ -542,7 +604,6 @@ export class RunnerDaemon {
   }
 
   async heartbeat(link: AppLink): Promise<void> {
-    this.capabilities?.refresh();
     if (this.stopping.signal.aborted || link.revoked) return;
     const { log } = this.options;
     const held = [...this.supervisor.runs.values()].filter(
@@ -552,6 +613,7 @@ export class RunnerDaemon {
     const jobs = held.filter((run) => run.jobId !== undefined);
     try {
       const policy = await this.policyOf(link);
+      const { variables, tools } = await this.environmentOf(link);
       const response = await link.client.post(
         RUNNER_ROUTES.heartbeat,
         {
@@ -559,7 +621,8 @@ export class RunnerDaemon {
           product: runnerHost().product,
           features: policy.features,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
-          tools: this.capabilities?.tools ?? this.tools,
+          variables,
+          tools,
           active: runs.map((run) => ({
             runId: run.runId,
             pid: run.pid,

@@ -99,6 +99,37 @@ describe("a runner's working directories", () => {
     expect(response.body.data).toEqual({ remove: [ended], keep: [ongoing] });
   });
 
+  it('preserves variable names across workspace reports and workspace usage across heartbeats', async () => {
+    h = await createHarness();
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    const heartbeat = (variables: string[]) =>
+      h.request('POST', api(RUNNER_ROUTES.heartbeat), {
+        runnerKey: runner.key,
+        body: {
+          version: '0.1.0',
+          features: ['input', 'checkout'],
+          tools: [{ kind: 'claude', authenticated: true }],
+          active: [],
+          load: { slots: 1, free: 1 },
+          variables,
+        },
+      });
+    expect((await heartbeat(['PI_KEY'])).status).toBe(200);
+    expect(
+      (await report(runner, { workspaces: [workspace(runIds[0])], disk }))
+        .status,
+    ).toBe(200);
+    const before = await h.services.runners.get(runner.runnerId);
+    expect(before.variables).toEqual(['PI_KEY']);
+    expect(before.workspaceUsage?.count).toBe(1);
+    expect((await heartbeat(['OTHER_KEY'])).status).toBe(200);
+    const shown = await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+      user: 'owner',
+    });
+    expect(shown.body.data.variables).toEqual(['OTHER_KEY']);
+    expect(shown.body.data.workspaceUsage).toEqual(before.workspaceUsage);
+  });
+
   it('keeps the report on the runner, most recently used first, with each subject, what was decided and the disk', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);
