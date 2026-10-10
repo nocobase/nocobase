@@ -3,7 +3,7 @@ import {
   type AppClientRegisteredRoute,
   type AppClientRouteComponentLoader,
 } from '@nocobase/app-client/plugins';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import applicationRoutes from '../../client/routes.ts';
 
@@ -58,7 +58,43 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
+      { name: 'theme-lab-orders', authorizedAs: null },
+      { name: 'theme-lab-order-new', authorizedAs: null },
+      { name: 'theme-lab-order-edit', authorizedAs: null },
+      { name: 'theme-lab-order-detail', authorizedAs: null },
+      { name: 'theme-lab-order-detail-edit', authorizedAs: null },
+      { name: 'theme-lab-workspace', authorizedAs: null },
+      { name: 'theme-lab-controls', authorizedAs: null },
+      { name: 'theme-lab-navigation', authorizedAs: null },
+      { name: 'theme-lab-gallery-dialog', authorizedAs: null },
+      { name: 'theme-lab-gallery-sheet', authorizedAs: null },
+      { name: 'theme-lab-feedback', authorizedAs: null },
+      { name: 'theme-lab-dashboard', authorizedAs: null },
+      { name: 'theme-lab-dashboard-detail', authorizedAs: null },
+      { name: 'theme-lab-customers', authorizedAs: null },
+      { name: 'theme-lab-create', authorizedAs: null },
+      { name: 'theme-lab-customers-detail', authorizedAs: null },
+      { name: 'theme-lab-pipeline', authorizedAs: null },
+      { name: 'theme-lab-pipeline-detail', authorizedAs: null },
     ]);
+  });
+
+  it('excludes preview routes from the production application', async () => {
+    vi.stubEnv('DEV', false);
+    vi.resetModules();
+    try {
+      const { default: productionRoutes } =
+        await import('../../client/routes.ts');
+      expect(productionRoutes).toHaveLength(2);
+      expect(
+        productionRoutes
+          .flatMap((contribution) => contribution.routes)
+          .some((route) => route.path?.startsWith('/theme-lab')),
+      ).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
   });
 
   it('keeps the inbox out of the application navigation', () => {
