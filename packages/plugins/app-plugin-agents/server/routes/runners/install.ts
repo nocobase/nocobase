@@ -22,6 +22,15 @@
  *    once it is unpacked links `<prefix>/node` to that `node`, which the package's launcher runs it with, so a user
  *    service started without the shell's PATH (launchd, systemd) still finds it.
  *
+ * The script asks with `accept=npm`, so an application that serves no tarball of a product and names its npm package
+ * instead (`DistNpmPackage`, `kind=npm` in the answer) is followed too: after the same Node.js 24 check, and a check
+ * that `npm` is on PATH (or `NOCOBASE_NPM`), it runs `npm install --prefix <prefix>/versions/<version>.partial
+ * --no-save --no-audit --no-fund --omit=optional <package>@<version>` with the npm configuration of the person running
+ * it, writes `bin/<command>` beside `node_modules` (the launcher of `npmLauncherScript`, which starts
+ * `node_modules/.bin/<command>` with the Node it finds as the universal launcher does), renames the directory to
+ * `<prefix>/versions/<version>`, and links `<prefix>/node` as for a universal tarball. Everything after that, from
+ * `current` to the service, is the same for both.
+ *
  * With `--runner` it warns when `pnpm` is not on PATH, suggesting `corepack enable`, and carries on. It then registers
  * the runner with the token (`nocobase-runner register`), installs and starts the user service
  * (`nocobase-runner service install`: a launchd agent or a systemd user unit), and waits until it runs.
@@ -42,6 +51,7 @@ import {
   HEADERS,
   RUNNER_PRODUCT,
 } from '@nocobase/agent-protocol';
+import { npmLauncherScript } from '@nocobase/app-cli-client/install';
 import {
   apiErrorResponse,
   cliRoute,
@@ -258,6 +268,20 @@ require_node() {
   [ "\${node_version%%.*}" -ge 24 ] || fail "$1 needs Node.js 24 or newer; $node_bin is $node_version. $node_hint"
 }
 
+# A package the application names on npm is installed with npm: sets npm_bin to NOCOBASE_NPM or the npm on PATH, and
+# fails saying how to get one otherwise. require_npm <command>.
+require_npm() {
+  npm_bin="\${NOCOBASE_NPM:-$(command -v npm 2>/dev/null || true)}"
+  [ -n "$npm_bin" ] && [ -x "$npm_bin" ] || fail "$1 is installed from npm, and npm is not on PATH. npm comes with Node.js: install Node.js 24 or newer from https://nodejs.org/en/download (a version manager such as nvm installs npm too), or set NOCOBASE_NPM to its path, and run this command again."
+}
+
+# The launcher of a version installed from npm: <version>/bin/<command> starts node_modules/.bin/<command> with the
+# first Node.js 24 or newer it finds, as the universal tarball's launcher does.
+write_npm_launcher() {
+  cat <<'LAUNCHER'
+${npmLauncherScript()}LAUNCHER
+}
+
 # Installs one product: install_product <command> <prefix> <mode>. Sets "installed" to what happened: "new", "kept"
 # (the token was not accepted, but the CLI is installed), "used" (the token was used, by the runner registered here)
 # or "missing" (the application serves no CLI; with --runner the runtime is installed without it).
@@ -268,7 +292,7 @@ install_product() {
   installed=new
   status="$(curl -sS -o "$tmp/resolve" -w '%{http_code}' \\
     -H "$header: $token" \\
-    "$server/api/agents/dist/products/$product/targets/$target?format=env")" ||
+    "$server/api/agents/dist/products/$product/targets/$target?format=env&accept=npm")" ||
     fail "Could not reach $server."
   if [ "$status" = 401 ] && [ "$runner" = 1 ] && registered; then
     installed=used
@@ -285,28 +309,54 @@ install_product() {
     message="$(sed -n 's/.*"message":"\\([^"]*\\)".*/\\1/p' "$tmp/resolve")"
     fail "$server answered $status: \${message:-$(cat "$tmp/resolve")}"
   fi
+  kind="$(field kind)"
   version="$(field version)"
-  url="$(field url)"
-  checksum="$(field sha256)"
   case "$version" in
     ''|*[!0-9A-Za-z.+-]*) fail "The server named an unexpected version: $version" ;;
   esac
-  case "$url" in
-    /*) ;;
-    *) fail "The server named an unexpected download: $url" ;;
-  esac
-  case "$checksum" in
-    *[!0-9a-f]*|'') fail "The server named an unexpected checksum: $checksum" ;;
-  esac
-  universal="$(field universal)"
-  if [ "$universal" = true ]; then
+  universal=""
+  if [ "$kind" = npm ]; then
+    package="$(field package)"
+    case "$package" in
+      ''|*[!0-9a-z@/._~-]*) fail "The server named an unexpected npm package: $package" ;;
+    esac
     require_node "$product"
-    say "$product $version runs on this machine's Node.js $node_version ($node_bin)."
+    require_npm "$product"
+    say "$product $version comes from npm ($package@$version) and runs on this machine's Node.js $node_version ($node_bin)."
+  else
+    url="$(field url)"
+    checksum="$(field sha256)"
+    case "$url" in
+      /*) ;;
+      *) fail "The server named an unexpected download: $url" ;;
+    esac
+    case "$checksum" in
+      *[!0-9a-f]*|'') fail "The server named an unexpected checksum: $checksum" ;;
+    esac
+    universal="$(field universal)"
+    if [ "$universal" = true ]; then
+      require_node "$product"
+      say "$product $version runs on this machine's Node.js $node_version ($node_bin)."
+    fi
   fi
 
   dest="$dir/versions/$version"
   if [ -x "$dest/bin/$product" ]; then
     say "$product $version for $target is already installed in $dest."
+  elif [ "$kind" = npm ]; then
+    say "Installing $package@$version with npm ..."
+    run rm -rf "$dest.partial"
+    run mkdir -p "$dest.partial"
+    # No optional dependencies: the coding tools' SDKs list one package per platform, each carrying a binary the
+    # runner never starts.
+    run "$npm_bin" install --prefix "$dest.partial" --no-save --no-audit --no-fund --omit=optional "$package@$version"
+    if [ "$dry_run" = 0 ]; then
+      [ -e "$dest.partial/node_modules/.bin/$product" ] || fail "$package@$version provides no $product command."
+      mkdir -p "$dest.partial/bin"
+      write_npm_launcher >"$dest.partial/bin/$product"
+      chmod 755 "$dest.partial/bin/$product"
+    fi
+    run mv "$dest.partial" "$dest"
   else
     say "Downloading $product $version for $target from $server ..."
     run curl -fSL --progress-bar -H "$header: $token" -o "$tmp/$product.tar.gz" "$server$url"
@@ -321,7 +371,7 @@ install_product() {
     run mv "$dest.partial" "$dest"
   fi
   run ln -sfn "versions/$version" "$dir/current"
-  if [ "$universal" = true ]; then
+  if [ "$universal" = true ] || [ "$kind" = npm ]; then
     # The launcher's first choice, so a service that does not have this shell's PATH runs the same Node.
     run ln -sfn "$node_bin" "$dir/node"
   fi
@@ -379,6 +429,7 @@ if [ "$runner" = 1 ]; then
   else
     say "Registered. Start the runner with: $runner_bin start"
   fi
+  say "Note: agents run with full access as $(id -un), with this user's home and credentials. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM."
 else
   say "$cli is installed: $bin_dir/$cli"
 fi

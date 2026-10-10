@@ -59,6 +59,7 @@
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@nocobase/session": "workspace:^",
+    "@nocobase/studio-cli": "workspace:^",
     "@playwright/test": "catalog:",
     "@refinedev/cli": "^2.16.48",
     "@refinedev/core": "catalog:",

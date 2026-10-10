@@ -129,7 +129,7 @@ it('refreshes stale detection before claiming even when the next heartbeat is no
   expect(detect).toHaveBeenCalledTimes(initial + 1);
 });
 
-// Protocol 7 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
+// Protocol 8 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
 const legacyFeatures = z.object({
   features: z.array(
     z.enum([
@@ -143,6 +143,7 @@ const legacyFeatures = z.object({
       'archives',
       'jobs.build',
       'mounts',
+      'npm',
     ]),
   ),
 });

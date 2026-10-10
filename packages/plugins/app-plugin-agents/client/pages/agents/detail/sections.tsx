@@ -51,17 +51,11 @@ import { useModelCatalog } from '../../../hooks/use-model-catalog.js';
 import { errorText, useNotify } from '../../../hooks/use-notify.js';
 import { useAgentText } from '../../../hooks/use-vocabulary.js';
 import { offersTool } from '../../../lib/agents.js';
-import {
-  DEFAULT_ALLOWED_COMMANDS,
-  DEFAULT_DENIED_PATTERNS,
-  DEFAULT_IDLE_TIMEOUT_MS,
-} from '../../../lib/tool-policy.js';
+import { DEFAULT_IDLE_TIMEOUT_MS } from '../../../lib/tool-policy.js';
 import {
   draftEntries,
   entriesError,
   entryDrafts,
-  invalidPattern,
-  patternLines,
   sameEntries,
   sameItems,
   wholeNumber,
@@ -706,96 +700,6 @@ export function PlacementSection({
             ) : null}
           </Field>
         </div>
-      </FieldGroup>
-    </AgSection>
-  );
-}
-
-// Runtime: the commands it may run on the runner's machine
-
-export function CommandPolicySection({
-  agent,
-  canEdit,
-}: SectionProps): ReactElement {
-  const { t } = useTranslation();
-  const pending = useDraftPending();
-  const initialAllowed = (
-    agent.toolPolicy?.allowedCommands ?? DEFAULT_ALLOWED_COMMANDS
-  ).join('\n');
-  const initialDenied = (
-    agent.toolPolicy?.deniedPatterns ?? DEFAULT_DENIED_PATTERNS
-  ).join('\n');
-  const [allowed, setAllowed] = useState(initialAllowed);
-  const [denied, setDenied] = useState(initialDenied);
-  const [patternError, setPatternError] = useState<string>();
-  const dirty = allowed !== initialAllowed || denied !== initialDenied;
-  const disabled = !canEdit || pending;
-
-  useSectionDraft('commands', dirty, () => {
-    const allowedLines = patternLines(allowed);
-    const deniedLines = patternLines(denied);
-    const bad = invalidPattern([...allowedLines, ...deniedLines]);
-    setPatternError(
-      bad ? t('capabilities.patternInvalid', { pattern: bad }) : undefined,
-    );
-    if (bad) return null;
-    return {
-      toolPolicy: policyWith(agent.toolPolicy, {
-        allowedCommands: sameItems(allowedLines, DEFAULT_ALLOWED_COMMANDS)
-          ? undefined
-          : allowedLines,
-        deniedPatterns: sameItems(deniedLines, DEFAULT_DENIED_PATTERNS)
-          ? undefined
-          : deniedLines,
-      }),
-    };
-  });
-
-  return (
-    <AgSection
-      id='ag-agent-commands'
-      title={t('commandPolicy.title')}
-      description={t('commandPolicy.hint')}
-    >
-      <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor='ag-agent-allowed'>
-            {t('capabilities.allowedCommands')}
-          </FieldLabel>
-          <Textarea
-            id='ag-agent-allowed'
-            rows={4}
-            spellCheck={false}
-            className='font-mono text-xs'
-            value={allowed}
-            disabled={disabled}
-            onChange={(event) => setAllowed(event.target.value)}
-          />
-          <FieldDescription>
-            {t('capabilities.allowedCommandsHint')}
-          </FieldDescription>
-        </Field>
-        <Field data-invalid={patternError ? true : undefined}>
-          <FieldLabel htmlFor='ag-agent-denied'>
-            {t('capabilities.deniedPatterns')}
-          </FieldLabel>
-          <Textarea
-            id='ag-agent-denied'
-            rows={4}
-            spellCheck={false}
-            className='font-mono text-xs'
-            value={denied}
-            disabled={disabled}
-            onChange={(event) => setDenied(event.target.value)}
-          />
-          {patternError ? (
-            <FieldError>{patternError}</FieldError>
-          ) : (
-            <FieldDescription>
-              {t('capabilities.deniedPatternsHint')}
-            </FieldDescription>
-          )}
-        </Field>
       </FieldGroup>
     </AgSection>
   );

@@ -40,6 +40,6 @@
     "directory": "packages/tools/studio-cli"
   },
   "dependencies": {
-    "@nocobase/app-cli-client": "workspace:^"
+    "@nocobase/app-cli-client": "workspace:*"
   }
 }
