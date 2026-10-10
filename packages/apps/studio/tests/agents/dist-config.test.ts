@@ -7,6 +7,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import runnerPackage from '@nocobase/agent-runner/package.json' with { type: 'json' };
+import studioCliPackage from '@nocobase/studio-cli/package.json' with { type: 'json' };
 import { RUNNER_PRODUCT } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -62,6 +63,13 @@ describe('agents.dist.npm', () => {
     expect(configWith({}).dist?.npm?.[RUNNER_PRODUCT]).toEqual({
       package: '@nocobase/agent-runner',
       version: runnerPackage.version,
+    });
+  });
+
+  it('pins nb-studio to the exact @nocobase/studio-cli this Studio is developed with', () => {
+    expect(configWith({}).dist?.npm?.['nb-studio']).toEqual({
+      package: '@nocobase/studio-cli',
+      version: studioCliPackage.version,
     });
   });
 

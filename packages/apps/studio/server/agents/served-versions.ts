@@ -17,7 +17,7 @@ import type { DistNpmSource } from '@nocobase/app-plugin-agents/server/tokens';
 
 /**
  * Each product Studio serves, by the npm package it is published as: the runner (`RUNNER_PRODUCT`) and `nb-studio`.
- * Until Studio declares `@nocobase/studio-cli`, its CLI is served only from tarballs.
+ * Studio declares both as development dependencies, so each is pinned to the version Studio is built with.
  *
  * This module imports no package at run time: `pnpm build` runs it before the workspace packages it would import are
  * usable from a compiled file, so the runner's product name is written out (a test holds it to `RUNNER_PRODUCT`).

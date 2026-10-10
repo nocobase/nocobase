@@ -533,10 +533,10 @@ importers:
         specifier: 0.3.285
         version: 0.3.285(@anthropic-ai/sdk@0.73.0(zod@4.6.5))(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5))(zod@4.6.5)
       '@nocobase/agent-protocol':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/agent-protocol
       '@nocobase/app-cli-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../app-cli-client
       '@nocobase/cli-envelope':
         specifier: workspace:^
@@ -655,7 +655,7 @@ importers:
   packages/app/app-cli-client:
     dependencies:
       '@nocobase/agent-protocol':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/agent-protocol
       '@nocobase/cli-envelope':
         specifier: workspace:^
@@ -1210,6 +1210,9 @@ importers:
       '@nocobase/session':
         specifier: workspace:^
         version: link:../../libs/session
+      '@nocobase/studio-cli':
+        specifier: workspace:^
+        version: link:../../tools/studio-cli
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.1
@@ -5310,6 +5313,9 @@ importers:
       '@nocobase/app-plugin-i18n':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-i18n
+      '@nocobase/app-plugin-mail':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-mail
       '@nocobase/app-plugin-notification':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-notification
@@ -6254,7 +6260,7 @@ importers:
   packages/tools/studio-cli:
     dependencies:
       '@nocobase/app-cli-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-cli-client
 
   ui-library:

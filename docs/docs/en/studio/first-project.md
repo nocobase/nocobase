@@ -8,6 +8,7 @@ Start a freight order management application by creating its project and arrangi
 2. **Local Studio has no public address.** GitHub Webhooks and hosted Actions cannot reach it, blocking later CI integration.
 3. **Developer lacks NocoBase 3 initialization guidance.** Without an initialization skill or explicit steps, the agent chose an older command.
 4. **Runner blocks downloaded scaffold execution by default.** Even the correct command requires additional permission configuration.
+5. **Local Studio cannot complete GitHub App registration.** The registration manifest still contains a localhost hook URL, which GitHub rejects, preventing repository authorization.
 
 These gaps interrupt local setup, application initialization, and later CI integration. See [Review notes](./review-notes) for configuration details and workflow proposals.
 
@@ -59,3 +60,30 @@ The confirmation dialog lists the project creation and agent run. Review it and 
 After execution, **Projects** lists Northstar Logistics. Open its **Issues** tab to view initialization issue PM-1 and its status.
 
 ![The created transport project](./assets/first-project-created-en.png)
+
+## Add the GitHub connection
+
+:::warning Complete GitHub setup before continuing development
+
+In this example, the Project lead created the project and dispatched initialization before the GitHub connection and repository authorization were configured. Linking only a local directory does not let Studio automatically provide GitHub push credentials to the Runner or create a PR for the project. Before continuing, add the GitHub connection, authorize the repository, and link it to the project.
+
+:::
+
+Studio supports two GitHub connection methods:
+
+- **GitHub App (used in this walkthrough)**: Install the App on a GitHub account or organization and authorize selected repositories. Once the project links a repository through this connection, Studio can provide the Runner with short-lived push credentials scoped to that repository and handle PRs. Studio guides App registration; no App code is required.
+- **Token**: Create a connection with a GitHub token. Currently, this method does not automatically provide push credentials to the Runner. Configure Git credentials on the Runner's machine to enable code pushes.
+
+This walkthrough uses **northstar-logistics** in a personal account, connects through a GitHub App, and authorizes only that repository.
+
+Open **Settings → Git**, then click **Add connection → GitHub**.
+
+![GitHub connection entry](./assets/github-settings-empty-en.png)
+
+Select **My account** and click **Create on GitHub**. In your signed-in GitHub browser, register the App and install it on your personal account. Select **Only select repositories** and authorize **northstar-logistics**.
+
+![Create a GitHub App connection for a personal account](./assets/github-connect-my-account-en.png)
+
+In this walkthrough, registering the GitHub App with localhost failed: GitHub rejected the hook URL because it was not reachable over the public internet. Although Studio says the webhook starts disabled and polling is used instead, its registration manifest still includes a localhost hook URL. Resolve the registration configuration or public address before continuing repository authorization.
+
+![GitHub rejects the App manifest containing a localhost hook URL](./assets/github-app-localhost-blocked-en.png)
