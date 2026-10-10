@@ -12,6 +12,38 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  globalChat: {
+    notSubmitted: 'Question was not sent',
+    editRejected: 'Return question and files to editor',
+    placeholder: 'Ask Agent…',
+    label: 'Question for Agent',
+    edit: 'Continue editing in panel',
+    preview: 'Preview page context',
+    send: 'Send question',
+    target: 'New conversation with {{name}}',
+    continue: 'Continue: {{title}} · {{name}}',
+    newConversation: 'New conversation',
+    noAgent: 'Choose an agent in the panel',
+    replying: 'Agent is replying',
+    truncated: 'Page context was shortened to stay within the budget.',
+    unknown: 'Send result awaiting confirmation',
+    creationUnknown: 'Conversation creation awaiting confirmation',
+    sending: 'Sending…',
+    unknownHelp:
+      'This question may already be saved. Check the conversation before sending more.',
+    check: 'Refresh confirmation',
+    viewConversation: 'View conversation',
+    creationHelp:
+      'The question has not been sent. Choose a conversation to continue, or create another; an empty conversation may already exist.',
+    refreshConversations: 'Refresh conversations',
+    chooseConversation: 'Continue in {{title}}',
+    moreConversations: 'More conversations',
+    createAnother: 'Create another conversation (an empty one may exist)',
+    draftConflict:
+      'The panel has a draft. How should the header question be handled?',
+    keepDraft: 'Keep panel draft',
+    appendDraft: 'Append header question',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
