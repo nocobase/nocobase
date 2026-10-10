@@ -246,7 +246,7 @@ const runBlock = (source, name) => {
     .join('\n');
 };
 
-test('a beta release that publishes Studio dispatches its release image from the release tag', (t) => {
+test('a beta release that publishes Studio builds its public release image from the release tag', (t) => {
   const source = workflow('release-beta');
   assert.match(
     source,
@@ -270,13 +270,15 @@ test('a beta release that publishes Studio dispatches its release image from the
     job,
     /!cancelled\(\) && !inputs\.dry_run\n\s+&& needs\.release\.outputs\.tag != '' && needs\.release\.outputs\.studio_version != ''/u,
   );
+  assert.match(job, /uses: \.\/\.github\/workflows\/v3-studio-image\.yml\n/u);
   assert.match(
     job,
-    /GH_TOKEN: \$\{\{ secrets\.NOCOBASE_CI_DISPATCH_TOKEN \}\}/u,
+    /with:\n\s+tag: \$\{\{ needs\.release\.outputs\.tag \}\}\n/u,
   );
-  assert.match(job, /permissions: \{\}/u);
+  assert.match(job, /secrets: inherit\n/u);
+  assert.doesNotMatch(job, /nocobase-ci|NOCOBASE_CI_DISPATCH_TOKEN/u);
 
-  const directory = mkdtempSync(path.join(tmpdir(), 'studio-image-dispatch-'));
+  const directory = mkdtempSync(path.join(tmpdir(), 'studio-image-release-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
 
   // The Studio version comes from the released specs, and is empty when Studio was not released.
@@ -329,73 +331,63 @@ test('a beta release that publishes Studio dispatches its release image from the
     'version=\n',
   );
 
-  // The dispatch names the release tag and release mode on the CI repository's main.
-  const bin = path.join(directory, 'bin');
-  mkdirSync(bin);
-  writeFileSync(
-    path.join(bin, 'gh'),
-    '#!/usr/bin/env node\nlet input = "";\nprocess.stdin.on("data", (c) => (input += c)).on("end", () => require("fs").writeFileSync(process.env.GH_CALL, JSON.stringify({ args: process.argv.slice(2), body: JSON.parse(input) })));\n',
-    { mode: 0o755 },
+  // The image is tagged with Studio's version and channel on Docker Hub and Aliyun's public registry.
+  const image = workflow('studio-image');
+  assert.match(image, /workflow_call:\n\s+inputs:\n\s+tag:/u);
+  assert.doesNotMatch(
+    image,
+    /workflow_dispatch|ALI_DOCKER_REGISTRY\b|runners-dist/u,
   );
-  const dispatch = (token) => {
-    const call = path.join(
-      directory,
-      `gh-call-${token ? 'token' : 'none'}.json`,
-    );
-    const summary = path.join(directory, 'summary');
-    writeFileSync(summary, '');
+  const name = (version) => {
+    const tagWorkspace = path.join(directory, `tags-${version || 'none'}`);
+    mkdirSync(path.join(tagWorkspace, 'packages/apps/studio'), {
+      recursive: true,
+    });
+    if (version)
+      writeFileSync(
+        path.join(tagWorkspace, 'packages/apps/studio/package.json'),
+        JSON.stringify({ name: '@nocobase/studio', version }),
+      );
+    const output = path.join(tagWorkspace, 'output');
+    writeFileSync(output, '');
     const result = spawnSync(
       'bash',
-      [
-        '-e',
-        '-c',
-        runBlock(source, 'Dispatch studio-image.yml in 2013xile/nocobase-ci'),
-      ],
+      ['-e', '-c', runBlock(image, 'Name the tags')],
       {
+        cwd: tagWorkspace,
         encoding: 'utf8',
         env: {
           ...process.env,
-          PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-          GH_TOKEN: token,
-          GH_CALL: call,
-          CI_REPOSITORY: '2013xile/nocobase-ci',
-          TAG: 'release-beta/2026-10-10.1',
-          VERSION: '1.0.0-beta.52',
-          GITHUB_STEP_SUMMARY: summary,
+          ALI_REGISTRY: 'registry.example.com',
+          TAG: 'release-beta/2026-10-11.1',
+          GITHUB_OUTPUT: output,
         },
       },
     );
-    let recorded;
-    try {
-      recorded = JSON.parse(readFileSync(call, 'utf8'));
-    } catch {
-      recorded = undefined;
-    }
-    return { status: result.status, stdout: result.stdout, recorded };
+    return {
+      status: result.status,
+      stdout: result.stdout,
+      output: readFileSync(output, 'utf8'),
+    };
   };
-  const sent = dispatch('token');
-  assert.equal(sent.status, 0);
-  assert.deepEqual(sent.recorded, {
-    args: [
-      'api',
-      '--method',
-      'POST',
-      'repos/2013xile/nocobase-ci/actions/workflows/studio-image.yml/dispatches',
-      '--input',
-      '-',
-    ],
-    body: {
-      ref: 'main',
-      inputs: { ref: 'release-beta/2026-10-10.1', release: 'true' },
-    },
-  });
-
-  // Without the token the release is not failed; it warns with the command to run by hand.
-  const skipped = dispatch('');
-  assert.equal(skipped.status, 0);
-  assert.equal(skipped.recorded, undefined);
+  assert.equal(
+    name('1.0.0-beta.52').output,
+    [
+      'version=1.0.0-beta.52',
+      'tags<<EOF',
+      'nocobase/studio:1.0.0-beta.52',
+      'nocobase/studio:beta',
+      'registry.example.com/nocobase/studio:1.0.0-beta.52',
+      'registry.example.com/nocobase/studio:beta',
+      'EOF',
+      '',
+    ].join('\n'),
+  );
+  assert.match(name('1.0.0').output, /nocobase\/studio:latest\n/u);
+  const missing = name('');
+  assert.notEqual(missing.status, 0);
   assert.match(
-    skipped.stdout,
-    /::warning::NOCOBASE_CI_DISPATCH_TOKEN is not configured.*gh workflow run studio-image\.yml -R 2013xile\/nocobase-ci -f ref=release-beta\/2026-10-10\.1 -f release=true/u,
+    missing.stdout,
+    /::error::release-beta\/2026-10-11\.1 has no valid version/u,
   );
 });

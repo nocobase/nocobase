@@ -688,7 +688,7 @@ describe('install script, the CLI alone with an API key', () => {
 
     // Two requests, both to the application under its base path and both with the key exactly as it was given.
     expect(requests.map((request) => request.url)).toEqual([
-      `/main/api/agents/dist/products/acme/targets/${target}?format=env`,
+      `/main/api/agents/dist/products/acme/targets/${target}?format=env&accept=npm`,
       `/main/api/agents/dist/products/acme/versions/0.7.0/files/acme-v0.7.0-${target}.tar.gz`,
     ]);
     expect(requests.every((request) => request.apiKey === apiKey)).toBe(true);

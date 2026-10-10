@@ -98,4 +98,18 @@ These are adjustments to the demonstration environment, not a fix to the default
 
 5. With the repository-local pnpm cache, the official scaffold actually executed but returned `TEMPLATE_DOWNLOAD_FAILED` twice. Template version lookup succeeds. The generator invokes `npm pack --silent`, which did not expose the full underlying error. A repository-local `npm_config_cache` path has been supplied for Runner investigation; the final outcome remains pending.
 
-**Current result:** The code location, scaffold authorization, and pnpm cache are verified in actual runs. Template download, application generation, and startup remain incomplete. Add the final result and screenshots after successful initialization.
+**Subsequent verification:** Runner run `391364430790660` on 2026-10-10 set both `XDG_CACHE_HOME` and `npm_config_cache` to writable repository-local paths. The default template download and dependency installation succeeded, followed by successful default SQLite configuration through `pnpm nocobase config init --json`. Developer implemented the home page and Orders, Customers, and Drivers navigation and committed `035df70` on local branch `agent-pm-1`. The transcript and issue report confirm successful startup and relevant checks. Initialization succeeded with these local adjustments; the default product flow remains unchanged.
+
+**Remaining blockers:** Runner has no usable GitHub push credentials, and Studio only links a local directory rather than a repository through a Git connection. Push failed and PR creation returned `NO_REPOSITORY`. No application PR exists yet; push credentials and Studio repository linking still need preparation.
+
+## GitHub App registration blocked by a localhost hook URL
+
+**Status: reproduced, unresolved.** On October 10, 2026, choosing Settings → Git → Add connection → GitHub → My account → Create on GitHub in local Studio produced `Invalid GitHub App configuration`. GitHub reported `Hook url is not supported because it isn't reachable over the public Internet (localhost)` and `Hook is invalid`. Registration failed before App installation or repository authorization.
+
+![GitHub App registration failure](./assets/github-app-localhost-blocked-en.png)
+
+**Source evidence:** In this walkthrough's isolated Studio, `buildAppManifest` in `server/git/github.ts` generates `hook_attributes: { url: input.webhookUrl, active: input.webhookActive }` even when the webhook is disabled, retaining the localhost URL. The UI says polling will be used, but the actual registration still fails GitHub's URL validation. That UI message does not establish that local registration works.
+
+**Impact:** This blocks App registration now and is distinct from the later CI limitation caused by the lack of a public Studio address. The previous plan to defer the tunnel until CI did not account for this registration failure.
+
+**Next steps:** Evaluate correcting the registration manifest or configuring a public address before retrying. No Studio source fix, tunnel, or completed authorization has been applied in this walkthrough; the blocker remains unresolved.

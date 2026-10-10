@@ -25,7 +25,8 @@
 // that application heartbeats, so its people see the runtime and why it takes no work, but claims nothing from it until
 // an answer comes without the verdict (this runner was updated, or the application was).
 //
-// Self-update: a heartbeat answer may name a newer runner the application serves (`upgrade`). A daemon started by
+// Self-update: a heartbeat answer may name a newer runner the application serves (`upgrade`), or, to this runner's
+// `npm` feature, the exact version to install from npm when it serves no tarball (`npmUpgrade`). A daemon started by
 // its service from an installation (`selfUpdate`) stops claiming, waits for its runs to end, installs the new version
 // (update.ts) and stops, and its process exits with `exitCode`; the service starts the new version. Any other daemon
 // only logs the notice.
@@ -63,6 +64,7 @@ import {
   type WorkspacesRequest,
   type WorkspacesResponse,
   routePath,
+  NPM_UPGRADE_FEATURE,
   type RunnerFeature,
   type ToolInfo,
   type ToolLoad,
@@ -115,6 +117,8 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'jobs.build',
   // Mounts (runner/mounts.ts): directories of files the application places beside the agent.
   'mounts',
+  // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
+  NPM_UPGRADE_FEATURE,
 ];
 
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
@@ -660,8 +664,25 @@ export class RunnerDaemon {
         response.compatibility?.message,
       );
       link.workspaceReporting = response.workspaces;
-      if (response.upgrade !== undefined)
-        this.noticeUpgrade(link, response.upgrade);
+      const { upgrade, npmUpgrade } = response;
+      if (upgrade !== undefined)
+        this.noticeUpgrade(
+          link,
+          upgrade,
+          upgrade.sha256 === undefined
+            ? undefined
+            : {
+                version: upgrade.latestVersion,
+                url: upgrade.downloadUrl,
+                sha256: upgrade.sha256,
+              },
+        );
+      else if (npmUpgrade !== undefined)
+        this.noticeUpgrade(link, npmUpgrade, {
+          kind: 'npm',
+          version: npmUpgrade.latestVersion,
+          package: npmUpgrade.package,
+        });
       for (const runId of response.cancelRequested)
         void this.supervisor.enforceCancel(runId);
       for (const runId of response.release) void this.supervisor.release(runId);
@@ -684,20 +705,20 @@ export class RunnerDaemon {
     }
   }
 
+  /**
+   * A newer runner a heartbeat answer names: a tarball (`upgrade`, installable once it carries its checksum) or an npm
+   * package (`npmUpgrade`, for this runner's `npm` feature).
+   */
   private noticeUpgrade(
     link: AppLink,
-    upgrade: {
-      latestVersion: string;
-      downloadUrl: string;
-      sha256?: string;
-      reason: string;
-    },
+    upgrade: { latestVersion: string; reason: string },
+    target: UpdateTarget | undefined,
   ): void {
     const { log, selfUpdate } = this.options;
     if (!isNewer(upgrade.latestVersion, runnerVersion())) return;
     if (
       selfUpdate === undefined ||
-      upgrade.sha256 === undefined ||
+      target === undefined ||
       this.pendingUpdate !== undefined
     ) {
       if (this.pendingUpdate === undefined)
@@ -710,16 +731,9 @@ export class RunnerDaemon {
     if (failedAt !== undefined && Date.now() - failedAt < UPDATE_RETRY_MS)
       return;
     log(
-      `${link.key}: updating to ${runnerHost().bin} ${upgrade.latestVersion} once no run is left`,
+      `${link.key}: updating to ${runnerHost().bin} ${upgrade.latestVersion}${target.kind === 'npm' ? ` (${target.package} from npm)` : ''} once no run is left`,
     );
-    this.pendingUpdate = {
-      link,
-      target: {
-        version: upgrade.latestVersion,
-        url: upgrade.downloadUrl,
-        sha256: upgrade.sha256,
-      },
-    };
+    this.pendingUpdate = { link, target };
     this.slotFreed?.();
     void this.updateWhenIdle();
   }
