@@ -24,7 +24,7 @@ Each product lands in a directory of its own, with a manifest of every file's SH
 
 ## Serving
 
-The plugin serves `agents.dist.dir` (default `storage/runners/dist`, relative to the App root), channel `agents.dist.channel` (default `stable`). A product's current version is the highest in the channel, unless `agents.dist.versions` pins one. Only files a manifest lists are served. Routes (`DIST_ROUTES` of `@nocobase/agent-protocol`): `GET /api/agents/dist/manifest`, `GET /api/agents/dist/products/<product>/targets/<target>` (`?format=env` for a shell; 404 `PLATFORM_UNSUPPORTED` with the targets there are; the universal tarball answers with the asked target and `universal: true`, `universal=true` in env form), the tarball itself, and `POST /api/agents/dist/downloadTokens`.
+The plugin serves `agents.dist.dir` (default `storage/runners/dist`, relative to the App root), channel `agents.dist.channel` (default `stable`). A product's current version is the highest in the channel, unless `agents.dist.versions` pins one. Only files a manifest lists are served. Routes (`DIST_ROUTES` of `@nocobase/agent-protocol`): `GET /api/agents/dist/manifest`, `GET /api/agents/dist/products/<product>/targets/<target>` (`?format=env` for a shell; 404 `PLATFORM_UNSUPPORTED` with the targets there are; the universal tarball answers with the asked target and `universal: true`, `universal=true` in env form), the tarball itself, and `POST /api/agents/dist/downloadTokens` (`<cli> install-token create`). A runner key, a registration token, a download token or any API key (scoped and service-account keys included) downloads; a session does too.
 
 ### Naming a product on npm instead
 
@@ -46,8 +46,11 @@ There are two ways to deliver the packages. When the runner and CLI follow the A
 The install script (`GET /api/agents/dist/installScript`, no credential, it carries no secret) installs the App's CLI under `~/.local/share/<cli>` and links it into `~/.local/bin`:
 
 ```bash
-# The CLI alone, with a download token any signed-in person mints (one platform, three downloads within 30 minutes):
+# The CLI alone, with a short-lived download token any signed-in person mints:
 curl -fsSL https://app.example.com/api/agents/dist/installScript | sh -s -- --token <download token>
+
+# The CLI alone, with the API key in an environment variable (CI, a server, an agent's machine):
+curl -fsSL https://app.example.com/api/agents/dist/installScript | sh -s -- --api-key-env ACME_API_KEY
 
 # A runtime: also installs nocobase-runner, registers it and starts it as a user service. "Add runtime" shows this line:
 curl -fsSL https://app.example.com/api/agents/dist/installScript | sh -s -- --runner --server https://app.example.com --token <registration token>
@@ -58,6 +61,26 @@ Options: `--prefix`, `--bin-dir`, `--dry-run`; with `--runner`, `--runner-prefix
 For a universal tarball the script checks, before downloading, that `node` on PATH is Node.js 24 or newer and stops with how to install it otherwise; it then links `<prefix>/node` to that `node`. The package's launcher tries `NOCOBASE_NODE`, `<prefix>/node`, `node` on PATH, and a Node an older standalone version in `<prefix>/versions/` still carries, so a runner's user service (launchd, systemd), whose PATH usually has no `node`, starts it. An update to a universal version leaves the Node it ran on in `<prefix>/node` before removing old versions. With `--runner`, a missing `pnpm` only prints a hint to run `corepack enable`.
 
 The script resolves with `accept=npm`. For an npm answer it checks Node.js 24 the same way and that `npm` is on PATH (or `NOCOBASE_NPM` names one), stopping with how to get it otherwise, then runs `npm install --prefix <prefix>/versions/<version>.partial --no-save --no-audit --no-fund --omit=optional <package>@<version>` with the npm configuration (registry, proxy) of the person running it, writes a launcher at `bin/<command>` beside `node_modules`, renames the directory to `<prefix>/versions/<version>` and links `<prefix>/node`. `current`, the command link and the runner's service are then exactly as for a tarball. `--omit=optional` keeps the coding tools' per-platform SDK packages, each carrying a binary the runner never starts, off the machine.
+
+### Without a browser
+
+A machine where nobody can open a browser — CI, a server, an agent's host — has two ways to install the CLI, and either way it still needs a credential of its own to use it. `<cli> login --no-browser` is not one of them: it prints an address that a person still has to approve in a browser somewhere else.
+
+**The machine already has an API key.** This is the unattended path. Someone who may create API keys creates one in the App for what the machine has to do (a scoped key or a service account's key is enough to download), and stores it among the machine's secrets. Then, from an empty machine:
+
+```bash
+export ACME_API_KEY=...   # from the CI's secrets, never typed on a command line
+curl -fsSL https://app.example.com/api/agents/dist/installScript | sh -s -- --api-key-env ACME_API_KEY
+export ACME_SERVER=https://app.example.com
+acme whoami --json        # the key's user
+acme <a command the key may run> --json
+```
+
+`--api-key-env` takes the name of the variable, never the key; it cannot be combined with `--token` or `--runner`. The script sends the key only to the App's own address (base path included) to resolve and download the tarball, from a `0600` curl config file in its temporary directory, so it never appears in an argument, the output, `--dry-run` or `install.json`. Redirects are not followed, so the key reaches no other address. The SHA-256 is checked as with a token. A key the App refuses (unknown, expired or revoked) fails the script even when the CLI is installed already. Nothing is saved: the CLI is not signed in afterwards. It reads its server and key from `<PREFIX>_SERVER` and `<PREFIX>_API_KEY` (the App's `nocobase.cli.envPrefix`, such as `ACME`); a machine that should keep the key instead runs `acme login --server <server> --api-key-stdin < <key file>`.
+
+**A signed-in person hands the machine a short-lived download token.** On their own machine, `acme install-token create --json` (`POST /api/agents/dist/downloadTokens`) answers `{ token, expiresAt, maxDownloads }` in `result.data`; the answer is never cached. The token downloads only the CLI: for the platform of its first request, at most three tarball downloads (retries included) within 30 minutes. It is not strictly single-use, and it is no sign-in: it reaches no other route and registers no runner. Run the `--token` line above with it on the other machine, then give that machine its own credential, an API key as above. Any signed-in person may mint one from a session or a personal API key; scoped keys, service-account keys and run tokens are refused (`SCOPED_KEY_FORBIDDEN`), because a token reaches only what its creator could download.
+
+Nothing here creates an API key or approves a sign-in without a person: a machine with no key and nobody signed in anywhere needs someone to create its credential first.
 
 ## Updates
 

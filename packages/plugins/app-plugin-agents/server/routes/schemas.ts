@@ -1573,7 +1573,7 @@ export const RegistrationTokenSchema: z.ZodType<RegistrationToken> = z.object({
 export const DownloadTokenSchema: z.ZodType<DownloadToken> = z.object({
   token: z.string().meta({
     description:
-      'The download token, shown only in this answer; the install script downloads the CLI with it.',
+      'The short-lived download token, shown only in this answer; the install script downloads the CLI with it. It signs no one in.',
   }),
   expiresAt: dateTime,
   maxDownloads: z.number().int().meta({
