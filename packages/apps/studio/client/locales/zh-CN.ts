@@ -1,5 +1,6 @@
 import { accountSettingsZhCN, preferencesZhCN } from '../account/locales.js';
 import type { AppResource } from './en-US.js';
+import { runRequestsZhCN } from '../agents/run-requests.locales.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
@@ -590,6 +591,9 @@ const zhCN: AppResource = {
   'errors.USER_DISABLED': '已停用的账号不能分配角色。',
   'errors.INVALID_SLUG': 'Slug 只能包含小写字母、数字和连字符。',
   'errors.INVALID_TITLE': '标题必填（最多 200 个字符）。',
+  'errors.NO_RUNNER_AVAILABLE':
+    '现在没有你能用的运行环境可以执行这个 agent：连接一个你自己的运行环境，或请负责人确认。',
+  'errors.RUN_REQUEST_SETTLED': '这个请求已经处理过了。',
   'invitations.invite': '邀请成员',
   'members.columns.email': '邮箱',
   'members.columns.name': '姓名',
@@ -1161,6 +1165,9 @@ const zhCN: AppResource = {
   },
   previews: previewsZhCN,
   deploys: deploysZhCN,
+
+  // Work someone asked of an agent on an issue another person owns (`client/agents/run-requests.ts`).
+  runRequests: runRequestsZhCN,
 
   // Studio's pull requests (`client/git`).
   studioGit: gitZhCN,

@@ -23,6 +23,8 @@
  * - organises requirement intake with AI (`intake/`): a request is a run of the person's online agent on the private
  *   `intake` subject, which hands its drafts back with `intake drafts`, bound as the projects plugin's organiser;
  * - clears an archived or deleted agent as executor of the unfinished issues it was given (`removal.ts`);
+ * - makes the issue's owner answer for its runs (`issue-subject.ts`): work anyone else causes is a run request the
+ *   owner confirms or rejects from their inbox, and the person who asked hears when nobody did (`run-requests.ts`);
  * - contributes the workflow status rules `runAgent` and `suggestExecutor` (whose suggestion is a decision card for
  *   the issue's owner) and tells owners what they skipped (`stage-rules.ts`), and the "Software development" workflow
  *   template that uses them (`catalog/workflow-templates.ts`), with its design-first proposals (`design.ts`).
@@ -97,6 +99,7 @@ import {
   settleSuggestions,
   stageNoticeRule,
 } from './stage-rules.js';
+import { bindRunRequestCards } from './run-requests.js';
 import { relayAnnouncements } from './tx.js';
 import { inactiveUsers } from './users.js';
 import { createAgentWork, startHandedOverStages } from './work.js';
@@ -273,6 +276,13 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       deps.inboxPort ?? (() => undefined),
       (error) => onError('Agents could not settle a blocked card.', error),
     ),
+    bindRunRequestCards({
+      agents,
+      connection: () => deps.projects().tx.read(),
+      port: deps.inboxPort ?? (() => undefined),
+      onError: (error) =>
+        onError('Agents could not deliver a run request card.', error),
+    }),
   ];
   if (deps.bindPlanHooks)
     releases.push(

@@ -54,33 +54,6 @@ describe("the runners' notices", () => {
       data: { variables: 'NPM_TOKEN' },
     });
   });
-  it('show an expired run request with its own title and body, opening nothing', () => {
-    const notice: AgentsNotice = {
-      key: 'run_request_expired:req1',
-      type: 'run_request_expired',
-      userIds: ['bob'],
-      subject: { kind: 'runRequest', id: 'req1', label: 'coder' },
-      title: 'coder did not run your request',
-      body: 'Nobody confirmed your request in time, so your request to coder on issue Draft implementation expired.',
-      params: {
-        agentName: 'coder',
-        subjectKind: 'issue',
-        subjectId: 'issue1',
-        requestId: 'req1',
-        responsibleUserId: 'alice',
-        reason: 'timeout',
-      },
-    };
-    expect(checkInboxSend(runnersNoticeToInbox(notice))).toMatchObject({
-      source: RUNNERS_SOURCE,
-      type: 'run_request_expired',
-      userIds: ['bob'],
-      title: notice.title,
-      body: notice.body,
-      path: null,
-      subject: { type: 'runRequest', id: 'req1', label: 'coder' },
-    });
-  });
   it('become an information card about the runtime for its owner', () => {
     const card = runnersNoticeToInbox(upgrade);
     expect(checkInboxSend(card)).toEqual({
@@ -121,6 +94,15 @@ describe("the runners' notices", () => {
     listeners.get('notice')?.({ notice: upgrade });
     // Nobody to tell: nothing is sent.
     listeners.get('notice')?.({ notice: { ...upgrade, userIds: [] } });
+    // A run request's notice is Studio's run requests' to deliver (`server/agents/run-requests.ts`).
+    listeners.get('notice')?.({
+      notice: {
+        ...upgrade,
+        key: 'run_request_expired:req1',
+        type: 'run_request_expired',
+        subject: { kind: 'runRequest', id: 'req1', label: 'coder' },
+      },
+    });
     await Promise.resolve();
     expect(sent.map((notice) => notice.key)).toEqual([upgrade.key]);
     // The runner upgraded: its owner's card settles.

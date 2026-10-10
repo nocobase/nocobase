@@ -3,6 +3,11 @@
  * agent becomes input of a run (`runs.enqueue`): it joins the run already working on the issue while that run can
  * still take input, else the run waiting for a runner, else starts a run.
  *
+ * The issue's owner answers for the work on it. Every wake names them as the responsible and the source of the change
+ * as the person who asked (`work-source.ts`): work the owner caused, or a chain of work they started or confirmed,
+ * runs as them at once; anyone else's becomes a run request the owner confirms or rejects, or the person who asked
+ * runs as themselves (`run-requests.ts`). A comment in the middle of the owner's run reaches it only once confirmed.
+ *
  * - Given an issue to execute: work starts, as the person who gave it (or the owner when the system did), unless they
  *   asked not to start now, or the issue is dormant: in backlog, finished or closed (`skipped: 'dormant'`). Taken off
  *   an issue: its queued work is withdrawn and work in progress is asked to stop.
@@ -11,12 +16,15 @@
  * - A person moving the issue's status tells a run that has not ended, unless the status's workflow stage already
  *   started work there (`stage-rules.ts`); finishing or closing the issue withdraws queued work instead. Moving it out
  *   of backlog to a status that is not finished starts the executing agent's work (`statusChange`).
- * - A new owner: queued work the previous owner woke is withdrawn, and starts again as the new owner's.
+ * - A new owner: queued work the previous owner woke is withdrawn and does not start again as the new owner's; what it
+ *   had not handled yet becomes run requests the new owner confirms. Pending requests are handed to the new owner in
+ *   the same transaction. Runs already working go on.
  * - Moved to another project (`project-move.ts`): work starts in the new project's working directories
  *   (`projectChanged`). A run claimed before the move works in the previous project's, so it is told to end and asked
  *   to stop (left to end on its own when its agent moved the issue), and the new run starts once it has ended
  *   (`onRunFinished`). Queued work claims in the new project's working directories anyway, and learns of the move.
- * - Released (nothing holds it, or every sub-issue finished): the executing agent is woken, unless the issue is dormant.
+ * - Released (nothing holds it, or every sub-issue finished): the executing agent is woken for whoever finished what
+ *   held it, unless the issue is dormant.
  * - Held (a `blockedBy` added that is not finished): its queued work is withdrawn (`onBlocked`); held runs go on.
  *
  * An issue that waits for unfinished issues (the projects plugin's `subtasks.blockersOf`) starts nothing, whatever woke
@@ -63,11 +71,20 @@ import {
 import { currentStage } from './stage-rules.js';
 import { jsonObject } from './values.js';
 import { AGENT_KIND, agentsTx } from './tx.js';
+import {
+  personSource,
+  userName,
+  workSourceOf,
+  type WorkSource,
+} from './work-source.js';
+
+export { userName } from './work-source.js';
 
 interface Wake {
   readonly agentId: string;
   readonly issue: Issue;
-  readonly actorUserId: string;
+  /** Who the work comes from; the issue's owner answers for it. */
+  readonly source: WorkSource;
   readonly triggerType: string;
   readonly input: {
     readonly type: RunInputType;
@@ -75,19 +92,6 @@ interface Wake {
     readonly text: string;
     readonly payload?: unknown;
   };
-}
-
-/** A person's display name, or their id. */
-export async function userName(
-  conn: DatabaseConnection,
-  id: string,
-): Promise<string> {
-  const user = await conn
-    .repository<{ id: string; name: string | null; username: string | null }>(
-      'user',
-    )
-    .findOne({ filter: { id } });
-  return user?.name ?? user?.username ?? id;
 }
 
 /**
@@ -151,6 +155,11 @@ export function createAgentWork(deps: {
   const { runs } = deps.agents;
   const subjectOf = (issue: Issue) => ({ kind: ISSUE_SUBJECT, id: issue.id });
 
+  /**
+   * Wakes the agent for the work: queued as the owner when the owner is its source, else a run request the owner
+   * confirms (`started: false`, no run). The source must be able to wake the agent, and so must the owner, who
+   * answers for it.
+   */
   async function wake(tx: ProjectsTx, request: Wake): Promise<RunAttempt> {
     const attempt = {
       kind: AGENT_KIND,
@@ -163,23 +172,31 @@ export function createAgentWork(deps: {
       request.agentId,
     );
     if (!agent) return { ...attempt, started: false, skipped: 'unavailable' };
-    if (!deps.agents.agents.mayInvoke(agent, request.actorUserId))
+    const { source, issue } = request;
+    const responsible = issue.ownerUserId;
+    if (
+      !deps.agents.agents.mayInvoke(agent, source.userId) ||
+      !deps.agents.agents.mayInvoke(agent, responsible)
+    )
       return { ...attempt, started: false, skipped: 'denied' };
     // Held by unfinished issues: the release wakes the agent once nothing holds it.
-    const blockers = await deps
-      .projects()
-      .subtasks.blockersOf(tx.conn, request.issue);
+    const blockers = await deps.projects().subtasks.blockersOf(tx.conn, issue);
     if (blockers.length > 0)
       return { ...attempt, started: false, skipped: 'blocked' };
-    // A plan's rehearsal: report the run it would start, queue nothing.
-    if (tx.rehearsal) return { ...attempt, started: true };
+    // A plan's rehearsal: report the run it would start, queue nothing; someone else's work only asks the owner.
+    if (tx.rehearsal)
+      return { ...attempt, started: source.userId === responsible };
     const result = await runs.enqueue(
       {
         agentId: agent.id,
-        subject: subjectOf(request.issue),
-        actorUserId: request.actorUserId,
-        ownerUserId: request.issue.ownerUserId,
-        priority: runPriorityOf(request.issue.priority),
+        subject: subjectOf(issue),
+        actorUserId: source.userId,
+        responsibleUserId: responsible,
+        ...(source.causedByRunId
+          ? { causedByRunId: source.causedByRunId }
+          : { requestedByUserId: source.userId }),
+        ownerUserId: responsible,
+        priority: runPriorityOf(issue.priority),
         input: {
           ...request.input,
           payload: {
@@ -193,41 +210,14 @@ export function createAgentWork(deps: {
       },
       agentsTx(tx),
     );
-    // A request waiting for confirmation has no run. Studio does not yet supply a responsible person;
-    // keep this guard until execution request handling is integrated.
-    if (result.runId === null) {
-      console.warn(
-        `Work for ${request.issue.identifier} became run request ${result.requestId} instead of a run.`,
-      );
-      return { ...attempt, started: false };
-    }
+    // Waiting for the owner: a run request, with its card in their inbox (`run-requests.ts`).
+    if (result.outcome === 'pending') return { ...attempt, started: false };
     return { ...attempt, started: true, runId: result.runId };
   }
 
-  /** Who a change acts for: the person who made it, or the issue's owner for the system's and agents' changes. */
-  async function actorOf(
-    tx: ProjectsTx,
-    actor: Actor,
-    issue: Issue,
-  ): Promise<{ readonly userId: string; readonly ref: ActorRef }> {
-    if (actor.type === 'user' && actor.id)
-      return {
-        userId: actor.id,
-        ref: {
-          kind: 'user',
-          id: actor.id,
-          name: await userName(tx.conn, actor.id),
-        },
-      };
-    return {
-      userId: issue.ownerUserId,
-      ref: {
-        kind: actor.type === AGENT_KIND ? 'agent' : 'system',
-        id: actor.id ?? 'system',
-        name: actor.type === AGENT_KIND ? 'Agent' : 'Studio',
-      },
-    };
-  }
+  /** Who a change comes from (`work-source.ts`). */
+  const sourceOf = (tx: ProjectsTx, actor: Actor | undefined, issue: Issue) =>
+    workSourceOf(tx.conn, actor, issue);
 
   /** Withdraws queued work of `agentId` and asks its work in progress to stop. */
   async function stop(
@@ -334,13 +324,13 @@ export function createAgentWork(deps: {
     tx: ProjectsTx,
     issue: Issue,
     stage: { readonly agentId: string; readonly payload: object },
-    who: { readonly userId: string; readonly ref: ActorRef },
+    who: WorkSource,
     triggerType: string,
   ): Promise<RunAttempt> {
     return wake(tx, {
       agentId: stage.agentId,
       issue,
-      actorUserId: who.userId,
+      source: who,
       triggerType,
       input: {
         type: 'signal',
@@ -375,7 +365,7 @@ export function createAgentWork(deps: {
     tx: ProjectsTx,
     issue: Issue,
     agentId: string,
-    who: { readonly userId: string; readonly ref: ActorRef },
+    who: WorkSource,
     actor: Actor,
   ): Promise<RunAttempt> {
     // In backlog, or finished: the work starts when the issue leaves backlog.
@@ -389,7 +379,7 @@ export function createAgentWork(deps: {
     return wake(tx, {
       agentId,
       issue,
-      actorUserId: who.userId,
+      source: who,
       triggerType: 'assigned',
       input: {
         type: 'signal',
@@ -413,7 +403,7 @@ export function createAgentWork(deps: {
       readonly start: boolean;
     },
     agentId: string,
-    who: { readonly userId: string; readonly ref: ActorRef },
+    who: WorkSource,
   ): Promise<RunAttempt[]> {
     const { before, after } = change;
     const held = (await runs.openOn(tx.conn, subjectOf(after), agentId)).filter(
@@ -460,7 +450,7 @@ export function createAgentWork(deps: {
     return wake(tx, {
       agentId,
       issue,
-      actorUserId: move.byUserId,
+      source: { userId: move.byUserId, ref: move.by },
       triggerType: PROJECT_CHANGED,
       input: {
         type: 'signal',
@@ -499,12 +489,20 @@ export function createAgentWork(deps: {
         .at(-1);
       if (!move) return;
       const agent = await deps.agents.agents.findWorkable(conn, run.agentId);
-      if (!agent || !deps.agents.agents.mayInvoke(agent, move.byUserId)) return;
+      if (
+        !agent ||
+        !deps.agents.agents.mayInvoke(agent, move.byUserId) ||
+        !deps.agents.agents.mayInvoke(agent, issue.owner.id)
+      )
+        return;
+      // As any wake: someone other than the owner who moved it asks the owner first.
       await runs.enqueue(
         {
           agentId: agent.id,
           subject: run.subject,
           actorUserId: move.byUserId,
+          responsibleUserId: issue.owner.id,
+          requestedByUserId: move.byUserId,
           ownerUserId: issue.owner.id,
           priority: runPriorityOf(issue.priority as Priority),
           input: {
@@ -532,7 +530,7 @@ export function createAgentWork(deps: {
         tx,
         issue,
         stage,
-        await actorOf(tx, actor, issue),
+        await sourceOf(tx, actor, issue),
         triggerType,
       );
     },
@@ -544,7 +542,7 @@ export function createAgentWork(deps: {
         tx,
         issue,
         agentId,
-        await actorOf(tx, actor, issue),
+        await sourceOf(tx, actor, issue),
         actor,
       );
     },
@@ -553,7 +551,19 @@ export function createAgentWork(deps: {
       const { before, after } = change;
       const from = agentOf(before);
       const to = agentOf(after);
-      const who = await actorOf(tx, change.actor, after);
+      const who = await sourceOf(tx, change.actor, after);
+      // A new owner: the requests waiting for the previous one are theirs now, in this transaction, so the previous
+      // owner can no longer confirm them; also when the new owner may not keep the agent and it is taken off.
+      if (before && before.ownerUserId !== after.ownerUserId && !tx.rehearsal)
+        await runs.requests.reassign(
+          {
+            subject: subjectOf(after),
+            toUserId: after.ownerUserId,
+            byUserId: change.actor.type === 'user' ? change.actor.id : null,
+            note: `${after.identifier} has a new owner.`,
+          },
+          agentsTx(tx),
+        );
       if (from && from !== to)
         await stop(
           tx,
@@ -614,7 +624,7 @@ export function createAgentWork(deps: {
         await wake(tx, {
           agentId: to,
           issue: after,
-          actorUserId: who.userId,
+          source: who,
           triggerType: 'statusChange',
           input: {
             type: 'statusChange',
@@ -643,10 +653,15 @@ export function createAgentWork(deps: {
       const executing = agentOf(issue);
       if (executing && !targets.has(executing))
         targets.set(executing, 'comment');
-      const actor: ActorRef = {
-        kind: 'user',
-        id: change.actor.id,
-        name: comment.authorName ?? (await userName(tx.conn, change.actor.id)),
+      // Only a person comments here (the projects plugin wakes nobody for anything else's comments).
+      const source: WorkSource = {
+        userId: change.actor.id,
+        ref: {
+          kind: 'user',
+          id: change.actor.id,
+          name:
+            comment.authorName ?? (await userName(tx.conn, change.actor.id)),
+        },
       };
       const attempts: RunAttempt[] = [];
       for (const [agentId, triggerType] of targets)
@@ -654,11 +669,11 @@ export function createAgentWork(deps: {
           await wake(tx, {
             agentId,
             issue,
-            actorUserId: change.actor.id,
+            source,
             triggerType,
             input: {
               type: 'comment',
-              actor,
+              actor: source.ref,
               text: comment.content,
               payload: { commentId: comment.id, parentId: comment.parentId },
             },
@@ -667,31 +682,58 @@ export function createAgentWork(deps: {
       return attempts;
     },
 
-    async onOwnerChanged(tx, { issue, from, to }) {
+    /**
+     * The issue was given to someone else. The previous owner's queued work does not run as the new owner's: it is
+     * withdrawn, and each input it had not handled is asked of the new owner as it was asked (a run request, unless
+     * the new owner asked it themselves). The requests waiting for the previous owner are handed to the new one, in
+     * this transaction, so the previous owner can no longer confirm them. Runs already working go on.
+     */
+    async onOwnerChanged(tx, { issue, from, to, actor }) {
+      if (tx.rehearsal) return [];
+      const unit = agentsTx(tx);
+      const by = actor?.type === 'user' && actor.id ? actor.id : null;
       const withdrawn = await runs.withdrawQueued(
-        { subject: subjectOf(issue), actorUserId: from, byUserId: null },
-        agentsTx(tx),
+        {
+          subject: subjectOf(issue),
+          actorUserId: from,
+          byUserId: by,
+          detail: `${issue.identifier} has a new owner; what the run had not handled is asked of them.`,
+        },
+        unit,
       );
       const attempts: RunAttempt[] = [];
-      for (const agentId of new Set(withdrawn.map((run) => run.agentId)))
-        attempts.push(
-          await wake(tx, {
-            agentId,
-            issue,
-            actorUserId: to,
-            triggerType: 'ownerChanged',
-            input: {
-              type: 'signal',
-              actor: {
-                kind: 'user',
-                id: to,
-                name: await userName(tx.conn, to),
-              },
-              text: `${issue.identifier} has a new owner; the work continues for them.`,
-              payload: { from, to },
-            },
-          }),
+      for (const run of withdrawn) {
+        const inputs = await runs.pendingInputs(tx.conn, run.id);
+        if (inputs.length === 0) continue;
+        // Asked again by whoever the withdrawn work came from: the previous owner, or the person they confirmed it for.
+        const source = await personSource(
+          tx.conn,
+          run.requestedByUserId || run.actorUserId,
         );
+        for (const input of inputs) {
+          const payload = jsonObject(input.payload);
+          attempts.push(
+            await wake(tx, {
+              agentId: run.agentId,
+              issue,
+              source,
+              triggerType:
+                typeof payload.trigger === 'string'
+                  ? payload.trigger
+                  : 'ownerChanged',
+              input: {
+                type: input.type,
+                actor: input.actor,
+                text: input.text,
+                payload: {
+                  ...payload,
+                  ownerChanged: { from, to, withdrawnRunId: run.id },
+                },
+              },
+            }),
+          );
+        }
+      }
       return attempts;
     },
 
@@ -714,22 +756,24 @@ export function createAgentWork(deps: {
       }));
     },
 
-    async onUnblocked(tx, { issue, releasedBy }) {
+    /** Released by whoever finished (or deleted, or unlinked) what held it: their work, which the owner confirms. */
+    async onUnblocked(tx, { issue, releasedBy, actor }) {
       const agentId = agentOf(issue);
       if (!agentId) return [];
       if (await dormant(tx.conn, issue))
         return [skipped(agentId, issue, 'unblocked', 'dormant')];
       // In a status the workflow hands to another agent, that agent's stage resumes.
       const stage = await stageOf(tx, issue, agentId);
+      const source = await sourceOf(tx, actor, issue);
       return [
         await wake(tx, {
           agentId: stage?.agentId ?? agentId,
           issue,
-          actorUserId: issue.ownerUserId,
+          source,
           triggerType: 'unblocked',
           input: {
             type: 'signal',
-            actor: { kind: 'system', id: 'system', name: 'Studio' },
+            actor: source.ref,
             text: `${issue.identifier} is no longer blocked: ${releasedBy.identifier} (${releasedBy.title}) is finished.`,
             payload: { releasedBy: releasedBy.id, ...stage?.payload },
           },
@@ -737,18 +781,20 @@ export function createAgentWork(deps: {
       ];
     },
 
-    async onSubtasksFinished(tx, { parent, stage, childIssueIds }) {
+    /** Woken by whoever finished the last sub-issue: their work, which the parent's owner confirms. */
+    async onSubtasksFinished(tx, { parent, stage, childIssueIds, actor }) {
       const agentId = agentOf(parent);
       if (!agentId) return [];
+      const source = await sourceOf(tx, actor, parent);
       return [
         await wake(tx, {
           agentId,
           issue: parent,
-          actorUserId: parent.ownerUserId,
+          source,
           triggerType: 'subtasksFinished',
           input: {
             type: 'signal',
-            actor: { kind: 'system', id: 'system', name: 'Studio' },
+            actor: source.ref,
             text:
               stage === null
                 ? `Every sub-issue of ${parent.identifier} is finished.`

@@ -3,12 +3,14 @@
  * a blocked agent's, `blocked.ts`,
  * a suggested executor's, `suggestions.ts`, and a design proposal's, `design.ts`), release management's deployment requests and failed deployments (`releases.ts`), Studio's pull
  * requests (`client/git/inbox.tsx`), issue previews and releases waiting (`previews.ts`), reopening what a deployment no longer runs (`reopen.ts`), the agents plugin's
- * notices, such as a runtime that needs an upgrade (`agents.ts`), knowledge proposals (`knowledge.ts`), and a repository's CI key that could not be rotated or was revoked (`ci.ts`).
+ * notices, such as a runtime that needs an upgrade (`agents.ts`), run requests on issues waiting for their owner
+ * (`run-requests.ts`), knowledge proposals (`knowledge.ts`), and a repository's CI key that could not be rotated or was revoked (`ci.ts`).
  */
 import { gitRenderer } from '../../git/inbox.js';
 import type { InboxRegistry } from '@/extensions/nocobase-inbox/registry';
 import { ciRenderer } from './ci.js';
 import { runnersRenderer } from './runners.js';
+import { runRequestsRenderer } from './run-requests.js';
 import { blockedRenderer } from './blocked.js';
 import { designRenderer } from './design.js';
 import { failedRunRenderer } from './failed-runs.js';
@@ -34,6 +36,7 @@ export const studioInboxRegistry: InboxRegistry = {
     reopenRenderer,
     deploysRenderer,
     runnersRenderer,
+    runRequestsRenderer,
     knowledgeRenderer,
     ciRenderer,
   ],

@@ -6,8 +6,8 @@
  *   the Runtimes page to open. Once the runner connects again speaking a protocol Studio serves (`notice.cleared`), the
  *   card settles as `upgraded`.
  *
- * - `run_request_expired`: a run request someone made was not confirmed in time; for now the card shows the
- *   notice's own `title` and `body` and opens nothing until Studio has an execution request page.
+ * A run request's notice (`run_request_expired`, subject `runRequest`) is not a runner's: Studio's run requests on
+ * issues deliver it, about the issue, with the way to run the request as oneself (`../agents/run-requests.ts`).
  *
  * The browser words and renders the runner notices with the `runners` entry of the inbox registry
  * (`client/inbox/contributions/runners.ts`) from the notice's `params`; `title` and `body` are the plugin's English,
@@ -32,8 +32,7 @@ export function runnersNoticeToInbox(notice: AgentsNotice): InboxSend {
     userIds: notice.userIds,
     title: notice.title,
     body: notice.body,
-    // Runner notices need a usable runtime; a run request has no page in Studio yet.
-    path: notice.subject.kind === 'runRequest' ? null : '/runtimes',
+    path: '/runtimes',
     subject: {
       type: notice.subject.kind,
       id: notice.subject.id,
@@ -58,7 +57,8 @@ export function bindRunnersNotices(
 ): () => void {
   const stops = [
     events.on('notice', ({ notice }) => {
-      if (notice.userIds.length === 0) return;
+      if (notice.userIds.length === 0 || notice.subject.kind === 'runRequest')
+        return;
       port().send(runnersNoticeToInbox(notice)).catch(onError);
     }),
     events.on('notice.cleared', ({ notice }) => {

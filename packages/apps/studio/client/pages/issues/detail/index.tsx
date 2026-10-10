@@ -11,7 +11,8 @@
  * card is the activity, its composer pinned at the bottom; the side column is the properties' cards.
  *
  * - the header's "Ask agent", and in its meta line Studio's marks (pull requests, deployments) and who is working now;
- * - "Waiting for you" above the description, which leaves out the approval card while it decides it;
+ * - "Waiting for you" above the description, which leaves out the approval card while it decides it, and what the
+ *   viewer asked of agents here that still waits for the owner (`agents/issue-run-requests.tsx`);
  * - the add bar (files, sub-issues, dependencies, and Studio's "Pull request");
  * - after the checklist, sub-issues, dependencies and files: the design proposal, the related plans, then Code and
  *   deployments (one row per pull request, unfolding into its previews and the environments it was deployed to) and
@@ -51,6 +52,7 @@ import { cn } from 'cn';
 
 import { DESIGN_PROPOSAL_KIND } from '../../../../shared/design.js';
 import { AskAgent } from '../../../agents/ask-agent.js';
+import { IssueRunRequestsSection } from '../../../agents/issue-run-requests.js';
 import { DesignSection } from '../../../agents/design/section.js';
 import {
   IssueLiveRun,
@@ -231,6 +233,7 @@ function IssuePage({
               onContinued={() => setStageRunRefresh((value) => value + 1)}
             />
             <IssueWaitingSection issue={detail} />
+            <IssueRunRequestsSection issue={detail} />
             <IssueDescriptionSection detail={detail} update={update} />
             <IssueAddSection detail={detail} state={main}>
               <IssueCodeAddButton issue={detail} {...linking} />

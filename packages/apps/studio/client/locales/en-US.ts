@@ -1,5 +1,6 @@
 import { accountSettingsEnUS, preferencesEnUS } from '../account/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
+import { runRequestsEnUS } from '../agents/run-requests.locales.js';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
@@ -630,6 +631,9 @@ const enUS = {
   'errors.INVALID_SLUG':
     'The slug takes lower-case letters, digits and hyphens.',
   'errors.INVALID_TITLE': 'A title is required (at most 200 characters).',
+  'errors.NO_RUNNER_AVAILABLE':
+    'No runtime you may use can run this agent now: connect one of your own, or ask the owner to confirm it.',
+  'errors.RUN_REQUEST_SETTLED': 'The request was settled already.',
   'invitations.invite': 'Invite members',
   'members.columns.email': 'Email',
   'members.columns.name': 'Name',
@@ -1270,6 +1274,9 @@ const enUS = {
   // what a deployment no longer runs.
   previews: previewsEnUS,
   deploys: deploysEnUS,
+
+  // Work someone asked of an agent on an issue another person owns (`client/agents/run-requests.ts`).
+  runRequests: runRequestsEnUS,
 
   // Studio's pull requests (`client/git`).
   studioGit: gitEnUS,
