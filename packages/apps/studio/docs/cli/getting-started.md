@@ -13,7 +13,7 @@ curl -fsSL https://studio.example.com/api/agents/dist/installScript | sh -s -- -
 nb-studio login --server https://studio.example.com
 ```
 
-It puts `nb-studio` in `~/.local/share/studio/versions/<version>` and links `~/.local/bin/nb-studio` to it (`--prefix`, `--bin-dir` move them; `--dry-run` shows what it would do). A download token downloads the CLI for one platform, three times at most, and registers nothing; to make a machine a runtime as well, use Agent team › Runtimes › Add runtime, whose line adds `--runner` and a registration token: it also installs the runner, `nocobase-runner`, in `~/.local/share/nocobase-runner` (`--runner-prefix`), registers it and starts it as a user service, or with `--no-service` registers it without starting it. A token of the other kind is refused before anything is installed. In this repository, `pnpm nocobase cli link` in this repository makes `nb-studio` a command in `node_modules/.bin` (`pnpm exec studio`; `--bin-dir ~/.local/bin` puts it on your PATH) that runs from the sources.
+It installs `nb-studio` under `~/.local/share/nb-studio/versions/<version>`, points `~/.local/share/nb-studio/current` at the active version, and links `~/.local/bin/nb-studio` to it (`--prefix`, `--bin-dir` move them; `--dry-run` shows what it would do). A download token downloads the CLI for one platform, three times at most, and registers nothing; to make a machine a runtime as well, use Agent team › Runtimes › Add runtime, whose line adds `--runner` and a registration token: it also installs the runner, `nocobase-runner`, in `~/.local/share/nocobase-runner` (`--runner-prefix`), registers it and starts it as a user service, or with `--no-service` registers it without starting it. The CLI install directory can also be set with `NOCOBASE_CLI_INSTALL_DIR`; the runner and command-link directories use `NOCOBASE_RUNNER_INSTALL_DIR` and `NOCOBASE_CLI_BIN_DIR`. `NB_STUDIO_HOME` moves the CLI's state directory; it does not change where the CLI is installed. A token of the other kind is refused before anything is installed. In this repository, `pnpm nocobase cli link` makes `nb-studio` a command in `node_modules/.bin` (`pnpm exec nb-studio`; `--bin-dir ~/.local/bin` puts it on your PATH) that runs from the sources.
 
 ### Update
 
@@ -96,7 +96,7 @@ Shell completion reads the commands the server last offered you, so it works off
 ```bash
 nb-studio completion zsh > "${fpath[1]}/_nb-studio"                     # zsh
 echo 'source <(nb-studio completion bash)' >> ~/.bashrc              # bash
-nb-studio completion fish > ~/.config/fish/completions/studio.fish    # fish
+nb-studio completion fish > ~/.config/fish/completions/nb-studio.fish # fish
 ```
 
 ## Every command takes
