@@ -212,6 +212,13 @@ describe('admin API', () => {
       ['Coder', 1, 1],
       ['Elsewhere', 0, 0],
     ]);
+    // Whether the caller owns each, for the list's order.
+    const owned = await h.request('GET', '/agents', {
+      user: 'owner',
+      can: ['agents.agents/read'],
+    });
+    expect(owned.body.data[0].owned).toBe(true);
+    expect(list.body.data[0].owned).toBe(false);
     // Runners are visible to whoever may read agents, to pick where they run.
     const runners = await h.request('GET', '/agents/runners', {
       user: 'alice',

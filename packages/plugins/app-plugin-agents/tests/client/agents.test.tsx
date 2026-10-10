@@ -434,6 +434,16 @@ describe('agent pages', () => {
     ).toBeInTheDocument();
   });
 
+  it('lists everyone agents first, then the caller’s own, by shown name', async () => {
+    renderPage(<AgentsPage />);
+    await screen.findByTestId('agent-a1');
+    expect(
+      screen
+        .getAllByTestId(/^agent-a\d$/)
+        .map((row) => row.getAttribute('data-testid')),
+    ).toEqual(['agent-a2', 'agent-a4', 'agent-a1']);
+  });
+
   it('wraps a long description inside the name column, two lines at most, with the full text on hover', async () => {
     const long = 'Reviews pull requests '.repeat(20).trim();
     agents[0] = { ...agents[0]!, description: long };

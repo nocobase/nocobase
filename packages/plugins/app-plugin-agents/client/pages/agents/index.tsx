@@ -7,7 +7,7 @@
  * with its tool signed in. An online agent runs on the server: its row shows its model service and model, and whether the
  * service still offers it. The list filters by type.
  */
-import { useTranslation } from '@nocobase/i18n/client';
+import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { BotIcon, PlusIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -54,7 +54,7 @@ import {
 import { useSetting } from '../../hooks/use-access.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useAgentText } from '../../hooks/use-vocabulary.js';
-import { entryText } from '../../lib/agents.js';
+import { entryText, orderAgents } from '../../lib/agents.js';
 
 /** The list refreshes this often for its active-run counts. */
 const REFRESH_MS = 15_000;
@@ -64,6 +64,8 @@ export default function AgentsPage(): ReactElement {
   const api = useAgentsApi();
   const navigate = useNavigate();
   const canManage = useSetting('agents.agents', 'manage');
+  const { locale } = useLocale();
+  const text = useAgentText();
   const [archived, setArchived] = useState(false);
   const [type, setType] = useState<AgentType | 'all'>('all');
   const typeItems = [
@@ -139,16 +141,20 @@ export default function AgentsPage(): ReactElement {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {agents.data
-              .filter((agent) => type === 'all' || agent.type === type)
-              .map((agent) => (
-                <AgentRow
-                  key={agent.id}
-                  agent={agent}
-                  runnerName={runnerName}
-                  onOpen={() => void navigate(encodeURIComponent(agent.id))}
-                />
-              ))}
+            {orderAgents(
+              agents.data.filter(
+                (agent) => type === 'all' || agent.type === type,
+              ),
+              (agent) => text.name(agent),
+              locale,
+            ).map((agent) => (
+              <AgentRow
+                key={agent.id}
+                agent={agent}
+                runnerName={runnerName}
+                onOpen={() => void navigate(encodeURIComponent(agent.id))}
+              />
+            ))}
           </TableBody>
         </Table>
       </div>
