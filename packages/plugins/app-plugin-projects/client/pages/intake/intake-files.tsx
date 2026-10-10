@@ -1,3 +1,4 @@
+import { resolveAppUrl } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { FileIcon, PaperclipIcon, XIcon } from 'lucide-react';
 import { useRef, type ReactElement } from 'react';
@@ -7,6 +8,12 @@ import {
   type IntakeFileRead,
   type IntakeReadState,
 } from '../../../shared/intake.js';
+import { isInlinePreviewable } from '../../../shared/attachments.js';
+import {
+  AttachmentList,
+  type AttachmentFile,
+  type AttachmentLabels,
+} from '../../components/attachment-list.js';
 import { PmTag, type PmTone } from '../../components/pm-tag.js';
 import { Button } from '../../components/ui/button.js';
 import { Spinner } from '../../components/ui/spinner.js';
@@ -31,8 +38,42 @@ export function IntakeFiles({
   readonly uploads: IntakeUploads;
   readonly reads: readonly IntakeFileRead[];
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const images: AttachmentFile[] = uploads.uploads.flatMap((upload) => {
+    const file = upload.file;
+    if (!file || !isInlinePreviewable(file.mimeType, file.ext)) return [];
+    const url = resolveAppUrl(
+      `api/projects/attachments/${encodeURIComponent(file.id)}/content`,
+    );
+    return [
+      {
+        id: file.id,
+        name: upload.name,
+        size: file.size,
+        url,
+        downloadUrl: `${url}?download=true`,
+        image: true,
+      },
+    ];
+  });
+  const labels: AttachmentLabels = {
+    title: t('attachments.title'),
+    images: t('attachments.images'),
+    files: t('attachments.files'),
+    pending: t('attachments.pending'),
+    upload: t('attachments.upload'),
+    preview: t('attachments.preview', { name: '{name}' }),
+    download: t('attachments.download', { name: '{name}' }),
+    remove: t('attachments.remove', { name: '{name}' }),
+    uploading: t('attachments.uploading', { name: '{name}' }),
+    removeTitle: t('attachments.removeTitle'),
+    removeDescription: t('attachments.removeDescription', { name: '{name}' }),
+    removeConfirm: t('attachments.removeConfirm'),
+    cancel: t('actions.cancel'),
+    previous: t('attachments.previous'),
+    next: t('attachments.next'),
+  };
   return (
     <div
       className='space-y-2'
@@ -65,6 +106,7 @@ export function IntakeFiles({
           {t('intake.filesHint', { count: INTAKE_FILES_MAX, size: SIZE_MB })}
         </span>
       </div>
+      <AttachmentList files={images} locale={i18n.language} labels={labels} />
       {uploads.uploads.length > 0 ? (
         <ul className='flex flex-wrap gap-2' aria-label={t('intake.files')}>
           {uploads.uploads.map((upload) => {
