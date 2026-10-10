@@ -82,6 +82,7 @@ const apiKey = 'acme_key "quoted" \\back';
 const requests: { url: string; apiKey: string | undefined }[] = [];
 /** Answers the tarball downloads with a redirect to another address, when set. */
 let redirectDownloadsTo: string | undefined;
+let redirectResolutionTo: string | undefined;
 
 beforeAll(async () => {
   // Each product in a manifest of its own, as `nocobase cli build` writes it.
@@ -130,9 +131,14 @@ beforeAll(async () => {
         url: request.url ?? '/',
         apiKey: typeof key === 'string' ? key : undefined,
       });
-      if (redirectDownloadsTo && request.url?.includes('/files/')) {
+      const redirectTo = request.url?.includes('/files/')
+        ? redirectDownloadsTo
+        : request.url?.includes('/targets/')
+          ? redirectResolutionTo
+          : undefined;
+      if (redirectTo) {
         response.writeHead(302, {
-          location: `${redirectDownloadsTo}${request.url}`,
+          location: `${redirectTo}${request.url}`,
         });
         response.end();
         return;
@@ -711,7 +717,7 @@ describe('install script, the CLI alone with an API key', () => {
     );
     expect(result.code).toBe(0);
     expect(result.stdout).toContain(
-      `+ curl -S --progress-bar -K <the API key in ${keyEnv}>`,
+      `+ curl -q -S --progress-bar -K <the API key in ${keyEnv}>`,
     );
     expect(leaked(result, [])).toBe(false);
     expect(existsSync(prefix)).toBe(false);
@@ -805,30 +811,86 @@ describe('install script, the CLI alone with an API key', () => {
     expect(again.stdout).not.toContain('is installed');
   });
 
-  it('does not follow a redirect, so the key reaches no other address', async () => {
-    const elsewhere: (string | undefined)[] = [];
-    const other = createServer((request, response) => {
-      const key = request.headers['x-api-key'];
-      elsewhere.push(typeof key === 'string' ? key : undefined);
-      response.writeHead(200);
-      response.end('not the tarball');
-    });
-    await new Promise<void>((resolve) => other.listen(0, '127.0.0.1', resolve));
-    const address = other.address();
-    redirectDownloadsTo = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
-    try {
-      const prefix = path.join(root, 'key-redirected');
-      const result = await install(
-        ['--server', base, '--api-key-env', keyEnv, '--prefix', prefix],
-        { [keyEnv]: apiKey },
+  it.each(['resolution', 'download'])(
+    'ignores default curl redirects during %s, so the key reaches no other address',
+    async (stage) => {
+      const elsewhere: (string | undefined)[] = [];
+      const other = createServer((request, response) => {
+        const key = request.headers['x-api-key'];
+        elsewhere.push(typeof key === 'string' ? key : undefined);
+        response.writeHead(200);
+        response.end('not the tarball');
+      });
+      await new Promise<void>((resolve) =>
+        other.listen(0, '127.0.0.1', resolve),
       );
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain('with a redirect (302)');
-      expect(elsewhere).toEqual([]);
-      expect(existsSync(path.join(prefix, 'current'))).toBe(false);
-    } finally {
-      redirectDownloadsTo = undefined;
-      await new Promise((resolve) => other.close(resolve));
-    }
-  });
+      const address = other.address();
+      const destination = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+      if (stage === 'resolution') redirectResolutionTo = destination;
+      else redirectDownloadsTo = destination;
+      const curlHome = path.join(root, `curl-redirect-${stage}`);
+      const tmp = path.join(curlHome, 'tmp');
+      mkdirSync(tmp, { recursive: true });
+      writeFileSync(path.join(curlHome, '.curlrc'), 'location\nverbose\n');
+      try {
+        const prefix = path.join(curlHome, 'prefix');
+        requests.length = 0;
+        const result = await install(
+          ['--server', base, '--api-key-env', keyEnv, '--prefix', prefix],
+          { [keyEnv]: apiKey, CURL_HOME: curlHome, TMPDIR: tmp },
+        );
+        expect(result.code).toBe(1);
+        expect(result.stderr).toContain(
+          stage === 'resolution' ? 'answered 302' : 'with a redirect (302)',
+        );
+        expect(elsewhere).toEqual([]);
+        expect(requests).toHaveLength(stage === 'resolution' ? 1 : 2);
+        expect(requests.every((request) => request.apiKey === apiKey)).toBe(
+          true,
+        );
+        expect(leaked(result, [curlHome])).toBe(false);
+        expect(execFileSync('ls', ['-A', tmp], { encoding: 'utf8' })).toBe('');
+        expect(existsSync(path.join(prefix, 'current'))).toBe(false);
+      } finally {
+        redirectDownloadsTo = undefined;
+        redirectResolutionTo = undefined;
+        await new Promise((resolve) => other.close(resolve));
+      }
+    },
+  );
+
+  it.each(['verbose', 'trace', 'trace-ascii'])(
+    'ignores default curl %s logging during installation',
+    async (logging) => {
+      const curlHome = path.join(root, `curl-logging-${logging}`);
+      const tmp = path.join(curlHome, 'tmp');
+      const prefix = path.join(curlHome, 'prefix');
+      const trace = path.join(curlHome, 'trace.log');
+      mkdirSync(tmp, { recursive: true });
+      writeFileSync(
+        path.join(curlHome, '.curlrc'),
+        logging === 'verbose' ? 'verbose\n' : `${logging} = "${trace}"\n`,
+      );
+      requests.length = 0;
+      const result = await install(
+        [
+          '--server',
+          base,
+          '--api-key-env',
+          keyEnv,
+          '--prefix',
+          prefix,
+          '--bin-dir',
+          path.join(curlHome, 'bin'),
+        ],
+        { [keyEnv]: apiKey, CURL_HOME: curlHome, TMPDIR: tmp },
+      );
+      expect(result.code).toBe(0);
+      expect(requests).toHaveLength(2);
+      expect(requests.every((request) => request.apiKey === apiKey)).toBe(true);
+      expect(existsSync(trace)).toBe(false);
+      expect(leaked(result, [curlHome])).toBe(false);
+      expect(execFileSync('ls', ['-A', tmp], { encoding: 'utf8' })).toBe('');
+    },
+  );
 });

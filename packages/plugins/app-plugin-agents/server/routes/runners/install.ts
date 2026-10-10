@@ -274,7 +274,8 @@ fi
 # A request with the credential: the API key from its file, or the token as a header.
 fetch() {
   if [ "$key_mode" = 1 ]; then
-    curl -K "$tmp/auth" "$@"
+    # -q must be first: default curl configs could enable redirects or log the key through verbose/trace.
+    curl -q -K "$tmp/auth" "$@"
   else
     curl -H "$header: $token" "$@"
   fi
@@ -339,7 +340,7 @@ install_product() {
     if [ "$key_mode" = 0 ]; then
       run curl -fSL --progress-bar -H "$header: $token" -o "$tmp/$product.tar.gz" "$server$url"
     elif [ "$dry_run" = 1 ]; then
-      say "+ curl -S --progress-bar -K <the API key in $api_key_env> -o $tmp/$product.tar.gz $server$url"
+      say "+ curl -q -S --progress-bar -K <the API key in $api_key_env> -o $tmp/$product.tar.gz $server$url"
     else
       # Redirects are not followed: curl would send the key on to wherever they point.
       code="$(fetch -S --progress-bar -w '%{http_code}' -o "$tmp/$product.tar.gz" "$server$url")" ||
