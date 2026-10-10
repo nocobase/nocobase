@@ -1,74 +1,60 @@
-import { fileURLToPath } from 'node:url';
-import { createDatabaseTest } from '@nocobase/app-testing/server';
-import { createMigrator } from '@nocobase/db';
+import path from 'node:path';
+import { describeMigration } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 
-const test = createDatabaseTest();
-
-test('upgrades existing invitations and reverses only the verification schema', async ({
-  database,
-  connection,
-  expectCollection,
-}) => {
-  await createMigrator({
-    database,
-    packageName: '@nocobase/app-plugin-authentication',
-    directory: fileURLToPath(
-      new URL(
-        '../../app-plugin-authentication/database/migrations',
-        import.meta.url,
-      ),
+describeMigration('202610100001_invitation_email_verification', {
+  sources: ['app-plugin-authentication', 'app-plugin-users'].map((name) => ({
+    packageName: `@nocobase/${name}`,
+    directory: path.resolve(
+      import.meta.dirname,
+      `../../${name}/database/migrations`,
     ),
-  }).latest();
-  const migrator = createMigrator({
-    database,
-    packageName: '@nocobase/app-plugin-users',
-    directory: fileURLToPath(
-      new URL('../database/migrations', import.meta.url),
-    ),
-  });
-  await migrator.upTo('202610020201_create_user_preferences');
-  await connection.repository('userInvitations').createOne({
-    values: {
-      id: 'legacy',
-      email: 'legacy@example.test',
+  })),
+  before: async ({ connection }) => {
+    await connection.repository('userInvitations').createOne({
+      values: {
+        id: 'legacy',
+        email: 'legacy@example.test',
+        tokenHash: 'a'.repeat(64),
+        roleScopes: {},
+        data: {},
+        summary: [],
+        status: 'pending',
+        invitedById: 'inviter',
+        expiresAt: '2026-10-17T00:00:00.000Z',
+        createdAt: '2026-10-10T00:00:00.000Z',
+        updatedAt: '2026-10-10T00:00:00.000Z',
+      },
+    });
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('userInvitationVerifications').toHaveIndex(
+      ['tokenHash'],
+      { unique: true },
+    );
+    await expectCollection('userInvitationVerifications').toHaveIndex([
+      'invitationId',
+    ]);
+    await expectCollection('userInvitations').toHaveField('verificationSentAt');
+    expect(
+      await connection
+        .repository('userInvitations')
+        .findOne({ filter: { id: 'legacy' } }),
+    ).toMatchObject({
       tokenHash: 'a'.repeat(64),
-      roleScopes: {},
-      data: {},
-      summary: [],
       status: 'pending',
-      invitedById: 'inviter',
-      expiresAt: '2026-10-17T00:00:00.000Z',
-      createdAt: '2026-10-10T00:00:00.000Z',
-      updatedAt: '2026-10-10T00:00:00.000Z',
-    },
-  });
-  await migrator.latest();
-  await expectCollection('userInvitationVerifications').toExist();
-  await expectCollection('userInvitations').toHaveField('verificationSentAt');
-  expect(
-    await connection
-      .repository('userInvitations')
-      .findOne({ filter: { id: 'legacy' } }),
-  ).toMatchObject({
-    tokenHash: 'a'.repeat(64),
-    status: 'pending',
-    verificationSentAt: null,
-    manualDelivery: false,
-  });
-  await expect(migrator.rollback()).resolves.toMatchObject({
-    rolledBack: ['202610100001_invitation_email_verification'],
-  });
-  await expectCollection('userInvitationVerifications').not.toExist();
-  await expectCollection('userInvitations').not.toHaveField(
-    'verificationSentAt',
-  );
-  await expectCollection('userInvitations').not.toHaveField('manualDelivery');
-  expect(
-    await connection
-      .repository('userInvitations')
-      .findOne({ filter: { id: 'legacy' } }),
-  ).toMatchObject({ tokenHash: 'a'.repeat(64), status: 'pending' });
-  await migrator.latest();
-  await expectCollection('userInvitationVerifications').toExist();
+      verificationSentAt: null,
+      manualDelivery: false,
+    });
+  },
+  down: async ({ connection }) => {
+    expect(
+      await connection
+        .repository('userInvitations')
+        .findOne({ filter: { id: 'legacy' } }),
+    ).toMatchObject({
+      tokenHash: 'a'.repeat(64),
+      status: 'pending',
+    });
+  },
 });

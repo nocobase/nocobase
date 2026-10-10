@@ -7,7 +7,7 @@
 
 Return invitation links after successful email delivery and let authorized inviters generate a fresh link without sending email. Show copy controls for newly created and resent invitations while invalidating previous links and storing only token hashes.
 
-Keep URLs complete in CLI text output so copied invitation links remain usable, including nested project invitation results displayed as expanded JSON. All commands now display structured object fields as complete, indented JSON instead of truncated text; ordinary long text remains compact and JSON-mode output is unchanged. Invitation creation also keeps the invitation ID visible for subsequent resend or revoke commands.
+Keep scalar URLs complete in CLI text output so copied invitation links remain usable. Structured fields retain their compact display; use `--json` for complete nested project invitation results. Invitation creation also keeps the invitation ID visible for subsequent resend or revoke commands.
 
 Require plugin invitations to retrieve links through their domain-authorized endpoint. Restrict link retrieval to the original inviter, recheck role and project permissions, and keep other managers' email resends free of invitation credentials even on delivery failure. Accept only the invitation whose token was supplied, and require an authenticated matching account when the email already exists, so one invitation cannot redeem another project's pending access.
 

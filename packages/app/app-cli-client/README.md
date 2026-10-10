@@ -2,7 +2,7 @@
 
 A command line for a NocoBase application, branded by the application: it signs in to a server and runs the business commands the server's command manifest (`GET /api/cli/manifest`) publishes for the caller, each a request to one API route. An application declares its brand under `nocobase.cli` in its `package.json` (`AppCliBrand`), and `nocobase cli build` and `nocobase cli link` of `@nocobase/app-cli` package it with an entry that calls `runAppCliPackage`, which reads the brand back from the packaged CLI's own `package.json` and runs it with `selfUpdate` on; an application's `acme` is made this way. A CLI may instead call `runAppCli` with an `AppCliConfig` of its own and add static commands.
 
-Business commands render lists as tables and object responses as named fields. HTTP(S) URLs remain complete for copying. Structured object fields, including nested invitation results, expand as complete, indented JSON for every command; ordinary long text remains truncated. Use `--json` for scripts and machine-readable output instead of parsing the text layout.
+Business commands render lists as tables and object responses as named fields. HTTP(S) URLs remain complete for copying. Ordinary text and structured fields retain their compact display. Use `--json` for complete nested results, including Projects invitation links, and for scripts instead of parsing the text layout.
 
 ```ts
 import { runAppCli } from '@nocobase/app-cli-client';

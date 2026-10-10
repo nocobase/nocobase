@@ -9,7 +9,8 @@ import {
   type UserInvitation,
 } from '@nocobase/app-plugin-users/server';
 import { createAppTest } from '@nocobase/app-testing/server';
-import { expect } from 'vitest';
+import { expect, vi } from 'vitest';
+import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
 import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
 
 import {
@@ -534,3 +535,116 @@ test('an account administrator delivers a project invitation without working ema
     ).status,
   ).toBe(400);
 });
+
+for (const action of ['revoke', 'rotate'] as const) {
+  test(`preserves batch results and existing membership when a queued invitation is ${action}d`, async ({
+    testApp,
+  }) => {
+    const mailbox = testApp.application.container.resolve(
+      invitationMailboxToken,
+    );
+    mailbox.fail = false;
+    const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const existing = await readData<{ id: string }>(
+      await admin.fetch(
+        '/users',
+        post({
+          name: 'Existing member',
+          email: `existing-${action}@example.test`,
+          password: 'existing-member-password',
+        }),
+      ),
+      201,
+    );
+    const project = await readData<ProjectDetail>(
+      await admin.fetch(
+        '/projects',
+        post({
+          name: 'Batch project',
+          visibility: 'members',
+        }),
+      ),
+      201,
+    );
+    const emails = Array.from(
+      { length: 7 },
+      (_, index) => `${action}-batch-${index}@example.test`,
+    );
+    const notification = testApp.application.container.resolve(
+      notificationServiceToken,
+    );
+    const send = notification.sendTransient.bind(notification);
+    const release = Promise.withResolvers<void>();
+    const blocked = vi
+      .spyOn(notification, 'sendTransient')
+      .mockImplementation(async (input) => {
+        await release.promise;
+        return send(input);
+      });
+    const pending = admin.fetch(
+      '/projects/invitations',
+      post({
+        emails: [...emails, `existing-${action}@example.test`],
+        projectIds: [project.id],
+      }),
+    );
+    let changedId: string | undefined;
+    try {
+      await vi.waitFor(() => expect(blocked).toHaveBeenCalledTimes(5), {
+        timeout: 10_000,
+      });
+      const invitations = await readData<UserInvitation[]>(
+        await admin.fetch('/users/invitations'),
+      );
+      changedId = invitations.find(
+        (invitation) => invitation.email === emails[5],
+      )?.id;
+      expect(changedId).toBeDefined();
+      const response =
+        action === 'revoke'
+          ? await admin.fetch(`/projects/invitations/${changedId}`, {
+              method: 'DELETE',
+              headers: { origin: 'http://localhost' },
+            })
+          : await admin.fetch(
+              `/projects/invitations/${changedId}/resend?sendEmail=false`,
+              post({}),
+            );
+      expect(response.status).toBe(action === 'revoke' ? 204 : 200);
+    } finally {
+      release.resolve();
+      await pending;
+      blocked.mockRestore();
+    }
+    const { results } = await readData<{ results: InvitationResult[] }>(
+      await pending,
+      201,
+    );
+    expect(results).toEqual([
+      ...emails.map((email, index) =>
+        index === 5
+          ? { email, outcome: 'invited', emailSent: false }
+          : {
+              email,
+              outcome: 'invited',
+              emailSent: true,
+              inviteUrl: expect.stringContaining('/main/invite/'),
+            },
+      ),
+      { email: `existing-${action}@example.test`, outcome: 'added' },
+    ]);
+    expect(emails.filter((email) => mailbox.messages.has(email))).toEqual(
+      emails.filter((_, index) => index !== 5),
+    );
+    const members = await readData<ProjectDetail>(
+      await admin.fetch(`/projects/${project.id}`),
+    );
+    expect(members.members.map((member) => member.id)).toContain(existing.id);
+    const users = testApp.application.container.resolve(
+      userManagementServiceToken,
+    );
+    expect((await users.getInvitation(changedId ?? ''))?.status).toBe(
+      action === 'revoke' ? 'revoked' : 'pending',
+    );
+  });
+}

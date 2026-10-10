@@ -47,7 +47,7 @@ import {
 
 /** Where links point and what the email calls the application. */
 export interface InvitationSite {
-  /** `app.publicOrigin`; without it, the origin the caller passes. */
+  /** Trusted origin required for mailbox proofs; shareable links may fall back to the caller's origin. */
   readonly publicOrigin?: string;
   readonly publicBasePath: string;
   readonly appTitle: string;
@@ -223,16 +223,31 @@ export function createInvitationManager(
     const pending = outgoing.entries();
     async function sendNext(): Promise<void> {
       for (const [index, { row, token }] of pending) {
-        const emailSent =
-          sendEmail && Date.now() < deadline
-            ? await sendVerification(token, deadline)
-            : false;
+        let emailSent = false;
+        let inviteUrl: string | undefined = `${base}/invite/${token}`;
+        try {
+          if (sendEmail && Date.now() < deadline)
+            emailSent = await sendVerification(token, deadline);
+        } catch (error) {
+          // A concurrent revocation, acceptance or rotation must not discard the rest of the committed batch.
+          if (
+            !(error instanceof UserManagementError) ||
+            ![
+              'INVITATION_NOT_FOUND',
+              'INVITATION_EXPIRED',
+              'INVITATION_ACCEPTED',
+              'INVITATION_REVOKED',
+            ].includes(error.code)
+          )
+            throw error;
+          inviteUrl = undefined;
+        }
         results[index] = {
           email: row.email,
           outcome: 'invited',
           invitationId: row.id,
           emailSent,
-          inviteUrl: `${base}/invite/${token}`,
+          ...(inviteUrl ? { inviteUrl } : {}),
         };
       }
     }

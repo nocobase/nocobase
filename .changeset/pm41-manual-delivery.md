@@ -8,6 +8,6 @@ Allow original inviters with user creation permission to explicitly generate a m
 
 Send invitation credentials through a transient notification service that never stores message bodies, recipients, provider diagnostics, or job payloads. Transient delivery is a single synchronous attempt without automatic retry or durable idempotency; failed or uncertain submissions are reported without echoing credentials. Existing notification history is not rewritten.
 
-Bound invitation batches to five concurrent sends sharing a 30-second mail-delivery budget. Return all invitation links when delivery is slow or uncertain, and record manual-delivery security events through the Projects endpoint as well.
+Bound invitation batches to five concurrent sends sharing a 30-second mail-delivery budget. Preserve per-recipient results when delivery is slow or another request closes or rotates a queued invitation; omit invalidated links and continue adding existing accounts to their projects. Record manual-delivery security events through the Projects endpoint as well.
 
 Keep verification resend progress and success instructions visible when an invitee requests a fresh email from an expired verification link. Simplify invitation dialog state and transient delivery inputs, and consolidate the unreleased invitation schema additions into one migration.
