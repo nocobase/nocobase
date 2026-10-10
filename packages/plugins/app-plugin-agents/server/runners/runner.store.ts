@@ -97,6 +97,21 @@ export function registrationTokensRepo(
   return conn.repository<RegistrationTokenRecord>('agRegistrationTokens');
 }
 
+/** Hold this host's registration lock until the surrounding transaction commits. */
+export async function lockRegistration(
+  conn: DatabaseConnection,
+  id: string,
+  updatedAt: string,
+): Promise<void> {
+  await conn
+    .repository<{ id: string; updatedAt: string }>('agRegistrationLocks')
+    .upsertOne({
+      filter: { id },
+      create: { id, updatedAt },
+      update: { updatedAt },
+    });
+}
+
 function toolList(value: unknown): ToolInfo[] {
   const list = Array.isArray(value) ? (value as unknown[]) : [];
   return list.flatMap((item) => {

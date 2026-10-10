@@ -12,6 +12,12 @@ A runner registers once per App with a one-time registration token (10 minutes):
 
 Then on the runner's machine: `nocobase-runner register --server <App URL> --token <token>`, and `nocobase-runner start` or `nocobase-runner service install` (launchd on macOS, a systemd user unit on Linux). The install script does all of this in one line; see [Distribution](distribution.md).
 
+Registering again with the same owner, name and hostname revokes previous registrations and their keys atomically. Old runtimes take no more work, and the sweeper requeues what they held; historical records retain their ids. Hostnames are self-reported, so another owner's matching runtime is preserved. Agent configurations limited to a previous runtime id need to select the new runtime.
+
+`runtime token list` (`GET /api/agents/runners/registrationTokens`, paged with `page` and `pageSize`) lists unused, unexpired token metadata. Signed-in callers see their own tokens; managers of runners see all. Tokens and hashes are never returned: create a fresh token if the original secret is lost. To delete a runtime, run `runtime revoke <runtime>` and then `runtime delete <runtime>`; deleting a live runtime returns `RUNNER_NOT_REVOKED` with those steps.
+
+The install script requires an explicit `--server <App URL>` with `--runner` and rejects a missing or empty value before downloading or installing anything. CLI-only installation still defaults to the application that served the script.
+
 A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started, and receive its variables like any runner, except those marked "Team runtimes only" (`teamRunnersOnly`): a run that gets one goes to a team runner. Their owner may share them with the team. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
 
 ## How work reaches a runner

@@ -49,6 +49,8 @@ import { tags } from '../openapi.js';
 import {
   RegistrationTokenInputSchema,
   RegistrationTokenSchema,
+  RegistrationTokenListQuery,
+  RegistrationTokenSummarySchema,
   RunnerHeldItemSchema,
   RunnerParams,
   RunnerPatchInput,
@@ -261,6 +263,40 @@ export function createAdminRoutes(
       for (const runner of visible)
         data.push(await summarizeRunner(context, runner, takes));
       return context.json({ data, meta: { total: data.length } });
+    },
+  );
+  router.get(
+    '/registrationTokens',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List usable runner registration tokens',
+      operationId: 'agentsListRunnerRegistrationTokens',
+      ...cliRoute({
+        command: 'runtime token list',
+        columns: ['id', 'createdById', 'trust', 'expiresAt'],
+      }),
+      description:
+        'Unused, unexpired token metadata, without secrets or hashes. Managers of runners see all tokens; other signed-in callers see their own.',
+      responses: {
+        200: listResponse(RegistrationTokenSummarySchema),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', RegistrationTokenListQuery),
+    async (context) => {
+      const who = caller(context);
+      const query = context.req.valid('query');
+      const result = await services.runners.listRegistrationTokens({
+        ...query,
+        ...((await who.can('agents.runners', 'manage'))
+          ? {}
+          : { createdById: who.userId }),
+      });
+      return context.json({
+        data: result.data,
+        meta: { total: result.total, ...query },
+      });
     },
   );
   router.post(
@@ -490,7 +526,8 @@ export function createAdminRoutes(
         flags: { runnerId: { name: 'runtime' } },
         confirm: 'Delete this runtime?',
       }),
-      description: 'Deletes a revoked runner; its past runs keep its id.',
+      description:
+        'Deletes a revoked runner; its past runs keep its id. First run runtime revoke <runtime>, then runtime delete <runtime>.',
       responses: {
         204: emptyResponse(),
         ...revokeErrors,
