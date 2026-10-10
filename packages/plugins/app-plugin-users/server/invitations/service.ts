@@ -224,7 +224,6 @@ export function createInvitationManager(
     async function sendNext(): Promise<void> {
       for (const [index, { row, token }] of pending) {
         let emailSent = false;
-        let inviteUrl: string | undefined = `${base}/invite/${token}`;
         try {
           if (sendEmail && Date.now() < deadline)
             emailSent = await sendVerification(token, deadline);
@@ -237,17 +236,24 @@ export function createInvitationManager(
               'INVITATION_EXPIRED',
               'INVITATION_ACCEPTED',
               'INVITATION_REVOKED',
+              'INVITATION_VERIFICATION_RATE_LIMITED',
             ].includes(error.code)
           )
             throw error;
-          inviteUrl = undefined;
         }
+        // Recheck after the send transaction: a lost reservation or an exhausted budget may hide a rotated or closed link.
+        const current = await findInvitation(database.connection(), {
+          id: row.id,
+        });
+        const isOpen =
+          current?.tokenHash === row.tokenHash &&
+          statusOf(current) === 'pending';
         results[index] = {
           email: row.email,
           outcome: 'invited',
           invitationId: row.id,
-          emailSent,
-          ...(inviteUrl ? { inviteUrl } : {}),
+          emailSent: isOpen && emailSent,
+          ...(isOpen ? { inviteUrl: `${base}/invite/${token}` } : {}),
         };
       }
     }

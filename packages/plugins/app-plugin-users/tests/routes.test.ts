@@ -73,7 +73,15 @@ describe('@nocobase/app-plugin-users API routes', () => {
         vi.mocked(service.invite).mockResolvedValue([result]);
         vi.mocked(service.resendInvitation).mockResolvedValue(result);
         const router = await apiRoutes.createRouter(
-          createApplication('allowed', service, permissions),
+          createApplication('allowed', service, {
+            requireAction: async ({ action }) => {
+              if (
+                (action === 'create' && !permissions.canCreateUsers) ||
+                (action === 'assign-role' && !permissions.canAssignRoles)
+              )
+                throw denied();
+            },
+          }),
         );
         const created = await router.request('/users/invitations', {
           method: 'POST',
@@ -919,8 +927,6 @@ function createApplication(
       readonly resource: { readonly type: string; readonly id: string };
       readonly action: string;
     }) => Promise<void>;
-    readonly canCreateUsers?: boolean;
-    readonly canAssignRoles?: boolean;
     readonly authenticatedUserId?: string;
     readonly scopedSession?: boolean;
     readonly logger?: { info: ReturnType<typeof vi.fn> };
@@ -949,13 +955,6 @@ function createApplication(
     middleware: () => async (context, next) => {
       context.set('authz', {
         identity: { principal: { type: 'user', id: 'admin-1' } },
-        can: ({ action }: { action: string }) =>
-          Promise.resolve(
-            mode === 'allowed' &&
-              (action === 'create'
-                ? options.canCreateUsers !== false
-                : options.canAssignRoles !== false),
-          ),
         require:
           options.requireAction ??
           (() =>

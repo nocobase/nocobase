@@ -2,7 +2,7 @@ import path from 'node:path';
 import { describeMigration } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 
-describeMigration('202610100001_invitation_email_verification', {
+describeMigration('202610100001_users_invitation_email_verification', {
   sources: ['app-plugin-authentication', 'app-plugin-users'].map((name) => ({
     packageName: `@nocobase/${name}`,
     directory: path.resolve(

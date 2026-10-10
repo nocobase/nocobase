@@ -17,7 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { InvitationEmail } from '../server/invitations/mail.js';
 import { hashToken } from '../server/invitations/rules.js';
-import { findInvitation } from '../server/invitations/store.js';
+import * as invitationStore from '../server/invitations/store.js';
 import {
   createUserManagementService,
   createUserRoleScopeRegistry,
@@ -90,6 +90,7 @@ describe('user invitations', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
     await testDatabase.destroy();
   });
@@ -99,7 +100,38 @@ describe('user invitations', () => {
   const proofOf = (email: InvitationEmail) =>
     /#verification=([\w-]+)/u.exec(email.text)?.[1] ?? '';
 
-  it('bounds slow batch delivery and returns every link in input order within one budget', async () => {
+  it('preserves batch results and valid links when a verification reservation is unavailable', async () => {
+    vi.spyOn(invitationStore, 'claimVerificationSend').mockResolvedValueOnce(
+      false,
+    );
+    const results = await service.invite({
+      emails: ['first@example.test', 'second@example.test', 'ann@example.com'],
+      invitedBy: 'ann',
+    });
+    expect(results).toEqual([
+      expect.objectContaining({
+        email: 'first@example.test',
+        outcome: 'invited',
+        emailSent: false,
+        inviteUrl: expect.any(String),
+      }),
+      expect.objectContaining({
+        email: 'second@example.test',
+        outcome: 'invited',
+        emailSent: true,
+        inviteUrl: expect.any(String),
+      }),
+      { email: 'ann@example.com', outcome: 'existingUser', userId: 'ann' },
+    ]);
+    expect(mail.map((email) => email.to)).toEqual(['second@example.test']);
+    const first = results[0];
+    if (first.outcome !== 'invited') throw new Error('Missing invitation');
+    await expect(
+      service.lookupInvitation(first.inviteUrl?.split('/').at(-1) ?? ''),
+    ).resolves.toMatchObject({ email: first.email });
+  });
+
+  it('bounds slow batch delivery and omits queued links that were revoked or rotated', async () => {
     const send = vi.fn((email: InvitationEmail) =>
       email.to === 'batch-0@example.test'
         ? Promise.resolve()
@@ -110,7 +142,11 @@ describe('user invitations', () => {
       users: userAdministration(database.connection()),
       roleScopes: createUserRoleScopeRegistry(),
       mailer: { send },
-      site: { publicOrigin: ORIGIN, publicBasePath: '/main', appTitle: 'Acme' },
+      site: {
+        publicOrigin: ORIGIN,
+        publicBasePath: '/main',
+        appTitle: 'Acme',
+      },
     });
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
     const emails = Array.from(
@@ -120,22 +156,35 @@ describe('user invitations', () => {
     const pending = batchService.invite({ emails, invitedBy: 'ann' });
     // One completed send frees a slot; the other five stay in flight until the common deadline.
     await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6));
+    const queued = await batchService.listInvitations();
+    const revoked = queued.find((row) => row.email === emails[6]);
+    const rotated = queued.find((row) => row.email === emails[7]);
+    if (!revoked || !rotated) throw new Error('Missing queued invitations');
+    await batchService.revokeInvitation(revoked.id);
+    await batchService.resendInvitation(rotated.id, { sendEmail: false });
     await vi.advanceTimersByTimeAsync(30_000);
     const results = await pending;
     expect(results.map((result) => result.email)).toEqual(emails);
     expect(results[0]).toMatchObject({ emailSent: true });
     expect(results.slice(1)).toEqual(
       emails.slice(1).map((email) =>
-        expect.objectContaining({
-          email,
-          emailSent: false,
-          inviteUrl: expect.stringContaining('/invite/'),
-        }),
+        email === emails[6] || email === emails[7]
+          ? {
+              email,
+              outcome: 'invited',
+              invitationId: expect.any(String),
+              emailSent: false,
+            }
+          : expect.objectContaining({
+              email,
+              emailSent: false,
+              inviteUrl: expect.stringContaining('/invite/'),
+            }),
       ),
     );
     expect(send).toHaveBeenCalledTimes(6);
     const rows = await batchService.listInvitations();
-    expect(rows).toHaveLength(50);
+    expect(rows).toHaveLength(49);
     const deliveries = await database
       .connection()
       .repository<{ sendError: string | null }>('userInvitations')
@@ -448,7 +497,9 @@ describe('user invitations', () => {
     await expect(service.lookupInvitation(token)).resolves.toMatchObject({
       email: 'new@example.com',
     });
-    const row = await findInvitation(database.connection(), { id });
+    const row = await invitationStore.findInvitation(database.connection(), {
+      id,
+    });
     expect(row).toMatchObject({
       tokenHash: hashToken(token),
       sentAt: null,

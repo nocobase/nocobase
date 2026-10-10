@@ -1,7 +1,7 @@
 import { defineMigration, type MigrationDefinition } from '@nocobase/db';
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202610100001_invitation_email_verification',
+  name: '202610100001_users_invitation_email_verification',
   async up({ builder }) {
     await builder.alterCollection('userInvitations', (collection) => {
       collection.datetimeTz('verificationSentAt').nullable();
