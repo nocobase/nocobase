@@ -105,6 +105,33 @@ Use `GET /api/mail/messages/countUnread` as authoritative. Reuse the plugin's us
 
 Enable mutations only when the account and provider support them. Consult [IMAP/SMTP boundaries](configuration-and-accounts.md#imapsmtp-boundaries-and-sent-copies) when using the generic adapter. For incomplete content, use [Synchronization and diagnostics](synchronization-and-diagnostics.md#incomplete-content).
 
+### Unread counts on custom menus
+
+Use `useMailUnreadCount()` from `@nocobase/app-plugin-mail/client` to reuse the same current-user fetching and refresh coordination as `MailNavigationIcon`. Register the Mail Client plugin and render under the host application's service context. `MailUnreadCountState` exposes `unreadCount: number | undefined`, `loading: boolean`, and `error: unknown`. An unknown count is not zero: `undefined` remains until the first successful response, while `0` is a real server result. Background requests keep the last successful count; failures preserve it and expose the original error, and the next successful response clears the error. Use `mailErrorMessage(error, fallback)` when showing an error rather than turning failure into a zero badge.
+
+```tsx
+import type { ReactElement } from 'react';
+import {
+  useMailUnreadCount,
+  type MailUnreadCountState,
+} from '@nocobase/app-plugin-mail/client';
+
+function CustomMailBadge(): ReactElement {
+  const state: MailUnreadCountState = useMailUnreadCount();
+  return (
+    <span aria-busy={state.loading}>
+      {state.unreadCount === undefined ? '—' : state.unreadCount}
+    </span>
+  );
+}
+```
+
+Mount the consumer inside the application's authenticated, session-owned scope and remount it when the signed-in user changes, for example `<CustomMailBadge key={sessionKey} />` where the application supplies a key that changes on session replacement. The Hook cannot detect a cookie/session change while the same host services remain mounted. Do not retain it across logout or user switching without remounting: a retained component can otherwise display the previous user's count. Cleanup discards late responses from the previous mount; replacing the host client also resets the state. This is not a new global cache or an authentication observer.
+
+The Hook fetches on mount and handles local workspace invalidation, server `mail.changed` events, realtime connection open/recovery, window focus throttled to 30 seconds, and a 60-second polling fallback. It retains the existing 100ms debounce and serialized requests: invalidation during a request discards that response and schedules one trailing refresh. `loading` covers an active request and its trailing refresh; an idle debounce can still show the last settled state until the request starts. Invalidations carry no authoritative count. The Hook neither changes read state nor provides account/folder filters, conversation deduplication or independent permission checks; the existing current-user endpoint supplies the count and enforces access.
+
+Each mounted Hook instance has its own requests, subscriptions and timers. Two simultaneous consumers may fetch independently; call once in an application-owned parent and distribute its state if several menus need it. Unmount removes listeners and timers but does not abort an already-issued HTTP request; its result is ignored. Low-level `MAIL_UNREAD_COUNT_CHANGED_EVENT` and `subscribeToMailInvalidations` remain private implementation details, not new supported exports or deep-import paths. Keep using `MailNavigationIcon` for the standard translated badge with zero hidden and `99+` display.
+
 ## Composition and drafts
 
 Keep composer state and errors independent of mailbox queries so a refresh does not discard edits. The shared composer retains unfinished content per account while mounted and uses local draft recovery across reloads. Preserve unsaved-change handling, attachment identities, and the separation between forwarded source content and the sender's editable comment.
