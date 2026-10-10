@@ -165,8 +165,8 @@ describe('the role editor', () => {
         .getAllByRole('switch')
         .map((item) => item.closest('div')?.textContent),
     ).toEqual([
-      'navigation.dashboard',
       'navigation.myIssues',
+      'navigation.dashboard',
       'navigation.issues',
       'navigation.projects',
       'navigation.knowledge',

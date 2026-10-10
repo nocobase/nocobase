@@ -2,6 +2,8 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronRight } from 'lucide-react';
 import { useRef, useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
+import { cn } from 'cn';
+import type { InboxBadge } from '@/components/inbox-badge';
 
 import {
   Collapsible,
@@ -39,6 +41,13 @@ interface Section {
   readonly items: readonly RouteNavigationItem[];
 }
 
+/** Live presentation for a route entry; links, selection and permissions remain owned by route navigation. */
+export interface NavigationDecoration {
+  readonly badge: InboxBadge;
+  readonly label: string;
+  readonly hint: string;
+}
+
 /**
  * A route tree as the sidebar's menu, drawn with the shadcn Sidebar primitives like the settings navigation.
  *
@@ -53,11 +62,13 @@ export function NavigationMenu({
   label,
   sections: asSections = false,
   selectedKey,
+  decorations,
 }: {
   readonly items: readonly RouteNavigationItem[];
   readonly label: string;
   readonly sections?: boolean;
   readonly selectedKey: string | undefined;
+  readonly decorations?: Readonly<Record<string, NavigationDecoration>>;
 }): ReactElement {
   const sections = asSections
     ? toSections(items)
@@ -85,6 +96,7 @@ export function NavigationMenu({
                   key={routeKey(item.route)}
                   item={item}
                   selectedKey={selectedKey}
+                  decoration={decorations?.[item.route.name]}
                 />
               ))}
             </SidebarMenu>
@@ -157,6 +169,7 @@ interface ItemProps {
   /** Rendered inside the icon mode's popover, where tooltips and the icon mode's popovers do not apply. */
   readonly inPopover?: boolean;
   readonly onNavigate?: () => void;
+  readonly decoration?: NavigationDecoration;
 }
 
 /** One top-level entry of a menu: a link, a collapsible sub-menu, or in the icon mode a popover of its children. */
@@ -165,6 +178,7 @@ function NavigationItem({
   selectedKey,
   inPopover = false,
   onNavigate,
+  decoration,
 }: ItemProps): ReactElement | null {
   const { state, isMobile } = useSidebar();
   const closeSheet = useCloseOnNavigate();
@@ -193,6 +207,7 @@ function NavigationItem({
       to={item.route.path}
       onClick={navigate}
       aria-current={isSelected ? 'page' : undefined}
+      aria-label={decoration?.label}
     />
   ) : undefined;
 
@@ -202,10 +217,37 @@ function NavigationItem({
         <SidebarMenuButton
           render={link}
           isActive={isSelected}
-          tooltip={inPopover ? undefined : label}
+          tooltip={inPopover ? undefined : (decoration?.hint ?? label)}
+          className={decoration ? 'relative overflow-visible' : undefined}
         >
           {Icon ? <Icon /> : null}
-          <span>{label}</span>
+          <span
+            className={
+              state === 'collapsed' && !isMobile && !inPopover
+                ? 'sr-only'
+                : 'truncate'
+            }
+          >
+            {label}
+          </span>
+          {decoration?.badge ? (
+            <span
+              aria-hidden='true'
+              data-testid='studio-inbox-badge'
+              data-kind={decoration.badge.kind}
+              className={cn(
+                'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-xs leading-none font-semibold tabular-nums',
+                state === 'collapsed' && !isMobile && !inPopover
+                  ? 'absolute -top-0.5 -right-0.5 ring-2 ring-sidebar'
+                  : 'ml-auto',
+                decoration.badge.kind === 'decisions'
+                  ? 'bg-inbox-pending text-inbox-pending-foreground'
+                  : 'bg-primary text-primary-foreground',
+              )}
+            >
+              {decoration.badge.text}
+            </span>
+          ) : null}
         </SidebarMenuButton>
       </SidebarMenuItem>
     );

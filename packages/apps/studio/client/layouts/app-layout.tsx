@@ -12,6 +12,7 @@ import { RouteTreeProvider } from '../routing/route-context.js';
 import { ChatPanel } from '@/extensions/nocobase-agent-chat/chat-panel';
 import { ChatFloatingButton } from '@/extensions/nocobase-agent-chat/launchers';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { useInboxNavigation } from '../inbox/navigation.js';
 
 import { useTranslation } from '@nocobase/i18n/client';
 import { LayoutHeader } from './components/layout-header.js';
@@ -43,6 +44,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   useSyncServerLocale();
   // The person's language and theme follow them from the server (`account/preferences-sync.ts`).
   useUserPreferencesSync();
+  const inbox = useInboxNavigation();
 
   const { t } = useTranslation();
   const { items: menuItems, denied } = useRouteNavigation(routes);
@@ -54,7 +56,8 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   const selectedKey = selectedNavigationId(routes, pathname, denied);
   // The home page's composer and a full-page conversation are where the person talks to an agent already; the
   // floating launcher would only sit on their send button.
-  const conversationPage = pathname === '/' || pathname.startsWith('/chat/');
+  const conversationPage =
+    pathname === '/home' || pathname.startsWith('/chat/');
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
@@ -77,6 +80,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
                     })}
                     sections
                     selectedKey={selectedKey}
+                    decorations={{ inbox }}
                   />
                 )}
               </AppSidebar>

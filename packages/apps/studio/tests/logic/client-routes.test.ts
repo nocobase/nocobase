@@ -86,17 +86,17 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders the sidebar with Home and Dashboard first, then My issues, the Development, Releases and Agent team sections, and Settings', () => {
-    // The inbox is not among them: it is the header's button (`client/inbox/header-button.tsx`).
+  it('orders the sidebar with Inbox first and Dashboard below My tasks, followed by the existing sections', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
       );
     const { routes } = resolveRoutes();
     expect(menu(routes)).toEqual([
+      'navigation.inbox',
       'navigation.home',
-      'navigation.dashboard',
       'navigation.myIssues',
+      'navigation.dashboard',
       'navigation.development',
       'navigation.releases',
       'navigation.agentTeam',
@@ -155,19 +155,18 @@ describe('app client routes', () => {
       expect(new Set(own.map((page) => page.authorizedAs)).size).toBe(1);
     }
     expect(all.filter((page) => !teamNames.has(page.name))).toEqual([
-      { name: 'home', authorizedAs: null },
+      { name: 'landing', authorizedAs: null },
       // One conversation full screen: a conversation is its owner's alone, which its API checks.
       { name: 'chat', authorizedAs: null },
       // The person's own settings; every category's API checks what it serves.
       { name: 'account', authorizedAs: null },
       { name: 'account-category', authorizedAs: null },
-      // The viewer's own inbox, opened from the header rather than the menu.
+      // The viewer's own inbox, first in the menu and available without page grants.
       { name: 'inbox', authorizedAs: null },
       // Legacy `/pm` links: redirects that open the agents' chat panel, which checks what it opens.
       { name: 'chat-pm', authorizedAs: null },
       { name: 'chat-pm-conversation', authorizedAs: null },
-      // The dashboard, behind the reports grant its figures' API checks too.
-      { name: 'dashboard', authorizedAs: 'reports' },
+      { name: 'home', authorizedAs: null },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
       // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).
@@ -192,6 +191,8 @@ describe('app client routes', () => {
         name: 'pm-my-issues-executing-issue-run',
         authorizedAs: 'pm-my-issues',
       },
+      // The dashboard, behind the reports grant its figures' API checks too.
+      { name: 'dashboard', authorizedAs: 'reports' },
       { name: 'pm-issues', authorizedAs: 'pm-issues' },
       { name: 'pm-issue-new', authorizedAs: 'pm-issues' },
       { name: 'pm-plan', authorizedAs: 'pm-issues' },

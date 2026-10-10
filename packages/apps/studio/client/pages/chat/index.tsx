@@ -11,11 +11,11 @@ import { ChatConversationPage } from '@/extensions/nocobase-agent-chat/conversat
 
 export default function ChatPage(): ReactElement {
   const { conversationId } = useParams();
-  if (!conversationId) return <Navigate to='/' replace />;
+  if (!conversationId) return <Navigate to='/home' replace />;
   return (
     <ChatConversationPage
       conversationId={conversationId}
-      newConversationPath='/'
+      newConversationPath='/home'
     />
   );
 }

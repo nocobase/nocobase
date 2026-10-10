@@ -81,7 +81,7 @@ test.describe('Online mode', () => {
       availability: { online: true },
     });
 
-    await open(page, '/');
+    await open(page, '/home');
     await expect(
       page.getByRole('heading', { name: '今天要做什么？' }),
     ).toBeVisible();

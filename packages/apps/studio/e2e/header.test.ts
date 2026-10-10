@@ -13,16 +13,18 @@ import {
 import { projectWithDoneApproval } from './support/approval.ts';
 import type { Issue } from './support/runner.ts';
 
-/** The header's inbox button, whatever its label says about the count; not the breadcrumb on the inbox itself. */
+/** The sidebar's inbox entry, including its full count label. */
 const inboxButton = (page: Page) =>
-  page.getByRole('banner').getByTestId('studio-inbox-button');
+  page
+    .getByRole('navigation', { name: '应用导航' })
+    .getByRole('link', { name: /^收件箱/ });
 
 /** The decisions waiting on the viewer, as the server counts them. */
 async function pendingDecisions(api: Api): Promise<number> {
   return (await api.get<{ decision: number }>('inbox/pending')).decision;
 }
 
-test.describe('header inbox', () => {
+test.describe('sidebar inbox', () => {
   // Lisa Nguyen, a contributor, leads a project whose workflow makes a member moving an issue to Done wait for her
   // approval. No other test asks her for a decision, so the count is hers alone.
   test.use({ user: 'lisa' });
@@ -48,7 +50,7 @@ test.describe('header inbox', () => {
     try {
       const me = await wendy.api.get<{ userId: string }>('projects/me');
       const issue = await wendy.api.post<Issue>('projects/issues', {
-        title: `顶栏收件箱角标 ${unique()}`,
+        title: `侧栏收件箱角标 ${unique()}`,
         projectId: project.id,
         ownerUserId: me.userId,
         statusKey: 'in_progress',
@@ -128,11 +130,17 @@ test.describe('header inbox', () => {
       page.getByRole('heading', { name: '收件箱', level: 1 }),
     ).toBeVisible();
     await expect(inboxButton(page)).toHaveAttribute('aria-current', 'page');
-    // The sidebar has no inbox entry any more.
+    // The sidebar is the only global inbox entry.
     await expect(
       page
         .getByRole('navigation', { name: '应用导航' })
         .getByRole('link', { name: /收件箱/ }),
+    ).toHaveCount(1);
+    await expect(
+      page
+        .getByRole('banner')
+        .getByRole('link', { name: /收件箱/ })
+        .and(page.locator('a[href]')),
     ).toHaveCount(0);
   });
 
@@ -152,14 +160,21 @@ test.describe('header inbox', () => {
       hasTouch: true,
     });
 
-    test('the button stays in the header without pushing it sideways', async ({
+    test('the inbox is reachable in the mobile menu without horizontal overflow', async ({
       page,
     }) => {
-      await open(page, '/');
+      await open(page, '/home');
+      await page
+        .getByRole('banner')
+        .getByRole('button', { name: /导航/ })
+        .click();
       await expect(inboxButton(page)).toBeVisible();
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       await inboxButton(page).click();
       await expect(page).toHaveURL(/\/inbox$/u);
+      await expect(
+        page.getByRole('navigation', { name: '应用导航' }),
+      ).toBeHidden();
     });
   });
 });
@@ -181,9 +196,9 @@ test.describe('back-office settings', () => {
       // The catch-all route sends it to the application's root, with or without the trailing slash.
       await expect
         .poll(() => page.url().replace(/\/$/u, ''))
-        .toBe(url('/').replace(/\/$/u, ''));
+        .toBe(url('/inbox'));
       await expect(
-        page.getByRole('heading', { name: '今天要做什么？' }),
+        page.getByRole('heading', { name: '收件箱', level: 1 }),
       ).toBeVisible();
     });
   }
@@ -198,5 +213,64 @@ test.describe('back-office settings', () => {
     await expect(
       page.getByRole('heading', { name: '常规', level: 1 }),
     ).toBeVisible();
+  });
+});
+
+test.describe('default landing navigation', () => {
+  test('root lands on inbox with the menu in order, and direct destinations survive refresh and history', async ({
+    page,
+  }) => {
+    await open(page, '/');
+    await expect(page).toHaveURL(url('/inbox'));
+    const nav = page.getByRole('navigation', { name: '应用导航' });
+    const links = nav.getByRole('link');
+    await expect(links.nth(0)).toHaveAccessibleName(/^收件箱/);
+    await expect(links.nth(1)).toHaveAccessibleName('首页');
+    await expect(links.nth(2)).toHaveAccessibleName('我的任务');
+    await expect(links.nth(3)).toHaveAccessibleName('仪表盘');
+    await nav.getByRole('link', { name: '仪表盘' }).click();
+    await expect(page).toHaveURL(url('/dashboard'));
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { name: '仪表盘', level: 1 }),
+    ).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(url('/inbox'));
+    await page.goForward();
+    await expect(page).toHaveURL(url('/dashboard'));
+    await open(page, '/inbox?kind=decision');
+    await page.reload();
+    await expect(page).toHaveURL(url('/inbox?kind=decision'));
+    await expect(
+      page.getByRole('heading', { name: '收件箱', level: 1 }),
+    ).toBeVisible();
+  });
+
+  test('root preserves account settings and fragment', async ({ page }) => {
+    await open(page, '/?account=preferences#detail');
+    await expect(page).toHaveURL(url('/inbox?account=preferences#detail'));
+    await expect(page.getByRole('dialog', { name: '个人设置' })).toBeVisible();
+  });
+
+  test('icon mode retains the full count and tooltip', async ({ page }) => {
+    await page.route('**/api/inbox/pending', (route) =>
+      route.fulfill({ json: { data: { decision: 120 } } }),
+    );
+    await open(page, '/inbox');
+    await page
+      .getByRole('banner')
+      .getByRole('button', { name: /导航/ })
+      .click();
+    const link = inboxButton(page);
+    await expect(link).toHaveAccessibleName('收件箱，120 项待处理');
+    await expect(link.getByTestId('studio-inbox-badge')).toBeVisible();
+    await expect(link.getByTestId('studio-inbox-badge')).toHaveText('99+');
+    await link.hover();
+    await expect(
+      page.getByText('120 项待处理决定，不是未读数；处理后才会减少。', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });
