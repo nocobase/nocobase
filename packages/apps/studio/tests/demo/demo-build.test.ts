@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import builtInAgents from '../../database/main/seeds/202610010030_studio_builtin_agents.js';
 import presetLabels from '../../database/main/seeds/202610010060_studio_preset_labels.js';
+import { createDesignService } from '../../server/agents/design.js';
 import { addReviewChecklist, buildDemo } from '../../server/demo/build.js';
 import { DEMO_REVIEW_CHECKLIST } from '../../server/demo/data.js';
 import { DEMO_HISTORY } from '../../server/demo/history.js';
@@ -84,7 +85,9 @@ async function build(
   expect(warnings.map((warning) => warning.message)).toEqual(expected);
 }
 
-describe('the demo data', () => {
+// Each test builds the whole demo on a fresh application, which takes several seconds alone and well past Vitest's
+// default under a full parallel run.
+describe('the demo data', { timeout: 120_000 }, () => {
   it('gives the built-in assistant a model and makes it the team default when a model service offers one', async () => {
     await build();
     const agents = await h.agents.agents.list();
@@ -284,6 +287,35 @@ describe('the demo data', () => {
       source: { kind: 'issue' },
       canDecide: true,
     });
+  });
+
+  it('has an issue whose agent proposal waits in Proposal review for the administrator to decide', async () => {
+    await build();
+    const [issue, ...others] = (
+      await h.projects.issueQueries.page(admin(), {
+        statusKey: 'proposal_review',
+      })
+    ).data;
+    expect(others).toHaveLength(0);
+    expect(issue).toMatchObject({ title: 'Export the issue list to Excel' });
+    const state = await createDesignService({
+      projects: () => h.projects,
+      inbox: () => undefined,
+    }).state(admin(), issue!.id);
+    expect(state).toMatchObject({
+      inReview: true,
+      canApprove: true,
+      canRequestChanges: true,
+      proposal: { authorType: 'agent', authorName: 'Frontend Developer' },
+    });
+    expect(state.proposal?.content).toContain('## Approach');
+    // No run waits for the agent: no demo runtime is online.
+    const runs = await h.agents.runs.openOn(
+      h.database.connection(),
+      { kind: 'issue', id: issue!.id },
+      state.proposal!.authorId!,
+    );
+    expect(runs).toHaveLength(0);
   });
 
   it('has a past the dashboard measures: work finished over two months and the agents’ runs on it', async () => {

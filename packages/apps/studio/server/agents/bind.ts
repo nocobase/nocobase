@@ -81,7 +81,7 @@ import {
 } from '../releases/caller.js';
 import { createIntakeOrganizer, watchIntakeRuns } from './intake/organizer.js';
 import { intakeBinding } from './intake/subject.js';
-import { issueBinding } from './issue-subject.js';
+import { issueBinding, type PageUrl } from './issue-subject.js';
 import { issueWorkspaces } from './issue-workspaces.js';
 import { createAgentKind } from './kind.js';
 import { agentBlockedRule, settleBlockedCards } from './blocked.js';
@@ -148,6 +148,8 @@ export interface StudioAgentsDeps {
    * (`notices.ts`); 0 waits forever. `DEFAULT_QUEUED_EXPIRY_HOURS` when left out.
    */
   readonly queuedExpiryMs?: number;
+  /** Links to Studio's pages as people open them, for the brief (`pageUrlOf`); bare paths without it. */
+  readonly pageUrl?: PageUrl;
   /** Follows the work conversations hand to agents (`conversation/delegation.ts`); nothing is followed without. */
   readonly delegations?: Delegations;
   readonly onError?: (message: string, error: unknown) => void;
@@ -193,6 +195,7 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
         // A run told its issue moved to another project is followed by a run there.
         { onRunFinished: work.onRunFinished },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
+        deps.pageUrl,
       ),
       reports: issueReports(deps.projects, viewerOf),
       // Runners remove the working directories of finished issues (`issue-workspaces.ts`).

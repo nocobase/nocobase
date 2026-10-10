@@ -2,9 +2,10 @@
  * Studio's demo data (its sample data, `app.sampleData`): a small team, its labels, a review
  * checklist added to the installed Software development workflow, three projects on the default workflow, issues in
  * every status with sub-issues, dependencies and comments, skills and agents, and a knowledge base (system and project
- * documents, with one change an agent proposed waiting for its decider), and runtimes that registered once and are
- * offline since. No repositories, and no runner that takes work: nothing here reaches outside the application. Dates
- * are days from the day the demo is built.
+ * documents, with one change an agent proposed waiting for its decider), one issue whose agent's design proposal
+ * waits in Proposal review for its owner, the administrator, and runtimes that registered once and are offline since.
+ * No repositories, and no runner that takes work: nothing here reaches outside the application. Dates are days from
+ * the day the demo is built.
  *
  * In text, `@{key}` mentions that user; `admin` is the initial administrator. Issues are listed so that every parent
  * and blocker comes before the issues that point at it.
@@ -129,6 +130,8 @@ export interface DemoIssue {
   readonly description: string;
   readonly checklistChecked?: readonly string[];
   readonly comments?: readonly DemoComment[];
+  /** The design proposal its executing agent submitted, before the issue entered `status` (Proposal review). */
+  readonly proposal?: string;
 }
 
 /** The demo accounts' password. */
@@ -552,6 +555,21 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     due: 6,
     description:
       'The run panel mixes thinking, tool calls and output together. Add a filter at the top:\n\n- All\n- Output only\n- Tool calls\n- Errors\n\nKeep the selected filter in the URL.',
+  },
+  {
+    key: 'issue-export',
+    project: 'Studio Platform',
+    title: 'Export the issue list to Excel',
+    status: 'proposal_review',
+    priority: 'medium',
+    owner: 'admin',
+    executorAgent: 'Frontend Developer',
+    labels: ['Frontend', 'Backend'],
+    due: 12,
+    description:
+      'Operations needs to export filtered issues into a spreadsheet for the weekly report.\n\n## Requirements\n- Add "Export" to the list toolbar, exporting with the current filters and sort order\n- Export the same columns the list shows\n- Large exports must not freeze the page',
+    proposal:
+      '## Approach\n\nAdd an "Export" button to the issue list toolbar. The server streams an xlsx file built from the current filters, and the browser downloads it directly.\n\n## Changes\n- Add `GET /api/projects/issues/export`, reusing the list\'s filter and sort parameters, reading page by page and writing to an xlsx stream instead of building the whole file in memory\n- Take the exported columns from the columns the list currently shows; export labels and owners by name\n- Export only the first 50,000 rows when there are more, and say so at the end of the file\n\n## Risks\n- Exporting a large project takes a while: download synchronously first, and consider a background job with an in-app notification if it exceeds 30 seconds\n\n## Needs your decision\n- Do we also need CSV? The proposal covers xlsx only.',
   },
   {
     key: 'rate-limit',

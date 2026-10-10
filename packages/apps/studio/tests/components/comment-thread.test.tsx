@@ -153,4 +153,42 @@ describe('CommentComposer', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Note' }));
     expect(screen.getByRole('button', { name: 'Add note' })).toBeTruthy();
   });
+
+  it('offers decisions beside the send button, and holds one that needs a reason until something is written', async () => {
+    const approve = vi.fn(() => Promise.resolve(true));
+    const back = vi.fn(() => Promise.resolve(true));
+    render(
+      <CommentComposer
+        onSubmit={() => Promise.resolve('c9')}
+        actions={[
+          { key: 'approve', label: 'Approve proposal', onRun: approve },
+          {
+            key: 'back',
+            label: 'Send back',
+            needsContent: true,
+            onRun: back,
+          },
+          {
+            key: 'off',
+            label: 'Unavailable',
+            disabled: true,
+            onRun: back,
+          },
+        ]}
+      />,
+    );
+    expect(
+      screen
+        .getByRole('button', { name: 'Send back' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole('button', { name: 'Unavailable' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Approve proposal' }));
+    await waitFor(() => expect(approve).toHaveBeenCalledWith(''));
+    expect(back).not.toHaveBeenCalled();
+  });
 });

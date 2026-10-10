@@ -84,6 +84,15 @@ function renderEditor(
   const editor = ref.current?.editor();
   if (!editor) throw new Error('no editor');
   const textbox = screen.getByRole('textbox', { name: 'Comment' });
+  // jsdom cannot measure a selection; scrolling belongs to the browser tests.
+  editor.setOptions({
+    editorProps: {
+      ...editor.options.editorProps,
+      handleScrollToSelection: () => true,
+    },
+  });
+  // Establish DOM focus before editing, without commands.focus()'s delayed animation frame.
+  act(() => editor.view.focus());
   return { editor, textbox, onChange, ref };
 }
 
@@ -135,12 +144,17 @@ describe('RichTextEditor', () => {
   it('inserts a mention chosen from the suggestion list, stored as a mention link', async () => {
     const { editor, textbox, onChange } = renderEditor();
     act(() => {
-      editor.commands.focus();
       editor.commands.insertContent('Ask @Ad');
     });
     await screen.findByRole('option', { name: 'Ada Lovelace' });
     expect(textbox.getAttribute('aria-expanded')).toBe('true');
     fireEvent.keyDown(textbox, { key: 'Enter' });
+    // Also verify the stored Markdown after any deferred focus or DOM observation has settled.
+    await act(async () => {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    });
     await waitFor(() =>
       expect(onChange).toHaveBeenLastCalledWith(
         'Ask [@Ada Lovelace](mention://user/u1) ',
@@ -274,7 +288,6 @@ describe('RichTextEditor', () => {
   it('opens the list for a full-width ＠ typed right after CJK text', async () => {
     const { editor } = renderEditor();
     act(() => {
-      editor.commands.focus();
       editor.commands.insertContent('请＠张');
     });
     expect(await screen.findByRole('option', { name: '张伟' })).toBeTruthy();
@@ -284,7 +297,6 @@ describe('RichTextEditor', () => {
     const onSubmit = vi.fn();
     const { editor, textbox } = renderEditor({ submitOnEnter: true, onSubmit });
     act(() => {
-      editor.commands.focus();
       editor.commands.insertContent('hello');
     });
     fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
@@ -317,7 +329,6 @@ describe('RichTextEditor', () => {
     });
     expect(screen.getByRole('toolbar', { name: 'Custom' })).toBeTruthy();
     act(() => {
-      editor.commands.focus();
       editor.commands.insertContent('Title');
     });
     fireEvent.click(screen.getByRole('button', { name: 'Heading' }));

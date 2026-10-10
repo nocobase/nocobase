@@ -12,6 +12,7 @@ import {
   mayInitializeEmptyRepository,
   EMPTY_REPOSITORY_NOTE,
   issueGuidance,
+  pageUrlOf,
   renderIssueContext,
   renderTask,
 } from '../../server/agents/issue-subject.js';
@@ -172,6 +173,31 @@ describe('issue brief', () => {
       'Report progress and results as comments',
     );
     expect(renderTask(context, inputs)).toContain('Post a comment on PM-12');
+  });
+
+  it('tells an agent in Proposal review that a comment decides nothing, with the link to the decision', () => {
+    const review: IssueContext = {
+      ...context,
+      status: {
+        key: 'proposal_review',
+        name: 'Proposal review',
+        category: 'started',
+      },
+      allowedTransitions: ['proposal_review', 'blocked'],
+    };
+    const task = renderTask(
+      review,
+      inputs,
+      pageUrlOf('https://studio.example.com/ignored', '/main/'),
+    );
+    expect(task).toContain('A comment decides nothing');
+    expect(task).toContain(
+      '[Approve or send back the proposal](https://studio.example.com/main/issues/PM-12#design)',
+    );
+    // Without a public address the link is the page's path; elsewhere nothing is said about it.
+    expect(renderTask(review, inputs)).toContain('](/issues/PM-12#design)');
+    expect(pageUrlOf(null, '/main')('/issues/PM-12')).toBe('/issues/PM-12');
+    expect(renderTask(context, inputs)).not.toContain('A comment decides');
   });
 
   it("gives a run the project's working directories in order", () => {
