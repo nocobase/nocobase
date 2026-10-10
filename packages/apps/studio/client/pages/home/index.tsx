@@ -9,7 +9,7 @@
  * chat panel. Sending starts a new conversation with that agent and model, and the first message with its files, whose
  * mode (the agent's type) is then fixed, and opens it full screen (`/chat/:conversationId`, `pages/chat`): one
  * conversation, one composer. A recent conversation opens there too; "All" opens the history in a dialog. Under the
- * composer, "Use Studio in your agent" gives a prompt that sets up the nb-studio CLI in a coding agent (`agent-setup.tsx`).
+ * composer, "Manage Studio with a local Coding Agent" gives a prompt that sets up the nb-studio CLI in a coding agent (`agent-setup.tsx`).
  * At phone width the composer sticks to the bottom, as in mobile chat apps, under the greeting and the recent
  * conversations.
  *

@@ -6,7 +6,7 @@
 
 Studio serves `nb-studio` itself, as a standalone tarball per platform that bundles its own Node, so nothing else needs to be installed first; the install script needs `curl`, `tar` and `sha256sum` or `shasum`, runs on macOS and Linux (WSL on Windows), and never asks for `sudo`.
 
-The quickest way is from the home page: "Use Studio in your agent" (「在你的 Agent 中使用 Studio」) under the composer gives a prompt to paste into a coding agent such as Claude Code or Codex. It carries a download token Studio has just created for you, valid for 30 minutes and for the CLI alone; the agent installs `nb-studio`, runs `nb-studio login` and asks you to confirm the code in your browser. To install it yourself, run the same line:
+The quickest way is from the home page: "Manage Studio with a local Coding Agent" (「用本地 Coding Agent 管理 Studio」) under the composer gives a prompt to paste into a coding agent such as Claude Code or Codex. It carries a download token Studio has just created for you, valid for 30 minutes and for the CLI alone; the agent installs `nb-studio`, runs `nb-studio login` and asks you to confirm the code in your browser. To install it yourself, run the same line:
 
 ```bash
 curl -fsSL https://studio.example.com/api/agents/dist/installScript | sh -s -- --token <download token>

@@ -1,5 +1,5 @@
 /**
- * "Use Studio in your agent", under the home page's composer: a dialog with a prompt to paste into a coding agent
+ * "Manage Studio with a local Coding Agent", under the home page's composer: a dialog with a prompt to paste into a coding agent
  * (Claude Code, Codex…) that installs the nb-studio CLI, signs it in as the person and points it at `nb-studio docs`. Opening
  * it mints a short-lived download token (`agents/dist/downloadTokens`) that the prompt's install line carries; the
  * person can make a new one when it has expired. The CLI acts as the person, so the dialog says so; it signs in only
