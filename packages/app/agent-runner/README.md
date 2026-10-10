@@ -20,6 +20,8 @@ nocobase-runner uninstall [--purge] [--dry-run]
 nocobase-runner unregister --server https://app.example.com
 ```
 
+Applications advertising workspace decisions can return repository-scoped merged pull request head commits for ended tasks, including legacy workspaces. The runner checks local commit ancestry without fetching and checks submodule commits independently. Only ended workspaces with proven commits and no tracked changes may discard untracked files; the collection log and `gc` show this explicitly. Application evidence is matched to the current report, path, last run and last use, and deletion checks the same evidence again under the workspace lock. Unknown or insufficient evidence preserves the directory. Keep drafts and temporary tools in the task's temporary directory outside its repositories.
+
 One daemon serves every application it is registered with; the slots are shared, and claims rotate across applications. Each application also caps what it hands this runner at the number set on its Runtimes page; when it is registered, that number is taken from `register --slots` if given, else from the registration token ("Add runtime"'s max concurrent runs), else 1, and registering without `--slots` raises the shared slots to the token's number but never lowers them. `register --cli <name>=<path>` makes it use a local build of a CLI instead of installing the one a run names.
 
 ### Skills

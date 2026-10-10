@@ -4,6 +4,8 @@
  */
 import {
   AGENT_TOOLS,
+  WorkspaceDecisionSchema,
+  WorkspaceCleanupResultSchema,
   RunnerPolicySchema,
   RunnerVariableNamesSchema,
   ToolLoadSchema,
@@ -183,12 +185,21 @@ const isFiniteNumber = (value: unknown): value is number =>
 
 function storedWorkspace(value: unknown): RunnerWorkspace | null {
   const item = jsonObject(value);
-  if (typeof item.runId !== 'string' || typeof item.workDir !== 'string')
+  if (
+    (item.runId !== undefined && typeof item.runId !== 'string') ||
+    typeof item.workDir !== 'string'
+  )
     return null;
   const text = (field: unknown): string | null =>
     typeof field === 'string' ? field : null;
   return {
-    runId: item.runId,
+    ...(typeof item.runId === 'string' ? { runId: item.runId } : {}),
+    ...(WorkspaceDecisionSchema.safeParse(item.decision).success
+      ? { decision: WorkspaceDecisionSchema.parse(item.decision) }
+      : {}),
+    ...(WorkspaceCleanupResultSchema.safeParse(item.cleanup).success
+      ? { cleanup: WorkspaceCleanupResultSchema.parse(item.cleanup) }
+      : {}),
     workDir: item.workDir,
     unpushed: item.unpushed === true,
     lastUsedAt: text(item.lastUsedAt) ?? '',
@@ -230,6 +241,9 @@ export function storedWorkspaceUsage(
       workspaces.filter((item) => item.unpushed).length,
     ),
     measuredAt: usage.measuredAt,
+    ...(isFiniteNumber(usage.intervalMs)
+      ? { intervalMs: usage.intervalMs }
+      : {}),
     workspaces,
   };
 }

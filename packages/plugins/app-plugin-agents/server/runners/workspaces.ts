@@ -11,7 +11,9 @@
 import {
   TERMINAL_RUN_STATUSES,
   WORKSPACE_REPORT_INTERVAL_MS,
-  type WorkspaceReport,
+  WorkspaceCommitEvidenceSchema,
+  type WorkspaceDecision,
+  type WorkspaceDirectoryReport,
   type WorkspaceReporting,
   type WorkspacesRequest,
   type WorkspacesResponse,
@@ -24,7 +26,7 @@ import type {
   RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import type { SubjectRegistry } from '../core/runs/ports.js';
-import { runsRepo } from '../core/runs/run.store.js';
+import { runsRepo, toExecutions } from '../core/runs/run.store.js';
 import type { Clock } from '../kernel/clock.js';
 import type { TxRunner } from '../kernel/tx.js';
 import { runnersRepo } from './runner.store.js';
@@ -65,17 +67,21 @@ async function ownRuns(
   for (let start = 0; start < runIds.length; start += CHUNK) {
     const chunk = runIds.slice(start, start + CHUNK);
     const records = await runsRepo(conn).findMany({
-      filter: (f) =>
-        f.and([
-          f.or(chunk.map((id) => f.string('id').eq(id))),
-          f.string('runnerId').eq(runnerId),
-        ]),
+      filter: (f) => f.and([f.or(chunk.map((id) => f.string('id').eq(id)))]),
     });
-    for (const record of records)
+    for (const record of records) {
+      if (
+        record.runnerId !== runnerId &&
+        !toExecutions(record.executionHistory).some(
+          (execution) => execution.runnerId === runnerId,
+        )
+      )
+        continue;
       found.set(record.id, {
         subjectKind: record.subjectKind,
         subjectId: record.subjectId,
       });
+    }
   }
   return found;
 }
@@ -137,43 +143,178 @@ export function createRunnerWorkspaces(
 ): RunnerWorkspaces {
   const { tx, clock, subjects } = deps;
   return {
-    reporting: { intervalMs: deps.intervalMs ?? WORKSPACE_REPORT_INTERVAL_MS },
+    reporting: {
+      intervalMs: deps.intervalMs ?? WORKSPACE_REPORT_INTERVAL_MS,
+      decisions: true,
+    },
 
     async report(runner, request) {
-      const reported = new Map<string, WorkspaceReport>();
-      for (const workspace of request.workspaces)
-        reported.set(workspace.runId, workspace);
-      const runIds = [...reported.keys()];
+      if (request.diagnostics === true && request.directories === undefined)
+        return {
+          remove: [],
+          keep: [],
+          reporting: {
+            intervalMs: deps.intervalMs ?? WORKSPACE_REPORT_INTERVAL_MS,
+            decisions: true,
+          },
+        };
       const conn = tx.read();
-      const runs = await ownRuns(conn, runner.id, runIds);
-      const settled = await settledSubjects(conn, subjects, runs);
+      const reports: readonly WorkspaceDirectoryReport[] =
+        request.directories ??
+        request.workspaces.map((workspace) => ({
+          ...workspace,
+          subjectKey: '',
+        }));
+      const runs = await ownRuns(
+        conn,
+        runner.id,
+        reports.flatMap((workspace) =>
+          workspace.runId === undefined ? [] : [workspace.runId],
+        ),
+      );
+      const legacy = new Map<string, RunSubject>();
+      const failures = new Map<string, WorkspaceDecision['reason']>();
+      for (const workspace of reports) {
+        if (workspace.runId !== undefined) continue;
+        if (
+          !subjects
+            .list()
+            .some((binding) => binding.workspaces?.resolveKeys !== undefined)
+        ) {
+          failures.set(workspace.workDir, 'bindingUnavailable');
+          continue;
+        }
+        const candidates: RunSubject[] = [];
+        for (const binding of subjects.list()) {
+          const ids =
+            (
+              await binding.workspaces?.resolveKeys?.(conn, [
+                workspace.subjectKey,
+              ])
+            )?.get(workspace.subjectKey) ?? [];
+          for (const subjectId of ids)
+            candidates.push({ subjectKind: binding.kind, subjectId });
+        }
+        if (candidates.length !== 1) {
+          failures.set(
+            workspace.workDir,
+            candidates.length > 1 ? 'ambiguousSubject' : 'subjectUnknown',
+          );
+          continue;
+        }
+        const candidate = candidates[0];
+        const records = await runsRepo(conn).findMany({
+          filter: {
+            subjectKind: candidate.subjectKind,
+            subjectId: candidate.subjectId,
+          },
+        });
+        if (
+          !records.some(
+            (record) =>
+              record.runnerId === runner.id ||
+              toExecutions(record.executionHistory).some(
+                (execution) => execution.runnerId === runner.id,
+              ),
+          )
+        ) {
+          failures.set(workspace.workDir, 'ownershipUnknown');
+          continue;
+        }
+        legacy.set(workspace.workDir, candidate);
+      }
+      const settled = await settledSubjects(
+        conn,
+        subjects,
+        new Map([...runs, ...legacy]),
+      );
       const remove: string[] = [];
       const keep: string[] = [];
+      const decisions: WorkspaceDecision[] = [];
       const workspaces: RunnerWorkspace[] = [];
-      for (const workspace of request.workspaces) {
-        const run = runs.get(workspace.runId);
+      for (const workspace of reports) {
+        const run =
+          workspace.runId === undefined
+            ? legacy.get(workspace.workDir)
+            : runs.get(workspace.runId);
         const kind =
           run === undefined ? undefined : settled.get(run.subjectKind);
         const ended =
           run === undefined || kind === undefined
             ? null
             : kind.has(run.subjectId);
-        if (ended === true) remove.push(workspace.runId);
-        else if (ended === false) keep.push(workspace.runId);
+        let reason: WorkspaceDecision['reason'] =
+          ended === true
+            ? 'settled'
+            : ended === false
+              ? 'active'
+              : 'bindingUnavailable';
+        if (run === undefined) {
+          reason = failures.get(workspace.workDir) ?? 'runNotFound';
+          if (
+            workspace.runId !== undefined &&
+            (await runsRepo(conn).findOne({ filter: { id: workspace.runId } }))
+          )
+            reason = 'ownershipUnknown';
+        }
+        const evidence =
+          ended === true && run !== undefined
+            ? ((
+                await subjects
+                  .get(run.subjectKind)
+                  ?.workspaces?.commits?.(conn, [run.subjectId])
+              )?.get(run.subjectId) ?? [])
+            : [];
+        const commits = evidence.filter(
+          (item) => WorkspaceCommitEvidenceSchema.safeParse(item).success,
+        );
+        if (workspace.runId !== undefined) {
+          if (ended === true) remove.push(workspace.runId);
+          else if (ended === false) keep.push(workspace.runId);
+        }
+        const decision: WorkspaceDecision = {
+          reportId: request.reportId ?? '',
+          workDir: workspace.workDir,
+          ...(workspace.runId === undefined ? {} : { runId: workspace.runId }),
+          lastUsedAt: workspace.lastUsedAt,
+          settled: ended,
+          reason,
+          commits,
+        };
+        if (request.reportId !== undefined) decisions.push(decision);
+        const previous = runner.workspaceUsage?.workspaces.find(
+          (item) => item.workDir === workspace.workDir,
+        );
+        const cleanup =
+          ended === true &&
+          workspace.cleanup !== undefined &&
+          previous?.decision !== undefined &&
+          previous.subjectKind === run?.subjectKind &&
+          previous.subjectId === run?.subjectId &&
+          workspace.cleanup.reportId === previous.decision.reportId &&
+          previous.runId === workspace.runId &&
+          previous.lastUsedAt === workspace.lastUsedAt &&
+          previous.settled === ended &&
+          JSON.stringify(previous.decision.commits) === JSON.stringify(commits)
+            ? workspace.cleanup
+            : undefined;
         workspaces.push({
-          runId: workspace.runId,
+          ...(workspace.runId === undefined ? {} : { runId: workspace.runId }),
           workDir: workspace.workDir,
           unpushed: workspace.unpushed,
           lastUsedAt: workspace.lastUsedAt,
           subjectKind: run?.subjectKind ?? null,
           subjectId: run?.subjectId ?? null,
           settled: ended,
+          ...(request.reportId === undefined ? {} : { decision }),
+          ...(cleanup === undefined ? {} : { cleanup }),
         });
       }
       workspaces.sort(
         (a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt),
       );
       const usage: RunnerWorkspaceUsage = {
+        intervalMs: deps.intervalMs ?? WORKSPACE_REPORT_INTERVAL_MS,
         disk:
           request.disk === undefined
             ? null
@@ -195,7 +336,19 @@ export function createRunnerWorkspaces(
         });
         emit({ type: 'runner.changed', runnerId: runner.id });
       });
-      return { remove, keep };
+      return {
+        remove,
+        keep,
+        ...(request.diagnostics === true
+          ? {
+              reporting: {
+                intervalMs: deps.intervalMs ?? WORKSPACE_REPORT_INTERVAL_MS,
+                decisions: true,
+              },
+            }
+          : {}),
+        ...(request.reportId === undefined ? {} : { decisions }),
+      };
     },
   };
 }

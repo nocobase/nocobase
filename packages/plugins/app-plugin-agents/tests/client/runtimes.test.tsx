@@ -14,6 +14,7 @@ import type { RunnerSummary } from '../../shared/runners.js';
 import { callsTo, clientMocks, realtime, resetApi } from './fake-client.js';
 import { runner } from './fixtures.js';
 import { renderPage, renderRoute } from './render.js';
+import { RunnersRefresh } from '../../client/components/runners-refresh.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -83,6 +84,136 @@ describe('runtimes page', () => {
     fireEvent.click(await screen.findByTestId(`runner-${id}`));
     return await screen.findByTestId('runner-sheet');
   };
+
+  it('removes low disk warnings only when a new workspace report shows recovered space', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: { freeBytes: 1, totalBytes: 100, minFreeBytes: 20 },
+        count: 0,
+        unpushedCount: 0,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [],
+      },
+    };
+    renderPage(
+      <>
+        <RunnersRefresh />
+        <RuntimesPage />
+      </>,
+    );
+    await screen.findByText('runtimes.workspaces.previousLow');
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.empty'),
+    ).toBeInTheDocument();
+    runners = [
+      { ...runners[0]!, lastSeenAt: new Date().toISOString() },
+      ...runners.slice(1),
+    ];
+    realtime.publish(RUNNERS_TOPIC, {
+      kind: 'runners.changed',
+      runnerId: 'r1',
+    });
+    expect(
+      within(sheet).getByText('runtimes.workspaces.stale'),
+    ).toBeInTheDocument();
+    runners = [
+      {
+        ...runners[0]!,
+        workspaceUsage: {
+          ...runners[0]!.workspaceUsage!,
+          measuredAt: new Date().toISOString(),
+          disk: { freeBytes: 50, totalBytes: 100, minFreeBytes: 20 },
+        },
+      },
+      ...runners.slice(1),
+    ];
+    realtime.publish(RUNNERS_TOPIC, {
+      kind: 'runners.changed',
+      runnerId: 'r1',
+    });
+    await waitFor(() =>
+      expect(within(sheet).queryByRole('alert')).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByText('runtimes.workspaces.previousLow'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.stale'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a previous low disk report and hides private directory diagnostics without explicit permission', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      status: 'offline',
+      workspaceUsage: {
+        disk: { freeBytes: 1, totalBytes: 100, minFreeBytes: 20 },
+        count: 1,
+        unpushedCount: 1,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    expect(
+      await screen.findByText('runtimes.workspaces.previousLow'),
+    ).toBeInTheDocument();
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.low'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.stale'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.title'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.empty'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps ended work distinct from cleanup and exposes diagnostic details through a keyboard trigger', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: null,
+        count: 1,
+        unpushedCount: 1,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [
+          {
+            runId: 'run',
+            workDir: '/work/long/subject',
+            unpushed: true,
+            lastUsedAt: '2026-10-01T00:00:00.000Z',
+            subjectKind: 'sample',
+            subjectId: 'subject',
+            settled: true,
+          },
+        ],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    const trigger = within(sheet).getByRole('button', {
+      name: /subject · runtimes.workspaces.ended/u,
+    });
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(within(sheet).getByText('/work/long/subject')).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.noCleanup'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.oldRunner'),
+    ).toBeInTheDocument();
+  });
 
   it('lists each runtime as one overview row, without switches', async () => {
     renderPage(<RuntimesPage />);

@@ -539,6 +539,11 @@ export class RunnerDaemon {
         const collected = await collectWorkspaces({
           paths,
           reporters,
+          decisionApps: new Set(
+            this.live
+              .filter((link) => link.workspaceReporting?.decisions === true)
+              .map((link) => link.key),
+          ),
           log,
           threshold: minFreeDisk(settings),
         });

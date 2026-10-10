@@ -1,6 +1,48 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
+    workspaces: {
+      title: 'Workspace diagnostics',
+      low: 'Low disk space',
+      previousLow: 'Last report: low disk space',
+      notReported: 'No workspace report received yet',
+      diskUnknown: 'Disk space could not be measured',
+      thresholdOff: 'No minimum free space warning configured',
+      free: 'Free space: {{value}}',
+      threshold: 'Minimum free space: {{value}}',
+      reportedAt: 'Last reported: {{time}}',
+      stale:
+        'These are previous readings; current disk space is not confirmed.',
+      empty: 'No working directories in the latest report',
+      ended: 'Ended',
+      active: 'Work continues',
+      unknown: 'Cannot confirm whether work ended',
+      oldRunner: 'This runner has not provided diagnostic reasons',
+      noCleanup: 'Local cleanup result has not been received',
+      discardsUntracked: 'Cleanup will discard untracked files',
+      decision: {
+        settled: 'Work ended; local cleanup checks are required',
+        active: 'Work continues',
+        runNotFound: 'Cannot confirm: run not found',
+        ownershipUnknown:
+          'Cannot confirm: runner ownership could not be verified',
+        ambiguousSubject: 'Cannot confirm: ambiguous subject key',
+        bindingUnavailable:
+          'Cannot confirm: application has no workspace binding',
+        subjectUnknown:
+          'Cannot confirm: application could not resolve the subject',
+      },
+      cleanup: {
+        allowed: 'Ended; cleanup allowed',
+        inUse: 'Retained: directory is in use',
+        changed: 'Retained: directory has been reused',
+        trackedChanges: 'Retained: tracked files have uncommitted changes',
+        unpushed:
+          'Retained: unpushed commits or insufficient local commit objects',
+        missingEvidence: 'Retained: insufficient commit evidence',
+        gitFailed: 'Retained: Git check failed',
+      },
+    },
     title: 'Runtimes',
     description:
       'The runtimes that run agents, and the coding tools each one reported.',

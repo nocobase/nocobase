@@ -4,7 +4,8 @@
 // reach by checkout.ts) holds the last run that worked there (`lastRunId`) and whether it holds unpushed work
 // (`hasUnpushedWork`): changes not committed, or a HEAD past both where the runner started the checkout and what it
 // last saw the remote task branch hold. It is never judged from the default branch's history, so a branch merged with
-// a squash is not unpushed once it was pushed. A directory is checked again only after a run used it.
+// a squash is not unpushed once it was pushed. A fresh application decision also rechecks cached Git state against
+// repository-specific merged PR heads, including legacy records without a remote tracking reference.
 //
 // The runner cannot tell on its own when the work on a subject is over. An application that accepts reports
 // (`HeartbeatResponse.workspaces`) is told about each of its directories and answers which runs belong to subjects
@@ -14,7 +15,9 @@
 // (`statfs`) rather than measuring directories, which meant reading every file under every `node_modules`; when it is
 // still low once the directories whose work is over are gone, it says once per pass what is left and that
 // `nocobase-runner gc` can remove it. A directory a run holds (its lock is taken) is never touched, and one with unpushed
-// work is only ever removed when a person forces it (`nocobase-runner gc --force`).
+// work is only ever removed when a person forces it (`nocobase-runner gc --force`). Untracked leftovers are allowed
+// only when the application confirms settlement and all repositories pass the tracked-change and commit checks.
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readdir, readFile, stat, statfs } from 'node:fs/promises';
 import path from 'node:path';
@@ -24,11 +27,14 @@ import { formatSize, minFreeBytes, type FreeSpace } from '../lib/size.ts';
 import {
   MAX_WORKSPACES_PER_REPORT,
   type WorkspaceDisk,
+  type WorkspaceDecision,
+  type WorkspaceCleanupResult,
   type WorkspacesRequest,
   type WorkspacesResponse,
 } from '../protocol/index.ts';
 import {
   acquireLock,
+  checkWorkspaceGit,
   hasUnpushedWork,
   readWorkspaceMeta,
   removeWorkspace,
@@ -49,7 +55,10 @@ export interface WorkspaceEntry {
   readonly subjectKey: string;
   readonly lastRunId?: string;
   readonly lastUsedAt: string;
-  readonly unpushed: boolean;
+  unpushed: boolean;
+  reportId?: string;
+  decision?: WorkspaceDecision;
+  cleanup?: WorkspaceCleanupResult;
   /** A run holds it now. */
   readonly inUse: boolean;
   status: WorkspaceStatus;
@@ -231,6 +240,7 @@ export function workspacesRequest(
   entries: readonly WorkspaceEntry[],
   appKey: string,
   disk: WorkspaceDisk | undefined,
+  decisions: boolean = false,
 ): WorkspacesRequest {
   const workspaces = entries
     .filter((entry) => entry.appKey === appKey && entry.lastRunId !== undefined)
@@ -242,7 +252,27 @@ export function workspacesRequest(
       unpushed: entry.unpushed,
       lastUsedAt: entry.lastUsedAt,
     }));
-  return { workspaces, ...(disk === undefined ? {} : { disk }) };
+  const reportId = decisions ? randomUUID() : undefined;
+  const directories = (decisions ? entries : [])
+    .filter((entry) => entry.appKey === appKey)
+    .sort((a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt))
+    .slice(0, MAX_WORKSPACES_PER_REPORT)
+    .map((entry) => {
+      entry.reportId = reportId;
+      return {
+        workDir: entry.workDir,
+        subjectKey: entry.subjectKey,
+        lastUsedAt: entry.lastUsedAt,
+        unpushed: entry.unpushed,
+        ...(entry.lastRunId === undefined ? {} : { runId: entry.lastRunId }),
+        ...(entry.cleanup === undefined ? {} : { cleanup: entry.cleanup }),
+      };
+    });
+  return {
+    workspaces,
+    ...(decisions ? { directories, reportId } : {}),
+    ...(disk === undefined ? {} : { disk }),
+  };
 }
 
 /** Records on each of `appKey`'s directories what the application answered about its last run. */
@@ -257,6 +287,67 @@ export function applyStatuses(
     if (entry.appKey !== appKey || entry.lastRunId === undefined) continue;
     if (remove.has(entry.lastRunId)) entry.status = 'ended';
     else if (keep.has(entry.lastRunId)) entry.status = 'active';
+  }
+}
+
+/** New decisions are tied to this request, directory, last run and last use. Recompute even when the old check was cached. */
+export async function applyDecisions(
+  paths: RunnerPaths,
+  entries: readonly WorkspaceEntry[],
+  appKey: string,
+  response: WorkspacesResponse,
+  log?: (message: string) => void,
+): Promise<void> {
+  applyStatuses(entries, appKey, response);
+  for (const entry of entries) {
+    if (entry.appKey !== appKey) continue;
+    const matches =
+      response.decisions?.filter(
+        (item) =>
+          item.reportId === entry.reportId &&
+          item.workDir === entry.workDir &&
+          item.runId === entry.lastRunId &&
+          item.lastUsedAt === entry.lastUsedAt,
+      ) ?? [];
+    if (matches.length !== 1) continue;
+    const decision = matches[0];
+    entry.decision = decision;
+    entry.status =
+      decision.settled === true
+        ? 'ended'
+        : decision.settled === false
+          ? 'active'
+          : 'unknown';
+    if (decision.settled !== true) continue;
+    const meta = await readWorkspaceMeta(paths, entry.workDir);
+    if (
+      meta === undefined ||
+      meta.lastRunId !== entry.lastRunId ||
+      meta.lastUsedAt !== entry.lastUsedAt
+    ) {
+      entry.unpushed = true;
+      entry.cleanup = {
+        reportId: decision.reportId,
+        reason: 'changed',
+        discardsUntracked: false,
+      };
+      continue;
+    }
+    const check = entry.inUse
+      ? { reason: 'inUse' as const, discardsUntracked: false }
+      : await checkWorkspaceGit(
+          entry.workDir,
+          meta,
+          decision.commits,
+          true,
+          log,
+        );
+    entry.unpushed = check.reason !== 'allowed';
+    entry.cleanup = { reportId: decision.reportId, ...check };
+    if (check.reason === 'allowed' && check.discardsUntracked)
+      log?.(
+        `workspaces: ${entry.workDir}: cleanup will discard untracked files`,
+      );
   }
 }
 
@@ -367,7 +458,15 @@ export async function removePlanned(
       return 'changed';
     if (
       options.force !== true &&
-      (await hasUnpushedWork(entry.workDir, meta, options.log))
+      (
+        await checkWorkspaceGit(
+          entry.workDir,
+          meta,
+          entry.decision?.settled === true ? entry.decision.commits : [],
+          entry.decision?.settled === true,
+          options.log,
+        )
+      ).reason !== 'allowed'
     ) {
       await writeWorkspaceMeta(paths, entry.workDir, {
         ...meta,
@@ -415,6 +514,7 @@ export interface CollectOptions {
     string,
     (request: WorkspacesRequest) => Promise<WorkspacesResponse>
   >;
+  readonly decisionApps?: ReadonlySet<string>;
   readonly readDisk?: ReadDisk;
   readonly log?: (message: string) => void;
 }
@@ -449,8 +549,19 @@ export async function collectWorkspaces(
     before === undefined ? undefined : workspaceDisk(before, threshold);
   for (const [appKey, report] of options.reporters ?? []) {
     try {
-      const response = await report(workspacesRequest(entries, appKey, disk));
-      applyStatuses(entries, appKey, response);
+      const response = await report(
+        workspacesRequest(
+          entries,
+          appKey,
+          disk,
+          options.decisionApps?.has(appKey) === true,
+        ),
+      );
+      await applyDecisions(paths, entries, appKey, response, log);
+      // Publish the local check against the prior decision, before attempting deletion. The response is not reused
+      // as new deletion authority: the plan and its locked check keep the original evidence from this pass.
+      if (options.decisionApps?.has(appKey) === true)
+        await report(workspacesRequest(entries, appKey, disk, true));
     } catch (error) {
       log?.(
         `${appKey}: workspace report failed: ${error instanceof Error ? error.message : String(error)}`,

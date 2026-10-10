@@ -1,13 +1,20 @@
 // Collecting working directories: what is counted as unpushed, which directories the application's word and a low disk
 // remove, and which are never removed.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   acquireLock,
   cachePath,
   checkout,
+  checkWorkspaceGit,
   gcWorkspaces,
   legacyMetaPath,
   markWorkspaceEnded,
@@ -20,6 +27,8 @@ import {
 import { isInside } from '../src/core/command-policy.ts';
 import {
   collectWorkspaces,
+  applyDecisions,
+  removePlanned,
   lowOnDisk,
   planRemovals,
   readDisk,
@@ -42,7 +51,7 @@ import type {
   WorkspacesRequest,
   WorkspacesResponse,
 } from '../src/protocol/index.ts';
-import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 
 const GB = 1024 ** 3;
 
@@ -144,6 +153,186 @@ describe('working directories', () => {
     };
     return { requests, reporters: new Map([['acme', report]]) };
   };
+
+  it('requires matching evidence for every repository in a workspace', async () => {
+    const done = await finishedRun('TASK-1', 'run-1');
+    const other = makeRemote(root, 'other-repo');
+    git(['clone', '--bare', '--quiet', other, cachePath(paths, other)], root);
+    const dir = path.join(done.workDir, 'extra');
+    git(['clone', '--quiet', other, dir], root);
+    commit(dir, 'other-change.txt');
+    const record = meta(done.workDir);
+    record.repos.push({
+      url: other,
+      path: 'extra',
+      cache: cachePath(paths, other),
+      branch: 'agent/task',
+    });
+    const head = git(['rev-parse', 'HEAD'], dir);
+    expect(
+      (
+        await checkWorkspaceGit(
+          done.workDir,
+          record,
+          [{ repository: remote, headSha: head }],
+          true,
+        )
+      ).reason,
+    ).toBe('missingEvidence');
+    expect(
+      (
+        await checkWorkspaceGit(
+          done.workDir,
+          record,
+          [{ repository: other, headSha: head }],
+          true,
+        )
+      ).reason,
+    ).toBe('allowed');
+  });
+
+  it('accepts a local ancestor of a merged head and preserves work when the evidence object is missing', async () => {
+    const done = await finishedRun('TASK-1', 'run-1', (dir) =>
+      commit(dir, 'feature.txt'),
+    );
+    const dir = path.join(done.workDir, 'app');
+    const ancestor = git(['rev-parse', 'HEAD'], dir);
+    commit(dir, 'merged-head.txt');
+    const mergedHead = git(['rev-parse', 'HEAD'], dir);
+    git(['reset', '--hard', ancestor], dir);
+    git(['update-ref', '-d', 'refs/remotes/origin/agent/TASK-1'], dir);
+    const record = { ...meta(done.workDir), legacy: true as const };
+    expect(
+      (
+        await checkWorkspaceGit(
+          done.workDir,
+          record,
+          [{ repository: remote, headSha: mergedHead }],
+          true,
+        )
+      ).reason,
+    ).toBe('allowed');
+    expect(
+      (
+        await checkWorkspaceGit(
+          done.workDir,
+          record,
+          [{ repository: remote, headSha: 'a'.repeat(40) }],
+          true,
+        )
+      ).reason,
+    ).toBe('missingEvidence');
+  });
+
+  it('uses merged head evidence for legacy directories without tracking refs, and permits only untracked leftovers', async () => {
+    const done = await finishedRun('TASK-1', 'run-1', (dir) =>
+      commit(dir, 'feature.txt'),
+    );
+    const dir = path.join(done.workDir, 'app');
+    const head = git(['rev-parse', 'HEAD'], dir);
+    const record = { ...meta(done.workDir), legacy: true as const };
+    git(['update-ref', '-d', 'refs/remotes/origin/agent/TASK-1'], dir);
+    writeFileSync(path.join(dir, 'draft.md'), 'scratch');
+    expect((await checkWorkspaceGit(done.workDir, record)).reason).toBe(
+      'unpushed',
+    );
+    const evidence = [{ repository: remote, headSha: head }];
+    expect(
+      await checkWorkspaceGit(done.workDir, record, evidence, true),
+    ).toEqual({ reason: 'allowed', discardsUntracked: true });
+    expect(
+      (
+        await checkWorkspaceGit(
+          done.workDir,
+          record,
+          [{ repository: 'https://other.example/repo', headSha: head }],
+          true,
+        )
+      ).reason,
+    ).not.toBe('allowed');
+    commit(dir, 'local.txt');
+    expect(
+      (await checkWorkspaceGit(done.workDir, record, evidence, true)).reason,
+    ).not.toBe('allowed');
+    git(['reset', '--hard', head], dir);
+    writeFileSync(path.join(dir, 'feature.txt'), 'modified');
+    expect(
+      (await checkWorkspaceGit(done.workDir, record, evidence, true)).reason,
+    ).toBe('trackedChanges');
+  });
+
+  it('recomputes a cached unpushed result on matching evidence and rechecks under the deletion lock', async () => {
+    const done = await finishedRun('TASK-1', 'run-1');
+    const dir = path.join(done.workDir, 'app');
+    writeFileSync(path.join(dir, 'scratch.txt'), 'scratch');
+    const entries = await scanWorkspaces(paths, { force: true });
+    expect(entries[0]?.unpushed).toBe(true);
+    const request = workspacesRequest(entries, 'acme', undefined, true);
+    const decision = {
+      reportId: request.reportId!,
+      workDir: done.workDir,
+      runId: 'run-1',
+      lastUsedAt: entries[0]!.lastUsedAt,
+      settled: true,
+      reason: 'settled' as const,
+      commits: [],
+    };
+    await applyDecisions(paths, entries, 'acme', {
+      remove: [],
+      keep: [],
+      decisions: [{ ...decision, reportId: 'stale' }],
+    });
+    expect(entries[0]?.unpushed).toBe(true);
+    await applyDecisions(paths, entries, 'acme', {
+      remove: [],
+      keep: [],
+      decisions: [decision],
+    });
+    expect(entries[0]?.unpushed).toBe(false);
+    const head = git(['rev-parse', 'HEAD'], dir);
+    commit(dir, 'late.txt');
+    expect(await removePlanned(paths, entries[0]!)).toBe('unpushed');
+    expect(existsSync(done.workDir)).toBe(true);
+    git(['reset', '--hard', head], dir);
+    expect(await removePlanned(paths, entries[0]!)).toBeUndefined();
+    expect(existsSync(done.workDir)).toBe(false);
+  });
+
+  it('checks submodule commits independently even when a pushed parent records their gitlink', async () => {
+    vi.stubEnv('GIT_CONFIG_COUNT', '1');
+    vi.stubEnv('GIT_CONFIG_KEY_0', 'protocol.file.allow');
+    vi.stubEnv('GIT_CONFIG_VALUE_0', 'always');
+    try {
+      const sub = makeRemote(root, 'sub-repo');
+      const seed = path.join(root, 'origin-repo-seed');
+      git(['submodule', 'add', '--quiet', sub, 'vendor/sub'], seed);
+      git([...COMMIT, 'commit', '-q', '-m', 'submodule'], seed);
+      publishSeed(root);
+      const done = await finishedRun('TASK-1', 'run-1');
+      const dir = path.join(done.workDir, 'app');
+      const child = path.join(dir, 'vendor/sub');
+      writeFileSync(path.join(child, 'draft.md'), 'draft');
+      expect(
+        await checkWorkspaceGit(done.workDir, meta(done.workDir), [], true),
+      ).toEqual({ reason: 'allowed', discardsUntracked: true });
+      commit(child, 'local.txt');
+      git(['add', 'vendor/sub'], dir);
+      git([...COMMIT, 'commit', '-q', '-m', 'record submodule'], dir);
+      const head = git(['rev-parse', 'HEAD'], dir);
+      expect(
+        (
+          await checkWorkspaceGit(
+            done.workDir,
+            meta(done.workDir),
+            [{ repository: remote, headSha: head }],
+            true,
+          )
+        ).reason,
+      ).toBe('unpushed');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 
   it('records the last run, and checks unpushed work once the run is over', async () => {
     const done = await finishedRun('TASK-1', 'run-1', (dir) =>
@@ -340,6 +529,74 @@ describe('working directories', () => {
     ]);
     expect(existsSync(ended.workDir)).toBe(false);
     expect(existsSync(ongoing.workDir)).toBe(true);
+  });
+
+  it('collects legacy directories using fresh merged heads while retaining later local commits', async () => {
+    const ended = await finishedRun('TASK-1', 'run-1');
+    const unpushed = await finishedRun('TASK-2', 'run-2');
+    const headSha = git(['rev-parse', 'HEAD'], path.join(ended.workDir, 'app'));
+    writeFileSync(path.join(ended.workDir, 'app', 'draft.md'), 'draft\n');
+    commit(path.join(unpushed.workDir, 'app'), 'local-change.txt');
+    for (const prepared of [ended, unpushed]) {
+      const record = meta(prepared.workDir);
+      const { lastRunId: _lastRunId, ...legacy } = record;
+      forgeRecord(prepared.workDir, legacy);
+      unlinkSync(workspaceRecordPath(paths, prepared.workDir));
+    }
+    const requests: WorkspacesRequest[] = [];
+    const report = (
+      request: WorkspacesRequest,
+    ): Promise<WorkspacesResponse> => {
+      requests.push(request);
+      return Promise.resolve({
+        remove: [],
+        keep: [],
+        decisions: request.directories?.map((directory) => ({
+          reportId: request.reportId!,
+          workDir: directory.workDir,
+          lastUsedAt: directory.lastUsedAt,
+          settled: true,
+          reason: 'settled',
+          commits: [{ repository: remote, headSha }],
+        })),
+      });
+    };
+    const logs: string[] = [];
+    const result = await collectWorkspaces({
+      paths,
+      reporters: new Map([['acme', report]]),
+      decisionApps: new Set(['acme']),
+      log: (message) => logs.push(message),
+      readDisk: fakeDisk(50 * GB),
+    });
+    expect(requests).toHaveLength(2);
+    expect(requests[0]?.workspaces).toEqual([]);
+    expect(requests[0]?.directories).toHaveLength(2);
+    expect(requests[1]?.directories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          workDir: ended.workDir,
+          cleanup: {
+            reportId: requests[0]?.reportId,
+            reason: 'allowed',
+            discardsUntracked: true,
+          },
+        }),
+        expect.objectContaining({
+          workDir: unpushed.workDir,
+          cleanup: expect.objectContaining({
+            reportId: requests[0]?.reportId,
+            reason: 'unpushed',
+          }),
+        }),
+      ]),
+    );
+    expect(result.removed).toEqual([
+      { workDir: ended.workDir, reason: 'ended' },
+    ]);
+    expect(existsSync(ended.workDir)).toBe(false);
+    expect(existsSync(unpushed.workDir)).toBe(true);
+    expect(logs.some((line) => line.includes('discard untracked'))).toBe(true);
   });
 
   it('keeps a directory whose work is over but holds unpushed work, and marks it', async () => {

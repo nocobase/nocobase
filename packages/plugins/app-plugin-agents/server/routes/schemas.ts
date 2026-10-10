@@ -17,6 +17,8 @@ import {
   ToolInfoSchema,
   ToolLoadSchema,
   ToolSlotsSchema,
+  WorkspaceDecisionSchema,
+  WorkspaceCleanupResultSchema,
   type RunEvent,
   type RunStatus,
 } from '@nocobase/agent-protocol';
@@ -1390,7 +1392,12 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
 
 // A runner's working directories, as it last reported them.
 const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
-  runId: z.string().meta({ description: 'The last run that worked in it.' }),
+  decision: WorkspaceDecisionSchema.optional(),
+  cleanup: WorkspaceCleanupResultSchema.optional(),
+  runId: z
+    .string()
+    .optional()
+    .meta({ description: 'The last run that worked in it.' }),
   workDir: z.string().meta({ description: 'Where it is on the runner.' }),
   unpushed: z.boolean().meta({
     description:
@@ -1421,6 +1428,7 @@ const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
         description:
           "The disk holding the runner's working directories; null when it did not say.",
       }),
+    intervalMs: z.number().int().positive().optional(),
     count: z.number().int(),
     unpushedCount: z.number().int(),
     measuredAt: dateTime,
@@ -1496,6 +1504,7 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
         'The runs it holds now by the coding tool each runs with; a tool it runs nothing of is left out.',
     }),
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
+    canSeeMachine: z.boolean().optional(),
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),

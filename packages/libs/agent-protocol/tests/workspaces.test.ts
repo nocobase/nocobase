@@ -16,6 +16,47 @@ const workspace = {
 };
 
 describe('workspace reports', () => {
+  it('accepts optional legacy directory decisions and rejects invalid commit evidence', () => {
+    const request = {
+      workspaces: [],
+      reportId: 'report',
+      directories: [
+        {
+          workDir: workspace.workDir,
+          subjectKey: 'task',
+          unpushed: true,
+          lastUsedAt: workspace.lastUsedAt,
+        },
+      ],
+    };
+    expect(WorkspacesRequestSchema.parse(request)).toEqual(request);
+    const decision = {
+      reportId: 'report',
+      workDir: workspace.workDir,
+      lastUsedAt: workspace.lastUsedAt,
+      settled: true,
+      reason: 'settled',
+      commits: [
+        { repository: 'https://example.com/repo.git', headSha: 'a'.repeat(40) },
+      ],
+    };
+    expect(
+      WorkspacesResponseSchema.parse({
+        remove: [],
+        keep: [],
+        decisions: [decision],
+      }).decisions,
+    ).toEqual([decision]);
+    expect(
+      WorkspacesResponseSchema.safeParse({
+        remove: [],
+        keep: [],
+        decisions: [
+          { ...decision, commits: [{ repository: 'repo', headSha: '--help' }] },
+        ],
+      }).success,
+    ).toBe(false);
+  });
   it('is sent under the runner namespace', () => {
     expect(RUNNER_ROUTES.workspaces).toBe('/api/agents/runners/workspaces');
   });
