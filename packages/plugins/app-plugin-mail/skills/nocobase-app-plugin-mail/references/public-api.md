@@ -16,7 +16,7 @@ The package root is a Server alias retained for plugin registration and applicat
 
 ### Plugin and configuration
 
-The Server entry exports the default plugin, `mailConfig`, `DEFAULT_MAIL_CONFIG`, `mailEnvironmentMappings`, `resolveMailConfig`, and the `MailConfig`/provider configuration types. Applications register the plugin and explicitly compose its configuration factory as described in [Configuration and accounts](configuration-and-accounts.md).
+The Server entry exports the default plugin, `mailConfig`, `DEFAULT_MAIL_CONFIG`, `mailEnvironmentMappings`, `resolveMailConfig`, and the `MailConfig`/provider configuration types. Applications register the plugin and explicitly compose its configuration factory as described in [Configuration and accounts](configuration-and-accounts.md). `mailConfig.rules.env` supplies seven section-relative `MAIL_*` mappings; wrappers must retain those rules explicitly. `mailEnvironmentMappings` preserves fully prefixed `mail.*` paths and parsing for legacy application-level environment providers, not section-level `env`. Neither interface makes private Mail configuration public.
 
 ### Supported tokens
 
