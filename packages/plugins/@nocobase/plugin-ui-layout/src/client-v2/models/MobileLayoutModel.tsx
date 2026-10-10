@@ -1541,7 +1541,10 @@ const MobileHomePlaceholder = observer(
       if (
         !activeRouteKeyFromLayout ||
         !tabItems.length ||
-        isActiveRouteRepresentedByMobileTabs(tabItems, activeRouteKeyFromLayout)
+        isActiveRouteRepresentedByMobileTabs(tabItems, activeRouteKeyFromLayout) ||
+        // Hidden routes are excluded from the tab list but remain accessible, e.g. when an in-page link
+        // points to a page that is hidden from the menu; do not bounce those visits back to the first tab.
+        mobileRouteTreeContainsTabKey(accessibleDesktopRoutes, activeRouteKeyFromLayout)
       ) {
         return;
       }
@@ -1554,6 +1557,7 @@ const MobileHomePlaceholder = observer(
       const basename = getMobileRouterBasename(model);
       navigate(toMobileRouterNavigationPath(fallbackRoute.path, basename), { replace: true });
     }, [
+      accessibleDesktopRoutes,
       activeRouteKeyFromLayout,
       model,
       model.flowEngine.context.app?.router,
