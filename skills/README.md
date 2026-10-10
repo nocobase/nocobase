@@ -5,7 +5,7 @@ This directory holds every Skill this repository commits. `pnpm install` links e
 | Skill                                                                 | Who uses it                                                                                                     | What it does                                                                                                                                       |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`nocobase-create-app`](nocobase-create-app/SKILL.md)                 | Users starting a project to develop, installed globally                                                         | Creates an application with `pnpm create @nocobase/app`, configures it with `nocobase config init`, `config set` and `config check`, and starts it |
-| [`nocobase-app-installer`](nocobase-app-installer/SKILL.md)           | Users installing a built application where it runs, from its archive, installed globally                       | Installs, upgrades, rolls back and checks an application's deployment archive with `@nocobase/app-installer`                                      |
+| [`nocobase-app-installer`](nocobase-app-installer/SKILL.md)           | Users installing a built application where it runs, from its archive, installed globally                        | Installs, upgrades, rolls back and checks an application's deployment archive with `@nocobase/app-installer`                                       |
 | [`nocobase-plugin-development`](nocobase-plugin-development/SKILL.md) | Contributors developing plugins in a NocoBase 3 source workspace, linked by this checkout or installed globally | Scaffolds, implements, registers and verifies a NocoBase 3 plugin                                                                                  |
 
 The two global Skills split by what the user ends up with. A project — source code someone changes, developed locally — is `nocobase-create-app`. An installation — built NocoBase that only runs, usually in production — is `nocobase-app-installer`. An application goes from one to the other: it is created and developed as a project, its own `nocobase-deployment` Skill builds the archive, and `nocobase-app-installer` installs it.
@@ -100,7 +100,9 @@ On the server, with the archive copied over, ask for the application, for exampl
 
 The Skill first settles whether app-installer is the right route: an application still to be developed is a project for `nocobase-create-app`, and Docker is the documented alternative. It says how to build the archive for the server when there is none yet, checks Node.js and pm2, runs `app-installer install --json`, and reports the URL, the first sign-in account, the `pm2 startup` command for you to run with sudo, and what the reverse proxy needs.
 
-Later, in the installation directory, ask it to check, upgrade or roll back. It relays what an upgrade or a rollback will stop and back up, and runs it only after you confirm. An upgrade that fails after switching rolls itself back, and the Skill reports what happened; an operation interrupted while the application is down is recovered with `rollback`.
+For NocoBase Studio, ask it to install a published npm release with `--app studio` (equivalent to `--app @nocobase/studio`). The [Studio reference](nocobase-app-installer/references/studio.md) covers checking release availability, installation without a repository checkout, upgrades in the same directory, and checks of login, business records, files and restart persistence. This route also needs npm and pnpm 11+ to build the downloaded application. Keep this global Skill change unmerged until the package release exposes `--app`; validate it against the local unreleased registry first.
+
+Later, in the installation directory, ask it to check, upgrade or roll back. It relays what an upgrade or a rollback will stop and back up, and proceeds within the interruption and data operation you have authorized, asking when that consent is still missing. An upgrade that fails after switching rolls itself back, and the Skill reports what happened; an operation interrupted while the application is down is recovered with `rollback`.
 
 ### Without an agent
 
@@ -108,7 +110,7 @@ Later, in the installation directory, ask it to check, upgrade or roll back. It 
 npx --yes @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
 ```
 
-`upgrade`, `rollback` and `status` take `--dir` with the installation directory; `upgrade` takes the new archive with `--archive`. The package README, `packages/tools/app-installer/README.md`, documents every flag, the directory layout and the exit codes.
+`upgrade`, `rollback` and `status` take `--dir` with the installation directory; `upgrade` takes the new archive with `--archive`, or resolves the recorded npm application with optional `--to <version or tag>`. The package README, `packages/tools/app-installer/README.md`, documents every flag, the directory layout and the exit codes.
 
 ## Test against the unreleased checkout
 
@@ -200,6 +202,8 @@ Worth covering when `nocobase-app-installer` changes:
 - An archive built for another machine, where the agent must relay the build command the error names rather than retry.
 - An upgrade asked for without prior consent: the agent must relay the confirmation notes and wait before passing `--yes`.
 - A directory holding `installer.json`, where the agent must start with `status`.
+- A request to install published Studio without a repository checkout: test both `--app studio` and `--app @nocobase/studio`, check Node/pnpm/pm2 prerequisites, preserve the published identity and version, and verify login and persistence. Check actual registry availability; a local snapshot does not prove public npm availability.
+- A Studio upgrade: identify the existing source kind, use npm `upgrade` with `--to` or `--rebuild` as appropriate (or `--archive` for archive installations), keep its data and mount path, obtain the confirmation notes, and honor already-authorized downtime without creating a second installation. Updating the installer package alone must not be reported as upgrading Studio.
 
 ### Without an agent
 
