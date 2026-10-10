@@ -317,12 +317,13 @@ export default class StudioPreviewsProvider extends ServiceProvider<Application>
   public override start(): Promise<void> {
     if (!this.assembled() || this.timers.length > 0) return Promise.resolve();
     const reconcile = () => {
-      void this.app.container
-        .resolve(studioPreviewsToken)
-        .reconcile()
-        .catch((error: unknown) =>
-          this.onError('Could not reconcile previews.', error),
-        );
+      void (async () => {
+        const builds = this.app.container.resolve(studioBuildsToken);
+        await builds.expireStale(new Date(Date.now() - 2 * 60 * 60 * 1000));
+        await this.app.container.resolve(studioPreviewsToken).reconcile();
+      })().catch((error: unknown) =>
+        this.onError('Could not reconcile previews and stale builds.', error),
+      );
     };
     const first = setTimeout(reconcile, FIRST_RECONCILE_MS);
     const every = setInterval(reconcile, RECONCILE_MS);
