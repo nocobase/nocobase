@@ -130,10 +130,12 @@ test('site deployment uses the existing publish triggers without a migration gat
       source,
       /github\.event_name == 'workflow_dispatch' && inputs\.publish/u,
     );
-    assert.match(
-      source,
-      /pull_request:\n    branches:\n      - v3-develop\n      - v3-main/u,
-    );
+    assert.deepEqual(triggerBranches(source, 'pull_request'), [
+      'v3-develop',
+      'v3-main',
+      '*/v3-*',
+    ]);
+    assert.deepEqual(triggerBranches(source, 'push'), ['v3-develop']);
     assert.match(source, /publish:[\s\S]*?default: false/u);
   }
   const docs = workflow('docs');
