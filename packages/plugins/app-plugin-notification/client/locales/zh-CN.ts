@@ -61,7 +61,7 @@ const zhCN: NotificationResource = {
     sending: '正在发送…',
     send: '发送',
     defaultTitle: 'NocoBase 通知测试',
-    defaultBody: '这是一条来自 Hub 的测试通知。',
+    defaultBody: '这是一条来自 NocoBase 的测试通知。',
     accepted: '测试通知 {{id}} 已受理。',
   },
   status: {

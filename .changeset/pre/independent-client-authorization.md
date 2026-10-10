@@ -1,10 +1,8 @@
 ---
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-skills': patch
 '@nocobase/app-client': minor
 '@nocobase/app-plugin-authz-default-access': patch

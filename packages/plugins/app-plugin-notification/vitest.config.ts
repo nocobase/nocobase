@@ -15,23 +15,16 @@ cpSync(
   path.join(fixture, 'client/extensions/nocobase-notification-logs-ui'),
   { recursive: true },
 );
-for (const name of ['alert', 'badge', 'button', 'button-variants', 'table']) {
-  const extension = name === 'button-variants' ? 'ts' : 'tsx';
+// The shadcn primitives the registry item imports, from a surviving plugin that ships them self-contained.
+for (const name of ['alert', 'badge', 'button', 'card', 'table']) {
   cpSync(
     path.resolve(
       import.meta.dirname,
-      `../app-plugin-hub/client/components/ui/${name}.${extension}`,
+      `../app-plugin-agents/client/components/ui/${name}.tsx`,
     ),
-    path.join(fixture, `client/components/ui/${name}.${extension}`),
+    path.join(fixture, `client/components/ui/${name}.tsx`),
   );
 }
-cpSync(
-  path.resolve(
-    import.meta.dirname,
-    '../app-plugin-agents/client/components/ui/card.tsx',
-  ),
-  path.join(fixture, 'client/components/ui/card.tsx'),
-);
 symlinkSync(
   path.join(template, 'node_modules'),
   path.join(fixture, 'node_modules'),

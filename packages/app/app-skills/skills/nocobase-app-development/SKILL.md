@@ -215,18 +215,14 @@ After adding or removing a language in `client/locales/` or `server/locales/`, r
 
 Application startup defaults belong in `config.yml`: `i18n.defaultLocale` for the language, and `client.app.defaultColorScheme` and `client.app.defaultTheme` for appearance. Valid browser-local choices take precedence. Which languages the interface offers is not configured — `client/locales/` is that list, while `server/locales/` independently defines the server's translated languages. See [internationalization](references/i18n.md), [frontend copy](references/frontend/references/i18n.md) and [themes and tokens](references/frontend/references/theme.md).
 
-## Publish application releases
-
-Deploying to a Hub uses the `pnpm nocobase hub` commands, which the application has while it depends on `@nocobase/hub-cli`: `hub remote add` records the target App in `.nocobase/hub.json`, `hub auth login` saves its API key outside the project, and `hub deploy` builds for the Hub, uploads and deploys. Read `.agents/skills/nocobase-hub-cli/SKILL.md`, which that package ships, before running them, and the `nocobase-deployment` Skill for the rest of a production deployment.
-
-## Logging and hosted applications
+## Logging
 
 Use the application logging service for diagnostics so entries carry application identity and follow its level and output policy. Development pretty output uses local time and displays `[appId/logger]`; file and JSON console output retain UTC timestamps and structured context. Request starts and headers, configuration diagnostics and AI resource loading stages are DEBUG; request completions and AI resource totals are INFO. Default optional `ai/skills` directories may be absent; explicitly configured missing directories still warn.
 
-The Hub configures hosted application output under `hub.logging.apps`; its own output uses `logging`. Deployed releases carry their own runtime and logging packages: updating the Hub cannot repair an old application formatter that prints numeric levels or omits context, or make an old runtime understand the structured console policy. Upgrade the application dependencies, rebuild and deploy a new release; never edit a deployed artifact or intercept process-wide stdout to rewrite other applications’ logs. Verify console enablement and pretty mode after upgrading.
+Deployed releases carry their own runtime and logging packages: an old release keeps the formatter it was built with. Upgrade the application dependencies, rebuild and deploy a new release; never edit a deployed artifact or intercept process-wide stdout to rewrite its logs. Verify console enablement and pretty mode after upgrading.
 
 Authentication diagnostics use the application `auth` logger unless an explicit authentication logger is configured. A missing Better Auth base URL is a configuration warning, not a logging error: configure `app.publicOrigin` with the externally reachable origin in the application deployment configuration. Do not substitute the internal Host bind address or suppress the warning to make startup appear clean.
 
-## Hub storage maintenance
+## Storage
 
-Hub storage separates Hub-owned state, Host runtime files, release archives, expanded revisions and persistent application volumes. Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
+Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.

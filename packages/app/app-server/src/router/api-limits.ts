@@ -327,7 +327,7 @@ const maxTrackedClients = 100_000;
  *
  * The client is the address of the connection, read from the Node.js server bindings. The signed-in user is not known
  * at this point: authentication runs inside the routes that need it. A request whose address is unknown, such as one an
- * in-process Hub forwards, is not counted. Counters live in this process, so each instance of a multi-instance
+ * in-process host forwards, is not counted. Counters live in this process, so each instance of a multi-instance
  * deployment counts on its own.
  */
 export function apiRateLimitMiddleware(

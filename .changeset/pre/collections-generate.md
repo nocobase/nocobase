@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Add `pnpm collections:generate` for writing and checking Collection artifacts

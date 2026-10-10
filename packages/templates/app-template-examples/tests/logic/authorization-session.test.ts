@@ -17,7 +17,6 @@ const test = createAppTest({
   connections: ['main', 'analytics'],
   config: {
     auth: { secret: 'test-auth-secret-at-least-32-characters' },
-    hub: { host: { enabled: false } },
   },
 });
 

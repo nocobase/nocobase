@@ -70,7 +70,6 @@ describe('API document of the examples application', () => {
             analytics: { migrations: { autoRun: true } },
           },
         },
-        hub: { host: { enabled: false } },
       },
     });
     const sourceRoot = path.resolve(import.meta.dirname, '../..');

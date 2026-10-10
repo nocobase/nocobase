@@ -3,7 +3,6 @@
 '@nocobase/app-plugin-authorization': patch
 '@nocobase/app-plugin-authz-default-access': patch
 '@nocobase/app-plugin-authz-sharing-rules': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
 '@nocobase/app-plugin-users': patch

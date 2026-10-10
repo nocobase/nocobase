@@ -3,7 +3,6 @@
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Command-line sign-in through the browser with Better Auth's official device authorization (RFC 8628). The templates enable `deviceAuthorization()` and `bearer()` in `server/config/auth.ts`, accepting the client id `nocobase-cli`, register `deviceAuthorizationClient()` in `client/config/auth.ts`, create the `deviceCode` table in a new migration (`202610060001_create_device_code`), and add a signed-in `/device` page built from the new `device-approval` UI Library block, preinstalled in `client/extensions/nocobase-device-approval/`. An existing application adopts it by copying those pieces and running `pnpm nocobase db apply`.

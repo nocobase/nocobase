@@ -10,7 +10,6 @@
 '@nocobase/app-plugin-departments-example': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-file-example': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-example': patch
 '@nocobase/app-plugin-notification-in-app': patch

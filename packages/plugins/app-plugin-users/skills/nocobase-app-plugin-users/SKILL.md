@@ -39,7 +39,7 @@ Every HTTP route requires Authentication and Authorization. Routes check the `us
 
 The page reports results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but its toasts are only logged to the browser console. Update `@nocobase/app-client` together with this plugin; the `nocobase-app-upgrade` Skill's `references/edge-cases.md` ("Notifications and the application toaster") has the full steps.
 
-The default `app` permission-set scope is supplied by Users whenever the Authorization plugin's `authorizationToken` is available. Do not copy a user-roles Provider into an application. Set `users.permissionSets: false` to replace the default with an application-owned scope; Hub uses this setting.
+The default `app` permission-set scope is supplied by Users whenever the Authorization plugin's `authorizationToken` is available. Do not copy a user-roles Provider into an application. Set `users.permissionSets: false` to replace the default with an application-owned scope.
 
 ## Add an application role scope
 
@@ -130,4 +130,4 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 - The target App passes its relevant tests, typecheck, and build. Skill
   synchronization alone proves only that the copy matches this source.
 
-Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Hub blocks self-deletion, deleting its last active administrator, and deleting owners of Apps. Historical user identities are retained but cannot sign in or appear in management lists.
+Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Historical user identities are retained but cannot sign in or appear in management lists.

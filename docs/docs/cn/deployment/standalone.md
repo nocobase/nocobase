@@ -1,11 +1,11 @@
 ---
 title: 手动部署：独立运行
-description: 不使用 Hub，通过 app-installer、Docker 或 Node.js 在服务器上运行应用。
+description: 通过 app-installer、Docker 或 Node.js 在服务器上运行应用。
 ---
 
 # 手动部署：独立运行
 
-本页说明不使用 Hub 的三种运行方式，适用于开源版以及未持有专业版授权的场景。推荐使用 app-installer：它将部署包安装到服务器并通过 pm2 运行，升级和回滚也由它完成。由 AI Agent 执行时，提示词见[用 AI Agent 部署](./with-agent#用-app-installer-部署到服务器)。
+本页说明在服务器上运行应用的三种方式。推荐使用 app-installer：它将部署包安装到服务器并通过 pm2 运行，升级和回滚也由它完成。由 AI Agent 执行时，提示词见[用 AI Agent 部署](./with-agent#用-app-installer-部署到服务器)。
 
 ## 构建部署包
 

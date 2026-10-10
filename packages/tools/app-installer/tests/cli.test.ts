@@ -106,12 +106,12 @@ describe('runInstaller', () => {
   });
 
   it('rejects an origin with a path before touching anything', async () => {
-    const target = path.join(dir, 'hub');
+    const target = path.join(dir, 'crm');
     const result = await run([
       'install',
       target,
       '--origin',
-      'https://apps.example.com/hub',
+      'https://apps.example.com/crm',
       '--json',
     ]);
     expect(result.code).toBe(2);
@@ -120,7 +120,13 @@ describe('runInstaller', () => {
 
   it('refuses a target that already holds files', async () => {
     await writeFile(path.join(dir, 'keep.txt'), 'mine');
-    const result = await run(['install', dir, '--template', 'hub', '--json']);
+    const result = await run([
+      'install',
+      dir,
+      '--archive',
+      'crm.tar.gz',
+      '--json',
+    ]);
     expect(result.code).toBe(2);
     expect(JSON.parse(result.stdout).error.code).toBe('TARGET_NOT_EMPTY');
   });
@@ -131,8 +137,8 @@ describe('runInstaller', () => {
       'install',
       '--dir',
       dir,
-      '--template',
-      'hub',
+      '--archive',
+      'crm.tar.gz',
       '--json',
     ]);
     expect(result.code).toBe(2);
@@ -170,9 +176,9 @@ describe('runInstaller', () => {
   it('rejects a malformed --set before touching anything', async () => {
     const result = await run([
       'install',
-      path.join(dir, 'hub'),
-      '--template',
-      'hub',
+      path.join(dir, 'crm'),
+      '--archive',
+      'crm.tar.gz',
       '--set',
       'novalue',
       '--json',
@@ -183,36 +189,20 @@ describe('runInstaller', () => {
     );
   });
 
-  it('asks for exactly one thing to install', async () => {
+  it('asks for the archive to install, and no longer takes a template', async () => {
     const target = path.join(dir, 'crm');
     const none = await run(['install', target, '--json']);
     expect(none.code).toBe(2);
     expect(JSON.parse(none.stdout).error.message).toContain('--archive');
-    const both = await run([
+    const template = await run([
       'install',
       target,
-      '--template',
-      'hub',
-      '--archive',
-      'crm.tar.gz',
-      '--json',
-    ]);
-    expect(both.code).toBe(2);
-    expect(JSON.parse(both.stdout).error.code).toBe('INVALID_USAGE');
-  });
-
-  it('builds only the Hub template, and says how to install an application of its own', async () => {
-    const result = await run([
-      'install',
-      path.join(dir, 'app'),
       '--template',
       'default',
       '--json',
     ]);
-    expect(result.code).toBe(2);
-    const { error } = JSON.parse(result.stdout);
-    expect(error.code).toBe('INVALID_USAGE');
-    expect(error.suggestions[0].message).toContain('--archive');
+    expect(template.code).toBe(2);
+    expect(JSON.parse(template.stdout).error.code).toBe('INVALID_USAGE');
   });
 
   it('takes an archive by local path only, and names one that is not there', async () => {

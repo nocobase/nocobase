@@ -1854,7 +1854,6 @@ async function writeRuntimeTestConfig(
           },
         },
       },
-      hub: { host: { enabled: false } },
     },
   });
   testConfigs.push(config);

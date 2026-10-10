@@ -198,7 +198,7 @@ test('passes when every application is clean', async () => {
   assert.equal(code, 0);
 });
 
-test('checks the three application templates', () => {
+test('checks the two application templates', () => {
   const root = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
   assert.deepEqual(
     templateTargets().map(({ name, appDir }) => [
@@ -208,7 +208,6 @@ test('checks the three application templates', () => {
     [
       ['default', 'packages/templates/app-template-default'],
       ['examples', 'packages/templates/app-template-examples'],
-      ['hub', 'packages/templates/app-template-hub'],
     ],
   );
 });

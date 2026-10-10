@@ -234,7 +234,7 @@ const writeDistEnv = () => {
 
 /**
  * Records what a deployment cannot read back from the built files. `relocatable` says the client was built with a
- * relative base, so an installer or a Hub may mount it at any path; an archive without it was built for the
+ * relative base, so an installer may mount it at any path; an archive without it was built for the
  * `basePath` it records instead, and has to be mounted there. `builtAt` tells two builds of the same version apart.
  */
 const recordDeploymentMetadata = () => {

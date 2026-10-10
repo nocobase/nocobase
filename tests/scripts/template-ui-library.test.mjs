@@ -5,12 +5,12 @@ import test from 'node:test';
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
 const libraryRoot = path.join(repoRoot, 'ui-library');
-const templates = ['default', 'examples', 'hub'];
+const templates = ['default', 'examples'];
 
 // The UI Library items the templates preinstall. The library is the source of truth, so each template carries exactly
 // the files `shadcn add` would install today, at their targets; a change to one of these items is carried into every
 // template that preinstalls it in the same pull request. `templates` names the templates an item is preinstalled in,
-// every template when left out: the inbox needs the in-app notification plugin, which the Hub does not register.
+// every template when left out.
 const preinstalled = [
   { group: 'auth', item: 'auth-forms' },
   { group: 'auth', item: 'auth-methods' },
@@ -21,8 +21,8 @@ const preinstalled = [
   { group: 'components', item: 'route-dialog' },
   { group: 'components', item: 'route-drawer' },
   { group: 'components', item: 'route-child-page' },
-  { group: 'inbox', item: 'inbox', templates: ['default', 'examples'] },
-  { group: 'inbox', item: 'inbox-button', templates: ['default', 'examples'] },
+  { group: 'inbox', item: 'inbox' },
+  { group: 'inbox', item: 'inbox-button' },
 ];
 
 function registryItem(group, name) {
