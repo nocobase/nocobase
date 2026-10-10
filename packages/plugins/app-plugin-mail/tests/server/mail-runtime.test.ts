@@ -1,3 +1,4 @@
+import { testId } from '../helpers/test-id.js';
 import {
   createMailTestDatabase,
   destroyMailTestDatabase,
@@ -47,10 +48,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     database = await createMailTestDatabase();
     store = createDatabaseMailStore(database);
     await store.saveAccount(account());
-    await store.replaceIdentities('account-1', [
+    await store.replaceIdentities(testId('account-1'), [
       {
-        id: 'identity-1',
-        accountId: 'account-1',
+        id: testId('identity-1'),
+        accountId: testId('account-1'),
         address: 'sender@example.com',
         isPrimary: true,
         canSend: true,
@@ -111,7 +112,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         outbox: { kick: vi.fn() },
       });
       for (const remote of [undefined, 'remote-draft']) {
-        const draft = await store.saveMessage('account-1', {
+        const draft = await store.saveMessage(testId('account-1'), {
           ...message(`local-draft:${remote ?? 'only-local'}`, 'Draft'),
           draft: true,
           providerDraftMessageId: remote,
@@ -120,7 +121,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         if (scope === 'personal')
           await service.deleteMessage(
             { actorId: 'user-1' },
-            { accountId: 'account-1', messageId: draft.id },
+            { accountId: testId('account-1'), messageId: draft.id },
           );
         else
           expect(
@@ -128,12 +129,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
               { actorId: 'admin' },
               {
                 action: 'delete',
-                items: [{ accountId: 'account-1', messageId: draft.id }],
+                items: [
+                  { accountId: testId('account-1'), messageId: draft.id },
+                ],
               },
             ),
           ).toMatchObject({ succeeded: 1, failed: 0 });
         expect(
-          await store.getMessageForAccount('account-1', draft.id),
+          await store.getMessageForAccount(testId('account-1'), draft.id),
         ).toBeUndefined();
       }
       expect(resolve).toHaveBeenCalledTimes(1);
@@ -190,7 +193,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       expect(closed).toBe(true);
       const getAccount = vi.spyOn(store, 'getAccount');
       getAccount.mockClear();
-      expect(await runtime.schedulePushSync('account-1')).toBe(false);
+      expect(await runtime.schedulePushSync(testId('account-1'))).toBe(false);
       expect(await runtime.createAutomaticSyncRuns()).toBe(0);
       await runtime.publishPending();
       expect(getAccount).not.toHaveBeenCalled();
@@ -218,8 +221,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         adapters: resolver({ ...baseAdapter(), sendMessage }),
       });
       const input = {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [{ address: 'recipient@example.com' }],
         subject: 'Latest',
         text: 'Latest body',
@@ -262,8 +265,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       adapters: resolver(baseAdapter()),
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [],
       subject: 'Draft',
       text: 'First',
@@ -297,9 +300,9 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       ),
     ).rejects.toThrow(/revision is outdated/);
     expect(
-      (await store.getMessage('user-1', 'account-1', first.id))?.text,
+      (await store.getMessage('user-1', testId('account-1'), first.id))?.text,
     ).toBe('Latest');
-    await store.deleteMessage('account-1', first.id);
+    await store.deleteMessage(testId('account-1'), first.id);
     await expect(
       service.saveDraft({ actorId: 'user-1' }, { ...input, draftRevision: 4 }),
     ).rejects.toThrow(/not found/);
@@ -315,14 +318,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   it('excludes suspended mail before pagination and counting while retaining management access', async () => {
     await store.saveAccount({
       ...account(),
-      id: 'paused',
+      id: testId('paused'),
       address: 'paused@example.com',
     });
     const visible = await store.saveMessage(
-      'account-1',
+      testId('account-1'),
       message('visible', 'Visible mail'),
     );
-    const hidden = await store.saveMessage('paused', {
+    const hidden = await store.saveMessage(testId('paused'), {
       ...message('hidden', 'Paused mail'),
       receivedAt: '2026-09-04T00:00:00.000Z',
     });
@@ -333,7 +336,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     await service.updateAccount(
       { actorId: 'user-1' },
-      { accountId: 'paused', status: 'suspended' },
+      { accountId: testId('paused'), status: 'suspended' },
     );
     const page = await store.listMessages('user-1', {
       limit: 1,
@@ -343,27 +346,28 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     expect(page.total).toBe(1);
     expect(page.nextCursor).toBeUndefined();
     expect(
-      (await store.listMessages('user-1', { accountIds: ['paused'] })).items,
+      (await store.listMessages('user-1', { accountIds: [testId('paused')] }))
+        .items,
     ).toEqual([]);
     expect(await service.getUnreadCount({ actorId: 'user-1' })).toBe(1);
     expect(
       (
         await service.listManagedMessages(
           { actorId: 'user-1' },
-          { accountIds: ['paused'] },
+          { accountIds: [testId('paused')] },
         )
       ).items.map((item) => item.id),
     ).toEqual([hidden.id]);
     expect(
       await service.getManagedMessage(
         { actorId: 'user-1' },
-        'paused',
+        testId('paused'),
         hidden.id,
       ),
     ).toMatchObject({ id: hidden.id });
     await service.updateAccount(
       { actorId: 'user-1' },
-      { accountId: 'paused', status: 'active' },
+      { accountId: testId('paused'), status: 'active' },
     );
     expect((await store.listMessages('user-1', {})).items).toHaveLength(2);
     expect(await service.getUnreadCount({ actorId: 'user-1' })).toBe(2);
@@ -373,14 +377,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     for (let index = 0; index < 102; index += 1) {
       await store.saveAccount({
         ...account(),
-        id: `owned-${index}`,
+        id: testId(`owned-${index}`),
         userId: `owner-${index}`,
         address: `owned-${index}@example.com`,
       });
     }
     await store.saveAccount({
       ...account(),
-      id: 'same-owner',
+      id: testId('same-owner'),
       userId: 'owner-0',
       address: 'same-owner@example.com',
     });
@@ -410,17 +414,17 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const accounts = await service.listManagedAccounts({
       actorId: 'administrator',
     });
-    expect(accounts.find((item) => item.id === 'owned-0')?.ownerName).toBe(
-      'alice',
-    );
-    expect(accounts.find((item) => item.id === 'same-owner')?.ownerName).toBe(
-      'alice',
-    );
-    expect(accounts.find((item) => item.id === 'owned-100')?.ownerName).toBe(
-      'Name owner-100',
-    );
     expect(
-      accounts.find((item) => item.id === 'owned-101')?.ownerName,
+      accounts.find((item) => item.id === testId('owned-0'))?.ownerName,
+    ).toBe('alice');
+    expect(
+      accounts.find((item) => item.id === testId('same-owner'))?.ownerName,
+    ).toBe('alice');
+    expect(
+      accounts.find((item) => item.id === testId('owned-100'))?.ownerName,
+    ).toBe('Name owner-100');
+    expect(
+      accounts.find((item) => item.id === testId('owned-101'))?.ownerName,
     ).toBeUndefined();
     expect(list).toHaveBeenCalledTimes(2);
     const ids = list.mock.calls.flatMap(([input]) => input?.userIds ?? []);
@@ -432,15 +436,15 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   it('paginates delivery history beyond the recent-record limit without crossing owners', async () => {
     await store.saveAccount({
       ...account(),
-      id: 'other-account',
+      id: testId('other-account'),
       userId: 'other-user',
       address: 'other@example.com',
     });
     for (let index = 0; index < 125; index += 1) {
       await store.createSubmission(
         {
-          id: `paged-${String(index).padStart(3, '0')}`,
-          accountId: 'account-1',
+          id: testId(`paged-${String(index).padStart(3, '0')}`),
+          accountId: testId('account-1'),
           status: 'accepted',
         },
         `paged-${index}`,
@@ -449,8 +453,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     }
     await store.createSubmission(
       {
-        id: 'other-submission',
-        accountId: 'other-account',
+        id: testId('other-submission'),
+        accountId: testId('other-account'),
         status: 'accepted',
       },
       'other-submission',
@@ -479,10 +483,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       pages.push(...page);
     }
     expect(pages.map((row) => row.id)).toEqual(
-      Array.from(
-        { length: 125 },
-        (_, index) => `paged-${String(124 - index).padStart(3, '0')}`,
-      ),
+      Array.from({ length: 125 }, (_, index) =>
+        testId(`paged-${String(index).padStart(3, '0')}`),
+      )
+        .sort()
+        .reverse(),
     );
     const counted = await service.listSubmissionsPage(
       { actorId: 'user-1' },
@@ -512,10 +517,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('paginates synchronization logs stably when creation times match', async () => {
     for (let index = 0; index < 25; index += 1) {
-      const id = `paged-sync-${String(index).padStart(2, '0')}`;
+      const id = testId(`paged-sync-${String(index).padStart(2, '0')}`);
       await store.createSyncRun({
         id,
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         requestedBy: 'user-1',
         mode: 'incremental',
         policy: {},
@@ -547,10 +552,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       (await service.listSyncRunsPage({ actorId: 'other-user' })).total,
     ).toBe(0);
     expect([...first, ...second].map((row) => row.id)).toEqual(
-      Array.from(
-        { length: 25 },
-        (_, index) => `paged-sync-${String(24 - index).padStart(2, '0')}`,
-      ),
+      Array.from({ length: 25 }, (_, index) =>
+        testId(`paged-sync-${String(index).padStart(2, '0')}`),
+      )
+        .sort()
+        .reverse(),
     );
     await expect(
       service.listSyncRuns({ actorId: 'other-user' }, 0, 20),
@@ -563,7 +569,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       for (let recipient = 0; recipient < 3; recipient += 1) {
         const key = `bulk:page-${String(batch).padStart(2, '0')}:${recipient}`;
         await store.createSubmission(
-          { id: key, accountId: 'account-1', status: 'accepted' },
+          {
+            id: testId(key),
+            accountId: testId('account-1'),
+            status: 'accepted',
+          },
           key,
           'fingerprint',
         );
@@ -582,11 +592,22 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     expect(await store.countSubmissions('other-user', true, true)).toBe(0);
     expect(first).toHaveLength(63);
     expect(second).toHaveLength(6);
-    expect(first.slice(0, 3).map((row) => row.id)).toEqual([
-      'bulk:page-21:0',
-      'bulk:page-21:1',
-      'bulk:page-21:2',
-    ]);
+    const orderedBatches = Array.from(
+      { length: 22 },
+      (_, batch) => `bulk:page-${String(batch).padStart(2, '0')}:`,
+    ).sort((left, right) =>
+      testId(`${right}0`).localeCompare(testId(`${left}0`)),
+    );
+    const expectedBatchIds = (prefix: string) =>
+      Array.from({ length: 3 }, (_, recipient) =>
+        testId(`${prefix}${recipient}`),
+      ).sort();
+    expect(first.map((row) => row.id)).toEqual(
+      orderedBatches.slice(0, 21).flatMap(expectedBatchIds),
+    );
+    expect(second.map((row) => row.id)).toEqual(
+      orderedBatches.slice(20).flatMap(expectedBatchIds),
+    );
     expect(
       new Set([...first.slice(0, 60), ...second].map((row) => row.id)).size,
     ).toBe(66);
@@ -610,8 +631,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'private@example.com' }],
       subject: 'private subject',
       text: 'private body',
@@ -622,7 +643,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({
         event: 'mail.send.result',
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         submissionId: result.id,
         status: 'accepted',
         durationMs: expect.any(Number),
@@ -697,8 +718,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       const result = await service.sendMessage(
         { actorId: 'user-1' },
         {
-          accountId: 'account-1',
-          identityId: 'identity-1',
+          accountId: testId('account-1'),
+          identityId: testId('identity-1'),
           to: [{ address: 'recipient@example.com' }],
           subject: 'Test',
           text: 'Body',
@@ -753,8 +774,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         }),
       };
       const run = await store.createSyncRun({
-        id: 'logged-sync',
-        accountId: 'account-1',
+        id: testId('logged-sync'),
+        accountId: testId('account-1'),
         requestedBy: 'user-1',
         mode: 'initial',
         policy: {
@@ -778,7 +799,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       expect(logger[retryable ? 'warn' : 'error']).toHaveBeenCalledWith(
         expect.objectContaining({
           event: retryable ? 'mail.sync.retry_scheduled' : 'mail.sync.failed',
-          accountId: 'account-1',
+          accountId: testId('account-1'),
           syncRunId: run.id,
           errorCode: 'SYNC_FAILED',
           retryable,
@@ -813,8 +834,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       }),
     };
     let run = await store.createSyncRun({
-      id: 'completed-sync',
-      accountId: 'account-1',
+      id: testId('completed-sync'),
+      accountId: testId('account-1'),
       requestedBy: 'user-1',
       mode: 'initial',
       policy: {
@@ -889,8 +910,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'recipient@example.com' }],
       subject: 'Hello',
       text: 'Mail body',
@@ -913,7 +934,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     ).resolves.toMatchObject([
       {
         id: first.id,
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         status: 'accepted',
         providerMessageId: 'provider-sent-1',
         createdAt: expect.any(String),
@@ -943,8 +964,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const adapters = resolver({ ...baseAdapter(), sendMessage });
     const service = new DefaultMailService({ store, adapters });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'first@example.com' }, { address: 'second@example.com' }],
       subject: 'Partial',
       text: 'Body',
@@ -996,8 +1017,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         outbox: { kick: vi.fn() },
       });
       const base = {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [{ address: 'one@example.com' }],
         subject: 'Batch',
         text: 'Body',
@@ -1020,7 +1041,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         scheduledDelivery: true,
       });
       expect(
-        await store.getMessage('user-1', 'account-1', draft.id),
+        await store.getMessage('user-1', testId('account-1'), draft.id),
       ).toBeUndefined();
       if (outcome === 'edited')
         await expect(
@@ -1043,13 +1064,17 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       await operation.execute({ actorId: 'user-1' }, second!.input, {
         scheduledDelivery: true,
       });
-      const remaining = await store.getMessage('user-1', 'account-1', draft.id);
+      const remaining = await store.getMessage(
+        'user-1',
+        testId('account-1'),
+        draft.id,
+      );
       expect(remaining).toBeUndefined();
     },
   );
 
   it('restores reply headers after saving and reopening a draft twice', async () => {
-    const parent = await store.saveMessage('account-1', {
+    const parent = await store.saveMessage(testId('account-1'), {
       ...message('parent', 'Original'),
       internetMessageId: '<parent@example.com>',
       references: ['<root@example.com>'],
@@ -1066,8 +1091,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const service = new DefaultMailService({ store, adapters });
     const base = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'recipient@example.com' }],
       subject: 'Re: Original',
       text: 'Reply',
@@ -1097,13 +1122,13 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       }),
     );
     expect(
-      await store.getMessage('user-1', 'account-1', first.id),
+      await store.getMessage('user-1', testId('account-1'), first.id),
     ).toBeUndefined();
   });
 
   it('preserves a reopened forward source without requesting duplicate quoted content', async () => {
     const parent = await store.saveMessage(
-      'account-1',
+      testId('account-1'),
       message('forward-parent', 'Original'),
     );
     const sendMessage = vi.fn<MailProviderAdapter['sendMessage']>(async () => ({
@@ -1117,8 +1142,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const service = new DefaultMailService({ store, adapters });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'recipient@example.com' }],
       subject: 'Fwd: Original',
       text: 'Comment and quoted body',
@@ -1161,8 +1186,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       recipients: [
         { address: 'first@example.com' },
         { address: 'second@example.com' },
@@ -1203,7 +1228,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const signature = await service.saveSignature(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         name: 'Scheduled',
         text: 'Original signature',
       },
@@ -1213,8 +1238,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const submission = await service.sendMessage(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         signatureId: signature.id,
         to: [{ address: 'recipient@example.com' }],
         subject: 'Later',
@@ -1229,7 +1254,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       { actorId: 'user-1' },
       {
         id: signature.id,
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         name: signature.name,
         text: 'Changed after scheduling',
       },
@@ -1305,8 +1330,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       const submission = await service.sendMessage(
         { actorId: 'user-1' },
         {
-          accountId: 'account-1',
-          identityId: 'identity-1',
+          accountId: testId('account-1'),
+          identityId: testId('identity-1'),
           to: [{ address: 'recipient@example.com' }],
           subject: 'Later',
           text: 'Scheduled body',
@@ -1371,8 +1396,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await expect(runtime.createAutomaticSyncRuns()).resolves.toBe(1);
     await expect(runtime.createAutomaticSyncRuns()).resolves.toBe(0);
 
-    await expect(store.findActiveSyncRun('account-1')).resolves.toMatchObject({
-      accountId: 'account-1',
+    await expect(
+      store.findActiveSyncRun(testId('account-1')),
+    ).resolves.toMatchObject({
+      accountId: testId('account-1'),
       requestedBy: 'user-1',
       mode: 'initial',
       policy: { batchSize: 37 },
@@ -1427,9 +1454,9 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       runtime.scheduleAutomaticSync();
       await vi.waitFor(() => expect(sweep).toHaveBeenCalledTimes(1));
       await sweep.mock.results[0]!.value;
-      await expect(store.findActiveSyncRun('account-1')).resolves.toMatchObject(
-        { accountId: 'account-1' },
-      );
+      await expect(
+        store.findActiveSyncRun(testId('account-1')),
+      ).resolves.toMatchObject({ accountId: testId('account-1') });
       for (const task of Object.values(tasks))
         expect(task).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
@@ -1453,7 +1480,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   it('continues with other accounts when reading one account sync time fails', async () => {
     const second = {
       ...account(),
-      id: 'account-2',
+      id: testId('account-2'),
       address: 'second@example.com',
     };
     await store.saveAccount(second);
@@ -1461,7 +1488,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const readSyncTime = vi
       .spyOn(store, 'getLastSyncedAt')
       .mockImplementation(async (accountId) => {
-        if (accountId === 'account-1')
+        if (accountId === testId('account-1'))
           throw new Error('account sync time unavailable');
         return undefined;
       });
@@ -1479,13 +1506,15 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       accountId: second.id,
     });
     expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: 'account-1' }),
+      expect.objectContaining({ accountId: testId('account-1') }),
       'Automatic Mail synchronization could not be scheduled.',
     );
     readSyncTime.mockResolvedValue(undefined);
     await expect(runtime.createAutomaticSyncRuns()).resolves.toBe(1);
-    await expect(store.findActiveSyncRun('account-1')).resolves.toMatchObject({
-      accountId: 'account-1',
+    await expect(
+      store.findActiveSyncRun(testId('account-1')),
+    ).resolves.toMatchObject({
+      accountId: testId('account-1'),
     });
   });
 
@@ -1562,10 +1591,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await expect(
       service.updateAccount(
         { actorId: 'user-1' },
-        { accountId: 'account-1', status: 'suspended' },
+        { accountId: testId('account-1'), status: 'suspended' },
       ),
     ).resolves.toMatchObject({ status: 'suspended' });
-    await expect(store.getAccount('account-1')).resolves.toMatchObject({
+    await expect(store.getAccount(testId('account-1'))).resolves.toMatchObject({
       automaticSyncIntervalMinutes: 45,
     });
   });
@@ -1724,15 +1753,15 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       clientState: 'a'.repeat(32),
       providerSubscriptionId: undefined,
     });
-    await expect(store.getPushSubscription('account-1')).resolves.toMatchObject(
-      {
-        providerSubscriptionId: 'provider-subscription-1',
-        renewAfter: '2099-01-01T00:00:00.000Z',
-      },
-    );
+    await expect(
+      store.getPushSubscription(testId('account-1')),
+    ).resolves.toMatchObject({
+      providerSubscriptionId: 'provider-subscription-1',
+      renewAfter: '2099-01-01T00:00:00.000Z',
+    });
 
     await store.savePushSubscription({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       provider: account().provider,
       providerSubscriptionId: 'provider-subscription-1',
       configurationFingerprint: 'stale-fingerprint',
@@ -1759,7 +1788,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('stops a recreated same-ID watch when the account is removed during rotation', async () => {
     await store.savePushSubscription({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       provider: account().provider,
       providerSubscriptionId: 'user@example.com',
       configurationFingerprint: 'stale-fingerprint',
@@ -1773,8 +1802,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const upsertPushSubscription = vi.fn<
       NonNullable<MailProviderAdapter['upsertPushSubscription']>
     >(async () => {
-      await store.markAccountRemoving('account-1', 'user-1');
-      await drainRemoval('account-1');
+      await store.markAccountRemoving(testId('account-1'), 'user-1');
+      await drainRemoval(testId('account-1'));
       return {
         ok: true,
         value: {
@@ -1813,13 +1842,13 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       'user@example.com',
     );
     await expect(
-      store.getPushSubscription('account-1'),
+      store.getPushSubscription(testId('account-1')),
     ).resolves.toBeUndefined();
   });
 
   it('preserves a complete subscription for remote cleanup while removal starts', async () => {
     await store.savePushSubscription({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       provider: account().provider,
       providerSubscriptionId: 'subscription-before-removal',
       configurationFingerprint: 'removal-fingerprint',
@@ -1827,7 +1856,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       expiresAt: '2099-01-01T00:00:00.000Z',
       updatedAt: '2000-01-01T00:00:00.000Z',
     });
-    await store.markAccountRemoving('account-1', 'user-1');
+    await store.markAccountRemoving(testId('account-1'), 'user-1');
 
     await expect(
       store.claimPushSubscriptionMaintenance(
@@ -1837,11 +1866,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         new Date(Date.now() + 60_000).toISOString(),
       ),
     ).resolves.toBeUndefined();
-    await expect(store.getPushSubscription('account-1')).resolves.toMatchObject(
-      {
-        providerSubscriptionId: 'subscription-before-removal',
-      },
-    );
+    await expect(
+      store.getPushSubscription(testId('account-1')),
+    ).resolves.toMatchObject({
+      providerSubscriptionId: 'subscription-before-removal',
+    });
   });
 
   it('deduplicates push-triggered synchronization', async () => {
@@ -1853,14 +1882,19 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
 
     const active = await store.createSyncRun({
-      id: 'active-push-sync',
-      accountId: 'account-1',
+      id: testId('active-push-sync'),
+      accountId: testId('account-1'),
       requestedBy: 'user-1',
       mode: 'incremental',
       policy: { maxMessages: 10_000, batchSize: 200 },
     });
-    await expect(runtime.schedulePushSync('account-1')).resolves.toBe(false);
-    await store.clearPushSyncPending('account-1', 'stale-request-token');
+    await expect(runtime.schedulePushSync(testId('account-1'))).resolves.toBe(
+      false,
+    );
+    await store.clearPushSyncPending(
+      testId('account-1'),
+      'stale-request-token',
+    );
 
     const claimed = await store.claimSyncRun(
       active.id,
@@ -1906,7 +1940,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   // MAIL-SEND-007, MAIL-CENTER-008/010, and MAIL-ACTION-001/005/007: messages.
   it('resolves a reply against the owned stored message', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [
         {
@@ -1933,8 +1967,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await service.sendMessage(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [{ address: 'recipient@example.com' }],
         subject: 'Re: Original',
         text: 'Reply body',
@@ -1957,7 +1991,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('passes the editable forward body to the provider and fingerprints its mode', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [message('provider-parent', 'Original')],
       deletedProviderMessageIds: [],
@@ -1974,8 +2008,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'recipient@example.com' }],
       subject: 'Fwd: Original',
       text: 'Edited original',
@@ -2003,7 +2037,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('loads only summary fields for the mailbox list', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [
         {
@@ -2038,7 +2072,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('updates Provider and local message state, then deletes the message', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [message('provider-mutable', 'Mutable')],
       deletedProviderMessageIds: [],
@@ -2068,7 +2102,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const updated = await service.updateMessage(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         messageId: stored.items[0].id,
         read: true,
         starred: true,
@@ -2085,7 +2119,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await service.deleteMessage(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         messageId: stored.items[0].id,
         permanently: true,
       },
@@ -2102,7 +2136,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('reads managed details across owners while preserving personal ownership and account scoping', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [message('managed-detail', 'Managed detail')],
       deletedProviderMessageIds: [],
@@ -2116,18 +2150,26 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     await expect(
-      service.getManagedMessage({ actorId: 'other-user' }, 'account-1', id),
+      service.getManagedMessage(
+        { actorId: 'other-user' },
+        testId('account-1'),
+        id,
+      ),
     ).resolves.toMatchObject({ subject: 'Managed detail' });
     await expect(
-      service.getMessage({ actorId: 'other-user' }, 'account-1', id),
+      service.getMessage({ actorId: 'other-user' }, testId('account-1'), id),
     ).resolves.toBeUndefined();
     await expect(
-      service.getManagedMessage({ actorId: 'other-user' }, 'wrong-account', id),
+      service.getManagedMessage(
+        { actorId: 'other-user' },
+        testId('wrong-account'),
+        id,
+      ),
     ).resolves.toBeUndefined();
     await expect(
       service.getManagedAttachment(
         { actorId: 'other-user' },
-        'wrong-account',
+        testId('wrong-account'),
         id,
         'missing',
       ),
@@ -2135,7 +2177,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await expect(
       service.getManagedAttachment(
         { actorId: 'other-user' },
-        'account-1',
+        testId('account-1'),
         id,
         'missing',
       ),
@@ -2144,7 +2186,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('executes management actions per message and preserves partial failures', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [
         message('provider-management-success', 'Success'),
@@ -2221,7 +2263,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('stores private notes and todo state without losing them on Provider sync', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [message('provider-note', 'Remember this')],
       deletedProviderMessageIds: [],
@@ -2238,7 +2280,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       service.updateMessage(
         { actorId: 'user-1' },
         {
-          accountId: 'account-1',
+          accountId: testId('account-1'),
           messageId: stored.id,
           note: 'Follow up on Friday',
           todo: true,
@@ -2246,7 +2288,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       ),
     ).resolves.toMatchObject({ note: 'Follow up on Friday', todo: true });
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [
         { ...message('provider-note', 'Updated subject'), read: true },
@@ -2271,7 +2313,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('creates and applies NocoBase labels without calling a Provider', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [message('provider-label', 'Label me')],
       deletedProviderMessageIds: [],
@@ -2299,7 +2341,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       service.updateMessageLabels(
         { actorId: 'user-1' },
         {
-          accountId: 'account-1',
+          accountId: testId('account-1'),
           messageId: stored.id,
           addLabelIds: [label.id],
         },
@@ -2322,17 +2364,17 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   });
 
   it('selects a managed signature and supports cancelling and retrying sync', async () => {
-    await store.replaceIdentities('account-1', [
+    await store.replaceIdentities(testId('account-1'), [
       {
-        id: 'identity-1',
-        accountId: 'account-1',
+        id: testId('identity-1'),
+        accountId: testId('account-1'),
         address: 'sender@example.com',
         isPrimary: true,
         canSend: true,
       },
       {
-        id: 'identity-2',
-        accountId: 'account-1',
+        id: testId('identity-2'),
+        accountId: testId('account-1'),
         address: 'support@example.com',
         isPrimary: false,
         canSend: true,
@@ -2346,7 +2388,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const signature = await setupService.saveSignature(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         name: 'Sales',
         text: 'Sales team',
       },
@@ -2366,8 +2408,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await service.sendMessage(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-2',
+        accountId: testId('account-1'),
+        identityId: testId('identity-2'),
         signatureId: signature.id,
         to: [{ address: 'reader@example.com' }],
         subject: 'Signed',
@@ -2383,7 +2425,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const alternate = await service.saveSignature(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         name: 'Support',
         text: 'Support team',
       },
@@ -2391,8 +2433,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await service.sendMessage(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         signatureId: alternate.id,
         to: [{ address: 'reader@example.com' }],
         subject: 'Switched signature',
@@ -2407,37 +2449,46 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         }),
       }),
     );
-    await store.replaceIdentities('account-1', [
+    await store.replaceIdentities(testId('account-1'), [
       {
-        id: 'identity-1',
-        accountId: 'account-1',
+        id: testId('identity-1'),
+        accountId: testId('account-1'),
         address: 'sender@example.com',
         isPrimary: true,
         canSend: true,
       },
     ]);
-    await expect(store.listSignatures('account-1')).resolves.toEqual(
+    await expect(store.listSignatures(testId('account-1'))).resolves.toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: signature.id, accountId: 'account-1' }),
-        expect.objectContaining({ id: alternate.id, accountId: 'account-1' }),
+        expect.objectContaining({
+          id: signature.id,
+          accountId: testId('account-1'),
+        }),
+        expect.objectContaining({
+          id: alternate.id,
+          accountId: testId('account-1'),
+        }),
       ]),
     );
 
     const run = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     await expect(
       service.cancelSyncRun({ actorId: 'user-1' }, run.id),
     ).resolves.toMatchObject({ status: 'cancelled' });
     await expect(
       service.retrySyncRun({ actorId: 'user-1' }, run.id),
-    ).resolves.toMatchObject({ status: 'pending', accountId: 'account-1' });
+    ).resolves.toMatchObject({
+      status: 'pending',
+      accountId: testId('account-1'),
+    });
   });
 
   it('moves a soft-deleted message to the local trash folder', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [
         {
           providerFolderId: 'trash',
@@ -2473,7 +2524,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
     await service.deleteMessage(
       { actorId: 'user-1' },
-      { accountId: 'account-1', messageId: stored.items[0].id },
+      { accountId: testId('account-1'), messageId: stored.items[0].id },
     );
 
     expect(moveMessage).toHaveBeenCalledWith(
@@ -2498,7 +2549,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     'downloads only an attachment belonging to the %s message',
     async (scope) => {
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         folders: [],
         messages: [
           {
@@ -2520,7 +2571,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       const stored = await store.listMessages('user-1', {});
       const messageDetails = await store.getMessage(
         'user-1',
-        'account-1',
+        testId('account-1'),
         stored.items[0].id,
       );
       const getAttachment = vi.fn<
@@ -2549,14 +2600,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       await expect(
         service.getAttachment(
           { actorId: 'admin-user' },
-          'account-1',
+          testId('account-1'),
           stored.items[0].id,
           messageDetails?.attachments[0].id ?? '',
         ),
       ).rejects.toThrow('Mail account was not found.');
       const content = await getContent(
         { actorId },
-        'account-1',
+        testId('account-1'),
         stored.items[0].id,
         messageDetails?.attachments[0].id ?? '',
       );
@@ -2577,7 +2628,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       await expect(
         getContent(
           { actorId },
-          'account-1',
+          testId('account-1'),
           stored.items[0].id,
           'other-attachment',
         ),
@@ -2621,8 +2672,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const draft = await service.saveDraft(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [],
         subject: 'Draft subject',
         text: 'Draft body',
@@ -2651,11 +2702,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
   });
 
-  it.each([undefined, ['account-1']])(
+  it.each([undefined, [testId('account-1')]])(
     'excludes local and synchronized drafts before paginating personal all mail (accounts: %j)',
     async (accountIds) => {
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         folders: [
           {
             providerFolderId: 'drafts',
@@ -2674,7 +2725,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         ['remote-draft', '03', true, 'drafts'],
         ['local-draft:local', '04', true, MAIL_LOCAL_DRAFT_FOLDER_ID],
       ] as const) {
-        await store.saveMessage('account-1', {
+        await store.saveMessage(testId('account-1'), {
           ...message(id, id),
           providerFolderIds: [folder],
           conversationId: 'conversation-with-draft',
@@ -2744,7 +2795,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         'custom',
       ] as const;
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         folders: types.map((type) => ({
           providerFolderId: type,
           type,
@@ -2792,16 +2843,16 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   it('allows drafts only through a matching draft folder in the same account', async () => {
     await store.saveAccount({
       ...account(),
-      id: 'account-2',
+      id: testId('account-2'),
       address: 'second@example.com',
     });
-    for (const accountId of ['account-1', 'account-2']) {
+    for (const accountId of [testId('account-1'), testId('account-2')]) {
       await store.commitSyncBatch({
         accountId,
         folders: [
           {
             providerFolderId: 'shared-folder',
-            type: accountId === 'account-1' ? 'drafts' : 'custom',
+            type: accountId === testId('account-1') ? 'drafts' : 'custom',
             name: 'Shared',
             kind: 'folder',
           },
@@ -2830,7 +2881,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       folderIds: ['shared-folder', 'inbox'],
     });
     expect(page.items.filter((item) => item.draft)).toMatchObject([
-      { accountId: 'account-1', providerMessageId: 'draft-in-both' },
+      { accountId: testId('account-1'), providerMessageId: 'draft-in-both' },
     ]);
     expect(page.items.filter((item) => !item.draft)).toHaveLength(2);
     expect(
@@ -2853,8 +2904,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const draft = await service.saveDraft(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [],
         subject: 'Local draft',
         text: 'Saved locally',
@@ -2883,7 +2934,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     async ({ scheduled, legacy, inline = false }) => {
       const content = new TextEncoder().encode('draft attachment');
       const metadata = {
-        id: 'upload-1',
+        id: testId('upload-1'),
         userId: 'user-1',
         disk: 'local',
         key: 'mail/upload-1',
@@ -2918,23 +2969,23 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         outboundAttachments: attachmentStorage,
       });
       const input = {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [{ address: 'recipient@example.com' }],
         subject: 'Attachment',
         text: 'Body',
         html: inline
-          ? '<img src="cid:nocobase-upload-1@mail.inline" width="320" height="160">'
+          ? `<img src="cid:nocobase-${testId('upload-1')}@mail.inline" width="320" height="160">`
           : undefined,
         idempotencyKey: 'draft-with-attachment',
-        attachmentIds: ['upload-1'],
+        attachmentIds: [testId('upload-1')],
       };
       const draft = await service.saveDraft({ actorId: 'user-1' }, input);
       expect(draft.attachments).toHaveLength(1);
       expect(draft.attachments[0].inline).toBe(inline);
       if (inline) expect(draft.html).toBe(input.html);
       if (legacy) {
-        await store.saveMessage('account-1', {
+        await store.saveMessage(testId('account-1'), {
           ...message(draft.providerMessageId, draft.subject),
           draft: true,
           attachments: draft.attachments.map(
@@ -2946,7 +2997,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(Date.now() + 86400000 + 1000);
       expect(
-        await store.getOutboundAttachment('user-1', 'upload-1'),
+        await store.getOutboundAttachment('user-1', testId('upload-1')),
       ).toBeDefined();
       expect(
         await store.listExpiredOutboundAttachments(
@@ -2954,10 +3005,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
           100,
         ),
       ).toEqual([]);
-      const reopened = await store.getMessage('user-1', 'account-1', draft.id);
+      const reopened = await store.getMessage(
+        'user-1',
+        testId('account-1'),
+        draft.id,
+      );
       const downloaded = await service.getAttachment(
         { actorId: 'user-1' },
-        'account-1',
+        testId('account-1'),
         draft.id,
         reopened!.attachments[0].id,
       );
@@ -2998,7 +3053,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       if (inline) expect(sent.html).toContain('width="320" height="160"');
       if (inline)
         expect(sent.attachments[0].contentId).toBe(
-          'nocobase-upload-1@mail.inline',
+          `nocobase-${testId('upload-1')}@mail.inline`,
         );
       expect(sent.retainedProviderAttachmentIds).toEqual([]);
       expect(await new Response(await sent.attachments[0].open()).text()).toBe(
@@ -3010,7 +3065,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   it('pages cleanup past retained uploads and releases them when the draft is deleted', async () => {
     const now = new Date().toISOString();
     const upload = {
-      id: 'upload-a',
+      id: testId('upload-a'),
       userId: 'user-1',
       disk: 'local',
       key: 'a',
@@ -3023,10 +3078,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await store.createOutboundAttachment(upload);
     await store.createOutboundAttachment({
       ...upload,
-      id: 'upload-b',
+      id: testId('upload-b'),
       key: 'b',
     });
-    const draft = await store.saveMessage('account-1', {
+    const draft = await store.saveMessage(testId('account-1'), {
       ...message('local-draft:cleanup', 'Retained upload'),
       draft: true,
       attachments: [
@@ -3047,14 +3102,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       await store.getOutboundAttachment('other-user', upload.id),
     ).toBeUndefined();
     expect(await store.listExpiredOutboundAttachments(now, 1)).toEqual([
-      expect.objectContaining({ id: 'upload-b' }),
+      expect.objectContaining({ id: testId('upload-b') }),
     ]);
-    await store.deleteMessage('account-1', draft.id);
+    await store.deleteMessage(testId('account-1'), draft.id);
     expect(
       await store.getOutboundAttachment('user-1', upload.id),
     ).toBeUndefined();
     expect(await store.listExpiredOutboundAttachments(now, 1)).toEqual([
-      expect.objectContaining({ id: 'upload-a' }),
+      expect.objectContaining({ id: testId('upload-a') }),
     ]);
   });
 
@@ -3084,8 +3139,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const draft = await service.saveDraft(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [],
         subject: 'Mirror failure',
         text: 'Keep this locally',
@@ -3117,19 +3172,19 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     for (const remote of [undefined, 'current-remote']) {
-      const draft = await store.saveMessage('account-1', {
+      const draft = await store.saveMessage(testId('account-1'), {
         ...message(`local-draft:${remote ?? 'new'}`, 'Draft'),
         draft: true,
         providerDraftMessageId: remote,
       });
       const updated = await service.updateMessage(
         { actorId: 'user-1' },
-        { accountId: 'account-1', messageId: draft.id, starred: true },
+        { accountId: testId('account-1'), messageId: draft.id, starred: true },
       );
       expect(updated.starred).toBe(true);
       if (remote) {
         expect(setStarred).toHaveBeenCalledWith(remote, true, undefined);
-        await store.saveFolder('account-1', {
+        await store.saveFolder(testId('account-1'), {
           providerFolderId: 'drafts',
           name: 'Drafts',
           type: 'drafts',
@@ -3138,7 +3193,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         const moved = await service.moveMessage(
           { actorId: 'user-1' },
           {
-            accountId: 'account-1',
+            accountId: testId('account-1'),
             messageId: draft.id,
             providerFolderId: 'drafts',
           },
@@ -3166,7 +3221,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         },
       ],
     };
-    const initial = await store.saveMessage('account-1', remote);
+    const initial = await store.saveMessage(testId('account-1'), remote);
     let revision = 0;
     const updateDraft = vi.fn<NonNullable<MailProviderAdapter['updateDraft']>>(
       async (draftId, input) => {
@@ -3244,8 +3299,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: remote.to,
       subject: 'Edited',
       text: 'Body',
@@ -3259,7 +3314,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       expect(saved.providerDraftMessageId).toBe('gmail-0');
       expect(saved.attachments[0].providerAttachmentId).toBe('part-0');
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         folders: [],
         messages: [remote],
         deletedProviderMessageIds: [`gmail-${index - 1}`],
@@ -3273,12 +3328,12 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         ).items.map((item) => item.id),
       ).toEqual([initial.id]);
       expect(
-        await store.getMessage('user-1', 'account-1', initial.id),
+        await store.getMessage('user-1', testId('account-1'), initial.id),
       ).toBeDefined();
     }
     const content = await service.getAttachment(
       { actorId: 'user-1' },
-      'account-1',
+      testId('account-1'),
       initial.id,
       'part-0',
     );
@@ -3295,7 +3350,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outboundAttachments: {
         create: async (_userId, file) => {
           const upload = {
-            id: 'copied-import',
+            id: testId('copied-import'),
             userId: 'user-1',
             fileName: file.fileName,
             contentType: file.contentType,
@@ -3311,7 +3366,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         open: async () => ({
           attachment: (await store.getOutboundAttachment(
             'user-1',
-            'copied-import',
+            testId('copied-import'),
           ))!,
           stream: new ReadableStream({
             start(controller) {
@@ -3333,7 +3388,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     expect(sent.status).toBe('accepted');
     expect(sendMessage).toHaveBeenCalledOnce();
     expect(
-      await store.getMessage('user-1', 'account-1', initial.id),
+      await store.getMessage('user-1', testId('account-1'), initial.id),
     ).toBeUndefined();
   });
 
@@ -3376,15 +3431,15 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         await service.saveSignature(
           { actorId: 'user-1' },
           {
-            accountId: 'account-1',
+            accountId: testId('account-1'),
             name: 'Default',
             text: 'Signature',
             isDefault: true,
           },
         );
       const input = {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [],
         subject: 'Local',
         text: 'Body',
@@ -3479,8 +3534,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const initial = await service.saveDraft(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [],
         subject: 'Local subject',
         text: 'Local body',
@@ -3491,8 +3546,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const conflicted = await service.saveDraft(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [],
         subject: 'New local subject',
         text: 'New local body',
@@ -3511,7 +3566,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
   it('updates account lifecycle and removes an account without account defaults', async () => {
     await store.saveAccount({
       ...account(),
-      id: 'account-2',
+      id: testId('account-2'),
       address: 'secondary@example.com',
       credentialReference: 'secret:secondary',
     });
@@ -3532,13 +3587,13 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await expect(
       service.updateAccount(
         { actorId: 'user-1' },
-        { accountId: 'account-1', status: 'suspended' },
+        { accountId: testId('account-1'), status: 'suspended' },
       ),
     ).resolves.toMatchObject({ status: 'suspended' });
     await expect(
       service.updateAccount(
         { actorId: 'user-1' },
-        { accountId: 'account-1', status: 'active' },
+        { accountId: testId('account-1'), status: 'active' },
       ),
     ).resolves.toMatchObject({ status: 'active' });
     await store.saveAccount({
@@ -3547,11 +3602,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const accountSync = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     expect(accountSync.policy.receivedAfter).toBe('2026-02-01T00:00:00.000Z');
     await store.savePushSubscription({
-      accountId: 'account-2',
+      accountId: testId('account-2'),
       provider: account().provider,
       providerSubscriptionId: 'push-account-2',
       configurationFingerprint: 'disconnect-fingerprint',
@@ -3560,8 +3615,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       updatedAt: '2026-09-07T00:00:00.000Z',
     });
 
-    await service.removeAccount({ actorId: 'user-1' }, 'account-2');
-    await drainRemoval('account-2', {
+    await service.removeAccount({ actorId: 'user-1' }, testId('account-2'));
+    await drainRemoval(testId('account-2'), {
       credentials,
       adapters: resolver({ ...baseAdapter(), deletePushSubscription }),
     });
@@ -3572,14 +3627,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     );
     expect(deleteCredential).toHaveBeenCalledWith('secret:secondary');
     await expect(service.listAccounts({ actorId: 'user-1' })).resolves.toEqual([
-      expect.objectContaining({ id: 'account-1' }),
+      expect.objectContaining({ id: testId('account-1') }),
     ]);
   });
 
   it('removes an account while cancelling its pending synchronization', async () => {
     const run = await store.createSyncRun({
-      id: 'remove-account-sync',
-      accountId: 'account-1',
+      id: testId('remove-account-sync'),
+      accountId: testId('account-1'),
       requestedBy: 'user-1',
       mode: 'initial',
       policy: { maxMessages: 100, batchSize: 10 },
@@ -3597,10 +3652,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
 
     await expect(
-      service.removeAccount({ actorId: 'user-1' }, 'account-1'),
-    ).resolves.toMatchObject({ id: 'account-1', status: 'removing' });
+      service.removeAccount({ actorId: 'user-1' }, testId('account-1')),
+    ).resolves.toMatchObject({ id: testId('account-1'), status: 'removing' });
 
-    await drainRemoval('account-1', { credentials });
+    await drainRemoval(testId('account-1'), { credentials });
     expect(cancelSyncRun).toHaveBeenCalledWith(run.id);
     const cancellation = cancelSyncRun.mock.results[0];
     expect(cancellation?.type).toBe('return');
@@ -3609,23 +3664,25 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         status: 'cancelled',
       });
     }
-    await expect(store.getAccount('account-1')).resolves.toBeUndefined();
+    await expect(
+      store.getAccount(testId('account-1')),
+    ).resolves.toBeUndefined();
     await expect(store.getSyncRun(run.id)).resolves.toBeUndefined();
     expect(deleteCredential).toHaveBeenCalledWith('secret:test');
   });
 
   it('does not schedule synchronization after account removal starts', async () => {
     await expect(
-      store.markAccountRemoving('account-1', 'user-1'),
+      store.markAccountRemoving(testId('account-1'), 'user-1'),
     ).resolves.toBe(true);
     await expect(
-      store.markAccountRemoving('account-1', 'user-1'),
+      store.markAccountRemoving(testId('account-1'), 'user-1'),
     ).resolves.toBe(true);
 
     await expect(
       store.createSyncRun({
-        id: 'sync-after-removal',
-        accountId: 'account-1',
+        id: testId('sync-after-removal'),
+        accountId: testId('account-1'),
         requestedBy: 'user-1',
         mode: 'initial',
         policy: { maxMessages: 100, batchSize: 10 },
@@ -3652,7 +3709,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const created = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     const outbox = await store.claimOutbox(
       new Date().toISOString(),
@@ -3669,12 +3726,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const running = operation.execute(outbox[0].payload);
 
     await entered.promise;
-    await service.removeAccount({ actorId: 'user-1' }, 'account-1');
-    await drainRemoval('account-1');
+    await service.removeAccount({ actorId: 'user-1' }, testId('account-1'));
+    await drainRemoval(testId('account-1'));
     providerGate.resolve();
 
     await expect(running).resolves.toBeUndefined();
-    await expect(store.getAccount('account-1')).resolves.toBeUndefined();
+    await expect(
+      store.getAccount(testId('account-1')),
+    ).resolves.toBeUndefined();
     await expect(store.getSyncRun(created.id)).resolves.toBeUndefined();
   });
 
@@ -3705,7 +3764,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const created = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     const outbox = await store.claimOutbox(
       new Date().toISOString(),
@@ -3722,19 +3781,21 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const running = operation.execute(outbox[0].payload);
 
     await entered.promise;
-    await service.removeAccount({ actorId: 'user-1' }, 'account-1');
-    await drainRemoval('account-1');
+    await service.removeAccount({ actorId: 'user-1' }, testId('account-1'));
+    await drainRemoval(testId('account-1'));
     providerGate.resolve();
 
     await expect(running).resolves.toBeUndefined();
-    await expect(store.getAccount('account-1')).resolves.toBeUndefined();
+    await expect(
+      store.getAccount(testId('account-1')),
+    ).resolves.toBeUndefined();
     await expect(store.getSyncRun(created.id)).resolves.toBeUndefined();
   });
 
   it('lists every account for management without granting cross-user sync', async () => {
     await store.saveAccount({
       ...account(),
-      id: 'account-2',
+      id: testId('account-2'),
       userId: 'user-2',
       address: 'other@example.com',
     });
@@ -3744,16 +3805,16 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     await store.createSyncRun({
-      id: 'sync-account-2',
-      accountId: 'account-2',
+      id: testId('sync-account-2'),
+      accountId: testId('account-2'),
       requestedBy: 'user-2',
       mode: 'initial',
       policy: { maxMessages: 100, batchSize: 20 },
     });
     await store.createSubmission(
       {
-        id: 'submission-account-2',
-        accountId: 'account-2',
+        id: testId('submission-account-2'),
+        accountId: testId('account-2'),
         status: 'accepted',
       },
       'operation-log-test',
@@ -3764,12 +3825,12 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       service.listManagedAccounts({ actorId: 'user-1' }),
     ).resolves.toEqual([
       expect.objectContaining({
-        id: 'account-1',
+        id: testId('account-1'),
         userId: 'user-1',
         canSync: true,
       }),
       expect.objectContaining({
-        id: 'account-2',
+        id: testId('account-2'),
         userId: 'user-2',
         canSync: false,
       }),
@@ -3778,14 +3839,17 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       service.listManagedSyncRunsPage({ actorId: 'user-1' }, 0, 20),
     ).resolves.toEqual({
       items: [
-        expect.objectContaining({ accountId: 'account-2', canManage: false }),
+        expect.objectContaining({
+          accountId: testId('account-2'),
+          canManage: false,
+        }),
       ],
       total: 1,
     });
     await expect(
       service.listManagedSubmissionsPage({ actorId: 'user-1' }, 0, 20),
     ).resolves.toEqual({
-      items: [expect.objectContaining({ accountId: 'account-2' })],
+      items: [expect.objectContaining({ accountId: testId('account-2') })],
       total: 1,
     });
     // A page past the end is empty but still reports the total, rather than truncating silently.
@@ -3793,7 +3857,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       service.listManagedSubmissionsPage({ actorId: 'user-1' }, 1, 20),
     ).resolves.toEqual({ items: [], total: 1 });
     await expect(
-      service.listManagedFolders({ actorId: 'user-1' }, 'missing-account'),
+      service.listManagedFolders(
+        { actorId: 'user-1' },
+        testId('missing-account'),
+      ),
     ).rejects.toMatchObject({
       status: 'NOT_FOUND',
       reason: 'MAIL_ACCOUNT_NOT_FOUND',
@@ -3814,8 +3881,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'recipient@example.com' }],
       subject: 'Resume me',
       text: 'Mail body',
@@ -3844,8 +3911,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'recipient@example.com' }],
       subject: 'First content',
       text: 'Mail body',
@@ -3874,8 +3941,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       signatureId: null,
       to: [{ address: 'recipient@example.com' }],
       subject: 'Same content',
@@ -3888,7 +3955,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await expect(
       service.sendMessage(
         { actorId: 'user-1' },
-        { ...input, signatureId: 'signature-1' },
+        { ...input, signatureId: testId('signature-1') },
       ),
     ).rejects.toThrow('idempotency key');
     expect(sendMessage).toHaveBeenCalledTimes(1);
@@ -3905,8 +3972,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: { kick: vi.fn() },
     });
     const input = {
-      accountId: 'account-1',
-      identityId: 'identity-1',
+      accountId: testId('account-1'),
+      identityId: testId('identity-1'),
       to: [{ address: 'recipient@example.com' }],
       subject: 'Same content',
       text: 'Mail body',
@@ -3925,7 +3992,11 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('does not allow an expired sender lease to overwrite recovery', async () => {
     const created = await store.createSubmission(
-      { id: 'submission-1', accountId: 'account-1', status: 'pending' },
+      {
+        id: testId('submission-1'),
+        accountId: testId('account-1'),
+        status: 'pending',
+      },
       'lease-test',
       'fingerprint',
     );
@@ -3957,8 +4028,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       service.sendMessage(
         { actorId: 'user-1' },
         {
-          accountId: 'account-1',
-          identityId: 'identity-1',
+          accountId: testId('account-1'),
+          identityId: testId('identity-1'),
           to: [{ address: 'recipient@example.com' }],
           subject: 'Hello',
           text: 'Mail body',
@@ -3967,7 +4038,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       ),
     ).rejects.toThrow('not active');
     await expect(
-      service.startSync({ actorId: 'user-1' }, { accountId: 'account-1' }),
+      service.startSync(
+        { actorId: 'user-1' },
+        { accountId: testId('account-1') },
+      ),
     ).rejects.toThrow('not active');
   });
 
@@ -4023,7 +4097,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const created = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
 
     for (let step = 0; step < 5; step += 1) {
@@ -4033,7 +4107,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const completed = await store.getSyncRun(created.id);
     const messages = await service.listMessages(
       { actorId: 'user-1' },
-      { accountIds: ['account-1'], limit: 20 },
+      { accountIds: [testId('account-1')], limit: 20 },
     );
     expect(completed).toMatchObject({
       status: 'completed',
@@ -4059,7 +4133,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       limit: 1,
       signal: expect.any(AbortSignal),
     });
-    expect(await store.getSyncCursor('account-1')).toEqual({
+    expect(await store.getSyncCursor(testId('account-1'))).toEqual({
       value: 'watermark-2',
     });
     await expect(
@@ -4067,14 +4141,14 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     ).resolves.toMatchObject([
       {
         id: created.id,
-        accountId: 'account-1',
+        accountId: testId('account-1'),
         status: 'completed',
       },
     ]);
 
     const next = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     expect(next.mode).toBe('incremental');
   });
@@ -4133,7 +4207,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const created = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
 
     for (let step = 0; step < 6; step += 1) {
@@ -4160,7 +4234,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('filters synchronized messages by folder and provider conversation', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [
         {
           providerFolderId: 'inbox',
@@ -4199,16 +4273,16 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
 
     const inbox = await store.listMessages('user-1', {
-      accountIds: ['account-1'],
+      accountIds: [testId('account-1')],
       folderIds: ['inbox'],
     });
     const syntheticInbox = await store.listMessages('user-1', {
-      accountIds: ['account-1'],
+      accountIds: [testId('account-1')],
       folderIds: ['__nocobase_default_inbox__'],
     });
     const conversation = await store.listConversationMessages(
       'user-1',
-      'account-1',
+      testId('account-1'),
       'conversation-1',
     );
 
@@ -4232,7 +4306,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('searches subject, preview, sender, and recipient fields without searching the body', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [
         {
           providerFolderId: 'inbox',
@@ -4287,7 +4361,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('uses stable keyset cursors for mailbox and conversation pages', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [
         {
@@ -4311,23 +4385,23 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
 
     const mailboxFirst = await store.listMessages('user-1', {
-      accountIds: ['account-1'],
+      accountIds: [testId('account-1')],
       limit: 1,
     });
     const mailboxSecond = await store.listMessages('user-1', {
-      accountIds: ['account-1'],
+      accountIds: [testId('account-1')],
       cursor: mailboxFirst.nextCursor,
       limit: 1,
     });
     const conversationFirst = await store.listConversationMessages(
       'user-1',
-      'account-1',
+      testId('account-1'),
       'conversation-1',
       { limit: 1 },
     );
     const conversationSecond = await store.listConversationMessages(
       'user-1',
-      'account-1',
+      testId('account-1'),
       'conversation-1',
       { cursor: conversationFirst.nextCursor, limit: 1 },
     );
@@ -4337,7 +4411,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       mailboxSecond.items[0].providerMessageId,
     ]).toEqual(['thread-message-3', 'thread-message-2']);
     const mailboxThird = await store.listMessages('user-1', {
-      accountIds: ['account-1'],
+      accountIds: [testId('account-1')],
       offset: 2,
       limit: 1,
     });
@@ -4354,7 +4428,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     expect(counted.total).toBe(3);
     expect(
       await store.listAllMessages({
-        accountIds: ['missing-account'],
+        accountIds: [testId('missing-account')],
         withTotal: true,
       }),
     ).toEqual({ items: [], total: 0 });
@@ -4412,7 +4486,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('keeps message folder JSON aligned after folder reconciliation', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [
         {
           providerFolderId: 'inbox',
@@ -4437,8 +4511,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       nextCursor: { value: 'cursor-1' },
     });
     const pending = await store.createSyncRun({
-      id: 'sync-folder-reconciliation',
-      accountId: 'account-1',
+      id: testId('sync-folder-reconciliation'),
+      accountId: testId('account-1'),
       requestedBy: 'user-1',
       mode: 'initial',
       policy: { maxMessages: 100, batchSize: 10 },
@@ -4462,7 +4536,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
 
     const stored = await store.listMessages('user-1', {
-      accountIds: ['account-1'],
+      accountIds: [testId('account-1')],
     });
     expect(stored.items[0].folderIds).toEqual(['inbox']);
   });
@@ -4489,7 +4563,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const created = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     const original = await store.claimOutbox(
       new Date().toISOString(),
@@ -4517,7 +4591,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       processedPages: 0,
       error: { code: 'PROVIDER_RATE_LIMITED' },
     });
-    expect(await store.getAccount('account-1')).toMatchObject({
+    expect(await store.getAccount(testId('account-1'))).toMatchObject({
       status: 'active',
     });
     const claimed = await store.claimOutbox(
@@ -4624,7 +4698,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       });
       const created = await service.startSync(
         { actorId: 'user-1' },
-        { accountId: 'account-1' },
+        { accountId: testId('account-1') },
       );
       const original = await store.claimOutbox(
         new Date().toISOString(),
@@ -4650,7 +4724,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         error: { code: `GMAIL_HTTP_${status}`, category },
       });
       expect(run?.error?.reasonCode).toBe(providerError.reasonCode);
-      expect(await store.getAccount('account-1')).toMatchObject({
+      expect(await store.getAccount(testId('account-1'))).toMatchObject({
         status: accountStatus,
       });
       const retryJobs = await store.claimOutbox(
@@ -4680,7 +4754,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       adapters,
       outbox: { kick: vi.fn() },
     });
-    await service.startSync({ actorId: 'user-1' }, { accountId: 'account-1' });
+    await service.startSync(
+      { actorId: 'user-1' },
+      { accountId: testId('account-1') },
+    );
     const outbox = await store.claimOutbox(
       new Date().toISOString(),
       'heartbeat-outbox-lease',
@@ -4711,7 +4788,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
   it('clears an expired Provider cursor so the next sync can rebootstrap', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: testId('account-1'),
       folders: [],
       messages: [],
       deletedProviderMessageIds: [],
@@ -4740,7 +4817,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const created = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     const task = await store.claimOutbox(
       new Date().toISOString(),
@@ -4770,10 +4847,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       recovering: true,
       mode: 'initial',
     });
-    expect(await store.getSyncCursor('account-1')).toBeUndefined();
+    expect(await store.getSyncCursor(testId('account-1'))).toBeUndefined();
     const restarted = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     expect(restarted.mode).toBe('initial');
   });
@@ -4797,8 +4874,8 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await service.sendMessage(
       { actorId: 'user-1' },
       {
-        accountId: 'account-1',
-        identityId: 'identity-1',
+        accountId: testId('account-1'),
+        identityId: testId('identity-1'),
         to: [{ address: 'recipient@example.com' }],
         subject: 'Authentication failure',
         text: 'Mail body',
@@ -4806,7 +4883,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       },
     );
 
-    expect(await store.getAccount('account-1')).toMatchObject({
+    expect(await store.getAccount(testId('account-1'))).toMatchObject({
       status: 'reauthorizationRequired',
     });
   });
@@ -4839,7 +4916,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     });
     const created = await service.startSync(
       { actorId: 'user-1' },
-      { accountId: 'account-1' },
+      { accountId: testId('account-1') },
     );
     const first = await store.claimOutbox(
       new Date().toISOString(),
@@ -4871,7 +4948,10 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       adapters: resolver(baseAdapter()),
       outbox: { kick: vi.fn() },
     });
-    await service.startSync({ actorId: 'user-1' }, { accountId: 'account-1' });
+    await service.startSync(
+      { actorId: 'user-1' },
+      { accountId: testId('account-1') },
+    );
     const first = await store.claimOutbox(
       new Date().toISOString(),
       'old-lease',
@@ -4904,7 +4984,7 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
 
 function account(): MailAccount {
   return {
-    id: 'account-1',
+    id: testId('account-1'),
     userId: 'user-1',
     provider: { type: 'test', name: 'test' },
     address: 'sender@example.com',

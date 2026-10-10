@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-mail
-description: Use when integrating the NocoBase 3 Mail plugin into an application: configure Gmail, Microsoft 365, or IMAP/SMTP accounts, embed mail UI, send from business code, or diagnose synchronization and delivery.
+description: Use when integrating the NocoBase 3 Mail plugin into an application: configure Gmail, Microsoft 365, or IMAP/SMTP accounts, embed mail UI, send from business code, subscribe to committed synchronization inserts with checkpoint recovery, or diagnose synchronization and delivery.
 argument-hint: "[action: inspect|configure|integrate|send|diagnose] [target]"
 allowed-tools: Read, Grep, Glob, Bash
 owner: mail-plugin-team
@@ -68,6 +68,7 @@ When the user says “you decide”, use `provider=auto`, `scope=local`, and `va
 | Embed a production workspace, connect business records, customize reading/composition, or add management and log pages | [Client integration](references/client-integration.md)                           |
 | Send from business code, manage drafts or attachments, schedule or bulk-send, or handle uncertain delivery             | [Sending and drafts](references/sending-and-drafts.md)                           |
 | Set an initial sync boundary, handle Gmail quota errors, recover synchronization, or diagnose stalled tasks and logs   | [Synchronization and diagnostics](references/synchronization-and-diagnostics.md) |
+| Subscribe to synchronization inserts, compensate missed notifications, or build an idempotent mail activity consumer   | [Server synchronization events](references/message-sync-events.md)               |
 
 # Safety Gate
 
@@ -116,3 +117,4 @@ Minimum scenarios: a normal local inspection; a normal configured or integrated 
 - [HTTP API](references/http-api.md)
 - [Sending and drafts](references/sending-and-drafts.md)
 - [Synchronization and diagnostics](references/synchronization-and-diagnostics.md)
+- [Server synchronization events](references/message-sync-events.md)

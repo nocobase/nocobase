@@ -16,9 +16,10 @@ import type { MailStore } from '../../server/contracts/persistence.js';
 import type { MailAccount, NormalizedMailMessage } from '../../shared/mail.js';
 import type { MailProviderAdapterResolver } from '../../server/contracts/provider.js';
 import { InlineJobExecutor } from '../helpers/inline-job-executor.js';
+import { testId } from '../helpers/test-id.js';
 
 const account: MailAccount = {
-  id: 'account',
+  id: testId('account'),
   userId: 'owner',
   address: 'owner@example.com',
   provider: { type: 'test', name: 'test' },
@@ -107,7 +108,11 @@ describe('durable bounded account removal', () => {
   });
 
   it('bounds every message batch, releases its transaction, resumes after restart and isolates other accounts', async () => {
-    const other = { ...account, id: 'other', address: 'other@example.com' };
+    const other = {
+      ...account,
+      id: testId('other'),
+      address: 'other@example.com',
+    };
     await store.saveAccount(other);
     await store.saveMessage(other.id, message);
     const now = new Date().toISOString();
@@ -162,7 +167,7 @@ describe('durable bounded account removal', () => {
         .execute();
     }
     const run = await store.createSyncRun({
-      id: 'run',
+      id: testId('run'),
       accountId: account.id,
       requestedBy: account.userId,
       mode: 'initial',
@@ -319,7 +324,7 @@ describe('durable bounded account removal', () => {
   it('rejects late writes and reauthorization throughout removal', async () => {
     await store.replaceIdentities(account.id, [
       {
-        id: 'identity',
+        id: testId('identity'),
         accountId: account.id,
         address: account.address,
         isPrimary: true,
@@ -327,17 +332,17 @@ describe('durable bounded account removal', () => {
       },
     ]);
     await store.createSubmission(
-      { id: 'pending', accountId: account.id, status: 'pending' },
+      { id: testId('pending'), accountId: account.id, status: 'pending' },
       'pending',
       'fingerprint',
     );
     await store.markAccountRemoving(account.id, account.userId);
     await expect(
-      store.updateIdentity('identity', { displayName: 'late edit' }),
+      store.updateIdentity(testId('identity'), { displayName: 'late edit' }),
     ).rejects.toThrow('removed');
     expect(
       await store.claimSubmission(
-        'pending',
+        testId('pending'),
         'lease',
         new Date(Date.now() + 60000).toISOString(),
       ),
@@ -356,7 +361,7 @@ describe('durable bounded account removal', () => {
     ).rejects.toThrow('removed');
     await expect(
       store.createSubmission(
-        { id: 'late', accountId: account.id, status: 'pending' },
+        { id: testId('late'), accountId: account.id, status: 'pending' },
         'key',
         'fingerprint',
       ),
@@ -389,7 +394,7 @@ describe('durable bounded account removal', () => {
             return toMessageRow(
               account.id,
               { ...message, providerMessageId: id },
-              id,
+              testId(id),
               now,
               now,
             );
@@ -419,7 +424,7 @@ describe('durable bounded account removal', () => {
 
   it('does not enqueue refresh or recreate mail when an in-flight send finishes after removal', async () => {
     const submission = await store.createSubmission(
-      { id: 'sending', accountId: account.id, status: 'pending' },
+      { id: testId('sending'), accountId: account.id, status: 'pending' },
       'key',
       'fingerprint',
     );

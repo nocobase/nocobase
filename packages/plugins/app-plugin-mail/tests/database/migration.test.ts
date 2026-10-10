@@ -15,6 +15,8 @@ import {
 } from '../helpers/database.js';
 
 const COLLECTIONS = [
+  'mailMessageSyncEvents',
+  'mailMessageSyncEventStates',
   'mailDraftStates',
   'mailCredentials',
   'mailOutboundAttachments',
@@ -42,6 +44,7 @@ const MIGRATIONS = [
   '202609200001_backfill_mail_conversations',
   '202609210001_normalize_mail_folders',
   '202609260001_add_mail_sync_retry_attempts',
+  '202609270001_app_plugin_mail_create_message_sync_events',
 ] as const;
 const sources = [
   {
@@ -57,6 +60,22 @@ for (const name of MIGRATIONS) {
       await expectCollection('mailAccounts').toHaveField(
         'initialSyncReceivedAfter',
         { type: 'datetimeTz' },
+      );
+      await expectCollection('mailOutboundAttachments').toHaveField('key', {
+        type: 'string',
+        length: 668,
+      });
+      await expectCollection('mailPushSubscriptions').toHaveField(
+        'providerSubscriptionId',
+        { type: 'string', length: 413 },
+      );
+      await expectCollection('mailPushSubscriptions').toHaveIndex(
+        ['providerType', 'providerName', 'providerSubscriptionId'],
+        { unique: true },
+      );
+      await expectCollection('mailOutboundAttachments').toHaveIndex(
+        ['disk', 'key'],
+        { unique: true },
       );
       await expectCollection('mailMessages').toHaveIndex(
         ['accountId', 'providerMessageId'],

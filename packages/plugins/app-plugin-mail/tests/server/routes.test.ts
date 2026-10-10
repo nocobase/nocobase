@@ -2066,6 +2066,12 @@ function service(overrides: Partial<MailService> = {}): MailService {
     listManagedSyncRunsPage: async () => ({ items: [], total: 0 }),
     listManagedSubmissionsPage: async () => ({ items: [], total: 0 }),
     listManagedFolders: async () => [],
+    onMessagesSynced: () => () => {},
+    listMessageSyncEvents: async () => ({ items: [], checkpoint: 'fixture' }),
+    listManagedMessageSyncEvents: async () => ({
+      items: [],
+      checkpoint: 'fixture',
+    }),
     listManagedMessages: async () => ({ items: [] }),
     manageMessages: async () => ({ items: [], succeeded: 0, failed: 0 }),
     listFolders: async () => [],

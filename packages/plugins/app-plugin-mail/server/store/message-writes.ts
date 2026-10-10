@@ -13,18 +13,24 @@ import {
 } from './rows.js';
 import { chunks } from './serialization.js';
 
+export interface MailMessageWriteResult {
+  readonly insertedMessageIds: readonly string[];
+  readonly updatedMessageIds: readonly string[];
+}
+
 export async function upsertMessages(
   query: QueryAdapter,
   accountId: string,
   messages: readonly NormalizedMailMessage[],
   preserveUpdatedAfter?: string,
-): Promise<void> {
+): Promise<MailMessageWriteResult> {
   const uniqueMessages = [
     ...new Map(
       messages.map((message) => [message.providerMessageId, message]),
     ).values(),
   ];
-  if (uniqueMessages.length === 0) return;
+  if (uniqueMessages.length === 0)
+    return { insertedMessageIds: [], updatedMessageIds: [] };
   const now = new Date().toISOString();
   const existingRows = await query
     .selectFrom<MessageRow>('mailMessages')
@@ -59,6 +65,7 @@ export async function upsertMessages(
     existingRows.map((row) => [row.providerMessageId, row]),
   );
   const rows: MessageRow[] = [];
+  const updatedMessageIds: string[] = [];
   const draftIds = uniqueMessages
     .filter((message) => message.draft)
     .map((message) => message.providerMessageId);
@@ -107,11 +114,12 @@ export async function upsertMessages(
     rows.push(row);
     if (existing) {
       await assertDraftEditable(query, accountId, existing.id);
-      await query
+      const result = await query
         .updateTable<MessageRow>('mailMessages')
         .set(row)
         .where('id', '=', existing.id)
         .execute();
+      if (result.updatedCount === 1) updatedMessageIds.push(existing.id);
     }
   }
   const newRows = rows.filter(
@@ -120,7 +128,8 @@ export async function upsertMessages(
   for (const batch of chunks(newRows, 25)) {
     await query.insertInto<MessageRow>('mailMessages').values(batch).execute();
   }
-  if (rows.length === 0) return;
+  if (rows.length === 0)
+    return { insertedMessageIds: [], updatedMessageIds: [] };
   const messageIds = rows.map((row) => row.id);
   await query
     .deleteFrom<MessageFolderRow>('mailMessageFolders')
@@ -147,6 +156,10 @@ export async function upsertMessages(
       .values(batch)
       .execute();
   }
+  return {
+    insertedMessageIds: newRows.map((row) => row.id),
+    updatedMessageIds,
+  };
 }
 
 export async function removeStaleMessageFolders(

@@ -7,6 +7,7 @@ import {
   createMailTestDatabase,
   destroyMailTestDatabase,
 } from '../helpers/database.js';
+import { testId } from '../helpers/test-id.js';
 
 describe('mail preferences persistence and ownership', () => {
   let database: DatabaseManager;
@@ -21,7 +22,7 @@ describe('mail preferences persistence and ownership', () => {
     service = new MailPreferencesService({ store });
     for (const userId of ['alice', 'bob']) {
       await store.saveAccount({
-        id: userId,
+        id: testId(userId),
         userId,
         provider: { type: 'test', name: 'test' },
         address: `${userId}@example.com`,
@@ -29,10 +30,10 @@ describe('mail preferences persistence and ownership', () => {
         scopes: [],
         status: 'active',
       });
-      await store.replaceIdentities(userId, [
+      await store.replaceIdentities(testId(userId), [
         {
-          id: `${userId}-identity`,
-          accountId: userId,
+          id: testId(`${userId}-identity`),
+          accountId: testId(userId),
           address: `${userId}@example.com`,
           isPrimary: true,
           canSend: true,
@@ -110,7 +111,7 @@ describe('mail preferences persistence and ownership', () => {
     ).rejects.toThrow('name is required');
     await expect(
       service.saveTemplate(owner, {
-        id: 'missing',
+        id: testId('missing'),
         name: 'Missing',
         subject: 'No',
       }),
@@ -120,7 +121,7 @@ describe('mail preferences persistence and ownership', () => {
 
   it('leaves new signatures non-default and persists clearing the only default', async () => {
     const created = await service.saveSignature(owner, {
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: 'Work',
       text: 'Regards',
     });
@@ -128,7 +129,7 @@ describe('mail preferences persistence and ownership', () => {
     await service.saveSignature(owner, { ...created, isDefault: true });
     const edited = await service.saveSignature(owner, {
       id: created.id,
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: 'Work',
       text: 'Updated',
     });
@@ -137,24 +138,24 @@ describe('mail preferences persistence and ownership', () => {
     const reopened = new MailPreferencesService({
       store: createDatabaseMailStore(database),
     });
-    expect(await reopened.listSignatures(owner, 'alice')).toEqual([
+    expect(await reopened.listSignatures(owner, testId('alice'))).toEqual([
       expect.objectContaining({ id: created.id, isDefault: false }),
     ]);
   });
 
   it('switches the default signature and promotes a remaining signature after deletion', async () => {
     const first = await service.saveSignature(owner, {
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: ' First ',
       text: 'First',
     });
     const second = await service.saveSignature(owner, {
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: 'Second',
       text: 'Second',
       isDefault: true,
     });
-    expect(await service.listSignatures(owner, 'alice')).toEqual(
+    expect(await service.listSignatures(owner, testId('alice'))).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: first.id,
@@ -164,33 +165,33 @@ describe('mail preferences persistence and ownership', () => {
         expect.objectContaining({ id: second.id, isDefault: true }),
       ]),
     );
-    await service.deleteSignature(owner, 'alice', second.id);
-    expect(await service.listSignatures(owner, 'alice')).toEqual([
+    await service.deleteSignature(owner, testId('alice'), second.id);
+    expect(await service.listSignatures(owner, testId('alice'))).toEqual([
       expect.objectContaining({ id: first.id, isDefault: true }),
     ]);
-    await service.deleteSignature(owner, 'alice', first.id);
-    expect(await service.listSignatures(owner, 'alice')).toEqual([]);
+    await service.deleteSignature(owner, testId('alice'), first.id);
+    expect(await service.listSignatures(owner, testId('alice'))).toEqual([]);
   });
 
   it('preserves signature order when switching the default and reopening the service', async () => {
     const first = await service.saveSignature(owner, {
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: 'Alpha',
       text: 'First',
     });
     const second = await service.saveSignature(owner, {
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: 'Zeta',
       text: 'Second',
     });
-    const before = await service.listSignatures(owner, 'alice');
+    const before = await service.listSignatures(owner, testId('alice'));
     expect(before.map((signature) => signature.id)).toEqual([
       first.id,
       second.id,
     ]);
 
     await service.saveSignature(owner, { ...second, isDefault: true });
-    const after = await service.listSignatures(owner, 'alice');
+    const after = await service.listSignatures(owner, testId('alice'));
     expect(after.map((signature) => signature.id)).toEqual(
       before.map((signature) => signature.id),
     );
@@ -202,59 +203,63 @@ describe('mail preferences persistence and ownership', () => {
     const reopened = new MailPreferencesService({
       store: createDatabaseMailStore(database),
     });
-    expect(await reopened.listSignatures(owner, 'alice')).toEqual(after);
+    expect(await reopened.listSignatures(owner, testId('alice'))).toEqual(
+      after,
+    );
   });
 
   it('rejects cross-account signature edits, deletes and identity changes', async () => {
     const signature = await service.saveSignature(owner, {
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: 'Private',
       text: 'Signature',
     });
-    await expect(service.listSignatures(other, 'alice')).rejects.toThrow(
-      'not found',
-    );
+    await expect(
+      service.listSignatures(other, testId('alice')),
+    ).rejects.toThrow('not found');
     await expect(
       service.saveSignature(other, {
         id: signature.id,
-        accountId: 'bob',
+        accountId: testId('bob'),
         name: 'Stolen',
         text: '',
       }),
     ).rejects.toThrow('not found');
     await expect(
-      service.deleteSignature(other, 'bob', signature.id),
+      service.deleteSignature(other, testId('bob'), signature.id),
     ).rejects.toThrow('not found');
     await expect(
       service.updateIdentity(other, {
-        accountId: 'alice',
-        identityId: 'alice-identity',
+        accountId: testId('alice'),
+        identityId: testId('alice-identity'),
         displayName: 'Wrong',
       }),
     ).rejects.toThrow('not found');
     await expect(
       service.updateIdentity(owner, {
-        accountId: 'alice',
-        identityId: 'bob-identity',
+        accountId: testId('alice'),
+        identityId: testId('bob-identity'),
         displayName: 'Wrong',
       }),
     ).rejects.toThrow('not found');
-    expect(await service.listSignatures(owner, 'alice')).toEqual([signature]);
+    expect(await service.listSignatures(owner, testId('alice'))).toEqual([
+      signature,
+    ]);
     await service.updateIdentity(owner, {
-      accountId: 'alice',
-      identityId: 'alice-identity',
+      accountId: testId('alice'),
+      identityId: testId('alice-identity'),
       displayName: 'Alice',
     });
-    expect(await service.listIdentities(owner, 'alice')).toEqual([
+    expect(await service.listIdentities(owner, testId('alice'))).toEqual([
       expect.objectContaining({ displayName: 'Alice' }),
     ]);
     await service.updateIdentity(owner, {
-      accountId: 'alice',
-      identityId: 'alice-identity',
+      accountId: testId('alice'),
+      identityId: testId('alice-identity'),
       displayName: null,
     });
     expect(
-      (await service.listIdentities(owner, 'alice'))[0].displayName,
+      (await service.listIdentities(owner, testId('alice')))[0].displayName,
     ).toBeUndefined();
   });
 
@@ -322,7 +327,7 @@ describe('mail preferences persistence and ownership', () => {
     });
 
     const signature = await service.saveSignature(owner, {
-      accountId: 'alice',
+      accountId: testId('alice'),
       name: 'Formal',
       text: 'Regards',
       html: '<p>Regards</p>',
@@ -330,7 +335,7 @@ describe('mail preferences persistence and ownership', () => {
     await expect(
       service.updateSignature(owner, {
         id: signature.id,
-        accountId: 'alice',
+        accountId: testId('alice'),
         isDefault: true,
       }),
     ).resolves.toMatchObject({
@@ -342,7 +347,7 @@ describe('mail preferences persistence and ownership', () => {
     await expect(
       service.updateSignature(owner, {
         id: signature.id,
-        accountId: 'alice',
+        accountId: testId('alice'),
         html: null,
       }),
     ).resolves.toMatchObject({

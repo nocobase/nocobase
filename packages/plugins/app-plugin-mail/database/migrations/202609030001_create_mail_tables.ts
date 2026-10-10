@@ -27,7 +27,8 @@ const migration: MigrationDefinition = defineMigration({
       collection.uuid('id').primary();
       collection.string('userId', { length: 255, nullable: false });
       collection.string('disk', { length: 100, nullable: false });
-      collection.string('key', { length: 1000, nullable: false });
+      // With disk(100), utf8mb4 needs at most 3072 bytes for the unique key.
+      collection.string('key', { length: 668, nullable: false });
       collection.string('fileName', { length: 500, nullable: false });
       collection.string('contentType', { length: 255, nullable: false });
       collection.integer('size', { nullable: false });
@@ -125,7 +126,8 @@ const migration: MigrationDefinition = defineMigration({
       collection.string('providerType', { length: 100, nullable: false });
       collection.string('providerName', { length: 255, nullable: false });
       collection.string('providerSubscriptionId', {
-        length: 1000,
+        // Together with type(100) and name(255), fits an utf8mb4 unique key.
+        length: 413,
       });
       collection.string('configurationFingerprint', { length: 64 });
       collection.datetimeTz('renewAfter');

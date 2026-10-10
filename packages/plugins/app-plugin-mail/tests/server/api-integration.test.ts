@@ -41,6 +41,7 @@ import type {
 } from '../../server/types.js';
 import { createMailTestDatabase } from '../helpers/database.js';
 import { InlineJobExecutor } from '../helpers/inline-job-executor.js';
+import { testId } from '../helpers/test-id.js';
 
 describe('MailClient → HTTP routes → service → database and jobs', () => {
   let database: DatabaseManager;
@@ -453,7 +454,11 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
     });
     for (let index = 0; index < 102; index += 1) {
       await store.createSubmission(
-        { id: `history-${index}`, accountId: account.id, status: 'accepted' },
+        {
+          id: testId(`history-${index}`),
+          accountId: account.id,
+          status: 'accepted',
+        },
         index === 101 ? 'single' : `bulk:history:${index}`,
         'fixture',
       );
