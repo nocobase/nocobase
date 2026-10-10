@@ -1,7 +1,6 @@
 ---
 '@nocobase/db-sqlite': patch
 '@nocobase/authorization': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-workflow': patch

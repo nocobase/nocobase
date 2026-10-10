@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-client': major
-'@nocobase/app-plugin-ai-employee': major
 '@nocobase/app-plugin-authentication': major
 '@nocobase/app-plugin-hub': major
 '@nocobase/app-plugin-users': major

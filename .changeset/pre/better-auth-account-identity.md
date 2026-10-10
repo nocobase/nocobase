@@ -6,7 +6,6 @@
 "@nocobase/app-template-examples": patch
 "@nocobase/app-template-hub": patch
 "@nocobase/app-plugin-hub": patch
-"@nocobase/app-plugin-ai-employee": patch
 "@nocobase/app-plugin-notification-in-app": patch
 ---
 

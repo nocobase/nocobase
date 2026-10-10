@@ -77,7 +77,7 @@ features:
         details: '角色，谁能看哪个菜单、哪条数据。'
         link: /capabilities/authorization
       - title: '更多…'
-        details: '通知、文件、多语言、主题、AI 员工和知识库。'
+        details: '通知、文件、多语言、主题和知识库。'
         link: /capabilities/
 
   - title: '上线和查阅'

@@ -2,7 +2,6 @@
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
 '@nocobase/app-template-hub': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-authorization': patch
 '@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-routes-example': patch

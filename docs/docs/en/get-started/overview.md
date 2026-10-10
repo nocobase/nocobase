@@ -33,7 +33,7 @@ Start with this small feature. The order tutorial later adds customer relationsh
 | Terminal            | Run creation, startup, and check commands                                                                  |
 | Browser             | Sign in, operate pages, and review results                                                                 |
 
-Configure the AI Agent's own account and model access beforehand. The walkthrough uses SQLite, so you do not need a separate database service or an AI employee configured inside the application.
+Configure the AI Agent's own account and model access beforehand. The walkthrough uses SQLite, so you do not need a separate database service.
 
 ## Reading order
 

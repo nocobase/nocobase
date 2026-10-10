@@ -6,8 +6,6 @@
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-registry-example': patch
-'@nocobase/app-plugin-ai-employee-example': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-skills': patch
 ---
 

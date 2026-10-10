@@ -11,7 +11,6 @@
 '@nocobase/app-plugin-users': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-file-example': patch

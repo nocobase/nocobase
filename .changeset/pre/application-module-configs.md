@@ -2,7 +2,6 @@
 '@nocobase/app-server': minor
 '@nocobase/create-app': patch
 '@nocobase/app-client': patch
-'@nocobase/app-plugin-ai-employee': minor
 '@nocobase/app-plugin-notification': minor
 '@nocobase/app-plugin-workflow': minor
 '@nocobase/app-plugin-hub': minor

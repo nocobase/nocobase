@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-authorization': patch

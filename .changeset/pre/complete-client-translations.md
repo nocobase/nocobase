@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-plugin-routes-example': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authorization': patch
 '@nocobase/app-plugin-file': patch

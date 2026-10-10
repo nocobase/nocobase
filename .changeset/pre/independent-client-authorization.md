@@ -10,7 +10,6 @@
 '@nocobase/app-plugin-authz-default-access': patch
 '@nocobase/app-plugin-authz-sharing-rules': patch
 '@nocobase/app-plugin-authz-restriction-rules': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-database-explorer': patch

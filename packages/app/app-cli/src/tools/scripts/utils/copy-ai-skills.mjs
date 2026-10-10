@@ -1,7 +1,7 @@
 // Copies the application's AI Skills into the build.
 //
-// `tsc` emits only TypeScript, and a Skill is a `SKILL.md`, so nothing else carries these files. The AI Employee
-// plugin loads them from `<applicationRoot>/ai/skills`, and in a deployment the application root is `dist` — a built
+// `tsc` emits only TypeScript, and a Skill is a `SKILL.md`, so nothing else carries these files. They are loaded
+// from `<applicationRoot>/ai/skills`, and in a deployment the application root is `dist` — a built
 // server resolves its own paths from `dist/server`. Without this step the directory simply is not there, and a
 // missing Skill directory is logged at debug level and skipped, so application Skills work in development and
 // silently disappear once deployed.

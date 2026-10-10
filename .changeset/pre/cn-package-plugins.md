@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-authorization': patch
@@ -13,7 +12,6 @@
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-users': patch
 '@nocobase/app-plugin-workflow': patch
-'@nocobase/app-plugin-ai-employee-example': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-departments-example': patch
 '@nocobase/app-plugin-file-example': patch

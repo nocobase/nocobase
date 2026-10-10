@@ -28,7 +28,7 @@ for (const name of ['alert', 'badge', 'button', 'button-variants', 'table']) {
 cpSync(
   path.resolve(
     import.meta.dirname,
-    '../app-plugin-ai-employee/registry/nocobase-ai/shared/ui/card.tsx',
+    '../app-plugin-agents/client/components/ui/card.tsx',
   ),
   path.join(fixture, 'client/components/ui/card.tsx'),
 );

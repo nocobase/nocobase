@@ -3,7 +3,6 @@
 '@nocobase/app-plugin-file-example': patch
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-plugin-routes-example': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-database-explorer': patch
 '@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-notification': patch
