@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-releases",
   "displayName": "Release management",
   "description": "Apps, releases, environments and deployments through pluggable deployment drivers.",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
