@@ -65,6 +65,22 @@ const enUS = {
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
+  'auth.passwordResetUnavailable':
+    'Self-service password reset is not enabled. Contact an administrator to reset your password.',
+  'auth.capabilityLoadFailed': 'Could not check password reset availability.',
+  'auth.retry': 'Retry',
+  'auth.loading': 'Loading',
+  'auth.passwordRequired': 'Enter a new password.',
+  'members.accountLink': 'Personal profile',
+  'members.actions': 'Member actions',
+  'members.resetPassword': 'Reset password',
+  'members.resettingPassword': 'Resetting password…',
+  'members.passwordResetSuccess': 'Password reset for {{name}}.',
+  'members.resetPasswordSessionsNotice':
+    'Resetting the password will end this member’s existing sessions.',
+  'members.changeOwnPasswordInstead':
+    'Change your own password from your profile.',
+  'members.memberNotFound': 'This member could not be found.',
   'auth.resetTitle': 'Reset password',
   'auth.resetDescription': 'Choose a new password for your account.',
   'auth.identifier': 'Username or email',
