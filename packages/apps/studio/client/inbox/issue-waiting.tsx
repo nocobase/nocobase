@@ -13,6 +13,7 @@ import { useInboxActions } from '@nocobase/app-plugin-notification-in-app/client
 import { PmTag } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { APP_NS, useTranslation } from '@nocobase/i18n/client';
+import { ArrowUpRightIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link } from 'react-router';
 
@@ -99,7 +100,7 @@ function CardBody({
   const model = useModel(entry);
   const useCanAct = renderer.useCanAct ?? noAction;
   const canAct = useCanAct(entry, model);
-  const { title, sentence } = wording.text(entry, model);
+  const { title, sentence, sentenceHref } = wording.text(entry, model);
   const { item } = entry;
   const parts = {
     entry,
@@ -149,7 +150,22 @@ function CardBody({
             <p className='text-sm font-semibold wrap-anywhere'>{title}</p>
             {sentence ? (
               <p className='text-sm text-muted-foreground wrap-anywhere'>
-                {sentence}
+                {sentenceHref ? (
+                  <a
+                    href={sentenceHref}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50'
+                  >
+                    {sentence}
+                    <ArrowUpRightIcon
+                      aria-hidden='true'
+                      className='ml-1 inline size-3.5 align-baseline'
+                    />
+                  </a>
+                ) : (
+                  sentence
+                )}
               </p>
             ) : null}
           </div>
