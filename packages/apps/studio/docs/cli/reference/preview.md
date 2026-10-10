@@ -80,6 +80,27 @@ nb-studio preview logs
 nb-studio preview logs --issue PM-12 --app web
 ```
 
+## preview preference set
+
+Set whether an issue needs a preview
+
+Requires editing the issue. Only when all linked issues opt out does Studio add no-preview to an open pull request. Pre-existing manual labels and existing previews are preserved. Label failures are returned in labels and retried by polling. This does not cancel running CI or start a preview immediately.
+
+```bash
+nb-studio preview preference set --not-required
+```
+
+| Flag             | Type    | Description                                                                          |
+| ---------------- | ------- | ------------------------------------------------------------------------------------ |
+| `--issue`        | string  | The issue, by identifier (PM-12) or id; in a run on an issue, that issue by default. |
+| `--not-required` | boolean | (required)                                                                           |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People, and agents in a run; needs the action `pm.issues/edit`.
+
+**Request:** `POST /api/previews/preference` (`previewsSetIssuePreference`)
+
 ## preview retry
 
 Deploy a preview again

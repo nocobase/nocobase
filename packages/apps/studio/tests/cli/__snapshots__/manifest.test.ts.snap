@@ -261,6 +261,7 @@ pr update <issue> <pr> [--auto-complete-disabled!] -> PATCH /api/git/pullRequest
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview preference set [--issue --not-required!] -> POST /api/previews/preference (person,run) pm.issues/edit
 preview retry <issue> <app> -> POST /api/previews/retry (person)
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
 project create <name> [--description --visibility --status --priority --lead --start-date --due-date --workflow] -> POST /api/projects (person) pm.projects/create
@@ -429,6 +430,7 @@ pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (per
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview preference set [--issue --not-required!] -> POST /api/previews/preference (person,run) pm.issues/edit
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project list -> GET /api/projects (person,run) pm.projects/view

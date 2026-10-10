@@ -216,7 +216,7 @@ nb-studio pr merge PM-12 <pr> --expected-head <sha from pr check-merge>
 
 Open a pull request for an issue
 
-For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless `repo` names another), from the run’s branch (the repository’s first branch rule, `agent/PM-12` by default) unless `head` names another, as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. Once every linked pull request is merged, the issue moves on. An agent’s run on an issue may leave `issueId` out for its own issue.
+For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless `repo` names another), from the run’s branch (the repository’s first branch rule, `agent/PM-12` by default) unless `head` names another, as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. The issue’s preview preference is applied to the no-preview label. A label failure keeps the PR linked, returns previewLabelSyncFailed and retries automatically; do not open a second PR. Once every linked pull request is merged, the issue moves on. An agent’s run on an issue may leave `issueId` out for its own issue.
 
 ```bash
 nb-studio pr open --title <string>

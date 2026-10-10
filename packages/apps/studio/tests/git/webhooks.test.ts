@@ -591,8 +591,17 @@ describe('webhook events', () => {
     expect(linked).toMatchObject([
       { number: 2, state: 'open', linkedBy: { type: 'system' } },
     ]);
-    // The payload is the read: GitHub was not asked.
-    expect(h.github.requests.length).toBe(before);
+    // The snapshot comes from the payload; the only fresh reads reconcile its preview label.
+    expect(h.github.requests.slice(before).length).toBeGreaterThan(0);
+    expect(
+      h.github.requests
+        .slice(before)
+        .every(
+          (request) =>
+            request.method === 'GET' &&
+            request.path === `/repos/${REPO}/pulls/2`,
+        ),
+    ).toBe(true);
     expect(h.port.sent.map((notice) => notice.decisionKey)).toContain(
       `pr:${linked[0]!.id}:${issue.id}`,
     );
@@ -636,6 +645,10 @@ describe('webhook events', () => {
     ).toMatchObject({ ignored: true, reason: 'notLinked' });
     expect(
       (await deliver(row, 'pull_request', pullPayload(3, 'labeled'))).body.data,
+    ).toMatchObject({ ignored: true, reason: 'notLinked' });
+    expect(
+      (await deliver(row, 'pull_request', pullPayload(3, 'assigned'))).body
+        .data,
     ).toMatchObject({ ignored: true, reason: 'unsupportedAction' });
     expect(await findPullRequest(h.projects.tx.read(), row.id, 3)).toBeNull();
   });

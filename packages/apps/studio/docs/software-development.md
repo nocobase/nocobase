@@ -278,3 +278,11 @@ studio:
       github.example.com: https://github.example.com/api/v3
     poll: false # stop polling (a second instance)
 ```
+
+### Choosing whether an issue needs a preview
+
+The issue's **No preview needed** property defaults to off. People who can edit the issue can change it; the CLI offers `nb-studio preview preference set --issue PM-12 --not-required` and `--no-not-required` to turn it back off. `preview status` reports the preference and each linked PR's last observed label state. An agent may recommend a preview choice in its design proposal; neither the proposal nor its approval changes the preference automatically.
+
+Studio adds `no-preview` when every linked, non-deleted issue opts out. Creating or linking a PR, unlinking an issue, or changing the preference reconciles the label. A linked issue that still needs a preview takes precedence. Studio removes only a label it manages, preserves other labels, and leaves a pre-existing manual `no-preview` label for someone to remove on GitHub. A failed label request does not undo a saved preference or an opened PR: the response reports it and repository polling retries from the current settings. After a timeout, Studio retains ownership of the attempted addition so a retry or a later toggle can reconcile it.
+
+The Code and deployments section distinguishes a confirmed `no-preview` label from a synchronization failure and preserves existing preview links. The setting never destroys an existing preview or cancels running CI. Opening a PR and adding its label are separate GitHub requests: the Preview workflow reads live labels before building, but a run that has already passed that check may still deploy. Removing the label restores eligibility for a subsequent CI run; it does not itself start one.

@@ -40,7 +40,14 @@ export function useIssuePreviews(issueId: string): IssuePreviewsState {
     queryFn: () => readPreviews(api, issueId),
     refetchInterval: (state) => {
       const previews = state.state.data?.previews ?? [];
+      if (
+        state.state.data?.labels?.some(
+          (label) => label.failed || label.present === null,
+        )
+      )
+        return POLL_MS;
       if (previews.some(moving)) return POLL_MS;
+      if ((state.state.data?.labels?.length ?? 0) > 0) return IDLE_POLL_MS;
       return previews.some((preview) => preview.status !== 'destroyed')
         ? IDLE_POLL_MS
         : false;

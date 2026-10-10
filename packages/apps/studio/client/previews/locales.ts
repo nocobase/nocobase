@@ -4,6 +4,20 @@
  * (`client/locales/*.ts`).
  */
 export const previewsEnUS = {
+  preference: {
+    label: 'No preview needed',
+    retry: 'Retry',
+    on: 'On',
+    off: 'Off',
+    saved: 'Preview preference saved',
+    hint: 'Applies when all linked issues agree. Existing previews remain available.',
+    loadFailed: 'Could not load the preview preference.',
+    syncFailed:
+      'The preference is saved, but the PR label could not be synchronized. Retrying automatically.',
+    skipped: 'Set to not require a preview',
+    manual:
+      'No preview needed: no-preview was added manually. Remove it on GitHub to enable previews.',
+  },
   entry: 'Preview',
   entryOf: 'Preview of {{app}}',
   loadFailed: 'Could not load the previews.',
@@ -161,6 +175,19 @@ export const previewsEnUS = {
 };
 
 export const previewsZhCN: typeof previewsEnUS = {
+  preference: {
+    label: '不需要预览',
+    retry: '重试',
+    on: '开启',
+    off: '关闭',
+    saved: '预览设置已保存',
+    hint: '全部关联任务都选择不需要预览时生效。已有预览仍可访问。',
+    loadFailed: '无法加载预览设置。',
+    syncFailed: '设置已保存，但 PR 标签同步失败，正在自动重试。',
+    skipped: '已设置为不需要预览',
+    manual:
+      '不需要预览：no-preview 标签由人工添加，需在 GitHub 移除才能启用预览。',
+  },
   entry: '预览',
   entryOf: '{{app}} 的预览',
   loadFailed: '无法加载预览',
