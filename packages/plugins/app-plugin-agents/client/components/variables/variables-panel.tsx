@@ -110,6 +110,7 @@ export function VariablesPanel({
     readonly name: string | null;
     readonly at: number | null;
     readonly teamRunnersOnly?: boolean;
+    readonly fromRunner?: boolean;
   } | null>(null);
   const [deleting, setDeleting] = useState<Row | null>(null);
   const [confirmReveal, setConfirmReveal] = useState(false);
@@ -239,6 +240,15 @@ export function VariablesPanel({
                         {t('envVars.teamRunnersOnlyBadge')}
                       </Badge>
                     ) : null}
+                    {item.fromRunner ? (
+                      <Badge
+                        variant='outline'
+                        className='ms-2 font-sans'
+                        data-from-runner
+                      >
+                        {t('envVars.fromRunnerBadge')}
+                      </Badge>
+                    ) : null}
                   </TableCell>
                   {several ? (
                     <TableCell>
@@ -281,6 +291,7 @@ export function VariablesPanel({
                                 name: item.name,
                                 at: item.at,
                                 teamRunnersOnly: item.teamRunnersOnly,
+                                fromRunner: item.fromRunner,
                               })
                             }
                           >
@@ -345,6 +356,7 @@ export function VariablesPanel({
                 at: editing.at ?? 0,
                 fixed: editing.at !== null,
                 teamRunnersOnly: editing.teamRunnersOnly ?? false,
+                fromRunner: editing.fromRunner ?? false,
               }
             : null
         }

@@ -177,6 +177,19 @@ export interface SubjectFacts {
   readonly group: { readonly id: string; readonly name: string } | null;
 }
 
+/** Whether the work on subjects of a kind is over (`SubjectBinding.workspaces`). */
+export interface SubjectWorkspaces {
+  /**
+   * Of `subjectIds` (of the binding's kind, each at most once), the ones whose work is over, such as a ticket that is
+   * done or cancelled with every pull request merged or closed: runners may remove the working directories they keep
+   * for them. Ids it does not know, or cannot decide, are left out; they are kept. Read inside `conn`, without writing.
+   */
+  settled(
+    conn: DatabaseConnection,
+    subjectIds: readonly string[],
+  ): Promise<ReadonlySet<string>>;
+}
+
 export interface SubjectReports {
   describe(
     conn: DatabaseConnection,
@@ -187,6 +200,15 @@ export interface SubjectReports {
 
 export interface SubjectBinding {
   readonly kind: string;
+  /**
+   * Reads the current responsible inside the request's transaction, before confirming or rejecting. Null means
+   * nobody answers for it (including a deleted subject). Applications with mutable responsibility must bind this;
+   * without it, requests use their recorded responsible and the application must call `requests.reassign` on changes.
+   */
+  readonly responsibleUserId?: (
+    conn: DatabaseConnection,
+    subjectId: string,
+  ) => Promise<string | null>;
   /**
    * Runs on this kind belong to the people they involve (who woke the agent, the owner): no one else sees them, or
    * their transcripts and briefs, whatever they may manage (a private conversation).
@@ -212,6 +234,11 @@ export interface SubjectBinding {
   readonly queuedExpiryMs?: number;
   /** What the reports may say about the subjects; without it, runs on the kind are reported by id only. */
   readonly reports?: SubjectReports;
+  /**
+   * Whether the work on a subject is over, so runners may remove the working directories they keep for it. Without
+   * it, no subject of the kind counts as over and runners keep their directories under their own retention rules.
+   */
+  readonly workspaces?: SubjectWorkspaces;
   /**
    * The agent types that may run on this kind; `['runner']` when absent. An online agent has no working directory, so a
    * kind offers `online` only when its runs need none (its assembly has no `dirs`); enqueueing a run of another type is

@@ -63,6 +63,7 @@ const AGENTS: readonly ChatAgent[] = [
     personal: false,
     isSystemDefault: false,
     isMyDefault: true,
+    fallbackAgentId: null,
     availability: online,
   },
   {
@@ -77,6 +78,7 @@ const AGENTS: readonly ChatAgent[] = [
     personal: false,
     isSystemDefault: true,
     isMyDefault: false,
+    fallbackAgentId: null,
     availability: online,
   },
   {
@@ -91,6 +93,7 @@ const AGENTS: readonly ChatAgent[] = [
     personal: true,
     isSystemDefault: false,
     isMyDefault: false,
+    fallbackAgentId: null,
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
   },
 ];

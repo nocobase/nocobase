@@ -18,7 +18,8 @@
  * the first is full; a run none of whose tools has room is passed over for the runs behind it.
  *
  * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
- * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked.
+ * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked. The
+ * names taken from the runner go in `workspace.passthrough`, without values.
  *
  * A claim is one transaction per run. It first writes the agent's row (`lockAgentForClaim`): on databases with row
  * locks, concurrent claims for the same agent wait there, so the concurrency count read next is current. The run is
@@ -36,6 +37,7 @@
  * mounts.
  */
 import {
+  ANNOUNCED_FAILURES,
   type AgentTool,
   policyAllowsAgent,
   policyAllowsRepo,
@@ -66,6 +68,7 @@ import type { ModelRef } from '../../../shared/models.js';
 import type { Run } from '../../../shared/runs.js';
 import { later, type Clock } from '../../kernel/clock.js';
 import { notFound } from '../../kernel/errors.js';
+import type { People } from '../../kernel/people.js';
 import type { IdSource } from '../../kernel/ids.js';
 import { runSecretsKey, type SecretMemory } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
@@ -83,6 +86,7 @@ import {
   type BriefSkill,
 } from '../brief/index.js';
 import { cliPackageFor } from './cli-package.js';
+import { executionHistory } from './execution.js';
 import type { SkillService, SkillTarget } from '../skills/index.js';
 import {
   describeVariables,
@@ -189,6 +193,7 @@ export interface ClaimService {
 }
 
 export interface ClaimDeps extends TransitionDeps {
+  readonly people?: Pick<People, 'names'>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -592,6 +597,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             runnerId: runner.id,
           })
         : [];
+    // Variables taken from the runner: names only. A runner that does not provide one fails the run while preparing
+    // it, saying how to provide it; runners are not chosen by them.
+    const passthrough = await deps.variables.passthroughOf(conn, variables);
     const nowText = clock.now().toISOString();
     const clean = await consumeReset(
       conn,
@@ -678,6 +686,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         leaseExpiresAt,
         requires,
         firstSeq: (last ? Number(last.seq) : 0) + 1,
+        acceptedFailures: Object.keys(ANNOUNCED_FAILURES),
       },
       app: deps.app,
       subject: {
@@ -701,6 +710,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       workspace: {
         dirs,
         env,
+        ...(passthrough.length > 0 ? { passthrough } : {}),
         ...(clean ? { clean: true } : {}),
         ...(git ? { git } : {}),
       },
@@ -880,6 +890,29 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             requires: [...assembled.requires],
             directoryKey: assembled.directoryKey,
             tool: assembled.entry.tool,
+            executionHistory: executionHistory(run, {
+              attempt: Number(run.attempt),
+              runnerId: runner.id,
+              runnerName: runner.name,
+              runnerOwnerUserId: runner.ownerUserId,
+              runnerOwnerName: runner.ownerUserId
+                ? ((await deps.people?.names(conn, [runner.ownerUserId]))?.get(
+                    runner.ownerUserId,
+                  ) ?? runner.ownerName)
+                : null,
+              runnerTrust: runner.trust,
+              tool: assembled.entry.tool,
+              toolVersion:
+                runner.tools.find((tool) => tool.kind === assembled.entry.tool)
+                  ?.version ?? null,
+              modelService: null,
+              model: assembled.entry.model,
+              actualModels: [],
+              effort: assembled.entry.effort ?? null,
+              dispatchedAt: nowText,
+              finishedAt: null,
+              failureReason: null,
+            }),
             modelService: null,
             model: assembled.entry.model,
             effort: assembled.entry.effort ?? null,
@@ -1039,6 +1072,23 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         filter: { id: run.id },
         values: {
           tool: null,
+          executionHistory: executionHistory(run, {
+            attempt: Number(run.attempt),
+            runnerId: holder.id,
+            runnerName: null,
+            runnerOwnerUserId: null,
+            runnerOwnerName: null,
+            runnerTrust: null,
+            tool: null,
+            toolVersion: null,
+            modelService: claimed.model?.modelService ?? null,
+            model: claimed.model?.model ?? null,
+            actualModels: [],
+            effort: claimed.model?.effort ?? null,
+            dispatchedAt: nowText,
+            finishedAt: null,
+            failureReason: null,
+          }),
           modelService: claimed.model?.modelService ?? null,
           model: claimed.model?.model ?? null,
           effort: claimed.model?.effort ?? null,

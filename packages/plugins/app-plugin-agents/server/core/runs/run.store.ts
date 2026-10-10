@@ -15,6 +15,7 @@ import type { DatabaseConnection, Repository } from '@nocobase/db';
 
 import type {
   Run,
+  RunExecutionSnapshot,
   RunInputRecord as RunInputView,
   RunRepo,
 } from '../../../shared/runs.js';
@@ -29,6 +30,7 @@ export interface RunRecord {
   readonly agentId: string;
   readonly agentType: string;
   readonly runnerId: string | null;
+  readonly executionHistory?: JsonColumn;
   readonly tool?: string | null;
   readonly modelService?: string | null;
   readonly model?: string | null;
@@ -43,6 +45,9 @@ export interface RunRecord {
   readonly subjectId: string;
   readonly threadScope: string;
   readonly actorUserId: string;
+  /** Null only on a run older than the column that no backfill reached; read as the actor then. */
+  readonly requestedByUserId?: string | null;
+  readonly confirmedByUserId?: string | null;
   readonly ownerUserId: string | null;
   readonly requires: readonly unknown[];
   readonly acceptsInput: boolean;
@@ -181,6 +186,27 @@ export function sessionsRepo(
 
 export const ACTIVE: readonly RunStatus[] = ['dispatched', 'running'];
 
+/** JSON columns may be decoded by the driver or returned as strings. */
+export function toExecutions(value: unknown): RunExecutionSnapshot[] {
+  if (typeof value === 'string') {
+    try {
+      return toExecutions(JSON.parse(value) as unknown);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(value)) return [];
+  return value.filter((item: unknown): item is RunExecutionSnapshot => {
+    const record = jsonObject(item);
+    return (
+      typeof record.attempt === 'number' &&
+      typeof record.runnerId === 'string' &&
+      Array.isArray(record.actualModels) &&
+      record.actualModels.every((model: unknown) => typeof model === 'string')
+    );
+  });
+}
+
 export function isActive(status: RunStatus): boolean {
   return ACTIVE.includes(status);
 }
@@ -192,11 +218,22 @@ export function isTerminal(status: RunStatus): boolean {
 }
 
 export function toRun(record: RunRecord): Run {
+  const executions = toExecutions(record.executionHistory);
+  const latest = executions.at(-1);
   return {
     id: record.id,
     agentId: record.agentId,
     agentType: record.agentType === 'online' ? 'online' : 'runner',
     runnerId: record.runnerId,
+    executions,
+    runnerName: latest?.runnerName ?? null,
+    runnerOwnerUserId: latest?.runnerOwnerUserId ?? null,
+    runnerOwnerName: latest?.runnerOwnerName ?? null,
+    toolVersion: latest?.toolVersion ?? null,
+    actualModels: latest?.actualModels ?? [],
+    actualEffort: latest?.actualEffort ?? null,
+    actualEffortSource: latest?.actualEffortSource ?? null,
+    actualEffortAt: latest?.actualEffortAt ?? null,
     tool: (record.tool as AgentTool | null | undefined) ?? null,
     modelService: record.modelService ?? null,
     model: record.model ?? null,
@@ -210,6 +247,8 @@ export function toRun(record: RunRecord): Run {
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
     actorUserId: record.actorUserId,
+    requestedByUserId: record.requestedByUserId ?? record.actorUserId,
+    confirmedByUserId: record.confirmedByUserId ?? null,
     ownerUserId: record.ownerUserId,
     requires: stringArray(record.requires) as RunnerFeature[],
     acceptsInput: Boolean(record.acceptsInput),

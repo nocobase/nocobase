@@ -82,6 +82,7 @@ export class OpencodeClient {
     path: string,
     body?: unknown,
     timeoutMs: number = REQUEST_TIMEOUT_MS,
+    signal?: AbortSignal,
   ): Promise<T> {
     const response = await this.fetchFn(this.baseUrl + path, {
       method,
@@ -91,7 +92,9 @@ export class OpencodeClient {
         ...(body === undefined ? {} : { 'content-type': 'application/json' }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+        : AbortSignal.timeout(timeoutMs),
     });
     const text = await response.text();
     if (!response.ok)
@@ -190,11 +193,19 @@ export class OpencodeClient {
     );
   }
 
-  async listModels(): Promise<ModelInfo[]> {
+  async listModels(signal?: AbortSignal): Promise<ModelInfo[]> {
     const models = OpencodeClient.data<unknown>(
-      await this.request('GET', '/api/model'),
+      await this.request(
+        'GET',
+        '/api/model',
+        undefined,
+        REQUEST_TIMEOUT_MS,
+        signal,
+      ),
     );
-    return Array.isArray(models) ? (models as ModelInfo[]) : [];
+    if (!Array.isArray(models))
+      throw new Error('Invalid model listing response');
+    return models as ModelInfo[];
   }
 
   /**

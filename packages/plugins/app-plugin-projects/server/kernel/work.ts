@@ -40,6 +40,7 @@ import type {
 import type { ActivityRecorder } from './activity.js';
 import type { KindRegistry } from './kinds.js';
 import type { Tx } from './tx.js';
+import type { Actor } from './actor.js';
 
 declare module './events.js' {
   interface DomainEventMap {
@@ -109,6 +110,7 @@ export interface IssueWorkHandler {
       readonly issue: Issue;
       readonly from: string;
       readonly to: string;
+      readonly actor?: Actor;
     },
   ): Promise<readonly RunAttempt[]>;
   /**
@@ -121,7 +123,11 @@ export interface IssueWorkHandler {
   /** Nothing holds the issue any more. */
   onUnblocked?(
     tx: Tx,
-    input: { readonly issue: Issue; readonly releasedBy: Issue },
+    input: {
+      readonly issue: Issue;
+      readonly releasedBy: Issue;
+      readonly actor?: Actor;
+    },
   ): Promise<readonly RunAttempt[]>;
   /** Every sub-issue (`stage` null), or every sub-issue of one stage, of an issue the kind executes is finished. */
   onSubtasksFinished?(
@@ -130,6 +136,7 @@ export interface IssueWorkHandler {
       readonly parent: Issue;
       readonly stage: number | null;
       readonly childIssueIds: readonly string[];
+      readonly actor?: Actor;
     },
   ): Promise<readonly RunAttempt[]>;
 }
@@ -241,6 +248,7 @@ export function kindTriggers(
             issue: after,
             from: before.ownerUserId,
             to: after.ownerUserId,
+            actor: change.actor,
           }),
         );
       }

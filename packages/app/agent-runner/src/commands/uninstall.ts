@@ -65,6 +65,7 @@ export default class Uninstall extends RunnerCommand {
         return servicePlan({
           paths,
           command: selfCommand(),
+          env: { PATH: process.env.PATH },
           ...(settings.serviceLabel === undefined
             ? {}
             : { label: settings.serviceLabel }),
