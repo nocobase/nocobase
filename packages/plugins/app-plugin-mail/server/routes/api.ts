@@ -907,7 +907,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
         { '200': listResponse(MailMessageSummarySchema, MailCursorListMeta) },
         {
           description:
-            'Filters by account, folder (including the virtual folders), label, conversation, search text, unread and starred. Paged by `pageToken`.',
+            'Filters by account, folder (including the virtual folders), label, conversation, search text, participant, unread and starred. Paged by `pageToken`. Participant filtering does not trim full threads or their conversation counts.',
           errors: {
             400: '`pageToken` is not a token this list answered (`INVALID_MAIL_REQUEST`).',
           },
@@ -922,6 +922,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
           labelIds: query.labelId ? [query.labelId] : undefined,
           conversationId: query.conversationId,
           query: query.q,
+          participant: query.participant,
           cursor: query.pageToken,
           limit: query.pageSize,
           withTotal: true,
@@ -1589,6 +1590,7 @@ export const mailApiRoutes: AppApiRouteContribution<AppPluginApplication> =
             accountIds: query.accountId ? [query.accountId] : undefined,
             folderIds: query.folderId ? [query.folderId] : undefined,
             query: query.q,
+            participant: query.participant,
             offset: (query.page - 1) * query.pageSize,
             limit: query.pageSize,
             withTotal: true,

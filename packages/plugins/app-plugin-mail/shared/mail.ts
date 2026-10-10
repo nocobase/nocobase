@@ -525,6 +525,8 @@ export interface MailListMessagesInput {
   readonly labelIds?: readonly string[];
   readonly conversationId?: string;
   readonly query?: string;
+  /** Exact From/To/Cc mailbox or @domain; full thread details and conversation counts are unchanged. */
+  readonly participant?: string;
   readonly unread?: boolean;
   readonly starred?: boolean;
   readonly cursor?: string;

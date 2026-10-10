@@ -18,9 +18,15 @@ import {
   Inbox,
   PenLine,
   RefreshCw,
-  Search,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { resolveAppUrl } from '@nocobase/app-client';
@@ -42,7 +48,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from '../components/ui/sheet.js';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '../components/ui/field.js';
 import { cn } from '../lib/utils.js';
+import { parseMailParticipant } from '../../shared/participant.js';
 import type { MailTemplateVariables } from '../contracts/composer.js';
 import {
   getMailFolderDisplayName,
@@ -106,6 +120,13 @@ export default function MailWorkspacePage({
   const [labelId, setLabelId] = useState<string>();
   const [smartView, setSmartView] = useState<MailboxSmartView>('all');
   const [query, setQuery] = useState('');
+  const [participant, setParticipant] = useState('');
+  const [debouncedParticipant, setDebouncedParticipant] = useState('');
+  const filterId = useId();
+  const participantInvalid =
+    participant !== '' && !parseMailParticipant(participant);
+  const participantReady =
+    participant === debouncedParticipant && !participantInvalid;
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [syncRuns, setSyncRuns] = useState<
     Readonly<Record<string, MailSyncRunView>>
@@ -163,11 +184,20 @@ export default function MailWorkspacePage({
       folderId,
       labelId,
       q: debouncedQuery.trim() || undefined,
+      ...(debouncedParticipant ? { participant: debouncedParticipant } : {}),
       unread: smartView === 'unread' ? true : undefined,
       starred: smartView === 'starred' ? true : undefined,
       pageSize: 50,
     }),
-    [accountId, debouncedQuery, folderAccountId, folderId, labelId, smartView],
+    [
+      accountId,
+      debouncedQuery,
+      debouncedParticipant,
+      folderAccountId,
+      folderId,
+      labelId,
+      smartView,
+    ],
   );
 
   const {
@@ -193,6 +223,7 @@ export default function MailWorkspacePage({
     mail,
     accounts,
     messageQuery,
+    queryEnabled: participantReady,
     reloadVersion,
     requestError,
     setError,
@@ -419,6 +450,14 @@ export default function MailWorkspacePage({
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedParticipant(participant),
+      300,
+    );
+    return () => window.clearTimeout(timer);
+  }, [participant]);
 
   const folderNames = useMemo(
     () => ({
@@ -847,7 +886,7 @@ export default function MailWorkspacePage({
         data-slot='mail-workspace'
         className='@container/mail flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background'
       >
-        <div className='flex shrink-0 flex-wrap items-center gap-2 border-b p-4'>
+        <div className='grid shrink-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-2 border-b px-4 py-1.5 @min-[44rem]/mail:flex @min-[44rem]/mail:flex-wrap @min-[44rem]/mail:gap-4 @min-[44rem]/mail:py-4'>
           {accounts.length > 0 ? (
             <Button
               ref={navigationButtonRef}
@@ -858,28 +897,70 @@ export default function MailWorkspacePage({
               onClick={() => setNavigationOpen(true)}
             >
               <Mailbox aria-hidden='true' className='size-4' />
-              {t('workspace.mailboxNavigation', {
-                defaultValue: 'Mailboxes and folders',
-              })}
+              <span className='sr-only @min-[44rem]/mail:not-sr-only'>
+                {t('workspace.mailboxNavigation', {
+                  defaultValue: 'Mailboxes and folders',
+                })}
+              </span>
             </Button>
           ) : null}
-          <label className='relative block w-full min-w-0 @min-[32rem]/mail:w-64'>
-            <Search
-              aria-hidden='true'
-              className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground'
-            />
-            <Input
-              aria-label={t('workspace.search', {
-                defaultValue: 'Search mail',
-              })}
-              className='pl-9'
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t('workspace.search', {
-                defaultValue: 'Search mail',
-              })}
-              value={query}
-            />
-          </label>
+          <FieldGroup className='contents @min-[44rem]/mail:flex @min-[44rem]/mail:min-w-0 @min-[44rem]/mail:flex-1 @min-[44rem]/mail:basis-full @min-[44rem]/mail:flex-row @min-[44rem]/mail:items-start @min-[44rem]/mail:gap-4 @min-[56rem]/mail:basis-auto'>
+            <Field className='col-start-2 min-w-0 @min-[44rem]/mail:w-64'>
+              <FieldLabel
+                className='sr-only @min-[44rem]/mail:not-sr-only'
+                htmlFor={`${filterId}-search`}
+              >
+                {t('workspace.search', { defaultValue: 'Search mail' })}
+              </FieldLabel>
+              <Input
+                id={`${filterId}-search`}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t('workspace.search', {
+                  defaultValue: 'Search mail',
+                })}
+                value={query}
+              />
+            </Field>
+            <Field
+              className='col-span-2 min-w-0 gap-1 @min-[44rem]/mail:w-80 @min-[44rem]/mail:gap-2'
+              data-invalid={participantInvalid}
+            >
+              <FieldLabel htmlFor={`${filterId}-participant`}>
+                {t('workspace.participant', { defaultValue: 'Participant' })}
+              </FieldLabel>
+              <Input
+                id={`${filterId}-participant`}
+                aria-invalid={participantInvalid}
+                aria-describedby={`${filterId}-participant-hint`}
+                aria-errormessage={
+                  participantInvalid
+                    ? `${filterId}-participant-error`
+                    : undefined
+                }
+                onChange={(event) => {
+                  // Invalidate immediately, before the debounced replacement request.
+                  resetMailbox();
+                  setParticipant(event.target.value);
+                }}
+                placeholder='alice@example.com / @example.com'
+                value={participant}
+              />
+              <FieldDescription id={`${filterId}-participant-hint`}>
+                {t('workspace.participantHint', {
+                  defaultValue:
+                    'Full email address or @domain. Matches From, To and Cc only.',
+                })}
+              </FieldDescription>
+              {participantInvalid ? (
+                <FieldError id={`${filterId}-participant-error`}>
+                  {t('workspace.participantInvalid', {
+                    defaultValue:
+                      'Enter a valid full email address or @domain.',
+                  })}
+                </FieldError>
+              ) : null}
+            </Field>
+          </FieldGroup>
         </div>
         {error ? (
           <div
