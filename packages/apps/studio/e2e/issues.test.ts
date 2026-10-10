@@ -225,3 +225,70 @@ test.describe('issues', () => {
     ).toContainText('进行中');
   });
 });
+
+test('table hierarchy keeps subtrees together at every list entry and after sorting or filtering', async ({
+  page,
+  api,
+}) => {
+  const tag = unique();
+  const me = await api.get<{ userId: string }>('projects/me');
+  const projects = await api.get<{ id: string }[]>('projects');
+  const projectId = projects[0]!.id;
+  const parent = await api.post<Issue>('projects/issues', {
+    title: `Parent ${tag}`,
+    projectId,
+    ownerUserId: me.userId,
+  });
+  const child = await api.post<Issue>('projects/issues', {
+    title: `Child ${tag}`,
+    projectId,
+    ownerUserId: me.userId,
+    parentIssueId: parent.id,
+  });
+  const grandchild = await api.post<Issue>('projects/issues', {
+    title: `Descendant ${tag}`,
+    projectId,
+    ownerUserId: me.userId,
+    parentIssueId: child.id,
+  });
+  for (const path of [
+    '/issues',
+    '/my-issues',
+    `/projects/${projectId}/issues`,
+  ]) {
+    await open(page, `${path}?view=list&q=${tag}&sort=number&direction=desc`);
+    const rows = page
+      .getByRole('table')
+      .getByRole('rowgroup')
+      .last()
+      .getByRole('row');
+    await expect(rows).toHaveCount(3);
+    expect(await rows.getByRole('link').allTextContents()).toEqual([
+      parent.identifier,
+      child.identifier,
+      grandchild.identifier,
+    ]);
+    await expect(rows.nth(2).locator('[data-issue-depth]')).toHaveAttribute(
+      'data-issue-depth',
+      '2',
+    );
+    await page.getByRole('button', { name: '编号', exact: true }).click();
+    await expect(page).toHaveURL(/direction=asc/);
+    expect(await rows.getByRole('link').allTextContents()).toEqual([
+      parent.identifier,
+      child.identifier,
+      grandchild.identifier,
+    ]);
+  }
+  await open(page, `/issues?view=list&q=${encodeURIComponent(child.title)}`);
+  const rows = page
+    .getByRole('table')
+    .getByRole('rowgroup')
+    .last()
+    .getByRole('row');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first().locator('[data-issue-depth]')).toHaveAttribute(
+    'data-issue-depth',
+    '0',
+  );
+});

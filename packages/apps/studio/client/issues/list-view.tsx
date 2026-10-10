@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 
 import { IssueMarks } from './issue-marks.js';
-import { issueTableRow } from './rows.js';
+import { issueTableRow, organizeIssueHierarchy } from './rows.js';
 import type { IssuesPage } from './use-issues-page.js';
 
 const SORT_COLUMN: Readonly<Record<IssueSort, IssueTableSortColumn | null>> = {
@@ -106,15 +106,16 @@ export function IssueListView({
     <div className='flex h-full min-h-0 flex-col gap-3'>
       <div className='min-h-0 flex-1 overflow-auto rounded-lg'>
         <IssueTable
-          rows={issues.map((issue) =>
-            issueTableRow(
+          rows={organizeIssueHierarchy(issues).map(({ issue, depth }) => ({
+            ...issueTableRow(
               issue,
               findStatus(statuses.data, issue.statusKey)
                 ? statuses.data
                 : undefined,
               { statusName, statusTone },
             ),
-          )}
+            depth,
+          }))}
           {...(sortColumn
             ? {
                 sort: {
@@ -129,7 +130,7 @@ export function IssueListView({
               <IssueMarks
                 issue={issue}
                 placement='row'
-                className='flex-nowrap'
+                className='max-w-full [&>*]:max-w-full [&>*]:truncate'
               />
             ) : null;
           }}
