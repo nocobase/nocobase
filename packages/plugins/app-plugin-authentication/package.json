@@ -101,7 +101,8 @@
     "@sinclair/typebox": "catalog:",
     "better-auth": "catalog:",
     "hono": "catalog:",
-    "knex": "catalog:"
+    "knex": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@base-ui/react": "^1.6.0",

@@ -1,8 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { UserPlusIcon } from 'lucide-react';
-import { KeyRoundIcon, MoreHorizontalIcon } from 'lucide-react';
+import { KeyRoundIcon, MoreHorizontalIcon, UserPlusIcon } from 'lucide-react';
 import { type ReactElement, useMemo, useState } from 'react';
 import {
   canManageProject,
@@ -19,10 +18,10 @@ import {
   usePmApi,
   useViewer,
 } from '@nocobase/app-plugin-projects/client/kit';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 
 import type { MemberWithRoles, Role } from '../../../../shared/access.js';
 import { Button } from '@/components/ui/button';
-import { useCan } from '@nocobase/app-plugin-authorization/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,8 +29,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Link } from 'react-router';
+import { studioKeys, useStudioApi } from '../../../access/api.js';
+import { useNotify } from '../../../access/notify.js';
+import { nextRoles, roleOptions, roleTitle, sameRoles } from './roles-model.js';
+import { useRoleError } from './use-role-error.js';
 
-function MemberActions({
+export function MemberActions({
   member,
   viewerId,
 }: {
@@ -70,10 +73,6 @@ function MemberActions({
     </DropdownMenu>
   );
 }
-import { nextRoles, roleOptions, roleTitle, sameRoles } from './roles-model.js';
-import { useRoleError } from './use-role-error.js';
-import { studioKeys, useStudioApi } from '../../../access/api.js';
-import { useNotify } from '../../../access/notify.js';
 
 function MemberRolesCell({
   member,

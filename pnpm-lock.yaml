@@ -3778,6 +3778,9 @@ importers:
       knex:
         specifier: 'catalog:'
         version: 3.3.0(mysql2@3.23.3(@types/node@24.13.3))(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@base-ui/react':
         specifier: ^1.6.0

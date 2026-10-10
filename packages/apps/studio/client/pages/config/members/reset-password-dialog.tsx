@@ -12,7 +12,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -167,7 +166,6 @@ export default function ResetPasswordDialog(): ReactElement {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <FieldDescription>{t('auth.newPassword')}</FieldDescription>
               {passwordFailure ? (
                 <FieldError>{passwordFailure}</FieldError>
               ) : null}
@@ -190,6 +188,10 @@ export default function ResetPasswordDialog(): ReactElement {
             </Field>
           </FieldGroup>
         </form>
+      ) : members.isSuccess ? (
+        <div className='text-sm text-muted-foreground'>
+          {t('members.memberNotFound')}
+        </div>
       ) : (
         <div className='text-sm text-muted-foreground'>
           {members.isError ? t('members.loadFailed') : t('status.loading')}

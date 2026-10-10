@@ -165,6 +165,11 @@ describe('API documentation access and the Better Auth fragment', () => {
     const document = (await response.json()) as ApiDocument;
     const paths = document.paths ?? {};
 
+    expect(paths['/api/authentication/capabilities']?.get).toMatchObject({
+      operationId: 'authenticationGetCapabilities',
+      security: [],
+    });
+
     const signInEmail = paths['/api/auth/sign-in/email']?.post;
     expect(signInEmail).toMatchObject({
       tags: ['Authentication'],

@@ -1,6 +1,7 @@
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   cliRoute,
+  dataResponse,
   defineApiRoutes,
   describeRoute,
   type AppApiRouteContribution,
@@ -9,6 +10,7 @@ import { Hono } from 'hono';
 
 import { authenticationToken } from '../tokens.js';
 import type { AuthenticationProviderConfig } from '../providers/authentication.js';
+import { PasswordResetCapabilitySchema } from './schemas.js';
 
 export const apiRoutes: AppApiRouteContribution<
   AppPluginApplication<AuthenticationProviderConfig>
@@ -28,34 +30,16 @@ export const apiRoutes: AppApiRouteContribution<
     '/authentication/capabilities',
     describeRoute({
       ...cliRoute(false),
+      operationId: 'authenticationGetCapabilities',
+      security: [],
       summary: 'Read public authentication capabilities',
       description: 'Returns whether password reset by email is configured.',
       tags: ['Authentication'],
       responses: {
-        200: {
-          description: 'Public authentication capabilities.',
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['data'],
-                properties: {
-                  data: {
-                    type: 'object',
-                    required: ['passwordResetAvailable'],
-                    properties: {
-                      passwordResetAvailable: {
-                        type: 'boolean',
-                        description:
-                          'Whether email-based password reset is configured.',
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        200: dataResponse(
+          PasswordResetCapabilitySchema,
+          'Public authentication capabilities.',
+        ),
       },
     }),
     (context) =>
