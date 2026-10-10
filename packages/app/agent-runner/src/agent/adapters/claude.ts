@@ -8,10 +8,10 @@
  *   project settings (the repository's .claude/) are loaded.
  * - The run's skills come as a local plugin (`plugins: [{ type: 'local' }]`,
  *   https://code.claude.com/docs/en/agent-sdk/plugins).
- * - Permissions: `acceptEdits`, and the runner's policy is consulted twice
- *   over: a PreToolUse hook enforces its denials for every tool call (so
- *   allow rules in project settings cannot widen it), and `canUseTool`
- *   answers the calls Claude Code would otherwise prompt for.
+ * - Permissions: none. Claude Code runs in `bypassPermissions` mode with no
+ *   hooks; only deny rules in the settings it loads still refuse a call. The
+ *   runner is not a security boundary: run it as a dedicated user, in a
+ *   container or in a VM. Claude Code refuses this mode as root.
  * - The executable is the `claude` on the runner's PATH, resolved to an
  *   absolute path and passed as `pathToClaudeCodeExecutable`. The SDK's
  *   bundled binary is never installed (its platform packages are left out),
@@ -26,11 +26,8 @@ import path from 'node:path';
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import type {
-  CanUseTool,
   ModelInfo,
-  HookCallback,
   Options,
-  PermissionResult,
   SDKMessage,
   SDKResultMessage,
   SDKUserMessage,
@@ -48,7 +45,6 @@ import type {
   AdapterResult,
   AdapterSession,
   AgentAdapter,
-  PermissionDecision,
   RunnerFeature,
   ToolDetection,
   Usage,
@@ -204,21 +200,6 @@ function toolResultText(content: unknown): string {
         : `[${block?.type ?? 'content'}]`,
     )
     .join('\n');
-}
-
-function normalizeDecision(decision: PermissionDecision): {
-  allow: boolean;
-  reason?: string;
-} {
-  if (decision === 'allow') return { allow: true };
-  if (decision === 'deny')
-    return { allow: false, reason: 'Denied by the runner policy' };
-  return { allow: false, reason: decision.deny };
-}
-
-/** What the model reads when the policy denies a tool call. */
-export function denialMessage(reason: string | undefined): string {
-  return `The runner policy denied this tool call${reason ? `: ${reason}` : ''}. This decision is final and nobody can grant it during this run, so do not ask for permission. Continue the task without this call, or use an allowed alternative.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -387,10 +368,6 @@ class ClaudeRun {
     { text: string; inputId?: string }
   >();
   private readonly toolNames = new Map<string, string>();
-  private readonly decisions = new Map<
-    string,
-    { allow: boolean; reason?: string }
-  >();
   private readonly reportedDecisions = new Set<string>();
   private readonly stderrLines: string[] = [];
   private sessionId?: string;
@@ -473,26 +450,7 @@ class ClaudeRun {
 
   // -- permissions ----------------------------------------------------------
 
-  private async decide(
-    tool: string,
-    input: Record<string, unknown>,
-    toolUseId: string | undefined,
-  ): Promise<{ allow: boolean; reason?: string }> {
-    const cached = toolUseId ? this.decisions.get(toolUseId) : undefined;
-    if (cached) return cached;
-    let decision: { allow: boolean; reason?: string };
-    try {
-      decision = normalizeDecision(await this.session.permission(tool, input));
-    } catch (error) {
-      decision = {
-        allow: false,
-        reason: `Policy error: ${error instanceof Error ? error.message : String(error)}`,
-      };
-    }
-    if (toolUseId) this.decisions.set(toolUseId, decision);
-    return decision;
-  }
-
+  /** A denial Claude Code decided itself (deny rules in settings); the runner denies nothing. */
   private report(
     tool: string,
     input: unknown,
@@ -517,44 +475,6 @@ class ClaudeRun {
     });
   }
 
-  /**
-   * Runs before Claude Code's own permission rules, so a policy denial
-   * cannot be bypassed by allow rules in project settings. A denial is
-   * answered with 'ask', which hands the call to canUseTool: that path
-   * returns the reason to the model as a plain permission denial (a hook
-   * 'deny' reaches the model as a "hook error", which models read as a
-   * request to ask for permission and stop).
-   */
-  private readonly preToolUse: HookCallback = async (hookInput) => {
-    if (hookInput.hook_event_name !== 'PreToolUse') return {};
-    const input = (hookInput.tool_input ?? {}) as Record<string, unknown>;
-    const decision = await this.decide(
-      hookInput.tool_name,
-      input,
-      hookInput.tool_use_id,
-    );
-    if (decision.allow) return {};
-    return {
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        permissionDecision: 'ask',
-        permissionDecisionReason: decision.reason,
-      },
-    };
-  };
-
-  private readonly canUseTool: CanUseTool = async (
-    tool,
-    input,
-    { toolUseID },
-  ): Promise<PermissionResult> => {
-    const decision = await this.decide(tool, input, toolUseID);
-    this.report(tool, input, toolUseID, decision);
-    return decision.allow
-      ? { behavior: 'allow', updatedInput: input }
-      : { behavior: 'deny', message: denialMessage(decision.reason) };
-  };
-
   // -- the run --------------------------------------------------------------
 
   private async buildOptions(): Promise<Options> {
@@ -572,9 +492,8 @@ class ClaudeRun {
         append: session.systemPrompt,
       },
       settingSources: ['project'],
-      permissionMode: 'acceptEdits',
-      canUseTool: this.canUseTool,
-      hooks: { PreToolUse: [{ hooks: [this.preToolUse] }] },
+      permissionMode: 'bypassPermissions',
+      allowDangerouslySkipPermissions: true,
       env: { ...session.env },
       abortController: this.abortController,
       includePartialMessages: false,

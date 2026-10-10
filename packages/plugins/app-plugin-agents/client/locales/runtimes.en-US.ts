@@ -168,7 +168,7 @@ const runtimesEnUS = {
   connect: {
     title: 'Add runtime',
     description:
-      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device.',
+      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device. Agents run there with full access, as the user who runs the runner, and can read and change anything that user can, SSH keys and other credentials included. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM.',
     createCredential: 'Generate install command',
     advanced: 'Advanced: limits per coding tool',
     run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application, registers the runner and starts it at login:",

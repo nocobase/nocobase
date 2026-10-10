@@ -2,7 +2,9 @@
  * Distribution: the application serves the agent runner and its own CLI itself (`DIST_ROUTES`), as tarballs that either
  * bundle Node, one per target, or carry none and run on the machine's own Node.js 24 or newer, one for every target
  * (`UNIVERSAL_TARGET`). Neither is published to a registry. The install script, the runner's self-update and the
- * runner's CLI installs all read the same answers.
+ * runner's CLI installs all read the same answers. An application without a tarball of a product may instead name the
+ * npm package and exact version to install it from (`DistNpmPackage`), only to callers that say they understand that
+ * answer.
  */
 import { z } from 'zod';
 
@@ -65,6 +67,70 @@ export const DistArtifactSchema: z.ZodType<DistArtifact> = z.object({
   channel: z.string().min(1),
   universal: z.boolean().optional(),
 });
+
+/** An npm package name, scoped or not, as the registry takes it (`@nocobase/agent-runner`, `acme-cli`). */
+export const NPM_PACKAGE_PATTERN: RegExp =
+  /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/u;
+
+/** One exact version, never a range: `1.2.3`, `1.0.0-beta.4`, optionally with build metadata. */
+export const EXACT_VERSION_PATTERN: RegExp =
+  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
+
+/**
+ * The value of the resolve route's `accept` query parameter (`DIST_ROUTES.resolve`, a comma-separated list) with which
+ * a caller says it understands `DistNpmPackage` answers. A caller that does not send it is answered as before: an
+ * artifact, or 404 when the application has none.
+ */
+export const DIST_ACCEPT_NPM = 'npm';
+
+/** Whether an `accept` query parameter (a comma-separated list) includes `value`. */
+export function distAccepts(
+  accept: string | undefined,
+  value: string,
+): boolean {
+  return (accept ?? '').split(',').some((entry) => entry.trim() === value);
+}
+
+/**
+ * Install `product` from the npm registry: `<package>@<version>`, an exact version, with the Node.js 24 or later the
+ * machine already has. The application answers this instead of an artifact when it has no tarball of the product and
+ * is configured with the package the product is published as, and only to a caller that opted in (`DIST_ACCEPT_NPM`
+ * on the resolve route, the runner feature `npm` on heartbeats). It is the same for every platform.
+ */
+export interface DistNpmPackage {
+  readonly kind: 'npm';
+  readonly product: string;
+  readonly version: string;
+  readonly package: string;
+  /** The channel the application serves (`stable` unless configured). */
+  readonly channel: string;
+}
+
+export const DistNpmPackageSchema: z.ZodType<DistNpmPackage> = z.object({
+  kind: z.literal('npm'),
+  product: z.string().regex(DIST_PRODUCT_PATTERN),
+  version: z.string().max(64).regex(EXACT_VERSION_PATTERN),
+  package: z.string().max(214).regex(NPM_PACKAGE_PATTERN),
+  channel: z.string().min(1),
+});
+
+/**
+ * What the resolve route answers: an artifact (no `kind`: the shape callers from before npm answers read), or, for a
+ * caller that opted in, an npm package.
+ */
+export type DistResolution = DistArtifact | DistNpmPackage;
+
+export const DistResolutionSchema: z.ZodType<DistResolution> = z.union([
+  DistNpmPackageSchema,
+  DistArtifactSchema,
+]);
+
+/** Whether a resolve answer is an npm package rather than an artifact. */
+export function isDistNpmPackage(
+  resolution: DistResolution,
+): resolution is DistNpmPackage {
+  return 'kind' in resolution && resolution.kind === 'npm';
+}
 
 /** What the application serves now: each product's current version and the targets it was built for. */
 export interface DistManifest {

@@ -446,6 +446,7 @@ if [ "$runner" = 1 ]; then
   else
     say "Registered. Start the runner with: $runner_bin start"
   fi
+  say "Note: agents run with full access as $(id -un), with this user's home and credentials. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM."
 else
   say "$cli is installed: $bin_dir/$cli"
 fi

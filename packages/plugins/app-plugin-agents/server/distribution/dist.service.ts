@@ -14,6 +14,9 @@
  * `universal: true`; a file built for the target wins over it. The application serves one channel (`agents.dist.channel`, `stable` by default); a product's
  * current version is the one `agents.dist.versions` pins, or the highest the channel has. Only files a manifest lists
  * are ever served.
+ *
+ * A product the directory has no current version of may instead be named on the npm registry (`agents.dist.npm`: its
+ * package and exact version), answered only to callers that understand it (`npmPackage`). The directory always wins.
  */
 import { createReadStream, type ReadStream } from 'node:fs';
 import { readdir, readFile, stat } from 'node:fs/promises';
@@ -24,11 +27,14 @@ import {
   DIST_PRODUCT_PATTERN,
   DIST_ROUTES,
   DIST_TARGET_PATTERN,
+  EXACT_VERSION_PATTERN,
+  NPM_PACKAGE_PATTERN,
   ProtocolError,
   routePath,
   type DistArtifact,
   type DistManifest,
   UNIVERSAL_TARGET,
+  type DistNpmPackage,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
 
@@ -42,7 +48,28 @@ export interface DistConfig {
   readonly channel?: string;
   /** A version to serve per product instead of the channel's highest, such as `{ acme: '0.3.1' }`. */
   readonly versions?: Readonly<Record<string, string>>;
+  /**
+   * The npm package and exact version each product is published as, such as
+   * `{ 'nocobase-runner': { package: '@nocobase/agent-runner', version: '1.0.0' } }`: answered instead of a tarball
+   * only when `dir` has no current version of the product, and only to callers that understand it (`DistNpmPackage`).
+   */
+  readonly npm?: Readonly<Record<string, DistNpmSource>>;
 }
+
+/** One product of `DistConfig.npm`. */
+export interface DistNpmSource {
+  readonly package: string;
+  /** An exact version, never a range. */
+  readonly version: string;
+}
+
+const DistNpmConfigSchema = z.record(
+  z.string().regex(DIST_PRODUCT_PATTERN),
+  z.object({
+    package: z.string().max(214).regex(NPM_PACKAGE_PATTERN),
+    version: z.string().max(64).regex(EXACT_VERSION_PATTERN),
+  }),
+);
 
 export const DEFAULT_CHANNEL = 'stable';
 
@@ -93,10 +120,17 @@ export interface DistService {
   resolve(product: string, target: string): Promise<DistArtifact>;
   /** A file the manifest lists (any version on the channel); 404 otherwise. */
   file(product: string, version: string, name: string): Promise<DistFile>;
+  /**
+   * The npm package to install `product` from (`DistConfig.npm`), or null when none is configured or the directory has
+   * a current version of the product, which is then served as a tarball exactly as without it. Only for callers that
+   * understand the answer: the resolve route's `accept=npm`, a runner with the `npm` feature.
+   */
+  npmPackage(product: string): Promise<DistNpmPackage | null>;
 }
 
 export function createDistService(config: DistConfig = {}): DistService {
   const channel = config.channel ?? DEFAULT_CHANNEL;
+  const npmSources = parseNpmSources(config.npm);
   const channelDir =
     config.dir === undefined ? null : path.resolve(config.dir, channel);
   let cache: { key: string; manifest: StoredManifest } | undefined;
@@ -286,5 +320,33 @@ export function createDistService(config: DistConfig = {}): DistService {
         open: () => createReadStream(file),
       };
     },
+
+    async npmPackage(product) {
+      const source = npmSources[product];
+      if (source === undefined) return null;
+      const stored = await load();
+      if (stored && currentVersion(stored, product) !== null) return null;
+      return {
+        kind: 'npm',
+        product,
+        version: source.version,
+        package: source.package,
+        channel,
+      };
+    },
   };
+}
+
+/** `agents.dist.npm`, checked when the service is created so a wrong entry fails the start rather than an install. */
+function parseNpmSources(
+  npm: DistConfig['npm'],
+): Readonly<Record<string, DistNpmSource>> {
+  const parsed = DistNpmConfigSchema.safeParse(npm ?? {});
+  if (!parsed.success)
+    throw new Error(
+      `agents.dist.npm names each product's npm package and exact version, such as { nocobase-runner: { package: '@nocobase/agent-runner', version: '1.0.0' } }: ${parsed.error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join('; ')}`,
+    );
+  return parsed.data;
 }

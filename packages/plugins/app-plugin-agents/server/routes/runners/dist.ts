@@ -15,12 +15,20 @@
 import { Readable } from 'node:stream';
 
 import {
+  DIST_ACCEPT_NPM,
+  DIST_TARGET_PATTERN,
+  distAccepts,
   DistArtifactSchema,
   DistManifestSchema,
+  DistNpmPackageSchema,
+  DistResolutionSchema,
   HEADERS,
+  isDistNpmPackage,
   ProtocolError,
   type DistArtifact,
   UNIVERSAL_TARGET,
+  type DistNpmPackage,
+  type DistResolution,
 } from '@nocobase/agent-protocol';
 import {
   apiErrorResponse,
@@ -74,6 +82,26 @@ export function artifactEnv(artifact: DistArtifact): string {
     ...(parsed.universal === true ? ['universal=true'] : []),
     '',
   ].join('\n');
+}
+
+/** The same lines for an npm answer, led by `kind=npm`; only a caller that sent `accept=npm` reads them. */
+export function npmPackageEnv(npm: DistNpmPackage): string {
+  const parsed = DistNpmPackageSchema.parse(npm);
+  return [
+    `kind=${parsed.kind}`,
+    `product=${parsed.product}`,
+    `version=${parsed.version}`,
+    `package=${parsed.package}`,
+    `channel=${parsed.channel}`,
+    '',
+  ].join('\n');
+}
+
+/** `artifactEnv` or `npmPackageEnv`, whichever the answer is. */
+export function resolutionEnv(resolution: DistResolution): string {
+  return isDistNpmPackage(resolution)
+    ? npmPackageEnv(resolution)
+    : artifactEnv(resolution);
 }
 
 export function createDistRoutes(
@@ -207,15 +235,15 @@ export function createDistRoutes(
       operationId: 'agentsResolveDistArtifact',
       // Plumbing: the runner, its install script and `acme` itself download from here.
       ...cliRoute(false),
-      description: `The current version of \`product\` (the application's CLI, which carries the runner, or \`nocobase-runner\`) for \`target\` (such as \`darwin-arm64\` or \`linux-x64\`), with its download path and SHA-256: the tarball built for that platform, else the universal one (\`universal: true\`), which carries no Node and needs Node.js 24 or newer on the machine. \`format=env\` answers the same as \`key=value\` lines a POSIX shell reads, as the install script does. Never cached. ${credentials}`,
+      description: `The current version of \`product\` (the application's CLI, which carries the runner, or \`nocobase-runner\`) for \`target\` (such as \`darwin-arm64\` or \`linux-x64\`), with its download path and SHA-256: the tarball built for that platform, else the universal one (\`universal: true\`), which carries no Node and needs Node.js 24 or newer on the machine. \`format=env\` answers the same as \`key=value\` lines a POSIX shell reads, as the install script does. With \`accept=npm\`, a product the application has no tarball of but names on npm (\`agents.dist.npm\`) is answered as \`{ kind: 'npm', product, version, package, channel }\`, the package and exact version to install with Node.js 24 or later, for every platform; without it such a product is 404 as before. A product with a tarball is answered the same either way. Never cached. ${credentials}`,
       security: downloadSecurity,
       responses: {
         200: {
           description:
-            'The artifact: `{ data }` in JSON, or with `format=env` the lines `product=`, `version=`, `target=`, `url=`, `sha256=`, `size=` and `channel=` as `text/plain`, and `universal=true` when the platform gets the universal tarball, which needs Node.js 24 or newer on the machine.',
+            'The artifact: `{ data }` in JSON, or with `format=env` the lines `product=`, `version=`, `target=`, `url=`, `sha256=`, `size=` and `channel=` as `text/plain`, and `universal=true` when the platform gets the universal tarball, which needs Node.js 24 or newer on the machine. An npm answer (only with `accept=npm`) is `{ data: { kind: \'npm\', ... } }`, or the lines `kind=npm`, `product=`, `version=`, `package=` and `channel=`.',
           content: {
             'application/json': {
-              schema: resolver(z.object({ data: DistArtifactSchema })),
+              schema: resolver(z.object({ data: DistResolutionSchema })),
             },
             'text/plain': {
               schema: {
@@ -236,12 +264,20 @@ export function createDistRoutes(
     apiValidator('query', DistTargetQuery),
     async (context) => {
       const { product, target } = context.req.valid('param');
-      const artifact = await services.dist.resolve(product, target);
-      if (context.req.valid('query').format === 'env')
-        return context.text(artifactEnv(artifact), 200, {
+      const query = context.req.valid('query');
+      // An npm answer only to a caller that asked for it: everyone else is answered exactly as before it existed.
+      const npm =
+        distAccepts(query.accept, DIST_ACCEPT_NPM) &&
+        DIST_TARGET_PATTERN.test(target)
+          ? await services.dist.npmPackage(product)
+          : null;
+      const resolution: DistResolution =
+        npm ?? (await services.dist.resolve(product, target));
+      if (query.format === 'env')
+        return context.text(resolutionEnv(resolution), 200, {
           'cache-control': 'no-store',
         });
-      return context.json({ data: artifact }, 200, {
+      return context.json({ data: resolution }, 200, {
         'cache-control': 'no-store',
       });
     },
