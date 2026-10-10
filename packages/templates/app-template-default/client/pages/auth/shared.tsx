@@ -70,7 +70,6 @@ function BrandPanel(): ReactElement {
   return (
     <div className='relative grid h-full place-items-center overflow-hidden bg-(--auth-brand-background) p-12 text-white'>
       <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_srgb,var(--primary)_22%,transparent),transparent_65%)]' />
-      <div className='pointer-events-none absolute inset-0 [background-image:linear-gradient(currentColor_1px,transparent_1px),linear-gradient(90deg,currentColor_1px,transparent_1px)] [background-size:64px_64px] opacity-[0.025]' />
       <div className='relative w-full max-w-xl'>
         <p className='text-xs font-semibold tracking-[0.16em] text-(--auth-brand-highlight) uppercase'>
           {t('auth.platform')}

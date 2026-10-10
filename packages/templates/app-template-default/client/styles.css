@@ -169,7 +169,6 @@
   [data-slot='sheet-overlay']
 ) {
   background: var(--overlay-backdrop);
-  backdrop-filter: none;
 }
 :is(
   [data-slot='dialog-content'],
@@ -341,4 +340,51 @@
 }
 :root[data-theme='compact'] .app-navigation [data-slot='sidebar-menu'] {
   gap: calc(var(--spacing) * 1.5);
+}
+
+/* Brand tint belongs to the application shell, independent of each page's content. */
+.app-brand-surface {
+  background-image: radial-gradient(
+    ellipse at 100% 0%,
+    color-mix(in srgb, var(--primary) 6%, transparent),
+    transparent 70%
+  );
+  background-size: 100% 18rem;
+  background-repeat: no-repeat;
+}
+
+/* Shared table hierarchy stays neutral so semantic status colors remain distinct. */
+[data-slot='table-header'] {
+  background: color-mix(in srgb, var(--muted) 70%, var(--card));
+}
+[data-slot='table-header'] [data-slot='table-row']:hover {
+  background: transparent;
+}
+[data-slot='table-head'] {
+  height: calc(var(--spacing) * 12);
+  padding-inline: calc(var(--spacing) * 3);
+  color: color-mix(in srgb, var(--foreground) 80%, var(--muted-foreground));
+  font-weight: 600;
+}
+[data-slot='table-cell'] {
+  padding-inline: calc(var(--spacing) * 3);
+}
+[data-slot='table-head'][aria-sort]:not([aria-sort='none']) {
+  color: var(--primary);
+}
+[data-slot='table-head'] button {
+  font-weight: inherit;
+}
+[data-slot='table-head'] button:hover {
+  color: var(--primary);
+}
+
+/* Nested items keep a comfortable rhythm independently of compact content. */
+.app-navigation [data-slot='sidebar-menu-sub-button'] {
+  height: calc(var(--spacing) * 10);
+  padding-inline: calc(var(--spacing) * 3);
+}
+.app-navigation [data-slot='sidebar-menu-sub'] {
+  gap: calc(var(--spacing) * 1.5);
+  padding-block: calc(var(--spacing) * 1.5);
 }

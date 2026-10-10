@@ -1,6 +1,8 @@
 import type { ComponentPropsWithoutRef, ReactElement } from 'react';
 import { cn } from 'cn';
 
+import { BRAND_MARK_PATH, BRAND_MARK_TRANSLATE } from './brand-mark-geometry';
+
 /** Keep the brand recognizable; the orbit, rather than the bricks, conveys progress. */
 export function BrandLoadingMark({
   className,
@@ -32,18 +34,12 @@ export function BrandLoadingMark({
         />
       </g>
       <g
-        transform='translate(11 9) scale(.66)'
-        stroke='currentColor'
-        strokeLinejoin='round'
-        strokeWidth='1.8'
+        transform='translate(15 17.176475219726562) scale(.34)'
+        fill='currentColor'
       >
-        <path
-          d='M7 31 27 19 57 37V50L47 56 37 50 27 56 7 44Z'
-          fill='currentColor'
-        />
-        <path d='M17 25 37 13 47 19 27 31Z' className='fill-background' />
-        <path d='M17 25 27 31V44L17 38Z' className='fill-background' />
-        <path d='M27 31 47 19V32L27 44Z' className='fill-background' />
+        <g transform={BRAND_MARK_TRANSLATE}>
+          <path d={BRAND_MARK_PATH} />
+        </g>
       </g>
     </svg>
   );
