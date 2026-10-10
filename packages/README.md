@@ -9,6 +9,7 @@ Every package published from this repository lives here, grouped by what it is r
 | `plugins/`   | Application plugins that ship as product features                                     |
 | `examples/`  | Application plugins that exist to demonstrate a capability                            |
 | `templates/` | Complete applications that `create-app` scaffolds from                                |
+| `apps/`      | Complete product applications this repository builds and deploys itself               |
 | `tools/`     | Development and build tooling, not shipped inside an application                      |
 
 ## `libs/`
@@ -49,6 +50,12 @@ For everyday development and exploring examples in this repository, run `pnpm ex
 | Default  | `pnpm default:dev`  | `pnpm default:build`  | `pnpm default:start`        |
 
 Inside a template's own directory, use `pnpm dev`, `pnpm build`, and `pnpm start`.
+
+## `apps/`
+
+Complete applications that are products in their own right rather than starting points. `studio` (`@nocobase/studio`) is NocoBase Studio, the AI application workspace that assembles the projects, agents, knowledge and releases plugins. An application here is published as its own source, like a template, so it can be installed and built elsewhere, but `create-app` never scaffolds from it and nothing depends on it.
+
+It is not kept in step with the templates: it takes a newer template through its `nocobase-app-upgrade` Skill, as any generated application does. Its migrations are immutable history from the moment they merge, because installations of it keep their data across updates.
 
 ## `tools/`
 
