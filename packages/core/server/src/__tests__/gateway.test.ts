@@ -47,6 +47,10 @@ describe('gateway', () => {
       { url: '/api/__app/../app:getInfo', headers: {} },
       { url: '/files/%2Ftmp%2Finvalid/main/attachments/1', headers: {} },
       { url: '/api/app:getInfo', headers: { 'x-app': 'a'.repeat(256) } },
+      // These match the character pattern but index `Object.prototype` on the adapters' plain-object app registries.
+      { url: '/api/app:getInfo', headers: { 'x-app': '__proto__' } },
+      { url: '/api/app:getInfo', headers: { 'x-app': 'constructor' } },
+      { url: '/api/app:getInfo', headers: { 'x-app': 'toString' } },
     ])('should reject an invalid app name from $url', async ({ url, headers }) => {
       const res = await supertest.agent(gateway.getCallback()).get(url).set(headers);
 

@@ -50,7 +50,12 @@ const APP_NAME_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
 const MAX_APP_NAME_LENGTH = 255;
 
 function isValidAppName(name: unknown): name is string {
-  return typeof name === 'string' && name.length <= MAX_APP_NAME_LENGTH && APP_NAME_PATTERN.test(name);
+  if (typeof name !== 'string' || name.length > MAX_APP_NAME_LENGTH || !APP_NAME_PATTERN.test(name)) {
+    return false;
+  }
+  // `__proto__`, `constructor`, `toString` and friends all match the pattern, and the supervisor adapters keep their
+  // applications in plain objects, so `hasApp('__proto__')` answers true and the request gets treated as a known app.
+  return !(name in Object.prototype);
 }
 
 export interface IncomingRequest {
