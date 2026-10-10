@@ -8,6 +8,62 @@ const workflow = (name) =>
     'utf8',
   );
 
+const triggerBranches = (source, event) => {
+  const match = source.match(
+    new RegExp(`^  ${event}:\\n    branches:\\n((?:      - .+\\n)+)`, 'mu'),
+  );
+  assert.ok(match, `${event} must declare branch filters`);
+  return match[1]
+    .trimEnd()
+    .split('\n')
+    .map((line) => line.replace(/^      - /u, '').replace(/^['"]|['"]$/gu, ''));
+};
+
+const matchesSingleSegmentGlob = (pattern, branch) => {
+  const expression = pattern
+    .split('*')
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+    .join('[^/]*');
+  return new RegExp(`^${expression}$`, 'u').test(branch);
+};
+
+test('stacked v3 targets receive PR checks without widening direct-branch triggers', () => {
+  const quality = workflow('quality');
+  const changesets = workflow('changeset-check');
+  const guard = workflow('guard-main');
+
+  assert.deepEqual(triggerBranches(quality, 'pull_request'), [
+    'v3-develop',
+    'v3-main',
+    '*/v3-*',
+  ]);
+  assert.deepEqual(triggerBranches(changesets, 'pull_request'), [
+    'v3-main',
+    'v3-develop',
+    '*/v3-*',
+  ]);
+  assert.deepEqual(triggerBranches(quality, 'push'), ['v3-develop']);
+  assert.deepEqual(triggerBranches(guard, 'pull_request'), ['v3-main']);
+
+  const workflowPattern = '*/v3-*';
+  const botPattern = /^[^/]+\/v3-[^/]+$/u;
+  for (const branch of [
+    'feat/v3-app-installer',
+    'fix/v3-stacked-pr-routing',
+    'docs/v3-release-notes',
+    'feat/app-installer',
+    'v3-develop',
+    'agent/PM-42',
+    'feat/v3-routing/extra',
+  ]) {
+    assert.equal(
+      matchesSingleSegmentGlob(workflowPattern, branch),
+      botPattern.test(branch),
+      branch,
+    );
+  }
+});
+
 test('OSS releases write only the migrated repository and v3 branches', () => {
   for (const name of [
     'release-beta',
