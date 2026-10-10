@@ -5,6 +5,7 @@
  * agents change each with the agent picker as a form field (avatar with availability, the menu grouped by type, "None"
  * first); everyone else reads its name.
  */
+import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
@@ -19,6 +20,7 @@ import {
   Field,
   FieldContent,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
   FieldTitle,
@@ -26,6 +28,7 @@ import {
 import { Skeleton } from '../components/ui/skeleton.js';
 import { useAgentPickerLabels } from '../hooks/use-agent-picker-labels.js';
 import { useAgentsApi } from '../hooks/use-agents-api.js';
+import { errorText } from '../hooks/use-notify.js';
 import { useNotify } from '../hooks/use-notify.js';
 import { useAgentText } from '../hooks/use-vocabulary.js';
 import { pickerAgentOf } from '../lib/agents.js';
@@ -66,6 +69,29 @@ export function ChatSettingsSection({
     },
     onError: (error) => notify.error(error),
   });
+  const failure =
+    save.error instanceof ApiClientError ? save.error.payload : null;
+  const errorBody =
+    failure && typeof failure === 'object' && 'error' in failure
+      ? failure.error
+      : null;
+  const violations =
+    errorBody &&
+    typeof errorBody === 'object' &&
+    'fieldViolations' in errorBody &&
+    Array.isArray(errorBody.fieldViolations)
+      ? errorBody.fieldViolations
+      : [];
+  const fieldError = (field: string) =>
+    violations.some(
+      (violation: unknown) =>
+        violation &&
+        typeof violation === 'object' &&
+        'field' in violation &&
+        violation.field === field,
+    )
+      ? errorText(t, save.error, t('common.requestFailed'))
+      : null;
   const ready = Boolean(settings.data && agents.data);
   const live = (agents.data ?? []).filter((agent) => !agent.archivedAt);
   const defaultAgentId = settings.data?.defaultAgentId ?? null;
@@ -86,6 +112,21 @@ export function ChatSettingsSection({
           options={live.map((agent) =>
             pickerAgentOf(agent, text.name(agent), agent.id === defaultAgentId),
           )}
+          disabledReason={(option) =>
+            live.find((agent) => agent.id === option.id)?.access !== 'everyone'
+              ? t('chat.settings.requiresEveryone')
+              : null
+          }
+          error={
+            fieldError('defaultAgentId') ??
+            (defaultAgentId !== null &&
+            live.some(
+              (agent) =>
+                agent.id === defaultAgentId && agent.access !== 'everyone',
+            )
+              ? t('chat.settings.requiresEveryone')
+              : null)
+          }
           current={defaultAgentId}
           ready={ready}
           canManage={canManage}
@@ -100,6 +141,7 @@ export function ChatSettingsSection({
           options={live
             .filter((agent) => agent.type === 'online')
             .map((agent) => pickerAgentOf(agent, text.name(agent), false))}
+          error={fieldError('onlineFallbackAgentId')}
           current={onlineFallbackAgentId}
           ready={ready}
           canManage={canManage}
@@ -126,6 +168,8 @@ function SettingField({
   saving,
   onChange,
   testId,
+  disabledReason,
+  error,
 }: {
   readonly id: string;
   readonly title: string;
@@ -137,6 +181,8 @@ function SettingField({
   readonly saving: boolean;
   readonly onChange: (agentId: string | null) => void;
   readonly testId: string;
+  readonly disabledReason?: (agent: ChatAgent) => string | null;
+  readonly error: string | null;
 }): ReactElement {
   const { t } = useTranslation();
   const labels = useAgentPickerLabels(title);
@@ -171,6 +217,7 @@ function SettingField({
         onSelect={(agentId) => {
           if (agentId !== current) onChange(agentId);
         }}
+        {...(disabledReason ? { disabledReason } : {})}
         disabled={saving}
         align='end'
         className='sm:w-80'
@@ -179,7 +226,7 @@ function SettingField({
     );
 
   return (
-    <Field orientation='responsive'>
+    <Field orientation='responsive' data-invalid={error ? true : undefined}>
       <FieldContent>
         {canManage ? (
           <FieldLabel id={`${id}-title`} htmlFor={id}>
@@ -189,6 +236,7 @@ function SettingField({
           <FieldTitle id={`${id}-title`}>{title}</FieldTitle>
         )}
         <FieldDescription>{description}</FieldDescription>
+        {error ? <FieldError>{error}</FieldError> : null}
       </FieldContent>
       {control}
     </Field>

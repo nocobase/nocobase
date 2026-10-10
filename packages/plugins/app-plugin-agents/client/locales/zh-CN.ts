@@ -42,6 +42,9 @@ const zhCN: AgentsResource = {
     title: '放弃未提交的内容？',
   },
   errors: {
+    SYSTEM_DEFAULT_REQUIRES_EVERYONE: '仅所有人可用的 Agent 可设为系统默认。',
+    SYSTEM_DEFAULT_ACCESS_RESTRICTED:
+      '请先更换或清空系统默认 Agent，再修改其可用范围。',
     CONFLICT: '它已被修改，请刷新后重试。',
     REVISION_CONFLICT: '它已被修改，请刷新后重试。',
     FORBIDDEN: '你没有权限执行此操作。',

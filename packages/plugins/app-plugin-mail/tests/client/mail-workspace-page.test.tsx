@@ -1293,6 +1293,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.getMessage.mockResolvedValue(message);
     render(<MailWorkspacePage />);
     fireEvent.click(await screen.findByText('IMAP message'));
+    await screen.findByRole('heading', { name: 'IMAP message' });
     fireEvent.click(
       await screen.findByRole('button', { name: 'More actions' }),
     );

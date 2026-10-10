@@ -167,6 +167,8 @@ export const AgentPatchSchema: z.ZodType<AgentPatch> = z
   });
 
 export interface AgentService {
+  /** Defaults are supplied by the composition root after the chat service exists. */
+  provideDefaults(defaults: AgentDefaults): void;
   list(options?: { readonly includeArchived?: boolean }): Promise<Agent[]>;
   /** 404 when absent. */
   get(id: string): Promise<Agent>;
@@ -211,6 +213,13 @@ export interface AgentService {
   ): Promise<void>;
   /** Whether `userId` may wake the agent. */
   mayInvoke(agent: Agent, userId: string): boolean;
+}
+
+export interface AgentDefaults {
+  readonly lockDefaults: (conn: DatabaseConnection) => Promise<void>;
+  readonly settings: (
+    conn: DatabaseConnection,
+  ) => Promise<{ readonly defaultAgentId: string | null }>;
 }
 
 export interface AgentServiceDeps {
@@ -396,6 +405,7 @@ async function checkType(
 
 export function createAgentService(deps: AgentServiceDeps): AgentService {
   const { tx, ids, clock, people } = deps;
+  let defaults: AgentDefaults | undefined;
 
   const require = async (
     conn: DatabaseConnection,
@@ -431,6 +441,9 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
     });
 
   return {
+    provideDefaults: (provided) => {
+      defaults = provided;
+    },
     list: (options = {}) =>
       listAgents(tx.read(), options.includeArchived ?? false),
     get: (id) => require(tx.read(), id),
@@ -522,7 +535,25 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
       );
       try {
         return await tx.run(async ({ conn, emit }) => {
+          // Always lock before reading when a patch requests restricted access, including historical defaults.
+          if (patch.access !== undefined && patch.access !== 'everyone') {
+            if (!defaults)
+              throw new Error('Agent defaults have not been provided.');
+            await defaults.lockDefaults(conn);
+          }
           const before = await require(conn, id);
+          if (
+            patch.access !== undefined &&
+            patch.access !== 'everyone' &&
+            (await defaults!.settings(conn)).defaultAgentId === id
+          )
+            throw invalid(
+              'Change or clear the system default agent before restricting its access.',
+              {
+                field: 'access',
+                reason: 'SYSTEM_DEFAULT_ACCESS_RESTRICTED',
+              },
+            );
           if (patch.expectedRevision !== before.revision)
             throw revisionConflict(before.revision);
           const now = clock.now().toISOString();

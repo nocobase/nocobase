@@ -18,6 +18,13 @@ export function toApiError(error: ProtocolError): ApiError {
     domain: error.domain,
     message: error.message,
     ...(error.details ? { metadata: error.details } : {}),
+    ...(typeof error.details?.field === 'string'
+      ? {
+          fieldViolations: [
+            { field: error.details.field, description: error.message },
+          ],
+        }
+      : {}),
     httpStatus: error.status as ContentfulStatusCode,
     cause: error,
   });

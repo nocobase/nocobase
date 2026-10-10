@@ -242,6 +242,54 @@ describe('agent pages', () => {
     });
   });
 
+  it('disables restricted defaults and identifies a historical invalid default', async () => {
+    agents[0] = { ...agents[0]!, access: 'ownerOnly' };
+    renderPage(<AgentsPage />);
+    const section = await screen.findByTestId('chat-settings');
+    const picker = await within(section).findByTestId('chat-default-agent');
+    expect(
+      within(section).getByText('chat.settings.requiresEveryone'),
+    ).toBeVisible();
+    await userEvent.click(picker);
+    const restricted = await screen.findByRole('menuitem', {
+      name: /^Reviewer/,
+    });
+    expect(restricted).toHaveAttribute('aria-disabled', 'true');
+    expect(restricted).toHaveTextContent('chat.settings.requiresEveryone');
+    fireEvent.click(restricted);
+    expect(callsTo('PATCH', 'agents/chatSettings')).toHaveLength(0);
+  });
+
+  it('shows default field errors when saving another field and preserves the saved default', async () => {
+    api.routes['PATCH agents/chatSettings'] = () => {
+      throw new FakeApiError(400, 'INVALID_REQUEST', {
+        error: {
+          metadata: { reason: 'SYSTEM_DEFAULT_REQUIRES_EVERYONE' },
+          fieldViolations: [
+            { field: 'defaultAgentId', description: 'Everyone only.' },
+          ],
+        },
+      });
+    };
+    renderPage(<AgentsPage />);
+    const section = await screen.findByTestId('chat-settings');
+    const picker = await within(section).findByTestId(
+      'chat-online-fallback-agent',
+    );
+    await userEvent.click(picker);
+    await userEvent.click(await screen.findByRole('menuitem', { name: /^PM/ }));
+    const message = await within(section).findByText(
+      'errors.SYSTEM_DEFAULT_REQUIRES_EVERYONE',
+    );
+    expect(message.closest('[data-slot="field"]')).toContainElement(
+      within(section).getByTestId('chat-default-agent'),
+    );
+    expect(within(section).getByTestId('chat-default-agent')).toHaveTextContent(
+      'Reviewer',
+    );
+    expect(picker).toHaveTextContent('chat.settings.none');
+  });
+
   it('sets the online fallback agent from the online agents only', async () => {
     api.routes['agents/chatSettings'] = () => ({ defaultAgentId: 'a4' });
     renderPage(<AgentsPage />);

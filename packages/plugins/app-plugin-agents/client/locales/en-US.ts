@@ -43,6 +43,10 @@ const pages = {
     title: 'Discard unsaved changes?',
   },
   errors: {
+    SYSTEM_DEFAULT_REQUIRES_EVERYONE:
+      'Only agents available to everyone can be the system default.',
+    SYSTEM_DEFAULT_ACCESS_RESTRICTED:
+      'Change or clear the system default agent before restricting its access.',
     CONFLICT: 'It changed in the meantime. Reload and try again.',
     REVISION_CONFLICT: 'It changed in the meantime. Reload and try again.',
     FORBIDDEN: 'You are not allowed to do this.',
