@@ -7,7 +7,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { ChevronDownIcon, KeyRoundIcon, Loader2Icon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
-import { Link } from 'react-router';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -112,15 +111,6 @@ export function ManualSteps({
       {target ? (
         <GenerateCiKey target={target} secretName={secretName} />
       ) : null}
-      <p className='text-xs text-muted-foreground'>
-        {t('ciSetup.manual.presetHint')}{' '}
-        <Link
-          to='/config/api-keys'
-          className='text-primary underline-offset-4 hover:underline'
-        >
-          {t('ciSetup.manual.openKeys')}
-        </Link>
-      </p>
     </div>
   );
 }

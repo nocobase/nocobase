@@ -183,6 +183,7 @@ export function ScopeEditor({
       label: localized(t, item.title),
     })),
   ];
+  const selectedPreset = options.presets.find((item) => item.id === preset);
   return (
     <div className='space-y-4'>
       {options.presets.length > 0 ? (
@@ -215,6 +216,11 @@ export function ScopeEditor({
               ))}
             </SelectContent>
           </Select>
+          {selectedPreset?.description ? (
+            <div className='text-xs text-muted-foreground'>
+              {localized(t, selectedPreset.description)}
+            </div>
+          ) : null}
         </Field>
       ) : null}
       {CATEGORIES.map((category) => {

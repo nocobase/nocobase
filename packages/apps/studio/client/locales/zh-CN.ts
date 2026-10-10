@@ -21,6 +21,18 @@ const zhCN: AppResource = {
         },
       },
     },
+    '@nocobase/app-plugin-releases': {
+      access: {
+        keyScopes: {
+          presets: {
+            ciDeploy: {
+              description:
+                '向选定的应用上传版本并部署，有效期 90 天。配置仓库 CI 请到项目的「部署 › 配置 CI」生成仓库 CI 密钥。',
+            },
+          },
+        },
+      },
+    },
   },
   // The UI Library's agent-chat block (the chat panel, `extensions/nocobase-agent-chat`); the keys below may reword it.
   ...agentChatZhCN,

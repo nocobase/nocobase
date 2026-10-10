@@ -21,6 +21,18 @@ const enUS = {
         },
       },
     },
+    '@nocobase/app-plugin-releases': {
+      access: {
+        keyScopes: {
+          presets: {
+            ciDeploy: {
+              description:
+                'Upload releases to the chosen apps and deploy them, for 90 days. To configure repository CI, go to the project’s Deployment › Configure CI and generate a repository CI key.',
+            },
+          },
+        },
+      },
+    },
   },
   // The UI Library's agent-chat block (the chat panel, `extensions/nocobase-agent-chat`); the keys below may reword it.
   ...agentChatEnUS,

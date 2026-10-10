@@ -249,9 +249,6 @@ export const ciSetupEnUS = {
       store:
         'Store it now as the repository secret {{secret}}. It cannot be shown again: generate or rotate for a new one.',
     },
-    presetHint:
-      'A “CI deploy” key from Settings › API keys also deploys to Apps that already exist, but cannot create Apps, so pull request previews do not work with it.',
-    openKeys: 'Open API keys',
     commands: 'nb-studio commands',
   },
   ownAgent: {
@@ -566,9 +563,6 @@ export const ciSetupZhCN: typeof ciSetupEnUS = {
       store:
         '请立即把它保存为仓库密钥 {{secret}}。它不会再次显示：需要新的值时，请重新生成或轮换。',
     },
-    presetHint:
-      '在 设置 › API 密钥 中创建的“CI 部署”密钥也能部署到已有的应用，但不能创建应用，因此无法用于 Pull request 预览。',
-    openKeys: '打开 API 密钥',
     commands: 'studio 命令',
   },
   ownAgent: {
