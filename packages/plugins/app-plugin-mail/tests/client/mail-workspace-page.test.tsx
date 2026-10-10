@@ -62,7 +62,6 @@ vi.mock('../../client/runtime.js', () => ({
 }));
 
 import MailWorkspacePage from '../../client/pages/mail-workspace-page.js';
-import MailManagementPage from '../../client/pages/mail-management-page.js';
 import { MAIL_UNREAD_COUNT_CHANGED_EVENT } from '../../client/components/mail-navigation-icon.js';
 
 describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
@@ -229,14 +228,23 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     );
   });
 
-  it('links first-time users to mailbox setup in Dev tools', async () => {
+  it('links first-time users to the accounts page the application names', async () => {
     mail.listAccounts.mockResolvedValue([]);
-    render(<MailWorkspacePage />);
+    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
     const connect = await screen.findByRole('link', {
       name: 'Connect mail account',
     });
-    expect(connect).toHaveAttribute('href', '/dev/mail/accounts');
+    expect(connect).toHaveAttribute('href', '/mail/accounts');
     expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
+  });
+
+  it('shows no setup link when the application names no accounts page', async () => {
+    mail.listAccounts.mockResolvedValue([]);
+    render(<MailWorkspacePage />);
+    await screen.findByText('Connect your first mailbox');
+    expect(
+      screen.queryByRole('link', { name: 'Connect mail account' }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps composer errors and entered text when the mailbox refreshes', async () => {
@@ -728,54 +736,6 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       'pageToken',
     );
   });
-
-  it.each([['management', MailManagementPage, 'listManagedMessages']] as const)(
-    'jumps directly to unvisited %s pages, rejects empty pages, and resets page size',
-    async (_name, Page, method) => {
-      const first = createUnreadMessage('First page');
-      const fourth = createUnreadMessage('Fourth page');
-      mail[method].mockImplementation(async (input) => ({
-        items: input.page === 5 ? [] : [input.page === 4 ? fourth : first],
-        total: input.pageSize * 5,
-      }));
-      render(<Page />);
-      await screen.findByText(first.subject);
-      fireEvent.change(screen.getByRole('spinbutton', { name: 'Go to page' }), {
-        target: { value: '4' },
-      });
-      fireEvent.click(screen.getByRole('button', { name: 'Go', exact: true }));
-      await screen.findByText(fourth.subject);
-      expect(mail[method]).toHaveBeenLastCalledWith(
-        expect.objectContaining({ page: 4, pageSize: 20 }),
-      );
-      expect(screen.getByRole('button', { name: 'Page 4' })).toHaveAttribute(
-        'aria-current',
-        'page',
-      );
-      mail[method].mockResolvedValueOnce({ items: [] });
-      fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
-      await screen.findByText(
-        'This page has no records. Choose another page or refresh.',
-      );
-      expect(screen.getByText(fourth.subject)).toBeVisible();
-      expect(screen.getByRole('button', { name: 'Page 4' })).toHaveAttribute(
-        'aria-current',
-        'page',
-      );
-      fireEvent.change(
-        screen.getByRole('combobox', { name: 'Rows per page' }),
-        { target: { value: '50' } },
-      );
-      await screen.findByText(first.subject);
-      expect(mail[method]).toHaveBeenLastCalledWith(
-        expect.objectContaining({ pageSize: 50 }),
-      );
-      expect(screen.getByRole('button', { name: 'Page 1' })).toHaveAttribute(
-        'aria-current',
-        'page',
-      );
-    },
-  );
 
   it('ignores a pending page response after switching mailbox filters', async () => {
     mail.listMessages.mockResolvedValueOnce({
@@ -1483,7 +1443,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(
       screen.getByRole('button', { name: 'Sync all mailboxes' }),
     ).toBeDisabled();
-    await screen.findByRole('link', { name: 'Connect mail account' });
+    await screen.findByText('Connect your first mailbox');
     expect(
       screen.queryByRole('option', { name: 'user@example.com' }),
     ).toBeNull();
@@ -1532,7 +1492,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listAccounts.mockResolvedValue([{ ...active, status: 'suspended' }]);
     now.mockReturnValue(30_000);
     fireEvent.focus(window);
-    await screen.findByRole('link', { name: 'Connect mail account' });
+    await screen.findByText('Connect your first mailbox');
     expect(screen.queryByText('Previously visible mail')).toBeNull();
     expect(
       screen.queryByRole('option', { name: 'user@example.com' }),
@@ -2589,123 +2549,6 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     );
   });
 
-  it('opens managed message details without selecting or marking the row read', async () => {
-    const message = createUnreadMessage('detail-message');
-    mail.listManagedMessages.mockResolvedValue({ items: [message] });
-    mail.getManagedMessage.mockResolvedValue(message);
-    render(<MailManagementPage />);
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'View details' }),
-    );
-    expect(await screen.findByText('Body detail-message')).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toHaveAttribute(
-      'data-slot',
-      'sheet-content',
-    );
-    expect(screen.getByRole('dialog')).toHaveAttribute('data-side', 'right');
-    expect(mail.getManagedMessage).toHaveBeenCalledWith(
-      'account-1',
-      'detail-message',
-    );
-    expect(mail.getMessage).not.toHaveBeenCalled();
-    expect(mail.manageMessages).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-    );
-    expect(
-      screen
-        .getAllByRole('checkbox')
-        .every((checkbox) => !(checkbox as HTMLInputElement).checked),
-    ).toBe(true);
-  });
-
-  it.each([false, true])(
-    'shows draft status without read state in the table and detail drawer (read: %s)',
-    async (read) => {
-      const draft = {
-        ...createUnreadMessage('managed-draft'),
-        draft: true,
-        read,
-      };
-      mail.listManagedMessages.mockResolvedValue({ items: [draft] });
-      mail.getManagedMessage.mockResolvedValue(draft);
-      render(<MailManagementPage />);
-      await screen.findByText('managed-draft');
-      const row = screen.getByText('managed-draft').closest('tr')!;
-      expect(within(row).getByText('dev.management.draft')).toBeInTheDocument();
-      expect(
-        within(row).queryByText('dev.management.read'),
-      ).not.toBeInTheDocument();
-      expect(
-        within(row).queryByText('dev.management.unread'),
-      ).not.toBeInTheDocument();
-      fireEvent.click(within(row).getByRole('checkbox'));
-      expect(screen.getByRole('button', { name: 'Mark read' })).toBeDisabled();
-      expect(
-        screen.getByRole('button', { name: 'Mark unread' }),
-      ).toBeDisabled();
-      fireEvent.click(
-        within(row).getByRole('button', { name: 'View details' }),
-      );
-      await screen.findByText('Body managed-draft');
-      const drawer = screen.getByRole('dialog');
-      expect(
-        within(drawer).getByText('dev.management.draft'),
-      ).toBeInTheDocument();
-      expect(
-        within(drawer).queryByText('dev.management.read'),
-      ).not.toBeInTheDocument();
-      expect(
-        within(drawer).queryByText('dev.management.unread'),
-      ).not.toBeInTheDocument();
-      expect(mail.manageMessages).not.toHaveBeenCalled();
-    },
-  );
-
-  it.each([
-    ['Mark read', 'markRead'],
-    ['Mark unread', 'markUnread'],
-  ])('skips selected drafts when applying %s', async (label, action) => {
-    const draft = { ...createUnreadMessage('managed-draft'), draft: true };
-    const received = createUnreadMessage('received-mail');
-    mail.listManagedMessages.mockResolvedValue({ items: [draft, received] });
-    mail.manageMessages.mockResolvedValue({
-      items: [
-        {
-          accountId: received.accountId,
-          messageId: received.id,
-          status: 'succeeded',
-        },
-      ],
-      succeeded: 1,
-      failed: 0,
-    });
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    try {
-      render(<MailManagementPage />);
-      await screen.findByText('managed-draft');
-      fireEvent.click(screen.getAllByRole('checkbox')[0]);
-      fireEvent.click(screen.getByRole('button', { name: label }));
-      await waitFor(() =>
-        expect(mail.manageMessages).toHaveBeenCalledWith({
-          action,
-          items: [{ accountId: received.accountId, messageId: received.id }],
-        }),
-      );
-      expect(confirm).toHaveBeenCalledWith(
-        expect.stringContaining('1 selected messages'),
-      );
-      await waitFor(() =>
-        expect(screen.getByRole('button', { name: label })).toBeDisabled(),
-      );
-      const row = screen.getByText('managed-draft').closest('tr')!;
-      expect(within(row).getByRole('checkbox')).toBeChecked();
-    } finally {
-      confirm.mockRestore();
-    }
-  });
-
   it.each([false, true])(
     'omits inline images from draft attachment lists while preserving real files (%s)',
     async (withFile) => {
@@ -2756,430 +2599,6 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       else expect(screen.queryByText(/1 attachment/)).not.toBeInTheDocument();
     },
   );
-
-  it('renders managed HTML with protected inline images and reports attachment download failures', async () => {
-    const message = {
-      ...createUnreadMessage('html-detail'),
-      html: '<p>Full body</p><img src="cid:logo">',
-      attachments: [
-        {
-          id: 'file-1',
-          messageId: 'html-detail',
-          providerAttachmentId: 'remote-file',
-          fileName: 'logo.png',
-          contentType: 'image/png',
-          size: 3,
-          inline: true,
-          contentId: 'logo',
-        },
-        {
-          id: 'document-1',
-          messageId: 'html-detail',
-          providerAttachmentId: 'document-1',
-          fileName: 'report.pdf',
-          contentType: 'application/pdf',
-          size: 5,
-          inline: false,
-        },
-      ],
-    };
-    mail.listManagedMessages.mockResolvedValue({ items: [message] });
-    mail.getManagedMessage.mockResolvedValue(message);
-    mail.downloadManagedAttachment.mockRejectedValueOnce(
-      new Error('Attachment unavailable'),
-    );
-    render(<MailManagementPage />);
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'View details' }),
-    );
-    const frame = await screen.findByTitle('html-detail');
-    expect(frame).toHaveAttribute(
-      'sandbox',
-      'allow-same-origin allow-popups allow-popups-to-escape-sandbox',
-    );
-    expect(frame.getAttribute('srcdoc')).toContain(
-      '/api/mail/management/accounts/account-1/messages/html-detail/attachments/file-1',
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'report.pdf' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Attachment unavailable',
-    );
-    expect(mail.downloadManagedAttachment).toHaveBeenCalledWith(
-      'account-1',
-      'html-detail',
-      'document-1',
-    );
-    expect(mail.downloadAttachment).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'report.pdf' })).toBeEnabled();
-  });
-
-  it('retries a failed detail request and ignores a closed message response', async () => {
-    const first = createUnreadMessage('first-detail');
-    const second = createUnreadMessage('second-detail');
-    let resolveFirst!: (message: typeof first) => void;
-    mail.listManagedMessages.mockResolvedValue({ items: [first, second] });
-    mail.getManagedMessage.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveFirst = resolve;
-      }),
-    );
-    render(<MailManagementPage />);
-    fireEvent.click(
-      (await screen.findAllByRole('button', { name: 'View details' }))[0],
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-    );
-    mail.getManagedMessage.mockRejectedValueOnce(
-      new Error('Detail unavailable'),
-    );
-    fireEvent.click(screen.getAllByRole('button', { name: 'View details' })[1]);
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Detail unavailable',
-    );
-    mail.getManagedMessage.mockResolvedValueOnce(second);
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByText('Body second-detail')).toBeInTheDocument();
-    await act(async () => {
-      resolveFirst(first);
-    });
-    expect(screen.queryByText('Body first-detail')).not.toBeInTheDocument();
-  });
-
-  it('lists synchronized messages across every account in the management table', async () => {
-    mail.listManagedMessages.mockResolvedValue({
-      items: [
-        {
-          id: 'message-1',
-          accountId: 'account-1',
-          providerMessageId: 'provider-message-1',
-          folderIds: ['INBOX'],
-          labelIds: [],
-          from: { address: 'sender@example.com' },
-          to: [{ address: 'user@example.com' }],
-          cc: [],
-          bcc: [],
-          subject: 'Management table message',
-          read: false,
-          starred: false,
-          draft: false,
-          hasAttachments: false,
-          receivedAt: '2026-09-07T00:00:00.000Z',
-        },
-      ],
-    });
-
-    render(<MailManagementPage />);
-
-    expect(
-      await screen.findByText('Management table message'),
-    ).toBeInTheDocument();
-    expect(mail.listManagedMessages).toHaveBeenCalledWith({
-      accountId: undefined,
-      q: undefined,
-      page: 1,
-      pageSize: 20,
-    });
-    expect(screen.getByRole('combobox', { name: 'Rows per page' })).toHaveValue(
-      '20',
-    );
-  });
-
-  it('opens the last management page and updates its last page number after filtering', async () => {
-    mail.listManagedMessages.mockImplementation(
-      async ({ page, pageSize, q }) => ({
-        items: [createUnreadMessage(`Message at ${(page - 1) * pageSize}`)],
-        total: q ? 25 : 205,
-      }),
-    );
-    render(<MailManagementPage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Page 11' }));
-    expect(await screen.findByText('Message at 200')).toBeVisible();
-    expect(mail.listManagedMessages).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 11, pageSize: 20 }),
-    );
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
-    fireEvent.change(screen.getByRole('textbox', { name: /Search/i }), {
-      target: { value: 'filtered' },
-    });
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'Page 11' }),
-      ).not.toBeInTheDocument(),
-    );
-    expect(screen.getByRole('button', { name: 'Page 2' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Page 1' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-  });
-
-  it('replaces management rows when paging and clears selection when returning', async () => {
-    const first = createUnreadMessage('First page message');
-    const second = createUnreadMessage('Second page message');
-    // Two pages at any page size: the second one is the last.
-    mail.listManagedMessages.mockImplementation(async ({ page, pageSize }) =>
-      page > 1
-        ? { items: [second], total: pageSize + 1 }
-        : { items: [first], total: pageSize + 1 },
-    );
-    render(<MailManagementPage />);
-    await screen.findByText(first.subject);
-    expect(
-      screen.getByRole('button', { name: 'Previous page' }),
-    ).toBeDisabled();
-    fireEvent.click(screen.getAllByRole('checkbox')[1]);
-    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
-    await screen.findByText(second.subject);
-    expect(screen.queryByText(first.subject)).not.toBeInTheDocument();
-    expect(screen.getByText('Page 2 · 20 per page')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
-    expect(screen.getAllByRole('checkbox')[1]).not.toBeChecked();
-    expect(mail.listManagedMessages).toHaveBeenLastCalledWith({
-      accountId: undefined,
-      q: undefined,
-      page: 2,
-      pageSize: 20,
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
-    await screen.findByText(first.subject);
-    expect(screen.queryByText(second.subject)).not.toBeInTheDocument();
-    expect(screen.getAllByRole('checkbox')[1]).not.toBeChecked();
-    expect(screen.getByText('Page 1 · 20 per page')).toBeInTheDocument();
-  });
-
-  it('keeps the management page on a failed request and resets pagination for filters and refresh', async () => {
-    const first = createUnreadMessage('First page message');
-    const second = createUnreadMessage('Second page message');
-    // Two pages at any page size: the second one is the last.
-    mail.listManagedMessages.mockImplementation(async ({ page, pageSize }) =>
-      page > 1
-        ? { items: [second], total: pageSize + 1 }
-        : { items: [first], total: pageSize + 1 },
-    );
-    render(<MailManagementPage />);
-    await screen.findByText(first.subject);
-    mail.listManagedMessages.mockRejectedValueOnce(
-      new Error('Page unavailable'),
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
-    await screen.findByText('Page unavailable');
-    expect(screen.getByText('Page 1 · 20 per page')).toBeInTheDocument();
-    expect(screen.getByText(first.subject)).toBeInTheDocument();
-    for (const reset of [
-      () =>
-        fireEvent.change(screen.getByRole('combobox', { name: 'Account' }), {
-          target: { value: 'account-1' },
-        }),
-      () =>
-        fireEvent.change(
-          screen.getByRole('textbox', { name: 'Search subject or preview' }),
-          { target: { value: 'search' } },
-        ),
-      () => fireEvent.click(screen.getByRole('button', { name: 'Refresh' })),
-      ...['50', '100'].map(
-        (size) => () =>
-          fireEvent.change(
-            screen.getByRole('combobox', { name: 'Rows per page' }),
-            {
-              target: { value: size },
-            },
-          ),
-      ),
-    ]) {
-      fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
-      await screen.findByText(second.subject);
-      expect(screen.getByRole('button', { name: 'Page 2' })).toHaveAttribute(
-        'aria-current',
-        'page',
-      );
-      expect(mail.listManagedMessages.mock.lastCall?.[0].pageSize).toBe(
-        Number(
-          (
-            screen.getByRole('combobox', {
-              name: 'Rows per page',
-            }) as HTMLSelectElement
-          ).value,
-        ),
-      );
-      fireEvent.click(screen.getAllByRole('checkbox')[1]);
-      reset();
-      await screen.findByText(first.subject);
-      expect(screen.getByRole('button', { name: 'Page 1' })).toHaveAttribute(
-        'aria-current',
-        'page',
-      );
-      expect(screen.getAllByRole('checkbox')[1]).not.toBeChecked();
-      expect(
-        screen.getByRole('button', { name: 'Previous page' }),
-      ).toBeDisabled();
-      expect(mail.listManagedMessages.mock.lastCall?.[0].page).toBe(1);
-    }
-    expect(mail.listManagedMessages).toHaveBeenLastCalledWith({
-      accountId: 'account-1',
-      q: 'search',
-      page: 1,
-      pageSize: 100,
-    });
-  });
-
-  it('ignores a management page response after the account filter changes', async () => {
-    const first = createUnreadMessage('First page message');
-    const stale = createUnreadMessage('Stale page message');
-    mail.listManagedMessages.mockResolvedValue({
-      items: [first],
-      total: 21,
-    });
-    render(<MailManagementPage />);
-    await screen.findByText(first.subject);
-    let resolvePage!: (page: { items: (typeof stale)[] }) => void;
-    mail.listManagedMessages.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolvePage = resolve;
-      }),
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Account' }), {
-      target: { value: 'account-1' },
-    });
-    await screen.findByText(first.subject);
-    await act(async () => {
-      resolvePage({ items: [stale] });
-    });
-    expect(screen.queryByText(stale.subject)).not.toBeInTheDocument();
-    expect(screen.getByText('Page 1 · 20 per page')).toBeInTheDocument();
-  });
-
-  it('refreshes batch results on the current management page and keeps failures selected', async () => {
-    const first = createUnreadMessage('First page message');
-    const second = createUnreadMessage('Second page message');
-    // Two pages at any page size: the second one is the last.
-    mail.listManagedMessages.mockImplementation(async ({ page, pageSize }) =>
-      page > 1
-        ? { items: [second], total: pageSize + 1 }
-        : { items: [first], total: pageSize + 1 },
-    );
-    mail.manageMessages.mockResolvedValue({
-      items: [
-        { accountId: second.accountId, messageId: second.id, status: 'failed' },
-      ],
-      succeeded: 0,
-      failed: 1,
-    });
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    try {
-      render(<MailManagementPage />);
-      await screen.findByText(first.subject);
-      fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
-      await screen.findByText(second.subject);
-      fireEvent.click(screen.getAllByRole('checkbox')[1]);
-      fireEvent.click(screen.getByRole('button', { name: 'Mark read' }));
-      await waitFor(() =>
-        expect(mail.listManagedMessages).toHaveBeenCalledTimes(3),
-      );
-      await screen.findByText(second.subject);
-      expect(screen.getByText('Page 2 · 20 per page')).toBeInTheDocument();
-      expect(screen.getAllByRole('checkbox')[1]).toBeChecked();
-      expect(mail.listManagedMessages).toHaveBeenLastCalledWith({
-        accountId: undefined,
-        q: undefined,
-        page: 2,
-        pageSize: 20,
-      });
-    } finally {
-      confirm.mockRestore();
-    }
-  });
-
-  it('runs a management action for selected rows and keeps failed rows selected', async () => {
-    const messages = [
-      {
-        id: 'message-1',
-        accountId: 'account-1',
-        providerMessageId: 'provider-message-1',
-        folderIds: ['INBOX'],
-        labelIds: [],
-        from: { address: 'sender@example.com' },
-        to: [{ address: 'user@example.com' }],
-        cc: [],
-        bcc: [],
-        subject: 'First management message',
-        read: false,
-        starred: false,
-        draft: false,
-        hasAttachments: false,
-      },
-      {
-        id: 'message-2',
-        accountId: 'account-1',
-        providerMessageId: 'provider-message-2',
-        folderIds: ['INBOX'],
-        labelIds: [],
-        from: { address: 'sender@example.com' },
-        to: [{ address: 'user@example.com' }],
-        cc: [],
-        bcc: [],
-        subject: 'Second management message',
-        read: false,
-        starred: false,
-        draft: false,
-        hasAttachments: false,
-      },
-    ] as const;
-    mail.listManagedMessages.mockResolvedValue({ items: messages });
-    mail.manageMessages.mockResolvedValue({
-      items: [
-        {
-          accountId: 'account-1',
-          messageId: 'message-1',
-          status: 'succeeded',
-        },
-        {
-          accountId: 'account-1',
-          messageId: 'message-2',
-          status: 'failed',
-          error: {
-            code: 'MAIL_MANAGEMENT_ACTION_FAILED',
-            category: 'unknown',
-            retryable: false,
-          },
-        },
-      ],
-      succeeded: 1,
-      failed: 1,
-    });
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-    render(<MailManagementPage />);
-
-    expect(
-      await screen.findByText('First management message'),
-    ).toBeInTheDocument();
-    const checkboxes = screen.getAllByRole('checkbox');
-    fireEvent.click(checkboxes[1]);
-    fireEvent.click(checkboxes[2]);
-    fireEvent.click(screen.getByRole('button', { name: 'Mark read' }));
-
-    await waitFor(() =>
-      expect(mail.manageMessages).toHaveBeenCalledWith({
-        action: 'markRead',
-        items: [
-          { accountId: 'account-1', messageId: 'message-1' },
-          { accountId: 'account-1', messageId: 'message-2' },
-        ],
-      }),
-    );
-    expect(confirm).toHaveBeenCalledTimes(1);
-    expect(
-      await screen.findByText(
-        '1 succeeded, 1 failed. Failed messages remain selected for retry.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole('checkbox')[2]).toBeChecked();
-    confirm.mockRestore();
-  });
 });
 
 function createUnreadMessage(id: string) {

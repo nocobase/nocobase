@@ -75,7 +75,6 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@base-ui/react": "catalog:",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
@@ -86,11 +85,7 @@
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@oclif/core": "catalog:",
-    "cn": "catalog:",
-    "cronstrue": "^3.24.0",
-    "lucide-react": "catalog:",
-    "react": "^19.0.0",
-    "react-router": "^7.0.0"
+    "cronstrue": "^3.24.0"
   },
   "devDependencies": {
     "@nocobase/app-client": "workspace:*",
@@ -102,15 +97,11 @@
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/i18n": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
-    "@testing-library/react": "catalog:",
-    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
-    "react": "catalog:",
-    "react-router": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

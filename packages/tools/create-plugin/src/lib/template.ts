@@ -764,7 +764,7 @@ function renderSkill(
     capabilities.client.components &&
       '- Client components: document each public package export, required props, and where the App should place it. Do not imply that a direct component import requires Client plugin registration.',
     capabilities.client.routes &&
-      '- Client routes: document the implemented App or Settings path, navigation entry, and access conditions.',
+      '- Client routes: document the implemented App path, navigation entry, and access conditions.',
     capabilities.client.serviceProviders &&
       '- Client ServiceProviders: document registered services, lifecycle side effects, and how an Agent can verify them.',
     capabilities.client.reactProviders &&

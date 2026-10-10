@@ -55,12 +55,6 @@
   {
     "type": "dir",
     "collapsed": true,
-    "name": "ai-employee",
-    "label": "AI employees"
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
     "name": "ai-knowledge-base",
     "label": "AI knowledge base"
   }

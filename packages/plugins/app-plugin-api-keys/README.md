@@ -4,14 +4,13 @@ API key authentication for NocoBase applications, built on Better Auth.
 
 A key authenticates as the user who created it. `Auth.getSession()` resolves the `x-api-key` header the same way it resolves a session cookie, so `auth.required()`, the route guards, and `@nocobase/app-plugin-authorization` all see the owning user and exactly the roles that user holds. Nothing in an application has to know a request arrived by key rather than by cookie.
 
-Keys are self-service: each signed-in user creates and revokes their own under `/settings/api-keys`.
+Keys are self-service: each signed-in user creates and revokes their own. The plugin ships no page for that; an application builds one on `authClient.apiKey.*` or the scoped key API below and declares it among its own routes.
 
 ## What this package is
 
 Better Auth's [API Key plugin](https://www.better-auth.com/docs/plugins/api-key), plus the parts an application needs around it:
 
 - the `apikey` table migration;
-- the Settings page and its locales;
 - `apiKey` and `apiKeyClient`, carrying Better Auth's own names and options.
 
 `apiKey` is wrapped only to supply three defaults, all of them overridable; everything else is Better Auth's behavior and its documentation applies unchanged. They come from this package rather than from a dependency each application installs because the migration here has to match the schema that version of `@better-auth/api-key` declares; a test asserts the table carries a column for every field the plugin declares.
@@ -31,9 +30,9 @@ export default defineAppConfig((_runtime) => ({
 ```
 
 ```ts
-// client/plugins.ts — the management page
+// client/plugins.ts — registers the plugin; it contributes no pages
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
-apiKeys({ path: '/api-keys' });
+apiKeys();
 
 // client/config/auth.ts — so authClient.apiKey.* reaches the endpoints
 import { apiKeyClient } from '@nocobase/app-plugin-api-keys/client';
@@ -43,7 +42,7 @@ export default defineAppConfig((_runtime) => ({
 }));
 ```
 
-Then grant `page:api-keys/access` to the roles that may manage keys — normally all authenticated users, since every endpoint acts only on the caller's own keys — and run `pnpm nocobase db apply`.
+Then run `pnpm nocobase db apply`.
 
 Registering the server plugin without `apiKey()` creates the table and mounts no endpoints; registering `apiKey()` without the server plugin mounts endpoints against a table that does not exist.
 
@@ -51,9 +50,9 @@ Registering the server plugin without `apiKey()` creates the table and mounts no
 
 | Option                    | Better Auth                         | Here    | Why                                                                                                                     |
 | ------------------------- | ----------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `enableSessionForAPIKeys` | `false`                             | `true`  | Without it a key authenticates nothing: the page still issues keys, and every request carrying one answers 401          |
+| `enableSessionForAPIKeys` | `false`                             | `true`  | Without it a key authenticates nothing: keys are still issued, and every request carrying one answers 401               |
 | `rateLimit.enabled`       | `true`, 10 requests per key per day | `false` | That is a quota for issuing keys rather than for using them, and it silently breaks the first integration anyone writes |
-| `requireName`             | `false`                             | `true`  | The management page identifies a key by its name, and a key listed as "unnamed" cannot be revoked with any confidence   |
+| `requireName`             | `false`                             | `true`  | A key is identified by its name, and a key listed as "unnamed" cannot be revoked with any confidence                    |
 
 All three are overridable. `apiKey({ rateLimit: { enabled: true, maxRequests: 1000, timeWindow: 60_000 } })` sets a quota, and passing all three back reproduces Better Auth's own behaviour exactly.
 
@@ -145,8 +144,6 @@ A service account's key is treated as scoped even without a scope: `required()` 
 
 `toApiKeysApiError(error)` turns `ApiKeyScopeError` and `ApiKeyRequestError` into that body's `ApiError`, for an application's own key routes: `router.onError((error, context) => apiErrorHandler(toApiKeysApiError(error), context))`.
 
-The Settings page under `/settings/api-keys` predates scopes and does not offer them; an application that offers scoped keys builds its own page on this API.
-
 ## Verification
 
 ```bash
@@ -163,4 +160,4 @@ Server calls run through `Auth.pluginApi()` and the normal Better Auth hooks; `w
 
 `findRequestApiKey(plugin, headers)` returns the key a request carries, read from the headers of every configuration that resolves keys into sessions, and `createApiKeyApiDocsAccess(resolveAuth)` is the API document access check the plugin's server registers; an application assembling its own providers can register it on `apiDocsToken` itself. `Auth.plugin<ApiKeysPlugin>('api-key')?.options.configurations` holds the configurations `apiKey()` was created with, after its defaults.
 
-Trusted lifecycle integrations can call `removeUserApiKeys(connection, userId, configIds)` within their user-deletion transaction to remove database-backed credentials for explicit user-referencing configurations. Do not pass organization-referencing or custom-storage configurations. Hub uses `default` and `hub-publishing`; dependent Hub bindings are removed by foreign-key cascades.
+Trusted lifecycle integrations can call `removeUserApiKeys(connection, userId, configIds)` within their user-deletion transaction to remove database-backed credentials for explicit user-referencing configurations. Do not pass organization-referencing or custom-storage configurations.

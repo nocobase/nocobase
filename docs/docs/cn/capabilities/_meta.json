@@ -55,12 +55,6 @@
   {
     "type": "dir",
     "collapsed": true,
-    "name": "ai-employee",
-    "label": "AI 员工"
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
     "name": "ai-knowledge-base",
     "label": "AI 知识库"
   }

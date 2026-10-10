@@ -109,7 +109,7 @@ test('independent Pro releases keep their own repository and branches', () => {
   }
 });
 
-test('installer smoke covers the Default archive instead of publishing or installing Hub templates', () => {
+test('installer smoke covers the Default archive', () => {
   const smoke = workflow('app-installer-smoke');
   const quality = workflow('quality');
   assert.match(smoke, /workflow_call:/u);
@@ -119,9 +119,9 @@ test('installer smoke covers the Default archive instead of publishing or instal
   );
   assert.match(
     smoke,
-    /--source archive --archive packages\/templates\/app-template-default\/storage\/exports\/dist\.tar\.gz/u,
+    /smoke-app-installer\.mjs --archive packages\/templates\/app-template-default\/storage\/exports\/dist\.tar\.gz/u,
   );
-  assert.doesNotMatch(smoke, /app-template-hub|--source template|schedule:/u);
+  assert.doesNotMatch(smoke, /app-template-hub|--source|schedule:/u);
   assert.match(quality, /template: \[default, examples\]/u);
   for (const name of ['release-beta', 'release-stable']) {
     assert.match(workflow(name), /template: \[default, examples\]/u);

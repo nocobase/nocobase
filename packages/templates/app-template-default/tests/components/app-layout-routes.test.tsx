@@ -31,7 +31,7 @@ vi.mock('@nocobase/app-plugin-i18n/client', async (importOriginal) => ({
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useClientApplication: () => ({ runtime: { settingsRouteTree: [] } }),
+  useClientApplication: () => ({ runtime: {} }),
 }));
 vi.mock('../../client/routing/route-navigation.js', async (original) => ({
   ...(await original<

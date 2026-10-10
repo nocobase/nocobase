@@ -236,14 +236,7 @@ export default function WorkflowWaitingTaskPage(): ReactElement {
                 <dt className='text-muted-foreground'>
                   {t('workflowTasks.runId')}
                 </dt>
-                <dd className='font-mono'>
-                  <Link
-                    className='text-primary underline-offset-2 hover:underline'
-                    to={`/settings/workflow/runs/${encodeURIComponent(task.runId)}`}
-                  >
-                    #{task.runId}
-                  </Link>
-                </dd>
+                <dd className='font-mono'>#{task.runId}</dd>
               </div>
               <div>
                 <dt className='text-muted-foreground'>

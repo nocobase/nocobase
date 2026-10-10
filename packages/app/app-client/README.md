@@ -346,9 +346,7 @@ export default {
 };
 ```
 
-Settings pages use `defineSettingsRoutes()`. Route component overrides replace
-only a page component loader and keep the plugin-owned route identity, path,
-authentication, navigation, and access metadata.
+Every page is an app route: there is no separate settings or dev surface. A page that configures something is an ordinary route in the application's navigation. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, authentication, navigation, and access metadata.
 
 ## Client plugin declaration
 
@@ -425,4 +423,4 @@ plugins that consume the changed fields.
 
 Application authorization is provided by `@nocobase/app-plugin-authorization/client`. Use `useCan` for reactive visibility checks and `useAuthorizationClient` or `authorizationClientToken` for the current application client. `AppClientRefineConfig` excludes `accessControlProvider`, and the Refine registry has no `setAccessControlProvider` setter.
 
-Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Authorization uses `authz: 'skip' | 'unrestricted' | { resource: { type, id }, action }`. Declare it on the first page of every path. A nested page that omits it inherits the effective value of its nearest ancestor page, through any number of groups and levels, and a child that declares its own value overrides it for its subtree. A first page that omits it never stops the application: protected `app` pages (`auth: 'required'`) and `settings` pages default to `'unrestricted'`, which admits only identities with unrestricted access such as root and hides the page from everyone else's menus, while `guest` and `optional` app pages and `dev` pages default to `'skip'`. Development builds log one warning per defaulted page naming its id, path and default; production logs nothing. `'unrestricted'` may also be declared explicitly for a root-only page, and it is never offered as a grant. `'skip'` applies only to the current page and does not bypass parent guards. Route groups cannot declare `authz`. Malformed values, the removed `access` field and string resource declarations are rejected.
+Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Authorization uses `authz: 'skip' | 'unrestricted' | { resource: { type, id }, action }`. Declare it on the first page of every path. A nested page that omits it inherits the effective value of its nearest ancestor page, through any number of groups and levels, and a child that declares its own value overrides it for its subtree. A first page that omits it never stops the application: protected pages (`auth: 'required'`) default to `'unrestricted'`, which admits only identities with unrestricted access such as root and hides the page from everyone else's menus, while `guest` and `optional` pages default to `'skip'`. Development builds log one warning per defaulted page naming its id, path and default; production logs nothing. `'unrestricted'` may also be declared explicitly for a root-only page, and it is never offered as a grant. `'skip'` applies only to the current page and does not bypass parent guards. Route groups cannot declare `authz`. Malformed values, the removed `access` field and string resource declarations are rejected.

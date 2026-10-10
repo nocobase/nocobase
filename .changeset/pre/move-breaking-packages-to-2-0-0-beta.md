@@ -1,8 +1,6 @@
 ---
 '@nocobase/app-client': major
-'@nocobase/app-plugin-ai-employee': major
 '@nocobase/app-plugin-authentication': major
-'@nocobase/app-plugin-hub': major
 '@nocobase/app-plugin-users': major
 '@nocobase/app-plugin-workflow': major
 '@nocobase/app-server': major
@@ -16,7 +14,6 @@
 '@nocobase/app-plugin-authz-sharing-rules': patch
 '@nocobase/app-plugin-database-example': patch
 '@nocobase/app-plugin-database-explorer': patch
-'@nocobase/app-plugin-departments-example': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-file-example': patch
 '@nocobase/app-plugin-i18n': patch
@@ -36,7 +33,6 @@
 '@nocobase/app-plugin-template-print-example': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-testing': patch
 ---
 

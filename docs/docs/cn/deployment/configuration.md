@@ -12,7 +12,6 @@ description: 生产环境的配置文件、数据库、密钥、初始管理员�
 | app-installer | 安装目录下的 `config.yml`，所有版本共用                     | 由 app-installer 生成，通过 `--set` 和 `--set-from-env` 填写值      |
 | Docker        | 宿主机上的文件，只读挂载到 `/app/config.yml`                | 手动编写，启动前通过镜像中的 `config check` 检查                    |
 | Node.js       | 与 `dist/` 并列的 `config.yml`，通过 `APP_CONFIG_FILE` 指定 | 通过 `node dist/cli/index.js config init` 生成，`config set` 填写值 |
-| Hub 托管      | 由 Hub 保存，部署时在管理界面填写或通过 CLI `--config` 提交 | Hub 自动补全密钥；`--config` 整份替换                               |
 
 ## 通过 CLI 生成和检查
 
@@ -65,7 +64,7 @@ secrets:
 
 `secrets.keys` 是应用加密存储的密钥材料，用于加密插件凭证、模型密钥、OAuth 令牌等需要回读的机密，登录和会话的密钥也由它派生。第一个密钥为当前密钥，新数据都用它加密；其余密钥只用于解密。每个密钥至少 32 字节，可通过 `openssl rand -hex 32` 生成。也可以用环境变量 `SECRETS_KEYS=2:<key>,1:<key>` 设置，当前密钥在前。
 
-`config init` 和 app-installer 会生成第一个密钥；Hub 为其托管的应用自动补全缺失或为占位值的 `secrets.keys`。密钥在重启和升级时保持不变，随配置一起备份并与数据库分开保存，不提交到代码仓库。占位值、不足 32 字节的密钥或重复的版本号会导致应用启动报错，`config check` 也会报告。
+`config init` 和 app-installer 会生成第一个密钥。密钥在重启和升级时保持不变，随配置一起备份并与数据库分开保存，不提交到代码仓库。占位值、不足 32 字节的密钥或重复的版本号会导致应用启动报错，`config check` 也会报告。
 
 轮换时，把新密钥放在第一位并使用比其他密钥都大的版本号，旧密钥保留在后面；重启后运行 `node dist/cli/index.js secrets rotate`（源码项目中为 `pnpm nocobase secrets rotate`），直到 `secrets status` 显示没有待重新加密的数据，再删除旧密钥。轮换可以在应用运行时进行，也可以重复执行。更换当前密钥会使所有用户退出登录一次，因为登录 Cookie 由当前密钥签名。
 
@@ -88,7 +87,7 @@ users:
 | 环境变量                  | 示例                           | 说明                                                                                                        |
 | ------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | `APP_PUBLIC_ORIGIN`       | `https://apps.example.com`     | 对外访问的协议和域名，不包含挂载路径                                                                        |
-| `APP_BASE_PATH`           | `/crm`                         | 挂载路径，启动时读取，无需重新构建；默认为 `/main`，Hub 为 `/hub`                                           |
+| `APP_BASE_PATH`           | `/crm`                         | 挂载路径，启动时读取，无需重新构建；默认为 `/main`                                                          |
 | `APP_SERVER_HOST`         | `127.0.0.1`                    | 监听地址；容器内使用 `0.0.0.0`                                                                              |
 | `APP_SERVER_PORT`         | `13000`                        | 监听端口                                                                                                    |
 | `APP_CONFIG_FILE`         | `/srv/nocobase/crm/config.yml` | 指定配置文件路径；未设置时默认查找部署根目录的配置文件（如 `config.yml`），其中保存的密钥会在重启后继续使用 |
@@ -96,7 +95,7 @@ users:
 | `NODE_ENV`                | `production`                   | 会话 Cookie 带 `Secure` 标记，仅可通过 HTTPS 或 localhost 登录                                              |
 | `NOCOBASE_STRICT_STARTUP` | `true`                         | 启动失败时以非零状态退出，以便服务管理器重启应用                                                            |
 
-同一配置项同时出现在文件和对应环境变量中时，以环境变量为准，例如 `SECRETS_KEYS` 覆盖 `secrets.keys`。仅 `config env` 列出的变量有效，不要按名称推测。Hub 托管的应用不设置这些变量：路径由 Hub 分配，配置中的 `app.publicOrigin` 表示对外 origin。
+同一配置项同时出现在文件和对应环境变量中时，以环境变量为准，例如 `SECRETS_KEYS` 覆盖 `secrets.keys`。仅 `config env` 列出的变量有效，不要按名称推测。
 
 ## HTTPS 与反向代理
 
@@ -128,4 +127,4 @@ server {
 }
 ```
 
-`proxy_pass` 不追加路径，以保留应用的 `/crm` 前缀；`Upgrade` 和 `Connection` 用于支持 WebSocket。同一域名下部署多个应用时，每个应用使用一个 `location /crm/`，转发至各自的端口。用于 Hub 时转发整站流量，并增加 `client_max_body_size 260m;`。执行 `nginx -t` 检查配置后再重新加载。
+`proxy_pass` 不追加路径，以保留应用的 `/crm` 前缀；`Upgrade` 和 `Connection` 用于支持 WebSocket。同一域名下部署多个应用时，每个应用使用一个 `location /crm/`，转发至各自的端口。执行 `nginx -t` 检查配置后再重新加载。

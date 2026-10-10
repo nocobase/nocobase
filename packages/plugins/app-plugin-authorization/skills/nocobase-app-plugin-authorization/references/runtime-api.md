@@ -49,7 +49,7 @@ export default defineServerPlugins([authentication, authorization]);
 | `authz.settings.add(item)`, `authz.settings.grant(id, actions)`                                        | Register a settings item and build a grant of it                                                              |
 | `authz.pages.grant(id)`                                                                                | Build a page `access` grant; pages come from the client route tree                                            |
 | `./client`: `useCan`, `useAuthorizationClient`, `authorizationClientToken`, `useAuthorizationRevision` | Session-aware visibility checks                                                                               |
-| `./client/management`, `./server/extension`                                                            | Shared workspace components and HTTP helpers for plugins that add authorization settings screens              |
+| `./server/extension`                                                                                   | HTTP helpers for plugins that add authorization settings surfaces                                             |
 
 ## Declare a business operation
 
@@ -150,7 +150,7 @@ For generated Repository APIs, keep the `defineRepositoryApiRoutes` declaration 
 
 ## Settings items
 
-An administration surface is a settings item, not a composite. Register it in the owning provider, place it in an administration subsection, declare the same id on its settings route and check it on every endpoint:
+An administration surface is a settings item, not a composite. Register it in the owning provider, place it in an administration subsection, declare the same id on the application page that edits it and check it on every endpoint:
 
 ```ts
 authz.ui.sections.add({
@@ -177,7 +177,7 @@ router.put('/sales/pricing', async (c) => {
 });
 ```
 
-Choose semantic action names; `authz.settings.grant(id, actions)` and every check refuse an id or action nobody registered. The settings route declares `authz: { resource: { type: 'settings', id: 'sales.pricing' }, action: 'read' }`. Registering the item only makes it grantable; assign it through a permission set to activate it. See [client development](client-development.md) for the route and [code versus seeds](code-and-seeds.md) for initial grants.
+Choose semantic action names; `authz.settings.grant(id, actions)` and every check refuse an id or action nobody registered. An application page that edits it declares `authz: { resource: { type: 'settings', id: 'sales.pricing' }, action: 'read' }` on its route. Registering the item only makes it grantable; assign it through a permission set to activate it. See [client development](client-development.md) for the route and [code versus seeds](code-and-seeds.md) for initial grants.
 
 ## Management HTTP API
 

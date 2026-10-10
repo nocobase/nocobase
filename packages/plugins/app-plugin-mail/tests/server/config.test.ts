@@ -155,7 +155,7 @@ describe('mail OAuth callback configuration', () => {
         '/main',
         'success',
       ),
-    ).toBe('/main/dev/mail/accounts?mailAuthorization=success');
+    ).toBe('/main?mailAuthorization=success');
   });
 
   it('resolves a configured return path and preserves its query parameters', () => {

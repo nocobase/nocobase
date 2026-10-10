@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-template-hub': minor
 '@nocobase/app-cli': patch
 ---
 
