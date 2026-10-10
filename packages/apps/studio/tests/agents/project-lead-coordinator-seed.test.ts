@@ -52,7 +52,12 @@ describe('the project lead coordinator seed', () => {
       },
       revision: 2,
     });
-    expect([...lead.actions].sort()).toEqual([...PROJECT_LEAD.actions].sort());
+    // This historical seed predates the project-creation grant.
+    expect([...lead.actions].sort()).toEqual(
+      PROJECT_LEAD.actions
+        .filter((action) => action !== 'pm.projects/create')
+        .sort(),
+    );
     expect(lead.actions).not.toContain('studio.git/open-pr');
     expect(lead.actions).not.toContain('studio.previews/manage');
     expect(await h.agents.agents.history('studio-project-lead')).toEqual([
