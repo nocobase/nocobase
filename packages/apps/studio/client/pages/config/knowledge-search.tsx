@@ -356,16 +356,6 @@ function StoreSection({
           {t('knowledge.searchSettings.store.type')}
         </dt>
         <dd>{typeLabel}</dd>
-        {index.store?.target ? (
-          <>
-            <dt className='text-muted-foreground'>
-              {t('knowledge.searchSettings.store.target')}
-            </dt>
-            <dd className='font-mono text-xs break-all'>
-              {index.store.target}
-            </dd>
-          </>
-        ) : null}
         <dt className='text-muted-foreground'>
           {t('knowledge.searchSettings.store.state')}
         </dt>

@@ -451,7 +451,7 @@ describe('the knowledge vector index', () => {
     });
     expect(await h.index.status()).toEqual({
       available: true,
-      store: { type: 'sqlite-vec', target: 'storage/vectors.sqlite' },
+      store: { type: 'sqlite-vec' },
       reason: null,
       active: {
         modelService: 'openai',
@@ -486,7 +486,7 @@ describe('the knowledge vector index', () => {
     });
     expect(await h.index.status()).toMatchObject({
       available: false,
-      store: { type: 'pgvector', target: 'postgres://vec@db:5432/vectors' },
+      store: { type: 'pgvector' },
       reason: 'PGVECTOR_CONNECTION_FAILED',
     });
   });

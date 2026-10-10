@@ -72,7 +72,7 @@ function config(
     settings: DEFAULT_KNOWLEDGE_SEARCH,
     index: {
       available: true,
-      store: { type: 'sqlite-vec', target: 'storage/vectors.sqlite' },
+      store: { type: 'sqlite-vec' },
       reason: null,
       active: null,
       building: null,
@@ -113,7 +113,7 @@ const section = (name: string) =>
   );
 
 describe('the knowledge search settings page', () => {
-  it('says why semantic search is unavailable, how to fix it, and where the store points', async () => {
+  it('says why semantic search is unavailable, how to fix it, and names the store type', async () => {
     api.knowledgeSearch.mockResolvedValue(
       config({
         index: {
@@ -156,8 +156,8 @@ describe('the knowledge search settings page', () => {
       screen.getByText('knowledge.searchSettings.store.types.pgvector'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('postgres://vec@db.internal:5432/vectors'),
-    ).toBeInTheDocument();
+      screen.queryByText('postgres://vec@db.internal:5432/vectors'),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/agents:\s+vectors:/u)).toBeInTheDocument();
   });
 
@@ -170,7 +170,7 @@ describe('the knowledge search settings page', () => {
         },
         index: {
           available: true,
-          store: { type: 'sqlite-vec', target: 'storage/vectors.sqlite' },
+          store: { type: 'sqlite-vec' },
           reason: null,
           active: null,
           building: {
@@ -196,7 +196,9 @@ describe('the knowledge search settings page', () => {
     expect(
       screen.getByText('knowledge.searchSettings.store.types.sqlite-vec'),
     ).toBeInTheDocument();
-    expect(screen.getByText('storage/vectors.sqlite')).toBeInTheDocument();
+    expect(
+      screen.queryByText('storage/vectors.sqlite'),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('progressbar', {
         name: /store\.buildingIndex .*"indexed":120,"total":480/u,
