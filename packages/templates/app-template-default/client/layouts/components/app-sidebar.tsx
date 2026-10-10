@@ -48,11 +48,11 @@ export function AppSidebarProvider({
       open={!collapsed}
       onOpenChange={(open) => setCollapsed(!open)}
       className='h-svh bg-background'
-      // shadcn's 16rem and 3rem, in spacing units: a density preset that changes the unit scales the sidebar together
-      // with the items inside it (the provider's documented way to set the widths).
+      // Give expanded navigation more breathing room while retaining density-aware sizing
+      // and the existing compact icon rail (the provider's documented width override).
       style={
         {
-          '--sidebar-width': 'calc(var(--spacing) * 64)',
+          '--sidebar-width': 'calc(var(--spacing) * 75)',
           '--sidebar-width-icon': 'calc(var(--spacing) * 12)',
         } as CSSProperties
       }
@@ -123,7 +123,7 @@ export function AppSidebar({
     <>
       {header}
       {/* The primitive hides the icon mode's overflow; a long menu still scrolls there. */}
-      <SidebarContent className='group-data-[collapsible=icon]:overflow-y-auto'>
+      <SidebarContent className='app-navigation group-data-[collapsible=icon]:overflow-y-auto [&_[data-slot=sidebar-menu-button]]:h-10 [&_[data-slot=sidebar-menu-button]]:px-3'>
         {children}
       </SidebarContent>
       {footer}

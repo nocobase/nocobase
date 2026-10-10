@@ -8,15 +8,14 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ClaudeAdapter } from '../../src/agent/adapters/claude.ts';
-import { createPolicy } from '../../src/core/command-policy.ts';
 import type {
   AdapterEvent,
   AdapterHandle,
@@ -76,12 +75,7 @@ function sessionFor(
     systemPrompt: 'You are a Acme test agent. Keep answers to one sentence.',
     model: MODEL,
     env: whitelistedEnv(),
-    permission: async (tool, input) => {
-      const command = typeof input.command === 'string' ? input.command : '';
-      if (tool === 'Bash' && /^\s*rm\b/.test(command))
-        return { deny: 'rm is not allowed in this run' };
-      return 'allow';
-    },
+    permission: async () => 'allow',
     abort: new AbortController().signal,
     maxTurns: 20,
     ...overrides,
@@ -122,16 +116,23 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
     expect(detection.authenticated).toBe(true);
   });
 
-  it('creates a file, is denied rm, and takes a steer between tool calls', async () => {
+  it('works with full access: writes its home, removes files, commits, and takes a steer', async () => {
     const workDir = await repo();
+    const marker = path.join(
+      homedir(),
+      '.cache',
+      'nocobase-runner-smoke',
+      `claude-${Date.now()}.txt`,
+    );
     const handle = adapter.start(
       sessionFor(
         workDir,
         [
           'Do these steps one at a time, one tool call per step:',
           '1. Create hello.txt containing exactly "hello".',
-          '2. Run the shell command `rm -f nothing.tmp`.',
-          '3. Run the shell command `ls`.',
+          `2. Run the shell command \`mkdir -p "${path.dirname(marker)}" && echo ok > "${marker}"\`.`,
+          '3. Run the shell command `rm -f nothing.tmp`.',
+          '4. Run the shell command `git add hello.txt && git -c user.name=Smoke -c user.email=smoke@example.com commit -q -m smoke`.',
           'Then reply "done".',
         ].join('\n'),
       ),
@@ -146,7 +147,7 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
       }
     });
     const result = await handle.result;
-    await save('create-file');
+    await save('full-access');
     console.log(
       events
         .map(
@@ -165,11 +166,14 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
     expect(
       (await readFile(path.join(workDir, 'hello.txt'), 'utf8')).trim(),
     ).toBe('hello');
+    expect((await readFile(marker, 'utf8')).trim()).toBe('ok');
     expect(
-      events.some(
-        (e) => e.type === 'permission' && e.meta?.decision === 'deny',
-      ),
-    ).toBe(true);
+      execFileSync('git', ['log', '--oneline'], {
+        cwd: workDir,
+        encoding: 'utf8',
+      }),
+    ).toContain('smoke');
+    expect(events.filter((e) => e.type === 'permission')).toEqual([]);
     expect(
       events.some((e) => e.type === 'input' && e.meta?.inputId === 'steer-1'),
     ).toBe(true);
@@ -200,112 +204,4 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
     expect(result.exit).toBe('aborted');
     expect(elapsed).toBeLessThan(5000);
   }, 120_000);
-
-  it('continues inside the workspace after an outside-file read is denied', async () => {
-    const root = await repo();
-    const workDir = path.join(root, 'work');
-    await mkdir(workDir);
-    await writeFile(path.join(root, 'full-test.log'), 'outside fixture');
-    const policy = createPolicy({
-      workDir,
-      policy: {
-        permissionMode: 'acceptEdits',
-        allowedCommands: ['^cat\\b', '^printf\\b'],
-        deniedPatterns: [],
-        idleTimeoutMs: 60_000,
-      },
-    });
-    const handle = adapter.start(
-      sessionFor(
-        workDir,
-        'First use Read to read ../full-test.log. Then create result.txt in the working directory containing exactly "done" and reply "done".',
-        {
-          permission: async (tool, input) => {
-            const decision = policy(tool, input);
-            return decision.decision === 'allow'
-              ? 'allow'
-              : { deny: decision.reason };
-          },
-        },
-      ),
-    );
-    const events = await drain(handle);
-    await save('outside-file-denial');
-    const denialIndex = events.findIndex(
-      (e) =>
-        e.type === 'permission' &&
-        e.meta?.decision === 'deny' &&
-        String(e.meta.reason).includes('outside the work directory'),
-    );
-    expect(denialIndex).toBeGreaterThanOrEqual(0);
-    expect(
-      events.slice(denialIndex + 1).some((e) => e.type === 'toolUse'),
-    ).toBe(true);
-    expect(
-      events.some(
-        (e) =>
-          e.type === 'toolResult' &&
-          String(e.output).includes('not a user instruction to stop'),
-      ),
-    ).toBe(true);
-    expect(
-      (await readFile(path.join(workDir, 'result.txt'), 'utf8')).trim(),
-    ).toBe('done');
-    expect((await handle.result).exit).toBe('completed');
-  }, 240_000);
-
-  it.each([false, true])(
-    'keeps permissions working after a background turn (resumed=%s)',
-    async (resumed) => {
-      const workDir = await repo();
-      let resumeSessionId: string | undefined;
-      if (resumed) {
-        const seed = adapter.start(
-          sessionFor(workDir, 'Reply "ready" without using tools.'),
-        );
-        await drain(seed);
-        const seedResult = await seed.result;
-        expect(seedResult.exit).toBe('completed');
-        resumeSessionId = seedResult.sessionId;
-        expect(resumeSessionId).toBeTruthy();
-      }
-      const handle = adapter.start(
-        sessionFor(
-          workDir,
-          'Use Bash with run_in_background=true to run `sleep 2`. End this turn immediately with "waiting". When notified that the task finished, use Write to create result.txt containing exactly "done", then reply "done". Do not schedule a wakeup.',
-          { resumeSessionId },
-        ),
-      );
-      const events = await drain(handle);
-      await save(
-        resumed ? 'resumed-background-continuation' : 'background-continuation',
-      );
-      const firstResult = events.findIndex(
-        (event) => event.type === 'status' && event.content === 'turnCompleted',
-      );
-      expect(firstResult).toBeGreaterThanOrEqual(0);
-      expect(
-        events
-          .slice(firstResult + 1)
-          .some(
-            (event) =>
-              event.type === 'permission' &&
-              event.tool === 'Write' &&
-              event.meta?.decision === 'allow',
-          ),
-      ).toBe(true);
-      expect(
-        events
-          .filter((event) => event.type === 'toolResult')
-          .some((event) =>
-            String(event.output).includes("The user doesn't want"),
-          ),
-      ).toBe(false);
-      expect(
-        (await readFile(path.join(workDir, 'result.txt'), 'utf8')).trim(),
-      ).toBe('done');
-      expect((await handle.result).exit).toBe('completed');
-    },
-    240000,
-  );
 });

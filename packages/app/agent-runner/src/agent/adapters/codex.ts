@@ -9,23 +9,16 @@
  *   cannot join the active turn (none is running yet, or it just ended) is
  *   started as the next turn; the run ends when a turn completes with
  *   nothing left to deliver.
- * - Permissions: approval policy `untrusted` with the `workspaceWrite`
- *   sandbox (writable: the work directory, the session's `writableRoots`,
- *   such as each worktree's Git directory, and the `.agents` directory of
- *   each working tree, which Codex otherwise keeps read-only as its own
- *   skills root although an application's `skills sync` writes there; network on, since the agent
- *   reaches its application through the application CLI). Codex then asks
- *   before every command and file change, and each request is answered by
- *   the runner's policy (`shell` with the unwrapped script, `edit` per
- *   file). A command Codex ran without asking (allowed by the machine's own
- *   Codex rules) is still checked when it completes and reported, but it
- *   cannot be undone. Requests to widen the sandbox are always refused.
+ * - Permissions: none. The thread runs with approval policy `never` and the
+ *   `dangerFullAccess` sandbox, and any approval request Codex still sends is
+ *   accepted. The runner is not a security boundary: run it as a dedicated
+ *   user, in a container or in a VM.
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access, mkdir, realpath, stat } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
@@ -40,8 +33,6 @@ import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
 import { detectExec } from './detect-exec.ts';
 import type {
-  CommandApprovalParams,
-  FileChangeApprovalParams,
   InitializeResponse,
   PermissionsApprovalParams,
   SandboxPolicy,
@@ -55,8 +46,6 @@ import type {
 } from './codex/protocol.ts';
 import { RpcConnection, RpcError, spawnCodexProcess } from './codex/rpc.ts';
 import type { CodexExit, CodexProcess, SpawnCodex } from './codex/rpc.ts';
-import { denialMessage } from './policy-denial.ts';
-import { permissionInputSummary } from './input-summary.ts';
 import {
   Channel,
   capInput,
@@ -71,7 +60,6 @@ import type {
   AdapterResult,
   AdapterSession,
   AgentAdapter,
-  PermissionDecision,
   RunnerFeature,
   ToolDetection,
   Usage,
@@ -143,16 +131,6 @@ async function findOnPath(
     }
   }
   return undefined;
-}
-
-function normalizeDecision(decision: PermissionDecision): {
-  allow: boolean;
-  reason?: string;
-} {
-  if (decision === 'allow') return { allow: true };
-  if (decision === 'deny')
-    return { allow: false, reason: 'Denied by the runner policy' };
-  return { allow: false, reason: decision.deny };
 }
 
 function errorMessage(error: unknown): string {
@@ -348,59 +326,6 @@ interface Steer {
   prompt?: boolean;
 }
 
-/**
- * The directory Codex's `workspaceWrite` sandbox keeps read-only inside every writable root, as the root of its own
- * skills and plugins (seen on macOS, with seatbelt). An application keeps its synchronized Skills there
- * (`<repo>/.agents/skills`), so `pnpm install` and `skills sync` fail with `EPERM` unless it is a writable root itself.
- */
-export const CODEX_AGENTS_DIR = '.agents';
-
-/** Creates missing `.agents` directories and opens only each working tree's canonical `.agents` itself. */
-export async function codexAgentsDirs(
-  session: AdapterSession,
-): Promise<string[]> {
-  const trees = [
-    ...new Set([session.workDir, ...(session.workingTrees ?? [])]),
-  ];
-  const allowed = await Promise.all(trees.map((tree) => realpath(tree)));
-  const dirs: string[] = [];
-  for (const tree of allowed) {
-    const dir = path.join(tree, CODEX_AGENTS_DIR);
-    try {
-      // A sandbox cannot open a missing root. Do this before starting Codex, without replacing existing paths.
-      await mkdir(dir);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-    }
-    let target: string;
-    try {
-      target = await realpath(dir);
-    } catch {
-      // Keep dangling or inaccessible paths intact and let Codex run without this extra writable root.
-      continue;
-    }
-    // An internal link must not open protected siblings (.codex/.git) or the whole working tree either.
-    if (target !== dir) continue;
-    if (!(await stat(target)).isDirectory()) continue;
-    // Use the canonical target so replacing a link later cannot redirect this sandbox root elsewhere.
-    dirs.push(target);
-  }
-  return [...new Set(dirs)];
-}
-
-/** What the sandbox lets the agent write: the work directory, the session's writable roots and their `.agents`. */
-export async function codexWritableRoots(
-  session: AdapterSession,
-): Promise<string[]> {
-  return [
-    ...new Set([
-      session.workDir,
-      ...(session.writableRoots ?? []),
-      ...(await codexAgentsDirs(session)),
-    ]),
-  ];
-}
-
 class CodexRun {
   private readonly events = new Channel<AdapterEvent>();
   private readonly session: AdapterSession;
@@ -428,9 +353,6 @@ class CodexRun {
   private steersInFlight = 0;
 
   private readonly items = new Map<string, ThreadItem>();
-  private readonly reviewedItems = new Set<string>();
-  /** What the model was told about each declined item, so its tool result says why it never ran. */
-  private readonly denials = new Map<string, string>();
   private usageBaseline?: TokenUsageBreakdown;
   private usageTotal?: TokenUsageBreakdown;
 
@@ -570,18 +492,12 @@ class CodexRun {
     this.turnRunning = true;
     this.turnSummary = undefined;
     const effort = session.effort || undefined;
-    const sandboxPolicy: SandboxPolicy = {
-      type: 'workspaceWrite',
-      writableRoots: await codexWritableRoots(session),
-      networkAccess: true,
-      excludeTmpdirEnvVar: false,
-      excludeSlashTmp: false,
-    };
+    const sandboxPolicy: SandboxPolicy = { type: 'dangerFullAccess' };
     const response = await this.rpc!.request<{ turn: Turn }>('turn/start', {
       threadId: this.threadId,
       input: inputs.map((steer) => textInput(steer.text)),
       clientUserMessageId: first.clientId,
-      approvalPolicy: 'untrusted',
+      approvalPolicy: 'never',
       sandboxPolicy,
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
@@ -645,78 +561,13 @@ class CodexRun {
     proc.kill('SIGKILL');
   }
 
-  // -- permissions ----------------------------------------------------------
-
-  private async decide(
-    tool: string,
-    input: Record<string, unknown>,
-  ): Promise<{ allow: boolean; reason?: string }> {
-    try {
-      return normalizeDecision(await this.session.permission(tool, input));
-    } catch (error) {
-      return { allow: false, reason: `Policy error: ${errorMessage(error)}` };
-    }
-  }
-
-  private report(
-    tool: string,
-    input: unknown,
-    toolUseId: string | undefined,
-    decision: { allow: boolean; reason?: string },
-    extra: Record<string, unknown> = {},
-  ): void {
-    const capped = capInput(input);
-    // What the denial was about, before capping drops the paths of a large input.
-    const summary = decision.allow ? undefined : permissionInputSummary(input);
-    this.emit({
-      type: 'permission',
-      tool,
-      input: capped.input,
-      meta: {
-        decision: decision.allow ? 'allow' : 'deny',
-        ...(decision.reason ? { reason: decision.reason } : {}),
-        ...(toolUseId ? { toolUseId } : {}),
-        ...(summary ? { inputSummary: summary } : {}),
-        ...extra,
-        ...(capped.truncated ? { truncated: true } : {}),
-      },
-    });
-  }
+  // -- tool calls as reported ----------------------------------------------
 
   private commandInput(
     command: string,
     cwd: string | null | undefined,
   ): Record<string, unknown> {
     return { command: unwrapShell(command), ...(cwd ? { cwd } : {}) };
-  }
-
-  /** Approval replies have no message field; deliver the reason as runtime feedback. */
-  private explainDenial(
-    tool: string,
-    toolUseId: string | undefined,
-    decision: { allow: boolean; reason?: string },
-  ): void {
-    if (decision.allow) return;
-    const message = denialMessage(decision.reason);
-    if (toolUseId) this.denials.set(toolUseId, message);
-    // Codex's approval reply carries no message and the declined item completes with empty output, so the reason
-    // reaches the model as runtime feedback. Do not await the steer while the app-server is waiting for its approval
-    // reply. The existing input queue retains feedback across turn boundaries.
-    void this.steer(
-      `Runner policy feedback for ${tool}${toolUseId ? ` (tool call ${toolUseId})` : ''}: ${message}`,
-    );
-  }
-
-  private async decideChanges(
-    changes: { path: string; kind: string }[],
-  ): Promise<{ allow: boolean; reason?: string }> {
-    if (changes.length === 0)
-      return { allow: false, reason: 'File change without a file list' };
-    for (const change of changes) {
-      const decision = await this.decide('edit', change);
-      if (!decision.allow) return decision;
-    }
-    return { allow: true };
   }
 
   private changeList(itemId: string): { path: string; kind: string }[] {
@@ -728,125 +579,36 @@ class CodexRun {
     }));
   }
 
+  // -- requests -------------------------------------------------------------
+
+  /**
+   * Codex runs with approval policy `never`, so it should not ask; whatever it still asks is accepted, except while the
+   * run is stopping, which starts nothing new. Questions nobody can answer during a run are declined or left empty.
+   */
   private readonly onRequest = async (
     method: string,
     params: unknown,
   ): Promise<unknown> => {
-    // A stopping run starts nothing new.
-    if (
-      this.stopping &&
-      (method === 'item/commandExecution/requestApproval' ||
-        method === 'item/fileChange/requestApproval')
-    ) {
-      this.reviewedItems.add((params as { itemId: string }).itemId);
-      return { decision: 'cancel' };
-    }
     switch (method) {
-      case 'item/commandExecution/requestApproval': {
-        const p = params as CommandApprovalParams;
-        const item = this.items.get(p.itemId);
-        const command =
-          p.command ??
-          (item?.type === 'commandExecution' && 'command' in item
-            ? item.command
-            : '');
-        const input = this.commandInput(command, p.cwd);
-        const decision = await this.decide('shell', input);
-        this.reviewedItems.add(p.itemId);
-        this.report('shell', input, p.itemId, decision);
-        this.explainDenial('shell', p.itemId, decision);
-        return { decision: decision.allow ? 'accept' : 'decline' };
-      }
-      case 'item/fileChange/requestApproval': {
-        const p = params as FileChangeApprovalParams;
-        const changes = this.changeList(p.itemId);
-        const decision = p.grantRoot
-          ? {
-              allow: false,
-              reason: 'Agent runs do not widen the writable roots',
-            }
-          : await this.decideChanges(changes);
-        this.reviewedItems.add(p.itemId);
-        this.report('edit', { changes }, p.itemId, decision);
-        this.explainDenial('edit', p.itemId, decision);
-        return { decision: decision.allow ? 'accept' : 'decline' };
-      }
+      case 'item/commandExecution/requestApproval':
+      case 'item/fileChange/requestApproval':
+        return { decision: this.stopping ? 'cancel' : 'accept' };
       case 'item/permissions/requestApproval': {
         const p = params as PermissionsApprovalParams;
-        const decision = {
-          allow: false,
-          reason: 'Agent runs do not widen the sandbox',
-        };
-        this.report(
-          'requestPermissions',
-          { permissions: p.permissions, reason: p.reason },
-          p.itemId,
-          decision,
-        );
-        this.explainDenial('requestPermissions', p.itemId, decision);
-        return { permissions: {}, scope: 'turn' };
+        return { permissions: p.permissions ?? {}, scope: 'turn' };
       }
-      case 'mcpServer/elicitation/request': {
-        const p = params as { serverName?: string; message?: string };
-        const decision = {
-          allow: false,
-          reason: 'MCP elicitations cannot be answered in agent runs',
-        };
-        this.report(
-          `mcp__${p.serverName ?? 'unknown'}`,
-          { message: p.message },
-          undefined,
-          decision,
-        );
-        this.explainDenial(
-          `mcp__${p.serverName ?? 'unknown'}`,
-          undefined,
-          decision,
-        );
+      case 'mcpServer/elicitation/request':
         return { action: 'decline', content: null, _meta: null };
-      }
       case 'item/tool/requestUserInput':
         // Nobody can answer during a run; the agent proceeds without answers.
         return { answers: {} };
       case 'execCommandApproval':
       case 'applyPatchApproval':
-        return { decision: 'denied' };
+        return { decision: this.stopping ? 'abort' : 'approved' };
       default:
         throw new Error(`Unsupported request: ${method}`);
     }
   };
-
-  /** A command or file change Codex ran without asking (local Codex rules). */
-  private async checkUnreviewed(item: ThreadItem): Promise<void> {
-    if (this.reviewedItems.has(item.id)) return;
-    this.reviewedItems.add(item.id);
-    // Declined calls never ran.
-    if ('status' in item && item.status === 'declined') return;
-    let tool: string;
-    let input: Record<string, unknown>;
-    let decision: { allow: boolean; reason?: string };
-    if (item.type === 'commandExecution' && 'command' in item) {
-      tool = 'shell';
-      input = this.commandInput(item.command, item.cwd);
-      decision = await this.decide(tool, input);
-    } else if (item.type === 'fileChange' && 'changes' in item) {
-      tool = 'edit';
-      const changes = item.changes.map((c) => ({
-        path: c.path,
-        kind: c.kind.type,
-      }));
-      input = { changes };
-      decision = await this.decideChanges(changes);
-    } else return;
-    this.report(tool, input, item.id, decision, { unprompted: true });
-    if (!decision.allow) {
-      this.emit({
-        type: 'error',
-        content: `Codex ran a ${tool} call the runner policy denies, without asking: ${decision.reason ?? ''}`,
-        meta: { reason: 'unknown', toolUseId: item.id },
-      });
-    }
-  }
 
   // -- notifications --------------------------------------------------------
 
@@ -985,39 +747,21 @@ class CodexRun {
         break;
       case 'commandExecution':
         if ('command' in item) {
-          void this.checkUnreviewed(item);
-          this.toolResult(
-            'shell',
-            this.denials.get(item.id) ?? item.aggregatedOutput ?? '',
-            item.id,
-            {
-              isError:
-                item.status !== 'completed' || (item.exitCode ?? 0) !== 0,
-              status: item.status,
-              ...(item.exitCode !== null ? { exitCode: item.exitCode } : {}),
-              ...(this.denials.has(item.id) ? { deniedByPolicy: true } : {}),
-            },
-          );
+          this.toolResult('shell', item.aggregatedOutput ?? '', item.id, {
+            isError: item.status !== 'completed' || (item.exitCode ?? 0) !== 0,
+            status: item.status,
+            ...(item.exitCode !== null ? { exitCode: item.exitCode } : {}),
+          });
         }
         break;
       case 'fileChange':
         if ('changes' in item) {
           this.items.set(item.id, item);
-          void this.checkUnreviewed(item);
           this.toolResult(
             'edit',
-            [
-              ...item.changes.map((c) => `${c.kind.type} ${c.path}`),
-              ...(this.denials.has(item.id)
-                ? [this.denials.get(item.id)!]
-                : []),
-            ].join('\n'),
+            item.changes.map((c) => `${c.kind.type} ${c.path}`).join('\n'),
             item.id,
-            {
-              isError: item.status !== 'completed',
-              status: item.status,
-              ...(this.denials.has(item.id) ? { deniedByPolicy: true } : {}),
-            },
+            { isError: item.status !== 'completed', status: item.status },
           );
         }
         break;
@@ -1166,7 +910,6 @@ class CodexRun {
             : 'Codex is not installed (codex executable not found)',
         );
       }
-      await codexAgentsDirs(this.session);
       // A stop or a dead process ends the run even while still connecting.
       const connecting = this.connect(detection.path ?? 'codex');
       connecting.catch(() => {
@@ -1268,8 +1011,8 @@ class CodexRun {
     if (session.skills) await this.registerSkills(rpc, session.skills.dir);
     const threadParams = {
       cwd: session.workDir,
-      approvalPolicy: 'untrusted',
-      sandbox: 'workspace-write',
+      approvalPolicy: 'never',
+      sandbox: 'danger-full-access',
       developerInstructions: session.systemPrompt,
       ...(session.model ? { model: session.model } : {}),
     };

@@ -1,14 +1,9 @@
 import {
   chmod,
-  lstat,
-  mkdir,
   mkdtemp,
   readdir,
-  readFile,
   realpath,
   rm,
-  stat,
-  symlink,
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -16,10 +11,7 @@ import path from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import {
-  CodexAdapter,
-  codexWritableRoots,
-} from '../../src/agent/adapters/codex.ts';
+import { CodexAdapter } from '../../src/agent/adapters/codex.ts';
 import { classifyCodexFailure } from '../../src/agent/adapters/codex/classify.ts';
 import {
   shellWords,
@@ -30,7 +22,6 @@ import type {
   AdapterHandle,
   AdapterSession,
 } from '../../src/agent/adapters/types.ts';
-import { createPolicy } from '../../src/core/command-policy.ts';
 import { fakeSpawn } from './fake-codex.ts';
 import type { FakeCodex } from './fake-codex.ts';
 
@@ -385,182 +376,31 @@ describe('skills', () => {
   });
 });
 
-describe('sandbox', () => {
-  it("lets the agent write the work directory, the session's writable roots and the working trees' .agents, and nothing else", async () => {
-    const other = await realpath(
-      await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-other-')),
-    );
-    const sub = path.join(defaultWorkDir, 'vendor', 'sub');
-    await mkdir(sub, { recursive: true });
-    let params: Record<string, unknown> = {};
+describe('access', () => {
+  it('starts the thread and every turn with full access and no approvals', async () => {
+    let start: Record<string, unknown> = {};
+    let turn: Record<string, unknown> = {};
     const { adapter } = adapterWith(async (fake) => {
-      params = await handshake(fake);
-      completeTurn(fake);
-    });
-    const handle = adapter.start(
-      session({
-        writableRoots: [other, '/cache.git/worktrees/app'],
-        workingTrees: [defaultWorkDir, other, sub],
-      }),
-    );
-    await drain(handle);
-    expect(params.sandboxPolicy).toMatchObject({
-      type: 'workspaceWrite',
-      writableRoots: [
-        defaultWorkDir,
-        other,
-        '/cache.git/worktrees/app',
-        path.join(defaultWorkDir, '.agents'),
-        path.join(other, '.agents'),
-        path.join(sub, '.agents'),
-      ],
-    });
-    await rm(other, { recursive: true, force: true });
-  });
-
-  it('opens the .agents of the work directory without any working trees, but never one outside the run', async () => {
-    let params: Record<string, unknown> = {};
-    const { adapter } = adapterWith(async (fake) => {
-      params = await handshake(fake);
+      fake.respond(await fake.nextRequest('initialize'), { userAgent: 't' });
+      const thread = await fake.nextRequest('thread/start');
+      start = thread.params as Record<string, unknown>;
+      fake.respond(thread, { thread: { id: 'thread-1' }, model: 'gpt-test' });
+      const request = await fake.nextRequest('turn/start');
+      turn = request.params as Record<string, unknown>;
+      fake.respond(request, {
+        turn: { id: 'turn-1', status: 'inProgress', error: null },
+      });
       completeTurn(fake);
     });
     await drain(adapter.start(session()));
-    const roots = (params.sandboxPolicy as { writableRoots: string[] })
-      .writableRoots;
-    expect(roots).toEqual([
-      defaultWorkDir,
-      path.join(defaultWorkDir, '.agents'),
-    ]);
-  });
-
-  it('creates a missing .agents before Codex starts, so the sandbox can open it', async () => {
-    const workDir = await mkdtemp(
-      path.join(tmpdir(), 'nocobase-runner-codex-work-'),
-    );
-    const sub = path.join(workDir, 'vendor', 'sub');
-    await mkdir(path.join(workDir, '.agents', 'skills'), { recursive: true });
-    const before = await stat(path.join(workDir, '.agents', 'skills'));
-    await mkdir(sub, { recursive: true });
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      completeTurn(fake);
+    expect(start).toMatchObject({
+      approvalPolicy: 'never',
+      sandbox: 'danger-full-access',
     });
-    await drain(
-      adapter.start(session({ workDir, workingTrees: [workDir, sub] })),
-    );
-    expect((await stat(path.join(sub, '.agents'))).isDirectory()).toBe(true);
-    // An existing one is kept with what it holds.
-    expect(
-      (await stat(path.join(workDir, '.agents', 'skills'))).isDirectory(),
-    ).toBe(true);
-    expect((await stat(path.join(workDir, '.agents', 'skills'))).ino).toBe(
-      before.ino,
-    );
-    await rm(workDir, { recursive: true, force: true });
-  });
-
-  it('opens canonical .agents when the working tree itself is a link', async () => {
-    const root = await realpath(
-      await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-tree-link-')),
-    );
-    try {
-      const tree = path.join(root, 'tree');
-      const alias = path.join(root, 'alias');
-      await mkdir(tree);
-      await symlink(tree, alias, 'dir');
-      expect(await codexWritableRoots(session({ workDir: alias }))).toEqual([
-        alias,
-        path.join(tree, '.agents'),
-      ]);
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  });
-
-  it.each([
-    '.codex',
-    '.git',
-    '.',
-    '../work-outside',
-    'skill-cache',
-    '../other/.agents',
-  ])(
-    'skips an .agents link to %s without failing the run or replacing it',
-    async (destination) => {
-      const root = await realpath(
-        await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-boundary-')),
-      );
-      try {
-        const workDir = path.join(root, 'work');
-        const other = path.join(root, 'other');
-        const otherAgents = path.join(other, '.agents');
-        const target = path.resolve(workDir, destination);
-        await mkdir(workDir);
-        await mkdir(otherAgents, { recursive: true });
-        await mkdir(target, { recursive: true });
-        await writeFile(path.join(target, 'keep.txt'), 'existing content');
-        await symlink(destination, path.join(workDir, '.agents'), 'dir');
-        const config = session({ workDir, workingTrees: [workDir, other] });
-        expect(await codexWritableRoots(config)).toEqual([
-          workDir,
-          otherAgents,
-        ]);
-        let params: Record<string, unknown> = {};
-        const { adapter } = adapterWith(async (fake) => {
-          params = await handshake(fake);
-          completeTurn(fake);
-        });
-        const handle = adapter.start(config);
-        await drain(handle);
-        expect((await handle.result).exit).toBe('completed');
-        expect(params.sandboxPolicy).toMatchObject({
-          writableRoots: [workDir, otherAgents],
-        });
-        expect(
-          (await lstat(path.join(workDir, '.agents'))).isSymbolicLink(),
-        ).toBe(true);
-        expect(await realpath(path.join(workDir, '.agents'))).toBe(target);
-        expect(await readFile(path.join(target, 'keep.txt'), 'utf8')).toBe(
-          'existing content',
-        );
-      } finally {
-        await rm(root, { recursive: true, force: true });
-      }
-    },
-  );
-
-  it('skips a regular file at .agents without replacing it', async () => {
-    const workDir = await mkdtemp(
-      path.join(tmpdir(), 'nocobase-runner-codex-file-'),
-    );
-    try {
-      await writeFile(path.join(workDir, '.agents'), 'keep');
-      expect(await codexWritableRoots(session({ workDir }))).toEqual([workDir]);
-      expect(await readFile(path.join(workDir, '.agents'), 'utf8')).toBe(
-        'keep',
-      );
-    } finally {
-      await rm(workDir, { recursive: true, force: true });
-    }
-  });
-
-  it('skips a dangling .agents link without creating its external target', async () => {
-    const root = await mkdtemp(
-      path.join(tmpdir(), 'nocobase-runner-codex-dangling-'),
-    );
-    try {
-      const workDir = path.join(root, 'work');
-      const outside = path.join(root, 'outside');
-      await mkdir(workDir);
-      await symlink(outside, path.join(workDir, '.agents'), 'dir');
-      expect(await codexWritableRoots(session({ workDir }))).toEqual([workDir]);
-      expect(
-        (await lstat(path.join(workDir, '.agents'))).isSymbolicLink(),
-      ).toBe(true);
-      await expect(stat(outside)).rejects.toMatchObject({ code: 'ENOENT' });
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
+    expect(turn).toMatchObject({
+      approvalPolicy: 'never',
+      sandboxPolicy: { type: 'dangerFullAccess' },
+    });
   });
 });
 
@@ -580,136 +420,9 @@ describe('shell commands', () => {
   });
 });
 
-describe('permissions', () => {
-  it('answers file changes from the policy, per file', async () => {
-    const seen: [string, unknown][] = [];
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      const change = {
-        type: 'fileChange',
-        id: 'patch-1',
-        changes: [
-          { path: '/work/a.txt', kind: { type: 'add' }, diff: '' },
-          { path: '/etc/hosts', kind: { type: 'update' }, diff: '' },
-        ],
-        status: 'inProgress',
-      };
-      item(fake, 'started', change);
-      fake.emit({
-        id: 7,
-        method: 'item/fileChange/requestApproval',
-        params: { threadId: 'thread-1', turnId: 'turn-1', itemId: 'patch-1' },
-      });
-      expect((await fake.nextAnswer(7)).result).toEqual({
-        decision: 'decline',
-      });
-      expect(await fake.acceptPolicyFeedback()).toContain(
-        'outside the work directory',
-      );
-      item(fake, 'completed', { ...change, status: 'declined' });
-      completeTurn(fake);
-    });
-    const handle = adapter.start(
-      session({
-        permission: async (tool, input) => {
-          seen.push([tool, input]);
-          return String(input.path).startsWith('/work/')
-            ? 'allow'
-            : { deny: 'outside the work directory' };
-        },
-      }),
-    );
-    const events = await drain(handle);
-    expect(seen).toEqual([
-      ['edit', { path: '/work/a.txt', kind: 'add' }],
-      ['edit', { path: '/etc/hosts', kind: 'update' }],
-    ]);
-    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
-      {
-        tool: 'edit',
-        meta: {
-          decision: 'deny',
-          reason: 'outside the work directory',
-          inputSummary: {
-            fields: ['changes'],
-            changes: [
-              { path: '/work/a.txt', kind: 'add' },
-              { path: '/etc/hosts', kind: 'update' },
-            ],
-          },
-        },
-      },
-    ]);
-    expect(events.find((e) => e.type === 'toolResult')?.meta?.isError).toBe(
-      true,
-    );
-    expect((await handle.result).exit).toBe('completed');
-  });
-
-  it('checks commands Codex ran without asking, and refuses sandbox widening', async () => {
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      const command = {
-        type: 'commandExecution',
-        id: 'exec-1',
-        command: "/bin/zsh -lc 'cat .acme/run.json'",
-        cwd: '/work',
-        status: 'completed',
-        aggregatedOutput: '{}',
-        exitCode: 0,
-        durationMs: 1,
-      };
-      item(fake, 'started', { ...command, status: 'inProgress' });
-      item(fake, 'completed', command);
-      fake.emit({
-        id: 8,
-        method: 'item/permissions/requestApproval',
-        params: {
-          threadId: 'thread-1',
-          turnId: 'turn-1',
-          itemId: 'perm-1',
-          reason: 'need network',
-          permissions: { network: { enabled: true } },
-        },
-      });
-      expect((await fake.nextAnswer(8)).result).toEqual({
-        permissions: {},
-        scope: 'turn',
-      });
-      await fake.acceptPolicyFeedback();
-      fake.emit({ id: 9, method: 'item/tool/call', params: {} });
-      expect((await fake.nextAnswer(9)).error?.message).toMatch(
-        /Unsupported request/,
-      );
-      completeTurn(fake);
-    });
-    const handle = adapter.start(
-      session({
-        permission: async (_tool, input) =>
-          String(input.command).includes('.acme')
-            ? { deny: 'credentials' }
-            : 'allow',
-      }),
-    );
-    const events = await drain(handle);
-    // The unprompted check runs after the fact, so its order is not fixed.
-    const permissions = events.filter((e) => e.type === 'permission');
-    expect(permissions).toHaveLength(2);
-    expect(permissions.find((e) => e.tool === 'shell')).toMatchObject({
-      input: { command: 'cat .acme/run.json', cwd: '/work' },
-      meta: { decision: 'deny', reason: 'credentials', unprompted: true },
-    });
-    expect(
-      permissions.find((e) => e.tool === 'requestPermissions')?.meta,
-    ).toMatchObject({ decision: 'deny' });
-    expect(
-      events.some(
-        (e) => e.type === 'error' && /without asking/.test(e.content ?? ''),
-      ),
-    ).toBe(true);
-  });
-
-  it('denies when the policy throws', async () => {
+describe('approvals', () => {
+  it('accepts every approval request without asking the runner', async () => {
+    const permission = vi.fn(async () => 'allow' as const);
     const { adapter } = adapterWith(async (fake) => {
       await handshake(fake);
       fake.emit({
@@ -719,212 +432,45 @@ describe('permissions', () => {
           threadId: 'thread-1',
           turnId: 'turn-1',
           itemId: 'exec-1',
-          command: 'ls',
+          command: 'cat ../outside.txt',
         },
       });
-      expect((await fake.nextAnswer(3)).result).toEqual({
-        decision: 'decline',
+      expect((await fake.nextAnswer(3)).result).toEqual({ decision: 'accept' });
+      fake.emit({
+        id: 4,
+        method: 'item/fileChange/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'patch-1',
+          grantRoot: '/',
+        },
       });
-      expect(await fake.acceptPolicyFeedback()).toContain(
-        'Policy error: broken',
+      expect((await fake.nextAnswer(4)).result).toEqual({ decision: 'accept' });
+      fake.emit({
+        id: 5,
+        method: 'item/permissions/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'perm-1',
+          reason: 'need network',
+          permissions: { network: { enabled: true } },
+        },
+      });
+      expect((await fake.nextAnswer(5)).result).toEqual({
+        permissions: { network: { enabled: true } },
+        scope: 'turn',
+      });
+      fake.emit({ id: 6, method: 'item/tool/call', params: {} });
+      expect((await fake.nextAnswer(6)).error?.message).toMatch(
+        /Unsupported request/,
       );
       completeTurn(fake);
     });
-    const handle = adapter.start(
-      session({
-        permission: async () => {
-          throw new Error('broken');
-        },
-      }),
-    );
-    const events = await drain(handle);
-    expect(events.find((e) => e.type === 'permission')?.meta).toMatchObject({
-      decision: 'deny',
-      reason: 'Policy error: broken',
-    });
-  });
-
-  it('delivers the refusal reason and continues with an allowed command', async () => {
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      fake.emit({
-        id: 10,
-        method: 'item/commandExecution/requestApproval',
-        params: {
-          threadId: 'thread-1',
-          turnId: 'turn-1',
-          itemId: 'outside',
-          command: 'cat ../full-test.log',
-        },
-      });
-      expect((await fake.nextAnswer(10)).result).toEqual({
-        decision: 'decline',
-      });
-      const feedback = await fake.acceptPolicyFeedback();
-      expect(feedback).toContain('outside the work directory');
-      expect(feedback).toContain('not a user instruction to stop');
-      expect(feedback).toContain('inside the working directories');
-      fake.emit({
-        id: 11,
-        method: 'item/commandExecution/requestApproval',
-        params: {
-          threadId: 'thread-1',
-          turnId: 'turn-1',
-          itemId: 'inside',
-          command: 'cat full-test.log',
-        },
-      });
-      expect((await fake.nextAnswer(11)).result).toEqual({
-        decision: 'accept',
-      });
-      completeTurn(fake);
-    });
-    const handle = adapter.start(
-      session({
-        permission: async (_tool, input) =>
-          String(input.command).includes('../')
-            ? { deny: 'cat outside the work directory: ../full-test.log' }
-            : 'allow',
-      }),
-    );
-    const events = await drain(handle);
-    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
-      {
-        meta: {
-          decision: 'deny',
-          reason: 'cat outside the work directory: ../full-test.log',
-        },
-      },
-      { meta: { decision: 'allow' } },
-    ]);
-    expect((await handle.result).exit).toBe('completed');
-  });
-
-  it('says why a read-only command with a command off the allowlist never ran, to the model and in its result', async () => {
-    const command =
-      "sed -n '1,220p' registry/markdown-view.tsx; test -d node_modules && echo deps-present || echo deps-missing";
-    const execution = {
-      type: 'commandExecution',
-      id: 'exec-test',
-      command,
-      cwd: '/work',
-      status: 'declined',
-      aggregatedOutput: '',
-      exitCode: null,
-      durationMs: null,
-    };
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      item(fake, 'started', { ...execution, status: 'inProgress' });
-      fake.emit({
-        id: 20,
-        method: 'item/commandExecution/requestApproval',
-        params: {
-          threadId: 'thread-1',
-          turnId: 'turn-1',
-          itemId: 'exec-test',
-          command,
-          cwd: '/work',
-        },
-      });
-      expect((await fake.nextAnswer(20)).result).toEqual({
-        decision: 'decline',
-      });
-      const feedback = await fake.acceptPolicyFeedback();
-      expect(feedback).toContain('Command is not in the allowlist: test');
-      expect(feedback).toContain('not a user instruction to stop');
-      item(fake, 'completed', execution);
-      completeTurn(fake);
-    });
-    const policy = createPolicy({
-      workDir: '/work',
-      policy: {
-        permissionMode: 'acceptEdits',
-        allowedCommands: ['^sed\\b', '^echo\\b'],
-        deniedPatterns: [],
-        idleTimeoutMs: 1000,
-      },
-    });
-    const handle = adapter.start(
-      session({
-        permission: async (tool, input) => {
-          const decision = policy(tool, input);
-          return decision.decision === 'allow'
-            ? 'allow'
-            : { deny: decision.reason };
-        },
-      }),
-    );
-    const events = await drain(handle);
-    expect(events.find((e) => e.type === 'permission')).toMatchObject({
-      tool: 'shell',
-      meta: {
-        decision: 'deny',
-        reason: 'Command is not in the allowlist: test',
-        toolUseId: 'exec-test',
-        inputSummary: { command },
-      },
-    });
-    const result = events.find(
-      (e) => e.type === 'toolResult' && e.meta?.toolUseId === 'exec-test',
-    );
-    expect(result?.output).toContain('Command is not in the allowlist: test');
-    expect(result?.meta).toMatchObject({
-      isError: true,
-      status: 'declined',
-      deniedByPolicy: true,
-    });
-  });
-
-  it('retains policy feedback when the denied call ends the active turn', async () => {
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      fake.emit({
-        id: 12,
-        method: 'item/commandExecution/requestApproval',
-        params: {
-          threadId: 'thread-1',
-          turnId: 'turn-1',
-          itemId: 'outside',
-          command: 'cat ../full-test.log',
-        },
-      });
-      expect((await fake.nextAnswer(12)).result).toEqual({
-        decision: 'decline',
-      });
-      const feedback = await fake.nextRequest('turn/steer');
-      completeTurn(fake);
-      fake.emit({
-        id: feedback.id,
-        error: { code: -32000, message: 'Turn ended' },
-      });
-      const next = await fake.nextRequest('turn/start');
-      expect(next.params).toMatchObject({
-        input: [
-          expect.objectContaining({
-            text: expect.stringContaining('not a user instruction to stop'),
-          }),
-        ],
-      });
-      fake.respond(next, {
-        turn: { id: 'turn-2', status: 'inProgress', error: null },
-      });
-      item(fake, 'completed', {
-        type: 'userMessage',
-        id: 'feedback',
-        clientId: (next.params as { clientUserMessageId: string })
-          .clientUserMessageId,
-        content: [],
-      });
-      completeTurn(fake, 'turn-2');
-    });
-    const handle = adapter.start(
-      session({
-        permission: async () => ({ deny: 'outside the work directory' }),
-      }),
-    );
-    await drain(handle);
-    expect((await handle.result).exit).toBe('completed');
+    const events = await drain(adapter.start(session({ permission })));
+    expect(permission).not.toHaveBeenCalled();
+    expect(events.filter((e) => e.type === 'permission')).toEqual([]);
   });
 });
 
@@ -1162,7 +708,8 @@ describe('stopping and resuming', () => {
     expect(resume).toMatchObject({
       threadId: 'thread-1',
       model: 'gpt-test',
-      approvalPolicy: 'untrusted',
+      approvalPolicy: 'never',
+      sandbox: 'danger-full-access',
     });
     // Baseline before this run: 800 input (400 cached), 40 output. Cached input and cache writes are part of
     // OpenAI's input tokens; Usage keeps them apart.

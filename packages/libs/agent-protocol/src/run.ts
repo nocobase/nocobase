@@ -121,7 +121,11 @@ export const PERMISSION_MODES = ['acceptEdits', 'plan', 'bypass'] as const;
 
 export type PermissionMode = (typeof PERMISSION_MODES)[number];
 
-/** How the runner decides what the agent's tools may do. */
+/**
+ * An agent's tool settings. Runners use `maxTurns` and `idleTimeoutMs`. `permissionMode`, `allowedCommands`,
+ * `deniedPatterns` and `allowedDownloads` are still sent and accepted, so stored agents and older runners keep working,
+ * but runners no longer enforce them: agents run with full access.
+ */
 export interface ToolPolicy {
   readonly permissionMode: PermissionMode;
   /** Regular expressions; a shell command must match one. */
@@ -228,6 +232,13 @@ export interface RepoDir {
    * agent). The application gives it only to that one run; a runner refuses a run on the default branch without it.
    */
   readonly initial?: true;
+  /**
+   * Allow this coding run to initialize a remote with no refs. The runner verifies the remote before selecting
+   * defaultBranch instead of branch, reports that choice in workspace notes, and permits only creation of that
+   * branch. A nonempty repository still uses branch and must have its configured base. Older runners ignore this
+   * option and fail the empty checkout without granting additional push access.
+   */
+  readonly initializeIfEmpty?: true;
 }
 
 const repoDirObject = z.object({
@@ -247,6 +258,7 @@ const repoDirObject = z.object({
   name: z.string().max(255).optional(),
   initPrompt,
   initial: z.literal(true).optional(),
+  initializeIfEmpty: z.literal(true).optional(),
 });
 
 export const RepoDirSchema: z.ZodType<RepoDir> = repoDirObject;

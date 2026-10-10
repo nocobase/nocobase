@@ -16,7 +16,7 @@ import {
   type MountBundle,
   type RunMount,
 } from '../protocol/index.ts';
-import { isInside } from '../core/command-policy.ts';
+import { isInside } from '../lib/paths.ts';
 
 export class MountsError extends Error {
   override name = 'MountsError';

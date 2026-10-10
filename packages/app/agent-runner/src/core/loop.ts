@@ -73,7 +73,7 @@ import type { Installation } from '../lib/install.ts';
 import { gcWorkspaces } from './checkout.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
 import { collectWorkspaces } from './workspaces.ts';
-import { installGitHooks } from './push-guard.ts';
+import { installGitHooks } from './git-hooks.ts';
 import {
   isAlive,
   jobRecordKey,
@@ -355,7 +355,7 @@ export class RunnerDaemon {
       pid: process.pid,
       startedAt: new Date().toISOString(),
     } satisfies DaemonPid);
-    await installGitHooks(paths.hooksDir, paths.pushAllowDir);
+    await installGitHooks(paths.hooksDir);
     log(
       `runner ${this.options.settings.name} starting for ${this.links
         .map(

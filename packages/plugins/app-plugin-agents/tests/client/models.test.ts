@@ -4,7 +4,6 @@ import {
   draftEntries,
   entriesError,
   entryDrafts,
-  invalidPattern,
   isDirtyDraft,
   moveEntry,
   newAgentDraft,
@@ -176,12 +175,10 @@ describe('agent forms', () => {
     ).toBe('agentForm.modelRequired');
   });
 
-  it('reads whole numbers and regular expressions', () => {
+  it('reads whole numbers', () => {
     expect(wholeNumber(' 4 ', 1, 100)).toBe(4);
     expect(wholeNumber('0', 1, 100)).toBeNull();
     expect(wholeNumber('2.5', 1, 100)).toBeNull();
-    expect(invalidPattern(['^git\\b', '('])).toBe('(');
-    expect(invalidPattern(['^ls'])).toBeNull();
   });
 
   it('counts the runners that can take a tool now', () => {

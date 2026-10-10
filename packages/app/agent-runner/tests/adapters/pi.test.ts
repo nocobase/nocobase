@@ -369,59 +369,6 @@ describe('start', () => {
 });
 
 describe('permissions', () => {
-  it('continues with an allowed write after an outside-workspace refusal', async () => {
-    const { spawn } = fakeSpawn((pi) => {
-      void (async () => {
-        const prompt = await pi.next('prompt');
-        pi.respond(prompt, { disposition: 'started' });
-        pi.write(
-          permissionRequest('outside', 'call-outside', 'read', {
-            path: '../full-test.log',
-          }),
-        );
-        const denied = JSON.parse(
-          String((await pi.next('extension_ui_response')).value),
-        ) as { allow: boolean; message: string };
-        expect(denied.allow).toBe(false);
-        expect(denied.message).toContain('outside the work directory');
-        expect(denied.message).toContain('not a user instruction to stop');
-        expect(denied.message).toContain('inside the working directories');
-        pi.write(
-          permissionRequest('inside', 'call-inside', 'write', {
-            path: 'full-test.log',
-            content: 'regenerated',
-          }),
-        );
-        expect(
-          JSON.parse(String((await pi.next('extension_ui_response')).value)),
-        ).toEqual({ allow: true });
-        writeAll(pi, [
-          ...assistantMessage([{ type: 'text', text: 'done' }]),
-          ...settled,
-        ]);
-      })();
-    });
-    const handle = (await adapterWith(spawn)).start(
-      session({
-        permission: async (_tool, input) =>
-          String(input.path).startsWith('../')
-            ? { deny: 'Read outside the work directory: ../full-test.log' }
-            : 'allow',
-      }),
-    );
-    const events = await collect(handle);
-    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
-      {
-        meta: {
-          decision: 'deny',
-          reason: 'Read outside the work directory: ../full-test.log',
-        },
-      },
-      { meta: { decision: 'allow' } },
-    ]);
-    expect((await handle.result).exit).toBe('completed');
-  });
-
   it('asks the policy about every call and blocks denials', async () => {
     const asked: [string, Record<string, unknown>][] = [];
     const permission: PermissionCheck = (tool, input) => {
@@ -500,7 +447,6 @@ describe('permissions', () => {
           decision: 'deny',
           reason: 'rm is not allowed',
           toolUseId: 'call_3',
-          inputSummary: { fields: ['command'], command: 'rm -rf x' },
         },
       }),
     ]);

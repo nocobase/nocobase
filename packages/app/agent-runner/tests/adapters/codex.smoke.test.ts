@@ -7,14 +7,13 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
 import { CodexAdapter } from '../../src/agent/adapters/codex.ts';
-import { createPolicy } from '../../src/core/command-policy.ts';
 import { spawnCodexProcess } from '../../src/agent/adapters/codex/rpc.ts';
 import type { SpawnCodex } from '../../src/agent/adapters/codex/rpc.ts';
 import type {
@@ -75,12 +74,7 @@ function sessionFor(workDir: string, prompt: string): AdapterSession {
     systemPrompt: 'You are a Acme test agent. Keep answers to one sentence.',
     effort: 'low',
     env: whitelistedEnv(),
-    permission: async (tool, input) => {
-      const command = typeof input.command === 'string' ? input.command : '';
-      if (tool === 'shell' && /^\s*rm\b/.test(command))
-        return { deny: 'rm is not allowed in this run' };
-      return 'allow';
-    },
+    permission: async () => 'allow',
     abort: new AbortController().signal,
   };
 }
@@ -130,17 +124,24 @@ describe.skipIf(!enabled)('codex adapter against a real Codex', () => {
     expect(detection.authenticated).toBe(true);
   });
 
-  it('creates a file, is denied rm, and takes a steer', async () => {
+  it('works with full access: writes its home, removes files, commits, and takes a steer', async () => {
     traffic = [];
     const workDir = await repo();
+    const marker = path.join(
+      homedir(),
+      '.cache',
+      'nocobase-runner-smoke',
+      `codex-${Date.now()}.txt`,
+    );
     const handle = adapter.start(
       sessionFor(
         workDir,
         [
           'Do these steps one at a time, one tool call per step:',
           '1. Create hello.txt containing exactly "hello".',
-          '2. Run the shell command `rm -f nothing.tmp`.',
-          '3. Run the shell command `ls`.',
+          `2. Run the shell command \`mkdir -p "${path.dirname(marker)}" && echo ok > "${marker}"\`.`,
+          '3. Run the shell command `rm -f nothing.tmp`.',
+          '4. Run the shell command `git add hello.txt && git -c user.name=Smoke -c user.email=smoke@example.com commit -q -m smoke`.',
           'Then reply "done".',
         ].join('\n'),
       ),
@@ -155,7 +156,7 @@ describe.skipIf(!enabled)('codex adapter against a real Codex', () => {
       }
     });
     const result = await handle.result;
-    await save('steer-deny');
+    await save('full-access');
     print(events);
     console.log('result', {
       ...result,
@@ -167,11 +168,25 @@ describe.skipIf(!enabled)('codex adapter against a real Codex', () => {
     expect(
       (await readFile(path.join(workDir, 'hello.txt'), 'utf8')).trim(),
     ).toBe('hello');
+    expect((await readFile(marker, 'utf8')).trim()).toBe('ok');
+    expect(
+      execFileSync('git', ['log', '--oneline'], {
+        cwd: workDir,
+        encoding: 'utf8',
+      }),
+    ).toContain('smoke');
     expect(
       events.some(
         (e) => e.type === 'permission' && e.meta?.decision === 'deny',
       ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      events.some(
+        (e) =>
+          e.type === 'toolResult' &&
+          /Operation not permitted|EPERM/.test(e.output ?? ''),
+      ),
+    ).toBe(false);
     expect(
       events.some((e) => e.type === 'input' && e.meta?.inputId === 'steer-1'),
     ).toBe(true);
@@ -203,55 +218,4 @@ describe.skipIf(!enabled)('codex adapter against a real Codex', () => {
     expect(result.exit).toBe('aborted');
     expect(elapsed).toBeLessThan(5000);
   }, 180_000);
-
-  it('continues inside the workspace after an outside-file read is denied', async () => {
-    traffic = [];
-    const root = await repo();
-    const workDir = path.join(root, 'work');
-    await mkdir(workDir);
-    await writeFile(path.join(root, 'full-test.log'), 'outside fixture');
-    const policy = createPolicy({
-      workDir,
-      policy: {
-        permissionMode: 'acceptEdits',
-        allowedCommands: ['^cat\\b', '^printf\\b'],
-        deniedPatterns: [],
-        idleTimeoutMs: 60_000,
-      },
-    });
-    const session = sessionFor(
-      workDir,
-      'First run the shell command `cat ../full-test.log > full-test.log`. Then create result.txt in the working directory containing exactly "done" and reply "done". Use one tool call per step.',
-    );
-    session.permission = async (tool, input) => {
-      const decision = policy(tool, input);
-      return decision.decision === 'allow'
-        ? 'allow'
-        : { deny: decision.reason };
-    };
-    const handle = adapter.start(session);
-    const events = await drain(handle);
-    await save('outside-file-denial');
-    const denialIndex = events.findIndex(
-      (e) =>
-        e.type === 'permission' &&
-        e.meta?.decision === 'deny' &&
-        String(e.meta.reason).includes('outside the work directory'),
-    );
-    expect(denialIndex).toBeGreaterThanOrEqual(0);
-    expect(
-      events.slice(denialIndex + 1).some((e) => e.type === 'toolUse'),
-    ).toBe(true);
-    expect(
-      events.some(
-        (e) =>
-          e.type === 'input' &&
-          String(e.content).includes('not a user instruction to stop'),
-      ),
-    ).toBe(true);
-    expect(
-      (await readFile(path.join(workDir, 'result.txt'), 'utf8')).trim(),
-    ).toBe('done');
-    expect((await handle.result).exit).toBe('completed');
-  }, 300_000);
 });

@@ -1,0 +1,45 @@
+{
+  "name": "@nocobase/studio-cli",
+  "version": "0.0.1",
+  "description": "nb-studio, the command line of NocoBase Studio: signs in to a Studio server and runs the business commands it publishes.",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "bin": {
+    "nb-studio": "./bin/run.js"
+  },
+  "files": [
+    "bin",
+    "skills",
+    "README.md"
+  ],
+  "nocobase": {
+    "cli": {
+      "bin": "nb-studio",
+      "displayName": "NocoBase Studio",
+      "description": "The nb-studio command line: signs in to a Studio server and runs the business commands it publishes, for people and for agents in a run.",
+      "stateDir": ".nb-studio",
+      "homeEnv": "NB_STUDIO_HOME",
+      "envPrefix": "NB_STUDIO",
+      "keychainEnv": "NB_STUDIO_KEYCHAIN",
+      "runCredentialsFile": ".nb-studio/run.json",
+      "exampleServer": "https://studio.example.com",
+      "auth": {
+        "clientId": "nb-studio"
+      }
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/tools/studio-cli"
+  },
+  "dependencies": {
+    "@nocobase/app-cli-client": "workspace:^"
+  }
+}

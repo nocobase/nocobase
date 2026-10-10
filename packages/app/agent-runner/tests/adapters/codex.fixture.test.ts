@@ -1,9 +1,11 @@
 /**
  * Replays recorded real runs (Codex CLI 0.158.0, app-server over stdio,
  * 2026-10-01; paths and the user agent sanitized):
- * - steer-deny: the agent writes hello.txt, the policy denies `rm`, a steer
- *   sent at the first tool call joins the running turn and the agent also
- *   writes world.txt before finishing.
+ * - steer-deny: the agent writes hello.txt and runs `rm` (recorded while a
+ *   runner policy still declined it; the recorded item stays declined), a
+ *   steer sent at the first tool call joins the running turn and the agent
+ *   also writes world.txt before finishing. The adapter now accepts every
+ *   approval request.
  * - stop: the run is stopped while `sleep 60` waits for approval; the turn
  *   is interrupted.
  */
@@ -46,10 +48,7 @@ function session(prompt: string): AdapterSession {
     effort: 'low',
     env: { PATH: '/usr/bin' },
     abort: new AbortController().signal,
-    permission: async (tool, input) =>
-      tool === 'shell' && String(input.command).startsWith('rm')
-        ? { deny: 'rm is not allowed in this run' }
-        : 'allow',
+    permission: async () => 'allow',
   };
 }
 
@@ -91,7 +90,7 @@ async function drain(
   return events;
 }
 
-it('replays a recorded run with a denial and a steer', async () => {
+it('replays a recorded run with a steer, accepting every approval', async () => {
   const traffic = await fixture('codex-steer-deny.json');
   let answers: ReturnType<typeof replay> | undefined;
   const spawn = fakeSpawn((fake) => {
@@ -118,17 +117,15 @@ it('replays a recorded run with a denial and a steer', async () => {
   const threadStart = fake.received.find((m) => m.method === 'thread/start');
   expect(threadStart?.params).toMatchObject({
     cwd: workDir,
-    approvalPolicy: 'untrusted',
-    sandbox: 'workspace-write',
+    approvalPolicy: 'never',
+    sandbox: 'danger-full-access',
     developerInstructions: 'brief',
   });
   const turnStart = fake.received.find((m) => m.method === 'turn/start');
   expect(turnStart?.params).toMatchObject({
     effort: 'low',
-    sandboxPolicy: {
-      type: 'workspaceWrite',
-      writableRoots: [workDir, path.join(workDir, '.agents')],
-    },
+    approvalPolicy: 'never',
+    sandboxPolicy: { type: 'dangerFullAccess' },
   });
   const steer = fake.received.find((m) => m.method === 'turn/steer');
   expect(steer?.params).toMatchObject({
@@ -139,7 +136,7 @@ it('replays a recorded run with a denial and a steer', async () => {
   const recorded = await answers!;
   expect([...recorded.values()].map((m) => m.result)).toEqual([
     { decision: 'accept' },
-    { decision: 'decline' },
+    { decision: 'accept' },
     { decision: 'accept' },
     { decision: 'accept' },
   ]);
@@ -153,23 +150,8 @@ it('replays a recorded run with a denial and a steer', async () => {
     'ls',
     'printf world > world.txt',
   ]);
-  expect(
-    events
-      .filter((e) => e.type === 'permission')
-      .map((e) => [e.tool, e.meta?.decision, e.meta?.reason]),
-  ).toEqual([
-    ['shell', 'allow', undefined],
-    ['shell', 'deny', 'rm is not allowed in this run'],
-    ['shell', 'allow', undefined],
-    ['shell', 'allow', undefined],
-  ]);
-  const declined = events.find(
-    (e) => e.type === 'toolResult' && e.meta?.status === 'declined',
-  );
-  expect(declined?.meta?.isError).toBe(true);
-  expect(
-    events.filter((e) => e.type === 'input' && e.meta?.inputId),
-  ).toMatchObject([
+  expect(events.filter((e) => e.type === 'permission')).toEqual([]);
+  expect(events.filter((e) => e.type === 'input')).toMatchObject([
     { content: 'also create world.txt', meta: { inputId: 'in-1' } },
   ]);
   // The input event follows the first tool call, which carried the steer.

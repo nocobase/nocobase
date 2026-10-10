@@ -8,10 +8,10 @@
  *   project settings (the repository's .claude/) are loaded.
  * - The run's skills come as a local plugin (`plugins: [{ type: 'local' }]`,
  *   https://code.claude.com/docs/en/agent-sdk/plugins).
- * - Permissions: `acceptEdits`, and the runner's policy is consulted twice
- *   over: a PreToolUse hook enforces its denials for every tool call (so
- *   allow rules in project settings cannot widen it), and `canUseTool`
- *   answers the calls Claude Code would otherwise prompt for.
+ * - Permissions: none. Claude Code runs in `bypassPermissions` mode with no
+ *   hooks; only deny rules in the settings it loads still refuse a call. The
+ *   runner is not a security boundary: run it as a dedicated user, in a
+ *   container or in a VM. Claude Code refuses this mode as root.
  * - The executable is the `claude` on the runner's PATH, resolved to an
  *   absolute path and passed as `pathToClaudeCodeExecutable`. The SDK's
  *   bundled binary is never installed (its platform packages are left out),
@@ -26,11 +26,8 @@ import path from 'node:path';
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import type {
-  CanUseTool,
   ModelInfo,
-  HookCallback,
   Options,
-  PermissionResult,
   SDKMessage,
   SDKResultMessage,
   SDKUserMessage,
@@ -41,9 +38,6 @@ import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
-import { permissionInputSummary } from './input-summary.ts';
-import type { PermissionInputSummary } from './input-summary.ts';
-import { denialMessage } from './policy-denial.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
   AdapterEvent,
@@ -51,7 +45,6 @@ import type {
   AdapterResult,
   AdapterSession,
   AgentAdapter,
-  PermissionDecision,
   RunnerFeature,
   ToolDetection,
   Usage,
@@ -66,7 +59,6 @@ export const DEFAULT_MIN_CLAUDE_VERSION = '2.1.284';
 const EFFORTS = new Set(TOOL_EFFORTS.claude);
 const STOP_GRACE_MS = 5000;
 const STDERR_KEEP_LINES = 40;
-const PERMISSION_TIMEOUT_MS = 5000;
 
 export interface ExecResult {
   code: number;
@@ -209,18 +201,6 @@ function toolResultText(content: unknown): string {
     )
     .join('\n');
 }
-
-function normalizeDecision(decision: PermissionDecision): {
-  allow: boolean;
-  reason?: string;
-} {
-  if (decision === 'allow') return { allow: true };
-  if (decision === 'deny')
-    return { allow: false, reason: 'Denied by the runner policy' };
-  return { allow: false, reason: decision.deny };
-}
-
-export { denialMessage } from './policy-denial.ts';
 
 // ---------------------------------------------------------------------------
 // Adapter
@@ -404,21 +384,7 @@ class ClaudeRun {
     { text: string; inputId?: string }
   >();
   private readonly toolNames = new Map<string, string>();
-  private readonly decisions = new Map<
-    string,
-    { allow: boolean; reason?: string }
-  >();
-  /** Permission events already emitted, by `<toolUseId>:<source>:<decision>`. */
-  private readonly reported = new Set<string>();
-  private readonly toolInputs = new Map<string, unknown>();
-  /** Summaries of the tool inputs, taken before they were capped for the transcript. */
-  private readonly toolSummaries = new Map<
-    string,
-    PermissionInputSummary | undefined
-  >();
-  private readonly backgroundTasks = new Set<string>();
-  private awaitingIdle = false;
-  private permissionChannelFailure?: string;
+  private readonly reportedDecisions = new Set<string>();
   private readonly stderrLines: string[] = [];
   private sessionId?: string;
   private model?: string;
@@ -503,75 +469,16 @@ class ClaudeRun {
 
   // -- permissions ----------------------------------------------------------
 
-  private async decide(
-    tool: string,
-    input: Record<string, unknown>,
-    toolUseId: string | undefined,
-    signal: AbortSignal,
-  ): Promise<{ allow: boolean; reason?: string }> {
-    const cached = toolUseId ? this.decisions.get(toolUseId) : undefined;
-    if (cached) return cached;
-    let decision: { allow: boolean; reason?: string };
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let onAbort: (() => void) | undefined;
-    try {
-      const deadline = new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(
-          () =>
-            reject(
-              new Error(
-                `Policy decision timed out after ${PERMISSION_TIMEOUT_MS}ms`,
-              ),
-            ),
-          PERMISSION_TIMEOUT_MS,
-        );
-        onAbort = () =>
-          reject(
-            new Error(
-              'Policy decision cancelled by the permission control channel',
-            ),
-          );
-        if (signal.aborted) onAbort();
-        else signal.addEventListener('abort', onAbort, { once: true });
-      });
-      decision = normalizeDecision(
-        await Promise.race([
-          deadline,
-          Promise.resolve().then(() => this.session.permission(tool, input)),
-        ]),
-      );
-    } catch (error) {
-      decision = {
-        allow: false,
-        reason: `Policy error: ${error instanceof Error ? error.message : String(error)}`,
-      };
-    } finally {
-      clearTimeout(timer);
-      if (onAbort) signal.removeEventListener('abort', onAbort);
-    }
-    if (toolUseId) this.decisions.set(toolUseId, decision);
-    return decision;
-  }
-
-  /**
-   * Emits one permission event per call, source and decision. `runner` is the runner's policy; `cli` a denial Claude
-   * Code decided itself (its own rules or mode); `diagnostic` a refusal no runner denial explains. A runner denial
-   * and a CLI denial of the same call are both kept, so neither reason hides the other.
-   */
+  /** A denial Claude Code decided itself (deny rules in settings); the runner denies nothing. */
   private report(
     tool: string,
     input: unknown,
     toolUseId: string | undefined,
     decision: { allow: boolean; reason?: string },
-    source: 'runner' | 'cli' | 'diagnostic',
-    summary: PermissionInputSummary | undefined = decision.allow
-      ? undefined
-      : permissionInputSummary(input),
   ) {
     if (toolUseId) {
-      const key = `${toolUseId}:${source}:${decision.allow ? 'allow' : 'deny'}`;
-      if (this.reported.has(key)) return;
-      this.reported.add(key);
+      if (this.reportedDecisions.has(toolUseId)) return;
+      this.reportedDecisions.add(toolUseId);
     }
     const capped = capInput(input);
     this.emit({
@@ -582,80 +489,24 @@ class ClaudeRun {
         decision: decision.allow ? 'allow' : 'deny',
         ...(decision.reason ? { reason: decision.reason } : {}),
         ...(toolUseId ? { toolUseId } : {}),
-        source,
-        ...(summary ? { inputSummary: summary } : {}),
         ...(capped.truncated ? { truncated: true } : {}),
       },
     });
   }
 
-  /** Whether the runner's own policy denied the call: its decision, never what was reported about it. */
-  private runnerDenied(toolUseId: string): boolean {
-    return this.decisions.get(toolUseId)?.allow === false;
-  }
-
-  /**
-   * Runs before Claude Code's own permission rules, so a policy denial
-   * cannot be bypassed by allow rules in project settings. Deny here so
-   * permissionDecisionReason reaches the model directly; routing through
-   * 'ask' and canUseTool can replace it with Claude Code's user-stop text.
-   */
-  private readonly preToolUse: HookCallback = async (
-    hookInput,
-    _id,
-    { signal },
-  ) => {
-    if (hookInput.hook_event_name !== 'PreToolUse') return {};
-    const input = (hookInput.tool_input ?? {}) as Record<string, unknown>;
-    const decision = await this.decide(
-      hookInput.tool_name,
-      input,
-      hookInput.tool_use_id,
-      signal,
-    );
-    this.report(
-      hookInput.tool_name,
-      input,
-      hookInput.tool_use_id,
-      decision,
-      'runner',
-    );
-    if (decision.allow) return {};
-    return {
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        permissionDecision: 'deny',
-        permissionDecisionReason: denialMessage(decision.reason),
-      },
-    };
-  };
-
-  private readonly canUseTool: CanUseTool = async (
-    tool,
-    input,
-    { toolUseID, signal },
-  ): Promise<PermissionResult> => {
-    const decision = await this.decide(tool, input, toolUseID, signal);
-    this.report(tool, input, toolUseID, decision, 'runner');
-    return decision.allow
-      ? { behavior: 'allow', updatedInput: input }
-      : { behavior: 'deny', message: denialMessage(decision.reason) };
-  };
-
   // -- the run --------------------------------------------------------------
-
-  private async unavailable(): Promise<string> {
-    return claudeUnavailableMessage(
-      await this.detect().catch((): ToolDetection => ({
-        installed: false,
-        authenticated: false,
-      })),
-    );
-  }
 
   private async buildOptions(): Promise<Options> {
     const executable = await this.resolveExecutable();
-    if (!executable) throw new Error(await this.unavailable());
+    if (!executable)
+      throw new Error(
+        claudeUnavailableMessage(
+          await this.detect().catch((): ToolDetection => ({
+            installed: false,
+            authenticated: false,
+          })),
+        ),
+      );
     const { session } = this;
     return {
       cwd: session.workDir,
@@ -665,12 +516,9 @@ class ClaudeRun {
         append: session.systemPrompt,
       },
       settingSources: ['project'],
-      permissionMode: 'acceptEdits',
-      permissionPrompts: 'host',
-      canUseTool: this.canUseTool,
-      hooks: { PreToolUse: [{ hooks: [this.preToolUse] }] },
-      // Without state events, a result can be mistaken for the end of background continuations.
-      env: { ...session.env, CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS: '1' },
+      permissionMode: 'bypassPermissions',
+      allowDangerouslySkipPermissions: true,
+      env: { ...session.env },
       abortController: this.abortController,
       includePartialMessages: false,
       stderr: (data: string) => {
@@ -733,15 +581,6 @@ class ClaudeRun {
         error: { reason: 'cancelled', message: 'Stopped by the runner' },
       };
     }
-    if (this.permissionChannelFailure)
-      return {
-        ...base,
-        exit: 'error',
-        error: {
-          reason: 'toolProcess',
-          message: this.permissionChannelFailure,
-        },
-      };
     const r = this.lastResult;
     const signal: ClaudeFailureSignal = {
       assistantError: this.lastAssistantError,
@@ -856,11 +695,6 @@ class ClaudeRun {
           ) {
             this.toolNames.set(block.id, block.name);
             const capped = capInput(block.input);
-            this.toolInputs.set(block.id, capped.input);
-            this.toolSummaries.set(
-              block.id,
-              permissionInputSummary(block.input),
-            );
             this.emit({
               type: 'toolUse',
               tool: block.name,
@@ -884,28 +718,6 @@ class ClaudeRun {
         for (const block of content) {
           if (block.type !== 'tool_result') continue;
           const capped = capText(toolResultText(block.content));
-          if (
-            block.is_error &&
-            /The user doesn't want to take this action right now|Tool permission request failed.*(?:Stream closed|AbortError)/s.test(
-              capped.text,
-            ) &&
-            !this.runnerDenied(block.tool_use_id)
-          ) {
-            // Claude Code's user-stop text for a call the runner did not deny: its own rules refused it, or the
-            // permission control channel is gone. Either way the work cannot go on as if it had been answered.
-            const reason = `Claude Code refused the tool without a runner denial. The permission control channel may be unavailable or native CLI rules may have denied it; this is not a user instruction to stop. CLI feedback: ${capped.text.slice(0, 1024)}`;
-            this.permissionChannelFailure = reason;
-            this.report(
-              this.toolNames.get(block.tool_use_id) ?? 'unknown',
-              this.toolInputs.get(block.tool_use_id),
-              block.tool_use_id,
-              { allow: false, reason },
-              'diagnostic',
-              this.toolSummaries.get(block.tool_use_id),
-            );
-          }
-          if (!block.is_error && this.decisions.get(block.tool_use_id)?.allow)
-            this.permissionChannelFailure = undefined;
           this.emit({
             type: 'toolResult',
             tool: this.toolNames.get(block.tool_use_id),
@@ -976,28 +788,16 @@ class ClaudeRun {
         });
         return;
       case 'permission_denied':
-        // Denials Claude Code decided itself (deny rules, mode); the runner's own are reported already.
-        if (this.runnerDenied(message.tool_use_id)) return;
+        // Denials Claude Code decided itself (deny rules, mode); ours are reported already.
         this.report(
           this.toolNames.get(message.tool_use_id) ?? message.tool_name,
-          this.toolInputs.get(message.tool_use_id),
+          undefined,
           message.tool_use_id,
           {
             allow: false,
             reason: message.decision_reason ?? message.message,
           },
-          'cli',
-          this.toolSummaries.get(message.tool_use_id),
         );
-        return;
-      case 'background_tasks_changed':
-        this.backgroundTasks.clear();
-        for (const task of message.tasks)
-          if (!task.ambient) this.backgroundTasks.add(task.task_id);
-        return;
-      case 'session_state_changed':
-        if (message.state === 'idle' && this.awaitingIdle)
-          this.closeInputIfDone();
         return;
       case 'status':
         if (message.status === 'compacting')
@@ -1012,21 +812,6 @@ class ClaudeRun {
   }
 
   private onResult(message: SDKResultMessage): void {
-    // The result list also covers SDK denials that emitted no permission_denied frame.
-    for (const denial of message.permission_denials ?? []) {
-      if (this.runnerDenied(denial.tool_use_id)) continue;
-      this.report(
-        denial.tool_name,
-        denial.tool_input,
-        denial.tool_use_id,
-        {
-          allow: false,
-          reason:
-            'Claude Code denied this call outside the runner policy callback; consult the CLI permission rules and control-channel diagnostics.',
-        },
-        'cli',
-      );
-    }
     this.lastResult = message;
     this.sessionId = message.session_id;
     this.acknowledge(
@@ -1061,23 +846,16 @@ class ClaudeRun {
     });
     this.emit({ type: 'usage', meta: { usage: this.usage() } });
 
-    // result ends a turn, not the process: EOF here also kills the permission
-    // control channel needed by background tasks and their continuation turns.
-    this.awaitingIdle = true;
-    if (message.subtype !== 'success' || message.is_error) this.input.close();
-  }
-
-  private closeInputIfDone(): void {
+    // End the session once nothing more is queued: no steer awaiting the
+    // agent and no further turn announced. Otherwise wait for the next result.
+    const failed = message.subtype !== 'success' || message.is_error;
     if (
-      this.backgroundTasks.size === 0 &&
-      this.pendingSteers.size === 0 &&
-      !(
-        this.lastResult?.queued_turn_count &&
-        this.lastResult.queued_turn_count > 0
-      )
-    )
+      failed ||
+      (this.pendingSteers.size === 0 &&
+        !(message.queued_turn_count && message.queued_turn_count > 0))
+    ) {
       this.input.close();
-    this.awaitingIdle = false;
+    }
   }
 }
 

@@ -88,7 +88,6 @@ describe('nocobase-runner cli', () => {
       registered: true,
       name: 'test-runner',
       slots: 3,
-      agentHome: 'isolated',
       agentTools: 'runner',
       running: false,
     });

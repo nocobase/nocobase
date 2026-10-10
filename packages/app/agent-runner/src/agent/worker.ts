@@ -4,9 +4,9 @@
 //     -> adapter turns (events, permissions, inputs) -> complete | fail | cancelAck
 //
 // The agent starts in the run's primary working directory (or the subject's work directory when the run names none),
-// with its own home and tmp inside the work directory (agent-home.ts), the application's CLI first on its PATH, the
-// push guard as its git hooks, and the run's policy deciding every tool call (policy.ts). The policy lets tools write in
-// every working directory and keeps them away from the CLI's credentials file and from the runner's own directory.
+// with the real HOME of the user the runner runs as, its own TMPDIR (and Codex its own CODEX_HOME) inside the work
+// directory, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
+// tools do: the runner is not a security boundary, so run it as a dedicated user, in a container or in a VM.
 //
 // While it runs, the lease is renewed every 15 s and the run's status is polled every few seconds; both answers carry
 // the cancel flag and the unhandled inputs. An input that arrives mid-turn is steered into the turn when the adapter
@@ -39,7 +39,7 @@ import {
   type RunnerSettings,
 } from '../lib/config.ts';
 import { backoff, delay, ApiError, type ApiClient } from '../lib/http.ts';
-import { cliStateDirs, type RunnerPaths } from '../lib/home.ts';
+import type { RunnerPaths } from '../lib/home.ts';
 import {
   createRedactor,
   FailureReasonSchema,
@@ -56,7 +56,6 @@ import {
   type FailureReason,
   type Redactor,
 } from '../protocol/index.ts';
-import { prepareAgentHome } from './agent-home.ts';
 import {
   markDirsPrepared,
   markWorkspaceEnded,
@@ -64,20 +63,18 @@ import {
   RUNNER_DIR,
   type PreparedDir,
 } from '../core/checkout.ts';
-import { credentialsGuard, deleteRunCredentials } from './credentials.ts';
+import { deleteRunCredentials } from './credentials.ts';
+import { prepareCodexHome } from './codex-home.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import { permissionDenialLog } from './permission-log.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
-import { createPolicy } from '../core/command-policy.ts';
 import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
 import { writeRunnerTools } from './runner-tools.ts';
 import {
   agentCwd,
-  agentWorkingTrees,
-  agentWritableRoots,
   PREPARE_STEPS,
   PrepareError,
   type PrepareContext,
@@ -144,7 +141,7 @@ export function workspaceNotes(options: {
   const lines = [
     dirs.length === 0
       ? `Your working directory is ${workDir}, an empty directory kept for this task; you start in it.`
-      : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your HOME and TMPDIR are inside it.`,
+      : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
   ];
   if (dirs.length > 0) {
     lines.push('Working directories (the first is the primary one):');
@@ -153,8 +150,14 @@ export function workspaceNotes(options: {
       lines.push(
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
-          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (the only branch you can push).`,
+          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
       );
+    }
+    for (const dir of dirs) {
+      if (dir.repo?.initializing)
+        lines.push(
+          `The remote ${dir.repo.url} has no refs. This checkout is initializing it on ${dir.repo.branch}, with no base commit. Implement the task in this directory, verify the result, then commit and push this branch. This first delivery needs no pull request, even if the usual workflow asks for one: there is no base branch yet. The push may only create the branch, not overwrite a branch created by someone else. Preserve existing files and commits on a retry. Report the actual checks and any failure; do not claim the task is complete merely because the first push succeeded.`,
+        );
     }
     lines.push('Keep every file you write inside these directories.');
   }
@@ -579,15 +582,12 @@ export class RunWorker {
       return this.finishEnding();
     }
 
-    const home =
-      deps.settings.agentHome === 'real'
-        ? undefined
-        : await prepareAgentHome(
-            path.join(runnerDir, 'home'),
-            payload.tool.kind,
-          );
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    const codexHome =
+      payload.tool.kind === 'codex'
+        ? await prepareCodexHome(path.join(runnerDir, 'codex-home'))
+        : undefined;
     const runnerTools =
       deps.settings.agentTools === 'system'
         ? []
@@ -598,8 +598,8 @@ export class RunWorker {
     const env = buildAgentEnv({
       source: process.env,
       binDir,
-      ...(home === undefined ? {} : { home }),
       tmpDir,
+      ...(codexHome === undefined ? {} : { codexHome }),
       pnpmStoreDir,
       pnpmImportMethod: importMethod,
       pinPnpm: runnerTools.includes('pnpm'),
@@ -613,30 +613,10 @@ export class RunWorker {
       localVariables: registration.variables,
       workspace: payload.workspace,
     });
-    const policy = createPolicy({
-      policy: payload.tool.policy,
-      workDir,
-      extraRoots: context.dirs
-        .filter((dir) => dir.kind === 'directory')
-        .map((dir) => dir.dir),
-      cwd,
-      home: env.HOME ?? workDir,
-      tmpDir,
-      protectedPaths: [
-        credentialsGuard(workDir, payload.cli.credential.file),
-        deps.paths.home,
-        // The person's own sign-in to the same CLI, such as `~/.acme`.
-        ...cliStateDirs(payload.cli),
-      ],
-      alwaysAllowed: [payload.cli.name],
-    });
-    // Consulted for every tool call; the adapter records refusals as `permission` events itself.
-    const permission: PermissionCheck = (tool, input) => {
+    // The runner is not a security boundary: every call a tool asks about is allowed.
+    const permission: PermissionCheck = () => {
       this.lastActivity = Date.now();
-      const decision = policy(tool, input);
-      return Promise.resolve(
-        decision.decision === 'allow' ? 'allow' : { deny: decision.reason },
-      );
+      return Promise.resolve('allow');
     };
 
     const idleMs = payload.tool.policy.idleTimeoutMs;
@@ -686,8 +666,6 @@ export class RunWorker {
       this.lastActivity = Date.now();
       const handle = adapter.start({
         workDir: cwd,
-        writableRoots: agentWritableRoots(context.dirs, cwd, [pnpmStoreDir]),
-        workingTrees: agentWorkingTrees(context.dirs),
         prompt,
         systemPrompt: system,
         ...(payload.tool.model === undefined

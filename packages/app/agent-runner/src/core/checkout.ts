@@ -1,14 +1,14 @@
 // Prepares a run's working directories before the agent starts.
 //
 // A `directory` entry is a directory that already exists on this machine: it is used in place (no checkout, no branch,
-// no push guard of the runner's) and locked so one run at a time works in it.
+// no branch) and locked so one run at a time works in it.
 //
 // Each repository URL has one bare cache, `~/.nocobase-runner/repos/<sha1(url)>.git`, fetched into
 // `refs/remotes/origin/*`. Each subject of each application has one long-lived work directory,
 // `<work root>/<app>/<subjectKey>/`, and every new repository is a reference clone at `<workDir>/<repo.path>` on the
 // run's branch (`agent/<key>`). Git metadata stays inside that directory; only existing objects are borrowed from the
 // cache, whose automatic GC is disabled. A later run finds the clone (or a legacy worktree) and keeps working; nothing is
-// reset. Every checkout gets the push guard (push-guard.ts): it may push only that branch, to that repository. A run
+// reset. Every checkout gets the runner's commit hook (git-hooks.ts); nothing limits where an agent pushes. A run
 // never works on the default branch, except the one run that makes an empty repository's first commit
 // (`RepoDir.initial`): its checkout starts on the default branch with no parent, and that branch is the one it pushes.
 //
@@ -60,14 +60,14 @@ import type {
   RepoReport,
   WorkspaceDir,
 } from '../protocol/index.ts';
-import { isInside } from './command-policy.ts';
+import { isInside } from '../lib/paths.ts';
 import {
   GIT_LOW_SPEED_CONFIG,
   GitNetworkError,
   retryGit,
   type GitRetryOptions,
 } from './git-retry.ts';
-import { allowPush, installGitHooks } from './push-guard.ts';
+import { installGitHooks } from './git-hooks.ts';
 import { isAlive } from './supervisor.ts';
 import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 import {
@@ -137,7 +137,7 @@ export function subjectWorkDir(
   return path.join(paths.workRoot, safeName(appKey), safeName(subjectKey));
 }
 
-/** The runner's own files in a working directory: the agent's home, tmp, the CLI shim and the workspace record. */
+/** The runner's own files in a working directory: tmp, Codex's home, the CLI shim and the workspace record. */
 export const RUNNER_DIR = '.nocobase-runner';
 
 /** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */
@@ -182,7 +182,7 @@ export async function updateCache(
     await git(['config', 'gc.auto', '0'], cache);
     await git(['config', 'gc.pruneExpire', 'never'], cache);
     await git(['config', 'maintenance.auto', 'false'], cache);
-    await installGitHooks(path.join(cache, 'hooks'), paths.pushAllowDir);
+    await installGitHooks(path.join(cache, 'hooks'));
     await retryGit(
       `git fetch ${url}`,
       () =>
@@ -219,6 +219,8 @@ export interface CheckedOutRepo {
   gitDir: string;
   /** The submodules checked out in `dir`, nested ones included, as absolute paths. */
   submodules: string[];
+  /** This run may create, but never update, the empty remote's default branch. */
+  initializing?: true;
 }
 
 /** A working directory as the run uses it. */
@@ -506,7 +508,10 @@ async function addClone(
     ]))
   ) {
     // An empty repository whose first commit this run makes: the default branch starts with no parent.
-    if (repo.initial === true) {
+    if (
+      repo.initial === true &&
+      (await git(['for-each-ref', '--format=%(refname)'], cache)) === ''
+    ) {
       await taskGit(context, [
         'symbolic-ref',
         'HEAD',
@@ -850,7 +855,7 @@ export interface PrepareDirsOptions {
 
 /**
  * Prepares every working directory: a repository is checked out (a bare cache and a long-lived clone on its branch,
- * with the push guard); a directory used in place must exist, is locked for the run, and is not checked out or
+ * with the runner's commit hook); a directory used in place must exist, is locked for the run, and is not checked out or
  * branched. A directory counts as fresh until a run of the subject finishes in it (`markDirsPrepared`), so a run that
  * dies before doing what the initialization prompt asks leaves it for the next attempt. The result's `release` gives
  * the directory locks back.
@@ -868,7 +873,8 @@ export async function prepareDirs(
   };
   try {
     const dirs: PreparedDir[] = [];
-    for (const [index, entry] of options.dirs.entries()) {
+    for (const [index, requested] of options.dirs.entries()) {
+      let entry = requested;
       const primary = index === 0;
       const common = {
         primary,
@@ -924,8 +930,9 @@ export async function prepareDirs(
       options.log?.(
         `checkout: ${entry.url} -> ${entry.path} (${entry.branch})`,
       );
+      const repoUrl = entry.url;
       const credential = options.credentials?.find(
-        (item) => item.url === entry.url,
+        (item) => item.url === repoUrl,
       );
       const auth: GitAuth | undefined =
         credential === undefined
@@ -935,6 +942,46 @@ export async function prepareDirs(
         ...(auth === undefined ? {} : { auth }),
         ...(options.retry === undefined ? {} : { retry: options.retry }),
       });
+      // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
+      // above; read all advertised refs before granting the narrowly scoped first-push exception.
+      let initializing = false;
+      if (
+        entry.initializeIfEmpty === true &&
+        entry.initial !== true &&
+        !(await gitOk(
+          [
+            'show-ref',
+            '--verify',
+            '--quiet',
+            `refs/remotes/origin/${entry.defaultBranch}`,
+          ],
+          cache,
+        )) &&
+        !(await gitOk(
+          [
+            'show-ref',
+            '--verify',
+            '--quiet',
+            `refs/remotes/origin/${entry.branch}`,
+          ],
+          cache,
+        ))
+      ) {
+        const refs = await retryGit(
+          `git ls-remote ${entry.url}`,
+          () =>
+            git(
+              [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
+              cache,
+              gitAuthEnv(auth),
+            ),
+          options.retry,
+        );
+        if (refs.trim() === '') {
+          initializing = true;
+          entry = { ...entry, branch: entry.defaultBranch, initial: true };
+        }
+      }
       const created = await ensureCheckout(cache, dir, entry);
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
@@ -956,10 +1003,9 @@ export async function prepareDirs(
           ? { pushedSha: known.pushedSha }
           : {}),
       });
-      // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
+      // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
-        await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
-      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir);
+        await installGitHooks(path.join(gitDir, 'hooks'));
       const submodules = await initSubmodules(dir, {
         all: created,
         url: entry.url,
@@ -978,6 +1024,7 @@ export async function prepareDirs(
         cache,
         gitDir,
         submodules: await listSubmodules(dir),
+        ...(initializing ? { initializing: true as const } : {}),
       };
       const key = preparedKey(entry);
       // A checkout created again (removed by GC, say) needs its initialization again.

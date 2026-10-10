@@ -12,8 +12,6 @@ import type {
 
 export interface FakeContext {
   options: Options;
-  /** Model-facing text from hook denials or permission callbacks. */
-  toolFeedback: string[];
   /** Next user message from the streaming input; undefined once it is closed. */
   nextInput(): Promise<SDKUserMessage | undefined>;
   /** Run the PreToolUse hook, then canUseTool when the hook does not deny. */
@@ -79,7 +77,6 @@ export function fakeQuery({
   });
   const ctx: FakeContext = {
     options,
-    toolFeedback: [],
     aborted,
     async nextInput() {
       const r = await iterator.next();
@@ -102,17 +99,9 @@ export function fakeQuery({
             { signal: new AbortController().signal },
           );
           const specific = (
-            out as {
-              hookSpecificOutput?: {
-                permissionDecision?: string;
-                permissionDecisionReason?: string;
-              };
-            }
+            out as { hookSpecificOutput?: { permissionDecision?: string } }
           ).hookSpecificOutput;
-          if (specific?.permissionDecision === 'deny') {
-            ctx.toolFeedback.push(specific.permissionDecisionReason ?? '');
-            return 'deny';
-          }
+          if (specific?.permissionDecision === 'deny') return 'deny';
         }
       }
       if (!options.canUseTool) return 'allow';
@@ -121,10 +110,6 @@ export function fakeQuery({
         toolUseID: toolUseId,
         requestId: `req-${toolUseId}`,
       });
-      if (result?.behavior === 'deny')
-        ctx.toolFeedback.push(
-          "The user doesn't want to take this action right now. STOP what you are doing and wait for the user to tell you how to proceed.",
-        );
       return result?.behavior === 'allow' ? 'allow' : 'deny';
     },
   };

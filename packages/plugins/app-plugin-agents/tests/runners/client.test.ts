@@ -8,6 +8,8 @@ import {
   registerCommand,
   upgradeCommand,
 } from '../../client/lib/install.js';
+import runtimesEnUS from '../../client/locales/runtimes.en-US.js';
+import runtimesZhCN from '../../client/locales/runtimes.zh-CN.js';
 import {
   listedTools,
   runnerActivity,
@@ -72,6 +74,13 @@ describe('install commands', () => {
     expect(registerCommand('https://x', 't')).toBe(
       'nocobase-runner register --server https://x --token t && nocobase-runner service install',
     );
+  });
+
+  it('come with the note that the host needs Node.js 24 or newer', () => {
+    expect(runtimesEnUS.connect.nodeRequired).toContain('Node.js 24 or newer');
+    expect(runtimesZhCN.connect.nodeRequired).toContain('Node.js 24');
+    expect(runtimesEnUS.connect.run).not.toContain('no Node.js needed');
+    expect(runtimesZhCN.connect.run).not.toContain('无需 Node.js');
   });
 
   it('update nocobase-runner, and reinstall anything else', () => {

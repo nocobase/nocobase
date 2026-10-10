@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 
 const workflow = (name) =>
@@ -7,6 +16,62 @@ const workflow = (name) =>
     new URL(`../../.github/workflows/v3-${name}.yml`, import.meta.url),
     'utf8',
   );
+
+const triggerBranches = (source, event) => {
+  const match = source.match(
+    new RegExp(`^  ${event}:\\n    branches:\\n((?:      - .+\\n)+)`, 'mu'),
+  );
+  assert.ok(match, `${event} must declare branch filters`);
+  return match[1]
+    .trimEnd()
+    .split('\n')
+    .map((line) => line.replace(/^      - /u, '').replace(/^['"]|['"]$/gu, ''));
+};
+
+const matchesSingleSegmentGlob = (pattern, branch) => {
+  const expression = pattern
+    .split('*')
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+    .join('[^/]*');
+  return new RegExp(`^${expression}$`, 'u').test(branch);
+};
+
+test('stacked v3 targets receive PR checks without widening direct-branch triggers', () => {
+  const quality = workflow('quality');
+  const changesets = workflow('changeset-check');
+  const guard = workflow('guard-main');
+
+  assert.deepEqual(triggerBranches(quality, 'pull_request'), [
+    'v3-develop',
+    'v3-main',
+    '*/v3-*',
+  ]);
+  assert.deepEqual(triggerBranches(changesets, 'pull_request'), [
+    'v3-main',
+    'v3-develop',
+    '*/v3-*',
+  ]);
+  assert.deepEqual(triggerBranches(quality, 'push'), ['v3-develop']);
+  assert.deepEqual(triggerBranches(guard, 'pull_request'), ['v3-main']);
+
+  const workflowPattern = '*/v3-*';
+  const botPattern = /^[^/]+\/v3-[^/]+$/u;
+  for (const branch of [
+    'feat/v3-app-installer',
+    'fix/v3-stacked-pr-routing',
+    'docs/v3-release-notes',
+    'feat/app-installer',
+    'v3-develop',
+    'agent/PM-42',
+    'feat/v3-routing/extra',
+  ]) {
+    assert.equal(
+      matchesSingleSegmentGlob(workflowPattern, branch),
+      botPattern.test(branch),
+      branch,
+    );
+  }
+});
 
 test('OSS releases write only the migrated repository and v3 branches', () => {
   for (const name of [
@@ -74,10 +139,12 @@ test('site deployment uses the existing publish triggers without a migration gat
       source,
       /github\.event_name == 'workflow_dispatch' && inputs\.publish/u,
     );
-    assert.match(
-      source,
-      /pull_request:\n    branches:\n      - v3-develop\n      - v3-main/u,
-    );
+    assert.deepEqual(triggerBranches(source, 'pull_request'), [
+      'v3-develop',
+      'v3-main',
+      '*/v3-*',
+    ]);
+    assert.deepEqual(triggerBranches(source, 'push'), ['v3-develop']);
     assert.match(source, /publish:[\s\S]*?default: false/u);
   }
   const docs = workflow('docs');
@@ -162,4 +229,173 @@ test('Pro workflows retain the branch arguments supported by their source-owned 
   for (const name of ['pro-release-stable', 'pro-promote-to-stable']) {
     assert.match(workflow(name), /ARGS=\(--branch main\)/u);
   }
+});
+
+// The unindented shell of the `run: |` block of the step called `name`.
+const runBlock = (source, name) => {
+  const start = source.indexOf(`      - name: ${name}\n`);
+  assert.notEqual(start, -1, name);
+  const end = source.indexOf('\n      - name: ', start + 1);
+  const lines = source.slice(start, end === -1 ? undefined : end).split('\n');
+  const begin = lines.indexOf('        run: |');
+  assert.notEqual(begin, -1, name);
+  return lines
+    .slice(begin + 1)
+    .filter((line) => line.startsWith('          ') || line === '')
+    .map((line) => line.slice(10))
+    .join('\n');
+};
+
+test('a beta release that publishes Studio dispatches its release image from the release tag', (t) => {
+  const source = workflow('release-beta');
+  assert.match(
+    source,
+    /studio_version: \$\{\{ steps\.studio\.outputs\.version \}\}/u,
+  );
+  const publish = source.indexOf('      - name: Publish to npm\n');
+  const find = source.indexOf(
+    '      - name: Find the published Studio version\n',
+  );
+  assert.ok(
+    publish !== -1 && find > publish,
+    'the version is read only after publishing',
+  );
+
+  const job = source.slice(
+    source.indexOf('\n  studio-image:\n'),
+    source.indexOf('\n  github-release:\n'),
+  );
+  assert.match(job, /needs: release\n/u);
+  assert.match(
+    job,
+    /!cancelled\(\) && !inputs\.dry_run\n\s+&& needs\.release\.outputs\.tag != '' && needs\.release\.outputs\.studio_version != ''/u,
+  );
+  assert.match(
+    job,
+    /GH_TOKEN: \$\{\{ secrets\.NOCOBASE_CI_DISPATCH_TOKEN \}\}/u,
+  );
+  assert.match(job, /permissions: \{\}/u);
+
+  const directory = mkdtempSync(path.join(tmpdir(), 'studio-image-dispatch-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+
+  // The Studio version comes from the released specs, and is empty when Studio was not released.
+  const workspace = path.join(directory, 'workspace');
+  mkdirSync(path.join(workspace, 'scripts'), { recursive: true });
+  mkdirSync(path.join(workspace, 'packages/apps/studio'), { recursive: true });
+  mkdirSync(path.join(workspace, 'packages/libs/db'), { recursive: true });
+  execFileSync('cp', [
+    path.join(import.meta.dirname, '../../scripts/list-package-versions.mjs'),
+    path.join(workspace, 'scripts'),
+  ]);
+  writeFileSync(
+    path.join(workspace, 'packages/apps/studio/package.json'),
+    JSON.stringify({ name: '@nocobase/studio', version: '1.0.0-beta.52' }),
+  );
+  writeFileSync(
+    path.join(workspace, 'packages/libs/db/package.json'),
+    JSON.stringify({ name: '@nocobase/db', version: '1.0.0-beta.9' }),
+  );
+  mkdirSync(path.join(directory, 'release-state'));
+  const findVersion = (before) => {
+    writeFileSync(
+      path.join(directory, 'release-state/versions-before.json'),
+      JSON.stringify(before),
+    );
+    const output = path.join(directory, 'find-output');
+    writeFileSync(output, '');
+    execFileSync(
+      'bash',
+      ['-e', '-c', runBlock(source, 'Find the published Studio version')],
+      {
+        cwd: workspace,
+        env: { ...process.env, RUNNER_TEMP: directory, GITHUB_OUTPUT: output },
+      },
+    );
+    return readFileSync(output, 'utf8');
+  };
+  assert.equal(
+    findVersion({
+      '@nocobase/studio': '1.0.0-beta.51',
+      '@nocobase/db': '1.0.0-beta.8',
+    }),
+    'version=1.0.0-beta.52\n',
+  );
+  assert.equal(
+    findVersion({
+      '@nocobase/studio': '1.0.0-beta.52',
+      '@nocobase/db': '1.0.0-beta.8',
+    }),
+    'version=\n',
+  );
+
+  // The dispatch names the release tag and release mode on the CI repository's main.
+  const bin = path.join(directory, 'bin');
+  mkdirSync(bin);
+  writeFileSync(
+    path.join(bin, 'gh'),
+    '#!/usr/bin/env node\nlet input = "";\nprocess.stdin.on("data", (c) => (input += c)).on("end", () => require("fs").writeFileSync(process.env.GH_CALL, JSON.stringify({ args: process.argv.slice(2), body: JSON.parse(input) })));\n',
+    { mode: 0o755 },
+  );
+  const dispatch = (token) => {
+    const call = path.join(
+      directory,
+      `gh-call-${token ? 'token' : 'none'}.json`,
+    );
+    const summary = path.join(directory, 'summary');
+    writeFileSync(summary, '');
+    const result = spawnSync(
+      'bash',
+      [
+        '-e',
+        '-c',
+        runBlock(source, 'Dispatch studio-image.yml in 2013xile/nocobase-ci'),
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+          GH_TOKEN: token,
+          GH_CALL: call,
+          CI_REPOSITORY: '2013xile/nocobase-ci',
+          TAG: 'release-beta/2026-10-10.1',
+          VERSION: '1.0.0-beta.52',
+          GITHUB_STEP_SUMMARY: summary,
+        },
+      },
+    );
+    let recorded;
+    try {
+      recorded = JSON.parse(readFileSync(call, 'utf8'));
+    } catch {
+      recorded = undefined;
+    }
+    return { status: result.status, stdout: result.stdout, recorded };
+  };
+  const sent = dispatch('token');
+  assert.equal(sent.status, 0);
+  assert.deepEqual(sent.recorded, {
+    args: [
+      'api',
+      '--method',
+      'POST',
+      'repos/2013xile/nocobase-ci/actions/workflows/studio-image.yml/dispatches',
+      '--input',
+      '-',
+    ],
+    body: {
+      ref: 'main',
+      inputs: { ref: 'release-beta/2026-10-10.1', release: 'true' },
+    },
+  });
+
+  // Without the token the release is not failed; it warns with the command to run by hand.
+  const skipped = dispatch('');
+  assert.equal(skipped.status, 0);
+  assert.equal(skipped.recorded, undefined);
+  assert.match(
+    skipped.stdout,
+    /::warning::NOCOBASE_CI_DISPATCH_TOKEN is not configured.*gh workflow run studio-image\.yml -R 2013xile\/nocobase-ci -f ref=release-beta\/2026-10-10\.1 -f release=true/u,
+  );
 });

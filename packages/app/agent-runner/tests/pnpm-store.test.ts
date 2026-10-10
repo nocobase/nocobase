@@ -14,11 +14,10 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildAgentEnv } from '../src/agent/env.ts';
-import { agentWritableRoots } from '../src/agent/prepare/index.ts';
 import { workspaceNotes } from '../src/agent/worker.ts';
 import { workspaceRecordPath } from '../src/core/checkout.ts';
 import { RunnerDaemon } from '../src/core/loop.ts';
-import { isInside } from '../src/core/command-policy.ts';
+import { isInside } from '../src/lib/paths.ts';
 import {
   ensurePnpmStore,
   pnpmImportMethod,
@@ -168,12 +167,6 @@ describe('the shared pnpm store', () => {
       pnpm_config_manage_package_manager_versions: 'false',
       npm_config_manage_package_manager_versions: 'false',
     });
-  });
-
-  it("is writable in a sandboxing tool's session", () => {
-    expect(
-      agentWritableRoots([], '/w/task-a/repo', ['/w/.pnpm-store']),
-    ).toEqual(['/w/.pnpm-store']);
   });
 
   it('is what the agent is told to install with, instead of a store of its own', () => {

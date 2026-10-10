@@ -1,0 +1,132 @@
+@import 'tailwindcss';
+@config "../tailwind.config.mjs";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import './theme/themes/default.css';
+@import './theme/themes/compact.css';
+@source "./components/ui";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-heading: var(--font-sans);
+  /* These names are implemented below as runtime-variable utilities. */
+  --shadow-2xs: initial;
+  --shadow-xs: initial;
+  --shadow-sm: initial;
+  --shadow-md: initial;
+  --shadow-lg: initial;
+  --shadow-xl: initial;
+  --shadow-2xl: initial;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply min-h-svh bg-background font-sans text-base text-foreground antialiased;
+    margin: 0;
+  }
+
+  /* Keep semantic text in application and plugin content on the same typography. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    @apply font-mono;
+  }
+}
+
+/* Named shadows normally compile to literal values. Arbitrary-value utilities
+   preserve the runtime token and Tailwind's ring/shadow composition. */
+@utility shadow-2xs {
+  @apply shadow-(--shadow-2xs);
+}
+@utility shadow-xs {
+  @apply shadow-(--shadow-xs);
+}
+@utility shadow-sm {
+  @apply shadow-(--shadow-sm);
+}
+@utility shadow-md {
+  @apply shadow-(--shadow-md);
+}
+@utility shadow-lg {
+  @apply shadow-(--shadow-lg);
+}
+@utility shadow-xl {
+  @apply shadow-(--shadow-xl);
+}
+@utility shadow-2xl {
+  @apply shadow-(--shadow-2xl);
+}
+
+/* The application's one toaster mounts before any dialog opens, and every
+   overlay shares z-50, so a dialog portaled later would paint over its toasts.
+   Lift the viewport here rather than in the generated component; left outside
+   any layer so it outranks the component's z-50 utility. */
+[data-slot='toast-viewport'] {
+  z-index: 100;
+}
+
+/* The looping activity timeline of the guest pages (`pages/auth/auth-shell.tsx`). */
+@keyframes auth-activity-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
