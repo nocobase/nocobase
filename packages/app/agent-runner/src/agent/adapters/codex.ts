@@ -354,7 +354,7 @@ interface Steer {
  */
 export const CODEX_AGENTS_DIR = '.agents';
 
-/** Creates missing `.agents` directories and accepts only real directories inside the run's working trees. */
+/** Creates missing `.agents` directories and opens only each working tree's canonical `.agents` itself. */
 export async function codexAgentsDirs(
   session: AdapterSession,
 ): Promise<string[]> {
@@ -374,30 +374,13 @@ export async function codexAgentsDirs(
     let target: string;
     try {
       target = await realpath(dir);
-    } catch (error) {
-      throw new Error(
-        `Refusing Codex writable root ${dir}: .agents must resolve to an existing directory`,
-        { cause: error },
-      );
+    } catch {
+      // Keep dangling or inaccessible paths intact and let Codex run without this extra writable root.
+      continue;
     }
-    if (
-      !allowed.some((root) => {
-        const relative = path.relative(root, target);
-        return (
-          relative === '' ||
-          (relative !== '..' &&
-            !relative.startsWith(`..${path.sep}`) &&
-            !path.isAbsolute(relative))
-        );
-      })
-    )
-      throw new Error(
-        `Refusing Codex writable root ${dir}: .agents resolves outside the run's working directories`,
-      );
-    if (!(await stat(target)).isDirectory())
-      throw new Error(
-        `Refusing Codex writable root ${dir}: .agents is not a directory`,
-      );
+    // An internal link must not open protected siblings (.codex/.git) or the whole working tree either.
+    if (target !== dir) continue;
+    if (!(await stat(target)).isDirectory()) continue;
     // Use the canonical target so replacing a link later cannot redirect this sandbox root elsewhere.
     dirs.push(target);
   }

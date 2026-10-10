@@ -444,85 +444,83 @@ describe('sandbox', () => {
     await rm(workDir, { recursive: true, force: true });
   });
 
-  it('keeps an internal .agents link and opens its canonical directory', async () => {
-    const workDir = await realpath(
-      await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-linked-')),
-    );
-    try {
-      const target = path.join(workDir, 'skill-cache');
-      await mkdir(target);
-      await writeFile(path.join(target, 'keep.txt'), 'existing skills');
-      await symlink('skill-cache', path.join(workDir, '.agents'), 'dir');
-      let params: Record<string, unknown> = {};
-      const { adapter } = adapterWith(async (fake) => {
-        params = await handshake(fake);
-        completeTurn(fake);
-      });
-      const handle = adapter.start(session({ workDir }));
-      await drain(handle);
-      expect((await handle.result).exit).toBe('completed');
-      expect(params.sandboxPolicy).toMatchObject({
-        writableRoots: [workDir, target],
-      });
-      expect(
-        (await lstat(path.join(workDir, '.agents'))).isSymbolicLink(),
-      ).toBe(true);
-      expect(await readFile(path.join(target, 'keep.txt'), 'utf8')).toBe(
-        'existing skills',
-      );
-    } finally {
-      await rm(workDir, { recursive: true, force: true });
-    }
-  });
-
-  it('refuses an external .agents link before spawning Codex and leaves it intact', async () => {
+  it('opens canonical .agents when the working tree itself is a link', async () => {
     const root = await realpath(
-      await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-boundary-')),
+      await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-tree-link-')),
     );
     try {
-      const workDir = path.join(root, 'work');
-      const outside = path.join(root, 'work-outside', '.agents');
-      await mkdir(workDir);
-      await mkdir(outside, { recursive: true });
-      await writeFile(path.join(outside, 'keep.txt'), 'outside skills');
-      await symlink(outside, path.join(workDir, '.agents'), 'dir');
-      const config = session({ workDir });
-      await expect(codexWritableRoots(config)).rejects.toThrow(
-        /outside the run's working directories/,
-      );
-      const { adapter, spawn } = adapterWith(() => {});
-      const handle = adapter.start(config);
-      await drain(handle);
-      expect(await handle.result).toMatchObject({
-        exit: 'error',
-        error: {
-          message: expect.stringContaining(
-            "outside the run's working directories",
-          ),
-        },
-      });
-      expect(spawn.processes).toHaveLength(0);
-      expect(
-        (await lstat(path.join(workDir, '.agents'))).isSymbolicLink(),
-      ).toBe(true);
-      expect(await realpath(path.join(workDir, '.agents'))).toBe(outside);
-      expect(await readFile(path.join(outside, 'keep.txt'), 'utf8')).toBe(
-        'outside skills',
-      );
+      const tree = path.join(root, 'tree');
+      const alias = path.join(root, 'alias');
+      await mkdir(tree);
+      await symlink(tree, alias, 'dir');
+      expect(await codexWritableRoots(session({ workDir: alias }))).toEqual([
+        alias,
+        path.join(tree, '.agents'),
+      ]);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
   });
 
-  it('refuses a regular file at .agents without replacing it', async () => {
+  it.each([
+    '.codex',
+    '.git',
+    '.',
+    '../work-outside',
+    'skill-cache',
+    '../other/.agents',
+  ])(
+    'skips an .agents link to %s without failing the run or replacing it',
+    async (destination) => {
+      const root = await realpath(
+        await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-boundary-')),
+      );
+      try {
+        const workDir = path.join(root, 'work');
+        const other = path.join(root, 'other');
+        const otherAgents = path.join(other, '.agents');
+        const target = path.resolve(workDir, destination);
+        await mkdir(workDir);
+        await mkdir(otherAgents, { recursive: true });
+        await mkdir(target, { recursive: true });
+        await writeFile(path.join(target, 'keep.txt'), 'existing content');
+        await symlink(destination, path.join(workDir, '.agents'), 'dir');
+        const config = session({ workDir, workingTrees: [workDir, other] });
+        expect(await codexWritableRoots(config)).toEqual([
+          workDir,
+          otherAgents,
+        ]);
+        let params: Record<string, unknown> = {};
+        const { adapter } = adapterWith(async (fake) => {
+          params = await handshake(fake);
+          completeTurn(fake);
+        });
+        const handle = adapter.start(config);
+        await drain(handle);
+        expect((await handle.result).exit).toBe('completed');
+        expect(params.sandboxPolicy).toMatchObject({
+          writableRoots: [workDir, otherAgents],
+        });
+        expect(
+          (await lstat(path.join(workDir, '.agents'))).isSymbolicLink(),
+        ).toBe(true);
+        expect(await realpath(path.join(workDir, '.agents'))).toBe(target);
+        expect(await readFile(path.join(target, 'keep.txt'), 'utf8')).toBe(
+          'existing content',
+        );
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it('skips a regular file at .agents without replacing it', async () => {
     const workDir = await mkdtemp(
       path.join(tmpdir(), 'nocobase-runner-codex-file-'),
     );
     try {
       await writeFile(path.join(workDir, '.agents'), 'keep');
-      await expect(codexWritableRoots(session({ workDir }))).rejects.toThrow(
-        /not a directory/,
-      );
+      expect(await codexWritableRoots(session({ workDir }))).toEqual([workDir]);
       expect(await readFile(path.join(workDir, '.agents'), 'utf8')).toBe(
         'keep',
       );
@@ -531,7 +529,7 @@ describe('sandbox', () => {
     }
   });
 
-  it('refuses a dangling .agents link without creating its external target', async () => {
+  it('skips a dangling .agents link without creating its external target', async () => {
     const root = await mkdtemp(
       path.join(tmpdir(), 'nocobase-runner-codex-dangling-'),
     );
@@ -540,9 +538,7 @@ describe('sandbox', () => {
       const outside = path.join(root, 'outside');
       await mkdir(workDir);
       await symlink(outside, path.join(workDir, '.agents'), 'dir');
-      await expect(codexWritableRoots(session({ workDir }))).rejects.toThrow(
-        /must resolve to an existing directory/,
-      );
+      expect(await codexWritableRoots(session({ workDir }))).toEqual([workDir]);
       expect(
         (await lstat(path.join(workDir, '.agents'))).isSymbolicLink(),
       ).toBe(true);
