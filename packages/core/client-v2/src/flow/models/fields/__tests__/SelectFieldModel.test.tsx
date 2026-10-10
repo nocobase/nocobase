@@ -18,6 +18,53 @@ function mockT(text: string) {
 }
 
 describe('SelectFieldModel', () => {
+  it('uses current enum values when persisted options retain an old identifier', () => {
+    const model = {
+      props: {
+        options: [{ label: 'On sale', value: 'generated-value' }],
+        value: 'generated-value',
+      },
+      context: {
+        collectionField: {
+          uiSchema: {
+            enum: [{ label: 'On sale', value: 'on_sale' }],
+          },
+        },
+      },
+      translate: mockT,
+    } as unknown as SelectFieldModel;
+
+    const element = SelectFieldModel.prototype.render.call(model) as React.ReactElement;
+
+    expect(element.props.options).toEqual([{ label: 'On sale', value: 'on_sale' }]);
+    expect(element.props.value).toEqual({ label: 'On sale', value: 'on_sale' });
+  });
+
+  it('keeps an old value when the current enum label is ambiguous', () => {
+    const model = {
+      props: {
+        options: [{ label: 'Active', value: 'old-active' }],
+        value: 'old-active',
+      },
+      context: {
+        collectionField: {
+          uiSchema: {
+            enum: [
+              { label: 'Active', value: 'active' },
+              { label: 'Active', value: 'enabled' },
+            ],
+          },
+        },
+      },
+      translate: mockT,
+    } as unknown as SelectFieldModel;
+
+    const element = SelectFieldModel.prototype.render.call(model) as React.ReactElement;
+
+    expect(element.props.options).toEqual([{ label: 'Active', value: 'old-active' }]);
+    expect(element.props.value).toEqual({ label: 'old-active', value: 'old-active' });
+  });
+
   it('translates enum fallback labels for selected values', () => {
     const model = {
       props: {
