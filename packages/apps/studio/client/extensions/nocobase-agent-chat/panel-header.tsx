@@ -1,6 +1,6 @@
 /**
  * The panel's header: the conversation's title (click to rename; Enter saves, Escape cancels), then new conversation,
- * history, full screen (the application's page of the conversation when it has one, else full width) or back, a menu
+ * history, full width or back, a menu
  * (archive) and close; under it, once the conversation exists, its agent with its availability and mode (Online or
  * Runner), read-only. A conversation stays with its agent and its mode: a new conversation chooses its agent in the
  * composer (`NewChatChoice`), and another agent means a new conversation.
@@ -49,13 +49,13 @@ export function PanelHeader({
 }): ReactElement {
   const { t } = useChatTranslation();
   const panel = useChatPanel();
-  const history = panel.view === 'history';
+  const expanded = panel.mode === 'expanded';
+  const split = expanded && !compact;
+  const history = !split && panel.view === 'history';
   const detail = useConversation(panel.conversationId);
   const conversation = detail.data ?? null;
   const actions = useConversationActions();
-  const expanded = panel.mode === 'expanded';
   const menuTarget = history ? null : conversation;
-  const pageTarget = panel.openPage && !expanded ? menuTarget : null;
   const shownTitle = history
     ? t('chat.history.title')
     : conversation
@@ -82,40 +82,31 @@ export function PanelHeader({
         >
           <SquarePenIcon />
         </Button>
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          className={TOUCH}
-          aria-label={t('chat.history.title')}
-          title={t('chat.history.title')}
-          aria-pressed={history}
-          onClick={() => panel.setView(history ? 'chat' : 'history')}
-          data-testid='chat-history-button'
-        >
-          <HistoryIcon />
-        </Button>
-        {compact ? null : pageTarget ? (
-          // The application shows a conversation as a page of its own: "full screen" goes there.
+        {split ? null : (
           <Button
             variant='ghost'
             size='icon-sm'
             className={TOUCH}
-            aria-label={t('chat.openPage')}
-            title={t('chat.openPage')}
-            onClick={() => panel.openPage?.(pageTarget.id)}
-            data-testid='chat-open-page'
+            aria-label={t('chat.history.title')}
+            title={t('chat.history.title')}
+            aria-pressed={history}
+            onClick={() => panel.setView(history ? 'chat' : 'history')}
+            data-testid='chat-history-button'
           >
-            <Maximize2Icon />
+            <HistoryIcon />
           </Button>
-        ) : (
-          // Without a page to go to (a new conversation, the history, or no page at all), the panel covers the content.
+        )}
+        {compact ? null : (
           <Button
             variant='ghost'
             size='icon-sm'
             className={TOUCH}
             aria-label={expanded ? t('chat.restoreSize') : t('chat.expand')}
             title={expanded ? t('chat.restoreSize') : t('chat.expand')}
-            onClick={() => panel.setMode(expanded ? 'docked' : 'expanded')}
+            onClick={() => {
+              panel.setView('chat');
+              panel.setMode(expanded ? 'docked' : 'expanded');
+            }}
             data-testid='chat-expand'
           >
             {expanded ? <Minimize2Icon /> : <Maximize2Icon />}
