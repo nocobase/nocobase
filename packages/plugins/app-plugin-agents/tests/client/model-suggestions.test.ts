@@ -26,7 +26,6 @@ describe('reported model suggestions', () => {
       expect(modelSuggestions('pi', runners)).toEqual(
         TOOL_MODEL_SUGGESTIONS.pi.map((id) => ({
           id,
-          builtIn: true,
           runners: [],
         })),
       );
@@ -66,14 +65,12 @@ describe('reported model suggestions', () => {
     expect(suggestions.filter((item) => item.id === common)).toEqual([
       {
         id: common,
-        builtIn: true,
         runners: [{ id: 'office', name: 'office', available: true }],
       },
     ]);
     expect(
       suggestions.find((item) => item.id === 'openai/gpt-6-sol'),
     ).toMatchObject({
-      builtIn: false,
       runners: [
         { id: 'office', name: 'office', available: true },
         { id: 'laptop', name: 'laptop', available: true },
