@@ -15,6 +15,7 @@ import {
   deepseekProviderOptions,
   getBuiltinLLMProviderModelOptionFields,
   ollamaProviderOptions,
+  atlascloudProviderOptions,
   orcarouterProviderOptions,
   openaiResponsesProviderOptions,
   shengsuanyunProviderOptions,
@@ -39,6 +40,7 @@ const V1_REGISTERED_PROVIDERS = [
   'mimo',
   'mistral',
   'orcarouter',
+  'atlascloud',
   'shengsuanyun',
 ];
 
@@ -58,6 +60,7 @@ describe('plugin-ai client-v2 LLM providers', () => {
     expect(plugin.aiManager.llmProviders.get('openai')).toBe(openaiResponsesProviderOptions);
     expect(plugin.aiManager.llmProviders.get('ollama')).toBe(ollamaProviderOptions);
     expect(plugin.aiManager.llmProviders.get('orcarouter')).toBe(orcarouterProviderOptions);
+    expect(plugin.aiManager.llmProviders.get('atlascloud')).toBe(atlascloudProviderOptions);
     expect(plugin.aiManager.llmProviders.get('shengsuanyun')).toBe(shengsuanyunProviderOptions);
   });
 
@@ -65,6 +68,7 @@ describe('plugin-ai client-v2 LLM providers', () => {
     expect(openaiResponsesProviderOptions.components.ProviderSettingsForm).toBe(ProviderSettingsForm);
     expect(ollamaProviderOptions.components.ProviderSettingsForm).toBe(EmptyProviderSettingsForm);
     expect(orcarouterProviderOptions.components.ProviderSettingsForm).toBe(OrcaRouterProviderSettingsForm);
+    expect(atlascloudProviderOptions.components.ProviderSettingsForm).toBe(ProviderSettingsForm);
     expect(shengsuanyunProviderOptions.components.ProviderSettingsForm).toBe(ShengSuanYunProviderSettingsForm);
     expect(shengsuanyunProviderOptions.components.ModelSettingsForm).toBeDefined();
     expect(openaiResponsesProviderOptions.components.ModelSettingsForm).toBeDefined();
@@ -102,6 +106,11 @@ describe('plugin-ai client-v2 LLM providers', () => {
       'timeout',
       'maxRetries',
     ]);
+    // Atlas Cloud is an OpenAI-compatible gateway, so it reuses the shared
+    // OpenAI completion fields, as mimo does.
+    expect(getBuiltinLLMProviderModelOptionFields('atlascloud').map((field) => field.name)).toEqual(
+      getBuiltinLLMProviderModelOptionFields('mimo').map((field) => field.name),
+    );
     expect(getBuiltinLLMProviderModelOptionFields('orcarouter').map((field) => field.name)).toEqual([
       'frequencyPenalty',
       'maxCompletionTokens',
