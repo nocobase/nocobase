@@ -259,6 +259,15 @@ export interface RegistrationToken {
   readonly expiresAt: string;
 }
 
+/** Usable token metadata; the secret and its hash are never returned by a list. */
+export interface RegistrationTokenSummary extends Omit<
+  RegistrationToken,
+  'token'
+> {
+  readonly createdById: string | null;
+  readonly createdAt: string;
+}
+
 /**
  * A short-lived token that lets the install script download the `acme` CLI for one platform (the one its first
  * download names) and nothing else; `token` is shown only in this answer. It registers no runner.

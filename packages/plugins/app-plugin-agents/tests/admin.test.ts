@@ -12,6 +12,58 @@ describe('admin API', () => {
     await h?.close();
   });
 
+  it('lists only usable registration token metadata within the caller visibility, with pagination', async () => {
+    h = await createHarness();
+    const expired = await h.services.runners.createRegistrationToken(
+      'alice',
+      {},
+    );
+    h.clock.advance(11 * 60_000);
+    const alice = await h.services.runners.createRegistrationToken('alice', {});
+    const bob = await h.services.runners.createRegistrationToken('bob', {});
+    await h.registerRunner({ ownerUserId: 'alice' });
+    const route = '/agents/runners/registrationTokens';
+    expect((await h.request('GET', route)).status).toBe(401);
+    const own = await h.request('GET', route, { user: 'alice' });
+    expect(own.status).toBe(200);
+    expect(own.body.data.map((token: { id: string }) => token.id)).toEqual([
+      alice.id,
+    ]);
+    expect(own.body.meta.total).toBe(1);
+    const page = await h.request('GET', `${route}?pageSize=1`, {
+      user: 'admin',
+      can: ADMIN,
+    });
+    expect(page.body.data).toHaveLength(1);
+    expect(page.body.meta.total).toBe(2);
+    const next = await h.request('GET', `${route}?pageSize=1&page=2`, {
+      user: 'admin',
+      can: ADMIN,
+    });
+    expect(
+      new Set(
+        [...page.body.data, ...next.body.data].map(
+          (token: { id: string }) => token.id,
+        ),
+      ),
+    ).toEqual(new Set([alice.id, bob.id]));
+    const text = JSON.stringify(own.body);
+    for (const secret of [
+      alice.token,
+      bob.token,
+      expired.token,
+      'tokenHash',
+      'runnerKey',
+    ])
+      expect(text).not.toContain(secret);
+    expect(
+      (await h.request('GET', route, { user: 'stranger' })).body.data,
+    ).toEqual([]);
+    expect(
+      (await h.request('GET', `${route}?page=0`, { user: 'alice' })).status,
+    ).toBe(400);
+  });
+
   it('needs a signed-in caller and the settings item for agents and runners', async () => {
     h = await createHarness();
     expect((await h.request('GET', '/agents')).status).toBe(401);
@@ -493,6 +545,12 @@ describe('admin API', () => {
     });
     expect(early.status).toBe(400);
     expect(early.body.error.reason).toBe('RUNNER_NOT_REVOKED');
+    expect(early.body.error.message).toContain(
+      `runtime revoke ${runner.runnerId}`,
+    );
+    expect(early.body.error.message).toContain(
+      `runtime delete ${runner.runnerId}`,
+    );
     expect(
       (
         await h.request('DELETE', path, {

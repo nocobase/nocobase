@@ -85,6 +85,25 @@ function operation(method: string, path: string): OpenAPIV3_1.OperationObject {
 }
 
 describe('agents API document', () => {
+  it('derives the runtime token list command with pagination from the production routes', () => {
+    const command = deriveAllCliCommands(document).find(
+      (entry) => entry.id === 'runtime:token:list',
+    );
+    expect(command).toMatchObject({
+      method: 'GET',
+      path: '/api/agents/runners/registrationTokens',
+    });
+    expect(command?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'page', in: 'query', type: 'integer' }),
+        expect.objectContaining({
+          field: 'pageSize',
+          in: 'query',
+          type: 'integer',
+        }),
+      ]),
+    );
+  });
   it('declares every route and hides none', () => {
     expect(findUndeclaredApiRoutes(api)).toEqual([]);
     const routes = inspectApiRoutes(api);

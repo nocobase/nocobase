@@ -78,6 +78,7 @@ import {
   RUNNER_TRUST,
   type DownloadToken,
   type RegistrationToken,
+  type RegistrationTokenSummary,
   type RegistrationTokenInput,
   type Runner,
   type RunnerHeldItem,
@@ -1562,6 +1563,26 @@ export const RegistrationTokenSchema: z.ZodType<RegistrationToken> = z.object({
   toolSlots: ToolSlotsSchema.nullable(),
   expiresAt: dateTime,
 });
+
+export const RegistrationTokenListQuery: z.ZodType<{
+  page: number;
+  pageSize: number;
+}> = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: pageSize(50, 100),
+});
+
+export const RegistrationTokenSummarySchema: z.ZodType<RegistrationTokenSummary> =
+  z.object({
+    id: z.string(),
+    createdById: z.string().nullable(),
+    trust: z.enum(RUNNER_TRUST),
+    enabledTools: z.array(AgentToolSchema).nullable(),
+    slots: z.number().int().nullable(),
+    toolSlots: ToolSlotsSchema.nullable().optional(),
+    createdAt: dateTime,
+    expiresAt: dateTime,
+  });
 
 export const DownloadTokenSchema: z.ZodType<DownloadToken> = z.object({
   token: z.string().meta({

@@ -33,6 +33,109 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('revokes every prior registration and key for the same owner, name and host', async () => {
+    h = await createHarness();
+    const register = async (owner: string, overrides = {}) => {
+      const token = await h.services.runners.createRegistrationToken(owner, {});
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+        ...overrides,
+      });
+    };
+    const otherOwner = await register('bob');
+    const otherHost = await register('alice', { hostname: 'other.local' });
+    const otherName = await register('alice', { name: 'other' });
+    const old = await register('alice');
+    const runId = await h.enqueue(await h.createAgent());
+    await h.services.runners.update(old.runnerId, { trust: 'team' });
+    // Install a usable tool before the old runtime claims work.
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: old.runnerKey,
+      body: heartbeat,
+    });
+    const claimed = await h.request('POST', '/agents/runners/claim', {
+      runnerKey: old.runnerKey,
+      body: { free: 1 },
+    });
+    expect(claimed.body.data.runs[0].run.id).toBe(runId);
+    const fresh = await register('alice');
+    expect(fresh.runnerId).not.toBe(old.runnerId);
+    expect((await h.services.runners.get(old.runnerId)).status).toBe('revoked');
+    for (const request of ['/heartbeat', '/claim']) {
+      const refused = await h.request('POST', `/agents/runners${request}`, {
+        runnerKey: old.runnerKey,
+        body: request === '/heartbeat' ? heartbeat : { free: 1 },
+      });
+      expect(refused.status).toBe(401);
+      expect(refused.body.error.reason).toBe('RUNNER_REVOKED');
+    }
+    await h.services.sweeper.sweep();
+    expect((await h.services.runs.get(runId)).status).toBe('queued');
+    for (const kept of [otherOwner, otherHost, otherName, fresh])
+      expect((await h.services.runners.get(kept.runnerId)).status).toBe(
+        'online',
+      );
+  });
+
+  it('serializes registrations with different tokens for the same host', async () => {
+    h = await createHarness();
+    const tokens = await Promise.all(
+      [1, 2].map(() => h.services.runners.createRegistrationToken('alice', {})),
+    );
+    const results = await Promise.all(
+      tokens.map((token) =>
+        h.services.runners.register({
+          ...registration(token.token),
+          features: [],
+          tools: [],
+        }),
+      ),
+    );
+    const runners = await Promise.all(
+      results.map((result) => h.services.runners.get(result.runnerId)),
+    );
+    expect(runners.filter((runner) => runner.status === 'online')).toHaveLength(
+      1,
+    );
+    expect(
+      runners.filter((runner) => runner.status === 'revoked'),
+    ).toHaveLength(1);
+  });
+
+  it('leaves the current runner usable when a replacement token is invalid', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('alice', {});
+    const current = await h.services.runners.register({
+      ...registration(token.token),
+      features: [],
+      tools: [],
+    });
+    await expect(
+      h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    const expired = await h.services.runners.createRegistrationToken(
+      'alice',
+      {},
+    );
+    h.clock.advance(11 * 60_000);
+    await expect(
+      h.services.runners.register({
+        ...registration(expired.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    expect((await h.services.runners.authenticate(current.runnerKey)).id).toBe(
+      current.runnerId,
+    );
+  });
+
   it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({
