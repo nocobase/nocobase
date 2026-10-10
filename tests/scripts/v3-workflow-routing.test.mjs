@@ -270,10 +270,14 @@ test('a beta release that publishes Studio dispatches its release image from the
     job,
     /!cancelled\(\) && !inputs\.dry_run\n\s+&& needs\.release\.outputs\.tag != '' && needs\.release\.outputs\.studio_version != ''/u,
   );
+  // A NocoBase App token for the CI repository, as every other workflow here authenticates; it may fail to mint.
   assert.match(
     job,
-    /GH_TOKEN: \$\{\{ secrets\.NOCOBASE_CI_DISPATCH_TOKEN \}\}/u,
+    /uses: actions\/create-github-app-token@v2\n\s+with:\n\s+app-id: \$\{\{ vars\.NOCOBASE_APP_ID \}\}\n\s+private-key: \$\{\{ secrets\.NOCOBASE_APP_PRIVATE_KEY \}\}\n\s+owner: 2013xile\n\s+repositories: nocobase-ci\n\s+permission-actions: write\n/u,
   );
+  assert.match(job, /id: ci_token\n\s+continue-on-error: true\n/u);
+  assert.match(job, /GH_TOKEN: \$\{\{ steps\.ci_token\.outputs\.token \}\}/u);
+  assert.doesNotMatch(job, /secrets\.NOCOBASE_CI_DISPATCH_TOKEN/u);
   assert.match(job, /permissions: \{\}/u);
 
   const directory = mkdtempSync(path.join(tmpdir(), 'studio-image-dispatch-'));
@@ -390,12 +394,13 @@ test('a beta release that publishes Studio dispatches its release image from the
     },
   });
 
-  // Without the token the release is not failed; it warns with the command to run by hand.
+  // Without a token (the App is not installed on the CI repository) the release is not failed; it warns with the
+  // command to run by hand.
   const skipped = dispatch('');
   assert.equal(skipped.status, 0);
   assert.equal(skipped.recorded, undefined);
   assert.match(
     skipped.stdout,
-    /::warning::NOCOBASE_CI_DISPATCH_TOKEN is not configured.*gh workflow run studio-image\.yml -R 2013xile\/nocobase-ci -f ref=release-beta\/2026-10-10\.1 -f release=true/u,
+    /::warning::The NocoBase App could not mint a token for 2013xile\/nocobase-ci.*gh workflow run studio-image\.yml -R 2013xile\/nocobase-ci -f ref=release-beta\/2026-10-10\.1 -f release=true/u,
   );
 });

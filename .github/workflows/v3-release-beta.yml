@@ -716,8 +716,9 @@ jobs:
 
   # Studio's release image is built by studio-image.yml in 2013xile/nocobase-ci, from this release's tag and without
   # baked runner packages, so the image answers npm with the versions just published. It runs only when this release
-  # published @nocobase/studio, even if a later step of the release job failed, and never fails the release itself
-  # for a missing token: without NOCOBASE_CI_DISPATCH_TOKEN it warns and the image can be dispatched by hand.
+  # published @nocobase/studio, even if a later step of the release job failed. It dispatches with a NocoBase App token
+  # for 2013xile/nocobase-ci, like every other workflow here, and never fails the release itself: when the App cannot
+  # mint that token (it is not installed on the CI repository), it warns and the image can be dispatched by hand.
   studio-image:
     name: Dispatch the Studio release image
     needs: release
@@ -728,16 +729,27 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
+      - name: Create a NocoBase App token for the CI repository
+        id: ci_token
+        continue-on-error: true
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: 2013xile
+          repositories: nocobase-ci
+          permission-actions: write
+
       - name: Dispatch studio-image.yml in 2013xile/nocobase-ci
         env:
-          GH_TOKEN: ${{ secrets.NOCOBASE_CI_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ steps.ci_token.outputs.token }}
           CI_REPOSITORY: 2013xile/nocobase-ci
           TAG: ${{ needs.release.outputs.tag }}
           VERSION: ${{ needs.release.outputs.studio_version }}
         run: |
           MANUAL="gh workflow run studio-image.yml -R $CI_REPOSITORY -f ref=$TAG -f release=true"
           if [ -z "$GH_TOKEN" ]; then
-            echo "::warning::NOCOBASE_CI_DISPATCH_TOKEN is not configured, so no Studio $VERSION image was built. Run: $MANUAL"
+            echo "::warning::The NocoBase App could not mint a token for $CI_REPOSITORY (is it installed there?), so no Studio $VERSION image was built. Run: $MANUAL"
             exit 0
           fi
           jq -n --arg ref "$TAG" '{ref: "main", inputs: {ref: $ref, release: "true"}}' \
