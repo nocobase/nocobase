@@ -21,9 +21,9 @@
 //
 // Nothing leaves the worker unredacted (`runSecrets`): every event is redacted as it is spooled, and so are the
 // summary, the failure detail, the repositories' push failures and the worker's log lines. The redactor removes the
-// values of the secrets the run was given (its variables, the passthrough values taken from this host, its CLI
-// credential's tokens, the runner key, and every repository credential as the broker gets it) and the common secret
-// patterns of `@nocobase/agent-protocol`.
+// values of the secrets the run was given (its variables, the passthrough values taken from this host, the proxy and
+// `--pass-env` values the runner passes, its CLI credential's tokens, the runner key, and every repository credential
+// as the broker gets it) and the common secret patterns of `@nocobase/agent-protocol`.
 //
 // The run's repository credentials (`workspace.git`) are kept by a broker in this process (git-credentials.ts), which
 // the checkout, the agent's git (through the runner's credential helper and a socket only this worker serves) and the
@@ -71,7 +71,7 @@ import {
 } from '../core/checkout.ts';
 import { credentialsGuard, deleteRunCredentials } from './credentials.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
-import { buildAgentEnv } from './env.ts';
+import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import {
   GitCredentialBroker,
   installCredentialHelper,
@@ -215,18 +215,26 @@ const CREDENTIAL_SECRET = /token|key|secret|password/iu;
 
 /**
  * The secret values a run carries: its variables, the values of the passthrough names as this host has them, the
+ * values the runner passes from its environment (its proxies, which may hold a password, and `--pass-env`), the
  * secret fields of its CLI credential (the run token), and the runner key it was claimed with.
  */
 export function runSecrets(
   payload: Pick<RunPayload, 'workspace' | 'cli'>,
   connection?: Pick<AppConnection, 'runnerKey' | 'registration'>,
   source: NodeJS.ProcessEnv = process.env,
+  passEnv: readonly string[] = [],
 ): string[] {
   const secrets = payload.workspace.env.map((variable) => variable.value);
+  const provided = providedVariables(
+    source,
+    passEnv,
+    connection?.registration.variables,
+  );
   for (const name of payload.workspace.passthrough ?? []) {
-    const value = connection?.registration.variables?.[name] ?? source[name];
+    const value = provided[name];
     if (value !== undefined) secrets.push(value);
   }
+  secrets.push(...environmentSecrets(source, passEnv));
   const content = payload.cli.credential.content;
   if (content !== null && typeof content === 'object')
     for (const [key, value] of Object.entries(content))
@@ -320,7 +328,14 @@ export class RunWorker {
     this.payload = payload;
     this.timings = timings;
     this.redactor = new GrowingRedactor(
-      createRedactor(runSecrets(payload, deps.connection)),
+      createRedactor(
+        runSecrets(
+          payload,
+          deps.connection,
+          process.env,
+          deps.settings.passEnv,
+        ),
+      ),
     );
     const redact = this.redactor;
     this.deps = {
@@ -549,6 +564,7 @@ export class RunWorker {
       payload,
       paths: deps.paths,
       registration,
+      passEnv: deps.settings.passEnv ?? [],
       client: this.client,
       tool: payload.tool.kind,
       log: deps.log,
@@ -664,6 +680,9 @@ export class RunWorker {
       pnpmImportMethod: importMethod,
       hooksDir: deps.paths.hooksDir,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),
+      ...(deps.settings.passEnv === undefined
+        ? {}
+        : { passEnv: deps.settings.passEnv }),
       ...(process.env[PROCESS_TAG_ENV] === undefined
         ? {}
         : { processTag: process.env[PROCESS_TAG_ENV] }),

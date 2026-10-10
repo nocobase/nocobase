@@ -5,6 +5,7 @@
 import {
   AGENT_TOOLS,
   RunnerPolicySchema,
+  RunnerVariableNamesSchema,
   ToolLoadSchema,
   ReportedToolInfoSchema,
   ToolSlotsSchema,
@@ -47,6 +48,7 @@ export interface RunnerRecord {
   readonly load: unknown;
   readonly acceptJobs: boolean;
   readonly policy: unknown;
+  readonly variables?: unknown;
   readonly workspaceUsage?: unknown;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
@@ -159,6 +161,23 @@ export function storedPolicy(value: unknown): RunnerPolicy | null {
     : policy;
 }
 
+/** Reported variable names as stored: valid names, each once, sorted; null when it reported none. */
+export function storedVariableNames(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  const parsed = RunnerVariableNamesSchema.safeParse(
+    typeof value === 'string' ? safeJson(value) : value,
+  );
+  return parsed.success ? [...new Set(parsed.data)].sort() : null;
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
@@ -240,6 +259,7 @@ export function toRunner(
     toolLoad: storedToolLoad(record.load),
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
+    variables: storedVariableNames(record.variables),
     workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,

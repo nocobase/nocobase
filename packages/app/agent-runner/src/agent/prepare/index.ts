@@ -3,6 +3,7 @@
 // step's failure reason when one throws; what a step learns it leaves on the context for the steps after it and for
 // the agent's start.
 //
+//   variables  the variables the run asks the runner for by name are ones it provides (`workspace.passthrough`)
 //   workspace  lock the subject's work directory; start over when the run asks (`workspace.clean`)
 //   cli        install or reuse the application's CLI, put it on the agent's PATH, write the run's credentials
 //   dirs       the working directories: check repositories out, take directories used in place
@@ -17,6 +18,7 @@ import { dirsStep } from './dirs.ts';
 import { mountsStep } from './mounts.ts';
 import { skillsStep } from './skills.ts';
 import type { PrepareStep } from './types.ts';
+import { variablesStep } from './variables.ts';
 import { workspaceStep } from './workspace.ts';
 
 export {
@@ -28,6 +30,7 @@ export {
 } from './types.ts';
 
 export const PREPARE_STEPS: readonly PrepareStep[] = [
+  variablesStep,
   workspaceStep,
   cliStep,
   dirsStep,
