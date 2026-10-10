@@ -15,6 +15,7 @@ import {
   type RunApp,
   type ToolSlots,
 } from '../protocol/index.ts';
+import { ENV_NAME_PATTERN, forbidden } from '../agent/env.ts';
 import { ApiClient } from './http.ts';
 import {
   ensureHome,
@@ -24,6 +25,7 @@ import {
   writeJsonAtomic,
   type RunnerPaths,
 } from './home.ts';
+import { DEFAULT_MIN_FREE_DISK, type FreeSpace } from './size.ts';
 
 /** How an agent's tool gets a home directory: an isolated one per workspace, or the runner user's own. */
 export type AgentHome = 'isolated' | 'real';
@@ -46,6 +48,35 @@ export interface RunnerSettings {
   autoUpdate: boolean;
   /** The label of the service `service install` set up, so `uninstall` finds it. */
   serviceLabel?: string;
+  /**
+   * Variable names always passed from the runner's environment to every run, and provided to a run that asks for them
+   * (`--pass-env` on `start` and `service install`); absent for none.
+   */
+  passEnv?: string[];
+  /**
+   * How much of the disk holding the working directories to keep free (`register --min-free-disk 20G`,
+   * `config set min-free-disk 10%`): below it, the runner warns what is left to remove (core/workspaces.ts). Absent for
+   * `DEFAULT_MIN_FREE_DISK`, null when the owner turned it off.
+   */
+  minFreeDisk?: FreeSpace | null;
+}
+
+/** The free space the runner keeps on the disk holding the working directories; null for none. */
+export function minFreeDisk(settings: RunnerSettings): FreeSpace | null {
+  return settings.minFreeDisk === undefined
+    ? DEFAULT_MIN_FREE_DISK
+    : settings.minFreeDisk;
+}
+
+function storedFreeSpace(value: unknown): FreeSpace | null | undefined {
+  if (value === null) return null;
+  if (typeof value !== 'object') return undefined;
+  const { bytes, percent } = value as { bytes?: unknown; percent?: unknown };
+  if (typeof bytes === 'number' && Number.isSafeInteger(bytes) && bytes > 0)
+    return { bytes };
+  if (typeof percent === 'number' && percent > 0 && percent < 100)
+    return { percent };
+  return undefined;
 }
 
 export interface AppRegistration {
@@ -77,6 +108,7 @@ export async function readSettings(
 ): Promise<RunnerSettings> {
   const stored = await readJson<Partial<RunnerSettings>>(paths.settings);
   const toolSlots = ToolSlotsSchema.safeParse(stored?.toolSlots);
+  const minFree = storedFreeSpace(stored?.minFreeDisk);
   return {
     name: stored?.name ?? defaultRunnerName(),
     slots: stored?.slots ?? 1,
@@ -90,7 +122,39 @@ export async function readSettings(
     ...(typeof stored?.serviceLabel === 'string' && stored.serviceLabel !== ''
       ? { serviceLabel: stored.serviceLabel }
       : {}),
+    ...(passEnvNames(stored?.passEnv).length > 0
+      ? { passEnv: passEnvNames(stored?.passEnv) }
+      : {}),
+    ...(minFree === undefined ? {} : { minFreeDisk: minFree }),
   };
+}
+
+/** `--pass-env` names: the valid ones, each once, in order. */
+export function passEnvNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const names = value.filter(
+    (name): name is string =>
+      typeof name === 'string' &&
+      ENV_NAME_PATTERN.test(name) &&
+      !forbidden(name),
+  );
+  return [...new Set(names)];
+}
+
+/**
+ * Drops `workspaceLimit`, a cap on what the working directories took together that `minFreeDisk` replaced, from the
+ * stored settings. Returns whether there was one, so the daemon says once that it no longer applies.
+ */
+export async function dropWorkspaceLimit(
+  paths: RunnerPaths = runnerPaths(),
+): Promise<boolean> {
+  const stored = await readJson<Record<string, unknown>>(paths.settings).catch(
+    () => undefined,
+  );
+  if (stored === undefined || !('workspaceLimit' in stored)) return false;
+  const { workspaceLimit: _replaced, ...rest } = stored;
+  await writeJsonAtomic(paths.settings, rest);
+  return true;
 }
 
 export async function writeSettings(

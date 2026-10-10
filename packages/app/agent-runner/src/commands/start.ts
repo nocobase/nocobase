@@ -15,10 +15,12 @@ import { ensureHome } from '../lib/home.ts';
 import { detectInstallation } from '../lib/install.ts';
 import { delay } from '../lib/http.ts';
 import { selfCommand } from '../lib/self.ts';
+import { passEnvFlag, rememberPassEnv } from '../lib/pass-env.ts';
 import { parseSlotsFlag } from '../lib/slots.ts';
 import { runnerCommandLine } from '../host.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, RunnerDaemon } from '../core/loop.ts';
+import { killLeftovers } from '../core/process-tree.ts';
 import { SERVICE_ENV } from '../core/service.ts';
 import type { Timings } from '../core/supervisor.ts';
 
@@ -38,6 +40,7 @@ export default class Start extends RunnerCommand {
     foreground: Interfaces.BooleanFlag<boolean>;
     slots: Interfaces.OptionFlag<string | undefined>;
     'agent-home': Interfaces.OptionFlag<string | undefined>;
+    'pass-env': Interfaces.OptionFlag<string[] | undefined>;
   } = {
     foreground: Flags.boolean({
       description: 'Run in this terminal until interrupted.',
@@ -52,7 +55,26 @@ export default class Start extends RunnerCommand {
         'real (the runner user’s own). Remembered for later starts.',
       options: ['isolated', 'real'],
     }),
+    'pass-env': passEnvFlag,
   };
+
+  /**
+   * Ends the foreground daemon's process: whatever is still running below it is stopped first, so nothing it started
+   * outlives it, and the process exits even when a handle would keep it alive, so a service sees it stop and starts it
+   * again when it should.
+   */
+  private async exitProcess(
+    code: number,
+    log: (message: string) => void,
+  ): Promise<never> {
+    const left = await killLeftovers(process.pid, { graceMs: 3_000 });
+    if (left.processes > 0 || left.groups > 0)
+      log(
+        `stopped ${left.processes} process(es) and ${left.groups} process group(s) left behind`,
+      );
+    log(`runner exiting (${code})`);
+    process.exit(code);
+  }
 
   async run(): Promise<{ pid: number }> {
     const { flags } = await this.parse(Start);
@@ -66,11 +88,12 @@ export default class Start extends RunnerCommand {
         EXIT_CODES.auth,
       );
     }
-    const settings = await readSettings(paths);
+    let settings = await readSettings(paths);
     if (flags['agent-home'] !== undefined) {
       settings.agentHome = flags['agent-home'] as AgentHome;
       await writeSettings(settings, paths);
     }
+    settings = await rememberPassEnv(settings, flags['pass-env'], paths);
     const running = await readDaemonPid(paths);
     if (running !== undefined) {
       throw new UsageError(
@@ -133,7 +156,8 @@ export default class Start extends RunnerCommand {
       paths,
       settings,
       connections,
-      adapters: loadAdapters(),
+      adapters: loadAdapters(process.env, settings.passEnv),
+      adaptersFor: loadAdapters,
       ...(slotsFlag.slots === undefined ? {} : { slots: slotsFlag.slots }),
       ...(slotsFlag.toolSlots === undefined
         ? {}
@@ -147,6 +171,6 @@ export default class Start extends RunnerCommand {
     process.on('SIGINT', () => stop('SIGINT'));
     await daemon.start();
     await daemon.wait();
-    return { pid: process.pid };
+    return this.exitProcess(daemon.exitCode, log);
   }
 }

@@ -45,7 +45,7 @@ For a business action, call the request scope’s authorize() once and bind its 
 Reserve supervisor access for decision actions. Submission must also check ownership. Show allowed actions in the UI and independently authorize them on the server.
 ```
 
-For the full design workflow, see [Describe permissions to AI](../capabilities/authorization/develop-with-ai).
+For configuring job responsibilities and assigning users, see [Permission sets and assignments](../capabilities/authorization/permission-sets).
 
 The database resource ID is `tutorialOrders`. Match Permission Set grants, route resource names, and API checks; a translated display title is not a resource ID.
 

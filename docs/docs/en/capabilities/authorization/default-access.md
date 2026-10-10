@@ -1,14 +1,32 @@
 ---
-title: 'Default access'
-description: 'A common record baseline for existing operation holders.'
+title: 'Default data scope'
+description: 'Provide common reference records to people who already have the relevant action.'
 ---
 
-# Default access
+# Default data scope
 
-Use default access for a stable baseline: everyone with View quotes may consult non-confidential quotes, while Edit remains limited to the preparer.
+Default data scope provides a common set of records to users who already hold an action. For example, requesters normally view their own orders and can also consult approved orders as purchase references.
 
-In Settings → Authorization → Default access, choose the business operation, action and named scope, configure its range and save. Configure different actions and tables separately. Each resource has at most one default-access rule, which lists every action and scope it widens; saving a second rule for the same resource is rejected. Rules that developers provision keep the key they were created with. Clearing a rule removes that baseline, not action grants or independent sharing.
+## Example: consult approved orders
 
-Defaults combine with role scope and sharing; they are not used only when a role has no selected scope. Do not copy a broad read baseline into editing. Verify both an action holder and a person without that action; the latter must remain denied.
+```text
+Keep requesters able to view their own orders.
+Let everyone with View orders permission also consult approved orders as purchase references.
+Configure these common records as a default data scope that administrators can adjust in Settings.
+```
 
-Use the [AI request template](develop-with-ai) when a new scope is needed. Specify which operation holders should always receive which records.
+In Settings → Authorization → Default Data Scope, configure Approved orders for View orders. This example extends reading while keeping approval responsibilities unchanged.
+
+![Configure approved orders as the default viewing scope](../../../cn/capabilities/authorization/assets/default-access.png)
+
+### View the result
+
+Alice's list includes her orders and Bob's approved PO-2026-003. Other users with View orders permission can consult the same reference records.
+
+![A requester consults another person's approved order](../../../cn/capabilities/authorization/assets/default-access-orders.png)
+
+## Adjust the common scope
+
+Default scope combines with the job's existing scope instead of replacing it. Administrators can change the common-record condition; configure different actions for a resource within the same default rule.
+
+Use [sharing rules](./sharing-rules) when only selected people need additional records. Reading, editing, and approval scopes can be configured separately.

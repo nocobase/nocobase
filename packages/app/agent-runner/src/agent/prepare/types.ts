@@ -18,6 +18,8 @@ export interface PrepareContext {
   readonly payload: RunPayload;
   readonly paths: RunnerPaths;
   readonly registration: AppRegistration;
+  /** The names the runner's owner passes from its environment (`--pass-env`). */
+  readonly passEnv: readonly string[];
   readonly client: ApiClient;
   readonly tool: AgentTool;
   readonly log: (message: string) => void;
@@ -67,18 +69,36 @@ export class PrepareError extends Error {
 
 /**
  * What the agent writes besides `cwd`, for a tool's own sandbox (`AdapterSession.writableRoots`): the other working
- * directories, and each repository worktree's own Git directory (`<cache>/worktrees/<name>`), which holds its index,
- * HEAD and submodules. Never the cache itself, which every subject's worktrees share.
+ * directories, each checkout's own Git directory (`.git` inside new clones, or `<cache>/worktrees/<name>` for legacy
+ * worktrees), which holds its index, HEAD and submodules, and `shared`, the directories every run on the machine
+ * writes, such as the pnpm store (core/pnpm-store.ts). Never the shared repository cache itself.
+ * The explicit clone .git root also permits local hooks/config; host-side Git treats both as untrusted (task-git.ts).
  */
 export function agentWritableRoots(
   dirs: readonly PreparedDir[],
   cwd: string,
+  shared: readonly string[] = [],
 ): string[] {
-  const roots = dirs.flatMap((dir) => [
-    dir.dir,
-    ...(dir.repo === undefined ? [] : [dir.repo.gitDir]),
-  ]);
+  const roots = [
+    ...dirs.flatMap((dir) => [
+      dir.dir,
+      ...(dir.repo === undefined ? [] : [dir.repo.gitDir]),
+    ]),
+    ...shared,
+  ];
   return [...new Set(roots)].filter((root) => root !== cwd);
+}
+
+/**
+ * The run's working trees, for a tool that protects paths inside its writable roots (`AdapterSession.workingTrees`):
+ * every working directory and each submodule checked out in a repository among them.
+ */
+export function agentWorkingTrees(dirs: readonly PreparedDir[]): string[] {
+  const trees = dirs.flatMap((dir) => [
+    dir.dir,
+    ...(dir.repo === undefined ? [] : dir.repo.submodules),
+  ]);
+  return [...new Set(trees)];
 }
 
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */

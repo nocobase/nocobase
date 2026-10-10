@@ -51,7 +51,7 @@ export interface Runner {
   readonly product: string | null;
   readonly protocolVersion: number;
   readonly features: readonly RunnerFeature[];
-  /** What the runner reported: each coding tool with its version and whether it is signed in. */
+  /** What the runner reported: version, sign-in and optional advisory model capabilities. Never edits Agent configuration. */
   readonly tools: readonly ToolInfo[];
   /**
    * The coding tools people let this runner run, chosen on the web; null offers every tool it reports. A tool left
@@ -88,9 +88,58 @@ export interface Runner {
    * missing from its `features` instead.
    */
   readonly policy: RunnerPolicy | null;
+  /**
+   * The names of the variables it provides to a run that asks for them by name (variables kept "from the runner"):
+   * its local variables and the names its owner passes from its environment, as it last reported them. Names only.
+   * Null or absent when it reported none (a runner from before they were reported: unknown).
+   */
+  readonly variables?: readonly string[] | null;
+  /**
+   * The working directories it keeps for this application and the free space on the disk holding them, as it last
+   * reported them. Null or absent when it never reported any (a runner that does not report, or one that has not yet).
+   */
+  readonly workspaceUsage?: RunnerWorkspaceUsage | null;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
+export interface RunnerWorkspaceUsage {
+  /** The disk holding the runner's working directories; null when it did not say. */
+  readonly disk: RunnerWorkspaceDisk | null;
+  /** How many it keeps for this application. */
+  readonly count: number;
+  /** How many of those hold work that was never pushed, and are never removed on the application's word. */
+  readonly unpushedCount: number;
+  /** When it reported them. */
+  readonly measuredAt: string;
+  /** This application's, most recently used first. */
+  readonly workspaces: readonly RunnerWorkspace[];
+}
+
+/** The disk holding a runner's working directories, as it reported it. */
+export interface RunnerWorkspaceDisk {
+  readonly freeBytes: number;
+  readonly totalBytes: number;
+  /** What its owner keeps free; below it, the runner removes directories that may go. Null for nothing. */
+  readonly minFreeBytes: number | null;
+}
+
+/** One working directory a runner keeps for this application. */
+export interface RunnerWorkspace {
+  /** The last run that worked in it. */
+  readonly runId: string;
+  /** Where it is on the runner. */
+  readonly workDir: string;
+  /** It holds changes not committed, or commits the remote task branch lacks. */
+  readonly unpushed: boolean;
+  readonly lastUsedAt: string;
+  /** The subject its last run worked on; null when the run is unknown here. */
+  readonly subjectKind: string | null;
+  readonly subjectId: string | null;
+  /** The subject's work is over (it may be removed), goes on, or cannot be told (null). */
+  readonly settled: boolean | null;
 }
 
 /** What a runner takes work for, as the kind of work it serves names it: an agent, for agent runs. */
