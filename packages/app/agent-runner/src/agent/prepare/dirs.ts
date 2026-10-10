@@ -9,7 +9,7 @@
 // the last error.
 import path from 'node:path';
 
-import { prepareDirs } from '../../core/checkout.ts';
+import { prepareDirs, RepoAccessFailure } from '../../core/checkout.ts';
 import { GitNetworkError } from '../../core/git-retry.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
@@ -31,9 +31,7 @@ async function prepare(
       runId: context.payload.run.id,
       workDir,
       dirs: context.payload.workspace.dirs,
-      ...(context.payload.workspace.git?.credentials
-        ? { credentials: context.payload.workspace.git.credentials }
-        : {}),
+      ...(context.gitAuth === undefined ? {} : { auth: context.gitAuth }),
       log: context.log,
       retry: {
         ...context.gitRetry,
@@ -58,6 +56,12 @@ async function prepare(
       },
     });
   } catch (error) {
+    // A repository whose credential the application could not issue says why, so the run is retried or not.
+    if (error instanceof RepoAccessFailure && error.kind !== 'leaseLost')
+      throw new PrepareError(
+        error.kind === 'denied' ? 'repoAccessDenied' : 'repoAccessUnavailable',
+        error.message,
+      );
     if (error instanceof GitNetworkError)
       throw new PrepareError(
         acceptedFailure('prepareNetwork', context.payload.run.acceptedFailures),

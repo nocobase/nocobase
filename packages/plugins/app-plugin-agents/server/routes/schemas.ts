@@ -945,6 +945,13 @@ export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
       branch: z.string(),
       pushed: z.boolean(),
       headSha: z.string().nullable(),
+      failure: z
+        .object({ reason: z.string(), message: z.string() })
+        .nullable()
+        .meta({
+          description:
+            'Why the runner could not push the repository at the end of the run; null when it pushed or did not try.',
+        }),
       updatedAt: dateTime,
     }),
   ),

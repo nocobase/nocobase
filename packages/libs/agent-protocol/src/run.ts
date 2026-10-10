@@ -335,11 +335,15 @@ export const RepoCredentialSchema: z.ZodType<RepoCredential> = z.object({
  * - `credentials`: short-lived credentials by repository URL, which the runner fetches and pushes that repository with
  *   (a git credential helper for the agent). They live in memory only: never written to disk, gone with the run. The
  *   push guard still allows only the run's branch.
+ * - `onDemand` (runners with the `gitCredentials` feature): repository URLs, each exactly as a `RepoDir` names it, whose
+ *   credential the runner asks for whenever git needs one (`RUNNER_ROUTES.gitCredential`) rather than receiving it
+ *   here. For these URLs the runner uses nothing else: no credential of the claim and none of the host's.
  */
 export interface RunGit {
   readonly author?: { readonly name: string; readonly email: string };
   readonly trailers?: readonly string[];
   readonly credentials?: readonly RepoCredential[];
+  readonly onDemand?: readonly string[];
 }
 
 export const RunGitSchema: z.ZodType<RunGit> = z.object({
@@ -351,6 +355,39 @@ export const RunGitSchema: z.ZodType<RunGit> = z.object({
     .optional(),
   trailers: z.array(z.string().min(1).max(500)).max(20).optional(),
   credentials: z.array(RepoCredentialSchema).optional(),
+  onDemand: z.array(z.string().min(1)).optional(),
+});
+
+/**
+ * A runner asks for the credential of one of its run's `RunGit.onDemand` repositories (`RUNNER_ROUTES.gitCredential`).
+ * The server answers only while this runner holds `attempt` of the run under a live lease, and only for a URL the claim
+ * listed, compared exactly. `refresh` says the credential it had was just refused by the remote, so the application
+ * issues a new one instead of answering from its cache.
+ */
+export interface GitCredentialRequest {
+  readonly attempt: number;
+  readonly url: string;
+  readonly refresh?: boolean;
+}
+
+export const GitCredentialRequestSchema: z.ZodType<GitCredentialRequest> =
+  z.strictObject({
+    attempt: z.number().int().positive(),
+    url: z.string().min(1).max(500),
+    refresh: z.boolean().optional(),
+  });
+
+/** The answer: a credential and when it stops working (RFC 3339). */
+export interface GitCredential {
+  readonly username: string;
+  readonly password: string;
+  readonly expiresAt: string;
+}
+
+export const GitCredentialSchema: z.ZodType<GitCredential> = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+  expiresAt: z.string().min(1),
 });
 
 /**

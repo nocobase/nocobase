@@ -20,9 +20,11 @@
 // work directory lives in its own directory, out of the agent's reach (`workspaceRecordPath`). The application's word that the work is over, and the owner's size limit, remove others
 // (workspaces.ts).
 //
-// A repository the run carries a credential for (`workspace.git.credentials`, a short-lived token) is fetched with it,
-// and the agent's git pushes with it through a credential helper (env.ts); it is never written to disk. Without one,
-// the host's own git credentials are used.
+// A repository the run carries a credential for (`workspace.git.credentials`, or `onDemand`: see
+// agent/git-credentials.ts) is fetched and pushed with the credential its `RepoAuthSource` gives, never with the host's
+// own git credentials, and with one fresh credential again when the remote refuses the first (`withRepoAuth`); the
+// agent's git gets it through a credential helper (env.ts). It is never written to disk. Without one, the host's own
+// git credentials are used.
 //
 // A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
 // sandbox of its tool. New checkouts keep their Git metadata (including submodule `modules/`) in their own `.git`;
@@ -55,8 +57,8 @@ import {
   type RunnerPaths,
 } from '../lib/home.ts';
 import type {
-  RepoCredential,
   RepoDir,
+  RepoPushFailure,
   RepoReport,
   WorkspaceDir,
 } from '../protocol/index.ts';
@@ -78,6 +80,55 @@ import {
 } from './task-git.ts';
 
 export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
+
+/** Why a repository's credential could not be had (agent/git-credentials.ts). */
+export class RepoAccessFailure extends Error {
+  override name = 'RepoAccessFailure';
+  /** `unavailable`: try again later; `denied`: the application will not issue one; `leaseLost`: the run is over here. */
+  readonly kind: 'unavailable' | 'denied' | 'leaseLost';
+
+  constructor(kind: 'unavailable' | 'denied' | 'leaseLost', message: string) {
+    super(message);
+    this.kind = kind;
+  }
+}
+
+/** Where the runner's own git gets a repository's credential from. */
+export interface RepoAuthSource {
+  /** Whether it answers for `url`; for such a URL nothing else is used, not even the host's credentials. */
+  covers(url: string): boolean;
+  /** Throws `RepoAccessFailure`. `refresh` asks for a new credential rather than the one held. */
+  get(url: string, options?: { refresh?: boolean }): Promise<GitAuth>;
+  /** The remote refused `auth`; true when it was the credential held, which is now forgotten. */
+  erase(url: string, auth: GitAuth): boolean;
+}
+
+/** Whether git failed because the remote refused its credential. */
+export function isAuthFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Authentication failed|Invalid username or (?:password|token)|could not read Username|could not read Password|The requested URL returned error: 40[13]|HTTP Basic: Access denied|terminal prompts disabled/iu.test(
+    message,
+  );
+}
+
+/**
+ * Runs `operation` with `url`'s credential from `source`, and once more with a fresh one when the remote refused the
+ * first. Without a source that answers for `url`, runs it without one (the host's credentials).
+ */
+export async function withRepoAuth<T>(
+  source: RepoAuthSource | undefined,
+  url: string,
+  operation: (auth: GitAuth | undefined) => Promise<T>,
+): Promise<T> {
+  if (source === undefined || !source.covers(url)) return operation(undefined);
+  const auth = await source.get(url);
+  try {
+    return await operation(auth);
+  } catch (error) {
+    if (!isAuthFailure(error) || !source.erase(url, auth)) throw error;
+    return operation(await source.get(url, { refresh: true }));
+  }
+}
 
 // ---------------------------------------------------------------------------------------------------------------
 // Locks
@@ -745,7 +796,11 @@ export async function initSubmodules(
             '--checkout',
             ...(all ? [] : ['--', ...selected]),
           ],
-          origin === undefined ? {} : gitAuthEnv(options.auth, origin),
+          {},
+          {
+            ...(options.auth === undefined ? {} : { auth: options.auth }),
+            ...(origin === undefined ? {} : { authScope: origin }),
+          },
         ),
       options.retry,
     );
@@ -843,8 +898,8 @@ export interface PrepareDirsOptions {
   /** Locked by the caller. */
   workDir: string;
   dirs: readonly WorkspaceDir[];
-  /** Short-lived credentials by repository URL (`workspace.git.credentials`). */
-  credentials?: readonly RepoCredential[];
+  /** The run's repository credentials (`workspace.git`). */
+  auth?: RepoAuthSource;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
   /** How cloning, fetching and the submodules' update are retried. */
@@ -930,18 +985,14 @@ export async function prepareDirs(
       options.log?.(
         `checkout: ${entry.url} -> ${entry.path} (${entry.branch})`,
       );
+      const retry = options.retry === undefined ? {} : { retry: options.retry };
       const repoUrl = entry.url;
-      const credential = options.credentials?.find(
-        (item) => item.url === repoUrl,
+      const cache = await withRepoAuth(options.auth, repoUrl, (auth) =>
+        updateCache(paths, repoUrl, {
+          ...(auth === undefined ? {} : { auth }),
+          ...retry,
+        }),
       );
-      const auth: GitAuth | undefined =
-        credential === undefined
-          ? undefined
-          : { username: credential.username, token: credential.password };
-      const cache = await updateCache(paths, entry.url, {
-        ...(auth === undefined ? {} : { auth }),
-        ...(options.retry === undefined ? {} : { retry: options.retry }),
-      });
       // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
       // above; read all advertised refs before granting the narrowly scoped first-push exception.
       let initializing = false;
@@ -967,15 +1018,17 @@ export async function prepareDirs(
           cache,
         ))
       ) {
-        const refs = await retryGit(
-          `git ls-remote ${entry.url}`,
-          () =>
-            git(
-              [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
-              cache,
-              gitAuthEnv(auth),
-            ),
-          options.retry,
+        const refs = await withRepoAuth(options.auth, repoUrl, (auth) =>
+          retryGit(
+            `git ls-remote ${repoUrl}`,
+            () =>
+              git(
+                [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
+                cache,
+                gitAuthEnv(auth),
+              ),
+            options.retry,
+          ),
         );
         if (refs.trim() === '') {
           initializing = true;
@@ -1006,13 +1059,15 @@ export async function prepareDirs(
       // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'));
-      const submodules = await initSubmodules(dir, {
-        all: created,
-        url: entry.url,
-        cache,
-        ...(auth === undefined ? {} : { auth }),
-        ...(options.retry === undefined ? {} : { retry: options.retry }),
-      });
+      const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
+        initSubmodules(dir, {
+          all: created,
+          url: entry.url,
+          cache,
+          ...(auth === undefined ? {} : { auth }),
+          ...retry,
+        }),
+      );
       if (submodules.length > 0)
         options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
@@ -1112,54 +1167,72 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
   }
 }
 
-/** Pushes each branch that has commits the remote lacks and reports where every repository stands. */
+/** Why a push failed, as `RepoReport.failure` names it. */
+export function pushFailureOf(error: unknown): RepoPushFailure {
+  if (error instanceof RepoAccessFailure)
+    return error.kind === 'leaseLost'
+      ? 'leaseLost'
+      : error.kind === 'denied'
+        ? 'credentialDenied'
+        : 'credentialUnavailable';
+  if (isAuthFailure(error)) return 'authFailed';
+  const message = error instanceof Error ? error.message : String(error);
+  if (
+    /\[rejected\]|\[remote rejected\]|pre-push hook declined|nocobase-runner:|protected branch|non-fast-forward/iu.test(
+      message,
+    )
+  )
+    return 'rejected';
+  return 'error';
+}
+
+/**
+ * Pushes each branch that has commits the remote lacks and reports where every repository stands; a push that failed
+ * says why (`RepoReport.failure`). With `auth`, a repository it answers for is reached with its credential only: once
+ * the run is no longer this runner's, nothing is pushed.
+ */
 export async function reportRepos(
   repos: readonly CheckedOutRepo[],
   options: {
     push: boolean;
-    credentials?: readonly RepoCredential[];
+    auth?: RepoAuthSource;
     log?: (message: string) => void;
   },
 ): Promise<RepoReport[]> {
   const reports: RepoReport[] = [];
   for (const repo of repos) {
-    const credential = options.credentials?.find(
-      (item) => item.url === repo.url,
-    );
-    const env = gitAuthEnv(
-      credential === undefined
-        ? undefined
-        : {
-            username: credential.username,
-            token: credential.password,
-          },
-      httpOrigin(repo.url),
-    );
     let headSha: string;
     try {
       headSha = await taskGit(repo, ['rev-parse', 'HEAD']);
     } catch (error) {
-      options.log?.(
-        `report: ${repo.url}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      options.log?.(`report: ${repo.url}: ${message}`);
       reports.push({
         url: repo.url,
         branch: repo.branch,
         pushed: false,
         headSha: '',
+        failure: {
+          reason: pushFailureOf(error),
+          message: message.slice(0, 2000),
+        },
       });
       continue;
     }
     const remoteSha = async (): Promise<string> =>
       (
-        await taskGit(
-          repo,
-          ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
-          env,
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          taskGit(
+            repo,
+            ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
+            {},
+            auth === undefined ? {} : { auth },
+          ),
         ).catch(() => '')
       ).split(/\s+/)[0] ?? '';
     const remote = await remoteSha();
     let pushed = headSha !== '' && remote === headSha;
+    let failure: RepoReport['failure'];
     // Work to push: commits on top of the default branch, or a branch the remote already has and HEAD moved past.
     const base = await taskGit(repo, [
       'rev-parse',
@@ -1168,27 +1241,44 @@ export async function reportRepos(
     const hasWork = headSha !== '' && (headSha !== base || remote !== '');
     if (options.push && !pushed && hasWork) {
       try {
-        await taskGit(
-          repo,
-          ['push', '--quiet', '--', repo.url, `HEAD:refs/heads/${repo.branch}`],
-          env,
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          taskGit(
+            repo,
+            [
+              'push',
+              '--quiet',
+              '--',
+              repo.url,
+              `HEAD:refs/heads/${repo.branch}`,
+            ],
+            {},
+            auth === undefined ? {} : { auth },
+          ),
         );
         pushed = (await remoteSha()) === headSha;
       } catch (error) {
-        options.log?.(
-          `push: ${repo.url} ${repo.branch}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        failure = {
+          reason: pushFailureOf(error),
+          message: message.slice(0, 2000),
+        };
+        options.log?.(`push: ${repo.url} ${repo.branch}: ${message}`);
       }
     }
-    // The push went to the URL rather than to `origin`, which leaves the tracking ref behind; bring it along so the
-    // checkout itself says what the remote has (core/workspaces.ts counts commits no remote-tracking ref has).
+    // Direct URL pushes leave origin's tracking ref behind; workspace cleanup needs the confirmed remote head.
     if (pushed)
       await taskGitOk(repo, [
         'update-ref',
         `refs/remotes/origin/${repo.branch}`,
         headSha,
       ]).catch(() => false);
-    reports.push({ url: repo.url, branch: repo.branch, pushed, headSha });
+    reports.push({
+      url: repo.url,
+      branch: repo.branch,
+      pushed,
+      headSha,
+      ...(failure === undefined ? {} : { failure }),
+    });
   }
   return reports;
 }

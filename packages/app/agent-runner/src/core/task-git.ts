@@ -2,7 +2,7 @@
 import { lstat, readdir, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
-import { CheckoutError, git } from './git.ts';
+import { CheckoutError, git, gitAuthEnv, type GitAuth } from './git.ts';
 import { isInside } from '../lib/paths.ts';
 import { GIT_LOW_SPEED_CONFIG } from './git-retry.ts';
 
@@ -10,6 +10,13 @@ export interface TaskGitContext {
   readonly dir: string;
   readonly cache: string;
   readonly url: string;
+}
+
+export interface TaskGitOptions {
+  /** Run credentials replace every host helper; rejection must not fall back to machine credentials. */
+  readonly auth?: GitAuth;
+  /** Submodules may share credentials only within their parent's HTTP origin. Defaults to the repository URL. */
+  readonly authScope?: string;
 }
 
 // Keep this list narrow: new Git configuration can introduce new ways to execute code or redirect credentials.
@@ -200,15 +207,19 @@ export async function taskGit(
   context: TaskGitContext,
   args: string[],
   env: Record<string, string> = {},
+  options: TaskGitOptions = {},
 ): Promise<string> {
   const gitDir = await taskGitDir(context);
   await checkMetadata(gitDir, context);
-  // The cache is runner-owned. Retain its host credential helper, never one supplied by the task's config.
+  // The cache is runner-owned. Retain its host helper only when this invocation has no run credential.
   // --get-urlmatch returns only the last matching helper if the host config contains several.
-  const trustedHelpers = await git(
-    ['config', '--get-urlmatch', 'credential.helper', context.url],
-    context.cache,
-  ).catch(() => '');
+  const trustedHelpers =
+    options.auth === undefined
+      ? await git(
+          ['config', '--get-urlmatch', 'credential.helper', context.url],
+          context.cache,
+        ).catch(() => '')
+      : '';
   const fileTransport = await git(
     ['config', '--get', 'protocol.file.allow'],
     context.cache,
@@ -247,7 +258,11 @@ export async function taskGit(
       .flatMap((value) => ['-c', value])
       .concat(GIT_LOW_SPEED_CONFIG, helperArgs, args),
     context.dir,
-    { ...env, ...helperEnv },
+    {
+      ...env,
+      ...gitAuthEnv(options.auth, options.authScope ?? context.url),
+      ...helperEnv,
+    },
   );
 }
 

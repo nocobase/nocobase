@@ -33,6 +33,34 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('serves npm-only protocol 8 runners and preserves both features for protocol 9 runners', async () => {
+    h = await createHarness();
+    for (const [protocolVersion, features] of [
+      [8, ['input', 'npm']],
+      [PROTOCOL_VERSION, ['input', 'npm', 'gitCredentials']],
+    ] as const) {
+      const token = await h.services.runners.createRegistrationToken(null, {});
+      const response = await h.request('POST', '/agents/runners/register', {
+        headers: { 'x-nocobase-protocol': String(protocolVersion) },
+        body: { ...registration(token.token), protocolVersion, features },
+      });
+      expect(response.status).toBe(200);
+      expect(
+        await h.services.runners.get(response.body.data.runnerId),
+      ).toMatchObject({
+        protocolVersion,
+        features: [...features],
+      });
+      const beat = await h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey: response.body.data.runnerKey,
+        headers: { 'x-nocobase-protocol': String(protocolVersion) },
+        body: { ...heartbeat, features },
+      });
+      expect(beat.status).toBe(200);
+      expect(beat.body.data.compatibility).toBeUndefined();
+    }
+  });
+
   it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({

@@ -123,6 +123,13 @@ export const FAILURE_REASONS = [
    * `checkoutFailed` otherwise.
    */
   'prepareNetwork',
+  /**
+   * A repository's credential could not be had for the run's checkout because the application's code host is
+   * unavailable or slow just now (protocol 9, `REPO_ACCESS_UNAVAILABLE`). Retried.
+   */
+  'repoAccessUnavailable',
+  /** The application will not issue a credential for one of the run's repositories (`REPO_ACCESS_DENIED`). */
+  'repoAccessDenied',
   'unknown',
 ] as const;
 
@@ -141,6 +148,7 @@ export const RETRYABLE_FAILURES: readonly FailureReason[] = [
   'toolNetwork',
   'toolRateLimit',
   'prepareNetwork',
+  'repoAccessUnavailable',
 ];
 
 export function isRetryable(reason: FailureReason): boolean {

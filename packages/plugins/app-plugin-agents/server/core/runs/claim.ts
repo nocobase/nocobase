@@ -481,6 +481,15 @@ interface Assembled {
   readonly requires: readonly RunnerFeature[];
   readonly directoryKey: string | null;
   readonly entry: RunnerModelEntry;
+  /** The repositories the runner asks credentials for on demand (`RunGit.onDemand`). */
+  readonly gitOnDemand: readonly string[];
+}
+
+/** Whether `runner` asks for repository credentials on demand rather than taking them with the claim. */
+export function asksCredentialsOnDemand(
+  runner: Pick<Runner, 'features'>,
+): boolean {
+  return runner.features.includes('gitCredentials');
 }
 
 const DIRECTORY_KEY_SEPARATOR = '\n';
@@ -627,6 +636,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           (dir): dir is Extract<WorkspaceDir, { kind: 'repo' }> =>
             dir.kind === 'repo',
         ),
+        onDemand: asksCredentialsOnDemand(runner),
       },
       prepared,
     );
@@ -742,6 +752,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       requires,
       directoryKey,
       entry,
+      gitOnDemand: git?.onDemand ?? [],
     };
   }
 
@@ -815,6 +826,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       deps.mounts,
       (error) => deps.onClaimFailure?.(candidate.id, error),
       deps.repoAccess,
+      { onDemand: asksCredentialsOnDemand(runner) },
     );
     let taken: RunPayload | null;
     try {
@@ -917,6 +929,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             model: assembled.entry.model,
             effort: assembled.entry.effort ?? null,
             teamOnlyVariables: null,
+            gitCredentialUrls:
+              assembled.gitOnDemand.length > 0
+                ? [...assembled.gitOnDemand]
+                : null,
           },
         });
         unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
