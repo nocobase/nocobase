@@ -28,9 +28,13 @@ export class UsageError extends Error {
 /** A failure as oclif reports it, with the CLI's exit code. */
 export function asCliError(error: unknown): Error {
   if (error instanceof AppApiError) {
-    return new Errors.CLIError(`${error.reason}: ${error.message}`, {
-      exit: error.exitCode,
-    });
+    const fieldViolations = (error.fieldViolations ?? []).map(
+      ({ field, description }) => `${field}: ${description}`,
+    );
+    return new Errors.CLIError(
+      [`${error.reason}: ${error.message}`, ...fieldViolations].join('\n'),
+      { exit: error.exitCode },
+    );
   }
   if (error instanceof UsageError)
     return new Errors.CLIError(error.message, { exit: error.exit });

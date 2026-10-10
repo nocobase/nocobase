@@ -221,6 +221,7 @@ export async function loadManifest(
         error.message,
         error.metadata,
         error.status,
+        error.fieldViolations,
       );
     throw new AppApiError(
       response.status,
