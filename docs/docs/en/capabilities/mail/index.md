@@ -1,44 +1,29 @@
 ---
-title: 'Overview'
-description: 'Learn what the Mail plugin does, where it fits, and how to ask an Agent to add mail to your application.'
-keywords: 'NocoBase,mail,email,Gmail,Microsoft 365,IMAP,SMTP,Agent'
+title: 'Mail'
+description: 'Read and send email from your application.'
 ---
 
 # Mail
 
-The NocoBase Mail plugin lets each user connect their own mailbox to read, organize, reply to, and send messages from a business application. You can build a mail center or ask an Agent to add mail to customer and project pages so that communication and business records stay together.
+Mail lets users connect their own mailboxes, synchronize incoming messages, read messages and attachments, and compose or reply without leaving the application. It supports sales communication, customer service, and project collaboration.
 
-Mail is a NocoBase Pro plugin. Before using it, confirm that Mail is installed and enabled in your application. If it is missing, ask the Agent to check whether it is available in your Pro environment before continuing.
+## Available capabilities
 
-For approval results, verification codes, and system alerts, use the email channel in [Notifications](../notification.md). Mail is for user-connected mailboxes; Notifications sends messages from the application. They have separate configuration and records.
+| Capability            | Purpose                                                                         |
+| --------------------- | ------------------------------------------------------------------------------- |
+| Connect mailboxes     | Connect through IMAP/SMTP or authorize Gmail and Microsoft 365 accounts.        |
+| Synchronize and read  | Import messages from a chosen starting date and view messages and attachments.  |
+| Compose and reply     | Write, reply, or forward with attachments, signatures, and templates.           |
+| Organize messages     | Search, mark as read, star, and label messages, depending on the provider.      |
+| Connect business data | Add mail actions to customer or project pages and include business information. |
 
-## What you can do
+Mail is for correspondence between users and external contacts. For approval results and automatic system reminders, see [Notifications](../notification.md).
 
-- Connect multiple personal mailboxes and switch between accounts and folders in one workspace.
-- Read conversations and attachments, search messages, and use read status, stars, labels, private notes, and to-do markers.
-- Compose, reply to, and forward messages with attachments, signatures, templates, drafts, and scheduled sending.
-- Ask an Agent to connect messages to customer, contact, or project pages according to rules you define.
+## Use Mail
 
-## Where it fits
+- [Mailbox Configuration](./configuration.md): what administrators and mailbox users need to prepare.
+- [Sync and Send Email](./quick-start.md): add a mail center, read customer inquiries, and reply.
+- [More Mail Features](./usage.md): use signatures and templates and connect business pages.
+- [Developer Reference](./development.md): integrate pages, permissions, and background jobs.
 
-Mail works well for sales, support, and project teams handling real mailbox conversations inside NocoBase. For example, sales reps can review a contact's correspondence from a customer page and reply without switching applications.
-
-The relationship between mail and business records depends on your workflow. Mail does not guess which customer a message belongs to; tell the Agent whether to match contact email addresses or let users select a record manually.
-
-## Mailbox options and limitations
-
-| Connection method      | Suitable when                                                                           | Keep in mind                                                                                                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gmail or Microsoft 365 | The provider supports OAuth and you want provider drafts, sending aliases, or push sync | An administrator may need to create or configure an OAuth app                                                                                                               |
-| IMAP/SMTP              | Your provider offers standard IMAP and SMTP access                                      | Primarily syncs new mail; changes made in other clients are not fully synchronized, and provider drafts, aliases, push sync, and moving messages to folders are unavailable |
-
-An application administrator configures provider access; each user then connects their own mailbox in the app. You do not need to learn the plugin API to get started. Follow [Quick Start](./quick-start.md) and ask the Agent to inspect the installed version and guide any required setup.
-
-## Next steps
-
-| I want to…                                            | Read                                       |
-| ----------------------------------------------------- | ------------------------------------------ |
-| Add mail to a mail center or customer page            | [Quick Start](./quick-start.md)            |
-| Prepare a provider, OAuth app, or mailbox connection  | [Prepare Mail Access](./configuration.md)  |
-| Extend templates, access rules, or business workflows | [Further Use](./usage.md)                  |
-| Customize or extend the Mail integration              | [Advanced Customization](./development.md) |
+IMAP/SMTP supports receiving new messages and sending email. Read, delete, and move changes made in other clients are not fully synchronized. Consider Gmail or Microsoft 365 when you need more complete mailbox organization.
