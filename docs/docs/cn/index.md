@@ -77,7 +77,7 @@ features:
         details: '角色，谁能看哪个菜单、哪条数据。'
         link: /capabilities/authorization
       - title: '工作流'
-        details: '可观测、可版本化的多阶段业务过程。'
+        details: '订单、开票、工单，等人、等外部系统、等超时。'
         link: /capabilities/workflow
       - title: '更多…'
         details: '通知、文件、多语言、主题、AI 员工和知识库。'

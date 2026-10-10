@@ -10,15 +10,18 @@
     "label": "快速开始"
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "development",
-    "label": "应用开发中的工作流"
+    "type": "file",
+    "name": "develop",
+    "label": "使用 Agent 开发"
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "management",
-    "label": "管理工作流"
+    "type": "file",
+    "name": "scenarios",
+    "label": "场景示例"
+  },
+  {
+    "type": "file",
+    "name": "extension",
+    "label": "扩展"
   }
 ]

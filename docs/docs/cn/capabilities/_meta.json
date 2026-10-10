@@ -29,6 +29,11 @@
   },
   {
     "type": "file",
+    "name": "approval",
+    "label": "审批"
+  },
+  {
+    "type": "file",
     "name": "scheduler",
     "label": "定时任务"
   },

@@ -2,7 +2,7 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Workflow overview"
+    "label": "Overview"
   },
   {
     "type": "file",
@@ -10,15 +10,18 @@
     "label": "Quick start"
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "development",
-    "label": "Develop with an agent"
+    "type": "file",
+    "name": "develop",
+    "label": "Develop with an Agent"
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "management",
-    "label": "Manage workflows"
+    "type": "file",
+    "name": "scenarios",
+    "label": "Scenarios"
+  },
+  {
+    "type": "file",
+    "name": "extension",
+    "label": "Extension"
   }
 ]

@@ -67,4 +67,4 @@ If the Agent needs to confirm which channels the current application supports or
 
 - [Send notifications](../tutorials/notifications.md) — Connect and verify notifications with an order approval example.
 - [Mail](./mail/index.md) — Connect a personal mailbox to a business page and handle correspondence.
-- [Workflow quick start](./workflow/quick-start.md) — Build, enable, run, and check a workflow with an inventory replenishment example.
+- [Workflow quick start](./workflow/quick-start.md) — Try the example processes, then ask an Agent to build a first approval process with notifications.

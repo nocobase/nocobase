@@ -1,0 +1,24 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Workflow overview"
+  },
+  {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick start"
+  },
+  {
+    "type": "dir",
+    "collapsed": true,
+    "name": "development",
+    "label": "Develop with an agent"
+  },
+  {
+    "type": "dir",
+    "collapsed": true,
+    "name": "management",
+    "label": "Manage workflows"
+  }
+]
