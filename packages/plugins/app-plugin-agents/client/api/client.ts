@@ -258,6 +258,10 @@ export class AgentsApi {
     return this.runnersApi.revokeRunner(runnerId);
   }
 
+  public refreshRunnerStatus(runnerId: string): Promise<Runner> {
+    return this.runnersApi.refreshRunnerStatus(runnerId);
+  }
+
   public deleteRunner(runnerId: string): Promise<void> {
     return this.runnersApi.deleteRunner(runnerId);
   }

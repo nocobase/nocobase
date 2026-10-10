@@ -123,6 +123,7 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
 
 const REVOKED = new Set(['RUNNER_REVOKED', 'RUNNER_KEY_INVALID']);
 const UNSUPPORTED = 'PROTOCOL_UNSUPPORTED';
+const TOOL_DETECTION_INTERVAL_MS = 10 * 60_000;
 /** How often the daemon looks at whether to collect working directories; it collects every `collectIntervalMs`. */
 const GC_TICK_MS = 60_000;
 const PRUNE_RETRY_MS = 5 * 60_000;
@@ -209,14 +210,18 @@ interface AppLink {
   /** The application cannot work with this runner's protocol: heartbeats only, no claims. */
   upgradeRequired: boolean;
   heartbeatTimer?: NodeJS.Timeout;
+  heartbeatPending?: Promise<void>;
+  reportedDetection?: AppLink['detection'];
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
-  /** Detection is cached only for this application and refreshed when its effective variables change. */
+  /** The last request detected successfully, kept until the server acknowledges its report. */
+  toolsRefreshCompletedId?: string;
   /**
    * What was detected for this application in the environment its runs get, by a digest of that environment: its
    * tools, and their model capabilities, refreshed in the background (`ToolCapabilitiesCache`).
    */
   detection?: {
+    detectedAt?: number;
     key: string;
     tools: Promise<ToolInfo[]>;
     capabilities: Promise<ToolCapabilitiesCache>;
@@ -459,7 +464,12 @@ export class RunnerDaemon {
    */
   private async environmentOf(
     link: AppLink,
-  ): Promise<{ variables: string[]; tools: ToolInfo[] }> {
+    force: boolean = false,
+  ): Promise<{
+    variables: string[];
+    tools: ToolInfo[];
+    detection: NonNullable<AppLink['detection']>;
+  }> {
     const stored = await readConnection(link.key, this.options.paths).catch(
       () => undefined,
     );
@@ -477,27 +487,36 @@ export class RunnerDaemon {
         ),
       )
       .digest('hex');
-    if (link.detection?.key !== key) {
+    if (
+      force ||
+      link.detection?.key !== key ||
+      (link.detection.detectedAt !== undefined &&
+        Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS)
+    ) {
       const previous = link.detection;
       const adapters =
         this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
         this.options.adapters;
       const tools = detectTools(adapters);
-      link.detection = {
+      const detection: NonNullable<AppLink['detection']> = {
         key,
         tools,
-        capabilities: tools.then(
-          (detected) => new ToolCapabilitiesCache(adapters, detected),
-        ),
+        capabilities: tools.then((detected) => {
+          detection.detectedAt = Date.now();
+          return new ToolCapabilitiesCache(adapters, detected);
+        }),
       };
+      link.detection = detection;
       if (previous !== undefined)
         void previous.capabilities.then((cache) => cache.stop());
     }
-    const capabilities = await link.detection.capabilities;
+    const detection = link.detection;
+    const capabilities = await detection.capabilities;
     capabilities.refresh();
     return {
       variables: providedNames(process.env, passEnv, localVariables),
       tools: [...capabilities.tools],
+      detection,
     };
   }
 
@@ -609,6 +628,17 @@ export class RunnerDaemon {
 
   async heartbeat(link: AppLink): Promise<void> {
     if (this.stopping.signal.aborted || link.revoked) return;
+    if (link.heartbeatPending) return link.heartbeatPending;
+    const pending = this.reportHeartbeat(link);
+    link.heartbeatPending = pending;
+    try {
+      await pending;
+    } finally {
+      link.heartbeatPending = undefined;
+    }
+  }
+
+  private async reportHeartbeat(link: AppLink): Promise<void> {
     const { log } = this.options;
     const held = [...this.supervisor.runs.values()].filter(
       (run) => run.appKey === link.key,
@@ -617,16 +647,20 @@ export class RunnerDaemon {
     const jobs = held.filter((run) => run.jobId !== undefined);
     try {
       const policy = await this.policyOf(link);
-      const { variables, tools } = await this.environmentOf(link);
+      const { variables, tools, detection } = await this.environmentOf(link);
       const response = await link.client.post(
         RUNNER_ROUTES.heartbeat,
         {
           version: runnerVersion(),
           product: runnerHost().product,
           features: policy.features,
+          toolsRefreshSupported: true,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
           variables,
           tools,
+          ...(link.toolsRefreshCompletedId
+            ? { toolsRefreshCompletedId: link.toolsRefreshCompletedId }
+            : {}),
           active: runs.map((run) => ({
             runId: run.runId,
             pid: run.pid,
@@ -658,12 +692,22 @@ export class RunnerDaemon {
         HeartbeatResponseSchema,
         { timeoutMs: 10_000 },
       );
+      link.reportedDetection = detection;
       this.setUpgradeRequired(
         link,
         response.compatibility !== undefined,
         response.compatibility?.message,
       );
       link.workspaceReporting = response.workspaces;
+      if (!response.toolsRefreshRequestId)
+        link.toolsRefreshCompletedId = undefined;
+      if (
+        response.toolsRefreshRequestId &&
+        response.toolsRefreshRequestId !== link.toolsRefreshCompletedId
+      ) {
+        await this.environmentOf(link, true);
+        link.toolsRefreshCompletedId = response.toolsRefreshRequestId;
+      }
       const { upgrade, npmUpgrade } = response;
       if (upgrade !== undefined)
         this.noticeUpgrade(
@@ -796,6 +840,21 @@ export class RunnerDaemon {
     free: number,
     wait: boolean,
   ): Promise<number> {
+    // A timer may already be detecting or reporting. Join it, then report any newer detection before claiming.
+    await this.environmentOf(link);
+    while (link.reportedDetection !== link.detection) {
+      const detection = link.detection;
+      await this.heartbeat(link);
+      if (link.revoked || link.upgradeRequired || this.stopping.signal.aborted)
+        return 0;
+      // A failed report leaves this generation unreported: retry on the next poll, without dispatching stale tools.
+      if (
+        link.reportedDetection !== link.detection &&
+        link.detection === detection
+      )
+        return 0;
+      await this.environmentOf(link);
+    }
     const pollTimeout =
       this.timings.pollTimeoutMs ?? link.connection.registration.pollTimeoutMs;
     const response: ClaimResponse = await link.client.post(

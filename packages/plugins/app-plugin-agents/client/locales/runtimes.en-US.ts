@@ -1,6 +1,11 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
+    refresh: {
+      button: 'Refresh status',
+      checking: 'Checking…',
+      restart: 'Please restart the runner to refresh its status.',
+    },
     title: 'Runtimes',
     description:
       'The runtimes that run agents, and the coding tools each one reported.',

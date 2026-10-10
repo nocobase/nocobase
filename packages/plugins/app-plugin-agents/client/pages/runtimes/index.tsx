@@ -1,3 +1,4 @@
+import { RefreshStatus } from './refresh-status.js';
 /**
  * Route `/runtimes`: the runtimes that run agents (a runner on a server, a VM or someone's own device). The list is an
  * overview, one row per runtime: its name with its system, its state with the slots it uses, its coding tools by
@@ -87,6 +88,10 @@ export default function RuntimesPage(): ReactElement {
   const runners = useQuery({
     queryKey: agentsKeys.runners,
     queryFn: () => api.runners(),
+    refetchInterval: (query) =>
+      query.state.data?.some((runner) => runner.toolsRefreshRequestId)
+        ? 2000
+        : false,
   });
   const settled = (): void => {
     void queryClient.invalidateQueries({ queryKey: agentsKeys.runners });
@@ -357,6 +362,7 @@ function RunnerActions({
         <MoreHorizontalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-auto min-w-40'>
+        <RefreshStatus runner={runner} menu />
         {revoked || !runner.canManage ? null : (
           <>
             <DropdownMenuItem onClick={onEdit}>
