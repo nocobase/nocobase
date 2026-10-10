@@ -81,6 +81,8 @@ Output status, folder-type and Provider error category/reason types have `Known.
 - **Synchronization:** `startSync`, `getSyncRun`, `listSyncRunsPage`, `retrySyncRun`, `cancelSyncRun`.
 - **Delivery history:** `listSubmissionsPage`, `retrySubmission`, `cancelSubmission`.
 
+`MailMessagesQuery` and `MailManagedMessagesQuery` include an optional `participant: string` for an exact normalized From/To/Cc mailbox or `@domain` match, independent of `q`. `MailClient` forwards it unchanged; omit it to clear the filter. List filtering does not trim full conversation details or change full-thread counts. See [CRM correspondence](client-integration.md#crm-correspondence-and-participant-filtering) for examples, validation and normalization boundaries.
+
 The TypeScript signatures are the request/result source of truth. For direct HTTP clients, see [HTTP API](http-api.md).
 
 ## Reusable components

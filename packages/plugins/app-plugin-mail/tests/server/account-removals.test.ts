@@ -17,8 +17,18 @@ import type { MailAccount, NormalizedMailMessage } from '../../shared/mail.js';
 import type { MailProviderAdapterResolver } from '../../server/contracts/provider.js';
 import { InlineJobExecutor } from '../helpers/inline-job-executor.js';
 
+const fixtureIds = {
+  account: '20000000-0000-4000-8000-000000000001',
+  otherAccount: '20000000-0000-4000-8000-000000000002',
+  run: '20000000-0000-4000-8000-000000000003',
+  identity: '20000000-0000-4000-8000-000000000004',
+  pendingSubmission: '20000000-0000-4000-8000-000000000005',
+  lateSubmission: '20000000-0000-4000-8000-000000000006',
+  sendingSubmission: '20000000-0000-4000-8000-000000000007',
+};
+
 const account: MailAccount = {
-  id: 'account',
+  id: fixtureIds.account,
   userId: 'owner',
   address: 'owner@example.com',
   provider: { type: 'test', name: 'test' },
@@ -107,7 +117,11 @@ describe('durable bounded account removal', () => {
   });
 
   it('bounds every message batch, releases its transaction, resumes after restart and isolates other accounts', async () => {
-    const other = { ...account, id: 'other', address: 'other@example.com' };
+    const other = {
+      ...account,
+      id: fixtureIds.otherAccount,
+      address: 'other@example.com',
+    };
     await store.saveAccount(other);
     await store.saveMessage(other.id, message);
     const now = new Date().toISOString();
@@ -162,7 +176,7 @@ describe('durable bounded account removal', () => {
         .execute();
     }
     const run = await store.createSyncRun({
-      id: 'run',
+      id: fixtureIds.run,
       accountId: account.id,
       requestedBy: account.userId,
       mode: 'initial',
@@ -319,7 +333,7 @@ describe('durable bounded account removal', () => {
   it('rejects late writes and reauthorization throughout removal', async () => {
     await store.replaceIdentities(account.id, [
       {
-        id: 'identity',
+        id: fixtureIds.identity,
         accountId: account.id,
         address: account.address,
         isPrimary: true,
@@ -327,17 +341,21 @@ describe('durable bounded account removal', () => {
       },
     ]);
     await store.createSubmission(
-      { id: 'pending', accountId: account.id, status: 'pending' },
+      {
+        id: fixtureIds.pendingSubmission,
+        accountId: account.id,
+        status: 'pending',
+      },
       'pending',
       'fingerprint',
     );
     await store.markAccountRemoving(account.id, account.userId);
     await expect(
-      store.updateIdentity('identity', { displayName: 'late edit' }),
+      store.updateIdentity(fixtureIds.identity, { displayName: 'late edit' }),
     ).rejects.toThrow('removed');
     expect(
       await store.claimSubmission(
-        'pending',
+        fixtureIds.pendingSubmission,
         'lease',
         new Date(Date.now() + 60000).toISOString(),
       ),
@@ -356,7 +374,11 @@ describe('durable bounded account removal', () => {
     ).rejects.toThrow('removed');
     await expect(
       store.createSubmission(
-        { id: 'late', accountId: account.id, status: 'pending' },
+        {
+          id: fixtureIds.lateSubmission,
+          accountId: account.id,
+          status: 'pending',
+        },
         'key',
         'fingerprint',
       ),
@@ -385,11 +407,11 @@ describe('durable bounded account removal', () => {
         .insertInto('mailMessages')
         .values(
           Array.from({ length: Math.min(20, 201 - offset) }, (_, index) => {
-            const id = `message-${String(offset + index).padStart(3, '0')}`;
+            const providerMessageId = `message-${String(offset + index).padStart(3, '0')}`;
             return toMessageRow(
               account.id,
-              { ...message, providerMessageId: id },
-              id,
+              { ...message, providerMessageId },
+              randomUUID(),
               now,
               now,
             );
@@ -419,7 +441,11 @@ describe('durable bounded account removal', () => {
 
   it('does not enqueue refresh or recreate mail when an in-flight send finishes after removal', async () => {
     const submission = await store.createSubmission(
-      { id: 'sending', accountId: account.id, status: 'pending' },
+      {
+        id: fixtureIds.sendingSubmission,
+        accountId: account.id,
+        status: 'pending',
+      },
       'key',
       'fingerprint',
     );

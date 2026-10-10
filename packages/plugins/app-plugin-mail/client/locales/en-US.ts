@@ -108,6 +108,10 @@ const enUS = {
     allAccounts: 'All accounts',
     allMail: 'All mail',
     search: 'Search mail',
+    participant: 'Participant',
+    participantHint:
+      'Full email address or @domain. Matches From, To and Cc only.',
+    participantInvalid: 'Enter a valid full email address or @domain.',
     unreadOnly: 'Unread',
     starredOnly: 'Starred',
     folders: 'Folders',

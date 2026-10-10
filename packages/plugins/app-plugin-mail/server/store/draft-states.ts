@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { QueryAdapter } from '@nocobase/db';
 import type { MessageRow } from './rows.js';
 import { MailError } from '../services/errors.js';
+import { deleteMessageParticipants } from './message-participants.js';
 
 interface DraftStateRow {
   [key: string]: unknown;
@@ -104,6 +105,7 @@ export async function closeDrafts(
         .execute();
   }
   if (!draft) return;
+  await deleteMessageParticipants(query, [draft.id], accountId);
   await query
     .deleteFrom('mailMessageFolders')
     .where('messageId', '=', draft.id)

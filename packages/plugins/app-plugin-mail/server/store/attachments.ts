@@ -27,6 +27,9 @@ export class MailAttachmentsStore {
     userId: string,
     attachmentId: string,
   ): Promise<MailOutboundAttachment | undefined> {
+    // Localized provider drafts may carry non-UUID attachment parts. They cannot refer to local uploads.
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(attachmentId))
+      return undefined;
     const row = await this.database
       .query()
       .selectFrom<OutboundAttachmentRow>('mailOutboundAttachments')
