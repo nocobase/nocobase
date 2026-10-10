@@ -323,7 +323,9 @@ require_node() {
 # fails saying how to get one otherwise. require_npm <command>.
 require_npm() {
   npm_bin="\${NOCOBASE_NPM:-$(command -v npm 2>/dev/null || true)}"
-  [ -n "$npm_bin" ] && [ -x "$npm_bin" ] || fail "$1 is installed from npm, and npm is not on PATH. npm comes with Node.js: install Node.js 24 or newer from https://nodejs.org/en/download (a version manager such as nvm installs npm too), or set NOCOBASE_NPM to its path, and run this command again."
+  if [ -z "$npm_bin" ] || [ ! -x "$npm_bin" ]; then
+    fail "$1 is installed from npm, and npm is not on PATH. npm comes with Node.js: install Node.js 24 or newer from https://nodejs.org/en/download (a version manager such as nvm installs npm too), or set NOCOBASE_NPM to its path, and run this command again."
+  fi
 }
 
 # The launcher of a version installed from npm: <version>/bin/<command> starts node_modules/.bin/<command> with the

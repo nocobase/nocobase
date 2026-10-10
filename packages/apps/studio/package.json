@@ -134,6 +134,7 @@
   },
   "files": [
     ".prettierignore",
+    "ai",
     "cli",
     "client",
     "server",
