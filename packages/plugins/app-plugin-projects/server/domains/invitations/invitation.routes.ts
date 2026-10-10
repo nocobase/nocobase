@@ -33,6 +33,9 @@ const access =
 export function createInvitationRoutes(
   invitations: InvitationService,
   authentication: Pick<Auth, 'isScopedSession'>,
+  securityLogger?: {
+    info(bindings: Readonly<Record<string, unknown>>, message: string): void;
+  },
 ): Hono<ViewerEnv> {
   const routes = domainRouter<ViewerEnv>();
   const origin = (url: string) => new URL(url).origin;
@@ -132,8 +135,17 @@ export function createInvitationRoutes(
         context.req.valid('param').invitationId,
         origin(context.req.url),
         sendEmail,
-        ...(manualDelivery ? ([true] as const) : []),
+        manualDelivery,
       );
+      if (manualDelivery)
+        securityLogger?.info(
+          {
+            event: 'user.invitation.manualDelivery',
+            actorId: viewerOf(context).userId,
+            invitationId: context.req.valid('param').invitationId,
+          },
+          'user.invitation.manualDelivery',
+        );
       return context.json({
         data: canReturnLink ? result : { ...result, inviteUrl: undefined },
       });

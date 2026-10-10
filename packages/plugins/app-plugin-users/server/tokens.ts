@@ -240,7 +240,6 @@ export interface UserManagementService {
   /** Sends a short-lived mailbox proof without changing the shareable invitation link. */
   verifyInvitationEmail(
     token: string,
-    origin?: string,
   ): Promise<{ readonly emailSent: boolean }>;
   /**
    * Accepts only the invitation identified by the token, in one transaction. An existing account must match

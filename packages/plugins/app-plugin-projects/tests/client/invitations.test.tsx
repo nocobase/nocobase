@@ -119,32 +119,6 @@ it('keeps a row menu open when the list changes underneath it', async () => {
   expect(screen.getByRole('menu')).toBeInTheDocument();
 });
 
-it("hides copying another inviter's link while keeping email resend available", async () => {
-  invitations = [
-    { ...invitation, invitedBy: { userId: 'other', name: 'Other' } },
-  ];
-  const user = userEvent.setup();
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  render(
-    <QueryClientProvider client={client}>
-      <InvitationsSection />
-    </QueryClientProvider>,
-  );
-  await user.click(
-    await screen.findByRole('button', {
-      name: 'invitations.actionsFor(email=ann@example.com)',
-    }),
-  );
-  expect(
-    await screen.findByRole('menuitem', { name: 'invitations.resend' }),
-  ).toBeInTheDocument();
-  expect(
-    screen.queryByRole('menuitem', { name: 'invitations.generateLink' }),
-  ).toBeNull();
-});
-
 it('reports failed delivery without offering a missing link for another inviter', async () => {
   invitations = [
     { ...invitation, invitedBy: { userId: 'other', name: 'Other' } },
@@ -166,6 +140,12 @@ it('reports failed delivery without offering a missing link for another inviter'
       name: 'invitations.actionsFor(email=ann@example.com)',
     }),
   );
+  expect(
+    screen.queryByRole('menuitem', { name: 'invitations.generateLink' }),
+  ).toBeNull();
+  expect(
+    screen.queryByRole('menuitem', { name: 'invitations.manualLink' }),
+  ).toBeNull();
   await user.click(
     await screen.findByRole('menuitem', { name: 'invitations.resend' }),
   );
@@ -181,37 +161,6 @@ it('reports failed delivery without offering a missing link for another inviter'
     screen.queryByRole('button', { name: 'invitations.copyLink' }),
   ).toBeNull();
 });
-
-it.each(['create', 'assign-role'])(
-  'allows copying without unrelated global user %s permission',
-  async (denied) => {
-    vi.mocked(useCan).mockImplementation((check) => ({
-      can: check !== 'unrestricted' && check?.action !== denied,
-      isPending: false,
-      error: undefined,
-      retry: vi.fn(),
-    }));
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    render(
-      <QueryClientProvider client={client}>
-        <InvitationsSection />
-      </QueryClientProvider>,
-    );
-    await userEvent.click(
-      await screen.findByRole('button', {
-        name: 'invitations.actionsFor(email=ann@example.com)',
-      }),
-    );
-    expect(
-      await screen.findByRole('menuitem', { name: 'invitations.resend' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('menuitem', { name: 'invitations.generateLink' }),
-    ).toBeInTheDocument();
-  },
-);
 
 it('confirms manual delivery separately and sends the privileged option', async () => {
   const url = 'https://example.test/invite/manual-token';

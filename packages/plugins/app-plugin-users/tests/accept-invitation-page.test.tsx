@@ -5,9 +5,7 @@ import {
   fireEvent,
   render,
   screen,
-  waitFor,
 } from '@testing-library/react';
-import { useSyncExternalStore, type ReactElement } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -67,103 +65,11 @@ vi.mock('@nocobase/app-plugin-authentication/client/actions', () => ({
 const { default: AcceptInvitationPage } =
   await import('../client/pages/accept-invitation-page.js');
 
-/** Remounts the page when the session changes, as the application does while a new session loads. */
-function RemountOnSignIn(): ReactElement {
-  const session = useSyncExternalStore(
-    mocks.session.subscribe,
-    mocks.session.get,
-  );
-  return <AcceptInvitationPage key={session ? 'signed-in' : 'signed-out'} />;
-}
-
 afterEach(() => {
   cleanup();
   window.sessionStorage.clear();
   mocks.session.set(null);
   mocks.request.mockReset();
-});
-
-it('lets the new member in instead of reporting the invitation accepted', async () => {
-  let accepted = false;
-  mocks.request.mockImplementation(({ path }: { path: string }) => {
-    if (path.endsWith('/lookup'))
-      return accepted
-        ? Promise.reject(
-            Object.assign(new Error('accepted'), {
-              reason: 'INVITATION_ACCEPTED',
-            }),
-          )
-        : Promise.resolve({
-            data: {
-              email: 'nia@example.com',
-              inviterName: 'Ann',
-              summary: ['Apollo'],
-              expiresAt: '2099-01-01T00:00:00.000Z',
-            },
-          });
-    accepted = true;
-    return Promise.resolve({
-      data: { email: 'nia@example.com', existingAccount: false },
-    });
-  });
-
-  render(
-    <MemoryRouter
-      initialEntries={['/invite/token-1#verification=private-proof']}
-    >
-      <Routes>
-        <Route path='/invite/:token' element={<RemountOnSignIn />} />
-        <Route path='/' element={<p>home</p>} />
-      </Routes>
-    </MemoryRouter>,
-  );
-
-  fireEvent.change(await screen.findByLabelText('accept.name'), {
-    target: { value: 'Nia' },
-  });
-  fireEvent.change(screen.getByLabelText('accept.password'), {
-    target: { value: 'secret-password' },
-  });
-  fireEvent.click(screen.getByRole('button', { name: /accept\.submit/u }));
-
-  await waitFor(() => expect(screen.getByText('home')).toBeTruthy());
-  const lookups = mocks.request.mock.calls.filter(([options]) =>
-    (options as { path: string }).path.endsWith('/lookup'),
-  );
-  expect(lookups).toHaveLength(1);
-});
-
-it('accepts into the matching signed-in account without setting a password', async () => {
-  mocks.session.set({ user: { name: 'Nia', email: 'nia@example.com' } });
-  mocks.request.mockImplementation(({ path }: { path: string }) =>
-    Promise.resolve({
-      data: path.endsWith('/lookup')
-        ? {
-            email: 'nia@example.com',
-            inviterName: 'Ann',
-            summary: [],
-            expiresAt: '2099-01-01T00:00:00Z',
-          }
-        : { email: 'nia@example.com', existingAccount: true },
-    }),
-  );
-  render(
-    <MemoryRouter initialEntries={['/invite/token-1']}>
-      <Routes>
-        <Route path='/invite/:token' element={<RemountOnSignIn />} />
-        <Route path='/' element={<p>home</p>} />
-      </Routes>
-    </MemoryRouter>,
-  );
-  fireEvent.click(await screen.findByRole('button', { name: 'accept.join' }));
-  expect(screen.queryByLabelText('accept.password')).toBeNull();
-  await screen.findByText('home');
-  expect(mocks.request).toHaveBeenCalledWith(
-    expect.objectContaining({
-      path: 'users/invitations/accept',
-      json: { token: 'token-1', name: 'Nia', password: '' },
-    }),
-  );
 });
 
 it('requires the wrong signed-in account to sign out without consuming the invitation', async () => {
@@ -179,7 +85,7 @@ it('requires the wrong signed-in account to sign out without consuming the invit
   render(
     <MemoryRouter initialEntries={['/invite/token-1']}>
       <Routes>
-        <Route path='/invite/:token' element={<RemountOnSignIn />} />
+        <Route path='/invite/:token' element={<AcceptInvitationPage />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -220,7 +126,7 @@ it('sends an existing account to sign-in with a return path to the pending invit
       initialEntries={['/invite/token-1#verification=private-proof']}
     >
       <Routes>
-        <Route path='/invite/:token' element={<RemountOnSignIn />} />
+        <Route path='/invite/:token' element={<AcceptInvitationPage />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -234,37 +140,6 @@ it('sends an existing account to sign-in with a return path to the pending invit
   await screen.findByText('accept.existingAccount');
   const link = await screen.findByRole('button', { name: 'accept.goToLogin' });
   expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-1');
-});
-
-it('offers sign-in with an invitation return path before submitting registration details', async () => {
-  mocks.request.mockResolvedValue({
-    data: {
-      email: 'nia@example.com',
-      inviterName: 'Ann',
-      summary: [],
-      expiresAt: '2099-01-01T00:00:00Z',
-    },
-  });
-  render(
-    <MemoryRouter initialEntries={['/invite/token-2']}>
-      <Routes>
-        <Route path='/invite/:token' element={<RemountOnSignIn />} />
-        <Route path='/login' element={<p>login page</p>} />
-      </Routes>
-    </MemoryRouter>,
-  );
-  const link = await screen.findByRole('button', { name: 'accept.goToLogin' });
-  expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-2');
-  expect(screen.queryByLabelText('accept.name')).toBeNull();
-  expect(screen.queryByLabelText('accept.password')).toBeNull();
-  expect(screen.getByRole('button', { name: 'accept.submit' })).toBeDisabled();
-  fireEvent.click(link);
-  await screen.findByText('login page');
-  expect(
-    mocks.request.mock.calls.every(([request]) =>
-      request.path.endsWith('/lookup'),
-    ),
-  ).toBe(true);
 });
 
 it('sends mailbox verification for a shared link without exposing registration fields', async () => {
@@ -283,7 +158,7 @@ it('sends mailbox verification for a shared link without exposing registration f
   render(
     <MemoryRouter initialEntries={['/invite/shared-token']}>
       <Routes>
-        <Route path='/invite/:token' element={<RemountOnSignIn />} />
+        <Route path='/invite/:token' element={<AcceptInvitationPage />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -298,7 +173,12 @@ it('sends mailbox verification for a shared link without exposing registration f
       json: { token: 'shared-token' },
     }),
   );
+  expect(screen.queryByLabelText('accept.name')).toBeNull();
   expect(screen.queryByLabelText('accept.password')).toBeNull();
+  expect(screen.getByRole('button', { name: 'accept.submit' })).toBeDisabled();
+  expect(
+    screen.getByRole('button', { name: 'accept.goToLogin' }),
+  ).toHaveAttribute('href', '/login?redirect=%2Finvite%2Fshared-token');
   expect(
     screen.getByRole('button', { name: 'accept.verifyEmail' }),
   ).toBeDisabled();

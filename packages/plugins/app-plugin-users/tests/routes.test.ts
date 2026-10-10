@@ -81,31 +81,13 @@ describe('@nocobase/app-plugin-users API routes', () => {
           body: JSON.stringify({ emails: [result.email] }),
         });
         expect(created.status).toBe(201);
-        expect(await created.json()).toEqual({
-          data: [
-            {
-              email: result.email,
-              outcome: result.outcome,
-              invitationId: result.invitationId,
-              emailSent,
-              inviteUrl: result.inviteUrl,
-            },
-          ],
-        });
+        expect(await created.json()).toEqual({ data: [result] });
         const resent = await router.request(
           '/users/invitations/invitation-1/resend',
           { method: 'POST' },
         );
         expect(resent.status).toBe(200);
-        expect(await resent.json()).toEqual({
-          data: {
-            email: result.email,
-            outcome: result.outcome,
-            invitationId: result.invitationId,
-            emailSent,
-            inviteUrl: result.inviteUrl,
-          },
-        });
+        expect(await resent.json()).toEqual({ data: result });
         const copy = await router.request(
           '/users/invitations/invitation-1/resend?sendEmail=false',
           { method: 'POST' },

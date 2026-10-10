@@ -62,6 +62,50 @@ export async function updateInvitation(
   });
 }
 
+/** Atomically reserves one verification email per minute for the current token. */
+export async function claimVerificationSend(
+  connection: DatabaseConnection,
+  row: InvitationRecord,
+  now: Date,
+): Promise<boolean> {
+  const { updatedCount } = await invitations(connection).updateMany({
+    filter: (f) =>
+      f.and([
+        f.string('id').eq(row.id),
+        f.string('status').eq('pending'),
+        f.string('tokenHash').eq(row.tokenHash),
+        f.or([
+          f.date('verificationSentAt').empty(),
+          f
+            .date('verificationSentAt')
+            .notAfter(new Date(now.getTime() - 60_000)),
+        ]),
+      ]),
+    values: {
+      verificationSentAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    },
+  });
+  return updatedCount > 0;
+}
+
+/** A delayed send must never overwrite the outcome of a rotated or closed invitation. */
+export async function recordInvitationDelivery(
+  connection: DatabaseConnection,
+  row: InvitationRecord,
+  error: string | null,
+): Promise<void> {
+  const now = new Date().toISOString();
+  await invitations(connection).updateMany({
+    filter: { id: row.id, status: 'pending', tokenHash: row.tokenHash },
+    values: {
+      sentAt: error ? null : now,
+      sendError: error?.slice(0, 1000) ?? null,
+      updatedAt: now,
+    },
+  });
+}
+
 /** Marks a pending invitation accepted; false when it no longer is pending. */
 export async function claimInvitation(
   connection: DatabaseConnection,

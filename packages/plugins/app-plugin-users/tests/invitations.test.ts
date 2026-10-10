@@ -99,6 +99,59 @@ describe('user invitations', () => {
   const proofOf = (email: InvitationEmail) =>
     /#verification=([\w-]+)/u.exec(email.text)?.[1] ?? '';
 
+  it('bounds slow batch delivery and returns every link in input order within one budget', async () => {
+    const send = vi.fn((email: InvitationEmail) =>
+      email.to === 'batch-0@example.test'
+        ? Promise.resolve()
+        : new Promise<void>(() => {}),
+    );
+    const batchService = createUserManagementService({
+      database,
+      users: userAdministration(database.connection()),
+      roleScopes: createUserRoleScopeRegistry(),
+      mailer: { send },
+      site: { publicOrigin: ORIGIN, publicBasePath: '/main', appTitle: 'Acme' },
+    });
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    const emails = Array.from(
+      { length: 50 },
+      (_, i) => `batch-${i}@example.test`,
+    );
+    const pending = batchService.invite({ emails, invitedBy: 'ann' });
+    // One completed send frees a slot; the other five stay in flight until the common deadline.
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6));
+    await vi.advanceTimersByTimeAsync(30_000);
+    const results = await pending;
+    expect(results.map((result) => result.email)).toEqual(emails);
+    expect(results[0]).toMatchObject({ emailSent: true });
+    expect(results.slice(1)).toEqual(
+      emails.slice(1).map((email) =>
+        expect.objectContaining({
+          email,
+          emailSent: false,
+          inviteUrl: expect.stringContaining('/invite/'),
+        }),
+      ),
+    );
+    expect(send).toHaveBeenCalledTimes(6);
+    const rows = await batchService.listInvitations();
+    expect(rows).toHaveLength(50);
+    const deliveries = await database
+      .connection()
+      .repository<{ sendError: string | null }>('userInvitations')
+      .findMany();
+    expect(
+      deliveries.filter((row) =>
+        row.sendError?.includes('delivery is unknown'),
+      ),
+    ).toHaveLength(5);
+    const last = results.at(-1);
+    if (last?.outcome !== 'invited') throw new Error('Missing invitation');
+    await expect(
+      batchService.lookupInvitation(last.inviteUrl?.split('/').at(-1) ?? ''),
+    ).resolves.toMatchObject({ email: emails.at(-1) });
+  });
+
   it('uses only the configured origin for private proof emails', async () => {
     const results = await service.invite({
       emails: ['host@example.test'],
@@ -110,7 +163,7 @@ describe('user invitations', () => {
     expect(mail[0].text).not.toContain('attacker.example');
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Date.now() + 61_000);
-    await service.verifyInvitationEmail(token, 'https://attacker.example');
+    await service.verifyInvitationEmail(token);
     expect(mail[1].text).toContain(ORIGIN);
     expect(mail[1].text).not.toContain('attacker.example');
     expect(JSON.stringify(results)).not.toContain('#verification');
@@ -431,14 +484,14 @@ describe('user invitations', () => {
     await expect(
       service.acceptInvitation({ ...input, emailVerificationToken: token }),
     ).rejects.toMatchObject({ code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' });
-    await expect(
-      service.verifyInvitationEmail(token, ORIGIN),
-    ).rejects.toMatchObject({ code: 'INVITATION_VERIFICATION_RATE_LIMITED' });
+    await expect(service.verifyInvitationEmail(token)).rejects.toMatchObject({
+      code: 'INVITATION_VERIFICATION_RATE_LIMITED',
+    });
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Date.now() + 61_000);
-    await expect(service.verifyInvitationEmail(token, ORIGIN)).resolves.toEqual(
-      { emailSent: true },
-    );
+    await expect(service.verifyInvitationEmail(token)).resolves.toEqual({
+      emailSent: true,
+    });
     expect(mail).toHaveLength(2);
     // Requesting another email does not invalidate a proof the recipient already received.
     await service.acceptInvitation({ ...input, emailVerificationToken: proof });
@@ -468,7 +521,7 @@ describe('user invitations', () => {
     await expect(
       service.acceptInvitation({ ...input, emailVerificationToken: oldProof }),
     ).rejects.toMatchObject({ code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' });
-    await service.verifyInvitationEmail(token, ORIGIN);
+    await service.verifyInvitationEmail(token);
     const proof = proofOf(mail[1] as InvitationEmail);
     const records = await database
       .connection()
@@ -480,7 +533,7 @@ describe('user invitations', () => {
     await expect(
       service.acceptInvitation({ ...input, emailVerificationToken: proof }),
     ).rejects.toMatchObject({ code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' });
-    await service.verifyInvitationEmail(token, ORIGIN);
+    await service.verifyInvitationEmail(token);
     await service.acceptInvitation({
       ...input,
       emailVerificationToken: proofOf(mail[2] as InvitationEmail),

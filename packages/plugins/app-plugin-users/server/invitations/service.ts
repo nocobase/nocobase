@@ -35,6 +35,8 @@ import {
 } from './rules.js';
 import {
   claimInvitation,
+  claimVerificationSend,
+  recordInvitationDelivery,
   findInvitation,
   insertInvitation,
   listPending,
@@ -76,6 +78,9 @@ export type InvitationManager = Pick<
   | 'acceptInvitation'
   | 'onInvitationAccepted'
 >;
+
+const DELIVERY_CONCURRENCY = 5;
+const DELIVERY_BUDGET_MS = 30_000;
 
 /** A link to deliver once the rows have committed. */
 interface Outgoing {
@@ -120,42 +125,19 @@ export function createInvitationManager(
   }
 
   /** The public link is shareable; only the mailbox receives the separate account-creation proof. */
-  async function sendVerification(token: string): Promise<boolean> {
+  async function sendVerification(
+    token: string,
+    deadline = Date.now() + DELIVERY_BUDGET_MS,
+  ): Promise<boolean> {
     const proof = await database.transaction(async (connection) => {
       const row = requireOpen(
         await findInvitation(connection, { tokenHash: hashToken(token) }),
       );
       const now = new Date();
-      if (
-        row.verificationSentAt &&
-        now.getTime() - new Date(row.verificationSentAt).getTime() < 60_000
-      )
+      if (!(await claimVerificationSend(connection, row, now)))
         throw new UserManagementError(
           'INVITATION_VERIFICATION_RATE_LIMITED',
           'Wait one minute before requesting another verification email.',
-          409,
-        );
-      const { updatedCount } = await connection
-        .repository<InvitationRecord>('userInvitations')
-        .updateMany({
-          filter: (f) =>
-            f.and([
-              f.string('id').eq(row.id),
-              f.string('status').eq('pending'),
-              f.string('tokenHash').eq(row.tokenHash),
-              f.or([
-                f.date('verificationSentAt').empty(),
-                f
-                  .date('verificationSentAt')
-                  .notAfter(new Date(now.getTime() - 60_000)),
-              ]),
-            ]),
-          values: { verificationSentAt: now.toISOString() },
-        });
-      if (!updatedCount)
-        throw new UserManagementError(
-          'INVITATION_VERIFICATION_RATE_LIMITED',
-          'The invitation changed. Try again later.',
           409,
         );
       const verification = mintToken();
@@ -184,6 +166,7 @@ export function createInvitationManager(
       return { row, verification, expiresAt };
     });
     let error: string | null = null;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       // A caller-controlled Host must never choose where mailbox credentials are delivered.
       if (!options.site.publicOrigin)
@@ -191,35 +174,40 @@ export function createInvitationManager(
           'Invitation verification emails require app.publicOrigin in the application config.',
         );
       const base = linkBase(undefined);
-      await options.mailer.send(
-        buildInvitationEmail({
-          to: proof.row.email,
-          appTitle: options.site.appTitle,
-          inviterName: await nameOf(proof.row.invitedById),
-          summary: proof.row.summary,
-          // A fragment is not sent to the HTTP server or in the Referer header.
-          url: `${base}/invite/${token}#verification=${proof.verification.token}`,
-          expiresAt: proof.expiresAt,
-          idempotencyKey: `invitation-verification:${proof.verification.hash}`,
+      const inviterName = await nameOf(proof.row.invitedById);
+      const remaining = deadline - Date.now();
+      if (remaining <= 0)
+        throw new Error('Invitation email delivery budget exhausted.');
+      await Promise.race([
+        options.mailer.send(
+          buildInvitationEmail({
+            to: proof.row.email,
+            appTitle: options.site.appTitle,
+            inviterName,
+            summary: proof.row.summary,
+            // A fragment is not sent to the HTTP server or in the Referer header.
+            url: `${base}/invite/${token}#verification=${proof.verification.token}`,
+            expiresAt: proof.expiresAt,
+          }),
+        ),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Invitation email delivery timed out; delivery is unknown.',
+                ),
+              ),
+            remaining,
+          );
         }),
-      );
+      ]);
     } catch (cause) {
       error = cause instanceof Error ? cause.message : String(cause);
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
-    await database
-      .connection()
-      .repository<InvitationRecord>('userInvitations')
-      .updateMany({
-        filter: {
-          id: proof.row.id,
-          status: 'pending',
-          tokenHash: proof.row.tokenHash,
-        },
-        values: {
-          sentAt: error ? null : new Date().toISOString(),
-          sendError: error ? error.slice(0, 1000) : null,
-        },
-      });
+    await recordInvitationDelivery(database.connection(), proof.row, error);
     return error === null;
   }
 
@@ -230,18 +218,31 @@ export function createInvitationManager(
     sendEmail: boolean = true,
   ): Promise<UserInvitationResult[]> {
     const base = linkBase(origin);
-    const results: UserInvitationResult[] = [];
-    for (const { row, token } of outgoing) {
-      const url = `${base}/invite/${token}`;
-      const emailSent = sendEmail ? await sendVerification(token) : false;
-      results.push({
-        email: row.email,
-        outcome: 'invited',
-        invitationId: row.id,
-        emailSent,
-        inviteUrl: url,
-      });
+    const deadline = Date.now() + DELIVERY_BUDGET_MS;
+    const results = new Array<UserInvitationResult>(outgoing.length);
+    const pending = outgoing.entries();
+    async function sendNext(): Promise<void> {
+      for (const [index, { row, token }] of pending) {
+        const emailSent =
+          sendEmail && Date.now() < deadline
+            ? await sendVerification(token, deadline)
+            : false;
+        results[index] = {
+          email: row.email,
+          outcome: 'invited',
+          invitationId: row.id,
+          emailSent,
+          inviteUrl: `${base}/invite/${token}`,
+        };
+      }
     }
+    // Share a deadline across workers so slow delivery cannot consume the CLI's request timeout.
+    await Promise.all(
+      Array.from(
+        { length: Math.min(DELIVERY_CONCURRENCY, outgoing.length) },
+        sendNext,
+      ),
+    );
     return results;
   }
 

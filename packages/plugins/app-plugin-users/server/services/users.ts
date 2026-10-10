@@ -97,10 +97,8 @@ class DefaultUserManagementService implements UserManagementService {
     this.invitations.revokeInvitation(id);
   lookupInvitation: InvitationManager['lookupInvitation'] = (token) =>
     this.invitations.lookupInvitation(token);
-  verifyInvitationEmail: InvitationManager['verifyInvitationEmail'] = (
-    token,
-    origin,
-  ) => this.invitations.verifyInvitationEmail(token, origin);
+  verifyInvitationEmail: InvitationManager['verifyInvitationEmail'] = (token) =>
+    this.invitations.verifyInvitationEmail(token);
   acceptInvitation: InvitationManager['acceptInvitation'] = (
     input,
     authenticatedUserId,

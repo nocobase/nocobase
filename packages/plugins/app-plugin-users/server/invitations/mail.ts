@@ -13,8 +13,6 @@ export interface InvitationEmail {
   readonly subject: string;
   readonly text: string;
   readonly html: string;
-  /** Stable per token, so a retried request never sends the same link twice. */
-  readonly idempotencyKey: string;
 }
 
 export interface InvitationMailer {
@@ -61,7 +59,6 @@ export function buildInvitationEmail(input: {
   readonly summary: readonly string[];
   readonly url: string;
   readonly expiresAt: Date;
-  readonly idempotencyKey: string;
 }): InvitationEmail {
   const date = input.expiresAt.toISOString();
   const blocks = LANGUAGES.map((texts) => {
@@ -99,6 +96,5 @@ export function buildInvitationEmail(input: {
           `\n<p>${escapeHtml(block.fallback)}<br>${url}</p>`,
       )
       .join('\n<hr>\n'),
-    idempotencyKey: input.idempotencyKey,
   };
 }

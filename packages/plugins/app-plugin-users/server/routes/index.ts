@@ -659,7 +659,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         context.json({
           data: await users.verifyInvitationEmail(
             context.req.valid('json').token,
-            new URL(context.req.url).origin,
           ),
         }),
     );

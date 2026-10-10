@@ -9,6 +9,7 @@ import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
   findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
   generateApiDocument,
@@ -18,6 +19,8 @@ import { Hono, type MiddlewareHandler } from 'hono';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { apiRoutes } from '../server/routes/api.js';
+import { createInvitationRoutes } from '../server/domains/invitations/index.js';
+import { viewerMiddleware, type ViewerEnv } from '../server/access/request.js';
 import {
   IssueDetailSchema,
   MeSchema,
@@ -49,6 +52,18 @@ function fakeAuthorization(): { middleware(): MiddlewareHandler } {
             role === 'admin' &&
               context.req.header('x-deny-user-action') !== action,
           ),
+        require: async ({ action }: { action: string }) => {
+          if (
+            role !== 'admin' ||
+            context.req.header('x-deny-user-action') === action
+          )
+            throw new ApiError({
+              status: 'PERMISSION_DENIED',
+              reason: 'DENIED',
+              domain: 'authorization',
+              message: 'Denied',
+            });
+        },
         identity: {
           principal: { type: 'user', id: 'alice' },
           subjects: [{ type: 'test-role', id: role }],
@@ -259,6 +274,51 @@ describe('the /api/projects guard', () => {
     });
     expect(copy.status).toBe(403);
     expect(resend).not.toHaveBeenCalled();
+  });
+
+  it('audits manual delivery only after authorization and successful rotation, without credentials', async () => {
+    await h.services.invitations.create(
+      h.viewer('alice', 'admin'),
+      { emails: ['manual@example.test'] },
+      'https://example.test',
+    );
+    const id = h.invitations.rows[0].id;
+    const authentication = container.resolve(authenticationToken);
+    const info = vi.fn();
+    const app = new Hono<ViewerEnv>();
+    app.use(
+      '*',
+      authentication.required(),
+      fakeAuthorization().middleware(),
+      viewerMiddleware(fakeAccess()),
+    );
+    app.route(
+      '/',
+      createInvitationRoutes(h.services.invitations, authentication, { info }),
+    );
+    const headers = { 'x-test-user': 'alice', 'x-test-role': 'admin' };
+    const url = `/${id}/resend?sendEmail=false&manualDelivery=true`;
+    const refused = await app.request(url, {
+      method: 'POST',
+      headers: { ...headers, 'x-deny-user-action': 'create' },
+    });
+    expect(refused.status).toBe(403);
+    expect(info).not.toHaveBeenCalled();
+    const success = await app.request(url, { method: 'POST', headers });
+    expect(success.status).toBe(200);
+    expect(info).toHaveBeenCalledExactlyOnceWith(
+      {
+        event: 'user.invitation.manualDelivery',
+        actorId: 'alice',
+        invitationId: id,
+      },
+      'user.invitation.manualDelivery',
+    );
+    await app.request(`/${id}/resend?sendEmail=false`, {
+      method: 'POST',
+      headers,
+    });
+    expect(info).toHaveBeenCalledTimes(1);
   });
 
   it('validates and forwards the mail-free invitation option', async () => {
