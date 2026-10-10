@@ -1,6 +1,6 @@
 // @vitest-environment node
 /**
- * The demo data over the real services: it adds its review checklist to the installed Software development workflow
+ * The demo data over the real services: it adds its review checklist to the installed default workflow
  * instead of a workflow of its own, its projects use the default workflow, and adding the checklist again changes
  * nothing.
  */
@@ -188,25 +188,35 @@ describe('the demo data', () => {
     ).toHaveLength(3);
   });
 
-  it('adds its review checklist to Software development and creates no workflow', async () => {
+  it('adds its review checklist to the default workflow and creates no workflow', async () => {
     await build();
     const workflows = await h.projects.workflows.list(admin());
-    expect(workflows).toHaveLength(1);
-    const [software] = workflows;
-    expect(software).toMatchObject({ builtInKey: 'software', isDefault: true });
-    const review = software!.definition.states.find(
+    expect(workflows).toHaveLength(2);
+    const defaultWorkflow = workflows.find((workflow) => workflow.isDefault)!;
+    expect(defaultWorkflow).toMatchObject({
+      builtInKey: 'aiReviewedDevelopment',
+      isDefault: true,
+    });
+    const review = defaultWorkflow.definition.states.find(
       (state) => state.key === 'in_review',
     )!;
-    // The template's own rules stay: telling the owner, and the code reviewer's run.
+    // The template's own code review rule stays.
     expect(review.rules?.map((rule) => rule.type)).toEqual([
       'checklist',
-      'notifyOwner',
       'runAgent',
     ]);
     expect(review.rules?.[0]).toEqual({
       type: 'checklist',
       config: { items: DEMO_REVIEW_CHECKLIST },
     });
+    const ownerApproved = workflows.find(
+      (workflow) => workflow.builtInKey === 'software',
+    )!;
+    expect(
+      ownerApproved.definition.states
+        .find((state) => state.key === 'in_review')
+        ?.rules?.some((rule) => rule.type === 'checklist'),
+    ).toBe(false);
     const projects = await h.projects.projects.list(admin());
     expect(projects.length).toBeGreaterThan(0);
     expect(projects.every((project) => project.workflowId === null)).toBe(true);
@@ -245,9 +255,13 @@ describe('the demo data', () => {
 
   it('leaves a workflow that has the checklist alone', async () => {
     expect(await addReviewChecklist(h.projects, admin())).toBe(true);
-    const [first] = await h.projects.workflows.list(admin());
+    const first = (await h.projects.workflows.list(admin())).find(
+      (workflow) => workflow.isDefault,
+    )!;
     expect(await addReviewChecklist(h.projects, admin())).toBe(true);
-    const [second] = await h.projects.workflows.list(admin());
+    const second = (await h.projects.workflows.list(admin())).find(
+      (workflow) => workflow.isDefault,
+    )!;
     expect(second!.revision).toBe(first!.revision);
     expect(second!.definition).toEqual(first!.definition);
   });

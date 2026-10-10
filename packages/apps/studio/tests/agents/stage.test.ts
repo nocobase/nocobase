@@ -13,11 +13,11 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
-  ANALYSIS_INSTRUCTION,
-  CODE_REVIEW_INSTRUCTION,
+  AI_ANALYSIS_INSTRUCTION as ANALYSIS_INSTRUCTION,
+  AI_CODE_REVIEW_INSTRUCTION as CODE_REVIEW_INSTRUCTION,
   IN_PROGRESS_INSTRUCTION,
   PROPOSAL_REVIEW_INSTRUCTION,
-  SOFTWARE_TEMPLATE,
+  AI_REVIEW_TEMPLATE,
   UI_REVIEW_INSTRUCTION,
 } from '../../server/agents/catalog/workflow-templates.js';
 import {
@@ -30,6 +30,7 @@ import {
   settleSuggestions,
 } from '../../server/agents/stage-rules.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
+import { makeRoot, runRoleAgentsSeed } from './role-agents.js';
 import {
   continueStageRun,
   pendingStageRun,
@@ -39,6 +40,12 @@ let h: BridgeHarness;
 let planned: any[];
 beforeEach(async () => {
   h = await createBridgeHarness();
+  // Isolate template installation and ad hoc stage rules from the application's install migration.
+  await h.database
+    .connection()
+    .query.deleteFrom('pmWorkflows')
+    .where('builtInKey', '=', 'aiReviewedDevelopment')
+    .execute();
   for (const id of ['alice', 'bob', 'carol']) await h.addUser(id);
   planned = [];
   h.projects.events.on('notice.planned', (event) => {
@@ -67,13 +74,13 @@ async function asAdmin<T>(run: () => Promise<T>): Promise<T> {
 }
 
 /** Installs the template and makes it the default workflow. */
-async function installSoftwareAsDefault(): Promise<WorkflowListItem> {
-  expect(await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE)).toBe(
+async function installAgentReviewAsDefault(): Promise<WorkflowListItem> {
+  expect(await h.projects.workflows.installTemplate(AI_REVIEW_TEMPLATE)).toBe(
     true,
   );
   return asAdmin(async () => {
     const software = (await h.projects.workflows.list(alice())).find(
-      (workflow) => workflow.builtInKey === 'software',
+      (workflow) => workflow.builtInKey === 'aiReviewedDevelopment',
     )!;
     return h.projects.workflows.setDefault(alice(), software.id);
   });
@@ -187,27 +194,27 @@ async function activities(issueId: string) {
   return page.data;
 }
 
-describe('the Software development template', () => {
+describe('the AI-reviewed development template', () => {
   it('is installed as the default while there is none, with the agent moves and the stage rules', async () => {
-    expect(await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE)).toBe(
+    expect(await h.projects.workflows.installTemplate(AI_REVIEW_TEMPLATE)).toBe(
       true,
     );
     const list = await h.projects.workflows.list(alice());
     expect(
       list.map((workflow) => [workflow.builtInKey, workflow.isDefault]),
-    ).toEqual([['software', true]]);
+    ).toEqual([['aiReviewedDevelopment', true]]);
     const software = list[0]!;
     expect(software).toMatchObject({
-      name: 'Software development',
+      name: 'AI-reviewed development',
       title: {
-        key: 'studioAgents.workflowTemplates.software',
+        key: 'studioAgents.workflowTemplates.aiReviewed',
         ns: '@nocobase/i18n/application',
       },
       description: expect.stringContaining(
-        'The Solution designer analyses and proposes',
+        'Agents review both the design and the code',
       ),
       descriptionTitle: {
-        key: 'studioAgents.workflowTemplates.softwareDescription',
+        key: 'studioAgents.workflowTemplates.aiReviewedDescription',
         ns: '@nocobase/i18n/application',
       },
     });
@@ -245,7 +252,13 @@ describe('the Software development template', () => {
     const rulesOf = (key: string) =>
       software.definition.states.find((state) => state.key === key)?.rules;
     expect(rulesOf('in_progress')).toEqual([
-      { type: 'runAgent', config: { instruction: IN_PROGRESS_INSTRUCTION } },
+      {
+        type: 'runAgent',
+        config: {
+          defaultAgentId: 'studio-senior-developer',
+          instruction: IN_PROGRESS_INSTRUCTION,
+        },
+      },
     ]);
     // Each review and design stage goes to its role agent, which never becomes the executor; In progress runs the
     // executor.
@@ -268,7 +281,6 @@ describe('the Software development template', () => {
       },
     ]);
     expect(rulesOf('in_review')).toEqual([
-      expect.objectContaining({ type: 'notifyOwner' }),
       {
         type: 'runAgent',
         config: {
@@ -324,14 +336,14 @@ describe('the Software development template', () => {
     expect(PROPOSAL_REVIEW_INSTRUCTION).toContain(
       'nb-studio issue update {{issue.identifier}} --status analysis',
     );
-    expect(CODE_REVIEW_INSTRUCTION).not.toContain('--status');
+    expect(CODE_REVIEW_INSTRUCTION).toContain('--status in_progress');
     // Previews follow pull requests, not the issue's status: finishing an issue runs nothing.
     expect(rulesOf('done')).toBeUndefined();
     expect(rulesOf('cancelled')).toBeUndefined();
   });
 
   it('offers three ways to start and asks for no approval on any move', () => {
-    const { states, transitions } = SOFTWARE_TEMPLATE.definition;
+    const { states, transitions } = AI_REVIEW_TEMPLATE.definition;
     const startOf = (key: string) =>
       states
         .find((state) => state.key === key)
@@ -341,7 +353,7 @@ describe('the Software development template', () => {
       'studioAgents.templateStarts.developLabel',
     ]);
     expect(startOf('analysis')).toEqual([
-      'studioAgents.templateStarts.designLabel',
+      'studioAgents.templateStarts.aiDesignLabel',
     ]);
     expect(startOf('backlog')).toEqual([
       'studioAgents.templateStarts.backlogLabel',
@@ -387,7 +399,7 @@ describe('the Software development template', () => {
   });
 
   it('lets an agent propose, and a reviewer pass a design on through UI review or send it back', async () => {
-    await installSoftwareAsDefault();
+    await installAgentReviewAsDefault();
     const agentId = await h.createAgent();
     const asAgent = { ...alice(), actor: { type: 'agent', id: agentId } };
     const issue = await h.projects.issues.create(alice(), {
@@ -431,7 +443,7 @@ describe('the Software development template', () => {
   });
 
   it('moves an issue to Done on merge from In review or In progress, and lets a person do so without approval', async () => {
-    await installSoftwareAsDefault();
+    await installAgentReviewAsDefault();
     const create = (title: string) =>
       h.projects.issues.create(alice(), { title, start: false });
     const reviewed = await create('Reviewed');
@@ -469,8 +481,10 @@ describe('the Software development template', () => {
     }
   });
 
-  it('runs the issue’s agent with the stage instruction when the issue enters In progress', async () => {
-    await installSoftwareAsDefault();
+  it('runs the existing executor with the stage instruction when the issue enters In progress', async () => {
+    await installAgentReviewAsDefault();
+    await makeRoot(h, 'alice');
+    await runRoleAgentsSeed(h);
     const agentId = await h.createAgent();
     const issue = await h.projects.issues.create(alice(), {
       title: 'Fix login',
@@ -482,6 +496,7 @@ describe('the Software development template', () => {
     await moveTo(issue, 'in_progress');
 
     const [run] = await runsOf(issue.id);
+    expect(await runsOf(issue.id)).toHaveLength(1);
     expect(run).toMatchObject({ agentId, actorUserId: 'alice' });
     const instruction = renderInstruction(IN_PROGRESS_INSTRUCTION, {
       'issue.identifier': issue.identifier,
@@ -519,7 +534,9 @@ describe('the Software development template', () => {
   });
 
   it('lets the agent move the issue on without waking itself again', async () => {
-    await installSoftwareAsDefault();
+    await installAgentReviewAsDefault();
+    await makeRoot(h, 'alice');
+    await runRoleAgentsSeed(h);
     const agentId = await h.createAgent();
     const issue = await h.projects.issues.create(alice(), {
       title: 'Self',

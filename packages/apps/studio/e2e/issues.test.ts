@@ -22,7 +22,7 @@ test.describe('issues', () => {
     );
     const board = page.getByRole('region', { name: '任务看板' });
     await expect(
-      board.getByRole('region', { name: /^进行中 \d+$/ }),
+      board.getByRole('region', { name: /^开发中 \d+$/ }),
     ).toBeVisible();
 
     await views.getByRole('button', { name: '列表' }).click();
@@ -222,6 +222,6 @@ test.describe('issues', () => {
       page
         .getByRole('complementary', { name: '属性' })
         .getByRole('combobox', { name: '状态' }),
-    ).toContainText('进行中');
+    ).toContainText('开发中');
   });
 });

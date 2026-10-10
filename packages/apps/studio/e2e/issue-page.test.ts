@@ -124,10 +124,10 @@ test.describe('issue page', () => {
     await open(page, `/issues/${issue.identifier}`);
     const properties = page.getByRole('region', { name: '属性' });
     await properties.getByRole('combobox', { name: '状态' }).click();
-    await page.getByRole('option', { name: '进行中' }).click();
+    await page.getByRole('option', { name: '开发中' }).click();
     await expect(
       properties.getByRole('combobox', { name: '状态' }),
-    ).toContainText('进行中');
+    ).toContainText('开发中');
     await expect
       .poll(
         async () =>
@@ -164,7 +164,7 @@ test.describe('issue page', () => {
         page
           .getByRole('region', { name: '属性' })
           .getByRole('combobox', { name: '状态' }),
-      ).toContainText('进行中');
+      ).toContainText('开发中');
     });
 
     test('sending it back with a comment returns the issue to Analysis', async ({

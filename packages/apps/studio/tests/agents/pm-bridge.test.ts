@@ -565,9 +565,9 @@ describe('the nb-studio CLI', () => {
     ] as const;
     const origin = await serve();
     dir = mkdtempSync(path.join(os.tmpdir(), 'studio-pm-'));
-    mkdirSync(path.join(dir, '.nb-studio'));
+    mkdirSync(path.join(dir, '.nb-studio-test'));
     writeFileSync(
-      path.join(dir, '.nb-studio', 'run.json'),
+      path.join(dir, '.nb-studio-test', 'run.json'),
       JSON.stringify({
         ...run.payload.cli.credential.content,
         server: origin,

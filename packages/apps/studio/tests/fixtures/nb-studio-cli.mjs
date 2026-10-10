@@ -23,8 +23,16 @@ registerHooks({
   },
 });
 
-const { runAppCliPackage } = await import('@nocobase/app-cli-client');
-await runAppCliPackage(
+const { readAppCliPackage, appCliConfigOf, runAppCli } =
+  await import('@nocobase/app-cli-client');
+const { brand, info } = readAppCliPackage(
   path.resolve(import.meta.dirname, '../..'),
+);
+// A distinct filename prevents an ancestor runner directory from supplying the real run's identity.
+await runAppCli(
+  {
+    ...appCliConfigOf(brand, info),
+    runCredentialsFile: '.nb-studio-test/run.json',
+  },
   process.argv.slice(2),
 );

@@ -14,18 +14,21 @@ export interface StudioCliResult {
 }
 
 /**
- * This process's environment without what a CI run sets (`GITHUB_*`, GitLab's `CI_*`): the CLI reads the repository and
- * the commit from it, so a test run in CI would otherwise send the test runner's own.
+ * Keep the test CLI independent of CI metadata and the invoking runner's Studio identity.
  */
-function withoutCi(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+function isolatedEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return Object.fromEntries(
     Object.entries(env).filter(
-      ([name]) => !name.startsWith('GITHUB_') && !name.startsWith('CI_'),
+      ([name]) =>
+        !name.startsWith('GITHUB_') &&
+        !name.startsWith('CI_') &&
+        !name.startsWith('NB_STUDIO_') &&
+        name !== 'AGENT_RUN_CREDENTIALS',
     ),
   );
 }
 
-/** Runs `nb-studio <args>` in `cwd` with `env` added to this process's environment, less CI's. */
+/** Runs the test CLI with only its explicitly supplied Studio identity. */
 export function runStudioCli(
   args: readonly string[],
   options: { cwd: string; env?: NodeJS.ProcessEnv },
@@ -33,7 +36,7 @@ export function runStudioCli(
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [STUDIO_CLI_BIN, ...args], {
       cwd: options.cwd,
-      env: { ...withoutCi(process.env), ...options.env },
+      env: { ...isolatedEnvironment(process.env), ...options.env },
     });
     let stdout = '';
     let stderr = '';

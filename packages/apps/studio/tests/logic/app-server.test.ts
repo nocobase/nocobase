@@ -720,13 +720,18 @@ describe('app server', () => {
         definition: { states: unknown[] };
       }>('pmWorkflows')
       .findMany();
-    expect(workflows).toHaveLength(1);
-    expect(workflows[0]).toMatchObject({
-      builtInKey: 'software',
+    expect(workflows).toHaveLength(2);
+    const defaultWorkflow = workflows.find((workflow) => workflow.isDefault);
+    expect(defaultWorkflow).toMatchObject({
+      builtInKey: 'aiReviewedDevelopment',
       isDefault: true,
     });
     // The nine built-in statuses and the template's own UI review.
-    expect(workflows[0]?.definition.states).toHaveLength(10);
+    const definition = defaultWorkflow!.definition;
+    expect(
+      (typeof definition === 'string' ? JSON.parse(definition) : definition)
+        .states,
+    ).toHaveLength(10);
   });
 
   it('serves Users and API Keys with the application authentication and permissions', async () => {

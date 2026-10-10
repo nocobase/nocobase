@@ -1,37 +1,7 @@
 /**
- * The "Software development" workflow template Studio contributes to the projects plugin
- * (`projectsWorkflowTemplatesToken`), with its design-first flow:
- *
- * - People move freely. An agent starts work from Todo, hands it over for review and reports itself blocked. The
- *   system makes no other move: a failed run leaves the issue where it is and tells its owner (`../failed-runs.ts`).
- * - **Design first**: the status an issue starts in is its process. Put in Analysis, its
- *   agent analyses and submits a design proposal, a Markdown document (`nb-studio issue design-proposal`, `../design.ts`);
- *   submitting moves the issue to Proposal review, where its owner gets a card to approve it or send it back and the
- *   proposal reviewer reviews it. An approved proposal goes on to UI review when it changes the interface, where the
- *   frontend designer passes it to In progress or sends it back to Analysis, and otherwise straight to In progress: the
- *   reviewers move it, or a person does. No agent moves an issue from Analysis to In progress. Sent back, the issue
- *   returns to Analysis and its designer revises the proposal. Put in Todo, the agent goes straight to work.
- * - **Merged is done**: Studio fires `studio.merged` once every pull request of an issue is merged (`studio/server/git`),
- *   and the system moves the issue from In review or In progress to Done at once. The optional entry condition
- *   `prMerged` is not used here. A required checklist on In review (or In progress) blocks this: its exit condition
- *   refuses `studio.merged` like any move, so the issue stays where it is until the items are checked and someone
- *   moves it to Done.
- * - **No approvals**: people move an issue freely, Done included, as with every other status. Whether a merged change
- *   is released yet is the project overview's "Merged, not released" reminder, not a gate on Done.
- *
- * The New issue form offers three ways to start (`startOption` rules): Straight to development (Todo, the initial
- * status), Design first (Analysis) and Plan later (Backlog, where nothing starts).
- *
- * Each stage goes to the built-in role agent for it (`presets.ts`, seeded by `202610100010_studio_role_agents` and
- * `202610100020_studio_frontend_designer`), none of them made the executor: entering Analysis runs the solution
- * designer, Proposal review the proposal reviewer (beside the owner's design card), UI review (`ui_review`, the
- * template's own status) the frontend designer and In review the code reviewer (beside telling the owner). In progress runs the issue's
- * executor, the developer the proposal recommends or the one it was given. A role agent that is missing or archived is
- * skipped as unavailable, and the owner is told. Everything about branches, pull requests and code is worded here, in
- * the instructions: the projects and agents plugins stay generic. An installed workflow is not changed: a person
- * applies these rules to it.
- *
- * The projects plugin installs it once, as the default workflow when none is the default yet (it ships none itself).
+ * Studio contributes two development workflows: agent review by default and owner-approved design as an alternative.
+ * Both complete on the merged event, while only the agent review process includes frontend review and a final code
+ * review report. Installed project definitions are preserved by the upgrade migration.
  */
 import type { WorkflowTemplate } from '@nocobase/app-plugin-projects/server/tokens';
 import {
@@ -47,6 +17,7 @@ import { AGENT_KIND } from '../tx.js';
 import { ROLE_AGENT_IDS } from './presets.js';
 
 export const SOFTWARE_TEMPLATE_KEY = 'software';
+export const AI_REVIEW_TEMPLATE_KEY = 'aiReviewedDevelopment';
 
 /** The status the template adds between Proposal review and In progress, for proposals that change the interface. */
 export const UI_REVIEW_STATUS = 'ui_review';
@@ -71,6 +42,7 @@ export const ANALYSIS_INSTRUCTION: string = [
 export const IN_PROGRESS_INSTRUCTION: string = [
   'Work on {{issue.identifier}} ({{issue.title}}) until the change is ready for review.',
   'Coming from proposal_review or ui_review, the design proposal in its comments is approved: implement it as proposed, and create the sub-issues it describes, if any.',
+  'Coming back from in_review, address every review finding, push to the same branch and pull request, and report what changed before returning the issue to in_review.',
   'Work on your run’s branch (the branch your checkout is on), push it, and open the pull request with `nb-studio pr open --title "<title following the repository’s commit convention>" --body-file <path>`: Studio opens it and links it to the issue, so the title and body need no issue key. Do not open it with gh or another tool.',
   'When it is ready, comment what you did and move the issue to in_review with `nb-studio issue update {{issue.identifier}} --status in_review`; it moves to done once its pull requests are merged.',
   'If you cannot go on, comment what you need from {{owner.name}} and move the issue to blocked with `nb-studio issue update {{issue.identifier}} --status blocked`.',
@@ -85,6 +57,7 @@ export const PROPOSAL_REVIEW_INSTRUCTION: string = [
   'Check that the proposal solves what the issue asks, fits the existing design, names its risks and says how it will be verified, and that the developer it recommends fits the work.',
   'Comment your review with `nb-studio issue comment add {{issue.identifier}} --content-file review.md`, in the language of the issue: start with your verdict, approve or changes requested, then each finding with what is wrong and what to do instead.',
   `If you approve it and the proposal changes the interface (pages, components, styles, copy people see), move the issue to UI review with \`nb-studio issue update {{issue.identifier}} --status ${UI_REVIEW_STATUS}\`; if you approve it and it changes no interface, move it to development with \`nb-studio issue update {{issue.identifier}} --status in_progress\`. If you request changes, name each change to make in your comment and move the issue back to analysis with \`nb-studio issue update {{issue.identifier}} --status analysis\`, where the proposal is revised from your comment. Then end your turn.`,
+  'If it needs a decision only a person can make, leave it in proposal review and mention {{owner.name}} in your comment (`[@{{owner.name}}](mention://user/<id>)`, with the owner’s id from `nb-studio issue get {{issue.identifier}} --json`).',
   'If you cannot review it, comment what is missing and end your turn.',
 ].join('\n');
 
@@ -107,6 +80,24 @@ export const CODE_REVIEW_INSTRUCTION: string = [
   'List them with `nb-studio pr list`, then read the issue, its approved design proposal if it has one, and each pull request’s diff and checks. Change nothing: do not edit code, push, open a pull request or move the issue.',
   'Look for bugs, missing tests, departures from the proposal and from the repository’s conventions, and security problems; run the checks yourself when that settles a finding.',
   'Comment your review with `nb-studio issue comment add {{issue.identifier}} --content-file review.md`, in the language of the issue: start with your verdict, approve or changes requested, then each finding with where it is, what is wrong and what to do instead. Then end your turn.',
+  'If you cannot review it, comment what is missing and end your turn.',
+].join('\n');
+
+export const AI_ANALYSIS_INSTRUCTION = ANALYSIS_INSTRUCTION.replace(
+  'wait for {{owner.name}} to approve it',
+  'submit it for agent review',
+).replace(
+  'Write only what {{owner.name}} has to decide',
+  'Explain the design decisions the reviewers need to assess',
+);
+
+export const AI_CODE_REVIEW_INSTRUCTION = [
+  '{{issue.identifier}} ({{issue.title}}) is handed over for review. Review its pull requests before {{owner.name}} merges them.',
+  'List them with `nb-studio pr list`, then read the issue, its approved design proposal if it has one, and each pull request’s diff and checks. Do not edit code, push, open a pull request, merge or deploy.',
+  'Look for bugs, missing tests, departures from the proposal and from the repository’s conventions, and security problems; run the checks yourself when that settles a finding.',
+  'Post one final report with `nb-studio issue comment add {{issue.identifier}} --content-file review.md`, in the language of the issue. Include your conclusion (approve or changes requested), key changes, verification results, review findings with what to change, remaining issues, and merge and deployment notes. Mention {{owner.name}} in that report so they can read it and merge (`[@{{owner.name}}](mention://user/<id>)`, with the owner’s id from `nb-studio issue get {{issue.identifier}} --json`).',
+  'If changes are required, list them and move the issue back to development with `nb-studio issue update {{issue.identifier}} --status in_progress`. Otherwise leave it in code review for the owner to merge. Never merge or deploy it yourself.',
+  'Then end your turn without posting another review or summary.',
   'If you cannot review it, comment what is missing and end your turn.',
 ].join('\n');
 
@@ -225,28 +216,58 @@ const states: WorkflowStatus[] = BUILTIN_STATUSES.flatMap((status) => {
     : [withRules];
 });
 
-export const SOFTWARE_TEMPLATE: WorkflowTemplate = {
-  key: SOFTWARE_TEMPLATE_KEY,
-  name: 'Software development',
+export const AI_REVIEW_TEMPLATE: WorkflowTemplate = {
+  key: AI_REVIEW_TEMPLATE_KEY,
+  name: 'AI-reviewed development',
   title: {
-    key: 'studioAgents.workflowTemplates.software',
+    key: 'studioAgents.workflowTemplates.aiReviewed',
     ns: STUDIO_NAMESPACE,
   },
   makeDefault: true,
   description: {
-    key: 'studioAgents.workflowTemplates.softwareDescription',
+    key: 'studioAgents.workflowTemplates.aiReviewedDescription',
     ns: STUDIO_NAMESPACE,
     defaultValue:
-      'The Solution designer analyses and proposes in Analysis; the Proposal reviewer reviews the proposal and passes it on or sends it back, to UI review (前端评审) when it changes the interface, where the Frontend designer passes it on or sends it back; the issue’s executor works in In progress and the Code reviewer comments on the pull request in In review. An issue moves to Done once its pull requests are merged. To capture lessons into the knowledge base, add a Retrospective rule to Done.',
+      'Agents review both the design and the code, and the owner is asked only for decisions a person has to make. In Analysis the solution designer writes a proposal; the proposal reviewer reviews it, and the frontend designer also reviews any UI changes; once approved, a developer agent implements it and opens a pull request; the code reviewer posts a final report, and the owner merges after reading it. The issue moves to Done when its pull requests are merged. Suits most development work.',
   },
   definition: {
-    states,
+    states: states.map((state) => ({
+      ...state,
+      rules: state.rules
+        ?.filter((rule) => rule.type !== 'notifyOwner')
+        .map((rule) => {
+          if (state.key === 'analysis' && rule.type === 'startOption') {
+            return startOption(
+              'aiDesign',
+              'Design first',
+              'The agent analyses and submits a design proposal; development starts once the agents approve it.',
+            );
+          }
+          if (rule.type !== RUN_AGENT) return rule;
+          return {
+            ...rule,
+            config: {
+              ...rule.config,
+              ...(state.key === 'analysis'
+                ? { instruction: AI_ANALYSIS_INSTRUCTION }
+                : {}),
+              ...(state.key === 'in_progress'
+                ? { defaultAgentId: ROLE_AGENT_IDS.seniorDeveloper }
+                : {}),
+              ...(state.key === 'in_review'
+                ? { instruction: AI_CODE_REVIEW_INSTRUCTION }
+                : {}),
+            },
+          };
+        }),
+    })),
     transitions: [
       { from: '*', to: '*', actors: ['user'] },
       { from: 'todo', to: 'in_progress', actors: [AGENT_KIND] },
       { from: 'blocked', to: 'in_progress', actors: [AGENT_KIND] },
       { from: 'in_progress', to: 'in_review', actors: [AGENT_KIND] },
       { from: 'in_progress', to: 'blocked', actors: [AGENT_KIND] },
+      { from: 'in_review', to: 'in_progress', actors: [AGENT_KIND] },
       // Merged is done: Studio fires the event once every pull request of the issue is merged.
       {
         from: 'in_review',
@@ -292,5 +313,48 @@ export const SOFTWARE_TEMPLATE: WorkflowTemplate = {
       { from: 'proposal_review', to: 'blocked', actors: [AGENT_KIND, 'user'] },
       { from: 'blocked', to: 'analysis', actors: [AGENT_KIND] },
     ],
+  },
+};
+
+/** New installations offer an owner gate alongside the default agent review process. */
+export const SOFTWARE_TEMPLATE: WorkflowTemplate = {
+  ...AI_REVIEW_TEMPLATE,
+  key: SOFTWARE_TEMPLATE_KEY,
+  name: 'Owner-approved development',
+  title: {
+    key: 'studioAgents.workflowTemplates.software',
+    ns: STUDIO_NAMESPACE,
+  },
+  makeDefault: false,
+  description: {
+    key: 'studioAgents.workflowTemplates.softwareDescription',
+    ns: STUDIO_NAMESPACE,
+    defaultValue:
+      'The owner approves every design before development starts. In Analysis an agent writes a proposal, and the owner approves it or sends it back in Proposal review; the executor then implements it and opens a pull request; In review notifies the owner to review and merge, and an AI code review can be added. Suits work with a wide impact, where a person should decide the direction.',
+  },
+  definition: {
+    states: states
+      .filter((state) => state.key !== UI_REVIEW_STATUS)
+      .map((state) => ({
+        ...state,
+        ...(state.key === 'proposal_review' ? { rules: [] } : {}),
+        ...(state.key === 'in_review'
+          ? {
+              rules: RULES.in_review.filter(
+                (rule) => rule.type === 'notifyOwner',
+              ),
+            }
+          : {}),
+      })),
+    transitions: AI_REVIEW_TEMPLATE.definition.transitions.filter(
+      (transition) =>
+        transition.from !== UI_REVIEW_STATUS &&
+        transition.to !== UI_REVIEW_STATUS &&
+        !(
+          transition.from === 'proposal_review' &&
+          transition.to === 'in_progress' &&
+          transition.actors.includes(AGENT_KIND)
+        ),
+    ),
   },
 };

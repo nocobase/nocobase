@@ -3,6 +3,11 @@ import type { LocaleResource } from '@nocobase/i18n';
 // The application's own server-side wording; most strings the server produces belong to a plugin's namespace. Use
 // `overrides` to reword a plugin's.
 const enUS = {
+  overrides: {
+    '@nocobase/app-plugin-projects': {
+      status: { todo: 'Todo', in_progress: 'In progress' },
+    },
+  },
   // The last line of a delivery comment about the user manual, which the agent's brief asks for in the
   // installation's language (`server/knowledge/brief.ts`); `<slug>` stays for the agent to fill in.
   knowledge: {

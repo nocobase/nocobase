@@ -106,7 +106,7 @@ test.describe('inbox decisions', () => {
       const card = await openDecision(page, issue.title);
       await expect(card.getByText('状态变更待审批')).toBeVisible();
       await expect(
-        card.getByText('Lisa Nguyen 申请将状态从 进行中 改为 已完成。'),
+        card.getByText('Lisa Nguyen 申请将状态从 开发中 改为 已完成。'),
       ).toBeVisible();
       await card.getByRole('button', { name: '批准', exact: true }).click();
 

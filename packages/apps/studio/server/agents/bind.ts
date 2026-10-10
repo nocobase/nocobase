@@ -53,7 +53,10 @@ import { agentActionOptions } from './capabilities.js';
 import { PRESETS } from './catalog/presets.js';
 import { studioScopes } from './catalog/scopes.js';
 import { CONVERSATION_SOURCES } from './catalog/sources.js';
-import { SOFTWARE_TEMPLATE } from './catalog/workflow-templates.js';
+import {
+  AI_REVIEW_TEMPLATE,
+  SOFTWARE_TEMPLATE,
+} from './catalog/workflow-templates.js';
 import {
   createActionGate,
   createPermissionSource,
@@ -316,7 +319,10 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
           onError('Agents could not settle a suggested executor.', error),
       ),
     );
-    if (deps.templates) releases.push(deps.templates.add(SOFTWARE_TEMPLATE));
+    if (deps.templates) {
+      releases.push(deps.templates.add(AI_REVIEW_TEMPLATE));
+      releases.push(deps.templates.add(SOFTWARE_TEMPLATE));
+    }
   }
   return () => {
     for (const release of releases.splice(0).reverse()) release();
