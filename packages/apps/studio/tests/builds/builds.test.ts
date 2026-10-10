@@ -540,6 +540,23 @@ describe('the CI workflows', () => {
     ].map((step) => staging.content.indexOf(step));
     expect(setupAt.every((index) => index >= 0)).toBe(true);
     expect([...setupAt].sort((a, b) => a - b)).toEqual(setupAt);
+    const tagSetupAt = [
+      '      - uses: actions/checkout@v4',
+      '      - uses: pnpm/action-setup@v4',
+      '      - uses: actions/setup-node@v4',
+      '      - name: Install the nb-studio CLI',
+      'nb-studio build status --app "$APP_ID" --state building --logs "$LOGS"',
+      'pnpm install --frozen-lockfile',
+      'pnpm build --target linux-x64 --tar',
+    ].map((step) => production.content.indexOf(step));
+    expect(tagSetupAt.every((index) => index >= 0)).toBe(true);
+    expect([...tagSetupAt].sort((a, b) => a - b)).toEqual(tagSetupAt);
+    expect(
+      production.content.match(/uses: pnpm\/action-setup@v4/gu),
+    ).toHaveLength(1);
+    expect(
+      production.content.match(/uses: actions\/setup-node@v4/gu),
+    ).toHaveLength(1);
     expect(staging.content).toContain('cancel-in-progress: false');
     expect(production.content).toContain("APP_ID: 'web'");
     expect(production.content).toContain("ENVIRONMENT: 'live'");

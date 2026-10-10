@@ -153,7 +153,7 @@ The repository's CI key above is the usual way. A key made yourself also works, 
 
 The key may do exactly what was chosen for it: it uploads and registers images for the Apps it was limited to (the `write` level), and deploys them only at the `admin` level; it never configures or deletes an App, and never deploys directly to a protected environment, where it may only ask (`nb-studio deploy`, or `nb-studio deploy request`, a deployment request a person approves). Disabling it stops it at once. Deployment history shows the key's name with the "API key" tag. A person may still make a key of their own for a script (Account settings › API keys), which acts as them.
 
-The `nb-studio` CLI comes from Studio itself (`/api/agents/dist`, a standalone tarball with Node for the machine's platform), signs in with the key (`printf %s "$NB_STUDIO_API_KEY" | NB_STUDIO_KEYCHAIN=off nb-studio login --server "$NB_STUDIO_URL" --api-key-stdin`; a CI machine has no system keychain) and offers only the commands the key's scope covers.
+The `nb-studio` CLI comes from Studio itself (`/api/agents/dist`) as a universal tarball without Node.js; it requires Node.js 24 or newer on the machine that runs it. In GitHub Actions, install Node first with `actions/setup-node@v4` and `node-version: 24`, then install and sign in to the CLI (`printf %s "$NB_STUDIO_API_KEY" | NB_STUDIO_KEYCHAIN=off nb-studio login --server "$NB_STUDIO_URL" --api-key-stdin`; a CI machine has no system keychain). The CLI offers only the commands the key's scope covers.
 
 ### Builds: CI says what is deployed where
 
