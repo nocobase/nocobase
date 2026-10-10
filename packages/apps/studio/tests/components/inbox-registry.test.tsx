@@ -32,6 +32,7 @@ import { InboxRegistryProvider } from '@/extensions/nocobase-inbox/registry-scop
 import { runnersRenderer } from '../../client/inbox/contributions/runners';
 import { failedRunRenderer } from '../../client/inbox/contributions/failed-runs';
 import { releasesRenderer } from '../../client/inbox/contributions/releases';
+import { runRequestsRenderer } from '../../client/inbox/contributions/run-requests';
 import type { InboxNotice } from '../../shared/inbox';
 
 const request = vi.fn();
@@ -487,6 +488,119 @@ describe("a failed run's decision card", () => {
     expect(
       screen.queryByRole('button', { name: 'inbox.runFailed.retry' }),
     ).toBeNull();
+  });
+});
+
+describe("a run request's decision card", () => {
+  const TEXT = 'Please also cover the SSO path.\n\nAnd the **logout** page.';
+  const asked = (overrides: Record<string, unknown> = {}) => ({
+    id: 'req1',
+    agentId: 'a1',
+    agentName: 'Coder',
+    subject: { kind: 'issue', id: 'i7' },
+    threadScope: 'main',
+    responsibleUserId: 'owner',
+    responsibleName: 'Owner',
+    requestedByUserId: 'bob',
+    requestedByName: 'Bob',
+    ownerUserId: 'owner',
+    fireAt: null,
+    maxAttempts: null,
+    input: {
+      type: 'comment',
+      actor: { kind: 'user', id: 'bob', name: 'Bob' },
+      text: TEXT,
+      payload: { trigger: 'comment', commentId: 'c1' },
+    },
+    status: 'pending',
+    settledById: null,
+    settledAt: null,
+    note: null,
+    expiresAt: '2026-10-16T08:00:00.000Z',
+    runId: null,
+    supersededById: null,
+    createdAt: '2026-10-09T08:00:00.000Z',
+    updatedAt: '2026-10-09T08:00:00.000Z',
+    ...overrides,
+  });
+  const card = (type = 'run_request') =>
+    entriesOf(
+      [item('r', { title: 'Bob asks Coder to work on PM-7', body: '' })],
+      [
+        notice('r', {
+          source: 'runRequests',
+          kind: type === 'run_request' ? 'decision' : 'info',
+          type,
+          subject: { type: 'issue', id: 'i7', label: 'PM-7' },
+          decisionKey: type === 'run_request' ? 'req1' : null,
+          data: {
+            requestId: 'req1',
+            agentName: 'Coder',
+            requestedByName: 'Bob',
+            identifier: 'PM-7',
+            excerpt: 'Please also cover the SSO path.',
+            reason: 'timeout',
+          },
+        }),
+      ],
+    )[0]!;
+  const answer = (found: Record<string, unknown>) =>
+    request.mockImplementation((call: { method?: string }) =>
+      Promise.resolve(call.method === 'POST' ? undefined : { data: found }),
+    );
+
+  it('shows the owner what was asked in full, and confirms it through the agents plugin', async () => {
+    pm.viewer = { userId: 'owner', permissions: { scopes: {} } };
+    request.mockReset();
+    answer(asked());
+    const onAction = renderDetail(card(), registry([runRequestsRenderer]));
+    expect(await screen.findByTestId('run-request-snapshot')).toHaveTextContent(
+      'And the logout page.',
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'runRequests.confirm' }),
+    );
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: 'agents/runRequests/req1/confirm',
+      }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'runRequests.reject' }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(onAction).toHaveBeenCalledWith(expect.anything(), 'read'),
+    );
+  });
+
+  it('offers nothing to decide to someone who does not own the issue', async () => {
+    pm.viewer = { userId: 'bob', permissions: { scopes: {} } };
+    request.mockReset();
+    answer(asked());
+    renderDetail(card(), registry([runRequestsRenderer]));
+    expect(
+      await screen.findByText('runRequests.onlyOwner'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'runRequests.confirm' }),
+    ).toBeNull();
+  });
+
+  it('lets the person who asked run an expired request as themselves', async () => {
+    pm.viewer = { userId: 'bob', permissions: { scopes: {} } };
+    request.mockReset();
+    answer(asked({ status: 'expired' }));
+    renderDetail(card('run_request_expired'), registry([runRequestsRenderer]));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'runRequests.asMe' }),
+    );
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: 'agents/runRequests/req1/runAsMe',
+      }),
+    );
   });
 });
 

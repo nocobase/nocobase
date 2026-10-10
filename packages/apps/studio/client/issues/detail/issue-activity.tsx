@@ -7,7 +7,12 @@
  * the projects plugin's headless hooks (`useIssueTimeline`, `useIssueCommentActions`, `useMentionSearch`), in the
  * projects plugin's words. A link with `?comment=<id>` highlights that comment and loads older threads until it is
  * found. Without `issues/comment` the composer and the reply buttons do not render.
+ *
+ * Someone other than the issue's owner may also "Comment and run as me": the agents the comment wakes would wait for
+ * the owner to confirm them (`agents/run-requests.ts`); this runs them as the commenter now, on a runtime they may use,
+ * and leaves them to the owner when there is none.
  */
+import { useApiClient } from '@nocobase/app-client';
 import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
 import {
   canComment,
@@ -34,7 +39,7 @@ import {
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useQuery, type QueryKey } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { BotIcon } from 'lucide-react';
 import {
   useCallback,
@@ -61,12 +66,17 @@ import type { RichTextHandle } from '@/components/rich-text-editor';
 import { IssueSurface } from '@/extensions/nocobase-issue-detail/issue-detail';
 import { cn } from 'cn';
 
+import { useNotify } from '../../access/notify.js';
+import { runCommentAsMe, runRequestKeys } from '../../agents/run-requests.js';
 import { IssueMarkdown } from '../markdown.js';
 import { ActivityRow } from './activity-row.js';
 import { attachmentFile, useFilePreviewState } from './files.js';
 import { useIssuePageWording } from './labels.js';
 import { MentionMembersLoadError } from './mention-members-load-error.js';
 import { issueMentionCandidates } from './mention-candidates.js';
+
+/** The composer's mode that runs what a comment asks of agents as the commenter. */
+const MINE = 'mine';
 
 export function IssueActivity({
   detail,
@@ -88,6 +98,9 @@ export function IssueActivity({
   const wording = useIssuePageWording();
   const { t } = wording;
   const api = usePmApi();
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+  const notify = useNotify();
   const viewer = useViewer();
   const apiKeys = useApiKeyActors();
   const authorLabel = useAuthorLabel();
@@ -252,6 +265,8 @@ export function IssueActivity({
   const original = (item: CommentItem): IssueComment | undefined =>
     comments.get(item.id);
 
+  // Only someone other than the owner is asked to wait for the owner's confirmation.
+  const foreign = Boolean(viewer && viewer.userId !== detail.ownerUserId);
   const modes = useMemo(
     () =>
       wakeable
@@ -261,6 +276,16 @@ export function IssueActivity({
               label: t('comments.modeComment'),
               placeholder: t('comments.placeholder'),
             },
+            ...(foreign
+              ? [
+                  {
+                    value: MINE,
+                    label: appT('runRequests.commentMode'),
+                    placeholder: appT('runRequests.commentModePlaceholder'),
+                    send: appT('runRequests.commentModeSend'),
+                  },
+                ]
+              : []),
             {
               value: 'note',
               label: t('comments.modeNote'),
@@ -269,8 +294,20 @@ export function IssueActivity({
             },
           ]
         : undefined,
-    [wakeable, t],
+    [wakeable, foreign, t, appT],
   );
+
+  /** Runs what the comment asked of agents as the viewer; left to the owner when no runtime of theirs can. */
+  const runAsMe = async (commentId: string): Promise<void> => {
+    try {
+      const count = await runCommentAsMe(apiClient, detail.id, commentId);
+      if (count > 0) notify.success(appT('runRequests.commentRan', { count }));
+    } catch (error) {
+      notify.error(error, appT('runRequests.commentNotRun'));
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: runRequestKeys.all });
+    }
+  };
 
   return (
     <>
@@ -359,6 +396,11 @@ export function IssueActivity({
                 });
                 uploads.clear();
                 setReplyTo(null);
+                if (mode === MINE) await runAsMe(comment.id);
+                else
+                  void queryClient.invalidateQueries({
+                    queryKey: runRequestKeys.all,
+                  });
                 return comment.id;
               }}
               labels={wording.composer}

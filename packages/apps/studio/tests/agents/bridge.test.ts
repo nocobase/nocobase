@@ -162,7 +162,7 @@ describe('issues start work for agents', () => {
     });
   });
 
-  it("withdraws the previous owner's queued work and queues it again for the new owner", async () => {
+  it("withdraws the previous owner's queued work and asks the new owner instead of queueing it as theirs", async () => {
     const agentId = await h.createAgent();
     const issue = await h.projects.issues.create(alice(), { title: 'A' });
     const assigned = await assign(issue, agentId);
@@ -173,13 +173,19 @@ describe('issues start work for agents', () => {
       }),
     );
     const runs = await runsOf(issue.id);
-    expect(runs.map((run) => [run.status, run.actorUserId]).sort()).toEqual([
+    expect(runs.map((run) => [run.status, run.actorUserId])).toEqual([
       ['cancelled', 'alice'],
-      ['queued', 'bob'],
     ]);
     expect(attempts).toEqual([
-      expect.objectContaining({ triggerType: 'ownerChanged', started: true }),
+      expect.objectContaining({ triggerType: 'assigned', started: false }),
     ]);
+    expect(
+      await h.agents.runs.requests.list({
+        userId: 'bob',
+        role: 'responsible',
+        status: 'pending',
+      }),
+    ).toEqual([expect.objectContaining({ requestedByUserId: 'alice' })]);
   });
 });
 
@@ -211,32 +217,34 @@ describe('comments reach agents', () => {
     });
   });
 
-  it('queues another person’s comment separately behind the active work', async () => {
+  it('asks the owner before another person’s comment reaches the active work', async () => {
     const agentId = await h.createAgent();
     const issue = await h.projects.issues.create(alice(), { title: 'A' });
     await assign(issue, agentId);
     const payload = await h.claimOne();
-    await h.projects.comments.create(bob(), issue.id, {
-      content: 'Use the v2 API.',
-    });
-    const work = await runsOf(issue.id);
-    expect(work).toHaveLength(2);
-    const next = work.find((run) => run.id !== payload.run.id)!;
-    expect(next).toMatchObject({ status: 'queued', actorUserId: 'bob' });
+    const { attempts } = await collectRunAttempts(() =>
+      h.projects.comments.create(bob(), issue.id, {
+        content: 'Use the v2 API.',
+      }),
+    );
+    expect(attempts).toEqual([
+      expect.objectContaining({ triggerType: 'comment', started: false }),
+    ]);
+    expect(await runsOf(issue.id)).toHaveLength(1);
     expect(
       (await h.agents.runs.detail(payload.run.id)).inputs.some(
         (input) => input.text === 'Use the v2 API.',
       ),
     ).toBe(false);
-    expect((await h.agents.runs.detail(next.id)).inputs.at(-1)).toMatchObject({
-      type: 'comment',
-      text: 'Use the v2 API.',
-      actor: { id: 'bob' },
+    const [request] = await h.agents.runs.requests.list({
+      userId: 'alice',
+      role: 'responsible',
+      status: 'pending',
     });
-    const workload = await h.agents.runs.workload({ subjectKind: 'issue' });
-    expect(workload.runs.find((run) => run.id === next.id)?.wait?.reason).toBe(
-      'sameWorkActive',
-    );
+    expect(request).toMatchObject({
+      requestedByUserId: 'bob',
+      input: { type: 'comment', text: 'Use the v2 API.' },
+    });
   });
 
   it('wakes a mentioned agent, and refuses mentioning one the person may not wake', async () => {

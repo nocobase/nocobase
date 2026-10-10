@@ -167,7 +167,8 @@ describe('design first', () => {
 
   /**
    * An issue bob creates in Analysis for alice, given to a developer agent: the run of the solution designer, whose
-   * stage Analysis is, that bob's assignment started. `actions` are the designer's.
+   * stage Analysis is, that bob's assignment asked for, once alice, who owns the issue, confirmed it. `actions` are
+   * the designer's.
    */
   async function analysisRun(actions: readonly string[] = AGENT_ACTIONS) {
     const agentId = ROLE_AGENT_IDS.solutionDesigner;
@@ -183,8 +184,17 @@ describe('design first', () => {
       ownerUserId: 'alice',
       executor: { type: 'agent', id: developerId },
     });
-    // The designer's stage starts once the creation commits.
-    await expect.poll(async () => (await runsOf(issue.id)).length).toBe(1);
+    // The designer's stage is asked of alice once the creation commits; she confirms it.
+    const pending = () =>
+      h.agents.runs.requests.list({
+        userId: 'alice',
+        role: 'responsible',
+        status: 'pending',
+      });
+    await expect.poll(async () => (await pending()).length).toBe(1);
+    const [request] = await pending();
+    await h.agents.runs.requests.confirm(request!.id, 'alice');
+    expect(await runsOf(issue.id)).toHaveLength(1);
     const payload = await h.claimOne();
     return {
       agentId,
@@ -243,7 +253,10 @@ describe('design first', () => {
 
   it("asks the issue's owner, not who woke the run, and approving moves it to development", async () => {
     const { token, issue, developerId } = await analysisRun();
-    expect((await runsOf(issue.id))[0]).toMatchObject({ actorUserId: 'bob' });
+    expect((await runsOf(issue.id))[0]).toMatchObject({
+      requestedByUserId: 'bob',
+      confirmedByUserId: 'alice',
+    });
     const proposed = await propose(token, issue);
     expect(proposed.status).toBe(200);
     expect(proposed.body.data).toMatchObject({

@@ -10,8 +10,11 @@
  * | `suggestExecutor` | the issue's owner gets a suggestion card in their inbox ("‹Agent› is suggested for PM-12"):     |
  * |                   | Accept makes `agentId` the executor and starts its work, Dismiss drops it                       |
  *
- * `runAgent` acts for whoever moved the issue (the owner, when the system or an agent moved it). When that person may
- * not wake the agent, the owner gets a suggestion instead. The loop guard defaults to `STAGE_RUN_LIMIT` actual runs
+ * `runAgent` acts for whoever caused the move (`sourceActor`: a workflow event moves the issue as the system, for the
+ * person or run that fired it), as any wake does (`work-source.ts`): the owner's own move, or one of a run whose chain
+ * the owner started or confirmed, runs as the owner; anyone else's asks the owner to confirm it (a run request), and
+ * the system's acts for the owner. When the person who caused it may not wake the agent, the owner gets a suggestion
+ * instead. The loop guard defaults to `STAGE_RUN_LIMIT` actual runs
  * per issue and status within `STAGE_RUN_WINDOW_HOURS` hours, configurable on each rule. It guards against agents and
  * the system moving an issue in a loop, so it never stops a person: a person's move (a user actor not acting through an
  * agent) starts the run, is not counted, and restarts the count. Environment failures and cancelled or unstarted runs
@@ -31,7 +34,6 @@
  * the plan is no longer open, whoever or whatever closed it (`settleSuggestions`).
  */
 import { randomUUID } from 'node:crypto';
-import type { ActorRef } from '@nocobase/agent-protocol';
 import type {
   Actor,
   NoticeRule,
@@ -60,6 +62,7 @@ import {
   stageGuardId,
   stageGuards,
 } from './stage-run-guard.js';
+import { workSourceOf } from './work-source.js';
 
 const SYSTEM_ACTOR: Actor = { type: 'system', id: null };
 
@@ -373,7 +376,9 @@ export function createStageRules(deps: {
       };
     },
     async entered(entry, config) {
-      const { tx, actor, status } = entry;
+      const { tx, status } = entry;
+      // Who caused the move: a workflow event moves as the system, for the person or run that fired it.
+      const actor = entry.sourceActor ?? entry.actor;
       let { issue } = entry;
       const guardId = stageGuardId(issue.id, status.key);
       // Every new entry replaces the previous entry's continuation, even when this entry skips for another reason.
@@ -452,12 +457,23 @@ export function createStageRules(deps: {
           { agentId, agentName: agent.name, limit, windowHours, continueToken },
         );
       }
-      // The run acts for whoever moved the issue; the system's and agents' moves act for the owner.
-      const moverId =
-        actor.type === 'user' && actor.id ? actor.id : issue.ownerUserId;
+      // The work comes from whoever caused the move (a run's move: its chain's source; the system's: the owner), and
+      // the owner answers for it: anyone else's asks the owner to confirm it (`work-source.ts`).
+      const source = await workSourceOf(tx.conn, actor, issue);
+      const moverId = source.userId;
       const isExecutor =
         issue.executor?.type === AGENT_KIND && issue.executor.id === agentId;
       const assign = config.assign !== false;
+      if (
+        moverId !== issue.ownerUserId &&
+        !deps.agents.agents.mayInvoke(agent, issue.ownerUserId)
+      )
+        return report(
+          entry,
+          RUN_AGENT,
+          skip('ownerCannotInvoke', { agentId, userId: issue.ownerUserId }),
+          { agentId, agentName: agent.name },
+        );
       if (!deps.agents.agents.mayInvoke(agent, moverId)) {
         if (isExecutor || !assign)
           return report(
@@ -508,26 +524,20 @@ export function createStageRules(deps: {
             'owner.name': ownerName,
           })
         : null;
-      const mover: ActorRef =
-        actor.type === 'user' && actor.id
-          ? {
-              kind: 'user',
-              id: actor.id,
-              name: await userName(tx.conn, actor.id),
-            }
-          : actor.type === AGENT_KIND && actor.id
-            ? { kind: 'agent', id: actor.id, name: 'Agent' }
-            : { kind: 'system', id: 'system', name: 'Studio' };
       const result = await runs.enqueue(
         {
           agentId,
           subject: { kind: ISSUE_SUBJECT, id: issue.id },
           actorUserId: moverId,
+          responsibleUserId: issue.ownerUserId,
+          ...(source.causedByRunId
+            ? { causedByRunId: source.causedByRunId }
+            : { requestedByUserId: moverId }),
           ownerUserId: issue.ownerUserId,
           priority: runPriorityOf(issue.priority),
           input: {
             type: 'signal',
-            actor: mover,
+            actor: source.ref,
             text: [
               `${issue.identifier} entered \`${status.key}\` (from \`${entry.from}\`) and the workflow asked you to work on this stage.`,
               ...(deps.continuedFrom
@@ -554,14 +564,12 @@ export function createStageRules(deps: {
         },
         agentsTx(tx),
       );
-      // A request waiting for confirmation has no run. Studio does not yet supply a responsible person;
-      // keep this guard until execution request handling is integrated.
-      if (result.runId === null) {
-        console.warn(
-          `Stage work for ${issue.identifier} became run request ${result.requestId} instead of a run.`,
-        );
-        return skip('pending', { agentId, requestId: result.requestId });
-      }
+      // Someone else's move asks the owner: the rule did its part, the run starts once they confirm it.
+      if (result.outcome === 'pending')
+        return {
+          status: 'applied',
+          details: { agentId, requestId: result.requestId },
+        };
       return {
         status: 'applied',
         details: { agentId, runId: result.runId },

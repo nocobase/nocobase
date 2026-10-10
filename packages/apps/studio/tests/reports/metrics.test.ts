@@ -143,8 +143,8 @@ describe('metrics', () => {
         activeMembers: 2,
       },
       aiShare: { share: 1, deliveredByAgent: 2, deliveredTotal: 2 },
-      // The unfinished issue keeps Bob's comment and Alice's status-triggered work in separate runs.
-      reliability: { runs: 7, completedRuns: 3, failedRuns: 0, lostRuns: 0 },
+      // Bob's comments on Alice's issues wait for her to confirm them (run requests): only the work given runs.
+      reliability: { runs: 3, completedRuns: 3, failedRuns: 0, lostRuns: 0 },
       cost: {
         inputTokens: 3_000_000,
         outputTokens: 6000,
@@ -168,16 +168,23 @@ describe('metrics', () => {
     expect(await reports.metrics(ALL, { projectId: alpha.id })).toMatchObject({
       projectId: alpha.id,
       adoption: { issuesCreated: 2, commentsCreated: 2 },
-      reliability: { runs: 4 },
+      reliability: { runs: 2 },
       cost: {
         estimatedCost: { USD: 3.03 },
         costPerDeliveredIssue: { USD: 1.515 },
       },
     });
+    // Bob's comments only asked Alice; he runs one of them as himself, the one run that is his.
+    const [asked] = await h.agents.runs.requests.list({
+      userId: 'bob',
+      role: 'requester',
+      status: 'pending',
+    });
+    await h.agents.runs.requests.runAsRequester(asked!.id, 'bob');
     expect(
       await reports.metrics({ userId: 'bob', allRuns: false }, {}),
     ).toMatchObject({
-      reliability: { runs: 3 },
+      reliability: { runs: 1 },
       cost: { estimatedCost: null, costPerDeliveredIssue: null },
     });
   });

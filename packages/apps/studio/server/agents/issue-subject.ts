@@ -35,6 +35,7 @@ import {
   PROJECT_TITLE,
 } from './catalog/triggers.js';
 import { AGENT_KIND } from './tx.js';
+import { issueResponsible } from './work-source.js';
 
 const SUBJECT_NOUN = 'issue';
 
@@ -572,6 +573,8 @@ export function issueBinding(
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
+    // The issue's owner answers for its work: a run request is confirmed or rejected by its owner at that moment.
+    responsibleUserId: issueResponsible,
     ...(queuedExpiryMs > 0 ? { queuedExpiryMs } : {}),
     title: ISSUE_TITLE,
     groupTitle: PROJECT_TITLE,

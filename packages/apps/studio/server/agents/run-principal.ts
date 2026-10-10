@@ -7,7 +7,8 @@
  *   (`../access/action-policy.ts`) and Studio's own (`capabilities.ts`); reading only for a run on an intake request),
  *   so every route that honours a key's
  *   scope honours the run's, and nothing else;
- * - who acts (`runActor`): the agent itself for a run on an issue; for a run on a conversation, the person who asked,
+ * - who acts (`runActor`): the agent itself for a run on an issue, with the run in its trace, so the work its changes
+ *   cause goes on as the run's chain (`work-source.ts`); for a run on a conversation, the person who asked,
  *   via the agent (`conversation/acting.ts`);
  * - what a conversation run writes (`delegatedWrites`): a direct write for the asker within the quota
  *   (`conversation/quota.ts`), made as an undoable plan of theirs, or 409 `PLAN_REQUIRED`.
@@ -243,7 +244,20 @@ export function createRunPrincipal(deps: {
       const identity = runOfRequest(context);
       if (!identity?.agent) return undefined;
       const asker = await deps.askerOf(identity);
-      if (!asker) return { type: AGENT_KIND, id: identity.agent.id };
+      // The run's trace tells the work its changes start where they come from (`work-source.ts`).
+      if (!asker)
+        return {
+          type: AGENT_KIND,
+          id: identity.agent.id,
+          ...(identity.run
+            ? {
+                trace: {
+                  agentId: identity.agent.id,
+                  runId: identity.run.run.id,
+                },
+              }
+            : {}),
+        };
       const actor = askerActor(asker);
       askers.set(actor, asker);
       return actor;
