@@ -34,6 +34,20 @@ export async function readPreviews(
   ).data;
 }
 
+export async function setPreviewPreference(
+  api: ApiClient,
+  issueId: string,
+  notRequired: boolean,
+): Promise<IssuePreviews> {
+  return (
+    await api.request<{ data: IssuePreviews }>({
+      method: 'POST',
+      path: 'previews/preference',
+      json: { issueId, notRequired },
+    })
+  ).data;
+}
+
 /** Destroys the issue's preview of one App, then reads the issue's previews again. */
 export async function destroyPreview(
   api: ApiClient,

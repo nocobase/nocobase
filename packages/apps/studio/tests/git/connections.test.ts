@@ -9,6 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setPreviewNotRequired } from '../../server/previews/preferences.js';
 import { createGitConnections } from '../../server/git/connections.js';
 import { INSTALLATION_TOKENS } from '../../server/git/installation-tokens.js';
 import { createGitProviders } from '../../server/git/providers.js';
@@ -893,6 +894,7 @@ describe('nb-studio pr open', () => {
     const app = await appConnection();
     await authorizeAlice(app);
     const { issue, payload } = await agentRun(app);
+    await setPreviewNotRequired(h.projects.tx.read(), issue.id, true);
     const opened = await h.request('POST', '/git/pullRequests/open', {
       runToken: payload.cli.credential.content.token as string,
       body: { title: `${issue.identifier}: Fix login`, draft: true },
@@ -904,6 +906,39 @@ describe('nb-studio pr open', () => {
     )!;
     expect(create.token).toMatch(/^ghu_/u);
     expect(h.github.pull(REPO, 1).user.login).toBe('alice-gh');
+    expect(h.github.pull(REPO, 1).labels).toContainEqual({
+      name: 'no-preview',
+    });
+  });
+
+  it('keeps an opened PR linked and reports a label failure without creating another PR', async () => {
+    const app = await appConnection();
+    const { issue, payload } = await agentRun(app);
+    await setPreviewNotRequired(h.projects.tx.read(), issue.id, true);
+    const write = vi
+      .spyOn(h.github.platform, 'addPullRequestLabel')
+      .mockRejectedValueOnce(new Error('Offline'));
+    const opened = await h.request('POST', '/git/pullRequests/open', {
+      runToken: payload.cli.credential.content.token as string,
+      body: { title: 'Preview preference', draft: true },
+    });
+    expect(opened.status).toBe(201);
+    expect(opened.body.data.previewLabelSyncFailed).toBe(true);
+    expect(opened.body.meta.message).toContain(
+      'Do not open another pull request',
+    );
+    expect((await h.git.list(alice(), issue.id)).data).toHaveLength(1);
+    expect(
+      h.github.requests.filter(
+        (request) =>
+          request.method === 'POST' && request.path === `/repos/${REPO}/pulls`,
+      ),
+    ).toHaveLength(1);
+    write.mockRestore();
+    await h.git.syncPreviewLabels(issue.id);
+    expect(h.github.pull(REPO, 1).labels).toContainEqual({
+      name: 'no-preview',
+    });
   });
 
   it('refuses without a linked repository', async () => {

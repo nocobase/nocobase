@@ -1116,7 +1116,7 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
         tags,
         summary: 'Open a pull request for an issue',
         operationId: 'gitOpenPullRequest',
-        description: `For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless \`repo\` names another), from the run’s branch (the repository’s first branch rule, \`agent/PM-12\` by default) unless \`head\` names another, as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. Once every linked pull request is merged, the issue moves on. ${ISSUE_DEFAULT}`,
+        description: `For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless \`repo\` names another), from the run’s branch (the repository’s first branch rule, \`agent/PM-12\` by default) unless \`head\` names another, as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. The issue’s preview preference is applied to the no-preview label. A label failure keeps the PR linked, returns previewLabelSyncFailed and retries automatically; do not open a second PR. Once every linked pull request is merged, the issue moves on. ${ISSUE_DEFAULT}`,
         security: personOrRunSecurity,
         responses: {
           201: dataResponse(IssuePullRequestSchema, 'Opened and linked.'),
@@ -1178,7 +1178,7 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           {
             data: pullRequest,
             meta: {
-              message: `Opened ${pullRequest.repo}#${pullRequest.number} (${pullRequest.url}), linked to the issue.`,
+              message: `Opened ${pullRequest.repo}#${pullRequest.number} (${pullRequest.url}), linked to the issue.${pullRequest.previewLabelSyncFailed ? ' Preview label synchronization failed; it will retry automatically. Do not open another pull request.' : ''}`,
             },
           },
           201,

@@ -176,6 +176,7 @@ export function renderTask(
   // a move as well only had the agent restate its proposal below the proposal card.
   const finish = isDesignStage(context)
     ? [
+        '- Include whether you recommend a preview and why. Read the current preference with `nb-studio preview status`; a recommendation or design approval does not change it. Only change the preview preference when the person explicitly asks.',
         `- If you wrote or revised the proposal, submit it with \`nb-studio issue design-proposal ${context.identifier} --content-file proposal.md\`: it is your report, and submitting moves the issue to proposal_review. End your turn without a comment restating or summarising it.`,
         '- If you only answered comments, end your turn.',
       ]

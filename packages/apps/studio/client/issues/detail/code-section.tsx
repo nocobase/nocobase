@@ -107,6 +107,18 @@ function GroupDetails({
   readonly onChanged: (next: IssuePreviews) => void;
 }): ReactElement | null {
   const { t, i18n } = useTranslation();
+  const label = previews?.labels?.find(
+    (item) => item.pullRequestId === group.pullRequest?.id,
+  );
+  const preferenceMessage = label?.failed
+    ? t('previews.preference.syncFailed')
+    : label?.present
+      ? t(
+          label.managed
+            ? 'previews.preference.skipped'
+            : 'previews.preference.manual',
+        )
+      : null;
   // An open pull request of a project that previews says when it has none yet; a merged one has no need to.
   const awaitingPreview =
     group.pullRequest?.state === 'open' &&
@@ -114,13 +126,16 @@ function GroupDetails({
     previews !== undefined &&
     previews.blocker === null;
   if (group.previews.length === 0 && group.marks.length === 0)
-    return awaitingPreview ? (
+    return awaitingPreview || preferenceMessage ? (
       <p className='text-xs text-muted-foreground'>
-        {t('studioGit.section.noPreview')}
+        {preferenceMessage ?? t('studioGit.section.noPreview')}
       </p>
     ) : null;
   return (
     <div className='space-y-3'>
+      {preferenceMessage ? (
+        <p className='text-xs text-muted-foreground'>{preferenceMessage}</p>
+      ) : null}
       {group.previews.length > 0 ? (
         <ul
           className='divide-y rounded-md border bg-card p-3'

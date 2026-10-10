@@ -57,6 +57,11 @@ export const PreviewLogsQuery = z.object({
   }),
 });
 
+export const PreviewPreferenceInput = z.strictObject({
+  issueId,
+  notRequired: z.boolean(),
+});
+
 export const PreviewDownInput = z.strictObject({ issueId, appId });
 
 export const PreviewRetryInput = z.strictObject({
@@ -178,6 +183,15 @@ export const PreviewListItemSchema: z.ZodType<PreviewListItem> = z.object({
 });
 
 export const IssuePreviewsSchema: z.ZodType<IssuePreviews> = z.object({
+  notRequired: z.boolean(),
+  labels: z.array(
+    z.object({
+      pullRequestId: z.string(),
+      managed: z.boolean(),
+      present: z.boolean().nullable(),
+      failed: z.boolean(),
+    }),
+  ),
   issueId: z.string(),
   identifier: z.string(),
   previews: z.array(PreviewSchema).meta({

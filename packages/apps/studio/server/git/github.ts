@@ -93,6 +93,7 @@ export function tokenExpirationOf(value: string | null): string | null {
 
 /** The fields Studio reads from a GitHub pull request object (REST answer and webhook payload alike). */
 export interface GitHubPullRequestPayload {
+  readonly labels?: readonly { readonly name: string }[];
   readonly number?: number;
   /** The GraphQL id: draft and ready for review are changed only through GraphQL. */
   readonly node_id?: string;
@@ -139,6 +140,9 @@ export function snapshotFromPayload(
   return {
     repo,
     number,
+    ...(payload.labels
+      ? { labels: payload.labels.map((label) => label.name) }
+      : {}),
     url:
       typeof payload.html_url === 'string' && payload.html_url
         ? payload.html_url.slice(0, 500)
@@ -370,7 +374,7 @@ const text = (value: unknown): string | undefined =>
 
 type PullRequestAction = 'opened' | 'updated' | 'ready' | 'reopened' | 'closed';
 
-/** The `pull_request` actions Studio reads, as Studio's actions; others (labels, assignees, reviews) change nothing it keeps. */
+/** The `pull_request` actions Studio reads, as Studio's actions; others (assignees, reviews) change nothing it keeps. */
 const PULL_REQUEST_ACTIONS: Readonly<Record<string, PullRequestAction>> = {
   opened: 'opened',
   edited: 'updated',
@@ -378,6 +382,8 @@ const PULL_REQUEST_ACTIONS: Readonly<Record<string, PullRequestAction>> = {
   converted_to_draft: 'updated',
   ready_for_review: 'ready',
   reopened: 'reopened',
+  labeled: 'updated',
+  unlabeled: 'updated',
   closed: 'closed',
 };
 
@@ -1008,6 +1014,27 @@ export function createGitHubPlatform(
         body: readOf(answer.body, repo, number),
         etag: answer.etag,
       };
+    },
+
+    async hasPullRequestLabel(auth, repo, number, label) {
+      const pull = await read<{ labels: { name: string }[] }>(
+        bearer(auth),
+        `${repoPath(repo)}/pulls/${number}`,
+      );
+      return pull.labels.some((item) => item.name === label);
+    },
+    async addPullRequestLabel(auth, repo, number, label) {
+      await read(bearer(auth), `${repoPath(repo)}/issues/${number}/labels`, {
+        method: 'POST',
+        body: { labels: [label] },
+      });
+    },
+    async removePullRequestLabel(auth, repo, number, label) {
+      await read(
+        bearer(auth),
+        `${repoPath(repo)}/issues/${number}/labels/${encodeURIComponent(label)}`,
+        { method: 'DELETE' },
+      );
     },
 
     async openPullRequest(auth, repo, input) {

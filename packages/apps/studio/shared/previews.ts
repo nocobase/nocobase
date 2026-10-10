@@ -140,7 +140,17 @@ export interface PreviewView {
 /** Why an issue has no preview: its project has no repository on a git host, whose CI would deploy one. */
 export type PreviewBlocker = 'noRepository';
 
+export interface PreviewLabelStatus {
+  readonly pullRequestId: string;
+  readonly managed: boolean;
+  readonly present: boolean | null;
+  readonly failed: boolean;
+}
+
 export interface IssuePreviews {
+  /** Older servers omit preferences during a rolling client/server upgrade. */
+  readonly notRequired?: boolean;
+  readonly labels?: readonly PreviewLabelStatus[];
   readonly issueId: string;
   readonly identifier: string;
   /** The previews of the pull requests linked to the issue. */

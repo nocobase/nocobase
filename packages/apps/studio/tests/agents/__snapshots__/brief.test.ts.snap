@@ -7,6 +7,7 @@ You have been given this issue to work on. Do the work it asks for.
 Someone commented on the issue you are working on. Take it into account.
 
 When you finish:
+- Include whether you recommend a preview and why. Read the current preference with \`nb-studio preview status\`; a recommendation or design approval does not change it. Only change the preview preference when the person explicitly asks.
 - If you wrote or revised the proposal, submit it with \`nb-studio issue design-proposal PM-12 --content-file proposal.md\`: it is your report, and submitting moves the issue to proposal_review. End your turn without a comment restating or summarising it.
 - If you only answered comments, end your turn."
 `;

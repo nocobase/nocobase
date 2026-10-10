@@ -36,6 +36,8 @@ import { useQuery } from '@tanstack/react-query';
 import { enUS, zhCN } from 'date-fns/locale';
 import type { ReactElement } from 'react';
 
+import { PreviewPreferenceField } from '../../previews/preference-field.js';
+
 import { IssuePriority, IssueStatusBadge } from '@/components/issue-table';
 import { Button } from '@/components/ui/button';
 import {
@@ -131,6 +133,7 @@ export function IssuePropertiesCard({
 
   return (
     <PropertyCard title={labels.properties} busy={busy} labels={labels}>
+      <PreviewPreferenceField issueId={detail.id} />
       <PropertyRow label={t('properties.status')} htmlFor='pm-prop-status'>
         <PropertySelect
           id='pm-prop-status'

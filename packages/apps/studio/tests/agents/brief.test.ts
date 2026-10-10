@@ -157,6 +157,12 @@ describe('issue brief', () => {
     expect(task).toContain(
       'nb-studio issue design-proposal PM-12 --content-file proposal.md',
     );
+    expect(task).toContain(
+      'Read the current preference with `nb-studio preview status`',
+    );
+    expect(task).toContain(
+      'Only change the preview preference when the person explicitly asks',
+    );
     expect(task).not.toContain('Post a comment');
     expect(task).not.toContain('Move the issue to the status that fits');
 

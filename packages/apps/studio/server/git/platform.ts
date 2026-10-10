@@ -89,6 +89,7 @@ export interface GitAuth {
 
 /** What Studio stores of a pull request (`studioPullRequests`). */
 export interface PullRequestSnapshot {
+  readonly labels?: readonly string[];
   readonly repo: string;
   readonly number: number;
   readonly url: string;
@@ -359,6 +360,25 @@ export interface WebhookParse {
 }
 
 export interface GitPlatform {
+  hasPullRequestLabel(
+    auth: GitAuth,
+    repo: string,
+    number: number,
+    label: string,
+  ): Promise<boolean>;
+  addPullRequestLabel(
+    auth: GitAuth,
+    repo: string,
+    number: number,
+    label: string,
+  ): Promise<void>;
+  removePullRequestLabel(
+    auth: GitAuth,
+    repo: string,
+    number: number,
+    label: string,
+  ): Promise<void>;
+
   /** Which provider it is, and what it offers (`providers.ts`). */
   readonly descriptor: GitProviderDescriptor;
   /** Where a host's REST API is, from its web origin (`overrides` by host, `studio.git.apiBaseUrls`). */
