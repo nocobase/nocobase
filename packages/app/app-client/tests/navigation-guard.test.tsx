@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import {
   useContext,
   useLayoutEffect,
@@ -6,6 +12,7 @@ import {
   type ReactElement,
 } from 'react';
 import {
+  BrowserRouter,
   Link,
   MemoryRouter,
   Route,
@@ -52,6 +59,51 @@ function Example({ decide }: { readonly decide: () => boolean }): ReactElement {
 }
 
 describe('host navigation guards', () => {
+  it.each(['/', '/main', '/main/'])(
+    'preserves basename %s and checks guards again after rejecting a native hash entry',
+    async (basename) => {
+      const prefix = basename.replace(/\/$/, '');
+      window.history.replaceState({ idx: 0 }, '', `${prefix}/list`);
+      const decide = vi.fn(() => false);
+      render(
+        <BrowserRouter basename={basename}>
+          <LocationProbe />
+          <Example decide={decide} />
+        </BrowserRouter>,
+      );
+      fireEvent.click(screen.getByText('Open'));
+      fireEvent.change(await screen.findByRole('textbox', { name: 'Draft' }), {
+        target: { value: 'Keep hash draft' },
+      });
+      act(() => {
+        window.location.hash = 'outside-router';
+      });
+      await waitFor(() => expect(decide).toHaveBeenCalledOnce());
+      await waitFor(() => {
+        expect(window.location.pathname).toBe(`${prefix}/edit`);
+        expect(window.location.hash).toBe('');
+      });
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Keep hash draft',
+      );
+      // The restored hash entry duplicates the original editor entry; traverse both before leaving.
+      act(() => window.history.back());
+      await waitFor(() => expect(window.history.state?.idx).toBe(1));
+      act(() => window.history.back());
+      await waitFor(() => expect(decide).toHaveBeenCalledTimes(2));
+      await waitFor(() =>
+        expect(screen.getByTestId('outer-location')).toHaveTextContent('/edit'),
+      );
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Keep hash draft',
+      );
+      decide.mockReturnValue(true);
+      fireEvent.click(screen.getByText('Leave'));
+      expect(await screen.findByText('Open')).toBeInTheDocument();
+      expect(window.location.pathname).toBe(`${prefix}/list`);
+    },
+  );
+
   it('retains the editor on rejected memory traversal and releases it when accepted', async () => {
     const decide = vi.fn(() => false);
     render(

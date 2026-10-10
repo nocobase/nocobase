@@ -20,10 +20,16 @@ import {
 } from './navigation-guard.js';
 
 function historyIndex(navigator: Navigator): number | undefined {
-  if ('index' in navigator && typeof navigator.index === 'number')
+  if (
+    'index' in navigator &&
+    typeof navigator.index === 'number' &&
+    Number.isFinite(navigator.index)
+  )
     return navigator.index;
   const state = window.history.state as { idx?: unknown } | null;
-  return typeof state?.idx === 'number' ? state.idx : undefined;
+  return typeof state?.idx === 'number' && Number.isFinite(state.idx)
+    ? state.idx
+    : undefined;
 }
 
 /**
@@ -85,6 +91,7 @@ export function NavigationGuardProvider({
         incoming.location.search === accepted.context.location.search &&
         incoming.location.hash === accepted.context.location.hash
       ) {
+        approvedRef.current = false;
         restoringRef.current = false;
         setAccepted({ context: incoming, index: historyIndex(navigator) });
         return;
@@ -99,11 +106,12 @@ export function NavigationGuardProvider({
       const index = historyIndex(navigator);
       if (accepted.index === undefined || index === undefined) {
         // Entries outside the router have no reversible delta. Preserve the editor and replace the current URL.
-        approvedRef.current = true;
-        navigator.replace(
-          accepted.context.location,
-          accepted.context.location.state,
-        );
+        const location = accepted.context.location;
+        const pathname =
+          location.pathname === '/'
+            ? navigation.basename
+            : `${navigation.basename.replace(/\/$/, '')}${location.pathname}`;
+        navigator.replace({ ...location, pathname }, location.state);
         return;
       }
       restoringRef.current = true;
@@ -119,7 +127,7 @@ export function NavigationGuardProvider({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [incoming, accepted, allows, navigator]);
+  }, [incoming, accepted, allows, navigator, navigation.basename]);
 
   // PUSH/REPLACE were checked synchronously above; other changes are held until the layout effect decides.
   return (
