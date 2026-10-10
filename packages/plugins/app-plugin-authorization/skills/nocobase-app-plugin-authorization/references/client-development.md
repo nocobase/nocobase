@@ -4,7 +4,7 @@ The sales workflow has three independent pages: Projects, Quotes and Orders. Del
 
 ## Register the runtime first
 
-Register the main authorization client factory and server plugin alongside authentication. The authorization React provider depends on the authentication provider; retain their normal composition order. A package dependency alone does not activate either side. Optional rule screens require their owning installed Skills; follow [capability discovery](optional-capabilities.md) before using them. See [runtime setup](runtime-api.md).
+Register the main authorization client factory and server plugin alongside authentication. The authorization React provider depends on the authentication provider; retain their normal composition order. A package dependency alone does not activate either side. Optional rule plugins require their owning installed Skills; follow [capability discovery](optional-capabilities.md) before using them. See [runtime setup](runtime-api.md).
 
 Application-owned pages belong in the App's `client/routes.ts` and page modules. A reusable plugin contributes routes through its client declaration. Use stable page ids that match the permission-set page grant:
 
@@ -140,10 +140,10 @@ These are sample ids; fetch actual options from the endpoint. Never expose prote
 
 ## Settings screens
 
-Use `defineSettingsRoutes` with a lazy page module, navigation keys and `authz: { resource: { type: 'settings', id }, action: 'read' }` naming a settings item registered on the server with `authz.settings.add`. Declare `authz` on every settings entry page: one that omits it defaults to `'unrestricted'`, which only root may open. Do not put `/settings` in its declared path. Check read and each write action separately in the endpoints. Existing permission-set and rule screens already provide assignment and data scope editing; reuse them rather than building another editor.
+A settings screen is an ordinary application page: declare it among the App's own routes in `client/routes.ts` with `defineAppRoutes`, a lazy page module, navigation keys and `authz: { resource: { type: 'settings', id }, action: 'read' }` naming a settings item registered on the server with `authz.settings.add`. Declare `authz` on every such entry page: one that omits it defaults to `'unrestricted'`, which only root may open. Check read and each write action separately in the endpoints. Plugins contribute no settings screens, and the authorization plugins ship no permission-set or rule editors; an App that needs one builds it on the management HTTP API.
 
 For a new configuration screen, use the shared API client, one saved baseline and one draft per saved section, route-backed child tabs with `Outlet`, unsaved-navigation protection and explicit save and error states. Read-only access renders data without writable controls. Options and search endpoints need the calling settings permission too. Only add an independent directory permission if the business directory has that additional boundary; a subject picker relies on the calling management permission.
 
 Verify menu and direct URL behavior, no-grant, page-only and action-only cases, pending and failed checks, session switching, out-of-scope rows, stale transitions, relation target constraints and post-save refresh. Perform actual API requests as ordinary users in addition to UI checks.
 
-Settings routes and their standalone detail routes check the relevant `settings` item, never `page` `access`, so they are not listed as pages in the permission workspace.
+A settings screen and its detail routes check the relevant `settings` item, never `page` `access`, so they are not offered as page grants.

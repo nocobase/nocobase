@@ -8,7 +8,7 @@ Validate using an administrator account with the appropriate permissions: the ta
 
 ## Management Entry Points
 
-The list page is `/settings/schedules`; details are at `/settings/schedules/:scheduleId`. Definitions are maintained in source. The UI supports viewing and enabling/disabling tasks, with no API for creating or editing Cron definitions.
+The plugin contributes no pages: the application builds its schedule list and detail pages on the routes below and declares them among its own routes, guarded by the same permission. Definitions are maintained in source. The API supports viewing and enabling/disabling tasks, with no route for creating or editing Cron definitions.
 
 All routes below require authentication and authorization for `{ resource: { type: 'page', id: 'scheduler.schedules' }, action: 'access' }`, checked before the schedule is looked up. Enabling/disabling currently uses the same permission, not a separate update action.
 

@@ -90,21 +90,13 @@ Prefer these hooks over calling `fetchInbox` and the mutation helpers from compo
 
 ## Client inbox page
 
-Register the package's `/client` entry to add the inbox component example to
-the built-in Dev Route. In development it is available at
-`/dev/notification-in-app` inside the App shell, such as
-`/main/dev/notification-in-app` when the App public base is `/main`. The App's
-navigation does not list dev pages, so open the URL directly. The route and its
-page module are absent from production builds.
+The plugin contributes no pages. An application that wants an inbox page renders the exported `NotificationInAppInbox` inside `NotificationInAppProvider` in a page of its own and declares that page among its own routes; mounting the Provider in the page keeps the subscription alive only while the page is open.
 
-The page mounts its inbox Provider locally, subscribes only while the page is
-open, reconnects after authentication changes, and refetches the unread count
-on realtime invalidation, WebSocket reconnection, and browser focus. HTTP state
-remains authoritative.
+The Provider subscribes only while it is mounted, reconnects after authentication changes, and refetches the unread count on realtime invalidation, WebSocket reconnection, and browser focus. HTTP state remains authoritative.
 
 ## Development
 
-Tests live in `tests/` and include Client Route and inbox runtime behavior,
+Tests live in `tests/` and include Client inbox runtime behavior,
 Server Route validation, stable pagination, Provider behavior, and real SQLite
 migration `up`/`down` coverage.
 
