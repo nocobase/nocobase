@@ -287,6 +287,8 @@ Each form reports `useUnsavedChanges(dirty)`, where dirty means a field differs 
 
 `AppClientProviders` includes a stable `NavigationGuardProvider` below its router. A page calls `useNavigationGuard(() => !pending && (!dirty || window.confirm(message)))` to register its synchronous leave decision. The host scopes PUSH and REPLACE to its descendants and holds the accepted route during rejected history traversal, preserving the mounted editor even when the browser has already notified its router. The callback should read the latest committed state; unregistering happens on unmount. Keep `beforeunload` separate and subscribe only while dirty or pending, since document navigation is outside the client router. A custom host using `AppClientProviders` gets the boundary automatically; one composing its own router/providers must mount `NavigationGuardProvider` above its routes.
 
+Index-based restoration is limited to entries observed in the same continuous history segment. For native hash entries or entries outside that segment, including history predating the mounted boundary, rejecting navigation replaces the current history entry with the accepted location instead of guessing a traversal distance. The draft remains mounted and subsequent navigation remains available, but the rejected history entry is replaced.
+
 ## React Providers
 
 React Providers are synchronous React components that receive `children`:

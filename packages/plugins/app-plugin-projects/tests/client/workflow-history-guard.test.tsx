@@ -38,13 +38,14 @@ function Editor(): ReactElement {
   );
 }
 
-async function setup(): Promise<void> {
-  window.history.replaceState({ idx: 0 }, '', '/list');
+async function setup(): Promise<{ home: unknown; list: unknown }> {
+  window.history.replaceState({ idx: 0 }, '', '/home');
   render(
     <StrictMode>
       <BrowserRouter>
         <NavigationGuardProvider>
           <Routes>
+            <Route path='/home' element={<Link to='/list'>Workflows</Link>} />
             <Route path='/edit' element={<Editor />} />
             <Route
               path='/list'
@@ -61,11 +62,16 @@ async function setup(): Promise<void> {
       </BrowserRouter>
     </StrictMode>,
   );
+  const home: unknown = window.history.state;
+  fireEvent.click(screen.getByText('Workflows'));
+  await screen.findByText('Open editor');
+  const list: unknown = window.history.state;
   fireEvent.click(screen.getByText('Open editor'));
   await screen.findByRole('textbox', { name: 'Draft' });
   fireEvent.change(screen.getByRole('textbox', { name: 'Draft' }), {
     target: { value: 'Keep this draft' },
   });
+  return { home, list };
 }
 
 describe('workflow browser history guard', () => {
@@ -85,18 +91,22 @@ describe('workflow browser history guard', () => {
 
   it('corrects another POP arriving during restoration without leaving navigation locked', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    await setup();
+    const { home, list } = await setup();
     // Model browser traversal notifications after its own location listener has already run.
     const originalState: unknown = window.history.state;
     const go = vi
       .spyOn(window.history, 'go')
       .mockImplementation(() => undefined);
-    for (const idx of [0, -1, 0]) {
+    for (const [state, idx, path] of [
+      [list, 1, '/list'],
+      [home, 0, '/home'],
+      [list, 1, '/list'],
+    ] as const) {
       await act(async () => {
-        window.history.replaceState({ idx, key: `entry-${idx}` }, '', '/list');
-        window.dispatchEvent(new PopStateEvent('popstate', { state: { idx } }));
+        window.history.replaceState(state, '', path);
+        window.dispatchEvent(new PopStateEvent('popstate', { state }));
       });
-      await waitFor(() => expect(go).toHaveBeenLastCalledWith(1 - idx));
+      await waitFor(() => expect(go).toHaveBeenLastCalledWith(2 - idx));
       expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
         'Keep this draft',
       );

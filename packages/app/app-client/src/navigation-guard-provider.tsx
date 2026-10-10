@@ -50,8 +50,15 @@ export function NavigationGuardProvider({
     context: incoming,
     index: historyIndex(navigator),
   }));
+  // Only entries observed in one continuous router history segment have comparable indexes.
+  const [historyEntries] = useState(
+    () => new Map([[incoming.location.key, historyIndex(navigator)]]),
+  );
   const restoringRef = useRef(false);
-  const approvedRef = useRef(false);
+  const approvedRef = useRef<{
+    index: number | undefined;
+    delta: number;
+  } | null>(null);
   const allows = useCallback(
     (): boolean =>
       !restoringRef.current && [...guards].every((guard) => guard()),
@@ -62,12 +69,12 @@ export function NavigationGuardProvider({
       ...navigator,
       push: (...args) => {
         if (!allows()) return;
-        approvedRef.current = true;
+        approvedRef.current = { index: historyIndex(navigator), delta: 1 };
         navigator.push(...args);
       },
       replace: (...args) => {
         if (!allows()) return;
-        approvedRef.current = true;
+        approvedRef.current = { index: historyIndex(navigator), delta: 0 };
         navigator.replace(...args);
       },
     }),
@@ -85,32 +92,45 @@ export function NavigationGuardProvider({
     queueMicrotask(() => {
       if (!active) return;
       if (incoming === accepted.context) return;
+      const index = historyIndex(navigator);
+      const wasApproved = approvedRef.current;
+      approvedRef.current = null;
+      const tracked =
+        index !== undefined &&
+        historyEntries.get(incoming.location.key) === index;
+      const contiguous =
+        wasApproved !== null &&
+        wasApproved.index !== undefined &&
+        wasApproved.index === accepted.index &&
+        index === wasApproved.index + wasApproved.delta;
+      const accept = (): void => {
+        if (!tracked && !contiguous) historyEntries.clear();
+        historyEntries.set(incoming.location.key, index);
+        restoringRef.current = false;
+        setAccepted({ context: incoming, index });
+      };
       if (
         incoming.location.key === accepted.context.location.key &&
         incoming.location.pathname === accepted.context.location.pathname &&
         incoming.location.search === accepted.context.location.search &&
         incoming.location.hash === accepted.context.location.hash
       ) {
-        approvedRef.current = false;
-        restoringRef.current = false;
-        setAccepted({ context: incoming, index: historyIndex(navigator) });
+        accept();
         return;
       }
-      const wasApproved = approvedRef.current;
-      approvedRef.current = false;
       if (wasApproved || allows()) {
-        restoringRef.current = false;
-        setAccepted({ context: incoming, index: historyIndex(navigator) });
+        accept();
         return;
       }
-      const index = historyIndex(navigator);
       if (
+        !tracked ||
         accepted.index === undefined ||
         index === undefined ||
         index === accepted.index
       ) {
-        // Native entries can restart router indexes, so different locations may share one. With no reversible delta,
-        // preserve the editor and replace the current URL instead of waiting for a traversal that cannot restore it.
+        // Native entries can restart router indexes. Unknown entries, including those predating this boundary,
+        // cannot supply a physical traversal distance; replace the URL without waiting for another POP.
+        historyEntries.clear();
         const location = accepted.context.location;
         const pathname =
           location.pathname === '/'
@@ -132,7 +152,14 @@ export function NavigationGuardProvider({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [incoming, accepted, allows, navigator, navigation.basename]);
+  }, [
+    incoming,
+    accepted,
+    allows,
+    navigator,
+    navigation.basename,
+    historyEntries,
+  ]);
 
   // PUSH/REPLACE were checked synchronously above; other changes are held until the layout effect decides.
   return (
