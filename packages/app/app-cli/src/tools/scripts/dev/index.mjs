@@ -288,8 +288,8 @@ if (!proxyTarget) {
       nextEnv.BETTER_AUTH_TRUSTED_ORIGINS,
       appServerPort,
     ),
-    APP_PUBLIC_ORIGIN:
-      String(nextEnv.APP_PUBLIC_ORIGIN || '').trim() || appOrigin,
+    // Keep an explicitly supplied APP_PUBLIC_ORIGIN from nextEnv, but do not invent one: environment values
+    // override config.yml, where the application's browser-facing origin may be a LAN address or a domain.
   };
 
   progress('Starting application server');
