@@ -8,6 +8,9 @@ export default defineConfig({
       createNodeVitestConfig({
         test: {
           name: 'server',
+          // Mail's full schema provisioning and rollback exceed the preset on container-backed dialects.
+          hookTimeout: 180_000,
+          testTimeout: 180_000,
           include: ['tests/{server,database,project}/**/*.test.ts'],
         },
       }),

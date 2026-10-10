@@ -30,6 +30,24 @@ export function CustomerMail() {
 
 `{{record.customer.name}}` resolves when applying a template. Unknown variables stay visible. Applying a template replaces subject and body. This does not associate messages with a customer or filter correspondence automatically; implement explicitly requested record relationships in the application's domain layer.
 
+## CRM correspondence and participant filtering
+
+Use the application-owned client to load exact correspondence, independently of template variables:
+
+```ts
+const mail = app.services.resolve(mailClientToken);
+const customerMail = await mail.listMessages({
+  participant: 'alice@example.com',
+});
+const companyMail = await mail.listMessages({ participant: '@example.com' });
+```
+
+In React, obtain `mail` with `useMailClient()`. `participant` is optional in `MailMessagesQuery` and `MailManagedMessagesQuery` and is forwarded unchanged to the API. The server trims surrounding whitespace and lowercases the entire mailbox/domain before an exact From/To/Cc match. It accepts ASCII dot-atom mailboxes and dotted DNS domains, not display-name forms, quoted local parts or Unicode addresses. Domain input must start with `@`; `@example.com` excludes subdomains, similar domains and suffix tricks. There is no alias or `+tag` folding. Bcc, Reply-To, display names, subject, preview and body do not participate. `q` keeps its existing fuzzy behavior, including display names and Bcc, and intersects with participant and other filters. Results include only locally synchronized mail within the caller's existing account permissions; do not retry a denied personal request against management APIs.
+
+The workspace exposes a separate Participant field with full-address/`@domain` help and accessible validation errors. It uses the existing 300 ms keyword debounce interval, resets page tokens, list and reader selection immediately on every participant edit or clear, and ignores stale responses. Invalid input issues no list request. Clearing omits the parameter instead of sending an empty string. A custom CRM page must likewise clear tokens/selections, guard outstanding responses and block invalid filters; an explicit empty, invalid or oversized API value returns `400 INVALID_INPUT` with a `participant` field violation. `MailWorkspacePageProps` does not provide an externally controlled participant prop; own CRM filtering state in a custom page rather than assuming template variables set the filter.
+
+List totals and paging apply the filter before pagination; opening a conversation still loads the complete thread, and the conversation badge keeps its existing full-thread count. Separate IMAP folder copies are not deduplicated by this filter. Verify historical results only after the [participant index upgrade](synchronization-and-diagnostics.md#participant-index-upgrade) has completed.
+
 ## Build a custom mail page
 
 Use `useMailClient()` for typed data access and own page state in the application. `listMessages()` accepts `MAIL_VIRTUAL_FOLDER_IDS` for built-in cross-account folders; `getMessage()` or `listConversationMessages()` loads detail; mutation methods such as `updateMessage()`, `moveMessage()` and `sendMessage()` perform the corresponding server operation. A custom page can combine these calls with `MailMessageList`, `MailConversationView`, `MailboxSidebar` and `MailComposer`, or render its own UI. The application owns filtering, loading/error state, cursor handling, selected-message state and refreshing after the user-scoped realtime invalidation event.
@@ -85,7 +103,7 @@ Signatures belong to accounts and are shared across their sending addresses, wit
 
 All-user detail and attachment APIs live under `/api/mail/management/accounts/:accountId/messages/:messageId`, with `/attachments/:attachmentId` for downloads. They require management permission. Opening management detail is read-only and does not mark mail read; draft rows use draft status and skip read-state actions. Moving to folders belongs to the personal workspace. Keep personal and all-user client paths explicit instead of retrying permission failures against a broader API.
 
-The Mail center pages by cursor, 50 messages per page: `listMessages()` and `listConversationMessages()` take `pageSize` and `pageToken`, and return `{ items, total, nextCursor }`, where `nextCursor` is the opaque token to send back as the next `pageToken` and is absent on the last page. Management and log tables page by number with page-size choices 20, 50 and 100: `listManagedMessages()`, `listSyncRunsPage()` and `listSubmissionsPage()` take `{ page, pageSize }` (page from 1, `pageSize` at most 100) and return `{ items, total }`. Reset pagination after filter or page-size changes. Search is `q`.
+The Mail center pages by cursor, 50 messages per page: `listMessages()` and `listConversationMessages()` take `pageSize` and `pageToken`, and return `{ items, total, nextCursor }`, where `nextCursor` is the opaque token to send back as the next `pageToken` and is absent on the last page. Management and log tables page by number with page-size choices 20, 50 and 100: `listManagedMessages()`, `listSyncRunsPage()` and `listSubmissionsPage()` take `{ page, pageSize }` (page from 1, `pageSize` at most 100) and return `{ items, total }`. Reset pagination and selection after filter or page-size changes. Keyword search is `q`; exact From/To/Cc filtering is the independent optional `participant`.
 
 Grouped bulk history counts complete batches, not recipients: call `listSubmissionsPage({ bulkOnly: true, groupByBatch: true, page, pageSize })`. Keep expandable recipient results inside their batch. Retry/cancel eligibility is defined in the sending reference.
 

@@ -1,9 +1,72 @@
 import { ApiClientError, type AppClient } from '@nocobase/app-client';
+import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { createElement } from 'react';
+import mailPlugin, {
+  mailClientToken,
+  type MailMessagesQuery,
+  type MailManagedMessagesQuery,
+} from '@nocobase/app-plugin-mail/client';
 import { describe, expect, it, vi } from 'vitest';
 
 import { MailClient, mailErrorMessage } from '../../client/mail-client.js';
 
 describe('MailClient', () => {
+  it.each([
+    'alice@example.com',
+    '  Alice+Tag@Example.com  ',
+    '@Example.com',
+    '',
+    '@',
+  ])(
+    'serializes optional participant unchanged in personal and managed requests: %j',
+    async (participant) => {
+      const requests: URLSearchParams[] = [];
+      const { app } = await renderWithApp(createElement('span'), {
+        plugins: [mailPlugin()],
+        fetch: answerApi(({ query }) => {
+          requests.push(
+            new URLSearchParams(
+              Object.entries(query).flatMap(([key, value]) =>
+                (Array.isArray(value) ? value : [value]).map((item) => [
+                  key,
+                  item,
+                ]),
+              ),
+            ),
+          );
+          return { data: [], meta: { total: 0, page: 1, pageSize: 20 } };
+        }),
+      });
+      const client = app.services.resolve(mailClientToken);
+      const personal: MailMessagesQuery = {
+        participant,
+        q: 'alice@example.com',
+        pageToken: 'opaque+token',
+        pageSize: 50,
+      };
+      const managed: MailManagedMessagesQuery = {
+        participant,
+        q: 'alice@example.com',
+        page: 2,
+        pageSize: 20,
+      };
+      await client.listMessages(personal);
+      await client.listManagedMessages(managed);
+      for (const query of requests) {
+        expect(query.get('participant')).toBe(participant);
+        expect(query.get('q')).toBe('alice@example.com');
+      }
+      expect(requests[0].get('pageToken')).toBe('opaque+token');
+      expect(requests[1].get('page')).toBe('2');
+      requests.length = 0;
+      await client.listMessages({ q: 'alice@example.com' });
+      await client.listManagedMessages({ q: 'alice@example.com' });
+      for (const query of requests) {
+        expect(query.has('participant')).toBe(false);
+        expect(query.get('q')).toBe('alice@example.com');
+      }
+    },
+  );
   it('shows the server translation of a failure and never its developer message', () => {
     const failure = (payload: unknown) =>
       new ApiClientError('Internal developer text', {

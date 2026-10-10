@@ -152,8 +152,10 @@ export interface MailMessagesQuery
   readonly accountId?: string;
   readonly folderId?: string;
   readonly labelId?: string;
-  /** Search text. */
+  /** Search text; independent of the exact participant filter. */
   readonly q?: string;
+  /** Exact From/To/Cc mailbox or @domain; normalized by the server. */
+  readonly participant?: string;
   readonly unread?: boolean;
   readonly starred?: boolean;
 }
@@ -162,6 +164,8 @@ export interface MailManagedMessagesQuery extends MailPageRequest {
   readonly accountId?: string;
   readonly folderId?: string;
   readonly q?: string;
+  /** Exact From/To/Cc mailbox or @domain; normalized by the server. */
+  readonly participant?: string;
   readonly unread?: boolean;
   readonly starred?: boolean;
 }

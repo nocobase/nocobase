@@ -313,7 +313,7 @@ describe('Provider response classification', () => {
 
 describe('[API] mail routes answer Provider failures', () => {
   const account: MailAccount = {
-    id: 'account-1',
+    id: '10000000-0000-4000-8000-000000000001',
     userId: 'alice',
     address: 'alice@example.com',
     provider: { type: 'fixture', name: 'fixture' },

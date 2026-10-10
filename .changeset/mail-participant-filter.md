@@ -1,0 +1,11 @@
+---
+'@nocobase/app-plugin-mail': minor
+---
+
+Add an optional participant filter to personal and managed message lists, public client query types and the Mail workspace. Full email addresses and @domain values match exact trimmed, lowercased From/To/Cc addresses; Bcc, Reply-To, display names and message content are excluded. Existing q keyword search, ownership boundaries, full conversation details and thread counts remain unchanged.
+
+Add the internal mailMessageParticipants schema and backfill historical addresses from stored sender/recipient JSON. Existing installations must use a maintenance window: back up the database, stop application writes and Mail synchronization/background workers, deploy and apply the migration, verify the complete historical backfill, then restart. Bounded reads and inserts limit memory and SQL parameters, not transaction duration or locks; this is not an online backfill. Measure mailbox size, migration time, lock/log impact and additional participant-row/index storage and write cost before upgrading. Invalid or unsupported historical addresses are skipped without truncating or rewriting original mail data.
+
+This release also corrects the released `202609030001_create_mail_tables` migration, which could never install on MySQL with utf8mb4 because two full unique indexes exceeded the 3072-byte key limit, or on SQL Server because signatures and message-folder links had duplicate account cascade paths. Fresh installations retain account foreign-key checks without a second direct cascade for those descendants; their identity/message parents still own cascading deletion. Fresh installs use an outbound storage-key limit of 667 characters (generated keys are 50 characters) and a provider subscription-ID limit of 412 characters, keeping each composite key within the limit. Existing successfully migrated databases are not resized or truncated. Operators of those installations should expect a checksum warning on the next `nocobase db apply`; review this correction and acknowledge it with `nocobase db repair` before proceeding.
+
+Avoid comparing non-UUID provider attachment parts to local upload UUIDs when reopening localized drafts. Cross-database regression fixtures now use valid local UUIDs without changing provider identifiers or search behavior.

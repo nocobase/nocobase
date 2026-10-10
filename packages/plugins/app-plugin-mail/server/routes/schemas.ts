@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseMailParticipant } from '../../shared/participant.js';
 
 import {
   MAIL_LABEL_COLORS,
@@ -33,6 +34,18 @@ const MAX_MAIL_ATTACHMENT_IDS = 100;
 const MAX_MAIL_DRAFT_REVISION = 2147483647;
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 20;
+
+const participant = z
+  .string()
+  .max(MAX_MAIL_ADDRESS_LENGTH)
+  .refine((value) => parseMailParticipant(value) !== undefined, {
+    message: 'Must be a full email address or @domain.',
+  })
+  .optional()
+  .meta({
+    description:
+      'A full email address or @domain, matched case-insensitively against From, To and Cc addresses only. Domains match exactly, excluding subdomains. Combined with other filters by intersection; conversation counts and full thread details remain unchanged.',
+  });
 
 function requiredText(maxLength: number = MAX_MAIL_STRING_LENGTH): z.ZodString {
   return z
@@ -230,6 +243,7 @@ export const MessagesQuery: z.ZodObject<
     labelId: z.ZodOptional<z.ZodString>;
     conversationId: z.ZodOptional<z.ZodString>;
     q: z.ZodOptional<z.ZodString>;
+    participant: z.ZodOptional<z.ZodString>;
     unread: z.ZodOptional<
       z.ZodPipe<
         z.ZodEnum<{
@@ -256,6 +270,7 @@ export const MessagesQuery: z.ZodObject<
   labelId: id.optional(),
   conversationId: id.optional(),
   q: z.string().max(MAX_MAIL_STRING_LENGTH).optional(),
+  participant,
   unread: queryBoolean,
   starred: queryBoolean,
 });
@@ -267,6 +282,7 @@ export const ManagementMessagesQuery: z.ZodObject<
     accountId: z.ZodOptional<z.ZodString>;
     folderId: z.ZodOptional<z.ZodString>;
     q: z.ZodOptional<z.ZodString>;
+    participant: z.ZodOptional<z.ZodString>;
     unread: z.ZodOptional<
       z.ZodPipe<
         z.ZodEnum<{
@@ -291,6 +307,7 @@ export const ManagementMessagesQuery: z.ZodObject<
   accountId: id.optional(),
   folderId: id.optional(),
   q: z.string().max(MAX_MAIL_STRING_LENGTH).optional(),
+  participant,
   unread: queryBoolean,
   starred: queryBoolean,
 });

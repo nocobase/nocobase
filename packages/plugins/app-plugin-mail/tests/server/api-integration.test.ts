@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { createApiClient } from '@nocobase/app-client';
 import {
   authenticationToken,
@@ -453,7 +454,7 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
     });
     for (let index = 0; index < 102; index += 1) {
       await store.createSubmission(
-        { id: `history-${index}`, accountId: account.id, status: 'accepted' },
+        { id: randomUUID(), accountId: account.id, status: 'accepted' },
         index === 101 ? 'single' : `bulk:history:${index}`,
         'fixture',
       );

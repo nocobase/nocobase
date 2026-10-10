@@ -4,7 +4,7 @@ description: Use when integrating the NocoBase 3 Mail plugin into an application
 argument-hint: "[action: inspect|configure|integrate|send|diagnose] [target]"
 allowed-tools: Read, Grep, Glob, Bash
 owner: mail-plugin-team
-version: 1.1.2
+version: 1.2.0
 last-reviewed: 2026-09-26
 risk-level: medium
 ---
@@ -62,16 +62,18 @@ When the user says “you decide”, use `provider=auto`, `scope=local`, and `va
 
 # Reference Loading Map
 
-| Task                                                                                                                   | Read                                                                             |
-| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Register Mail, configure provider quotas, connect an account, configure OAuth/push, or replace credential storage      | [Configuration and accounts](references/configuration-and-accounts.md)           |
-| Embed a production workspace, connect business records, customize reading/composition, or add management and log pages | [Client integration](references/client-integration.md)                           |
-| Send from business code, manage drafts or attachments, schedule or bulk-send, or handle uncertain delivery             | [Sending and drafts](references/sending-and-drafts.md)                           |
-| Set an initial sync boundary, handle Gmail quota errors, recover synchronization, or diagnose stalled tasks and logs   | [Synchronization and diagnostics](references/synchronization-and-diagnostics.md) |
+| Task                                                                                                                                                | Read                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Register Mail, configure provider quotas, connect an account, configure OAuth/push, or replace credential storage                                   | [Configuration and accounts](references/configuration-and-accounts.md)           |
+| Embed a production workspace, connect business records, customize reading/composition, or add management and log pages                              | [Client integration](references/client-integration.md)                           |
+| Send from business code, manage drafts or attachments, schedule or bulk-send, or handle uncertain delivery                                          | [Sending and drafts](references/sending-and-drafts.md)                           |
+| Upgrade the participant index, set an initial sync boundary, handle Gmail quota errors, recover synchronization, or diagnose stalled tasks and logs | [Synchronization and diagnostics](references/synchronization-and-diagnostics.md) |
 
 # Safety Gate
 
 Do not expose credential values in logs, reports, screenshots, or test output. The default credential vault stores plain JSON in the database; promise encryption only when an application-supplied vault is configured.
+
+Participant-index upgrades require a backed-up maintenance window with application writes and Mail synchronization stopped; complete and verify the historical backfill before restarting or exposing filtered results. Bounded batches do not make this an online backfill. Read the [upgrade checklist](references/synchronization-and-diagnostics.md#participant-index-upgrade) before deployment.
 
 Treat `accepted` as provider acceptance, not recipient delivery; `unknown` may mean the provider already sent the message. Do not retry an uncertain submission until the sending reference and provider state have been checked.
 
