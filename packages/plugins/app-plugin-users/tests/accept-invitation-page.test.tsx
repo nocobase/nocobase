@@ -142,47 +142,85 @@ it('sends an existing account to sign-in with a return path to the pending invit
   expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-1');
 });
 
-it('sends mailbox verification for a shared link without exposing registration fields', async () => {
-  mocks.request.mockImplementation(({ path }: { path: string }) =>
-    Promise.resolve({
-      data: path.endsWith('/lookup')
-        ? {
-            email: 'nia@example.com',
-            inviterName: 'Ann',
-            summary: [],
-            expiresAt: '2099-01-01T00:00:00Z',
-          }
-        : { emailSent: true },
-    }),
-  );
-  render(
-    <MemoryRouter initialEntries={['/invite/shared-token']}>
-      <Routes>
-        <Route path='/invite/:token' element={<AcceptInvitationPage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
-  fireEvent.click(
-    await screen.findByRole('button', { name: 'accept.verifyEmail' }),
-  );
-  await screen.findByText('accept.verificationSent');
-  expect(mocks.request).toHaveBeenCalledWith(
-    expect.objectContaining({
-      path: 'users/invitations/verifyEmail',
-      method: 'POST',
-      json: { token: 'shared-token' },
-    }),
-  );
-  expect(screen.queryByLabelText('accept.name')).toBeNull();
-  expect(screen.queryByLabelText('accept.password')).toBeNull();
-  expect(screen.getByRole('button', { name: 'accept.submit' })).toBeDisabled();
-  expect(
-    screen.getByRole('button', { name: 'accept.goToLogin' }),
-  ).toHaveAttribute('href', '/login?redirect=%2Finvite%2Fshared-token');
-  expect(
-    screen.getByRole('button', { name: 'accept.verifyEmail' }),
-  ).toBeDisabled();
-});
+it.each([false, true])(
+  'keeps verification delivery feedback visible with an expired proof: %s',
+  async (expiredProof) => {
+    const { ApiClientError } = await import('@nocobase/app-client');
+    const delivery = Promise.withResolvers<{ data: { emailSent: boolean } }>();
+    mocks.request.mockImplementation(({ path }: { path: string }) => {
+      if (path.endsWith('/verifyEmail')) return delivery.promise;
+      if (path.endsWith('/accept'))
+        return Promise.reject(
+          Object.assign(
+            new ApiClientError('Verification required', {
+              status: 400,
+              method: 'POST',
+              url: '/api/users/invitations/accept',
+              reason: 'INVITATION_EMAIL_VERIFICATION_REQUIRED',
+            }),
+            { reason: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' },
+          ),
+        );
+      return Promise.resolve({
+        data: {
+          email: 'nia@example.com',
+          inviterName: 'Ann',
+          summary: [],
+          expiresAt: '2099-01-01T00:00:00Z',
+        },
+      });
+    });
+    render(
+      <MemoryRouter
+        initialEntries={[
+          `/invite/shared-token${expiredProof ? '#verification=expired-proof' : ''}`,
+        ]}
+      >
+        <Routes>
+          <Route path='/invite/:token' element={<AcceptInvitationPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    if (expiredProof) {
+      fireEvent.change(await screen.findByLabelText('accept.name'), {
+        target: { value: 'Nia' },
+      });
+      fireEvent.change(screen.getByLabelText('accept.password'), {
+        target: { value: 'secret-password' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'accept.submit' }));
+      await screen.findByText('accept.errors.verificationRequired');
+    }
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'accept.verifyEmail' }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'accept.verificationSending' }),
+    ).toBeDisabled();
+    await act(async () => delivery.resolve({ data: { emailSent: true } }));
+    await screen.findByText('accept.verificationSent');
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'users/invitations/verifyEmail',
+        method: 'POST',
+        json: { token: 'shared-token' },
+      }),
+    );
+    if (!expiredProof) {
+      expect(screen.queryByLabelText('accept.name')).toBeNull();
+      expect(screen.queryByLabelText('accept.password')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'accept.submit' }),
+      ).toBeDisabled();
+    }
+    expect(
+      screen.getByRole('button', { name: 'accept.goToLogin' }),
+    ).toHaveAttribute('href', '/login?redirect=%2Finvite%2Fshared-token');
+    expect(
+      screen.getByRole('button', { name: 'accept.verifyEmail' }),
+    ).toBeDisabled();
+  },
+);
 
 it('allows registration from an administrator-authorized manual link without requesting email', async () => {
   mocks.request.mockImplementation(({ path }: { path: string }) =>

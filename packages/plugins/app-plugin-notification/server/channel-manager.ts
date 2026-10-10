@@ -90,19 +90,12 @@ export class ChannelManager {
     const notificationId = randomUUID();
     return Promise.all(
       recipients.map(async (recipient): Promise<ProviderSendResult> => {
-        const now = new Date().toISOString();
-        const delivery: NotificationDeliveryRecord = {
+        const delivery = {
           id: randomUUID(),
           notificationId,
-          channelName: name,
-          channelType: runtime.channel.type,
           providerType: runtime.provider.type,
           recipientSnapshot: recipient,
           messageSnapshot: message,
-          attemptCount: 0,
-          status: 'pending',
-          createdAt: now,
-          updatedAt: now,
         };
         const prepared = await this.prepare(runtime.channel, delivery);
         if (!prepared.ok)
@@ -204,7 +197,14 @@ export class ChannelManager {
 
   private async prepare(
     channel: NotificationChannel,
-    delivery: NotificationDeliveryRecord,
+    delivery: Pick<
+      NotificationDeliveryRecord,
+      | 'id'
+      | 'notificationId'
+      | 'recipientSnapshot'
+      | 'messageSnapshot'
+      | 'providerType'
+    >,
   ): Promise<
     | { readonly ok: true; readonly value: object }
     | { readonly ok: false; readonly error: NotificationProviderSendError }
@@ -372,7 +372,7 @@ export class ChannelManager {
   private async invoke(
     provider: NotificationProvider,
     message: object,
-    delivery: NotificationDeliveryRecord,
+    delivery: Pick<NotificationDeliveryRecord, 'id' | 'notificationId'>,
     attemptId: string,
     submittedAt: string,
   ): Promise<ProviderSendResult> {

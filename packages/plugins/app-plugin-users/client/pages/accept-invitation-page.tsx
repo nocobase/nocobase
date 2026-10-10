@@ -364,7 +364,7 @@ function AcceptForm({
       ) : null}
       {!invitedSession &&
       invitation.emailVerificationRequired !== false &&
-      (!emailVerificationToken || problem) ? (
+      (!emailVerificationToken || problem || verifying || verificationSent) ? (
         <div className='space-y-3'>
           <p className='text-sm text-muted-foreground'>
             {t('accept.verifyDescription')}
@@ -381,6 +381,7 @@ function AcceptForm({
             disabled={verifying || verificationCooling}
             onClick={() => {
               setVerifying(true);
+              setVerificationSent(false);
               setProblem(undefined);
               users
                 .verifyInvitationEmail(token)

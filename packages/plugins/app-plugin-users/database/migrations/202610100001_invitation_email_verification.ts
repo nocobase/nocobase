@@ -5,6 +5,7 @@ const migration: MigrationDefinition = defineMigration({
   async up({ builder }) {
     await builder.alterCollection('userInvitations', (collection) => {
       collection.datetimeTz('verificationSentAt').nullable();
+      collection.boolean('manualDelivery').notNull().defaultTo(false);
     });
     await builder.createCollection(
       'userInvitationVerifications',
@@ -23,6 +24,7 @@ const migration: MigrationDefinition = defineMigration({
     await builder.dropCollection('userInvitationVerifications');
     await builder.alterCollection('userInvitations', (collection) => {
       collection.dropField('verificationSentAt');
+      collection.dropField('manualDelivery');
     });
   },
 });
