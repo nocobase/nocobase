@@ -264,6 +264,7 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       onError('Agents could not update a design review card.', error),
     ),
     settleFailedRunCards(
+      agents,
       deps.projects,
       deps.inboxPort ?? (() => undefined),
       (error) => onError('Agents could not settle a failed run card.', error),

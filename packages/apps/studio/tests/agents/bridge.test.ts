@@ -861,6 +861,41 @@ describe('claims and endings', () => {
     });
   });
 
+  it('settles the old decision when a run is retried and keeps a later failure separate', async () => {
+    const planned: any[] = [];
+    h.projects.events.on('notice.planned', (event) => {
+      planned.push(event.notice);
+    });
+    const { runId } = await claimedRun({ maxAttempts: 1 });
+    await h.runner(RUNNER_ROUTES.fail, runId, {
+      reason: 'toolAuth',
+      detail: 'Not signed in.',
+    });
+    await expect.poll(() => planned.length).toBe(1);
+
+    const retry = await h.agents.runs.retry(runId, 'alice');
+    expect(retry.retryOfRunId).toBe(runId);
+    await expect.poll(() => h.port.settled.length).toBe(1);
+    expect(h.port.settled).toEqual([
+      { decisionKey: `agents:run-failed:${runId}`, outcome: 'retried' },
+    ]);
+
+    const payload = await h.claimOne();
+    await h.runner(RUNNER_ROUTES.fail, payload.run.id, {
+      reason: 'toolAuth',
+      detail: 'Still not signed in.',
+    });
+    await expect.poll(() => planned.length).toBe(2);
+    expect(planned.map((notice) => notice.key)).toEqual([
+      `agents:run-failed:${runId}`,
+      `agents:run-failed:${payload.run.id}`,
+    ]);
+    expect(h.port.settled[0]).toEqual({
+      decisionKey: `agents:run-failed:${runId}`,
+      outcome: 'retried',
+    });
+  });
+
   describe("deciding a failed run's card", () => {
     /** Studio's inbox as the decision needs it: the card waits until resolved. */
     function inbox() {

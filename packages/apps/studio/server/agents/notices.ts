@@ -6,8 +6,9 @@
  * The run ends in the agents plugin's transaction; once it commits, a projects transaction announces it
  * (`work.announced` of kind `agent.notice`) and the rule plans the notice there.
  *
- * The card folds away by itself once its issue moves on: when the issue enters
- * In review or a finished status (done or closed), every card of the issue still waiting settles as `issueMoved`.
+ * The card folds away when its issue moves on: when it enters In review or a finished status (done or closed), every
+ * card of the issue still waiting settles as `issueMoved`. If a new run retries the card's run, its card settles as
+ * `retried`, wherever that retry was started.
  */
 import type {
   NoticeRule,
@@ -127,13 +128,14 @@ export function announceFailedRuns(
 /** The status an issue is handed over for review in; a failed run's card is no longer needed there. */
 const IN_REVIEW = 'in_review';
 
-/** Settles an issue's failed-run cards once it moves to review or finishes; returns what stops it. */
+/** Settles failed-run cards when an issue moves on or their run is retried; returns what stops it. */
 export function settleFailedRunCards(
+  agents: Pick<Agents, 'events' | 'runs'>,
   projects: () => Pick<Projects, 'events' | 'issueContext' | 'tx'>,
   port: () => StudioInboxPort | undefined,
   onError: (error: unknown) => void,
 ): () => void {
-  return projects().events.on('issue.updated', (event) => {
+  const stopIssueUpdates = projects().events.on('issue.updated', (event) => {
     const status = event.changes.status;
     const inbox = port();
     if (!status || !inbox) return;
@@ -154,4 +156,21 @@ export function settleFailedRunCards(
       });
     })().catch(onError);
   });
+  const stopRunChanges = agents.events.on('run.changed', (event) => {
+    if (event.status !== 'queued') return;
+    void (async () => {
+      const run = await agents.runs.get(event.runId);
+      if (!run.retryOfRunId || run.subject.kind !== ISSUE_SUBJECT) return;
+      const inbox = port();
+      if (!inbox) return;
+      await inbox.resolve({
+        ...runFailedDecision(run.retryOfRunId),
+        outcome: 'retried',
+      });
+    })().catch(onError);
+  });
+  return () => {
+    stopIssueUpdates();
+    stopRunChanges();
+  };
 }
