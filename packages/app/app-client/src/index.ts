@@ -151,3 +151,6 @@ export type {
   ClientServiceProviderContext,
   ResolvedAppClientContributions,
 } from './plugins.js';
+
+export { NavigationGuardProvider } from './navigation-guard-provider.js';
+export { useNavigationGuard } from './navigation-guard.js';

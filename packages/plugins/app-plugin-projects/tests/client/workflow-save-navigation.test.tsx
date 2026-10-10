@@ -114,6 +114,35 @@ async function setup(
 }
 
 describe('workflow save and leave behavior', () => {
+  it('only subscribes to beforeunload while the editor has unsaved changes', async () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    await setup();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Edit', exact: true }),
+    );
+    expect(
+      add.mock.calls.filter(([type]) => type === 'beforeunload'),
+    ).toHaveLength(0);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), {
+      target: { value: 'Changed' },
+    });
+    const subscriptions = add.mock.calls.filter(
+      ([type]) => type === 'beforeunload',
+    );
+    expect(subscriptions).toHaveLength(1);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Discard changes', exact: true }),
+    );
+    expect(
+      remove.mock.calls.some(
+        ([type, listener]) =>
+          type === 'beforeunload' && listener === subscriptions[0]?.[1],
+      ),
+    ).toBe(true);
+    expect(unloading()).toBe(false);
+  });
+
   it.each([
     ['en-US', 'Edit', 'Name', 'Discard changes'],
     ['zh-CN', '编辑', '名称', '放弃修改'],

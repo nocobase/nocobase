@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { NavigationGuardProvider } from '@nocobase/app-client';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { StrictMode, useState, type ReactElement } from 'react';
 import { BrowserRouter, Link, Route, Routes, useNavigate } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -31,91 +38,84 @@ function Editor(): ReactElement {
   );
 }
 
-function setup(): void {
+async function setup(): Promise<void> {
   window.history.replaceState({ idx: 0 }, '', '/list');
-  window.history.pushState({ idx: 1 }, '', '/edit');
   render(
     <StrictMode>
       <BrowserRouter>
-        <Routes>
-          <Route path='/edit' element={<Editor />} />
-          <Route path='/list' element={<p>Workflow list</p>} />
-          <Route path='/other' element={<p>Other destination</p>} />
-        </Routes>
+        <NavigationGuardProvider>
+          <Routes>
+            <Route path='/edit' element={<Editor />} />
+            <Route
+              path='/list'
+              element={
+                <>
+                  <p>Workflow list</p>
+                  <Link to='/edit'>Open editor</Link>
+                </>
+              }
+            />
+            <Route path='/other' element={<p>Other destination</p>} />
+          </Routes>
+        </NavigationGuardProvider>
       </BrowserRouter>
     </StrictMode>,
   );
+  fireEvent.click(screen.getByText('Open editor'));
+  await screen.findByRole('textbox', { name: 'Draft' });
   fireEvent.change(screen.getByRole('textbox', { name: 'Draft' }), {
     target: { value: 'Keep this draft' },
   });
 }
 
 describe('workflow browser history guard', () => {
-  it('allows native restoration after declining a non-cancelable traversal', async () => {
-    const navigation = new EventTarget();
-    vi.stubGlobal('navigation', navigation);
+  it('preserves a returning editor on repeated Back after the host router has mounted', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    setup();
-    const traversal = (cancelable: boolean) =>
-      Object.assign(new Event('navigate', { cancelable }), {
-        navigationType: 'traverse',
-        destination: { sameDocument: true },
+    await setup();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      window.history.back();
+      await waitFor(() => expect(confirm).toHaveBeenCalledTimes(attempt + 1));
+      await waitFor(() => expect(window.location.pathname).toBe('/edit'));
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Keep this draft',
+      );
+      expect(screen.queryByText('Workflow list')).not.toBeInTheDocument();
+    }
+  });
+
+  it('corrects another POP arriving during restoration without leaving navigation locked', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    await setup();
+    // Model browser traversal notifications after its own location listener has already run.
+    const originalState: unknown = window.history.state;
+    const go = vi
+      .spyOn(window.history, 'go')
+      .mockImplementation(() => undefined);
+    for (const idx of [0, -1, 0]) {
+      await act(async () => {
+        window.history.replaceState({ idx, key: `entry-${idx}` }, '', '/list');
+        window.dispatchEvent(new PopStateEvent('popstate', { state: { idx } }));
       });
-    const first = traversal(true);
-    navigation.dispatchEvent(first);
-    expect(first.defaultPrevented).toBe(true);
-
-    // After cancellation consumes activation, another browser Back cannot be canceled.
-    navigation.dispatchEvent(traversal(false));
-    const restore = traversal(true);
-    const originalGo = window.history.go.bind(window.history);
-    const go = vi.spyOn(window.history, 'go').mockImplementation((delta) => {
-      navigation.dispatchEvent(restore);
-      if (!restore.defaultPrevented) originalGo(delta);
+      await waitFor(() => expect(go).toHaveBeenLastCalledWith(1 - idx));
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Keep this draft',
+      );
+    }
+    await act(async () => {
+      window.history.replaceState(originalState, '', '/edit');
+      window.dispatchEvent(
+        new PopStateEvent('popstate', { state: window.history.state }),
+      );
     });
-    window.history.back();
-    await waitFor(() => expect(go).toHaveBeenCalledWith(1));
-    expect(restore.defaultPrevented).toBe(false);
-    await waitFor(() => expect(window.location.pathname).toBe('/edit'));
-    expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
-      'Keep this draft',
-    );
-    expect(confirm).toHaveBeenCalledTimes(2);
-
+    go.mockRestore();
     confirm.mockReturnValue(true);
     fireEvent.click(screen.getByText('Other page'));
     expect(await screen.findByText('Other destination')).toBeInTheDocument();
   });
 
-  it('cancels native navigation before the router can unmount a returning editor', () => {
-    const navigation = new EventTarget();
-    vi.stubGlobal('navigation', navigation);
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    setup();
-    const traversal = () =>
-      Object.assign(new Event('navigate', { cancelable: true }), {
-        navigationType: 'traverse',
-        destination: { sameDocument: true },
-      });
-    const declined = traversal();
-    navigation.dispatchEvent(declined);
-    expect(declined.defaultPrevented).toBe(true);
-    expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
-      'Keep this draft',
-    );
-    confirm.mockReturnValue(true);
-    const accepted = traversal();
-    navigation.dispatchEvent(accepted);
-    expect(accepted.defaultPrevented).toBe(false);
-    window.dispatchEvent(
-      new PopStateEvent('popstate', { state: window.history.state }),
-    );
-    expect(confirm).toHaveBeenCalledTimes(2);
-  });
-
   it('retains the mounted draft and restores the URL after declining browser Back, then allows Back and Forward', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    setup();
+    await setup();
     window.history.back();
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
     await waitFor(() => expect(window.location.pathname).toBe('/edit'));
@@ -135,7 +135,7 @@ describe('workflow browser history guard', () => {
 
   it('guards programmatic replace and releases its listeners after leaving', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    setup();
+    await setup();
     fireEvent.click(screen.getByText('Replace'));
     expect(window.location.pathname).toBe('/edit');
     confirm.mockReturnValue(true);
@@ -149,7 +149,7 @@ describe('workflow browser history guard', () => {
   it('keeps navigation in place while a save is pending', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const go = vi.spyOn(window.history, 'go');
-    setup();
+    await setup();
     fireEvent.click(screen.getByText('Start saving'));
     fireEvent.click(screen.getByText('Other page'));
     expect(window.location.pathname).toBe('/edit');
