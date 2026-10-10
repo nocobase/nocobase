@@ -41,6 +41,8 @@ import {
   type CallerIdentity,
 } from '@nocobase/app-plugin-agents/server/tokens';
 
+import { isAgentAction } from './capabilities.js';
+
 import { LEVELS } from '../../shared/access.js';
 import { BUSINESS_TYPES, businessResource } from '../access/catalog.js';
 import { toStudioApiError } from '../http/errors.js';
@@ -196,16 +198,33 @@ export function runScopeStep(
       const allowed = await agents.gate.allowed(identity);
       // A route that takes a run names the action it performs; the run holds it, or the route never runs.
       const action = declaredRouteActionOf(request.http);
-      if (!action || !allowed.has(action))
+      if (!action || !allowed.has(action)) {
+        const missingCapability =
+          typeof action === 'string' &&
+          isAgentAction(action) &&
+          !identity.agent?.actions.includes(action);
         throw new ApiError({
           status: 'PERMISSION_DENIED',
           reason: 'RUN_ACTION_FORBIDDEN',
           domain: 'studio',
           message: action
-            ? `The agent is not given ${action}, which this needs.`
+            ? missingCapability
+              ? `This agent is not configured with ${action}. Someone who can edit the agent can enable that capability; a personal CLI login does not change the run's permissions.`
+              : `This run is not permitted to perform ${action}. Check the requesting person's permissions and the run's restrictions; plan confirmation does not grant permission.`
             : 'This route names no action an agent may be given.',
-          ...(action ? { metadata: { action } } : {}),
+          ...(action
+            ? {
+                metadata: {
+                  action,
+                  agentId: identity.agent?.id,
+                  permissionReason: missingCapability
+                    ? 'agentCapabilityMissing'
+                    : 'runPermissionDenied',
+                },
+              }
+            : {}),
         });
+      }
       // A consulted agent's run reads only, but the plans it proposes reach as far as its agent and person do: the
       // person confirms them.
       request.keyScope = runKeyScope(

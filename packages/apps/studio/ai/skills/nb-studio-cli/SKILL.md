@@ -27,6 +27,19 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 - A missing argument is refused with `MISSING_ARGUMENT` naming what to pass; do not loop on the same line.
 - Exit codes: 0 ok, 2 network (retry later), 3 authentication or permission (do not retry), 4 not found, 5 invalid input (fix the line), 6 conflict (read again, then retry), 7 a plan is required (propose it with `nb-studio plan create`).
 
+## Permission refusals and useful next steps
+
+Before promising a write, read `nb-studio whoami --json` and the command's docs. For an operation plan, check the business action of every row as well: being allowed to propose plans does not grant `pm.projects/create` or other operations inside them. A `PLAN_REQUIRED` refusal calls for a confirmation plan; a forbidden operation cannot be fixed by proposing a plan.
+
+A Studio run already has its identity. Installing the CLI, registering a Runner, or signing a person in does not add capabilities to that run. The home page's local Coding Agent setup is for an agent outside Studio. Never suggest a personal login or another credential to get past a run's refusal.
+
+Explain refusals in the person's language, in this order:
+
+1. State the result accurately: an attempted project creation that was refused has not created a project. Distinguish a saved proposal from an executed change, and account for any earlier successful operations.
+2. Name the missing action and the restriction the evidence establishes. `RUN_ACTION_FORBIDDEN` with `metadata.permissionReason: agentCapabilityMissing` means this agent lacks a configured capability; `runPermissionDenied` does not establish that the person lacks permission. Other refusals or plan-row errors may not identify the cause: do not invent one.
+3. Offer a concrete next step. For a missing agent capability, someone who can edit it can go to Agent team > Agents > the current agent. For manual project creation, use Projects > New project, retain the name and description already supplied, and ask for the resulting link so work can continue. Use only verified links, and never claim a form is prefilled or that the person may edit settings without evidence.
+4. Answer what preparation is needed from the command's actual required fields. Continue drafting useful requirements while blocked; do not ask for a repository or test environment merely to create a project unless that operation requires it.
+
 ## Common work
 
 ```bash
