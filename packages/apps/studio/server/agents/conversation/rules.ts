@@ -10,7 +10,10 @@
 import { PLAN_ROWS_MAX } from '@nocobase/app-plugin-projects/shared/plans';
 import { PRIORITIES } from '@nocobase/app-plugin-projects/shared/common';
 
-import type { ConfirmChanges } from '@nocobase/app-plugin-agents/shared/agents';
+import type {
+  Agent,
+  ConfirmChanges,
+} from '@nocobase/app-plugin-agents/shared/agents';
 import {
   commandRef,
   type CommandDialect,
@@ -20,6 +23,33 @@ import {
 } from '@nocobase/app-plugin-agents/server/tokens';
 import { INTAKE_SOURCE } from '../catalog/sources.js';
 import { DIRECT_WRITE_LIMIT } from './quota.js';
+
+/** Current configuration, not an authorization grant; commands still check the person and the target scope. */
+export function permissionGuidance(
+  agent: Pick<Agent, 'name' | 'actions'>,
+  cli: string,
+): string[] {
+  const configured = new Set(agent.actions);
+  return [
+    'Permissions and next steps:',
+    `- Current agent: ${JSON.stringify(agent.name)}. Its configured creation capabilities are:`,
+    ...(
+      [
+        ['Create projects', 'pm.projects/create'],
+        ['Create issues', 'pm.issues/create'],
+      ] as const
+    ).map(
+      ([label, action]) =>
+        `  - ${label} (\`${action}\`): ${configured.has(action) ? 'configured; still subject to the requesting person and target scope' : 'not configured for this agent; do not attempt it, including through an operation plan'}.`,
+    ),
+    `- Before promising a write or proposing an operation plan, check \`${cli} whoami --json\` and \`${cli} docs <command words>\` for the current identity, actions and required inputs. Check each plan row's business action too: access to plan commands is not permission to perform every operation in a plan.`,
+    '- Confirmation is separate from authorization. A PLAN_REQUIRED refusal asks for a confirmation plan; a permission refusal must not be retried as a plan, with a personal login, another credential, or a direct HTTP call.',
+    '- On refusal, answer in the person’s language: say what has and has not happened, identify the missing action and only the restriction the evidence establishes, then give one concrete next step. Do not blame the person when only this agent lacks the capability; if the cause is unknown, say so rather than guessing.',
+    '- When this agent lacks a configured capability, explain that someone who can edit the agent may enable it in Agent team > Agents > this agent. Otherwise suggest the relevant manual action, subject to the person’s permissions. Use only verified page links; do not invent a settings URL or claim a form is prefilled.',
+    '- For project creation, retain the name and description already supplied. Explain the manual step as Projects > New project, and ask for the resulting project link so you can continue. Check the actual required inputs before saying what is needed; do not demand a repository or test environment unless the chosen operation requires it. You may keep drafting the description or requirements without claiming they were saved.',
+    '- A running Runner or a personal CLI login does not grant this Studio agent more capabilities. Studio runs are already connected using their run identity; the local Coding Agent setup instructions are for an agent outside Studio. Do not suggest reinstalling or logging in to fix a permission refusal.',
+  ];
+}
 
 /** The rules Studio adds to a conversation's list. */
 export const CONVERSATION_RULES: readonly string[] = [
@@ -61,7 +91,7 @@ function planLines(
     format: [
       `- A plan is \`{"title", "description"?, "rows": [{"op", "params", "ref"?}]}\` with 1 to ${PLAN_ROWS_MAX} rows, run in order. Operations: \`issue.create\` {title, description?, projectId?, parentIssueId?, stage?, statusKey?, priority?, ownerUserId?, executor?, labelIds?, startDate?, dueDate?, blockedBy?, start?}; \`issue.update\` {issue, set: {title?, description?, statusKey?, priority?, ownerUserId?, executor?, parentIssueId?, stage?, projectId?, startDate?, dueDate?, labelIds?}, start?}; \`comment.create\` {issue, content, parentId?}; \`dependency\` {action: "add" | "remove", issue, dependsOn, type?: "blockedBy" | "relatedTo"}; \`project.create\` {name, description?, visibility?, priority?, leadUserId?, startDate?, dueDate?, workflowId?}. An issue is named by its id, its identifier (PM-12) or \`{"ref": "<ref of an earlier row>"}\`; a project by its id or a ref. \`executor\` is \`{"type": "user" | "agent", "id"}\` or null; \`priority\` is one of ${PRIORITIES.join(', ')}. Unknown fields are refused.`,
       `- Example: \`${PLAN_EXAMPLE}\``,
-      `- A plan is rehearsed when you create it: if a row would fail, nothing is stored and the command fails (exit code 5) with every row's check in the error's details; fix those rows and create it again.`,
+      `- A plan is rehearsed when you create it: if a row would fail, nothing is stored and the command fails (exit code 5) with every row's check in the error's details; correct invalid inputs and create it again, but do not retry permission failures as another plan.`,
     ],
   };
 }
@@ -115,6 +145,7 @@ export function consultationRules(): ConsultationRules {
     const plan = planLines(context.cli, context.dialect);
     return Promise.resolve({
       sections: [
+        permissionGuidance(context.agent, context.cli),
         [
           `Proposing a change for ${owner}:`,
           `- To have something changed, ${plan.propose} ${owner} reviews it on a card in the conversation that asked you and executes it; until then nothing of it is applied. Say in your answer what you proposed.`,
@@ -130,12 +161,15 @@ export function consultationRules(): ConsultationRules {
 export function conversationRules(): ConversationRules {
   return async (_conn, context): Promise<ConversationRuleLines> => ({
     rules: CONVERSATION_RULES,
-    sections: projectRules({
-      ownerName: context.ownerName,
-      cli: context.cli,
-      dialect: context.dialect,
-      confirmChanges: context.agent.confirmChanges,
-      intake: context.conversation.source === INTAKE_SOURCE,
-    }),
+    sections: [
+      permissionGuidance(context.agent, context.cli),
+      ...projectRules({
+        ownerName: context.ownerName,
+        cli: context.cli,
+        dialect: context.dialect,
+        confirmChanges: context.agent.confirmChanges,
+        intake: context.conversation.source === INTAKE_SOURCE,
+      }),
+    ],
   });
 }

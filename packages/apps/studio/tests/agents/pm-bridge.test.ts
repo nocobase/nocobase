@@ -235,6 +235,11 @@ describe('a conversation run acts as the person who asked', () => {
       { priority: 'high' },
     );
     expect(refused.status).toBe(403);
+    expect(refused.body.error.metadata).toMatchObject({
+      action: 'pm.issues/edit',
+      agentId: viewOnly.agentId,
+      permissionReason: 'agentCapabilityMissing',
+    });
     expect(
       (await command(viewOnly, 'issue:get', [target.identifier])).status,
     ).toBe(200);
@@ -258,6 +263,26 @@ describe('a conversation run acts as the person who asked', () => {
     const none = await command(bobs, 'issue:get', [secret.identifier]);
     expect(none.status).toBe(403);
     expect(none.body.error.reason).toBe('RUN_ACTION_FORBIDDEN');
+    expect(none.body.error.metadata).toMatchObject({
+      action: 'pm.issues/view',
+      agentId: bobs.agentId,
+      permissionReason: 'runPermissionDenied',
+    });
+    expect(none.body.error.message).not.toContain('not configured');
+  });
+
+  it('does not turn a missing project capability into permission through a plan', async () => {
+    const run = await conversationRun();
+    const proposed = await command(run, 'plan:create', [], {
+      title: 'Create the support project',
+      rows: [{ op: 'project.create', params: { name: 'Support' } }],
+    });
+    expect(proposed.status).toBe(400);
+    expect(proposed.body.error.reason).toBe('PLAN_INVALID');
+    expect((await command(run, 'project:list')).body.data).toEqual([]);
+    expect(
+      (await h.projects.plans.list(alice(), { status: 'open' })).data,
+    ).toEqual([]);
   });
 
   it('acts as the agent itself when it works on an issue', async () => {
@@ -296,6 +321,15 @@ describe('a conversation run acts as the person who asked', () => {
       '- Do not post comments on issues to answer the person: answer in the conversation.\n- Who executes an issue is changed only through an operation plan the person confirms.',
     );
     expect(system).not.toContain('Requirement intake:');
+    expect(system).toContain(
+      'Create projects (`pm.projects/create`): not configured for this agent',
+    );
+    expect(system).toContain(
+      'Create issues (`pm.issues/create`): configured; still subject to the requesting person and target scope',
+    );
+    expect(system).toContain('nb-studio whoami --json');
+    expect(system).toContain('Confirmation is separate from authorization');
+    expect(system).toContain('Projects > New project');
     expect(
       projectRules({
         ownerName: 'alice',
@@ -858,6 +892,9 @@ describe('plans proposed in a conversation', () => {
       actions: [...PM_ACTIONS, 'pm.projects/create'],
     });
     expect(run.payload.prompt.system).toContain('Requirement intake:');
+    expect(run.payload.prompt.system).toContain(
+      'Create projects (`pm.projects/create`): configured; still subject to the requesting person and target scope',
+    );
     const proposed = await command(run, 'plan:create', [], {
       title: 'Organized',
       rows: [
