@@ -128,6 +128,25 @@ const inputs: RunInput[] = [
 ];
 
 describe('issue brief', () => {
+  it('includes project requirements without confusing proposal revisions with framework versions', () => {
+    const requirements = renderIssueContext({
+      ...context,
+      project: {
+        ...context.project!,
+        description: 'NocoBase 3; internal support ticket entry.',
+      },
+    });
+    expect(requirements).toContain('## Project requirements');
+    expect(requirements).toContain(
+      'NocoBase 3; internal support ticket entry.',
+    );
+    const guidance = issueGuidance('PM-12', 'nb-studio').rules.join('\n');
+    expect(guidance).toContain(
+      'A proposal revision (such as v3) is not a framework version',
+    );
+    expect(guidance).toContain('ask for that requirement before installing');
+  });
+
   it('renders the task and the issue context', () => {
     expect(renderTask(context, inputs)).toMatchSnapshot();
     expect(renderIssueContext(context)).toMatchSnapshot();

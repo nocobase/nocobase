@@ -28,7 +28,7 @@ export interface InitRecord {
   readonly defaultBranch: string | null;
   readonly firstCommit: boolean;
   readonly templateRepo: string | null;
-  /** The `create-app` template of a NocoBase application the agent scaffolds (`prompt` with `firstCommit`). */
+  /** The `create-app` template of a NocoBase application the agent scaffolds (a repository root or app/ in a runner directory). */
   readonly appTemplate: NocobaseAppTemplate | null;
   readonly workflowId: string | null;
   readonly workflowPath: string | null;

@@ -58,7 +58,7 @@ const codeLocationFields = {
           })
           .meta({
             description:
-              'A NocoBase application, scaffolded with `create-app` by the init issue’s agent (`initAgentId`) on its runner and pushed as the first commit; the preview CI is connected with it unless `ci` says otherwise.',
+              'A NocoBase 3 application, scaffolded with `create-app` by the init issue’s agent (`initAgentId`) on its runner and pushed as the first commit; the preview CI is connected with it unless `ci` says otherwise.',
           }),
       ]),
     })
@@ -81,6 +81,16 @@ const codeLocationFields = {
     .strictObject({
       runnerId: z.string(),
       path: z.string(),
+      init: z
+        .strictObject({
+          method: z.literal('nocobase'),
+          template: z.enum(NOCOBASE_APP_TEMPLATES),
+        })
+        .optional()
+        .meta({
+          description:
+            'Create a NocoBase 3 application from the selected template in app/ inside this directory. Requires initAgentId; mutually exclusive with initPrompt. The template remains part of subsequent issue context.',
+        }),
       initPrompt: prompt,
     })
     .optional(),
@@ -141,7 +151,7 @@ export const ProjectInitSchema: z.ZodType<ProjectInitView> = z
     templateRepo: z.string().nullable(),
     appTemplate: z.enum(NOCOBASE_APP_TEMPLATES).nullable().meta({
       description:
-        'The `create-app` template of a NocoBase application the agent scaffolds; null otherwise.',
+        'The NocoBase 3 template retained for subsequent issues: repository root, or app/ inside a runner directory; null otherwise.',
     }),
     workflow: InitWorkflowSchema.nullable(),
     run: z

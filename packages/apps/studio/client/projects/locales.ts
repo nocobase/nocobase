@@ -96,6 +96,9 @@ export const projectPageEnUS = {
     defaultBranchHint:
       'Where issues branch from and where staging builds come from.',
     chooseRunner: 'Choose a runner',
+    directoryNocobase: 'Initialize a NocoBase 3 application',
+    directoryNocobaseHint:
+      'The agent creates the default application in app/ inside this directory and checks existing files first. Requires Node.js 24 and pnpm 11. The template requirement also applies to subsequent tasks.',
     loadingRunners: 'Loading runners…',
     newRepoAdded:
       'Created through a connection when you add it; an “Initialize” issue sets it up, and its default branch is protected once ready.',
@@ -183,7 +186,7 @@ export const projectPageEnUS = {
       },
       initMethods: {
         nocobase: {
-          title: 'NocoBase app (default template)',
+          title: 'NocoBase 3 app (default template)',
           description:
             'An agent on a runner creates the application with create-app’s default template and pushes it as the first commit.',
         },
@@ -379,6 +382,9 @@ export const projectPageZhCN: typeof projectPageEnUS = {
     defaultBranch: '默认分支',
     defaultBranchHint: '任务从这里创建分支，预发布（staging）构建也来自这里。',
     chooseRunner: '选择运行器',
+    directoryNocobase: '初始化 NocoBase 3 应用',
+    directoryNocobaseHint:
+      'Agent 会先检查已有文件，再在此目录下的 app/ 中创建默认模板应用。需要 Node.js 24、pnpm 11。后续任务也会遵循所选模板的技术要求。',
     loadingRunners: '正在加载运行器…',
     newRepoAdded:
       '添加时通过连接创建；由一个“初始化”任务完成初始化，就绪后保护默认分支。',
@@ -460,7 +466,7 @@ export const projectPageZhCN: typeof projectPageEnUS = {
       },
       initMethods: {
         nocobase: {
-          title: 'NocoBase 应用默认模板',
+          title: 'NocoBase 3 应用默认模板',
           description:
             '由运行环境上的 Agent 用 create-app 的默认模板创建应用，并作为首次提交推送。',
         },

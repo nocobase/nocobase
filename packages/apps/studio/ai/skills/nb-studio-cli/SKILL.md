@@ -27,6 +27,14 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 - A missing argument is refused with `MISSING_ARGUMENT` naming what to pass; do not loop on the same line.
 - Exit codes: 0 ok, 2 network (retry later), 3 authentication or permission (do not retry), 4 not found, 5 invalid input (fix the line), 6 conflict (read again, then retry), 7 a plan is required (propose it with `nb-studio plan create`).
 
+## Planning and initializing applications
+
+Before creating implementation issues, read the project and its working directories. Record the confirmed framework generation, template, package source and application root in the project description so every issue run receives them. A proposal revision such as “v3” is not a framework version. Inspect existing code and its own AGENTS.md; ask for missing or conflicting requirements before installing an application.
+
+For NocoBase 3, use `pnpm create @nocobase/app` with the configured npm registry (public npm by default, honoring an explicit NOCOBASE_REGISTRY override) and the generated application's own skills. Do not substitute `create-nocobase-app`, a NocoBase 2 tutorial, or globally installed NocoBase 2 skills. Verify `nocobase.templatePackage` and the generated AGENTS.md instead of inferring the framework generation from package version numbers.
+
+When your identity can use `project setup create`, read its command documentation first. A local directory can declare `runnerDirectory.init: { "method": "nocobase", "template": "default" }` with `initAgentId`; Studio creates an initialization issue for app/ and retains the template requirement for later issues. This is mutually exclusive with `initPrompt`. Do not add a duplicate project or directory to repair an existing project's requirements, and do not grant yourself Runner permissions if initialization is refused.
+
 ## Common work
 
 ```bash

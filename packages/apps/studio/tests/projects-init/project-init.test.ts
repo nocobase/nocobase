@@ -23,6 +23,8 @@ import {
   createProjectInits,
   type ProjectInits,
 } from '../../server/projects-init/service.js';
+import { createIssueContextProvider } from '../../server/agents/issue-subject.js';
+import { NewProjectInput } from '../../server/projects-init/schemas.js';
 import { initialDirOf } from '../../server/projects-init/store.js';
 import type { GitConnection } from '../../shared/git.js';
 import type { NewProjectRequest } from '../../shared/project-init.js';
@@ -721,5 +723,159 @@ describe('a new project with code elsewhere', () => {
     expect(issue.executor).toEqual({ type: 'agent', id: agentId });
     expect(issue.description).toContain('Install the dependencies.');
     expect(issue.description).toContain('/srv/app');
+  });
+});
+
+describe('NocoBase 3 runner directory initialization', () => {
+  const local = (): NewProjectRequest => ({
+    name: 'Local NocoBase',
+    description: 'Internal support staff enter tickets; use NocoBase 3.',
+    initAgentId: agentId,
+    codeLocation: 'runnerDirectory',
+    runnerDirectory: {
+      runnerId: 'runner-1',
+      path: '/srv/support',
+      init: { method: 'nocobase', template: 'default' },
+    },
+  });
+
+  async function contextOf(
+    issueId: string,
+    executor = agentId,
+  ): Promise<string> {
+    const provider = createIssueContextProvider(h.agents, () => h.projects);
+    const assembled = await provider.assemble(h.database.connection(), {
+      agent: { id: executor, actions: [] },
+      run: { id: 'future-run', subject: { kind: 'issue', id: issueId } },
+      inputs: [],
+      cli: 'nb-studio',
+    } as Parameters<typeof provider.assemble>[1]);
+    return assembled.context ?? '';
+  }
+
+  it('persists the template without Git setup and carries it to another agent after initialization', async () => {
+    const created = await inits.newProject(alice(), local());
+    expect(created).toMatchObject({
+      repo: null,
+      init: {
+        appTemplate: 'default',
+        firstCommit: false,
+        method: 'prompt',
+        state: 'pending',
+      },
+    });
+    const issue = await h.projects.issueQueries.detail(
+      alice(),
+      created.initIssueId!,
+    );
+    expect(issue.description).toContain(
+      'pnpm create @nocobase/app app --template default --json',
+    );
+    expect(issue.description).toContain('never delete or move existing work');
+    expect(issue.description).toContain('recorded reason');
+    expect(issue.description).not.toContain('git push');
+    expect(issue.description).not.toContain('mktemp');
+    expect(issue.description).not.toContain('npm.nocobase.ai');
+    expect(issue.description).toContain('NOCOBASE_REGISTRY:+env');
+    expect(
+      await initialDirOf(h.database.connection(), issue.id, created.projectId),
+    ).toBeNull();
+
+    // A completed initialization remains the baseline; the next issue has no framework wording of its own.
+    await h.database
+      .connection()
+      .query.updateTable('studioProjectInits')
+      .set({ state: 'done', runSucceeded: true })
+      .where('projectId', '=', created.projectId)
+      .execute();
+    const next = await h.projects.issues.create(alice(), {
+      title: 'Add ticket form',
+      projectId: created.projectId,
+    });
+    const otherAgent = await h.createAgent({ name: 'Frontend' });
+    const context = await contextOf(next.id, otherAgent);
+    expect(context).toContain('Internal support staff enter tickets');
+    expect(context).toContain('Framework: NocoBase 3');
+    expect(context).toContain('@nocobase/app-template-default');
+    expect(context).toContain('application root: app/');
+    expect(context).toContain('Never use create-nocobase-app');
+    expect(context).toContain('AGENTS.md');
+
+    // A removed working directory must not constrain unrelated code remaining in the project.
+    await h.projects.projects.removeResource(
+      alice(),
+      created.projectId,
+      created.resourceId!,
+    );
+    expect(await contextOf(next.id)).not.toContain(
+      'Required application baseline',
+    );
+  });
+
+  it('also supports adding a NocoBase directory to an existing project', async () => {
+    const project = await inits.newProject(alice(), {
+      name: 'Existing project',
+      codeLocation: 'none',
+    });
+    const added = await inits.createCodeLocation(
+      alice(),
+      project.projectId,
+      local(),
+    );
+    expect(added.init).toMatchObject({
+      appTemplate: 'default',
+      firstCommit: false,
+    });
+    expect(await contextOf(added.initIssueId!)).toContain(
+      'application root: app/',
+    );
+  });
+
+  it('refuses a missing agent, incompatible prompt, and unsupported template before creating records', async () => {
+    await expect(
+      inits.newProject(alice(), { ...local(), initAgentId: null }),
+    ).rejects.toMatchObject({ code: 'AGENT_REQUIRED' });
+    await expect(
+      inits.newProject(alice(), {
+        ...local(),
+        runnerDirectory: {
+          ...local().runnerDirectory!,
+          initPrompt: 'Use something else',
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+    const wrong = {
+      ...local(),
+      runnerDirectory: {
+        ...local().runnerDirectory!,
+        init: { method: 'nocobase', template: 'legacy' },
+      },
+    };
+    expect(NewProjectInput.safeParse(wrong).success).toBe(false);
+    await expect(inits.newProject(alice(), wrong)).rejects.toMatchObject({
+      code: 'UNKNOWN_APP_TEMPLATE',
+    });
+    const rows = await h.database
+      .connection()
+      .query.selectFrom('studioProjectInits')
+      .selectAll()
+      .execute();
+    expect(rows).toEqual([]);
+  });
+
+  it('does not infer a framework for an ordinary directory', async () => {
+    const created = await inits.newProject(alice(), {
+      ...local(),
+      description: null,
+      runnerDirectory: {
+        runnerId: 'runner-1',
+        path: '/srv/plain',
+        initPrompt: 'Inspect this directory',
+      },
+    });
+    expect(created.init?.appTemplate).toBeNull();
+    expect(await contextOf(created.initIssueId!)).not.toContain(
+      'Required application baseline',
+    );
   });
 });

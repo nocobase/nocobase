@@ -9,13 +9,15 @@
  *   an initial commit when the prompt is left empty), the project (its workflow; who works on its issues is left to the workflow's status
  *   rules), its working directory (a repository is watched through the connection, so its webhooks reach Studio), the
  *   initialization record, and the "Initialize project" issue as the project's setup issue (`projectSetup`): every
- *   later issue of the project waits for it. An existing repository or a directory without a prompt, or nothing: no
+ *   later issue of the project waits for it. An existing repository without a prompt, a directory without initialization, or nothing: no
  *   initialization, the project is ready.
  * - **A NocoBase application** (`nocobase-app.ts`) is an agent's initialization of an empty repository whose init issue
  *   gives fixed steps instead of a prompt: `create-app` with the chosen template on the agent's runner, the generated
  *   tree copied into the checkout, the first commit pushed. Its preview CI is connected with it (`direct`, pull
  *   requests to Preview, unless the request chose otherwise), so the workflow is committed when it finishes, before the
  *   branch is protected. While no runner can run the agent, its view says it waits for one (`waitingForRunner`).
+ *   A local directory can use the same NocoBase 3 template in app/, without Git or CI; its template is retained for
+ *   subsequent issue context just like a repository’s.
  * - **Following it**: Studio's git tells every push and workflow run a webhook delivers (`RepoEvents`), and the agents
  *   plugin every run that changed. A run of the chosen workflow on the repository moves the record: completed with
  *   success finishes it, any other conclusion fails it (with the run's page, also commented on the issue), a new
@@ -70,7 +72,11 @@ import type { StudioGit } from '../git/service.js';
 import { categoriesOf, systemViewer } from '../previews/sources.js';
 import type { CiSetup } from '../builds/ci-setup.js';
 import type { RepositoryLinks } from '../releases/links.js';
-import { nocobaseAppBrief, nocobaseAppName } from './nocobase-app.js';
+import {
+  nocobaseAppBrief,
+  nocobaseAppName,
+  nocobaseDirectoryBrief,
+} from './nocobase-app.js';
 import {
   decodeInit,
   initOfIssue,
@@ -237,6 +243,7 @@ interface CheckedLocation {
   readonly directory: {
     readonly runnerId: string;
     readonly path: string;
+    readonly appTemplate: NocobaseAppTemplate | null;
   } | null;
   readonly label: string | null;
   readonly deploy: DeploySettings | null;
@@ -264,6 +271,11 @@ type InitTarget =
       readonly template: NocobaseAppTemplate;
       readonly appName: string;
     }
+  | {
+      readonly kind: 'nocobaseDirectory';
+      readonly path: string;
+      readonly template: NocobaseAppTemplate;
+    }
   | { readonly kind: 'repo'; readonly repo: string }
   | { readonly kind: 'directory'; readonly path: string };
 
@@ -277,6 +289,8 @@ function initDescription(prompt: string | null, target: InitTarget): string {
           'If the run fails, its log is linked here, and someone who manages the project can run it again.',
         ].join('\n')
       : `${target.repo} was generated from the template repository ${target.templateRepo}, with no workflow to initialize it: the project is ready.`;
+  if (target.kind === 'nocobaseDirectory')
+    return nocobaseDirectoryBrief(target);
   if (target.kind === 'nocobase')
     return [
       nocobaseAppBrief({
@@ -726,8 +740,7 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
       };
       prompt = optionalPrompt(given.initPrompt);
     }
-    let directory: { readonly runnerId: string; readonly path: string } | null =
-      null;
+    let directory: CheckedLocation['directory'] = null;
     if (location === 'runnerDirectory') {
       const given = request.runnerDirectory
         ? record(request.runnerDirectory)
@@ -743,8 +756,28 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
           'INVALID_REQUEST',
           'A directory on a runner needs its runner and an absolute path.',
         );
-      directory = { runnerId: given.runnerId, path: given.path };
       prompt = optionalPrompt(given.initPrompt);
+      let appTemplate: NocobaseAppTemplate | null = null;
+      if (given.init !== undefined) {
+        const init = record(given.init);
+        if (
+          init.method !== 'nocobase' ||
+          typeof init.template !== 'string' ||
+          !(NOCOBASE_APP_TEMPLATES as readonly string[]).includes(init.template)
+        )
+          throw invalid(
+            'UNKNOWN_APP_TEMPLATE',
+            'Choose a supported NocoBase 3 application template.',
+          );
+        if (prompt !== null)
+          throw invalid(
+            'INVALID_REQUEST',
+            'Choose either a NocoBase 3 application template or an initialization prompt.',
+          );
+        appTemplate = init.template as NocobaseAppTemplate;
+        scaffolds = true;
+      }
+      directory = { runnerId: given.runnerId, path: given.path, appTemplate };
     }
     const initAgentId =
       prompt === null && !scaffolds ? null : optionalText(input.initAgentId);
@@ -789,6 +822,7 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
     // A NocoBase application's preview CI is connected with it: the standard workflow of the application at the root,
     // named after the repository, deploying each pull request to Preview (`parseCiRun`'s defaults).
     const ciChoice: unknown =
+      location === 'newRepo' &&
       scaffolds &&
       (input.ci === undefined || input.ci === null) &&
       deps.ci?.()?.check
@@ -988,7 +1022,14 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
           ...label,
         })
       ).id;
-      if (prompt !== null) target = { kind: 'directory', path: directory.path };
+      if (directory.appTemplate)
+        target = {
+          kind: 'nocobaseDirectory',
+          path: directory.path,
+          template: directory.appTemplate,
+        };
+      else if (prompt !== null)
+        target = { kind: 'directory', path: directory.path };
     }
 
     if (!target || !resourceId) {
@@ -1022,7 +1063,10 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
         firstCommit:
           target.kind === 'firstCommit' || target.kind === 'nocobase',
         templateRepo: target.kind === 'template' ? target.templateRepo : null,
-        appTemplate: target.kind === 'nocobase' ? target.template : null,
+        appTemplate:
+          target.kind === 'nocobase' || target.kind === 'nocobaseDirectory'
+            ? target.template
+            : null,
         workflowId: workflow?.id ?? null,
         workflowPath: workflow?.path ?? null,
         workflowName: workflow?.name ?? null,

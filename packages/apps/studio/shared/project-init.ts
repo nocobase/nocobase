@@ -10,11 +10,10 @@
  *   reaches. When the person chose one of its workflows (`.github/workflows/nb-studio-init.yml` is preselected when the
  *   template has it), the initialization is that workflow's successful run on the new repository; it runs itself on the
  *   initial commit. A failed run can be run again (`POST …/init/retry`). With no workflow, the project is ready at once.
- * - `nocobase` (a new repository only) is recorded as `prompt` with its `appTemplate`: Studio creates the repository
- *   empty and the init issue's agent is given fixed steps instead of a person's prompt (`nocobaseAppBrief`): scaffold
- *   the application with `create-app` from that template on its runner, copy it into the repository and push the first
- *   commit. Studio connects the repository's preview CI with it (the standard workflow, pull requests to Preview), whose
- *   files are committed once the repository is initialized, before its default branch is protected.
+ * - `nocobase` (a new repository or a runner directory) is recorded as `prompt` with its `appTemplate`. The init
+ *   agent receives fixed NocoBase 3 steps, and later issues retain that baseline. A repository is created empty,
+ *   receives the generated app at its root and the first commit, then its preview CI and branch protection. A local
+ *   directory receives the app in app/, preserving existing files; it needs neither a Git host nor preview CI.
  * - `prompt`: the init issue's agent is given the person's prompt. A new repository with a prompt is created empty:
  *   the agent makes the first commit on the default branch and pushes it, the one run allowed to push the default
  *   branch, and the initialization is done once that run succeeded and the push reached the host, in either order
@@ -52,7 +51,7 @@ export const INIT_STATES = ['pending', 'running', 'failed', 'done'] as const;
 export type InitState = (typeof INIT_STATES)[number];
 
 /**
- * The templates of `create-app` a new repository may start from (`--template`); only the default one is offered for
+ * The templates of `create-app` a working directory may start from (`--template`); only the default one is offered for
  * now. A NocoBase application is not generated from a template repository: an agent scaffolds it on its runner.
  */
 export const NOCOBASE_APP_TEMPLATES = ['default'] as const;
@@ -128,6 +127,11 @@ export interface CodeLocationRequest {
     readonly runnerId: string;
     /** Absolute, on that runner. */
     readonly path: string;
+    /** Create a NocoBase 3 application in app/; mutually exclusive with initPrompt. */
+    readonly init?: {
+      readonly method: 'nocobase';
+      readonly template: NocobaseAppTemplate;
+    };
     /** Optional: what the agent does first in it. */
     readonly initPrompt?: string | null;
   };
