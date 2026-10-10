@@ -400,7 +400,7 @@ When the user asks to disable or hide a feature, make it reversible by default:
 
 Do not declare a plugin's own page route a second time: registering another `/install` is a conflict, not a customization. Pick one of these, in order of preference:
 
-1. **Plugin options**: when the plugin supports them, pass options where the plugin is registered in `client/plugins.ts`, for example `users({ mount: 'settings', path: '/users' })`.
+1. **Plugin options**: when the plugin supports them, pass options where the plugin is registered in `client/plugins.ts`; the plugin's README lists the options it accepts.
 2. **Source extension**: create `client/extensions/<name>/extension.ts`; it is discovered automatically.
 3. **Route override**: add an entry to `client/route-overrides.ts`; its `routeId` is `<plugin-package>:<route-name>`.
 
