@@ -1,9 +1,7 @@
 ---
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-authorization': patch
 '@nocobase/app-plugin-file': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
 '@nocobase/app-plugin-workflow': patch

@@ -5,26 +5,24 @@ description: 准备连接信息，复制对应场景的提示词，让 Agent 完
 
 # 用 AI Agent 部署
 
-准备好应用源码、目标服务器或 Hub 的访问权限后，选择一个场景，把提示词中的 `<占位内容>` 换成自己的信息发送给 Agent。你不需要先写好部署命令或运行配置。Agent 负责检查环境、准备配置、构建和部署；无法自动确认的信息应向你询问，而不是猜测。
+准备好应用源码和目标服务器的访问权限后，选择一个场景，把提示词中的 `<占位内容>` 换成自己的信息发送给 Agent。你不需要先写好部署命令或运行配置。Agent 负责检查环境、准备配置、构建和部署；无法自动确认的信息应向你询问，而不是猜测。
 
 部署包不包含开发环境的数据库和上传文件。首次部署示例使用新数据；需要保留开发数据时，请明确告诉 Agent，需要另行迁移或恢复。
 
 ## 从哪里开始
 
-| 你要做什么               | 在哪里开启 Agent 会话               | 对应示例                                                |
-| ------------------------ | ----------------------------------- | ------------------------------------------------------- |
-| 发布到团队已有的 Hub     | 应用源码根目录                      | [发布到 Hub](#发布到-hub)                               |
-| 在服务器运行单个应用     | 应用源码根目录，通过 SSH 操作服务器 | [用 app-installer 部署](#用-app-installer-部署到服务器) |
-| 用 Docker 运行应用       | 应用源码根目录，通过 SSH 操作服务器 | [用 Docker 部署](#用-docker-部署)                       |
-| 搭建供团队发布应用的 Hub | 直接在服务器开启会话                | [安装 Hub](#安装-hub)                                   |
+| 你要做什么           | 在哪里开启 Agent 会话               | 对应示例                                                |
+| -------------------- | ----------------------------------- | ------------------------------------------------------- |
+| 在服务器运行单个应用 | 应用源码根目录，通过 SSH 操作服务器 | [用 app-installer 部署](#用-app-installer-部署到服务器) |
+| 用 Docker 运行应用   | 应用源码根目录，通过 SSH 操作服务器 | [用 Docker 部署](#用-docker-部署)                       |
 
-Hub 需要专业版授权。没有 Hub 时，单个应用可优先选择 app-installer；已有容器运维环境时选择 Docker。不使用 Agent 时，按[手动部署：Hub](./hub)或[手动部署：独立运行](./standalone)操作，不需要安装 Skill。
+单个应用可优先选择 app-installer；已有容器运维环境时选择 Docker。不使用 Agent 时，按[手动部署：独立运行](./standalone)操作，不需要安装 Skill。
 
 ### 让 Agent 读到部署 Skill
 
-应用通常在 `.agents/skills/` 中包含 `nocobase-deployment`；发布到 Hub 还需要 `nocobase-hub-cli`。让 Agent 实际读取这些文件，不依赖工具是否自动发现它们。缺失时，先检查依赖和 Skill 同步状态；`pnpm nocobase skills sync` 可以同步已安装包提供的 Skill。Hub 命令由 `@nocobase/hub-cli` 提供，旧项目需要先检查兼容版本，再补充依赖。
+应用通常在 `.agents/skills/` 中包含 `nocobase-deployment`。让 Agent 实际读取这些文件，不依赖工具是否自动发现它们。缺失时，先检查依赖和 Skill 同步状态；`pnpm nocobase skills sync` 可以同步已安装包提供的 Skill。
 
-用 app-installer 安装应用或 Hub 时，在 Agent 运行的机器安装全局 Skill：
+用 app-installer 安装应用时，在 Agent 运行的机器安装全局 Skill：
 
 ```bash
 npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-app-installer --skill nocobase-app-installer -g
@@ -35,7 +33,6 @@ npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocob
 ### 你需要准备的信息
 
 - **服务器部署**：可用的 SSH 连接，例如已配置的别名 `crm-prod`；不要把 SSH 密码或私钥内容粘贴到对话。
-- **Hub 发布**：Hub 中已创建应用的地址 `<Hub 地址>/apps/<应用 ID>`，以及绑定该应用且具有上传和部署权限的 API Key，创建方式见[Hub CLI 部署](./hub#2-通过-cli-部署)。
 - **访问地址**：域名、挂载路径、DNS 和 HTTPS 状态。
 - **数据计划**：首次使用空数据库，还是保留已有数据库和上传文件。
 
@@ -44,24 +41,6 @@ npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocob
 ## 提示词
 
 每个首次部署示例都包含执行授权：Agent 先简要说明计划，再连续完成检查、配置、构建和部署。缺少必要信息、需要系统权限或发现目标已有数据时必须停下询问。更新与回滚使用后面的专用任务单。
-
-### 发布到 Hub
-
-在源码根目录执行 `pnpm nocobase hub remote add origin <Hub 地址>/apps/<应用 ID>` 将 Hub 中的应用添加为远程，再由你自己执行 `pnpm nocobase hub auth login`：它以不回显的方式读取 API Key 并保存到项目之外，密钥不经过对话。下面以新 SQLite 数据库为例，不要求你提前编写 `runtime.yml`。
-
-```text
-请把当前 NocoBase 3 应用首次发布到已有 Hub，并完成部署验收。
-Hub 远程：origin，<例如 https://apps.example.com/hub/apps/crm，应用已经在 Hub 中创建>
-凭据：API Key 已通过 hub auth login 保存。
-数据计划：新 SQLite 数据库，不迁移本地开发数据。
-
-先读取项目 AGENTS.md、README 和 nocobase-deployment、nocobase-hub-cli Skill，检查依赖、工作区和支持的命令。简要说明计划后，可以完成首次部署所需的检查、配置准备、构建、上传和部署。
-通过 hub remote list 和 hub auth status 确认远程与本次要求一致且 Hub 接受其密钥；不一致时让我执行 hub auth login，不经手密钥。由 hub deploy 按 Hub 报告的平台构建，不要自行执行 pnpm build 或指定目标平台。基于 config.example.yml 准备完整运行配置，检查数据库持久路径、管理员和插件必填项，不复制开发环境配置。需要密码时告诉我安全填写位置后等待；发现已有部署或数据时停止并询问是否改为更新。
-运行必要检查，使用 hub deploy 完成构建、上传和部署，并等待最终结果。网络超时先核实部署记录，重试同一次请求才复用原幂等键。
-最后报告版本、Release 和操作 ID、访问地址、迁移结果、健康检查和业务验证。无法查询部署记录或登录时，告诉我在 Hub 或业务页面需要核对什么，不虚构命令或扩大 API Key 权限；不能把“上传成功”当作部署成功。
-```
-
-使用 PostgreSQL 等外部数据库时，把 SQLite 数据计划替换为主机、端口、数据库名、用户名和密码所在的变量或凭据文件路径；检查构建产物包含兼容驱动并提交完整运行配置。已有外部数据库执行迁移前先完成备份。
 
 ### 用 app-installer 部署到服务器
 
@@ -109,33 +88,9 @@ SSH 目标：<例如 crm-prod>
 最后检查容器健康、实际挂载路径健康接口和日志，报告镜像标识、登录地址和 HTTPS/反向代理待办。修改现有代理服务前等我确认；本机健康不等于公网可用。
 ```
 
-### 安装 Hub
-
-直接在服务器开启 Agent 会话；安装 Hub 不需要先创建开发项目。
-
-```text
-请在当前服务器用 app-installer 安装 NocoBase Hub，不开发或修改 Hub 源码。我已具备专业版授权。
-安装目录：<例如 /srv/nocobase/hub>
-公网 origin：<例如 https://apps.example.com>；挂载路径：/hub。
-数据库：新 SQLite；端口：13000，仅监听 127.0.0.1。
-域名和 HTTPS 状态：<实际情况>
-
-读取 nocobase-app-installer Skill，检查 Node、pnpm、全局 pm2、目录、端口和磁盘空间。可以执行首次安装和启动；缺少依赖、目录非空或需要 sudo 时先说明。使用发布的 Hub 模板，不启动开发服务。
-安装前告诉我如何安全设置管理员凭据。完成后验证 /hub/api/healthz 和登录地址，报告配置、数据、备份位置和开机启动步骤，给出将整个域名转发给 Hub、支持 WebSocket 和 Release 上传大小的反向代理配置。修改已有代理服务前等我确认。没有托管应用时只报告 Hub 验收结果，说明下一步如何创建和发布应用。
-```
-
 ## 更新与回滚
 
 已有安装不能继续使用首次部署任务单。要先明确当前版本、配置和数据、备份如何恢复以及允许的停机窗口；Agent 应说明影响范围和估算依据。
-
-### 更新 Hub 上的应用
-
-在原应用源码根目录发送：
-
-```text
-请更新 Hub 上的应用。Hub 远程：<名称>；API Key 已通过 hub auth login 保存。沿用 Hub 当前配置、数据库和上传文件，不用本机开发配置覆盖。
-读取部署和 Hub CLI Skill，用 hub status 记录当前运行的 Release，检查源码、配置和迁移差异；hub deploy 按 Hub 报告的平台构建。说明停机、备份和恢复要求，等我确认切换窗口和备份状态后再发布。结果未确认时先核实状态，重试同一次请求复用同一幂等键。完成后核对运行 Release、健康状态和业务访问，并保留回滚依据。
-```
 
 ### 更新 app-installer 安装的应用
 
@@ -146,20 +101,13 @@ SSH 目标：<例如 crm-prod>
 先读取 Skill 并运行 status，核对当前版本、归档平台、配置、备份范围和迁移风险。先运行不带 --yes 的预检，把停机和备份说明告诉我；我确认且外部数据库已备份后再执行。沿用密钥、数据库和 storage，完成后报告新旧版本、备份位置和验证结果；自动回滚时说明最终运行版本。
 ```
 
-### 回滚 Hub 上的应用
-
-```text
-请将 Hub 应用回滚到指定 Release。Hub 远程：<名称>；目标 Release ID：<从 hub releases 或 Hub 历史中选择的 ID>；API Key 已通过 hub auth login 保存。
-先核对目标 Release、配置和数据库兼容性，说明停机与数据恢复风险，等我确认再执行。用 hub releases 核对目标 Release，不猜“上一个版本”。新一次回滚使用新的幂等键，同一次请求重试才复用原键；不要把历史成功记录当成本次切换成功。代码回滚不等于数据库恢复，不擅自恢复或清空数据。完成后核对运行版本、健康状态和业务访问。
-```
-
 Docker 更新应指定新镜像标签或摘要，复用 Compose 配置和持久目录，确认备份及切换窗口并保留旧镜像。app-installer 回滚应先读取安装器确认说明，注意 SQLite 恢复可能丢失升级后的数据。不要把代码回滚当作数据库恢复，具体操作见[手动部署：独立运行](./standalone)。
 
 ## 验收
 
 让 Agent 给出简短的部署报告，至少包含：
 
-- 目标服务器或 Hub 应用、源码版本、归档校验和或镜像标识、最终运行版本。
+- 目标服务器、源码版本、归档校验和或镜像标识、最终运行版本。
 - 配置与持久目录位置、迁移和初始化结果，不包含密钥内容。
 - 健康检查地址及响应、正式访问地址、已完成的登录与业务检查。
 - 更新时的旧版本、备份位置、回滚办法；未完成的检查、原因和具体下一步。

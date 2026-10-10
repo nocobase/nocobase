@@ -1,7 +1,6 @@
 /**
  * Release artifacts: spooling an upload to a temporary file with its checksum, size limit and empty check, and reading
- * the metadata a release records (version, config template, manifest) from the archive. Adapted from the Hub plugin's
- * `artifact-upload.ts` and `inspectArtifact`.
+ * the metadata a release records (version, config template, manifest) from the archive.
  */
 import { createHash } from 'node:crypto';
 import { lstat, mkdtemp, open, readFile, rm } from 'node:fs/promises';

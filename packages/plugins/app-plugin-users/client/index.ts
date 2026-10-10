@@ -2,8 +2,4 @@
 // its client/plugins.ts.
 export { default } from './plugin.js';
 export type { UsersClientOptions } from './plugin.js';
-export {
-  createUsersRoutes,
-  USERS_PAGE_ACCESS,
-  USERS_ROUTE_ID,
-} from './routes.js';
+export { INVITE_ROUTE_ID } from './routes.js';

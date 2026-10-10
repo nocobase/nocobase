@@ -298,7 +298,7 @@ export interface UsersConfig {
    * `nocobase` / `admin@nocobase.com` / `admin123`; set at all, it needs a password.
    */
   readonly initialAdmin?: InitialAdminConfig;
-  /** Disable when an application provides its own assignment scope, such as Hub. */
+  /** Disable when an application provides its own assignment scope. */
   readonly permissionSets?: boolean;
   readonly invitations?: {
     /** The notification Channel invitation emails go through; `system-email` by default. */

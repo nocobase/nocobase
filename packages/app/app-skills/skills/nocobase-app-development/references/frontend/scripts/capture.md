@@ -1,6 +1,6 @@
 # Screenshot tool
 
-`capture.mjs` uses Playwright to open pages, perform actions and take screenshots according to a configuration, and writes console errors, page exceptions and 4xx/5xx requests to `screenshots/capture-log.json`. The full workflow uses it in its acceptance review (step 4 of [`../ui-workflow.md`](../ui-workflow.md)). It imports `@playwright/test` from the application's own `node_modules`, which the Default and Examples templates install and the Hub template does not: in a Hub application run `pnpm add -D @playwright/test` first, the devDependency [`../references/testing.md`](../references/testing.md) names for end-to-end tests. Run it from the application root:
+`capture.mjs` uses Playwright to open pages, perform actions and take screenshots according to a configuration, and writes console errors, page exceptions and 4xx/5xx requests to `screenshots/capture-log.json`. The full workflow uses it in its acceptance review (step 4 of [`../ui-workflow.md`](../ui-workflow.md)). It imports `@playwright/test` from the application's own `node_modules`, which the Default and Examples templates install: in an application without it run `pnpm add -D @playwright/test` first, the devDependency [`../references/testing.md`](../references/testing.md) names for end-to-end tests. Run it from the application root:
 
 ```bash
 # 1. Save the sign-in session: a browser window opens, the user signs in themselves, and the script never touches the password

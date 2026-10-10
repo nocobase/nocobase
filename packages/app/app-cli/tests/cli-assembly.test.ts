@@ -307,7 +307,7 @@ describe('topic collisions', () => {
         .map((name) => pluginTopicFor(`@nocobase/${name}`)),
     );
 
-    expect(names).toEqual(expect.arrayContaining(['hub', 'i18n', 'workflow']));
+    expect(names).toEqual(expect.arrayContaining(['agents', 'i18n']));
     expect(names.filter((name) => RESERVED_TOPICS.includes(name))).toEqual([]);
   });
 });

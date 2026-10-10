@@ -29,12 +29,9 @@ await api.request({
 });
 
 const stream = await api.stream({
-  path: `/aiEmployee/conversations/${encodeURIComponent(sessionId)}/send`,
+  path: `/chats/${encodeURIComponent(chatId)}/send`,
   method: 'POST',
-  json: {
-    aiEmployee: 'atlas',
-    messages: [{ role: 'user', content: { type: 'text', content: 'Hello' } }],
-  },
+  json: { message: 'Hello' },
 });
 
 const order = await api.repository<Order>('orders').findOne({

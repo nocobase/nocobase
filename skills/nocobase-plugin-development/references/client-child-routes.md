@@ -1,12 +1,12 @@
 # Child routes and route navigation
 
-Use this guide for nested pages, page Tabs, and menu groups in a plugin. All source paths are relative to the plugin package. Register its routes and locales through the Client plugin declaration; see [Client contributions](client.md) and [internationalization](i18n.md). First [copy the required page and route components into the plugin](client-components.md#copy-page-and-route-components-into-the-plugin). Routes are the source of navigation for App, Settings, and Dev. Business page code decides how child content is presented.
+Use this guide for nested pages, page Tabs, and menu groups in a plugin. All source paths are relative to the plugin package. Register its routes and locales through the Client plugin declaration; see [Client contributions](client.md) and [internationalization](i18n.md). First [copy the required page and route components into the plugin](client-components.md#copy-page-and-route-components-into-the-plugin). Routes are the source of the application's navigation. Business page code decides how child content is presented.
 
 Wrap the parent page content in `PageContainer` to apply the shared page padding and spacing. Inline Tab content renders within that container and does not add a second one.
 
 ## Default for page Tabs
 
-When asked to build a page with Tabs, use child routes by default; the user does not need to request routing separately. This applies to App, Settings, and Dev pages, including plugin-owned pages. Follow an explicit user request for a different interaction.
+When asked to build a page with Tabs, use child routes by default; the user does not need to request routing separately. This applies to every page, including plugin-owned pages. Follow an explicit user request for a different interaction.
 
 A Tab is a view of its parent page rather than a place of its own, so a Tab route declares no `breadcrumb`; the trail stops at the parent.
 
@@ -184,7 +184,7 @@ Follow this order:
 
 ### 1. Add a child route
 
-Add the route in `<plugin>/client/routes.ts`, inside the owning `defineAppRoutes()`, `defineSettingsRoutes()`, or `defineDevRoutes()` contribution. Do not declare the child route in the page component file. Declare the overlay as a child of the page that should remain mounted underneath it:
+Add the route in `<plugin>/client/routes.ts`, inside the owning `defineAppRoutes()` contribution. Do not declare the child route in the page component file. Declare the overlay as a child of the page that should remain mounted underneath it:
 
 ```ts
 {
@@ -335,11 +335,9 @@ Returning `false` keeps the overlay open. The guard applies to the close button,
 - Is `beforeClose` present when unsaved state needs protection?
 - Do direct URLs, refresh, query strings, browser back/forward, and nested overlays behave correctly?
 
-## Settings and Dev
+## Authentication and authorization
 
-Use the same page/group shape with `defineSettingsRoutes()` or `defineDevRoutes()`. Do not write `/settings` or `/dev` in their declared paths. A settings page's nested detail or Tab normally omits navigation. Dev routes and modules reachable only from them are excluded from production.
-
-App entry routes choose auth; descendants inherit it. Settings and Dev require sign-in. Declare `authz` on the first page of every path: a `{ resource: { type, id }, action }` request, `'skip'` or `'unrestricted'`; nothing is inferred from the route name. A nested page that omits it inherits its nearest ancestor page's value, and a child's own value overrides it. An entry page that omits it registers with a development warning and defaults to `'unrestricted'` (root only) on protected App and settings pages or `'skip'` on guest, optional and dev pages. Every parent check must pass before a child is rendered, so a child that needs nothing beyond its parent may declare `'skip'`. A menu group cannot declare `authz` and adds no page permission. Client access checks do not replace server authorization.
+There is no Settings or Dev route surface; `defineAppRoutes()` is the only Client route API. Entry routes choose auth; descendants inherit it. Declare `authz` on the first page of every path: a `{ resource: { type, id }, action }` request, `'skip'` or `'unrestricted'`; nothing is inferred from the route name. A nested page that omits it inherits its nearest ancestor page's value, and a child's own value overrides it. An entry page that omits it registers with a development warning and defaults to `'unrestricted'` (root only) on protected pages or `'skip'` on guest and optional pages. Every parent check must pass before a child is rendered, so a child that needs nothing beyond its parent may declare `'skip'`. A menu group cannot declare `authz` and adds no page permission. Client access checks do not replace server authorization.
 
 ## Verify
 

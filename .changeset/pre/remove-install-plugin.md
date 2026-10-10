@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-template-default': major
 '@nocobase/app-template-examples': major
-'@nocobase/app-template-hub': major
 '@nocobase/app-plugin-authentication': major
 ---
 

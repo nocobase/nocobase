@@ -77,7 +77,7 @@ features:
         details: 'Roles, menu visibility, and which records each user may see.'
         link: /capabilities/authorization
       - title: 'More…'
-        details: 'Notifications, files, languages, themes, AI employees and knowledge base.'
+        details: 'Notifications, files, languages, themes and knowledge base.'
         link: /capabilities/
 
   - title: 'Ship and look up'

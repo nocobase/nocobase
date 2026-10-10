@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-client': major
 '@nocobase/app-template-default': major
-'@nocobase/app-template-hub': major
 '@nocobase/app-server': major
 '@nocobase/app-plugin-authentication': minor
 '@nocobase/app-plugin-authorization': minor

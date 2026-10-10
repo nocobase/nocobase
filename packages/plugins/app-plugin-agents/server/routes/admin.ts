@@ -308,6 +308,7 @@ export function createAdminRoutes(
                     agent.runnerIds.includes(runner.id)),
               ).length,
         canEdit: await mayEdit(who, agent.ownerUserId),
+        owned: agent.ownerUserId === who.userId,
         canCopy: services.agents.mayInvoke(agent, who.userId),
       });
     return result;

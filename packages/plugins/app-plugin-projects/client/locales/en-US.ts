@@ -6,6 +6,7 @@ import plansEnUS from './plans.en-US.js';
 const pages = {
   actions: {
     cancel: 'Cancel',
+    close: 'Close',
     save: 'Save',
   },
   activity: {

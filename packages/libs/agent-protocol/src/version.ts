@@ -170,7 +170,7 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
  */
 export const TOOL_EFFORTS: Readonly<Record<AgentTool, readonly string[]>> = {
   claude: ['low', 'medium', 'high', 'xhigh', 'max'],
-  codex: ['minimal', 'low', 'medium', 'high', 'xhigh'],
+  codex: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
   opencode: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'],
   pi: ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'],
 };

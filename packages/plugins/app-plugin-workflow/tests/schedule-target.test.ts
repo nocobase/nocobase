@@ -16,7 +16,7 @@ const context = {
 };
 
 describe('WorkflowScheduleTarget', () => {
-  it('describes workflows with their route id, not the workflow key', async () => {
+  it('describes workflows by their title, not the workflow key', async () => {
     const testDatabase = await createTestDatabase();
     const { database } = testDatabase;
     try {
@@ -38,10 +38,10 @@ describe('WorkflowScheduleTarget', () => {
         })
         .execute();
       const target = createTarget(vi.fn(), database);
-      await expect(
-        target.describe({ workflowKey: 'daily' }),
-      ).resolves.toMatchObject({
-        href: '/settings/workflow/workflows/1',
+      // The plugin ships no page to link to, so the summary carries no `href`.
+      await expect(target.describe({ workflowKey: 'daily' })).resolves.toEqual({
+        targetLabel: 'Daily',
+        state: 'ready',
       });
     } finally {
       await testDatabase.destroy();

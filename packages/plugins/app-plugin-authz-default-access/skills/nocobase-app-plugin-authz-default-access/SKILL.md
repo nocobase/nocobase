@@ -77,6 +77,6 @@ Build the rule with `defineDefaultAccessRule` in a portable seed-data module and
 
 ## Administration and acceptance
 
-Use the existing settings page, `/settings/authorization/default-access`, for ordinary configuration; its HTTP routes are listed in the package README and each checks `settings:authorization.default-access` with `read`, `create`, `update` or `delete`. Reading options never grants write access.
+The plugin contributes no page; an application that edits these rules builds its page on the HTTP routes, which are listed in the package README and each checks `settings:authorization.default-access` with `read`, `create`, `update` or `delete`. Reading options never grants write access.
 
-Run the owning feature's route and policy tests for allowed and denied records, multiple grants and rule removal. Verify changes with a new request and inspect the same operation in Settings → Authorization → Inspector; a client snapshot does not prove that a row operation is allowed. Report the rules changed and the observed allow and deny outcomes.
+Run the owning feature's route and policy tests for allowed and denied records, multiple grants and rule removal. Verify changes with a new request and inspect the same operation with `POST /api/authorization/inspector/decide`; a client snapshot does not prove that a row operation is allowed. Report the rules changed and the observed allow and deny outcomes.

@@ -80,10 +80,6 @@ Keep the code and check results after each chapter. When pausing, record where y
 
 Your AI Agent can write the code, but you need to start the project, describe rules, and check behavior. Ask it to explain unfamiliar fields or files in relation to the business task before changing them.
 
-### Do I need an AI employee configured inside the application?
-
-No. This tutorial uses an AI Agent in the project directory. An in-app AI employee is not a prerequisite.
-
 ### Is the result a complete order product?
 
 The case covers submission, supervisor decisions, and in-app notifications. Product line items, stock, payments, multi-stage approval, and full decision history need further design for your business.

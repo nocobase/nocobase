@@ -1,6 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "开发方式" },
-  { "type": "file", "name": "employee", "label": "注册 AI 员工" },
-  { "type": "file", "name": "tool", "label": "注册 Tool" },
-  { "type": "file", "name": "skill", "label": "注册 Skill" }
-]

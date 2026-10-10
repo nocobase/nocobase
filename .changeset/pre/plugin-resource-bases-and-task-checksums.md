@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-authorization': patch
@@ -7,7 +6,6 @@
 '@nocobase/app-plugin-database-explorer': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-file-example': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-i18n': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
@@ -23,7 +21,6 @@
 '@nocobase/app-server': major
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/create-plugin': patch
 '@nocobase/db': minor
 '@nocobase/dev-config': minor

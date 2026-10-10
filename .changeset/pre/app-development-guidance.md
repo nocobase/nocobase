@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-template-default': minor
-'@nocobase/app-template-hub': minor
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/authorization': patch
 ---

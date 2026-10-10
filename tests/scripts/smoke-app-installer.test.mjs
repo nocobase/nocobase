@@ -5,22 +5,18 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
-  BROKEN_VERSION,
-  OLDER_VERSION,
   databaseFile,
   markLastUpgradeMigrated,
   parseArgs,
   processCommandLine,
-  registerBrokenRelease,
-  registerOlderRelease,
   releaseIdOf,
   repackArchive,
 } from '../../scripts/smoke-app-installer.mjs';
 
-test('the smoke script takes a source, a root, a port and the installer command after --', () => {
-  const defaults = parseArgs(['--source', 'template', '--root', '/tmp/hub']);
-  assert.equal(defaults.source, 'template');
-  assert.equal(defaults.root, path.resolve('/tmp/hub'));
+test('the smoke script takes a root, an archive, a port and the installer command after --', () => {
+  const defaults = parseArgs(['--root', '/tmp/crm', '--archive', 'crm.tar.gz']);
+  assert.equal(defaults.root, path.resolve('/tmp/crm'));
+  assert.equal(defaults.archive, path.resolve('crm.tar.gz'));
   assert.equal(defaults.port, 13000);
   assert.deepEqual(defaults.installer, [
     'node',
@@ -28,8 +24,6 @@ test('the smoke script takes a source, a root, a port and the installer command 
   ]);
 
   const custom = parseArgs([
-    '--source',
-    'archive',
     '--root',
     '/tmp/crm',
     '--archive',
@@ -42,7 +36,6 @@ test('the smoke script takes a source, a root, a port and the installer command 
     '@nocobase/app-installer@0.1.0',
   ]);
   assert.equal(custom.port, 13200);
-  assert.equal(custom.archive, path.resolve('crm.tar.gz'));
   assert.deepEqual(custom.installer, [
     'npx',
     '--yes',
@@ -51,44 +44,14 @@ test('the smoke script takes a source, a root, a port and the installer command 
 
   for (const args of [
     [],
-    ['--root', '/tmp/hub'],
-    ['--source', 'template', '--port', '13000'],
-    ['--source', 'other', '--root', '/tmp/hub'],
-    ['--source', 'archive', '--root', '/tmp/crm'],
-    ['--source', 'template', '--root', '/tmp/hub', '--archive', 'x.tar.gz'],
-    ['--source', 'template', '--root', '/tmp/hub', '--port', 'x'],
-    ['--source', 'template', '--root', '/tmp/hub', '--other', 'y'],
-    ['--source', 'template', '--root', '/tmp/hub', '--'],
+    ['--root', '/tmp/crm'],
+    ['--archive', 'crm.tar.gz'],
+    ['--source', 'archive', '--root', '/tmp/crm', '--archive', 'crm.tar.gz'],
+    ['--root', '/tmp/crm', '--archive', 'crm.tar.gz', '--port', 'x'],
+    ['--root', '/tmp/crm', '--archive', 'crm.tar.gz', '--other', 'y'],
+    ['--root', '/tmp/crm', '--archive', 'crm.tar.gz', '--'],
   ])
     assert.throws(() => parseArgs(args));
-});
-
-test('the smoke script refuses the App Host port for the Hub, not for an archive', () => {
-  assert.throws(
-    () =>
-      parseArgs([
-        '--source',
-        'template',
-        '--root',
-        '/tmp/hub',
-        '--port',
-        '13010',
-      ]),
-    /App Host/,
-  );
-  assert.equal(
-    parseArgs([
-      '--source',
-      'archive',
-      '--root',
-      '/tmp/crm',
-      '--archive',
-      'crm.tar.gz',
-      '--port',
-      '13010',
-    ]).port,
-    13010,
-  );
 });
 
 test('release ids are formed the way app-installer forms them', () => {
@@ -114,7 +77,7 @@ function fakeInstallation(root, installed) {
     path.join(root, 'installer.json'),
     JSON.stringify({
       schemaVersion: 1,
-      name: 'nocobase-hub',
+      name: 'nocobase-crm',
       current: id,
       releases: [
         {
@@ -137,79 +100,6 @@ function fakeInstallation(root, installed) {
 
 const readState = (root) =>
   JSON.parse(fs.readFileSync(path.join(root, 'installer.json'), 'utf8'));
-
-test('an older release is registered as a copy of the installed one and made current', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'installer-smoke-'));
-  try {
-    const installedId = fakeInstallation(root, '1.0.0-beta.37');
-    const older = releaseIdOf(OLDER_VERSION, '2000-01-01T00:00:00.000Z');
-
-    assert.deepEqual(registerOlderRelease(root), {
-      name: 'nocobase-hub',
-      id: older,
-      upgradeTarget: '1.0.0-beta.37',
-    });
-
-    const state = readState(root);
-    assert.equal(state.current, older);
-    assert.deepEqual(
-      state.releases.map((entry) => entry.id),
-      [older, installedId],
-    );
-    // Older than the installed release, so pruning after the upgrade keeps the right one.
-    assert.ok(state.releases[0].installedAt < state.releases[1].installedAt);
-    assert.deepEqual(state.releases[0].buildTarget, buildTarget);
-    assert.equal(
-      fs.readlinkSync(path.join(root, 'current')),
-      path.join('releases', older, 'app'),
-    );
-    assert.match(
-      fs.readFileSync(
-        path.join(root, 'current', 'dist', 'server', 'standalone.js'),
-        'utf8',
-      ),
-      /1\.0\.0-beta\.37/,
-    );
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('a broken release is a newer copy whose server entry throws, not made current', () => {
-  const root = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'installer-smoke-broken-'),
-  );
-  try {
-    const installedId = fakeInstallation(root, '1.0.0');
-    const broken = registerBrokenRelease(root, installedId);
-    assert.match(
-      broken,
-      new RegExp(`^${BROKEN_VERSION.replaceAll('.', '\\.')}_`),
-    );
-    const state = readState(root);
-    assert.equal(state.current, installedId);
-    assert.deepEqual(
-      state.releases.map((entry) => entry.version),
-      ['1.0.0', BROKEN_VERSION],
-    );
-    const entry = fs.readFileSync(
-      path.join(
-        root,
-        'releases',
-        broken,
-        'app',
-        'dist',
-        'server',
-        'standalone.js',
-      ),
-      'utf8',
-    );
-    assert.match(entry, /^throw new Error/);
-    assert.match(entry, /startServer/);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
 
 test('marking the last upgrade as migrated touches only that entry', () => {
   const root = fs.mkdtempSync(
@@ -287,7 +177,7 @@ test('a later build is a repacked archive with a new build time, broken on reque
   }
 });
 
-test('the database is the Hub one at its known path, or the one file an application has', () => {
+test('the database is the one file an application has', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'installer-smoke-db-'));
   try {
     fs.mkdirSync(path.join(root, 'storage', 'logs'), { recursive: true });
@@ -298,10 +188,8 @@ test('the database is the Hub one at its known path, or the one file an applicat
       path.join(root, 'storage', 'database.sqlite'),
     );
 
-    const hub = path.join(root, 'storage', 'hub', 'database', 'main.sqlite');
-    fs.mkdirSync(path.dirname(hub), { recursive: true });
-    fs.writeFileSync(hub, '');
-    assert.equal(databaseFile(root), hub);
+    fs.writeFileSync(path.join(root, 'storage', 'other.sqlite'), '');
+    assert.throws(() => databaseFile(root), /found 2/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

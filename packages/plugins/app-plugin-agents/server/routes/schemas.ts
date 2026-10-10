@@ -492,6 +492,7 @@ export const AgentSummarySchema: z.ZodType<AgentSummary> = agentObject
     activeRuns: z.number().int(),
     onlineRunners: z.number().int(),
     canEdit: z.boolean(),
+    owned: z.boolean(),
     canCopy: z.boolean(),
   })
   .meta({ ref: 'AgentsAgentSummary' });

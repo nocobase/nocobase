@@ -2,7 +2,6 @@
 '@nocobase/app-server': minor
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Declare database dialect drivers on the application's own database config.

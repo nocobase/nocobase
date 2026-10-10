@@ -90,13 +90,12 @@ the build boundary a running server reaches, and it does so through a dynamic
 import that a production runtime never evaluates and that never loads the
 compiler.
 
-The client contributes Workflows and Workflow runs under the application's Automation settings group. Their record detail routes stay inside the settings layout at `/settings/workflow/workflows/:id` and `/settings/workflow/runs/:id`.
+The client contributes no pages. It registers the workflow service provider and locales, and keeps the canvas, inspector and version comparison components; an application that manages workflows builds its pages on the `/api/workflows` routes and declares them among its own routes.
 
 Register it with `pnpm nocobase plugin register workflow --workspace-root . --app app-template-default`.
 Application-owned workflow source remains in the application package. The
-plugin itself owns and publishes its complete management UI; enabling the
-plugin is sufficient to register the Automation settings pages and their
-detail routes.
+plugin contributes no management pages; an application that needs them builds
+them on the management HTTP API.
 
 Run modules receive execution options containing a read-only application
 service resolver, the Workflow abort signal, and a contextual logger. They

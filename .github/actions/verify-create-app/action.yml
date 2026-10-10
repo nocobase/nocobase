@@ -1,6 +1,6 @@
 name: Verify create-app
 description: >-
-  Publishes packages to a throwaway registry, generates Default, Examples, and Hub applications with create-app, and checks test,
+  Publishes packages to a throwaway registry, generates Default and Examples applications with create-app, and checks test,
   dev, build, and production start. Fails the run before anything reaches the real registry.
 
 inputs:
@@ -14,7 +14,7 @@ inputs:
     description: Disable upstream resolution for workspace packages so PRs test their own artifacts at committed versions.
     default: 'false'
   template-kind:
-    description: Template to verify (default, examples, hub, or all).
+    description: Template to verify (default, examples, or all).
     default: all
   package-artifacts:
     description: Directory containing the complete set of tarballs produced by pack:check. Empty uses changeset publish.
@@ -37,9 +37,9 @@ runs:
       run: |
         set -euo pipefail
         case "$TEMPLATE_KIND" in
-          all|default|examples|hub) ;;
+          all|default|examples) ;;
           *)
-            echo "::error::template-kind must be all, default, examples, or hub; received '$TEMPLATE_KIND'"
+            echo "::error::template-kind must be all, default, or examples; received '$TEMPLATE_KIND'"
             exit 2
             ;;
         esac
@@ -237,7 +237,7 @@ runs:
         # the working tree — a generated application there would be committed and published.
         # Each template has its own dependency graph: workspace tests cannot prove that its published declarations resolve.
         if [ "$TEMPLATE_KIND" = 'all' ]; then
-          TEMPLATE_KINDS=(default examples hub)
+          TEMPLATE_KINDS=(default examples)
         else
           TEMPLATE_KINDS=("$TEMPLATE_KIND")
         fi

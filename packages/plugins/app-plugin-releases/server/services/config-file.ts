@@ -1,7 +1,7 @@
 /**
  * An App's `config.yml`: validation, generated secrets and atomic writes. A new App starts from its release's
  * `config.example.yml`; `secrets.keys`, `auth.secret` and `session.secret` are generated when missing or left as
- * placeholders, and an existing value is kept across deployments. Adapted from the Hub plugin.
+ * placeholders, and an existing value is kept across deployments.
  */
 import { randomBytes, randomUUID } from 'node:crypto';
 import { chmod, mkdir, rename, rm, writeFile } from 'node:fs/promises';

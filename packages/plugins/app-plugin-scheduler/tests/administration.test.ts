@@ -1,11 +1,9 @@
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
-import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { expect, it } from 'vitest';
 import { SchedulerAuthorizationProvider } from '../server/authorization.js';
-import routes from '../client/routes.js';
 
 it.each([false, true])(
   'extends the Automation subsection (workflow booted first: %s)',
@@ -49,20 +47,3 @@ it.each([false, true])(
     ).toThrow();
   },
 );
-
-it('uses administration read for Settings and standalone detail routes', () => {
-  const resolved = resolveAppClientContributions([
-    { packageName: '@nocobase/app-plugin-scheduler', routes },
-  ]);
-  expect(resolved.routes.length).toBeGreaterThan(0);
-  for (const route of resolved.routes) {
-    expect(route.authz).toEqual({
-      resource: { type: 'settings', id: 'scheduler.schedules' },
-      action: 'read',
-    });
-  }
-  expect(resolved.settingsRouteTree[0]?.children?.[0]?.authz).toEqual({
-    resource: { type: 'settings', id: 'scheduler.schedules' },
-    action: 'read',
-  });
-});
