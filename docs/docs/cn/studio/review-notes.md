@@ -87,4 +87,51 @@ Developer 检查后发现项目没有关联代码仓库，运行目录只有 Run
 - **GitHub 连接与 Webhook：** 在 Studio 的 Git 设置中配置 GitHub App 连接并授权目标仓库。将对应连接的 Webhook 接收地址填入 GitHub App 的 Webhook URL，并在两端配置一致的 Webhook secret。若采用仓库级 Webhook，则使用该仓库对应的接收地址和 secret。接收地址由实际连接或仓库决定，不使用示例 ID。
 - **Actions 凭据与工作流：** 使用 Studio 的 CI 配置为仓库生成部署所需的 API key，将其保存为 GitHub Actions secret **`NB_STUDIO_API_KEY`**；工作流中的 **`NB_STUDIO_URL`** 使用 Actions 可访问的 Studio 地址（本例包含 `/main`）。将生成的工作流保存到 `.github/workflows/`，核对触发分支和部署环境后再启用。Webhook secret 与 Actions API key 分别配置。
 
-当前演示尚未完成代码位置关联、应用初始化和 CI 接入。完成这些准备后，再继续下方的开发流程。
+当前演示已关联本地代码位置，应用初始化与 CI 接入尚未完成。
+
+## Developer 缺少 NocoBase 3 初始化指引
+
+**状态：本次运行已确认，本地已补充任务说明。**
+
+补齐代码位置后，Developer 能识别本地仓库，但仓库只有初始 README，没有应用源码及生成应用自带的 Skills。该次运行只加载 `nb-studio-cli`，它负责 Studio 项目和任务操作，不包含应用脚手架指引；任务原描述也未明确 NocoBase 3 的初始化步骤。Agent 搜索旧官网返回空结果后，自行使用 `yarn create nocobase-app . -d postgres`。没有证据说明旧命令来自该 Skill 或实际读到的网页。
+
+源码中的专用 NocoBase 初始化流程已有正确指引：Node.js 24+、pnpm 11，以及 `pnpm create @nocobase/app northstar-logistics --template default --json`。生成器要求新的空目标目录，因此需要先生成应用，再将源码放入已有 Git 仓库。普通开发任务没有自动取得这些指引，形成了新应用初始化与后续开发之间的衔接缺口。
+
+**建议：**从零创建应用时，由专用初始化流程提供版本明确的命令、前置条件和失败处理，或为执行 Agent 配备相应初始化 Skill，不让普通 Developer 自行猜测安装方式。本地已将正确步骤补到原 PM-1；这不代表默认流程已修复。
+
+## Runner 默认策略拒绝下载执行初始化脚手架
+
+**状态：默认策略与实测拒绝已确认，本地已补精确白名单。**
+
+Developer 的原 `toolPolicy` 为 null，使用产品的 `DEFAULT_TOOL_POLICY`。普通命令白名单允许 pnpm、yarn 等工具，但未配置 `allowedDownloads`；Runner 对 `pnpm create`、`yarn create`、`pnpm dlx` 等下载外部代码并立即执行的命令另行检查，默认拒绝。这个默认行为不是本轮安装 Runner 时额外加的限制，也不等于所有 npm 依赖安装均被禁止。
+
+本轮不仅旧版命令被拒，补充正确的 NocoBase 3 命令后也发生拒绝。当前版本的专用初始化说明提供了脚手架命令，但运行领取路径仍合并 Agent 默认工具策略，未发现按初始化任务自动增加下载授权的逻辑；尚未实测所有专用初始化入口，不将源码分析扩大为所有版本的运行结论。
+
+**影响与建议：**默认 Developer 无法直接执行该脚手架来初始化新应用。初始化流程应同时准备正确指引和明确授权范围，并在启动前检查，避免任务运行后才暴露缺口。本地仅放行本例官方脚手架命令，保留其他默认限制。首次精确规则遗漏 `NODE_OPTIONS` 内存参数前缀，导致重试仍被拒；该本地规则随后已修正，不把这一配置失误归为产品缺陷。
+
+### 本轮临时处理与验证进度
+
+以下是演示环境的实际补充，不代表产品默认流程已修复。
+
+1. 创建专用 Git 仓库，将本地 checkout 关联到项目的 Runner 代码位置；在原 PM-1 中补充目录信息，继续原任务。运行记录确认 Runner 已在该目录执行。
+2. 在任务说明中补充 NocoBase 3 官方初始化命令、Node.js/pnpm 前置版本、空目录要求和默认 SQLite 方案，由 Developer 在 Runner 上执行。
+3. 为本地 Developer 的 `allowedDownloads` 添加仅匹配本例官方脚手架的规则，同时保留其他默认权限检查。修正规则的内存参数前缀及正则转义问题后，用 Runner 的实际策略函数验证：本例命令允许，其他脚手架下载仍拒绝。后续运行确认正确命令已真正执行。
+4. 执行随后暴露 pnpm 在隔离 HOME 中创建 dlx 缓存失败。任务已补充仓库内可写 `XDG_CACHE_HOME` 路径，并为带该缓存路径和内存参数的精确命令追加许可，再交 Runner 重试。
+
+5. 使用仓库内 pnpm 缓存后，官方脚手架已实际执行，但模板下载两次返回 `TEMPLATE_DOWNLOAD_FAILED`。模板版本查询正常；生成器内部调用 `npm pack --silent`，底层错误未完整呈现。已补充仓库内 `npm_config_cache` 路径交 Runner 排查，这一处理的最终结果仍待确认。
+
+**后续验证结果：**2026-10-10 的 Runner 运行 `391364430790660` 同时设置仓库内 `XDG_CACHE_HOME` 和 `npm_config_cache`，成功下载默认模板并安装依赖；随后执行 `pnpm nocobase config init --json`，默认 SQLite 配置成功。Developer 完成首页和 Orders、Customers、Drivers 导航，提交至本地 `agent-pm-1` 分支，提交 `035df70`。运行记录与任务报告显示应用启动成功，相关检查通过。初始化阻塞已在这次演示中解除；这些本地补充不代表默认流程已修复。
+
+**当前剩余阻塞：**Runner 无可用 GitHub 推送凭据，分支尚未推送；Studio 仅关联本地目录，未通过 Git 连接关联仓库，创建 PR 返回 `NO_REPOSITORY`。尚无应用 PR，后续处理推送凭据与 Studio 仓库连接。
+
+## GitHub App 注册被 localhost Hook URL 阻塞
+
+**状态：已复现，未解决。** 2026-10-10，在本地 Studio 的 Settings → Git 中选择 Add connection → GitHub → My account → Create on GitHub 后，GitHub 显示 `Invalid GitHub App configuration`，并报告 `Hook url is not supported because it isn't reachable over the public Internet (localhost)` 和 `Hook is invalid`。App 注册未完成，尚未进入安装及仓库授权。
+
+![GitHub App 注册失败](./assets/github-app-localhost-blocked-en.png)
+
+**源码事实：** 本轮隔离 Studio 的 `server/git/github.ts` 中，`buildAppManifest` 在 Webhook 关闭时仍生成 `hook_attributes: { url: input.webhookUrl, active: input.webhookActive }`，保留 localhost URL。界面提示关闭 Webhook 后使用轮询，但用户实际注册仍被 GitHub 的 URL 校验拒绝。不能将界面提示当作已验证的本地注册能力。
+
+**影响与区别：** 这是当前 GitHub App 注册阶段的阻塞，与前面后续 CI 无公网访问入口的限制分开记录。此前“隧道到 CI 阶段再开”的安排未覆盖这一实际注册问题。
+
+**后续处理：** 可评估修正注册配置，或提前配置公网地址后重新注册；本轮尚未修改 Studio 源码、开启隧道或完成授权，不宣称已解决。

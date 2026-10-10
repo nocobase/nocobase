@@ -24,7 +24,7 @@ import {
   type Checkout,
   type WorkspaceMeta,
 } from '../src/core/checkout.ts';
-import { isInside } from '../src/core/command-policy.ts';
+import { isInside } from '../src/lib/paths.ts';
 import {
   collectWorkspaces,
   applyDecisions,

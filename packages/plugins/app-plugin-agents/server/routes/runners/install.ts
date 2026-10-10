@@ -14,13 +14,17 @@
  * for each product it:
  *
  * 1. asks the application which version it serves for this platform (`DIST_ROUTES.resolve`), sending the token;
- * 2. downloads that standalone tarball (it bundles Node, so nothing needs to be installed first), checks its SHA-256,
- *    and unpacks it into `<prefix>/versions/<version>`, pointing `<prefix>/current` at it and `<bin-dir>/<command>`
+ * 2. downloads that tarball, checks its SHA-256, and unpacks it into `<prefix>/versions/<version>`, pointing `<prefix>/current` at it and `<bin-dir>/<command>`
  *    at `<prefix>/current/bin/<command>`, and records the installation in `<prefix>/install.json` (`mode`: `cli` for
- *    the CLI, `runner` for the runner), which `<cli> update` and the runner's self-update read.
+ *    the CLI, `runner` for the runner), which `<cli> update` and the runner's self-update read. A tarball built for the
+ *    platform bundles its Node. The universal one (`universal=true` in the answer) carries none: before downloading
+ *    it the script checks that `node` on PATH is Node.js 24 or newer, failing with how to install it otherwise, and
+ *    once it is unpacked links `<prefix>/node` to that `node`, which the package's launcher runs it with, so a user
+ *    service started without the shell's PATH (launchd, systemd) still finds it.
  *
- * With `--runner` it then registers the runner with the token (`nocobase-runner register`), installs and starts the
- * user service (`nocobase-runner service install`: a launchd agent or a systemd user unit), and waits until it runs.
+ * With `--runner` it warns when `pnpm` is not on PATH, suggesting `corepack enable`, and carries on. It then registers
+ * the runner with the token (`nocobase-runner register`), installs and starts the user service
+ * (`nocobase-runner service install`: a launchd agent or a systemd user unit), and waits until it runs.
  * An application that serves no CLI still gets its runtime: the CLI is skipped with a note.
  *
  * The script is served with the server's address it was requested from as its default `--server`, so the CLI-only
@@ -226,6 +230,10 @@ else
   fail "sha256sum or shasum is required to check the download."
 fi
 
+if [ "$runner" = 1 ] && ! command -v pnpm >/dev/null 2>&1; then
+  printf '%s\\n' "Note: pnpm is not on PATH. Runs that install a project's dependencies use it; run \\"corepack enable\\" (it comes with Node.js) to get it. Continuing." >&2
+fi
+
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT INT TERM
 runner_bin="$runner_prefix/current/bin/$runner_cmd"
@@ -236,6 +244,19 @@ registered() {
 }
 
 field() { sed -n "s/^$1=//p" "$tmp/resolve" | head -n 1; }
+
+# A universal package carries no Node: sets node_bin to the node on PATH when it is Node.js 24 or newer, and fails
+# saying how to install one otherwise. require_node <command>.
+require_node() {
+  node_hint="Install Node.js 24 or newer (https://nodejs.org/en/download, or with a version manager: nvm install 24), open a new shell so that node is on PATH, and run this command again."
+  node_bin="$(command -v node 2>/dev/null || true)"
+  [ -n "$node_bin" ] || fail "$1 needs Node.js 24 or newer, and node is not on PATH. $node_hint"
+  node_version="$("$node_bin" -p 'process.versions.node' 2>/dev/null || true)"
+  case "$node_version" in
+    ''|*[!0-9.]*) fail "$1 needs Node.js 24 or newer, and $node_bin does not say its version. $node_hint" ;;
+  esac
+  [ "\${node_version%%.*}" -ge 24 ] || fail "$1 needs Node.js 24 or newer; $node_bin is $node_version. $node_hint"
+}
 
 # Installs one product: install_product <command> <prefix> <mode>. Sets "installed" to what happened: "new", "kept"
 # (the token was not accepted, but the CLI is installed), "used" (the token was used, by the runner registered here)
@@ -277,6 +298,11 @@ install_product() {
   case "$checksum" in
     *[!0-9a-f]*|'') fail "The server named an unexpected checksum: $checksum" ;;
   esac
+  universal="$(field universal)"
+  if [ "$universal" = true ]; then
+    require_node "$product"
+    say "$product $version runs on this machine's Node.js $node_version ($node_bin)."
+  fi
 
   dest="$dir/versions/$version"
   if [ -x "$dest/bin/$product" ]; then
@@ -295,6 +321,10 @@ install_product() {
     run mv "$dest.partial" "$dest"
   fi
   run ln -sfn "versions/$version" "$dir/current"
+  if [ "$universal" = true ]; then
+    # The launcher's first choice, so a service that does not have this shell's PATH runs the same Node.
+    run ln -sfn "$node_bin" "$dir/node"
+  fi
   run mkdir -p "$bin_dir"
   run ln -sfn "$dir/current/bin/$product" "$bin_dir/$product"
   if [ "$dry_run" = 0 ]; then
@@ -349,6 +379,7 @@ if [ "$runner" = 1 ]; then
   else
     say "Registered. Start the runner with: $runner_bin start"
   fi
+  say "Note: agents run with full access as $(id -un), with this user's home and credentials. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM."
 else
   say "$cli is installed: $bin_dir/$cli"
 fi

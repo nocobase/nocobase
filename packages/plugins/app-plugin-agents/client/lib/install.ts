@@ -1,5 +1,5 @@
 /**
- * The commands a page shows to install what this application serves (standalone builds with their own Node): the
+ * The commands a page shows to install what this application serves (the host needs Node.js 24 or newer): the
  * runner, `nocobase-runner`, and the application's CLI. "Add runtime" shows one line with `--runner` and a registration
  * token (Cloudflare-Tunnel-style onboarding) that installs both, registers the runner and starts it as a user service;
  * the trust level and the coding tools it may run travel with the token, so the command carries nothing else. Without

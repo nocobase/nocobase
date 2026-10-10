@@ -556,6 +556,10 @@ describe('runtimes page', () => {
         /^nocobase-runner register .*--token fgreg_secret.* && nocobase-runner service install$/u,
       ),
     ).toBeInTheDocument();
+    // The packages run on the host's own Node.js, which the command says beside it.
+    expect(
+      within(dialog).getAllByText('connect.nodeRequired').length,
+    ).toBeGreaterThan(0);
     runners = [...runners, runner('r3', { name: 'build-box' })];
     realtime.publish(RUNNERS_TOPIC, {
       kind: 'runners.changed',

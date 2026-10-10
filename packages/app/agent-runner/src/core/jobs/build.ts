@@ -20,7 +20,7 @@ import type {
   BuildJobSpec,
   BuildOutput,
 } from '../../protocol/index.ts';
-import { isInside } from '../command-policy.ts';
+import { isInside } from '../../lib/paths.ts';
 import { buildJobEnv, prepareJobHome } from './env.ts';
 import {
   addJobWorktree,

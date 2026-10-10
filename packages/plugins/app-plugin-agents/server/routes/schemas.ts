@@ -315,7 +315,14 @@ export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
 
 export const DistTargetQuery: z.ZodType<{
   format?: 'json' | 'env' | undefined;
-}> = z.object({ format: z.enum(['json', 'env']).optional() });
+  accept?: string | undefined;
+}> = z.object({
+  format: z.enum(['json', 'env']).optional(),
+  accept: z.string().max(200).optional().meta({
+    description:
+      'The other answers the caller understands, comma-separated. `npm`: when the application has no tarball of the product but names its npm package, answer that package and exact version (`kind: npm`) instead of 404. Unknown values are ignored.',
+  }),
+});
 
 export const VariableValueInput: z.ZodType<{
   value?: string;
