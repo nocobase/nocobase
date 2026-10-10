@@ -3,7 +3,7 @@
 // The runner's own directory (0700), which no agent works in: `~/.nocobase-runner`. `NOCOBASE_RUNNER_HOME` moves it;
 // tests use that.
 //
-//   ~/.nocobase-runner/settings.json               this machine's runner settings: name, slots, how agents get a home
+//   ~/.nocobase-runner/settings.json               this machine's runner settings: name, slots, free disk, tools
 //   ~/.nocobase-runner/policy.json                 the owner's local policy: what work the runner takes (written by
 //                                                  its owner only; see core/local-policy.ts)
 //   ~/.nocobase-runner/apps/<app>.json             one registration per application: server, runner id
@@ -26,7 +26,7 @@
 // `NOCOBASE_RUNNER_WORK_ROOT` moves it.
 //
 //   ~/.nocobase-runner-work/<app>/<subjectKey>/   one long-lived working directory per subject
-//     .nocobase-runner/                           the runner's per-workspace files: the agent's home, tmp, bin and
+//     .nocobase-runner/                           the runner's per-workspace files: tmp, Codex's home, bin and
 //                                                 the run's skills (`plugin/skills/`)
 //   ~/.nocobase-runner-work/.pnpm-store/          the pnpm store every run shares (core/pnpm-store.ts)
 import {
@@ -39,25 +39,6 @@ import {
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-
-/**
- * Where the person's own copy of a run's CLI keeps its state, such as `~/.acme` (with their `acme login`), which is
- * kept from the agent: the CLI's default state directory, `~/.<name>`, and the home directory's counterpart of the run's
- * credentials directory (`~/.acme` for `.acme/run.json`).
- */
-export function cliStateDirs(
-  cli: {
-    readonly name: string;
-    readonly credential: { readonly file: string };
-  },
-  home: string = os.homedir(),
-): string[] {
-  const dirs = [path.join(home, `.${cli.name}`)];
-  const [top] = cli.credential.file.split(/[\\/]/u);
-  if (cli.credential.file.includes('/') && top !== undefined && top !== '')
-    dirs.push(path.join(home, top));
-  return [...new Set(dirs)];
-}
 
 export function runnerHome(env: NodeJS.ProcessEnv = process.env): string {
   const configured = env.NOCOBASE_RUNNER_HOME;

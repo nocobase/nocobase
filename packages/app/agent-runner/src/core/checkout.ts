@@ -60,7 +60,7 @@ import type {
   RepoReport,
   WorkspaceDir,
 } from '../protocol/index.ts';
-import { isInside } from './command-policy.ts';
+import { isInside } from '../lib/paths.ts';
 import {
   GIT_LOW_SPEED_CONFIG,
   GitNetworkError,
@@ -137,7 +137,7 @@ export function subjectWorkDir(
   return path.join(paths.workRoot, safeName(appKey), safeName(subjectKey));
 }
 
-/** The runner's own files in a working directory: the agent's home, tmp, the CLI shim and the workspace record. */
+/** The runner's own files in a working directory: tmp, Codex's home, the CLI shim and the workspace record. */
 export const RUNNER_DIR = '.nocobase-runner';
 
 /** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */

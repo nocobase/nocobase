@@ -28,9 +28,6 @@ import {
 } from './home.ts';
 import { DEFAULT_MIN_FREE_DISK, type FreeSpace } from './size.ts';
 
-/** How an agent's tool gets a home directory: an isolated one per workspace, or the runner user's own. */
-export type AgentHome = 'isolated' | 'real';
-
 export interface RunnerSettings {
   /** Shown in every application; the host name by default. */
   name: string;
@@ -41,7 +38,6 @@ export interface RunnerSettings {
    * tool left out is bounded by `slots` only.
    */
   toolSlots?: ToolSlots;
-  agentHome: AgentHome;
   /**
    * The Node.js and pnpm agents get (`config set agent-tools`): the runner's own, first on their PATH (`runner`, the
    * default), or the machine's (`system`).
@@ -123,7 +119,7 @@ export async function readSettings(
     Object.keys(toolSlots.data).length > 0
       ? { toolSlots: toolSlots.data }
       : {}),
-    agentHome: stored?.agentHome === 'real' ? 'real' : 'isolated',
+    // A stored `agentHome` is ignored: agents always get the real home.
     agentTools: stored?.agentTools === 'system' ? 'system' : 'runner',
     autoUpdate: stored?.autoUpdate !== false,
     ...(typeof stored?.serviceLabel === 'string' && stored.serviceLabel !== ''

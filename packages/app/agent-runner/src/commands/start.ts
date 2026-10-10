@@ -5,12 +5,7 @@ import path from 'node:path';
 
 import { loadAdapters } from '../agent/adapters/registry.ts';
 import { RunnerCommand, UsageError } from '../lib/command.ts';
-import {
-  readConnections,
-  readSettings,
-  writeSettings,
-  type AgentHome,
-} from '../lib/config.ts';
+import { readConnections, readSettings } from '../lib/config.ts';
 import { ensureHome } from '../lib/home.ts';
 import { detectInstallation } from '../lib/install.ts';
 import { delay } from '../lib/http.ts';
@@ -49,11 +44,11 @@ export default class Start extends RunnerCommand {
       description:
         'How many runs at once, for this start: a total (3), limits per coding tool (claude=2,codex=1), or both. Defaults to the registered ones.',
     }),
+    // Accepted for older service definitions and ignored: agents always get the real home.
     'agent-home': Flags.string({
-      description:
-        "The home directory agents' tools get: isolated (a home per workspace, linking only what the tools need) or " +
-        'real (the runner user’s own). Remembered for later starts.',
+      description: 'Ignored. Agents always get the runner user’s real home.',
       options: ['isolated', 'real'],
+      hidden: true,
     }),
     'pass-env': passEnvFlag,
   };
@@ -89,10 +84,6 @@ export default class Start extends RunnerCommand {
       );
     }
     let settings = await readSettings(paths);
-    if (flags['agent-home'] !== undefined) {
-      settings.agentHome = flags['agent-home'] as AgentHome;
-      await writeSettings(settings, paths);
-    }
     settings = await rememberPassEnv(settings, flags['pass-env'], paths);
     const running = await readDaemonPid(paths);
     if (running !== undefined) {

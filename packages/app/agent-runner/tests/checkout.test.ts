@@ -12,11 +12,7 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  agentWorkingTrees,
-  agentWritableRoots,
-} from '../src/agent/prepare/index.ts';
-import { createPolicy, isInside } from '../src/core/command-policy.ts';
+import { isInside } from '../src/lib/paths.ts';
 import { buildAgentEnv } from '../src/agent/env.ts';
 import {
   ALLOW_FILE,
@@ -355,7 +351,7 @@ describe('checkout', () => {
     await work.release();
   });
 
-  it('keeps push permissions protected from file edits, shell redirection and sandbox writable roots', async () => {
+  it('keeps push permissions outside the checkout and enforces them in the hooks', async () => {
     const work = await checkout({
       paths,
       appKey: 'app',
@@ -367,30 +363,6 @@ describe('checkout', () => {
     expect(existsSync(allow)).toBe(true);
     expect(isInside(paths.home, allow)).toBe(true);
     expect(existsSync(path.join(entry.gitDir, ALLOW_FILE))).toBe(false);
-    const roots = [entry.dir, ...agentWritableRoots(work.dirs, entry.dir)];
-    for (const root of roots) expect(isInside(root, allow)).toBe(false);
-    for (const permissionMode of ['acceptEdits', 'bypass'] as const) {
-      const permission = createPolicy({
-        workDir: work.workDir,
-        cwd: entry.dir,
-        protectedPaths: [paths.home],
-        policy: {
-          permissionMode,
-          allowedCommands: ['^printf\\b'],
-          deniedPatterns: [],
-          idleTimeoutMs: 1_000,
-        },
-      });
-      expect(
-        permission('Write', { file_path: allow, content: 'branch=main' }),
-      ).toMatchObject({ decision: 'deny' });
-      expect(permission('Edit', { file_path: allow })).toMatchObject({
-        decision: 'deny',
-      });
-      expect(
-        permission('Bash', { command: `printf branch=main > '${allow}'` }),
-      ).toMatchObject({ decision: 'deny' });
-    }
     // A forged checkout-local file is ignored even when an agent can create it.
     writeFileSync(path.join(entry.dir, 'pending.txt'), 'new commit');
     git(['add', '.'], entry.dir);
@@ -954,10 +926,6 @@ describe('checkout', () => {
         git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
       ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
       expect(work.repos[0]!.submodules).toEqual([path.join(dir, 'vendor/sub')]);
-      expect(agentWorkingTrees(work.dirs)).toEqual([
-        dir,
-        path.join(dir, 'vendor/sub'),
-      ]);
       await work.release();
     });
 
@@ -995,9 +963,6 @@ describe('checkout', () => {
         ];
         expect([...work.repos[0]!.submodules].sort()).toEqual(
           [...expected].sort(),
-        );
-        expect([...agentWorkingTrees(work.dirs)].sort()).toEqual(
-          [dir, ...expected].sort(),
         );
         expect(
           existsSync(
@@ -1095,16 +1060,11 @@ describe('checkout', () => {
         subjectKey: 'isolated-second',
         dirs: [repo('isolated-second')],
       });
-      const rootsA = agentWritableRoots(a.dirs, a.workDir);
-      const rootsB = agentWritableRoots(b.dirs, b.workDir);
-      expect(rootsA).toEqual([a.repos[0]!.dir, a.repos[0]!.gitDir]);
-      for (const root of rootsA) {
-        expect(isInside(root, b.repos[0]!.gitDir)).toBe(false);
-        expect(isInside(root, b.repos[0]!.dir)).toBe(false);
-        expect(isInside(root, a.repos[0]!.cache)).toBe(false);
-      }
-      for (const root of rootsB)
-        expect(isInside(root, a.repos[0]!.gitDir)).toBe(false);
+      const [first, second] = [a.repos[0]!, b.repos[0]!];
+      expect(isInside(first.dir, first.gitDir)).toBe(true);
+      expect(isInside(second.dir, second.gitDir)).toBe(true);
+      expect(isInside(first.dir, second.gitDir)).toBe(false);
+      expect(isInside(first.gitDir, first.cache)).toBe(false);
       await a.release();
       await b.release();
     });

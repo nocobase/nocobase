@@ -9,8 +9,8 @@
 // Tool detection runs in the same environment, without the run's own (`detectionEnv`), so a tool that reads its login
 // or its key from a variable is detected as it will run.
 //
-// The runner then sets what it owns: HOME (the agent's home, see agent-home.ts), TMPDIR (inside the working
-// directory), the machine's shared pnpm store (core/pnpm-store.ts), the runner's own Node.js and pnpm with pnpm kept from
+// HOME is the real home of the user the runner runs as. The runner then sets what it owns: TMPDIR (inside the working
+// directory), Codex's CODEX_HOME (codex-home.ts), the machine's shared pnpm store (core/pnpm-store.ts), the runner's own Node.js and pnpm with pnpm kept from
 // switching versions (runner-tools.ts), the run's process tag (`AGENT_RUN_PROCESS_TAG`,
 // which marks what the tool starts as the run's, see core/process-tree.ts), the application CLI's directory first on
 // PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
@@ -79,9 +79,9 @@ export interface BuildEnvOptions {
   workspace?: Pick<RunWorkspace, 'env' | 'passthrough' | 'git'>;
   /** Put first on PATH: the directory holding the application's CLI (see `writeCliShim`). */
   binDir?: string;
-  /** The agent's HOME; the runner's own when absent. */
-  home?: string;
   tmpDir?: string;
+  /** Codex's state directory for this workspace (codex-home.ts); HOME stays the runner user's real one. */
+  codexHome?: string;
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
   /** How pnpm imports packages from that store (`pnpmImportMethod`); `copy` when absent. */
@@ -100,7 +100,7 @@ export function forbidden(name: string): boolean {
     /^(NOCOBASE_RUNNER_|AGENT_RUN_|GIT_CONFIG|GIT_DIR$|GIT_WORK_TREE$|GIT_EXEC_PATH$)/i.test(
       name,
     ) ||
-    ['PATH', 'HOME', 'TMPDIR'].includes(name) ||
+    ['PATH', 'HOME', 'TMPDIR', 'CODEX_HOME'].includes(name) ||
     PNPM_STORE_ENV.includes(name.toLowerCase()) ||
     !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
   );
@@ -177,8 +177,8 @@ export function buildAgentEnv(
       env.PATH === undefined || env.PATH === ''
         ? options.binDir
         : `${options.binDir}${path.delimiter}${env.PATH}`;
-  if (options.home !== undefined) env.HOME = options.home;
   if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
+  if (options.codexHome !== undefined) env.CODEX_HOME = options.codexHome;
   if (options.pnpmStoreDir !== undefined)
     Object.assign(
       env,
