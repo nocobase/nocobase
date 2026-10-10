@@ -35,9 +35,9 @@ vi.mock('../../client/theme/index.js', () => ({ ThemeSettings: () => null }));
 vi.mock('../../client/layouts/components/user-menu.js', () => ({
   UserMenu: () => null,
 }));
-// The header's inbox button needs the API and realtime; its own test covers its labels.
-vi.mock('../../client/inbox/header-button.js', () => ({
-  InboxHeaderButton: () => null,
+// Inbox navigation needs the API and realtime; its own test covers its labels.
+vi.mock('../../client/inbox/navigation.js', () => ({
+  useInboxNavigation: () => ({ badge: null, label: 'Inbox', hint: 'Inbox' }),
 }));
 vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => ({
   ...(await importOriginal<

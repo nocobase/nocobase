@@ -1,4 +1,4 @@
-/** The inbox's counts and refresh for the header and the dashboard, over the in-app plugin's hooks and Studio's source. */
+/** The inbox's counts and refresh for the navigation and dashboard, over the in-app plugin's hooks and Studio's source. */
 import {
   useInboxRefresh as useInAppInboxRefresh,
   useInboxUnreadCount,

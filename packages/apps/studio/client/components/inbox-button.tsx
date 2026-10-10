@@ -92,11 +92,9 @@ export function InboxButton({
           <span
             className={cn(
               // Anchored to the corner and pushed a third of its size out, whatever its width.
-              'absolute top-0 right-0 flex h-4.5 min-w-4.5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full px-1 leading-none font-semibold tabular-nums ring-2 ring-background',
-              // "99+" in smaller type, so the badge stays a pill rather than covering the icon.
-              badge.text.length > 2 ? 'text-[9px]' : 'text-[11px]',
+              'absolute top-0 right-0 flex h-5 min-w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full px-1 text-xs leading-none font-semibold tabular-nums ring-2 ring-background',
               badge.kind === 'decisions'
-                ? 'bg-amber-500 text-white'
+                ? 'bg-inbox-pending text-inbox-pending-foreground'
                 : 'bg-primary text-primary-foreground',
             )}
             data-testid={`${idPrefix}-badge`}

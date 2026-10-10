@@ -3,6 +3,19 @@ import { expect, test } from '@playwright/test';
 import { USERS, url } from './support/fixtures.ts';
 
 test.describe('sign-in', () => {
+  test('signing in from root lands on inbox', async ({ page }) => {
+    await page.goto(url('/'));
+    await expect(page).toHaveURL(/\/login/);
+    await page
+      .getByRole('textbox', { name: '用户名或邮箱' })
+      .fill(USERS.lisa.email);
+    await page.getByRole('textbox', { name: '密码' }).fill(USERS.lisa.password);
+    await page.getByRole('button', { name: '登录' }).click();
+    await expect(page).toHaveURL(url('/inbox'));
+    await expect(
+      page.getByRole('heading', { name: '收件箱', level: 1 }),
+    ).toBeVisible();
+  });
   test('a signed-out visitor is sent to the sign-in page and signs in as a demo user', async ({
     page,
   }) => {

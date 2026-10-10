@@ -1,8 +1,8 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { inboxBadge, useDocumentTitleBadge } from '@/components/inbox-badge';
-import { InboxButton } from '@/components/inbox-button';
+import type { InboxBadge } from '@/components/inbox-badge';
 
 import { armInboxChime, playInboxChime, useInboxChime } from './chime.js';
 import {
@@ -13,15 +13,19 @@ import {
 import { usePendingFeeds } from './use-registry.js';
 
 /**
- * The header's inbox button (the UI Library's `InboxButton`), with the number of decisions waiting on the viewer.
+ * The application layout owns the inbox subscription and reminders, even while the menu is hidden or replaced by
+ * settings navigation. Route navigation only describes static entries, so it receives the badge as presentation data.
  *
  * The amber count is what still needs the viewer's action, not what is unread: a decision that was read but not handled
  * keeps counting until it is resolved. With no decision waiting, a count in the primary color says how many items are
  * still unread; why the two never add up is `inboxBadge`'s. Whichever count shows prefixes the browser tab title
- * (`(3) Studio`), and a rising decision count rings the chime unless the viewer turned it off. The header is mounted once
- * per layout, so the button owns both.
+ * (`(3) Studio`), and a rising decision count rings the chime unless the viewer turned it off.
  */
-export function InboxHeaderButton(): ReactElement {
+export function useInboxNavigation(): {
+  readonly badge: InboxBadge;
+  readonly label: string;
+  readonly hint: string;
+} {
   const { t } = useTranslation();
   useInboxRefresh();
   const pending = usePendingDecisions();
@@ -49,17 +53,23 @@ export function InboxHeaderButton(): ReactElement {
     previousRef.current = next;
   }, [decisions, plans, chime]);
 
-  return (
-    <InboxButton
-      badge={badge}
-      idPrefix='studio-inbox'
-      labels={{
-        title: t('inbox.title'),
-        pending: (value) => t('inbox.headerPending', { count: value }),
-        unread: (value) => t('inbox.headerUnread', { count: value }),
-        pendingHint: (value) => t('inbox.pendingBadgeHint', { count: value }),
-        unreadHint: (value) => t('inbox.unreadBadgeHint', { count: value }),
-      }}
-    />
-  );
+  return {
+    badge,
+    label: !badge
+      ? t('inbox.title')
+      : t(
+          badge.kind === 'decisions'
+            ? 'inbox.headerPending'
+            : 'inbox.headerUnread',
+          { count: badge.count },
+        ),
+    hint: !badge
+      ? t('inbox.title')
+      : t(
+          badge.kind === 'decisions'
+            ? 'inbox.pendingBadgeHint'
+            : 'inbox.unreadBadgeHint',
+          { count: badge.count },
+        ),
+  };
 }
