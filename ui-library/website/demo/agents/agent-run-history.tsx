@@ -77,6 +77,8 @@ export function AgentRunHistoryDemo(): ReactElement {
       <div className='space-y-6'>
         {shown ? (
           <RunTranscript
+            // Replace these demo identities with the application's id and the signed-in user's id.
+            preferenceKey='nocobase:ui-library:demo-viewer:run-transcript-filters'
             header={
               <RunHeader
                 run={shown}
@@ -84,8 +86,14 @@ export function AgentRunHistoryDemo(): ReactElement {
                 attempt='attempt 1 of 3'
               />
             }
+            summary={
+              shown.failure ? (
+                <p className='text-sm text-destructive'>{shown.failure}</p>
+              ) : null
+            }
+            // Load every event: local filters need the complete history to count and expand hidden segments.
             events={EVENTS}
-            open
+            open={shown.status === 'running'}
           />
         ) : null}
         <RunBrief

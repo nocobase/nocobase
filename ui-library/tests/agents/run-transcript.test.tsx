@@ -21,8 +21,9 @@ const event = (
 });
 const list = (): HTMLElement =>
   screen.getByRole('list', { name: 'Run transcript' });
-const toggle = (name: string): void =>
+const toggle = (name: string): void => {
   fireEvent.click(screen.getByRole('button', { name, exact: true }));
+};
 // Vitest exposes its JSDOM instance; Node's native web storage can shadow the browser global.
 declare const jsdom: JSDOM;
 beforeEach(() => {
