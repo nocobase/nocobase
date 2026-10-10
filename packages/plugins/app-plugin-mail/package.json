@@ -134,12 +134,15 @@
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-router": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "@nocobase/app-testing": "workspace:*"
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/config": "workspace:*",
+    "@playwright/test": "catalog:"
   },
   "repository": {
     "type": "git",

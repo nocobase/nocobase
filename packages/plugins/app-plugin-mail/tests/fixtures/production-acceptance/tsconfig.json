@@ -1,0 +1,10 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/client.json",
+  "compilerOptions": { "types": ["node"] },
+  "include": [
+    "main.tsx",
+    "../../../../../templates/app-template-default/client/vite-env.d.ts",
+    "../../playwright/production-acceptance.config.ts",
+    "../../playwright/mail-production-acceptance.test.ts"
+  ]
+}

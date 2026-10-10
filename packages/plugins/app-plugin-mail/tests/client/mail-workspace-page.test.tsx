@@ -18,13 +18,7 @@ const mail = vi.hoisted(() => ({
   downloadAttachment: vi.fn(),
   getSyncRun: vi.fn(),
   getMessage: vi.fn(),
-  getManagedMessage: vi.fn(),
-  downloadManagedAttachment: vi.fn(),
   listAccounts: vi.fn(),
-  listManagementAccounts: vi.fn(),
-  listManagedFolders: vi.fn(),
-  listManagedMessages: vi.fn(),
-  manageMessages: vi.fn(),
   listProviders: vi.fn(),
   listConversationMessages: vi.fn(),
   listFolders: vi.fn(),
@@ -61,10 +55,16 @@ vi.mock('../../client/runtime.js', () => ({
   useMailClient: () => mail,
 }));
 
+import { MAIL_VIRTUAL_FOLDER_IDS } from '../../shared/mail.js';
+import type {
+  MailClient,
+  MailMessage,
+  MailOutboundAttachmentView,
+} from '../../client/mail-client.js';
 import MailWorkspacePage from '../../client/pages/mail-workspace-page.js';
 import { MAIL_UNREAD_COUNT_CHANGED_EVENT } from '../../client/components/mail-navigation-icon.js';
 
-describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
+describe('[UI][SRV] mail workspace, composer, and drafts', () => {
   afterEach(() => vi.restoreAllMocks());
   beforeEach(() => {
     window.localStorage.clear();
@@ -78,18 +78,6 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         address: 'user@example.com',
         scopes: [],
         status: 'active',
-      },
-    ]);
-    mail.listManagementAccounts.mockResolvedValue([
-      {
-        id: 'account-1',
-        userId: 'user-1',
-        provider: { type: 'gmail', name: 'google' },
-        address: 'user@example.com',
-        scopes: [],
-        status: 'active',
-        canSync: false,
-        canMoveMessages: true,
       },
     ]);
     mail.listProviders.mockResolvedValue([
@@ -113,7 +101,6 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     ]);
     mail.listFolders.mockResolvedValue([]);
     mail.deleteMessage.mockResolvedValue(undefined);
-    mail.listManagedFolders.mockResolvedValue([]);
     mail.listLabels.mockResolvedValue([]);
     mail.listIdentities.mockResolvedValue([
       {
@@ -126,12 +113,6 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     ]);
     mail.listSignatures.mockResolvedValue([]);
     mail.listMessages.mockResolvedValue({ items: [] });
-    mail.listManagedMessages.mockResolvedValue({ items: [] });
-    mail.manageMessages.mockResolvedValue({
-      items: [],
-      succeeded: 0,
-      failed: 0,
-    });
     mail.listTemplates.mockResolvedValue([]);
     mail.sendMessage.mockResolvedValue({
       id: 'submission-1',
@@ -238,14 +219,148 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
   });
 
-  it('shows no setup link when the application names no accounts page', async () => {
-    mail.listAccounts.mockResolvedValue([]);
+  it.each(['/', '/main', '/team/crm'])(
+    'links production empty workspaces under %s',
+    async (basePath) => {
+      vi.stubEnv('DEV', false);
+      const runtimeConfig = document.getElementById('nocobase-runtime-config')!;
+      const originalConfig = runtimeConfig.textContent;
+      runtimeConfig.textContent = JSON.stringify({
+        version: 1,
+        config: { app: { basePath } },
+      });
+      try {
+        mail.listAccounts.mockResolvedValue([]);
+        render(
+          <MailWorkspacePage
+            accountsHref='/mail/accounts?from=workspace'
+            headerActions={<button type='button'>Application action</button>}
+          />,
+        );
+        const connect = await screen.findByRole('link', {
+          name: 'Connect mail account',
+        });
+        expect(connect).toHaveAttribute(
+          'href',
+          `${basePath === '/' ? '' : basePath}/mail/accounts?from=workspace`,
+        );
+        expect(
+          screen.getByRole('button', { name: 'Application action' }),
+        ).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
+        expect(
+          screen.getByRole('button', { name: 'Sync all mailboxes' }),
+        ).toBeDisabled();
+        expect(
+          document.querySelector('a[href*="/dev/mail/accounts"]'),
+        ).toBeNull();
+      } finally {
+        runtimeConfig.textContent = originalConfig;
+        vi.unstubAllEnvs();
+      }
+    },
+  );
+
+  it.each([undefined, ''])(
+    'does not invent a personal account route without accountsHref %j',
+    async (accountsHref) => {
+      mail.listAccounts.mockResolvedValue([]);
+      const { rerender } = render(
+        <MailWorkspacePage
+          accountsHref={accountsHref}
+          headerActions={<button type='button'>Application action</button>}
+        />,
+      );
+      await screen.findByText('Connect your first mailbox');
+      expect(
+        screen.queryByRole('link', { name: 'Connect mail account' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('link', { name: 'Mail accounts' }),
+      ).not.toBeInTheDocument();
+      expect(
+        document.querySelector('a[href*="/dev/mail/accounts"]'),
+      ).toBeNull();
+      rerender(<MailWorkspacePage accountsHref='/mail/accounts' />);
+      expect(
+        screen.getByRole('link', { name: 'Connect mail account' }),
+      ).toHaveAttribute('href', '/mail/accounts');
+    },
+  );
+
+  it('does not invent account links for a populated workspace either', async () => {
     render(<MailWorkspacePage />);
-    await screen.findByText('Connect your first mailbox');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    expect(
+      screen.queryByRole('link', { name: 'Mail accounts' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Connect mail account' }),
     ).not.toBeInTheDocument();
+    expect(document.querySelector('a[href*="/dev/mail/accounts"]')).toBeNull();
   });
+
+  it('keeps production account management and application actions beside Compose and Sync', async () => {
+    const extraAction = vi.fn();
+    mail.getSyncRun.mockResolvedValue({
+      ...(await mail.startSync()),
+      status: 'completed',
+    });
+    mail.startSync.mockClear();
+    render(
+      <MailWorkspacePage
+        accountsHref='/mail/accounts'
+        headerActions={
+          <button type='button' onClick={extraAction}>
+            Application action
+          </button>
+        }
+      />,
+    );
+    const compose = screen.getByRole('button', { name: 'Compose' });
+    const sync = screen.getByRole('button', { name: 'Sync all mailboxes' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    expect(
+      await screen.findByRole('link', { name: 'Mail accounts' }),
+    ).toHaveAttribute('href', '/mail/accounts');
+    expect(
+      screen.queryByRole('link', { name: 'Connect mail account' }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(sync).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Application action' }));
+    expect(extraAction).toHaveBeenCalledOnce();
+    fireEvent.click(sync);
+    await waitFor(() =>
+      expect(mail.startSync).toHaveBeenCalledWith(
+        expect.objectContaining({ accountId: 'account-1' }),
+      ),
+    );
+    fireEvent.click(compose);
+    await screen.findByRole('dialog', { name: 'New message' });
+  });
+
+  it.each(['suspended', 'removing'])(
+    'offers account recovery when the only mailbox is %s',
+    async (status) => {
+      mail.listAccounts.mockResolvedValue([
+        {
+          id: 'account-1',
+          userId: 'user-1',
+          provider: { type: 'gmail', name: 'google' },
+          address: 'user@example.com',
+          scopes: [],
+          status,
+        },
+      ]);
+      render(<MailWorkspacePage accountsHref='/mail/accounts' />);
+      expect(
+        await screen.findByRole('link', { name: 'Connect mail account' }),
+      ).toHaveAttribute('href', '/mail/accounts');
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeDisabled();
+    },
+  );
 
   it('keeps composer errors and entered text when the mailbox refreshes', async () => {
     mail.listTemplates.mockRejectedValue(new Error('templates unavailable'));
@@ -301,11 +416,11 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(await screen.findByText('Message content')).toBeInTheDocument();
     const requests = mail.listMessages.mock.calls.length;
     expect(
-      screen.queryByRole('button', { name: 'Back to messages' }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Back to message list' }),
+    ).toHaveClass('@min-[56rem]/mail:hidden');
     expect(
-      screen.queryByRole('button', { name: 'Mailbox navigation' }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    ).toHaveClass('@min-[56rem]/mail:hidden');
     expect(screen.getByRole('combobox', { name: 'Account' })).toBeVisible();
     expect(
       screen.getByRole('button', { name: /Reading flow/ }),
@@ -313,6 +428,275 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(mail.listMessages).toHaveBeenCalledTimes(requests);
   });
 
+  it('keeps the mounted list, page and scroll position when returning and ignores late details', async () => {
+    const first = { ...createUnreadMessage('First mobile page'), read: true };
+    const second = { ...createUnreadMessage('Second mobile page'), read: true };
+    mail.listMessages.mockResolvedValueOnce({
+      items: [first],
+      nextCursor: 'mobile-page-2',
+    });
+    mail.listMessages.mockResolvedValueOnce({ items: [second] });
+    let resolveDetails!: (message: typeof second) => void;
+    mail.getMessage.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDetails = resolve;
+        }),
+    );
+    const { container } = render(<MailWorkspacePage />);
+    await screen.findByText(first.subject);
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    await screen.findByText(second.subject);
+    const list = screen.getByRole('region', { name: 'Mail' });
+    list.scrollTop = 137;
+    const requests = mail.listMessages.mock.calls.length;
+    fireEvent.click(
+      screen.getByRole('button', { name: new RegExp(second.subject) }),
+    );
+    expect(container.querySelector('[data-slot=mail-list-pane]')).toHaveClass(
+      'hidden',
+    );
+    expect(
+      container.querySelector('[data-slot=mail-conversation-pane]'),
+    ).toHaveClass('flex');
+    expect(screen.getByRole('region', { name: 'Mail' })).toBe(list);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Back to message list' }),
+    );
+    await act(async () => {
+      resolveDetails(second);
+    });
+    expect(container.querySelector('[data-slot=mail-list-pane]')).toHaveClass(
+      'flex',
+    );
+    expect(
+      container.querySelector('[data-slot=mail-conversation-pane]'),
+    ).toHaveClass('hidden');
+    expect(screen.getByRole('region', { name: 'Mail' })).toBe(list);
+    expect(list.scrollTop).toBe(137);
+    expect(screen.getByText('Page 2')).toBeInTheDocument();
+    expect(screen.queryByText(second.text)).not.toBeInTheDocument();
+    expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+    expect(mail.updateMessage).not.toHaveBeenCalled();
+  });
+
+  it('closes mailbox navigation for the current folder and returns from the conversation', async () => {
+    const message = {
+      ...createUnreadMessage('Mobile drawer message'),
+      read: true,
+    };
+    mail.listMessages.mockResolvedValue({ items: [message] });
+    mail.getMessage.mockResolvedValue(message);
+    const { container } = render(<MailWorkspacePage />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: new RegExp(message.subject) }),
+    );
+    await screen.findByText(message.text);
+    const requests = mail.listMessages.mock.calls.length;
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    const currentFolder = drawer.querySelector<HTMLButtonElement>(
+      'button[aria-current="page"]',
+    );
+    expect(currentFolder).not.toBeNull();
+    fireEvent.click(currentFolder!);
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(container.querySelector('[data-slot=mail-list-pane]')).toHaveClass(
+      'flex',
+    );
+    expect(
+      container.querySelector('[data-slot=mail-conversation-pane]'),
+    ).toHaveClass('hidden');
+    expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+  });
+
+  it.each(['Unread', 'Starred', 'Sent', 'Drafts'])(
+    'closes the drawer and switches to %s',
+    async (name) => {
+      render(<MailWorkspacePage />);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Mailboxes and folders' }),
+      );
+      const drawer = await screen.findByRole('dialog', {
+        name: 'Mailboxes and folders',
+      });
+      fireEvent.click(within(drawer).getByRole('button', { name }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      await waitFor(() =>
+        expect(mail.listMessages).toHaveBeenLastCalledWith(
+          expect.objectContaining(
+            name === 'Unread'
+              ? { unread: true }
+              : name === 'Starred'
+                ? { starred: true }
+                : {
+                    folderId:
+                      name === 'Sent'
+                        ? MAIL_VIRTUAL_FOLDER_IDS.sent
+                        : MAIL_VIRTUAL_FOLDER_IDS.drafts,
+                  },
+          ),
+        ),
+      );
+    },
+  );
+
+  it('closes navigation on account and label changes', async () => {
+    mail.listLabels.mockResolvedValue([
+      { id: 'mobile-label', name: 'Customer', color: 'blue' },
+    ]);
+    render(<MailWorkspacePage />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    let drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    fireEvent.change(
+      within(drawer).getByRole('combobox', { name: 'Account' }),
+      { target: { value: 'account-1' } },
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(mail.listMessages).toHaveBeenLastCalledWith(
+        expect.objectContaining({ accountId: 'account-1' }),
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Customer' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(mail.listMessages).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          accountId: 'account-1',
+          labelId: 'mobile-label',
+        }),
+      ),
+    );
+  });
+
+  it('focuses the narrow reader and restores its retained row without scrolling', async () => {
+    const message = { ...createUnreadMessage('Keyboard reading'), read: true };
+    mail.listMessages.mockResolvedValue({ items: [message] });
+    mail.getMessage.mockResolvedValue(message);
+    render(<MailWorkspacePage />);
+    const row = await screen.findByRole('button', {
+      name: new RegExp(message.subject),
+    });
+    const navigation = screen.getByRole('button', {
+      name: 'Mailboxes and folders',
+    });
+    const bounds = new DOMRect(0, 0, 160, 36);
+    vi.spyOn(navigation, 'getClientRects').mockReturnValue(
+      Object.assign([bounds], { item: () => bounds }),
+    );
+    const list = screen.getByRole('region', { name: 'Mail' });
+    list.scrollTop = 137;
+    row.focus();
+    fireEvent.click(row);
+    const back = screen.getByRole('button', { name: 'Back to message list' });
+    await waitFor(() => expect(back).toHaveFocus());
+    await screen.findByText(message.text);
+    fireEvent.click(back);
+    await waitFor(() => expect(row).toHaveFocus());
+    expect(list.scrollTop).toBe(137);
+  });
+
+  it('closes an open drawer when CSS hides its trigger and focuses the live search control', async () => {
+    render(<MailWorkspacePage />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    const navigation = screen.getByRole('button', {
+      name: 'Mailboxes and folders',
+    });
+    const bounds = new DOMRect(0, 0, 160, 36);
+    const visibleRects = Object.assign([bounds], { item: () => bounds });
+    const hiddenRects = Object.assign([], { item: () => null });
+    let visible = true;
+    vi.spyOn(navigation, 'getClientRects').mockImplementation(() =>
+      visible ? visibleRects : hiddenRects,
+    );
+    let notify!: () => void;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        readonly callback: () => void;
+        constructor(callback: () => void) {
+          this.callback = callback;
+        }
+        observe(target: Element): void {
+          if (target === navigation) notify = this.callback;
+        }
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    );
+    try {
+      const requests = mail.listMessages.mock.calls.length;
+      fireEvent.click(navigation);
+      await screen.findByRole('dialog', { name: 'Mailboxes and folders' });
+      act(() => {
+        visible = false;
+        notify();
+      });
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByRole('textbox', { name: 'Search mail' }),
+        ).toHaveFocus(),
+      );
+      expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('closes navigation with its translated close control without changing the list', async () => {
+    render(<MailWorkspacePage />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+    );
+    const requests = mail.listMessages.mock.calls.length;
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mailboxes and folders' }),
+    );
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Mailboxes and folders',
+    });
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Close mailbox navigation' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(mail.listMessages).toHaveBeenCalledTimes(requests);
+  });
   it.each(['Reply', 'Forward'])(
     'removes and restores quoted content in %s without changing the authored body',
     async (action) => {
@@ -1435,7 +1819,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       },
     ]);
 
-    render(<MailWorkspacePage />);
+    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
 
     expect(
       await screen.findByRole('button', { name: 'Compose' }),
@@ -1487,7 +1871,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         },
       ],
     });
-    render(<MailWorkspacePage />);
+    render(<MailWorkspacePage accountsHref='/mail/accounts' />);
     expect(await screen.findByText('Previously visible mail')).toBeVisible();
     mail.listAccounts.mockResolvedValue([{ ...active, status: 'suspended' }]);
     now.mockReturnValue(30_000);
@@ -2597,6 +2981,119 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           screen.getByRole('button', { name: 'Download report.pdf' }),
         ).toBeVisible();
       else expect(screen.queryByText(/1 attachment/)).not.toBeInTheDocument();
+    },
+  );
+
+  it.each([false, true])(
+    'prepares reply images only once and preserves another composer opened while preparation is pending: %s',
+    async (openAnotherComposer) => {
+      const message: MailMessage = {
+        ...createUnreadMessage('pending-reply'),
+        read: true,
+        replyTo: [{ address: 'reply@example.com' }],
+        references: [],
+        html: '<p>Pending original</p><img src="cid:logo"><img src="cid:logo">',
+        hasAttachments: true,
+        attachments: [
+          {
+            id: 'logo',
+            messageId: 'pending-reply',
+            providerAttachmentId: 'remote-logo',
+            fileName: 'logo.png',
+            contentType: 'image/png',
+            size: 3,
+            inline: true,
+            contentId: 'logo',
+          },
+        ],
+      };
+      let finishUpload!: (value: MailOutboundAttachmentView) => void;
+      const pendingUpload = new Promise<MailOutboundAttachmentView>(
+        (resolve) => {
+          finishUpload = resolve;
+        },
+      );
+      const download = vi
+        .fn<MailClient['downloadAttachment']>()
+        .mockImplementation(async () => new Response('png').body!);
+      const upload = vi
+        .fn<MailClient['uploadAttachment']>()
+        .mockReturnValue(pendingUpload);
+      mail.downloadAttachment.mockImplementation(download);
+      mail.uploadAttachment.mockImplementation(upload);
+      mail.listMessages.mockResolvedValue({ items: [message] });
+      mail.getMessage.mockResolvedValue(message);
+      render(<MailWorkspacePage />);
+      fireEvent.click(
+        await screen.findByRole('button', { name: /pending-reply/ }),
+      );
+      const reply = await screen.findByRole('button', { name: 'Reply' });
+      fireEvent.click(reply);
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+      fireEvent.click(reply);
+      fireEvent.click(reply);
+      await act(async () => {});
+      expect(download).toHaveBeenCalledExactlyOnceWith(
+        'account-1',
+        'pending-reply',
+        'logo',
+      );
+      expect(upload).toHaveBeenCalledTimes(1);
+      expect(
+        screen.queryByRole('dialog', { name: 'New message' }),
+      ).not.toBeInTheDocument();
+      if (openAnotherComposer) {
+        fireEvent.click(screen.getByRole('button', { name: 'Compose' }));
+        fireEvent.change(await screen.findByLabelText('Subject'), {
+          target: { value: 'Do not overwrite this composer' },
+        });
+      }
+      await act(async () =>
+        finishUpload({
+          id: 'pending-reply-image',
+          fileName: 'logo.png',
+          contentType: 'image/png',
+          size: 3,
+          expiresAt: '',
+        }),
+      );
+      expect(await screen.findByLabelText('Subject')).toHaveValue(
+        openAnotherComposer
+          ? 'Do not overwrite this composer'
+          : 'Re: pending-reply',
+      );
+      if (openAnotherComposer) {
+        expect(screen.getByLabelText('TO')).toHaveValue('');
+        expect(screen.queryByTitle('Quoted message')).not.toBeInTheDocument();
+      } else {
+        expect(screen.getByLabelText('TO')).toHaveValue('reply@example.com');
+        expect(
+          screen.getByTitle('Quoted message').getAttribute('srcdoc'),
+        ).toContain('Pending original');
+        const editor = screen.getByLabelText('Message body');
+        editor.innerHTML = '<p>Prepared reply</p>';
+        fireEvent.input(editor);
+        await waitFor(() =>
+          expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled(),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+        await waitFor(() =>
+          expect(mail.sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+              accountId: 'account-1',
+              inReplyToMessageId: 'pending-reply',
+              replyBodyIncluded: true,
+              attachmentIds: ['pending-reply-image'],
+              retainedAttachmentIds: [],
+              html: expect.stringContaining(
+                'cid:nocobase-pending-reply-image@mail.inline',
+              ),
+            }),
+          ),
+        );
+      }
+      expect(download).toHaveBeenCalledTimes(1);
+      expect(upload).toHaveBeenCalledTimes(1);
     },
   );
 });

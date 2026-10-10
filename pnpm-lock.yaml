@@ -4090,9 +4090,15 @@ importers:
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing
+      '@nocobase/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.1
       '@testing-library/jest-dom':
         specifier: 'catalog:'
         version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
@@ -4129,6 +4135,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)

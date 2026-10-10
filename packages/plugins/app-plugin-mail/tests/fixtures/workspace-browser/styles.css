@@ -1,0 +1,3 @@
+@import '../../../../../templates/app-template-default/client/styles.css';
+@source './main.tsx';
+@source '../../../client';

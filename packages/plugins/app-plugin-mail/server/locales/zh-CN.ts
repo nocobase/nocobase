@@ -5,6 +5,8 @@ const zhCN: MailServerResource = {
     accessDenied: '需要邮件访问权限。',
     idempotencyConflict: '该幂等键已关联到另一个请求。',
     invalidRequest: '邮件请求无效。',
+    accountCredentialsInvalid:
+      '邮箱认证失败。请检查登录名和密码或授权码，并确认已开启 IMAP/SMTP。Gmail 等邮箱可能需要使用应用专用密码。',
     requestFailed: '无法完成邮件请求。',
     providerRateLimited: '邮件服务请求过于频繁，请稍后重试。',
     providerUnavailable: '无法连接邮件服务，请稍后重试。',

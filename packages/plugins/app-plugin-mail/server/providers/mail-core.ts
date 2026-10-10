@@ -19,6 +19,7 @@ import {
 
 import { createMailProviderAdapterResolver } from '../adapter-resolver.js';
 import {
+  resolveMailOAuthReturnUrl,
   resolveMailAutomaticSyncIntervalFromMs,
   resolveMailConfig,
   type MailConfig,
@@ -45,12 +46,16 @@ import {
 } from '../tokens.js';
 import { mailFailedPrecondition } from '../services/errors.js';
 
+// Keep this historical destination fixed: the current default no longer names a Dev page.
+const LEGACY_DEVELOPMENT_MAIL_OAUTH_RETURN_PATH = '/dev/mail/accounts';
+
 export type MailCoreProviderApplication = AppPluginApplication;
 
 export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplication> {
   public readonly name: string = '@nocobase/app-plugin-mail';
   private realtimeTopic?: RealtimeUserTopic<MailRealtimeEvent>;
   private missingMailConfigWarningLogged = false;
+  private productionOAuthReturnWarningLogged = false;
   private readonly messageChangeNotifier: MailMessageChangeNotifier = {
     notify: (userId) => {
       this.realtimeTopic?.publishFor(userId, { kind: 'mail.changed' });
@@ -176,6 +181,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   }
 
   public override boot(): Promise<void> {
+    this.warnAboutDevelopmentOAuthReturn();
     if (this.app.container.has(realtimeServiceToken)) {
       this.realtimeTopic = this.app.container
         .resolve(realtimeServiceToken)
@@ -184,6 +190,59 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
         });
     }
     return Promise.resolve();
+  }
+
+  private warnAboutDevelopmentOAuthReturn(): void {
+    if (
+      this.app.nodeEnv !== 'production' ||
+      this.productionOAuthReturnWarningLogged
+    )
+      return;
+    const config = this.getMailConfig();
+    const origin = 'https://mail-return.invalid';
+    let developmentReturn: boolean;
+    try {
+      const mountedDevelopmentPath = new URL(
+        resolveMailOAuthReturnUrl(
+          LEGACY_DEVELOPMENT_MAIL_OAUTH_RETURN_PATH,
+          origin,
+          this.app.publicBasePath,
+          'success',
+        ),
+        origin,
+      ).pathname.replace(/\/+$/u, '');
+      // Also recognize an explicitly prefixed path, even if the application added its prefix twice.
+      developmentReturn = [this.app.publicBasePath, ''].some((basePath) => {
+        const path = new URL(
+          resolveMailOAuthReturnUrl(
+            config.oauthReturnUrl,
+            origin,
+            basePath,
+            'success',
+          ),
+          origin,
+        ).pathname.replace(/\/+$/u, '');
+        return (
+          path === LEGACY_DEVELOPMENT_MAIL_OAUTH_RETURN_PATH ||
+          path === mountedDevelopmentPath
+        );
+      });
+    } catch {
+      // This observability check must not introduce new URL validation failures at startup.
+      return;
+    }
+    if (!developmentReturn) return;
+    const message =
+      'Mail OAuth return URL points to a development-only page that is excluded from production builds. Configure mail.oauthReturnUrl to an application-owned production account page.';
+    if (this.app.container.has(loggingToken)) {
+      this.app.container
+        .resolve(loggingToken)
+        .getLogger()
+        .warn({ namespace: 'mail' }, message);
+    } else {
+      console.warn(message);
+    }
+    this.productionOAuthReturnWarningLogged = true;
   }
 
   private listProviderConfigs(): readonly import('../../shared/mail.js').MailProviderConfig[] {

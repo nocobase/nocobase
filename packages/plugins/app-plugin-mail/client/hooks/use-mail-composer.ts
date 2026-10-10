@@ -1,4 +1,8 @@
 import {
+  notifyComposerCompletion,
+  reportComposerCompletionError,
+} from '../lib/mail-composer-completion.js';
+import {
   writePendingDelivery,
   clearPendingDelivery,
 } from '../lib/mail-pending-delivery.js';
@@ -22,6 +26,7 @@ import {
 import type {
   ComposerState,
   MailComposerProps,
+  MailComposerCompletionDetails,
 } from '../contracts/composer.js';
 import {
   mailErrorMessage,
@@ -44,9 +49,16 @@ export function useMailComposer({
   providers,
   onClose,
   onComplete,
+  onCompletionError,
 }: MailComposerProps): MailComposerController {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
   const mail = useMailClient();
+  const complete = useCallback(
+    (...args: Parameters<MailComposerProps['onComplete']>): void => {
+      notifyComposerCompletion(onComplete, onCompletionError, ...args);
+    },
+    [onComplete, onCompletionError],
+  );
   const [error, setError] = useState<string>();
 
   const [initialRecovery] = useState(() =>
@@ -407,6 +419,14 @@ export function useMailComposer({
       retainedAttachments,
     );
     let submitted = false;
+    let completion: Exclude<
+      MailComposerCompletionDetails,
+      { readonly kind: 'draft' }
+    > = {
+      kind: 'normal',
+      input: structuredClone(input),
+      submissions: [],
+    };
     const sendBulk = async () => {
       // Each recipient must own its delivery; sending the shared provider draft
       // would consume it on the first message and break the rest of the batch.
@@ -450,6 +470,11 @@ export function useMailComposer({
         forwardBodyIncluded: input.forwardBodyIncluded,
       };
       const wire = { ...bulkInput, idempotencyKey: input.idempotencyKey };
+      completion = {
+        kind: 'bulk',
+        input: structuredClone(wire),
+        submissions: [],
+      };
       writePendingDelivery({
         accountId: composerAccountId,
         mode: 'bulk',
@@ -459,6 +484,11 @@ export function useMailComposer({
       return mail.sendBulk(wire);
     };
     const sendSingle = () => {
+      completion = {
+        kind: 'normal',
+        input: structuredClone(input),
+        submissions: [],
+      };
       writePendingDelivery({
         accountId: composerAccountId,
         mode: 'normal',
@@ -479,42 +509,60 @@ export function useMailComposer({
       return mode === 'bulk' ? sendBulk() : sendSingle();
     })();
     void operation
-      .then((results) => {
-        const rejectedRecipients = results.flatMap(
-          (result) => result.error?.recipients?.rejected ?? [],
-        );
-        const operationError = results.find((result) => result.error)?.error;
-        const outcome = results.some((result) => result.status === 'unknown')
-          ? 'unknown'
-          : results.some((result) => result.status === 'failed')
-            ? 'failed'
-            : rejectedRecipients.length > 0
-              ? 'partial'
-              : 'accepted';
-        clearPendingDelivery(composerAccountId, input.idempotencyKey);
-        closeComposer(true);
-        onComplete(
-          outcome === 'accepted' && input.scheduledAt ? 'scheduled' : outcome,
-          rejectedRecipients,
-          operationError,
-        );
-      })
-      .catch((error: unknown) => {
-        if (
-          !submitted ||
-          (error instanceof ApiClientError &&
-            [400, 401, 403, 404, 422].includes(error.status))
-        ) {
+      .then(
+        (results) => {
+          const rejectedRecipients = results.flatMap(
+            (result) => result.error?.recipients?.rejected ?? [],
+          );
+          const operationError = results.find((result) => result.error)?.error;
+          const outcome = results.some((result) => result.status === 'unknown')
+            ? 'unknown'
+            : results.some((result) => result.status === 'failed')
+              ? 'failed'
+              : rejectedRecipients.length > 0
+                ? 'partial'
+                : 'accepted';
           clearPendingDelivery(composerAccountId, input.idempotencyKey);
-          endingRef.current = false;
-          requestError(error);
-          return;
-        }
-        // A transport failure is not evidence of non-delivery. Keep the outgoing
-        // snapshot in sending records, never restore it as an editable draft.
-        closeComposer(true);
-        onComplete('unknown');
-      })
+          const details = {
+            ...completion,
+            submissions: structuredClone(results),
+          };
+          try {
+            closeComposer(true);
+          } finally {
+            complete(
+              outcome === 'accepted' && input.scheduledAt
+                ? 'scheduled'
+                : outcome,
+              rejectedRecipients,
+              operationError,
+              details,
+            );
+          }
+        },
+        (error: unknown) => {
+          if (
+            !submitted ||
+            (error instanceof ApiClientError &&
+              [400, 401, 403, 404, 422].includes(error.status))
+          ) {
+            clearPendingDelivery(composerAccountId, input.idempotencyKey);
+            endingRef.current = false;
+            requestError(error);
+            return;
+          }
+          // A transport failure is not evidence of non-delivery. Keep the outgoing
+          // snapshot in sending records, never restore it as an editable draft.
+          try {
+            closeComposer(true);
+          } finally {
+            complete('unknown', undefined, undefined, completion);
+          }
+        },
+      )
+      .catch((error: unknown) =>
+        reportComposerCompletionError(onCompletionError, error),
+      )
       .finally(() => setSending(false));
   };
 
@@ -673,12 +721,21 @@ export function useMailComposer({
             closeAfterSave &&
             latestComposerFingerprintRef.current === fingerprint
           ) {
+            const details: MailComposerCompletionDetails = {
+              kind: 'draft',
+              submissions: [],
+              draft: { id: draft.id, accountId: draft.accountId },
+            };
             endingRef.current = true;
             clearComposerRecovery(composerAccountId);
             composerSessionRef.current += 1;
             setComposer(undefined);
-            onClose();
-            onComplete('draft');
+            try {
+              onClose();
+            } catch (error) {
+              reportComposerCompletionError(onCompletionError, error);
+            }
+            complete('draft', undefined, undefined, details);
           }
         })
         .catch(() => {
@@ -693,7 +750,8 @@ export function useMailComposer({
     },
     [
       onClose,
-      onComplete,
+      onCompletionError,
+      complete,
       composer,
       composerAccountId,
       identityId,
