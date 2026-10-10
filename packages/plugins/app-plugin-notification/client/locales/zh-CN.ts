@@ -1,10 +1,6 @@
 import type { NotificationResource } from './en-US.js';
 
 const zhCN: NotificationResource = {
-  nav: {
-    notifications: '通知',
-    logs: '通知日志',
-  },
   logs: {
     deliveryOperations: '投递操作',
     recipeDescription: '跟踪各渠道的交接和服务提供方的每次尝试。',

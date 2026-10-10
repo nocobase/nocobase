@@ -1,21 +1,22 @@
 ---
 name: nocobase-app-plugin-users
-description: Integrate the Users plugin into a NocoBase App, configure its page placement and permissions, or add an application-owned role scope through the public Server contracts.
+description: Integrate the Users plugin into a NocoBase App, build a user management page on its API and configure its permissions, or add an application-owned role scope through the public Server contracts.
 metadata:
   short-description: Integrate reusable user administration
 ---
 
 # User Management App Plugin
 
-Use this Skill when an application needs a user management page or API, or when
-another plugin needs to expose application-specific roles in the Users page. Do
+Use this Skill when an application needs user management, or when another
+plugin needs to expose application-specific roles in user management. Do
 not use it to modify the Users plugin source or to replace Authentication's
 user, account, or Session storage.
 
 ## Public surfaces
 
 - Client registration factory and `UsersClientOptions`:
-  `@nocobase/app-plugin-users/client`.
+  `@nocobase/app-plugin-users/client`. It contributes only the public
+  invitation page at `/invite/:token`; there is no user management page.
 - Typed API client: `UsersClient` and its types from
   `@nocobase/app-plugin-users/client/user-client`.
 - Server contracts: `userManagementServiceToken`,
@@ -25,19 +26,15 @@ user, account, or Session storage.
 
 Every HTTP route requires Authentication and Authorization. Routes check the `user` record type with one of `read`, `create`, `update`, `disable`, `enable`, `assign-role`, `reset-password`, `revoke-sessions` or `delete`. Account creation checks both `create` and `assign-role`. `delete` is permitted only while an application role scope can clean a deleted user up.
 
-## Register and place the page
+## Register the plugin
 
 1. Register Authentication, Authorization, and then Users in the App's Client
-   and Server plugin arrays.
-2. Configure the Client factory. `users({ mount: 'settings', path: '/users' })`
-   produces `/settings/users`; `mount: 'app'` makes the path App-relative and
-   registers a primary-navigation entry protected by the same page access rule.
-3. Grant the page, `{ resource: { type: 'page', id: 'users' }, actions: [{ action: 'access' }] }` or `authz.pages.grant('users')`, to roles that may open it.
-4. Grant only the `user` actions those roles need, on `{ type: 'user', id: '*' }` because `user` is a record type. The plugin creates no roles and grants no access by itself.
-5. Use `componentLoader` only to replace the page implementation. It does not
-   change the route identity, mount, or path.
+   and Server plugin arrays. The Client factory takes no placement options:
+   `users()`.
+2. Grant only the `user` actions those roles need, on `{ type: 'user', id: '*' }` because `user` is a record type. The plugin creates no roles and grants no access by itself.
+3. For a user management page, build it in the App on `UsersClient` and declare it among the App's own routes with the page access it needs; the plugin ships none.
 
-The page reports results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but its toasts are only logged to the browser console. Update `@nocobase/app-client` together with this plugin; the `nocobase-app-upgrade` Skill's `references/edge-cases.md` ("Notifications and the application toaster") has the full steps.
+The invitation page reports results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but its toasts are only logged to the browser console.
 
 The default `app` permission-set scope is supplied by Users whenever the Authorization plugin's `authorizationToken` is available. Do not copy a user-roles Provider into an application. Set `users.permissionSets: false` to replace the default with an application-owned scope.
 
@@ -57,12 +54,13 @@ For a required single-role scope, set `selection: 'single'` and
 `requiredOnCreate: true`. Reject invalid values in the scope and enforce
 business invariants such as the last-administrator rule on the server.
 
-Set `assignable: false` or `removable: false` on an option when the Users page
+Set `assignable: false` or `removable: false` on an option when user management
 must show a protected assignment but must not add or revoke it. Enforce the
 same rule in `replace()` because these flags only control the Client. Set
 `hasAuthenticatedDefaultAccess: true` when the scope lists direct assignments
-but all signed-in users also inherit separately configured default access; the
-page then explains that distinction instead of treating the default as a role.
+but all signed-in users also inherit separately configured default access, so a
+user management page can explain that distinction instead of treating the
+default as a role.
 Use `labelI18nKey` with `labelI18nNs` on a scope or option when its owner has
 registered Client locale resources; keep `label` as the readable fallback.
 Implement optional `getMany()` when assignments can be read as a batch. Users
@@ -70,7 +68,8 @@ uses it for list pages and falls back to `get()` for existing scopes.
 
 ## Invite users
 
-Holders of `invite` on the `user` resource see "Invite users" on the page. An
+Holders of `invite` on the `user` resource may invite users through
+`POST /api/users/invitations` or `UsersClient`. An
 address without an account gets an email with a link to `/invite/:token`, where
 the invitee sets a name and password; an address that already has an account is
 reported back and nothing is sent. Choosing roles in the invitation also needs
@@ -95,10 +94,10 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 - Authentication owns user identity, credentials, account state, password
   hashing, and Sessions.
 - Authorization owns Permission Sets, grants, and assignments.
-- Users owns the management API, built-in page, orchestration transaction,
+- Users owns the management API, the invitation page, orchestration transaction,
   `user` authorization handler, and role-scope registry.
 - The App or business plugin owns role definitions, role grants, assignments,
-  page placement, and role-specific invariants.
+  the user management page, and role-specific invariants.
 - The plugin's `skills/` source is authoritative. `.agents/skills/` is a
   synchronized copy and must not be edited.
 
@@ -106,7 +105,6 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 
 - Browser route access is only navigation control. The Server independently
   authenticates and authorizes every request.
-- An App-mounted page hides its primary-navigation entry until `access` on page `users` is allowed. Direct navigation is checked separately by the Client Route.
 - A conditional grant is not accepted as an unrestricted user-management
   grant; use explicit static grants for this resource.
 - Disabled users are rejected by Authentication and lose their existing HTTP
@@ -116,7 +114,6 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 
 ## Verification
 
-- A role without `access` on page `users` cannot navigate to the page.
 - Anonymous API requests return `401`; authenticated requests without the
   requested `user` action return `403`.
 - Creating a user with a required role scope creates both records, while role

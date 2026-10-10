@@ -85,7 +85,6 @@ export class WorkflowScheduleTarget implements ScheduleTargetType<WorkflowSchedu
     if (!row) return { targetLabel: config.workflowKey, state: 'missing' };
     return {
       targetLabel: row.title ?? row.key,
-      href: `/settings/workflow/workflows/${encodeURIComponent(String(row.id))}`,
       state: row.enabled ? 'ready' : 'disabled',
     };
   }
@@ -159,15 +158,6 @@ export class WorkflowScheduleTarget implements ScheduleTargetType<WorkflowSchedu
         run.finishedAt ? new Date(run.finishedAt) : undefined,
       ),
     };
-  }
-
-  public referenceHref(reference: {
-    readonly type: string;
-    readonly id: string;
-  }): string | undefined {
-    return reference.type === 'workflow-run'
-      ? `/settings/workflow/runs/${encodeURIComponent(reference.id)}`
-      : undefined;
   }
 
   private find(key: string): Promise<WorkflowRow | undefined> {

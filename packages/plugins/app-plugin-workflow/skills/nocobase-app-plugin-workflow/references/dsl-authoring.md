@@ -383,9 +383,9 @@ Workflow diagnostics use the application logging service with source `workflow` 
 
 ## Source preview during development
 
-Use the candidate entry from the workflow list when iterating with `pnpm dev`. Its `/settings/workflow/workflows/<hash>` URL identifies the discovered artifact exactly. Source edits produce a new hash, so reopen the candidate from the refreshed list to inspect the new definition; an old unpublished hash may become unavailable. Viewing a candidate does not materialize a database revision. Parameter settings and manual run remain visible for an unmaterialized version, but opening either shows an enable-first prompt without loading custom forms. Enable the version to materialize it and navigate to its id page; parameter configuration is optional when the workflow provides defaults.
+When iterating with `pnpm dev`, read the discovered candidate with `GET /api/workflows/sources/{key}` and address it by its hash with `GET /api/workflows/<hash>`; the hash identifies the discovered artifact exactly. Source edits produce a new hash, so read the source again to inspect the new definition; an old unpublished hash may become unavailable. Reading a candidate does not materialize a database revision. Enable the version (`POST /api/workflows/<hash>/enable`) to materialize it, then use its id; parameter configuration is optional when the workflow provides defaults.
 
-An `id` URL remains pinned to its materialized revision. Enable uses the displayed revision identifier; parameter settings and manual run use the materialized id, including for previously enabled versions that are now disabled; they must not silently fall back to newer source when that revision is unavailable.
+An id remains pinned to its materialized revision. Enable uses the revision identifier it is given; parameter settings and manual run use the materialized id, including for previously enabled versions that are now disabled; they must not silently fall back to newer source when that revision is unavailable.
 
 ## Materialized resource snapshots
 

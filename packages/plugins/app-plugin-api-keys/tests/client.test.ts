@@ -1,4 +1,3 @@
-import { KeyRound } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 
 import apiKeys from '../client/plugin.js';
@@ -8,51 +7,13 @@ import {
   formatKeyHint,
   isExpired,
 } from '../client/expiry.js';
-import {
-  createApiKeysRoutes,
-  normalizeApiKeysRoutePath,
-} from '../client/routes.js';
 
 describe('@nocobase/app-plugin-api-keys Client', () => {
-  // Loading a page module transforms its whole import graph on first use, which can outlast the default 5 s timeout
-  // when a release runner runs every package's tests at once.
-  it('mounts one Settings page at a relative path', async () => {
-    const registration = apiKeys({});
+  it('contributes no pages', () => {
+    const registration = apiKeys();
 
     expect(registration.serviceProviders).toEqual([]);
-    expect(registration.routes).toHaveLength(1);
-    expect(registration.routes[0]).toMatchObject({
-      parent: 'settings',
-      routes: [
-        {
-          name: 'api-keys',
-          path: '/api-keys',
-          authz: {
-            resource: { type: 'page', id: 'api-keys' },
-            action: 'access',
-          },
-          navigation: { title: 'nav.apiKeys', icon: KeyRound },
-        },
-      ],
-    });
-    await expect(
-      registration.routes[0]?.routes[0]?.componentLoader(),
-    ).resolves.toMatchObject({ default: expect.any(Function) });
-  }, 30_000);
-
-  it('lets an application choose the path and the menu label', () => {
-    expect(
-      createApiKeysRoutes({ path: 'tokens/', title: 'Tokens' }),
-    ).toMatchObject({
-      routes: [{ path: '/tokens', navigation: { title: 'Tokens' } }],
-    });
-  });
-
-  it('refuses a route path that repeats its own mount', () => {
-    expect(() => normalizeApiKeysRoutePath('/settings/api-keys')).toThrow(
-      TypeError,
-    );
-    expect(() => normalizeApiKeysRoutePath('/')).toThrow(TypeError);
+    expect(registration.routes).toEqual([]);
   });
 
   it('offers only lifetimes Better Auth accepts', () => {

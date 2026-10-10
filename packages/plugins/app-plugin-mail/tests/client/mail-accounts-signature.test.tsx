@@ -61,7 +61,7 @@ const mail = vi.hoisted(() => ({
 
 vi.mock('../../client/runtime.js', () => ({ useMailClient: () => mail }));
 
-import MailAccountsDevPage from '../../client/pages/mail-accounts-dev-page.js';
+import MailAccountsPage from '../../client/pages/mail-accounts-page.js';
 
 describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   beforeEach(() => {
@@ -127,7 +127,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
         removalFailed: true,
       })),
     );
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
     expect(
       await screen.findByText('Removal failed; retrying automatically'),
     ).toBeVisible();
@@ -157,7 +157,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
           rejectDelete = reject;
         }),
     );
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
     fireEvent.click(
       (await screen.findAllByRole('button', { name: 'Signatures' }))[0],
     );
@@ -216,7 +216,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   });
 
   it('creates a named signature for an account', async () => {
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
     const signatureButtons = await screen.findAllByRole('button', {
       name: 'Signatures',
     });
@@ -265,7 +265,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       signature = { ...signature, ...input };
       return signature;
     });
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Signatures' }));
     const drawer = within(
       await screen.findByRole('dialog', { name: 'Signature management' }),
@@ -310,7 +310,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Signatures' }));
     const signatureDrawer = await screen.findByRole('dialog', {
       name: 'Signature management',
@@ -372,7 +372,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
 
     expect(await screen.findByRole('table')).toBeInTheDocument();
     expect(
@@ -447,7 +447,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
 
     expect(await screen.findByText('2026-01-15')).toBeVisible();
     expect(
@@ -457,7 +457,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   });
 
   it('opens template management from the account page', async () => {
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Templates' }));
 
@@ -482,7 +482,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Labels' }));
 
     const labelDialog = await screen.findByRole('dialog', {
@@ -519,7 +519,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
       },
     ]);
 
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Labels' }));
     const labelDialog = await screen.findByRole('dialog', {
       name: 'Label management',
@@ -564,7 +564,7 @@ describe('[UI][DATA] accounts, signatures, templates, and local labels', () => {
   });
 
   it('requires confirmation before removing an account', async () => {
-    render(<MailAccountsDevPage />);
+    render(<MailAccountsPage />);
 
     fireEvent.click(
       await screen.findByRole('button', { name: 'Remove account' }),

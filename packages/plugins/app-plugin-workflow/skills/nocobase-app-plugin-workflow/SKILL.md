@@ -20,7 +20,7 @@ The application owns workflow source packages, business services, trigger timing
 
 For an initialized application, edit application-root `config.yml`; consult `config.example.yml` for supported settings.
 
-The management pages report results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but their toasts are only logged to the browser console. Update `@nocobase/app-client` together with this plugin; the `nocobase-app-upgrade` Skill's `references/edge-cases.md` ("Notifications and the application toaster") has the full steps.
+The plugin contributes no management pages. Inspect and operate workflows through the authenticated management HTTP API or the Workflow service; an App that needs management pages builds them on that API and declares them among its own routes.
 
 # Choose the Task Path
 
