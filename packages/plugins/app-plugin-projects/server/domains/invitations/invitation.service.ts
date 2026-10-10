@@ -254,12 +254,22 @@ export function createInvitationService(
       const own = invitation.invitedBy.id === viewer.userId;
       if (!own && !sendEmail)
         throw forbidden('Only the inviter can obtain an invitation link.');
-      if (own)
+      if (own) {
+        const conn = deps.tx.read();
+        const projectIds = dataOf(invitation.data)?.projectIds ?? [];
+        const remaining = await projectNames(conn, projectIds);
+        if (projectIds.length > 0 && remaining.size === 0)
+          throw invalid(
+            'INVALID_PROJECT',
+            'The invited projects no longer exist.',
+          );
+        // Acceptance skips deleted projects too; every remaining project still needs current authorization.
         await checkInviter(
-          deps.tx.read(),
+          conn,
           viewer,
-          dataOf(invitation.data)?.projectIds ?? [],
+          projectIds.filter((projectId) => remaining.has(projectId)),
         );
+      }
       const result = sentResult(
         await fromUsers(() =>
           deps.invitations.resendInvitation(id, { origin, sendEmail }),

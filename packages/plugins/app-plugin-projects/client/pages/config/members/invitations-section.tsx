@@ -83,13 +83,12 @@ export function InvitationsSection(): ReactElement | null {
     }) => api.resendInvitation(invitation.id, sendEmail),
     onSuccess: (result, { sendEmail }) => {
       setLinkOnly(!sendEmail);
-      if (result.inviteUrl) setResent(result);
+      setResent(result.inviteUrl ? result : null);
       if (sendEmail && result.emailSent === false) {
-        void toaster.show({
+        toaster.show({
           type: 'warning',
           title: t('invitations.outcome.notSent'),
         });
-        setResent(result);
       } else if (sendEmail)
         notify.success(t('invitations.resent', { email: result.email }));
     },

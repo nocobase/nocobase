@@ -340,6 +340,9 @@ function AcceptForm({
           </div>
         </>
       ) : null}
+      {!session ? (
+        <LoginLink redirect={`/invite/${encodeURIComponent(token)}`} />
+      ) : null}
       {problem ? <Problem>{problem}</Problem> : null}
       {done === 'signedUp' && login.error ? (
         <>

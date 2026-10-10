@@ -84,6 +84,57 @@ describe('inviting', () => {
 });
 
 describe('managing invitations', () => {
+  it.each([true, false])(
+    'renews invitations for remaining projects after partial deletion (sendEmail=%s)',
+    async (sendEmail) => {
+      await invite(
+        h.viewer('admin', 'admin'),
+        ['new@example.com'],
+        [apollo, zeus],
+      );
+      const id = h.invitations.rows[0]?.id ?? '';
+      await h.services.projects.remove(h.viewer('admin', 'admin'), apollo);
+      const resend = vi.spyOn(h.invitations, 'resendInvitation');
+      await expect(
+        h.services.invitations.resend(
+          h.viewer('admin', 'admin'),
+          id,
+          ORIGIN,
+          sendEmail,
+        ),
+      ).resolves.toMatchObject({
+        inviteUrl: expect.stringContaining('/invite/'),
+      });
+      expect(resend).toHaveBeenCalledWith(id, { origin: ORIGIN, sendEmail });
+      await h.invitations.accept(id, 'newbie');
+      const detail = await h.services.projects.get(
+        h.viewer('admin', 'admin'),
+        zeus,
+      );
+      expect(detail.members.map((member) => member.id)).toContain('newbie');
+    },
+  );
+
+  it.each([true, false])(
+    'rechecks access to remaining projects after partial deletion (sendEmail=%s)',
+    async (sendEmail) => {
+      const other = (
+        await h.services.projects.create(h.viewer('lead'), { name: 'Other' })
+      ).id;
+      await invite(h.viewer('lead'), ['new@example.com'], [apollo, other]);
+      const id = h.invitations.rows[0]?.id ?? '';
+      await h.services.projects.remove(h.viewer('admin', 'admin'), other);
+      await h.services.projects.update(h.viewer('admin', 'admin'), apollo, {
+        leadUserId: 'alice',
+      });
+      const resend = vi.spyOn(h.invitations, 'resendInvitation');
+      await expect(
+        h.services.invitations.resend(h.viewer('lead'), id, ORIGIN, sendEmail),
+      ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+      expect(resend).not.toHaveBeenCalled();
+    },
+  );
+
   it('forwards mail-free rotation only for an invitation the viewer can manage', async () => {
     await invite(h.viewer('admin', 'admin'), ['new@example.com'], [apollo]);
     const id = h.invitations.rows[0]?.id ?? '';
@@ -141,16 +192,19 @@ describe('managing invitations', () => {
     },
   );
 
-  it("rechecks project access before returning the owner's link", async () => {
-    await invite(h.viewer('lead'), ['new@example.com'], [apollo]);
-    const id = h.invitations.rows[0]?.id ?? '';
-    await h.services.projects.remove(h.viewer('admin', 'admin'), apollo);
-    const resend = vi.spyOn(h.invitations, 'resendInvitation');
-    await expect(
-      h.services.invitations.resend(h.viewer('lead'), id, ORIGIN, false),
-    ).rejects.toMatchObject({ code: 'INVALID_PROJECT' });
-    expect(resend).not.toHaveBeenCalled();
-  });
+  it.each([true, false])(
+    'rejects renewal when every invited project was deleted (sendEmail=%s)',
+    async (sendEmail) => {
+      await invite(h.viewer('lead'), ['new@example.com'], [apollo]);
+      const id = h.invitations.rows[0]?.id ?? '';
+      await h.services.projects.remove(h.viewer('admin', 'admin'), apollo);
+      const resend = vi.spyOn(h.invitations, 'resendInvitation');
+      await expect(
+        h.services.invitations.resend(h.viewer('lead'), id, ORIGIN, sendEmail),
+      ).rejects.toMatchObject({ code: 'INVALID_PROJECT' });
+      expect(resend).not.toHaveBeenCalled();
+    },
+  );
 
   it('shows a lead their own invitations and a manager every one', async () => {
     await invite(h.viewer('lead'), ['one@example.com'], [apollo]);

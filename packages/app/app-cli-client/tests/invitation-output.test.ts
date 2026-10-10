@@ -69,3 +69,17 @@ describe('copyable invitation URLs', () => {
     );
   });
 });
+
+it('preserves non-invitation structured fields as readable, complete JSON', () => {
+  const config = {
+    description: 'x'.repeat(160),
+    rules: Array.from({ length: 20 }, (_, index) => ({
+      name: `rule-${index}`,
+      enabled: true,
+    })),
+  };
+  const output = renderFields({ config });
+  expect(JSON.parse(output.slice(output.indexOf('{')))).toEqual(config);
+  expect(output).toContain('rule-19');
+  expect(output).not.toContain('…');
+});

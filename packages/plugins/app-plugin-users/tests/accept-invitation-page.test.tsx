@@ -227,6 +227,37 @@ it('sends an existing account to sign-in with a return path to the pending invit
     target: { value: 'secret-password' },
   });
   fireEvent.click(screen.getByRole('button', { name: 'accept.submit' }));
+  await screen.findByText('accept.existingAccount');
   const link = await screen.findByRole('button', { name: 'accept.goToLogin' });
   expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-1');
+});
+
+it('offers sign-in with an invitation return path before submitting registration details', async () => {
+  mocks.request.mockResolvedValue({
+    data: {
+      email: 'nia@example.com',
+      inviterName: 'Ann',
+      summary: [],
+      expiresAt: '2099-01-01T00:00:00Z',
+    },
+  });
+  render(
+    <MemoryRouter initialEntries={['/invite/token-2']}>
+      <Routes>
+        <Route path='/invite/:token' element={<RemountOnSignIn />} />
+        <Route path='/login' element={<p>login page</p>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  const link = await screen.findByRole('button', { name: 'accept.goToLogin' });
+  expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-2');
+  expect(screen.getByLabelText('accept.name')).toHaveValue('');
+  expect(screen.getByLabelText('accept.password')).toHaveValue('');
+  fireEvent.click(link);
+  await screen.findByText('login page');
+  expect(
+    mocks.request.mock.calls.every(([request]) =>
+      request.path.endsWith('/lookup'),
+    ),
+  ).toBe(true);
 });

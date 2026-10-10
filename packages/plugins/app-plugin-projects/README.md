@@ -310,3 +310,5 @@ Open pages refresh when the server announces a change on the `pm:changes` realti
 ```bash
 pnpm --filter @nocobase/app-plugin-projects check
 ```
+
+When renewing an invitation, deleted projects are ignored if at least one selected project remains. The inviter must still be authorized to invite into every remaining project. If all originally selected projects were deleted, renewal is rejected.
