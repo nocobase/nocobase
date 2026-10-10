@@ -7,6 +7,8 @@ import {
 } from '@nocobase/app-server/config';
 import type { AgentsConfig } from '@nocobase/app-plugin-agents/server/tokens';
 
+import { servedVersions } from '../agents/served-versions.js';
+
 /**
  * Agents (`@nocobase/app-plugin-agents`). `app` is how runners name Studio. `cli` is the command line agents talk to
  * Studio with: `nb-studio` (declared under `nocobase.cli` in `package.json` and packaged by `pnpm nocobase cli build`), which
@@ -19,15 +21,20 @@ import type { AgentsConfig } from '@nocobase/app-plugin-agents/server/tokens';
  * the background. `dist.dir` is where the `nb-studio` and `nocobase-runner` tarballs are served from: the image bakes
  * them into `/app/runners/dist` and sets `NB_STUDIO_RUNNERS_DIST` to it, which counts only once it holds a channel. An
  * image built without them, local development, and a `config.yml` naming its own `agents.dist.dir` keep the plugin's
- * default `storage/runners/dist` or that directory.
+ * default `storage/runners/dist` or that directory. `dist.npm` pins the runner and `nb-studio` to the exact versions
+ * this build ships with (`server/agents/served-versions.ts`): a product that directory has no tarball of is named on
+ * npm instead, to the runners, install scripts and CLIs that understand that answer.
  */
 const agents: AppConfigFactory<AgentsConfig> = defineAppConfig(
   ({ paths, env }) => ({
     app: { id: 'nb-studio', name: 'NocoBase Studio' },
-    ...(env.NB_STUDIO_RUNNERS_DIST &&
-    existsSync(path.join(env.NB_STUDIO_RUNNERS_DIST, 'stable'))
-      ? { dist: { dir: env.NB_STUDIO_RUNNERS_DIST } }
-      : {}),
+    dist: {
+      ...(env.NB_STUDIO_RUNNERS_DIST &&
+      existsSync(path.join(env.NB_STUDIO_RUNNERS_DIST, 'stable'))
+        ? { dir: env.NB_STUDIO_RUNNERS_DIST }
+        : {}),
+      npm: servedVersions(),
+    },
     cli: {
       name: 'nb-studio',
       package: { kind: 'served' },

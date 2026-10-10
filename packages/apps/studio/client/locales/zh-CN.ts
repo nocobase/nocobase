@@ -128,32 +128,36 @@ const zhCN: AppResource = {
     },
     send: '发送',
     setUpModels: '添加模型服务',
+    runnerUnavailable:
+      '这个 Agent 暂无可用的运行环境。请添加或启动运行环境，并确保对应编码工具已安装、已登录。消息发送后会等待 Runner 就绪。',
+    setUpRunners: '配置运行环境',
     sendFailed: '消息没有发出去，请重试。',
     recent: '最近的对话',
     allConversations: '查看全部',
     untitled: '未命名对话',
     agentSetup: {
-      open: '在你的 Agent 中使用 Studio',
-      title: '在你的 Agent 中使用 Studio',
+      open: '用本地 Coding Agent 管理 Studio',
+      title: '连接本地 Coding Agent',
       description:
-        '把这段提示发给 Claude Code、Codex 等编程 Agent，它会安装 studio 命令行并登录。',
+        '将下面的配置指令发给你常用的本地 Coding Agent（如 Claude Code、Codex）。完成配置后，就能让它帮你查询项目、创建任务、更新进度。',
       prompt:
-        '请帮我安装并配置 Studio CLI，用来操作 Studio（{{server}}）的项目和任务：\n' +
-        '1. 运行 `{{install}}` 安装 studio；\n' +
-        '2. 运行 `nb-studio login --server {{server}}`，把它显示的验证码告诉我，我在浏览器里确认；\n' +
-        '3. 登录后运行 `nb-studio docs` 了解可用命令，之后按我的要求用 studio 操作，不要直接调用 HTTP 接口。',
-      promptLabel: '给 Agent 的提示',
-      preparing: '正在准备提示',
+        '请帮我安装并配置 NocoBase Studio CLI，用来管理 NocoBase Studio（{{server}}）的项目和任务：\n' +
+        '1. 运行 `{{install}}` 安装 `nb-studio`；\n' +
+        '2. 运行 `nb-studio login --server {{server}}`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；\n' +
+        '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；\n' +
+        '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
+      promptLabel: '发送给 Coding Agent 的配置指令',
+      preparing: '正在生成配置指令',
       identity:
-        'CLI 会以你的身份操作，权限和你在 Studio 里一样，登录时需要你在浏览器确认。',
-      expiry: '此链接 30 分钟内有效，可重新生成。',
+        'Coding Agent 将通过 CLI 以你的身份操作，操作范围受你的 Studio 权限限制。登录需要你在浏览器中确认。',
+      expiry: '配置指令中的安装链接 30 分钟内有效，过期后请重新生成。',
       runtime:
-        '这里只安装 CLI。要让 Agent 在这台机器上运行，请在「Agent 团队 › 运行环境 › 添加运行环境」中添加，它会安装 nocobase-runner。',
-      regenerate: '重新生成',
-      copy: '复制',
-      copied: '已复制',
-      copyFailed: '复制失败',
-      failed: '提示准备失败，请重试。',
+        '要让 Studio 将任务派发到你的电脑执行，请前往「Agent 团队 › 运行环境 › 添加运行环境」安装并注册 Runner。',
+      regenerate: '重新生成配置指令',
+      copy: '复制配置指令',
+      copied: '已复制配置指令',
+      copyFailed: '配置指令复制失败，请重试。',
+      failed: '配置指令生成失败，请重试。',
     },
   },
   dashboard: {

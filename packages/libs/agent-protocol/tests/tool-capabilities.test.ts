@@ -7,6 +7,7 @@ import {
   MAX_EFFORT_LENGTH,
   ToolInfoSchema,
   ReportedToolInfoSchema,
+  PROTOCOL_VERSION,
   isProtocolSupported,
 } from '../src/index.js';
 
@@ -104,6 +105,7 @@ describe('tool capabilities within protocol 7', () => {
   });
 
   it('accepts legacy tools and lets legacy receivers strip the optional additions', () => {
+    expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(7);
     expect(isProtocolSupported(7)).toBe(true);
     expect(ToolInfoSchema.parse(legacy)).toEqual(legacy);
     expect(

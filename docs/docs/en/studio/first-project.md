@@ -4,10 +4,18 @@ Start a freight order management application by creating its project and arrangi
 
 :::danger Current blockers
 
-1. **Repository preparation is missing from the first development flow.** We requested a new application, but Project lead created and dispatched an initialization issue without first guiding us to prepare a Git repository or another code location. Only after starting did the developer agent find no linked repository or application source. The issue became **Blocked**, interrupting the first development task.
-2. **Local Studio has no public address.** Studio is currently reachable only locally. GitHub cannot deliver Webhooks to it, and GitHub-hosted Actions cannot reach its API, blocking later CI and automated deployment integration. This integration has not yet been tested; local application initialization can proceed first.
+1. **Repository preparation guidance is missing.** The issue was dispatched before a code location was linked, leaving initialization **Blocked**.
+2. **Local Studio has no public address.** GitHub Webhooks and hosted Actions cannot reach it, blocking later CI integration.
+3. **Developer lacks NocoBase 3 initialization guidance.** Without an initialization skill or explicit steps, the agent chose an older command.
+4. **Runner blocks downloaded scaffold execution by default.** Even the correct command requires additional permission configuration.
 
-These gaps interrupt initial development and later CI integration. See [Review notes](./review-notes) for configuration details and workflow proposals.
+These gaps interrupt local setup, application initialization, and later CI integration. See [Review notes](./review-notes) for configuration details and workflow proposals.
+
+:::
+
+:::warning Continue after local setup adjustments
+
+For this walkthrough, we created a demo Git repository, linked its local directory to the project's Runner code location, and added the missing information to the original initialization issue. We now continue PM-1 so the developer agent can initialize the application. GitHub CI and Webhooks remain unconfigured; the public tunnel will be set up at the CI stage.
 
 :::
 

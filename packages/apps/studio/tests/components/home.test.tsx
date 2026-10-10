@@ -1,6 +1,6 @@
 /**
  * The home page's composer: the agent it starts with, the one agent picker listing both types, what it says when online
- * agents have no model,
+ * agents have no model or runner agents have no eligible runtime,
  * sending (a new conversation, opened full screen at `/chat/:id`), and the recent conversations with their modes, which
  * open there too.
  */
@@ -11,6 +11,7 @@ import type {
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -117,6 +118,7 @@ function ChatPageStub() {
 }
 
 const { default: HomePage } = await import('../../client/pages/home/index');
+const { homeKeys } = await import('../../client/pages/home/api');
 
 function agent(
   id: string,
@@ -138,13 +140,12 @@ function agent(
   };
 }
 
-function renderHome(): void {
+function renderHome(): QueryClient {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   render(
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      }
-    >
+    <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <Routes>
           <Route path='/' element={<HomePage />} />
@@ -153,6 +154,7 @@ function renderHome(): void {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return queryClient;
 }
 
 describe('the home page', () => {
@@ -427,6 +429,75 @@ describe('the home page', () => {
     expect(
       await screen.findByRole('link', { name: 'home.setUpModels' }),
     ).toHaveAttribute('href', '/models');
+  });
+
+  it('warns when the selected runner agent has no eligible runtime, but still queues messages', async () => {
+    state.services = 0;
+    state.agents[1] = agent('Coder', 'runner', {
+      availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+    });
+    renderHome();
+    expect(screen.queryByText('home.runnerUnavailable')).toBeNull();
+    await userEvent.click(await screen.findByTestId('chat-agent-picker'));
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: /Coder/u }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'home.runnerUnavailable',
+    );
+    expect(
+      screen.getByRole('link', { name: 'home.setUpRunners' }),
+    ).toHaveAttribute('href', '/runtimes');
+    expect(screen.queryByRole('link', { name: 'home.setUpModels' })).toBeNull();
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'home.inputLabel' }),
+      'Fix the build',
+    );
+    expect(screen.getByRole('button', { name: 'home.send' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'home.send' }));
+    await waitFor(() =>
+      expect(start).toHaveBeenCalledWith('Coder', plain('Fix the build')),
+    );
+  });
+
+  it('refreshes runner availability without losing the selected agent or message draft', async () => {
+    state.agents[1] = agent('Coder', 'runner', {
+      isMyDefault: true,
+      availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+    });
+    const queryClient = renderHome();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'home.runnerUnavailable',
+    );
+    const input = screen.getByRole('textbox', { name: 'home.inputLabel' });
+    await userEvent.type(input, 'Keep this draft');
+    state.agents = [
+      state.agents[0]!,
+      agent('Coder', 'runner', { isMyDefault: true }),
+    ];
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: homeKeys.agents });
+    });
+    await waitFor(() =>
+      expect(screen.queryByText('home.runnerUnavailable')).toBeNull(),
+    );
+    expect(input).toHaveValue('Keep this draft');
+    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent('Coder');
+    state.agents[1] = agent('Coder', 'runner', {
+      isMyDefault: true,
+      availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+    });
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: homeKeys.agents });
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'home.runnerUnavailable',
+    );
+    await userEvent.click(screen.getByTestId('chat-agent-picker'));
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: /Project manager/u }),
+    );
+    expect(screen.queryByText('home.runnerUnavailable')).toBeNull();
   });
 
   it('lists the recent conversations with their modes', async () => {
