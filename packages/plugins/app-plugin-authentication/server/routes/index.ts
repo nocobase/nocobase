@@ -1,5 +1,6 @@
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  cliRoute,
   defineApiRoutes,
   describeRoute,
   type AppApiRouteContribution,
@@ -22,6 +23,45 @@ export const apiRoutes: AppApiRouteContribution<
     // generator, through the fragment the provider adds.
     describeRoute({ hide: true }),
     (context) => auth.handler(context.req.raw),
+  );
+  router.get(
+    '/authentication/capabilities',
+    describeRoute({
+      ...cliRoute(false),
+      summary: 'Read public authentication capabilities',
+      description: 'Returns whether password reset by email is configured.',
+      tags: ['Authentication'],
+      responses: {
+        200: {
+          description: 'Public authentication capabilities.',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['data'],
+                properties: {
+                  data: {
+                    type: 'object',
+                    required: ['passwordResetAvailable'],
+                    properties: {
+                      passwordResetAvailable: {
+                        type: 'boolean',
+                        description:
+                          'Whether email-based password reset is configured.',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    (context) =>
+      context.json({
+        data: { passwordResetAvailable: auth.passwordResetAvailable() },
+      }),
   );
   return router;
 });

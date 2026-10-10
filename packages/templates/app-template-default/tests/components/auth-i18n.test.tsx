@@ -13,6 +13,12 @@ import { Loading } from '../../client/components/loading.js';
 
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useSignUpAvailable: () => true,
+  usePasswordResetCapability: () => ({
+    data: { passwordResetAvailable: true },
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
 }));
 
 vi.mock('@nocobase/app-plugin-authentication/client/actions', () => ({

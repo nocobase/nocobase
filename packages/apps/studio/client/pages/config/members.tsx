@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Outlet } from 'react-router';
 
 import { MemberRolesPanel } from './members/member-roles-panel.js';
 
@@ -8,5 +9,10 @@ import { MemberRolesPanel } from './members/member-roles-panel.js';
  * item (`assign`, `invite`, `define-roles`), checked again by every endpoint.
  */
 export default function MembersSettingsPage(): ReactElement {
-  return <MemberRolesPanel />;
+  return (
+    <>
+      <MemberRolesPanel />
+      <Outlet />
+    </>
+  );
 }

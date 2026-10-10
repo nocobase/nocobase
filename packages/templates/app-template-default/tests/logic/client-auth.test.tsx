@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.ts';
 import LoginPage from '../../client/pages/auth/login.tsx';
+import ForgotPasswordPage from '../../client/pages/auth/forgot-password.tsx';
 import RegisterPage from '../../client/pages/auth/register.tsx';
 
 const passwordLoginAction = vi.hoisted(() => ({
@@ -18,14 +19,26 @@ const passwordLoginAction = vi.hoisted(() => ({
 }));
 
 const signUpAvailable = vi.hoisted(() => ({ value: true }));
+const resetAvailable = vi.hoisted(() => ({ value: true }));
 
 vi.mock('@nocobase/app-plugin-authentication/client/actions', () => ({
   usePasswordLogin: () => passwordLoginAction,
   usePasswordRegistration: () => ({ isPending: false, submit: vi.fn() }),
+  usePasswordResetRequest: () => ({
+    isPending: false,
+    isSuccess: false,
+    submit: vi.fn(),
+  }),
 }));
 
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useSignUpAvailable: () => signUpAvailable.value,
+  usePasswordResetCapability: () => ({
+    data: { passwordResetAvailable: resetAvailable.value },
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
 }));
 
 const runtime = await createTestI18nRuntime({
@@ -111,6 +124,25 @@ describe('application authentication pages', () => {
       'href',
       '/register',
     );
+  });
+
+  it('hides password recovery when it is not available', () => {
+    resetAvailable.value = false;
+    renderAt('/', <LoginPage />);
+    expect(
+      screen.queryByRole('link', { name: 'Forgot password?' }),
+    ).not.toBeInTheDocument();
+    resetAvailable.value = true;
+  });
+
+  it('shows the administrator contact message on direct access while recovery is disabled', () => {
+    resetAvailable.value = false;
+    renderAt('/forgot-password', <ForgotPasswordPage />);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Self-service password reset is not enabled',
+    );
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
+    resetAvailable.value = true;
   });
 
   it('sends a visitor back to sign-in while sign-up is off', () => {
