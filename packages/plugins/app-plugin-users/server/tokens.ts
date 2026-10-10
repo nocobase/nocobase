@@ -178,7 +178,7 @@ export interface AcceptUserInvitationInput {
 export interface AcceptedUserInvitation {
   readonly email: string;
   readonly userId: string;
-  /** The address had an account already: nothing was created, and it signs in with its own password. */
+  /** The signed-in invited account accepted the invitation; no account or password was created. */
   readonly existingAccount: boolean;
 }
 
@@ -229,12 +229,12 @@ export interface UserManagementService {
   revokeInvitation(id: string): Promise<void>;
   lookupInvitation(token: string): Promise<PublicUserInvitation>;
   /**
-   * Creates the account, or uses the one the address has by now, and accepts
-   * every pending invitation of the address in one transaction, running the
-   * handlers for each.
+   * Accepts only the invitation identified by the token, in one transaction. An existing account must match
+   * authenticatedUserId, which the caller obtains from the authenticated session, never from request input.
    */
   acceptInvitation(
     input: AcceptUserInvitationInput,
+    authenticatedUserId?: string,
   ): Promise<AcceptedUserInvitation>;
   /** Registers what accepting an invitation also does; returns what removes it. */
   onInvitationAccepted(handler: UserInvitationAcceptedHandler): () => void;
@@ -254,7 +254,8 @@ export class UserManagementError extends Error {
       | 'INVITATION_EXPIRED'
       | 'INVITATION_ACCEPTED'
       | 'INVITATION_REVOKED'
-      | 'INVITATION_CLOSED',
+      | 'INVITATION_CLOSED'
+      | 'INVITATION_SIGN_IN_REQUIRED',
     message: string,
     readonly status: 400 | 404 | 409 = 400,
   ) {

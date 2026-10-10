@@ -108,6 +108,50 @@ describe('managing invitations', () => {
     });
   });
 
+  it.each([true, false])(
+    "does not disclose another inviter's link when emailSent=%s",
+    async (emailSent) => {
+      await invite(h.viewer('lead'), ['new@example.com'], [apollo]);
+      const id = h.invitations.rows[0]?.id ?? '';
+      const resend = vi
+        .spyOn(h.invitations, 'resendInvitation')
+        .mockResolvedValue({
+          email: 'new@example.com',
+          outcome: 'invited',
+          invitationId: id,
+          emailSent,
+          inviteUrl: 'https://example.test/invite/secret',
+        });
+      await expect(
+        h.services.invitations.resend(
+          h.viewer('admin', 'admin'),
+          id,
+          ORIGIN,
+          false,
+        ),
+      ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+      expect(resend).not.toHaveBeenCalled();
+      const result = await h.services.invitations.resend(
+        h.viewer('admin', 'admin'),
+        id,
+        ORIGIN,
+      );
+      expect(result.emailSent).toBe(emailSent);
+      expect(result.inviteUrl).toBeUndefined();
+    },
+  );
+
+  it("rechecks project access before returning the owner's link", async () => {
+    await invite(h.viewer('lead'), ['new@example.com'], [apollo]);
+    const id = h.invitations.rows[0]?.id ?? '';
+    await h.services.projects.remove(h.viewer('admin', 'admin'), apollo);
+    const resend = vi.spyOn(h.invitations, 'resendInvitation');
+    await expect(
+      h.services.invitations.resend(h.viewer('lead'), id, ORIGIN, false),
+    ).rejects.toMatchObject({ code: 'INVALID_PROJECT' });
+    expect(resend).not.toHaveBeenCalled();
+  });
+
   it('shows a lead their own invitations and a manager every one', async () => {
     await invite(h.viewer('lead'), ['one@example.com'], [apollo]);
     await invite(h.viewer('admin', 'admin'), ['two@example.com'], [zeus]);

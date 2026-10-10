@@ -188,28 +188,55 @@ describe('user invitations', () => {
     await expect(service.listInvitations()).resolves.toEqual([]);
   });
 
-  it('accepts every pending invitation of the address at once', async () => {
-    for (const projectId of ['p1', 'p2'])
+  it('accepts only the supplied token and leaves other project invitations pending', async () => {
+    for (const projectId of ['private-project', 'lead-project'])
       await service.invite({
         emails: ['new@example.com'],
         invitedBy: 'ann',
         data: { projectId },
         origin: ORIGIN,
       });
-
-    await service.acceptInvitation({
-      token: tokenOf(mail[1] as InvitationEmail),
+    const privateToken = tokenOf(mail[0] as InvitationEmail);
+    const leadToken = tokenOf(mail[1] as InvitationEmail);
+    const created = await service.acceptInvitation({
+      token: leadToken,
       name: 'Nia',
       password: 'secret-password',
     });
-
     expect(accepted.map((context) => context.data)).toEqual([
-      { projectId: 'p2' },
-      { projectId: 'p1' },
+      { projectId: 'lead-project' },
+    ]);
+    await expect(service.lookupInvitation(privateToken)).resolves.toMatchObject(
+      { email: 'new@example.com' },
+    );
+    // Even the real recipient opening the other link must first authenticate to the account it would grant access to.
+    for (const authenticatedUserId of [undefined, 'ann']) {
+      await expect(
+        service.acceptInvitation(
+          { token: privateToken, name: 'Nia', password: 'different-password' },
+          authenticatedUserId,
+        ),
+      ).rejects.toMatchObject({ code: 'INVITATION_SIGN_IN_REQUIRED' });
+    }
+    expect(accepted).toHaveLength(1);
+    await expect(service.lookupInvitation(privateToken)).resolves.toMatchObject(
+      { email: 'new@example.com' },
+    );
+    await service.acceptInvitation(
+      { token: privateToken, name: 'Nia', password: '' },
+      created.userId,
+    );
+    expect(accepted.map((context) => context.data)).toEqual([
+      { projectId: 'lead-project' },
+      { projectId: 'private-project' },
     ]);
     await expect(
-      service.lookupInvitation(tokenOf(mail[0] as InvitationEmail)),
+      service.acceptInvitation(
+        { token: privateToken, name: 'Nia', password: '' },
+        created.userId,
+      ),
     ).rejects.toMatchObject({ code: 'INVITATION_ACCEPTED' });
+    expect(accepted).toHaveLength(2);
   });
 
   it('rolls the whole acceptance back when a handler fails', async () => {
@@ -244,11 +271,14 @@ describe('user invitations', () => {
     });
     await insertUser('bob', 'Bob');
 
-    const result = await service.acceptInvitation({
-      token: tokenOf(mail[0] as InvitationEmail),
-      name: 'Someone else',
-      password: 'secret-password',
-    });
+    const result = await service.acceptInvitation(
+      {
+        token: tokenOf(mail[0] as InvitationEmail),
+        name: 'Someone else',
+        password: 'secret-password',
+      },
+      'bob',
+    );
 
     expect(result).toEqual({
       email: 'bob@example.com',

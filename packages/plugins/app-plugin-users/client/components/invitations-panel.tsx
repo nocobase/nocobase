@@ -37,11 +37,13 @@ const NS = '@nocobase/app-plugin-users';
 export function InvitationsPanel({
   invitations,
   busy,
+  canCopyLink,
   onResend,
   onRevoke,
 }: {
   readonly invitations: readonly UserInvitation[];
   readonly busy: boolean;
+  readonly canCopyLink: (invitation: UserInvitation) => boolean;
   readonly onResend: (invitation: UserInvitation, sendEmail?: boolean) => void;
   readonly onRevoke: (invitation: UserInvitation) => void;
 }): ReactElement {
@@ -121,12 +123,14 @@ export function InvitationsPanel({
                           <Send />
                           {t('invitations.resend')}
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onResend(invitation, false)}
-                        >
-                          <Copy />
-                          {t('invitations.copyNewLink')}
-                        </DropdownMenuItem>
+                        {canCopyLink(invitation) ? (
+                          <DropdownMenuItem
+                            onClick={() => onResend(invitation, false)}
+                          >
+                            <Copy />
+                            {t('invitations.copyNewLink')}
+                          </DropdownMenuItem>
+                        ) : null}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           variant='destructive'

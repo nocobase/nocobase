@@ -604,8 +604,13 @@ export default function UsersPage(): ReactElement {
         <InvitationsPanel
           invitations={invitations}
           busy={busy}
-          onResend={(invitation, sendEmail = true) =>
-            void perform(async () => {
+          canCopyLink={(invitation) =>
+            invitation.invitedBy.id === session?.user.id &&
+            (Object.keys(invitation.roleScopes).length === 0 ||
+              globalCapabilities['assign-role'])
+          }
+          onResend={(invitation, sendEmail = true) => {
+            perform(async () => {
               const result = await users.resendInvitation(
                 invitation.id,
                 sendEmail,
@@ -613,13 +618,18 @@ export default function UsersPage(): ReactElement {
               setLinkOnly(!sendEmail);
               if (result.outcome === 'invited' && result.inviteUrl)
                 setResent(result);
+              else if (result.outcome === 'invited' && !result.emailSent)
+                toaster.show({
+                  type: 'warning',
+                  title: t('invite.outcome.notSent'),
+                });
               else
                 toaster.show({
                   type: 'success',
                   title: t('invitations.resent'),
                 });
-            })
-          }
+            }).catch(reportError);
+          }}
           onRevoke={(invitation) =>
             void perform(async () => {
               await users.revokeInvitation(invitation.id);

@@ -140,7 +140,8 @@ export const AcceptInvitationInput: z.ZodObject<
 > = z.strictObject({
   token: nonEmpty,
   name: nonEmpty,
-  password: nonEmpty,
+  // Existing accounts authenticate through their session; account creation still validates password strength.
+  password: z.string(),
 });
 
 export const PreferenceParams: z.ZodObject<
@@ -291,7 +292,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Returned for every new invitation link, whether or not email was sent.',
+          'Returned for new invitations and authorized resends by the original inviter, whether or not email was sent.',
       }),
     }),
     z.object({
@@ -319,7 +320,7 @@ export const AcceptedInvitationSchema: z.ZodType<{
   email: z.string(),
   existingAccount: z.boolean().meta({
     description:
-      'The address had an account already: nothing was created, and it signs in with its own password.',
+      'The address had an account already: the signed-in invited account accepted it; no password was changed.',
   }),
 });
 

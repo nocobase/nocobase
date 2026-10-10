@@ -45,6 +45,7 @@ import type {
 import { pmKeys } from '../../../api/keys.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
+import { useViewer } from '../../../hooks/use-viewer.js';
 import { usePmFormatters } from '../../../lib/format.js';
 import { InviteResults } from './invite-dialog.js';
 import { SectionHeading } from '../section-heading.js';
@@ -56,6 +57,7 @@ import { SectionHeading } from '../section-heading.js';
 export function InvitationsSection(): ReactElement | null {
   const { t } = useTranslation();
   const api = usePmApi();
+  const viewer = useViewer();
   const notify = useNotify();
   const toaster = useToaster();
   const queryClient = useQueryClient();
@@ -191,18 +193,20 @@ export function InvitationsSection(): ReactElement | null {
                   <SendIcon />
                   {t('invitations.resend')}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={resending}
-                  onClick={() =>
-                    resendInvitation({
-                      invitation: row.original,
-                      sendEmail: false,
-                    })
-                  }
-                >
-                  <CopyIcon />
-                  {t('invitations.copyNewLink')}
-                </DropdownMenuItem>
+                {row.original.invitedBy.userId === viewer?.userId ? (
+                  <DropdownMenuItem
+                    disabled={resending}
+                    onClick={() =>
+                      resendInvitation({
+                        invitation: row.original,
+                        sendEmail: false,
+                      })
+                    }
+                  >
+                    <CopyIcon />
+                    {t('invitations.copyNewLink')}
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant='destructive'
@@ -217,7 +221,7 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [t, format, resending, resendInvitation],
+    [t, format, resending, resendInvitation, viewer?.userId],
   );
 
   const rows = invitations.data;

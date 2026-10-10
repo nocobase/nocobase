@@ -58,6 +58,7 @@ it('requests a fresh link without mail from the existing invitation menu', async
     <InvitationsPanel
       invitations={[invitation]}
       busy={false}
+      canCopyLink={() => true}
       onResend={resend}
       onRevoke={vi.fn()}
     />,

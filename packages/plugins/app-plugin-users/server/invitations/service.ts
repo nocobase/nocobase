@@ -3,9 +3,8 @@
  *
  * - An address that already has an account is reported back (`existingUser`) and nothing is sent; the caller decides
  *   what that account gets.
- * - An address may hold several pending invitations, each with its own link, roles and data. Accepting any one of them
- *   accepts them all, in one transaction: the account is created with the accepted invitation's roles, and the
- *   `onInvitationAccepted` handlers run once per invitation, so what each inviter attached takes effect.
+ * - Each invitation's token authorizes only that invitation's roles and data. Other invitations for the same address
+ *   need their own tokens; an existing account must also authenticate before accepting an invitation.
  * - Only the token's hash is stored. Emails are submitted after the rows commit; the inviter always gets the link
  *   once, to forward by hand, and the row keeps any delivery error.
  */
@@ -295,7 +294,10 @@ export function createInvitationManager(
       };
     },
 
-    async acceptInvitation(input): Promise<AcceptedUserInvitation> {
+    async acceptInvitation(
+      input,
+      authenticatedUserId,
+    ): Promise<AcceptedUserInvitation> {
       const accepted = await database.transaction(async (connection) => {
         const row = requireOpen(
           await findInvitation(connection, {
@@ -303,6 +305,12 @@ export function createInvitationManager(
           }),
         );
         const existing = await userIdByEmail(row.email, connection);
+        if (existing && existing !== authenticatedUserId)
+          throw new UserManagementError(
+            'INVITATION_SIGN_IN_REQUIRED',
+            'Sign in with the invited account before accepting this invitation.',
+            409,
+          );
         let userId = existing;
         if (!userId) {
           const created = await users.withConnection(connection).create({
@@ -314,28 +322,21 @@ export function createInvitationManager(
           for (const [key, value] of Object.entries(row.roleScopes))
             await options.requireScope(key).replace(userId, value, connection);
         }
-        const others = (
-          await listPending(connection, { email: row.email })
-        ).filter(
-          (other) => other.id !== row.id && statusOf(other) === 'pending',
-        );
-        for (const invitation of [row, ...others]) {
-          if (!(await claimInvitation(connection, invitation.id, userId)))
-            throw new UserManagementError(
-              'INVITATION_ACCEPTED',
-              'This invitation has already been accepted.',
-              409,
-            );
-          for (const handler of handlers)
-            await handler({
-              connection,
-              invitationId: invitation.id,
-              userId,
-              email: row.email,
-              createdAccount: !existing,
-              data: invitation.data,
-            });
-        }
+        if (!(await claimInvitation(connection, row.id, userId)))
+          throw new UserManagementError(
+            'INVITATION_ACCEPTED',
+            'This invitation has already been accepted.',
+            409,
+          );
+        for (const handler of handlers)
+          await handler({
+            connection,
+            invitationId: row.id,
+            userId,
+            email: row.email,
+            createdAccount: !existing,
+            data: row.data,
+          });
         return { email: row.email, userId, existingAccount: !!existing };
       });
       await options.onRoleScopesChanged?.(accepted.userId);

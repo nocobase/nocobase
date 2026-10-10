@@ -84,9 +84,7 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 - Server code invites through `UserManagementService.invite`, may attach `data`
   and a `summary` the invitee sees (for example project names), and registers
   `onInvitationAccepted` to act on acceptance. Handlers run in the acceptance
-  transaction; one that throws rolls the account creation back. Accepting one
-  invitation accepts every pending invitation of the address, and the handlers
-  run once per invitation.
+  transaction; one that throws rolls the account creation back. Accepting a token consumes only that invitation and runs its handlers once. Other invitations for the address remain pending and need their own tokens. Existing accounts must be authenticated as the invited user before acceptance; server callers pass the session user ID as the second argument, never a user ID from the request body.
 - Replace the accept page with `inviteComponentLoader` to match the
   application's own sign-in pages.
 
@@ -116,7 +114,7 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
 
 ## Verification
 
-Invitation create/resend results include `inviteUrl` whether email delivery succeeds or fails. `resendInvitation(id, { sendEmail: false })` generates a new link without sending email; the HTTP resend endpoint accepts `?sendEmail=false`. Every resend invalidates the previous link and renews its seven-day validity. List responses never expose tokens or links. The users page offers “Copy new link” for this operation, then displays the new link for copying.
+Invitation creation returns `inviteUrl` whether email delivery succeeds or fails. HTTP resend results include it only for the original inviter; owned invitations carrying roles also require current `assign-role` permission. Other invitation managers can resend email but never receive the credential and cannot rotate without email. `resendInvitation(id, { sendEmail: false })` generates a new link without sending email; the HTTP resend endpoint accepts `?sendEmail=false`. Every resend invalidates the previous link and renews its seven-day validity. List responses never expose tokens or links. The users page offers “Copy new link” for this operation, then displays the new link for copying.
 
 - A role without `access` on page `users` cannot navigate to the page.
 - Anonymous API requests return `401`; authenticated requests without the

@@ -250,12 +250,22 @@ export function createInvitationService(
     },
 
     async resend(viewer, id, origin, sendEmail = true) {
-      await managed(viewer, id);
-      return sentResult(
+      const invitation = await managed(viewer, id);
+      const own = invitation.invitedBy.id === viewer.userId;
+      if (!own && !sendEmail)
+        throw forbidden('Only the inviter can obtain an invitation link.');
+      if (own)
+        await checkInviter(
+          deps.tx.read(),
+          viewer,
+          dataOf(invitation.data)?.projectIds ?? [],
+        );
+      const result = sentResult(
         await fromUsers(() =>
           deps.invitations.resendInvitation(id, { origin, sendEmail }),
         ),
       );
+      return own ? result : { ...result, inviteUrl: undefined };
     },
 
     async revoke(viewer, id) {

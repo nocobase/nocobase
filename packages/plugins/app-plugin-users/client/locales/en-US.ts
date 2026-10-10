@@ -147,6 +147,7 @@ const enUS = {
     nameRequired: 'Enter your name.',
     passwordTooShort: 'The password needs at least {{min}} characters.',
     submit: 'Create account and join',
+    join: 'Accept invitation',
     submitting: 'Joining…',
     signedIn:
       'You are signed in as {{name}}. Sign out to accept this invitation with a new account.',
@@ -166,6 +167,8 @@ const enUS = {
     },
   },
   errors: {
+    INVITATION_LINK_FORBIDDEN:
+      'Only the inviter can copy this invitation link.',
     SELF_DELETE_NOT_ALLOWED: 'You cannot delete your own account.',
     LAST_ASSIGNMENT:
       'This user is the last one holding a permission set that must stay assigned.',

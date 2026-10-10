@@ -1,6 +1,7 @@
 import {
   authenticationToken,
   UserAdministrationError,
+  type AuthEnv,
 } from '@nocobase/app-plugin-authentication';
 import {
   authorizationToken,
@@ -193,11 +194,33 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       apiValidator('query', ResendInvitationQuery),
       async (context) => {
         const { invitationId } = context.req.valid('param');
+        const invitation = await users.getInvitation(invitationId);
+        if (!invitation)
+          throw new UserManagementError(
+            'INVITATION_NOT_FOUND',
+            'This invitation does not exist.',
+            404,
+          );
+        const sendEmail = context.req.valid('query').sendEmail !== 'false';
+        const own =
+          invitation.invitedBy.id ===
+          context.get('authz').identity.principal.id;
+        if (!own && !sendEmail)
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            domain: 'users',
+            reason: 'INVITATION_LINK_FORBIDDEN',
+            message: 'Only the inviter can obtain an invitation link.',
+          });
+        if (own && Object.keys(invitation.roleScopes).length > 0)
+          await requireUserAction(context, '*', 'assign-role');
+        const result = await users.resendInvitation(invitationId, {
+          sendEmail,
+          origin: new URL(context.req.url).origin,
+        });
         return context.json({
-          data: await users.resendInvitation(invitationId, {
-            sendEmail: context.req.valid('query').sendEmail !== 'false',
-            origin: new URL(context.req.url).origin,
-          }),
+          // Even failed email delivery must not expose another inviter's registration credential.
+          data: own ? result : { ...result, inviteUrl: undefined },
         });
       },
     );
@@ -551,7 +574,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // bytes, stored only as a hash) is the credential and opens one pending,
     // unexpired invitation; it travels in the body so request logs never
     // record it. Mounted before `/users`, so the guard above never runs here.
-    const invitations = new Hono();
+    const invitations = new Hono<AuthEnv>();
     invitations.onError((error, context) =>
       apiErrorHandler(
         toInvitationTokenError(error) ?? toUsersApiError(error) ?? error,
@@ -594,7 +617,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         // The sign-up page's: accepting creates the account from the invitation link.
         ...cliRoute(false),
         description:
-          'Public: the token from the invitation link is the credential. Creates the account with `name` and `password` unless the address already has one, which then signs in with its own password.',
+          'The token authorizes only this invitation. Creates the account with `name` and `password`; an existing account must be signed in as the invited user.',
         security: [],
         responses: {
           200: dataResponse(AcceptedInvitationSchema),
@@ -602,10 +625,24 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           500: apiErrorResponse(500),
         },
       }),
+      authentication.optional(),
       apiValidator('json', AcceptInvitationInput),
       async (context) => {
+        const auth = context.get('auth');
+        if (
+          auth &&
+          (await authentication.isScopedSession(auth, context.req.raw))
+        )
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            domain: 'authentication',
+            reason: 'SCOPED_KEY_FORBIDDEN',
+            message:
+              'This endpoint does not accept scoped API keys or service-account keys.',
+          });
         const accepted = await users.acceptInvitation(
           context.req.valid('json'),
+          auth?.user.id,
         );
         securityLogger?.info(
           { event: 'user.invitation.accept', targetUserId: accepted.userId },

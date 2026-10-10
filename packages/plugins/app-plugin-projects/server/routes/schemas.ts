@@ -763,7 +763,7 @@ export const InvitationResultSchema: z.ZodType<InvitationResult> = z
     emailSent: z.boolean().optional(),
     inviteUrl: z.string().optional().meta({
       description:
-        'The new invitation link, returned once whether or not email was sent.',
+        'The new invitation link, returned only to the original inviter whether or not email was sent.',
     }),
   })
   .meta({ ref: 'ProjectsInvitationResult' });

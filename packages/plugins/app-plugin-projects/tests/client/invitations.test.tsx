@@ -102,3 +102,29 @@ it('keeps a row menu open when the list changes underneath it', async () => {
   expect(await screen.findByText('bob@example.com')).toBeInTheDocument();
   expect(screen.getByRole('menu')).toBeInTheDocument();
 });
+
+it("hides copying another inviter's link while keeping email resend available", async () => {
+  invitations = [
+    { ...invitation, invitedBy: { userId: 'other', name: 'Other' } },
+  ];
+  const user = userEvent.setup();
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <InvitationsSection />
+    </QueryClientProvider>,
+  );
+  await user.click(
+    await screen.findByRole('button', {
+      name: 'invitations.actionsFor(email=ann@example.com)',
+    }),
+  );
+  expect(
+    await screen.findByRole('menuitem', { name: 'invitations.resend' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('menuitem', { name: 'invitations.copyNewLink' }),
+  ).toBeNull();
+});
