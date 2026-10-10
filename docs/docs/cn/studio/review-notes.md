@@ -120,4 +120,18 @@ Developer 的原 `toolPolicy` 为 null，使用产品的 `DEFAULT_TOOL_POLICY`�
 
 5. 使用仓库内 pnpm 缓存后，官方脚手架已实际执行，但模板下载两次返回 `TEMPLATE_DOWNLOAD_FAILED`。模板版本查询正常；生成器内部调用 `npm pack --silent`，底层错误未完整呈现。已补充仓库内 `npm_config_cache` 路径交 Runner 排查，这一处理的最终结果仍待确认。
 
-**当前结果：**代码位置、脚手架命令授权与 pnpm 缓存已通过实际运行验证；模板下载、应用生成及启动尚未完成。应用初始化成功后，再补实际结果和截图。
+**后续验证结果：**2026-10-10 的 Runner 运行 `391364430790660` 同时设置仓库内 `XDG_CACHE_HOME` 和 `npm_config_cache`，成功下载默认模板并安装依赖；随后执行 `pnpm nocobase config init --json`，默认 SQLite 配置成功。Developer 完成首页和 Orders、Customers、Drivers 导航，提交至本地 `agent-pm-1` 分支，提交 `035df70`。运行记录与任务报告显示应用启动成功，相关检查通过。初始化阻塞已在这次演示中解除；这些本地补充不代表默认流程已修复。
+
+**当前剩余阻塞：**Runner 无可用 GitHub 推送凭据，分支尚未推送；Studio 仅关联本地目录，未通过 Git 连接关联仓库，创建 PR 返回 `NO_REPOSITORY`。尚无应用 PR，后续处理推送凭据与 Studio 仓库连接。
+
+## GitHub App 注册被 localhost Hook URL 阻塞
+
+**状态：已复现，未解决。** 2026-10-10，在本地 Studio 的 Settings → Git 中选择 Add connection → GitHub → My account → Create on GitHub 后，GitHub 显示 `Invalid GitHub App configuration`，并报告 `Hook url is not supported because it isn't reachable over the public Internet (localhost)` 和 `Hook is invalid`。App 注册未完成，尚未进入安装及仓库授权。
+
+![GitHub App 注册失败](./assets/github-app-localhost-blocked-en.png)
+
+**源码事实：** 本轮隔离 Studio 的 `server/git/github.ts` 中，`buildAppManifest` 在 Webhook 关闭时仍生成 `hook_attributes: { url: input.webhookUrl, active: input.webhookActive }`，保留 localhost URL。界面提示关闭 Webhook 后使用轮询，但用户实际注册仍被 GitHub 的 URL 校验拒绝。不能将界面提示当作已验证的本地注册能力。
+
+**影响与区别：** 这是当前 GitHub App 注册阶段的阻塞，与前面后续 CI 无公网访问入口的限制分开记录。此前“隧道到 CI 阶段再开”的安排未覆盖这一实际注册问题。
+
+**后续处理：** 可评估修正注册配置，或提前配置公网地址后重新注册；本轮尚未修改 Studio 源码、开启隧道或完成授权，不宣称已解决。
