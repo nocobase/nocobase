@@ -43,10 +43,12 @@ import { createTxRunner, type TxRunner } from './kernel/tx.js';
 import {
   createRunnerService,
   createRunnerSweeper,
+  createRunnerWorkspaces,
   createSlots,
   createWorkSignal,
   type RunnerService,
   type RunnerSweeper,
+  type RunnerWorkspaces,
   type Slots,
   type WorkSignal,
 } from './runners/index.js';
@@ -218,6 +220,11 @@ export interface Agents {
   readonly runners: RunnerService;
   /** Which agents each runner may run and which runs one holds, for the runtimes pages. */
   readonly runnerView: RunnerView;
+  /**
+   * The working directories runners report: which may go because their subject's work is over, and the disk they
+   * take, kept for the runtimes pages.
+   */
+  readonly workspaces: RunnerWorkspaces;
   /**
    * Jobs: deterministic steps runners execute without a model (a build), of the kinds the application registers; used
    * by the off-by-default runner build method.
@@ -612,6 +619,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     cli,
     runners,
     runnerView: createRunnerView({ agents, subjects, tx }),
+    workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,
     signal,

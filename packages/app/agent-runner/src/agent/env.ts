@@ -16,7 +16,11 @@ import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { RUN_CREDENTIALS_ENV, type RunWorkspace } from '../protocol/index.ts';
-import { PNPM_STORE_ENV, pnpmStoreEnv } from '../core/pnpm-store.ts';
+import {
+  PNPM_STORE_ENV,
+  pnpmStoreEnv,
+  type PnpmImportMethod,
+} from '../core/pnpm-store.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
 
@@ -43,6 +47,8 @@ export interface BuildEnvOptions {
   tmpDir?: string;
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
+  /** How pnpm imports packages from that store (`pnpmImportMethod`); `copy` when absent. */
+  pnpmImportMethod?: PnpmImportMethod;
   /** The push guard's hooks directory. */
   hooksDir?: string;
   /** The run's process tag (core/process-tree.ts), which marks what the tool starts as the run's. */
@@ -86,7 +92,10 @@ export function buildAgentEnv(
   if (options.home !== undefined) env.HOME = options.home;
   if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
   if (options.pnpmStoreDir !== undefined)
-    Object.assign(env, pnpmStoreEnv(options.pnpmStoreDir));
+    Object.assign(
+      env,
+      pnpmStoreEnv(options.pnpmStoreDir, options.pnpmImportMethod ?? 'copy'),
+    );
   if (options.processTag !== undefined)
     env[PROCESS_TAG_ENV] = options.processTag;
   const config: [string, string][] = [];

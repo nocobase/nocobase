@@ -60,6 +60,7 @@ export {
   type SubjectFacts,
   type SubjectRegistry,
   type SubjectReports,
+  type SubjectWorkspaces,
   type SubjectScope,
   type WorkSink,
 } from './ports.js';

@@ -82,6 +82,8 @@ import {
   type RunnerRecentRun,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerWorkspace,
+  type RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import {
   RUN_REQUEST_STATUSES,
@@ -1376,6 +1378,49 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
   }),
 });
 
+// A runner's working directories, as it last reported them.
+const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+  runId: z.string().meta({ description: 'The last run that worked in it.' }),
+  workDir: z.string().meta({ description: 'Where it is on the runner.' }),
+  unpushed: z.boolean().meta({
+    description:
+      "It holds changes not committed, or commits the remote task branch lacks; never removed on the application's word.",
+  }),
+  lastUsedAt: z.string(),
+  subjectKind: z.string().nullable(),
+  subjectId: z.string().nullable(),
+  settled: z.boolean().nullable().meta({
+    description:
+      "Its subject's work is over (true), goes on (false), or cannot be told (null).",
+  }),
+});
+
+const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
+  .object({
+    disk: z
+      .object({
+        freeBytes: z.number().int(),
+        totalBytes: z.number().int(),
+        minFreeBytes: z.number().int().nullable().meta({
+          description:
+            "What the runner's owner keeps free; below it, the runner removes directories that may go. Null for nothing.",
+        }),
+      })
+      .nullable()
+      .meta({
+        description:
+          "The disk holding the runner's working directories; null when it did not say.",
+      }),
+    count: z.number().int(),
+    unpushedCount: z.number().int(),
+    measuredAt: dateTime,
+    workspaces: z.array(RunnerWorkspaceSchema).meta({
+      description:
+        "This application's, most recently used first; empty for a caller who may not see the runner's machine.",
+    }),
+  })
+  .meta({ ref: 'AgentsRunnerWorkspaceUsage' });
+
 // Runners, as people manage them.
 const runnerObject = z.object({
   id: z.string(),
@@ -1407,6 +1452,10 @@ const runnerObject = z.object({
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),
+  workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
+    description:
+      'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
+  }),
   lastSeenAt: dateTime.nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
