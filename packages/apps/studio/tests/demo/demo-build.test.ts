@@ -85,7 +85,9 @@ async function build(
   expect(warnings.map((warning) => warning.message)).toEqual(expected);
 }
 
-describe('the demo data', () => {
+// Each test builds the whole demo on a fresh application, which takes several seconds alone and well past Vitest's
+// default under a full parallel run.
+describe('the demo data', { timeout: 120_000 }, () => {
   it('gives the built-in assistant a model and makes it the team default when a model service offers one', async () => {
     await build();
     const agents = await h.agents.agents.list();
