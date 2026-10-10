@@ -3,7 +3,11 @@
 // `HTTP_<status>` otherwise.
 import type { z } from 'zod';
 
-import { readErrorBody, type ExitCode } from '@nocobase/agent-protocol';
+import {
+  readErrorBody,
+  type ErrorFieldViolation,
+  type ExitCode,
+} from '@nocobase/agent-protocol';
 
 import { apiExitCode } from '../parse/exit.ts';
 
@@ -15,6 +19,8 @@ export class AppApiError extends Error {
   /** The error body's canonical `status`, when it carried one. */
   readonly apiStatus: string | undefined;
   readonly metadata: unknown;
+  /** Field-level validation failures returned by the API. */
+  readonly fieldViolations: readonly ErrorFieldViolation[] | undefined;
 
   constructor(
     status: number,
@@ -22,6 +28,7 @@ export class AppApiError extends Error {
     message: string,
     metadata?: unknown,
     apiStatus?: string,
+    fieldViolations?: readonly ErrorFieldViolation[],
   ) {
     super(message);
     this.name = 'AppApiError';
@@ -29,6 +36,7 @@ export class AppApiError extends Error {
     this.reason = reason;
     this.metadata = metadata;
     this.apiStatus = apiStatus;
+    this.fieldViolations = fieldViolations;
   }
 
   /** No response, or a server-side failure worth retrying. */
@@ -149,6 +157,7 @@ export class ApiClient {
           error.message,
           error.metadata,
           error.status,
+          error.fieldViolations,
         );
       throw new AppApiError(
         response.status,
@@ -224,6 +233,7 @@ export class ApiClient {
           error.message,
           error.metadata,
           error.status,
+          error.fieldViolations,
         );
       throw new AppApiError(
         response.status,
