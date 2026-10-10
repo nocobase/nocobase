@@ -148,6 +148,11 @@ export interface FakeGitHub {
     /** Whether the app allows the device flow. */
     deviceFlow: boolean;
     /**
+     * The HTTP status GitHub refuses the device flow of an app without it with: 200 like its other OAuth refusals, or a
+     * 4xx of its own.
+     */
+    deviceFlowRefusalStatus: number;
+    /**
      * Codes GitHub sent back after creating the app from a manifest, each converted once into the app (its slug, the
      * account that owns it, and the webhook secret GitHub made).
      */
@@ -271,6 +276,7 @@ export function createFakeGitHub(
     minted: [] as FakeGitHub['app']['minted'],
     codes: new Map<string, FakeUser>(),
     deviceFlow: true,
+    deviceFlowRefusalStatus: 200,
     manifestCodes: new Map<
       string,
       {
@@ -488,9 +494,13 @@ export function createFakeGitHub(
       };
       if (url.pathname === '/login/device/code' && method === 'POST') {
         if (body.client_id !== app.clientId) return refuse(401);
+        if (!app.deviceFlow) {
+          record(app.deviceFlowRefusalStatus);
+          return json(app.deviceFlowRefusalStatus, {
+            error: 'device_flow_disabled',
+          });
+        }
         record(200);
-        if (!app.deviceFlow)
-          return json(200, { error: 'device_flow_disabled' });
         const deviceCode = `dc_${++nextToken}`;
         const userCode = `WDJB-${String(nextToken).padStart(4, '0')}`;
         app.devices.set(deviceCode, { userCode, user: null });

@@ -239,7 +239,9 @@ describe('connections', () => {
         state: 'forged',
         redirectUri: 'x',
       }),
-    ).rejects.toMatchObject({ details: { code: 'GIT_AUTHORIZATION_FAILED' } });
+    ).rejects.toMatchObject({
+      details: { code: 'GIT_AUTHORIZATION_STATE_INVALID' },
+    });
     const acting = await h.gitConnections.actingAuth(
       { connectionId: app.id, apiBaseUrl: API },
       'alice',
@@ -258,6 +260,112 @@ describe('connections', () => {
         )
       ).as,
     ).toBe('connection');
+  });
+});
+
+describe('a person’s authorization coming back from the host', () => {
+  const callback = 'https://studio.example.com/oauth/git/callback';
+  const stateFor = async (id: string, userId = 'alice') =>
+    new URL(
+      await h.gitConnections.authorizeUrl(userId, id, callback),
+    ).searchParams.get('state');
+
+  it('says why it did not connect: declined, refused by the host, too late, or not started here', async () => {
+    const app = await appConnection();
+    const state = await stateFor(app.id);
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: undefined,
+        state,
+        error: 'access_denied',
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({ details: { code: 'GIT_AUTHORIZATION_DENIED' } });
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: undefined,
+        state,
+        error: 'redirect_uri_mismatch',
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({
+      details: {
+        code: 'GIT_AUTHORIZATION_REFUSED',
+        hostError: 'redirect_uri_mismatch',
+      },
+    });
+    // What the host passes on is a code, never arbitrary text.
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: undefined,
+        state,
+        error: '<script>',
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({ details: { hostError: 'unknown' } });
+    // A code GitHub did not issue, or issued already.
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: 'never-issued',
+        state,
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({
+      details: {
+        code: 'GIT_AUTHORIZATION_REFUSED',
+        hostError: 'bad_verification_code',
+      },
+    });
+    const later = createGitConnections({
+      conn: () => h.projects.tx.read(),
+      providers: createGitProviders([h.github.platform]),
+      secrets: createGitSecrets(TEST_SECRETS),
+      now: () => new Date(Date.now() + 2 * 3600 * 1000),
+    });
+    await expect(
+      later.completeAuthorization('alice', {
+        code: 'x',
+        state,
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({ details: { code: 'GIT_AUTHORIZATION_EXPIRED' } });
+    await expect(
+      h.gitConnections.completeAuthorization('bob', {
+        code: 'x',
+        state,
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({
+      details: { code: 'GIT_AUTHORIZATION_STATE_INVALID' },
+    });
+  });
+
+  it('reports GitHub out of reach as such', async () => {
+    const app = await appConnection();
+    const state = await stateFor(app.id);
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new TypeError('fetch failed'));
+    const offline = createGitConnections({
+      conn: () => h.projects.tx.read(),
+      providers: createGitProviders([
+        (await import('../../server/git/github.js')).createGitHubPlatform({
+          sleep: async () => undefined,
+        }),
+      ]),
+      secrets: createGitSecrets(TEST_SECRETS),
+    });
+    try {
+      await expect(
+        offline.completeAuthorization('alice', {
+          code: 'code-a',
+          state,
+          redirectUri: callback,
+        }),
+      ).rejects.toMatchObject({ details: { code: 'GITHUB_UNAVAILABLE' } });
+    } finally {
+      fetch.mockRestore();
+    }
   });
 });
 
@@ -316,11 +424,74 @@ describe('a person’s own authorization without the web flow', () => {
     await expect(
       h.gitConnections.startDeviceFlow('bob', app.id),
     ).rejects.toMatchObject({ details: { code: 'GIT_DEVICE_FLOW_DISABLED' } });
+    // GitHub answering it with a 400 is the same refusal, not GitHub out of reach.
+    h.github.app.deviceFlowRefusalStatus = 400;
+    await expect(
+      h.gitConnections.startDeviceFlow('bob', app.id),
+    ).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+      details: { code: 'GIT_DEVICE_FLOW_DISABLED' },
+    });
     // A token connection has no app to authorize.
     const token = await tokenConnection(h);
     await expect(
       h.gitConnections.startDeviceFlow('bob', token.id),
     ).rejects.toMatchObject({ details: { code: 'GIT_PERSONAL_UNAVAILABLE' } });
+  });
+
+  it('says where to turn the device flow on, and tells another refusal from GitHub being out of reach', async () => {
+    h.github.app.installations.set('acme', '77');
+    const { state } = await (async () => {
+      const form = await h.gitConnections.startAppManifest(
+        'alice',
+        {},
+        {
+          homepage: 'https://studio.example.com/',
+          redirect: 'https://studio.example.com/oauth/git/manifest',
+          callback: 'https://studio.example.com/oauth/git/callback',
+          setup: 'https://studio.example.com/oauth/git/setup',
+          webhook: (id) =>
+            `https://studio.example.com/api/webhooks/github/connections/${id}`,
+          publicOrigin: 'https://studio.example.com',
+        },
+      );
+      return { state: new URL(form.action).searchParams.get('state')! };
+    })();
+    h.github.app.manifestCodes.set('mc-1', {
+      slug: 'studio-acme',
+      owner: 'acme',
+      organization: true,
+      webhookSecret: 'whsec-from-github-0123',
+    });
+    const created = await h.gitConnections.completeAppManifest('alice', {
+      code: 'mc-1',
+      state,
+    });
+    const app = await h.gitConnections.get(created.connectionId);
+    h.github.app.deviceFlow = false;
+    await expect(
+      h.gitConnections.startDeviceFlow('bob', app.id),
+    ).rejects.toMatchObject({
+      details: {
+        code: 'GIT_DEVICE_FLOW_DISABLED',
+        appSettingsUrl:
+          'https://github.com/organizations/acme/settings/apps/studio-acme',
+      },
+    });
+    // A client id GitHub does not know: refused with GitHub's status, not "could not be reached".
+    h.github.app.deviceFlow = true;
+    (h.github.app as { clientId: string }).clientId = 'Iv1.changed';
+    await expect(
+      h.gitConnections.startDeviceFlow('bob', app.id),
+    ).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+      details: {
+        code: 'GIT_DEVICE_FLOW_REFUSED',
+        status: 401,
+        appSettingsUrl:
+          'https://github.com/organizations/acme/settings/apps/studio-acme',
+      },
+    });
   });
 
   it('uses a personal access token checked against the host, with its expiry, and acts as it', async () => {

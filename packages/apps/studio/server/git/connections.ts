@@ -497,13 +497,20 @@ export interface GitConnections {
     connectionId: string,
     redirectUri: string,
   ): Promise<string>;
-  /** The host sent the person back: store their tokens and who they are. */
+  /**
+   * The host sent the person back: store their tokens and who they are. Refused as `GIT_AUTHORIZATION_DENIED` (the
+   * person declined), `GIT_AUTHORIZATION_REFUSED` (the host refused, `hostError` its code), `GIT_AUTHORIZATION_EXPIRED`
+   * (the state is too old), `GIT_AUTHORIZATION_STATE_INVALID` (not started here, or by another person),
+   * `GIT_AUTHORIZATION_FAILED` (nothing to complete), or the host's failure.
+   */
   completeAuthorization(
     userId: string,
     input: {
       readonly code: unknown;
       readonly state: unknown;
       readonly redirectUri: string;
+      /** The host's `error` in place of a code (`access_denied`, `redirect_uri_mismatch`). */
+      readonly error?: unknown;
     },
   ): Promise<void>;
   /** Starts the device flow of the connection's app: the code the person enters on the host. */
@@ -582,18 +589,21 @@ function hostFailure(error: unknown): ProtocolError {
           ? 'GITHUB_NOT_FOUND'
           : error.status === 422
             ? 'GITHUB_INVALID'
-            : 'GITHUB_UNAVAILABLE';
+            : // Any other answer in 4xx is the host refusing, not the host out of reach.
+              error.status >= 400 && error.status < 500
+              ? 'GITHUB_REFUSED'
+              : 'GITHUB_UNAVAILABLE';
     return new ProtocolError('CONFLICT', error.message, {
       code,
       status: error.status,
     });
   }
-  return error instanceof ProtocolError
-    ? error
-    : new ProtocolError(
-        'INTERNAL_ERROR',
-        'The code host could not be reached.',
-      );
+  if (error instanceof ProtocolError) return error;
+  // A defect, not the host: kept as the cause so whoever logs the failure sees it.
+  return Object.assign(
+    new ProtocolError('INTERNAL_ERROR', 'The code host could not be reached.'),
+    { cause: error },
+  );
 }
 
 function record(input: unknown): Record<string, unknown> {
@@ -662,10 +672,44 @@ const INSTALL_TTL_MS = 24 * 60 * 60 * 1000;
 const ACCOUNT_NAME = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/u;
 const INSTALLATION_ID = /^\d{1,20}$/u;
 
-const deviceFlowDisabled = () =>
-  invalid(
-    'The app does not allow the device flow: an administrator enables it in the app’s settings on the host.',
-    'GIT_DEVICE_FLOW_DISABLED',
+/** An OAuth error code as the host writes one (`redirect_uri_mismatch`); anything else is not passed on. */
+const HOST_ERROR = /^[A-Za-z0-9_.-]{1,64}$/u;
+
+const hostErrorOf = (value: string): string =>
+  HOST_ERROR.test(value) ? value : 'unknown';
+
+/** The host refused the person's authorization, with the code it gave (`hostError`). */
+const hostRefusedAuthorization = (hostError: string) => {
+  const code = hostErrorOf(hostError);
+  return new ProtocolError(
+    'INVALID_REQUEST',
+    `The host refused the authorization (${code}).`,
+    { code: 'GIT_AUTHORIZATION_REFUSED', hostError: code },
+  );
+};
+
+/** The app's device flow is off; `appSettingsUrl` is where it is turned on, when Studio knows the app's page. */
+const deviceFlowDisabled = (appSettingsUrl: string | null) =>
+  new ProtocolError(
+    'INVALID_REQUEST',
+    'The app does not allow the device flow: an administrator enables it in the app’s settings on the host (Enable Device Flow).',
+    { code: 'GIT_DEVICE_FLOW_DISABLED', appSettingsUrl },
+  );
+
+/**
+ * The host refused to start the device flow for another reason than the flow being off, or without saying which:
+ * most often the app's device flow is off or the client id is not the app's.
+ */
+const deviceFlowRefused = (error: GitApiError, appSettingsUrl: string | null) =>
+  new ProtocolError(
+    'INVALID_REQUEST',
+    `The host refused the device flow (${error.hostError ?? `HTTP ${error.status}`}): check that the app enables the device flow and that its client id is right.`,
+    {
+      code: 'GIT_DEVICE_FLOW_REFUSED',
+      status: error.status,
+      hostError: error.hostError ? hostErrorOf(error.hostError) : null,
+      appSettingsUrl,
+    },
   );
 
 export function createGitConnections(deps: {
@@ -1907,9 +1951,17 @@ export function createGitConnections(deps: {
           clientId: row.clientId,
         });
       } catch (error) {
+        // A refusal is not GitHub being unreachable: say what the host answered, and where the app is set up.
+        if (
+          error instanceof GitApiError &&
+          !error.rateLimited &&
+          error.status >= 400 &&
+          error.status < 500
+        )
+          throw deviceFlowRefused(error, appPages(row).appSettingsUrl);
         throw hostFailure(error);
       }
-      if (!started) throw deviceFlowDisabled();
+      if (!started) throw deviceFlowDisabled(appPages(row).appSettingsUrl);
       const ttl = started.expiresIn * 1000;
       return {
         handle: sealState(
@@ -1947,7 +1999,8 @@ export function createGitConnections(deps: {
       const client = { webUrl: row.webUrl, clientId: row.clientId };
       try {
         const polled = await on(row).pollDeviceAuthorization(client, state.d);
-        if (polled.status === 'disabled') throw deviceFlowDisabled();
+        if (polled.status === 'disabled')
+          throw deviceFlowDisabled(appPages(row).appSettingsUrl);
         if (polled.status !== 'granted')
           return {
             status: polled.status,
@@ -2025,6 +2078,13 @@ export function createGitConnections(deps: {
     async completeAuthorization(userId, input) {
       const refused = (message: string) =>
         invalid(message, 'GIT_AUTHORIZATION_FAILED');
+      if (input.error === 'access_denied')
+        throw invalid(
+          'The authorization was declined on the host.',
+          'GIT_AUTHORIZATION_DENIED',
+        );
+      if (typeof input.error === 'string' && input.error)
+        throw hostRefusedAuthorization(input.error.slice(0, 100));
       if (typeof input.code !== 'string' || typeof input.state !== 'string')
         throw refused('The host sent no authorization.');
       const state = openState(input.state);
@@ -2034,10 +2094,17 @@ export function createGitConnections(deps: {
         state.k !== undefined ||
         state.u !== userId ||
         typeof state.c !== 'string' ||
-        typeof state.e !== 'number' ||
-        state.e < now().getTime()
+        typeof state.e !== 'number'
       )
-        throw refused('The authorization expired or was not started here.');
+        throw invalid(
+          'The authorization was not started here, or by you.',
+          'GIT_AUTHORIZATION_STATE_INVALID',
+        );
+      if (state.e < now().getTime())
+        throw invalid(
+          'The authorization took too long: start it again.',
+          'GIT_AUTHORIZATION_EXPIRED',
+        );
       const row = await required(state.c);
       const secret = openOf(row, row.clientSecretSealed, P.clientSecret);
       if (!row.clientId || !secret)
@@ -2053,6 +2120,8 @@ export function createGitConnections(deps: {
         });
         await storeTokens(userId, row, tokens, user, 'oauth');
       } catch (error) {
+        if (error instanceof GitApiError && error.hostError)
+          throw hostRefusedAuthorization(error.hostError);
         throw hostFailure(error);
       }
     },

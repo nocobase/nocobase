@@ -201,6 +201,8 @@ export const UpdateRepositoryInput = z.strictObject({
 export const OAuthCallbackQuery = z.object({
   code: z.string().optional(),
   state: z.string().optional(),
+  /** What the host sends in place of a code when it did not authorize (`access_denied`, `redirect_uri_mismatch`). */
+  error: z.string().optional(),
 });
 
 export const RepositoryWebhookParams = z.object({

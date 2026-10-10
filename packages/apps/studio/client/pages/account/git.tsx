@@ -3,7 +3,8 @@
  * once; never a demo one), or have linked even if it no longer allows it, is a row
  * with its provider's icon, its name, host and account, and one way to connect first ("Connect {provider}"): the app's
  * OAuth web flow when it offers one (back through `/oauth/git/callback`, which returns here with `connected=1` or
- * `error=<code>`), else its device flow (a code entered on the host, polled here until it is). The other ways it
+ * `error=<code>` and the host's `hostError`, said in a toast in words), else its device flow (a code entered on the
+ * host, polled here until it is; an app whose device flow is off says so, with a link to its settings). The other ways it
  * offers wait in "Other ways": the device flow beside the web flow, and a personal access token (checked by the server
  * against the host, with the permissions it needs). A connected row shows the account, how it was
  * connected, when it expires (warned a week ahead) and Disconnect. Tokens never reach the browser. With nothing to link
@@ -11,6 +12,7 @@
  * Settings › Git. The
  * dialog's section heading carries the page's description; the rows sit directly under it, separated by dividers.
  */
+import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDownIcon, ExternalLinkIcon, GitBranchIcon } from 'lucide-react';
@@ -69,6 +71,82 @@ interface Pending {
   readonly connection: GitConnectionChoice;
 }
 
+/** What the host's return through `/oauth/git/callback` adds to this page's address. */
+const CALLBACK_PARAMS = ['connected', 'error', 'hostError'] as const;
+
+/** The reasons the callback sends back that have words of their own; another shows its code. */
+const CALLBACK_REASONS: ReadonlySet<string> = new Set([
+  'GIT_AUTHORIZATION_DENIED',
+  'GIT_AUTHORIZATION_REFUSED',
+  'GIT_AUTHORIZATION_EXPIRED',
+  'GIT_AUTHORIZATION_STATE_INVALID',
+  'GIT_AUTHORIZATION_FAILED',
+  'GIT_SESSION_EXPIRED',
+  'GITHUB_UNAVAILABLE',
+  'GITHUB_RATE_LIMITED',
+]);
+
+/** The host's own refusals that say what to fix. */
+const HOST_ERRORS: ReadonlySet<string> = new Set([
+  'redirect_uri_mismatch',
+  'incorrect_client_credentials',
+  'bad_verification_code',
+]);
+
+/** Why the host's return did not connect the account, in words. */
+function callbackFailureText(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  code: string,
+  hostError: string | null,
+): string {
+  if (hostError && HOST_ERRORS.has(hostError))
+    return t(`studioGit.personal.hostError.${hostError}`);
+  if (CALLBACK_REASONS.has(code))
+    return t(`studioGit.personal.failedReason.${code}`, {
+      hostError: hostError ?? code,
+    });
+  return t('studioGit.personal.failed', { code });
+}
+
+/** A device flow the host would not start: why, and where the app's settings are, from the refusal's metadata. */
+interface DeviceRefusal {
+  readonly code: 'GIT_DEVICE_FLOW_DISABLED' | 'GIT_DEVICE_FLOW_REFUSED';
+  readonly reason: string | null;
+  readonly appSettingsUrl: string | null;
+}
+
+function deviceRefusalOf(error: unknown): DeviceRefusal | null {
+  if (!(error instanceof ApiClientError)) return null;
+  if (
+    error.reason !== 'GIT_DEVICE_FLOW_DISABLED' &&
+    error.reason !== 'GIT_DEVICE_FLOW_REFUSED'
+  )
+    return null;
+  const metadata = (
+    error.payload as {
+      error?: {
+        metadata?: {
+          appSettingsUrl?: unknown;
+          hostError?: unknown;
+          status?: unknown;
+        };
+      };
+    } | null
+  )?.error?.metadata;
+  const url = metadata?.appSettingsUrl;
+  return {
+    code: error.reason,
+    reason:
+      typeof metadata?.hostError === 'string'
+        ? metadata.hostError
+        : typeof metadata?.status === 'number'
+          ? `HTTP ${metadata.status}`
+          : null,
+    appSettingsUrl:
+      typeof url === 'string' && /^https?:\/\//u.test(url) ? url : null,
+  };
+}
+
 export default function AccountGit(): ReactElement {
   const { t } = useTranslation();
   const api = useGitApi();
@@ -83,9 +161,15 @@ export default function AccountGit(): ReactElement {
     if (params.get('connected'))
       notify.success(t('studioGit.personal.connectedNotice'));
     else if (error)
-      notify.error(null, t('studioGit.personal.failed', { code: error }));
-    if (params.has('connected') || params.has('error'))
-      setParams({}, { replace: true });
+      notify.error(
+        null,
+        callbackFailureText(t, error, params.get('hostError')),
+      );
+    if (!CALLBACK_PARAMS.some((key) => params.has(key))) return;
+    // Only what the host's return added: the rest (`account=git`) keeps this dialog open.
+    const rest = new URLSearchParams(params);
+    for (const key of CALLBACK_PARAMS) rest.delete(key);
+    setParams(rest, { replace: true });
   }, [notify, params, setParams, t]);
   const connect = useMutation({
     mutationFn: (connectionId: string) => api.authorize(connectionId),
@@ -415,6 +499,8 @@ function DeviceFlow({
   const [code, setCode] = useState<GitDeviceAuthorization | null>(null);
   const [over, setOver] = useState<'expired' | 'denied' | null>(null);
   const [failed, setFailed] = useState(false);
+  const [refusal, setRefusal] = useState<DeviceRefusal | null>(null);
+  const provider = providerOf(connection.provider);
 
   useEffect(() => {
     let live = true;
@@ -425,7 +511,10 @@ function DeviceFlow({
       (error: unknown) => {
         if (!live) return;
         setFailed(true);
-        notify.error(error);
+        // The app's device flow being off is said here, with where to turn it on; anything else is a toast.
+        const refused = deviceRefusalOf(error);
+        if (refused) setRefusal(refused);
+        else notify.error(error);
       },
     );
     return () => {
@@ -458,7 +547,9 @@ function DeviceFlow({
         api.pollDeviceFlow(connection.id, code.handle).then(settle, (error) => {
           if (!live) return;
           setFailed(true);
-          notify.error(error);
+          const refused = deviceRefusalOf(error);
+          if (refused) setRefusal(refused);
+          else notify.error(error);
         });
       }, interval * 1000);
     };
@@ -498,9 +589,35 @@ function DeviceFlow({
           <Spinner />
         </div>
       )}
-      <p className='text-xs text-muted-foreground'>
-        {t(`studioGit.providers.${providerOf(connection.provider).id}.device`)}
-      </p>
+      {refusal ? (
+        <div className='space-y-2' data-git-device-refusal={refusal.code}>
+          <p className='text-sm text-destructive'>
+            {refusal.code === 'GIT_DEVICE_FLOW_DISABLED'
+              ? t('studioGit.personal.device.disabled', {
+                  provider: provider.label,
+                })
+              : t('studioGit.personal.device.refused', {
+                  provider: provider.label,
+                  reason: refusal.reason ?? refusal.code,
+                })}
+          </p>
+          {refusal.appSettingsUrl ? (
+            <a
+              href={refusal.appSettingsUrl}
+              target='_blank'
+              rel='noreferrer'
+              className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
+            >
+              {t('studioGit.personal.device.appSettings')}
+              <ExternalLinkIcon className='size-3' aria-hidden='true' />
+            </a>
+          ) : null}
+        </div>
+      ) : (
+        <p className='text-xs text-muted-foreground'>
+          {t(`studioGit.providers.${provider.id}.device`)}
+        </p>
+      )}
       {over ? (
         <p className='text-sm text-destructive'>
           {t(`studioGit.personal.device.${over}`)}

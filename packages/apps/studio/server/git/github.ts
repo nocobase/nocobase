@@ -695,13 +695,19 @@ function oauthTokensOf(authentication: {
 }
 
 /**
- * GitHub's OAuth pages answer a refusal with 200 and an `error` in the body, which `@octokit/oauth-methods` throws as a
- * 400: that body (`authorization_pending`, `bad_verification_code`, …), or null for any other failure.
+ * GitHub's OAuth pages answer a refusal with an `error` in the body, mostly with 200, which `@octokit/oauth-methods`
+ * throws as a 400, and some with a 4xx of their own (an app without the device flow), which the client passes on: that
+ * body (`authorization_pending`, `bad_verification_code`, `device_flow_disabled`, …), or null for any other failure.
  */
 function oauthRefusalOf(
   error: unknown,
 ): { readonly error: string; readonly interval?: number } | null {
-  if (!(error instanceof RequestError) || error.status !== 400) return null;
+  if (
+    !(error instanceof RequestError) ||
+    error.status < 400 ||
+    error.status >= 500
+  )
+    return null;
   const data = error.response?.data as
     { error?: unknown; interval?: unknown } | undefined;
   if (typeof data?.error !== 'string') return null;
@@ -717,6 +723,7 @@ const refused = (what: string, error: unknown): GitApiError => {
   return new GitApiError(
     400,
     `GitHub refused ${what}${refusal ? ` (${refusal.error})` : ''}.`,
+    { hostError: refusal?.error ?? null },
   );
 };
 

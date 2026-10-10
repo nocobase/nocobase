@@ -322,6 +322,34 @@ export const gitEnUS = {
       'In Settings › Git, add the app’s client ID to a connection, or turn on “Allow personal tokens”.',
     openSettings: 'Open Settings › Git',
     failed: 'Your account could not be connected ({{code}}).',
+    /** Why the host's sign-in did not connect the account, by the reason the server sent the page back with. */
+    failedReason: {
+      GIT_AUTHORIZATION_DENIED:
+        'Your account was not connected: the authorization was declined on the host.',
+      GIT_AUTHORIZATION_REFUSED:
+        'Your account could not be connected: the host refused the authorization ({{hostError}}).',
+      GIT_AUTHORIZATION_EXPIRED:
+        'Your account could not be connected: the authorization took too long. Connect again.',
+      GIT_AUTHORIZATION_STATE_INVALID:
+        'Your account could not be connected: the authorization was not started from this page, or was started by another account. Connect again from here.',
+      GIT_AUTHORIZATION_FAILED:
+        'Your account could not be connected. Try again; if it keeps failing, ask an administrator to look for “Personal git authorization failed” in the server log.',
+      GIT_SESSION_EXPIRED:
+        'Your account could not be connected: you were signed out of Studio while authorizing on the host. Sign in, then connect again.',
+      GITHUB_UNAVAILABLE:
+        'Your account could not be connected: Studio could not reach the host to finish the authorization. Try again; if it keeps failing, ask an administrator to check that the server can reach the host.',
+      GITHUB_RATE_LIMITED:
+        'Your account could not be connected: the host’s rate limit was reached. Try again later.',
+    },
+    /** The host's own refusals worth explaining (`GIT_AUTHORIZATION_REFUSED`). */
+    hostError: {
+      redirect_uri_mismatch:
+        'Your account could not be connected: the app’s callback URL on the host is not Studio’s. An administrator sets it to the callback URL shown in Settings › Git.',
+      incorrect_client_credentials:
+        'Your account could not be connected: the app’s client ID or client secret in Settings › Git does not match the app on the host.',
+      bad_verification_code:
+        'Your account could not be connected: the host’s code expired or was used already. Connect again.',
+    },
     device: {
       title: 'Connect {{name}} with a code',
       description:
@@ -331,6 +359,11 @@ export const gitEnUS = {
       expired: 'The code expired.',
       denied: 'The authorization was refused.',
       retry: 'Get a new code',
+      disabled:
+        'This {{provider}} App does not have Device Flow enabled. An administrator turns on “Enable Device Flow” in the app’s settings on {{provider}}, then you can connect with a code.',
+      refused:
+        '{{provider}} refused to start connecting with a code ({{reason}}). Most often the app does not have “Enable Device Flow” turned on, or the client ID in Settings › Git is not the app’s.',
+      appSettings: 'Open the app’s settings',
     },
     token: {
       title: 'Use a personal token for {{name}}',
@@ -809,6 +842,30 @@ export const gitZhCN: typeof gitEnUS = {
       '在 设置 › Git 中为连接添加 App 的 Client ID，或开启「允许个人令牌」。',
     openSettings: '打开 设置 › Git',
     failed: '无法连接你的账号（{{code}}）。',
+    failedReason: {
+      GIT_AUTHORIZATION_DENIED: '没有连接你的账号：你在托管平台上拒绝了授权。',
+      GIT_AUTHORIZATION_REFUSED:
+        '无法连接你的账号：托管平台拒绝了授权（{{hostError}}）。',
+      GIT_AUTHORIZATION_EXPIRED: '无法连接你的账号：授权耗时过长，请重新连接。',
+      GIT_AUTHORIZATION_STATE_INVALID:
+        '无法连接你的账号：这次授权不是从本页面发起的，或由其他账号发起。请在这里重新连接。',
+      GIT_AUTHORIZATION_FAILED:
+        '无法连接你的账号。请重试；如果一直失败，请让管理员在服务器日志中查找“Personal git authorization failed”。',
+      GIT_SESSION_EXPIRED:
+        '无法连接你的账号：在托管平台上授权期间，你已退出 Studio 登录。请先登录，再重新连接。',
+      GITHUB_UNAVAILABLE:
+        '无法连接你的账号：Studio 无法访问托管平台来完成授权。请重试；如果一直失败，请让管理员检查服务器能否访问托管平台。',
+      GITHUB_RATE_LIMITED:
+        '无法连接你的账号：已达到托管平台的请求频率限制，请稍后再试。',
+    },
+    hostError: {
+      redirect_uri_mismatch:
+        '无法连接你的账号：托管平台上 App 的回调地址（Callback URL）与 Studio 的不一致。请管理员将其设置为 设置 › Git 中显示的回调地址。',
+      incorrect_client_credentials:
+        '无法连接你的账号：设置 › Git 中 App 的 Client ID 或 Client secret 与托管平台上的 App 不一致。',
+      bad_verification_code:
+        '无法连接你的账号：托管平台返回的授权码已过期或已被使用，请重新连接。',
+    },
     device: {
       title: '用验证码连接 {{name}}',
       description:
@@ -818,6 +875,11 @@ export const gitZhCN: typeof gitEnUS = {
       expired: '验证码已过期。',
       denied: '授权被拒绝。',
       retry: '获取新验证码',
+      disabled:
+        '这个 {{provider}} App 没有开启 Device Flow。需要管理员在 {{provider}} 上该 App 的设置中开启“Enable Device Flow”，之后才能用验证码连接。',
+      refused:
+        '{{provider}} 拒绝了验证码连接（{{reason}}）。最常见的原因是该 App 没有开启“Enable Device Flow”，或 设置 › Git 中的 Client ID 不是该 App 的。',
+      appSettings: '打开 App 设置',
     },
     token: {
       title: '为 {{name}} 使用个人令牌',

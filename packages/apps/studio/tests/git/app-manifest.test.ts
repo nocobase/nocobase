@@ -259,7 +259,9 @@ describe('the code GitHub sends back', () => {
         state,
         redirectUri: `${STUDIO}/oauth/git/callback`,
       }),
-    ).rejects.toMatchObject({ details: { code: 'GIT_AUTHORIZATION_FAILED' } });
+    ).rejects.toMatchObject({
+      details: { code: 'GIT_AUTHORIZATION_STATE_INVALID' },
+    });
     // A code GitHub does not know.
     h.github.app.manifestCodes.clear();
     await expect(

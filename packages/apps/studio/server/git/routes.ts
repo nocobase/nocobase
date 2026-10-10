@@ -65,6 +65,7 @@ import type { CallerIdentity } from '@nocobase/app-plugin-agents/server/tokens';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import type { Application } from '@nocobase/app-server/application';
+import { loggingToken } from '@nocobase/app-server/logging';
 import {
   apiErrorResponse,
   apiErrorResponses,
@@ -236,7 +237,11 @@ const connectionNotFound = apiErrorResponse(
 );
 const hostRefused = apiErrorResponse(
   400,
-  'The input is not acceptable to the connection (`INVALID_GIT_CONNECTION` and similar), or the code host refused the request (`GITHUB_FORBIDDEN`, `GITHUB_NOT_FOUND`, `GITHUB_INVALID`).',
+  'The input is not acceptable to the connection (`INVALID_GIT_CONNECTION` and similar), or the code host refused the request (`GITHUB_FORBIDDEN`, `GITHUB_NOT_FOUND`, `GITHUB_INVALID`, `GITHUB_REFUSED`).',
+);
+const deviceFlowRefused = apiErrorResponse(
+  400,
+  'The app does not allow the device flow (`GIT_DEVICE_FLOW_DISABLED`), or the code host refused to start it (`GIT_DEVICE_FLOW_REFUSED`, with its `status` and `hostError`); both name the app’s settings on the host in `appSettingsUrl` when Studio knows them. Otherwise as the other authorization routes (`GIT_PERSONAL_UNAVAILABLE`, `GITHUB_*`).',
 );
 const hostUnavailable = apiErrorResponse(
   503,
@@ -844,7 +849,7 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           'Answers the code the caller enters on the host; poll `pollDeviceFlow` with `handle` until it is connected.',
         responses: {
           200: dataResponse(GitDeviceAuthorizationSchema),
-          400: hostRefused,
+          400: deviceFlowRefused,
           ...signedIn,
           404: connectionNotFound,
           503: hostUnavailable,
@@ -1748,94 +1753,237 @@ function reasonOf(error: unknown, fallback: string): string {
   return encodeURIComponent(typeof reason === 'string' ? reason : fallback);
 }
 
+/** Where the host's redirects write what went wrong: the server log, as these routes have no request log of their own. */
+export interface GitOAuthLogger {
+  info(fields: Record<string, unknown>, message: string): void;
+  warn(fields: Record<string, unknown>, message: string): void;
+}
+
+/**
+ * What a failed redirect is logged with: the reason the page shows, what the host answered, and the cause of a defect.
+ * Never the request's code or state, nor an error object whole: an Octokit error carries the request it sent.
+ */
+function failureFields(
+  error: unknown,
+  fallback: string,
+): Record<string, unknown> {
+  const details =
+    (error as { readonly details?: Readonly<Record<string, unknown>> })
+      .details ?? {};
+  const cause = error instanceof Error ? (error.cause ?? error) : error;
+  return {
+    reason: typeof details.code === 'string' ? details.code : fallback,
+    ...(typeof details.hostError === 'string'
+      ? { hostError: details.hostError }
+      : {}),
+    ...(typeof details.status === 'number'
+      ? { hostStatus: details.status }
+      : {}),
+    error:
+      cause instanceof Error
+        ? `${cause.name}: ${cause.message}`
+        : String(cause),
+  };
+}
+
 /**
  * Where the host sends the browser back, as root routes: a `GET` that completes something, which an `/api` `GET` may
- * not do. `/oauth/git/callback`: a person authorized the app, back to their settings. `/oauth/git/manifest`: an app
- * was created from Studio's manifest, stored, then on to installing it. `/oauth/git/setup`: the app was installed,
- * recorded, back to Settings › Git (`installed=1`).
+ * not do. `/oauth/git/callback`: a person authorized the app, back to their settings (`connected=1`, or `error=<code>`
+ * and the host's `hostError` when it gave one). `/oauth/git/manifest`: an app was created from Studio's manifest,
+ * stored, then on to installing it. `/oauth/git/setup`: the app was installed, recorded, back to Settings › Git
+ * (`installed=1`). Every failure is logged.
  */
 export const gitOAuthRoutes: AppRootRouteContribution<Application> =
   defineRootRoutes(({ container }) => {
     if (!container.has(authenticationToken) || !container.has(studioGitToken))
       return new Hono();
-    const authentication = container.resolve(authenticationToken);
-    const binding = container.resolve(studioGitToken);
-    const back = binding.appPath('/account/git');
-    const settings = binding.appPath('/config/git');
-    const router = new Hono();
-    // Nothing here answers JSON: the person is in their browser, sent back to their settings either way.
-    router.onError((_error, context) =>
-      context.req.path.endsWith('/oauth/git/callback')
-        ? context.redirect(`${back}?error=GIT_AUTHORIZATION_FAILED`)
-        : context.redirect(`${settings}?error=GIT_APP_MANIFEST_FAILED`),
-    );
-    /** Whoever completes an app's creation or installation manages the connections. */
-    const manager: MiddlewareHandler = async (context, next) => {
-      if (!(await binding.gitSettings(userIdOf(context))).manage)
-        return context.redirect(`${settings}?error=FORBIDDEN`);
-      await next();
-    };
-    router.get(
-      '/oauth/git/manifest',
-      authentication.required(),
-      manager,
-      query(AppManifestCallbackQuery),
-      async (context) => {
-        const { code, state } = context.req.valid('query');
-        try {
-          const created = await binding
-            .connections()
-            .completeAppManifest(userIdOf(context), { code, state });
-          return context.redirect(created.installUrl);
-        } catch (error) {
-          return context.redirect(
-            `${settings}?error=${reasonOf(error, 'GIT_APP_MANIFEST_FAILED')}`,
-          );
-        }
-      },
-    );
-    router.get(
-      '/oauth/git/setup',
-      authentication.required(),
-      manager,
-      query(AppSetupQuery),
-      async (context) => {
-        const { installation_id: installationId, state } =
-          context.req.valid('query');
-        try {
-          await binding
-            .connections()
-            .completeInstallation(userIdOf(context), { installationId, state });
-          return context.redirect(`${settings}?installed=1`);
-        } catch (error) {
-          return context.redirect(
-            `${settings}?error=${reasonOf(error, 'GIT_INSTALLATION_NOT_FOUND')}`,
-          );
-        }
-      },
-    );
-    router.get(
-      '/oauth/git/callback',
-      authentication.required(),
-      query(OAuthCallbackQuery),
-      async (context) => {
-        const { code, state } = context.req.valid('query');
-        try {
-          await binding.connections().completeAuthorization(userIdOf(context), {
-            code,
-            state,
-            redirectUri: callbackOf(binding, context),
-          });
-          return context.redirect(`${back}?connected=1`);
-        } catch (error) {
-          return context.redirect(
-            `${back}?error=${reasonOf(error, 'GIT_AUTHORIZATION_FAILED')}`,
-          );
-        }
-      },
-    );
-    return router;
+    return createGitOAuthRouter({
+      required: container.resolve(authenticationToken).required(),
+      binding: container.resolve(studioGitToken),
+      logger: container.has(loggingToken)
+        ? container
+            .resolve(loggingToken)
+            .getLogger('app')
+            .child({ module: 'studio-git' })
+        : null,
+    });
   });
+
+/** The host's redirects, given the session check, Studio's git and where failures are logged. */
+export function createGitOAuthRouter(deps: {
+  readonly required: MiddlewareHandler;
+  readonly binding: StudioGitBinding;
+  readonly logger: GitOAuthLogger | null;
+}): Hono {
+  const { binding, logger } = deps;
+  const back = binding.appPath('/account/git');
+  const settings = binding.appPath('/config/git');
+  const router = new Hono();
+  const fail = (
+    context: Context,
+    error: unknown,
+    fallback: string,
+    message: string,
+  ): void => {
+    // A failure before the session check passed has no person to name.
+    const userId = (
+      context.get('auth' as never) as { user?: { id?: string } } | undefined
+    )?.user?.id;
+    logger?.warn(
+      {
+        path: context.req.path,
+        ...(userId === undefined ? {} : { userId: String(userId) }),
+        ...failureFields(error, fallback),
+      },
+      message,
+    );
+  };
+  // Nothing here answers JSON: the person is in their browser, sent back to their settings either way.
+  router.onError((error, context) => {
+    if (context.req.path.endsWith('/oauth/git/callback')) {
+      fail(
+        context,
+        error,
+        'GIT_AUTHORIZATION_FAILED',
+        'Personal git authorization failed',
+      );
+      return context.redirect(`${back}?error=GIT_AUTHORIZATION_FAILED`);
+    }
+    fail(
+      context,
+      error,
+      'GIT_APP_MANIFEST_FAILED',
+      'Git app setup from the host failed',
+    );
+    return context.redirect(`${settings}?error=GIT_APP_MANIFEST_FAILED`);
+  });
+  /**
+   * The session check, for a browser: it answers a missing or refused session itself (401 JSON) without throwing, so
+   * neither `onError` nor a route's `catch` would see it. That answer becomes a log line and a redirect to sign-in,
+   * which then opens `page` (an application path) with `GIT_SESSION_EXPIRED`: a signed-out person reaching `page`
+   * directly would be sent to sign-in and on to home, losing the reason.
+   */
+  const signedIn =
+    (page: string, message: string): MiddlewareHandler =>
+    async (context, next) => {
+      let passed = false;
+      const answer = await deps.required(context, async () => {
+        passed = true;
+        await next();
+      });
+      if (passed) return answer;
+      const status = answer instanceof Response ? answer.status : null;
+      logger?.warn(
+        {
+          path: context.req.path,
+          reason: 'GIT_SESSION_EXPIRED',
+          ...(status === null ? {} : { status }),
+        },
+        message,
+      );
+      return context.redirect(
+        `${binding.appPath('/login')}?redirect=${encodeURIComponent(
+          `${page}?error=GIT_SESSION_EXPIRED`,
+        )}`,
+      );
+    };
+  /** Whoever completes an app's creation or installation manages the connections. */
+  const manager: MiddlewareHandler = async (context, next) => {
+    if (!(await binding.gitSettings(userIdOf(context))).manage)
+      return context.redirect(`${settings}?error=FORBIDDEN`);
+    await next();
+  };
+  router.get(
+    '/oauth/git/manifest',
+    signedIn('/config/git', 'Git app creation failed: no session'),
+    manager,
+    query(AppManifestCallbackQuery),
+    async (context) => {
+      const { code, state } = context.req.valid('query');
+      try {
+        const created = await binding
+          .connections()
+          .completeAppManifest(userIdOf(context), { code, state });
+        return context.redirect(created.installUrl);
+      } catch (error) {
+        fail(
+          context,
+          error,
+          'GIT_APP_MANIFEST_FAILED',
+          'Git app creation failed on its way back from the host',
+        );
+        return context.redirect(
+          `${settings}?error=${reasonOf(error, 'GIT_APP_MANIFEST_FAILED')}`,
+        );
+      }
+    },
+  );
+  router.get(
+    '/oauth/git/setup',
+    signedIn('/config/git', 'Git app installation failed: no session'),
+    manager,
+    query(AppSetupQuery),
+    async (context) => {
+      const { installation_id: installationId, state } =
+        context.req.valid('query');
+      try {
+        await binding
+          .connections()
+          .completeInstallation(userIdOf(context), { installationId, state });
+        return context.redirect(`${settings}?installed=1`);
+      } catch (error) {
+        fail(
+          context,
+          error,
+          'GIT_INSTALLATION_NOT_FOUND',
+          'Git app installation failed on its way back from the host',
+        );
+        return context.redirect(
+          `${settings}?error=${reasonOf(error, 'GIT_INSTALLATION_NOT_FOUND')}`,
+        );
+      }
+    },
+  );
+  router.get(
+    '/oauth/git/callback',
+    signedIn('/account/git', 'Personal git authorization failed: no session'),
+    query(OAuthCallbackQuery),
+    async (context) => {
+      const { code, state, error: hostError } = context.req.valid('query');
+      try {
+        await binding.connections().completeAuthorization(userIdOf(context), {
+          code,
+          state,
+          error: hostError,
+          redirectUri: callbackOf(binding, context),
+        });
+        logger?.info(
+          { path: context.req.path, userId: userIdOf(context) },
+          'Personal git authorization completed',
+        );
+        return context.redirect(`${back}?connected=1`);
+      } catch (error) {
+        fail(
+          context,
+          error,
+          'GIT_AUTHORIZATION_FAILED',
+          'Personal git authorization failed',
+        );
+        const refusal = (
+          error as { readonly details?: { readonly hostError?: unknown } }
+        ).details?.hostError;
+        return context.redirect(
+          `${back}?error=${reasonOf(error, 'GIT_AUTHORIZATION_FAILED')}${
+            typeof refusal === 'string'
+              ? `&hostError=${encodeURIComponent(refusal)}`
+              : ''
+          }`,
+        );
+      }
+    },
+  );
+  return router;
+}
 
 const WEBHOOK_DESCRIPTION =
   'Called by GitHub, not by a person: no session or API key. The credential is the signature: `X-Hub-Signature-256` must be the HMAC-SHA256 of the raw body with the endpoint’s webhook secret, `X-GitHub-Delivery` names the delivery (a delivery taken already is acknowledged and not acted on again), and `X-GitHub-Event` the event.';
