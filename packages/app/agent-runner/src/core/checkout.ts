@@ -219,6 +219,8 @@ export interface CheckedOutRepo {
   gitDir: string;
   /** The submodules checked out in `dir`, nested ones included, as absolute paths. */
   submodules: string[];
+  /** This run may create, but never update, the empty remote's default branch. */
+  initializing?: true;
 }
 
 /** A working directory as the run uses it. */
@@ -506,7 +508,10 @@ async function addClone(
     ]))
   ) {
     // An empty repository whose first commit this run makes: the default branch starts with no parent.
-    if (repo.initial === true) {
+    if (
+      repo.initial === true &&
+      (await git(['for-each-ref', '--format=%(refname)'], cache)) === ''
+    ) {
       await taskGit(context, [
         'symbolic-ref',
         'HEAD',
@@ -868,7 +873,8 @@ export async function prepareDirs(
   };
   try {
     const dirs: PreparedDir[] = [];
-    for (const [index, entry] of options.dirs.entries()) {
+    for (const [index, requested] of options.dirs.entries()) {
+      let entry = requested;
       const primary = index === 0;
       const common = {
         primary,
@@ -924,8 +930,9 @@ export async function prepareDirs(
       options.log?.(
         `checkout: ${entry.url} -> ${entry.path} (${entry.branch})`,
       );
+      const repoUrl = entry.url;
       const credential = options.credentials?.find(
-        (item) => item.url === entry.url,
+        (item) => item.url === repoUrl,
       );
       const auth: GitAuth | undefined =
         credential === undefined
@@ -935,6 +942,46 @@ export async function prepareDirs(
         ...(auth === undefined ? {} : { auth }),
         ...(options.retry === undefined ? {} : { retry: options.retry }),
       });
+      // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
+      // above; read all advertised refs before granting the narrowly scoped first-push exception.
+      let initializing = false;
+      if (
+        entry.initializeIfEmpty === true &&
+        entry.initial !== true &&
+        !(await gitOk(
+          [
+            'show-ref',
+            '--verify',
+            '--quiet',
+            `refs/remotes/origin/${entry.defaultBranch}`,
+          ],
+          cache,
+        )) &&
+        !(await gitOk(
+          [
+            'show-ref',
+            '--verify',
+            '--quiet',
+            `refs/remotes/origin/${entry.branch}`,
+          ],
+          cache,
+        ))
+      ) {
+        const refs = await retryGit(
+          `git ls-remote ${entry.url}`,
+          () =>
+            git(
+              [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
+              cache,
+              gitAuthEnv(auth),
+            ),
+          options.retry,
+        );
+        if (refs.trim() === '') {
+          initializing = true;
+          entry = { ...entry, branch: entry.defaultBranch, initial: true };
+        }
+      }
       const created = await ensureCheckout(cache, dir, entry);
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
@@ -959,7 +1006,9 @@ export async function prepareDirs(
       // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
-      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir);
+      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir, {
+        createOnly: initializing,
+      });
       const submodules = await initSubmodules(dir, {
         all: created,
         url: entry.url,
@@ -978,6 +1027,7 @@ export async function prepareDirs(
         cache,
         gitDir,
         submodules: await listSubmodules(dir),
+        ...(initializing ? { initializing: true as const } : {}),
       };
       const key = preparedKey(entry);
       // A checkout created again (removed by GC, say) needs its initialization again.
