@@ -4266,6 +4266,65 @@ describe('plugin-ui-layout mobile models', () => {
     ]);
   });
 
+  it('should keep a directly linked hidden mobile page reachable instead of redirecting to the first visible page', async () => {
+    const events: string[] = [];
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Hidden',
+        schemaUid: 'hidden-page',
+        hideInMenu: true,
+        sort: 20,
+      },
+    ];
+    let layoutModel: MobileLayoutModel | undefined;
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => routes),
+      isAccessibleLoaded: vi.fn(() => true),
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    };
+
+    const renderResult = renderMobileLayoutWithRouteRepository(routeRepository, {
+      initialEntries: ['/v/mobile/hidden-page'],
+      outletElement: React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(MobileRoutePageProbe, {
+          events,
+          getModel: () => {
+            if (!layoutModel) {
+              throw new Error('Mobile layout model is not ready.');
+            }
+            return layoutModel;
+          },
+        }),
+        React.createElement(MobileCurrentPathProbe),
+      ),
+      beforeRender: (model) => {
+        layoutModel = model;
+      },
+    });
+
+    await waitFor(() => {
+      expect(routeRepository.ensureAccessibleLoaded).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      const visiblePaths = Array.from(renderResult.container.querySelectorAll('[data-testid="mobile-current-path"]'))
+        .filter((element) => !element.closest('div[style*="display: none"]'))
+        .map((element) => element.textContent);
+      expect(visiblePaths).toEqual(['/v/mobile/hidden-page']);
+    });
+  });
+
   it('should read mobile link routes from url with href fallback', () => {
     const urlRoutes: NocoBaseDesktopRoute[] = [
       {
