@@ -804,6 +804,43 @@ describe('the GitHub platform', () => {
     ).rejects.toMatchObject({ status: 401 });
   });
 
+  it('tells an app without the device flow from GitHub being out of reach, whatever status GitHub refuses with', async () => {
+    const github = createFakeGitHub();
+    const { platform } = github;
+    const client = {
+      webUrl: 'https://github.com',
+      clientId: github.app.clientId,
+    };
+    github.app.deviceFlow = false;
+    for (const status of [200, 400, 401]) {
+      github.app.deviceFlowRefusalStatus = status;
+      expect(await platform.startDeviceAuthorization(client)).toBeNull();
+    }
+    // Another refusal keeps GitHub's own code and status, and is no reason to try again.
+    github.app.deviceFlow = true;
+    await expect(
+      platform.startDeviceAuthorization({ ...client, clientId: 'unknown' }),
+    ).rejects.toMatchObject({ status: 401, hostError: null });
+  });
+
+  it('keeps the code GitHub refused an authorization with', async () => {
+    const github = createFakeGitHub();
+    const client = {
+      webUrl: 'https://github.com',
+      clientId: github.app.clientId,
+      clientSecret: github.app.clientSecret,
+    };
+    await expect(
+      github.platform.exchangeCode(client, {
+        code: 'never-issued',
+        redirectUri: 'https://studio.example.com/oauth/git/callback',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      hostError: 'bad_verification_code',
+    });
+  });
+
   it('normalizes webhook deliveries into events', async () => {
     const body = (value: unknown) =>
       new TextEncoder().encode(JSON.stringify(value));

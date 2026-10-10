@@ -416,6 +416,9 @@ const zhCN: AppResource = {
   'errors.EXPIRY_REQUIRED': '限定范围的密钥必须设置过期时间。',
   'errors.GIT_DEVICE_FLOW_DISABLED':
     '该 App 不允许用验证码连接：需要管理员在托管平台上的 App 设置中开启 Device Flow。',
+  'errors.GIT_DEVICE_FLOW_REFUSED':
+    '托管平台拒绝了验证码连接：请确认该 App 已开启 Device Flow，且 Client ID 正确。',
+  'errors.GITHUB_REFUSED': 'GitHub 拒绝了这个请求。',
   'errors.INVALID_PERSONAL_TOKEN':
     '托管平台拒绝了该令牌：请确认它有效、未过期且完整粘贴。',
   'errors.GIT_PERSONAL_TOKENS_DISABLED': '此连接已关闭个人令牌。',

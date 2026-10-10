@@ -17,7 +17,8 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router';
+import { ApiClientError } from '@nocobase/app-client';
+import { MemoryRouter, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type {
@@ -84,19 +85,20 @@ vi.mock('@nocobase/i18n/client', async (importOriginal) => ({
     i18n: { language: 'en-US' },
   }),
 }));
+const notify = { success: vi.fn(), error: vi.fn() };
 vi.mock('../../client/access/notify', () => ({
-  useNotify: () => ({ success: vi.fn(), error: vi.fn() }),
+  useNotify: () => notify,
 }));
 
 const { default: GitSettingsPage } =
   await import('../../client/pages/config/git');
 const { default: AccountGit } = await import('../../client/pages/account/git');
 
-const wrap = (ui: ReactElement) => (
+const wrap = (ui: ReactElement, path = '/') => (
   <QueryClientProvider
     client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
   >
-    <MemoryRouter>{ui}</MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
   </QueryClientProvider>
 );
 
@@ -877,6 +879,110 @@ describe('Account settings › Git', () => {
     expect(primary.dataset.gitMethod).toBe('device');
     fireEvent.click(primary);
     await waitFor(() => expect(api.startDeviceFlow).toHaveBeenCalledWith('c1'));
+  });
+
+  it('says why the host’s sign-in did not connect, and keeps the dialog open', async () => {
+    api.me.mockResolvedValue({ hosts: [] });
+    function Where(): ReactElement {
+      return <output data-testid='where'>{useLocation().search}</output>;
+    }
+    const { unmount } = render(
+      wrap(
+        <>
+          <AccountGit />
+          <Where />
+        </>,
+        '/issues?account=git&error=GIT_AUTHORIZATION_EXPIRED',
+      ),
+    );
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        null,
+        'studioGit.personal.failedReason.GIT_AUTHORIZATION_EXPIRED',
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('where').textContent).toBe('?account=git'),
+    );
+    unmount();
+    // The host's own refusal, when it says what to fix.
+    render(
+      wrap(
+        <AccountGit />,
+        '/?account=git&error=GIT_AUTHORIZATION_REFUSED&hostError=redirect_uri_mismatch',
+      ),
+    );
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenLastCalledWith(
+        null,
+        'studioGit.personal.hostError.redirect_uri_mismatch',
+      ),
+    );
+  });
+
+  it('tells a failure on the server from an authorization not started here, and an ended session', async () => {
+    api.me.mockResolvedValue({ hosts: [] });
+    for (const code of [
+      'GIT_AUTHORIZATION_FAILED',
+      'GIT_AUTHORIZATION_STATE_INVALID',
+      'GIT_SESSION_EXPIRED',
+    ]) {
+      const { unmount } = render(
+        wrap(<AccountGit />, `/?account=git&error=${code}`),
+      );
+      await waitFor(() =>
+        expect(notify.error).toHaveBeenLastCalledWith(
+          null,
+          `studioGit.personal.failedReason.${code}`,
+        ),
+      );
+      unmount();
+    }
+  });
+
+  it('says when the app does not have the device flow on, with a link to its settings', async () => {
+    api.me.mockResolvedValue({
+      hosts: [
+        {
+          connection: choice(acme),
+          methods: ['device'],
+          authorization: null,
+        },
+      ],
+    });
+    api.startDeviceFlow.mockRejectedValue(
+      new ApiClientError('The app does not allow the device flow.', {
+        status: 400,
+        reason: 'GIT_DEVICE_FLOW_DISABLED',
+        payload: {
+          error: {
+            reason: 'GIT_DEVICE_FLOW_DISABLED',
+            metadata: {
+              appSettingsUrl:
+                'https://github.com/organizations/acme/settings/apps/studio-acme',
+            },
+          },
+        },
+        method: 'POST',
+        url: '/api/git/authorizations/c1/startDeviceFlow',
+      }),
+    );
+    render(wrap(<AccountGit />));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'studioGit.personal.connect' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      await within(dialog).findByText('studioGit.personal.device.disabled'),
+    ).toBeTruthy();
+    expect(
+      within(dialog)
+        .getByText('studioGit.personal.device.appSettings')
+        .closest('a')
+        ?.getAttribute('href'),
+    ).toBe('https://github.com/organizations/acme/settings/apps/studio-acme');
+    // Said in the dialog, not as "the request failed".
+    expect(notify.error).not.toHaveBeenCalled();
   });
 
   it('saves a pasted token, with the permissions it needs', async () => {

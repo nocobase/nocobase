@@ -104,4 +104,13 @@ describe('the account settings dialog', () => {
       screen.getByRole('dialog').querySelector('[data-account-category="git"]'),
     ).not.toBeNull();
   });
+
+  it('keeps what the code host sent the person back with, for the category to read', () => {
+    renderAt(
+      '/account/git?error=GIT_AUTHORIZATION_REFUSED&hostError=redirect_uri_mismatch',
+    );
+    expect(where()).toBe(
+      '/?error=GIT_AUTHORIZATION_REFUSED&hostError=redirect_uri_mismatch&account=git',
+    );
+  });
 });

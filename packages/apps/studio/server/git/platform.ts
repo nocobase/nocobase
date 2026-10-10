@@ -660,15 +660,21 @@ export interface GitPlatform {
  */
 export class GitApiError extends Error {
   public readonly retryAt: string | null;
+  /** The error code the host's OAuth pages refused with (`bad_verification_code`), when they did. */
+  public readonly hostError: string | null;
 
   public constructor(
     public readonly status: number,
     message: string,
-    options: { readonly retryAt?: string | null } = {},
+    options: {
+      readonly retryAt?: string | null;
+      readonly hostError?: string | null;
+    } = {},
   ) {
     super(message);
     this.name = 'GitApiError';
     this.retryAt = options.retryAt ?? null;
+    this.hostError = options.hostError ?? null;
   }
 
   /** Whether the host refused because of its rate limit. */

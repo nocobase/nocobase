@@ -440,6 +440,9 @@ const enUS = {
   'errors.EXPIRY_REQUIRED': 'A key with a scope must expire.',
   'errors.GIT_DEVICE_FLOW_DISABLED':
     'The app does not allow connecting with a code: an administrator turns on its device flow in the app’s settings on the host.',
+  'errors.GIT_DEVICE_FLOW_REFUSED':
+    'The host refused to start connecting with a code: check that the app enables its device flow and that its client ID is right.',
+  'errors.GITHUB_REFUSED': 'GitHub refused the request.',
   'errors.INVALID_PERSONAL_TOKEN':
     'The host refused the token: check that it is valid, not expired and pasted whole.',
   'errors.GIT_PERSONAL_TOKENS_DISABLED':
