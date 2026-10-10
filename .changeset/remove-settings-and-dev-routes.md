@@ -33,7 +33,6 @@
 '@nocobase/app-plugin-releases': minor
 '@nocobase/app-plugin-scheduler': minor
 '@nocobase/app-plugin-users': minor
-'@nocobase/app-plugin-workflow': minor
 '@nocobase/app-testing': patch
 ---
 

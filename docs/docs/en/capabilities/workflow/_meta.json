@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick start"
+  },
+  {
+    "type": "file",
+    "name": "develop",
+    "label": "Develop with an Agent"
+  },
+  {
+    "type": "file",
+    "name": "scenarios",
+    "label": "Scenarios"
+  },
+  {
+    "type": "file",
+    "name": "extension",
+    "label": "Extension"
+  }
+]

@@ -17,32 +17,27 @@ Tasks that do not need to be viewed and tracked through the UI must not be manag
 
 ## Then Choose the Execution Model
 
-Scheduler runs independently of Workflow. The official application templates keep Workflow disabled by default. Before choosing a target, inspect `server/plugins.ts`, `client/plugins.ts`, `cli/plugins.ts`, and `server/config/index.ts`; a package dependency or synchronized Skill does not enable the plugin. Use an application-owned target when it meets the business requirements. Only choose `workflow` when the Workflow plugin is explicitly enabled and its target is registered; enabling Workflow is a separate application capability change.
+After deciding to use Scheduler, choose according to business complexity:
 
-After deciding to use Scheduler, choose according to business complexity and the registered targets:
+| Scenario                                                                                  | Choice          | Implementation boundary                                                                                  |
+| ----------------------------------------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------- |
+| Periodic cleanup, cache refresh, a single report, or one business Service call            | Own target type | Short operations may complete directly; hand lengthy work to a `JobExecutor`                             |
+| A simple operation that happens hourly                                                    | Own target type | Cron alone is not a reason to introduce a heavier execution system                                       |
+| Immediate asynchronous execution                                                          | `JobExecutor`   | No Cron Schedule is needed                                                                               |
+| A one-time delay, such as ten minutes after a request                                     | Queue `delay`   | No Cron Schedule is needed; `JobExecutor` has no delay                                                   |
+| Another execution system with its own references, status queries, and completion protocol | Own target type | The same `registerTarget()` call, with `inspect()` and completion reporting for work that finishes later |
 
-| Scenario                                                                                  | Choice                     | Implementation boundary                                                                                                           |
-| ----------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Periodic cleanup, cache refresh, a single report, or one business Service call            | Own target type            | Short operations may complete directly; hand lengthy work to a `JobExecutor`                                                      |
-| Staged processing, branches, persisted node state, or node-level diagnostics              | Optional `workflow` target | With Workflow enabled, Scheduler determines when to trigger; Workflow orchestrates the process and nodes call typed business code |
-| A simple operation that happens hourly                                                    | Own target type            | Cron alone is not a reason to introduce Workflow                                                                                  |
-| Immediate asynchronous execution                                                          | `JobExecutor`              | No Cron Schedule is needed                                                                                                        |
-| A one-time delay, such as ten minutes after a request                                     | Queue `delay`              | No Cron Schedule is needed; `JobExecutor` has no delay                                                                            |
-| Another execution system with its own references, status queries, and completion protocol | Own target type            | The same `registerTarget()` call, with `inspect()` and completion reporting for work that finishes later                          |
-
-Every schedule points at a registered target; `registerTarget()` is the target extension surface, and there is no built-in target type. `workflow` means `target.type: 'workflow'`, registered by the Workflow plugin, not an additional job wrapping a workflow. An application's own targets do not depend on the Workflow plugin. Neither approach guarantees exactly-once external business effects; design business idempotency for both.
+Every schedule points at a registered target; `registerTarget()` is the target extension surface, and there is no built-in target type. A target does not guarantee exactly-once external business effects; design business idempotency.
 
 ## Read by Task
 
-- To create or change a schedule, read [Definitions, Registration, and Synchronization](references/definitions.md), starting with application-owned targets; the Workflow declaration is an optional integration.
+- To create or change a schedule, read [Definitions, Registration, and Synchronization](references/definitions.md).
 - To register or review a target, hand its work to a `JobExecutor`, report completion, or diagnose a historical occurrence after retargeting, read [Target Extensions and Execution Protocol](references/targets.md).
 - To integrate or review the UI/API and permissions, interpret status, or diagnose missing definitions, read [Operations and Verification](references/operations.md), including the complete management route table, separate status dimensions, and application identity checks.
-- To review Workflow readiness or recover a scheduled Workflow execution, read the Workflow integration section in [Definitions, Registration, and Synchronization](references/definitions.md); it covers the plugin-provided completion reporting and stable event identity.
-- To author the workflow itself, use the installed Workflow plugin's `nocobase-app-plugin-workflow` skill. Confirm supported Instructions instead of inventing nodes from business terminology.
 
 ## Development Loop
 
-1. Establish which tasks and execution records administrators need to see. Check Server/Client/CLI registration, page permissions, the application's `jobs` configuration (a `redis` adapter for more than one instance; `memory` serves one process) and `JobExecutorServiceProvider` composition, and target availability, then choose an application-owned target type or `workflow`.
+1. Establish which tasks and execution records administrators need to see. Check Server/Client/CLI registration, page permissions, the application's `jobs` configuration (a `redis` adapter for more than one instance; `memory` serves one process) and `JobExecutorServiceProvider` composition and target availability, then choose or register the target type.
 2. Implement business logic and Providers in application source, and call `schedulerServiceToken.defineSchedule(definition)` with an application-wide stable key from that Provider's `register()`/`boot()`.
 3. Validate payload/input, timezone, idempotency, and the full asynchronous chain: submission, actual job execution, terminal notification, and recovery from persisted execution state. Obtain credentials through secure business Service configuration, never `target.config`.
 4. Run application type checks, relevant tests, and build. Synchronize definitions and, in development, use an administrator account to find the task in the UI and track a real execution to its final state. Confirm the business result.

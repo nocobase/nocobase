@@ -169,7 +169,7 @@ export const ScheduleOccurrenceSchema: z.ZodType = z
         .optional()
         .meta({
           description:
-            'What the target created for this firing, such as a workflow execution.',
+            'What the target created for this firing, such as a run it started.',
         }),
       href: z.string().optional().meta({
         description: 'An application path to `reference`, when it has a page.',

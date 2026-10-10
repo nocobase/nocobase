@@ -115,6 +115,6 @@ Ask for a short deployment report covering:
 - The health-check URL and response, public URL, and completed sign-in and business checks.
 - For updates, the old version, backup locations and rollback procedure; incomplete checks, reasons and concrete next steps.
 
-Sign in through the public URL yourself. For a first deployment, use agreed test data to verify writes, uploads and persistence after restart. For an existing production application, agree on test records and a restart window first; do not write business data, trigger workflows or restart solely for verification without agreement. If the Agent cannot operate a browser, perform those checks yourself and leave them marked pending in its report.
+Sign in through the public URL yourself. For a first deployment, use agreed test data to verify writes, uploads and persistence after restart. For an existing production application, agree on test records and a restart window first; do not write business data, trigger business processes or restart solely for verification without agreement. If the Agent cannot operate a browser, perform those checks yourself and leave them marked pending in its report.
 
 “Configuration generated,” “request accepted,” “container started” and “healthy locally” are intermediate results. Public access, business verification or migration results that remain unconfirmed must stay on the outstanding list.

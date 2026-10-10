@@ -10,7 +10,6 @@
 '@nocobase/app-plugin-notification-in-app': minor
 '@nocobase/app-plugin-scheduler': minor
 '@nocobase/app-plugin-users': minor
-'@nocobase/app-plugin-workflow': minor
 ---
 
 Plugins no longer contribute Settings or Dev pages. Every page a plugin registered under `/settings/...` or `/dev/...` is removed, together with the components, locale keys and tests only those pages used; an application that wants such a page builds it on the plugin's HTTP API and client and declares it among its own routes.
@@ -24,4 +23,3 @@ Plugins no longer contribute Settings or Dev pages. Every page a plugin register
 - `@nocobase/app-plugin-notification-in-app`: the Dev inbox page, the `routes` export and the `./client/routes` entry are removed. Render `NotificationInAppInbox` inside `NotificationInAppProvider` in an application page.
 - `@nocobase/app-plugin-scheduler`: the schedule list and detail pages are removed. The client registers only the locales for the titles its server registers.
 - `@nocobase/app-plugin-users`: the user management page and the `mount`, `path`, `title` and `componentLoader` options are removed, together with `createUsersRoutes`, `USERS_PAGE_ACCESS` and `USERS_ROUTE_ID`. The plugin contributes only the invitation page at `/invite/:token`, which `inviteComponentLoader` still replaces; build a user management page on `UsersClient`.
-- `@nocobase/app-plugin-workflow`: the workflow and workflow run pages, `WORKFLOW_SETTING_PATHS` and `WORKFLOW_ROUTE_IDS` are removed. The schedule target no longer returns an `href` for a workflow or a run, because there is no page to link to. The canvas, inspector and version comparison components remain.

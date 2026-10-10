@@ -44,15 +44,15 @@ Create two business tables. Use the application's existing capabilities for acco
 
 For example, “远山科技” is a customer and `SO-001` is one of its orders. Read the customer name from the customer record; keep the amount and status on the order. Chapter 1 explains field types, relationships, and storage rules.
 
-## The six chapters
+## The five chapters
 
 | Chapter                                        | What you learn                                       | Result                                            |
 | ---------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------- |
 | [1. Create orders and customers](./data-model) | Tables, fields, relationships, migrations, and seeds | Two tables and example customers                  |
 | [2. Build list and detail pages](./pages)      | Routes, forms, APIs, and persistence                 | Create an order and open its own detail URL       |
 | [3. Add permissions](./permissions)            | Page access, operations, and record scope            | Isolated salesperson data and supervisor access   |
-| [5. Send notifications](./notifications)       | Inbox messages, recipients, links, and deduplication | The applicant receives the correct decision       |
-| [6. Deploy](./deploy)                          | Builds, runtime configuration, and deployment checks | Run production mode and recheck the complete flow |
+| [4. Send notifications](./notifications)       | Inbox messages, recipients, links, and deduplication | The applicant receives the correct decision       |
+| [5. Deploy](./deploy)                          | Builds, runtime configuration, and deployment checks | Run production mode and recheck the complete flow |
 
 ## Before you start
 

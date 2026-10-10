@@ -1,16 +1,16 @@
 ---
-title: '5. Send notifications'
+title: '4. Send notifications'
 description: 'Use an order approval scenario to have an Agent send an in-app message to the applicant and verify its entry point, recipient, and delivery result.'
-keywords: 'NocoBase,notifications,approval,in-app,Agent,workflow'
+keywords: 'NocoBase,notifications,approval,in-app,Agent'
 ---
 
-# 5. Send notifications
+# 4. Send notifications
 
 After an order is approved or rejected, the applicant needs to know the result and return to the order to see its details. This chapter uses an in-app message to show how to describe the business rules to an application Agent, confirm where the notification appears, and check the delivery result.
 
 ## Before you start
 
-- The previous chapters have set up orders and an approval workflow that distinguishes approved and rejected states.
+- An order's decision moves it to `approved` or `rejected`; [chapter 1](./data-model) defines the status values.
 - The application template registers the notification and in-app notification plugins.
 - Prepare an applicant account and a supervisor account to verify that recipients cannot see one another's notifications.
 
@@ -21,11 +21,11 @@ This example uses in-app messages, so you do not need to configure email or a gr
 Give the following request to your application Agent, replacing the page name with the one used in the previous chapters:
 
 ```text
-Notify the applicant when the current order approval workflow finishes.
+Notify the applicant when the order's approval finishes.
 
 When the approval result changes to approved or rejected, send an in-app message to the applicant for that order. Include the result and order number. Clicking the message should open the order detail page. Do not send notifications for pending approvals, drafts, or orders whose approval result has not changed.
 
-First check the order and applicant fields, approval workflow, notification plugins, and user permissions. Reuse the notification channel already available in the app. If applicants do not have an entry point for their in-app messages, add a clear "My notifications" entry and make sure a signed-in user can read only messages addressed to them.
+First check the order and applicant fields, approval states, notification plugins, and user permissions. Reuse the notification channel already available in the app. If applicants do not have an entry point for their in-app messages, add a clear "My notifications" entry and make sure a signed-in user can read only messages addressed to them.
 
 Repeated processing of the same approval result for an order must send only one notification. A notification failure must not undo a completed approval. Tell me where to check the failure reason and when it is safe to retry.
 
@@ -48,7 +48,7 @@ After an applicant submits an order and a supervisor approves or rejects it, the
 4. Check the message and order link, then refresh the page to confirm the message is still available.
 5. Sign in as another applicant and confirm they cannot read the first applicant's notification.
 
-Administrators can inspect notifications and delivery records in **Settings → Notifications → Notification logs**. A successful workflow run only confirms that the business process completed. Administrators still need to confirm that the in-app message was saved for the right recipient. If an email or group bot reports an uncertain result, check the destination before retrying to avoid duplicate messages.
+Administrators can inspect notifications and delivery records in **Settings → Notifications → Notification logs**. A successful status change only confirms that the business process completed. Administrators still need to confirm that the in-app message was saved for the right recipient. If an email or group bot reports an uncertain result, check the destination before retrying to avoid duplicate messages.
 
 ## Extend the example to email or group bots
 

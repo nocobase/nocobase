@@ -408,7 +408,7 @@ Do not declare a plugin's own page route a second time: registering another `/in
 - Source extensions and route overrides apply to App routes, the only kind of client route.
 - Keep the replacement page lazy, declare `componentEntry` so tools can find the source file, and default-export the component. `componentEntry` is the replacement module's path from the application root, without an extension.
 
-A route override replacing the workflow plugin's run detail page (an App route; its id is the package name and the route name):
+A route override replacing the scheduler plugin's schedule detail page (an App route; its id is the package name and the route name):
 
 ```ts
 // client/route-overrides.ts
@@ -420,9 +420,9 @@ import {
 export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
   defineClientRouteComponentOverrides([
     {
-      routeId: '@nocobase/app-plugin-workflow:workflow-run-detail',
-      componentEntry: './client/pages/workflow-run-detail/index',
-      componentLoader: () => import('./pages/workflow-run-detail/index.js'),
+      routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
+      componentEntry: './client/pages/schedule-detail/index',
+      componentLoader: () => import('./pages/schedule-detail/index.js'),
     },
   ]);
 
@@ -432,26 +432,26 @@ export default routeComponentOverrides;
 Or, instead of that entry (one override per route), a source extension, which keeps the override together with its own files under one folder; `client/source-extensions.ts` loads every `client/extensions/*/extension.ts`:
 
 ```ts
-// client/extensions/workflow-run-ui/extension.ts
+// client/extensions/schedule-ui/extension.ts
 import {
   defineClientRouteComponentOverrides,
   defineClientSourceExtension,
   type AppClientSourceExtension,
 } from '@nocobase/app-client/plugins';
 
-const workflowRunUiExtension: AppClientSourceExtension =
+const scheduleUiExtension: AppClientSourceExtension =
   defineClientSourceExtension({
-    name: 'workflow-run-ui',
+    name: 'schedule-ui',
     routeComponentOverrides: defineClientRouteComponentOverrides([
       {
-        routeId: '@nocobase/app-plugin-workflow:workflow-run-detail',
-        componentEntry: './client/extensions/workflow-run-ui/pages/run-detail',
-        componentLoader: () => import('./pages/run-detail.js'),
+        routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
+        componentEntry: './client/extensions/schedule-ui/pages/schedule-detail',
+        componentLoader: () => import('./pages/schedule-detail.js'),
       },
     ]),
   });
 
-export default workflowRunUiExtension;
+export default scheduleUiExtension;
 ```
 
 - **A route can be overridden only once across the three mechanisms**; a second override raises an error that names the route id. Pick one; do not stack them.
