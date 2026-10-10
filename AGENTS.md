@@ -236,7 +236,15 @@ The loader flattens the application's sources and every registered plugin's into
 
 `packages/tools/create-plugin/template/AGENTS.md` carries this for generated plugins; change both together.
 
-Before editing an existing migration, check its Git history and the status of the branch that introduced it. An existing migration may be corrected directly only while its introducing feature branch has not yet been merged. Once that branch has been merged into its target branch, never modify the migration again; implement every correction or subsequent schema change in a new migration. Do not use hard-coded previous checksum hashes to make an edited migration appear compatible.
+### Migrations change incrementally
+
+Every package under `packages/` is published to npm, and `v3-develop` publishes a prerelease of every changed package, so a migration merged there reaches installed applications with the next release, and a beta release counts. Some plugins used to correct a merged migration in place while nothing outside this repository ran it; that is no longer allowed, and the existing migrations of those plugins are not an example to follow.
+
+Before editing an existing migration, check its Git history and the status of the branch that introduced it. An existing migration may be corrected directly only while its introducing feature branch has not yet been merged. Once that branch has been merged into its target branch, never modify the migration again, not its operations, not its `down`, and not its name or filename; implement every correction or subsequent schema change in a new migration. Do not use hard-coded previous checksum hashes to make an edited migration appear compatible.
+
+The reason is that an installation never runs a migration twice. One that already ran the old version records it as executed and skips the edited file, keeping the schema the old version produced, while a fresh installation runs the new version: the two now disagree, and nothing reports it beyond a checksum warning that `nocobase db repair` silences without changing the schema. A new migration is the only change both reach. Write it so that it brings an installation from what the earlier migrations left behind to the target, and so that it also holds on a fresh installation that runs every migration in order. Name it after the earlier one so it sorts after it, and cover the upgrade path in its `describeMigration()` test.
+
+A correction that only reformats a migration or edits a comment changes no schema, but it still changes the checksum every existing installation recorded and warns each of them on the next run. Leave a merged migration's file untouched for those too.
 
 The one exception is a released migration that has never succeeded on a supported database and that no later migration can get past, because the failing statement is the one that creates the table — for example a unique index declared on a `varchar(1024)`, which exceeds MySQL's key length, so the plugin cannot be installed there at all. Such a migration may be corrected in place, and only to the extent that makes it succeed. The changeset must say that it edits a released migration and why, and must tell operators of installations that already ran it to expect a checksum warning on the next `nocobase db apply` and to clear it with `nocobase db repair`.
 
