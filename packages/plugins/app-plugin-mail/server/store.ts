@@ -10,6 +10,11 @@ import { MailOutboxStore } from './store/outbox.js';
 import { MailPushStore } from './store/push.js';
 import { MailSubmissionsStore } from './store/submissions.js';
 import { MailSyncStore } from './store/sync.js';
+import { MailMessageSyncEventsStore } from './store/message-sync-events.js';
+import type {
+  MailListMessageSyncEventsInput,
+  MailMessageSyncEventsPage,
+} from './contracts/message-sync-events.js';
 import { MailTemplatesStore } from './store/templates.js';
 import {
   type MailAccount,
@@ -41,6 +46,7 @@ import {
   type MailStoredSubmission,
   type MailSyncBatch,
   type MailSyncStepCommit,
+  type MailSyncStepResult,
 } from './contracts/persistence.js';
 import {
   type MailProviderPushSubscription,
@@ -59,6 +65,7 @@ export class DatabaseMailStore implements MailStore {
   private readonly metadata: MailMetadataStore;
   private readonly messages: MailMessagesStore;
   private readonly sync: MailSyncStore;
+  private readonly messageSyncEvents: MailMessageSyncEventsStore;
   private readonly submissions: MailSubmissionsStore;
   private readonly outbox: MailOutboxStore;
   public constructor(database: DatabaseManager) {
@@ -71,6 +78,7 @@ export class DatabaseMailStore implements MailStore {
     this.metadata = new MailMetadataStore(database);
     this.messages = new MailMessagesStore(database, this.accounts);
     this.sync = new MailSyncStore(database, this.accounts);
+    this.messageSyncEvents = new MailMessageSyncEventsStore(database);
     this.submissions = new MailSubmissionsStore(database, this.accounts);
     this.outbox = new MailOutboxStore(database);
   }
@@ -653,8 +661,16 @@ export class DatabaseMailStore implements MailStore {
     return this.sync.renewSyncRunLease(syncRunId, leaseToken, leaseExpiresAt);
   }
 
-  public async commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncRun> {
+  public async commitSyncStep(
+    input: MailSyncStepCommit,
+  ): Promise<MailSyncStepResult> {
     return this.sync.commitSyncStep(input);
+  }
+
+  public async listMessageSyncEvents(
+    input: MailListMessageSyncEventsInput,
+  ): Promise<MailMessageSyncEventsPage> {
+    return this.messageSyncEvents.listMessageSyncEvents(input);
   }
 
   public async failSyncRun(

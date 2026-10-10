@@ -345,7 +345,7 @@ describe('Mail participant index lifecycle transactions', () => {
           to: [{ address: 'inserted@example.com' }],
         }),
       ],
-      phase: 'changes',
+      phase: 'catchUp',
       status: 'running',
       createNextTask: false,
     });
@@ -399,7 +399,7 @@ describe('Mail participant index lifecycle transactions', () => {
         message('deleted', { to: [{ address: 'stale@example.com' }] }),
         message('absent'),
       ],
-      phase: 'changes',
+      phase: 'catchUp',
       status: 'running',
       createNextTask: false,
     });
@@ -473,7 +473,7 @@ describe('Mail participant index lifecycle transactions', () => {
             message('late-insert'),
           ],
           deletedProviderMessageIds: ['deleted'],
-          phase: 'changes',
+          phase: 'catchUp',
           status: 'running',
           createNextTask: true,
           changeCursor: { value: 'late' },

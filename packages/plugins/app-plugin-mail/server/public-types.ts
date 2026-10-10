@@ -78,6 +78,15 @@ export type {
   NormalizedMailAttachment,
 } from '../shared/mail.js';
 
+/** Committed sync insertions, best-effort wakeups and durable account checkpoints. */
+export type {
+  MailListMessageSyncEventsInput,
+  MailMessageSyncEventsPage,
+  MailMessagesSyncedEvent,
+  MailMessagesSyncedListener,
+  MailUnsubscribe,
+} from './contracts/message-sync-events.js';
+
 /** Server facade for application plugins that consume Mail operations. */
 export type { MailService } from './contracts/service.js';
 

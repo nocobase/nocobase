@@ -22,6 +22,10 @@ Before production deployment, measure representative and large mailboxes: messag
 
 On failure, leave writes and synchronization stopped, inspect the migration error and transaction outcome, and use the application's migration recovery procedures or the verified backup before retrying. Never expose a partly populated index or repair data by editing Mail tables. A migration rollback removes only the derived participant structure; original sender/recipient JSON remains available for a later reapply/backfill. Rehearse apply/rollback/reapply and failure recovery on a database copy before the production window.
 
+## Consume newly synchronized messages
+
+Use the public Server `onMessagesSynced()` subscription for quick application-owned Job wakeups, and the personal or explicitly authorized managed event-log reads for restart and periodic compensation. Register in `boot()`, unsubscribe in `shutdown()`, and save a final account checkpoint only after every event is processed, deliberately skipped, or reliably submitted to durable application tasks. See [Server synchronization events and incremental consumption](message-sync-events.md) for the complete contract, Provider example, fixed-bound pagination, body recovery, history backfill and retention. The ordinary mailbox pagination cursor and Provider `receivedAfter` are not consumption checkpoints.
+
 ## Gmail quota, HTTP batch, and retry behavior
 
 For Gmail, one list page is fetched with `messages.list`, followed by one `messages.get` per message. Mail groups up to 10 message gets into each HTTP `multipart/mixed` batch request. Batching reduces HTTP connections only: Google charges every embedded call separately, so `messages.get` still costs 20 quota units and `messages.list` costs 5. A 100-message page therefore costs about 2,005 units before incidental profile, label, history, or fallback metadata calls; it does not become a single quota unit. See [Gmail quota configuration](configuration-and-accounts.md#gmail-quota-configuration) for defaults and project overrides.

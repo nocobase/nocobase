@@ -14,6 +14,7 @@ import {
   type MailStore,
   type MailSyncBatch,
   type MailSyncStepCommit,
+  type MailSyncStepResult,
 } from '../contracts/persistence.js';
 import { fromSyncRunRow, toSyncRunRow } from './mappers.js';
 import {
@@ -33,6 +34,7 @@ import {
 } from './rows.js';
 import { chunks, jsonOrNull, parseJson } from './serialization.js';
 import { insertOutbox, upsertSyncState } from './sync-writes.js';
+import { appendMessageSyncEvents } from './message-sync-events.js';
 
 export class MailSyncStore {
   public constructor(
@@ -394,9 +396,11 @@ export class MailSyncStore {
     return result.updatedCount === 1;
   }
 
-  public async commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncRun> {
+  public async commitSyncStep(
+    input: MailSyncStepCommit,
+  ): Promise<MailSyncStepResult> {
     const now = new Date().toISOString();
-    await this.database.transaction(async (connection): Promise<void> => {
+    return this.database.transaction(async (connection) => {
       await lockWritableAccount(connection.query, input.run.accountId);
       await upsertFolders(
         connection.query,
@@ -443,7 +447,7 @@ export class MailSyncStore {
           (message) => !deletedIds.has(message.providerMessageId),
         );
       }
-      await upsertMessages(
+      const writes = await upsertMessages(
         connection.query,
         input.run.accountId,
         messages,
@@ -577,6 +581,15 @@ export class MailSyncStore {
       if (result.updatedCount !== 1) {
         throw new Error('Mail sync run lease was lost before commit.');
       }
+      const messageSyncEvents = await appendMessageSyncEvents(
+        connection.query,
+        {
+          ...input.run,
+          phase:
+            input.run.phase === 'preparing' ? input.phase : input.run.phase,
+        },
+        writes.insertedMessageIds,
+      );
       if (input.restart || input.status === 'completed')
         await connection.query
           .deleteFrom('mailSyncTombstones')
@@ -607,10 +620,17 @@ export class MailSyncStore {
           now,
         );
       }
+      // Capture the run and events before committing: a later read failure must
+      // never make a committed step appear to have failed or lose its notifications.
+      const updated = await connection.query
+        .selectFrom<SyncRunRow>('mailSyncRuns')
+        .selectAll()
+        .where('id', '=', input.run.id)
+        .executeTakeFirst<SyncRunRow>();
+      if (!updated)
+        throw new Error('Committed mail sync run could not be read.');
+      return { ...fromSyncRunRow(updated), messageSyncEvents };
     });
-    const updated = await this.getSyncRun(input.run.id);
-    if (!updated) throw new Error('Committed mail sync run could not be read.');
-    return updated;
   }
 
   public async failSyncRun(

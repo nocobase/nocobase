@@ -10,6 +10,14 @@ import { MailAuthorizationService } from './services/authorization.js';
 import { type DefaultMailServiceDependencies } from './services/dependencies.js';
 import { MailDraftsService } from './services/drafts.js';
 import { MailManagementService } from './services/management.js';
+import { MailMessageSyncEventsService } from './services/message-sync-events.js';
+import { MailMessageSyncNotifier } from './message-sync-notifier.js';
+import type {
+  MailListMessageSyncEventsInput,
+  MailMessageSyncEventsPage,
+  MailMessagesSyncedListener,
+  MailUnsubscribe,
+} from './contracts/message-sync-events.js';
 import { MailMessagesService } from './services/messages.js';
 import { MailPreferencesService } from './services/preferences.js';
 import { MailProvidersService } from './services/providers.js';
@@ -58,6 +66,8 @@ export class DefaultMailService implements MailService {
   private readonly sync: MailSyncService;
   private readonly submissions: MailSubmissionsService;
   private readonly management: MailManagementService;
+  private readonly messageSyncEvents: MailMessageSyncEventsService;
+  private readonly messageSyncNotifier: MailMessageSyncNotifier;
   public constructor(dependencies: DefaultMailServiceDependencies) {
     const syncBatchSize = resolveMailSyncBatchSize(dependencies.syncBatchSize);
     const defaultAutomaticSyncIntervalMinutes =
@@ -83,6 +93,30 @@ export class DefaultMailService implements MailService {
     this.attachments = new MailAttachmentsService(dependencies);
     this.submissions = new MailSubmissionsService(dependencies, sendMail);
     this.management = new MailManagementService(dependencies);
+    this.messageSyncEvents = new MailMessageSyncEventsService(dependencies);
+    this.messageSyncNotifier =
+      dependencies.messageSyncNotifier ??
+      new MailMessageSyncNotifier(dependencies.logger);
+  }
+
+  public onMessagesSynced(
+    listener: MailMessagesSyncedListener,
+  ): MailUnsubscribe {
+    return this.messageSyncNotifier.subscribe(listener);
+  }
+
+  public listMessageSyncEvents(
+    context: MailOperationContext,
+    input: MailListMessageSyncEventsInput,
+  ): Promise<MailMessageSyncEventsPage> {
+    return this.messageSyncEvents.listMessageSyncEvents(context, input);
+  }
+
+  public listManagedMessageSyncEvents(
+    context: MailOperationContext,
+    input: MailListMessageSyncEventsInput,
+  ): Promise<MailMessageSyncEventsPage> {
+    return this.messageSyncEvents.listManagedMessageSyncEvents(context, input);
   }
 
   public listProviders(): Promise<readonly MailProviderView[]> {

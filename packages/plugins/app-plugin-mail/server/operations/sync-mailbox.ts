@@ -1,5 +1,6 @@
 import { mailLogError, writeMailLog, type MailLogger } from '../logging.js';
 import { randomUUID } from 'node:crypto';
+import type { MailMessageSyncNotifier } from '../message-sync-notifier.js';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 
 import type {
@@ -28,6 +29,7 @@ export interface SyncMailboxOperationDependencies {
   readonly adapters: MailProviderAdapterResolver;
   readonly leaseMs?: number;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
+  readonly messageSyncNotifier?: MailMessageSyncNotifier;
 }
 
 const SYNC_STEP_TIMEOUT_MS = 5 * 60 * 1_000;
@@ -274,6 +276,8 @@ export class SyncMailboxOperation {
     input: MailSyncStepCommit,
   ): Promise<MailSyncRun> {
     const result = await this.dependencies.store.commitSyncStep(input);
+    // The commit carries its own snapshot: notify before any logging or readback can fail.
+    this.dependencies.messageSyncNotifier?.notify(result.messageSyncEvents);
     writeMailLog(
       this.dependencies.logger,
       result.status === 'partial' || input.restart ? 'warn' : 'info',

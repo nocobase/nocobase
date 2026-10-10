@@ -1,4 +1,5 @@
 import { notifyMailMessageChange } from './realtime.js';
+import type { MailMessageSyncNotifier } from './message-sync-notifier.js';
 import { MailAccountRemovals } from './runtime/account-removals.js';
 import { MailBackgroundTasks } from './runtime/background-tasks.js';
 import { MailOutboxRelay } from './runtime/outbox-relay.js';
@@ -51,6 +52,7 @@ export interface MailRuntimeOptions {
   readonly pushWebhookUrl?: string;
   readonly pushWebhookSecret?: string;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
+  readonly messageSyncNotifier?: MailMessageSyncNotifier;
 }
 
 export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
