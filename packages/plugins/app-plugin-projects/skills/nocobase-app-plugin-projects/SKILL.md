@@ -125,5 +125,7 @@ approve|reject` (403 `NOT_APPROVER`) and `/withdraw` (403 `NOT_REQUESTER`) decid
 
 ## Verification
 
+Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. Status rule conditions and entry actions receive optional `sourceActor` for the original cause (including its full trace); `actor` remains the identity used by the workflow for permissions, so event moves still use `system`. For ordinary moves, `sourceActor` equals `actor`. Use `sourceActor` to attribute work started by a rule, and pass the real actor when firing workflow events; omitted event actors default to the system.
+
 `GET /api/projects/me` as a signed-in user returns 200 with `permissions`; `POST /api/projects/issues` with a `title` returns 201
 with an identifier such as `PM-1`.

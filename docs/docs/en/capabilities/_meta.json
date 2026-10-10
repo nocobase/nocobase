@@ -2,11 +2,6 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Built-in capabilities"
-  },
-  {
-    "type": "file",
-    "name": "overview",
     "label": "Overview"
   },
   {
@@ -20,12 +15,6 @@
     "name": "authorization",
     "label": "Permissions",
     "collapsed": true
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
-    "name": "workflow",
-    "label": "Workflow"
   },
   {
     "type": "file",

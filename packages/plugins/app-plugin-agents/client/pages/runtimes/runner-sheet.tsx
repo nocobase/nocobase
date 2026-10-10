@@ -3,8 +3,8 @@
  * many runs it takes at once and who it works for (sharing it with the team asks first), and whether it takes build
  * jobs when the application gives runners any; "Tools" is one table of the coding tools it reported, a row each: whether
  * it is on here, its sign-in, how many runs of it at once and how many it runs now. Both are one form, saved together
- * with "Save". "Local policy" shows what its owner's policy on the machine lets it take; "Recent runs" lists its latest
- * runs. Only its owner and the managers of runtimes change it; everyone else reads it.
+ * with "Save". "Local policy" shows what its owner's policy on the machine lets it take; "Variables from this machine"
+ * the names of the variables it provides to runs that take them from it; "Recent runs" lists its latest runs. Only its owner and the managers of runtimes change it; everyone else reads it.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -185,6 +185,13 @@ function RunnerDetail({
         description={t('runtimes.policy.description')}
       >
         <PolicyView runner={runner} />
+      </AgSection>
+      <AgSection
+        id='ag-runner-variables'
+        title={t('runtimes.variables.title')}
+        description={t('runtimes.variables.description')}
+      >
+        <VariablesView runner={runner} />
       </AgSection>
       <AgSection id='ag-runner-runs' title={t('runtimes.detail.runs')}>
         <RecentRuns runnerId={runner.id} />
@@ -610,6 +617,31 @@ function PolicyView({
         );
       })}
     </dl>
+  );
+}
+
+/** The names of the variables the runner provides to runs that take them from it, as it reported them; read only. */
+function VariablesView({
+  runner,
+}: {
+  readonly runner: RunnerSummary;
+}): ReactElement {
+  const { t } = useTranslation();
+  const names = runner.variables;
+  if (!names || names.length === 0)
+    return (
+      <p className='text-sm text-muted-foreground'>
+        {names ? t('runtimes.variables.none') : t('runtimes.variables.unknown')}
+      </p>
+    );
+  return (
+    <div className='flex flex-wrap gap-1' data-runner-variables>
+      {names.map((name) => (
+        <AgTag key={name} tone='grey' className='font-mono'>
+          {name}
+        </AgTag>
+      ))}
+    </div>
   );
 }
 

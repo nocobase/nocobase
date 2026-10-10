@@ -1,6 +1,7 @@
 /**
  * The sweeper: marks runners not heard from for `TIMINGS.offlineAfterMs` offline, then takes back what runners that
- * went away held and ends what nobody will end: the agent runs (`core/runs/sweeper.ts`) and the jobs (`jobs.sweep`).
+ * went away held and ends what nobody will end: the agent runs (`core/runs/sweeper.ts`) and the jobs (`jobs.sweep`). Last it expires
+ * the run requests nobody settled in time (`runs.requests.expireDue`).
  * It runs on a timer (the `AgentsSweep` task, every 30 seconds) and is safe to run on several instances at once: every
  * move is a guarded update, so something another instance (or its runner) moved first is left alone.
  */
@@ -17,6 +18,8 @@ export interface SweepReport {
   readonly failed: number;
   readonly cancelled: number;
   readonly jobs: JobSweepReport;
+  /** Run requests nobody settled in time, now expired. */
+  readonly requestsExpired: number;
 }
 
 export interface RunnerSweeper {
@@ -28,6 +31,7 @@ export function createRunnerSweeper(deps: {
   readonly runners: Pick<RunnerService, 'markOffline'>;
   readonly runs: RunSweeper;
   readonly jobs: Pick<JobService, 'sweep'>;
+  readonly requests: { expireDue(): Promise<number> };
 }): RunnerSweeper {
   return {
     async sweep() {
@@ -39,7 +43,8 @@ export function createRunnerSweeper(deps: {
       ).length;
       const runs = await deps.runs.sweep();
       const jobs = await deps.jobs.sweep();
-      return { runnersOffline, ...runs, jobs };
+      const requestsExpired = await deps.requests.expireDue();
+      return { runnersOffline, ...runs, jobs, requestsExpired };
     },
   };
 }

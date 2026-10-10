@@ -45,7 +45,7 @@ For a business action, call the request scope’s authorize() once and bind its 
 Reserve supervisor access for decision actions. Submission must also check ownership. Show allowed actions in the UI and independently authorize them on the server.
 ```
 
-For the full design workflow, see [Describe permissions to AI](../capabilities/authorization/develop-with-ai).
+For configuring job responsibilities and assigning users, see [Permission sets and assignments](../capabilities/authorization/permission-sets).
 
 The database resource ID is `tutorialOrders`. Match Permission Set grants, route resource names, and API checks; a translated display title is not a resource ID.
 
@@ -62,5 +62,3 @@ Create `SO-A01` as salesperson A and `SO-B01` as salesperson B. Each salesperson
 Copy A's detail URL into B's browser. B must not receive its contents. Ask the AI Agent to test direct API requests too: anonymous reads return `401`, forbidden operations are denied, and out-of-scope details do not reveal order data.
 
 In the next chapter, also test a salesperson's forged approval request. A hidden Approve button is not a security boundary.
-
-Next: [Add an approval flow](./workflow).

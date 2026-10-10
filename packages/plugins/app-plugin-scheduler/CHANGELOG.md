@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-scheduler
 
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- 1408643: Clarify that Scheduler runs independently of Workflow and requires explicit Workflow plugin and target registration before using the optional workflow integration. Prefer application-owned targets when they meet the business requirements.
+- Updated dependencies [487921c]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-cli@1.0.0-beta.15
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+
 ## 1.0.0-beta.14
 
 ### Patch Changes
