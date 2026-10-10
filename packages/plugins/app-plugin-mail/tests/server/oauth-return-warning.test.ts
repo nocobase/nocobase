@@ -55,11 +55,6 @@ const warning =
 describe('production OAuth return warning', () => {
   for (const basePath of ['', '/main', '/nested/app']) {
     it.each([
-      undefined,
-      {},
-      DEFAULT_MAIL_CONFIG,
-      { oauthReturnUrl: '' },
-      { oauthReturnUrl: '   ' },
       { oauthReturnUrl: '/dev/mail/accounts' },
       {
         oauthReturnUrl:
@@ -92,12 +87,28 @@ describe('production OAuth return warning', () => {
     );
   }
 
+  it.each([
+    undefined,
+    {},
+    DEFAULT_MAIL_CONFIG,
+    { oauthReturnUrl: '' },
+    { oauthReturnUrl: '   ' },
+    { oauthReturnUrl: '/' },
+  ])(
+    'does not warn about the current root return default: %j',
+    async (mail) => {
+      const { provider, warn } = await fixture(mail, 'production', '/main');
+      await provider.boot();
+      expect(warn.mock.calls.filter((call) => call[1] === warning)).toEqual([]);
+    },
+  );
+
   it.each(['development', 'develop', 'test', undefined])(
     'uses application environment rather than ambient production: %s',
     async (nodeEnv) => {
       vi.stubEnv('NODE_ENV', 'production');
       const { provider, warn } = await fixture(
-        DEFAULT_MAIL_CONFIG,
+        { oauthReturnUrl: '/dev/mail/accounts' },
         nodeEnv,
         '/main',
       );
@@ -150,7 +161,7 @@ describe('production OAuth return warning', () => {
       }
     }
     const { app, warn } = await fixture(
-      DEFAULT_MAIL_CONFIG,
+      { oauthReturnUrl: '/dev/mail/accounts' },
       'production',
       '/main',
     );

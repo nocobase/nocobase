@@ -33,7 +33,7 @@ Start with this small feature. The order tutorial later adds customer relationsh
 | Terminal            | Run creation, startup, and check commands                                                                  |
 | Browser             | Sign in, operate pages, and review results                                                                 |
 
-Configure the AI Agent's own account and model access beforehand. The walkthrough uses SQLite, so you do not need a separate database service or an AI employee configured inside the application.
+Configure the AI Agent's own account and model access beforehand. The walkthrough uses SQLite, so you do not need a separate database service.
 
 ## Reading order
 
@@ -47,11 +47,3 @@ Choose [Create with an AI Agent](./create-app) or [Create manually](./create-app
 Create the project once and continue working in it. You do not initialize another application for every feature.
 
 After your first feature, the "Working with an AI Agent" pages help you describe requirements clearly, review the result, and move on to larger features. To connect data, pages, permissions, and processes in one case, follow the [order application tutorial](../tutorials/).
-
-## Start through Hub
-
-:::info Guide pending
-
-The Hub getting-started guide is not yet available. Follow [Create an application](./create-app) to start locally.
-
-:::

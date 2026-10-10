@@ -352,7 +352,11 @@ export interface RunWorkspace {
    * the `secrets` feature). The runner injects them and never writes them to disk.
    */
   readonly env: readonly EnvVar[];
-  /** Variable names whose values the runner takes from its own configuration or environment; never from the server. */
+  /**
+   * Variable names whose values the runner takes from its own configuration (its local variables, or a name its owner
+   * passes from its environment); never from the server. A runner that does not provide one of them fails the run before
+   * the agent starts.
+   */
   readonly passthrough?: readonly string[];
   /**
    * Start over: the runner removes what it prepared for this subject (its checkouts, the agent's home and its record of

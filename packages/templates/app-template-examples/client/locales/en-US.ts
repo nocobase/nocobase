@@ -14,96 +14,6 @@ const enUS = {
   'inboxButton.pendingHint':
     '{{count}} waiting for you; it goes down once they are handled.',
   'inboxButton.unreadHint': '{{count}} unread; it goes down as you read them.',
-  workflowTasks: {
-    title: 'Waiting tasks',
-    description: 'Review quotation tasks created by the example workflow.',
-    detailTitle: 'Review quotation',
-    detailDescription: 'Submit a decision to resume the waiting workflow.',
-    refresh: 'Refresh',
-    search: 'Search quotation',
-    filterStatus: 'Filter by status',
-    loading: 'Loading tasks…',
-    loadError: 'Could not load tasks.',
-    detailError: 'Could not load this task.',
-    notFound: 'Task not found',
-    notFoundHint:
-      'This task may have been removed. Return to the list to see current tasks.',
-    retry: 'Retry',
-    empty: 'No review tasks yet. Run the quotation workflow to create one.',
-    noResults: 'No tasks match these filters.',
-    emptyHint: 'Run Quotation routing in Automation settings to create a task.',
-    clearFiltersHint: 'Change the search or status filter to see more tasks.',
-    clearFilters: 'Clear filters',
-    quotation: 'Quotation',
-    route: 'Route',
-    amount: 'Amount',
-    statusLabel: 'Status',
-    createdAt: 'Created',
-    action: 'Action',
-    process: 'Process',
-    view: 'View',
-    total: '{{count}} tasks',
-    previous: 'Previous',
-    next: 'Next',
-    back: 'Back to tasks',
-    runId: 'Workflow run',
-    waitStatus: 'Wait node',
-    reviewer: 'Reviewer',
-    decision: 'Decision',
-    comment: 'Comment',
-    chooseDecision: 'Choose a decision',
-    decisionRequired: 'Choose a decision before submitting.',
-    submit: 'Submit decision',
-    submitting: 'Submitting…',
-    submitError:
-      'Could not submit the decision. Refresh the task and try again.',
-    submitSuccess:
-      'Decision recorded. Check the processing result for its final outcome.',
-    resumeStatus: 'Processing result',
-    appliedHint:
-      'The wait node applied this decision. Subsequent nodes can use its result; this does not mean the whole workflow has completed.',
-    resume: {
-      executing: 'Executing',
-      queued: 'Waiting to be applied',
-      processing: 'Applying decision',
-      consumed: 'Decision applied',
-      rejected: 'Decision could not be applied',
-      'not-found': 'Submission record missing',
-      unknown: 'No submission record available',
-    },
-    resumeReason: {
-      stale:
-        'The wait was completed or restarted before this decision was applied.',
-      'run-ended': 'The workflow run ended before this decision was applied.',
-      'target-missing': 'The waiting node run no longer exists.',
-      'commit-failed':
-        'The decision repeatedly failed to commit. The workflow ended in error.',
-    },
-    submitted: 'Submitted decision',
-    unavailable: 'The wait node is not currently available for submission.',
-    status: {
-      all: 'All',
-      pending: 'Pending',
-      submitting: 'Submitting',
-      submitted: 'Submitted',
-      unavailable: 'Unavailable',
-    },
-    routeValue: {
-      standard: 'Standard',
-      'manual-follow-up': 'Manual follow-up',
-    },
-    decisionValue: { approved: 'Approved', rejected: 'Rejected' },
-    wait: {
-      pending: 'Pending',
-      'not-ready': 'Preparing',
-      finished: 'Finished',
-      'run-ended': 'Run ended',
-      'run-not-found': 'Run missing',
-      'node-not-found': 'Node missing',
-      ambiguous: 'Ambiguous',
-      submitted: 'Decision submitted',
-    },
-  },
   i18nExamples: {
     title: 'Internationalization',
     description:
@@ -195,17 +105,15 @@ const enUS = {
   'auth.marketingTitleSecond': 'NocoBase keeps it',
   'auth.marketingTitleThird': 'reliable.',
   'auth.marketingDescription':
-    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions, workflows and governance underneath.',
+    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions and governance underneath.',
   'auth.frontend': 'AI-native frontend',
   'auth.frontendDescription':
     'Compose interfaces freely on a flexible framework.',
   'auth.foundation': 'NocoBase foundation',
-  'auth.foundationDescription':
-    'Reliable data, access control, workflows and governance.',
+  'auth.foundationDescription': 'Reliable data, access control and governance.',
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',
-  'status.loadingSettings': 'Loading settings',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
@@ -218,18 +126,6 @@ const enUS = {
   shell: {
     buildFreely: 'AI builds freely.',
     reliability: '<brand>NocoBase</brand> keeps it reliable.',
-  },
-  surface: {
-    backToApp: 'Back to app',
-    loading: 'Loading {{title}}',
-    navigation: '{{title}} navigation',
-    page: '{{title}} page',
-  },
-  settings: {
-    title: 'Settings',
-    emptyTitle: 'No settings available',
-    emptyDescription:
-      'No enabled plugin contributes a settings page you have access to.',
   },
   routeOverlays: {
     title: 'Route dialogs and drawers',
@@ -419,11 +315,6 @@ const enUS = {
       description:
         'Generate DOCX or PDF invoices from authorized quote data; PDF requires LibreOffice on the application server.',
     },
-    workflows: {
-      title: 'Workflow examples',
-      description:
-        'Route quotations, generate analytics reports, and diagnose failures. Open a workflow, enable it, and run it with the sample inputs in its description.',
-    },
     routes: {
       title: 'Application routes',
       description:
@@ -527,8 +418,6 @@ const enUS = {
     signingOut: 'Signing out…',
   },
   navigation: {
-    workflow: 'Workflow',
-    workflowWaitingTasks: 'Waiting tasks',
     i18nExamples: 'Internationalization',
     numbers: 'Numeric types',
     externalCrm: 'External CRM',

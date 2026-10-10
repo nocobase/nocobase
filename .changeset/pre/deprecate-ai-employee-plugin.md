@@ -1,7 +1,6 @@
 ---
 "@nocobase/app-template-default": minor
 "@nocobase/app-template-examples": minor
-"@nocobase/app-plugin-ai-employee": patch
 "@nocobase/app-skills": patch
 ---
 

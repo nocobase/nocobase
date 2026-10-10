@@ -59,17 +59,15 @@ const enUS = {
   'auth.marketingTitleSecond': 'NocoBase keeps it',
   'auth.marketingTitleThird': 'reliable.',
   'auth.marketingDescription':
-    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions, workflows and governance underneath.',
+    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions and governance underneath.',
   'auth.frontend': 'AI-native frontend',
   'auth.frontendDescription':
     'Compose interfaces freely on a flexible framework.',
   'auth.foundation': 'NocoBase foundation',
-  'auth.foundationDescription':
-    'Reliable data, access control, workflows and governance.',
+  'auth.foundationDescription': 'Reliable data, access control and governance.',
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',
-  'status.loadingSettings': 'Loading settings',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
@@ -83,22 +81,10 @@ const enUS = {
     buildFreely: 'AI builds freely.',
     reliability: '<brand>NocoBase</brand> keeps it reliable.',
   },
-  surface: {
-    backToApp: 'Back to app',
-    loading: 'Loading {{title}}',
-    navigation: '{{title}} navigation',
-    page: '{{title}} page',
-  },
-  settings: {
-    title: 'Settings',
-    emptyTitle: 'No settings available',
-    emptyDescription:
-      'No enabled plugin contributes a settings page you have access to.',
-  },
   home: {
     title: 'Start building your application',
     description:
-      'Describe what you need to your AI Agent, then build pages, data models, and business workflows.',
+      'Describe what you need to your AI Agent, then build pages, data models, and business processes.',
   },
 
   appearance: {

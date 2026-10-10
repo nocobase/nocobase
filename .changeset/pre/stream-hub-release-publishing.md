@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-hub': minor
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-template-default': minor
 ---

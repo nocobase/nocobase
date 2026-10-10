@@ -20,7 +20,7 @@ Adds restriction rules: for the subjects a rule lists, the records an action rea
  ────────────────────────      ────────────────────────────────────────────────────         ────────────────────────────
  restriction rules ──────────▶ `restrict` constraint for the rule's subjects ─┐             context.authorize(...)
                                 grants, default access, sharing ──────────────┴▶ type       authz.database.policyFor(...)
- display: the "Restriction rules" settings page; its settings item is placed in the authorization subsection through authz.ui
+ display: its settings item is placed in the authorization subsection through authz.ui; the plugin contributes no page
 ```
 
 ## Entry points
@@ -30,7 +30,6 @@ Adds restriction rules: for the subjects a rule lists, the records an action rea
 | `@nocobase/app-plugin-authz-restriction-rules/server`        | Server plugin and the `restrictionRules` factory. |
 | `@nocobase/app-plugin-authz-restriction-rules/client`        | Client plugin.                                    |
 | `@nocobase/app-plugin-authz-restriction-rules/client/plugin` | The client plugin factory alone.                  |
-| `@nocobase/app-plugin-authz-restriction-rules/client/routes` | The settings route contribution.                  |
 | `@nocobase/app-plugin-authz-restriction-rules/package.json`  | The package manifest.                             |
 
 ## Install
@@ -115,7 +114,7 @@ Every route is described, with its parameters, request and response schemas and 
 | `POST /restrictionRules/subjects/:type/resolve` | `read`          | `{ ids: string[] }`            | `SubjectOption[]`                                                       |
 | `GET /restrictionRules/records/:collection`     | `read`          | query `page`, `pageSize`       | `[{ id, label, description? }]`, with `meta: { page, pageSize, total }` |
 
-The settings page is `/settings/authorization/restriction-rules`; its route declares `authz: { resource: { type: 'settings', id: 'authorization.restriction-rules' }, action: 'read' }`.
+The plugin contributes no page. An application that edits these rules builds its page on the routes above and declares it among its own routes with `authz: { resource: { type: 'settings', id: 'authorization.restriction-rules' }, action: 'read' }`.
 
 ## `@nocobase/app-plugin-authz-restriction-rules/server`
 
@@ -142,14 +141,6 @@ The settings page is `/settings/authorization/restriction-rules`; its route decl
 | Export    | Kind   | Signature                | Purpose                    |
 | --------- | ------ | ------------------------ | -------------------------- |
 | `default` | plugin | `AppClientPluginFactory` | The client plugin factory. |
-
-## `@nocobase/app-plugin-authz-restriction-rules/client/routes`
-
-### Exports
-
-| Export    | Kind  | Signature                    | Purpose                                           |
-| --------- | ----- | ---------------------------- | ------------------------------------------------- |
-| `default` | const | `AppClientRouteContribution` | The settings route of the restriction-rules page. |
 
 ## `@nocobase/app-plugin-authz-restriction-rules/package.json`
 

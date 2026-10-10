@@ -6,7 +6,7 @@ Resolve `MailService` with `mailServiceToken`, or use the authenticated `POST /a
 
 Supply a stable `idempotencyKey` for one logical send and retain it across transport retries. A key reused with different content is rejected. After a lost response, query submission history or repeat the same logical request with the same key; generating a new key can duplicate mail. Mail owns persisted submissions and outbox/background job delivery, so application code should not add a second provider submission path.
 
-Submission history is available through `MailService.listSubmissions()`, `GET /api/mail/submissions`, and `/dev/mail/logs/send`. A failed request answers the standard error body `{ error: { code, status, reason, domain: 'mail', message, localizedMessage } }`; branch on `reason` (for example `MAIL_IDEMPOTENCY_CONFLICT` or `MAIL_ACCOUNT_INACTIVE`), never on `message`, and show `localizedMessage` when present. A submission's own delivery error is a public Provider error with `code`, `category` and `retryable`. Public views omit internal provider errors, request fingerprints and leases.
+Submission history is available through `MailService.listSubmissions()`, and `GET /api/mail/submissions`. A failed request answers the standard error body `{ error: { code, status, reason, domain: 'mail', message, localizedMessage } }`; branch on `reason` (for example `MAIL_IDEMPOTENCY_CONFLICT` or `MAIL_ACCOUNT_INACTIVE`), never on `message`, and show `localizedMessage` when present. A submission's own delivery error is a public Provider error with `code`, `category` and `retryable`. Public views omit internal provider errors, request fingerprints and leases.
 
 ## Delivery outcomes and retries
 
@@ -38,7 +38,7 @@ Scheduled sends persist their message snapshot and run through Mail's outbox and
 
 Ordinary scheduled messages remain in Drafts with `scheduledSend` metadata. Use the submission cancellation action before editing, deleting or sending the draft again; wait for cancellation success before opening the composer. Cancellation restores the same draft and retains recipients, content and attachments. Pending schedules are cancellable before sending starts. Accepted, failed and unknown delivery all remove the draft; outgoing snapshots remain available for inspection and eligible retries. The upgrade migration restores draft associations for existing ordinary schedules. Separate sending continues to use batch history.
 
-`POST /api/mail/messages/sendBulk` creates separate per-recipient submissions. The shared development composer at `/dev/mail/send` offers both ordinary sending and Send separately. Separate sending deduplicates at most 100 recipients and requires empty Cc/Bcc; each child owns its content and attachment references; the source draft is removed once every child request is persisted.
+`POST /api/mail/messages/sendBulk` creates separate per-recipient submissions. `MailComposer` offers both ordinary sending and Send separately. Separate sending deduplicates at most 100 recipients and requires empty Cc/Bcc; each child owns its content and attachment references; the source draft is removed once every child request is persisted.
 
 Display grouped history using `GET /api/mail/submissions?bulkOnly=true&groupByBatch=true`. Pages (`page`, `pageSize`) and `meta.total` count complete batches. Expand the parent for recipient details; parent actions apply only to eligible children in that batch. Refresh pending results and retry only failed eligible children, preserving accepted and unknown outcomes.
 

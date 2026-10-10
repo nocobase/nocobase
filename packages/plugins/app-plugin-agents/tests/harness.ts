@@ -108,6 +108,11 @@ export interface Harness {
   readonly finished: Run[];
   /** Makes the fake context provider throw, to test failed assembly. */
   failAssembly: boolean;
+  /**
+   * The samples whose work is over, as the fake subject's `workspaces.settled` says; undefined for a subject kind that
+   * cannot say (no `workspaces` member).
+   */
+  settled: Set<string> | undefined;
   /** The working directories the fake subject has. */
   dirs: SubjectDir[];
   /** The scopes (a registered `team`) whose variables and skills the fake subject's runs get. */
@@ -299,10 +304,12 @@ export async function createHarness(
   const finished: Run[] = [];
   const harness = {
     failAssembly: false,
+    settled: undefined,
     dirs: [],
     scopes: [],
   } as {
     failAssembly: boolean;
+    settled: Set<string> | undefined;
     dirs: SubjectDir[];
     scopes: SubjectScope[];
   };
@@ -357,6 +364,15 @@ export async function createHarness(
         finished.push(run);
         return Promise.resolve();
       },
+    },
+    get workspaces() {
+      const settled = harness.settled;
+      return settled === undefined
+        ? undefined
+        : {
+            settled: (_conn: unknown, ids: readonly string[]) =>
+              Promise.resolve(new Set(ids.filter((id) => settled.has(id)))),
+          };
     },
   });
 

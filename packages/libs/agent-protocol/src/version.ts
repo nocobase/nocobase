@@ -44,6 +44,13 @@ import { z } from 'zod';
  * version 7 as optional fields: a server that does not know them ignores them, and a runner that does not send them is
  * bounded by its total slots only.
  *
+ * The names of the variables a runner provides (`variables` on register and heartbeat) were added the same way, for
+ * the application to show which runners offer what a run asks for by name (`RunWorkspace.passthrough`). A runner fails
+ * a run whose passthrough names it does not provide before the agent starts; the server does not choose runners by them.
+ *
+ * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
+ * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
+ *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
  */
@@ -119,8 +126,8 @@ export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
  * (https://platform.claude.com/docs/en/about-claude/models/overview) and OpenAI's
  * (https://developers.openai.com/api/docs/models). Claude Code keeps its `opus` / `sonnet` / `haiku` aliases, which
  * follow the newest model of each family, followed by the full ids; OpenCode and Pi name a model `provider/model` so
- * providers with the same model id stay distinct; Codex takes the bare id. Last checked on 2026-10-09. Keep commonly
- * used earlier models as suggestions too; this list does not establish availability on any runner.
+ * providers with the same model id stay distinct; Codex takes the bare id. Last checked on 2026-10-09. List only ids
+ * the provider publishes; this list does not establish availability on any runner.
  */
 export const TOOL_MODEL_SUGGESTIONS: Readonly<
   Record<AgentTool, readonly string[]>
@@ -130,8 +137,6 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
     'sonnet',
     'haiku',
     'claude-opus-5-5',
-    'claude-sonnet-5-5',
-    'claude-haiku-5-5',
     'claude-sonnet-5',
     'claude-haiku-4-5',
     'claude-fable-5-1',
@@ -139,8 +144,6 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
   codex: ['gpt-6.1-sol', 'gpt-6-astra', 'gpt-6-luna'],
   opencode: [
     'anthropic/claude-opus-5-5',
-    'anthropic/claude-sonnet-5-5',
-    'anthropic/claude-haiku-5-5',
     'anthropic/claude-sonnet-5',
     'anthropic/claude-haiku-4-5',
     'anthropic/claude-fable-5-1',
@@ -150,8 +153,6 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
   ],
   pi: [
     'anthropic/claude-opus-5-5',
-    'anthropic/claude-sonnet-5-5',
-    'anthropic/claude-haiku-5-5',
     'anthropic/claude-sonnet-5',
     'anthropic/claude-haiku-4-5',
     'anthropic/claude-fable-5-1',
@@ -169,7 +170,7 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
  */
 export const TOOL_EFFORTS: Readonly<Record<AgentTool, readonly string[]>> = {
   claude: ['low', 'medium', 'high', 'xhigh', 'max'],
-  codex: ['minimal', 'low', 'medium', 'high', 'xhigh'],
+  codex: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
   opencode: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'],
   pi: ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'],
 };

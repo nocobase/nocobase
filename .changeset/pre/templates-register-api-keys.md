@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-template-default': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Register `@nocobase/app-plugin-api-keys` so an application generated from either template can issue API keys out of the box.

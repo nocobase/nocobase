@@ -13,13 +13,7 @@ import { formatCommandLine, quoteForShell } from '@nocobase/cli-envelope';
 import { installerCommand } from '../lib/invocation.ts';
 import { layoutOf, releaseDir } from '../lib/layout.ts';
 import { currentNodeMajor } from '../lib/prechecks.ts';
-import { resolveTemplateVersion } from '../lib/registry.ts';
-import {
-  capitalize,
-  nodeRebuildAdvice,
-  subjectOf,
-  templateOf,
-} from '../lib/source.ts';
+import { nodeRebuildAdvice } from '../lib/source.ts';
 import { findRelease, readState } from '../lib/state.ts';
 import type { CommandDeps, CommandOutcome } from './install.ts';
 
@@ -28,11 +22,6 @@ export const STATUS_FLAGS = {
     description:
       'Installation root managed by app-installer. Defaults to the current directory.',
   }),
-  offline: Flags.boolean({
-    default: false,
-    description:
-      'Skip asking the registry for a newer version of a template installation.',
-  }),
   json: Flags.boolean({
     default: false,
     description: 'Print one JSON result on stdout.',
@@ -40,7 +29,7 @@ export const STATUS_FLAGS = {
 };
 
 export interface StatusInput {
-  flags: { dir?: string; offline: boolean; json: boolean };
+  flags: { dir?: string; json: boolean };
 }
 
 /** Bytes used by a directory tree, not following symbolic links. */
@@ -71,8 +60,6 @@ export async function status(
   const root = path.resolve(deps.cwd ?? process.cwd(), input.flags.dir ?? '.');
   const layout = layoutOf(root);
   const state = await readState(layout);
-  const subject = subjectOf(state);
-  const template = templateOf(state);
   const env = await readAppEnv(layout);
   const link = await readCurrent(layout);
 
@@ -96,7 +83,7 @@ export async function status(
   const endpoints = endpointsOf(env);
   if (endpoints.port === null) {
     deps.reporter.warn(
-      `APP_SERVER_PORT in app.env is "${env.APP_SERVER_PORT ?? ''}", which is not a port number; ${subject} cannot listen on it.`,
+      `APP_SERVER_PORT in app.env is "${env.APP_SERVER_PORT ?? ''}", which is not a port number; the application cannot listen on it.`,
     );
   }
   const url = healthUrl(env);
@@ -131,22 +118,6 @@ export async function status(
     );
   }
 
-  let latest: string | null = null;
-  if (template && !input.flags.offline) {
-    try {
-      latest = await resolveTemplateVersion(
-        state.registry,
-        template.package,
-        'latest',
-        deps.fetchImpl,
-      );
-    } catch {
-      deps.reporter.warn(
-        `Could not ask ${state.registry} for the latest version.`,
-      );
-    }
-  }
-
   return {
     status: 'success',
     result: {
@@ -173,23 +144,15 @@ export async function status(
         matches: nodeMatches,
       },
       pending: state.pending ?? null,
-      latest,
-      updateAvailable:
-        latest === null ? null : latest !== currentRelease?.version,
     },
     summary: [
-      `${capitalize(subject)} ${state.appName} ${currentRelease?.version ?? '?'} at ${root}`,
+      `The application ${state.appName} ${currentRelease?.version ?? '?'} at ${root}`,
       `  Release   ${state.current}${currentRelease ? `, built ${currentRelease.builtAt}` : ''}`,
-      `  Source    ${template ? `the ${template.name} template` : 'deployment archives'}`,
+      '  Source    deployment archives',
       `  URL       ${endpoints.url} (listening on ${endpoints.host}:${endpoints.port ?? `invalid port "${env.APP_SERVER_PORT ?? ''}"`})`,
       `  Health    ${healthy ? 'ok' : 'not answering'} (${url})`,
       `  Process   ${processInfo ? `${processInfo.status}, pid ${processInfo.pid}, ${processInfo.restarts} restarts` : 'not registered with pm2'} (${state.name})`,
       `  Node      machine ${nodeMajor}, release ${currentRelease?.buildTarget.nodeMajor ?? '?'}${nodeMatches ? '' : ' — mismatch'}`,
-      ...(latest === null
-        ? []
-        : [
-            `  Latest    ${latest}${latest === currentRelease?.version ? ' (installed)' : ' (update available)'}`,
-          ]),
       '  Releases',
       ...releases.map(
         (release) =>

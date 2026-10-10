@@ -2,13 +2,13 @@
 
 ## Package entries
 
-| Entry                                         | Purpose                                                                                                                     |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `@nocobase/app-plugin-mail/server`            | Server plugin, application configuration, Server service token and Provider extension contracts.                            |
-| `@nocobase/app-plugin-mail/client`            | Client plugin, `MailClient`, its application token/hook, `MailWorkspacePage`, template helpers and realtime event contract. |
-| `@nocobase/app-plugin-mail/client/components` | Curated Mail UI components and their props/state types.                                                                     |
-| `@nocobase/app-plugin-mail/realtime`          | Realtime topic and event type for consumers that only need the event contract.                                              |
-| `@nocobase/app-plugin-mail/package.json`      | Package metadata.                                                                                                           |
+| Entry                                         | Purpose                                                                                                                                         |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@nocobase/app-plugin-mail/server`            | Server plugin, application configuration, Server service token and Provider extension contracts.                                                |
+| `@nocobase/app-plugin-mail/client`            | Client plugin, `MailClient`, its application token/hook, `MailWorkspacePage`, `MailAccountsPage`, template helpers and realtime event contract. |
+| `@nocobase/app-plugin-mail/client/components` | Curated Mail UI components and their props/state types.                                                                                         |
+| `@nocobase/app-plugin-mail/realtime`          | Realtime topic and event type for consumers that only need the event contract.                                                                  |
+| `@nocobase/app-plugin-mail/package.json`      | Package metadata.                                                                                                                               |
 
 The package root is a Server alias retained for plugin registration and application configuration. Use the explicit `/server` entry in new application code. Package export maps are the public boundary; source files such as `server/tokens`, `server/types`, `client/plugin`, `client/routes`, and the internal component barrel are not public imports.
 
@@ -63,7 +63,7 @@ Output status, folder-type and Provider error category/reason types have `Known.
 
 - The default export registers the Mail Client plugin.
 - `MailWorkspacePage` and `MailWorkspacePageProps` provide the full workspace. `title` and `description` customize the heading; `templateVariables` supplies an allowlisted record context for saved template placeholders and does not associate messages with application records. `accountsHref` is an optional application-internal personal account path without a deployment prefix: the workspace resolves it with `resolveAppUrl()`, shows a connection link when no usable accounts exist, and a Mail accounts link in its header otherwise. Without it no account link is generated. `headerActions?: ReactNode` appends actions after Compose, Sync and the optional account link without replacing them.
-- `MailAccountsPage` and `MailAccountsPageProps` provide the personal connection and management page for application-owned production routes. The administrator's read-only account overview is not a replacement.
+- `MailAccountsPage` and `MailAccountsPageProps` provide the personal connection and management component for application-owned routes. The plugin registers no built-in Dev, settings or management pages or routes; applications own those pages. An application-owned administrator overview using the read-only all-user APIs is not a replacement for personal account connection.
 - `MailClient` and `mailClientToken` expose the typed client data layer. Resolve the app-owned instance with `useMailClient()` in React or `app.services.resolve(mailClientToken)` elsewhere; do not construct a separate `MailClient` for normal UI integration.
 - `useMailUnreadCount(): MailUnreadCountState` exposes the current user's count, loading state and latest request error through the host Mail/realtime services. Until the first successful response, `unreadCount` is `undefined`, not zero; refresh failures retain the last successful count. It shares the navigation icon's local/realtime/reconnect/focus/polling refresh logic and instance-local debounce/serialization. Mount in a session-owned scope that remounts on user changes; there is no shared global cache or automatic session observer. See [custom unread menus](client-integration.md#unread-counts-on-custom-menus). Low-level event/subscription implementation files remain private.
 - `mailErrorMessage(cause, fallback)` returns the text to show for a failed call: the server's `localizedMessage`, or `fallback`. Code that must react to a specific failure branches on `ApiClientError.reason` from `@nocobase/app-client` instead.

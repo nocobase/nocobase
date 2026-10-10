@@ -56,15 +56,14 @@ const zhCN: AppResource = {
   'auth.marketingTitleSecond': 'NocoBase 保障',
   'auth.marketingTitleThird': '可靠运行。',
   'auth.marketingDescription':
-    '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限、工作流与治理。',
+    '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限与治理。',
   'auth.frontend': 'AI 原生前端',
   'auth.frontendDescription': '在灵活的框架上自由构建界面。',
   'auth.foundation': 'NocoBase 基础能力',
-  'auth.foundationDescription': '可靠的数据、访问控制、工作流与治理。',
+  'auth.foundationDescription': '可靠的数据、访问控制与治理。',
   'auth.marketingFooter': '自由构建，可靠支撑。',
   'status.loading': '加载中',
   'status.loadingPage': '正在加载页面',
-  'status.loadingSettings': '正在加载设置',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
@@ -77,17 +76,6 @@ const zhCN: AppResource = {
   shell: {
     buildFreely: 'AI 自由构建。',
     reliability: '<brand>NocoBase</brand> 保障可靠。',
-  },
-  surface: {
-    backToApp: '返回应用',
-    loading: '正在加载{{title}}',
-    navigation: '{{title}}导航',
-    page: '{{title}}页面',
-  },
-  settings: {
-    title: '设置',
-    emptyTitle: '暂无可用设置',
-    emptyDescription: '没有已启用的插件提供你有权访问的设置页面。',
   },
   home: {
     title: '开始构建你的应用',

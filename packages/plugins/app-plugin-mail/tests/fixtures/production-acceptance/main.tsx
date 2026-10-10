@@ -114,7 +114,7 @@ Object.assign(window, {
   __mailProductionAcceptance: {
     production: import.meta.env.PROD,
     realMailClient: app.services.resolve(mailClientToken) instanceof MailClient,
-    devRoutes: runtime.devRoutes.length,
+    routes: runtime.routes.map((route) => route.path),
   },
 });
 window.addEventListener('pagehide', () => void app.shutdown());

@@ -25,7 +25,6 @@ const repoRoot = path.resolve(
 /** Packages carrying a `nocobase.defaultTemplateVersion` that mirrors their own version. */
 const TARGETS = [
   'packages/templates/app-template-default',
-  'packages/templates/app-template-hub',
   'packages/templates/app-template-examples',
 ];
 

@@ -19,7 +19,6 @@ import {
 
 import { createMailProviderAdapterResolver } from '../adapter-resolver.js';
 import {
-  DEFAULT_MAIL_OAUTH_RETURN_PATH,
   resolveMailOAuthReturnUrl,
   resolveMailAutomaticSyncIntervalFromMs,
   resolveMailConfig,
@@ -46,6 +45,9 @@ import {
   mailStoreToken,
 } from '../tokens.js';
 import { mailFailedPrecondition } from '../services/errors.js';
+
+// Keep this historical destination fixed: the current default no longer names a Dev page.
+const LEGACY_DEVELOPMENT_MAIL_OAUTH_RETURN_PATH = '/dev/mail/accounts';
 
 export type MailCoreProviderApplication = AppPluginApplication;
 
@@ -202,7 +204,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
     try {
       const mountedDevelopmentPath = new URL(
         resolveMailOAuthReturnUrl(
-          undefined,
+          LEGACY_DEVELOPMENT_MAIL_OAUTH_RETURN_PATH,
           origin,
           this.app.publicBasePath,
           'success',
@@ -221,7 +223,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           origin,
         ).pathname.replace(/\/+$/u, '');
         return (
-          path === DEFAULT_MAIL_OAUTH_RETURN_PATH ||
+          path === LEGACY_DEVELOPMENT_MAIL_OAUTH_RETURN_PATH ||
           path === mountedDevelopmentPath
         );
       });

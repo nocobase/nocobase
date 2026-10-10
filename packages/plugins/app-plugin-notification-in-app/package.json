@@ -38,10 +38,6 @@
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
     },
-    "./client/routes": {
-      "types": "./client/routes.ts",
-      "import": "./client/routes.ts"
-    },
     "./realtime": {
       "types": "./shared/realtime.ts",
       "import": "./shared/realtime.ts"
@@ -70,10 +66,6 @@
       "./client/plugin": {
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
-      },
-      "./client/routes": {
-        "types": "./dist/client/routes.d.ts",
-        "import": "./dist/client/routes.js"
       },
       "./realtime": {
         "types": "./dist/shared/realtime.d.ts",

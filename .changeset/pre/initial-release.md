@@ -13,7 +13,6 @@
 '@nocobase/caching': patch
 '@nocobase/dev-config': patch
 '@nocobase/drive': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/snowflake': patch
 '@nocobase/logging': patch
 '@nocobase/app-cli': patch

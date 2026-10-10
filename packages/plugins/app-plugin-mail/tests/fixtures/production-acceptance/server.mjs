@@ -61,7 +61,7 @@ const capabilities = {
   aliases: false,
 };
 
-async function start(basePath, developmentReturn = false) {
+async function start(basePath, legacyDevelopmentReturn = false) {
   const config = await createTestAppConfig({
     config: {
       app: {
@@ -78,15 +78,12 @@ async function start(basePath, developmentReturn = false) {
       logging: {
         level: 'warn',
         console: { enabled: false },
-        file: { enabled: developmentReturn },
+        file: { enabled: legacyDevelopmentReturn },
       },
       mail: {
-        ...(developmentReturn
-          ? {}
-          : {
-              oauthReturnUrl:
-                '/mail/accounts?source=connect&mailAuthorization=old',
-            }),
+        oauthReturnUrl: legacyDevelopmentReturn
+          ? '/dev/mail/accounts'
+          : '/mail/accounts?source=connect&mailAuthorization=old',
         automaticSyncIntervalMs: 86400000,
         providers: { local: { type: 'acceptance-local' } },
       },
@@ -321,7 +318,7 @@ try {
   warningEvidence = {
     production: true,
     fullMailEngineStarted: true,
-    defaultReturnWarningCount: warnings.length,
+    legacyDevelopmentReturnWarningCount: warnings.length,
   };
 } finally {
   await warningApp.close();

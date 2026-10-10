@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-cli': major
 '@nocobase/app-skills': minor
-'@nocobase/app-plugin-hub': patch
 ---
 
 Tidy the `release upload` and `release deploy` commands and make `--json` output consistent across the CLI.

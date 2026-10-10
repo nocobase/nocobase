@@ -308,6 +308,7 @@ export function createAdminRoutes(
                     agent.runnerIds.includes(runner.id)),
               ).length,
         canEdit: await mayEdit(who, agent.ownerUserId),
+        owned: agent.ownerUserId === who.userId,
         canCopy: services.agents.mayInvoke(agent, who.userId),
       });
     return result;
@@ -649,13 +650,18 @@ export function createAdminRoutes(
             description:
               'Only team runners receive it; personal runners leave a run that gets it.',
           },
+          fromRunner: {
+            description:
+              'Take it from the runner: no value here; the runner that takes the run provides it (`nocobase-runner env set NAME`).',
+          },
         },
         examples: [
           'variable set agent <agent> NPM_TOKEN --value-file token.txt',
           'variable set agent <agent> DEPLOY_KEY --value-file key.txt --team-runners-only',
+          'variable set agent <agent> OPENAI_API_KEY --from-runner',
         ],
       }),
-      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a team runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. Needs the right to change the scope. ${scopeAccess}`,
+      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a team runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. With \`fromRunner\` the variable is a name only: the runner that takes the run provides its value from its own configuration (\`nocobase-runner env set NAME\` or \`--pass-env NAME\`), and a runner that does not fails the run before the agent starts. Needs the right to change the scope. ${scopeAccess}`,
       responses: {
         200: dataResponse(VariableSchema.nullable()),
         404: noScope,
@@ -673,9 +679,14 @@ export function createAdminRoutes(
         variableName,
         body.value,
         caller(context as unknown as Context<AdminEnv>).userId,
-        body.teamRunnersOnly === undefined
-          ? {}
-          : { teamRunnersOnly: body.teamRunnersOnly },
+        {
+          ...(body.teamRunnersOnly === undefined
+            ? {}
+            : { teamRunnersOnly: body.teamRunnersOnly }),
+          ...(body.fromRunner === undefined
+            ? {}
+            : { fromRunner: body.fromRunner }),
+        },
       );
       const variable = (await services.variables.list(target)).find(
         (item) => item.name === variableName,
@@ -1463,7 +1474,7 @@ export function createAdminRoutes(
         flags: { runId: { name: 'run' }, pageSize: { name: 'limit' } },
         columns: ['seq', 'at', 'type', 'tool'],
       }),
-      description: `The run's transcript as JSON pages, in order: a page holds the events after \`after\` (a \`seq\`), up to \`pageSize\`. Not a stream: to follow a run, ask again with \`after\` set to \`meta.lastSeq\`, when the run's realtime topic announces a change. ${runVisibility}`,
+      description: `The run's transcript as JSON pages, in order: a page holds the events after \`after\` (a \`seq\`), up to \`pageSize\`. Repeat \`type\` to filter raw event types before paging; omit it for all events. Keep the same types while paging. Not a stream: to follow a run, ask again with \`after\` set to \`meta.lastSeq\`, when the run's realtime topic announces a change. ${runVisibility}`,
       responses: {
         200: listResponse(RunEventItemSchema, SeqPageMetaSchema),
         404: noRun,
@@ -1473,7 +1484,7 @@ export function createAdminRoutes(
     runParam,
     apiValidator('query', RunEventsQuery),
     async (context) => {
-      const { after, pageSize, pageToken } = context.req.valid('query');
+      const { after, pageSize, pageToken, type } = context.req.valid('query');
       const from =
         pageToken === undefined
           ? (after ?? 0)
@@ -1482,6 +1493,7 @@ export function createAdminRoutes(
         context.req.valid('param').runId,
         from,
         pageSize,
+        type,
       );
       return context.json({
         data: page.events,

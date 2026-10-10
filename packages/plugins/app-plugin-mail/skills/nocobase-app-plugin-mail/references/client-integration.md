@@ -4,30 +4,17 @@ See the [public API inventory](public-api.md) for the exact package entries, exp
 
 ## Production composition
 
-Register the Mail Client plugin before rendering its UI. Use `MailWorkspacePage` from `@nocobase/app-plugin-mail/client` for the complete workspace. Public `MailAccountConnector`, `MailSignatureManager`, `MailTemplateManager`, `MailLabelManager`, `MailComposer`, and `MailWorkspaceComposer` are exported from `@nocobase/app-plugin-mail/client/components`. Inspect their installed props: they are composable components, not automatically configured routes. The `/client` entry exports the plugin, `MailClient`, and complete workspace; it does not re-export reusable components.
+Register the Mail Client plugin before rendering its UI. Use `MailWorkspacePage` from `@nocobase/app-plugin-mail/client` for the complete workspace. Public `MailAccountConnector`, `MailSignatureManager`, `MailTemplateManager`, `MailLabelManager`, `MailComposer`, and `MailWorkspaceComposer` are exported from `@nocobase/app-plugin-mail/client/components`. Inspect their installed props: they are composable components, not automatically configured routes. The `/client` entry exports the plugin, `MailClient`, `MailWorkspacePage` and the personal `MailAccountsPage`; it does not re-export the reusable component barrel.
 
 Use the application's client services and permission context. `useMailClient()` resolves the application-owned client in React; `app.services.resolve(mailClientToken)` does so elsewhere. Use the Mail translation namespace for application-owned copy that reuses Mail translation keys. Follow the target application's routing and theme conventions for new pages.
 
-The plugin contributes these current routes, relative to the public base path:
+The plugin contributes no routes. An application places `MailWorkspacePage`, `MailAccountsPage` and the reusable components in pages it declares among its own routes, with the page permissions those routes need. Pass the accounts page's path to `MailWorkspacePage` as `accountsHref` so a user without an account can reach it. Administrators read every user's accounts and logs through `GET /api/mail/settings/accounts`, `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions`.
 
-| Route                     | Purpose                                                         |
-| ------------------------- | --------------------------------------------------------------- |
-| `/dev/mail/accounts`      | Personal accounts, connection, signatures, templates and labels |
-| `/dev/mail/center`        | Personal workspace                                              |
-| `/dev/mail/send`          | Shared composer with ordinary and separate sending              |
-| `/dev/mail/logs/send`     | Personal submissions                                            |
-| `/dev/mail/logs/bulk`     | Complete batches with per-recipient results                     |
-| `/dev/mail/logs/sync`     | Personal synchronization history                                |
-| `/dev/mail/management`    | All-user message management                                     |
-| `/settings/mail/accounts` | Read-only all-user account overview                             |
-
-`/dev/mail/logs` opens its default child. The old `/dev/mail/bulk-send`, `/dev/mail/send-logs`, `/dev/mail/sync-logs`, and former send child paths redirect to the current pages. Use current paths for new links. There is no `/settings/mail/operation-logs` page; administrators read every user's logs through `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions`.
-
-Development routes are excluded from production. Adding a production workspace also requires application-owned account/settings/log links as needed. If account connection is included, configure `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL` to an application-owned production page and read [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page). The default return destination remains a development page for backward compatibility. The return page only consumes `mailAuthorization` and refreshes account state; it does not need `MailAccountConnector` unless it also starts a separate new-account flow. Do not claim that the plugin contributes a standalone production `/mail` route.
+If account connection is included, configure `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL` to the application page that renders the accounts and read [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page); the default returns to the application's root (`/`), so the application must register and configure its own account page. The return page only consumes `mailAuthorization` and refreshes account state; it does not need `MailAccountConnector` unless it also starts a separate new-account flow.
 
 ### Personal account entry and workspace actions
 
-Register an application-owned `/mail/accounts` page whose lazy loader imports the public `MailAccountsPage` from `/client`. Require authentication (`auth: 'required'`) and declare `authz: { resource: { type: 'page', id: 'mail.workspace' }, action: 'access' }` on that page and the workspace. The account APIs independently enforce permissions; a link grants no access. This is a personal connection/management page, including resuming suspended accounts, not the administrator's read-only `/settings/mail/accounts` overview.
+Register an application-owned `/mail/accounts` page whose lazy loader imports the public `MailAccountsPage` from `/client`. Require authentication (`auth: 'required'`) and declare `authz: { resource: { type: 'page', id: 'mail.workspace' }, action: 'access' }` on that page and the workspace. The account APIs independently enforce permissions; a link grants no access. This is a personal connection/management page, including resuming suspended accounts, not an application-owned administrator overview using the read-only all-user APIs.
 
 ```tsx
 <MailWorkspacePage
@@ -36,11 +23,11 @@ Register an application-owned `/mail/accounts` page whose lazy loader imports th
 />
 ```
 
-Import `resolveAppUrl` from `@nocobase/app-client` for application-owned links. `accountsHref` excludes the deployment prefix: `/mail/accounts` becomes `/main/mail/accounts` under `/main`. With no usable accounts the workspace displays Connect mail account; with accounts it retains Mail accounts in the header. If the property is omitted, neither link is invented. `headerActions` appends arbitrary React content after the built-in controls without replacing their disabled/loading behavior, and never implicitly supplies an empty-state account link. The Dev wrapper explicitly passes `/dev/mail/accounts`; the reusable workspace does not depend on development mode.
+Import `resolveAppUrl` from `@nocobase/app-client` for application-owned links. `accountsHref` excludes the deployment prefix: `/mail/accounts` becomes `/main/mail/accounts` under `/main`. With no usable accounts the workspace displays Connect mail account; with accounts it retains Mail accounts in the header. If the property is omitted, neither link is invented. `headerActions` appends arbitrary React content after the built-in controls without replacing their disabled/loading behavior, and never implicitly supplies an empty-state account link. The plugin supplies no Dev wrapper or built-in Dev, settings or management routes; the reusable workspace does not depend on development mode.
 
-Separately configure `mail.oauthReturnUrl: /mail/accounts` so OAuth success and failure return to the registered production page. This server configuration is independent of the component property; the return page consumes the authorization result and reloads accounts. Registering a path only in Dev routes or passing a link does not put that page in a production build.
+Separately configure `mail.oauthReturnUrl: /mail/accounts` so OAuth success and failure return to the registered production page. This server configuration is independent of the component property; the return page consumes the authorization result and reloads accounts. Passing a link does not register a route; include the application-owned page in the production client.
 
-A production startup warning flags the known development-only return destination without changing it or creating a route. It is an observability reminder, not proof that a custom route exists. Keep the return path free of the deployment prefix, register the page in production with the authentication/permission contract above, and verify both success and failure flows; the existing `MailAccountsPage` already handles those result parameters.
+A production startup warning flags only the legacy `/dev/mail/accounts` return destination, including prefixed and absolute URL forms, without changing it or creating a route. The current root (`/`) default does not trigger this warning. It is an observability reminder, not proof that a custom route exists. Keep the return path free of the deployment prefix, register the page in production with the authentication/permission contract above, and verify both success and failure flows; the existing `MailAccountsPage` already handles those result parameters.
 
 ## Business records and templates
 

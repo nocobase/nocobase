@@ -1,11 +1,11 @@
 ---
 title: 'Manual: standalone'
-description: Run the application on a server without a Hub, using app-installer, Docker or Node.js.
+description: Run the application on a server using app-installer, Docker or Node.js.
 ---
 
 # Manual: standalone
 
-This page describes the three ways to run an application without a Hub. It applies to the open-source edition and to deployments without a Professional license. app-installer is the recommended method: it installs the archive on the server, runs it under pm2, and performs upgrades and rollbacks. For an AI Agent, use the prompts in [Deploy with an AI Agent](./with-agent#deploy-to-a-server-with-app-installer).
+This page describes the three ways to run an application on a server. app-installer is the recommended method: it installs the archive on the server, runs it under pm2, and performs upgrades and rollbacks. For an AI Agent, use the prompts in [Deploy with an AI Agent](./with-agent#deploy-to-a-server-with-app-installer).
 
 ## Build the archive
 

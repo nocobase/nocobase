@@ -26,7 +26,7 @@ An agent's runs on one subject: a compact side-column log with a live timer, an 
 - Installs to: `client/components/agent-run-history.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/agent-run-history-demo` (`pnpm exec shadcn view @nocobase/agent-run-history-demo`)
-- After installing: Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default.
+- After installing: Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default. Pass complete events to RunTranscript; scope preferenceKey by application and user, and translate filterLabels.
 
 ### agent-composer
 

@@ -52,7 +52,7 @@ jobs:
           test -f packages/templates/app-template-default/storage/exports/dist.tar.gz
 
       - name: Install, upgrade and roll back the archive
-        run: node scripts/smoke-app-installer.mjs --source archive --archive packages/templates/app-template-default/storage/exports/dist.tar.gz --root "$APP_ROOT" --port 13000 -- node packages/tools/app-installer/bin/run.js
+        run: node scripts/smoke-app-installer.mjs --archive packages/templates/app-template-default/storage/exports/dist.tar.gz --root "$APP_ROOT" --port 13000 -- node packages/tools/app-installer/bin/run.js
 
       - name: Show logs
         if: failure()
