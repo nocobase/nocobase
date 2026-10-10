@@ -1,4 +1,3 @@
-// db-test-portability: sqlite-only — exercises installer backups of SQLite files
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { create } from 'tar';
