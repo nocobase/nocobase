@@ -135,13 +135,19 @@ export const InvitationTokenInput: z.ZodObject<
 > = z.strictObject({ token: nonEmpty });
 
 export const AcceptInvitationInput: z.ZodObject<
-  { token: z.ZodString; name: z.ZodString; password: z.ZodString },
+  {
+    token: z.ZodString;
+    name: z.ZodString;
+    password: z.ZodString;
+    emailVerificationToken: z.ZodOptional<z.ZodString>;
+  },
   z.core.$strict
 > = z.strictObject({
   token: nonEmpty,
   name: nonEmpty,
   // Existing accounts authenticate through their session; account creation still validates password strength.
   password: z.string(),
+  emailVerificationToken: z.string().min(1).max(128).optional(),
 });
 
 export const PreferenceParams: z.ZodObject<
@@ -292,7 +298,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Returned only with global user create and assign-role permissions. Resends additionally require the original inviter and empty plugin data. Never returned to email-only inviters, even on delivery failure.',
+          'Shareable invitation link, returned regardless of email delivery. New accounts additionally require proof sent only to the invited mailbox. Resends require the original inviter and empty plugin data.',
       }),
     }),
     z.object({
@@ -340,3 +346,8 @@ export const UserPreferenceSchema: z.ZodType<{ value: unknown }> = z.object({
 export const InvitationsMeta: z.ZodType<{ total: number }> = z.object({
   total: z.number().int(),
 });
+
+export const InvitationVerificationResultSchema: z.ZodObject<
+  { emailSent: z.ZodBoolean },
+  z.core.$strip
+> = z.object({ emailSent: z.boolean() });

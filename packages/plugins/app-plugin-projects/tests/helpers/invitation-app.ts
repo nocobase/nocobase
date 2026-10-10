@@ -83,7 +83,13 @@ class ProjectAccessProvider extends ServiceProvider<AppPluginApplication> {
       permissionsOf: async (identity) => {
         const snapshot = await authz.for(identity).snapshot();
         return permissionsOf(
-          snapshot.unrestricted ? 'admin' : 'member',
+          snapshot.unrestricted ||
+            (await authz.for(identity).can({
+              resource: { type: 'settings', id: 'pm.members' },
+              action: 'invite',
+            }))
+            ? 'admin'
+            : 'member',
           identity.principal.id,
         );
       },

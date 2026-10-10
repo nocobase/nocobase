@@ -51,6 +51,7 @@ import {
   InvitationParams,
   ResendInvitationQuery,
   InvitationTokenInput,
+  InvitationVerificationResultSchema,
   InviteUsersInput,
   PreferenceInput,
   PreferenceParams,
@@ -162,7 +163,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         const { emails, roleScopes } = context.req.valid('json');
         if (roleScopes) await requireUserAction(context, '*', 'assign-role');
         const invitedBy = context.get('authz').identity.principal.id;
-        const canReturnLink = await canCreateUser(context);
         const results = await users.invite({
           emails,
           invitedBy,
@@ -174,9 +174,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         });
         return context.json(
           {
-            data: results.map((result) =>
-              canReturnLink ? result : { ...result, inviteUrl: undefined },
-            ),
+            data: results,
           },
           201,
         );
@@ -220,17 +218,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           invitation.invitedBy.id ===
           context.get('authz').identity.principal.id;
         // Plugin-owned credentials must be retrieved through their domain's authorization checks.
-        const canReturnLink =
-          own &&
-          Object.keys(invitation.data).length === 0 &&
-          (await canCreateUser(context));
+        const canReturnLink = own && Object.keys(invitation.data).length === 0;
         if (!canReturnLink && !sendEmail)
           throw new ApiError({
             status: 'PERMISSION_DENIED',
             domain: 'users',
             reason: 'INVITATION_LINK_FORBIDDEN',
             message:
-              'Retrieving a registration link requires global user creation and role assignment permissions, and the original inviter in the originating application.',
+              'Only the original inviter can retrieve a link through the originating application.',
           });
         if (own && Object.keys(invitation.roleScopes).length > 0)
           await requireUserAction(context, '*', 'assign-role');
@@ -629,6 +624,35 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         }),
     );
     invitations.post(
+      '/verifyEmail',
+      describeRoute({
+        tags,
+        summary: 'Send an invitation email verification link',
+        operationId: 'usersVerifyInvitationEmail',
+        ...cliRoute(false),
+        description:
+          'Public: requires a valid invitation token. Sends a separate proof only to the invited mailbox, at most once per minute. Never returns the proof or changes the shareable link.',
+        security: [],
+        responses: {
+          200: dataResponse(InvitationVerificationResultSchema),
+          400: closedInvitation,
+          429: apiErrorResponse(
+            429,
+            'Wait one minute before requesting another verification email.',
+          ),
+          500: apiErrorResponse(500),
+        },
+      }),
+      apiValidator('json', InvitationTokenInput),
+      async (context) =>
+        context.json({
+          data: await users.verifyInvitationEmail(
+            context.req.valid('json').token,
+            new URL(context.req.url).origin,
+          ),
+        }),
+    );
+    invitations.post(
       '/accept',
       authentication.optional(),
       describeRoute({
@@ -638,13 +662,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         // The sign-up page's: accepting creates the account from the invitation link.
         ...cliRoute(false),
         description:
-          'The token authorizes only this invitation. Creates the account with `name` and `password`; an existing account must be signed in as the invited user.',
+          'The token authorizes only this invitation. Creating an account requires `emailVerificationToken` from the invited mailbox as well as `name` and `password`; an existing account must be signed in as the invited user.',
         security: [],
         responses: {
           200: dataResponse(AcceptedInvitationSchema),
           400: apiErrorResponse(
             400,
-            'The invitation is unknown or closed, the account input is invalid, or the invited account must sign in (`INVITATION_SIGN_IN_REQUIRED`).',
+            'The invitation is unknown or closed, the account input is invalid, mailbox verification is required (`INVITATION_EMAIL_VERIFICATION_REQUIRED`), or the invited account must sign in (`INVITATION_SIGN_IN_REQUIRED`).',
           ),
           ...apiErrorResponses,
           409: apiErrorResponse(
@@ -810,7 +834,10 @@ function toUsersApiError(error: unknown): ApiError | undefined {
     error instanceof UserRoleScopeError
   )
     return new ApiError({
-      status: statusOf(error.status),
+      status:
+        error.code === 'INVITATION_VERIFICATION_RATE_LIMITED'
+          ? 'RESOURCE_EXHAUSTED'
+          : statusOf(error.status),
       reason: error.code,
       domain: 'users',
       message: error.message,
@@ -920,18 +947,6 @@ function allowed(
     );
     await next();
   });
-}
-
-/** A registration link lets its holder choose the invited account's password, just like creating a user. */
-async function canCreateUser(context: {
-  get(key: 'authz'): AuthorizationEnv['Variables']['authz'];
-}): Promise<boolean> {
-  const authz = context.get('authz');
-  const resource = { type: 'user', id: '*' };
-  return (
-    (await authz.can({ resource, action: 'create' })) &&
-    (await authz.can({ resource, action: 'assign-role' }))
-  );
 }
 
 async function requireUserAction(

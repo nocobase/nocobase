@@ -158,7 +158,7 @@ async function main() {
   }
 
   // The same composition as the application's `server/embedded.ts`, with the runtime definition swapped for the
-  // extended one. A standalone proxy, such as the Hub's, forwards outside `/api` and does not change the document.
+  // extended one. A standalone proxy forwards outside `/api` and does not change the document.
   const standalone = defineStandaloneServer({
     rootDir: appDir,
     appRuntime: definition,
@@ -176,8 +176,6 @@ async function main() {
       connections: request.connections ?? ['main'],
       config: {
         auth: { secret: process.env.AUTH_SECRET },
-        // The Hub plugin would otherwise start its host; the document does not depend on it.
-        hub: { host: { enabled: false } },
         // Keep the report readable: startup information is noise here, and log files would outlive the run.
         logging: { level: 'error', file: { enabled: false } },
         ...request.config,

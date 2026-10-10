@@ -24,10 +24,8 @@ import {
 import {
   DEFAULT_REGISTRY,
   downloadTemplate,
-  resolveTemplateKind,
   resolveTemplateSource,
 } from './lib/template.ts';
-import { buildHubEnvFile, readEnvExample } from './lib/hub.ts';
 import { buildNpmrcFile } from './lib/npmrc.ts';
 import {
   FAILURE_CODES,
@@ -193,17 +191,9 @@ async function run(
   const template = await downloadTemplate({ registry, source });
   state.stage = 'scaffold';
   try {
-    const kind = resolveTemplateKind(input.flags.template, {
-      name: template.name,
-      nocobase: { templateKind: template.kind },
-    });
     const extraFiles: Record<string, string> = {
       '.npmrc': buildNpmrcFile({ registry }),
     };
-    if (kind === 'hub')
-      extraFiles['.env'] = buildHubEnvFile({
-        example: await readEnvExample(template.directory),
-      });
     await scaffoldFromTemplate({
       name,
       targetDirectory,
@@ -215,19 +205,11 @@ async function run(
     // Creation stops at a project that can be configured, not at one that can run. Which database an application uses
     // is decided by the driver it depends on, and configuring it is `config init`'s job — so the next steps name it
     // rather than this command writing a configuration nobody asked for.
-    state.nextCommands =
-      kind === 'hub'
-        ? [
-            'pnpm nocobase config init',
-            'pnpm nocobase config check',
-            'pnpm build',
-            'pnpm start',
-          ]
-        : [
-            'pnpm nocobase config init',
-            'pnpm nocobase config check',
-            'pnpm dev',
-          ];
+    state.nextCommands = [
+      'pnpm nocobase config init',
+      'pnpm nocobase config check',
+      'pnpm dev',
+    ];
     state.message =
       'Configure the application with pnpm nocobase config init before starting it. That uses SQLite; for another database, install its driver and name the dialect, for example: pnpm add @nocobase/db-postgres, then pnpm nocobase config init --dialect postgres';
     progress(`Created ${name}. ${state.message}`);

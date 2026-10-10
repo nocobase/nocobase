@@ -7,7 +7,8 @@ const zhCN: UsersResource = {
     summary: '你还将加入：{{items}}。',
     separator: '、',
     action: '接受邀请',
-    validity: '打开链接设置姓名和密码即可加入，{{date}} 前有效，只能使用一次。',
+    validity:
+      '请在 15 分钟内验证邮箱并接受邀请。如果验证链接已过期，可在邀请页面重新申请验证邮件。',
     fallback: '如果链接无法打开，请复制到浏览器：',
   },
 };

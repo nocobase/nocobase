@@ -72,6 +72,7 @@ import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
 import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
+import { writeRunnerTools } from './runner-tools.ts';
 import {
   agentCwd,
   agentWorkingTrees,
@@ -580,6 +581,10 @@ export class RunWorker {
           );
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    const runnerTools =
+      deps.settings.agentTools === 'system'
+        ? []
+        : await writeRunnerTools(binDir);
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
     const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
@@ -590,6 +595,7 @@ export class RunWorker {
       tmpDir,
       pnpmStoreDir,
       pnpmImportMethod: importMethod,
+      pinPnpm: runnerTools.includes('pnpm'),
       hooksDir: deps.paths.hooksDir,
       ...(deps.settings.passEnv === undefined
         ? {}

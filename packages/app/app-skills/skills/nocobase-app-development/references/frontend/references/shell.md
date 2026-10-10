@@ -4,10 +4,9 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 
 ## 1. Behaviors to keep
 
-- The header's "Settings" entry appears only when the user can open at least one settings page, and stays visible on that page; the header reads the registered tree through `useClientApplication().runtime.settingsRouteTree`.
-- Dev pages (`defineDevRoutes()`) render inside `AppLayout` at their `/dev/...` paths, with no navigation or header entry; `client/routing/app-router.tsx` mounts them, and a production build has none to mount.
+- There is no settings area and no Settings or Inbox entry in the header: every signed-in page renders inside `AppLayout`, and settings pages are ordinary pages in the sidebar ([section 5 of `page.md`](page.md#5-settings-pages)). Do not add a second layout or a `/settings` route split to the router.
 - The account menu's language control (`client/layouts/components/language-switcher.tsx`) is a submenu with radio items and must stay inside `DropdownMenuContent`, which provides its keyboard navigation and selected state.
-- Navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page expands its ancestor groups without collapsing the others. Keep App and Settings consistent.
+- Navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page expands its ancestor groups without collapsing the others.
 - The sidebar is shadcn's `Sidebar`, composed in `client/layouts/components/app-sidebar.tsx` (provider, desktop sidebar, phone sheet, header toggle) and `navigation-menu.tsx` (the route tree as `SidebarMenu*` entries with controlled `Collapsible` sub-menus). Keep `client/components/ui/sidebar.tsx` as the shadcn CLI writes it and change the sidebar from these two files: the widths are set through the provider's `style` in spacing units (`--sidebar-width`, `--sidebar-width-icon`) so they follow the density preset; the phone sheet is rendered in `app-sidebar.tsx` with a translated title instead of the primitive's own; and the provider's Ctrl/Cmd+B shortcut is stopped by a `document` keydown listener, so the key stays with editors.
 - The desktop sidebar can collapse to icons: leaf entries then show their label in a tooltip without delay and groups open in a popover on hover or keyboard focus, keeping the filtered entries, parent-page links, nested groups and the highlight of the group holding the current page. The collapsed state is shared through `useSidebarPreference` under `nocobase:sidebar:collapsed` by every application on the same origin, while whether the phone sheet is open stays local to each layout.
 - The authorization provider clears the permission snapshot before rendering a new session; route navigation and page guards subscribe to the authorization revision, so account switches and permission changes take effect without a reload.
@@ -19,7 +18,7 @@ The icon button area in the top-right corner of the page is in `client/layouts/c
 
 | What the entry does                                     | On hover                                                                                                           | Examples                 |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Settings, Notifications  |
+| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Help, Notifications      |
 | Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Appearance, account menu |
 
 ### Navigation entries
@@ -29,7 +28,7 @@ Use `Tooltip`, `TooltipTrigger`, and `TooltipContent`, and pass the router's `Li
 ```tsx
 // client/layouts/components/header-actions.tsx
 import { useTranslation } from '@nocobase/i18n/client';
-import { CircleHelp, Settings } from 'lucide-react';
+import { CircleHelp } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import {
@@ -38,13 +37,12 @@ import {
   TooltipContent,
   TooltipProvider,
 } from '#components/ui/tooltip';
-// … (the other imports and ACTION_LINK_CLASS stay unchanged)
+// … (the other imports stay unchanged)
 
-export function HeaderActions({
-  showSettings,
-}: {
-  readonly showSettings: boolean;
-}): ReactElement {
+const ACTION_LINK_CLASS =
+  'inline-flex size-10 items-center justify-center rounded-xl border border-border/70 bg-background/60 text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+
+export function HeaderActions(): ReactElement {
   const { t } = useTranslation();
 
   return (
@@ -70,8 +68,8 @@ export function HeaderActions({
 }
 ```
 
-- Keep the link's route, access control, and button styling unchanged (reuse the file's `ACTION_LINK_CLASS`).
-- Keep the hint to a few words, such as "Settings" or "Notification center"; do not write sentences like "Click here to go to…". It also shows on keyboard focus (Base UI's Tooltip does this by default; do not turn it off).
+- Keep every header entry the same size and style (`ACTION_LINK_CLASS` above matches the Appearance and account triggers).
+- Keep the hint to a few words, such as "Help" or "Notification center"; do not write sentences like "Click here to go to…". It also shows on keyboard focus (Base UI's Tooltip does this by default; do not turn it off).
 - Translate both the tooltip and the `aria-label`; an unread count can be added to the `aria-label`.
 - Do not also write a native `title` attribute, or a second browser tooltip appears. An icon-only trigger must keep an accessible name.
 
@@ -92,4 +90,4 @@ export function HeaderActions({
 ## 3. Verify
 
 - Run the shell tests that cover what you changed: `tests/components/header-hover.test.tsx` (hover, keyboard and Escape), `navigation-menu.test.tsx`, `sidebar-permissions.test.tsx`, `sidebar-preference.test.tsx` and `language-switcher.test.tsx` under `tests/components/`, and `tests/logic/client-shell.test.tsx` and `tests/logic/user-menu-sign-out.test.tsx`.
-- Look at the App and Settings layouts in the browser, on the desktop and at 375px, with the sidebar expanded and collapsed.
+- Look at the App layout in the browser, on the desktop and at 375px, with the sidebar expanded and collapsed.

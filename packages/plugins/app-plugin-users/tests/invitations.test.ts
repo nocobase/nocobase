@@ -13,7 +13,7 @@ import {
   type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { InvitationEmail } from '../server/invitations/mail.js';
 import { hashToken } from '../server/invitations/rules.js';
@@ -80,7 +80,7 @@ describe('user invitations', () => {
           return Promise.resolve();
         },
       },
-      site: { publicBasePath: '/main', appTitle: 'Acme' },
+      site: { publicOrigin: ORIGIN, publicBasePath: '/main', appTitle: 'Acme' },
     });
     service.onInvitationAccepted((context) => {
       accepted.push(context);
@@ -90,11 +90,60 @@ describe('user invitations', () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     await testDatabase.destroy();
   });
 
   const tokenOf = (email: InvitationEmail) =>
     /\/main\/invite\/([\w-]+)/u.exec(email.text)?.[1] ?? '';
+  const proofOf = (email: InvitationEmail) =>
+    /#verification=([\w-]+)/u.exec(email.text)?.[1] ?? '';
+
+  it('uses only the configured origin for private proof emails', async () => {
+    const results = await service.invite({
+      emails: ['host@example.test'],
+      invitedBy: 'ann',
+      origin: 'https://attacker.example',
+    });
+    const token = tokenOf(mail[0]);
+    expect(mail[0].text).toContain(ORIGIN);
+    expect(mail[0].text).not.toContain('attacker.example');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 61_000);
+    await service.verifyInvitationEmail(token, 'https://attacker.example');
+    expect(mail[1].text).toContain(ORIGIN);
+    expect(mail[1].text).not.toContain('attacker.example');
+    expect(JSON.stringify(results)).not.toContain('#verification');
+  });
+
+  it('does not send private proof links without a trusted public origin', async () => {
+    const unsafe = createUserManagementService({
+      database,
+      users: userAdministration(database.connection()),
+      roleScopes: createUserRoleScopeRegistry(),
+      mailer: {
+        send: async (email) => {
+          mail.push(email);
+        },
+      },
+      site: { publicBasePath: '/main', appTitle: 'Acme' },
+    });
+    const results = await unsafe.invite({
+      emails: ['host@example.test'],
+      invitedBy: 'ann',
+      origin: 'https://attacker.example',
+    });
+    expect(results[0]).toMatchObject({
+      emailSent: false,
+      inviteUrl: expect.any(String),
+    });
+    expect(mail).toHaveLength(0);
+    const rows = await database
+      .connection()
+      .repository('userInvitations')
+      .findMany();
+    expect(rows[0].sendError).toContain('app.publicOrigin');
+  });
 
   it('sends a link to a new address and reports an existing account', async () => {
     const results = await service.invite({
@@ -166,6 +215,7 @@ describe('user invitations', () => {
     });
     const result = await service.acceptInvitation({
       token,
+      emailVerificationToken: proofOf(mail[0] as InvitationEmail),
       name: 'Nia',
       password: 'secret-password',
     });
@@ -200,6 +250,7 @@ describe('user invitations', () => {
     const leadToken = tokenOf(mail[1] as InvitationEmail);
     const created = await service.acceptInvitation({
       token: leadToken,
+      emailVerificationToken: proofOf(mail[1] as InvitationEmail),
       name: 'Nia',
       password: 'secret-password',
     });
@@ -251,6 +302,7 @@ describe('user invitations', () => {
     await expect(
       service.acceptInvitation({
         token,
+        emailVerificationToken: proofOf(mail[0] as InvitationEmail),
         name: 'Nia',
         password: 'secret-password',
       }),
@@ -274,6 +326,7 @@ describe('user invitations', () => {
     const result = await service.acceptInvitation(
       {
         token: tokenOf(mail[0] as InvitationEmail),
+        emailVerificationToken: proofOf(mail[0] as InvitationEmail),
         name: 'Someone else',
         password: 'secret-password',
       },
@@ -356,6 +409,82 @@ describe('user invitations', () => {
     await expect(
       service.resendInvitation(id, { origin: ORIGIN, sendEmail: false }),
     ).rejects.toMatchObject({ code: 'INVITATION_CLOSED' });
+  });
+
+  it('requires private mailbox proof for copied links, expires proofs, and preserves earlier delivered proofs', async () => {
+    const [result] = await service.invite({
+      emails: ['proof@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+    if (result?.outcome !== 'invited') throw new Error('Expected invitation');
+    const token = tokenOf(mail[0] as InvitationEmail);
+    const proof = proofOf(mail[0] as InvitationEmail);
+    const input = { token, name: 'Recipient', password: 'secret-password' };
+    expect(result.inviteUrl).not.toContain(proof);
+    expect(JSON.stringify(await service.lookupInvitation(token))).not.toContain(
+      proof,
+    );
+    await expect(service.acceptInvitation(input)).rejects.toMatchObject({
+      code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED',
+    });
+    await expect(
+      service.acceptInvitation({ ...input, emailVerificationToken: token }),
+    ).rejects.toMatchObject({ code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' });
+    await expect(
+      service.verifyInvitationEmail(token, ORIGIN),
+    ).rejects.toMatchObject({ code: 'INVITATION_VERIFICATION_RATE_LIMITED' });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 61_000);
+    await expect(service.verifyInvitationEmail(token, ORIGIN)).resolves.toEqual(
+      { emailSent: true },
+    );
+    expect(mail).toHaveLength(2);
+    // Requesting another email does not invalidate a proof the recipient already received.
+    await service.acceptInvitation({ ...input, emailVerificationToken: proof });
+    expect(
+      await database
+        .connection()
+        .repository('userInvitationVerifications')
+        .findMany(),
+    ).toEqual([]);
+  });
+
+  it('requires fresh mailbox proof after rotation and supports a copied link without sending invitation mail', async () => {
+    const [result] = await service.invite({
+      emails: ['rotation@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+    if (result?.outcome !== 'invited') throw new Error('Expected invitation');
+    const oldProof = proofOf(mail[0] as InvitationEmail);
+    const renewed = await service.resendInvitation(result.invitationId, {
+      origin: ORIGIN,
+      sendEmail: false,
+    });
+    if (renewed.outcome !== 'invited') throw new Error('Expected invitation');
+    const token = renewed.inviteUrl?.split('/').at(-1) ?? '';
+    const input = { token, name: 'Recipient', password: 'secret-password' };
+    await expect(
+      service.acceptInvitation({ ...input, emailVerificationToken: oldProof }),
+    ).rejects.toMatchObject({ code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' });
+    await service.verifyInvitationEmail(token, ORIGIN);
+    const proof = proofOf(mail[1] as InvitationEmail);
+    const records = await database
+      .connection()
+      .repository('userInvitationVerifications')
+      .findMany();
+    expect(JSON.stringify(records)).not.toContain(proof);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 16 * 60_000);
+    await expect(
+      service.acceptInvitation({ ...input, emailVerificationToken: proof }),
+    ).rejects.toMatchObject({ code: 'INVITATION_EMAIL_VERIFICATION_REQUIRED' });
+    await service.verifyInvitationEmail(token, ORIGIN);
+    await service.acceptInvitation({
+      ...input,
+      emailVerificationToken: proofOf(mail[2] as InvitationEmail),
+    });
   });
 
   it('refuses invalid addresses and unknown role scopes', async () => {

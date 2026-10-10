@@ -73,9 +73,18 @@ it.each([true, false])(
     );
     await user.click(
       await screen.findByRole('menuitem', {
-        name: sendEmail ? 'invitations.resend' : 'invitations.copyNewLink',
+        name: sendEmail ? 'invitations.resend' : 'invitations.generateLink',
       }),
     );
+    if (!sendEmail) {
+      expect(
+        screen.getByText('invitations.generateDescription'),
+      ).toBeInTheDocument();
+      expect(screen.queryByDisplayValue(url)).toBeNull();
+      await user.click(
+        screen.getByRole('button', { name: 'invitations.generateLink' }),
+      );
+    }
     expect(await screen.findByDisplayValue(url)).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', { name: 'invitations.copyLink' }),
@@ -132,7 +141,7 @@ it("hides copying another inviter's link while keeping email resend available", 
     await screen.findByRole('menuitem', { name: 'invitations.resend' }),
   ).toBeInTheDocument();
   expect(
-    screen.queryByRole('menuitem', { name: 'invitations.copyNewLink' }),
+    screen.queryByRole('menuitem', { name: 'invitations.generateLink' }),
   ).toBeNull();
 });
 
@@ -174,7 +183,7 @@ it('reports failed delivery without offering a missing link for another inviter'
 });
 
 it.each(['create', 'assign-role'])(
-  'hides copy when the inviter lacks user %s permission but keeps email resend',
+  'allows copying without unrelated global user %s permission',
   async (denied) => {
     vi.mocked(useCan).mockImplementation((check) => ({
       can: check !== 'unrestricted' && check?.action !== denied,
@@ -199,7 +208,7 @@ it.each(['create', 'assign-role'])(
       await screen.findByRole('menuitem', { name: 'invitations.resend' }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('menuitem', { name: 'invitations.copyNewLink' }),
-    ).not.toBeInTheDocument();
+      screen.queryByRole('menuitem', { name: 'invitations.generateLink' }),
+    ).toBeInTheDocument();
   },
 );

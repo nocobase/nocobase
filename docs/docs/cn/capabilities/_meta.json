@@ -17,6 +17,17 @@
     "collapsed": true
   },
   {
+    "type": "dir",
+    "collapsed": true,
+    "name": "workflow",
+    "label": "工作流"
+  },
+  {
+    "type": "file",
+    "name": "approval",
+    "label": "审批"
+  },
+  {
     "type": "file",
     "name": "scheduler",
     "label": "定时任务"
@@ -51,12 +62,6 @@
     "type": "file",
     "name": "theme",
     "label": "主题"
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
-    "name": "ai-employee",
-    "label": "AI 员工"
   },
   {
     "type": "dir",

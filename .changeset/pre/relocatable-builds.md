@@ -3,11 +3,9 @@
 '@nocobase/app-server': major
 '@nocobase/app-cli': major
 '@nocobase/app-installer': minor
-'@nocobase/app-plugin-hub': minor
 '@nocobase/app-skills': minor
 '@nocobase/app-template-default': major
 '@nocobase/app-template-examples': major
-'@nocobase/app-template-hub': major
 ---
 
 A build is no longer tied to a mount path. `createAppViteConfig` builds with a relative base, and the application server rewrites the relative URLs in `index.html` — the `./assets/` chunks and every `public/` file the page references — to the path it is mounted at, so one `dist/` runs at any `APP_BASE_PATH`. The development server still needs an absolute base and refuses to start without `APP_BASE_PATH`, which `pnpm dev` always passes; `DEFAULT_APP_BASE_PATH` in `@nocobase/app-server/support` is the `/main` it falls back to. In proxy mode, `createDevClientConfigPlugin` from `@nocobase/app-cli/dev/proxy` renders the remote application's client configuration into the local page, and says which status or redirect it met when the remote does not serve one.

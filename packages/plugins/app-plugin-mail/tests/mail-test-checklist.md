@@ -29,16 +29,7 @@ Gmail、Microsoft 和 IMAP/SMTP 邮箱应分别记录结果。“邮箱服务已
 
 ## 页面范围
 
-| 页面           | 测试入口                  |
-| -------------- | ------------------------- |
-| 邮件工作台     | `/dev/mail/center`        |
-| 邮箱账号       | `/dev/mail/accounts`      |
-| 邮件管理       | `/dev/mail/management`    |
-| 批量发件       | `/dev/mail/bulk-send`     |
-| 单封发送测试页 | `/dev/mail/send`          |
-| 用户同步记录   | `/dev/mail/sync-logs`     |
-| 用户发送记录   | `/dev/mail/send-logs`     |
-| 管理员账号查看 | `/settings/mail/accounts` |
+插件不再自带页面，测试在应用自己挂载 `MailWorkspacePage`、`MailAccountsPage` 和公开组件的页面上进行，管理员视角的账号和记录通过 `/api/mail/settings/*` 接口核对。
 
 建议按“连接账号 → 同步 → 浏览与搜索 → 标签和状态 → 写信、草稿、附件、签名及模板 → 发送结果与记录 → 权限和异常恢复”的顺序执行。
 

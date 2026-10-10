@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-ai-employee': minor
 '@nocobase/app-plugin-authentication': minor
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-file': minor
@@ -7,7 +6,6 @@
 '@nocobase/app-plugin-notification': minor
 '@nocobase/app-plugin-notification-in-app': minor
 '@nocobase/app-plugin-notification-providers': minor
-'@nocobase/app-plugin-workflow': minor
 '@nocobase/app-plugin-database-example': minor
 '@nocobase/app-plugin-queue-example': minor
 '@nocobase/app-plugin-realtime-example': minor

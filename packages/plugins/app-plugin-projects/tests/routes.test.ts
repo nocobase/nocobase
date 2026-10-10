@@ -150,7 +150,7 @@ const call = (path: string, init: RequestInit & { role?: string } = {}) => {
 
 describe('the /api/projects guard', () => {
   it.each([true, false])(
-    'never gives project leads registration tokens when emailSent=%s',
+    'returns safe shareable links to project leads when emailSent=%s',
     async (emailSent) => {
       const project = await h.services.projects.create(h.viewer('alice'), {
         name: 'Owned project',
@@ -174,7 +174,12 @@ describe('the /api/projects guard', () => {
       expect(await response.json()).toEqual({
         data: {
           results: [
-            { email: 'victim@example.test', outcome: 'invited', emailSent },
+            {
+              email: 'victim@example.test',
+              outcome: 'invited',
+              emailSent,
+              inviteUrl: expect.stringContaining('/invite/'),
+            },
           ],
         },
       });
@@ -194,19 +199,24 @@ describe('the /api/projects guard', () => {
       });
       expect(resent.status).toBe(200);
       expect(await resent.json()).toEqual({
-        data: { email: 'victim@example.test', outcome: 'invited', emailSent },
+        data: {
+          email: 'victim@example.test',
+          outcome: 'invited',
+          emailSent,
+          inviteUrl: expect.stringContaining('/invite/'),
+        },
       });
       const copy = await call(`/invitations/${id}/resend?sendEmail=false`, {
         role: 'member',
         method: 'POST',
       });
-      expect(copy.status).toBe(403);
-      expect(resend).toHaveBeenCalledTimes(1);
+      expect(copy.status).toBe(200);
+      expect(resend).toHaveBeenCalledTimes(2);
     },
   );
 
   it.each(['create', 'assign-role'])(
-    'also requires global user %s permission for project administrators',
+    'does not require global user %s permission for project administrators',
     async (action) => {
       await h.services.invitations.create(
         h.viewer('alice', 'admin'),
@@ -220,8 +230,8 @@ describe('the /api/projects guard', () => {
         method: 'POST',
         headers: { 'x-deny-user-action': action },
       });
-      expect(response.status).toBe(403);
-      expect(resend).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(resend).toHaveBeenCalledTimes(1);
     },
   );
 

@@ -108,7 +108,9 @@ it('lets the new member in instead of reporting the invitation accepted', async 
   });
 
   render(
-    <MemoryRouter initialEntries={['/invite/token-1']}>
+    <MemoryRouter
+      initialEntries={['/invite/token-1#verification=private-proof']}
+    >
       <Routes>
         <Route path='/invite/:token' element={<RemountOnSignIn />} />
         <Route path='/' element={<p>home</p>} />
@@ -214,7 +216,9 @@ it('sends an existing account to sign-in with a return path to the pending invit
       : Promise.reject(error),
   );
   render(
-    <MemoryRouter initialEntries={['/invite/token-1']}>
+    <MemoryRouter
+      initialEntries={['/invite/token-1#verification=private-proof']}
+    >
       <Routes>
         <Route path='/invite/:token' element={<RemountOnSignIn />} />
       </Routes>
@@ -251,8 +255,9 @@ it('offers sign-in with an invitation return path before submitting registration
   );
   const link = await screen.findByRole('button', { name: 'accept.goToLogin' });
   expect(link.getAttribute('href')).toBe('/login?redirect=%2Finvite%2Ftoken-2');
-  expect(screen.getByLabelText('accept.name')).toHaveValue('');
-  expect(screen.getByLabelText('accept.password')).toHaveValue('');
+  expect(screen.queryByLabelText('accept.name')).toBeNull();
+  expect(screen.queryByLabelText('accept.password')).toBeNull();
+  expect(screen.getByRole('button', { name: 'accept.submit' })).toBeDisabled();
   fireEvent.click(link);
   await screen.findByText('login page');
   expect(
@@ -260,4 +265,41 @@ it('offers sign-in with an invitation return path before submitting registration
       request.path.endsWith('/lookup'),
     ),
   ).toBe(true);
+});
+
+it('sends mailbox verification for a shared link without exposing registration fields', async () => {
+  mocks.request.mockImplementation(({ path }: { path: string }) =>
+    Promise.resolve({
+      data: path.endsWith('/lookup')
+        ? {
+            email: 'nia@example.com',
+            inviterName: 'Ann',
+            summary: [],
+            expiresAt: '2099-01-01T00:00:00Z',
+          }
+        : { emailSent: true },
+    }),
+  );
+  render(
+    <MemoryRouter initialEntries={['/invite/shared-token']}>
+      <Routes>
+        <Route path='/invite/:token' element={<RemountOnSignIn />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'accept.verifyEmail' }),
+  );
+  await screen.findByText('accept.verificationSent');
+  expect(mocks.request).toHaveBeenCalledWith(
+    expect.objectContaining({
+      path: 'users/invitations/verifyEmail',
+      method: 'POST',
+      json: { token: 'shared-token' },
+    }),
+  );
+  expect(screen.queryByLabelText('accept.password')).toBeNull();
+  expect(
+    screen.getByRole('button', { name: 'accept.verifyEmail' }),
+  ).toBeDisabled();
 });

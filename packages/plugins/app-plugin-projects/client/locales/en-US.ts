@@ -6,6 +6,7 @@ import plansEnUS from './plans.en-US.js';
 const pages = {
   actions: {
     cancel: 'Cancel',
+    close: 'Close',
     save: 'Save',
   },
   activity: {
@@ -408,7 +409,9 @@ const pages = {
     projectsHint: 'Invitees join these projects as members.',
     projectsPlaceholder: 'Choose projects',
     resend: 'Send again',
-    copyNewLink: 'Copy new link',
+    generateLink: 'Generate new link',
+    generateDescription:
+      'The previous invitation link and its email verification links will stop working. No email will be sent. Copy the new link after generating it.',
     linkReady: 'New link ready',
     newLinkDescription:
       'The previous link no longer works. Copy and share the new link below.',

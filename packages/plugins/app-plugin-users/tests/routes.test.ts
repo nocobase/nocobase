@@ -34,7 +34,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
     { canCreateUsers: true, canAssignRoles: false },
     { canCreateUsers: false, canAssignRoles: false },
   ])(
-    'keeps registration credentials private without both user creation permissions: %j',
+    'returns shareable links without global user creation permissions: %j',
     async (permissions) => {
       for (const emailSent of [true, false]) {
         const service = userService();
@@ -63,6 +63,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
               outcome: result.outcome,
               invitationId: result.invitationId,
               emailSent,
+              inviteUrl: result.inviteUrl,
             },
           ],
         });
@@ -77,14 +78,15 @@ describe('@nocobase/app-plugin-users API routes', () => {
             outcome: result.outcome,
             invitationId: result.invitationId,
             emailSent,
+            inviteUrl: result.inviteUrl,
           },
         });
         const copy = await router.request(
           '/users/invitations/invitation-1/resend?sendEmail=false',
           { method: 'POST' },
         );
-        expect(copy.status).toBe(403);
-        expect(service.resendInvitation).toHaveBeenCalledTimes(1);
+        expect(copy.status).toBe(200);
+        expect(service.resendInvitation).toHaveBeenCalledTimes(2);
       }
     },
   );
@@ -666,6 +668,34 @@ describe('@nocobase/app-plugin-users API routes', () => {
     expect(service.list).not.toHaveBeenCalled();
   });
 
+  it('allows public verification requests and reports throttling without exposing proofs', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('anonymous', service),
+    );
+    const request = () =>
+      router.request('/users/invitations/verifyEmail', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: 'shared' }),
+      });
+    const response = await request();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: { emailSent: true } });
+    vi.mocked(service.verifyInvitationEmail).mockRejectedValue(
+      new UserManagementError(
+        'INVITATION_VERIFICATION_RATE_LIMITED',
+        'Wait one minute.',
+        409,
+      ),
+    );
+    const limited = await request();
+    expect(limited.status).toBe(429);
+    expect(await limited.json()).toMatchObject({
+      error: { reason: 'INVITATION_VERIFICATION_RATE_LIMITED' },
+    });
+  });
+
   it('answers 404 for a user the service cannot find', async () => {
     const service = userService();
     vi.mocked(service.enable).mockRejectedValue(
@@ -842,6 +872,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
     expect(operationIds.sort()).toEqual(
       [
         'usersAcceptInvitation',
+        'usersVerifyInvitationEmail',
         'usersCreateUser',
         'usersDeleteUser',
         'usersDisableUser',
@@ -995,6 +1026,7 @@ function userService(): UserManagementService {
       }),
     ),
     revokeInvitation: vi.fn(() => Promise.resolve()),
+    verifyInvitationEmail: vi.fn(async () => ({ emailSent: true })),
     lookupInvitation: vi.fn(() =>
       Promise.resolve({
         email: 'new@example.com',

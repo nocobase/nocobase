@@ -142,8 +142,8 @@ export interface InviteUsersInput {
 }
 
 /**
- * - `invited`: a link was generated and is returned to trusted server callers. HTTP callers need global user create and
- *   assign-role permissions to receive this registration credential, whether or not an email was sent.
+ * - `invited`: a shareable link was generated. Domain-authorized original inviters receive it regardless of
+ *   email delivery; creating an account additionally requires proof delivered only to the invited mailbox.
  * - `existingUser`: the address already has an account and nothing was sent;
  *   the caller decides what that account gets.
  */
@@ -173,6 +173,8 @@ export interface AcceptUserInvitationInput {
   readonly token: string;
   readonly name: string;
   readonly password: string;
+  /** Proof delivered only to the invited mailbox, never returned to the inviter. */
+  readonly emailVerificationToken?: string;
 }
 
 export interface AcceptedUserInvitation {
@@ -228,6 +230,11 @@ export interface UserManagementService {
   ): Promise<UserInvitationResult>;
   revokeInvitation(id: string): Promise<void>;
   lookupInvitation(token: string): Promise<PublicUserInvitation>;
+  /** Sends a short-lived mailbox proof without changing the shareable invitation link. */
+  verifyInvitationEmail(
+    token: string,
+    origin?: string,
+  ): Promise<{ readonly emailSent: boolean }>;
   /**
    * Accepts only the invitation identified by the token, in one transaction. An existing account must match
    * authenticatedUserId, which the caller obtains from the authenticated session, never from request input.
@@ -255,7 +262,9 @@ export class UserManagementError extends Error {
       | 'INVITATION_ACCEPTED'
       | 'INVITATION_REVOKED'
       | 'INVITATION_CLOSED'
-      | 'INVITATION_SIGN_IN_REQUIRED',
+      | 'INVITATION_SIGN_IN_REQUIRED'
+      | 'INVITATION_EMAIL_VERIFICATION_REQUIRED'
+      | 'INVITATION_VERIFICATION_RATE_LIMITED',
     message: string,
     readonly status: 400 | 404 | 409 = 400,
   ) {
@@ -299,7 +308,7 @@ export interface UsersConfig {
    * `nocobase` / `admin@nocobase.com` / `admin123`; set at all, it needs a password.
    */
   readonly initialAdmin?: InitialAdminConfig;
-  /** Disable when an application provides its own assignment scope, such as Hub. */
+  /** Disable when an application provides its own assignment scope. */
   readonly permissionSets?: boolean;
   readonly invitations?: {
     /** The notification Channel invitation emails go through; `system-email` by default. */

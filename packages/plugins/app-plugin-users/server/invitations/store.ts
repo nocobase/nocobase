@@ -1,5 +1,5 @@
 /** The `userInvitations` table; only this file reads or writes it. */
-import type { DatabaseConnection } from '@nocobase/db';
+import type { DatabaseConnection, Repository } from '@nocobase/db';
 
 import type { UserRoleValue } from '../tokens.js';
 
@@ -14,6 +14,7 @@ export interface InvitationRecord {
   readonly invitedById: string;
   readonly expiresAt: string;
   readonly sentAt: string | null;
+  readonly verificationSentAt: string | null;
   readonly sendError: string | null;
   readonly acceptedUserId: string | null;
   readonly acceptedAt: string | null;
@@ -65,10 +66,11 @@ export async function claimInvitation(
   connection: DatabaseConnection,
   id: string,
   userId: string,
+  tokenHash: string,
 ): Promise<boolean> {
   const now = new Date().toISOString();
   const { updatedCount } = await invitations(connection).updateMany({
-    filter: { id, status: 'pending' },
+    filter: { id, status: 'pending', tokenHash },
     values: {
       status: 'accepted',
       acceptedUserId: userId,
@@ -77,4 +79,21 @@ export async function claimInvitation(
     },
   });
   return updatedCount > 0;
+}
+
+/** Independent mailbox proofs: requesting another email must not invalidate one already delivered. */
+export interface InvitationVerificationRecord {
+  readonly id: string;
+  readonly invitationId: string;
+  readonly invitationTokenHash: string;
+  readonly tokenHash: string;
+  readonly expiresAt: string;
+}
+
+export function verifications(
+  connection: DatabaseConnection,
+): Repository<InvitationVerificationRecord> {
+  return connection.repository<InvitationVerificationRecord>(
+    'userInvitationVerifications',
+  );
 }

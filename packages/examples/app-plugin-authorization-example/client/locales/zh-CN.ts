@@ -44,7 +44,7 @@ export default {
   access: {
     title: '当前角色',
     direct: '直接授权',
-    coverage: '每个示例账号的岗位职责都直接授予。按组织继承的角色见部门示例。',
+    coverage: '每个示例账号的岗位职责都直接授予。',
   },
   rules: {
     public: '排除保密项目',

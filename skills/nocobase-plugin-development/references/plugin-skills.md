@@ -59,7 +59,7 @@ Describe only implemented public surfaces:
 - Importable Client components, hooks, factories, props, and options.
 - Server exports, original ServiceTokens, public APIs, and supported Route factories.
 - Collections, fields, relations, permissions, and configuration the App must own.
-- Pages, Settings entries, workflow nodes, Registry items, CLI commands, and other composable capabilities.
+- Pages, Settings entries, Registry items, CLI commands, and other composable capabilities.
 - Required call order, inputs, outputs, identity, idempotency, retry limits, lifecycle, capacity limits, and observable failure behavior.
 
 Do not make private modules, internal tables, deep source paths, copied implementations, general repository rules, or design history part of the App contract.

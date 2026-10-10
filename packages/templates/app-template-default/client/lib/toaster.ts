@@ -39,7 +39,7 @@ export function createToaster(manager: typeof toast = toast): Toaster {
  * Base UI announces a high-priority toast at once, but hides the toast itself from assistive technology until the
  * toast viewport is focused, and repeats its title and description in a visually hidden alert. That suits an error
  * written as plain text. Every other error keeps the default priority: one with an action, or whose title or
- * description is an element rather than text, may hold a control — Hub's technical details toggle is one — which a
+ * description is an element rather than text, may hold a control — a technical details toggle, for one — which a
  * high priority would hide and duplicate.
  */
 function isUrgent({ type, title, description, action }: ToastOptions): boolean {

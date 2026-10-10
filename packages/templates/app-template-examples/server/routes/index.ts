@@ -15,7 +15,6 @@ import { articlesRoutes } from './articles.js';
 import { numericExamplesRoutes } from './numeric-examples.js';
 import { analyticsRoutes } from './analytics.js';
 import { externalCrmRoutes } from './external-crm.js';
-export { quotationReviewTaskRoutes } from './quotation-review-tasks.js';
 import { EXAMPLES_APP_TAGS as tags } from './domain.js';
 import { ExampleGreeting } from './schemas.js';
 

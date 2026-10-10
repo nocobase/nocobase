@@ -1,6 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "配置概览" },
-  { "type": "file", "name": "llm", "label": "LLM 服务" },
-  { "type": "file", "name": "storage", "label": "附件存储" },
-  { "type": "file", "name": "mcp", "label": "MCP 服务" }
-]

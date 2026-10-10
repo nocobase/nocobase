@@ -16,11 +16,6 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Hub",
-        "link": "hub"
-      },
-      {
-        "type": "custom-link",
         "label": "Standalone",
         "link": "standalone"
       }

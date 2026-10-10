@@ -5,6 +5,7 @@ import plansZhCN from './plans.zh-CN.js';
 const pages = {
   actions: {
     cancel: '取消',
+    close: '关闭',
     save: '保存',
   },
   activity: {
@@ -392,7 +393,9 @@ const pages = {
     projectsHint: '被邀请人以成员身份加入这些项目。',
     projectsPlaceholder: '选择项目',
     resend: '重新发送',
-    copyNewLink: '复制新链接',
+    generateLink: '生成新链接',
+    generateDescription:
+      '生成后，旧邀请链接及其邮箱验证链接将立即失效。此次不会发送邮件，请在生成后复制新链接。',
     linkReady: '新链接已生成',
     newLinkDescription: '旧链接已失效，请复制并分享下方的新链接。',
     copyLink: '复制邀请链接',

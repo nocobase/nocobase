@@ -42,7 +42,7 @@ describe('resolveAuthSecret', () => {
     );
   });
 
-  /** A Hub shows this to an operator whose configuration lives in the Hub, so it carries no standalone advice. */
+  /** A host shows this to an operator whose configuration lives in the host, so it carries no standalone advice. */
   it('states what is missing without prescribing a command', () => {
     expect(() => resolveAuthSecret(undefined)).toThrow(
       ApplicationNotConfiguredError,

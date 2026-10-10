@@ -1,7 +1,7 @@
 /**
  * Invitation emails through the notification plugin, on the channel `users.invitations.emailChannel` names
  * (`system-email` by default). A missing or disabled channel, or a delivery the plugin reports as failed, is an error,
- * and only callers authorized to create global users may receive the registration link to forward.
+ * while domain-authorized inviters can still share the invitation link. New accounts require mailbox verification.
  */
 import {
   notificationServiceToken,

@@ -6,7 +6,8 @@ import {
   signIn,
   DEFAULT_ADMIN_CREDENTIALS,
 } from '@nocobase/app-plugin-authentication/testing';
-import users, { createUsersRoutes } from '@nocobase/app-plugin-users/client';
+import users from '@nocobase/app-plugin-users/client';
+import usersRoutes from '@nocobase/app-plugin-users/client/routes';
 import { createTestApp } from '@nocobase/app-testing/server';
 import { renderWithApp } from '@nocobase/app-testing/client';
 import { cleanup, screen } from '@testing-library/react';
@@ -15,7 +16,10 @@ import type { ReactElement } from 'react';
 import { Route, Routes } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { createInvitationServer } from '../helpers/invitation-app.js';
+import {
+  createInvitationServer,
+  invitationMailboxToken,
+} from '../helpers/invitation-app.js';
 import type { InvitationResult } from '../../shared/invitations.js';
 import type { ProjectDetail } from '../../shared/projects.js';
 
@@ -66,6 +70,7 @@ it('returns from real password sign-in to the pending invitation and grants its 
       data: ProjectDetail;
     };
     const tokens: string[] = [];
+    const proofs: string[] = [];
     for (const projectIds of [[], [project.id]]) {
       const response = await admin.fetch(
         '/projects/invitations',
@@ -78,13 +83,14 @@ it('returns from real password sign-in to the pending invitation and grants its 
       const token = data.results[0]?.inviteUrl?.split('/').at(-1);
       if (!token) throw new Error('Missing invitation token.');
       tokens.push(token);
+      proofs.push(
+        /#verification=([\w-]+)/u.exec(
+          server.application.container
+            .resolve(invitationMailboxToken)
+            .messages.get(EMAIL) ?? '',
+        )?.[1] ?? '',
+      );
     }
-    const accepted = await server.request(
-      '/users/invitations/accept',
-      post({ token: tokens[0], name: 'Invitee', password: PASSWORD }),
-    );
-    expect(accepted.status).toBe(200);
-
     // In-process browser transport: preserve the real Set-Cookie headers between requests, including Better Auth's fetches.
     const cookies = new Map<string, string>();
     const browserFetch: typeof fetch = async (input, init) => {
@@ -104,14 +110,32 @@ it('returns from real password sign-in to the pending invitation and grants its 
       return response;
     };
     vi.stubGlobal('fetch', browserFetch);
-    const contribution = createUsersRoutes({ mount: 'app' }).find(
-      (item) => item.parent === 'app',
-    );
-    const route = contribution?.routes.find((item) => item.name === 'invite');
+    const route = usersRoutes.routes.find((item) => item.name === 'invite');
     if (!route?.componentLoader)
       throw new Error('Missing public invitation page.');
     const { default: InvitationPage } = await route.componentLoader();
     const user = userEvent.setup();
+    await renderWithApp(
+      <Routes>
+        <Route path='/invite/:token' element={<InvitationPage />} />
+        <Route path='/' element={<p>Registered home</p>} />
+      </Routes>,
+      {
+        plugins: [authentication(), users()],
+        namespaces: { '@nocobase/i18n': { status: { loading: 'Loading' } } },
+        server: { publicBasePath: server.publicBasePath, fetch: browserFetch },
+        route: `/invite/${tokens[0]}#verification=${proofs[0]}`,
+      },
+    );
+    await user.type(await screen.findByLabelText('Name'), 'Invitee');
+    await user.type(screen.getByLabelText('Password'), PASSWORD);
+    await user.click(
+      screen.getByRole('button', { name: 'Create account and join' }),
+    );
+    await screen.findByText('Registered home');
+    cleanup();
+    cookies.clear();
+    sessionStorage.clear();
     await renderWithApp(
       <Routes>
         <Route path='/invite/:token' element={<InvitationPage />} />

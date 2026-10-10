@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Guard unrestricted-only pages in the route guard and menus

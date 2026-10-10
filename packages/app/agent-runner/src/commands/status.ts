@@ -1,4 +1,5 @@
 import { RunnerCommand } from '../lib/command.ts';
+import type { AgentTools } from '../agent/runner-tools.ts';
 import {
   readConnections,
   readSettings,
@@ -17,6 +18,7 @@ interface RunnerStatus {
   /** Limits per coding tool beside `slots`; absent when none is set. */
   toolSlots?: ToolSlots;
   agentHome: AgentHome;
+  agentTools: AgentTools;
   apps: {
     key: string;
     name: string;
@@ -63,6 +65,9 @@ export default class Status extends RunnerCommand {
     this.log(
       `Home     agents get ${settings.agentHome === 'real' ? 'the real home' : 'an isolated home'}`,
     );
+    this.log(
+      `Tools    agents get ${settings.agentTools === 'system' ? "the machine's Node.js and pnpm" : "the runner's Node.js and pnpm"}`,
+    );
     if (apps.length === 0)
       this.log(`Not registered. Run \`${runnerCommandLine('register')}\`.`);
     for (const app of apps)
@@ -84,6 +89,7 @@ export default class Status extends RunnerCommand {
         ? {}
         : { toolSlots: settings.toolSlots }),
       agentHome: settings.agentHome,
+      agentTools: settings.agentTools,
       apps,
       running: daemon !== undefined,
       ...(daemon === undefined ? {} : { pid: daemon.pid }),

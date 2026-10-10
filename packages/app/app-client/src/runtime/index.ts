@@ -28,12 +28,8 @@ import {
   type AppClientReactProviderDefinition,
   type AppClientReactProviders,
   type AppClientRegisteredReactProvider,
-  type AppClientRegisteredDevRoute,
-  type AppClientRegisteredDevRouteGroup,
   type AppClientRegisteredRoute,
   type AppClientRegisteredServiceProvider,
-  type AppClientRegisteredSetting,
-  type AppClientRegisteredSettingGroup,
   type AppClientRouteComponentOverrideDefinition,
   type AppClientRouteContribution,
   type AppClientRoutes,
@@ -89,13 +85,6 @@ export interface AppRuntimeContext {
   readonly serviceProviders: readonly AppClientRegisteredServiceProvider[];
   readonly reactProviders: readonly AppClientRegisteredReactProvider[];
   readonly routes: readonly AppClientRegisteredRoute[];
-  readonly settingsRouteTree: readonly AppClientRegisteredRoute[];
-  readonly devRouteTree: readonly AppClientRegisteredRoute[];
-  readonly settings: readonly AppClientRegisteredSetting[];
-  readonly settingGroups: readonly AppClientRegisteredSettingGroup[];
-  /** Dev pages. Empty in a production build, where every dev contribution resolved to no routes. */
-  readonly devRoutes: readonly AppClientRegisteredDevRoute[];
-  readonly devRouteGroups: readonly AppClientRegisteredDevRouteGroup[];
   readonly validate?: AppRuntimeValidator;
 }
 
@@ -175,12 +164,6 @@ export async function resolveAppRuntime(
       ...(definition.routeComponentOverrides ?? []),
       ...extensionOverrides,
     ]),
-    settingsRouteTree: contributions.settingsRouteTree,
-    devRouteTree: contributions.devRouteTree,
-    settings: contributions.settings,
-    settingGroups: contributions.settingGroups,
-    devRoutes: contributions.devRoutes,
-    devRouteGroups: contributions.devRouteGroups,
     validate: definition.validate,
   };
   if (definition.defaultConfigs) {

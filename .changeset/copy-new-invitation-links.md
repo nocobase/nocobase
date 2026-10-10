@@ -1,10 +1,11 @@
 ---
 '@nocobase/app-plugin-users': patch
+'@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-projects': patch
 '@nocobase/app-cli-client': patch
 ---
 
-Return invitation links after successful email delivery and let authorized account creators generate a fresh link without sending email. Show copy controls for newly created and resent invitations while invalidating previous links and storing only token hashes.
+Return invitation links after successful email delivery and let authorized inviters generate a fresh link without sending email. Show copy controls for newly created and resent invitations while invalidating previous links and storing only token hashes.
 
 Keep URLs complete in CLI text output so copied invitation links remain usable, including nested project invitation results displayed as expanded JSON. All commands now display structured object fields as complete, indented JSON instead of truncated text; ordinary long text remains compact and JSON-mode output is unchanged. Invitation creation also keeps the invitation ID visible for subsequent resend or revoke commands.
 
@@ -14,4 +15,6 @@ Offer a direct sign-in return path on invitation pages and show copy instruction
 
 Describe invitation authentication failures and closed invitations with their actual HTTP responses. Show invitations whose current link has not been emailed with a neutral status, including links intentionally generated without email.
 
-Require the same global user creation and role assignment permissions as direct account creation before returning registration links from either invitation API. Project leads and invitation-only users retain email invitations and resends, without credential disclosure even when delivery fails. Reject unauthorized mail-free rotation without invalidating the existing link, hide unavailable copy actions, and report delivery failures without unavailable copy instructions. Scoped project credentials remain email-only.
+Separate shareable invitation links from private mailbox proofs so ordinary Studio admins, owners, and project leads can copy without global account-creation rights. New accounts require a 15-minute proof sent only to the invited mailbox; existing accounts must authenticate. Store only hashes, limit verification email requests to once per minute per invitation, preserve unexpired proofs across email requests, and invalidate all proofs on invitation rotation or completion. Mark newly verified accounts email-verified through the trusted authentication administration API.
+
+Verification emails require configured `app.publicOrigin` and a working email channel; caller-controlled request origins cannot select a verification URL. Existing invitations need the new email verification step after upgrade. A copied link alone cannot bypass unavailable email delivery for a new account. Confirm old-link invalidation before generating a new link in member settings.

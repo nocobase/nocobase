@@ -30,7 +30,6 @@ export interface ModelReporter {
 
 export interface ModelSuggestion {
   readonly id: string;
-  readonly builtIn: boolean;
   readonly runners: readonly ModelReporter[];
   /** Union of explicitly reported efforts; absent when every reporter left them unknown. */
   readonly efforts?: readonly string[];
@@ -42,10 +41,7 @@ export function modelSuggestions(
   runners: readonly ModelSuggestionRunner[] | undefined,
 ): ModelSuggestion[] {
   const suggestions = new Map<string, ModelSuggestion>(
-    TOOL_MODEL_SUGGESTIONS[tool].map((id) => [
-      id,
-      { id, builtIn: true, runners: [] },
-    ]),
+    TOOL_MODEL_SUGGESTIONS[tool].map((id) => [id, { id, runners: [] }]),
   );
   for (const runner of runners ?? []) {
     for (const info of runner.tools) {
@@ -77,7 +73,6 @@ export function modelSuggestions(
               ];
         suggestions.set(model.id, {
           id: model.id,
-          builtIn: previous?.builtIn ?? false,
           runners: [
             ...(previous?.runners.filter((item) => item.id !== runner.id) ??
               []),

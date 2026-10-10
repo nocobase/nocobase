@@ -5,3 +5,16 @@
  * apart.
  */
 export const LIFECYCLE_ROUTES: string = 'lifecycleExample';
+
+/**
+ * The realtime topic every page of this plugin listens on. A push names the
+ * record that changed and nothing else; the page reads it back through its
+ * signed-in routes, so the topic can be public.
+ */
+export const LIFECYCLE_CHANGES_TOPIC: string = 'lifecycle-example:changes';
+
+/** What a push says: which record changed. */
+export interface LifecycleChange {
+  readonly lifecycle: string;
+  readonly recordId: string;
+}

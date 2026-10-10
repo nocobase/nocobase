@@ -12,7 +12,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 
 import { Button } from '../components/ui/button.js';
 import { Input } from '../components/ui/input.js';
@@ -29,6 +29,10 @@ function errorKey(error: unknown): string {
     if (error.reason === 'INVITATION_EXPIRED') return 'expired';
     if (error.reason === 'INVITATION_ACCEPTED') return 'accepted';
     if (error.reason === 'INVITATION_REVOKED') return 'revoked';
+    if (error.reason === 'INVITATION_EMAIL_VERIFICATION_REQUIRED')
+      return 'verificationRequired';
+    if (error.reason === 'INVITATION_VERIFICATION_RATE_LIMITED')
+      return 'verificationRateLimited';
     if (error.reason?.startsWith('PASSWORD_')) return 'password';
     if (error.reason?.endsWith('_CONFLICT')) return 'accountConflict';
   }
@@ -74,6 +78,10 @@ export default function AcceptInvitationPage(): ReactElement {
   const api = useApiClient();
   const users = useMemo(() => new UsersClient(api), [api]);
   const { token = '' } = useParams();
+  const location = useLocation();
+  const emailVerificationToken =
+    new URLSearchParams(location.hash.slice(1)).get('verification') ??
+    undefined;
   const navigate = useNavigate();
   const { session } = useAuthentication();
   const [lookup, setLookup] = useState<Lookup>({ state: 'loading' });
@@ -136,6 +144,7 @@ export default function AcceptInvitationPage(): ReactElement {
     body = (
       <AcceptForm
         token={token}
+        emailVerificationToken={emailVerificationToken}
         users={users}
         invitation={lookup.invitation}
         onJoined={() => {
@@ -207,11 +216,13 @@ function LoginLink({ redirect }: { readonly redirect?: string }): ReactElement {
 
 function AcceptForm({
   token,
+  emailVerificationToken,
   users,
   invitation,
   onJoined,
 }: {
   readonly token: string;
+  readonly emailVerificationToken?: string;
   readonly users: UsersClient;
   readonly invitation: PublicUserInvitation;
   /** The account was created and is signing in. */
@@ -225,6 +236,14 @@ function AcceptForm({
   const [password, setPassword] = useState('');
   const [problem, setProblem] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationCooling, setVerificationCooling] = useState(false);
+  useEffect(() => {
+    if (!verificationCooling) return;
+    const timer = setTimeout(() => setVerificationCooling(false), 60_000);
+    return () => clearTimeout(timer);
+  }, [verificationCooling]);
   const [done, setDone] = useState<'signedUp' | 'existing'>();
   const invitedSession =
     session?.user.email.toLowerCase() === invitation.email.toLowerCase();
@@ -280,6 +299,7 @@ function AcceptForm({
     try {
       const accepted = await users.acceptInvitation({
         token,
+        emailVerificationToken,
         name: invitedSession
           ? session?.user.name || invitation.email
           : name.trim(),
@@ -314,7 +334,7 @@ function AcceptForm({
         <Label htmlFor='invite-email'>{t('accept.email')}</Label>
         <Input id='invite-email' readOnly value={invitation.email} />
       </div>
-      {!invitedSession ? (
+      {!invitedSession && emailVerificationToken ? (
         <>
           <div className='space-y-2'>
             <Label htmlFor='invite-name'>{t('accept.name')}</Label>
@@ -340,6 +360,42 @@ function AcceptForm({
           </div>
         </>
       ) : null}
+      {!invitedSession && (!emailVerificationToken || problem) ? (
+        <div className='space-y-3'>
+          <p className='text-sm text-muted-foreground'>
+            {t('accept.verifyDescription')}
+          </p>
+          {verificationSent ? (
+            <p role='status' className='text-sm'>
+              {t('accept.verificationSent')}
+            </p>
+          ) : null}
+          <Button
+            type='button'
+            variant='outline'
+            className='w-full'
+            disabled={verifying || verificationCooling}
+            onClick={() => {
+              setVerifying(true);
+              setProblem(undefined);
+              users
+                .verifyInvitationEmail(token)
+                .then((result) => {
+                  setVerificationCooling(true);
+                  setVerificationSent(result.emailSent);
+                  if (!result.emailSent)
+                    setProblem(t('accept.errors.verificationDelivery'));
+                })
+                .catch((error: unknown) =>
+                  setProblem(t(`accept.errors.${errorKey(error)}`)),
+                )
+                .finally(() => setVerifying(false));
+            }}
+          >
+            {t(verifying ? 'accept.verificationSending' : 'accept.verifyEmail')}
+          </Button>
+        </div>
+      ) : null}
       {!session ? (
         <LoginLink redirect={`/invite/${encodeURIComponent(token)}`} />
       ) : null}
@@ -353,7 +409,12 @@ function AcceptForm({
       <Button
         className='w-full'
         type='submit'
-        disabled={saving || login.isPending || done === 'signedUp'}
+        disabled={
+          saving ||
+          login.isPending ||
+          done === 'signedUp' ||
+          (!invitedSession && !emailVerificationToken)
+        }
       >
         {saving || login.isPending ? (
           <Spinner data-icon='inline-start' aria-label={t('page.loading')} />

@@ -22,7 +22,7 @@ export interface InvitationMailer {
   send(email: InvitationEmail): Promise<void>;
 }
 
-/** Used when no channel is configured: every send fails, so the inviter gets the link to forward. */
+/** Used when no channel is configured: delivery fails; sharing a link still requires mailbox verification before account creation. */
 export const unconfiguredMailer: InvitationMailer = {
   send: () =>
     Promise.reject(new Error('No invitation email channel is configured.')),
@@ -63,7 +63,7 @@ export function buildInvitationEmail(input: {
   readonly expiresAt: Date;
   readonly idempotencyKey: string;
 }): InvitationEmail {
-  const date = input.expiresAt.toISOString().slice(0, 10);
+  const date = input.expiresAt.toISOString();
   const blocks = LANGUAGES.map((texts) => {
     const values = {
       inviter: input.inviterName,

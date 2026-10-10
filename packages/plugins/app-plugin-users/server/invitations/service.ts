@@ -5,8 +5,8 @@
  *   what that account gets.
  * - Each invitation's token authorizes only that invitation's roles and data. Other invitations for the same address
  *   need their own tokens; an existing account must also authenticate before accepting an invitation.
- * - Only the token's hash is stored. Emails are submitted after the rows commit; trusted server callers receive the generated link
- *   once. HTTP endpoints disclose this registration credential only with global user creation permissions.
+ * - Only token hashes are stored. The shareable link does not prove mailbox ownership; account creation requires
+ *   a separate proof delivered only to the invited email address after the transaction commits.
  */
 import { randomUUID } from 'node:crypto';
 
@@ -38,6 +38,7 @@ import {
   insertInvitation,
   listPending,
   updateInvitation,
+  verifications,
   type InvitationRecord,
 } from './store.js';
 
@@ -70,6 +71,7 @@ export type InvitationManager = Pick<
   | 'resendInvitation'
   | 'revokeInvitation'
   | 'lookupInvitation'
+  | 'verifyInvitationEmail'
   | 'acceptInvitation'
   | 'onInvitationAccepted'
 >;
@@ -116,6 +118,110 @@ export function createInvitationManager(
     return `${start.replace(/\/+$/u, '')}${options.site.publicBasePath.replace(/\/+$/u, '')}`;
   }
 
+  /** The public link is shareable; only the mailbox receives the separate account-creation proof. */
+  async function sendVerification(token: string): Promise<boolean> {
+    const proof = await database.transaction(async (connection) => {
+      const row = requireOpen(
+        await findInvitation(connection, { tokenHash: hashToken(token) }),
+      );
+      const now = new Date();
+      if (
+        row.verificationSentAt &&
+        now.getTime() - new Date(row.verificationSentAt).getTime() < 60_000
+      )
+        throw new UserManagementError(
+          'INVITATION_VERIFICATION_RATE_LIMITED',
+          'Wait one minute before requesting another verification email.',
+          409,
+        );
+      const { updatedCount } = await connection
+        .repository<InvitationRecord>('userInvitations')
+        .updateMany({
+          filter: (f) =>
+            f.and([
+              f.string('id').eq(row.id),
+              f.string('status').eq('pending'),
+              f.string('tokenHash').eq(row.tokenHash),
+              f.or([
+                f.date('verificationSentAt').empty(),
+                f
+                  .date('verificationSentAt')
+                  .notAfter(new Date(now.getTime() - 60_000)),
+              ]),
+            ]),
+          values: { verificationSentAt: now.toISOString() },
+        });
+      if (!updatedCount)
+        throw new UserManagementError(
+          'INVITATION_VERIFICATION_RATE_LIMITED',
+          'The invitation changed. Try again later.',
+          409,
+        );
+      const verification = mintToken();
+      const expiresAt = new Date(
+        Math.min(
+          now.getTime() + 15 * 60_000,
+          new Date(row.expiresAt).getTime(),
+        ),
+      );
+      await verifications(connection).deleteMany({
+        filter: (f) =>
+          f.and([
+            f.string('invitationId').eq(row.id),
+            f.date('expiresAt').notAfter(now),
+          ]),
+      });
+      await verifications(connection).createOne({
+        values: {
+          id: randomUUID(),
+          invitationId: row.id,
+          invitationTokenHash: row.tokenHash,
+          tokenHash: verification.hash,
+          expiresAt: expiresAt.toISOString(),
+        },
+      });
+      return { row, verification, expiresAt };
+    });
+    let error: string | null = null;
+    try {
+      // A caller-controlled Host must never choose where mailbox credentials are delivered.
+      if (!options.site.publicOrigin)
+        throw new Error(
+          'Invitation verification emails require app.publicOrigin in the application config.',
+        );
+      const base = linkBase(undefined);
+      await options.mailer.send(
+        buildInvitationEmail({
+          to: proof.row.email,
+          appTitle: options.site.appTitle,
+          inviterName: await nameOf(proof.row.invitedById),
+          summary: proof.row.summary,
+          // A fragment is not sent to the HTTP server or in the Referer header.
+          url: `${base}/invite/${token}#verification=${proof.verification.token}`,
+          expiresAt: proof.expiresAt,
+          idempotencyKey: `invitation-verification:${proof.verification.hash}`,
+        }),
+      );
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : String(cause);
+    }
+    await database
+      .connection()
+      .repository<InvitationRecord>('userInvitations')
+      .updateMany({
+        filter: {
+          id: proof.row.id,
+          status: 'pending',
+          tokenHash: proof.row.tokenHash,
+        },
+        values: {
+          sentAt: error ? null : new Date().toISOString(),
+          sendError: error ? error.slice(0, 1000) : null,
+        },
+      });
+    return error === null;
+  }
+
   /** Submits each email after the rows committed and records the outcome on the row. */
   async function deliver(
     outgoing: readonly Outgoing[],
@@ -123,36 +229,15 @@ export function createInvitationManager(
     sendEmail: boolean = true,
   ): Promise<UserInvitationResult[]> {
     const base = linkBase(origin);
-    const connection = database.connection();
     const results: UserInvitationResult[] = [];
     for (const { row, token } of outgoing) {
       const url = `${base}/invite/${token}`;
-      let error: string | null = null;
-      try {
-        if (sendEmail)
-          await options.mailer.send(
-            buildInvitationEmail({
-              to: row.email,
-              appTitle: options.site.appTitle,
-              inviterName: await nameOf(row.invitedById),
-              summary: row.summary,
-              url,
-              expiresAt: new Date(row.expiresAt),
-              idempotencyKey: `user-invitation:${hashToken(token)}`,
-            }),
-          );
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
-      }
-      await updateInvitation(connection, row.id, {
-        sentAt: sendEmail && !error ? new Date().toISOString() : null,
-        sendError: error ? error.slice(0, 1000) : null,
-      });
+      const emailSent = sendEmail ? await sendVerification(token) : false;
       results.push({
         email: row.email,
         outcome: 'invited',
         invitationId: row.id,
-        emailSent: sendEmail && !error,
+        emailSent,
         inviteUrl: url,
       });
     }
@@ -212,6 +297,7 @@ export function createInvitationManager(
               now.getTime() + INVITATION_TTL_MS,
             ).toISOString(),
             sentAt: null,
+            verificationSentAt: null,
             sendError: null,
             acceptedUserId: null,
             acceptedAt: null,
@@ -259,7 +345,16 @@ export function createInvitationManager(
         const expiresAt = new Date(
           Date.now() + INVITATION_TTL_MS,
         ).toISOString();
-        await updateInvitation(connection, id, { tokenHash: hash, expiresAt });
+        await updateInvitation(connection, id, {
+          tokenHash: hash,
+          expiresAt,
+          verificationSentAt: null,
+          sentAt: null,
+          sendError: null,
+        });
+        await verifications(connection).deleteMany({
+          filter: { invitationId: id },
+        });
         return { row: { ...row, tokenHash: hash, expiresAt }, token };
       });
       const [result] = await deliver([outgoing], input.origin, input.sendEmail);
@@ -277,7 +372,14 @@ export function createInvitationManager(
             409,
           );
         await updateInvitation(connection, id, { status: 'revoked' });
+        await verifications(connection).deleteMany({
+          filter: { invitationId: id },
+        });
       });
+    },
+
+    async verifyInvitationEmail(token) {
+      return { emailSent: await sendVerification(token) };
     },
 
     async lookupInvitation(token) {
@@ -313,21 +415,43 @@ export function createInvitationManager(
           );
         let userId = existing;
         if (!userId) {
+          const verification = input.emailVerificationToken
+            ? await verifications(connection).findOne({
+                filter: {
+                  invitationId: row.id,
+                  invitationTokenHash: row.tokenHash,
+                  tokenHash: hashToken(input.emailVerificationToken),
+                },
+              })
+            : undefined;
+          if (
+            !verification ||
+            new Date(verification.expiresAt).getTime() <= Date.now()
+          )
+            throw new UserManagementError(
+              'INVITATION_EMAIL_VERIFICATION_REQUIRED',
+              'Open the verification link sent to the invited email address before creating an account.',
+              409,
+            );
           const created = await users.withConnection(connection).create({
             name: input.name,
             email: row.email,
+            emailVerified: true,
             password: input.password,
           });
           userId = created.id;
           for (const [key, value] of Object.entries(row.roleScopes))
             await options.requireScope(key).replace(userId, value, connection);
         }
-        if (!(await claimInvitation(connection, row.id, userId)))
+        if (!(await claimInvitation(connection, row.id, userId, row.tokenHash)))
           throw new UserManagementError(
             'INVITATION_ACCEPTED',
             'This invitation has already been accepted.',
             409,
           );
+        await verifications(connection).deleteMany({
+          filter: { invitationId: row.id },
+        });
         for (const handler of handlers)
           await handler({
             connection,

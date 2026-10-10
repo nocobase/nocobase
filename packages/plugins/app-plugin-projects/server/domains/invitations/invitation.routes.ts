@@ -79,7 +79,7 @@ export function createInvitationRoutes(
     }),
     apiValidator('json', CreateInvitationsBody),
     async (context) => {
-      const canReturnLink = await canCreateUser(context, authentication);
+      const canReturnLink = await canShareLink(context, authentication);
       const results = await invitations.create(
         viewerOf(context),
         context.req.valid('json'),
@@ -118,11 +118,9 @@ export function createInvitationRoutes(
     apiValidator('query', ResendInvitationQuery),
     async (context) => {
       const sendEmail = context.req.valid('query').sendEmail !== 'false';
-      const canReturnLink = await canCreateUser(context, authentication);
+      const canReturnLink = await canShareLink(context, authentication);
       if (!sendEmail && !canReturnLink)
-        throw forbidden(
-          'Retrieving a registration link requires global user creation and role assignment permissions.',
-        );
+        throw forbidden('Scoped credentials cannot retrieve invitation links.');
       const result = await invitations.resend(
         viewerOf(context),
         context.req.valid('param').invitationId,
@@ -164,18 +162,13 @@ export function createInvitationRoutes(
   return routes;
 }
 
-/** Project invitations must not grant the ability to choose passwords for arbitrary global email identities. */
-async function canCreateUser(
+/** Scoped automation credentials remain email-only; people use the domain's invitation permissions. */
+async function canShareLink(
   context: Context<ViewerEnv>,
   authentication: Pick<Auth, 'isScopedSession'>,
 ): Promise<boolean> {
   const auth = context.get('auth');
-  if (!auth || (await authentication.isScopedSession(auth, context.req.raw)))
-    return false;
-  const authz = context.get('authz');
-  const resource = { type: 'user', id: '*' };
   return (
-    (await authz.can({ resource, action: 'create' })) &&
-    (await authz.can({ resource, action: 'assign-role' }))
+    !!auth && !(await authentication.isScopedSession(auth, context.req.raw))
   );
 }

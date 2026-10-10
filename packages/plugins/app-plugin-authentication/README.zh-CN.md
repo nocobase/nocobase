@@ -61,7 +61,7 @@ users:
 
 不配置整个 `initialAdmin` 节点时，保留默认账号 `nocobase/admin123`；显式配置时必须提供非空密码，省略用户名则使用 `nocobase`，省略邮箱则使用 `admin@nocobase.com`。用户名支持 3–30 个字母、数字、下划线或点，邮箱须为有效地址，两者存储时均转为小写。密码经哈希后写入数据库，配置值不传给 Better Auth 的运行时 options。
 
-配置只在用户表为空时生效。已有安装、重复执行 Seed 或之后修改配置，都不会重置账号或密码。root 授权 Seed 使用相同配置中的用户名定位管理员，Hub 后续的管理员初始化也使用该身份。
+配置只在用户表为空时生效。已有安装、重复执行 Seed 或之后修改配置，都不会重置账号或密码。root 授权 Seed 使用相同配置中的用户名定位管理员。
 
 ## 常用命令
 
@@ -73,3 +73,5 @@ pnpm --filter @nocobase/app-plugin-authentication build
 ```
 
 用户管理 `remove(userId, actorId)` 在事务内永久停用并隐藏账号，保留 `deletedAt`、`deletedBy` 与原身份用于历史归属，删除登录账户和会话。删除前业务资源检查与 API Key 清理由上层生命周期服务负责；不可直接把底层方法暴露为无授权接口。已删除账号不能重新启用，用户名和邮箱仍保留。
+
+受信任的服务端调用方可在独立完成邮箱所有权验证后，通过 `UserAdministrationService.create` 的 `emailVerified: true` 标记邮箱已验证。该选项默认是 false，普通 HTTP 创建用户接口不接受此字段。

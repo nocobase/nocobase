@@ -59,8 +59,8 @@ export default class PluginUpdate extends AppCommand {
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> @nocobase/app-plugin-workflow',
-    '<%= config.bin %> <%= command.id %> workflow',
+    '<%= config.bin %> <%= command.id %> @nocobase/app-plugin-scheduler',
+    '<%= config.bin %> <%= command.id %> scheduler',
     '<%= config.bin %> <%= command.id %> --dry-run',
   ];
 
@@ -69,7 +69,7 @@ export default class PluginUpdate extends AppCommand {
   } = {
     name: Args.string({
       description:
-        'Plugin to upgrade: a full @nocobase/app-plugin-* package name or a short name such as workflow. Omit to upgrade every registered plugin.',
+        'Plugin to upgrade: a full @nocobase/app-plugin-* package name or a short name such as scheduler. Omit to upgrade every registered plugin.',
       required: false,
     }),
   };

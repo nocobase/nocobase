@@ -8,7 +8,7 @@ const enUS = {
     separator: ', ',
     action: 'Accept the invitation',
     validity:
-      'Open the link to set your name and password. It works once, until {{date}}.',
+      'Verify your email and accept the invitation within 15 minutes. If this verification link expires, request a new verification email from the invitation page.',
     fallback: 'If the link does not open, copy it into your browser:',
   },
 };

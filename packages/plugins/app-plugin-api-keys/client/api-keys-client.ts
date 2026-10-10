@@ -1,5 +1,7 @@
 import type { ApiKey } from '@better-auth/api-key';
 import type { apiKeyClient } from '@better-auth/api-key/client';
+// Loads the module the declaration below augments: TypeScript only augments a module that is part of the program.
+import type {} from '@nocobase/app-plugin-authentication/client';
 
 /**
  * Better Auth's API Key client plugin, which an application adds to `plugins`

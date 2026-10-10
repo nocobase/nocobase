@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { rm, statfs } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
 import path from 'node:path';
 import { Flags } from '@oclif/core';
 import { pendingTaskCount, runAppCli } from '../lib/app-cli.ts';
@@ -34,27 +34,17 @@ import { acquireLock } from '../lib/lock.ts';
 import {
   checkPlatform,
   checkPm2,
-  checkPnpm,
   checkPortFree,
   currentNodeMajor,
 } from '../lib/prechecks.ts';
-import { resolveTemplateVersion } from '../lib/registry.ts';
 import {
   assertStorageOutsideRelease,
-  buildFromTemplate,
   checkArchiveDriver,
   unpackRelease,
-  verifyBuildTarget,
   type PreparedRelease,
 } from '../lib/release.ts';
 import { runCommand } from '../lib/run-command.ts';
-import {
-  capitalize,
-  hostsApplications,
-  resolveArchivePath,
-  subjectOf,
-  templateOf,
-} from '../lib/source.ts';
+import { resolveArchivePath } from '../lib/source.ts';
 import {
   checkPm2Ownership,
   errorLogCommandLine,
@@ -75,9 +65,6 @@ import {
 import { compareVersions } from '../lib/version.ts';
 import type { CommandDeps, CommandOutcome } from './install.ts';
 
-/** A build needs room for the sources and development dependencies (about 900 MB) plus the release and a backup. */
-const MINIMUM_FREE_BYTES = 2 * 1024 ** 3;
-
 export const UPGRADE_FLAGS = {
   dir: Flags.string({
     description:
@@ -85,11 +72,7 @@ export const UPGRADE_FLAGS = {
   }),
   archive: Flags.string({
     description:
-      'For an installation from a deployment archive: the new archive, built by `pnpm build --tar` for this machine.',
-  }),
-  to: Flags.string({
-    description:
-      'For a template installation: the version or dist-tag to upgrade to, latest by default, or the installed version with --rebuild. A build of that version already on disk is reused.',
+      'The new deployment archive, built by `pnpm build --tar` for this machine.',
   }),
   'backup-done': Flags.boolean({
     default: false,
@@ -108,16 +91,6 @@ export const UPGRADE_FLAGS = {
     description:
       'Releases to keep on disk, counting the new one; the one upgraded from is always kept so rollback stays possible.',
   }),
-  'keep-source': Flags.boolean({
-    default: false,
-    description:
-      'For a template installation: keep the build directory with the sources and development dependencies.',
-  }),
-  rebuild: Flags.boolean({
-    default: false,
-    description:
-      'For a template installation: build the target again even when a build of it is on disk, the running version included: for a machine whose Node major changed and has no newer version to upgrade to.',
-  }),
   yes: Flags.boolean({
     default: false,
     description: 'Proceed without asking for confirmation.',
@@ -132,52 +105,31 @@ export interface UpgradeInput {
   flags: {
     dir?: string;
     archive?: string;
-    to?: string;
     'backup-done': boolean;
     'health-timeout': number;
     keep: number;
-    'keep-source': boolean;
-    rebuild: boolean;
     yes: boolean;
     json: boolean;
   };
 }
 
-/**
- * The installation was interrupted by a previous operation that never finished; refuse to stack another on top. The one
- * operation that may follow an interrupted rebuild is the rebuild again, with `resumeRebuild`: it builds a fresh release
- * and switches to it, which `rollback` cannot do when the release it would return to was built for another Node.
- */
-export function assertNoPending(
-  state: InstallerState,
-  root: string,
-  resumeRebuild = false,
-): void {
+/** The installation was interrupted by a previous operation that never finished; refuse to stack another on top. */
+export function assertNoPending(state: InstallerState, root: string): void {
   if (!state.pending) return;
-  if (state.pending.rebuild && resumeRebuild) return;
   const { action, from, to, startedAt } = state.pending;
   throw new InstallerError(
     'OPERATION_INTERRUPTED',
-    `${state.pending.rebuild ? 'A rebuild of' : action === 'upgrade' ? 'An upgrade from' : 'A rollback from'} ${from}${state.pending.rebuild ? '' : ` to ${to}`}, started ${startedAt}, did not finish; ${subjectOf(state)} may be stopped or half-switched.`,
+    `${action === 'upgrade' ? 'An upgrade from' : 'A rollback from'} ${from} to ${to}, started ${startedAt}, did not finish; the application may be stopped or half-switched.`,
     {
       exitCode: EXIT_INVALID,
       suggestions: [
-        state.pending.rebuild
-          ? {
-              message:
-                'Run the rebuild again; it builds a fresh release and switches to it:',
-              run: installerCommandLine(
-                ['upgrade', '--dir', root, '--rebuild'],
-                { registry: state.registry },
-              ),
-            }
-          : {
-              message:
-                'Recover first; an interrupted upgrade is undone and an interrupted rollback is finished:',
-              run: installerCommandLine(['rollback', '--dir', root], {
-                registry: state.registry,
-              }),
-            },
+        {
+          message:
+            'Recover first; an interrupted upgrade is undone and an interrupted rollback is finished:',
+          run: installerCommandLine(['rollback', '--dir', root], {
+            registry: state.registry,
+          }),
+        },
       ],
     },
   );
@@ -203,32 +155,6 @@ export function releasesToPrune(
   return releases.filter((record) => !kept.has(record.id));
 }
 
-/** Whether a recorded release can run here: built for this platform, architecture and Node major. */
-function fitsMachine(record: ReleaseRecord): boolean {
-  try {
-    verifyBuildTarget(record.buildTarget);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** The newest build of `version` on disk that can run here, which an upgrade to that version reuses. */
-function reusableBuild(
-  state: InstallerState,
-  layout: Layout,
-  version: string,
-): ReleaseRecord | undefined {
-  return [...state.releases]
-    .filter(
-      (record) =>
-        record.version === version &&
-        existsSync(releaseDir(layout, record.id)) &&
-        fitsMachine(record),
-    )
-    .sort((a, b) => b.builtAt.localeCompare(a.builtAt))[0];
-}
-
 function recordOf(prepared: PreparedRelease): ReleaseRecord {
   return {
     id: prepared.id,
@@ -249,72 +175,28 @@ function replaceRecord(state: InstallerState, record: ReleaseRecord): void {
   ];
 }
 
-async function checkFreeSpace(root: string): Promise<void> {
-  const stats = await statfs(root);
-  const free = stats.bavail * stats.bsize;
-  if (free < MINIMUM_FREE_BYTES) {
+/** An upgrade moves to another deployment archive, which `--archive` names. */
+function requireArchive(
+  state: InstallerState,
+  root: string,
+  flags: UpgradeInput['flags'],
+): string {
+  if (flags.archive === undefined) {
     throw new InstallerError(
-      'DISK_LOW',
-      `${root} has ${Math.round(free / 1024 ** 2)} MB free; building a release needs about ${MINIMUM_FREE_BYTES / 1024 ** 3} GB.`,
+      'INVALID_USAGE',
+      `${root} upgrades from a deployment archive; pass the new one with --archive.`,
       {
         exitCode: EXIT_INVALID,
+        // No `run`: a suggestion's command runs as printed, and the archive's path is not known here.
         suggestions: [
           {
-            message:
-              'Free some space, or lower --keep to prune old releases on the next upgrade.',
+            message: `Build it for this machine in the application project, copy it to the server, then run: ${installerCommand(`upgrade --dir ${quoteForShell(root)} --archive <the copied archive>`, { registry: state.registry })}`,
           },
         ],
       },
     );
   }
-}
-
-/**
- * An upgrade takes the kind of source the install did: a template installation moves between template versions, and
- * one installed from an archive moves to another archive.
- */
-function checkUpgradeSource(
-  state: InstallerState,
-  root: string,
-  flags: UpgradeInput['flags'],
-): void {
-  const template = templateOf(state);
-  if (template && flags.archive !== undefined) {
-    throw new InstallerError(
-      'INVALID_USAGE',
-      `${root} was installed from the ${template.name} template, which upgrades to a template version with --to, not to an archive.`,
-      { exitCode: EXIT_INVALID },
-    );
-  }
-  if (!template) {
-    if (flags.archive === undefined) {
-      throw new InstallerError(
-        'INVALID_USAGE',
-        `${root} was installed from a deployment archive; pass the new one with --archive.`,
-        {
-          exitCode: EXIT_INVALID,
-          // No `run`: a suggestion's command runs as printed, and the archive's path is not known here.
-          suggestions: [
-            {
-              message: `Build it for this machine in the application project, copy it to the server, then run: ${installerCommand(`upgrade --dir ${quoteForShell(root)} --archive <the copied archive>`, { registry: state.registry })}`,
-            },
-          ],
-        },
-      );
-    }
-    const templateOnly = [
-      flags.to !== undefined && '--to',
-      flags.rebuild && '--rebuild',
-      flags['keep-source'] && '--keep-source',
-    ].filter(Boolean);
-    if (templateOnly.length > 0) {
-      throw new InstallerError(
-        'INVALID_USAGE',
-        `${templateOnly.join(', ')} apply to a template installation; ${root} upgrades from the archive given with --archive.`,
-        { exitCode: EXIT_INVALID },
-      );
-    }
-  }
+  return flags.archive;
 }
 
 /**
@@ -353,7 +235,6 @@ interface RollbackContext {
   service: ServiceOptions;
   from: ReleaseRecord;
   to: ReleaseRecord;
-  rebuild: boolean;
   pending: number;
   backup: BackupResult;
   /** Set when this upgrade put the release on disk rather than reusing one already recorded. */
@@ -373,7 +254,6 @@ interface RollbackContext {
  */
 async function rollBackUpgrade(context: RollbackContext): Promise<never> {
   const { layout, state, service, from, to, backup } = context;
-  const subject = subjectOf(state);
   const reason =
     context.cause instanceof Error
       ? context.cause.message
@@ -419,13 +299,10 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
     migrations: context.pending,
     backup: backup.relative,
     databaseRestored,
-    ...(context.rebuild ? { rebuild: true } : {}),
   });
   await writeState(layout, state);
 
-  const doing = context.rebuild
-    ? `Rebuilding ${to.version}`
-    : `Upgrading to ${to.id}`;
+  const doing = `Upgrading to ${to.id}`;
   const externalDatabaseNote =
     context.pending > 0 && !hasDatabase
       ? ` ${to.id} may already have migrated the external database; restore it from your own backup if ${from.id} misbehaves.`
@@ -448,7 +325,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
   }
   throw new InstallerError(
     'ROLLBACK_FAILED',
-    `${doing} failed (${reason}), and ${from.id} did not come back either${rollbackError instanceof Error ? ` (${rollbackError.message})` : ''}. ${capitalize(subject)} is down.`,
+    `${doing} failed (${reason}), and ${from.id} did not come back either${rollbackError instanceof Error ? ` (${rollbackError.message})` : ''}. The application is down.`,
     {
       exitCode: EXIT_ROLLBACK_FAILED,
       details: { log, backup: backup.relative, databaseRestored },
@@ -507,10 +384,11 @@ export async function upgrade(
   try {
     // Read under the lock: a run that waited on it must see what the previous one wrote.
     const state = await readState(layout);
-    assertNoPending(state, root, flags.rebuild);
-    const subject = subjectOf(state);
-    const template = templateOf(state);
-    checkUpgradeSource(state, root, flags);
+    assertNoPending(state, root);
+    const archive = resolveArchivePath(
+      deps.cwd ?? process.cwd(),
+      requireArchive(state, root, flags),
+    );
     const env = await readAppEnv(layout);
     const from = findRelease(state, state.current);
     if (!from) {
@@ -520,20 +398,6 @@ export async function upgrade(
         { exitCode: EXIT_INVALID },
       );
     }
-    if (state.pending?.rebuild) {
-      reporter.progress(
-        `Starting the rebuild of ${from.version} again, after the one that started ${state.pending.startedAt} was interrupted`,
-      );
-      const orphan = state.pending.to;
-      if (!findRelease(state, orphan)) {
-        await rm(path.dirname(releaseDir(layout, orphan)), {
-          recursive: true,
-          force: true,
-        });
-      }
-      delete state.pending;
-    }
-
     const machineMajor = currentNodeMajor();
     const nodeChanged = from.buildTarget.nodeMajor !== machineMajor;
     const noop = (warning?: string): CommandOutcome => {
@@ -548,7 +412,7 @@ export async function upgrade(
           nodeMatches: !nodeChanged,
         },
         summary: [
-          `${capitalize(subject)} is already on ${from.version} (${from.id}).`,
+          `The application is already on ${from.version} (${from.id}).`,
           ...(warning ? [`  ${warning}`] : []),
         ],
       };
@@ -585,83 +449,35 @@ export async function upgrade(
     await checkPm2(pm2);
     await checkPm2Ownership(service);
 
-    // What to switch to. A template installation names a version and builds it after the prompt, since that takes
-    // minutes; an archive has to be unpacked first, because only its manifest says which release it is.
-    let targetVersion: string;
-    let reuse: ReleaseRecord | undefined;
-    let prepared: PreparedRelease | undefined;
-    let rebuildCurrent = false;
-    if (template) {
-      // `--rebuild` alone means the installed version: a newer one would be an upgrade, which builds for this machine anyway.
-      const requested = flags.to ?? (flags.rebuild ? from.version : 'latest');
-      targetVersion = state.releases.some(
-        (record) => record.version === requested,
-      )
-        ? requested
-        : await resolveTemplateVersion(
-            state.registry,
-            template.package,
-            requested,
-            deps.fetchImpl,
-          );
-      if (targetVersion === from.version && !flags.rebuild) {
-        return noop(
-          nodeChanged
-            ? `${from.id} was built for Node ${from.buildTarget.nodeMajor}, but this machine runs Node ${machineMajor}; build it again for this machine with \`${installerCommand(`upgrade --dir ${quoteForShell(root)} --rebuild`, { registry: state.registry })}\`.`
-            : undefined,
-        );
+    // What to switch to: an archive has to be unpacked first, because only its manifest says which release it is.
+    reporter.progress(`Unpacking ${archive}`);
+    const unpacked = await unpackRelease({ layout, archive });
+    const discard = async () => {
+      if (!unpacked.reused) {
+        await rm(path.dirname(unpacked.dir), {
+          recursive: true,
+          force: true,
+        });
       }
-      if ((compareVersions(targetVersion, from.version) ?? 0) < 0) {
-        refuseDowngrade(targetVersion);
+    };
+    try {
+      checkArchiveMatches(state, unpacked, env);
+      checkArchiveDriver(unpacked.dir, state.dialect);
+      if (unpacked.id === from.id) {
+        return noop();
       }
-      // Building the running version again, for this machine: it becomes a release of its own, switched to like any other.
-      rebuildCurrent = flags.rebuild && targetVersion === from.version;
-      reuse = flags.rebuild
-        ? undefined
-        : reusableBuild(state, layout, targetVersion);
-      if (!reuse) {
-        await checkPnpm(run);
-        await checkFreeSpace(root);
+      if ((compareVersions(unpacked.version, from.version) ?? 0) < 0) {
+        refuseDowngrade(unpacked.version);
       }
-    } else {
-      const archive = resolveArchivePath(
-        deps.cwd ?? process.cwd(),
-        flags.archive!,
-      );
-      reporter.progress(`Unpacking ${archive}`);
-      const unpacked = await unpackRelease({
-        layout,
-        archive,
-      });
-      const discard = async () => {
-        if (!unpacked.reused) {
-          await rm(path.dirname(unpacked.dir), {
-            recursive: true,
-            force: true,
-          });
-        }
-      };
-      try {
-        checkArchiveMatches(state, unpacked, env);
-        checkArchiveDriver(unpacked.dir, state.dialect);
-        if (unpacked.id === from.id) {
-          return noop();
-        }
-        if ((compareVersions(unpacked.version, from.version) ?? 0) < 0) {
-          refuseDowngrade(unpacked.version);
-        }
-      } catch (error) {
-        await discard();
-        throw error;
-      }
-      targetVersion = unpacked.version;
-      reuse = unpacked.reused ? findRelease(state, unpacked.id) : undefined;
-      prepared = reuse ? undefined : unpacked;
+    } catch (error) {
+      await discard();
+      throw error;
     }
+    const reuse = unpacked.reused ? findRelease(state, unpacked.id) : undefined;
+    const prepared: PreparedRelease | undefined = reuse ? undefined : unpacked;
 
     const inventory = readDatabaseInventory(layout, env);
     const unprotected = [...inventory.external, ...inventory.unresolved];
-    const hosts = hostsApplications(state);
     const discardPrepared = async () => {
       if (prepared) {
         await rm(path.dirname(prepared.dir), { recursive: true, force: true });
@@ -677,12 +493,8 @@ export async function upgrade(
       }
       await confirm(
         [
-          template && rebuildCurrent
-            ? `Build ${from.version} again for this machine (Node ${machineMajor}) and switch ${subject} at ${root} to the new build.`
-            : `Upgrade ${subject} at ${root} from ${from.id} to ${prepared?.id ?? reuse?.id ?? targetVersion}.`,
-          hosts
-            ? `${capitalize(subject)} and every application it hosts stop while the release switches; deployments in progress are marked failed.`
-            : `${capitalize(subject)} stops while the release switches.`,
+          `Upgrade the application at ${root} from ${from.id} to ${unpacked.id}.`,
+          'The application stops while the release switches.',
           inventory.sqlite.length > 0
             ? 'The SQLite databases and the configuration are copied to backups/ before anything is migrated.'
             : 'The configuration is copied to backups/ before anything is migrated.',
@@ -693,7 +505,7 @@ export async function upgrade(
             : []),
           ...(nodeChanged
             ? [
-                `This machine runs Node ${machineMajor}, but ${from.id} was built for Node ${from.buildTarget.nodeMajor}: it cannot be rolled back to${hosts ? `, and hosted applications must be rebuilt with --node-version ${machineMajor}` : ''}.`,
+                `This machine runs Node ${machineMajor}, but ${from.id} was built for Node ${from.buildTarget.nodeMajor}: it cannot be rolled back to.`,
               ]
             : []),
         ],
@@ -711,21 +523,10 @@ export async function upgrade(
       reporter.progress(`Reusing the ${reuse.id} release already on disk`);
       to = reuse;
     } else {
-      prepared ??= await buildFromTemplate({
-        layout,
-        template: template!,
-        version: targetVersion,
-        registry: state.registry,
-        drivers: state.drivers,
-        keepSource: flags['keep-source'],
-        reporter,
-        run,
-      });
-      to = recordOf(prepared);
+      to = recordOf(prepared!);
       newRecord = to;
     }
-    // A release built before relocatable builds, reused or just built from an older template version, runs only at
-    // the path it was built for.
+    // A release built before relocatable builds runs only at the path it was built for.
     const fixedMountPath = fixedMountPathOf(to, state);
     if (fixedMountPath !== undefined) {
       try {
@@ -774,7 +575,6 @@ export async function upgrade(
       from: from.id,
       to: to.id,
       startedAt: new Date().toISOString(),
-      ...(rebuildCurrent ? { rebuild: true } : {}),
     };
     await writeState(layout, state);
 
@@ -853,7 +653,6 @@ export async function upgrade(
         service,
         from,
         to,
-        rebuild: rebuildCurrent,
         pending,
         backup,
         newRecord,
@@ -879,7 +678,6 @@ export async function upgrade(
       outcome: 'completed',
       migrations: pending,
       backup: backup.relative,
-      ...(rebuildCurrent ? { rebuild: true } : {}),
     });
     await writeState(layout, state);
 
@@ -901,16 +699,6 @@ export async function upgrade(
       await writeState(layout, state);
     }
 
-    const notes = hosts
-      ? [
-          'Deployments that were in progress are marked failed; start them again in the Hub.',
-          ...(nodeChanged
-            ? [
-                `Rebuild hosted applications with --node-version ${machineMajor} before deploying them again.`,
-              ]
-            : []),
-        ]
-      : [];
     return {
       status: 'success',
       result: {
@@ -920,24 +708,19 @@ export async function upgrade(
         fromVersion: from.version,
         toVersion: to.version,
         upgraded: true,
-        rebuilt: rebuildCurrent,
         reused: reuse !== undefined,
         migrations: pending,
         backup: backup.relative,
         pruned: pruned.map((record) => record.id),
-        notes,
       },
       summary: [
-        rebuildCurrent
-          ? `Rebuilt ${subject} ${to.version} for Node ${machineMajor}.`
-          : `Upgraded ${subject} from ${from.version} to ${to.version}.`,
+        `Upgraded the application from ${from.version} to ${to.version}.`,
         `  Release     ${to.id}`,
         `  Migrations  ${pending}`,
         `  Backup      ${backup.relative}`,
         ...(pruned.length > 0
           ? [`  Pruned      ${pruned.map((record) => record.id).join(', ')}`]
           : []),
-        ...notes.map((note) => `  ${note}`),
       ],
     };
   } finally {

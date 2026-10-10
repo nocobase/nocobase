@@ -1,7 +1,8 @@
 # @nocobase/app-plugin-users
 
-Reusable user administration for NocoBase applications. The plugin provides a
-Settings or App page, authenticated and authorized HTTP APIs, and a role-scope
+Reusable user administration for NocoBase applications. The plugin provides
+authenticated and authorized HTTP APIs, a typed client for an application's own
+user management page, the invitation acceptance page, and a role-scope
 extension point. Authentication remains the source of user and session data;
 applications and business plugins remain responsible for roles and grants.
 
@@ -11,19 +12,15 @@ Register Authentication and Authorization before Users on both runtimes:
 
 ```ts
 // client/plugins.ts
-users({ mount: 'settings', path: '/users' });
+users();
 
 // server/plugins.ts
 users;
 ```
 
-The default route is `/settings/users`. Set `mount: 'app'` to mount the same
-owned route under the App and add its protected primary-navigation entry. The
-route and navigation use the same check, `access` on page `users`. Provide
-`componentLoader` to replace only the page implementation without changing its
-identity, path, or navigation.
+The plugin contributes no user management page: an application that manages users builds that page on `UsersClient` and declares it among its own routes. Its only client route is the public invitation page at `/invite/:token`; `inviteComponentLoader` replaces its implementation without changing its identity or path.
 
-The application must grant `access` on page `users` and the required `user`
+The application must grant the required `user`
 actions on `{ type: 'user', id: '*' }`.
 Users does not create roles or grant access by itself.
 
@@ -34,9 +31,9 @@ Users does not create roles or grant access by itself.
 - `userRoleScopeRegistryToken` lets an application plugin expose its own role
   choices and assignment implementation through `UserRoleScope`.
 - Role options may be marked non-assignable or non-removable when a scope needs
-  to display protected assignments without letting the Users page change them.
+  to display protected assignments without letting user management change them.
   A scope can also declare that authenticated-subject defaults apply separately
-  so the page does not present inherited access as a direct user role.
+  so a user management page does not present inherited access as a direct user role.
   Application-owned labels can provide an i18n key and namespace while keeping
   the plain label as a fallback.
 - Scopes backed by a shared assignment store should implement optional
@@ -55,45 +52,43 @@ a stable `409 ALREADY_EXISTS` instead of exposing a database error.
 
 ## HTTP API
 
-| Method   | Path                                          | Success                                                |
-| -------- | --------------------------------------------- | ------------------------------------------------------ |
-| `GET`    | `/api/users/options`                          | `200 { data }`                                         |
-| `GET`    | `/api/users`                                  | `200 { data: [...], meta: { page, pageSize, total } }` |
-| `POST`   | `/api/users`                                  | `201 { data }`                                         |
-| `PATCH`  | `/api/users/:userId`                          | `200 { data }`                                         |
-| `DELETE` | `/api/users/:userId?confirm=true`             | `204`                                                  |
-| `POST`   | `/api/users/:userId/disable`                  | `200 { data }`                                         |
-| `POST`   | `/api/users/:userId/enable`                   | `200 { data }`                                         |
-| `PUT`    | `/api/users/:userId/roleScopes/:scope`        | `200 { data }`                                         |
-| `POST`   | `/api/users/:userId/resetPassword`            | `204`                                                  |
-| `POST`   | `/api/users/:userId/revokeSessions`           | `204`                                                  |
-| `GET`    | `/api/users/invitations`                      | `200 { data: [...], meta: { total } }`                 |
-| `POST`   | `/api/users/invitations`                      | `201 { data: [...] }`, one result per address          |
-| `POST`   | `/api/users/invitations/:invitationId/resend` | `200 { data }`                                         |
-| `DELETE` | `/api/users/invitations/:invitationId`        | `204`, revokes a pending invitation                    |
-| `POST`   | `/api/users/invitations/lookup`               | `200 { data }`, public, `{ token }`                    |
-| `POST`   | `/api/users/invitations/accept`               | `200 { data }`, public, `{ token, name, password }`    |
+| Method   | Path                                          | Success                                                                     |
+| -------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| `GET`    | `/api/users/options`                          | `200 { data }`                                                              |
+| `GET`    | `/api/users`                                  | `200 { data: [...], meta: { page, pageSize, total } }`                      |
+| `POST`   | `/api/users`                                  | `201 { data }`                                                              |
+| `PATCH`  | `/api/users/:userId`                          | `200 { data }`                                                              |
+| `DELETE` | `/api/users/:userId?confirm=true`             | `204`                                                                       |
+| `POST`   | `/api/users/:userId/disable`                  | `200 { data }`                                                              |
+| `POST`   | `/api/users/:userId/enable`                   | `200 { data }`                                                              |
+| `PUT`    | `/api/users/:userId/roleScopes/:scope`        | `200 { data }`                                                              |
+| `POST`   | `/api/users/:userId/resetPassword`            | `204`                                                                       |
+| `POST`   | `/api/users/:userId/revokeSessions`           | `204`                                                                       |
+| `GET`    | `/api/users/invitations`                      | `200 { data: [...], meta: { total } }`                                      |
+| `POST`   | `/api/users/invitations`                      | `201 { data: [...] }`, one result per address                               |
+| `POST`   | `/api/users/invitations/:invitationId/resend` | `200 { data }`                                                              |
+| `DELETE` | `/api/users/invitations/:invitationId`        | `204`, revokes a pending invitation                                         |
+| `POST`   | `/api/users/invitations/lookup`               | `200 { data }`, public, `{ token }`                                         |
+| `POST`   | `/api/users/invitations/accept`               | `200 { data }`, public, `{ token, emailVerificationToken, name, password }` |
 
-The invitation list holds pending and expired invitations only, so it is not paged. `lookup` needs no session. `accept` accepts only the invitation identified by the token in the body. Creating an account needs no session; if the address already has an account, the caller must be signed in as that account before any invitation is consumed or membership granted. Other pending invitations for the same address remain pending and require their own tokens.
-
-Creating an invitation returns `inviteUrl` only when the caller has both global `user/create` and `user/assign-role` permissions, regardless of email delivery success. A registration link lets its holder choose the password of the invited email identity, so project invitation rights or `user/invite` alone must never disclose it. Other callers can send and resend email, receive its delivery status, and cannot rotate without email; failed delivery does not relax this boundary. The users resend endpoint returns the link only with those same global permissions, to the original inviter of an invitation with empty plugin `data`. Invitations carrying plugin `data` must use their originating plugin to retrieve a link and recheck its domain permissions; the generic users endpoint can only resend their email. Other invitation managers may resend email but never receive the link, even if delivery fails, and cannot use `sendEmail=false`. The link is returned only with the operation that generates it; list responses never expose it, and storage contains only its hash. Resend rotates the token, invalidates the previous link and renews its seven-day validity. Pass `sendEmail=false` in the resend query to generate a new link without email. The generated `user invitation create` and `user invitation resend` CLI commands return the same results; use `user invitation resend --invitation <id> --send-email false` for a link without email.
+The invitation list holds pending and expired invitations only, so it is not paged. `lookup` and `verifyEmail` need no session. New accounts must supply the invitation token and a private mailbox proof to `accept`; existing accounts must authenticate with the invited email.
 
 Each route is described, with its parameters, request and response schemas and error statuses, in the application's API document at `/api/swagger/docs` (JSON at `/api/swagger`, served to a signed-in user or a valid API key), under the `Users` tag with operation ids such as `usersDisableUser`.
 
 The list accepts `page`, `pageSize` (default 20, capped at 100), `q` (name, username or email), `status`, and `roleScope` with `role`. Every input is validated: an unknown body field or an invalid value answers `400 INVALID_ARGUMENT` with reason `INVALID_INPUT`. Failures use the standard error body; branch on `error.reason`:
 
-| Reason                                                                                                                                                                                      | Status                                    | Domain           |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------- |
-| `USER_NOT_FOUND`                                                                                                                                                                            | `404 NOT_FOUND`                           | `users`          |
-| `ROLE_SCOPE_NOT_FOUND`                                                                                                                                                                      | `404` in the path, else `400`             | `users`          |
-| `ROLE_SCOPE_REQUIRED`, `INVALID_ROLE_SCOPE_VALUE`                                                                                                                                           | `400 INVALID_ARGUMENT`                    | `users`          |
-| `SELF_DELETE_NOT_ALLOWED`, `USER_DELETION_NOT_CONFIGURED`, `PROTECTED_ROLE_ASSIGNMENT` and the reasons of an application role scope, such as Hub's `HUB_ADMIN_REQUIRED` and `USER_HAS_APPS` | `400 FAILED_PRECONDITION`                 | `users`          |
-| `INVITATION_NOT_FOUND`: no invitation by that id, or, from `lookup` and `accept`, by that token (`400` with a field violation on `token`)                                                   | `404 NOT_FOUND` or `400 INVALID_ARGUMENT` | `users`          |
-| `INVITATION_EXPIRED`, `INVITATION_ACCEPTED`, `INVITATION_REVOKED`, `INVITATION_CLOSED`, `INVITATION_SIGN_IN_REQUIRED`                                                                       | `400 FAILED_PRECONDITION`                 | `users`          |
-| `INVALID_PREFERENCE_KEY`, `INVALID_PREFERENCE_VALUE`, `TOO_MANY_PREFERENCES`                                                                                                                | `400 INVALID_ARGUMENT`                    | `users`          |
-| `LAST_ASSIGNMENT`                                                                                                                                                                           | `400 FAILED_PRECONDITION`                 | `authorization`  |
-| `USER_EMAIL_CONFLICT`, `USER_USERNAME_CONFLICT`, `USER_IDENTITY_CONFLICT`                                                                                                                   | `409 ALREADY_EXISTS`                      | `authentication` |
-| `PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`                                                                                                                                                   | `400 INVALID_ARGUMENT`                    | `authentication` |
+| Reason                                                                                                                                    | Status                                    | Domain           |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------- |
+| `USER_NOT_FOUND`                                                                                                                          | `404 NOT_FOUND`                           | `users`          |
+| `ROLE_SCOPE_NOT_FOUND`                                                                                                                    | `404` in the path, else `400`             | `users`          |
+| `ROLE_SCOPE_REQUIRED`, `INVALID_ROLE_SCOPE_VALUE`                                                                                         | `400 INVALID_ARGUMENT`                    | `users`          |
+| `SELF_DELETE_NOT_ALLOWED`, `USER_DELETION_NOT_CONFIGURED`, `PROTECTED_ROLE_ASSIGNMENT` and the reasons of an application role scope       | `400 FAILED_PRECONDITION`                 | `users`          |
+| `INVITATION_NOT_FOUND`: no invitation by that id, or, from `lookup` and `accept`, by that token (`400` with a field violation on `token`) | `404 NOT_FOUND` or `400 INVALID_ARGUMENT` | `users`          |
+| `INVITATION_EXPIRED`, `INVITATION_ACCEPTED`, `INVITATION_REVOKED`, `INVITATION_CLOSED`                                                    | `400 FAILED_PRECONDITION`                 | `users`          |
+| `INVALID_PREFERENCE_KEY`, `INVALID_PREFERENCE_VALUE`, `TOO_MANY_PREFERENCES`                                                              | `400 INVALID_ARGUMENT`                    | `users`          |
+| `LAST_ASSIGNMENT`                                                                                                                         | `400 FAILED_PRECONDITION`                 | `authorization`  |
+| `USER_EMAIL_CONFLICT`, `USER_USERNAME_CONFLICT`, `USER_IDENTITY_CONFLICT`                                                                 | `409 ALREADY_EXISTS`                      | `authentication` |
+| `PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`                                                                                                 | `400 INVALID_ARGUMENT`                    | `authentication` |
 
 A role scope reports a refusal by throwing `UserRoleScopeError(reason, message, status)`: `404` answers `NOT_FOUND`, `409` answers `FAILED_PRECONDITION`, and `400` answers `INVALID_ARGUMENT`.
 
@@ -101,10 +96,9 @@ A role scope reports a refusal by throwing `UserRoleScopeError(reason, message, 
 
 `UsersClient` is available from
 `@nocobase/app-plugin-users/client/user-client` for App-owned UI that needs the
-same API contract. The built-in page supports pagination, search, status and
-role filters, account editing, enable/disable, password reset, Session
-revocation, and application-provided role scopes. Empty scopes are shown as
-unassigned rather than silently disappearing from the user row.
+same API contract. It covers pagination, search, status and role filters,
+account editing, enable/disable, password reset, Session revocation, and
+application-provided role scopes.
 
 ## Personal preferences
 
@@ -131,12 +125,18 @@ When authorization is installed, the plugin registers the `user` subject type wi
 
 ## Permission-set integration
 
-When the authorization plugin is installed, Users automatically registers the `app` permission-set scope. No application Provider is needed. Set `users.permissionSets: false` in application configuration when providing a replacement scope, as Hub does. Direct assignments remain separate from permissions inherited through authenticated users or other subjects. Protected unrestricted assignments cannot be changed through this scope.
-
-The Settings page uses a searchable selection list for both user creation and the assignment drawer. Changes are saved together; labels use permission-set presentation metadata and update with the client locale while custom titles remain unchanged.
+When the authorization plugin is installed, Users automatically registers the `app` permission-set scope. No application Provider is needed. Set `users.permissionSets: false` in application configuration when providing a replacement scope. Direct assignments remain separate from permissions inherited through authenticated users or other subjects. Protected unrestricted assignments cannot be changed through this scope.
 
 ## User deletion
 
-`DELETE /api/users/:userId?confirm=true` requires the `user/delete` action and the `confirm=true` query parameter, and answers `204`. The service also rejects deleting the acting user. Application role scopes can implement `assertCanDelete(userId, actorId, connection)` and `onDelete(userId, connection)` to protect owned resources and remove credentials in the same transaction. Hub grants deletion only to its Platform Administrator and registers those lifecycle rules; Users does not grant access by default. Failed cleanup rolls back the deletion. Repeating a deletion changes nothing and answers `404 USER_NOT_FOUND`.
+`DELETE /api/users/:userId?confirm=true` requires the `user/delete` action and the `confirm=true` query parameter, and answers `204`. The service also rejects deleting the acting user. Application role scopes can implement `assertCanDelete(userId, actorId, connection)` and `onDelete(userId, connection)` to protect owned resources and remove credentials in the same transaction. Users does not grant access by default. Failed cleanup rolls back the deletion. Repeating a deletion changes nothing and answers `404 USER_NOT_FOUND`.
 
-Deletion removes the user from management lists, revokes sessions and removes sign-in accounts. Authentication retains a disabled identity with `deletedAt` and `deletedBy` for historical attribution; it cannot be re-enabled through user management. Email and username remain reserved. The authenticated deletion route emits a structured `user.delete` security event without credentials. The UI requires confirmation and reports failures through the application's notification host.
+Deletion removes the user from management lists, revokes sessions and removes sign-in accounts. Authentication retains a disabled identity with `deletedAt` and `deletedBy` for historical attribution; it cannot be re-enabled through user management. Email and username remain reserved. The authenticated deletion route emits a structured `user.delete` security event without credentials.
+
+## Shareable invitations and mailbox verification
+
+Authorized inviters receive `inviteUrl` on creation, regardless of email delivery. The original inviter can renew with `POST /api/users/invitations/{invitationId}/resend?sendEmail=false`; choosing roles still requires `assign-role`. Plugin invitations must use their domain-authorized endpoint. Other managers can resend email but do not receive links. Invitation lists never expose tokens. Renewal invalidates the previous invitation token and all of its mailbox proofs; acceptance applies only the supplied invitation.
+
+A shared link alone cannot create an account. New users request a private verification email from the invitation page and open its link to set their name and password. Configure `app.publicOrigin` and the Users email channel: verification URLs never use the request origin, and copying cannot bypass unavailable email delivery. Existing users sign in with the invited address. Existing pending invitations also need mailbox verification after upgrade.
+
+`POST /api/users/invitations/verifyEmail` accepts `{ token }` and returns `{ data: { emailSent } }`, without the proof. Requests are limited to once per minute (`429`, `INVITATION_VERIFICATION_RATE_LIMITED`). Proofs last 15 minutes; earlier unexpired proofs survive a new email request. Only hashes are stored. Missing, expired, or incorrect proofs on new-account acceptance return `400` with `INVITATION_EMAIL_VERIFICATION_REQUIRED`. The email URL fragment `#verification=…` supplies the `emailVerificationToken` submitted in the acceptance body.

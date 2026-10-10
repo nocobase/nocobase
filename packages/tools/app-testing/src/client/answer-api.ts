@@ -1,7 +1,7 @@
 /** A request to the application's API as a test answers it: relative to the API root, with its JSON body read. */
 export interface ApiCall {
   readonly method: string;
-  /** The path below the API root, such as `hub/api-keys`. */
+  /** The path below the API root, such as `users`. */
   readonly path: string;
   /** The query parameters, present only when the request has any. A repeated name lists every value. */
   readonly query?: Readonly<Record<string, string | readonly string[]>>;

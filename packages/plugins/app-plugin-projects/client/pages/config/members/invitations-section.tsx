@@ -1,4 +1,3 @@
-import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -59,18 +58,11 @@ export function InvitationsSection(): ReactElement | null {
   const { t } = useTranslation();
   const api = usePmApi();
   const viewer = useViewer();
-  const { can: canCreateUser } = useCan({
-    resource: { type: 'user', id: '*' },
-    action: 'create',
-  });
-  const { can: canAssignRole } = useCan({
-    resource: { type: 'user', id: '*' },
-    action: 'assign-role',
-  });
   const notify = useNotify();
   const toaster = useToaster();
   const queryClient = useQueryClient();
   const format = usePmFormatters();
+  const [generating, setGenerating] = useState<Invitation | null>(null);
   const [revoking, setRevoking] = useState<Invitation | null>(null);
   const [resent, setResent] = useState<InvitationResult | null>(null);
   const [linkOnly, setLinkOnly] = useState(false);
@@ -201,20 +193,13 @@ export function InvitationsSection(): ReactElement | null {
                   <SendIcon />
                   {t('invitations.resend')}
                 </DropdownMenuItem>
-                {row.original.invitedBy.userId === viewer?.userId &&
-                canCreateUser &&
-                canAssignRole ? (
+                {row.original.invitedBy.userId === viewer?.userId ? (
                   <DropdownMenuItem
                     disabled={resending}
-                    onClick={() =>
-                      resendInvitation({
-                        invitation: row.original,
-                        sendEmail: false,
-                      })
-                    }
+                    onClick={() => setGenerating(row.original)}
                   >
                     <CopyIcon />
-                    {t('invitations.copyNewLink')}
+                    {t('invitations.generateLink')}
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuSeparator />
@@ -231,15 +216,7 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [
-      t,
-      format,
-      resending,
-      resendInvitation,
-      viewer?.userId,
-      canCreateUser,
-      canAssignRole,
-    ],
+    [t, format, resending, resendInvitation, viewer?.userId],
   );
 
   const rows = invitations.data;
@@ -270,6 +247,36 @@ export function InvitationsSection(): ReactElement | null {
         showSelectedCount={false}
         getRowId={(invitation) => invitation.id}
       />
+      <AlertDialog
+        open={generating !== null}
+        onOpenChange={(open) => {
+          if (!open) setGenerating(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('invitations.generateLink')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('invitations.generateDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (generating)
+                  resendInvitation({
+                    invitation: generating,
+                    sendEmail: false,
+                  });
+                setGenerating(null);
+              }}
+            >
+              {t('invitations.generateLink')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog
         open={revoking !== null}
         onOpenChange={(open) => {
