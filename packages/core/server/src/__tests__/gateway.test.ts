@@ -89,6 +89,31 @@ describe('gateway', () => {
       expect(bootstrapApp).not.toHaveBeenCalled();
     });
 
+    it('should destroy the socket instead of rejecting when a websocket upgrade fails', async () => {
+      const port = await startServerWithRandomPort(gateway.startHttpServer.bind(gateway));
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => unhandled.push(reason);
+      process.on('unhandledRejection', onUnhandled);
+      vi.spyOn(AppSupervisor.getInstance(), 'proxyWs').mockRejectedValue(new Error('proxyWs exploded'));
+
+      try {
+        const client = new ws(`ws://localhost:${port}${process.env.WS_PATH}`);
+        await new Promise<void>((resolve) => {
+          client.on('error', () => resolve());
+          client.on('close', () => resolve());
+          client.on('open', () => {
+            client.close();
+            resolve();
+          });
+        });
+        await waitSecond();
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
+
+      expect(unhandled).toEqual([]);
+    });
+
     it('should reject invalid names before creating a logger', () => {
       expect(() => gateway.getLogger('/tmp/invalid', {} as Parameters<Gateway['getLogger']>[1])).toThrow();
       expect([...gateway.loggers.getKeys()]).toEqual([]);

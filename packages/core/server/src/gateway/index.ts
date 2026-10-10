@@ -681,6 +681,29 @@ export class Gateway extends EventEmitter {
     return ctx.resolvedAppName;
   }
 
+  private async handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer) {
+    const isProxy = await AppSupervisor.getInstance().proxyWs(request, socket, head);
+    if (isProxy) {
+      return;
+    }
+    const appInstance = await AppSupervisor.getInstance().getApp('main');
+    for (const handle of Gateway.wsServers) {
+      const result = await handle(request, socket, head, appInstance);
+      if (result !== false) {
+        return;
+      }
+    }
+    const { pathname } = parse(request.url);
+
+    if (pathname === process.env.WS_PATH) {
+      this.wsServer.wss.handleUpgrade(request, socket, head, (ws) => {
+        this.wsServer.wss.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  }
+
   getCallback() {
     return this.requestHandler.bind(this);
   }
@@ -835,27 +858,14 @@ export class Gateway extends EventEmitter {
     });
 
     this.wsServer = new WSServer();
-    this.server.on('upgrade', async (request, socket, head) => {
-      const isProxy = await AppSupervisor.getInstance().proxyWs(request, socket, head);
-      if (isProxy) {
-        return;
-      }
-      const appInstance = await AppSupervisor.getInstance().getApp('main');
-      for (const handle of Gateway.wsServers) {
-        const result = await handle(request, socket, head, appInstance);
-        if (result !== false) {
-          return;
-        }
-      }
-      const { pathname } = parse(request.url);
-
-      if (pathname === process.env.WS_PATH) {
-        this.wsServer.wss.handleUpgrade(request, socket, head, (ws) => {
-          this.wsServer.wss.emit('connection', ws, request);
-        });
-      } else {
+    this.server.on('upgrade', (request, socket, head) => {
+      // Nothing awaits this listener, so a rejection anywhere below would become an unhandled rejection and, with no
+      // process level handler installed, take the process down on a request that any client can send. Drop the
+      // socket instead.
+      this.handleUpgrade(request, socket, head).catch((error) => {
+        AppSupervisor.getInstance().logger.error('Failed to handle websocket upgrade', { error });
         socket.destroy();
-      }
+      });
     });
 
     this.server.listen(this.port, this.host, () => {
