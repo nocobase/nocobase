@@ -111,6 +111,35 @@ Keep composer state and errors independent of mailbox queries so a refresh does 
 
 Signatures belong to accounts and are shared across their sending addresses, with one default and selectable alternatives. Templates belong to the current user. For custom sending, scheduled delivery, batch actions or draft persistence, read [Sending and drafts](sending-and-drafts.md) before replacing those interactions.
 
+### Prepare replies on custom pages
+
+Use `prepareMailReply(mail, message)` from `/client` rather than importing private quote helpers or copying the workspace's reply logic. It returns `Promise<MailComposerRequest>`; that type is also exported from `/client` and remains available from `/client/components`. Pass the returned object unchanged as the `request` of `MailComposer` or `MailWorkspaceComposer`, alongside the required account, provider and callback props.
+
+```tsx
+import {
+  prepareMailReply,
+  type MailClient,
+  type MailMessage,
+  type MailComposerRequest,
+} from '@nocobase/app-plugin-mail/client';
+
+async function openPreparedReply(
+  mail: MailClient,
+  message: MailMessage,
+  isCurrent: () => boolean,
+  open: (request: MailComposerRequest) => void,
+): Promise<void> {
+  const request = await prepareMailReply(mail, message);
+  if (isCurrent()) open(request);
+}
+```
+
+Call this from `MailConversationView.actions.reply` with the application-owned client from `useMailClient()`. The application owns pending/error state and prevents duplicate preparation. Capture a session/version before awaiting; `isCurrent()` must reject results after unmount, cancellation, selection changes, or another composer session opens (even if that session has since closed). Do not overwrite an active composer. Catch preparation errors and show `mailErrorMessage(cause, fallback)`; do not open a reply without its quote after failure. The built-in workspace uses this same preparation function and retains its existing composer guards.
+
+Preparation uses the message's account and local ID, prefers all Reply-To addresses over From, preserves an existing `Re:` prefix, and leaves CC/BCC and the editable body empty. The quote stays in `value.forwardQuote` with kind `reply`; ordinary source attachments are not added to the top-level `attachments`. Keep `uploads`: only CID images referenced by the quote are copied into owned uploads, and dropping them breaks sending and draft recovery. Composer identity selection, signatures, quote removal/restoration and reply association remain composer responsibilities; this function neither opens UI nor sends or saves mail.
+
+This is a browser-only API requiring `DOMParser` and `File`, not a Node/SSR helper. It may retry deferred/failed content and download/upload referenced images, and rejects when those operations fail. A partial failure can leave temporary uploads under the existing attachment lifecycle; preparation is not a transaction or cancellation API. Preview the quote only through the shared script-disabled sandbox, never by injecting its received HTML/CSS into the application's DOM. Preparation does not grant access or bypass the server's ownership and permission checks.
+
 ### Associate composer completion with business records
 
 Both composers keep `onComplete(result, rejectedRecipients?, error?, details?)`. The first three arguments are unchanged; `details` is an optional `MailComposerCompletionDetails` exported from `/client/components`. For `kind: 'normal'`, `input` is the actual single-message request; for `kind: 'bulk'`, it is the actual separate-send request, including deduplicated `recipients` and copied attachment IDs. These detached snapshots preserve account, identity, subject, body (including the editor's signature and reply/forward quote), scheduling, and attachment references before the composer is cleared. They describe client-submitted content, not final MIME, server-prepared content or proof of delivery. Internal delivery snapshots and provider context are not part of this public contract.

@@ -62,6 +62,11 @@ vi.mock('../../client/runtime.js', () => ({
 }));
 
 import { MAIL_VIRTUAL_FOLDER_IDS } from '../../shared/mail.js';
+import type {
+  MailClient,
+  MailMessage,
+  MailOutboundAttachmentView,
+} from '../../client/mail-client.js';
 import { MailCenterDevPage } from '../../client/pages/mail-dev-page.js';
 import MailWorkspacePage from '../../client/pages/mail-workspace-page.js';
 import MailManagementPage from '../../client/pages/mail-management-page.js';
@@ -3592,6 +3597,118 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(screen.getAllByRole('checkbox')[2]).toBeChecked();
     confirm.mockRestore();
   });
+  it.each([false, true])(
+    'prepares reply images only once and preserves another composer opened while preparation is pending: %s',
+    async (openAnotherComposer) => {
+      const message: MailMessage = {
+        ...createUnreadMessage('pending-reply'),
+        read: true,
+        replyTo: [{ address: 'reply@example.com' }],
+        references: [],
+        html: '<p>Pending original</p><img src="cid:logo"><img src="cid:logo">',
+        hasAttachments: true,
+        attachments: [
+          {
+            id: 'logo',
+            messageId: 'pending-reply',
+            providerAttachmentId: 'remote-logo',
+            fileName: 'logo.png',
+            contentType: 'image/png',
+            size: 3,
+            inline: true,
+            contentId: 'logo',
+          },
+        ],
+      };
+      let finishUpload!: (value: MailOutboundAttachmentView) => void;
+      const pendingUpload = new Promise<MailOutboundAttachmentView>(
+        (resolve) => {
+          finishUpload = resolve;
+        },
+      );
+      const download = vi
+        .fn<MailClient['downloadAttachment']>()
+        .mockImplementation(async () => new Response('png').body!);
+      const upload = vi
+        .fn<MailClient['uploadAttachment']>()
+        .mockReturnValue(pendingUpload);
+      mail.downloadAttachment.mockImplementation(download);
+      mail.uploadAttachment.mockImplementation(upload);
+      mail.listMessages.mockResolvedValue({ items: [message] });
+      mail.getMessage.mockResolvedValue(message);
+      render(<MailWorkspacePage />);
+      fireEvent.click(
+        await screen.findByRole('button', { name: /pending-reply/ }),
+      );
+      const reply = await screen.findByRole('button', { name: 'Reply' });
+      fireEvent.click(reply);
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+      fireEvent.click(reply);
+      fireEvent.click(reply);
+      await act(async () => {});
+      expect(download).toHaveBeenCalledExactlyOnceWith(
+        'account-1',
+        'pending-reply',
+        'logo',
+      );
+      expect(upload).toHaveBeenCalledTimes(1);
+      expect(
+        screen.queryByRole('dialog', { name: 'New message' }),
+      ).not.toBeInTheDocument();
+      if (openAnotherComposer) {
+        fireEvent.click(screen.getByRole('button', { name: 'Compose' }));
+        fireEvent.change(await screen.findByLabelText('Subject'), {
+          target: { value: 'Do not overwrite this composer' },
+        });
+      }
+      await act(async () =>
+        finishUpload({
+          id: 'pending-reply-image',
+          fileName: 'logo.png',
+          contentType: 'image/png',
+          size: 3,
+          expiresAt: '',
+        }),
+      );
+      expect(await screen.findByLabelText('Subject')).toHaveValue(
+        openAnotherComposer
+          ? 'Do not overwrite this composer'
+          : 'Re: pending-reply',
+      );
+      if (openAnotherComposer) {
+        expect(screen.getByLabelText('TO')).toHaveValue('');
+        expect(screen.queryByTitle('Quoted message')).not.toBeInTheDocument();
+      } else {
+        expect(screen.getByLabelText('TO')).toHaveValue('reply@example.com');
+        expect(
+          screen.getByTitle('Quoted message').getAttribute('srcdoc'),
+        ).toContain('Pending original');
+        const editor = screen.getByLabelText('Message body');
+        editor.innerHTML = '<p>Prepared reply</p>';
+        fireEvent.input(editor);
+        await waitFor(() =>
+          expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled(),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+        await waitFor(() =>
+          expect(mail.sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+              accountId: 'account-1',
+              inReplyToMessageId: 'pending-reply',
+              replyBodyIncluded: true,
+              attachmentIds: ['pending-reply-image'],
+              retainedAttachmentIds: [],
+              html: expect.stringContaining(
+                'cid:nocobase-pending-reply-image@mail.inline',
+              ),
+            }),
+          ),
+        );
+      }
+      expect(download).toHaveBeenCalledTimes(1);
+      expect(upload).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 function createUnreadMessage(id: string) {

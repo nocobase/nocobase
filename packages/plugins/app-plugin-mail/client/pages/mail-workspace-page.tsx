@@ -1,6 +1,6 @@
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
-import { prepareReplyContent } from '../lib/mail-reply-content.js';
+import { prepareMailReply } from '../prepare-mail-reply.js';
 import { mailErrorDescription } from '../lib/mail-error-description.js';
 import { useMailWorkspaceData } from '../hooks/use-mail-workspace-data.js';
 import {
@@ -1147,24 +1147,13 @@ export default function MailWorkspacePage({
                           if (preparingReplyRef.current || composerRequest)
                             return;
                           preparingReplyRef.current = true;
-                          void prepareReplyContent(mail, message)
-                            .then(({ message: source, quote, uploads }) => {
+                          void prepareMailReply(mail, message)
+                            .then((reply) => {
                               openComposer(
-                                {
-                                  ...EMPTY_COMPOSER,
-                                  mode: 'reply',
-                                  forwardQuote: quote,
-                                  relatedMessageId: source.id,
-                                  to: source.replyTo.length
-                                    ? source.replyTo
-                                        .map((address) => address.address)
-                                        .join(', ')
-                                    : (source.from?.address ?? ''),
-                                  subject: replySubject(source.subject),
-                                },
-                                [],
-                                source.accountId,
-                                uploads,
+                                reply.value,
+                                reply.attachments,
+                                reply.accountId,
+                                reply.uploads,
                               );
                             })
                             .catch(requestError)
@@ -1494,10 +1483,6 @@ function formatAddressList(
   addresses: readonly { address: string; name?: string }[],
 ): string {
   return addresses.map((address) => address.address).join(', ');
-}
-
-function replySubject(subject: string): string {
-  return /^re:/iu.test(subject.trim()) ? subject : `Re: ${subject}`;
 }
 
 function forwardSubject(subject: string): string {
