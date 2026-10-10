@@ -51,6 +51,9 @@ import { z } from 'zod';
  * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
  * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
  *
+ * Requested tool detection is announced through optional `toolsRefreshSupported` on register and heartbeat.
+ * The server stores it as `tools.refresh`; runners omit that enum value on the wire so version 7 receivers accept them.
+ *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
  */

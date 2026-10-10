@@ -105,7 +105,6 @@ export function runnerVersion(): string {
 
 /** What every runner of this version can do, before adapter features. */
 export const BASE_FEATURES: readonly RunnerFeature[] = [
-  'tools.refresh',
   'input',
   'checkout',
   'directories',
@@ -207,7 +206,8 @@ interface AppLink {
   /** The application cannot work with this runner's protocol: heartbeats only, no claims. */
   upgradeRequired: boolean;
   heartbeatTimer?: NodeJS.Timeout;
-  heartbeatRunning?: boolean;
+  heartbeatPending?: Promise<void>;
+  reportedDetection?: AppLink['detection'];
   /** The owner's local policy for this application, as last read (every heartbeat and claim reads it again). */
   policy?: PolicyReport;
   /** The last request detected successfully, kept until the server acknowledges its report. */
@@ -217,7 +217,7 @@ interface AppLink {
    * tools, and their model capabilities, refreshed in the background (`ToolCapabilitiesCache`).
    */
   detection?: {
-    detectedAt: number;
+    detectedAt?: number;
     key: string;
     tools: Promise<ToolInfo[]>;
     capabilities: Promise<ToolCapabilitiesCache>;
@@ -461,7 +461,11 @@ export class RunnerDaemon {
   private async environmentOf(
     link: AppLink,
     force: boolean = false,
-  ): Promise<{ variables: string[]; tools: ToolInfo[] }> {
+  ): Promise<{
+    variables: string[];
+    tools: ToolInfo[];
+    detection: NonNullable<AppLink['detection']>;
+  }> {
     const stored = await readConnection(link.key, this.options.paths).catch(
       () => undefined,
     );
@@ -482,29 +486,33 @@ export class RunnerDaemon {
     if (
       force ||
       link.detection?.key !== key ||
-      Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS
+      (link.detection.detectedAt !== undefined &&
+        Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS)
     ) {
       const previous = link.detection;
       const adapters =
         this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
         this.options.adapters;
       const tools = detectTools(adapters);
-      link.detection = {
-        detectedAt: Date.now(),
+      const detection: NonNullable<AppLink['detection']> = {
         key,
         tools,
-        capabilities: tools.then(
-          (detected) => new ToolCapabilitiesCache(adapters, detected),
-        ),
+        capabilities: tools.then((detected) => {
+          detection.detectedAt = Date.now();
+          return new ToolCapabilitiesCache(adapters, detected);
+        }),
       };
+      link.detection = detection;
       if (previous !== undefined)
         void previous.capabilities.then((cache) => cache.stop());
     }
-    const capabilities = await link.detection.capabilities;
+    const detection = link.detection;
+    const capabilities = await detection.capabilities;
     capabilities.refresh();
     return {
       variables: providedNames(process.env, passEnv, localVariables),
       tools: [...capabilities.tools],
+      detection,
     };
   }
 
@@ -615,9 +623,18 @@ export class RunnerDaemon {
   }
 
   async heartbeat(link: AppLink): Promise<void> {
-    if (this.stopping.signal.aborted || link.revoked || link.heartbeatRunning)
-      return;
-    link.heartbeatRunning = true;
+    if (this.stopping.signal.aborted || link.revoked) return;
+    if (link.heartbeatPending) return link.heartbeatPending;
+    const pending = this.reportHeartbeat(link);
+    link.heartbeatPending = pending;
+    try {
+      await pending;
+    } finally {
+      link.heartbeatPending = undefined;
+    }
+  }
+
+  private async reportHeartbeat(link: AppLink): Promise<void> {
     const { log } = this.options;
     const held = [...this.supervisor.runs.values()].filter(
       (run) => run.appKey === link.key,
@@ -626,13 +643,14 @@ export class RunnerDaemon {
     const jobs = held.filter((run) => run.jobId !== undefined);
     try {
       const policy = await this.policyOf(link);
-      const { variables, tools } = await this.environmentOf(link);
+      const { variables, tools, detection } = await this.environmentOf(link);
       const response = await link.client.post(
         RUNNER_ROUTES.heartbeat,
         {
           version: runnerVersion(),
           product: runnerHost().product,
           features: policy.features,
+          toolsRefreshSupported: true,
           ...(policy.policy.reported ? { policy: policy.policy.reported } : {}),
           variables,
           tools,
@@ -670,6 +688,7 @@ export class RunnerDaemon {
         HeartbeatResponseSchema,
         { timeoutMs: 10_000 },
       );
+      link.reportedDetection = detection;
       this.setUpgradeRequired(
         link,
         response.compatibility !== undefined,
@@ -706,8 +725,6 @@ export class RunnerDaemon {
       log(
         `${link.key}: heartbeat failed: ${error instanceof Error ? error.message : String(error)}`,
       );
-    } finally {
-      link.heartbeatRunning = false;
     }
   }
 
@@ -809,12 +826,20 @@ export class RunnerDaemon {
     free: number,
     wait: boolean,
   ): Promise<number> {
-    if (
-      !link.detection ||
-      Date.now() - link.detection.detectedAt >= TOOL_DETECTION_INTERVAL_MS
-    ) {
-      await this.environmentOf(link);
+    // A timer may already be detecting or reporting. Join it, then report any newer detection before claiming.
+    await this.environmentOf(link);
+    while (link.reportedDetection !== link.detection) {
+      const detection = link.detection;
       await this.heartbeat(link);
+      if (link.revoked || link.upgradeRequired || this.stopping.signal.aborted)
+        return 0;
+      // A failed report leaves this generation unreported: retry on the next poll, without dispatching stale tools.
+      if (
+        link.reportedDetection !== link.detection &&
+        link.detection === detection
+      )
+        return 0;
+      await this.environmentOf(link);
     }
     const pollTimeout =
       this.timings.pollTimeoutMs ?? link.connection.registration.pollTimeoutMs;

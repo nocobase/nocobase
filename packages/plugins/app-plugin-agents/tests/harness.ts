@@ -139,6 +139,7 @@ export interface Harness {
 export interface RunnerOptions {
   readonly name?: string;
   readonly features?: readonly RunnerFeature[];
+  readonly toolsRefreshSupported?: boolean;
   readonly trust?: RunnerTrust;
   readonly ownerUserId?: string | null;
   readonly tools?: readonly ToolInfo[];
@@ -534,6 +535,9 @@ export async function createHarness(
         arch: 'arm64',
         version: '0.0.1',
         protocolVersion: PROTOCOL_VERSION,
+        ...(options.toolsRefreshSupported === undefined
+          ? {}
+          : { toolsRefreshSupported: options.toolsRefreshSupported }),
         features: [
           ...(options.features ?? [
             'input',

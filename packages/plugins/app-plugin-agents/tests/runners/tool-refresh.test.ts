@@ -8,7 +8,10 @@ describe('runner tool status refresh', () => {
   });
   it('persists requests until a matching heartbeat reports fresh tools, coalescing retries', async () => {
     h = await createHarness();
-    const r = await h.registerRunner({ features: ['tools.refresh'] });
+    const r = await h.registerRunner({
+      features: [],
+      toolsRefreshSupported: true,
+    });
     const path = `/agents/runners/${r.runnerId}/refreshStatus`;
     const first = await h.request('POST', path, { user: 'owner' });
     expect(first.status).toBe(202);
@@ -20,7 +23,8 @@ describe('runner tool status refresh', () => {
     ).toBe(requestId);
     const heartbeat = {
       version: 'fixture',
-      features: ['tools.refresh'],
+      features: [],
+      toolsRefreshSupported: true,
       tools: [{ kind: 'claude', authenticated: false }],
       active: [],
       load: { slots: 1, free: 1 },
@@ -56,7 +60,10 @@ describe('runner tool status refresh', () => {
   });
   it('requires the owner rights and refuses unsupported and revoked runners', async () => {
     h = await createHarness();
-    const r = await h.registerRunner({ features: ['tools.refresh'] });
+    const r = await h.registerRunner({
+      features: [],
+      toolsRefreshSupported: true,
+    });
     const path = `/agents/runners/${r.runnerId}/refreshStatus`;
     expect((await h.request('POST', path)).status).toBe(401);
     expect(

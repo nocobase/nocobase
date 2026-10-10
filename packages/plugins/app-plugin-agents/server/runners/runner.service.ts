@@ -270,7 +270,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             version: request.version,
             product: request.product ?? null,
             protocolVersion: request.protocolVersion,
-            features: cleanList(request.features),
+            features: cleanList([
+              ...request.features,
+              ...(request.toolsRefreshSupported ? ['tools.refresh'] : []),
+            ]),
             tools: request.tools.map((tool) =>
               ReportedToolInfoSchema.parse(tool),
             ),
@@ -413,7 +416,12 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
           JSON.stringify(runner.features) !==
-            JSON.stringify(cleanList(request.features)) ||
+            JSON.stringify(
+              cleanList([
+                ...request.features,
+                ...(request.toolsRefreshSupported ? ['tools.refresh'] : []),
+              ]),
+            ) ||
           JSON.stringify(runner.tools) !== JSON.stringify(request.tools) ||
           JSON.stringify(runner.policy) !== JSON.stringify(policy) ||
           JSON.stringify(runner.variables ?? null) !==
@@ -423,7 +431,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           values: {
             version: request.version,
             product: request.product ?? null,
-            features: cleanList(request.features),
+            features: cleanList([
+              ...request.features,
+              ...(request.toolsRefreshSupported ? ['tools.refresh'] : []),
+            ]),
             tools: request.tools.map((tool) =>
               ReportedToolInfoSchema.parse(tool),
             ),

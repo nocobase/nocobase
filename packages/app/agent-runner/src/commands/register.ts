@@ -154,6 +154,7 @@ export default class Register extends RunnerCommand {
       product: runnerHost().product,
       protocolVersion: PROTOCOL_VERSION,
       features: policy.features,
+      toolsRefreshSupported: true,
       tools: await detectTools(adapters),
       // Only an explicit --slots overrides the token's, its total and its limits per tool each on their own.
       ...(slotsFlag.slots === undefined ? {} : { slots: slotsFlag.slots }),
