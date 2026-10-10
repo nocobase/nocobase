@@ -690,6 +690,60 @@ describe('runner end to end', () => {
     expect(groupAlive(pid)).toBe(false);
   });
 
+  it('starts a coding run in a verified empty remote and publishes its first commit', async () => {
+    const remote = path.join(scratch, 'empty.git');
+    git(['init', '--quiet', '--bare', '--initial-branch=main', remote]);
+    const run = server.enqueue({
+      workspace: {
+        dirs: [
+          {
+            kind: 'repo',
+            url: `file://${remote}`,
+            defaultBranch: 'main',
+            branch: 'agent/PM-9',
+            path: 'app',
+            initializeIfEmpty: true,
+          },
+        ],
+        env: [],
+      },
+      prompt: {
+        system: '{{runner.workspaceNotes}}',
+        session: 'fresh',
+        turn: [
+          'system',
+          'write app.txt initialized',
+          `bash ${COMMIT} add app.txt && ${COMMIT} commit -q -m Initialize`,
+          'say done',
+        ].join('\n'),
+      },
+    });
+    daemon();
+    await waitFor(
+      () => run.status === 'completed' || run.status === 'failed',
+      20_000,
+      'empty repository run',
+    );
+    expect(run.fail).toBeUndefined();
+    expect(run.status).toBe('completed');
+    expect([...run.events.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'checkout',
+          meta: expect.objectContaining({ branch: 'main', initializing: true }),
+        }),
+      ]),
+    );
+    expect(run.complete?.repos).toEqual([
+      expect.objectContaining({
+        branch: 'main',
+        pushed: true,
+        headSha: git(['rev-parse', 'refs/heads/main'], remote),
+      }),
+    ]);
+    expect(git(['show', 'main:app.txt'], remote)).toBe('initialized');
+  });
+
   it('fails with checkoutFailed when a repository cannot be cloned', async () => {
     const run = server.enqueue({
       workspace: {
