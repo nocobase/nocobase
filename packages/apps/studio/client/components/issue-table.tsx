@@ -43,6 +43,8 @@ export interface IssueTableRow {
   readonly id: string;
   readonly identifier: string;
   readonly title: string;
+  /** Display depth among the loaded rows; absent means a root. */
+  readonly depth?: number;
   readonly labels: readonly {
     readonly id: string;
     readonly name: string;
@@ -74,6 +76,7 @@ export interface IssueTableLabels {
   readonly owner: string;
   readonly executor: string;
   readonly updated: string;
+  readonly depth?: string;
   readonly selectAll: string;
   readonly selectRow: string;
   readonly unassigned: string;
@@ -89,6 +92,7 @@ const defaultIssueTableLabels: IssueTableLabels = {
   owner: 'Owner',
   executor: 'Executor',
   updated: 'Updated',
+  depth: 'Level {depth}',
   selectAll: 'Select all',
   selectRow: 'Select {identifier}',
   unassigned: '—',
@@ -346,184 +350,245 @@ export function IssueTable({
   return (
     // `isolate` keeps the sticky header's z-index inside the table, so a page laid over the list (a covering child
     // route) is not painted under it.
-    <Table className={cn('isolate', className)}>
-      <TableHeader className='sticky top-0 z-10 bg-background'>
-        <TableRow className='hover:bg-transparent'>
-          {selectable ? (
-            <TableHead className='w-8'>
-              <Checkbox
-                aria-label={labels.selectAll}
-                checked={allChecked}
-                indeterminate={someChecked}
-                onCheckedChange={(checked) =>
-                  onSelectedIdsChange(
-                    checked ? new Set(rows.map((row) => row.id)) : new Set(),
-                  )
-                }
+    <div className='min-w-0'>
+      {onSortChange ? (
+        <div className='flex flex-wrap gap-2 pb-2 lg:hidden'>
+          <SortButton
+            column='priority'
+            title={labels.priority}
+            sort={sort}
+            onSortChange={onSortChange}
+          />
+          <SortButton
+            column='updated'
+            title={labels.updated}
+            sort={sort}
+            onSortChange={onSortChange}
+          />
+        </div>
+      ) : null}
+      <Table className={cn('isolate max-lg:table-fixed', className)}>
+        <TableHeader className='sticky top-0 z-10 bg-background'>
+          <TableRow className='hover:bg-transparent'>
+            {selectable ? (
+              <TableHead className='w-8'>
+                <Checkbox
+                  aria-label={labels.selectAll}
+                  checked={allChecked}
+                  indeterminate={someChecked}
+                  onCheckedChange={(checked) =>
+                    onSelectedIdsChange(
+                      checked ? new Set(rows.map((row) => row.id)) : new Set(),
+                    )
+                  }
+                />
+              </TableHead>
+            ) : null}
+            <TableHead className='w-24'>
+              <SortButton
+                column='identifier'
+                title={labels.identifier}
+                sort={sort}
+                onSortChange={onSortChange}
               />
             </TableHead>
-          ) : null}
-          <TableHead className='w-24'>
-            <SortButton
-              column='identifier'
-              title={labels.identifier}
-              sort={sort}
-              onSortChange={onSortChange}
-            />
-          </TableHead>
-          <TableHead className='w-full min-w-48'>{labels.title}</TableHead>
-          <TableHead className='w-32'>{labels.status}</TableHead>
-          <TableHead className='w-28'>
-            <SortButton
-              column='priority'
-              title={labels.priority}
-              sort={sort}
-              onSortChange={onSortChange}
-            />
-          </TableHead>
-          <TableHead className='w-40 max-md:hidden'>{labels.owner}</TableHead>
-          <TableHead className='w-44 max-md:hidden'>
-            {labels.executor}
-          </TableHead>
-          <TableHead className='w-24'>
-            <SortButton
-              column='updated'
-              title={labels.updated}
-              sort={sort}
-              onSortChange={onSortChange}
-            />
-          </TableHead>
-          {rowAction ? <TableHead className='w-24' /> : null}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.length === 0 ? (
-          <TableRow className='hover:bg-transparent'>
-            <TableCell
-              colSpan={columns}
-              className='h-32 text-center text-muted-foreground'
-            >
-              {empty ?? labels.empty}
-            </TableCell>
+            <TableHead className='lg:w-full lg:min-w-48'>
+              {labels.title}
+            </TableHead>
+            <TableHead className='hidden w-32 lg:table-cell'>
+              {labels.status}
+            </TableHead>
+            <TableHead className='hidden w-28 lg:table-cell'>
+              <SortButton
+                column='priority'
+                title={labels.priority}
+                sort={sort}
+                onSortChange={onSortChange}
+              />
+            </TableHead>
+            <TableHead className='w-40 max-lg:hidden'>{labels.owner}</TableHead>
+            <TableHead className='w-44 max-lg:hidden'>
+              {labels.executor}
+            </TableHead>
+            <TableHead className='hidden w-24 lg:table-cell'>
+              <SortButton
+                column='updated'
+                title={labels.updated}
+                sort={sort}
+                onSortChange={onSortChange}
+              />
+            </TableHead>
+            {rowAction ? <TableHead className='w-24' /> : null}
           </TableRow>
-        ) : null}
-        {rows.map((row) => {
-          const href = rowHref?.(row);
-          const checked = selectedIds?.has(row.id) ?? false;
-          return (
-            <TableRow
-              key={row.id}
-              data-state={checked ? 'selected' : undefined}
-              className={cn(onRowClick && 'cursor-pointer')}
-              onClick={(event) => {
-                if (onRowClick && plainClick(event)) onRowClick(row, event);
-              }}
-            >
-              {selectable ? (
-                <TableCell onClick={(event) => event.stopPropagation()}>
-                  <Checkbox
-                    aria-label={labels.selectRow.replace(
-                      '{identifier}',
-                      row.identifier,
-                    )}
-                    checked={checked}
-                    onCheckedChange={(next) => toggle(row.id, next)}
-                  />
-                </TableCell>
-              ) : null}
-              <TableCell>
-                {href ? (
-                  <a
-                    href={href}
-                    className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (onRowClick && plainClick(event)) {
-                        event.preventDefault();
-                        onRowClick(row, event);
-                      }
-                    }}
-                  >
-                    {row.identifier}
-                  </a>
-                ) : (
-                  <span className='font-mono text-xs text-muted-foreground'>
-                    {row.identifier}
-                  </span>
-                )}
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 ? (
+            <TableRow className='hover:bg-transparent'>
+              <TableCell
+                colSpan={columns}
+                className='h-32 text-center text-muted-foreground'
+              >
+                {empty ?? labels.empty}
               </TableCell>
-              <TableCell className='max-w-0'>
-                <div className='flex min-w-0 items-center gap-2'>
-                  <span className='truncate font-medium' title={row.title}>
-                    {row.title}
-                  </span>
-                  {row.labels.length > 0 ? (
-                    <span className='flex shrink-0 gap-1 max-md:hidden'>
-                      {row.labels.slice(0, 3).map((label) => (
-                        <Badge
-                          key={label.id}
-                          variant='secondary'
-                          className={issueColorClass[label.color]}
-                        >
-                          {label.name}
-                        </Badge>
-                      ))}
-                      {row.labels.length > 3 ? (
-                        <span className='text-xs text-muted-foreground'>
-                          +{row.labels.length - 3}
+            </TableRow>
+          ) : null}
+          {rows.map((row) => {
+            const href = rowHref?.(row);
+            const checked = selectedIds?.has(row.id) ?? false;
+            return (
+              <TableRow
+                key={row.id}
+                data-state={checked ? 'selected' : undefined}
+                className={cn(onRowClick && 'cursor-pointer')}
+                onClick={(event) => {
+                  if (onRowClick && plainClick(event)) onRowClick(row, event);
+                }}
+              >
+                {selectable ? (
+                  <TableCell onClick={(event) => event.stopPropagation()}>
+                    <Checkbox
+                      aria-label={labels.selectRow.replace(
+                        '{identifier}',
+                        row.identifier,
+                      )}
+                      checked={checked}
+                      onCheckedChange={(next) => toggle(row.id, next)}
+                    />
+                  </TableCell>
+                ) : null}
+                <TableCell className='max-lg:overflow-hidden'>
+                  {href ? (
+                    <a
+                      href={href}
+                      className='block truncate font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (onRowClick && plainClick(event)) {
+                          event.preventDefault();
+                          onRowClick(row, event);
+                        }
+                      }}
+                    >
+                      {row.identifier}
+                    </a>
+                  ) : (
+                    <span className='font-mono text-xs text-muted-foreground'>
+                      {row.identifier}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className='min-w-0 whitespace-normal lg:max-w-0'>
+                  <div className='min-w-0 [container-type:inline-size]'>
+                    <div
+                      data-issue-depth={row.depth ?? 0}
+                      style={{
+                        paddingInlineStart: `min(${(row.depth ?? 0) * 16}px, 25cqw)`,
+                      }}
+                      className='flex min-w-0 flex-wrap items-center gap-2'
+                    >
+                      {(row.depth ?? 0) > 0 ? (
+                        <span className='w-full text-xs text-muted-foreground'>
+                          {(
+                            labels.depth ?? defaultIssueTableLabels.depth!
+                          ).replace('{depth}', String(row.depth))}
                         </span>
                       ) : null}
-                    </span>
-                  ) : null}
-                  {rowMarks ? (
-                    <span className='flex shrink-0 items-center gap-1 empty:hidden'>
-                      {rowMarks(row)}
-                    </span>
-                  ) : null}
-                </div>
-              </TableCell>
-              <TableCell>
-                {row.status ? (
-                  <IssueStatusBadge status={row.status} />
-                ) : (
-                  <span className='text-muted-foreground'>
-                    {labels.unassigned}
-                  </span>
-                )}
-              </TableCell>
-              <TableCell>
-                <IssuePriority
-                  priority={row.priority}
-                  label={labels.priorities[row.priority]}
-                />
-              </TableCell>
-              <TableCell className='max-w-40 max-md:hidden'>
-                <IssuePerson person={row.owner} fallback={labels.unassigned} />
-              </TableCell>
-              <TableCell className='max-w-44 max-md:hidden'>
-                <IssuePerson
-                  person={row.executor}
-                  fallback={labels.unassigned}
-                />
-              </TableCell>
-              <TableCell
-                className='text-sm whitespace-nowrap text-muted-foreground tabular-nums'
-                title={new Date(row.updatedAt).toLocaleString(locale)}
-              >
-                {date.format(new Date(row.updatedAt))}
-              </TableCell>
-              {rowAction ? (
-                <TableCell
-                  className='text-right'
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  {rowAction(row)}
+                      <span
+                        className='min-w-0 max-w-full truncate font-medium'
+                        title={row.title}
+                      >
+                        {row.title}
+                      </span>
+                      {row.labels.length > 0 ? (
+                        <span className='flex min-w-0 max-w-full flex-wrap gap-1'>
+                          {row.labels.slice(0, 3).map((label) => (
+                            <Badge
+                              key={label.id}
+                              variant='secondary'
+                              className={cn(
+                                issueColorClass[label.color],
+                                'max-w-full [&]:overflow-hidden [&]:text-ellipsis',
+                              )}
+                            >
+                              {label.name}
+                            </Badge>
+                          ))}
+                          {row.labels.length > 3 ? (
+                            <span className='text-xs text-muted-foreground'>
+                              +{row.labels.length - 3}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
+                      {rowMarks ? (
+                        <span className='flex min-w-0 max-w-full flex-wrap items-center gap-1 empty:hidden [&>*]:max-w-full'>
+                          {rowMarks(row)}
+                        </span>
+                      ) : null}
+                      <div className='flex w-full min-w-0 flex-wrap items-center gap-2 lg:hidden'>
+                        {row.status ? (
+                          <IssueStatusBadge
+                            status={row.status}
+                            className='max-w-full overflow-hidden'
+                          />
+                        ) : (
+                          <span>{labels.unassigned}</span>
+                        )}
+                        <IssuePriority
+                          priority={row.priority}
+                          label={labels.priorities[row.priority]}
+                          className='max-w-full'
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </TableCell>
-              ) : null}
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                <TableCell className='max-lg:hidden'>
+                  {row.status ? (
+                    <IssueStatusBadge status={row.status} />
+                  ) : (
+                    <span className='text-muted-foreground'>
+                      {labels.unassigned}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className='max-lg:hidden'>
+                  <IssuePriority
+                    priority={row.priority}
+                    label={labels.priorities[row.priority]}
+                  />
+                </TableCell>
+                <TableCell className='max-w-40 max-lg:hidden'>
+                  <IssuePerson
+                    person={row.owner}
+                    fallback={labels.unassigned}
+                  />
+                </TableCell>
+                <TableCell className='max-w-44 max-lg:hidden'>
+                  <IssuePerson
+                    person={row.executor}
+                    fallback={labels.unassigned}
+                  />
+                </TableCell>
+                <TableCell
+                  className='text-sm whitespace-nowrap text-muted-foreground tabular-nums max-lg:hidden'
+                  title={new Date(row.updatedAt).toLocaleString(locale)}
+                >
+                  {date.format(new Date(row.updatedAt))}
+                </TableCell>
+                {rowAction ? (
+                  <TableCell
+                    className='text-right'
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {rowAction(row)}
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

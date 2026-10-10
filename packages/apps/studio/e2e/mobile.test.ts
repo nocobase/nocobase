@@ -148,3 +148,107 @@ test.describe('floating chat button at phone width', () => {
     });
   }
 });
+
+test('deep issue tables fit narrow screens in both languages and modes and retain sorting', async ({
+  page,
+  api,
+}) => {
+  test.setTimeout(120_000);
+  const tag = `hierarchy-${Date.now()}`;
+  const label = await api.post<{ id: string }>('projects/labels', {
+    name: `Long label 标签 ${tag}`,
+    color: 'purple',
+  });
+  const issueIds: string[] = [];
+  let parentIssueId: string | undefined;
+  const identifiers: string[] = [];
+  for (let depth = 0; depth < 9; depth++) {
+    const issue = await api.post<{ id: string; identifier: string }>(
+      'projects/issues',
+      {
+        title: `${tag} ${depth} ${'Long title 很长的标题'.repeat(12)}`,
+        parentIssueId,
+        priority: 'urgent',
+        labelIds: [label.id],
+      },
+    );
+    parentIssueId = issue.id;
+    issueIds.push(issue.id);
+    identifiers.push(issue.identifier);
+  }
+  // Exercise a long deployment mark without making a real deployment.
+  await page.route('**/api/deploys/marks?*', async (route) => {
+    const mark = {
+      role: 'staging',
+      status: 'deployed',
+      appId: 'test-app',
+      environmentId: 'test-env',
+      environmentName: 'Long environment 很长的环境名称'.repeat(4),
+      sha: 'abcdef1234567',
+      version: null,
+      deploymentId: 'test-deploy',
+      withdrawnByDeploymentId: null,
+      withdrawnVersion: null,
+      deployedAt: '2026-01-01T00:00:00Z',
+    };
+    await route.fulfill({
+      json: { data: Object.fromEntries(issueIds.map((id) => [id, [mark]])) },
+    });
+  });
+  // Keep appearance changes local to this test; other workers use the same demo account.
+  let appearance = { locale: 'zh-CN', 'theme.mode': 'light' };
+  await page.route('**/api/users/me/preferences**', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: { data: appearance } });
+    } else {
+      await route.fulfill({ status: 204 });
+    }
+  });
+  // The fixture signs in through the API; navigate before accessing origin-scoped storage.
+  await open(page, `/issues?view=list&q=${tag}`);
+  for (const width of [375, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const locale of ['zh-CN', 'en-US']) {
+      for (const mode of ['light', 'dark']) {
+        appearance = { locale, 'theme.mode': mode };
+        await page.evaluate(
+          `localStorage.setItem('nocobase.locale', ${JSON.stringify(locale)});` +
+            `localStorage.setItem('nocobase:main:theme:color-scheme', ${JSON.stringify(mode)});`,
+        );
+        await open(page, `/issues?view=list&q=${tag}`);
+        const table = page.getByRole('table');
+        await expect(table.getByRole('link')).toHaveCount(9);
+        expect(await table.getByRole('link').allTextContents()).toEqual(
+          identifiers,
+        );
+        await expect(table.locator('[data-deploy-mark]').first()).toBeVisible();
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+        // A page may fit while the generic Table wrapper still scrolls horizontally.
+        const overflow = await page.evaluate<number[]>(`(() => {
+          const table = document.querySelector('table');
+          const widths = [];
+          for (let element = table; element; element = element.parentElement) {
+            widths.push(element.scrollWidth - element.clientWidth);
+          }
+          return widths;
+        })()`);
+        expect(Math.max(...overflow)).toBeLessThanOrEqual(0);
+        const priority = locale === 'zh-CN' ? '优先级' : 'Priority';
+        await page.getByRole('button', { name: priority, exact: true }).click();
+        await expect(page).toHaveURL(/sort=priority/);
+        await page
+          .getByRole('button', {
+            name: locale === 'zh-CN' ? '更新时间' : 'Updated',
+            exact: true,
+          })
+          .click();
+        await expect
+          .poll(() => new URL(page.url()).searchParams.get('sort'))
+          .toBeNull();
+        await page.screenshot({
+          path: `storage/ui-workflow/issue-hierarchy/screenshots/${width}-${locale}-${mode}.png`,
+        });
+      }
+    }
+  }
+});
