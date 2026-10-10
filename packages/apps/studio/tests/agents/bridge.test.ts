@@ -824,6 +824,44 @@ describe('claims and endings', () => {
     ]);
   });
 
+  it('passes verified-empty initialization permission to an assigned coding run', async () => {
+    h.roles.set('alice', 'admin');
+    const project = await h.projects.projects.create(alice(), {
+      name: 'New app',
+    });
+    await h.projects.projects.addResource(alice(), project.id, {
+      type: 'gitRepo',
+      url: 'https://example.com/acme/empty.git',
+      defaultRef: 'main',
+    });
+    const agentId = await h.createAgent({
+      actions: [
+        'pm.issues/view',
+        'pm.issues/comment',
+        'pm.issues/edit',
+        'studio.git/open-pr',
+      ],
+    });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Create a NocoBase 3 application',
+      projectId: project.id,
+    });
+    await assign(issue, agentId);
+    const payload = await h.claimOne();
+    expect(payload.workspace.dirs[0]).toMatchObject({
+      branch: `agent/${issue.identifier}`,
+      defaultBranch: 'main',
+      initializeIfEmpty: true,
+    });
+    expect(payload.workspace.dirs[0]).not.toHaveProperty('initial');
+    expect(payload.prompt.system).toContain(
+      'runner may initialize a repository only after verifying',
+    );
+    expect(payload.prompt.system).toContain(
+      'NocoBase 3 via `pnpm create @nocobase/app`',
+    );
+  });
+
   it("lets a project's managers change its variables, and its members see their names", async () => {
     h.roles.set('alice', 'admin');
     const project = await h.projects.projects.create(alice(), { name: 'Web' });

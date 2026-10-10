@@ -135,32 +135,37 @@ const enUS = {
     },
     send: 'Send',
     setUpModels: 'Add a model service',
+    runnerUnavailable:
+      'No runtime is available for this agent. Add or start a runtime with its coding tool installed and signed in. Messages will wait until a runner is ready.',
+    setUpRunners: 'Set up a runtime',
     sendFailed: 'The message could not be sent. Try again.',
     recent: 'Recent conversations',
     allConversations: 'View all',
     untitled: 'Untitled conversation',
     agentSetup: {
-      open: 'Use Studio in your agent',
-      title: 'Use Studio in your agent',
+      open: 'Manage Studio with a local Coding Agent',
+      title: 'Connect a local Coding Agent',
       description:
-        'Paste this prompt into a coding agent such as Claude Code or Codex. It installs the nb-studio CLI and signs it in.',
+        'Send the setup instructions below to your preferred local Coding Agent, such as Claude Code or Codex. Once connected, it can help you find projects, create tasks, and update progress.',
       prompt:
-        'Please install and set up the Studio CLI so you can work with the projects and issues on Studio ({{server}}):\n' +
-        '1. Run `{{install}}` to install studio.\n' +
-        '2. Run `nb-studio login --server {{server}}` and tell me the code it shows; I will confirm it in my browser.\n' +
-        '3. Once signed in, run `nb-studio docs` to learn the commands, then use nb-studio for what I ask instead of calling the HTTP API directly.',
-      promptLabel: 'Prompt for your agent',
-      preparing: 'Preparing the prompt',
+        'Please install and configure the NocoBase Studio CLI to manage projects and issues in NocoBase Studio ({{server}}):\n' +
+        '1. Run `{{install}}` to install `nb-studio`.\n' +
+        '2. Run `nb-studio login --server {{server}}`, share the sign-in URL and code it displays, and wait for me to confirm the sign-in in my browser.\n' +
+        '3. Once signed in, run `nb-studio whoami` to check the identity and permissions, then run `nb-studio docs` to learn the available commands.\n' +
+        '4. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',
+      promptLabel: 'Setup instructions for your Coding Agent',
+      preparing: 'Generating setup instructions',
       identity:
-        'The CLI acts as you, with the same permissions you have in Studio. Signing in needs your confirmation in the browser.',
-      expiry: 'This link works for 30 minutes; you can generate a new one.',
+        'Your Coding Agent uses the CLI to act as you, within your Studio permissions. You need to confirm the sign-in in your browser.',
+      expiry:
+        'The installation link in these instructions is valid for 30 minutes. Generate new instructions if it expires.',
       runtime:
-        'This installs the CLI only. To run agents on this machine, add it under Agent team › Runtimes › Add runtime, which installs nocobase-runner.',
-      regenerate: 'Generate new link',
-      copy: 'Copy',
-      copied: 'Copied',
-      copyFailed: 'Could not copy the prompt',
-      failed: 'Could not prepare the prompt. Try again.',
+        'To let Studio assign tasks to run on your computer, go to Agent team › Runtimes › Add runtime to install and register a Runner.',
+      regenerate: 'Regenerate instructions',
+      copy: 'Copy setup instructions',
+      copied: 'Setup instructions copied',
+      copyFailed: 'Could not copy the setup instructions. Try again.',
+      failed: 'Could not generate the setup instructions. Try again.',
     },
   },
   dashboard: {

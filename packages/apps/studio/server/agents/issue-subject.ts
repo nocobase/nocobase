@@ -337,6 +337,7 @@ export function dirsOf(
     readonly resourceId: string;
     readonly defaultBranch: string;
   } | null = null,
+  initializeIfEmpty = false,
 ): SubjectDir[] {
   const used = new Set<string>();
   const nameOf = (base: string, index: number): string => {
@@ -399,6 +400,7 @@ export function dirsOf(
         // A project's repository may name no base: assume the common default.
         defaultBranch: repo.defaultRef ?? 'main',
         branch: branches.get(repo.id) ?? `agent/${context.identifier}`,
+        ...(initializeIfEmpty ? { initializeIfEmpty: true as const } : {}),
         path: nameOf(
           repo.url
             .replace(/\.git$/u, '')
@@ -413,6 +415,26 @@ export function dirsOf(
     ];
   });
 }
+
+/** Only the assigned coding executor in a development stage may make an empty repository's first commit. */
+export function mayInitializeEmptyRepository(
+  context: IssueContext,
+  agent: { readonly id: string; readonly actions: readonly string[] },
+): boolean {
+  return (
+    context.executor?.type === AGENT_KIND &&
+    context.executor.id === agent.id &&
+    ['todo', 'in_progress', 'blocked'].includes(context.status.key) &&
+    agent.actions.includes('studio.git/open-pr')
+  );
+}
+
+export const EMPTY_REPOSITORY_NOTE = [
+  '## Empty repository initialization',
+  '',
+  'The runner may initialize a repository only after verifying that its remote has no refs. Follow its workspace notes for the actual branch and whether this is the first delivery. A missing base branch in a nonempty repository is a configuration error, not permission to replace its history.',
+  'When the task requests a new NocoBase application, use NocoBase 3 via `pnpm create @nocobase/app`, honoring the project’s specified template, registry and directory. Do not substitute the legacy `create-nocobase-app` initializer. Check existing files before scaffolding; continue partially generated work on retry instead of overwriting it. Verify the generated `nocobase.templatePackage`, AGENTS.md and application-local skills, then follow those instructions to install, start and check the application. Report the application directory, startup instructions, accessible URL and actual verification results. A successful first push alone does not prove the application works.',
+].join('\n');
 
 /** What the init issue's agent is told: its run makes the empty repository's first commit, on the default branch. */
 export function initialNote(defaultBranch: string): string {
@@ -451,6 +473,10 @@ export function createIssueContextProvider(
         context.id,
         context.project?.id ?? null,
       );
+      const initializeIfEmpty = mayInitializeEmptyRepository(
+        context,
+        claim.agent,
+      );
       return {
         subject: {
           key: context.identifier,
@@ -468,7 +494,10 @@ export function createIssueContextProvider(
               renderIssueContext(context),
               initialNote(initial.defaultBranch),
             ].join('\n\n')
-          : renderIssueContext(context),
+          : [
+              renderIssueContext(context),
+              ...(initializeIfEmpty ? [EMPTY_REPOSITORY_NOTE] : []),
+            ].join('\n\n'),
         turn: {
           prompt: agents.briefs.turnPrompt(claim.inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
@@ -482,6 +511,7 @@ export function createIssueContextProvider(
             context.identifier,
           ),
           initial,
+          initializeIfEmpty,
         ),
         scopes: context.project
           ? [{ scope: PROJECT_SCOPE, scopeId: context.project.id }]
