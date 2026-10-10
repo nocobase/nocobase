@@ -1,10 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
-  nav: {
-    notifications: 'Notifications',
-    logs: 'Notification logs',
-  },
   logs: {
     deliveryOperations: 'Delivery operations',
     recipeDescription: 'Trace each channel handoff and every provider attempt.',
@@ -62,7 +58,7 @@ const enUS = {
     sending: 'Sending…',
     send: 'Send',
     defaultTitle: 'NocoBase notification test',
-    defaultBody: 'This is a test notification from Hub.',
+    defaultBody: 'This is a test notification from NocoBase.',
     accepted: 'Test notification {{id}} accepted.',
   },
   status: {

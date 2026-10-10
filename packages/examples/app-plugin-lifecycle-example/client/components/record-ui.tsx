@@ -14,6 +14,8 @@ import {
 import { useTranslate } from '../lib/use-example-record.js';
 import { dateTime, NAMESPACE } from '../lib/format.js';
 import { cn } from '../lib/utils.js';
+import { visitedStates } from '../lib/diagram.js';
+import { FlowDiagram } from './flow-diagram.js';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
 
@@ -43,7 +45,54 @@ const STATE_TONES: Readonly<Record<string, Tone>> = {
   approved: 'info',
   rejected: 'danger',
   paid: 'success',
+  // The durable flows.
+  creatingCheckout: 'info',
+  awaitingPayment: 'warning',
+  paymentFailed: 'danger',
+  cancelled: 'neutral',
+  refunding: 'info',
+  refundNeedsAttention: 'danger',
+  refunded: 'success',
+  fulfilled: 'success',
+  starting: 'info',
+  processing: 'warning',
+  done: 'success',
+  failed: 'danger',
+  timedOut: 'danger',
+  reserving: 'info',
+  charging: 'info',
+  releasing: 'warning',
+  compensationNeedsAttention: 'danger',
+  confirmed: 'success',
+  preparing: 'warning',
+  readyToShip: 'info',
+  booking: 'info',
+  shipped: 'info',
+  exception: 'danger',
+  delivered: 'success',
+  renewing: 'info',
+  active: 'success',
+  pastDue: 'danger',
 };
+
+/** The Mermaid source under a drawn diagram, folded away. */
+export function DiagramSource({
+  diagram,
+}: {
+  readonly diagram: string;
+}): ReactElement {
+  const { t } = useTranslation(NAMESPACE);
+  return (
+    <details>
+      <summary className='cursor-pointer text-xs text-muted-foreground'>
+        {t('lifecycle.diagramHint')}
+      </summary>
+      <pre className='mt-2 overflow-x-auto rounded-md bg-muted px-2 py-1.5 text-xs'>
+        {diagram}
+      </pre>
+    </details>
+  );
+}
 
 export function StateBadge({
   state,
@@ -97,8 +146,11 @@ export function LifecyclePanel({
   detail,
   actions,
   onChange,
+  diagram = true,
 }: {
   readonly detail: RecordDetail;
+  /** Whether to draw the lifecycle here; off where the page already draws it. */
+  readonly diagram?: boolean;
   /** The library's operator actions on this record's runs. */
   readonly actions: Pick<
     UseLifecycleResult,
@@ -230,17 +282,17 @@ export function LifecyclePanel({
             </div>
           </div>
 
-          <details className='space-y-2'>
-            <summary className='cursor-pointer font-medium'>
-              {t('lifecycle.diagram')}
-            </summary>
-            <p className='text-xs text-muted-foreground'>
-              {t('lifecycle.diagramHint')}
-            </p>
-            <pre className='overflow-x-auto rounded-md bg-muted px-2 py-1.5 text-xs'>
-              {detail.diagram}
-            </pre>
-          </details>
+          {diagram ? (
+            <div className='space-y-2'>
+              <h3 className='font-medium'>{t('lifecycle.diagram')}</h3>
+              <FlowDiagram
+                diagram={detail.diagram}
+                current={state}
+                visited={visitedStates(detail)}
+              />
+              <DiagramSource diagram={detail.diagram} />
+            </div>
+          ) : null}
 
           <div className='space-y-2'>
             <h3 className='font-medium'>{t('lifecycle.transitions')}</h3>

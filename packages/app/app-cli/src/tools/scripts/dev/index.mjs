@@ -281,8 +281,8 @@ if (!proxyTarget) {
     APP_SERVER_PORT: String(appServerPort),
     APP_SERVER_START_LOG: 'false',
     // Asks the server to refresh database/<connection>/collections/ after its startup migrations change a schema.
-    // It names this application's root, so a Hub's in-process applications, which see the same environment, leave
-    // their deployed revisions alone. Read by DatabaseProvider in @nocobase/app-server.
+    // It names this application's root, so other applications a host runs in the same process, which see the same
+    // environment, leave their deployed revisions alone. Read by DatabaseProvider in @nocobase/app-server.
     NOCOBASE_COLLECTIONS_REFRESH: rootDir,
     BETTER_AUTH_TRUSTED_ORIGINS: resolveDevTrustedOrigins(
       nextEnv.BETTER_AUTH_TRUSTED_ORIGINS,

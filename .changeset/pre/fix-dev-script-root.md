@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-template-default': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Fix `pnpm dev`, which stopped starting after the development scripts were reorganized.

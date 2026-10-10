@@ -22,5 +22,5 @@ Your business code lives in your own source. This section is organized by topic 
 - [Configuration](./configuration) — Where the database address, secrets and the rest live.
 - [Internationalization](./i18n) — Make every user-visible string translatable.
 - [Testing](./testing) — Where tests live, and what to verify after a change.
-- [Deployment](/deployment/) — Build the archive, deploy to a server or publish to a Hub; deployment has a chapter of its own.
+- [Deployment](/deployment/) — Build the archive and deploy it to a server; deployment has a chapter of its own.
 - Reference — Look things up by name: [Route types](./reference/routes), [Style tokens](./reference/theme-tokens).

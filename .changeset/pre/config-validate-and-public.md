@@ -6,7 +6,6 @@
 "@nocobase/app-skills": patch
 "@nocobase/app-template-default": patch
 "@nocobase/app-template-examples": patch
-"@nocobase/app-template-hub": patch
 ---
 
 Let a configuration section declare validation and the fields the browser may read, and use it to hide sign-up when the server has disabled it.

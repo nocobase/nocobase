@@ -2,7 +2,6 @@
 '@nocobase/app-skills': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Revert the Settings theme page and the converted theme presets.

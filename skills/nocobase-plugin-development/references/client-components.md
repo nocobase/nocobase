@@ -230,15 +230,15 @@ Destructure `add` and `close` rather than keeping the returned object: the objec
 
 ## Keep page modules lazy
 
-Route declarations load page modules instead of statically importing them in `client/plugin.ts`. Declare `authz` on the first page of every path, as a check, `'skip'` or `'unrestricted'`. A nested page that omits it inherits its nearest ancestor page's value. A first page that omits it still registers with a development warning, defaulting to `'unrestricted'` (root only) on a protected App or settings page and to `'skip'` on a guest, optional or dev page, so always declare it:
+Route declarations load page modules instead of statically importing them in `client/plugin.ts`. Declare `authz` on the first page of every path, as a check, `'skip'` or `'unrestricted'`. A nested page that omits it inherits its nearest ancestor page's value. A first page that omits it still registers with a development warning, defaulting to `'unrestricted'` (root only) on a protected page and to `'skip'` on a guest or optional page, so always declare it:
 
 ```ts
-defineSettingsRoutes([
+defineAppRoutes([
   {
     name: 'audit-log',
     path: '/audit-log',
     navigation: { title: 'auditLog.title' },
-    authz: { resource: { type: 'settings', id: 'audit-log' }, action: 'read' },
+    authz: { resource: { type: 'page', id: 'audit-log' }, action: 'access' },
     componentLoader: () => import('./pages/audit-log-page.js'),
   },
 ]);

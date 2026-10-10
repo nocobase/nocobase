@@ -1,1 +1,0 @@
-Prompt from markdown file.

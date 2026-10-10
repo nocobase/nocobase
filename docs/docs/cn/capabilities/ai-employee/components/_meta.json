@@ -1,8 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "组件概览" },
-  { "type": "file", "name": "chat", "label": "聊天框" },
-  { "type": "file", "name": "floating", "label": "全局对话入口" },
-  { "type": "file", "name": "tasks", "label": "员工任务" },
-  { "type": "file", "name": "context", "label": "页面上下文" },
-  { "type": "file", "name": "tool-cards", "label": "Tool 卡片" }
-]

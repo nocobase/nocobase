@@ -111,8 +111,8 @@ export interface SkillsSyncPlan {
 
 /**
  * The skill directory prefix a plugin package owns. The prefix is the package
- * name without its scope, so `@nocobase/app-plugin-workflow` owns
- * `nocobase-app-plugin-workflow` and `nocobase-app-plugin-workflow-<suffix>`.
+ * name without its scope, so `@nocobase/app-plugin-scheduler` owns
+ * `nocobase-app-plugin-scheduler` and `nocobase-app-plugin-scheduler-<suffix>`.
  */
 export function pluginSkillPrefix(packageName: string): string {
   if (!packageName.startsWith(PACKAGE_SCOPE)) {

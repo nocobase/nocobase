@@ -1,9 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
-  nav: {
-    devInbox: 'In-app notification',
-  },
   inbox: {
     eyebrow: 'Personal inbox',
     title: 'Message center',

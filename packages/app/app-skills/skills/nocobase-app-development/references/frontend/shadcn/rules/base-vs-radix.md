@@ -52,13 +52,13 @@ When `render` changes an element to a non-button (`<a>`, `<span>`), add `nativeB
 **Incorrect (base):** missing `nativeButton={false}`.
 
 ```tsx
-<Button render={<a href="/docs" />}>Read the docs</Button>
+<Button render={<a href='/docs' />}>Read the docs</Button>
 ```
 
 **Correct (base):**
 
 ```tsx
-<Button render={<a href="/docs" />} nativeButton={false}>
+<Button render={<a href='/docs' />} nativeButton={false}>
   Read the docs
 </Button>
 ```
@@ -67,7 +67,7 @@ When `render` changes an element to a non-button (`<a>`, `<span>`), add `nativeB
 
 ```tsx
 <Button asChild>
-  <a href="/docs">Read the docs</a>
+  <a href='/docs'>Read the docs</a>
 </Button>
 ```
 
@@ -90,7 +90,9 @@ Same for triggers whose `render` is not a `Button`:
 
 ```tsx
 <Select>
-  <SelectTrigger><SelectValue placeholder="Select a fruit" /></SelectTrigger>
+  <SelectTrigger>
+    <SelectValue placeholder='Select a fruit' />
+  </SelectTrigger>
 </Select>
 ```
 
@@ -122,12 +124,12 @@ const items = [
 ```tsx
 <Select>
   <SelectTrigger>
-    <SelectValue placeholder="Select a fruit" />
+    <SelectValue placeholder='Select a fruit' />
   </SelectTrigger>
   <SelectContent>
     <SelectGroup>
-      <SelectItem value="apple">Apple</SelectItem>
-      <SelectItem value="banana">Banana</SelectItem>
+      <SelectItem value='apple'>Apple</SelectItem>
+      <SelectItem value='banana'>Banana</SelectItem>
     </SelectGroup>
   </SelectContent>
 </Select>
@@ -157,7 +159,9 @@ Base supports `multiple`, render-function children on `SelectValue`, and object 
 <Select items={items} multiple defaultValue={[]}>
   <SelectTrigger>
     <SelectValue>
-      {(value: string[]) => value.length === 0 ? "Select fruits" : `${value.length} selected`}
+      {(value: string[]) =>
+        value.length === 0 ? 'Select fruits' : `${value.length} selected`
+      }
     </SelectValue>
   </SelectTrigger>
   ...
@@ -184,8 +188,8 @@ Base uses a `multiple` boolean prop. Radix uses `type="single"` or `type="multip
 **Incorrect (base):**
 
 ```tsx
-<ToggleGroup type="single" defaultValue="daily">
-  <ToggleGroupItem value="daily">Daily</ToggleGroupItem>
+<ToggleGroup type='single' defaultValue='daily'>
+  <ToggleGroupItem value='daily'>Daily</ToggleGroupItem>
 </ToggleGroup>
 ```
 
@@ -278,8 +282,8 @@ Radix requires `type="single"` or `type="multiple"` and supports `collapsible`. 
 **Incorrect (base):**
 
 ```tsx
-<Accordion type="single" collapsible defaultValue="item-1">
-  <AccordionItem value="item-1">...</AccordionItem>
+<Accordion type='single' collapsible defaultValue='item-1'>
+  <AccordionItem value='item-1'>...</AccordionItem>
 </Accordion>
 ```
 
@@ -300,7 +304,7 @@ Radix requires `type="single"` or `type="multiple"` and supports `collapsible`. 
 **Correct (radix):**
 
 ```tsx
-<Accordion type="single" collapsible defaultValue="item-1">
-  <AccordionItem value="item-1">...</AccordionItem>
+<Accordion type='single' collapsible defaultValue='item-1'>
+  <AccordionItem value='item-1'>...</AccordionItem>
 </Accordion>
 ```

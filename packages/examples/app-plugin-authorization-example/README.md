@@ -21,7 +21,7 @@ The rule plugins are optional peers: without one, the seed skips its rules and t
 
 Engineers can edit their own out-of-region drafts without being allowed to submit them. The proposal engineer can edit/submit quote-7 through explicit quote and project-3 sharing. Sharing alone does not grant Submit. The coordinator manages owned project-8 in another region; direct confidentiality restrictions remain in force. Orders reference accepted historical quotes, separate from the draft exercises; submitting a practice quote does not create an order.
 
-Every account holds its job directly. For permission sets inherited through an organisation, such as a set assigned to a department that reaches its members, see the [departments example](../app-plugin-departments-example/README.md).
+Every account holds its job directly.
 
 ## Source map
 

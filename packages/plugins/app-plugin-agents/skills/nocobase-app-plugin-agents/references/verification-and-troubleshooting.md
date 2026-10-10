@@ -22,6 +22,10 @@ Test what the App builds on the plugin, not the plugin itself. `@nocobase/app-pl
 | Vectors                   | `vectors.status()` on `agentsToken`: availability, store and the `VectorUnavailableCode`                                                                                                                                                                                |
 | The runner itself         | `nocobase-runner status`, `nocobase-runner logs -f [--run <id>]`, `~/.nocobase-runner/policy.json`                                                                                                                                                                      |
 
+## Filtering a run transcript
+
+`GET /api/agents/runs/:runId/events` accepts repeated `type` query parameters (for example, `?type=text&type=input`). The generated `run events` command exposes repeatable `--type` flags. Values are raw protocol event types, not UI groups: `text`, `thinking`, `toolUse`, `toolResult`, `permission`, `input`, `checkout`, `status`, `error`, `usage`. Omitting the filter returns every type. The service equivalent is `agents.runs.events(runId, afterSeq, limit, types?)`. Filtering happens before pagination; retain the same types with `pageToken` or the returned `lastSeq`. These API/CLI filters are exact and do not automatically include errors. A UI that summarizes hidden events must load the complete history and filter locally.
+
 ## Troubleshooting
 
 | Symptom                                                                      | Cause and fix                                                                                                                                                                                                                                                                                                                             |

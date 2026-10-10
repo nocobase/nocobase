@@ -45,7 +45,7 @@ export default {
     title: 'Your roles',
     direct: 'Direct assignment',
     coverage:
-      'Each example account holds its job responsibilities through a direct assignment. The departments example shows roles inherited from an organisation.',
+      'Each example account holds its job responsibilities through a direct assignment.',
   },
   rules: {
     public: 'Exclude confidential projects',

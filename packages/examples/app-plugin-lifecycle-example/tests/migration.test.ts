@@ -111,3 +111,66 @@ describeMigration('202610010001_lifecycle_example_create_collections', {
     for (const name of COLLECTIONS) await expectCollection(name).not.toExist();
   },
 });
+
+const FLOW_COLLECTIONS = [
+  'lifecycleExampleOrders',
+  'lifecycleExampleExports',
+  'lifecycleExamplePurchases',
+  'lifecycleExampleFulfilments',
+  'lifecycleExampleSubscriptions',
+];
+
+describeMigration('202610090001_lifecycle_example_create_durable_flows', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    for (const name of FLOW_COLLECTIONS) {
+      await expectCollection(name).toExist();
+      await expectCollection(name).toHaveField('lifecycleVersion', {
+        nullable: false,
+      });
+      // What the trigger sweep reads.
+      await expectCollection(name).toHaveIndex(['status', 'statusChangedAt']);
+    }
+    // What the renewal sweep reads.
+    await expectCollection('lifecycleExampleSubscriptions').toHaveIndex([
+      'status',
+      'currentPeriodEnd',
+    ]);
+    // A simulated system's object is found by its kind and key, once.
+    await expectCollection('lifecycleExampleSandboxObjects').toHaveIndex(
+      ['kind', 'key'],
+      { unique: true },
+    );
+    const objects = connection.repository('lifecycleExampleSandboxObjects');
+    const object = {
+      values: {
+        kind: 'checkout',
+        key: 'cs_1',
+        status: 'open',
+        data: {},
+        version: 0,
+        createdAt: '2026-10-09T09:00:00.000Z',
+        updatedAt: '2026-10-09T09:00:00.000Z',
+      },
+    };
+    await objects.createOne(object);
+    await expect(objects.createOne(object)).rejects.toThrow();
+    // An event is sent under one id, however often it is delivered.
+    await expectCollection('lifecycleExampleWebhookEvents').toHaveIndex(
+      ['eventId'],
+      { unique: true },
+    );
+    await expectCollection('lifecycleExampleWebhookEvents').toHaveField(
+      'outcome',
+      { nullable: true },
+    );
+  },
+  down: async ({ expectCollection }) => {
+    for (const name of [
+      ...FLOW_COLLECTIONS,
+      'lifecycleExampleSandboxObjects',
+      'lifecycleExampleWebhookEvents',
+    ])
+      await expectCollection(name).not.toExist();
+  },
+});
