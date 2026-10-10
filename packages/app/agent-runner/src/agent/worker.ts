@@ -158,6 +158,12 @@ export function workspaceNotes(options: {
           : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (the only branch you can push).`,
       );
     }
+    for (const dir of dirs) {
+      if (dir.repo?.initializing)
+        lines.push(
+          `The remote ${dir.repo.url} has no refs. This checkout is initializing it on ${dir.repo.branch}, with no base commit. Implement the task in this directory, verify the result, then commit and push this branch. This first delivery needs no pull request, even if the usual workflow asks for one: there is no base branch yet. The push may only create the branch, not overwrite a branch created by someone else. Preserve existing files and commits on a retry. Report the actual checks and any failure; do not claim the task is complete merely because the first push succeeded.`,
+        );
+    }
     lines.push(
       `Keep every file you write inside these directories or the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}).`,
     );

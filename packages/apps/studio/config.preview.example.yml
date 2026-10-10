@@ -1,0 +1,118 @@
+# Studio preview configuration: one process, SQLite, the in-app inbox only, no email, no runners, and optionally a
+# team's worth of demo data. For a production configuration start from config.example.yml instead.
+#
+#   cp config.preview.example.yml config.yml
+#
+# then replace every `replace-with-…` value below; the application refuses to start on the placeholder secrets. Generate
+# the key with `openssl rand -hex 32`.
+
+app:
+  # The origin people open the preview at: scheme, host and port, no path. Sign-in checks it.
+  publicOrigin: https://studio-preview.example.com
+  # Builds the demo data when the database is installed: a small team (each with the password demo1234), labels, a
+  # review checklist on the Software development workflow, three projects with issues in every status, comments, skills
+  # and agents. No runners and no repositories are created. It happens once, at installation; turning it on later adds
+  # nothing, and `pnpm nocobase db sample` builds it afterwards in development. APP_SAMPLE_DATA=true sets it too.
+  sampleData: false
+
+# The language the preview starts in, for the browser and the server alike.
+i18n:
+  defaultLocale: zh-CN
+
+client:
+  app:
+    title: Studio
+
+users:
+  # The first administrator, created when the database is installed. Changing these values later does not reset an
+  # existing account.
+  initialAdmin:
+    username: replace-with-an-admin-username # 3–30 letters, digits, underscores or dots
+    email: replace-with-an-admin-email@example.com
+    password: replace-with-an-admin-password
+
+# Encrypts what Studio stores as a secret (agent, project and repository variables, model keys, release credentials)
+# and derives the sign-in and session keys. Keep it: values sealed under one key cannot be read without it. To rotate,
+# put a new key first with a higher version, run `pnpm nocobase secrets rotate`, then remove the old one.
+secrets:
+  keys:
+    - version: 1
+      key: replace-with-a-unique-secret
+
+auth:
+  emailAndPassword:
+    enabled: true
+    autoSignIn: false
+  session:
+    storeSessionInDatabase: true
+
+studio:
+  # How long an issue's agent run may wait for a runner before it fails (queuedExpired) and the issue's owner is asked
+  # to retry it, give the issue to someone else or cancel it. 0 lets it wait forever.
+  # agents:
+  #   queuedExpiryHours: 24
+  # Release management (docs/releases.md): a "Preview" environment on the local App Host is created at installation.
+  # Give previews their own origin in production, a site pointing at the Host port (releases.host.port).
+  # releases:
+  #   previewEnvironment: true
+  #   previewPublicUrl: https://studio-preview.example.com/{appId}/
+
+# Inbox and mentions go to the in-app channel only; nothing is sent by email.
+notification:
+  channels:
+    inbox:
+      provider: in-app
+
+database:
+  default: main
+  connections:
+    main:
+      dialect: sqlite
+      database: database.sqlite
+      debug: false
+      schemaManagement: managed
+      migrations:
+        autoRun: true
+      seeds:
+        autoRun: true
+
+snowflake:
+  workerId: 0
+  epoch: 1605024000
+
+# The knowledge base's vectors (semantic search) in storage/vectors.sqlite with sqlite-vec, the default for one
+# process. To use a PostgreSQL with pgvector of its own instead, or to turn semantic search off (store: false):
+# agents:
+#   vectors:
+#     store: pgvector
+#     url: postgres://vectors:replace-with-the-password@db.internal:5432/vectors
+
+# One process: scheduled jobs run in it, kept in storage/jobs between restarts.
+jobs:
+  default: memory
+
+server:
+  host: 0.0.0.0
+  port: 13000
+  startLog: true
+
+# Warnings and errors only; files are kept for a week.
+logging:
+  level: warn
+  file:
+    enabled: true
+    retentionDays: 7
+    name: app
+    maxFileSizeMB: 10
+    maxTotalSizeMB: 100
+  loggers:
+    request:
+      level: warn
+      file:
+        name: request
+  console:
+    enabled: true
+    pretty: false
+
+# Agent runners are not configured here: the preview starts none. Register one from the Runtimes page when an agent
+# should work on issues.

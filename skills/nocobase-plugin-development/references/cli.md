@@ -254,19 +254,19 @@ A CLI plugin can attach commands to App lifecycle stages:
 
 ```ts
 const cliPlugin: AppCliPlugin = defineCliPlugin({
-  packageName: '@nocobase/app-plugin-workflow',
-  devCommands: { check: WorkflowCheck, build: WorkflowBuild },
+  packageName: '@acme/app-plugin-reports',
+  devCommands: { compile: ReportsCompile },
   buildHooks: {
     afterServerBuild: [
       {
-        label: 'Build workflow artifacts',
+        label: 'Compile report templates',
         command: [
           'pnpm',
           'nocobase',
-          'workflow',
-          'build',
-          '--resource-root',
-          './dist/server/workflows',
+          'reports',
+          'compile',
+          '--out-dir',
+          './dist/server/reports',
         ],
       },
     ],
@@ -274,7 +274,7 @@ const cliPlugin: AppCliPlugin = defineCliPlugin({
 });
 ```
 
-`devHooks` takes the same shape for the `beforeDev` stage. The Workflow plugin declares none: outside production its loader compiles `server/workflows` on demand, so a build before `pnpm dev` would only slow every start.
+`devHooks` takes the same shape for the `beforeDev` stage. Declare one only when development genuinely needs the step before the server starts; a plugin that can compile its inputs on demand at run time should not slow every `pnpm dev` start with it.
 
 Choose a stage by what exists when the hook runs:
 

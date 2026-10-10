@@ -17,7 +17,6 @@
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-template-print-example': patch
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-workflow': patch
 ---
 
 Tests in these plugins and example plugins take their fixtures from `@nocobase/app-testing` alone: database fixtures such as `createDatabaseTest()`, `describeMigration()` and `expectCollection()` from `@nocobase/app-testing/server`, and the command runner from `@nocobase/app-testing/cli`. Each package replaces its `@nocobase/db-testing` development dependency with `@nocobase/app-testing`. Nothing any of them ships changes.

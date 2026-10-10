@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-default",
   "displayName": "Default Template",
-  "version": "1.0.0-beta.58",
+  "version": "1.0.0-beta.60",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.58"
+    "defaultTemplateVersion": "1.0.0-beta.60"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -94,7 +94,6 @@
     "cli",
     "client",
     "server",
-    "workflows",
     "database/tsconfig.json",
     "database/*/migrations/**",
     "database/*/seeds/**",
@@ -168,7 +167,6 @@
     "@nocobase/app-plugin-notification-providers": "workspace:^",
     "@nocobase/app-plugin-scheduler": "workspace:^",
     "@nocobase/app-plugin-users": "workspace:^",
-    "@nocobase/app-plugin-workflow": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/db": "workspace:^",
@@ -184,6 +182,7 @@
     "@nocobase/authorization": "workspace:^",
     "@nocobase/queue": "workspace:^",
     "@nocobase/jobs": "workspace:^",
+    "@nocobase/lifecycle": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
     "@nocobase/repository-input": "workspace:^",

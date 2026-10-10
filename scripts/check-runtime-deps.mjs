@@ -4,7 +4,7 @@
 // bare imports intact and installs a `node_modules` beside it from the generated `dist/package.json`, which is built
 // by following `dependencies` alone. A server module importing something declared only as a devDependency therefore
 // resolves in every development checkout and is simply absent on the deployed server.
-// `@nocobase/app-plugin-workflow` shipped exactly that: `server/loader/source-parser.ts` imports `typescript`, which
+// A plugin shipped exactly that: a server module imported `typescript`, which
 // was a devDependency, so a built application crashed on start with `Cannot find package 'typescript'`.
 //
 // Client code fails the same way, one step later. A plugin's `client/` is not bundled by the plugin — `build` is
@@ -63,7 +63,7 @@ const SKIPPED_DIRECTORIES = new Set([
  * Top-level directories a package publishes, derived from `files`.
  *
  * `files` is the authoritative answer to whether code ships, so the scan follows it rather than a list maintained
- * here — tooling that runs from a checkout, such as `app-plugin-workflow`'s `skill-evals`, is excluded because the
+ * here — tooling that runs from a checkout, such as a plugin's `skill-evals`, is excluded because the
  * manifest already excludes it, not because this script knows its name.
  *
  * A package that ships `dist` is checked through the source files in its emitting TypeScript projects instead; see

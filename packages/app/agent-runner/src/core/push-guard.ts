@@ -56,6 +56,7 @@ if [ ! -f "$allow" ]; then
 fi
 allowed_url="$(sed -n 's/^url=//p' "$allow")"
 allowed_branch="$(sed -n 's/^branch=//p' "$allow")"
+create_only="$(sed -n 's/^createOnly=//p' "$allow")"
 if [ "$remote_url" != "$allowed_url" ]; then
   echo "nocobase-runner: this checkout may push only to $allowed_url, not $remote_url." >&2
   exit 1
@@ -64,6 +65,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   if [ "$remote_ref" != "refs/heads/$allowed_branch" ]; then
     echo "nocobase-runner: this checkout may push only the branch $allowed_branch, not $remote_ref." >&2
     exit 1
+  fi
+  if [ "$create_only" = "true" ]; then
+    case "$remote_sha" in
+      *[!0]*) echo "nocobase-runner: initial push may only create $remote_ref; it already exists. Refresh the repository and retry the task." >&2; exit 1 ;;
+    esac
   fi
   case "$local_sha" in
     *[!0]*) ;;
@@ -107,11 +113,12 @@ export async function allowPush(
   url: string,
   branch: string,
   allowDir: string,
+  options: { readonly createOnly?: boolean } = {},
 ): Promise<void> {
   await mkdir(allowDir, { recursive: true, mode: 0o700 });
   await writeFile(
     await pushAllowPath(allowDir, gitDir),
-    `url=${url}\nbranch=${branch}\n`,
+    `url=${url}\nbranch=${branch}\n${options.createOnly ? 'createOnly=true\n' : ''}`,
     { mode: 0o600 },
   );
   await rm(path.join(gitDir, ALLOW_FILE), { force: true });

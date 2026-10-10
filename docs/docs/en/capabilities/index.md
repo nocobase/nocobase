@@ -13,6 +13,8 @@ The table below lists the capabilities and example use cases. Follow each link f
 | ---------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
 | [Authentication](./auth)                 | Sign-in, registration, sessions, and authentication methods  | Employees sign in to a purchasing application                   |
 | [Permissions](./authorization)           | Access control for pages, actions, and records               | Buyers manage their suppliers; managers view team records       |
+| [Workflow](./workflow)                   | Multi-step processes that wait for people, systems, or time  | Cancel an order automatically when it stays unpaid too long     |
+| [Approval](./approval)                   | Multi-level approval, countersigning, hand-over, and copies  | Route a purchase request through approvers by amount            |
 | [Scheduled tasks](./scheduler)           | Time-based processing with execution history                 | Check supplier certifications for upcoming expiration           |
 | [Notifications](./notification)          | In-app messages, email, and group messages                   | Notify a supplier owner when a certification is about to expire |
 | [Mail](./mail)                           | Connect mailboxes to read, reply to, and send email          | Handle customer correspondence from a customer page             |

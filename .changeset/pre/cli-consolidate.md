@@ -2,7 +2,6 @@
 '@nocobase/app-cli': major
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-plugin-workflow': minor
 '@nocobase/app-plugin-scheduler': minor
 '@nocobase/app-plugin-cli-example': minor
 '@nocobase/create-app': minor

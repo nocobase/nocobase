@@ -1,0 +1,18 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/server-library.json",
+  "compilerOptions": {
+    // Application configuration factories infer exports during the full TypeScript build.
+    "isolatedDeclarations": false,
+    // tsc-alias completes relative ESM paths after compilation.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "rootDir": ".",
+    "outDir": "dist",
+    "paths": {
+      "@/jobs/*.js": ["./server/jobs/*.ts"],
+      "@/jobs/*": ["./server/jobs/*"]
+    }
+  },
+  "tsc-alias": { "resolveFullPaths": true },
+  "include": ["server/**/*.ts", "database/**/*.ts", "cli/**/*.ts"]
+}

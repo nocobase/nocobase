@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-workflow': minor
 '@nocobase/dev-config': minor
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch

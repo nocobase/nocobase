@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.40",
+  "version": "1.0.0-beta.42",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.40"
+    "defaultTemplateVersion": "1.0.0-beta.42"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -26,6 +26,7 @@
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
+    "@nocobase/markdown-mermaid": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",
     "@refinedev/cli": "^2.16.48",
@@ -93,7 +94,6 @@
     "cli",
     "client",
     "server",
-    "workflows",
     "database/tsconfig.json",
     "database/*/migrations/**",
     "database/*/seeds/**",
@@ -184,7 +184,6 @@
     "@nocobase/app-plugin-service-provider-example": "workspace:^",
     "@nocobase/app-plugin-skills-example": "workspace:^",
     "@nocobase/app-plugin-users": "workspace:^",
-    "@nocobase/app-plugin-workflow": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/db": "workspace:^",

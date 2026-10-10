@@ -12,7 +12,6 @@
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-plugin-service-provider-example': patch
 '@nocobase/app-plugin-skills-example': patch
-'@nocobase/app-plugin-workflow': patch
 ---
 
 Unify Client and Server application composition around the explicit `serviceProviders` contribution and rename Client React tree contributions to `reactProviders`.
