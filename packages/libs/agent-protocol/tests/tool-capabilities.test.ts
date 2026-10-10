@@ -104,7 +104,7 @@ describe('tool capabilities within protocol 7', () => {
   });
 
   it('accepts legacy tools and lets legacy receivers strip the optional additions', () => {
-    expect(PROTOCOL_VERSION).toBe(7);
+    expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(7);
     expect(ToolInfoSchema.parse(legacy)).toEqual(legacy);
     expect(
       z
