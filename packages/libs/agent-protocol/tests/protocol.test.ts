@@ -13,6 +13,7 @@ import {
   exitCodeFor,
   HeartbeatRequestSchema,
   isProtocolSupported,
+  acceptedFailure,
   isRetryable,
   MAX_EVENTS_PER_BATCH,
   MIN_PROTOCOL_VERSION,
@@ -132,6 +133,23 @@ describe('agent protocol', () => {
     expect(ClaimResponseSchema.parse({ runs: [payload] })).toEqual({
       runs: [payload],
     });
+  });
+
+  it('reports prepareNetwork only to an application that announces it', () => {
+    expect(acceptedFailure('prepareNetwork', ['prepareNetwork'])).toBe(
+      'prepareNetwork',
+    );
+    expect(acceptedFailure('prepareNetwork', undefined)).toBe('checkoutFailed');
+    expect(acceptedFailure('prepareNetwork', [])).toBe('checkoutFailed');
+    expect(acceptedFailure('toolNetwork', undefined)).toBe('toolNetwork');
+    const run = {
+      ...payload.run,
+      acceptedFailures: ['prepareNetwork', 'later'],
+    };
+    expect(RunPayloadSchema.parse({ ...payload, run }).run).toEqual(run);
+    expect(
+      RunPayloadSchema.parse(payload).run.acceptedFailures,
+    ).toBeUndefined();
   });
 
   it('carries mounts inside the work directory, and reads a payload without them', () => {
@@ -327,6 +345,8 @@ describe('agent protocol', () => {
   it('classifies failures and errors', () => {
     expect(isRetryable('runnerOffline')).toBe(true);
     expect(isRetryable('toolAuth')).toBe(false);
+    expect(isRetryable('prepareNetwork')).toBe(true);
+    expect(isRetryable('checkoutFailed')).toBe(false);
     expect(ERROR_STATUS.RUN_INPUT_PENDING).toBe(400);
     expect(ERROR_API_STATUS.RUN_INPUT_PENDING).toBe('FAILED_PRECONDITION');
     expect(ERROR_STATUS.LEASE_LOST).toBe(409);

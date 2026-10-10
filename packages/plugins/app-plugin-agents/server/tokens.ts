@@ -67,6 +67,11 @@ export type {
 } from './online/index.js';
 export { commandRef, dialectOf } from './core/runs/ports.js';
 export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './core/runs/execution-view.js';
+export {
   RUN_CREDENTIAL,
   runIdentityOf,
   type RunCredentialData,
@@ -86,6 +91,12 @@ export type {
   ContextProvider,
   EnqueueRequest,
   EnqueueResult,
+  RunEnqueued,
+  RunRequestPending,
+  RunRequestFilter,
+  RunRequestReassignment,
+  RunRequestService,
+  RequestedRun,
   MountContext,
   MountOffer,
   NewInput,
@@ -102,6 +113,7 @@ export type {
   SubjectFacts,
   SubjectRegistry,
   SubjectReports,
+  SubjectWorkspaces,
   SubjectScope,
   WorkSink,
 } from './core/runs/index.js';
@@ -110,7 +122,7 @@ export type { Tx } from './kernel/tx.js';
 export type {
   AgentsEvent,
   AgentsEventBus,
-  RunnerNotice,
+  AgentsNotice,
 } from './kernel/events.js';
 export type { DistConfig, DistService } from './distribution/index.js';
 export { JobSecretsNotAllowed } from './jobs/index.js';

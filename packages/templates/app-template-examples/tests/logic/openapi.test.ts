@@ -146,10 +146,7 @@ describe('API document of the examples application', () => {
       'examplesCreateArticle',
       'examplesGetGreeting',
       'examplesGetNumericExamples',
-      'examplesGetQuotationReviewTask',
       'examplesListArticles',
-      'examplesListQuotationReviewTasks',
-      'examplesSubmitQuotationReviewTask',
       'examplesUpdateArticle',
     ]);
     expect(own.every(({ tags }) => tags?.[0] === 'Examples')).toBe(true);

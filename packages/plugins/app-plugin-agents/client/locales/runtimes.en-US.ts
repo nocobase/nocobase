@@ -51,6 +51,14 @@ const runtimesEnUS = {
       subjects: 'Subjects',
       repos: 'Repositories',
     },
+    variables: {
+      title: 'Variables from this machine',
+      description:
+        'The variables it provides to runs that take them from the runtime, by name; the values stay on the machine. Set one there with `nocobase-runner env set NAME`, or pass it with `--pass-env NAME`.',
+      none: 'None: a run that takes a variable from the runtime fails here before it starts.',
+      unknown:
+        'Not reported: its runner is older than this feature. Update the runner to see them.',
+    },
     jobs: {
       allow: 'Allow build jobs',
       hint: 'Builds and other steps this application configures, run without a model. This runtime reports: {{kinds}}.',
@@ -77,7 +85,7 @@ const runtimesEnUS = {
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
       runsFailed: 'Could not load its runs.',
-      readOnly: 'Only its owner or a manager of runtimes can change it.',
+      readOnly: 'Only its owner can change it.',
       owner: 'Owner {{name}}',
     },
     status: {

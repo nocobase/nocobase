@@ -19,6 +19,7 @@ const TABLES = [
   'agWorkspaceResets',
   'agSecrets',
   'agSecretAudits',
+  'agRunnerVariables',
   'agSkills',
   'agSkillVersions',
   'agSkillAttachments',

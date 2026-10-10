@@ -69,6 +69,7 @@ export type ErrorCode =
   | 'SCOPE_NOT_FOUND'
   | 'PRODUCT_NOT_FOUND'
   | 'DIST_FILE_NOT_FOUND'
+  | 'RUN_REQUEST_NOT_FOUND'
   | 'COMMAND_UNKNOWN'
   | 'PLATFORM_UNSUPPORTED'
   | 'CONFLICT'
@@ -83,6 +84,8 @@ export type ErrorCode =
   | 'AGENT_NOT_ARCHIVED'
   | 'AGENT_HAS_ACTIVE_RUNS'
   | 'AGENT_BUSY'
+  | 'RUN_REQUEST_SETTLED'
+  | 'NO_RUNNER_AVAILABLE'
   | 'RUNNER_NOT_REVOKED'
   | 'SKILL_VERSION_CURRENT'
   | 'CONVERSATION_CONFLICT'
@@ -129,6 +132,8 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   SCOPE_NOT_FOUND: 'NOT_FOUND',
   PRODUCT_NOT_FOUND: 'NOT_FOUND',
   DIST_FILE_NOT_FOUND: 'NOT_FOUND',
+  /** A run request (work someone asked of an agent another person answers for) that does not exist, or that the caller may not see. */
+  RUN_REQUEST_NOT_FOUND: 'NOT_FOUND',
   COMMAND_UNKNOWN: 'NOT_FOUND',
   /** The application serves no build of this product for the asking platform; `metadata.targets` lists those it has. */
   PLATFORM_UNSUPPORTED: 'NOT_FOUND',
@@ -148,6 +153,10 @@ export const ERROR_API_STATUS: Readonly<Record<ErrorCode, ApiStatus>> = {
   AGENT_HAS_ACTIVE_RUNS: 'FAILED_PRECONDITION',
   /** The agent already works on the same subject; `metadata.runId` is that run. */
   AGENT_BUSY: 'FAILED_PRECONDITION',
+  /** The run request was already confirmed, rejected, withdrawn, superseded or expired; `metadata.status` says which. */
+  RUN_REQUEST_SETTLED: 'FAILED_PRECONDITION',
+  /** No runner the person may use can run the agent now, so work run as them would only wait; nothing was queued. */
+  NO_RUNNER_AVAILABLE: 'FAILED_PRECONDITION',
   RUNNER_NOT_REVOKED: 'FAILED_PRECONDITION',
   SKILL_VERSION_CURRENT: 'FAILED_PRECONDITION',
   /** The conversation's state forbids this; `metadata.reason` says which (`ConversationConflict`). */

@@ -5,22 +5,36 @@
 //
 // Each repository URL has one bare cache, `~/.nocobase-runner/repos/<sha1(url)>.git`, fetched into
 // `refs/remotes/origin/*`. Each subject of each application has one long-lived work directory,
-// `<work root>/<app>/<subjectKey>/`, and every repository is a worktree of its cache at `<workDir>/<repo.path>` on the
-// run's branch (`agent/<key>`). A later run of the same subject finds the worktree and keeps working in it; nothing is
-// reset. Every worktree gets the push guard (push-guard.ts): it may push only that branch, to that repository. A run
+// `<work root>/<app>/<subjectKey>/`, and every new repository is a reference clone at `<workDir>/<repo.path>` on the
+// run's branch (`agent/<key>`). Git metadata stays inside that directory; only existing objects are borrowed from the
+// cache, whose automatic GC is disabled. A later run finds the clone (or a legacy worktree) and keeps working; nothing is
+// reset. Every checkout gets the push guard (push-guard.ts): it may push only that branch, to that repository. A run
 // never works on the default branch, except the one run that makes an empty repository's first commit
-// (`RepoDir.initial`): its worktree starts on the default branch with no parent, and that branch is the one it pushes.
+// (`RepoDir.initial`): its checkout starts on the default branch with no parent, and that branch is the one it pushes.
 //
 // Locks are directories created with mkdir, which is atomic, holding the owner's pid: one for each subject, one for
 // each cache. A lock whose owner is dead is taken over.
 //
 // GC removes a subject's work directory 7 days after a run that ended with every branch pushed, and any work directory
-// not used for 30 days.
+// not used for 30 days, unless it holds work that was never pushed (`hasUnpushedWork`). The runner's record of each
+// work directory lives in its own directory, out of the agent's reach (`workspaceRecordPath`). The application's word that the work is over, and the owner's size limit, remove others
+// (workspaces.ts).
 //
 // A repository the run carries a credential for (`workspace.git.credentials`, a short-lived token) is fetched with it,
 // and the agent's git pushes with it through a credential helper (env.ts); it is never written to disk. Without one,
 // the host's own git credentials are used.
-import { execFile } from 'node:child_process';
+//
+// A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
+// sandbox of its tool. New checkouts keep their Git metadata (including submodule `modules/`) in their own `.git`;
+// legacy worktrees keep it under `<cache>/worktrees/<name>/`. They are fetched with the repository's credential, sent
+// only to the repository's own host. A new checkout initializes every submodule, recursively; an existing one only those not
+// initialized yet, so a submodule the agent moved keeps its state. A failure fails the preparation, and what it was
+// initializing is recorded in the protected cache, keyed by the checkout's Git directory, until an update succeeds: a
+// later preparation of the same checkout finishes it, nested submodules included, even though the top-level ones
+// already look initialized. The agent never ran in between, so there is no state of its to keep.
+//
+// Cloning, fetching and the submodules' update are retried where they fail for a passing cause, and abort a stalled
+// transfer instead of hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import {
@@ -32,7 +46,6 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { delay } from '../lib/http.ts';
 import {
@@ -48,74 +61,23 @@ import type {
   WorkspaceDir,
 } from '../protocol/index.ts';
 import { isInside } from './command-policy.ts';
+import {
+  GIT_LOW_SPEED_CONFIG,
+  GitNetworkError,
+  retryGit,
+  type GitRetryOptions,
+} from './git-retry.ts';
 import { allowPush, installGitHooks } from './push-guard.ts';
 import { isAlive } from './supervisor.ts';
+import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
+import {
+  taskGit,
+  taskGitDir,
+  taskGitOk,
+  type TaskGitContext,
+} from './task-git.ts';
 
-const run = promisify(execFile);
-
-export class CheckoutError extends Error {
-  override name = 'CheckoutError';
-}
-
-/** An HTTPS token git fetches with, for one invocation (a job's `repo.auth`). */
-export interface GitAuth {
-  readonly username?: string;
-  readonly token: string;
-}
-
-/**
- * The environment that gives one git invocation an `Authorization` header, through `GIT_CONFIG_*` so the token is in
- * neither the command line nor any configuration file.
- */
-export function gitAuthEnv(auth: GitAuth | undefined): Record<string, string> {
-  if (auth === undefined) return {};
-  const basic = Buffer.from(
-    `${auth.username ?? 'x-access-token'}:${auth.token}`,
-  ).toString('base64');
-  return {
-    GIT_CONFIG_COUNT: '1',
-    GIT_CONFIG_KEY_0: 'http.extraHeader',
-    GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
-  };
-}
-
-export async function git(
-  args: string[],
-  cwd?: string,
-  env: Record<string, string> = {},
-): Promise<string> {
-  try {
-    const { stdout } = await run('git', args, {
-      cwd,
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-        GIT_ASKPASS: 'echo',
-        ...env,
-      },
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    return stdout.trim();
-  } catch (error) {
-    const stderr = (error as { stderr?: string }).stderr?.trim();
-    throw new CheckoutError(
-      `git ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,
-    );
-  }
-}
-
-export async function gitOk(
-  args: string[],
-  cwd?: string,
-  env: Record<string, string> = {},
-): Promise<boolean> {
-  try {
-    await git(args, cwd, env);
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 
 // ---------------------------------------------------------------------------------------------------------------
 // Locks
@@ -158,7 +120,7 @@ export async function acquireLock(
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Caches and worktrees
+// Caches and checkouts
 
 export function cachePath(paths: RunnerPaths, url: string): string {
   return path.join(
@@ -178,19 +140,23 @@ export function subjectWorkDir(
 /** The runner's own files in a working directory: the agent's home, tmp, the CLI shim and the workspace record. */
 export const RUNNER_DIR = '.nocobase-runner';
 
-/** Locks a repository's cache (fetching into it, adding or removing its worktrees). */
+/** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */
 export function lockCache(cache: string): Promise<Lock> {
   return acquireLock(`${cache}.lock`, { timeoutMs: 120_000 });
 }
 
 /**
  * Creates the repository's bare cache or fetches every branch into it, with the host's git credentials or `auth`.
- * `extra` refspecs are fetched in the same call, such as a tag a job names.
+ * `extra` refspecs are fetched in the same call, such as a tag a job names. Both are retried as `retry` says.
  */
 export async function updateCache(
   paths: RunnerPaths,
   url: string,
-  options: { auth?: GitAuth; extra?: readonly string[] } = {},
+  options: {
+    auth?: GitAuth;
+    extra?: readonly string[];
+    retry?: GitRetryOptions;
+  } = {},
 ): Promise<string> {
   const cache = cachePath(paths, url);
   const env = gitAuthEnv(options.auth);
@@ -198,20 +164,42 @@ export async function updateCache(
   try {
     if (!existsSync(cache)) {
       await mkdir(paths.reposDir, { recursive: true, mode: 0o700 });
-      await git(['clone', '--bare', '--quiet', url, cache], undefined, env);
+      await retryGit(
+        `git clone ${url}`,
+        async () => {
+          // A clone cut off may leave a partial cache behind.
+          await rm(cache, { recursive: true, force: true });
+          await git(
+            [...GIT_LOW_SPEED_CONFIG, 'clone', '--bare', '--quiet', url, cache],
+            paths.reposDir,
+            env,
+          );
+        },
+        options.retry,
+      );
     }
-    await installGitHooks(path.join(cache, 'hooks'));
-    await git(
-      [
-        'fetch',
-        '--prune',
-        '--quiet',
-        'origin',
-        '+refs/heads/*:refs/remotes/origin/*',
-        ...(options.extra ?? []),
-      ],
-      cache,
-      env,
+    // Reference clones borrow objects even after their refs disappear from the cache. Never prune those objects.
+    await git(['config', 'gc.auto', '0'], cache);
+    await git(['config', 'gc.pruneExpire', 'never'], cache);
+    await git(['config', 'maintenance.auto', 'false'], cache);
+    await installGitHooks(path.join(cache, 'hooks'), paths.pushAllowDir);
+    await retryGit(
+      `git fetch ${url}`,
+      () =>
+        git(
+          [
+            ...GIT_LOW_SPEED_CONFIG,
+            'fetch',
+            '--prune',
+            '--quiet',
+            'origin',
+            '+refs/heads/*:refs/remotes/origin/*',
+            ...(options.extra ?? []),
+          ],
+          cache,
+          env,
+        ),
+      options.retry,
     );
     return cache;
   } finally {
@@ -227,6 +215,10 @@ export interface CheckedOutRepo {
   /** Absolute. */
   dir: string;
   cache: string;
+  /** The clone's `.git`, or a legacy worktree's own directory under the cache. */
+  gitDir: string;
+  /** The submodules checked out in `dir`, nested ones included, as absolute paths. */
+  submodules: string[];
 }
 
 /** A working directory as the run uses it. */
@@ -236,7 +228,7 @@ export interface PreparedDir {
   dir: string;
   primary: boolean;
   /**
-   * Prepared for this subject by this run: a worktree just created, or a directory no run has finished in yet. It
+   * Prepared for this subject by this run: a checkout just created, or a directory no run has finished in yet. It
    * stays fresh, and its initialization prompt is given again, until `markDirsPrepared` records a run that finished.
    */
   fresh: boolean;
@@ -257,10 +249,31 @@ export interface Checkout {
   release(): Promise<void>;
 }
 
+/** A repository checked out in a work directory, as the runner recorded it. */
+export interface WorkspaceRepo {
+  url: string;
+  /** Relative to the work directory, and inside it. */
+  path: string;
+  /** Always `cachePath(paths, url)`. */
+  cache: string;
+  branch: string;
+  /** Where the checkout started when the runner created it; nothing past it was committed while HEAD is here. */
+  startSha?: string;
+  /** What the runner last saw the remote task branch hold after it pushed (or found it already pushed). */
+  pushedSha?: string;
+}
+
+/**
+ * The runner's record of a subject's work directory. It lives in the runner's own directory
+ * (`workspaces/<sha256(workDir)>.json`), which no agent can write, because removing a directory, and deciding whether
+ * it holds unpushed work, rest on it. Records kept before that in the work directory itself
+ * (`.nocobase-runner/workspace.json`, `legacyMetaPath`) are still read, as written by the agent's side: their caches
+ * and paths are derived and checked again, and what they say was pushed is ignored (`legacy`).
+ */
 export interface WorkspaceMeta {
   appKey?: string;
   subjectKey: string;
-  repos: { url: string; path: string; cache: string; branch: string }[];
+  repos: WorkspaceRepo[];
   /**
    * Working directories a run of the subject finished in (`repo:<path>` or `directory:<abs path>`); `clean` empties
    * it.
@@ -271,79 +284,306 @@ export interface WorkspaceMeta {
   endedAt?: string;
   /** Every branch was pushed when the last run ended. */
   pushed?: boolean;
+  /** The last run that worked here, which the application is asked about (core/workspaces.ts). */
+  lastRunId?: string;
+  /** Whether the directory held unpushed work when last checked (`measuredAt`). */
+  unpushed?: boolean;
+  measuredAt?: string;
+  /**
+   * Read from a record in the work directory, kept before the runner kept its own, or measured from one since: only
+   * its layout is believed. A run preparing the directory again writes a record of the runner's own.
+   */
+  legacy?: true;
 }
 
-export function metaPath(workDir: string): string {
+/** Where the runner keeps its record of a work directory. */
+export function workspaceRecordPath(
+  paths: RunnerPaths,
+  workDir: string,
+): string {
+  return path.join(
+    paths.workspacesDir,
+    `${createHash('sha256').update(path.resolve(workDir)).digest('hex')}.json`,
+  );
+}
+
+/** Where earlier runners kept the record, inside the work directory (and so within the agent's reach). */
+export function legacyMetaPath(workDir: string): string {
   return path.join(workDir, RUNNER_DIR, 'workspace.json');
 }
 
-async function addWorktree(
+const isText = (value: unknown): value is string =>
+  typeof value === 'string' && value !== '';
+const SHA = /^[0-9a-f]{40,64}$/u;
+
+/**
+ * A record as far as it can be believed: every repository's cache derived from its URL, and every path inside the
+ * work directory (not the runner's own part of it); entries that are neither are dropped.
+ */
+function believable(
+  paths: RunnerPaths,
+  workDir: string,
+  raw: Record<string, unknown>,
+  fromWorkDir: boolean,
+): WorkspaceMeta | undefined {
+  if (!isText(raw.subjectKey) || !isText(raw.lastUsedAt)) return undefined;
+  // A legacy record stays one when the runner measures it into its own directory, until a run prepares it again.
+  const legacy = fromWorkDir || raw.legacy === true;
+  const root = path.resolve(workDir);
+  const repos = (
+    Array.isArray(raw.repos) ? (raw.repos as unknown[]) : []
+  ).flatMap((item): WorkspaceRepo[] => {
+    const repo = (item ?? {}) as Record<string, unknown>;
+    if (!isText(repo.url) || !isText(repo.path) || !isText(repo.branch))
+      return [];
+    const dir = path.resolve(root, repo.path);
+    if (
+      dir === root ||
+      !isInside(root, dir) ||
+      isInside(path.join(root, RUNNER_DIR), dir)
+    )
+      return [];
+    return [
+      {
+        url: repo.url,
+        path: path.relative(root, dir),
+        cache: cachePath(paths, repo.url),
+        branch: repo.branch,
+        ...(!legacy && isText(repo.startSha) && SHA.test(repo.startSha)
+          ? { startSha: repo.startSha }
+          : {}),
+        ...(!legacy && isText(repo.pushedSha) && SHA.test(repo.pushedSha)
+          ? { pushedSha: repo.pushedSha }
+          : {}),
+      },
+    ];
+  });
+  const text = (key: string) => (isText(raw[key]) ? { [key]: raw[key] } : {});
+  return {
+    ...text('appKey'),
+    subjectKey: raw.subjectKey,
+    repos,
+    ...(Array.isArray(raw.prepared)
+      ? { prepared: (raw.prepared as unknown[]).filter(isText) }
+      : {}),
+    lastUsedAt: raw.lastUsedAt,
+    ...text('endedAt'),
+    ...text('lastRunId'),
+    ...text('measuredAt'),
+    ...(typeof raw.unpushed === 'boolean' ? { unpushed: raw.unpushed } : {}),
+    ...(legacy
+      ? { legacy: true as const }
+      : typeof raw.pushed === 'boolean'
+        ? { pushed: raw.pushed }
+        : {}),
+  };
+}
+
+/** The runner's record of `workDir`, else an earlier runner's record kept inside it; undefined when there is neither. */
+export async function readWorkspaceMeta(
+  paths: RunnerPaths,
+  workDir: string,
+): Promise<WorkspaceMeta | undefined> {
+  const own = await readJson<Record<string, unknown>>(
+    workspaceRecordPath(paths, workDir),
+  ).catch(() => undefined);
+  if (own !== undefined) return believable(paths, workDir, own, false);
+  const legacy = await readJson<Record<string, unknown>>(
+    legacyMetaPath(workDir),
+  ).catch(() => undefined);
+  return legacy === undefined
+    ? undefined
+    : believable(paths, workDir, legacy, true);
+}
+
+export async function writeWorkspaceMeta(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: WorkspaceMeta,
+): Promise<void> {
+  await writeJsonAtomic(workspaceRecordPath(paths, workDir), meta);
+}
+
+/**
+ * Whether the directory holds work that is not on the remote: changes not committed (untracked files included) in any
+ * of its repositories, or a HEAD that is neither where the runner started the checkout nor contained in what it last
+ * saw the remote task branch hold. A record from an earlier runner, which recorded neither, is judged by the task
+ * branch's remote-tracking ref instead. A checkout that cannot be read counts as unpushed, so it is kept.
+ */
+export async function hasUnpushedWork(
+  workDir: string,
+  meta: WorkspaceMeta,
+  log?: (message: string) => void,
+): Promise<boolean> {
+  for (const repo of meta.repos) {
+    const dir = path.join(workDir, repo.path);
+    if (!existsSync(dir)) continue;
+    const context = { dir, cache: repo.cache, url: repo.url };
+    try {
+      const status = await taskGit(context, [
+        'status',
+        '--porcelain',
+        '--untracked-files=normal',
+      ]);
+      if (status.trim() !== '') return true;
+      const head = await taskGit(context, [
+        'rev-parse',
+        '--verify',
+        '-q',
+        'HEAD',
+      ]).catch(() => '');
+      // No commit at all: nothing to push.
+      if (head === '') continue;
+      if (head === repo.startSha || head === repo.pushedSha) continue;
+      const pushed =
+        meta.legacy === true
+          ? `refs/remotes/origin/${repo.branch}`
+          : repo.pushedSha;
+      if (
+        pushed !== undefined &&
+        (await taskGitOk(context, [
+          'merge-base',
+          '--is-ancestor',
+          head,
+          pushed,
+        ]))
+      )
+        continue;
+      return true;
+    } catch (error) {
+      log?.(
+        `workspaces: ${dir}: counted as unpushed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return true;
+    }
+  }
+  return false;
+}
+
+async function addClone(
   cache: string,
   dir: string,
   repo: RepoDir,
 ): Promise<void> {
-  await git(['worktree', 'prune'], cache);
-  const local = await gitOk(
-    ['show-ref', '--verify', '--quiet', `refs/heads/${repo.branch}`],
+  const context = { cache, dir, url: repo.url };
+  await git(
+    [
+      'clone',
+      '--quiet',
+      '--shared',
+      '--reference',
+      cache,
+      '--no-checkout',
+      cache,
+      dir,
+    ],
     cache,
   );
-  if (local) {
-    await git(['worktree', 'add', '--quiet', dir, repo.branch], cache);
-    return;
-  }
-  const remote = await gitOk(
-    ['show-ref', '--verify', '--quiet', `refs/remotes/origin/${repo.branch}`],
+  // The cache fetches into remote-tracking refs, rather than updating its original local branches.
+  await taskGit(context, [
+    'fetch',
+    '--quiet',
+    '--prune',
     cache,
-  );
+    '+refs/remotes/origin/*:refs/remotes/origin/*',
+  ]);
+  await taskGit(context, ['remote', 'set-url', 'origin', repo.url]);
+  const remote = await taskGitOk(context, [
+    'show-ref',
+    '--verify',
+    '--quiet',
+    `refs/remotes/origin/${repo.branch}`,
+  ]);
   const base = remote
     ? `origin/${repo.branch}`
     : `origin/${repo.defaultBranch}`;
   if (
-    !(await gitOk(
-      ['rev-parse', '--verify', '--quiet', `${base}^{commit}`],
-      cache,
-    ))
+    !(await taskGitOk(context, [
+      'rev-parse',
+      '--verify',
+      '--quiet',
+      `${base}^{commit}`,
+    ]))
   ) {
     // An empty repository whose first commit this run makes: the default branch starts with no parent.
     if (repo.initial === true) {
-      await git(
-        ['worktree', 'add', '--quiet', '--orphan', '-b', repo.branch, dir],
-        cache,
-      );
+      await taskGit(context, [
+        'symbolic-ref',
+        'HEAD',
+        `refs/heads/${repo.branch}`,
+      ]);
       return;
     }
     throw new CheckoutError(`${repo.url} has no branch ${repo.defaultBranch}`);
   }
-  await git(
-    ['worktree', 'add', '--quiet', '--no-track', '-b', repo.branch, dir, base],
-    cache,
-  );
+  await taskGit(context, [
+    'checkout',
+    '--quiet',
+    '--no-track',
+    '-B',
+    repo.branch,
+    base,
+  ]);
+  // A clone initially imports the cache's HEAD branch, which the cache does not update on subsequent fetches.
+  // Keep only the task branch locally; upstream bases are available as the refreshed origin/* tracking refs.
+  for (const branch of (
+    await taskGit(context, [
+      'for-each-ref',
+      '--format=%(refname:short)',
+      'refs/heads/',
+    ])
+  ).split('\n')) {
+    if (branch !== '' && branch !== repo.branch)
+      await taskGit(context, ['branch', '-D', '--', branch]);
+  }
 }
 
-/** Makes `dir` a worktree of `cache` on the repository's branch; true when it had to be created. */
-async function ensureWorktree(
+/** Creates a reference clone, or resumes the existing clone/worktree without resetting its work. */
+async function ensureCheckout(
   cache: string,
   dir: string,
   repo: RepoDir,
 ): Promise<boolean> {
+  const context = { cache, dir, url: repo.url };
   if (
     existsSync(dir) &&
-    (await gitOk(['rev-parse', '--is-inside-work-tree'], dir))
+    existsSync(path.join(dir, '.git')) &&
+    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']))
   ) {
-    const current = await git(
-      ['symbolic-ref', '--quiet', '--short', 'HEAD'],
-      dir,
-    ).catch(() => '');
+    // Refresh the clone's tracking refs without moving its branch or touching uncommitted work. Legacy worktrees
+    // share these refs with the cache, which updateCache already refreshed.
+    if ((await stat(path.join(dir, '.git'))).isDirectory()) {
+      const lock = await lockCache(cache);
+      try {
+        await taskGit(context, [
+          'fetch',
+          '--quiet',
+          '--prune',
+          cache,
+          '+refs/remotes/origin/*:refs/remotes/origin/*',
+        ]);
+      } finally {
+        await lock.release();
+      }
+    }
+    const current = await taskGit(context, [
+      'symbolic-ref',
+      '--quiet',
+      '--short',
+      'HEAD',
+    ]).catch(() => '');
     if (current !== repo.branch) {
-      const exists = await gitOk(
-        ['show-ref', '--verify', '--quiet', `refs/heads/${repo.branch}`],
-        dir,
-      );
-      await git(
+      const exists = await taskGitOk(context, [
+        'show-ref',
+        '--verify',
+        '--quiet',
+        `refs/heads/${repo.branch}`,
+      ]);
+      await taskGit(
+        context,
         exists
           ? ['checkout', '--quiet', repo.branch]
           : ['checkout', '--quiet', '-b', repo.branch],
-        dir,
       );
     }
     return false;
@@ -355,8 +595,182 @@ async function ensureWorktree(
     await rm(dir, { recursive: true, force: true });
   }
   await mkdir(path.dirname(dir), { recursive: true });
-  await addWorktree(cache, dir, repo);
+  const lock = await lockCache(cache);
+  try {
+    await addClone(cache, dir, repo);
+  } catch (error) {
+    await rm(dir, { recursive: true, force: true });
+    throw error;
+  } finally {
+    await lock.release();
+  }
   return true;
+}
+
+/** The host part of an HTTP(S) URL (`https://github.com/`), the only place a submodule fetch sends the credential. */
+function httpOrigin(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+      ? `${parsed.origin}/`
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The filename of a pending submodule preparation record. */
+export const SUBMODULES_PENDING = 'nocobase-runner-submodules.json';
+
+interface PendingSubmodules {
+  /** Every submodule, recursively. */
+  readonly all: boolean;
+  /** Otherwise these top-level ones, with theirs. */
+  readonly paths: readonly string[];
+}
+
+async function readPending(
+  file: string,
+): Promise<PendingSubmodules | undefined> {
+  try {
+    const value = JSON.parse(
+      await readFile(file, 'utf8'),
+    ) as Partial<PendingSubmodules>;
+    return {
+      all: value.all === true,
+      paths: Array.isArray(value.paths)
+        ? value.paths.filter(
+            (entry): entry is string => typeof entry === 'string',
+          )
+        : [],
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Initializes the worktree's submodules as its `.gitmodules` lists them: every one, recursively, when `all`; otherwise
+ * only the top-level ones not initialized yet (with theirs), and those an earlier update left unfinished
+ * (`SUBMODULES_PENDING`). Returns the paths it initialized. The update is retried as `retry` says; one that keeps
+ * failing on the network is a `GitNetworkError`.
+ */
+export async function initSubmodules(
+  dir: string,
+  options: {
+    all: boolean;
+    url: string;
+    cache: string;
+    auth?: GitAuth;
+    retry?: GitRetryOptions;
+  },
+): Promise<string[]> {
+  const context: TaskGitContext = {
+    dir,
+    cache: options.cache,
+    url: options.url,
+  };
+  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
+  if (
+    (await taskGit(context, [
+      'config',
+      '--local',
+      '--get',
+      'remote.origin.url',
+    ])) !== options.url
+  )
+    throw new CheckoutError(
+      `${options.url}: submodules require the original origin URL; restore it before resuming`,
+    );
+  const failed = (step: string, error: unknown): CheckoutError =>
+    new CheckoutError(
+      `${options.url}: ${step} its submodules failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  let status: string;
+  let pendingFile: string;
+  try {
+    status = await taskGit(context, ['submodule', 'status']);
+    const gitDir = await taskGitDir(context);
+    const pendingDir = path.join(options.cache, 'submodule-preparations');
+    await mkdir(pendingDir, { recursive: true, mode: 0o700 });
+    pendingFile = path.join(
+      pendingDir,
+      `${createHash('sha256').update(gitDir).digest('hex')}-${SUBMODULES_PENDING}`,
+    );
+    // Task Git metadata is writable; never read or overwrite a pending record supplied by an agent there.
+  } catch (error) {
+    throw failed('reading', error);
+  }
+  const pending = await readPending(pendingFile);
+  const all = options.all || pending?.all === true;
+  // `-<sha> <path>` is a submodule not initialized; ` `, `+` and `U` are initialized ones.
+  const listed = status
+    .split('\n')
+    .filter((line) => line !== '')
+    .map((line) => ({
+      missing: line.startsWith('-'),
+      path: line.slice(1).trim().split(/\s+/)[1] ?? '',
+    }))
+    .filter((entry) => entry.path !== '');
+  const unfinished = new Set(pending?.paths ?? []);
+  const selected = listed
+    .filter((entry) => all || entry.missing || unfinished.has(entry.path))
+    .map((entry) => entry.path);
+  if (selected.length === 0) {
+    await rm(pendingFile, { force: true });
+    return [];
+  }
+  await writeFile(
+    pendingFile,
+    JSON.stringify({ all, paths: selected } satisfies PendingSubmodules),
+  );
+  const origin = httpOrigin(options.url);
+  try {
+    // `-c` reaches the clones and fetches the update runs (GIT_CONFIG_PARAMETERS), so a stalled one gives up too.
+    await retryGit(
+      `git submodule update in ${options.url}`,
+      () =>
+        taskGit(
+          context,
+          [
+            'submodule',
+            'update',
+            '--init',
+            '--recursive',
+            '--checkout',
+            ...(all ? [] : ['--', ...selected]),
+          ],
+          origin === undefined ? {} : gitAuthEnv(options.auth, origin),
+        ),
+      options.retry,
+    );
+  } catch (error) {
+    if (error instanceof GitNetworkError) throw error;
+    throw failed('initializing', error);
+  }
+  await rm(pendingFile, { force: true });
+  return selected;
+}
+
+/** The submodules initialized in the worktree `dir`, nested ones included, as absolute paths. */
+export async function listSubmodules(dir: string): Promise<string[]> {
+  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
+  // `foreach` visits only checked-out submodules; `displaypath` is relative to this top-level worktree even in recursion.
+  // The ./ prefix and NUL terminator preserve leading/trailing whitespace through git()'s trim().
+  const listed = await git(
+    [
+      'submodule',
+      'foreach',
+      '--quiet',
+      '--recursive',
+      'printf "%s\\0" "./$displaypath"',
+    ],
+    dir,
+  );
+  return listed
+    .split('\0')
+    .filter((entry) => entry !== '')
+    .map((entry) => path.resolve(dir, entry));
 }
 
 /** The subject's working directory, locked for one run. */
@@ -397,20 +811,12 @@ export async function lockWorkspace(options: {
  * directory, including the record of prepared directories. The caller holds the workspace lock. A directory used in
  * place is never inside a work directory (`prepareDirs` refuses that), so its contents are never touched.
  */
-export async function cleanWorkspace(workDir: string): Promise<void> {
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-    () => undefined,
-  );
-  for (const repo of meta?.repos ?? []) {
-    if (!existsSync(repo.cache)) continue;
-    await gitOk(
-      ['worktree', 'remove', '--force', path.join(workDir, repo.path)],
-      repo.cache,
-    );
-  }
-  await rm(workDir, { recursive: true, force: true });
-  for (const repo of meta?.repos ?? [])
-    if (existsSync(repo.cache)) await gitOk(['worktree', 'prune'], repo.cache);
+export async function cleanWorkspace(
+  paths: RunnerPaths,
+  workDir: string,
+): Promise<void> {
+  const meta = await readWorkspaceMeta(paths, workDir);
+  await removeWorkspace(paths, workDir, meta ?? { repos: [] });
   await mkdir(path.join(workDir, RUNNER_DIR), { recursive: true, mode: 0o700 });
 }
 
@@ -436,10 +842,14 @@ export interface PrepareDirsOptions {
   credentials?: readonly RepoCredential[];
   lockTimeoutMs?: number;
   log?: (message: string) => void;
+  /** How cloning, fetching and the submodules' update are retried. */
+  retry?: GitRetryOptions;
+  /** The run preparing them, recorded as the last run that worked here. */
+  runId?: string;
 }
 
 /**
- * Prepares every working directory: a repository is checked out (a bare cache and a long-lived worktree on its branch,
+ * Prepares every working directory: a repository is checked out (a bare cache and a long-lived clone on its branch,
  * with the push guard); a directory used in place must exist, is locked for the run, and is not checked out or
  * branched. A directory counts as fresh until a run of the subject finishes in it (`markDirsPrepared`), so a run that
  * dies before doing what the initialization prompt asks leaves it for the next attempt. The result's `release` gives
@@ -449,10 +859,9 @@ export async function prepareDirs(
   options: PrepareDirsOptions,
 ): Promise<{ dirs: PreparedDir[]; release(): Promise<void> }> {
   const { paths, workDir } = options;
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-    () => undefined,
-  );
+  const meta = await readWorkspaceMeta(paths, workDir);
   const prepared = new Set(meta?.prepared ?? []);
+  const shas = new Map<string, Pick<WorkspaceRepo, 'startSha' | 'pushedSha'>>();
   const locks: Lock[] = [];
   const release = async (): Promise<void> => {
     for (const lock of locks.splice(0)) await lock.release();
@@ -518,24 +927,48 @@ export async function prepareDirs(
       const credential = options.credentials?.find(
         (item) => item.url === entry.url,
       );
-      const cache = await updateCache(
-        paths,
-        entry.url,
-        credential
-          ? {
-              auth: {
-                username: credential.username,
-                token: credential.password,
-              },
-            }
-          : {},
+      const auth: GitAuth | undefined =
+        credential === undefined
+          ? undefined
+          : { username: credential.username, token: credential.password };
+      const cache = await updateCache(paths, entry.url, {
+        ...(auth === undefined ? {} : { auth }),
+        ...(options.retry === undefined ? {} : { retry: options.retry }),
+      });
+      const created = await ensureCheckout(cache, dir, entry);
+      const gitDir = await taskGitDir({ dir, cache, url: entry.url });
+      const relative = path.relative(workDir, dir);
+      const known = meta?.repos.find(
+        (item) => item.url === entry.url && item.path === relative,
       );
-      const created = await ensureWorktree(cache, dir, entry);
-      await allowPush(
-        await git(['rev-parse', '--absolute-git-dir'], dir),
-        entry.url,
-        entry.branch,
-      );
+      // Where a new checkout starts: nothing past it is the agent's. A resumed one keeps what was recorded.
+      const startSha = created
+        ? await taskGit({ dir, cache, url: entry.url }, [
+            'rev-parse',
+            '--verify',
+            '-q',
+            'HEAD',
+          ]).catch(() => '')
+        : (known?.startSha ?? '');
+      shas.set(dir, {
+        ...(startSha === '' ? {} : { startSha }),
+        ...(!created && known?.pushedSha !== undefined
+          ? { pushedSha: known.pushedSha }
+          : {}),
+      });
+      // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
+      if (isInside(dir, gitDir))
+        await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
+      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir);
+      const submodules = await initSubmodules(dir, {
+        all: created,
+        url: entry.url,
+        cache,
+        ...(auth === undefined ? {} : { auth }),
+        ...(options.retry === undefined ? {} : { retry: options.retry }),
+      });
+      if (submodules.length > 0)
+        options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
         url: entry.url,
         branch: entry.branch,
@@ -543,9 +976,11 @@ export async function prepareDirs(
         primary,
         dir,
         cache,
+        gitDir,
+        submodules: await listSubmodules(dir),
       };
       const key = preparedKey(entry);
-      // A worktree created again (removed by GC, say) needs its initialization again.
+      // A checkout created again (removed by GC, say) needs its initialization again.
       if (created) prepared.delete(key);
       dirs.push({
         kind: 'repo',
@@ -559,7 +994,7 @@ export async function prepareDirs(
     const repos = dirs.flatMap((entry) =>
       entry.repo === undefined ? [] : [entry.repo],
     );
-    await writeJsonAtomic(metaPath(workDir), {
+    await writeWorkspaceMeta(paths, workDir, {
       appKey: options.appKey,
       subjectKey: options.subjectKey,
       repos: repos.map((repo) => ({
@@ -567,10 +1002,19 @@ export async function prepareDirs(
         path: path.relative(workDir, repo.dir),
         cache: repo.cache,
         branch: repo.branch,
+        ...shas.get(repo.dir),
       })),
       prepared: [...prepared],
       lastUsedAt: new Date().toISOString(),
-    } satisfies WorkspaceMeta);
+      ...((options.runId ?? meta?.lastRunId)
+        ? { lastRunId: options.runId ?? meta?.lastRunId }
+        : {}),
+      // Checked again once the run is over (core/workspaces.ts); what it held before stands in until then.
+      ...(meta?.unpushed === undefined ? {} : { unpushed: meta.unpushed }),
+      ...(meta?.measuredAt === undefined
+        ? {}
+        : { measuredAt: meta.measuredAt }),
+    });
     return { dirs, release };
   } catch (error) {
     await release();
@@ -587,6 +1031,7 @@ export interface CheckoutOptions {
   clean?: boolean;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
+  retry?: GitRetryOptions;
 }
 
 /** Locks the subject's work directory and prepares every working directory. The caller releases it. */
@@ -600,7 +1045,8 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
       : { timeoutMs: options.lockTimeoutMs }),
   });
   try {
-    if (options.clean === true) await cleanWorkspace(lock.workDir);
+    if (options.clean === true)
+      await cleanWorkspace(options.paths, lock.workDir);
     const prepared = await prepareDirs({ ...options, workDir: lock.workDir });
     return {
       workDir: lock.workDir,
@@ -622,31 +1068,63 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
 /** Pushes each branch that has commits the remote lacks and reports where every repository stands. */
 export async function reportRepos(
   repos: readonly CheckedOutRepo[],
-  options: { push: boolean; log?: (message: string) => void },
+  options: {
+    push: boolean;
+    credentials?: readonly RepoCredential[];
+    log?: (message: string) => void;
+  },
 ): Promise<RepoReport[]> {
   const reports: RepoReport[] = [];
   for (const repo of repos) {
-    const headSha = await git(['rev-parse', 'HEAD'], repo.dir).catch(() => '');
+    const credential = options.credentials?.find(
+      (item) => item.url === repo.url,
+    );
+    const env = gitAuthEnv(
+      credential === undefined
+        ? undefined
+        : {
+            username: credential.username,
+            token: credential.password,
+          },
+      httpOrigin(repo.url),
+    );
+    let headSha: string;
+    try {
+      headSha = await taskGit(repo, ['rev-parse', 'HEAD']);
+    } catch (error) {
+      options.log?.(
+        `report: ${repo.url}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      reports.push({
+        url: repo.url,
+        branch: repo.branch,
+        pushed: false,
+        headSha: '',
+      });
+      continue;
+    }
     const remoteSha = async (): Promise<string> =>
       (
-        await git(
-          ['ls-remote', 'origin', `refs/heads/${repo.branch}`],
-          repo.dir,
+        await taskGit(
+          repo,
+          ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
+          env,
         ).catch(() => '')
       ).split(/\s+/)[0] ?? '';
     const remote = await remoteSha();
     let pushed = headSha !== '' && remote === headSha;
     // Work to push: commits on top of the default branch, or a branch the remote already has and HEAD moved past.
-    const base = await git(
-      ['rev-parse', `origin/${repo.defaultBranch}`],
-      repo.dir,
-    ).catch(() => '');
+    const base = await taskGit(repo, [
+      'rev-parse',
+      `origin/${repo.defaultBranch}`,
+    ]).catch(() => '');
     const hasWork = headSha !== '' && (headSha !== base || remote !== '');
     if (options.push && !pushed && hasWork) {
       try {
-        await git(
-          ['push', '--quiet', 'origin', `HEAD:refs/heads/${repo.branch}`],
-          repo.dir,
+        await taskGit(
+          repo,
+          ['push', '--quiet', '--', repo.url, `HEAD:refs/heads/${repo.branch}`],
+          env,
         );
         pushed = (await remoteSha()) === headSha;
       } catch (error) {
@@ -655,6 +1133,14 @@ export async function reportRepos(
         );
       }
     }
+    // The push went to the URL rather than to `origin`, which leaves the tracking ref behind; bring it along so the
+    // checkout itself says what the remote has (core/workspaces.ts counts commits no remote-tracking ref has).
+    if (pushed)
+      await taskGitOk(repo, [
+        'update-ref',
+        `refs/remotes/origin/${repo.branch}`,
+        headSha,
+      ]).catch(() => false);
     reports.push({ url: repo.url, branch: repo.branch, pushed, headSha });
   }
   return reports;
@@ -662,31 +1148,46 @@ export async function reportRepos(
 
 /** Records that a run finished in `dirs`: they are no longer fresh for the subject. */
 export async function markDirsPrepared(
+  paths: RunnerPaths,
   workDir: string,
   dirs: readonly Pick<PreparedDir, 'key'>[],
 ): Promise<void> {
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir));
+  const meta = await readWorkspaceMeta(paths, workDir);
   if (meta === undefined) return;
   const prepared = new Set(meta.prepared ?? []);
   for (const dir of dirs) prepared.add(dir.key);
-  await writeJsonAtomic(metaPath(workDir), {
+  await writeWorkspaceMeta(paths, workDir, {
     ...meta,
     prepared: [...prepared],
   });
 }
 
+/**
+ * Records that the run ended, with where each repository stood (`reportRepos`): every branch pushed or not, and for
+ * each one pushed, the commit the remote task branch now holds.
+ */
 export async function markWorkspaceEnded(
+  paths: RunnerPaths,
   workDir: string,
-  pushed: boolean,
+  reports: readonly RepoReport[],
 ): Promise<void> {
-  const meta = await readJson<WorkspaceMeta>(metaPath(workDir));
+  const meta = await readWorkspaceMeta(paths, workDir);
   if (meta === undefined) return;
   const now = new Date().toISOString();
-  await writeJsonAtomic(metaPath(workDir), {
+  await writeWorkspaceMeta(paths, workDir, {
     ...meta,
+    repos: meta.repos.map((repo) => {
+      const report = reports.find(
+        (item) => item.url === repo.url && item.branch === repo.branch,
+      );
+      const headSha = report?.headSha ?? '';
+      return report?.pushed === true && SHA.test(headSha)
+        ? { ...repo, pushedSha: headSha }
+        : repo;
+    }),
     lastUsedAt: now,
     endedAt: now,
-    pushed,
+    pushed: reports.every((report) => report.pushed),
   });
 }
 
@@ -703,6 +1204,27 @@ export interface GcOptions {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * Removes a subject's work directory, and a legacy worktree's record in its cache. The caller holds the workspace lock.
+ */
+export async function removeWorkspace(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: Pick<WorkspaceMeta, 'repos'>,
+): Promise<void> {
+  // Only repositories as `readWorkspaceMeta` believes them: a cache derived from the URL, a path inside `workDir`.
+  for (const repo of meta.repos) {
+    const dir = path.join(workDir, repo.path);
+    if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
+    if (existsSync(repo.cache))
+      await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+  }
+  await rm(workDir, { recursive: true, force: true });
+  await rm(workspaceRecordPath(paths, workDir), { force: true });
+  for (const repo of meta.repos)
+    if (existsSync(repo.cache)) await gitOk(['worktree', 'prune'], repo.cache);
+}
+
 /** Removes the work directories the retention rules let go. Returns the removed directories. */
 export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
   const { paths } = options;
@@ -715,7 +1237,8 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
     () => [],
   );
   for (const app of apps) {
-    if (!app.isDirectory()) continue;
+    // `.pnpm-store`, `.jobs`: the runner's own, never an application's (`safeName` gives none a leading dot).
+    if (!app.isDirectory() || app.name.startsWith('.')) continue;
     const appDir = path.join(paths.workRoot, app.name);
     for (const entry of await readdir(appDir, { withFileTypes: true }).catch(
       () => [],
@@ -723,9 +1246,7 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
       if (entry.isDirectory()) workDirs.push(path.join(appDir, entry.name));
   }
   for (const workDir of workDirs) {
-    const meta = await readJson<WorkspaceMeta>(metaPath(workDir)).catch(
-      () => undefined,
-    );
+    const meta = await readWorkspaceMeta(paths, workDir);
     if (meta === undefined) continue;
     const lastUsed = Date.parse(meta.lastUsedAt);
     const ended =
@@ -743,15 +1264,17 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
       continue;
     }
     try {
-      for (const repo of meta.repos) {
-        const dir = path.join(workDir, repo.path);
-        if (existsSync(repo.cache))
-          await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+      // Read again under the lock: a run may have used it since.
+      const current = await readWorkspaceMeta(paths, workDir);
+      if (current === undefined || current.lastUsedAt !== meta.lastUsedAt)
+        continue;
+      if (await hasUnpushedWork(workDir, current, options.log)) {
+        options.log?.(
+          `gc: kept ${workDir}: it holds work that was never pushed`,
+        );
+        continue;
       }
-      await rm(workDir, { recursive: true, force: true });
-      for (const repo of meta.repos)
-        if (existsSync(repo.cache))
-          await gitOk(['worktree', 'prune'], repo.cache);
+      await removeWorkspace(paths, workDir, current);
       removed.push(workDir);
       options.log?.(`gc: removed ${workDir}`);
     } finally {

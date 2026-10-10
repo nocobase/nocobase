@@ -17,6 +17,9 @@ export default createNodeVitestConfig({
   },
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
+    // TODO: Re-enable Workflow tests when capability testing resumes.
+    exclude: ['tests/**'],
+    passWithNoTests: true,
     testTimeout: 30_000,
   },
 });

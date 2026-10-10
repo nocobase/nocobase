@@ -23,7 +23,6 @@ import app from './app.js';
 import api from './api.js';
 import database from './database.js';
 import snowflake from './snowflake.js';
-import workflow from './workflow.js';
 import users from './users.js';
 
 const defaultConfigs: AppConfigFactory<{
@@ -47,7 +46,6 @@ const defaultConfigs: AppConfigFactory<{
   api: ReturnType<typeof api>;
   database: ReturnType<typeof database>;
   snowflake: ReturnType<typeof snowflake>;
-  workflow: ReturnType<typeof workflow>;
   users: ReturnType<typeof users>;
   mail: ReturnType<typeof mail>;
 }> = defaultAppConfigs({
@@ -71,7 +69,6 @@ const defaultConfigs: AppConfigFactory<{
   api,
   database,
   snowflake,
-  workflow,
   users,
   mail,
 });

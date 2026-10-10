@@ -14,10 +14,13 @@ import {
   type SettingsItem,
 } from '../../shared/access.js';
 import type { Actor } from '../kernel/actor.js';
+import type { ActivityExecution } from '../../shared/plans.js';
 import { forbidden } from '../kernel/errors.js';
 
 export interface Viewer {
   readonly userId: string;
+  /** The host's runner machine permission check. Absent: only the snapshotted owner sees machine facts. */
+  readonly seesExecutionMachine?: (execution: ActivityExecution) => boolean;
   /** The same user as an actor, for the activity log and events. */
   readonly actor: Actor;
   readonly permissions: Permissions;

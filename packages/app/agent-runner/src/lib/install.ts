@@ -18,9 +18,14 @@ export {
   type Installation,
 } from '@nocobase/app-cli-client/install';
 
-/** The installation of the host's package; undefined when it was not installed by the install script. */
+/**
+ * The installation of the host's package; undefined when it was not installed by the install script.
+ * `NOCOBASE_RUNNER_INSTALLATION` names a version directory to take as the one the runner runs from; tests use it to run
+ * the repository's runner as an installed one.
+ */
 export function detectInstallation(
-  root: string = runnerHost().packageRoot,
+  root: string = process.env.NOCOBASE_RUNNER_INSTALLATION ||
+    runnerHost().packageRoot,
 ): Installation | undefined {
   return detectAt(root);
 }
