@@ -30,6 +30,7 @@ import { RouteOverlayContext } from './use-route-overlay.js';
 
 export interface RouteOverlayProps {
   readonly title: ReactNode;
+  readonly finalFocus?: () => HTMLElement | null;
   readonly description?: ReactNode;
   readonly children?: ReactNode;
   readonly footer?: ReactNode;
@@ -53,6 +54,7 @@ const ParentPopupContext =
  */
 export function RouteOverlay({
   title,
+  finalFocus,
   description,
   children,
   footer,
@@ -135,6 +137,7 @@ export function RouteOverlay({
             <DialogPrimitive.Popup
               ref={popupRef}
               finalFocus={() => {
+                if (finalFocus) return finalFocus();
                 const previous = previousFocusRef.current;
                 if (parentPopup?.current) {
                   return previous?.isConnected &&

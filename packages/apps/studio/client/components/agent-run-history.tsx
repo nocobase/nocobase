@@ -22,6 +22,15 @@ import {
   type ReactNode,
 } from 'react';
 
+import { rememberRunFocus } from '@/agents/run-focus';
+
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from '@/components/ui/empty';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,6 +61,7 @@ export interface AgentRunHistoryRun {
   readonly id: string;
   readonly agentId: string;
   readonly agentName: string;
+  readonly model?: string;
   readonly status: AgentRunHistoryStatus;
   /** A stop was asked for and the run has not ended yet. */
   readonly stopping?: boolean;
@@ -80,6 +90,7 @@ export interface AgentRunHistoryLabels {
   readonly allAgents: string;
   readonly allStatuses: string;
   readonly noMatch: string;
+  readonly clearFilters?: string;
 }
 
 const defaultAgentRunHistoryLabels: AgentRunHistoryLabels = {
@@ -117,6 +128,7 @@ const defaultAgentRunHistoryLabels: AgentRunHistoryLabels = {
   allAgents: 'All agents',
   allStatuses: 'All statuses',
   noMatch: 'No runs match these filters.',
+  clearFilters: 'Clear filters',
 };
 
 /** Puts `values` into a label's `{name}` placeholders. */
@@ -246,7 +258,7 @@ function plainClick(event: MouseEvent): boolean {
 /** How a run is opened: a link to `runHref(run)`, and `onOpenRun` on a plain click. */
 export interface RunOpener {
   readonly runHref?: (run: AgentRunHistoryRun) => string;
-  readonly onOpenRun?: (run: AgentRunHistoryRun) => void;
+  readonly onOpenRun?: (run: AgentRunHistoryRun, target?: HTMLElement) => void;
 }
 
 function RunLink({
@@ -272,7 +284,7 @@ function RunLink({
         onClick={(event) => {
           if (!opener.onOpenRun || !plainClick(event)) return;
           event.preventDefault();
-          opener.onOpenRun(run);
+          opener.onOpenRun(run, event.currentTarget);
         }}
       >
         {children}
@@ -284,7 +296,7 @@ function RunLink({
         type='button'
         className={cn('text-left', className)}
         aria-label={label}
-        onClick={() => opener.onOpenRun?.(run)}
+        onClick={(event) => opener.onOpenRun?.(run, event.currentTarget)}
       >
         {children}
       </button>
@@ -322,7 +334,7 @@ export interface AgentRunHistoryProps extends RunOpener {
   /** Shown in place of the runs when they could not be loaded. */
   readonly error?: ReactNode;
   /** Asks to stop an open run; the consumer confirms it. Without it, no Stop. */
-  readonly onStop?: (run: AgentRunHistoryRun) => void;
+  readonly onStop?: (run: AgentRunHistoryRun, target?: HTMLElement) => void;
   /** Beside the title, such as "Clean working directory". */
   readonly actions?: ReactNode;
   /** How many finished runs show before "View all". */
@@ -330,11 +342,17 @@ export interface AgentRunHistoryProps extends RunOpener {
   readonly locale?: string;
   readonly labels?: AgentRunHistoryLabels;
   readonly className?: string;
+  readonly loadingLabel?: string;
+  readonly emptyDescription?: string;
+  readonly busy?: boolean;
 }
 
 export function AgentRunHistory({
   runs,
   error,
+  emptyDescription,
+  loadingLabel = 'Loading execution log…',
+  busy,
   onStop,
   actions,
   recent = 3,
@@ -344,22 +362,48 @@ export function AgentRunHistory({
   ...opener
 }: AgentRunHistoryProps): ReactElement {
   const [all, setAll] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const allRef = useRef<HTMLButtonElement>(null);
+  const handingOffRef = useRef(false);
   const list = runs ?? [];
   const open = list.filter(isRunOpen);
   const finished = list.filter((run) => !isRunOpen(run)).slice(0, recent);
   const openRun: RunOpener = {
     ...(opener.runHref ? { runHref: opener.runHref } : {}),
-    onOpenRun: (run) => {
+    onOpenRun: (run, target) => {
+      rememberRunFocus(
+        all ? allRef.current : (target ?? null),
+        headingRef.current,
+      );
+      handingOffRef.current = all;
       setAll(false);
-      opener.onOpenRun?.(run);
+      opener.onOpenRun?.(run, target);
     },
   };
 
   let content: ReactNode;
   if (error && !runs) content = error;
-  else if (!runs) content = <Skeleton className='h-16 w-full' />;
+  else if (!runs)
+    content = (
+      <div role='status' aria-label={loadingLabel}>
+        <span className='sr-only'>{loadingLabel}</span>
+        <Skeleton aria-hidden className='h-16 w-full' />
+      </div>
+    );
   else if (list.length === 0)
-    content = <p className='text-sm text-muted-foreground'>{labels.empty}</p>;
+    content = (
+      <Empty className='min-h-40 border border-dashed p-6'>
+        <EmptyHeader>
+          <EmptyMedia variant='icon'>
+            <BotIcon />
+          </EmptyMedia>
+          <EmptyTitle>{labels.empty}</EmptyTitle>
+          {emptyDescription ? (
+            <EmptyDescription>{emptyDescription}</EmptyDescription>
+          ) : null}
+        </EmptyHeader>
+      </Empty>
+    );
   else
     content = (
       <div className='space-y-2'>
@@ -390,8 +434,12 @@ export function AgentRunHistory({
           <Button
             variant='link'
             size='xs'
+            ref={allRef}
             className='px-0'
-            onClick={() => setAll(true)}
+            onClick={() => {
+              handingOffRef.current = false;
+              setAll(true);
+            }}
           >
             {fillLabel(labels.viewAll, { count: list.length })}
           </Button>
@@ -401,17 +449,28 @@ export function AgentRunHistory({
 
   return (
     <section
-      className={cn('space-y-3', className)}
+      className={cn('flex flex-col gap-4', className)}
       aria-label={labels.title}
+      aria-busy={busy ?? !runs}
       data-slot='agent-run-history'
     >
-      <div className='flex items-center justify-between gap-2'>
-        <h2 className='text-sm font-semibold'>{labels.title}</h2>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className='font-heading text-base font-medium'
+        >
+          {labels.title}
+        </h2>
         {list.length > 0 ? actions : null}
       </div>
+      {error && runs ? error : null}
       {content}
       <AllRunsDialog
-        open={all}
+        open={all && list.length > 0}
+        finalFocus={() =>
+          handingOffRef.current ? false : (allRef.current ?? headingRef.current)
+        }
         onOpenChange={setAll}
         runs={list}
         opener={openRun}
@@ -432,7 +491,7 @@ function PinnedRun({
   readonly run: AgentRunHistoryRun;
   readonly opener: RunOpener;
   readonly locale: string | undefined;
-  readonly onStop?: (run: AgentRunHistoryRun) => void;
+  readonly onStop?: (run: AgentRunHistoryRun, target?: HTMLElement) => void;
   readonly labels: AgentRunHistoryLabels;
 }): ReactElement {
   const active = isRunActive(run);
@@ -443,18 +502,23 @@ function PinnedRun({
   );
   return (
     <div
-      className='flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-1.5'
+      className='flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-1.5'
       data-testid={`run-${run.id}`}
     >
       <RunLink
         run={run}
         opener={opener}
-        label={labels.viewTranscript}
-        className='flex min-w-0 flex-1 items-center gap-2 rounded p-0.5 outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring'
+        label={`${labels.viewTranscript}: ${run.agentName}, ${run.model ?? ''}, ${run.stopping ? labels.status.stopping : labels.status[run.status]}, ${dateTimeText(run.createdAt, locale)} · ${run.id}`}
+        className='flex min-w-0 flex-1 flex-wrap items-center gap-2 rounded p-0.5 outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring'
       >
         <RunStatusBadge run={run} labels={labels} />
-        <span className='min-w-0 truncate text-sm font-medium'>
+        <span className='min-w-0 flex-1 basis-28 wrap-anywhere text-sm font-medium'>
           {run.agentName}
+          {run.model ? (
+            <span className='block text-xs font-normal text-muted-foreground'>
+              {run.model}
+            </span>
+          ) : null}
         </span>
         <span
           className='ml-auto shrink-0 font-mono text-xs text-muted-foreground tabular-nums'
@@ -478,7 +542,7 @@ function PinnedRun({
           variant='outline'
           size='xs'
           disabled={run.stopping}
-          onClick={() => onStop(run)}
+          onClick={(event) => onStop(run, event.currentTarget)}
         >
           <SquareIcon data-icon='inline-start' />
           {labels.stop}
@@ -506,17 +570,22 @@ function RunLine({
       <RunLink
         run={run}
         opener={opener}
-        label={labels.viewTranscript}
+        label={`${labels.viewTranscript}: ${run.agentName}, ${run.model ?? ''}, ${run.stopping ? labels.status.stopping : labels.status[run.status]}, ${dateTimeText(run.createdAt, locale)} · ${run.id}`}
         className='flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring'
       >
         <span className='min-w-0 flex-1 space-y-0.5'>
-          <span className='flex min-w-0 items-center gap-2'>
-            <span className='min-w-0 flex-1 truncate text-sm'>
+          <span className='flex min-w-0 flex-wrap items-center gap-2'>
+            <span className='min-w-0 flex-1 basis-28 wrap-anywhere text-sm'>
               {run.agentName}
+              {run.model ? (
+                <span className='block text-xs text-muted-foreground'>
+                  {run.model}
+                </span>
+              ) : null}
             </span>
             <RunStatusBadge run={run} labels={labels} />
           </span>
-          <span className='flex items-center gap-1.5 whitespace-nowrap text-muted-foreground tabular-nums'>
+          <span className='flex flex-wrap items-center gap-1.5 text-muted-foreground tabular-nums'>
             {duration ? (
               <>
                 <span>{duration}</span>
@@ -536,6 +605,7 @@ function RunLine({
 const ALL = '__all__';
 
 function AllRunsDialog({
+  finalFocus,
   open,
   onOpenChange,
   runs,
@@ -543,6 +613,7 @@ function AllRunsDialog({
   locale,
   labels,
 }: {
+  readonly finalFocus: () => HTMLElement | false | null;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly runs: readonly AgentRunHistoryRun[];
@@ -595,7 +666,10 @@ function AllRunsDialog({
   );
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-xl'>
+      <DialogContent
+        finalFocus={finalFocus}
+        className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-xl'
+      >
         <DialogHeader>
           <DialogTitle>
             {fillLabel(labels.allTitle, { count: runs.length })}
@@ -606,9 +680,24 @@ function AllRunsDialog({
           {filter(statusItems, status, setStatus, labels.filterStatus)}
         </div>
         {shown.length === 0 ? (
-          <p className='py-6 text-center text-sm text-muted-foreground'>
-            {labels.noMatch}
-          </p>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant='icon'>
+                <BotIcon />
+              </EmptyMedia>
+              <EmptyTitle>{labels.noMatch}</EmptyTitle>
+            </EmptyHeader>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => {
+                setAgentId(ALL);
+                setStatus(ALL);
+              }}
+            >
+              {labels.clearFilters ?? defaultAgentRunHistoryLabels.clearFilters}
+            </Button>
+          </Empty>
         ) : (
           <ul
             className='-mx-1 min-h-0 overflow-y-auto'
@@ -942,7 +1031,7 @@ export function RunActions({
   labels = defaultAgentRunHistoryLabels,
 }: {
   readonly run: Pick<AgentRunHistoryRun, 'status' | 'stopping'>;
-  readonly onStop?: () => void;
+  readonly onStop?: (target?: HTMLElement) => void;
   readonly onRetry?: () => void;
   readonly busy?: boolean;
   readonly labels?: AgentRunHistoryLabels;
@@ -957,7 +1046,7 @@ export function RunActions({
           variant='outline'
           size='sm'
           disabled={busy || run.stopping}
-          onClick={onStop}
+          onClick={(event) => onStop(event.currentTarget)}
         >
           <SquareIcon data-icon='inline-start' />
           {run.stopping ? labels.status.stopping : labels.stop}

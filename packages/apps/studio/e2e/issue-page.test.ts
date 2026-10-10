@@ -1,4 +1,10 @@
-import { expect, open, test, unique } from './support/fixtures.ts';
+import {
+  expect,
+  open,
+  test,
+  unique,
+  horizontalOverflow,
+} from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 
 test.describe('issue page', () => {
@@ -50,6 +56,242 @@ test.describe('issue page', () => {
     await expect(
       page.getByRole('heading', { name: issue.title, level: 1 }),
     ).toBeHidden();
+  });
+
+  test('execution history stays after details, wraps and preserves focus across container widths', async ({
+    page,
+    api,
+  }) => {
+    test.setTimeout(120_000);
+    const name = 'Layout Agent with a very long readable name '.repeat(3);
+    const agent = await api.post<{ id: string }>('agents', {
+      name,
+      modelEntries: [{ tool: 'claude' }],
+      access: 'everyone',
+    });
+    const records = [
+      'running',
+      'queued',
+      'failed',
+      'completed',
+      'cancelled',
+      'completed',
+    ].map((status, index) => ({
+      id: `sidebar-run-${index}`,
+      agentId: agent.id,
+      agentType: 'runner',
+      status,
+      actualModels: ['long-model-name-'.repeat(6)],
+      model: 'configured-model',
+      createdAt: `2026-01-0${index + 1}T09:00:00Z`,
+      startedAt: '2026-01-01T09:01:00Z',
+      finishedAt: ['running', 'queued'].includes(status)
+        ? null
+        : '2026-01-01T09:02:00Z',
+      cancelRequestedAt: null,
+      maxAttempts: 1,
+      attempt: 1,
+      inputs: [],
+      subject: { kind: 'issue', id: issue.id },
+      tool: null,
+      modelService: null,
+    }));
+    let visibleRecords = records;
+    let status = 200;
+    let hold = false;
+    let release: (() => void) | undefined;
+    await page.route('**/api/agents/runs?**', async (route) => {
+      if (hold)
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      await route.fulfill({
+        status,
+        json:
+          status === 200
+            ? { data: visibleRecords }
+            : { error: { code: 'REQUEST_FAILED', message: 'Test failure' } },
+      });
+    });
+    await page.route(
+      /\/api\/agents\/runs\/sidebar-run-\d+(?:\/events(?:\?.*)?)?$/u,
+      (route) => {
+        const path = new URL(route.request().url()).pathname;
+        const record = records.find((item) => path.includes(item.id));
+        return route.fulfill({
+          json: {
+            data: path.endsWith('/events')
+              ? { events: [], hasMore: false }
+              : record,
+          },
+        });
+      },
+    );
+    await open(page, `/issues/${issue.identifier}`);
+    const history = page.locator('[data-slot="agent-run-history"]');
+    const aside = page.locator('[data-slot="issue-detail-layout"] aside');
+    await expect(history).toHaveCount(1);
+    await expect(aside.locator('[data-slot="agent-run-history"]')).toHaveCount(
+      1,
+    );
+    const datesBox = await aside
+      .getByRole('heading', { name: '详情', exact: true })
+      .boundingBox();
+    const historyBox = await history.boundingBox();
+    expect(historyBox?.y).toBeGreaterThan(datesBox!.y);
+    const check = async (width: number, assistant: boolean) => {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(history).toBeVisible();
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+      expect(
+        await history.evaluate((element) => {
+          const metrics = element as unknown as {
+            scrollWidth: number;
+            clientWidth: number;
+          };
+          return metrics.scrollWidth - metrics.clientWidth;
+        }),
+      ).toBeLessThanOrEqual(1);
+      const layout = page.locator('[data-slot="issue-detail-layout"]');
+      const available = await layout.evaluate(
+        (element) =>
+          (element as unknown as { clientWidth: number }).clientWidth,
+      );
+      await expect(layout.locator(':scope > div')).toHaveCSS(
+        'flex-direction',
+        available >= 1024 ? 'row' : 'column',
+      );
+      await page.evaluate(
+        `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); scroller.scrollTop = 0; })()`,
+      );
+      await page.screenshot({
+        path: `storage/ui-workflow/issue-runs/screenshots/page-top-${width}-${assistant ? 'assistant' : 'plain'}.png`,
+      });
+      await page.evaluate(
+        `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); const dates = document.querySelector('[data-slot="agent-run-history"]'); scroller.scrollTop += dates.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 180; })()`,
+      );
+      await page.screenshot({
+        path: `storage/ui-workflow/issue-runs/screenshots/history-${width}-${assistant ? 'assistant' : 'plain'}.png`,
+      });
+    };
+    for (const width of [375, 1280, 1600]) await check(width, false);
+    const layout = page.locator('[data-slot="issue-detail-layout"]');
+    const inset =
+      1600 -
+      (await layout.evaluate(
+        (element) =>
+          (element as unknown as { clientWidth: number }).clientWidth,
+      ));
+    for (const available of [1023, 1024, 1025])
+      await check(available + inset, false);
+    await expect(aside.locator(':scope > div')).toHaveCSS('position', 'static');
+    await history
+      .getByRole('button', { name: '查看全部 6 条' })
+      .scrollIntoViewIfNeeded();
+    expect(
+      await page
+        .locator('[data-slot="route-child-page"] > div')
+        .evaluate(
+          (element) => (element as unknown as { scrollTop: number }).scrollTop,
+        ),
+    ).toBeGreaterThan(0);
+
+    await page.screenshot({
+      path: 'storage/ui-workflow/issue-runs/screenshots/history-bottom.png',
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.getByTestId('chat-header-button').click();
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
+    await check(1280, true);
+    await page
+      .getByRole('button', { name: 'Toggle Sidebar', exact: true })
+      .click();
+    await check(1280, true);
+    const link = history.getByRole('link').first();
+    await link.focus();
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await expect(link).toBeFocused();
+    await link.press('Enter');
+    await expect(
+      page.getByRole('dialog', { name: '运行记录', exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(
+      page.getByRole('dialog', { name: '运行记录', exact: true }),
+    ).toBeHidden();
+    await expect(link).toBeFocused();
+    const all = history.getByRole('button', { name: '查看全部 6 条' });
+    await all.click();
+    await page.getByTestId('all-runs').getByRole('link').last().click();
+    await expect(
+      page.getByRole('dialog', { name: '运行记录', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByTestId('all-runs')).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(
+      page.getByRole('dialog', { name: '运行记录', exact: true }),
+    ).toBeHidden();
+    await expect(all).toBeFocused();
+    for (const locale of ['en-US', 'zh-CN']) {
+      for (const mode of ['light', 'dark']) {
+        await api.patch('users/me/preferences', { locale, 'theme.mode': mode });
+        await page.evaluate(
+          `localStorage.setItem('nocobase.locale', '${locale}'); localStorage.setItem('nocobase:main:theme:color-scheme', '${mode}');`,
+        );
+        await page.reload();
+        await expect(history).toBeVisible();
+        await expect(
+          history.getByRole('heading', {
+            name: locale === 'en-US' ? 'Execution log' : '执行记录',
+            exact: true,
+          }),
+        ).toBeVisible();
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+        await page.evaluate(
+          `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); const dates = document.querySelector('[data-slot="agent-run-history"]'); scroller.scrollTop += dates.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 180; })()`,
+        );
+        await page.screenshot({
+          path: `storage/ui-workflow/issue-runs/screenshots/history-${locale}-${mode}.png`,
+        });
+      }
+    }
+    hold = true;
+    await page.reload();
+    await expect(
+      history.getByRole('status', { name: '正在加载执行记录…' }),
+    ).toBeVisible();
+    await history.screenshot({
+      path: 'storage/ui-workflow/issue-runs/screenshots/loading.png',
+    });
+    hold = false;
+    release?.();
+    await expect(history.getByTestId('run-sidebar-run-0')).toBeVisible();
+    for (const code of [500, 403, 404]) {
+      status = code;
+      await page.reload();
+      await expect(history.getByRole('alert')).toBeVisible();
+      if (code === 500)
+        await expect(
+          history.getByRole('button', { name: '重试', exact: true }),
+        ).toBeVisible();
+      else
+        await expect(
+          history.getByRole('button', { name: '重试', exact: true }),
+        ).toHaveCount(0);
+      await history.screenshot({
+        path: `storage/ui-workflow/issue-runs/screenshots/error-${code}.png`,
+      });
+    }
+    status = 200;
+    visibleRecords = [];
+    await api.patch(`projects/issues/${issue.id}`, {
+      executor: { type: 'agent', id: agent.id },
+    });
+    await page.reload();
+    await expect(history.getByText('暂无运行。')).toBeVisible();
+    await history.screenshot({
+      path: 'storage/ui-workflow/issue-runs/screenshots/empty.png',
+    });
   });
 
   test('a comment is posted, shown in the timeline and kept after a reload', async ({

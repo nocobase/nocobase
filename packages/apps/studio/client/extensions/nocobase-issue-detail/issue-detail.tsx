@@ -513,8 +513,8 @@ const LAYOUT_INSET = 24;
 
 /**
  * The frame of a record's page on the application's background: the main column (its cards, such as `IssueSurface`,
- * stacked with the frame's gap) beside a fixed 20rem side column of cards from `lg` up, folded into one column on narrow
- * screens. The side column follows the page while it fits the viewport.
+ * stacked with the frame's gap) beside a fixed 20rem side column when the page container reaches 64rem.
+ * Narrow containers, including those beside the assistant, stack the same DOM to preserve focus. The side column follows the page while it fits the viewport.
  */
 export function IssueDetailLayout({
   main,
@@ -531,18 +531,27 @@ export function IssueDetailLayout({
   const fits = useFitsScrollViewport(contentRef, LAYOUT_INSET);
   return (
     <div
-      className={cn(
-        'flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 lg:flex-row',
-        className,
-      )}
+      className={cn('@container/issue min-h-full', className)}
       data-slot='issue-detail-layout'
     >
-      <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>{main}</div>
-      <aside aria-label={asideLabel} className='lg:w-[20rem] lg:shrink-0'>
-        <div className={cn(fits && 'lg:sticky lg:top-6')} ref={contentRef}>
-          {aside}
+      <div className='flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @min-[64rem]/issue:flex-row'>
+        <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>
+          {main}
         </div>
-      </aside>
+        <aside
+          aria-label={asideLabel}
+          className='min-w-0 @min-[64rem]/issue:w-[20rem] @min-[64rem]/issue:shrink-0'
+        >
+          <div
+            className={cn(
+              fits && '@min-[64rem]/issue:sticky @min-[64rem]/issue:top-6',
+            )}
+            ref={contentRef}
+          >
+            {aside}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
