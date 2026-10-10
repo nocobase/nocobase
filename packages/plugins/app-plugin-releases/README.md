@@ -20,6 +20,51 @@ Environment credentials and registry passwords are sealed with the application's
 
 Client: list `@nocobase/app-plugin-releases/client`. Pass `routes: false` and use `@nocobase/app-plugin-releases/client/pages` to place the pages yourself; otherwise they mount at `/releases` and `/release-environments` (paths are options), with an App's page at `:appId` (Overview, Deployments, Variables, Settings) and an environment's at `:environmentId` (Overview, Variables, Settings) below them, the tab in `?tab=`. An application that mounts the pages elsewhere provides `ReleasesPathsContext` (or wraps them with `withReleasesPaths`) so they link to one another.
 
+## Artifact storage
+
+`releases.artifact` accepts either a complete disk configuration or `{ disk: <name>, prefix?: <prefix> }`. A reference selects the named disk from the application's final `drive.disks` configuration; it never falls back to `drive.default`. Only `disk` and `prefix` are allowed in a reference: configure drivers, credentials and other storage options on the disk itself.
+
+```yaml
+drive:
+  default: local
+  disks:
+    local:
+      driver: fs
+      location: storage/files
+      visibility: private
+    oss:
+      driver: s3
+      bucket: release-archives
+      region: auto
+      endpoint: https://s3.example.com
+      forcePathStyle: true
+      supportsACL: false
+      visibility: private
+      credentials: {} # Uses the S3 default credential provider chain.
+releases:
+  artifact:
+    disk: oss
+    prefix: releases
+  dataDir: storage/releases
+```
+
+Use `disk: local` to store archives on the filesystem. A prefix is relative to the disk root: `releases` stores new uploads and promoted archives at `releases/<appId>/<releaseId>.tar.gz` on both filesystem and S3 disks. Omit `prefix` or set it to an empty string to use the root; trailing `/` characters are removed. Absolute paths, backslashes, `.` or `..` path segments and control characters are rejected. A prefix organizes files; it is not a permission boundary.
+
+Existing complete configurations continue to work:
+
+```yaml
+releases:
+  artifact:
+    driver: fs
+    location: storage/artifacts
+    visibility: private
+  dataDir: storage/releases
+```
+
+The plugin copies referenced disk configuration without changing `drive.disks`. Both managed Hosts receive the resolved complete configuration; prefixes are applied only when generating new artifact keys. Changing the prefix on the same disk leaves existing records and files in place: old releases still deploy, roll back, promote and delete using their recorded keys. Changing the disk requires the operator to migrate existing files. Invalid references fail before services or Hosts are initialized, and configuration errors never include credentials.
+
+Applications composing services directly with `createReleases({ config, drive, ... })` pass the final `AppDriveConfig` as the optional `drive` argument when `config.artifact` references a named disk. Existing callers with a complete artifact disk configuration need no changes.
+
 ## CI and API keys with a scope
 
 The plugin has no keys of its own. The API is authenticated by the application, which accepts a person's session or an API key, and opts into scoped keys (`auth.required({ scopedKeys: true })`). A request made with a scoped key (or any key of a service account) carries the key's `KeyScope` on its identity, and `callerOf` turns it into a `key` caller: its permissions are cut down to what the scope covers, and the Apps it reaches to the ones the scope picked (`keyScope.objects('rel.apps')`), for listing as well as every App check.

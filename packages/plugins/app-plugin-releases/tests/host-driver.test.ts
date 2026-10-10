@@ -77,7 +77,21 @@ describe('Host driver end to end', () => {
         },
       },
     });
-    harness = await createHarness({ drivers: [driver], rootDir });
+    harness = await createHarness({
+      drivers: [driver],
+      rootDir,
+      artifact: { disk: 'archives', prefix: 'releases' },
+      drive: {
+        default: 'archives',
+        disks: {
+          archives: {
+            driver: 'fs',
+            location: path.join(rootDir, 'artifacts'),
+            visibility: 'private',
+          },
+        },
+      },
+    });
     await harness.environment({
       id: 'local',
       name: 'Local Host',

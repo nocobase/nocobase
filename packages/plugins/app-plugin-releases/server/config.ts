@@ -2,10 +2,17 @@ import type { AppRuntimeLogging } from '@nocobase/app-server/logging';
 import type { AppDriveDiskConfig } from '@nocobase/drive';
 import type { LoggingConfig } from '@nocobase/logging';
 
+/** A named disk from the application's final `drive.disks` configuration. */
+export interface ReleasesArtifactDiskReference {
+  readonly disk: string;
+  /** Relative object-key prefix; omitted or empty means the disk root. */
+  readonly prefix?: string;
+}
+
 /** The application's `releases` configuration section. */
 export interface ReleasesPluginConfig {
   /** Where release archives are stored. */
-  readonly artifact: AppDriveDiskConfig;
+  readonly artifact: AppDriveDiskConfig | ReleasesArtifactDiskReference;
   /** The plugin's own files: deployment logs and the configuration each deployment applied. */
   readonly dataDir: string;
   /** Largest accepted release archive, in MiB (256 by default). */

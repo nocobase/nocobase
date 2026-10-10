@@ -155,6 +155,7 @@ export interface ReleasesServiceOptions {
   readonly guard: AccessGuard;
   readonly events: ReleasesEventBus;
   readonly artifact: AppDriveDiskConfig;
+  readonly artifactPrefix?: string;
   readonly dataDir: string;
   readonly maxArtifactBytes?: number;
   readonly logging?: {
@@ -298,6 +299,12 @@ export class ReleasesService {
   private readonly runs = new Map<string, Promise<unknown>>();
   private restoring: Promise<void> | null = null;
   private closed = false;
+
+  private artifactKey(appId: string, releaseId: string): string {
+    return [this.options.artifactPrefix, appId, `${releaseId}.tar.gz`]
+      .filter(Boolean)
+      .join('/');
+  }
 
   public constructor(private readonly options: ReleasesServiceOptions) {
     this.diagnostic = createDiagnosticLogger(options.logger);
@@ -805,7 +812,7 @@ export class ReleasesService {
         );
         if (existing) return existing;
         const id = randomUUID();
-        const artifactKey = `${appId}/${id}.tar.gz`;
+        const artifactKey = this.artifactKey(appId, id);
         const release: ReleaseRecord = {
           id,
           appId,
@@ -988,7 +995,7 @@ export class ReleasesService {
       }
       const id = randomUUID();
       const artifactKey = release.artifactKey
-        ? `${targetAppId}/${id}.tar.gz`
+        ? this.artifactKey(targetAppId, id)
         : null;
       const copy: ReleaseRecord = {
         ...release,
