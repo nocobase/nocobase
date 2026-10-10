@@ -2,14 +2,12 @@ name: V3 Studio image
 
 # NocoBase Studio's public release image, built from a v3 release's aggregate tag after the release published
 # @nocobase/studio to npm, and pushed to Docker Hub and Aliyun's public registry as nocobase/studio:<version> and
-# :beta (or :latest for a version without a prerelease part), like the v2 release images. It carries no runner or
-# CLI packages: Studio answers runners and nb-studio with the npm packages and exact versions it was built with.
+# :beta (or :latest for a version without a prerelease part), like the v2 release images. Studio's `pnpm build` packs
+# the universal (Node-free) nocobase-runner and nb-studio packages at the exact versions it records into
+# dist/runners, so the image serves the runner and CLI it was built with, including to runners installed from a
+# package, which can only update from one.
 #
-# The universal (Node-free) nocobase-runner and nb-studio packages of the same release are uploaded as an artifact,
-# for an installation that has to serve them from its own agents.dist.dir, such as runners installed before npm
-# distribution that can only update from a package.
-#
-# Internal images (dev versions with the packages baked in) are built in 2013xile/nocobase-ci and pushed to the
+# Internal images (dev versions of Studio, nb-studio and the runner) are built in 2013xile/nocobase-ci and pushed to the
 # internal registry instead.
 #
 # The beta release calls this; re-run its job from the release run to rebuild an image.
@@ -86,26 +84,13 @@ jobs:
       - name: Build the workspace packages Studio depends on
         run: pnpm --filter "@nocobase/studio^..." build
 
-      # dist/ is built here, with this job's heap, and the image takes it prebuilt.
+      # dist/ is built here, with this job's heap, and the image takes it prebuilt. It includes dist/runners, the
+      # runner and nb-studio packages Studio serves.
       - name: Build dist for linux-x64
         working-directory: packages/apps/studio
         env:
           NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD: '1'
         run: pnpm build --target linux-x64
-
-      # Not baked into the image: kept for installations that serve packages themselves.
-      - name: Build the universal runner and nb-studio packages
-        working-directory: packages/apps/studio
-        run: |
-          pnpm nocobase cli build --universal --out "$RUNNER_TEMP/studio-dist"
-          pnpm nocobase cli build --runner --universal --out "$RUNNER_TEMP/studio-dist"
-
-      - name: Upload the universal packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: studio-dist-${{ steps.tags.outputs.version }}
-          path: ${{ runner.temp }}/studio-dist
-          retention-days: 30
 
       - name: Sign in to Docker Hub
         uses: docker/login-action@v3
@@ -146,6 +131,4 @@ jobs:
             echo "Built \`@nocobase/studio@${VERSION}\` from \`${TAG}\`:"
             echo
             printf '%s\n' "$TAGS" | sed 's/^/- `/; s/$/`/'
-            echo
-            echo "The universal runner and nb-studio packages are in the \`studio-dist-${VERSION}\` artifact."
           } >> "$GITHUB_STEP_SUMMARY"
