@@ -109,6 +109,8 @@ Neither the way nor the application and target are stored (`studioRepoCi.setups`
 
 Every way is offered for every trigger. The first three need a Git connection to the repository; without one the run offers the last two. The file and prompt name no repository, so they read the same before the repository exists (New project). `POST /api/repositoryDeployments/{resourceId}/ci/configure` (`nb-studio build ci configure <repo> --file run.json`, `{ method, app?, target?, workflowFiles?, agentId? }` with `target` `{ trigger, ref?, environmentId }`) runs one of the first three for whoever manages the project, and `POST /api/repositoryDeployments/ciWorkflows/generate` (`nb-studio build ci workflows`, `{ app, target?, defaultBranch?, managed? }`) generates the standard file to copy. A new project sends its run with the rest (`ci` of `POST /api/projectSetups`); "Skip" leaves it for later.
 
+To update an existing generated workflow after upgrading Studio, open Projects › Settings › Deployment › Configure CI and run the standard workflow setup again for each application and target, using its existing directory, App ID, trigger, branch or tag, and environment. Studio compares the generated files with the default branch and opens or updates an **Update Studio CI workflows** pull request; review and merge it. The setup writes a fresh repository CI secret as part of the run. It regenerates the whole workflow file, so review custom edits in the diff and preserve them before merging. A renamed, customized, or otherwise unsupported workflow can be fixed manually: move its existing pnpm setup and Node 24 setup (including cache and subdirectory settings) before the nb-studio CLI installation, remove duplicate setup steps from their old positions, and leave dependency installation and build after the `building` report. A Docker workflow only needs `actions/setup-node@v4` with `node-version: 24` before installing the CLI. Retrying a failed run or rotating the secret does not update an existing workflow.
+
 ### Where the CI stands
 
 CI's reports are the truth. Deployment's **CI status** lists the Apps CI reported for the repository in one table with fixed columns (App, last build with its state, last deploy, "…"), a header row per environment they run in, in release management's order, a protected one marked with a shield whose tooltip says what protection means for CI (`GET /api/repositoryDeployments/{resourceId}/ci/connection`, `nb-studio build ci connection <repo>`; `server/builds/ci-reports.ts`). An App's environment is the App's own, else that of the pull request preview it was, else that of its link to the repository, never guessed from its name; a pull request's App gone with its pull request counts in the Preview environment, and any other App nobody knows any more is left out. A build of a pull request (or of an App named `<appId>-pr-<n>`) counts for one row of the application, `<appId>-pr-*`. Each row shows its last build with its state, and its last upload to deploy. A row is there because CI reported it, so it says nothing more while it is connected, which it is only once CI reported a build of that App itself, never because another App of the repository did; an App recorded for the repository that no build names says **Not reported yet**. The key Studio keeps is a quiet line beneath the table.
@@ -212,6 +214,9 @@ jobs:
       IMAGE: ghcr.io/${{ github.repository_owner }}/shop
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:

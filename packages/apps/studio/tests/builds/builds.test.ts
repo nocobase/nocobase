@@ -401,6 +401,20 @@ describe('the CI workflows', () => {
       '.github/workflows/nb-studio-shop-preview.yml',
     ]);
     const yaml = workflow.files[0]!.content;
+    const preparation = [
+      '      - uses: pnpm/action-setup@v4',
+      '      - uses: actions/setup-node@v4',
+      '          node-version: 24',
+      '      - name: Install the nb-studio CLI',
+      `nb-studio build status --app "$APP_ID" --state building --logs "$LOGS"`,
+      'pnpm install --frozen-lockfile',
+      'pnpm build --target linux-x64 --tar',
+    ];
+    const preparationAt = preparation.map((step) => yaml.indexOf(step));
+    expect(preparationAt.every((index) => index >= 0)).toBe(true);
+    expect([...preparationAt].sort((a, b) => a - b)).toEqual(preparationAt);
+    expect(yaml.match(/uses: pnpm\/action-setup@v4/gu)).toHaveLength(1);
+    expect(yaml.match(/uses: actions\/setup-node@v4/gu)).toHaveLength(1);
     // Previews only: no push, no tags, and no paths filter for the root application.
     expect(yaml).toContain(
       'on:\n  pull_request:\n    types: [opened, synchronize, reopened]\npermissions:',
@@ -481,6 +495,10 @@ describe('the CI workflows', () => {
       "APP_ID: 'admin-pr-${{ github.event.pull_request.number }}'",
     );
     expect(admin).toContain("package_json_file: 'apps/admin/package.json'");
+    expect(web).toContain("cache-dependency-path: 'apps/web/pnpm-lock.yaml'");
+    expect(admin).toContain(
+      "cache-dependency-path: 'apps/admin/pnpm-lock.yaml'",
+    );
     expect(web).not.toContain('push:');
   });
 
@@ -511,9 +529,17 @@ describe('the CI workflows', () => {
     expect(staging.content).toContain("APP_ID: 'web-staging'");
     expect(staging.content).toContain("ENVIRONMENT: 'staging'");
     // A push checks out what it pushed.
-    expect(staging.content).toContain(
-      '      - uses: actions/checkout@v4\n      - name: Install the nb-studio CLI',
-    );
+    const setupAt = [
+      '      - uses: actions/checkout@v4',
+      '      - uses: pnpm/action-setup@v4',
+      '      - uses: actions/setup-node@v4',
+      '      - name: Install the nb-studio CLI',
+      'nb-studio build status --app "$APP_ID" --state building --logs "$LOGS"',
+      'pnpm install --frozen-lockfile',
+      'pnpm build --target linux-x64 --tar',
+    ].map((step) => staging.content.indexOf(step));
+    expect(setupAt.every((index) => index >= 0)).toBe(true);
+    expect([...setupAt].sort((a, b) => a - b)).toEqual(setupAt);
     expect(staging.content).toContain('cancel-in-progress: false');
     expect(production.content).toContain("APP_ID: 'web'");
     expect(production.content).toContain("ENVIRONMENT: 'live'");
