@@ -1,0 +1,151 @@
+name: V3 Studio image
+
+# NocoBase Studio's public release image, built from a v3 release's aggregate tag after the release published
+# @nocobase/studio to npm, and pushed to Docker Hub and Aliyun's public registry as nocobase/studio:<version> and
+# :beta (or :latest for a version without a prerelease part), like the v2 release images. It carries no runner or
+# CLI packages: Studio answers runners and nb-studio with the npm packages and exact versions it was built with.
+#
+# The universal (Node-free) nocobase-runner and nb-studio packages of the same release are uploaded as an artifact,
+# for an installation that has to serve them from its own agents.dist.dir, such as runners installed before npm
+# distribution that can only update from a package.
+#
+# Internal images (dev versions with the packages baked in) are built in 2013xile/nocobase-ci and pushed to the
+# internal registry instead.
+#
+# The beta release calls this; re-run its job from the release run to rebuild an image.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Aggregate release tag to build, e.g. release-beta/2026-10-11.1'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Build and push the Studio image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Studio's build typechecks it together with the framework's sources, which needs more than Node's default heap.
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - name: Check out the release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Name the tags
+        id: tags
+        env:
+          ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          manifest=packages/apps/studio/package.json
+          version=$(jq -r '.version // empty' "$manifest" 2>/dev/null || true)
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::$TAG has no valid version in $manifest (found '${version}'), so a release image cannot be tagged."
+            exit 1
+          fi
+          case "$version" in
+            *-*) channel=beta ;;
+            *) channel=latest ;;
+          esac
+          tags=
+          for image in nocobase/studio "$ALI_REGISTRY/nocobase/studio"; do
+            tags="${tags}${image}:${version}"$'\n'"${image}:${channel}"$'\n'
+          done
+          {
+            echo "version=${version}"
+            echo "tags<<EOF"
+            printf '%s' "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # Studio and the workspace packages it depends on, nothing else in the repository.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter "@nocobase/studio..."
+
+      - name: Build the workspace packages Studio depends on
+        run: pnpm --filter "@nocobase/studio^..." build
+
+      # dist/ is built here, with this job's heap, and the image takes it prebuilt.
+      - name: Build dist for linux-x64
+        working-directory: packages/apps/studio
+        env:
+          NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD: '1'
+        run: pnpm build --target linux-x64
+
+      # Not baked into the image: kept for installations that serve packages themselves.
+      - name: Build the universal runner and nb-studio packages
+        working-directory: packages/apps/studio
+        run: |
+          pnpm nocobase cli build --universal --out "$RUNNER_TEMP/studio-dist"
+          pnpm nocobase cli build --runner --universal --out "$RUNNER_TEMP/studio-dist"
+
+      - name: Upload the universal packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-dist-${{ steps.tags.outputs.version }}
+          path: ${{ runner.temp }}/studio-dist
+          retention-days: 30
+
+      - name: Sign in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Sign in to Aliyun's public registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/apps/studio
+          file: packages/apps/studio/Dockerfile
+          platforms: linux/amd64
+          build-args: DIST=prebuilt
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          provenance: false
+
+      - name: Summary
+        env:
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ steps.tags.outputs.version }}
+          TAGS: ${{ steps.tags.outputs.tags }}
+        run: |
+          {
+            echo '### Studio image'
+            echo
+            echo "Built \`@nocobase/studio@${VERSION}\` from \`${TAG}\`:"
+            echo
+            printf '%s\n' "$TAGS" | sed 's/^/- `/; s/$/`/'
+            echo
+            echo "The universal runner and nb-studio packages are in the \`studio-dist-${VERSION}\` artifact."
+          } >> "$GITHUB_STEP_SUMMARY"
