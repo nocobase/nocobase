@@ -12,15 +12,15 @@ Asks a model for a short answer (an embedding, a ranking) over a connection bein
 nb-studio service check --model <string>
 ```
 
-| Flag           | Type      | Description  |
-| -------------- | --------- | ------------ |
-| `--service`    | string    |              |
-| `--provider`   | openai \\ | anthropic \\ | google \\ | deepseek \\ | alibaba \\ | moonshotai \\ | ollama \\ | cohere \\ | openai-compatible |     |
-| `--base-url`   | string    |              |
-| `--api-key`    | string    |              |
-| `--model`      | string    | (required)   |
-| `--kind`       | chat \\   | embedding \\ | rerank    |             |
-| `--dimensions` | integer   |              |
+| Flag           | Type                                                                                                        | Description |
+| -------------- | ----------------------------------------------------------------------------------------------------------- | ----------- |
+| `--service`    | string                                                                                                      |             |
+| `--provider`   | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible |             |
+| `--base-url`   | string                                                                                                      |             |
+| `--api-key`    | string                                                                                                      |             |
+| `--model`      | string                                                                                                      | (required)  |
+| `--kind`       | chat \| embedding \| rerank                                                                                 |             |
+| `--dimensions` | integer                                                                                                     |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -38,15 +38,15 @@ Needs `agents.services` manage. The key is stored encrypted and never answered.
 nb-studio service create
 ```
 
-| Flag         | Type      | Description                                                       |
-| ------------ | --------- | ----------------------------------------------------------------- |
-| `--title`    | string    |                                                                   |
-| `--provider` | openai \\ | anthropic \\                                                      | google \\ | deepseek \\ | alibaba \\ | moonshotai \\ | ollama \\ | cohere \\ | openai-compatible |     |
-| `--base-url` | string    |                                                                   |
-| `--api-key`  | string    |                                                                   |
-| `--models`   | json      |                                                                   |
-| `--enabled`  | boolean   |                                                                   |
-| `--file`     | path      | The request body as a JSON object; the flags override its fields. |
+| Flag         | Type                                                                                                        | Description                                                       |
+| ------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `--title`    | string                                                                                                      |                                                                   |
+| `--provider` | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible |                                                                   |
+| `--base-url` | string                                                                                                      |                                                                   |
+| `--api-key`  | string                                                                                                      |                                                                   |
+| `--models`   | json                                                                                                        |                                                                   |
+| `--enabled`  | boolean                                                                                                     |                                                                   |
+| `--file`     | path                                                                                                        | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -94,12 +94,12 @@ Asks the provider for its models over a connection being edited, or a saved serv
 nb-studio service discover
 ```
 
-| Flag         | Type      | Description  |
-| ------------ | --------- | ------------ |
-| `--service`  | string    |              |
-| `--provider` | openai \\ | anthropic \\ | google \\ | deepseek \\ | alibaba \\ | moonshotai \\ | ollama \\ | cohere \\ | openai-compatible |     |
-| `--base-url` | string    |              |
-| `--api-key`  | string    |              |
+| Flag         | Type                                                                                                        | Description |
+| ------------ | ----------------------------------------------------------------------------------------------------------- | ----------- |
+| `--service`  | string                                                                                                      |             |
+| `--provider` | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible |             |
+| `--base-url` | string                                                                                                      |             |
+| `--api-key`  | string                                                                                                      |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

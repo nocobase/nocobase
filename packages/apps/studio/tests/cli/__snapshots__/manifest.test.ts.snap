@@ -306,7 +306,7 @@ report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) 
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run brief <run> -> GET /api/agents/runs/{runId}/brief (person)
 run cancel <run> -> POST /api/agents/runs/{runId}/cancel (person) confirm
-run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
 run list [--subject-kind --subject --agent --status --limit --page-token] -> GET /api/agents/runs (person)
 run request confirm <request> -> POST /api/agents/runRequests/{requestId}/confirm (person) confirm
@@ -437,7 +437,7 @@ release list <app> [--page --limit --label] -> GET /api/releases/apps/{appId}/re
 report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run context -> GET /api/agents/runs/current/context (run) agents.runs/self
-run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
 run self -> GET /api/agents/runs/current (run) agents.runs/self"
 `;

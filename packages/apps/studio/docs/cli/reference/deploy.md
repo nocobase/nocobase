@@ -95,15 +95,15 @@ nb-studio deploy logs <app> <deployment>
 | `app`        |             |
 | `deployment` |             |
 
-| Flag           | Type     | Description |
-| -------------- | -------- | ----------- |
-| `--page-token` | string   |             |
-| `--level`      | trace \\ | debug \\    | info \\ | warn \\ | error \\ | fatal |     |
-| `--source`     | string   |             |
-| `--search`     | string   |             |
-| `--since`      | string   |             |
-| `--until`      | string   |             |
-| `--from-start` | boolean  |             |
+| Flag           | Type                                             | Description |
+| -------------- | ------------------------------------------------ | ----------- |
+| `--page-token` | string                                           |             |
+| `--level`      | trace \| debug \| info \| warn \| error \| fatal |             |
+| `--source`     | string                                           |             |
+| `--search`     | string                                           |             |
+| `--since`      | string                                           |             |
+| `--until`      | string                                           |             |
+| `--from-start` | boolean                                          |             |
 
 **Output:** A list (table columns: `time`, `level`, `msg`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -125,9 +125,9 @@ nb-studio deploy reopen-suggestion decide <app> --action <string>
 | -------- | ----------- |
 | `app`    |             |
 
-| Flag       | Type      | Description |
-| ---------- | --------- | ----------- |
-| `--action` | reopen \\ | dismiss     | (required) |
+| Flag       | Type              | Description |
+| ---------- | ----------------- | ----------- |
+| `--action` | reopen \| dismiss | (required)  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -256,13 +256,13 @@ Any signed-in caller; lists the requests on Apps they may view or requests they 
 nb-studio deploy request list
 ```
 
-| Flag            | Type       | Description  |
-| --------------- | ---------- | ------------ |
-| `--page`        | integer    | (default 1)  |
-| `--limit`       | integer    | (default 20) |
-| `--app`         | string     |              |
-| `--status`      | pending \\ | approved \\  | rejected \\ | cancelled \\ | deployed \\ | failed |     |
-| `--awaiting-me` | boolean    |              |
+| Flag            | Type                                                               | Description  |
+| --------------- | ------------------------------------------------------------------ | ------------ |
+| `--page`        | integer                                                            | (default 1)  |
+| `--limit`       | integer                                                            | (default 20) |
+| `--app`         | string                                                             |              |
+| `--status`      | pending \| approved \| rejected \| cancelled \| deployed \| failed |              |
+| `--awaiting-me` | boolean                                                            |              |
 
 **Output:** A list (table columns: `id`, `appId`, `environmentId`, `kind`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

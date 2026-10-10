@@ -16,10 +16,10 @@ nb-studio board failed-run decide <run> --action <string>
 | -------- | ----------- |
 | `run`    |             |
 
-| Flag       | Type     | Description |
-| ---------- | -------- | ----------- |
-| `--action` | retry \\ | reassign \\ | cancel | (required) |
-| `--user`   | string   |             |
+| Flag       | Type                        | Description |
+| ---------- | --------------------------- | ----------- |
+| `--action` | retry \| reassign \| cancel | (required)  |
+| `--user`   | string                      |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

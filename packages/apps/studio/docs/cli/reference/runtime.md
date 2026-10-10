@@ -114,12 +114,12 @@ A one-time token the install script registers a runner with; the token is shown 
 nb-studio runtime token create
 ```
 
-| Flag              | Type      | Description                                                                                                                                                          |
-| ----------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--trust`         | team \\   | ownerOnly                                                                                                                                                            |             |
-| `--enabled-tools` | claude \\ | codex \\                                                                                                                                                             | opencode \\ | pi  | (repeatable) |
-| `--slots`         | integer   | How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.                                              |
-| `--tool-slots`    | json      | How many runs of each coding tool the runner takes at once; omitted or null for no limits per tool. A runner's own limits per tool (`--slots claude=2`) override it. |
+| Flag              | Type                              | Description                                                                                                                                                          |
+| ----------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--trust`         | team \| ownerOnly                 |                                                                                                                                                                      |
+| `--enabled-tools` | claude \| codex \| opencode \| pi | (repeatable)                                                                                                                                                         |
+| `--slots`         | integer                           | How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.                                              |
+| `--tool-slots`    | json                              | How many runs of each coding tool the runner takes at once; omitted or null for no limits per tool. A runner's own limits per tool (`--slots claude=2`) override it. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -147,14 +147,14 @@ nb-studio runtime update <runtime>
 | --------- | ----------- |
 | `runtime` |             |
 
-| Flag              | Type      | Description                                                                                                               |
-| ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `--name`          | string    |                                                                                                                           |
-| `--trust`         | team \\   | ownerOnly                                                                                                                 |             |
-| `--slots`         | integer   |                                                                                                                           |
-| `--tool-slots`    | json      | How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own. |
-| `--enabled-tools` | claude \\ | codex \\                                                                                                                  | opencode \\ | pi  | (repeatable) |
-| `--accept-jobs`   | boolean   |                                                                                                                           |
+| Flag              | Type                              | Description                                                                                                               |
+| ----------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `--name`          | string                            |                                                                                                                           |
+| `--trust`         | team \| ownerOnly                 |                                                                                                                           |
+| `--slots`         | integer                           |                                                                                                                           |
+| `--tool-slots`    | json                              | How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own. |
+| `--enabled-tools` | claude \| codex \| opencode \| pi | (repeatable)                                                                                                              |
+| `--accept-jobs`   | boolean                           |                                                                                                                           |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
