@@ -132,7 +132,6 @@ const appRuntime = defineAppRuntime({
     snowflake: defineAppConfig(() => ({ workerId: 1 })),
     auth: defineAuthConfig({
       defaults: () => ({
-        trustedOrigins: ['http://localhost'],
         secret: 'invitation-integration-test-secret-at-least-32-characters',
         emailAndPassword: { enabled: true, disableSignUp: true },
       }),

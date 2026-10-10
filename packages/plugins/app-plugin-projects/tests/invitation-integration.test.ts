@@ -55,6 +55,45 @@ async function invite(
   return new URL(url).pathname.split('/').at(-1) ?? '';
 }
 
+test('accepts same-origin invitations with unrelated cookies without configuring publicOrigin or trustedOrigins', async ({
+  testApp,
+  request,
+}) => {
+  const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  const { results } = await readData<{ results: InvitationResult[] }>(
+    await admin.fetch(
+      '/projects/invitations',
+      post({ emails: ['cookie-invite@example.test'] }),
+    ),
+    201,
+  );
+  const inviteUrl = results[0]?.inviteUrl;
+  expect(inviteUrl).toMatch(/^http:\/\/localhost\/main\/invite\//u);
+  const input = {
+    token: inviteUrl?.split('/').at(-1),
+    name: 'Cookie invitee',
+    password: 'cookie-invitation-password',
+  };
+  const accept = (origin: string) =>
+    request('/users/invitations/accept', {
+      ...post(input),
+      headers: {
+        'content-type': 'application/json',
+        cookie: 'analytics=unrelated',
+        origin,
+      },
+    });
+  const refused = await accept('https://evil.example');
+  expect(refused.status).toBe(403);
+  expect(await refused.json()).toMatchObject({
+    error: { reason: 'INVALID_CSRF_ORIGIN' },
+  });
+  expect(await readData(await accept('http://localhost'))).toMatchObject({
+    email: 'cookie-invite@example.test',
+    existingAccount: false,
+  });
+});
+
 test('accepts each project invitation through real sessions without consuming or granting the other one', async ({
   testApp,
   request,

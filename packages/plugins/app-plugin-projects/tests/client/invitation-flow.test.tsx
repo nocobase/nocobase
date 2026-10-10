@@ -1,3 +1,4 @@
+// @vitest-environment-options { "url": "http://localhost" }
 import authentication, {
   GuestAuthentication,
   usePasswordLogin,
