@@ -2,6 +2,7 @@ export {
   briefOf,
   createClaimService,
   fits,
+  fitsActor,
   hasTool,
   onlineEntryOf,
   pickEntry,
@@ -16,6 +17,11 @@ export {
   type ServerHolder,
 } from './claim.js';
 export { resolveAgentCli, type AgentCli } from './policy.js';
+export {
+  createClaimEligibility,
+  type ClaimEligibility,
+  type EligibilityRequest,
+} from './eligibility.js';
 export {
   createBriefSectionRegistry,
   createRepoAccessRegistry,
@@ -54,6 +60,7 @@ export {
   type SubjectFacts,
   type SubjectRegistry,
   type SubjectReports,
+  type SubjectWorkspaces,
   type SubjectScope,
   type WorkSink,
 } from './ports.js';
@@ -79,13 +86,28 @@ export {
 export {
   createRunService,
   DEFAULT_THREAD,
+  queuedRun,
   type EnqueueRequest,
   type EnqueueResult,
   type NewInput,
+  type RunEnqueued,
   type RunFilter,
+  type RunRequestPending,
   type RunService,
 } from './run.service.js';
+export {
+  RUN_REQUEST_TTL_MS,
+  type RequestedRun,
+  type RunRequestFilter,
+  type RunRequestReassignment,
+  type RunRequestService,
+} from './run-requests.js';
 export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
+export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './execution-view.js';
 export {
   createAvailability,
   type AgentAvailability,

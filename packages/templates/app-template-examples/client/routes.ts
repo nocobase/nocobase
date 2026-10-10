@@ -9,9 +9,40 @@ import {
 } from 'lucide-react';
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
+
+// Optional routes retained for applications that explicitly enable the Workflow plugin.
+export const workflowExampleRoutes: AppClientRouteContribution =
+  defineAppRoutes([
+    {
+      auth: 'required',
+      name: 'workflowExamples',
+      path: '/workflow',
+      navigation: { title: 'navigation.workflow', icon: Workflow },
+      children: [
+        {
+          auth: 'required',
+          authz: 'skip',
+          name: 'workflowWaitingTasks',
+          path: 'waiting-tasks',
+          navigation: { title: 'navigation.workflowWaitingTasks' },
+          breadcrumb: { title: 'navigation.workflowWaitingTasks' },
+          componentLoader: () =>
+            import('./pages/workflow-waiting-tasks/index.js'),
+        },
+        {
+          auth: 'required',
+          authz: 'skip',
+          name: 'workflowWaitingTask',
+          path: 'waiting-tasks/:id',
+          breadcrumb: { title: 'workflowTasks.detailTitle' },
+          componentLoader: () =>
+            import('./pages/workflow-waiting-tasks/task.js'),
+        },
+      ],
+    },
+  ]);
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
@@ -25,9 +56,9 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/',
   },
   {
-    // The header's inbox button is where a user looks for messages, so this page is reached from there. Declaring no
-    // navigation keeps a second menu entry from pointing at the one destination the button already owns. The plugin's
-    // API answers each person's own messages only, so the page needs no authorization of its own.
+    // Declares no navigation, so the application decides where its entry goes (for example a sidebar item with an
+    // unread badge). The plugin's API answers each person's own messages only, so the page needs no authorization of
+    // its own.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/inbox.js'),
@@ -133,32 +164,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
   {
     auth: 'required',
-    name: 'workflowExamples',
-    path: '/workflow',
-    navigation: { title: 'navigation.workflow', icon: Workflow },
-    children: [
-      {
-        auth: 'required',
-        authz: 'skip',
-        name: 'workflowWaitingTasks',
-        path: 'waiting-tasks',
-        navigation: { title: 'navigation.workflowWaitingTasks' },
-        breadcrumb: { title: 'navigation.workflowWaitingTasks' },
-        componentLoader: () =>
-          import('./pages/workflow-waiting-tasks/index.js'),
-      },
-      {
-        auth: 'required',
-        authz: 'skip',
-        name: 'workflowWaitingTask',
-        path: 'waiting-tasks/:id',
-        breadcrumb: { title: 'workflowTasks.detailTitle' },
-        componentLoader: () => import('./pages/workflow-waiting-tasks/task.js'),
-      },
-    ],
-  },
-  {
-    auth: 'required',
     authz: {
       resource: { type: 'page', id: 'numeric-examples' },
       action: 'access',
@@ -226,11 +231,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([]);
-
-const routes: readonly AppClientRouteContribution[] = [
-  appRoutes,
-  settingsRoutes,
-];
+const routes: readonly AppClientRouteContribution[] = [appRoutes];
 
 export default routes;

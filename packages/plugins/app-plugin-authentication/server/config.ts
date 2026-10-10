@@ -123,8 +123,8 @@ export function resolveAuthSecrets(
   }
   if (secret) return { secret };
 
-  // The fact only: a standalone start adds `pnpm nocobase config init`, and a Hub shows this to an operator whose
-  // configuration lives in the Hub, where that advice would be wrong.
+  // The fact only: a standalone start adds `pnpm nocobase config init`, and a host shows this to an operator whose
+  // configuration lives in the host, where that advice would be wrong.
   throw new ApplicationNotConfiguredError('secrets.keys is not set.', {
     key: 'secrets.keys',
     environmentVariable: 'SECRETS_KEYS',

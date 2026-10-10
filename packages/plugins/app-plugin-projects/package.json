@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-projects",
   "displayName": "Projects",
   "description": "Projects, issues, workflows and collaboration for a NocoBase application.",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.3",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

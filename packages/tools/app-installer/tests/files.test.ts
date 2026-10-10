@@ -86,11 +86,11 @@ describe('app.env', () => {
   it('checks health on loopback when the application binds every interface, under its base path', () => {
     expect(
       healthUrl({
-        APP_BASE_PATH: '/hub',
+        APP_BASE_PATH: '/shop',
         APP_SERVER_HOST: '0.0.0.0',
         APP_SERVER_PORT: '13001',
       }),
-    ).toBe('http://127.0.0.1:13001/hub/api/healthz');
+    ).toBe('http://127.0.0.1:13001/shop/api/healthz');
     expect(
       healthUrl({ APP_SERVER_HOST: '10.0.0.5', APP_SERVER_PORT: '80' }),
     ).toBe('http://10.0.0.5:80/main/api/healthz');
@@ -148,9 +148,8 @@ describe('ecosystem.config.cjs', () => {
     await writeFile(
       layout.ecosystemFile,
       buildEcosystemConfig({
-        name: 'nocobase-hub',
+        name: 'nocobase-crm',
         nodePath: '/usr/bin/node',
-        keepChildren: true,
       }),
     );
 
@@ -164,11 +163,10 @@ describe('ecosystem.config.cjs', () => {
         cwd: string;
         env?: Record<string, string>;
         kill_timeout: number;
-        treekill: boolean;
       }[];
     };
     const [app] = config.apps;
-    expect(app.name).toBe('nocobase-hub');
+    expect(app.name).toBe('nocobase-crm');
     expect(app.script).toBe('/usr/bin/node');
     expect(app.interpreter).toBe('none');
     // `require` resolves the file's real path, which differs from a temporary directory's name on macOS.
@@ -178,10 +176,9 @@ describe('ecosystem.config.cjs', () => {
     // app.env is read by launcher.mjs on every start; values captured here would go stale under pm2 restart.
     expect(app.env).toBeUndefined();
     expect(app.kill_timeout).toBeGreaterThanOrEqual(60_000);
-    expect(app.treekill).toBe(false);
   });
 
-  it('leaves pm2 to kill the process tree of an application that hosts nothing', async () => {
+  it('leaves pm2 to kill the process tree', async () => {
     const layout = layoutOf(root);
     await writeFile(
       layout.ecosystemFile,
@@ -304,10 +301,10 @@ describe('launcher.mjs', () => {
     expect((await launch()).report.version).toBe('1.0.0');
 
     await switchCurrent(layout, releaseLinkTarget('1.1.0'));
-    await writeEnv('https://hub.example.org');
+    await writeEnv('https://shop.example.org');
     expect((await launch()).report).toMatchObject({
       version: '1.1.0',
-      origin: 'https://hub.example.org',
+      origin: 'https://shop.example.org',
     });
   });
 });
@@ -328,12 +325,10 @@ describe('installer.json', () => {
     schemaVersion: 1,
     appName: 'crm',
     basePath: '/crm',
-    templateKind: 'app',
     source: { kind: 'archive' },
     name: 'nocobase-crm',
-    registry: 'https://npm.nocobase.ai',
+    registry: 'https://registry.internal.example',
     dialect: 'sqlite',
-    drivers: [],
     current: id,
     releases: [
       {

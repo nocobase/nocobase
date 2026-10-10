@@ -29,12 +29,8 @@ describe('app client routes', () => {
 
   it('loads every page component', async () => {
     const resolved = resolveRoutes();
-    const loaders = [
-      ...componentLoadersIn(resolved.routes),
-      ...componentLoadersIn(resolved.settingsRouteTree),
-      ...componentLoadersIn(resolved.devRouteTree),
-    ];
-    // The trees above are filtered by loader, so an empty list would make the loop below pass without loading
+    const loaders = componentLoadersIn(resolved.routes);
+    // The tree above is filtered by loader, so an empty list would make the loop below pass without loading
     // anything at all.
     expect(loaders).not.toHaveLength(0);
 
@@ -77,8 +73,6 @@ describe('app client routes', () => {
       { name: 'routeChildPageOnboarding', authorizedAs: null },
       { name: 'routeChildPageRenewal', authorizedAs: null },
       { name: 'articles', authorizedAs: null },
-      { name: 'workflowWaitingTasks', authorizedAs: null },
-      { name: 'workflowWaitingTask', authorizedAs: null },
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },

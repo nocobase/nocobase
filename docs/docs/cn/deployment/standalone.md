@@ -1,11 +1,11 @@
 ---
 title: 手动部署：独立运行
-description: 不使用 Hub，通过 app-installer、Docker 或 Node.js 在服务器上运行应用。
+description: 通过 app-installer、Docker 或 Node.js 在服务器上运行应用。
 ---
 
 # 手动部署：独立运行
 
-本页说明不使用 Hub 的三种运行方式，适用于开源版以及未持有专业版授权的场景。推荐使用 app-installer：它将部署包安装到服务器并通过 pm2 运行，升级和回滚也由它完成。由 AI Agent 执行时，提示词见[用 AI Agent 部署](./with-agent#用-app-installer-部署到服务器)。
+本页说明在服务器上运行应用的三种方式。推荐使用 app-installer：它将部署包安装到服务器并通过 pm2 运行，升级和回滚也由它完成。由 AI Agent 执行时，提示词见[用 AI Agent 部署](./with-agent#用-app-installer-部署到服务器)。
 
 ## 构建部署包
 
@@ -27,12 +27,12 @@ scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz
 
 ## 用 app-installer 部署
 
-服务器需要 Node.js 24 以及全局安装的 pm2 4.3 或更高版本（`npm install -g pm2`；不要使用通过 `npx` 临时下载的 pm2；Windows 请使用 WSL），不需要源码和 pnpm。NocoBase 3 的包发布在 `https://npm.nocobase.ai`，需要通过 `--registry` 指定。
+服务器需要 Node.js 24 以及全局安装的 pm2 4.3 或更高版本（`npm install -g pm2`；不要使用通过 `npx` 临时下载的 pm2；Windows 请使用 WSL），不需要源码和 pnpm。NocoBase 3 的包可从公共 npm 获取。
 
 ### 安装
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm \
+npx --yes @nocobase/app-installer install /srv/nocobase/crm \
   --archive /tmp/crm.tar.gz --origin https://apps.example.com --base-path /crm
 ```
 
@@ -41,7 +41,7 @@ npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/noco
 使用其他数据库时，通过 `--dialect` 和 `--set` 指定连接参数；密码先写入环境变量，再通过 `--set-from-env` 读取：
 
 ```bash
-CRM_DB_PASSWORD=... npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm \
+CRM_DB_PASSWORD=... npx --yes @nocobase/app-installer install /srv/nocobase/crm \
   --archive /tmp/crm.tar.gz --origin https://apps.example.com --base-path /crm --dialect postgres \
   --set database.connections.main.host=db.internal \
   --set database.connections.main.username=crm \
@@ -55,9 +55,9 @@ CRM_DB_PASSWORD=... npx --registry=https://npm.nocobase.ai @nocobase/app-install
 ### 升级、回滚与状态
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer rollback --dir /srv/nocobase/crm
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv/nocobase/crm
+npx --yes @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
+npx --yes @nocobase/app-installer rollback --dir /srv/nocobase/crm
+npx --yes @nocobase/app-installer status --dir /srv/nocobase/crm
 ```
 
 升级时，先在旧版本继续服务的同时解压新版本并检查配置，然后停止应用、将 SQLite 数据库和配置备份到 `backups/`、切换版本、执行迁移、启动并执行健康检查；迁移或启动失败时自动回滚到原版本。命令执行前会说明停机范围和备份内容并请求确认，脚本中可加 `--yes` 跳过确认。外部数据库不在备份范围内，需要先自行备份，再加 `--backup-done`。该备份仅用于回滚，不包含上传文件，不能替代定期备份。同一版本号重新构建后升级，同样视为一次升级。

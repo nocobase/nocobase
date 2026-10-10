@@ -7,9 +7,9 @@ import test from 'node:test';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const releases = [
-  'release-beta.yml',
-  'release-stable.yml',
-  'merge-beta-to-stable.yml',
+  'v3-release-beta.yml',
+  'v3-release-stable.yml',
+  'v3-merge-beta-to-stable.yml',
 ];
 const identity =
   'nocobase[bot] <179432756+nocobase[bot]@users.noreply.github.com>';
@@ -38,9 +38,9 @@ test('release candidates and sync commits use the verified NocoBase bot identity
   let count = 0;
   for (const name of [
     ...releases,
-    'pro-release-beta.yml',
-    'pro-release-stable.yml',
-    'pro-promote-to-stable.yml',
+    'v3-pro-release-beta.yml',
+    'v3-pro-release-stable.yml',
+    'v3-pro-promote-to-stable.yml',
   ]) {
     const source = workflow(name);
     const configurations = source.matchAll(
@@ -106,7 +106,7 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
         'merge',
         'https://github.com/nocobase/nocobase/pull/1',
       ]);
-      assert.ok(args.includes('--merge'), name);
+      assert.ok(args.includes('--squash'), name);
       const subjectIndex = args.indexOf('--subject');
       assert.notEqual(subjectIndex, -1, name);
       assert.match(args[subjectIndex + 1], /\[skip ci\]$/u, name);
@@ -173,7 +173,7 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
 });
 
 test('GitHub Releases use the App and receive its private key through workflow_call', () => {
-  const source = workflow('github-release.yml');
+  const source = workflow('v3-github-release.yml');
   assert.match(
     source,
     /    secrets:\n      NOCOBASE_APP_PRIVATE_KEY:\n        required: true/u,
@@ -184,7 +184,7 @@ test('GitHub Releases use the App and receive its private key through workflow_c
     /GH_TOKEN: \$\{\{ steps\.release_token\.outputs\.token \}\}/u,
   );
   assert.doesNotMatch(source, /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/u);
-  for (const name of ['release-beta.yml', 'release-stable.yml']) {
+  for (const name of ['v3-release-beta.yml', 'v3-release-stable.yml']) {
     const caller = workflow(name)
       .split('\n  github-release:')[1]
       .split(/\n  [a-z][\w-]*:/u)[0];

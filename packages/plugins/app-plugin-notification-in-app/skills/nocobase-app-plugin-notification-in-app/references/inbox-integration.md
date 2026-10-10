@@ -36,13 +36,7 @@ import {
 
 Prefer the hooks over calling the API helpers from components: `useInboxItems(pageSize)` pages by `nextPageToken`, `useInboxActions()` marks, deletes and reads all optimistically and refetches once settled, and `useInboxRefresh(extraTopics)` mounts the realtime, reconnection and focus invalidation once for the page. Extend `inboxKeys.all` invalidation for data the application attaches to messages by passing its own realtime topics to `useInboxRefresh` rather than subscribing separately.
 
-The package's Client plugin contributes this development-only App-relative route:
-
-```text
-/dev/notification-in-app
-```
-
-Register `@nocobase/app-plugin-notification-in-app/client` in the application Client composition root. The application renders the page inside its shell without a navigation entry, so open it by URL. The page mounts `NotificationInAppProvider` locally and cleans up its realtime and focus listeners when navigation leaves the page. The Dev Route and its exclusive dependencies are absent from production builds.
+Register `@nocobase/app-plugin-notification-in-app/client` in the application Client composition root. The plugin contributes no routes: an application that wants an inbox page renders `NotificationInAppInbox` inside `NotificationInAppProvider` in a page it declares among its own routes. Mounting the Provider in that page cleans up its realtime and focus listeners when navigation leaves the page.
 
 ## Final delivery validation
 
@@ -62,7 +56,7 @@ When an application configures `api.baseURL` or `api.realtimeURL`, both transpor
 
 #### Ownership and upgrades
 
-The plugin owns the inbox components, Provider, Dev Route, authentication enforcement, per-user isolation, persistence, and event publication. Applications receive UI changes by upgrading the plugin. A production inbox surface requires a separate product decision and must use an authenticated App or Settings Route rather than exposing the Dev Route.
+The plugin owns the inbox components, Provider, authentication enforcement, per-user isolation, persistence, and event publication. Applications receive UI changes by upgrading the plugin. The application owns the inbox page and its route, which must require authentication.
 
 ## Diagnosis order
 

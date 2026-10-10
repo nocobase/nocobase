@@ -64,7 +64,7 @@ export interface ApiErrorOptions {
   readonly status: ApiErrorStatus;
   /** What went wrong, in UPPER_SNAKE_CASE, unique within `domain`. Clients branch on `reason`, never on `message`. */
   readonly reason: string;
-  /** Who defined `reason`: the plugin's URL namespace, such as `hub`, or `app` for the framework. */
+  /** Who defined `reason`: the plugin's URL namespace, such as `workflows`, or `app` for the framework. */
   readonly domain: string;
   /** Developer-facing English description. Never shown to end users and never relied on by clients. */
   readonly message: string;
@@ -102,7 +102,7 @@ export interface ApiErrorBody {
  * An error a route throws to answer with the standard `/api` error body.
  *
  * ```ts
- * throw new ApiError({ status: 'NOT_FOUND', reason: 'APP_NOT_FOUND', domain: 'hub', message: `App ${id} was not found.` });
+ * throw new ApiError({ status: 'NOT_FOUND', reason: 'WORKFLOW_NOT_FOUND', domain: 'workflows', message: `Workflow ${id} was not found.` });
  * ```
  */
 export class ApiError extends Error {

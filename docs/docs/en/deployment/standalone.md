@@ -1,11 +1,11 @@
 ---
 title: 'Manual: standalone'
-description: Run the application on a server without a Hub, using app-installer, Docker or Node.js.
+description: Run the application on a server using app-installer, Docker or Node.js.
 ---
 
 # Manual: standalone
 
-This page describes the three ways to run an application without a Hub. It applies to the open-source edition and to deployments without a Professional license. app-installer is the recommended method: it installs the archive on the server, runs it under pm2, and performs upgrades and rollbacks. For an AI Agent, use the prompts in [Deploy with an AI Agent](./with-agent#deploy-to-a-server-with-app-installer).
+This page describes the three ways to run an application on a server. app-installer is the recommended method: it installs the archive on the server, runs it under pm2, and performs upgrades and rollbacks. For an AI Agent, use the prompts in [Deploy with an AI Agent](./with-agent#deploy-to-a-server-with-app-installer).
 
 ## Build the archive
 
@@ -27,12 +27,12 @@ The archive contains `dist/` and `config.example.yml`, excludes runtime configur
 
 ## Deploy with app-installer
 
-The server requires Node.js 24 and a globally installed pm2 4.3 or later (`npm install -g pm2`; do not use a pm2 fetched through `npx`; on Windows, use WSL). Neither the sources nor pnpm are needed. NocoBase 3 packages are published to `https://npm.nocobase.ai`, which is specified with `--registry`.
+The server requires Node.js 24 and a globally installed pm2 4.3 or later (`npm install -g pm2`; do not use a pm2 fetched through `npx`; on Windows, use WSL). Neither the sources nor pnpm are needed. NocoBase 3 packages are available from public npm.
 
 ### Install
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm \
+npx --yes @nocobase/app-installer install /srv/nocobase/crm \
   --archive /tmp/crm.tar.gz --origin https://apps.example.com --base-path /crm
 ```
 
@@ -41,7 +41,7 @@ The target directory must not exist or must be empty. `--origin` carries no path
 For another database, specify the connection settings with `--dialect` and `--set`; export the password to an environment variable first and read it with `--set-from-env`:
 
 ```bash
-CRM_DB_PASSWORD=... npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm \
+CRM_DB_PASSWORD=... npx --yes @nocobase/app-installer install /srv/nocobase/crm \
   --archive /tmp/crm.tar.gz --origin https://apps.example.com --base-path /crm --dialect postgres \
   --set database.connections.main.host=db.internal \
   --set database.connections.main.username=crm \
@@ -55,9 +55,9 @@ When several applications are installed on one server, each uses its own directo
 ### Upgrade, roll back and status
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer rollback --dir /srv/nocobase/crm
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv/nocobase/crm
+npx --yes @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
+npx --yes @nocobase/app-installer rollback --dir /srv/nocobase/crm
+npx --yes @nocobase/app-installer status --dir /srv/nocobase/crm
 ```
 
 An upgrade first unpacks the new release and checks the configuration while the old release continues to serve, then stops the application, backs up the SQLite databases and configuration into `backups/`, switches releases, runs the migrations, starts the application and runs the health check. A failed migration or start is rolled back to the original release automatically. Before running, the command states the downtime scope and backup contents and requests confirmation; scripts pass `--yes` to skip the prompt. External databases are outside the backup scope: back them up separately and pass `--backup-done`. This backup serves rollbacks only, excludes uploads, and does not replace regular backups. Rebuilding the same version and upgrading with it counts as an upgrade as well.

@@ -1,6 +1,6 @@
 /**
- * Who new conversations go to: the team's system default chat agent (`agSettings`, key `chat`) and each person's own
- * default (`agChatPreferences`).
+ * Who new conversations go to: the team's system default chat agent and online fallback agent (`agSettings`, key
+ * `chat`) and each person's own default (`agChatPreferences`).
  */
 import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
@@ -28,7 +28,10 @@ export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
   .partial();
 
 export const ChatSettingsPatchSchema: z.ZodType<ChatSettingsPatch> = z
-  .strictObject({ defaultAgentId: z.string().min(1).max(64).nullable() })
+  .strictObject({
+    defaultAgentId: z.string().min(1).max(64).nullable(),
+    onlineFallbackAgentId: z.string().min(1).max(64).nullable(),
+  })
   .partial();
 
 export interface ChatSettingsService {
@@ -64,6 +67,10 @@ export function createChatSettingsService(deps: {
     return {
       defaultAgentId:
         typeof value.defaultAgentId === 'string' ? value.defaultAgentId : null,
+      onlineFallbackAgentId:
+        typeof value.onlineFallbackAgentId === 'string'
+          ? value.onlineFallbackAgentId
+          : null,
     };
   }
 
@@ -89,6 +96,20 @@ export function createChatSettingsService(deps: {
           if (!agent || agent.archivedAt)
             throw invalid('defaultAgentId names no agent.', {
               field: 'defaultAgentId',
+            });
+        }
+        if (
+          patch.onlineFallbackAgentId !== undefined &&
+          next.onlineFallbackAgentId !== null
+        ) {
+          const agent = await findAgent(conn, next.onlineFallbackAgentId);
+          if (!agent || agent.archivedAt)
+            throw invalid('onlineFallbackAgentId names no agent.', {
+              field: 'onlineFallbackAgentId',
+            });
+          if (agent.type !== 'online')
+            throw invalid('onlineFallbackAgentId must name an online agent.', {
+              field: 'onlineFallbackAgentId',
             });
         }
         const now = clock.now().toISOString();

@@ -489,6 +489,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           catalog,
           to,
           actor: SYSTEM_ACTOR,
+          sourceActor: recorded,
           approved: true,
           event,
           write: async () => {
@@ -527,7 +528,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           message: error.message,
         };
       }
-      await announce(tx, issue, await reload(tx, issue.id), SYSTEM_ACTOR, true);
+      await announce(tx, issue, await reload(tx, issue.id), recorded, true);
       return { issueId: issue.id, outcome: 'moved', from: issue.statusKey, to };
     },
 

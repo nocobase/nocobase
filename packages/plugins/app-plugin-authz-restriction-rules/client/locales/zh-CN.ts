@@ -1,38 +1,4 @@
+// The title the plugin's server registers with the authorization catalog resolves in this namespace.
 export default {
   resourceTitle: '限制规则',
-  navigation: { title: '限制规则' },
-  restrictionRules: {
-    noResources:
-      '尚未定义支持记录范围的业务资源。可以让 AI 定义业务权限和记录范围，开发后即可在这里配置规则。',
-    page: {
-      title: '限制规则',
-      description: '限制指定用户可访问的记录范围，本身不授予权限。',
-    },
-    notice: '限制规则仅限制已有权限，不授予新的权限。',
-    search: '搜索限制规则',
-    create: '新建限制规则',
-    ruleHeader: '规则',
-    appliesToHeader: '适用于',
-    restrictedActionsHeader: '受限的操作',
-    allowedScopeHeader: '允许的范围',
-    emptyNone: '暂无限制规则。可为指定用户设置记录访问范围的上限。',
-    emptySearch: '没有匹配搜索条件的限制规则。',
-    pagerLabel: '限制规则',
-    editTitle: '编辑限制规则',
-    newTitle: '新建限制规则',
-    editorDescription: '为指定用户设置记录访问范围的上限。',
-    ruleHeading: '基本信息',
-    ruleDescription: '为规则命名，并选择要限制的资源。',
-    ruleName: '规则名称',
-    assignmentsHeading: '适用对象',
-    assignmentsDescription: '选择谁受这条限制约束。',
-    reason: '说明',
-    accessHeading: '操作与记录范围',
-    accessDescription: '为每个操作分别设置记录范围的上限。',
-    deleteRule: '删除规则',
-    save: '保存限制规则',
-    confirmDeleteTitle: '确定删除该限制规则吗？',
-    confirmDeleteBody:
-      '删除限制规则“{{title}}”。实际访问范围由剩余权限集和规则决定。',
-  },
 };

@@ -93,14 +93,14 @@ describe('limits per coding tool', () => {
     const either = await h.createAgent({
       maxConcurrentRuns: 5,
       modelEntries: [
-        { tool: 'claude', model: null },
-        { tool: 'codex', model: null },
+        { tool: 'claude', model: 'claude-requested', effort: 'high' },
+        { tool: 'codex', model: 'codex-requested', effort: 'medium' },
       ],
     });
     await h.enqueue(either, '1');
     await h.enqueue(either, '2');
     const runner = await h.registerRunner({
-      tools: [...BOTH],
+      tools: BOTH.map((tool) => ({ ...tool, version: `${tool.kind}-version` })),
       slots: 2,
       toolSlots: { claude: 1 },
     });
@@ -108,6 +108,33 @@ describe('limits per coding tool', () => {
     expect(taken.map((payload) => payload.tool.kind)).toEqual([
       'claude',
       'codex',
+    ]);
+    const runs = await Promise.all(
+      taken.map((payload) => h.services.runs.get(payload.run.id)),
+    );
+    expect(runs.map((run) => run.executions)).toMatchObject([
+      [
+        {
+          attempt: 1,
+          runnerId: runner.runnerId,
+          tool: 'claude',
+          toolVersion: 'claude-version',
+          model: 'claude-requested',
+          effort: 'high',
+          actualModels: [],
+        },
+      ],
+      [
+        {
+          attempt: 1,
+          runnerId: runner.runnerId,
+          tool: 'codex',
+          toolVersion: 'codex-version',
+          model: 'codex-requested',
+          effort: 'medium',
+          actualModels: [],
+        },
+      ],
     ]);
   });
 

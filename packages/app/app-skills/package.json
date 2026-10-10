@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/app-skills",
-  "version": "0.1.0-beta.24",
+  "version": "0.1.0-beta.26",
   "description": "Agent Skills for developing, upgrading and deploying NocoBase applications.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/app/app-skills"
   },
   "prettier": "@nocobase/dev-config/prettier",

@@ -4,6 +4,7 @@ import pricesZhCN from './prices.zh-CN.js';
 import skillsZhCN from './skills.zh-CN.js';
 import servicesZhCN from './services.zh-CN.js';
 import runtimesZhCN from './runtimes.zh-CN.js';
+import runWaitZhCN from './runWait.zh-CN.js';
 import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
@@ -165,6 +166,7 @@ const zhCN: AgentsResource = {
       high: '高',
       xhigh: '超高',
       max: '最高',
+      ultra: '极致',
     },
     created: '已创建 Agent {{name}}',
   },
@@ -265,6 +267,15 @@ const zhCN: AgentsResource = {
     moveDown: '下移',
     remove: '移除',
     suggestions: '可以输入任意模型，或选择常用模型',
+    availableRunners_one: '{{count}} 台执行机可用',
+    availableRunners_other: '{{count}} 台执行机可用',
+    runnerReady: '已就绪',
+    runnerNotReady: '未就绪',
+    reportHint:
+      '执行机上报的模型仅供建议，保存后才生效。工具支持不代表有使用权限、账号额度或一定能调用成功。',
+    reportedEfforts: '可选的上报思考强度：{{efforts}}。',
+    noReportedEfforts: '无',
+    effortNotReported: '已保存的强度 {{effort}} 未被上报，将保留至你修改。',
     required: '至少添加一项。',
     runnerNeedsOne: 'Runner Agent 至少需要一项工具与模型，最后一项不能移除。',
     tooMany: '最多 20 项。',
@@ -371,7 +382,7 @@ const zhCN: AgentsResource = {
     actionsHead: '操作',
     title: '环境变量',
     description:
-      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。',
+      '每次运行都会传给编码工具，并在运行记录中脱敏；保存后不再显示值。共享 agent 的使用者可以在自己的电脑上拿到这些值；高风险的密钥请勾选「仅限团队运行环境」。',
     add: '添加变量',
     addTitle: '添加环境变量',
     editTitle: '替换 {{name}}',
@@ -380,6 +391,16 @@ const zhCN: AgentsResource = {
     nameHint: '大写字母、数字和下划线。',
     value: '值',
     valueTooLong: '值超过 8 KB。',
+    keepValueHint: '留空则保留原来的值。',
+    teamRunnersOnly: '仅限团队运行环境',
+    teamRunnersOnlyHint:
+      '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由团队运行环境接。',
+    teamRunnersOnlyBadge: '仅限团队运行环境',
+    fromRunner: '从运行环境取',
+    fromRunnerHint:
+      '这里不保存值：由接活的运行环境从它所在的机器提供，在那台机器上用 `{{command}}` 设置，或用 `--pass-env` 放行。不提供这个变量的运行环境会在运行开始前失败。',
+    fromRunnerBadge: '从运行环境取',
+    valueRequired: '请填写值，或继续从运行环境取。',
     empty: '没有环境变量。',
     edit: '替换值',
     actions: '{{name}} 的操作',
@@ -616,6 +637,7 @@ const zhCN: AgentsResource = {
     modelUnavailable: 'Agent 的模型不可用。',
     stepLimit: 'Agent 调用工具次数过多，仍未作答。',
     policyRefused: '没有运行环境的策略允许接这项工作。',
+    prepareNetwork: '准备运行时运行环境无法连接到仓库所在的服务器。',
     unknown: '运行失败。',
   },
   ...runtimesZhCN,
@@ -623,6 +645,7 @@ const zhCN: AgentsResource = {
   ...servicesZhCN,
   ...pricesZhCN,
   ...skillsZhCN,
+  ...runWaitZhCN,
   access: accessZhCN.access,
 };
 

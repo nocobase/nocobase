@@ -43,18 +43,12 @@ function release(version: string, installedAt: string): ReleaseRecord {
 function state(overrides: Partial<InstallerState> = {}): InstallerState {
   return {
     schemaVersion: 1,
-    appName: 'hub',
-    basePath: '/hub',
-    templateKind: 'hub',
-    source: {
-      kind: 'template',
-      template: 'hub',
-      package: '@nocobase/app-template-hub',
-    },
-    name: 'nocobase-hub',
-    registry: 'https://npm.nocobase.ai',
+    appName: 'crm',
+    basePath: '/crm',
+    source: { kind: 'archive' },
+    name: 'nocobase-crm',
+    registry: 'https://registry.internal.example',
     dialect: 'sqlite',
-    drivers: [],
     current: '3.0.0',
     releases: [],
     history: [],
@@ -224,7 +218,7 @@ describe('rollback target', () => {
     });
     let error: unknown;
     try {
-      assertNoPending(interrupted, '/srv/my hub');
+      assertNoPending(interrupted, '/srv/my shop');
     } catch (caught) {
       error = caught;
     }
@@ -239,14 +233,14 @@ describe('rollback target', () => {
         `@nocobase/app-installer@${packageMetadata.version}`,
         'rollback',
         '--dir',
-        '/srv/my hub',
+        '/srv/my shop',
       ],
     });
     // Printed for a person, the path is quoted so the line still runs when pasted.
     expect(formatCommandLine(run!)).toBe(
-      `npx --yes --registry=http://127.0.0.1:4873 @nocobase/app-installer@${packageMetadata.version} rollback --dir '/srv/my hub'`,
+      `npx --yes --registry=http://127.0.0.1:4873 @nocobase/app-installer@${packageMetadata.version} rollback --dir '/srv/my shop'`,
     );
-    expect(() => assertNoPending(state(), '/srv/hub')).not.toThrow();
+    expect(() => assertNoPending(state(), '/srv/shop')).not.toThrow();
   });
 });
 
@@ -322,7 +316,7 @@ describe('backup and restore', () => {
 
   it('copies each database with its journal and restores it, dropping a newer journal', async () => {
     const layout = layoutOf(root);
-    const main = path.join(layout.storageDir, 'hub/database/main.sqlite');
+    const main = path.join(layout.storageDir, 'shop/database/main.sqlite');
     const extra = path.join(layout.storageDir, 'extra/main.sqlite');
     await mkdir(path.dirname(main), { recursive: true });
     await mkdir(path.dirname(extra), { recursive: true });

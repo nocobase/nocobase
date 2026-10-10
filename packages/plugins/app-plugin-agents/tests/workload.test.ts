@@ -180,6 +180,55 @@ describe('explainWait', () => {
     sameWorkActive: false,
   };
 
+  it('sends the values each reason’s words need, never text', () => {
+    expect(
+      explainWait(run, {
+        ...context,
+        runners: [runner({ toolSlots: { claude: 1 } })],
+        runnerUsed: new Map([['r1', 1]]),
+        runnerToolUsed: new Map([['r1', { claude: 1 }]]),
+      }).params,
+    ).toEqual({ tool: 'claude', used: 1, limit: 1 });
+    expect(explainWait(run, { ...context, agentActive: 2 }).params).toEqual({
+      active: 2,
+      limit: 2,
+    });
+    expect(
+      explainWait(
+        {
+          ...run,
+          teamOnlyVariables: [
+            { scope: 'agent', scopeId: 'a1', name: 'NPM_TOKEN' },
+            { scope: 'workdir', scopeId: 'w1', name: 'KEY' },
+          ],
+        },
+        {
+          ...context,
+          runners: [runner({ trust: 'ownerOnly', ownerUserId: 'bob' })],
+        },
+      ),
+    ).toMatchObject({
+      reason: 'secretsNotAllowed',
+      params: { variables: ['NPM_TOKEN', 'KEY'] },
+      detail: null,
+    });
+    expect(
+      explainWait({ ...run, requires: ['checkout', 'secrets'] }, context)
+        .params,
+    ).toEqual({ features: ['secrets'] });
+    expect(
+      explainWait({ ...run, availableAt: '2026-10-02T11:00:00Z' }, context)
+        .params,
+    ).toEqual({ until: '2026-10-02T11:00:00.000Z' });
+    expect(
+      explainWait(
+        { ...run, claimFailures: 1, failureDetail: 'No repo.' },
+        context,
+      ).params,
+    ).toEqual({ detail: 'No repo.' });
+    expect(explainWait(run, context).params).toBeUndefined();
+  });
+
   it('follows the claim rules in order', () => {
     expect(explainWait(run, { ...context, agent: null }).reason).toBe(
       'agentArchived',
@@ -212,6 +261,24 @@ describe('explainWait', () => {
     expect(
       explainWait({ ...run, requires: ['checkout', 'secrets'] }, context),
     ).toMatchObject({ reason: 'missingFeatures', missing: ['secrets'] });
+    const teamOnlyVariables = [{ scope: 'agent', scopeId: 'a1', name: 'KEY' }];
+    // Only personal runners fit a run with a team-only variable; a team runner would take it.
+    expect(
+      explainWait(
+        { ...run, teamOnlyVariables },
+        {
+          ...context,
+          runners: [runner({ trust: 'ownerOnly', ownerUserId: 'bob' })],
+          sameWorkActive: true,
+        },
+      ),
+    ).toMatchObject({
+      reason: 'secretsNotAllowed',
+      variables: teamOnlyVariables,
+    });
+    expect(explainWait({ ...run, teamOnlyVariables }, context).reason).toBe(
+      'next',
+    );
     expect(explainWait(run, { ...context, sameWorkActive: true }).reason).toBe(
       'sameWorkActive',
     );

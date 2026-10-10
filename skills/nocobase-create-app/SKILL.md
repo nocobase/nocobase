@@ -1,6 +1,6 @@
 ---
 name: nocobase-create-app
-description: Create a NocoBase 3 project to develop, locally, with `pnpm create @nocobase/app`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase to develop with, and the working directory holds no NocoBase application yet. Not for installing a NocoBase Hub, unless the user will develop the Hub's own code, and not for deploying to production — both belong to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
+description: Create a NocoBase 3 project to develop, locally, with `pnpm create @nocobase/app`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase to develop with, and the working directory holds no NocoBase application yet. Not for deploying to production, which belongs to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
 ---
 
 # Create a NocoBase 3 application
@@ -16,11 +16,9 @@ This Skill gets a new project created, configured and running locally: source co
   | The user asks to                                  | Skill                                                                   |
   | ------------------------------------------------- | ----------------------------------------------------------------------- |
   | Install, create, set up or try NocoBase, to develop with | This one                                                         |
-  | Install a NocoBase Hub                            | `nocobase-app-installer`, `--template hub`                              |
   | Deploy an application to production or a server   | `nocobase-app-installer`, `--archive`                                   |
-  | Develop the Hub's own code                        | This one, with `--template=hub`                                         |
 
-  A Hub is installed, not created: hand a request to install one over to `nocobase-app-installer`, on a laptop as much as on a server, unless the user says they will develop the Hub's own code. Hand over a request to deploy as well, and stop here in both cases.
+  Hand a request to deploy over to `nocobase-app-installer`, and stop here.
 - On Windows, work in WSL. The commands below assume a POSIX shell such as Bash; the subshell and the inline environment variable do not work in PowerShell or cmd.
 - Check `node --version` (24 or later) and `pnpm --version` (11). If either is missing or does not match, stop before creating anything and tell the user:
   - which tool is missing or which version was found, and which version is required;
@@ -35,14 +33,14 @@ This Skill gets a new project created, configured and running locally: source co
 `pnpm create @nocobase/app` does not accept `.` as the name. Run it from the parent directory with the target directory's name, which generates the files directly into it:
 
 ```bash
-(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}" pnpm create @nocobase/app <name> --json)
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app <name> --json)
 ```
 
-- NocoBase 3 packages, `@nocobase/create-app` included, are published to `https://npm.nocobase.ai`, not to the public npm, where a bare `pnpm create @nocobase/app` answers 404. `npm_config_registry` makes pnpm fetch `create-app` from there; `pnpm create` takes no `--registry` of its own (pnpm 11 rejects it as an unknown option, and after the package name it is passed to `create-app`), so the registry is set in the environment of this one command; `create-app` then installs from the same registry and records it in the project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too. Leave the user's pnpm configuration unchanged; `pnpm config set @nocobase:registry` is not needed.
+- NocoBase 3 packages, `@nocobase/create-app` included, are published to the public npm registry. The command sets that registry only for this process while allowing `NOCOBASE_REGISTRY` to select a private registry or an unreleased local snapshot; `create-app` uses the same registry for the template and dependency installation, and records only a non-public override in the project's `.npmrc`. Leave the user's pnpm configuration unchanged.
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
 - `--json` never prompts. It prints one JSON document on stdout and progress on stderr, so parse stdout only. It is the envelope every `pnpm nocobase … --json` command prints: `ok` says whether creation worked, `result` holds what it produced, and a failure's `error.code`, `error.message` and `error.details` say where it stopped. create-app 0.1.0-beta.23 and earlier print a flat result instead, with `status` `success` or `error` and `stage`, `message`, `directory` and `nextCommands` at the top level; read the same fields there.
-- The default template is the one to develop an application from, and needs no flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first, and `--template=hub` only for a user who will develop the Hub's own code.
+- The default template is the one to develop an application from, and needs no flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first.
 
 Read the result before doing anything else:
 
@@ -50,7 +48,7 @@ Read the result before doing anything else:
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `ok: true` (`status: "success"` in a flat result)       | Continue below. Report any `warnings`.                                                                            |
 | `INVALID_USAGE`, stage `input` (exit 2)                  | Fix the arguments. Nothing was created.                                                                           |
-| `TEMPLATE_DOWNLOAD_FAILED`, stage `download`             | Check the network, and that `https://npm.nocobase.ai/` is reachable. Nothing was created.                         |
+| `TEMPLATE_DOWNLOAD_FAILED`, stage `download`             | Check the network and the configured registry. Nothing was created.                                               |
 | `INSTALL_FAILED`, stage `install`                        | The project exists. Run `pnpm install` inside it to retry, then continue with Configure. Do not create it again.  |
 | `DRIVER_VERIFICATION_FAILED`, stage `verify`             | The SQLite driver's native addon did not load, even after a rebuild. Report the message; it names the cause.      |
 | `NODE_UNSUPPORTED`                                       | Node.js is older than 24. Ask the user to upgrade it; nothing ran.                                                |
@@ -100,7 +98,7 @@ Tell the user:
   - **They are not loaded here**: tell the user to start a new agent session in the application directory, and say exactly how. When the application is in this session's directory, they only need to end this session and start a new one in the same directory. Otherwise, give the full path and the command that starts your own agent there, for example `cd /work/my-app && claude` for Claude Code. In a desktop client, they open that directory as the project and start a new session there.
 - What to ask for next, in this session or the new one:
   - A small first feature, for example: "Read the project's AGENTS.md first, then add an order list where signed-in users can create and edit orders, saved to the application database."
-  - The step-by-step guide: https://github.com/nocobase/nocobase3/blob/develop/docs/docs/en/get-started/first-feature.md
+  - The step-by-step guide: https://github.com/nocobase/nocobase/blob/v3-develop/docs/docs/en/get-started/first-feature.md
 - Going to production later: the application's own `nocobase-deployment` Skill builds its deployment archive, and the global `nocobase-app-installer` Skill installs it on the machine that runs it. One line; do not start it now.
 
 Keep this handover short: one line per point, commands and paths in code formatting, and only the case that applies to this user.
@@ -111,12 +109,12 @@ If the Skills are not loaded but the user wants to keep working in this session 
 
 | Symptom                                              | Fix                                                                                                          |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `@nocobase/create-app` not found (404) when creating | Set the registry in the command's environment, as in the Create command: `npm_config_registry=https://npm.nocobase.ai pnpm create @nocobase/app`. |
+| `@nocobase/create-app` not found (404) when creating | Check the package name and public npm access. For a private snapshot, set `NOCOBASE_REGISTRY` to the registry that contains it and rerun the Create command. |
 | `Unknown option: 'registry'` when creating             | `pnpm create` takes no `--registry`. Run the Create command as written, with the registry in `npm_config_registry`. |
-| `@nocobase/...` not found (404) in the application   | Its `.npmrc` lacks `@nocobase:registry=https://npm.nocobase.ai/`. Add that line to the project's `.npmrc`.   |
+| `@nocobase/...` not found (404) in the application   | Check the package name and version. For a private registry, confirm the project's `.npmrc` has the matching `@nocobase:registry` entry. |
 | No version matches, or the newest one is ignored     | Set `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` for the command.                                                     |
 | `Could not locate the bindings file`                 | No prebuilt `better-sqlite3` binary matches this platform. Install a C++ toolchain, set `better-sqlite3: true` under `allowBuilds` in `pnpm-workspace.yaml`, then run `rm -rf node_modules && pnpm install`. |
 | A warning that the Skills could not be synchronized  | Run `pnpm nocobase skills sync` in the application.                                                          |
 | `pnpm dev` or `pnpm start` says it is not configured | Run `pnpm nocobase config init --json`, then `pnpm nocobase config check --json`, and follow the result.     |
 
-The full guide: https://github.com/nocobase/nocobase3/blob/develop/docs/docs/en/get-started/create-app-with-agent.md
+The full guide: https://github.com/nocobase/nocobase/blob/v3-develop/docs/docs/en/get-started/create-app-with-agent.md

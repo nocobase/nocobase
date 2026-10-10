@@ -1,27 +1,23 @@
 ---
-title: 'Built-in capabilities'
-description: 'Sign-in, permissions, approvals, notifications — what is ready-made, how to install and use it.'
+title: 'Overview'
+description: 'Explore reusable NocoBase capabilities that simplify application development.'
 ---
 
-# Built-in capabilities
+# Overview
 
-:::warning Being written
-This page is being written.
-:::
+NocoBase provides reusable capabilities such as authentication, permissions, files, and notifications. Reusing these capabilities and their components reduces the work needed to build account management, access control, and message delivery, so you can focus on business pages and rules.
 
-This section covers reusable application capabilities and supporting Skills that help an Agent implement business features. Each page explains the problem, installation, common usage, and customization. Refer to the individual page for the features it provides out of the box.
+The table below lists the capabilities and example use cases. Follow each link for usage details.
 
-## In this section
-
-- [Overview](./overview) — What is available, and how to install it.
-- [Authentication](./auth) — Accounts, passwords and sessions.
-- [Permissions](./authorization) — Roles, menu visibility, and which records each user may see.
-- [Workflow](./workflow) — Observable, versioned, multi-stage business processes.
-- [Scheduled tasks](./scheduler) — Define schedules in code and monitor, enable, or disable them in the UI.
-- [Notifications](./notification) — Email, in-app messages, and IM channels.
-- [Mail](./mail) — Connect personal mailboxes to synchronize, read, and send messages.
-- [Files](./file) — Uploads and attachments.
-- [Template printing](./template-print) — Use a Skill to guide the Agent in implementing contracts, orders, and reports.
-- [Language switching](./i18n) — Switching the interface language.
-- [Themes](./theme) — Change colors and fonts, and switch between light and dark.
-- [AI employees and knowledge base](./ai-employee) — AI features your finished application offers its own users.
+| Capability                               | What it provides                                             | Example use case                                                |
+| ---------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
+| [Authentication](./auth)                 | Sign-in, registration, sessions, and authentication methods  | Employees sign in to a purchasing application                   |
+| [Permissions](./authorization)           | Access control for pages, actions, and records               | Buyers manage their suppliers; managers view team records       |
+| [Scheduled tasks](./scheduler)           | Time-based processing with execution history                 | Check supplier certifications for upcoming expiration           |
+| [Notifications](./notification)          | In-app messages, email, and group messages                   | Notify a supplier owner when a certification is about to expire |
+| [Mail](./mail)                           | Connect mailboxes to read, reply to, and send email          | Handle customer correspondence from a customer page             |
+| [Files](./file)                          | Upload, associate, preview, and download files               | Store certification documents in supplier records               |
+| [Template printing](./template-print)    | Skills and implementation references for document generation | Fill a contract template with order data                        |
+| [Language switching](./i18n)             | Interface languages and default language settings            | Provide an English interface for overseas staff                 |
+| [Themes](./theme)                        | Colors, fonts, layout density, and color modes               | Apply brand colors or a compact layout                          |
+| [AI knowledge base](./ai-knowledge-base) | Import, process, and retrieve business documents             | Answer supplier onboarding questions using purchasing policies  |

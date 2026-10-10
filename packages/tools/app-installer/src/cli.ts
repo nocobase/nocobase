@@ -65,14 +65,14 @@ function describeFlags(flags: Record<string, FlagHelp>): string[] {
 /** Every usage line and example is a command that runs as-is, the same way error suggestions are. */
 export function formatHelp(): string {
   return [
-    'Install and manage a NocoBase 3 application on a server, from a deployment archive or the published Hub template.',
+    'Install and manage a NocoBase 3 application on a server, from a deployment archive.',
     '',
     'USAGE',
     `  $ ${installerCommand('COMMAND [FLAGS]')}`,
     '',
     'COMMANDS',
-    '  install DIRECTORY  Install into DIRECTORY (or --dir DIRECTORY) from --archive or --template hub, and start it with pm2.',
-    '  upgrade            Upgrade the installation in --dir, the current directory by default: to a new --archive, or for a template installation to --to (latest) or a --rebuild.',
+    '  install DIRECTORY  Install into DIRECTORY (or --dir DIRECTORY) from --archive, and start it with pm2.',
+    '  upgrade            Upgrade the installation in --dir, the current directory by default, to a new --archive.',
     '  rollback           Return to the release the last upgrade came from, or to --to.',
     '  status             Report the release, endpoints, health, pm2 process and releases on disk.',
     '',
@@ -91,17 +91,14 @@ export function formatHelp(): string {
     'EXAMPLES',
     `  $ ${installerCommand('install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com')}`,
     `  $ ${installerCommand('upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz --yes')}`,
-    `  $ ${installerCommand('install /srv/nocobase/hub --template hub --origin https://apps.example.com')}`,
-    `  $ ${installerCommand('install /srv/nocobase/hub --template hub --dialect postgres --set database.connections.main.host=db.internal --set-from-env database.connections.main.password=HUB_DB_PASSWORD')}`,
-    `  $ ${installerCommand('upgrade --dir /srv/nocobase/hub --yes')}`,
+    `  $ ${installerCommand('install /srv/nocobase/crm --archive /tmp/crm.tar.gz --dialect postgres --set database.connections.main.host=db.internal --set-from-env database.connections.main.password=CRM_DB_PASSWORD')}`,
     `  $ ${installerCommand('rollback --dir /srv/nocobase/crm')}`,
     `  $ ${installerCommand('status --dir /srv/nocobase/crm --json')}`,
     '',
     'NOTES',
-    `  Requires Node.js 24+ and, to start the application, pm2 ${MINIMUM_PM2_VERSION}+ installed globally; --template also needs pnpm 11+.`,
+    `  Requires Node.js 24+ and, to start the application, pm2 ${MINIMUM_PM2_VERSION}+ installed globally.`,
     '  Build an archive in the application project with pnpm build --target <platform> --node-version <major> --tar, matching this machine.',
-    '  Packages come from https://npm.nocobase.ai by default; override with --registry or NOCOBASE_REGISTRY.',
-    '  --template builds the Hub on this machine and takes several minutes.',
+    '  Suggested installer commands use https://registry.npmjs.org by default; override with --registry or NOCOBASE_REGISTRY.',
     '  To change the origin or port, edit app.env in the installation root, then run pm2 restart with the process name.',
   ].join('\n');
 }

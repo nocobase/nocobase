@@ -2,11 +2,9 @@
 '@nocobase/logging': patch
 '@nocobase/app-server': patch
 '@nocobase/app-host': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-skills': patch
 ---
 

@@ -1,6 +1,6 @@
 # Child routes
 
-Child pages, page tabs and navigation groups are all declared as routes. Routes are the source of navigation in App, Settings and Dev; how child content is presented (inline, covering, dialog, drawer) is decided by page code.
+Child pages, page tabs and navigation groups are all declared as routes. Routes are the source of the application's navigation; how child content is presented (inline, covering, dialog, drawer) is decided by page code.
 
 For the basic rules on route fields, `auth`, `authz`, menus, the back button and breadcrumbs, see [`page.md`](page.md). For dialogs and drawers (`RouteDialog`, `RouteDrawer`, `useRouteOverlay`, `beforeClose`), see [`overlay.md`](overlay.md).
 
@@ -67,7 +67,7 @@ For how to write `RouteDialog` and `RouteDrawer`, see [`overlay.md`](overlay.md)
 
 ### Use child routes by default
 
-- When building a page with tabs, each tab is a child route by default; the user does not have to ask for "routes" separately. This is the same for App, Settings and Dev pages, including plugin pages. When the user explicitly asks for a different interaction, follow the user's request.
+- When building a page with tabs, each tab is a child route by default; the user does not have to ask for "routes" separately. This is the same for every page, including plugin pages. When the user explicitly asks for a different interaction, follow the user's request.
 - A tab is a view of the parent page, not a separate destination: tab routes declare no `navigation`, and no `breadcrumb` (the header's trail stops at the parent page).
 - Tab content goes in the parent route's `children`; the parent page places `<Outlet />` in its content area; switching tabs uses route navigation.
 - **Derive the selected tab from the URL**; do not keep a separate `activeTab` state. Every tab can be opened directly, survives a reload, and works with the browser's back and forward.
@@ -617,19 +617,18 @@ A page that shows a record whose detail is a page of its own — an orders list'
 
 - **Group**: only `name`, `navigation` and `children`, with no `componentLoader`. `path` is optional; when present, it becomes the prefix of the child routes' paths; when absent, the group is only a set of entries in the menu.
 - A group renders no business component (the route renderer provides its Outlet), cannot declare `authz`, and carries no page permission of its own: the first page below a group with no page above it declares its own `authz`.
-- Groups can contain groups. A group's `name` must be unique, like a route name; settings group names are unique across the whole settings area.
+- Groups can contain groups. A group's `name` must be unique, like a route name.
 - **Clickable parent**: a page can also have `navigation` and child pages with `navigation`. In the menu it is then both a link and expandable: the link and the expand button are two separate controls. Choose how the child pages are presented according to [section 3](#3-four-ways-to-present-a-child-route).
 - Pages that should not appear in the menu, such as details and tab content, have no `navigation`. A descendant can still declare `navigation` when its ancestor does not.
 - A path with a parameter cannot have `navigation`.
 - `navigation.order` sets the order among siblings; lower numbers come first.
 - Navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page automatically expands its ancestor groups.
 
-## 7. Settings pages and dev pages
+## 7. Settings pages
 
-- Use `defineSettingsRoutes()` and `defineDevRoutes()`; pages, groups and `children` are written the same way as in App routes. Do not write `/settings` or `/dev` in the path.
+- A settings page is an ordinary App page under a navigation group of the application's own, such as Settings ([section 5 of `page.md`](page.md#5-settings-pages)); there is no `/settings` or `/dev` surface.
 - Tabs in settings pages also use child routes ([section 4](#4-page-tabs)); nested details and tabs usually have no `navigation`.
-- Settings pages and dev pages both require sign-in and declare `authz` on their first page, as [section 4 of `page.md`](page.md#4-authz-page-authorization) describes. A settings page checks its settings item (["Settings pages" in `page.md`](page.md#settings-pages)); its child pages and tabs inherit that check or declare another action or item of their own, never a page grant. A dev page usually writes `'skip'`.
-- Dev pages, and modules imported only by them, are left out of the production build.
+- A settings page checks its settings item; its child pages and tabs inherit that check or declare another action or item of their own, never a page grant.
 - Navigation groups carry no page permission. Access checks in the browser do not replace server authorization.
 
 ## 8. Verify
@@ -640,7 +639,7 @@ A page that shows a record whose detail is a page of its own — an orders list'
 4. Use back and forward: the selected tab and the menu highlight match the URL.
 5. Check the menu, the copy in each language, the link and expand button of clickable parents, and navigation on narrow screens.
 6. Remove permission for the parent page: none of the child pages can load. Then remove permission for just one child page that declares `authz` explicitly.
-7. Settings pages and dev pages: a settings page's menu position is as expected; a dev page opens by URL inside the App shell and does not appear in the production build.
+7. Settings pages: a settings page's menu position under its group is as expected.
 8. Covering child pages: opening one covers the parent from the top of the content area, whatever the parent's scroll position, and nothing of the parent shows below it; the back button returns to the list with exactly the search and filters it had, and nothing the child page or its tabs wrote is left in the list's URL; the covered page keeps its input and scroll position; after going back, it works normally.
 9. Pages with tabs whose header opens overlays: from a tab other than the default, open each one. Its URL is the tab's URL plus its own segment, the tab stays selected and its content mounted behind it, and closing, saving, Esc and Back all return to that tab; opening that URL directly shows the same tab behind it.
 

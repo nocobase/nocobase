@@ -43,10 +43,12 @@ import { createTxRunner, type TxRunner } from './kernel/tx.js';
 import {
   createRunnerService,
   createRunnerSweeper,
+  createRunnerWorkspaces,
   createSlots,
   createWorkSignal,
   type RunnerService,
   type RunnerSweeper,
+  type RunnerWorkspaces,
   type Slots,
   type WorkSignal,
 } from './runners/index.js';
@@ -118,6 +120,7 @@ import {
 import {
   createBriefPreviewer,
   createBriefSectionRegistry,
+  createClaimEligibility,
   createClaimService,
   createRepoAccessRegistry,
   createRunMountRegistry,
@@ -134,6 +137,7 @@ import {
   type AgentCli,
   type Availability,
   type BriefPreviewer,
+  type ClaimEligibility,
   type ClaimService,
   type RunnerReports,
   type RepoAccessRegistry,
@@ -203,6 +207,11 @@ export interface Agents {
    * its model), and how many of its runs have not finished.
    */
   readonly availability: Availability;
+  /**
+   * Whether a runner would actually take an agent's work done as a person, by the claim's rules: trust, features and
+   * whether it may receive the work's variables. For deciding before a run exists; call it outside a transaction.
+   */
+  readonly eligibility: ClaimEligibility;
   /** Who runners register with: the application's id and name. */
   readonly app: RunApp;
   /** The application's CLI (`agents.cli`, resolved): what runs talk to it with and what the install script installs. */
@@ -211,6 +220,11 @@ export interface Agents {
   readonly runners: RunnerService;
   /** Which agents each runner may run and which runs one holds, for the runtimes pages. */
   readonly runnerView: RunnerView;
+  /**
+   * The working directories runners report: which may go because their subject's work is over, and the disk they
+   * take, kept for the runtimes pages.
+   */
+  readonly workspaces: RunnerWorkspaces;
   /**
    * Jobs: deterministic steps runners execute without a model (a build), of the kinds the application registers; used
    * by the off-by-default runner build method.
@@ -369,6 +383,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     onError,
   });
   const actions = createAgentActionCatalog();
+  const scopes = createScopeKinds();
   const variables = createVariableService({
     tx,
     ids,
@@ -415,8 +430,13 @@ export function createAgents(deps: AgentsDeps): Agents {
       },
     },
   });
+  const eligibility = createClaimEligibility({
+    runners,
+    variables,
+  });
   const availability = createAvailability({
     runners,
+    eligibility,
     openRuns: openCounts,
     models: gateway,
   });
@@ -432,6 +452,8 @@ export function createAgents(deps: AgentsDeps): Agents {
       find: (conn, id) => runners.find(conn, id),
       jobsByRunner: (conn) => slots.jobsByRunner(conn),
     },
+    eligibility,
+    people,
   });
   const sections = createBriefSectionRegistry();
   const mounts = createRunMountRegistry();
@@ -457,6 +479,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     list: () => [...builtInSkills.values()],
   };
   const claims = createClaimService({
+    people,
     sections,
     mounts,
     repoAccess,
@@ -484,6 +507,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runners,
     runs: createSweeper({ ...transitions, tx, ids, runners }),
     jobs,
+    requests: runs.requests,
   });
   // Jobs open the stored variables they name here.
   jobs.provideSecrets({
@@ -509,6 +533,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     agents,
     runners,
+    eligibility,
     runs,
     people,
     settings: chat,
@@ -589,10 +614,12 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     agents,
     availability,
+    eligibility,
     app,
     cli,
     runners,
     runnerView: createRunnerView({ agents, subjects, tx }),
+    workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,
     signal,
@@ -621,7 +648,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     mounts,
     repoAccess,
     people,
-    scopes: createScopeKinds(),
+    scopes,
     subjects,
     gate,
     actions,

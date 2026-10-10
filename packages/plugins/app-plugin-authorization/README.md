@@ -1,6 +1,6 @@
 # @nocobase/app-plugin-authorization
 
-NocoBase application integration for authorization: authenticated identities, Permission Sets, pages, settings, composite resources, database field, record and relation policies, the `/api/authorization` HTTP surface and the permission workspace UI. It builds on [`@nocobase/authorization`](../../libs/authorization/README.md), whose terms and contracts apply unchanged. For configuration without code, read the [user guide](../../../docs/docs/en/capabilities/authorization/index.md); for implementing a feature, read the [development Skill](skills/nocobase-app-plugin-authorization/SKILL.md).
+NocoBase application integration for authorization: authenticated identities, Permission Sets, pages, settings, composite resources, database field, record and relation policies, and the `/api/authorization` HTTP surface. It ships no pages: an application builds its permission management pages on that surface. It builds on [`@nocobase/authorization`](../../libs/authorization/README.md), whose terms and contracts apply unchanged. For configuration without code, read the [user guide](../../../docs/docs/en/capabilities/authorization/index.md); for implementing a feature, read the [development Skill](skills/nocobase-app-plugin-authorization/SKILL.md).
 
 ## Terminology
 
@@ -16,7 +16,7 @@ NocoBase application integration for authorization: authenticated identities, Pe
 | Data scope            | A named slot on a composite action that a grant or rule fills with a record selection. It targets the one collection its grant actions address.                                                                                                                                                  |
 | Record selection      | `all`, `records` with ids, or `recordAccess` with a key and params.                                                                                                                                                                                                                              |
 | Record access         | A named way to select records; `recordAccess.recordsIOwn` and its siblings are the built-in ones.                                                                                                                                                                                                |
-| Section               | A top-level heading on the left of the workspace, `{ name, title, order }`: `pages`, `business`, `administration` and any a plugin adds through `authz.ui.sections.add`. Display only.                                                                                                           |
+| Section               | A top-level heading of a permission management page, `{ name, title, order }`: `pages`, `business`, `administration` and any a plugin adds through `authz.ui.sections.add`. Display only.                                                                                                        |
 | Subsection            | A left-side entry under a section, `{ name, title, parent, order? }`, such as `authorization` or `automation`; `authz.ui.place` lists a resource in one. Display only.                                                                                                                           |
 | Resource group        | A right-side heading resources are listed under, `{ name, title, parent?, order? }`, nested to any depth and registered with `authz.ui.groups.add`. Display only.                                                                                                                                |
 | Authorization context | The request's `authz` Hono variable: `authorize`, `can`, `require`, `snapshot` for the signed-in identity.                                                                                                                                                                                       |
@@ -44,9 +44,7 @@ NocoBase application integration for authorization: authenticated identities, Pe
 | `@nocobase/app-plugin-authorization/server/extension`       | HTTP helpers for plugins that add authorization settings surfaces, such as the rule plugins.     |
 | `@nocobase/app-plugin-authorization/client`                 | Client plugin, `AuthorizationClient`, `useCan` and related hooks.                                |
 | `@nocobase/app-plugin-authorization/client/plugin`          | The client plugin factory alone.                                                                 |
-| `@nocobase/app-plugin-authorization/client/routes`          | The settings route contribution.                                                                 |
 | `@nocobase/app-plugin-authorization/client/react-providers` | The React provider contribution.                                                                 |
-| `@nocobase/app-plugin-authorization/client/management`      | Workspace components the rule plugins import.                                                    |
 | `@nocobase/app-plugin-authorization/package.json`           | The package manifest.                                                                            |
 
 ## Install and configure
@@ -101,7 +99,7 @@ authz.ui.place({ type: 'settings', id: 'workflow' }, { section: 'automation' });
 const grant = authz.settings.grant('workflow', ['manage']);
 ```
 
-A settings item may declare any action names. `settings.grant` refuses an id or action nobody registered. Where the workspace lists it is a separate `authz.ui.place`; an unplaced item is listed under the "Other" subsection of `administration`, the `settings` type's default section, and startup logs a warning. Check a settings action on the server with `requireSettings` from `./server/extension` or with `context.require({ resource: { type: 'settings', id: 'workflow' }, action: 'manage' })`.
+A settings item may declare any action names. `settings.grant` refuses an id or action nobody registered. Where a permission management page lists it is a separate `authz.ui.place`; an unplaced item is listed under the "Other" subsection of `administration`, the `settings` type's default section, and startup logs a warning. Check a settings action on the server with `requireSettings` from `./server/extension` or with `context.require({ resource: { type: 'settings', id: 'workflow' }, action: 'manage' })`.
 
 ### Collection
 
@@ -194,15 +192,15 @@ A composite action composes exactly the grants its definition lists, on any reso
 import { grantBacked } from '@nocobase/authorization/core';
 
 authz.resourceTypes.add({
-  type: 'hub.app',
-  actions: ['read', 'deploy'],
+  type: 'pm.issue',
+  actions: ['read', 'close'],
   authorize: grantBacked({
-    also: (request) => ownsApp(request.principal.id, request.resource.id),
+    also: (request) => ownsIssue(request.principal.id, request.resource.id),
   }),
 });
 ```
 
-This is a record type: it declares its actions and no items, so any record id passes validation and only an undeclared action is denied; the type's `authorize` judges each record. Grants use `id: '*'` to mean every record. `grantBacked()` is the default judgement and permits when a grant without a policy matches. Hub (`hub.app`, `hub.host`), users (`user`), notification and `page` are record types; `settings`, `composite` and `database.collection` are catalog types, which register items and deny any unregistered item or action.
+This is a record type: it declares its actions and no items, so any record id passes validation and only an undeclared action is denied; the type's `authorize` judges each record. Grants use `id: '*'` to mean every record. `grantBacked()` is the default judgement and permits when a grant without a policy matches. Users (`user`), notification and `page` are record types; `settings`, `composite` and `database.collection` are catalog types, which register items and deny any unregistered item or action.
 
 ### Workspace placement: `authz.ui`
 
@@ -213,7 +211,7 @@ authz.ui.place(reference, { section: 'sales', group: 'ledgers' });
 authz.ui.defaultSection('report', 'administration');
 ```
 
-`authz.ui` decides where the permission workspace lists each resource and is never read by a check. The workspace lists top-level sections on the left, each with its subsections as entries, and the selected subsection's resources on the right, under their groups. This plugin registers the sections `pages` (order 0), `business` (100) and `administration` (200); its `authorization` subsection; and the default sections `composite → business` and `settings → administration`. `pagesPlugin`, which depends on `ui`, registers the `pages.page` subsection (order 0, titled `sections.page` in this plugin's namespace); it is the only subsection the client fills, from its route tree, and the options mark it with `recordType: { type: 'page', actions }`. Resource types have no titles, so every heading the workspace shows comes from `authz.ui`.
+`authz.ui` decides where a permission management page lists each resource and is never read by a check: top-level sections, each with its subsections, and each subsection's resources under their groups. The plugin ships no such page; the options routes return this layout for an application's own. This plugin registers the sections `pages` (order 0), `business` (100) and `administration` (200); its `authorization` subsection; and the default sections `composite → business` and `settings → administration`. `pagesPlugin`, which depends on `ui`, registers the `pages.page` subsection (order 0, titled `sections.page` in this plugin's namespace); an application's page fills it from its own route tree, and the options mark it with `recordType: { type: 'page', actions }`. Resource types have no titles, so every heading such a page shows comes from `authz.ui`.
 
 | Member                                                   | Behavior                                                                                                                                                                                                                                                                                                                                                                                               |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -221,7 +219,7 @@ authz.ui.defaultSection('report', 'administration');
 | `sections.add({ name, title, parent, order?, extend? })` | A subsection, one level under a top-level section. Without `extend`, a deep-equal re-add is a no-op and anything else throws. With `extend: true`, as a client settings group is extended, the add does nothing when the subsection exists and creates it otherwise; the owner's later add replaces the title and order and throws only if the parents differ. `extend` on a top-level section throws. |
 | `groups.add({ name, title, parent?, order? })`           | A right-side group, nested to any depth.                                                                                                                                                                                                                                                                                                                                                               |
 | `place(ref, { section, group?, order? })`                | Lists a resource, `{ type, id }` or a `CompositeResourceReference`, in a subsection and optionally a group. `order` positions it within the subsection; unordered resources follow in registration order. Placing in a top-level section throws; placing the same resource elsewhere throws.                                                                                                           |
-| `defaultSection(type, section)`                          | Unplaced resources of `type` are listed under `<section>.other`. Types with no default section and no placement are not displayed; `database.collection`, `hub.app` and `user` are such types.                                                                                                                                                                                                         |
+| `defaultSection(type, section)`                          | Unplaced resources of `type` are listed under `<section>.other`. Types with no default section and no placement are not displayed; `database.collection` and `user` are such types.                                                                                                                                                                                                                    |
 
 A placement may name a subsection, group or resource that registers later. Startup validation runs in the provider's `start` hook, after every plugin's `boot`: it reports a placement whose subsection or group is unknown, a placement of an unregistered resource, and any composite data scope whose target type lacks `recordAccess`, throwing in development and logging a warning when `NODE_ENV` is `production`. It also warns about each unplaced composite or settings item, which is then listed under its default section's "Other". Workflow owns `automation` and scheduler extends it, so the owner's title wins whichever boots first. The Pages entry is filled on the client from the route tree, with navigation groups as resource groups in menu order.
 
@@ -413,7 +411,7 @@ defineRoutes([
 ]);
 ```
 
-Declare `authz` on every entry client route: there is no `page:<route.name>` inference. A nested page that omits it inherits its nearest ancestor page's value; an entry page that omits it defaults to `'unrestricted'` on protected App and settings routes, which `useCan('unrestricted')` and `client.can('unrestricted')` pass only for an unrestricted snapshot such as root's, and to `'skip'` on guest, optional and dev routes. Unrestricted-only routes are never offered as page grants. The permission workspace lists these pages in the `pages.page` subsection, under their navigation groups as resource groups, from the client route tree sorted by `navigation.order` the way the menu sorts them.
+Declare `authz` on every entry client route: there is no `page:<route.name>` inference. A nested page that omits it inherits its nearest ancestor page's value; an entry page that omits it defaults to `'unrestricted'` on protected App routes, which `useCan('unrestricted')` and `client.can('unrestricted')` pass only for an unrestricted snapshot such as root's, and to `'skip'` on guest and optional routes. Unrestricted-only routes are never offered as page grants. A permission management page lists these pages in the `pages.page` subsection, under their navigation groups as resource groups, from the client route tree sorted by `navigation.order` the way the menu sorts them.
 
 ## HTTP API
 
@@ -542,7 +540,7 @@ The root entry `@nocobase/app-plugin-authorization` exports exactly the same nam
 | `uiPlugin`                            | function | `uiPlugin(): UiPlugin`                                                                                                                                                      | Registers `authz.ui` with the built-in sections, the `authorization` subsection and the default sections. |
 | `UiPlugin`                            | type     | `AuthorizationPlugin<UiAuthorizationApi>`                                                                                                                                   | The plugin `uiPlugin` returns.                                                                            |
 | `UiAuthorizationApi`                  | type     | `{ ui: AuthorizationUiApi }`                                                                                                                                                | What the plugin adds to the instance and to every setup context.                                          |
-| `AuthorizationUiApi`                  | type     | `sections`, `groups`, `place(target, placement)`, `defaultSection(type, section)`, `defaultSectionOf(type)`, `placementOf(ref)`, `validate({ resourceTypes, composites? })` | Where the workspace lists each resource.                                                                  |
+| `AuthorizationUiApi`                  | type     | `sections`, `groups`, `place(target, placement)`, `defaultSection(type, section)`, `defaultSectionOf(type)`, `placementOf(ref)`, `validate({ resourceTypes, composites? })` | Where a permission management page lists each resource.                                                   |
 | `AuthorizationUiSections`             | type     | `add(definition)`, `has(name)`, `isSubsection(name)`, `get(name)`, `other(parent)`, `tree()`                                                                                | `ui.sections`.                                                                                            |
 | `AuthorizationUiGroups`               | type     | `add(group)`, `has(name)`, `get(name)`, `list()`                                                                                                                            | `ui.groups`.                                                                                              |
 | `AuthorizationUiSection`              | type     | `{ name, title, order?, parent? }`                                                                                                                                          | A section, or a subsection when `parent` is set.                                                          |
@@ -703,14 +701,6 @@ authz.routes.add('/sharingRules', createRouteHandler(router));
 | `default`                    | plugin | `AppClientPluginFactory<AuthorizationClientOptions>` | The client plugin factory.   |
 | `AuthorizationClientOptions` | type   | `{}`                                                 | The plugin takes no options. |
 
-## `@nocobase/app-plugin-authorization/client/routes`
-
-### Exports
-
-| Export    | Kind  | Signature                    | Purpose                                                                   |
-| --------- | ----- | ---------------------------- | ------------------------------------------------------------------------- |
-| `default` | const | `AppClientRouteContribution` | Settings routes for Permission Sets and the inspector, each with `authz`. |
-
 ## `@nocobase/app-plugin-authorization/client/react-providers`
 
 ### Exports
@@ -719,62 +709,6 @@ authz.routes.add('/sharingRules', createRouteHandler(router));
 | ---------------- | ----- | --------------------------------------------- | ------------------------------------------------ |
 | `default`        | const | `readonly AppClientReactProviderDefinition[]` | The provider that supplies the session's client. |
 | `reactProviders` | const | `readonly AppClientReactProviderDefinition[]` | The same value, by name.                         |
-
-## `@nocobase/app-plugin-authorization/client/management`
-
-Exactly what the rule plugins import to build their settings pages; the workspace itself is not exported.
-
-### Exports
-
-| Export                        | Kind      | Purpose                                            |
-| ----------------------------- | --------- | -------------------------------------------------- |
-| `PermissionsPage`             | component | The settings page frame.                           |
-| `useAuthorizationPageData`    | hook      | Loads a rule plugin's options and rules.           |
-| `AuthorizationPageState`      | type      | What `useAuthorizationPageData` returns.           |
-| `useAuthorizationTranslation` | hook      | Translations in this plugin's namespace.           |
-| `Translate`                   | type      | The translate function it returns.                 |
-| `ManagementTable`             | component | A rules table.                                     |
-| `ManagementToolbar`           | component | Toolbar above a rules table.                       |
-| `EmptyTableRow`               | component | Placeholder row.                                   |
-| `TablePager`                  | component | Pagination control.                                |
-| `pageSlice`                   | function  | One page of a list.                                |
-| `FilterBar`                   | component | Filters above a table.                             |
-| `SearchField`                 | component | Search input.                                      |
-| `SelectField`                 | component | Select input.                                      |
-| `Field`                       | component | Labelled form field.                               |
-| `ConfirmDialog`               | component | Confirmation dialog.                               |
-| `ErrorBox`                    | component | Error display.                                     |
-| `errorMessage`                | function  | Readable text of an error.                         |
-| `RuleDrawer`                  | component | Drawer that edits one rule.                        |
-| `RuleForm`                    | component | The rule form inside it.                           |
-| `useRuleDraft`                | hook      | Draft state of a rule being edited.                |
-| `ResourceEditor`              | component | Picks the rule's resource.                         |
-| `ActionsEditor`               | component | Picks a collection rule's actions.                 |
-| `RuleActionsEditor`           | component | Edits a rule's actions and their selections.       |
-| `DataScopesEditor`            | component | Edits a composite rule's selection per data scope. |
-| `SelectionEditor`             | component | Edits one record selection.                        |
-| `SelectionMark`               | component | Shows one record selection compactly.              |
-| `SubjectsEditor`              | component | Picks subjects.                                    |
-| `useSubjectNames`             | hook      | Resolves subject titles.                           |
-| `useSubjectDetails`           | hook      | Resolves subject titles and `manage` paths.        |
-| `subjectKey`                  | function  | Stable key of a subject.                           |
-| `defaultSelection`            | function  | The initial selection of a rule action.            |
-| `incompleteSelection`         | function  | Whether a selection still needs input.             |
-| `selectionLabel`              | function  | Readable text of a selection.                      |
-| `firstActions`                | function  | The default actions of a new rule.                 |
-| `actionLabel`                 | function  | Readable text of an action.                        |
-| `resourceLabel`               | function  | Readable text of a resource.                       |
-| `titleText`                   | function  | Text of an `AuthorizationTitle`.                   |
-| `humanize`                    | function  | Readable text of an identifier.                    |
-| `collectionFields`            | function  | Fields of a collection from options.               |
-| `findResource`                | function  | The resource with a type and id in options.        |
-| `workspaceSubsections`        | function  | Every subsection of options, in section order.     |
-| `AuthorizationOptions`        | type      | What an `options` route answers.                   |
-| `ResourceGroupOption`         | type      | One group in options.                              |
-| `AuthorizationRecordOption`   | type      | One record in a records route.                     |
-| `AuthorizationSubject`        | type      | `{ type; id }`.                                    |
-| `RecordSelection`             | type      | A record selection, as the client edits it.        |
-| `DataScopeRuleAction`         | type      | One action of a composite rule with its scope.     |
 
 ## `@nocobase/app-plugin-authorization/package.json`
 

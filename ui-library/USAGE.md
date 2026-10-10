@@ -14,12 +14,6 @@ The UI Library publishes NocoBase business components as a [shadcn registry](htt
   }
   ```
 
-- **Point the `@nocobase` scope at the NocoBase npm registry.** Items depend on `@nocobase/*` packages, which are published only to `https://npm.nocobase.ai`. `create-app` needs the same setting, so you may have it already; otherwise add this line to `~/.npmrc`:
-
-  ```text
-  @nocobase:registry=https://npm.nocobase.ai
-  ```
-
 - **Have the plugins the item builds on.** An item calls a plugin's public exports and registers nothing itself, and some, such as the authentication components, call none and leave the wiring to your page, which then needs the plugin it calls, here `@nocobase/app-plugin-authentication`. The `docs` message shadcn prints after installing an item names what it requires.
 
 ## Package imports
@@ -47,7 +41,7 @@ The dry run lists every file shadcn would create or overwrite and every dependen
 4. **Add the translations.** shadcn does not touch your locale resources. A block ships its translations in its `locales/` directory: spread each file into the matching file in `client/locales/`, before your own keys so that yours can reword them, as its README shows. A component ships none; add the keys its README lists. Without this step the item renders its English defaults in every language.
 5. **Run the application's checks**: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build`.
 
-An application created from one of the templates already contains the `page-container`, `page-header`, `route-dialog`, `route-drawer` and `route-child-page` components in `client/components/`, the `auth-forms`, `auth-methods` and `auth-split-layout` blocks its sign-in pages use, and the `device-approval` block its `/device` page uses, in `client/extensions/nocobase-<item>/`; one created from the default or the examples template also contains the `inbox` block its `/inbox` page renders and the `inbox-button` component in its header. Do not add them again; to take a newer version, see [Upgrading an item](#upgrading-an-item).
+An application created from one of the templates already contains the `page-container`, `page-header`, `route-dialog`, `route-drawer` and `route-child-page` components in `client/components/`, the `auth-forms`, `auth-methods` and `auth-split-layout` blocks its sign-in pages use, and the `device-approval` block its `/device` page uses, in `client/extensions/nocobase-<item>/`; one created from the default or the examples template also contains the `inbox` block its `/inbox` page renders. Do not add them again; to take a newer version, see [Upgrading an item](#upgrading-an-item).
 
 ## Add an item to a plugin
 
@@ -95,11 +89,11 @@ To remove an item, delete a block's directory, or a component's files, and the i
 
 ## Troubleshooting
 
-| Symptom                                                                                              | Cause and fix                                                                                                                                                                                   |
-| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Unknown registry "@nocobase"`                                                                       | `components.json` has no `registries` entry for `@nocobase`; add it as shown in [Before you start](#before-you-start).                                                                          |
-| `Unexpected token '<', "<!doctype "... is not valid JSON`                                            | No item has that name, so the host answered with the site's HTML page. Check the name with `npx shadcn@latest search @nocobase`.                                                                |
-| `ERR_PNPM_FETCH_404` for `registry.npmjs.org/@nocobase%2F...`                                        | The `@nocobase` scope is not pointed at `https://npm.nocobase.ai`. Add it to `~/.npmrc` and run the command again; shadcn installs dependencies before it writes files, so nothing was written. |
-| `TS2307: Cannot find module '#components/ui/button'` in a plugin                                     | The owning package is missing an `imports` mapping; see [Add an item to a plugin](#add-an-item-to-a-plugin).                                                                                    |
-| `TS2835: Relative import paths need explicit file extensions` in an installed item                   | The copy predates the `.js` rule or has been edited since; add the extension.                                                                                                                   |
-| A plugin works in this repository, but an application reports `Could not resolve` one of its imports | The import is declared in `devDependencies`, which the installing application never receives. Declare it as a peer.                                                                             |
+| Symptom                                                                                              | Cause and fix                                                                                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Unknown registry "@nocobase"`                                                                       | `components.json` has no `registries` entry for `@nocobase`; add it as shown in [Before you start](#before-you-start).                                                       |
+| `Unexpected token '<', "<!doctype "... is not valid JSON`                                            | No item has that name, so the host answered with the site's HTML page. Check the name with `npx shadcn@latest search @nocobase`.                                             |
+| `ERR_PNPM_FETCH_404` for an `@nocobase/*` dependency                                                 | Confirm the package name and requested version exist on public npm, then run the command again; shadcn installs dependencies before it writes files, so nothing was written. |
+| `TS2307: Cannot find module '#components/ui/button'` in a plugin                                     | The owning package is missing an `imports` mapping; see [Add an item to a plugin](#add-an-item-to-a-plugin).                                                                 |
+| `TS2835: Relative import paths need explicit file extensions` in an installed item                   | The copy predates the `.js` rule or has been edited since; add the extension.                                                                                                |
+| A plugin works in this repository, but an application reports `Could not resolve` one of its imports | The import is declared in `devDependencies`, which the installing application never receives. Declare it as a peer.                                                          |

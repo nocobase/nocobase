@@ -43,6 +43,7 @@ describe('runtimes page', () => {
         ],
         canChangeTrust: true,
         canManage: true,
+        canRevoke: true,
         activeRuns: 1,
         slots: 2,
       }),
@@ -268,7 +269,12 @@ describe('runtimes page', () => {
       toolLoad: _toolLoad,
       activeByTool: _activeByTool,
       ...older
-    } = runner('r1', { activeRuns: 1, slots: 2, canManage: true });
+    } = runner('r1', {
+      activeRuns: 1,
+      slots: 2,
+      canManage: true,
+      canRevoke: true,
+    });
     runners = [older];
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
@@ -508,7 +514,12 @@ describe('runtimes page', () => {
   });
 
   it('shows the settings read-only to someone who may not manage the runtime', async () => {
-    runners[0] = { ...runners[0]!, canManage: false, canChangeTrust: false };
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canChangeTrust: false,
+      canRevoke: false,
+    };
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
     expect(
@@ -526,6 +537,24 @@ describe('runtimes page', () => {
     expect(toggle).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(toggle);
     expect(callsTo('PATCH', 'agents/runners/r1')).toHaveLength(0);
+  });
+
+  it("offers a manager of runtimes only revoking someone else's runtime, not changing it", async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canChangeTrust: false,
+      canRevoke: true,
+    };
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    await userEvent.click(
+      within(row).getByRole('button', { name: /actionsFor/u }),
+    );
+    expect(
+      await screen.findByText('runtimes.revoke.confirm'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('runtimes.edit.button')).toBeNull();
   });
 
   it('adds a runtime that runs only the coding tools checked, with its concurrency', async () => {

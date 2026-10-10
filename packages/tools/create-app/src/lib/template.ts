@@ -3,28 +3,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
 
-/**
- * v3 packages are published to the self-hosted registry rather than the public npm. Drop this default once they are
- * published to the public registry as well.
- *
- * Note this is the registry the *template* is downloaded from. It is unrelated to the registry that served this
- * package itself, which `pnpm create` resolves before any of this code runs.
- */
-export const DEFAULT_REGISTRY = 'https://npm.nocobase.ai';
-
-/**
- * What a template needs scaffolding around it, which is not the same for every template.
- *
- * Both apps and hubs own a database and receive config.yml. Hubs also receive deployment settings in .env.
- *
- * The kind belongs to the template rather than to the flag, so `--template hub` and `--template ./packages/templates/app-template-hub` are scaffolded identically.
- */
-export type TemplateKind = 'app' | 'hub';
+/** The public npm registry that carries NocoBase packages and templates. */
+export const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
 
 export interface TemplateAlias {
   /** Published package the name resolves to. Carries no tag; the channel is applied separately. */
   packageName: string;
-  kind: TemplateKind;
 }
 
 /**
@@ -38,9 +22,8 @@ export interface TemplateAlias {
  * More templates are expected here. Add an entry rather than asking anyone to type the package specifier.
  */
 export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
-  default: { kind: 'app', packageName: '@nocobase/app-template-default' },
-  examples: { kind: 'app', packageName: '@nocobase/app-template-examples' },
-  hub: { kind: 'hub', packageName: '@nocobase/app-template-hub' },
+  default: { packageName: '@nocobase/app-template-default' },
+  examples: { packageName: '@nocobase/app-template-examples' },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
@@ -93,38 +76,6 @@ function lookupTemplateAlias(name: string): TemplateAlias | undefined {
     : undefined;
 }
 
-/**
- * Decides which flow a template is scaffolded with, from the name given on the command line and the manifest of what
- * was actually downloaded.
- *
- * A name settles it outright. Anything else — a package specifier, a local path — is only known once the template is
- * on disk, so the kind is read from its own manifest: `nocobase.templateKind` when it declares one, and otherwise the
- * package name, which is what lets `--template ./packages/templates/app-template-hub` work against a checkout that
- * predates the field. An unrecognized template is treated as an app, which is what every template was before this
- * distinction existed.
- */
-export function resolveTemplateKind(
-  template: string,
-  manifest: { name?: string; nocobase?: { templateKind?: string } } = {},
-): TemplateKind {
-  const alias = lookupTemplateAlias(template.trim());
-
-  if (alias) {
-    return alias.kind;
-  }
-
-  const declared = manifest.nocobase?.templateKind;
-
-  if (declared === 'app' || declared === 'hub') {
-    return declared;
-  }
-
-  return manifest.name === HUB_TEMPLATE_PACKAGE ? 'hub' : 'app';
-}
-
-/** The published hub template, named here so a package specifier for it is recognized as well as the `hub` name is. */
-export const HUB_TEMPLATE_PACKAGE = '@nocobase/app-template-hub';
-
 export function isTemplateAlias(template: string): boolean {
   return lookupTemplateAlias(template.trim()) !== undefined;
 }
@@ -136,8 +87,6 @@ export interface ResolvedTemplate {
   directory: string;
   name: string;
   version: string;
-  /** `nocobase.templateKind` as the template declared it, if it declared one. */
-  kind?: string;
 }
 
 export interface DownloadTemplateOptions {
@@ -196,7 +145,7 @@ async function findTarball(directory: string): Promise<string> {
 
 async function readTemplateManifest(
   directory: string,
-): Promise<{ name: string; version: string; kind?: string }> {
+): Promise<{ name: string; version: string }> {
   const manifestPath = path.join(directory, 'package.json');
   let raw: string;
 
@@ -211,13 +160,11 @@ async function readTemplateManifest(
   const manifest = JSON.parse(raw) as {
     name?: string;
     version?: string;
-    nocobase?: { templateKind?: string };
   };
 
   return {
     name: manifest.name ?? 'unknown',
     version: manifest.version ?? '0.0.0',
-    kind: manifest.nocobase?.templateKind,
   };
 }
 

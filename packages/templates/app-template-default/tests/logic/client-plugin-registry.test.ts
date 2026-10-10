@@ -34,27 +34,6 @@ describe('client plugin registry consistency', () => {
     expect(undeclared).toEqual([]);
   });
 
-  it('mounts the standard user and API key pages under Settings', () => {
-    for (const [packageName, routePath] of [
-      ['@nocobase/app-plugin-users', '/users'],
-      ['@nocobase/app-plugin-api-keys', '/api-keys'],
-    ]) {
-      const plugin = clientPlugins.plugins.find(
-        (entry) => entry.packageName === packageName,
-      );
-      expect(plugin?.routes).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            parent: 'settings',
-            routes: expect.arrayContaining([
-              expect.objectContaining({ path: routePath }),
-            ]),
-          }),
-        ]),
-      );
-    }
-  });
-
   it('registers no package twice', () => {
     expect(new Set(registeredClientPackages).size).toBe(
       registeredClientPackages.length,

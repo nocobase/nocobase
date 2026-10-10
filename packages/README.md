@@ -39,7 +39,7 @@ They are published and installable like any other plugin — the difference is i
 
 Complete, runnable applications. `create-app` downloads one and scaffolds a project from it, so a template is published as its own source rather than as a built library.
 
-`app-template-default` is what `pnpm create @nocobase/app` produces. `app-template-hub` is the application hub. `app-template-examples` combines application-owned article management with installable capability examples and demonstration data.
+`app-template-default` is what `pnpm create @nocobase/app` produces. `app-template-examples` combines application-owned article management with installable capability examples and demonstration data.
 
 For everyday development and exploring examples in this repository, run `pnpm examples:dev` from the repository root. Each template has explicit root commands:
 
@@ -47,13 +47,12 @@ For everyday development and exploring examples in this repository, run `pnpm ex
 | -------- | ------------------- | --------------------- | --------------------------- |
 | Examples | `pnpm examples:dev` | `pnpm examples:build` | `pnpm examples:start`       |
 | Default  | `pnpm default:dev`  | `pnpm default:build`  | `pnpm default:start`        |
-| Hub      | `pnpm hub:dev`      | `pnpm hub:build`      | `pnpm hub:start`            |
 
 Inside a template's own directory, use `pnpm dev`, `pnpm build`, and `pnpm start`.
 
 ## `tools/`
 
-Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project. `hub-cli` is a development dependency of the Default template that gives it `nocobase hub deploy` and `hub upload`, by naming a CLI entry the application's command line finds among its dependencies.
+Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project.
 
 ## Adding a package
 

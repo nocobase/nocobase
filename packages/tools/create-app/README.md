@@ -3,38 +3,12 @@
 Creates a NocoBase 3 application.
 
 ```bash
-npm_config_registry=https://npm.nocobase.ai pnpm create @nocobase/app crm
+pnpm create @nocobase/app crm
 ```
 
 `pnpm create @nocobase/app` resolves to the `@nocobase/create-app` package and runs it, forwarding every argument after the package name verbatim.
 
-## Why `npm_config_registry` is needed
-
-Two downloads happen, at different stages, each reading a different setting:
-
-```
-Stage 1  pnpm resolves the @nocobase/create-app package from a registry
-         ← npm_config_registry decides this, before any of our code runs
-
-Stage 2  create-app runs and downloads the application template
-         ← --registry decides this, and already defaults to https://npm.nocobase.ai
-```
-
-This package is published only to the self-hosted registry, while `pnpm create` resolves package names from the public npm by default, so stage 1 has to be pointed at it or the command fails outright:
-
-```
-ERR_PNPM_FETCH_404  GET https://registry.npmjs.org/@nocobase%2Fcreate-app: Not Found
-```
-
-`pnpm create` does not accept `--registry` itself — after the package name it is forwarded to this program, and before the package name it is read as part of the name. So it has to be an environment variable, or a one-time entry in `~/.npmrc`:
-
-```
-@nocobase:registry=https://npm.nocobase.ai
-```
-
-After that the prefix is no longer needed. This whole section stops applying once the package is published to the public npm.
-
-Note that `--registry` is not a substitute: that flag belongs to this program and is parsed only after the process starts, whereas a stage 1 failure means the process never started. Conversely, stage 2 already defaults to the self-hosted registry, so `--registry` is rarely needed day to day.
+NocoBase packages and templates are published to the public npm registry. `--registry` changes where create-app downloads the template and installs dependencies; `NOCOBASE_REGISTRY` supplies the same override for a private registry or an unreleased local snapshot. A generated project's `.npmrc` records a non-public registry for the `@nocobase` scope and omits the override when public npm is used.
 
 ## About dist-tags
 
@@ -52,7 +26,7 @@ The problem resolves itself once a stable version is published, at which point `
 To check the current state:
 
 ```bash
-npm view @nocobase/create-app dist-tags --registry=https://npm.nocobase.ai
+npm view @nocobase/create-app dist-tags --registry=https://registry.npmjs.org
 ```
 
 For the same reason, `--template-tag` also defaults to `latest`.
@@ -62,7 +36,7 @@ For the same reason, `--template-tag` also defaults to `latest`.
 With no arguments, the command asks for the directory and nothing else:
 
 ```bash
-npm_config_registry=https://npm.nocobase.ai pnpm create @nocobase/app
+pnpm create @nocobase/app
 ```
 
 ## Flags
@@ -74,16 +48,15 @@ npm_config_registry=https://npm.nocobase.ai pnpm create @nocobase/app
 | `--no-install`   | Skip installing dependencies after scaffolding                                           |
 | `--template`     | Template, `default` by default. Also accepts a published package or a local package path |
 | `--template-tag` | Channel a named template is fetched from: `latest` (default) or `beta`                   |
-| `--registry`     | Registry the template is downloaded from, `https://npm.nocobase.ai` by default           |
+| `--registry`     | Registry the template is downloaded from, `https://registry.npmjs.org` by default        |
 | `-h, --help`     | Show help                                                                                |
 | `--version`      | Show the version                                                                         |
 
-`--template` supports three names: `default` (the default application), `examples` (the example application), and `hub` (an application hub), each pointing at the corresponding `@nocobase/app-template-*` package.
+`--template` supports two names: `default` (the default application) and `examples` (the example application), each pointing at the corresponding `@nocobase/app-template-*` package.
 
 ```bash
 pnpm create @nocobase/app crm --template=default   # the default, can be omitted
 pnpm create @nocobase/app examples --template=examples
-pnpm create @nocobase/app hub --template=hub
 ```
 
 `--template-tag` decides which channel a named template is fetched from, `latest` by default:
@@ -111,7 +84,6 @@ The template is downloaded (`@nocobase/app-template-default@latest` by default) 
 - `.npmrc` records the registry the template came from, scoped to `@nocobase`, so later installs in the project resolve NocoBase packages from the same place; it is omitted for the public npm
 - `.gitignore` is written when the template ships none, so the `config.yml` that `config init` later writes cannot be committed
 - `pnpm-workspace.yaml` gets its `allowBuilds` decisions (see below)
-- A hub additionally gets `.env`, copied from the template's `.env.example`
 - Dependencies are installed (skip with `--no-install`)
 - The application's own `pnpm nocobase skills sync` runs, copying skills from its direct `@nocobase/*` dependencies and registered plugins into `.agents/skills/`. This has to come after the install, because the sync resolves packages out of `node_modules`. A failure is only a warning; the generated application still runs, and the command can be re-run in the application directory at any time.
 
@@ -161,7 +133,7 @@ JSON mode never prompts. It writes one final JSON document to stdout and progres
 | `DRIVER_VERIFICATION_FAILED` | `verify`        | The database driver's native addon did not load, even after a rebuild.                 |
 | `NODE_UNSUPPORTED`           |                 | Node.js is older than 24; nothing ran.                                                 |
 
-`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. It always begins with `pnpm nocobase config init` and `pnpm nocobase config check`, preceded by `pnpm install` after `--no-install`, and a Hub ends with `pnpm build` and `pnpm start` instead of `pnpm dev`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
+`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. It always begins with `pnpm nocobase config init` and `pnpm nocobase config check`, preceded by `pnpm install` after `--no-install`, and ends with `pnpm dev`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
 
 Success exits with 0, invalid input with 2, and operational failures with 1. An install failure preserves generated files, and its suggestion is the `pnpm --dir <directory> install` that retries it in the existing directory from wherever it is run. `configured` is always `false`: creation writes no configuration, and nothing here verifies a database connection. The CLI never starts the application itself.
 

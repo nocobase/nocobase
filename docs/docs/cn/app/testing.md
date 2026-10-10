@@ -206,4 +206,4 @@ pnpm exec eslint --max-warnings 0 tests/components/orders.test.tsx tests/logic/o
 
 确认测试汇总实际包含指定文件。模板允许空测试集，所以拼错路径可能成功退出却没有执行测试。修改生产代码或构建输出时，再运行所属 TypeScript 项目和构建；只有影响范围需要全部检查时才运行 `pnpm check`。
 
-Default 和 Examples 提供 `pnpm test:e2e`；Hub 第一次编写浏览器测试前需要配置 Playwright。先单独启动应用，再将 `APP_URL` 设为包含基础路径的完整地址。登录凭据放在环境变量中，会话状态文件不提交到 Git。布局、焦点、导航和完整操作流程需要浏览器验证，jsdom 无法验证实际布局或输入法行为。
+Default 和 Examples 提供 `pnpm test:e2e`。先单独启动应用，再将 `APP_URL` 设为包含基础路径的完整地址。登录凭据放在环境变量中，会话状态文件不提交到 Git。布局、焦点、导航和完整操作流程需要浏览器验证，jsdom 无法验证实际布局或输入法行为。

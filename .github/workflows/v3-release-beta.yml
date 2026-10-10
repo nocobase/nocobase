@@ -1,0 +1,718 @@
+name: V3 Release Beta
+
+# Release prereleases from v3-develop: consume changesets, assign X.Y.0-beta.N versions, and publish them under the beta
+# dist-tag. Versioning happens on an isolated release branch so v3-develop remains available while the release is checked.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: compute versions and run checks without publishing or pushing'
+        type: boolean
+        default: false
+      skip_smoke_test:
+        description: 'Skip the create-app smoke test (use only when the smoke test itself is broken)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-write
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+# prepare versions the release and saves it as release-source-state. build and test both restore that state and run in
+# parallel: tests read workspace packages from source, so they never needed the build output, and running them after
+# the build only added their duration to every release.
+jobs:
+  prepare:
+    name: Prepare beta release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: release-source
+    outputs:
+      release_branch: ${{ steps.branch.outputs.name }}
+      batch: ${{ steps.branch.outputs.batch }}
+      rows: ${{ steps.changed.outputs.rows }}
+      base_sha: ${{ steps.release_state.outputs.base_sha }}
+      source_sha: ${{ steps.release_state.outputs.source_sha }}
+      has_changes: ${{ steps.release_state.outputs.has_changes }}
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+
+      - name: Check out v3-develop
+        uses: actions/checkout@v4
+        with:
+          ref: v3-develop
+          path: release-source
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: release-source/pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+          scope: '@nocobase'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify v3-develop is in pre mode
+        run: |
+          if [ ! -f .changeset/pre.json ]; then
+            echo "::error::v3-develop is not in pre mode. Run changeset pre enter beta locally and commit it first."
+            exit 1
+          fi
+          MODE=$(node -p "require('./.changeset/pre.json').mode")
+          if [ "$MODE" != "pre" ]; then
+            echo "::error::pre.json has mode '$MODE', expected 'pre'"
+            exit 1
+          fi
+
+      # README.md is created by changeset init and is not a pending release entry.
+      - name: Verify there is something to release
+        run: |
+          COUNT=$(find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' | wc -l | tr -d ' ')
+          if [ "$COUNT" = "0" ]; then
+            echo "::error::No pending changesets — nothing to release"
+            exit 1
+          fi
+          echo "Pending changesets: $COUNT"
+
+      - name: Configure git
+        run: |
+          git config user.name "nocobase[bot]"
+          git config user.email "179432756+nocobase[bot]@users.noreply.github.com"
+
+      - name: Record release base
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Snapshot versions before versioning
+        run: node scripts/list-package-versions.mjs > "$RUNNER_TEMP/versions-before.json"
+
+      # The sequence comes from permanent tags because release branches are deleted after merging.
+      - name: Create release branch
+        id: branch
+        run: |
+          git fetch --tags --force
+          DAY=$(date -u +%Y-%m-%d)
+          MAX=0
+          for t in $(git tag -l "release-beta/${DAY}.*"); do
+            N="${t##*.}"
+            case "$N" in ''|*[!0-9]*) continue ;; esac
+            [ "$N" -gt "$MAX" ] && MAX="$N"
+          done
+          SEQ=$((MAX + 1))
+          BATCH="${DAY}.${SEQ}"
+          NAME="release-beta/${BATCH}"
+          git checkout -b "$NAME"
+          {
+            echo "name=$NAME"
+            echo "batch=$BATCH"
+          } >> "$GITHUB_OUTPUT"
+          echo "Version: $BATCH"
+
+      - name: Version
+        run: pnpm changeset version
+
+      # changesets updates package versions but does not know about create-app's defaultTemplateVersion field.
+      - name: Sync template version
+        run: node ./scripts/sync-template-version.mjs
+
+      - name: Verify versions actually changed
+        id: changed
+        run: |
+          CHANGED=$(node scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/versions-before.json")
+          if [ -z "$CHANGED" ]; then
+            echo "::error::changeset version changed no versions (they may all be empty changesets)"
+            exit 1
+          fi
+          echo "$CHANGED"
+          echo "rows=$(node scripts/list-package-versions.mjs --released-rows "$RUNNER_TEMP/versions-before.json")" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize
+        run: |
+          {
+            echo "### Prerelease"
+            echo
+            echo "| Package | Version |"
+            echo "| --- | --- |"
+            node scripts/list-package-versions.mjs --table
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save versioned release source
+        id: release_state
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          RELEASE_BRANCH: ${{ steps.branch.outputs.name }}
+          RELEASE_BATCH: ${{ steps.branch.outputs.batch }}
+        run: |
+          TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
+          RELEASE_MESSAGE=$(printf 'chore: release %s [skip ci]\n\ncurrent app-template-default version: %s' "$RELEASE_BATCH" "$TEMPLATE_VERSION")
+          node ../scripts/release-state.mjs save \
+            --directory "$RUNNER_TEMP/release-state" \
+            --base "$BASE_SHA" \
+            --branch "$RELEASE_BRANCH" \
+            --message "$RELEASE_MESSAGE"
+          cp "$RUNNER_TEMP/versions-before.json" "$RUNNER_TEMP/release-state/versions-before.json"
+
+      - name: Upload release source state
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-source-state
+          path: ${{ runner.temp }}/release-state
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  build:
+    name: Build and pack beta release
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: release-source
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+
+      - name: Check out release base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          path: release-source
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: release-source/pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+          scope: '@nocobase'
+
+      - name: Download release source state
+        uses: actions/download-artifact@v4
+        with:
+          name: release-source-state
+          path: ${{ runner.temp }}/release-state
+
+      - name: Restore versioned release source
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+        run: |
+          node ../scripts/release-state.mjs restore \
+            --directory "$RUNNER_TEMP/release-state" \
+            --base "$BASE_SHA" \
+            --expected "$SOURCE_SHA" \
+            --branch "$RELEASE_BRANCH"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Templates publish their sources rather than a dist, and the smoke jobs build applications generated from the
+      # packed templates, so building the templates here produced nothing a release uses. They were half the build.
+      - name: Build
+        run: NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD=1 pnpm -r --if-present --filter '!./packages/templates/**' build
+
+      # The build above already produced every dist, so pack:check skips the build half of each prepack script.
+      - name: Pack checked workspace packages
+        env:
+          PACK_DIR: ${{ runner.temp }}/release-smoke-packages
+          PACK_CHECK_PREBUILT: '1'
+        run: pnpm pack:check
+
+      # Select the real publish set against the release registry state, then reuse the exact tarballs pack:check
+      # validated for the smoke tests.
+      - name: Prepare publish tarballs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-pack"
+          pnpm changeset publish-plan --output "$RUNNER_TEMP/release-pack/publish-plan.json"
+          node ../scripts/prepare-release-pack.mjs \
+            --plan "$RUNNER_TEMP/release-pack/publish-plan.json" \
+            --artifacts "$RUNNER_TEMP/release-smoke-packages" \
+            --output "$RUNNER_TEMP/release-pack" \
+            --repo-root "$PWD"
+
+      - name: Upload checked workspace packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-smoke-packages
+          path: ${{ runner.temp }}/release-smoke-packages/*.tgz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+      - name: Upload publish tarballs
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-pack
+          path: ${{ runner.temp }}/release-pack
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  test:
+    name: Test beta release (${{ matrix.shard }})
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: release-source
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [plugins, others]
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+
+      - name: Check out release base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          path: release-source
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: release-source/pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+          scope: '@nocobase'
+
+      - name: Download release source state
+        uses: actions/download-artifact@v4
+        with:
+          name: release-source-state
+          path: ${{ runner.temp }}/release-state
+
+      - name: Restore versioned release source
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+        run: |
+          node ../scripts/release-state.mjs restore \
+            --directory "$RUNNER_TEMP/release-state" \
+            --base "$BASE_SHA" \
+            --expected "$SOURCE_SHA" \
+            --branch "$RELEASE_BRANCH"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # --no-sort starts each package's tests as soon as a slot is free. Tests do not depend on one another, and the
+      # default topological order made every level wait for its slowest package. Generated applications run the three
+      # template suites again against packed packages, so those suites run here only when the smoke test is skipped.
+      - name: Test
+        env:
+          SHARD: ${{ matrix.shard }}
+          INCLUDE_TEMPLATES: ${{ inputs.skip_smoke_test }}
+        run: ../scripts/release-test-shard.sh "$SHARD" "$INCLUDE_TEMPLATES"
+
+  smoke:
+    name: Release smoke (${{ matrix.template }})
+    needs: [prepare, build]
+    if: '!inputs.skip_smoke_test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: release-source
+    strategy:
+      fail-fast: false
+      matrix:
+        template: [default, examples]
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+
+      - name: Check out release base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          path: release-source
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: release-source/pnpm-lock.yaml
+
+      - name: Download release source state
+        uses: actions/download-artifact@v4
+        with:
+          name: release-source-state
+          path: ${{ runner.temp }}/release-state
+
+      - name: Restore versioned release source
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+        run: |
+          node ../scripts/release-state.mjs restore \
+            --directory "$RUNNER_TEMP/release-state" \
+            --base "$BASE_SHA" \
+            --expected "$SOURCE_SHA" \
+            --branch "$RELEASE_BRANCH"
+
+      - name: Download checked workspace packages
+        uses: actions/download-artifact@v4
+        with:
+          name: release-smoke-packages
+          path: ${{ runner.temp }}/release-smoke-packages
+
+      - name: Verify create-app against this release
+        uses: ./.github/actions/verify-create-app
+        with:
+          source-directory: release-source
+          template-kind: ${{ matrix.template }}
+          package-artifacts: ${{ runner.temp }}/release-smoke-packages
+          local-packages-only: 'true'
+
+  release:
+    name: Publish beta
+    needs: [prepare, build, test, smoke]
+    if: >-
+      !cancelled() && needs.prepare.result == 'success'
+      && needs.build.result == 'success' && needs.test.result == 'success'
+      && (needs.smoke.result == 'success' || (inputs.skip_smoke_test && needs.smoke.result == 'skipped'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: release-source
+    outputs:
+      tag: ${{ needs.prepare.outputs.release_branch }}
+      merged: ${{ steps.merge.outputs.merged }}
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+
+      - name: Check out release base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          path: release-source
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: release-source/pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+          scope: '@nocobase'
+
+      - name: Download release source state
+        uses: actions/download-artifact@v4
+        with:
+          name: release-source-state
+          path: ${{ runner.temp }}/release-state
+
+      - name: Restore versioned release source
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+        run: |
+          node ../scripts/release-state.mjs restore \
+            --directory "$RUNNER_TEMP/release-state" \
+            --base "$BASE_SHA" \
+            --expected "$SOURCE_SHA" \
+            --branch "$RELEASE_BRANCH"
+
+      - name: Configure git
+        run: |
+          git config user.name "nocobase[bot]"
+          git config user.email "179432756+nocobase[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download publish tarballs
+        uses: actions/download-artifact@v4
+        with:
+          name: release-pack
+          path: ${{ runner.temp }}/release-pack
+
+      - name: Validate publish tarballs
+        run: |
+          node ../scripts/prepare-release-pack.mjs \
+            --validate-only \
+            --plan "$RUNNER_TEMP/release-pack/publish-plan.json" \
+            --output "$RUNNER_TEMP/release-pack" \
+            --repo-root "$PWD"
+
+      # A retried release may have published only part of the original plan. Recompute registry state and select the
+      # remaining releases from the already validated tarballs instead of trying to publish completed versions again.
+      - name: Refresh publish plan
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-publish"
+          pnpm changeset publish-plan --output "$RUNNER_TEMP/release-publish/publish-plan.json"
+          node ../scripts/prepare-release-pack.mjs \
+            --plan "$RUNNER_TEMP/release-publish/publish-plan.json" \
+            --artifacts "$RUNNER_TEMP/release-pack/packages" \
+            --output "$RUNNER_TEMP/release-publish" \
+            --repo-root "$PWD"
+
+      - name: Stop here on dry run
+        if: inputs.dry_run
+        run: echo "dry_run=true — the release artifacts were verified; nothing was published or pushed."
+
+      - name: Note the skipped smoke test
+        if: inputs.skip_smoke_test
+        run: echo "::warning::The create-app smoke test was skipped for this release."
+
+      # Mint the write token after validation so long builds do not consume its one-hour lifetime.
+      - name: Create a fresh NocoBase release token
+        if: '!inputs.dry_run'
+        id: release_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+
+      - name: Authenticate git writes as nocobase bot
+        if: '!inputs.dry_run'
+        env:
+          RELEASE_TOKEN: ${{ steps.release_token.outputs.token }}
+        run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase.git"
+
+      # Use full refspecs because the release branch and tag intentionally share a name for a short time.
+      - name: Tag and push release branch
+        if: '!inputs.dry_run'
+        env:
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+        run: |
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_BRANCH"; then
+            TAG_SHA=$(git rev-parse "refs/tags/${RELEASE_BRANCH}^{commit}")
+            HEAD_SHA=$(git rev-parse HEAD)
+            if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
+              echo "::error::Tag $RELEASE_BRANCH points to $TAG_SHA instead of release candidate $HEAD_SHA"
+              exit 1
+            fi
+            echo "Tag $RELEASE_BRANCH already points to the release candidate."
+          else
+            git tag "$RELEASE_BRANCH"
+          fi
+          git push origin "refs/heads/${RELEASE_BRANCH}:refs/heads/${RELEASE_BRANCH}"
+          git push origin "refs/tags/${RELEASE_BRANCH}:refs/tags/${RELEASE_BRANCH}"
+
+      # Publish the exact tarballs prepared and tested from the immutable release source state.
+      - name: Publish to npm
+        if: '!inputs.dry_run'
+        run: pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # changesets may assign latest when a package has only prerelease versions. Reassert beta for every package in
+      # this release so beta always points to the version that was just published.
+      - name: Point the beta dist-tag at this release
+        if: '!inputs.dry_run'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          node scripts/list-package-versions.mjs \
+            --released-specs "$RUNNER_TEMP/release-state/versions-before.json" \
+            > "$RUNNER_TEMP/released-specs.txt"
+          cat "$RUNNER_TEMP/released-specs.txt"
+
+          FAILED=0
+          while IFS= read -r SPEC; do
+            [ -n "$SPEC" ] || continue
+            if npm dist-tag add "$SPEC" beta; then
+              echo "beta -> $SPEC"
+            else
+              echo "::warning::Could not point beta at $SPEC"
+              FAILED=1
+            fi
+          done < "$RUNNER_TEMP/released-specs.txt"
+
+          if [ "$FAILED" = "1" ]; then
+            echo "::error::One or more packages kept a stale beta dist-tag. Fix them with npm dist-tag add <pkg>@<version> beta."
+            exit 1
+          fi
+
+      - name: Push package tags
+        if: '!inputs.dry_run'
+        run: git push origin --tags
+
+      # The tag preserves the exact tested candidate; squash its PR to follow the repository's merge policy.
+      # Conflicts leave the candidate branch available for manual resolution.
+      - name: Merge back into v3-develop
+        if: '!inputs.dry_run'
+        id: merge
+        env:
+          GH_TOKEN: ${{ steps.release_token.outputs.token }}
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+          RELEASE_BATCH: ${{ needs.prepare.outputs.batch }}
+        run: |
+          TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
+          PR_URL=$(gh pr create \
+            --title "chore: release $RELEASE_BATCH [skip ci]" \
+            --body "Prerelease \`$RELEASE_BATCH\` published to npm under the \`beta\` dist-tag. Per-package versions are in the workflow summary." \
+            --base v3-develop \
+            --head "$RELEASE_BRANCH")
+          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+          set +e
+          gh pr merge "$PR_URL" --squash --delete-branch --subject "chore: merge release $RELEASE_BATCH into v3-develop [skip ci]" \
+            --body "current app-template-default version: $TEMPLATE_VERSION"
+          RC=$?
+          set -e
+          if [ $RC -ne 0 ]; then
+            echo "::warning::Failed to merge the PR back into v3-develop; conflicts need manual work: $PR_URL"
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Notify merge failure
+        if: "!inputs.dry_run && steps.merge.outputs.merged == 'false'"
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: ${{ github.repository }}
+          REGISTRY_URL: https://registry.npmjs.org
+          TITLE: NocoBase 3 预览版发布成功，但 PR 合回失败
+          STATUS: failure
+          STATUS_TEXT_FAILURE: 需要人工介入
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CONTENT: |
+            版本 **${{ needs.prepare.outputs.batch }}** 已成功发布到 npm（dist-tag `beta`）。
+
+            但版本提交合回 `v3-develop` 时发生冲突，需要人工解决：
+            ${{ steps.merge.outputs.url }}
+
+            发版分支 `${{ needs.prepare.outputs.release_branch }}` 已保留，解决冲突后合并即可。
+            **在此之前不要再次发版**，否则版本号会从旧基线重新计算。
+        run: ../scripts/feishu-notify.sh
+
+      - name: Fail the run when merge back failed
+        if: "!inputs.dry_run && steps.merge.outputs.merged == 'false'"
+        run: exit 1
+
+      - name: Notify success
+        if: "!inputs.dry_run && steps.merge.outputs.merged == 'true'"
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: ${{ github.repository }}
+          REGISTRY_URL: https://registry.npmjs.org
+          TITLE: NocoBase 3 预览版发布
+          STATUS: success
+          STATUS_TEXT_SUCCESS: 发布成功
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases
+          TABLE_JSON: ${{ needs.prepare.outputs.rows }}
+          CONTENT: |
+            版本 **${{ needs.prepare.outputs.batch }}** 已发布到 npm（dist-tag `beta`）。
+
+            本次发布的 package：
+        run: ../scripts/feishu-notify.sh
+
+  # This job also covers failures before the release job, which cannot reach notification steps in the release job.
+  notify-failure:
+    name: Notify beta release failure
+    needs: [prepare, build, test, smoke, release]
+    if: >-
+      always() && !cancelled() && !inputs.dry_run
+      && needs.release.outputs.merged != 'false'
+      && (needs.prepare.result == 'failure' || needs.build.result == 'failure' || needs.test.result == 'failure'
+        || needs.smoke.result == 'failure' || needs.release.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+
+      - name: Notify failure
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: ${{ github.repository }}
+          TITLE: NocoBase 3 预览版发布失败
+          STATUS: failure
+          STATUS_TEXT_FAILURE: 发版中断
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CONTENT: |
+            预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
+        run: ./scripts/feishu-notify.sh
+
+  # npm is already published at this point. Rendering a GitHub Release is recoverable and stays in a separate job.
+  github-release:
+    name: Publish the GitHub Release
+    needs: release
+    if: >-
+      !cancelled() && !inputs.dry_run
+      && needs.release.outputs.tag != ''
+      && (needs.release.result == 'success' || needs.release.outputs.merged == 'false')
+    uses: ./.github/workflows/v3-github-release.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets:
+      NOCOBASE_APP_PRIVATE_KEY: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+    permissions:
+      contents: read

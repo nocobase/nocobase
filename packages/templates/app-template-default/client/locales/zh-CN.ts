@@ -64,7 +64,6 @@ const zhCN: AppResource = {
   'auth.marketingFooter': '自由构建，可靠支撑。',
   'status.loading': '加载中',
   'status.loadingPage': '正在加载页面',
-  'status.loadingSettings': '正在加载设置',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
@@ -77,17 +76,6 @@ const zhCN: AppResource = {
   shell: {
     buildFreely: 'AI 自由构建。',
     reliability: '<brand>NocoBase</brand> 保障可靠。',
-  },
-  surface: {
-    backToApp: '返回应用',
-    loading: '正在加载{{title}}',
-    navigation: '{{title}}导航',
-    page: '{{title}}页面',
-  },
-  settings: {
-    title: '设置',
-    emptyTitle: '暂无可用设置',
-    emptyDescription: '没有已启用的插件提供你有权访问的设置页面。',
   },
   home: {
     title: '开始构建你的应用',

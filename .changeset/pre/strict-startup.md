@@ -3,7 +3,6 @@
 '@nocobase/queue': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-skills': patch
 ---
 

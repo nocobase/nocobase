@@ -1,6 +1,6 @@
 # Client Service, Context, and Routed Tabs Examples
 
-Use these examples when the shorter Client references do not show enough implementation detail. They follow the current `ClientApplication`, authorization Client, React Router, and shadcn/base-nova APIs on `develop`; adapt package names, resource identities, copy, and event topics to the owning plugin.
+Use these examples when the shorter Client references do not show enough implementation detail. They follow the current `ClientApplication`, authorization Client, React Router, and shadcn/base-nova APIs on `v3-develop`; adapt package names, resource identities, copy, and event topics to the owning plugin.
 
 ## Application-scoped Client service with typed options
 
@@ -248,7 +248,7 @@ export default reactProviders;
 
 Use the hook from any plugin page rendered below the Provider. Test the Provider with a controlled `AuditFeed` and assert rerender and unsubscribe behavior; declaration tests separately assert the full `after` ID and extension layer.
 
-## URL-controlled Settings Tabs with child access
+## URL-controlled Tabs with child access
 
 Generate `tabs` into this plugin before using the next page:
 
@@ -261,9 +261,9 @@ Keep the generated primitives in `client/components/ui/`, then replace their `@/
 
 ```ts
 // client/routes.ts
-import { defineSettingsRoutes } from '@nocobase/app-client/plugins';
+import { defineAppRoutes } from '@nocobase/app-client/plugins';
 
-const routes = defineSettingsRoutes([
+const routes = defineAppRoutes([
   {
     name: 'audit-log',
     path: '/audit-log',
@@ -543,7 +543,7 @@ function SettingsRoutes(): ReactElement {
           </>
         }
       >
-        <Route path='/settings/audit-log' element={<AuditLogSettingsPage />}>
+        <Route path='/audit-log' element={<AuditLogSettingsPage />}>
           <Route path='general' element={<p>General panel</p>} />
           <Route path='retention' element={<p>Retention panel</p>} />
         </Route>
@@ -580,11 +580,11 @@ describe('AuditLogSettingsPage', () => {
       permissions: [settingsPermission('retention')],
     };
 
-    await renderAt('/settings/audit-log?source=menu');
+    await renderAt('/audit-log?source=menu');
 
     expect(await screen.findByText('Retention panel')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/settings/audit-log/retention?source=menu',
+      '/audit-log/retention?source=menu',
     );
     expect(
       screen.queryByRole('tab', { name: enUS.settings.tabs.general }),
@@ -592,11 +592,11 @@ describe('AuditLogSettingsPage', () => {
   });
 
   it('keeps an explicit child URL instead of redirecting it to the preferred Tab', async () => {
-    await renderAt('/settings/audit-log/retention?source=link');
+    await renderAt('/audit-log/retention?source=link');
 
     expect(await screen.findByText('Retention panel')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/settings/audit-log/retention?source=link',
+      '/audit-log/retention?source=link',
     );
     expect(
       screen.getByRole('tab', { name: enUS.settings.tabs.retention }),
@@ -606,7 +606,7 @@ describe('AuditLogSettingsPage', () => {
   it('says so when no settings Tab is accessible', async () => {
     snapshot = { unrestricted: false, permissions: [] };
 
-    await renderAt('/settings/audit-log');
+    await renderAt('/audit-log');
 
     expect(await screen.findByText(enUS.settings.noAccess)).toBeInTheDocument();
     expect(api).toHaveBeenCalledWith(

@@ -23,11 +23,11 @@ If you have not run an application yet, complete [Get started](../get-started/).
 
 The team needs one place to manage customer orders. Salespeople create and submit them; a supervisor decides whether they are approved. Applicants can check the status and notification instead of repeatedly asking for updates.
 
-| Role          | Daily actions                                                                  | Data scope                                               |
-| ------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| Salesperson   | Create orders, submit them, and check results                                  | Own orders                                               |
-| Supervisor    | Review orders, approve or reject, and leave comments                           | All orders                                               |
-| Administrator | Create accounts, assign permissions, and configure workflows and notifications | Configuration; use ordinary accounts to test permissions |
+| Role          | Daily actions                                                    | Data scope                                               |
+| ------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
+| Salesperson   | Create orders, submit them, and check results                    | Own orders                                               |
+| Supervisor    | Review orders, approve or reject, and leave comments             | All orders                                               |
+| Administrator | Create accounts, assign permissions, and configure notifications | Configuration; use ordinary accounts to test permissions |
 
 An order moves from Draft to Pending approval, then to Approved or Rejected. A rejected order can be submitted again. Each decision has one notification; dispatching the same result again does not create another message.
 
@@ -35,7 +35,7 @@ An order moves from Draft to Pending approval, then to Approved or Rejected. A r
 
 ## Preview the data model
 
-Create two business tables. Use the application's existing capabilities for accounts, permissions, workflows, and notifications rather than designing replacement business tables for them.
+Create two business tables. Use the application's existing capabilities for accounts, permissions, and notifications rather than designing replacement business tables for them.
 
 | Table                          | Information                                             | Relationships                                        |
 | ------------------------------ | ------------------------------------------------------- | ---------------------------------------------------- |
@@ -46,14 +46,13 @@ For example, “远山科技” is a customer and `SO-001` is one of its orders.
 
 ## The six chapters
 
-| Chapter                                        | What you learn                                                 | Result                                            |
-| ---------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------- |
-| [1. Create orders and customers](./data-model) | Tables, fields, relationships, migrations, and seeds           | Two tables and example customers                  |
-| [2. Build list and detail pages](./pages)      | Routes, forms, APIs, and persistence                           | Create an order and open its own detail URL       |
-| [3. Add permissions](./permissions)            | Page access, operations, and record scope                      | Isolated salesperson data and supervisor access   |
-| [4. Add an approval flow](./workflow)          | State transitions, human decisions, and asynchronous workflows | Only valid operations change order status         |
-| [5. Send notifications](./notifications)       | Inbox messages, recipients, links, and deduplication           | The applicant receives the correct decision       |
-| [6. Deploy](./deploy)                          | Builds, runtime configuration, and deployment checks           | Run production mode and recheck the complete flow |
+| Chapter                                        | What you learn                                       | Result                                            |
+| ---------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| [1. Create orders and customers](./data-model) | Tables, fields, relationships, migrations, and seeds | Two tables and example customers                  |
+| [2. Build list and detail pages](./pages)      | Routes, forms, APIs, and persistence                 | Create an order and open its own detail URL       |
+| [3. Add permissions](./permissions)            | Page access, operations, and record scope            | Isolated salesperson data and supervisor access   |
+| [5. Send notifications](./notifications)       | Inbox messages, recipients, links, and deduplication | The applicant receives the correct decision       |
+| [6. Deploy](./deploy)                          | Builds, runtime configuration, and deployment checks | Run production mode and recheck the complete flow |
 
 ## Before you start
 
@@ -80,10 +79,6 @@ Keep the code and check results after each chapter. When pausing, record where y
 ### Can I follow without programming experience?
 
 Your AI Agent can write the code, but you need to start the project, describe rules, and check behavior. Ask it to explain unfamiliar fields or files in relation to the business task before changing them.
-
-### Do I need an AI employee configured inside the application?
-
-No. This tutorial uses an AI Agent in the project directory. An in-app AI employee is not a prerequisite.
 
 ### Is the result a complete order product?
 

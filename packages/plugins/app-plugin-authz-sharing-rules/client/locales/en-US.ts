@@ -1,44 +1,4 @@
+// The title the plugin's server registers with the authorization catalog resolves in this namespace.
 export default {
   resourceTitle: 'Sharing Rules',
-  navigation: { title: 'Sharing Rules' },
-  sharingRules: {
-    noResources:
-      'No business resources supporting record scopes have been defined. Ask AI to define the business permissions and record scopes before configuring rules here.',
-    page: {
-      title: 'Sharing Rules',
-      description:
-        'Sharing rules widen access, opening specific records or a reusable record scope to the people you choose.',
-    },
-    search: 'Search sharing rules',
-    create: 'New sharing rule',
-    ruleHeader: 'Rule',
-    recordsSharedHeader: 'Records shared',
-    sharedWithHeader: 'Shared with',
-    accessHeader: 'Access',
-    emptyNone:
-      'No sharing rules yet. Create one to open records to the people who need them.',
-    emptySearch: 'No sharing rules match your search.',
-    pagerLabel: 'Sharing rules',
-    editTitle: 'Edit sharing rule',
-    newTitle: 'New sharing rule',
-    editorDescription: 'Open access to selected records for an audience.',
-    ruleHeading: 'Basic information',
-    ruleDescription: 'Name the rule and choose the resource to share.',
-    ruleName: 'Rule name',
-    accessHeading: 'Actions and record scope',
-    accessDescription: 'Choose records independently for each action.',
-    assignmentsHeading: 'Applies to',
-    assignmentsDescription: 'Choose who receives the additional access.',
-    description: 'Description',
-    recordsToShare: 'Records to share',
-    selectedRecords: 'Selected records',
-    policyRecords: 'Records matching a policy',
-    matchingPolicy: 'Records matching policy',
-    noRecords: 'No records found.',
-    deleteRule: 'Delete rule',
-    save: 'Save sharing rule',
-    confirmDeleteTitle: 'Delete this sharing rule?',
-    confirmDeleteBody:
-      'Delete sharing rule “{{title}}”. Access provided by other permission sets and sharing rules remains available.',
-  },
 };

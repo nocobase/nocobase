@@ -1,5 +1,164 @@
 # @nocobase/app-plugin-agents
 
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- 97d94dc: Preserve each run attempt's runtime, owner, tool version, requested model and reasoning effort, and expose primary-tool models reported during execution in run lists and details. Retain execution history when a retry releases its holder. Existing runs expose known usage models without inventing historical runtime snapshots.
+
+  Allow applications to attach execution snapshots to agent activity traces and return the originating run and attempt on comments. Applications must wire these facts into their run views, CLI projections and activity badges; installed UI Library component copies require an explicit update.
+
+  Separate requested settings from tool-reported effort, retaining report provenance and change times. Codex reports resolved thread settings and explicitly marks per-turn overrides unreported when the tool returns no resolved value. Apply reader machine permissions to execution history and action sources, skip unchanged snapshot writes, and filter/deduplicate legacy model queries in the database. Custom application outputs must apply the provided machine projections, and projects hosts can supply the same rights through `Viewer.seesExecutionMachine`.
+
+- d942ae9: Add run requests to the agents plugin: when someone other than the person who answers for a subject wakes an agent on it, the work waits for that person to confirm it, or runs on the asker's own account.
+
+  - `runs.enqueue` takes `responsibleUserId`, `requestedByUserId` (the source of the chain of work), `causedByRunId` (work a run caused keeps that run's source) and `execution: 'auto' | 'mine'`. When the source is the responsible, or no responsible is given, work is queued as before. When the source is someone else, `auto` stores a run request instead of queueing anything. `mine` queues the work at once as the source, on their own runner or a team runner, and is refused with `NO_RUNNER_AVAILABLE` when no online runner would take it by the claim's rules (`eligibility.canClaim`, the agent's team-only variables included).
+  - Breaking for callers that read the result: `EnqueueResult` is now `RunEnqueued | RunRequestPending`, and `outcome` gains `'pending'`. A pending result has a `requestId` and has `runId` and `inputId` set to `null`. Check `outcome` before using `runId`. Work that names no responsible is never pending.
+  - `actorUserId` is optional on `EnqueueRequest` when a `responsibleUserId` is given.
+  - New `runs.requests` service:
+    - `confirm` and `reject`: only by the responsible. Confirming queues the work as the responsible with the input as it was asked, and its actor is the asker.
+    - `withdraw` and `runAsRequester`: only by the asker.
+    - `list`, `get` and `pendingOn` read requests.
+    - `reassign`: for when the subject's responsible changes. A request whose seven days already ran out is expired instead of being renewed or queued.
+    - `expireDue`: run by the sweeper. A request expires after seven days and the asker gets a `run_request_expired` notice. Any path that finds a request past its expiry treats it as expired, even before the sweep.
+  - A request keeps the work's `fireAt` and `maxAttempts`, and confirming restores them. A `fireAt` that has already passed means the work runs now. Work with a `parentRunId` (a consultation) is never made to wait for confirmation and is refused instead.
+  - New routes, for people by session or unscoped API key only:
+    - `GET /api/agents/runRequests`
+    - `GET /api/agents/runRequests/{requestId}`
+    - `POST /api/agents/runRequests/{requestId}/confirm`, `reject`, `withdraw` and `runAsMe`
+    - CLI commands: `run request list|get|confirm|reject|withdraw|run-as-me`.
+  - New events: `runRequest.created`, `confirmed`, `rejected`, `withdrawn`, `superseded` and `expired`. Breaking type rename: `RunnerNotice` is now the single `AgentsNotice` interface, which adds `run_request_expired` alongside the existing runner and run notices, with subjects of kind `runner`, `run` or `runRequest`. Applications must replace imports and references to `RunnerNotice` with `AgentsNotice`; no old-name alias is exported. Both `notice` and `notice.cleared` use this interface.
+  - Runs record `requestedByUserId` and `confirmedByUserId`. Migration `202610090002_ag_create_run_requests` creates `agRunRequests`, adds both columns to `agRuns`, and fills `requestedByUserId` of existing runs from `actorUserId`. It runs after the team runner variables migration (`202610090001_ag_add_team_runner_variables`).
+  - The sweeper's report gains `requestsExpired`.
+  - Work is merged or appended only into runs with the same `actorUserId`, including `mine`, `runAsMe` and confirmed requests.
+  - Subjects can bind `responsibleUserId(conn, subjectId)` to recheck current responsibility when confirming or rejecting. Without a resolver, applications must reassign requests when responsibility changes. A reassignment that has no usable responsible expires the request, notifies its requester and preserves execution as the requester.
+  - `auto` requests require the requester's own agent permission. Identical pending snapshots reuse the existing request without renewing its expiry or emitting another creation event, including when database drivers return attempt counts as strings or equivalent scheduling times in different representations. Run request mutation routes declare concurrent settlement errors (409).
+  - `@nocobase/agent-protocol` adds the error reasons `RUN_REQUEST_NOT_FOUND`, `RUN_REQUEST_SETTLED` and `NO_RUNNER_AVAILABLE`.
+
+- f94ebc6: Pass proxies and CA certificates to coding tools, let the runner's owner pass and set variables, and let an agent take a variable from the runner.
+
+  - The runner passes the proxy variables (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, upper and lower case) and the CA variables (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`) from its own environment to every coding tool by default. The values of the proxy variables are redacted from what a run reports, since a proxy URL may carry a password.
+  - `nocobase-runner start --pass-env NAME` and `service install --pass-env NAME` (repeatable) pass a variable from the runner's environment to every run. The names are remembered in the settings for later starts; `nocobase-runner env unset NAME` forgets one.
+  - `service install` writes the installing shell's proxy, CA and `--pass-env` variables, with their current values, into the launchd plist or systemd unit beside `PATH`, and prints the names it wrote. The unit or plist is now written with mode 0600, `%` is escaped for systemd, and `--dry-run` and `--json` show `<hidden>` instead of the values.
+  - `nocobase-runner env set NAME [VALUE]`, `env unset NAME` and `env list` keep the runner's local variables (`apps/<key>.json`, 0600). `set` reads the value from standard input when it is left out, and `list` shows names only.
+  - Coding tool detection uses the whitelist, passed variables and local variables of its application, rather than the runner's whole environment. Heartbeats refresh detection when local variables or passed names change, without sharing local keys between applications.
+  - A run's `workspace.passthrough` names are now provided only by the runner's local variables and its `--pass-env` names, no longer by any variable of the runner's environment. A run that asks for a name the runner does not provide fails before anything is prepared, with `setupFailed` and a message naming `nocobase-runner env set NAME` and `--pass-env NAME`.
+  - Protocol: `RegisterRequest` and `HeartbeatRequest` gain an optional `variables`, the names of the variables the runner provides (names only, at most `MAX_RUNNER_VARIABLES`, validated by `RunnerVariableNamesSchema`). A server that does not know the field ignores it, and a runner that does not send it is shown as not reporting.
+  - Agents plugin: a variable can be taken from the runner. `PUT /api/agents/variables/{scopeKind}/{scopeId}/{name}` takes `fromRunner: true` without a value (`variable set ... --from-runner`), which keeps the name only (new collection `agRunnerVariables`, migration `202610090005_ag_add_runner_variables`), and `Variable.fromRunner` marks such variables in lists. Such names merge with the other variables by scope like any variable, and a claim puts those whose last entry is taken from the runner into `workspace.passthrough` instead of `workspace.env`. The variable dialog has a "Take from the runtime" option, and the list a badge. Runner-owned names are rejected; older declarations of reserved names fail preparation explicitly.
+  - Agents plugin: a runner's reported names are kept on the runner (`agRunners.variables`, `Runner.variables`, null when it reported none), and the runtime's sheet lists them under "Variables from this machine". Runners are not chosen by them.
+
+- 1832cfc: Report models and available reasoning efforts detected by Pi, OpenCode and Codex through optional protocol 7 capability fields, with explicit detection status and periodic background refresh. Bound model counts and identifier lengths, and keep configuration, paths and credentials out of failure reasons. Store capabilities per runner and return model suggestions through existing visibility rules without changing Agent configuration. Discard invalid or unfamiliar advisory fields without rejecting registration or heartbeats.
+
+  Run model discovery with the agent environment whitelist in empty temporary directories, terminate discovery process groups on cancellation and wait for cleanup during runner shutdown. Preserve Pi provider/model identifiers, discard invalid efforts individually and avoid reporting successful detection when every received model is invalid.
+
+  Pi's startup version and authentication checks now also use the restricted environment. API keys supplied only through the runner daemon's environment no longer count as a Pi login during detection; configure Pi's persistent authentication for the runner user. Pass run-specific variables explicitly through the application's run environment or passthrough contract instead of relying on implicit daemon environment inheritance. Those run-specific variables are not used for host capability discovery.
+
+- 0170880: Remove a runner's working directories once their work is over. Every ten minutes the runner reports each working directory it keeps for an application, with the last run that worked in it, whether it holds work that was never pushed and when it was last used, and the free space on the disk holding them (`POST /api/agents/runners/workspaces`). The application finds each run's subject and asks the subject's binding whether its work is over (the new optional `SubjectBinding.workspaces.settled`), never while a run on that subject has not finished, and answers which directories may go. Callers who may not see a runner's machine see only the counts and the disk of `Runner.workspaceUsage`, without the directories. The runner removes them, except a directory with unpushed work, which it keeps and reports as unpushed: changes not committed (untracked files included), or a HEAD past both where the runner started the checkout and what it last saw the remote task branch hold after pushing. The runner keeps its record of each working directory in its own directory (`~/.nocobase-runner/workspaces/`), out of the agent's reach, and checks a record an earlier runner left inside the working directory: caches are derived from the repository URL, paths must stay inside the directory, and what it says was pushed is ignored. The existing retention rules (7 days after a fully pushed run, 30 days unused) no longer remove a directory with unpushed work either. Whether a branch was merged is never judged from the default branch's history, so squash merges count as merged once the application says the work is over. A runner keeps reporting only to an application whose heartbeat answer announces it (`HeartbeatResponse.workspaces`); older runners and older applications keep the existing retention rules. The runner also watches the free space on the disk holding its working directories, reading it from the file system rather than measuring directories, against `min-free-disk`: 5 GB by default, or a size or a share of the disk (`nocobase-runner register --min-free-disk 20G`, or `nocobase-runner config set min-free-disk 20G|10%|off`). It removes on its own only the directories whose work is over, least recently used first, never a pushed directory whose work goes on; when the disk is still low after that, it logs once per collection how many pushed and unpushed directories remain and that `nocobase-runner gc` can remove them. `min-free-disk` replaces the earlier `workspace-limit` setting, which upgrading drops from the runner's settings with a one-time log line. `nocobase-runner gc` lists every working directory with its application, subject, server status, unpushed state and last use, with the disk's free space and the threshold, and with `--apply` removes what the rules allow, filtered by `--ended`, `--older-than` and `--subject`; `--force` also removes unpushed work. The application keeps each runner's last report (`agRunners.workspaceUsage`, added by a migration) and shows it as `Runner.workspaceUsage`.
+
+### Patch Changes
+
+- d89339e: Claude Code now reports its models and their reasoning efforts through the Agent SDK's `supportedModels()`, without sending a prompt, instead of reporting model detection as unsupported.
+
+  Codex reasoning efforts are now `low`, `medium`, `high`, `xhigh`, `max` and `ultra`, as current Codex releases advertise them: `minimal` is gone, and `max` is passed to Codex as itself rather than as `xhigh`. An agent entry already saved with an effort its tool no longer takes keeps it until the entry is changed.
+
+  In an agent's tools and models, the effort select stays aligned with the rest of its row, and the reported efforts are listed on a line of their own below the entry, naming only efforts that can be chosen. Model suggestions no longer carry a "Built-in" badge. In the agents list, a long description wraps within the name column, two lines at most, with the full text on hover. The agents list now shows the agents everyone can use first, the application's own in the order it added them, then the viewer's own agents, then the ones others share with them, each group by the name shown in the viewer's language; list entries carry `owned`, whether the caller owns the agent.
+
+  The runner now gives agents its own Node.js and pnpm: it ships pnpm 11.7.0 and writes `node` and `pnpm` launchers first on each run's PATH, and keeps pnpm from switching to the version a repository's `packageManager` names, so `pnpm install` works on a machine without pnpm or with another Node.js. `nocobase-runner config set agent-tools system` keeps the machine's own instead. The runner's own `pnpm store prune` also uses the bundled pnpm, so garbage collection no longer needs pnpm on the runner's PATH.
+
+- de5254b: Merge built-in model suggestions with visible runtimes' model reports in Agent editors, show reporting runtimes and their current readiness, and suggest their reported reasoning efforts without changing saved configuration. The model combobox expands to fit model names and source badges on one line, within the available viewport, and uses the correct singular or plural runtime count.
+- 8974f9c: Retry a run's preparation when git fails for a passing cause. The runner retries cloning, fetching and the submodules' update three times, after 2, 5 and 15 seconds, when git's error names a cut-off TLS handshake, a reset, refused or timed-out connection, a name that did not resolve, or an HTTP 5xx or 429, and aborts a transfer slower than 1 KiB/s for a minute instead of hanging. Each retry is a `status` event in the run. A repository that does not exist, credentials the host refuses, a certificate the runner does not trust, any other HTTP 4xx, and an error that names no passing cause fail at once, with a hint of what to fix where git names the cause. When every retry fails, the run fails with the new retryable reason `prepareNetwork`, and the application queues it again under the run's retry policy. The failure's error event records how many retries were made and the last error, also when the last attempt failed for a permanent cause. Submodules an earlier preparation could not finish, nested ones included, are finished by the next preparation of the same worktree. The application announces the reasons it accepts on each run (`RunHeader.acceptedFailures`), and the runner reports `checkoutFailed` to an application that does not announce `prepareNetwork`.
+- 97d94dc: Retain the latest actual reasoning effort observation across repeated reports so delayed reports cannot overwrite newer facts, while preserving value and source change times.
+- Updated dependencies [d89339e]
+- Updated dependencies [d942ae9]
+- Updated dependencies [9235602]
+- Updated dependencies [de5254b]
+- Updated dependencies [f94ebc6]
+- Updated dependencies [1832cfc]
+- Updated dependencies [8974f9c]
+- Updated dependencies [0170880]
+- Updated dependencies [0daf996]
+  - @nocobase/agent-protocol@0.1.0-beta.2
+  - @nocobase/app-cli@1.0.0-beta.16
+
+## 0.1.0-beta.2
+
+### Minor Changes
+
+- 57c59a0: Queue work as the person it runs as, and let a variable keep its runs on team runners.
+
+  - New work for an agent on a subject now merges only into a run working as the same person (`actorUserId`). Work woken by someone else starts a run of its own instead of borrowing the identity of a run already queued or held, and the owner's own work is no longer swallowed by a run another person's comment queued, which their personal runner would never take. Runs of one agent, subject and thread are still claimed one at a time, so the second waits with `sameWorkActive`. A retry likewise looks only at open runs of the person retrying.
+  - Variables gain `teamRunnersOnly`, off by default and off for every existing variable (migration `202610090001_ag_add_team_runner_variables`, which also adds `agRuns.teamOnlyVariables`). Without it nothing changes: a run's variables go to whichever runner takes it, including the personal runner of anyone who may use the agent, and the variables settings now say so. Jobs also enforce the mark on the exact stored variables referenced by their prepared spec, including repository credentials. Custom job secret sources may throw `JobSecretsNotAllowed` (exported from `server/tokens`) to report this runner mismatch; a personal runner leaves such a job queued without a preparation failure, continues to other jobs, and receives no values or delivery audits from the refused claim. A run that gets a variable marked `teamRunnersOnly` is taken only by a team runner: a personal runner leaves it, the run notes which variables asked for a team runner, and its wait answers the new reason `secretsNotAllowed` with those variables (`RunWait.variables`). The mark is checked and the values are opened in the claim's own transaction, so a runner receives exactly what was checked. `PUT /api/agents/variables/{scopeKind}/{scopeId}/{name}` takes `teamRunnersOnly`, and without `value` changes only the mark of an existing variable; the variable dialog has a "Team runtimes only" checkbox, and replacing a value with an empty field keeps the stored one.
+  - Waits are now a code and its values, never text: `RunWait` gains `params` (`RunWaitParams`), the values each reason's words need, such as `{ tool, used, limit }` for `toolSlotsFull`, `{ variables }` for `secretsNotAllowed`, `{ active, limit }` for `concurrencyFull`, `{ features }`, `{ until }`, `{ tool }`, `{ runners }` and `{ detail }` for the others; it is optional, and the earlier fields stay. `RUN_WAIT_REASONS` adds `secretsNotAllowed`.
+  - The agents plugin's client words waits: `formatRunWait(t, wait)` and `runWaitBlocks(wait)` from `@nocobase/app-plugin-agents/client/runs`, with texts in the plugin's namespace (`runWait.reasons.<reason>`, English and Chinese) and the page's `t`, so they follow a language switch. An application uses it as it is, rewords any reason in its locale file's `overrides` for that namespace (a reason this version does not know included), or formats waits itself; a reason with no text reads as "Queued (<reason>)".
+  - The `agent-queue` Registry item no longer knows any wait reason: `AgentQueueWait.reason` is a string, the `AgentQueueWaitReason` type and `labels.queue.reasons` are removed, `waitText` and `isBlockingWait` become `waitView`, and the new `formatWait` prop words a wait (`{ text, detail?, blocking? }`), showing the reason code without it. Applications with a copy of the item, Studio included, sync it once and pass `formatWait`, such as `formatRunWait` with `runWaitBlocks`; a reason added later then needs no change to the copy.
+  - The projects plugin's intake progress no longer words wait reasons itself: `IntakeAiProgress` gains an optional `waitParams`, and the application gives the words through the new `IntakeWaitFormatContext` (from `@nocobase/app-plugin-projects/client/kit`), such as the agents plugin's `formatRunWait`; without it a queued request reads as waiting, naming the reason. Its own texts per reason are removed.
+  - Applications should forward the new `run_secrets_not_allowed` notice (to the run's actor and owner, naming the variables) and its `notice.cleared`, sent once a runner takes the run. Repository access providers that mint credentials in `prepare` may implement `discard(run, prepared)`, called when a claim is skipped or rolled back.
+  - New `eligibility` service (`runnersFor`, `canClaim`, `mayQueue`, `teamOnly`): whether a runner would take an agent's work done as a person, by the claim's rules including team-only variables, for callers deciding before a run exists. `availability` accepts the person (`actorUserId`) and uses it, and `GET /api/agents/available` now answers `online` for the caller: an agent whose only online runners would not take the caller's work reads as offline. Enqueue itself never refuses for this; such work waits.
+  - The added data fields remain optional for consumers constructing their own objects: `RunWait.variables` and `RunWait.params` may be omitted, and `Variable.teamRunnersOnly` may be omitted (treated as false). The API still supplies the mark when listing stored variables.
+
+- 0fd2538: Answer conversations with an online agent when a runner agent cannot run for the person. The team's chat settings gain `onlineFallbackAgentId`, an online agent set on the agents page or with `conversation settings update --online-fallback-agent`. A conversation started with a runner agent that no runner may run for its owner now, such as one whose only online runner is someone else's personal runner, starts on that online agent as if switched, and the owner may switch back; `chatAgents` reports it per agent as `fallbackAgentId`. `POST …/fallback` may now switch a runner conversation to the online fallback agent, and a conversation's `mode` follows the agent it answers with. Without an online fallback agent set, runner conversations do not switch automatically.
+
+  Runner availability uses the same claim eligibility as execution, including required features and variables restricted to team runners. Existing runner conversations also switch on the next message when no eligible runner remains, transferring unanswered queued messages to the online agent. Manual switching skips an unavailable system default, and switching back is offered only when the original agent can answer again.
+
+  The configured online fallback is available for automatic and manual switching only while an enabled model service offers its default answering model. If that model becomes unavailable, new and existing conversations retain the original runner agent and record a system notice explaining why the online fallback cannot answer.
+
+  Repeated messages during the same fallback failure keep a single explanatory notice. A changed failure reason or a failure after availability recovers records a new notice.
+
+  Consumer behavior changes: a conversation's `mode` now follows its current agent when switching or restoring, rather than remaining fixed for its lifetime. Switching between runner and online agents clears the selected model. Clients should read the returned conversation's `mode` after each switch.
+
+### Patch Changes
+
+- 41cc0b8: Only a runner's owner may change it. A manager of runners (`agents.runners` manage) can no longer rename someone else's runner, change its slots, coding tools or job setting, or share a personal runner with the team, which would have sent everyone's work to another person's machine with their tools' sign-ins and credentials; `PATCH /api/agents/runners/:runnerId` answers `403` instead. A runner whose owner can no longer act (none recorded, or an account the application reports disabled or deleted) is changed by managers of runners, so it is not left unchangeable. Managers keep revoking any runner as an emergency measure, and deleting it once revoked: revoking someone else's runner now tells its owner through a `runner_revoked` notice and is recorded in the application's `security` log. Runner summaries gain `canRevoke`, and `canManage` and `canChangeTrust` now mean the caller may change the runner; the Runtimes page shows someone else's runner read only, with revoke or delete as the only menu items.
+- Updated dependencies [487921c]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-cli@1.0.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.1
+  - @nocobase/app-plugin-file@1.0.0-beta.21
+  - @nocobase/markdown-mermaid@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+
+## 0.1.0-beta.1
+
+### Minor Changes
+
+- 476f988: A call to an OpenCode base URL (Zen or Go) carries `x-opencode-session` automatically, as OpenCode Go requires: the same session id for every model call of a conversation and a new one for each call outside any, so no service setting is needed. Every request to a provider names the plugin first in its user agent (`nocobase-agents/<version>`). The service form says which provider type serves which of OpenCode's model families.
+- b8df35c: Limit a runner's concurrent runs per coding tool, beside its total slots, so a machine with Claude Code and Codex can run, say, at most two Claude runs and one Codex run at once.
+
+  - `@nocobase/agent-protocol`: optional `toolSlots` on registration, `load.tools` on the heartbeat and `tools` on the claim (`ToolSlots`, `ToolLoad`). They are additions within protocol 7: a side that does not know them ignores them.
+  - `@nocobase/agent-runner`: `register --slots` and `start --slots` take a total, limits per tool, or both (`3,claude=2,codex=1`). The limits hold across every application the machine serves; each claim says how many runs of each limited tool the runner can still take, and the heartbeat reports them.
+  - `@nocobase/app-plugin-agents`: runners and registration tokens keep `toolSlots`, set on registration or on the runtime's settings and in the "Add runtime" dialog. A claim takes a run only when both the runner's total and the run's tool have room, using the agent's next tool while its first is full and passing over a run none of whose tools has room. A queued run waiting on a full tool reads `toolSlotsFull` rather than `runnersBusy`, and the runtimes page shows the runs by tool against each limit. The migration `202610080001_ag_add_runner_tool_slots` adds the columns. A runtime's settings list its coding tools in one table (on or off, sign-in, limit, runs now), and a tool's switch is now saved with "Save" together with the rest of the form instead of at once. The "Add runtime" dialog keeps the limits per tool under "Advanced" for the checked tools, and its button reads "Generate install command". A limit above the max concurrent runs is pointed out, since the total bounds it.
+  - `@nocobase/app-plugin-projects`: words the `toolSlotsFull` wait reason.
+
+  Every field this adds to the shared types is optional, so code that builds these objects itself needs no change: `Runner.toolSlots` and `Runner.toolLoad`, `RunnerSummary.activeByTool`, `RegistrationToken.toolSlots`, and `HeldItems.byTool` of `Slots`. The server always fills them in. A missing field reads as no limit per tool and nothing known about its use, and the runtimes page then shows no use per tool. `RUN_WAIT_REASONS` gains `toolSlotsFull`, so a `Record` keyed by every `RunWaitReason` needs an entry for it.
+
+  Applications using a copied UI Library `agent-queue` block must merge the `toolSlotsFull` reason and wording changes from `ui-library/registry/agents/agent-queue` into their copy. This PR updates the registry source, including an optional label with an English fallback, but a plugin upgrade does not update installed source. Add `queue.reasons.toolSlotsFull` to the application's translations to show the new reason in its locale.
+
+### Patch Changes
+
+- 220700e: Size the Y axis of the usage page's daily trend chart to its tick labels, so cost amounts with a currency prefix are no longer clipped at the left edge.
+- Updated dependencies [bb8484b]
+- Updated dependencies [dc91aab]
+- Updated dependencies [b8df35c]
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.20
+  - @nocobase/agent-protocol@0.1.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.14
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/markdown-mermaid@0.1.0-beta.0
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

@@ -1,5 +1,35 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.9
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- Updated dependencies [487921c]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+
+## 1.0.0-beta.8
+
+### Patch Changes
+
+- 860ef32: Move Mail and its offline provider example into the open-source NocoBase 3 workspace. Keep their package names, public APIs, database migrations, and version history, and publish future releases through the OSS release pipeline. The Examples template loads both plugins with three offline demo providers. Other templates keep Mail opt-in and do not load the demo.
+- Updated dependencies [bb8484b]
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+
 ## 1.0.0-beta.7
 
 ### Patch Changes

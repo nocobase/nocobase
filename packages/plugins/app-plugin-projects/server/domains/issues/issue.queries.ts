@@ -329,7 +329,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         : undefined;
       const catalog = await deps.statuses.forProject(conn, issue.projectId);
       const activities = await this.activities(viewer, issue.id, {});
-      const threads = await deps.extras().threads(conn, issue);
+      const threads = await deps.extras().threads(conn, issue, viewer);
       return {
         ...item,
         parent:
@@ -447,7 +447,11 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
           actorId: row.actorId,
           actorName: name(row.actorType, row.actorId),
           action: row.action,
-          ...splitVia(row.details, (agentId) => name(AGENT_VIA_KIND, agentId)),
+          ...splitVia(
+            row.details,
+            (agentId) => name(AGENT_VIA_KIND, agentId),
+            viewer,
+          ),
           createdAt: row.createdAt,
         })),
         nextCursor: result.nextCursor,

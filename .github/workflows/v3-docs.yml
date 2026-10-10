@@ -1,0 +1,143 @@
+name: V3 Docs
+
+# Publishing is atomic and reversible by construction. Each run uploads the built site to its own timestamp directory
+# in the bucket and then rewrites the CDN's back-to-origin rules to point at it, so a reader sees either the whole old
+# version or the whole new one. Rolling back is running `deploy-cdn.mjs` against the previous directory — the files are
+# still there, and nothing has to be rebuilt.
+
+on:
+  push:
+    branches:
+      - v3-develop
+    paths:
+      - 'docs/**'
+      - '.github/workflows/v3-docs.yml'
+  pull_request:
+    branches:
+      - v3-develop
+      - v3-main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/v3-docs.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Upload to OSS and switch the CDN. Leave off to build and check only.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  # Publishing rewrites one set of CDN rules. Two runs doing that at once would race over which version is live, so
+  # they are serialized rather than cancelled: cancelling mid-publish could leave the rules pointing at a directory
+  # the cleanup step of the other run has already deleted.
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check documentation structure
+        working-directory: docs
+        run: ./check.sh
+
+      # English builds to dist/ and every other language to dist/<lang>/, so English has to go first: building it
+      # second would write over the directory the others are already in.
+      - name: Build
+        working-directory: docs
+        env:
+          # A single build peaks well under this today, but the ceiling is what turns a runaway into a clear
+          # `JavaScript heap out of memory` rather than a runner the scheduler reclaims with no error in the log.
+          NODE_OPTIONS: --max-old-space-size=3072
+        run: |
+          pnpm build --lang=en
+          pnpm build --lang=cn
+
+      # Rspress emits `foo.html`, and `cleanUrls` means readers ask for `/foo`. The CDN rules resolve that to
+      # `/foo/index.html`, which is the layout this produces. The two are a pair — neither works alone.
+      - name: Normalize HTML output
+        working-directory: docs
+        run: node ./scripts/normalize-html-output.mjs --out-dir ./dist
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-dist
+          path: docs/dist
+          retention-days: 7
+
+      - name: Publish
+        if: >-
+          github.event_name == 'workflow_dispatch' && inputs.publish ||
+          github.event_name == 'push' && github.ref == 'refs/heads/v3-develop'
+        working-directory: docs
+        env:
+          DOCS_ALI_OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
+          DOCS_ALI_OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}
+          DOCS_ALI_OSS_BUCKET: ${{ secrets.V3_DOCS_ALI_OSS_BUCKET }}
+          DOCS_ALI_OSS_REGION: ${{ secrets.V3_DOCS_ALI_OSS_REGION }}
+          DOCS_ALI_CDN_DOMAIN: ${{ secrets.V3_DOCS_ALI_CDN_DOMAIN }}
+          # ossutil reads the credentials from these names rather than the DOCS_-prefixed ones.
+          OSS_ACCESS_KEY_ID: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.DOCS_ALI_OSS_ACCESS_KEY_SECRET }}
+        run: |
+          set -euo pipefail
+
+          for name in DOCS_ALI_OSS_ACCESS_KEY_ID DOCS_ALI_OSS_ACCESS_KEY_SECRET \
+                      DOCS_ALI_OSS_BUCKET DOCS_ALI_OSS_REGION DOCS_ALI_CDN_DOMAIN; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set. Configure the repository secrets before publishing."
+              exit 1
+            fi
+          done
+
+          curl -fsSL -o /tmp/ossutil.zip \
+            https://gosspublic.alicdn.com/ossutil/v2/2.2.2/ossutil-2.2.2-linux-amd64.zip
+          unzip -o -q /tmp/ossutil.zip -d /tmp/ossutil
+          sudo mv /tmp/ossutil/ossutil-2.2.2-linux-amd64/ossutil /usr/local/bin/ossutil
+          sudo chmod 755 /usr/local/bin/ossutil
+
+          # ossutil takes the bare region id, `cn-beijing`, and derives the endpoint from it; the SDK the publish
+          # script uses takes the `oss-` prefixed form. The secret holds whichever one was pasted from the console,
+          # and each side normalizes it — `--region oss-cn-beijing` is rejected outright.
+          REGION="${DOCS_ALI_OSS_REGION#oss-}"
+
+          # Asia/Shanghai so the directory name reads as the local time of the people who deploy it.
+          TIMESTAMP="$(TZ=Asia/Shanghai date +%Y%m%d%H%M%S)"
+          echo "Uploading to oss://$DOCS_ALI_OSS_BUCKET/$TIMESTAMP/"
+
+          ossutil cp -r ./dist/ "oss://$DOCS_ALI_OSS_BUCKET/$TIMESTAMP/" \
+            -f -j 64 --region "$REGION"
+
+          # The bucket's static-website error document is read from the root, not from inside a version directory.
+          ossutil cp ./dist/404.html "oss://$DOCS_ALI_OSS_BUCKET/404.html" \
+            -f --region "$REGION"
+
+          node ./scripts/deploy-cdn.mjs --timestamp "$TIMESTAMP"
+
+          echo "### Documentation published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Version \`$TIMESTAMP\` is live at https://$DOCS_ALI_CDN_DOMAIN/" >> "$GITHUB_STEP_SUMMARY"

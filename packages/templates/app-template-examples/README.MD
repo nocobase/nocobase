@@ -6,9 +6,9 @@ You own everything in this directory. Add pages, API routes, database tables, an
 
 This is the examples template, based on `@nocobase/app-template-default`. It is a standalone application with its own database and configuration. Default provides a clean starting template with product capabilities and no example plugins.
 
-The homepage links to article management, repository queries, CRM, orders, file management, routes, and AI employee tasks. Additional registered plugins demonstrate services, queues, scheduled jobs, record lifecycles and the office processes built on them, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
+The homepage links to article management, repository queries, CRM, orders, file management, and routes. Additional registered plugins demonstrate services, queues, scheduled jobs, record lifecycles and the office processes built on them, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
 
-Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories and mounted under Settings. Keep these product integrations aligned with Default.
+Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories. Keep these product integrations aligned with Default.
 
 ## Create an examples application
 
@@ -41,17 +41,9 @@ The fallback table runs deliberately incomplete resources in a page-local `I18nR
 
 The regional comparison formats the same number, USD amount and fixed UTC timestamp for `zh-CN`, `en-US` and `de-DE` using `Intl`. It performs no currency conversion and does not add German to the application's language list. This example covers regional formatting; it does not demonstrate RTL layout.
 
-## AI employee example
-
-Every signed-in page carries the global AI employee entry: a trigger at the lower right opens the shared AI conversation as a side panel that pushes the page narrower on a wide screen and expands into a dialog. `client/components/ai-employee-entry.tsx` composes it around `AppLayout` from the application-owned `nocobase-ai` Registry item in `client/extensions/nocobase-ai`, and shows the trigger only once the current user has an AI employee. Settings and Dev keep their own layouts without it. Configure an LLM service under `ai.llmServices` in `config.yml` first, as the AI Employee plugin's README describes; without one the employees load but cannot answer.
-
-Open **AI employee tasks** from the homepage or sidebar (`/ai-employee-example`). `@nocobase/app-plugin-ai-employee-example` registers the AI employee Iris and the read-only tool `example-ticket-history` on the server, and declares the route; the page itself is the plugin's `tasks-page` Registry item in `client/extensions/nocobase-ai-employee-example-tasks-page`, which replaces the plugin's fallback through `extension.ts`. Select a ticket and hover **Ask Iris** to run **Analyze this ticket**, which is sent at once, or **Draft a reply**, which only fills the composer; **Triage the queue** starts a task from an ordinary button through `useGlobalAIChatController().triggerTask()` with every ticket as work context. Each task carries its user message, instructions for that run and the tools it may call, and Iris reads each ticket's internal history through the tool.
-
-Both directories under `client/extensions/` belong to the application. `pnpm registry materialize` in the source repository installs them, and upgrades are reviewed with a three-way merge rather than copied over. `tests/components/ai-employee-entry.test.tsx` and `tests/components/ai-employee-tasks-page.test.tsx` cover the entry, the tasks and the requests they send, and `tests/logic/ai-employee-example.test.ts` starts the application and reads the registered employee and tool back.
-
 ## Maintain this template
 
-Keep framework files aligned with Default and Hub: the `package.json` scripts that call `nocobase`, runtime composition mechanisms, the `cli/plugins.ts` composition root, shell, theme and development guidance. Keep the examples homepage, article module, example plugin choices and sample data here. Existing Default installations retain their historical data; follow the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) when removing example registrations.
+Keep framework files aligned with Default: the `package.json` scripts that call `nocobase`, runtime composition mechanisms, the `cli/plugins.ts` composition root, shell, theme and development guidance. Keep the examples homepage, article module, example plugin choices and sample data here. Existing Default installations retain their historical data; follow the [upgrade migration rules](.agents/skills/nocobase-app-upgrade/references/edge-cases.md#migrations) when removing example registrations.
 
 ## Getting started
 
@@ -130,7 +122,7 @@ client/                  Browser application
 ├── pages/               Your page components
 ├── components/          Your components
 │   └── ui/              shadcn/ui primitives
-├── layouts/             App and Settings layouts
+├── layouts/             App layout
 │   └── components/      Layout containers, navigation, branding and account controls
 ├── routing/             Route rendering, access checks, loading and error UI
 ├── locales/             Your translated strings
@@ -431,7 +423,7 @@ For example, `pnpm build --target linux-x64 --node-version 24` produces:
 }
 ```
 
-`nodeMajor` describes the target runtime, not the Node version used to run the build. No target patch version is implied. These fields provide platform and Node ABI checks for Hub deployment; they do not describe system libraries, CPU instruction requirements, or other runtime prerequisites.
+`nodeMajor` describes the target runtime, not the Node version used to run the build. No target patch version is implied. These fields provide platform and Node ABI checks for deployment; they do not describe system libraries, CPU instruction requirements, or other runtime prerequisites.
 
 If your application has no native modules — `pg`, `mysql2`, and `tedious` are all plain JavaScript — no platform-specific binaries need retargeting. The build still records the selected target, and the deployment runtime must satisfy `engines.node`.
 
@@ -459,7 +451,7 @@ Pass the file's path relative to `dist/client/`, with or without a leading slash
 
 #### Packing the build
 
-`pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact you upload to a Hub to deploy this application.
+`pnpm build --tar` writes `storage/exports/dist.tar.gz`, the artifact `@nocobase/app-installer` installs on a server.
 
 The archive has two levels: `config.example.yml` and `dist/` sit at the root, and the build is inside `dist/`. What `dist/` holds varies with the application; this is the shape:
 
@@ -577,7 +569,7 @@ Tests live in `tests/`, never beside the source they cover. Put logic and integr
 
 ### Notification testing
 
-After signing in with the `notification:test` `send` permission, use the notification logs settings page to send a real message through the durable Notification Manager. Examples enables the built-in database-backed In-app channel by default. Choose In-app in **Send test notification**, enter a title and message, and leave the recipient user ID blank to send to yourself, or specify another user's ID. Read the message in the **Inbox** (`/inbox`), which the header's inbox button opens. An explicit `notification.channels` setting in `config.yml` overrides the defaults; include the In-app channel there if you configure other channels.
+After signing in with the `notification:test` `send` permission, send a real message through the durable Notification Manager with `POST <APP_BASE_PATH>/api/notifications/testSends`; `GET <APP_BASE_PATH>/api/notifications/testTargets` lists each channel and the fields its test takes. Examples enables the built-in database-backed In-app channel by default: choose it, give a title and message, and leave the recipient blank to send to yourself. Read the message in the **Inbox** at `/inbox`. An explicit `notification.channels` setting in `config.yml` overrides the defaults; include the In-app channel there if you configure other channels.
 
 The form is generated from safe Channel test metadata; Email tests require an address and IM tests use the configured logical target. The button remains visible so configuration problems are discoverable. The server enforces the `notification:test` `send` permission only when the message is submitted.
 
@@ -598,13 +590,19 @@ The application documents every `/api` endpoint it serves — its own routes, ev
 - Swagger UI: `<origin><APP_BASE_PATH>/api/swagger/docs`, such as `http://127.0.0.1:13000/main/api/swagger/docs`
 - JSON: `<origin><APP_BASE_PATH>/api/swagger`
 
-Only a signed-in user or an API key may read them; anyone else gets `401`. Open the Swagger UI in a browser where you are signed in, or, from a script, send an API key created at `<APP_BASE_PATH>/settings/api-keys` in the `x-api-key` header. Swagger UI's **Authorize** button takes a key too and keeps it across reloads.
+Only a signed-in user or an API key may read them; anyone else gets `401`. Open the Swagger UI in a browser where you are signed in, or, from a script, send an API key created with `POST <APP_BASE_PATH>/api/apiKeys` in the `x-api-key` header. Swagger UI's **Authorize** button takes a key too and keeps it across reloads.
 
 ```bash
 curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
 ```
 
 Replace `/main` with the application's `APP_BASE_PATH`. An application without the authentication plugin registers no way to tell who is asking, so it does not serve the documentation at all and both URLs answer `404`. There is no setting that makes it public.
+
+## Optional Workflow plugin
+
+The Workflow plugin is disabled by default in Client, Server, and CLI. Its package dependency and `server/config/workflow.ts` are retained. To opt in, register the plugin with `pnpm nocobase plugin register @nocobase/app-plugin-workflow` and restore the `workflow` import, type, and entry in `server/config/index.ts`.
+
+Examples additionally keeps `workflowExampleRoutes` in `client/routes.ts` and `quotationReviewTaskRoutes` in `server/routes/index.ts` outside the default route lists. Add those contributions to their corresponding lists to expose the waiting-task demo after enabling the plugin. Workflow schedules register only when its service is available.
 
 ## Working with an AI agent
 
@@ -616,7 +614,7 @@ MIT
 
 ## Workflow examples
 
-Open **Workflow examples** on the homepage, or **Settings → Automation → Workflows**. The three application-owned packages under `workflows/` are built by `pnpm dev` and `pnpm build`. Enable a definition, open its detail page, choose **Run**, and enter the sample values below. Inspect the run diagram and select a node to see its output, errors, and logs.
+After enabling the optional Workflow plugin and its example routes, use the Workflow plugin's API, listed in the application's API document. The three application-owned packages under `workflows/` are built by `pnpm dev` and `pnpm build`. Enable a definition with `POST /api/workflows/{workflowId}/enable`, run it with `POST /api/workflows/{workflowId}/run` and the sample values below, and read the run and each node's output, errors and logs from `/api/workflows/runs`.
 
 | Workflow                        | Sample input                                    | Expected result                                                                    |
 | ------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -672,7 +670,7 @@ pnpm nocobase db apply
 
 后端实现位于 `server/providers/numeric-examples-service.ts` 和
 `server/routes/numeric-examples.ts`，页面位于 `client/pages/numeric-examples.tsx`。
-这是 Examples 独有内容，不改变 Default / Hub 模板或数据库运行时。
+这是 Examples 独有内容，不改变 Default 模板或数据库运行时。
 
 ## Numeric types example
 
@@ -698,7 +696,7 @@ Every signed-in user may read these sample records; the endpoint exposes no
 writes or arbitrary collection/query parameters. Row previews are capped at 100;
 aggregates cover the entire selected sample set.
 
-This is Examples-only teaching content, so it does not change Default or Hub.
+This is Examples-only teaching content, so it does not change Default.
 
 ## Runtime paths and application creation
 

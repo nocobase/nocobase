@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-ai-employee': minor
 '@nocobase/app-plugin-authentication': minor
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-file': minor

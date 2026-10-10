@@ -20,20 +20,20 @@ describe('parseInput', () => {
     await expect(parseInput(['crm', '--dialect=postgres'])).rejects.toThrow();
   });
   /**
-   * `pnpm create @nocobase/app crm --template=hub` forwards everything after the package name verbatim, so this is the
+   * `pnpm create @nocobase/app crm --template=examples` forwards everything after the package name verbatim, so this is the
    * exact argv the command receives in the documented invocation.
    */
   it('parses the directory argument and the template flag', async () => {
-    const input = await parseInput(['crm', '--template=hub']);
+    const input = await parseInput(['crm', '--template=examples']);
 
     expect(input.directory).toBe('crm');
-    expect(input.flags.template).toBe('hub');
+    expect(input.flags.template).toBe('examples');
   });
 
   it('accepts the space-separated flag form', async () => {
-    const input = await parseInput(['crm', '--template', 'hub']);
+    const input = await parseInput(['crm', '--template', 'examples']);
 
-    expect(input.flags.template).toBe('hub');
+    expect(input.flags.template).toBe('examples');
   });
 
   it('leaves the directory unset when it is omitted, so it can be prompted for', async () => {
@@ -108,7 +108,7 @@ describe('formatHelp', () => {
     expect(help).toContain('--template-tag');
     expect(help).toContain('default');
     expect(help).toContain('--[no-]install');
-    expect(help).toContain('https://npm.nocobase.ai');
+    expect(help).toContain('https://registry.npmjs.org');
     expect(help).toContain('create-app crm');
   });
 });

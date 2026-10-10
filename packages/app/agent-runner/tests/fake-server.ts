@@ -30,6 +30,9 @@ import {
   type SkillBundle,
   type StartRequest,
   type UpgradeNotice,
+  type WorkspaceReporting,
+  type WorkspacesRequest,
+  type WorkspacesResponse,
 } from '../src/protocol/index.ts';
 
 export interface FakeRunner {
@@ -98,6 +101,8 @@ export interface FakeServerOptions {
   heartbeatIntervalMs?: number;
   /** The application the server says it is on registration; none when absent. */
   app?: { id: string; name: string };
+  /** Gate dispatch on the reported tool authentication, as an application does. */
+  requireAuthentication?: boolean;
 }
 
 type RunInit = Partial<Omit<RunPayload, 'run'>> & {
@@ -166,6 +171,13 @@ export class FakeServer {
   uploadStatus: number | undefined;
   /** The slots the registration token carries; registration answers the runner's own, else these, else 1. */
   tokenSlots: number | undefined;
+  /**
+   * While set, heartbeat answers announce workspace reports and the workspaces route answers `workspaceAnswer`;
+   * otherwise the route does not exist, as on an application that predates it.
+   */
+  workspaceReporting: WorkspaceReporting | undefined;
+  workspaceAnswer: WorkspacesResponse = { remove: [], keep: [] };
+  readonly workspaceReports: WorkspacesRequest[] = [];
   private readonly jobQueue: string[] = [];
   private readonly queue: string[] = [];
   private readonly waiters = new Set<() => void>();
@@ -179,6 +191,7 @@ export class FakeServer {
     this.options = {
       pollTimeoutMs: 1_000,
       heartbeatIntervalMs: 500,
+      requireAuthentication: false,
       app: { id: 'test-app', name: 'Test App' },
       ...options,
     };
@@ -402,9 +415,17 @@ export class FakeServer {
     const features = new Set(
       runner.heartbeats.at(-1)?.features ?? runner.register.features,
     );
-    const index = this.queue.findIndex((id) =>
-      this.run(id).payload.run.requires.every((f) => features.has(f)),
-    );
+    const tools = runner.heartbeats.at(-1)?.tools ?? runner.register.tools;
+    const index = this.queue.findIndex((id) => {
+      const payload = this.run(id).payload;
+      return (
+        payload.run.requires.every((f) => features.has(f)) &&
+        (!this.options.requireAuthentication ||
+          tools.some(
+            (tool) => tool.kind === payload.tool.kind && tool.authenticated,
+          ))
+      );
+    });
     if (index < 0) return undefined;
     const [id] = this.queue.splice(index, 1);
     const run = this.run(id as string);
@@ -509,7 +530,17 @@ export class FakeServer {
         cancelRequested,
         release: [],
         ...(jobs ? { jobs } : {}),
+        ...(this.workspaceReporting === undefined
+          ? {}
+          : { workspaces: this.workspaceReporting }),
       });
+    });
+
+    app.post(RUNNER_ROUTES.workspaces, async (c) => {
+      if (this.workspaceReporting === undefined)
+        return error(c, 404, 'ROUTE_NOT_FOUND');
+      this.workspaceReports.push((await c.req.json()) as WorkspacesRequest);
+      return ok(c, this.workspaceAnswer);
     });
 
     app.get(DIST_ROUTES.file, (c) => {

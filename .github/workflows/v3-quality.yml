@@ -1,0 +1,357 @@
+name: V3 Quality
+
+on:
+  pull_request:
+    branches:
+      - v3-develop
+      - v3-main
+    paths-ignore:
+      - 'docs/**'
+  push:
+    branches:
+      - v3-develop
+    paths-ignore:
+      - 'docs/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changed-files:
+    name: Changed files
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared development config
+        run: pnpm dev-config:build
+
+      # ESLint is run per package rather than over one list of every changed file. The type-aware rules build a
+      # TypeScript program per file and hold it for the length of the run, so a single process grows with the size of
+      # the change: a repository-wide refactor touching a couple of thousand files exhausts the runner's heap and the
+      # job dies with an allocation failure instead of a lint result. One process per package bounds that, because
+      # each exits and frees what it held. `--filter "[$BASE_SHA]"` selects exactly the packages the diff touched, so
+      # an ordinary pull request still lints only what it changed.
+      #
+      # Prettier keeps taking every changed file at once. It parses and prints one file at a time without any
+      # cross-file analysis, so its memory does not scale the same way — the same diff that kills ESLint peaks well
+      # under half a gigabyte here.
+      - name: Check changed files
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          if [[ "$BASE_SHA" =~ ^0+$ ]]; then
+            BASE_SHA="$(git rev-list --max-parents=0 "$HEAD_SHA")"
+          fi
+
+          # Files outside any package: the root ESLint configuration covers `scripts/`, `tests/`, and the root
+          # `.js`/`.mjs`/`.cjs` files, but no package owns them, so the per-package run below never reaches them.
+          root_files=()
+          prettier_files=()
+
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              packages/*) ;;
+              *.js|*.jsx|*.mjs|*.cjs|*.ts|*.tsx|*.mts|*.cts) root_files+=("$file") ;;
+            esac
+
+            case "$file" in
+              *.js|*.jsx|*.mjs|*.cjs|*.ts|*.tsx|*.mts|*.cts|*.json|*.json5|*.jsonc|*.md|*.mdx|*.yml|*.yaml|*.css|*.scss|*.less|*.html)
+                prettier_files+=("$file")
+                ;;
+            esac
+          done < <(git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$HEAD_SHA")
+
+          if ((${#root_files[@]})); then
+            pnpm exec eslint --no-warn-ignored --max-warnings 0 -- "${root_files[@]}"
+          fi
+
+          pnpm --filter "[$BASE_SHA]" --if-present lint
+
+          if ((${#prettier_files[@]})); then
+            pnpm exec prettier --check --ignore-path .prettierignore -- "${prettier_files[@]}"
+          fi
+
+  validation:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Typecheck
+            script: typecheck
+            peers_check: true
+            deps_check: true
+            openapi_check: true
+          - name: Test
+            script: test
+            peers_check: false
+            deps_check: false
+            openapi_check: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Runs before the matrix script because a misdeclared dependency is decided by reading manifests, and reporting it
+      # in seconds is more useful than reporting it after a full typecheck.
+      - name: Check peer dependencies
+        if: ${{ matrix.peers_check }}
+        run: pnpm peers:check
+
+      # Same reasoning: a dependency declared in the wrong place is decided by reading manifests and sources, and it
+      # otherwise surfaces only once a published package is installed somewhere its devDependencies are absent.
+      - name: Check runtime dependencies
+        if: ${{ matrix.deps_check }}
+        run: pnpm deps:check
+
+      # A test that configures SQLite or asserts on SQLite-only SQL passes on every default run and fails only on another
+      # database, so it is caught by reading the source rather than by running it.
+      - name: Check database test portability
+        if: ${{ matrix.deps_check }}
+        run: pnpm db-tests:check
+
+      # The UI Library catalog the application Skill ships (references/frontend/references/ui-library.md) is generated
+      # from ui-library/registry; an item added or redescribed without regenerating it fails here.
+      - name: Check the UI Library catalog is up to date
+        if: ${{ matrix.deps_check }}
+        run: pnpm ui-library-catalog:check
+
+      # Starts each template on SQLite test databases and fails on an /api route that declares nothing, a documented
+      # operation without tags, summary or operationId, a duplicate operationId, or a schema reference the document
+      # cannot resolve. It needs no build: the templates run from their TypeScript sources.
+      - name: Check API document declarations
+        if: ${{ matrix.openapi_check }}
+        run: pnpm openapi:check
+
+      - name: ${{ matrix.name }}
+        run: pnpm ${{ matrix.script }}
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # pnpm build just produced every dist, so pack:check skips the build half of each prepack script.
+      - name: Check package tarballs
+        env:
+          PACK_DIR: ${{ runner.temp }}/nocobase-pack-check
+          PACK_CHECK_PREBUILT: '1'
+        run: pnpm pack:check
+
+      - name: Upload checked package tarballs
+        uses: actions/upload-artifact@v4
+        with:
+          name: create-app-packages
+          path: ${{ runner.temp }}/nocobase-pack-check/*.tgz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  create-app-smoke:
+    name: Create-app smoke (${{ matrix.template }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        template: [default, examples]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Download checked package tarballs
+        uses: actions/download-artifact@v4
+        with:
+          name: create-app-packages
+          path: ${{ runner.temp }}/nocobase-pack-check
+
+      # Each runner installs the exact tarballs checked by Build into its own registry. Workspace package names have
+      # no upstream fallback, so an already-published version cannot hide a broken artifact from this checkout.
+      - name: Verify create-app against the checked packages
+        uses: ./.github/actions/verify-create-app
+        with:
+          local-packages-only: 'true'
+          template-kind: ${{ matrix.template }}
+          package-artifacts: ${{ runner.temp }}/nocobase-pack-check
+
+  app-installer-smoke:
+    name: App-installer smoke (Default archive)
+    needs: build
+    uses: ./.github/workflows/v3-app-installer-smoke.yml
+
+  db-integration-plan:
+    name: Select DB integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      databases: ${{ steps.select.outputs.databases }}
+      should_run: ${{ steps.select.outputs.should_run }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Select affected databases
+        id: select
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node scripts/select-db-integration-matrix.mjs
+
+  db-integration:
+    name: DB integration (${{ matrix.database }})
+    needs: db-integration-plan
+    if: ${{ needs.db-integration-plan.outputs.should_run == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        database: ${{ fromJSON(needs.db-integration-plan.outputs.databases) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared development config
+        run: pnpm dev-config:build
+
+      - name: Test ${{ matrix.database }}
+        run: pnpm --filter @nocobase/db-${{ matrix.database }} test:integration
+
+  quality:
+    name: quality
+    if: ${{ always() }}
+    needs:
+      - changed-files
+      - validation
+      - build
+      - create-app-smoke
+      - app-installer-smoke
+      - db-integration-plan
+      - db-integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify parallel jobs
+        env:
+          CHANGED_FILES_RESULT: ${{ needs.changed-files.result }}
+          VALIDATION_RESULT: ${{ needs.validation.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          CREATE_APP_SMOKE_RESULT: ${{ needs['create-app-smoke'].result }}
+          APP_INSTALLER_SMOKE_RESULT: ${{ needs['app-installer-smoke'].result }}
+          DB_PLAN_RESULT: ${{ needs['db-integration-plan'].result }}
+          DB_SHOULD_RUN: ${{ needs['db-integration-plan'].outputs.should_run }}
+          DB_INTEGRATION_RESULT: ${{ needs['db-integration'].result }}
+        run: |
+          if [[ "$CHANGED_FILES_RESULT" != "success" || "$VALIDATION_RESULT" != "success" || "$BUILD_RESULT" != "success" || "$CREATE_APP_SMOKE_RESULT" != "success" || "$APP_INSTALLER_SMOKE_RESULT" != "success" || "$DB_PLAN_RESULT" != "success" ]]; then
+            echo "One or more quality jobs failed or were cancelled."
+            exit 1
+          fi
+
+          # Only accept a skipped matrix when the successful planner explicitly selected no databases.
+          if [[ "$DB_SHOULD_RUN" == "false" && "$DB_INTEGRATION_RESULT" == "skipped" ]]; then
+            echo "No database integration tests required."
+          elif [[ "$DB_SHOULD_RUN" != "true" || "$DB_INTEGRATION_RESULT" != "success" ]]; then
+            echo "Database integration tests failed, were cancelled, or were unexpectedly skipped."
+            exit 1
+          fi

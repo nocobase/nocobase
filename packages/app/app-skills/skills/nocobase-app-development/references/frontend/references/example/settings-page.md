@@ -2,11 +2,11 @@
 
 Part of the [projects worked example](../example.md).
 
-**Depends on**: [members card](members-card.md), [session alert](session-expired-alert.md), [copy](copy.md); the settings route and item in ["Settings pages" in `page.md`](../page.md#settings-pages).
+**Depends on**: [members card](members-card.md), [session alert](session-expired-alert.md), [copy](copy.md); the settings route and item in ["Settings pages" in `page.md`](../page.md#5-settings-pages).
 
 **Add first**: `yes n | pnpm exec shadcn add alert card skeleton`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
 
-Rules: ["Settings pages" in `page.md`](../page.md#settings-pages), and guideline T4.
+Rules: ["Settings pages" in `page.md`](../page.md#5-settings-pages), and guideline T4.
 
 ```tsx
 // client/pages/settings/projects/index.tsx

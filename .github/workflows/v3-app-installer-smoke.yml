@@ -1,0 +1,61 @@
+name: V3 app-installer smoke test
+
+# Build the default application's deployment archive and exercise the compiled installer's
+# install, upgrade and rollback paths on Debian. Quality calls this workflow for its source snapshot.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-installer-smoke-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  archive:
+    name: Install the app-template-default archive on Debian bookworm
+    runs-on: ubuntu-24.04
+    container: node:24-bookworm
+    timeout-minutes: 45
+    env:
+      APP_ROOT: /tmp/crm
+      NOCOBASE_APP_INSTALLER_USE_DIST: '1'
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install pm2
+        run: npm install -g pm2
+
+      # The archive is built from this checkout rather than from a published template, so it carries the build
+      # metadata and APP_STORAGE_DIR support the installer relies on, whether or not they are released yet.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app-installer
+        run: |
+          pnpm --filter @nocobase/app-installer build
+          test -f packages/tools/app-installer/dist/cli.js
+
+      # `pnpm build` builds the workspace packages the template depends on first, and vendors them into the archive.
+      - name: Build a deployment archive of the default template
+        run: |
+          pnpm --filter @nocobase/app-template-default build --tar
+          test -f packages/templates/app-template-default/storage/exports/dist.tar.gz
+
+      - name: Install, upgrade and roll back the archive
+        run: node scripts/smoke-app-installer.mjs --archive packages/templates/app-template-default/storage/exports/dist.tar.gz --root "$APP_ROOT" --port 13000 -- node packages/tools/app-installer/bin/run.js
+
+      - name: Show logs
+        if: failure()
+        run: |
+          tail -n 200 "$APP_ROOT"/logs/*.log || true
+          pm2 logs --nostream --lines 100 || true

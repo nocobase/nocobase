@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- 3380f9d: Update application lifecycle buttons from the current runtime state, explain unavailable operations, and refresh visible application pages automatically with retry and stale-response protection.
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

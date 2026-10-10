@@ -1566,7 +1566,6 @@ async function writeRuntimeTestConfig(
           main: { seeds: { autoRun: env.DB_SEEDS_AUTO_RUN === 'true' } },
         },
       },
-      hub: { host: { enabled: false } },
     },
   });
   testConfigs.push(config);
