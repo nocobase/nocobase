@@ -167,7 +167,6 @@
     "@nocobase/app-plugin-cli-example": "workspace:^",
     "@nocobase/app-plugin-database-example": "workspace:^",
     "@nocobase/app-plugin-database-explorer": "workspace:^",
-    "@nocobase/app-plugin-departments-example": "workspace:^",
     "@nocobase/app-plugin-file": "workspace:^",
     "@nocobase/app-plugin-file-example": "workspace:^",
     "@nocobase/app-plugin-i18n": "workspace:^",

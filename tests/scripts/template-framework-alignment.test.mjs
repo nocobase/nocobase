@@ -122,25 +122,6 @@ function runtimeDependencies(template) {
 
 function sharedFrameworkSource(template, file) {
   let source = readFileSync(path.join(template.directory, file), 'utf8');
-  if (
-    template.kind !== 'hub' &&
-    file === 'client/layouts/components/header-actions.tsx'
-  ) {
-    // Default and Examples preinstall the UI Library inbox; the Hub registers no in-app notifications. Exclude only
-    // the inbox's explicit entry; all shared header behavior must still match across the three.
-    const additions = [
-      /^import \{ InboxHeaderButton \} from '#components\/inbox-header-button';\n/gm,
-      /^[\t ]*\{\/\* The inbox's entry, from the UI Library; keep its unread shortcut on every authenticated surface\. \*\/\}\n[\t ]*<InboxHeaderButton \/>\n/gm,
-    ];
-    return additions.reduce((shared, addition) => {
-      assert.equal(
-        [...shared.matchAll(addition)].length,
-        1,
-        `${template.kind} header must contain exactly one inbox entry`,
-      );
-      return shared.replace(addition, '');
-    }, source);
-  }
 
   // The image recipe is shared. Only the template's own directory, named in the usage comment, and Hub's `/hub` runtime
   // mount path differ; both are normalized to Default's before comparing.

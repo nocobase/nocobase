@@ -29,7 +29,6 @@ vi.mock('@nocobase/app-client', async (importOriginal) => {
   };
 });
 
-import { InboxHeaderButton } from '../../client/components/inbox-header-button.tsx';
 import InboxPage from '../../client/pages/inbox.tsx';
 
 const messages = [
@@ -96,24 +95,6 @@ function Frame({
     </QueryClientProvider>
   );
 }
-
-it('links the header to the inbox with the unread count, for a signed-in person only', async () => {
-  const view = render(
-    <Frame path='/'>
-      <InboxHeaderButton />
-    </Frame>,
-  );
-  const link = await screen.findByRole('link', { name: 'Inbox, 2 unread' });
-  expect(link).toHaveAttribute('href', '/inbox');
-  expect(screen.getByText('2')).toBeInTheDocument();
-  mocks.session = null;
-  view.rerender(
-    <Frame path='/'>
-      <InboxHeaderButton />
-    </Frame>,
-  );
-  expect(screen.queryByRole('link')).toBeNull();
-});
 
 it("lists the plugin's messages as notifications and marks one read when it is opened", async () => {
   render(

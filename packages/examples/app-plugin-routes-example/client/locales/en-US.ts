@@ -11,12 +11,4 @@ export default {
   plugin: 'Plugin',
   scope: 'Scope',
   message: 'Message',
-  devExample: 'Dev route example',
-  devTitle: 'Routes example dev tools',
-  devRoute: 'Dev route',
-  availableIn: 'Available in',
-  developmentOnly: 'Development builds only',
-  appRoute: 'App route',
-  apiRoute: 'API route',
-  rootRoute: 'Root route',
 };

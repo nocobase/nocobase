@@ -15,7 +15,6 @@
 '@nocobase/app-plugin-workflow': patch
 '@nocobase/app-plugin-ai-employee-example': patch
 '@nocobase/app-plugin-authorization-example': patch
-'@nocobase/app-plugin-departments-example': patch
 '@nocobase/app-plugin-file-example': patch
 '@nocobase/app-plugin-jobs-example': patch
 '@nocobase/app-plugin-notification-example': patch

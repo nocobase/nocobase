@@ -263,7 +263,7 @@ A script or an agent reads the JSON document with an API key in the `x-api-key` 
 curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
 ```
 
-`/main` is the application's `APP_BASE_PATH`; an application mounted at `/crm` serves `/crm/api/swagger`, and one mounted at the origin root serves `/api/swagger`. A user creates an API key on the API keys settings page, `<APP_BASE_PATH>/settings/api-keys`, and the key acts as that user; the `nocobase-app-plugin-api-keys` Skill describes the plugin and its configuration.
+`/main` is the application's `APP_BASE_PATH`; an application mounted at `/crm` serves `/crm/api/swagger`, and one mounted at the origin root serves `/api/swagger`. A signed-in user creates an API key with `POST <APP_BASE_PATH>/api/apiKeys`, and the key acts as that user; the `nocobase-app-plugin-api-keys` Skill describes the plugin and its configuration.
 
 Only a request one of the registered access checks allows may read either route: the authentication plugin allows a signed-in session and the API keys plugin a valid API key. Anything else is answered `401` with reason `API_DOCS_UNAUTHENTICATED`. While no access check is registered, as in an application without the authentication plugin, both routes answer `404 ROUTE_NOT_FOUND`: an application that cannot tell who is asking does not publish its API. There is no setting that makes the documentation public.
 
