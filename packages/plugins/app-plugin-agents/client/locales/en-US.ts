@@ -274,7 +274,8 @@ const pages = {
     remove: 'Remove',
     suggestions: 'Type any model, or pick a common one',
     builtIn: 'Built-in',
-    availableRunners: '{{count}} runtimes available',
+    availableRunners_one: '{{count}} runtime available',
+    availableRunners_other: '{{count}} runtimes available',
     runnerReady: 'Ready',
     runnerNotReady: 'Not ready',
     reportHint:

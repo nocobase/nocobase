@@ -57,7 +57,7 @@ function ModelSources({
     (runner) => runner.available,
   ).length;
   return (
-    <span className='ml-auto inline-flex shrink-0 items-center gap-1'>
+    <span className='ml-auto inline-flex shrink-0 flex-nowrap items-center gap-1 whitespace-nowrap'>
       {suggestion.builtIn ? (
         <Badge variant='secondary'>{t('modelEntries.builtIn')}</Badge>
       ) : null}
@@ -131,11 +131,19 @@ export function ModelInput({
         aria-label={ariaLabel}
         title={t('modelEntries.suggestions')}
       />
-      <ComboboxContent className='min-w-72'>
+      <ComboboxContent
+        // Fit the model and both source badges even when the form's input is narrow; cap growth at the viewport.
+        style={{
+          width: 'max-content',
+          minWidth:
+            'min(var(--available-width), max(var(--anchor-width), calc(var(--spacing) * 144)))',
+          maxWidth: 'var(--available-width)',
+        }}
+      >
         <ComboboxList>
           {(item: string) => (
-            <ComboboxItem key={item} value={item}>
-              <span title={item} className='min-w-0 flex-1 truncate font-mono'>
+            <ComboboxItem key={item} value={item} className='flex-nowrap'>
+              <span title={item} className='min-w-0 truncate font-mono'>
                 {item}
               </span>
               <ModelSources suggestion={byId.get(item)!} />

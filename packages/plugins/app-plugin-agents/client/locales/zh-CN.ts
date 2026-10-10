@@ -267,7 +267,8 @@ const zhCN: AgentsResource = {
     remove: '移除',
     suggestions: '可以输入任意模型，或选择常用模型',
     builtIn: '内置',
-    availableRunners: '{{count}} 台执行机可用',
+    availableRunners_one: '{{count}} 台执行机可用',
+    availableRunners_other: '{{count}} 台执行机可用',
     runnerReady: '已就绪',
     runnerNotReady: '未就绪',
     reportHint:

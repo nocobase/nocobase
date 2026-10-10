@@ -129,7 +129,7 @@ describe('model suggestions in the Agent editor', () => {
     },
   );
 
-  it('lists built-in models on one line in a popup at least as wide as a model id needs', async () => {
+  it('keeps full model titles and allows choosing a built-in suggestion', async () => {
     const runtime = await createTestI18nRuntime({
       namespaces: { [NS]: locales },
     });
@@ -150,13 +150,46 @@ describe('model suggestions in the Agent editor', () => {
       'data-slot',
       'badge',
     );
-    expect(option.closest('[data-slot="combobox-content"]')).toHaveClass(
-      'min-w-72',
-    );
     await user.click(option);
     expect(screen.getByRole('combobox', { name: 'Model' })).toHaveValue(
       'claude-opus-5-5',
     );
+  });
+
+  it.each([
+    { locale: 'en-US', online: true, source: '1 runtime available' },
+    { locale: 'en-US', online: false, source: '0 runtimes available' },
+    { locale: 'zh-CN', online: true, source: '1 台执行机可用' },
+    { locale: 'zh-CN', online: false, source: '0 台执行机可用' },
+  ])('renders $source in $locale', async ({ locale, online, source }) => {
+    const runtime = await createTestI18nRuntime({
+      locale,
+      namespaces: { [NS]: locales },
+    });
+    const user = userEvent.setup();
+    render(
+      <TestI18nProvider runtime={runtime} namespace={NS}>
+        <Editor
+          runners={[
+            {
+              ...reportingRunner('office', 'Office'),
+              status: online ? 'online' : 'offline',
+            },
+          ]}
+          initial={newEntryDraft({ tool: 'pi', model: MODEL })}
+          save={vi.fn()}
+        />
+      </TestI18nProvider>,
+    );
+    await user.click(
+      screen.getByRole('combobox', {
+        name: locale === 'en-US' ? 'Model' : '模型',
+      }),
+    );
+    const option = await screen.findByRole('option', {
+      name: new RegExp(MODEL),
+    });
+    expect(within(option).getByText(source)).toBeVisible();
   });
 
   it('keeps an existing model and effort when a report arrives, and keeps manual input possible', async () => {
