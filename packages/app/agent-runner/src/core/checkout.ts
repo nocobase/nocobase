@@ -412,54 +412,177 @@ export async function writeWorkspaceMeta(
  * saw the remote task branch hold. A record from an earlier runner, which recorded neither, is judged by the task
  * branch's remote-tracking ref instead. A checkout that cannot be read counts as unpushed, so it is kept.
  */
-export async function hasUnpushedWork(
+export interface WorkspaceGitCheck {
+  readonly reason: import('../protocol/index.ts').WorkspaceCleanupReason;
+  readonly discardsUntracked: boolean;
+}
+
+/** Rechecks local objects only; application evidence never triggers a network fetch. */
+export async function checkWorkspaceGit(
   workDir: string,
   meta: WorkspaceMeta,
+  evidence: readonly import('../protocol/index.ts').WorkspaceCommitEvidence[] = [],
+  allowUntracked: boolean = false,
   log?: (message: string) => void,
-): Promise<boolean> {
+): Promise<WorkspaceGitCheck> {
+  let discardsUntracked = false;
+  const result = (reason: WorkspaceGitCheck['reason']): WorkspaceGitCheck => ({
+    reason,
+    discardsUntracked,
+  });
   for (const repo of meta.repos) {
     const dir = path.join(workDir, repo.path);
-    if (!existsSync(dir)) continue;
     const context = { dir, cache: repo.cache, url: repo.url };
     try {
+      if (!existsSync(dir)) return result('gitFailed');
       const status = await taskGit(context, [
         'status',
         '--porcelain',
         '--untracked-files=normal',
+        '--ignore-submodules=untracked',
       ]);
-      if (status.trim() !== '') return true;
+      const lines = status.split('\n').filter(Boolean);
+      discardsUntracked ||= lines.some((line) => line.startsWith('??'));
+      if (lines.some((line) => !line.startsWith('??')))
+        return result('trackedChanges');
+      if (discardsUntracked && !allowUntracked) return result('unpushed');
+      // Parent status checks gitlink changes, but a committed gitlink does not prove the submodule commit was pushed.
+      // taskGit validates every initialized submodule's config and metadata pointer before entering it with -C.
+      const submodules = await taskGit(context, [
+        'submodule',
+        'foreach',
+        '--quiet',
+        '--recursive',
+        'printf "%s\\0" "./$displaypath"',
+      ]);
+      for (const relative of submodules.split('\0').filter(Boolean)) {
+        const child = path.resolve(dir, relative);
+        if (!isInside(dir, child) || child === dir) return result('gitFailed');
+        const childArgs = ['-C', child];
+        const childStatus = await taskGit(context, [
+          ...childArgs,
+          'status',
+          '--porcelain',
+          '--untracked-files=normal',
+          '--ignore-submodules=untracked',
+        ]);
+        const childLines = childStatus.split('\n').filter(Boolean);
+        discardsUntracked ||= childLines.some((line) => line.startsWith('??'));
+        if (childLines.some((line) => !line.startsWith('??')))
+          return result('trackedChanges');
+        if (discardsUntracked && !allowUntracked) return result('unpushed');
+        const childHead = await taskGit(context, [
+          ...childArgs,
+          'rev-parse',
+          '--verify',
+          'HEAD',
+        ]);
+        const childUrl = await taskGit(context, [
+          ...childArgs,
+          'config',
+          '--local',
+          '--get',
+          'remote.origin.url',
+        ]);
+        const refs = await taskGit(context, [
+          ...childArgs,
+          'for-each-ref',
+          '--format=%(objectname)',
+          'refs/remotes/origin/',
+        ]);
+        const childCandidates = [
+          ...refs.split('\n'),
+          ...evidence
+            .filter((item) => item.repository === childUrl)
+            .map((item) => item.headSha),
+        ].filter((sha) => /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(sha));
+        let childProven = false;
+        for (const candidate of childCandidates) {
+          if (
+            childHead === candidate ||
+            (await taskGitOk(context, [
+              ...childArgs,
+              'merge-base',
+              '--is-ancestor',
+              childHead,
+              candidate,
+            ]))
+          ) {
+            childProven = true;
+            break;
+          }
+        }
+        if (!childProven) return result('unpushed');
+      }
       const head = await taskGit(context, [
         'rev-parse',
         '--verify',
         '-q',
         'HEAD',
-      ]).catch(() => '');
-      // No commit at all: nothing to push.
-      if (head === '') continue;
-      if (head === repo.startSha || head === repo.pushedSha) continue;
+      ]);
+      if (
+        meta.legacy !== true &&
+        (head === repo.startSha || head === repo.pushedSha)
+      )
+        continue;
+      const candidates = evidence
+        .filter(
+          (item) =>
+            item.repository === repo.url &&
+            /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(item.headSha),
+        )
+        .map((item) => item.headSha);
       const pushed =
         meta.legacy === true
           ? `refs/remotes/origin/${repo.branch}`
           : repo.pushedSha;
-      if (
-        pushed !== undefined &&
-        (await taskGitOk(context, [
-          'merge-base',
-          '--is-ancestor',
-          head,
-          pushed,
-        ]))
-      )
-        continue;
-      return true;
+      if (pushed !== undefined) candidates.push(pushed);
+      let proven = false;
+      let hasObjects = false;
+      for (const candidate of candidates) {
+        if (
+          !(await taskGitOk(context, [
+            'rev-parse',
+            '--verify',
+            '-q',
+            `${candidate}^{commit}`,
+          ]))
+        )
+          continue;
+        hasObjects = true;
+        if (
+          head === candidate ||
+          (await taskGitOk(context, [
+            'merge-base',
+            '--is-ancestor',
+            head,
+            candidate,
+          ]))
+        ) {
+          proven = true;
+          break;
+        }
+      }
+      if (!proven) return result(hasObjects ? 'unpushed' : 'missingEvidence');
     } catch (error) {
       log?.(
-        `workspaces: ${dir}: counted as unpushed: ${error instanceof Error ? error.message : String(error)}`,
+        `workspaces: ${dir}: kept after Git check failed: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return true;
+      return result('gitFailed');
     }
   }
-  return false;
+  return result('allowed');
+}
+
+export async function hasUnpushedWork(
+  workDir: string,
+  meta: WorkspaceMeta,
+  log?: (message: string) => void,
+): Promise<boolean> {
+  return (
+    (await checkWorkspaceGit(workDir, meta, [], false, log)).reason !==
+    'allowed'
+  );
 }
 
 async function addClone(
