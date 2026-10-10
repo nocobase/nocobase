@@ -15,6 +15,9 @@ const { readFile, writeFile } = require('fs').promises;
 const { syncPluginSymlinks } = require('@nocobase/utils/plugin-symlink');
 
 function runPatchPackage() {
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return;
+  }
   // run yarn patch-package
   // console.log('patching third party packages...');
   run('yarn', ['patch-package'], {
@@ -23,6 +26,9 @@ function runPatchPackage() {
 }
 
 function writeToExclude() {
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return;
+  }
   const excludePath = resolve(process.cwd(), '.git', 'info', 'exclude');
   const content = 'packages/pro-plugins/\n';
   const dirPath = dirname(excludePath);
