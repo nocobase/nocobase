@@ -141,10 +141,9 @@ export interface KnowledgeIndexModel {
 export interface KnowledgeIndexStatus {
   /** Whether the vector store can be used (configured in `agents.vectors` of `config.yml`). */
   readonly available: boolean;
-  /** The store configured: its type and where it points, with no secret; null when vectors are turned off. */
+  /** The configured store type; null when vectors are turned off. */
   readonly store: {
     readonly type: string;
-    readonly target: string | null;
   } | null;
   /** Why it cannot be used, when it cannot. */
   readonly reason: KnowledgeIndexReason | null;

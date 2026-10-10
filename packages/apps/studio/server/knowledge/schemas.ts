@@ -96,10 +96,6 @@ export const KnowledgeSearchConfigSchema: z.ZodType<KnowledgeSearchConfig> = z
             description:
               'The vector store type, such as `sqlite-vec` or `pgvector`.',
           }),
-          target: z.string().nullable().meta({
-            description:
-              'Where it points, with no secret: a file path, or `postgres://user@host:port/database`.',
-          }),
         })
         .nullable()
         .meta({ description: 'Null when vectors are turned off.' }),

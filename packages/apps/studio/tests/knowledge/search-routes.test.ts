@@ -1,7 +1,7 @@
 // @vitest-environment node
 /**
- * `GET /api/knowledgeSearch` as the settings page reads it: the vector index's store, availability, reason code and
- * progress, in the documented shape.
+ * `GET /api/knowledgeSearch` as the settings page reads it: the vector index's store type, availability, reason code and
+ * progress, without exposing the configured store target.
  */
 import os from 'node:os';
 
@@ -63,7 +63,7 @@ async function routesWith(index: KnowledgeIndexStatus, read = true) {
 
 describe('the knowledge search status', () => {
   it('answers the store, its progress and a reason code', async () => {
-    const building: KnowledgeIndexStatus = {
+    const building = {
       available: true,
       store: { type: 'sqlite-vec', target: 'storage/vectors.sqlite' },
       reason: null,
@@ -77,14 +77,19 @@ describe('the knowledge search status', () => {
       },
       pending: 360,
       failed: 0,
-    };
+    } as unknown as KnowledgeIndexStatus;
     const response = await (
       await routesWith(building)
     ).request('/knowledgeSearch');
     expect(response.status).toBe(200);
     const { data } = (await response.json()) as { data: unknown };
     const config = KnowledgeSearchConfigSchema.parse(data);
-    expect(config.index).toEqual(building);
+    expect(config.index).toEqual({
+      ...building,
+      store: { type: 'sqlite-vec' },
+    });
+    expect(JSON.stringify(data)).not.toContain('vectors.sqlite');
+    expect(config.index.store).not.toHaveProperty('target');
     expect(config.canManage).toBe(false);
 
     const off: KnowledgeIndexStatus = {
