@@ -14,9 +14,8 @@
  * - "Waiting for you" above the description, which leaves out the approval card while it decides it;
  * - the add bar (files, sub-issues, dependencies, and Studio's "Pull request");
  * - after the checklist, sub-issues, dependencies and files: the design proposal, the related plans, then Code and
- *   deployments (one row per pull request, unfolding into its previews and the environments it was deployed to) and
- *   the agents' execution log;
- * - the agents' runs on the activity line. The side column keeps the properties, the people and the dates.
+ *   deployments (one row per pull request, unfolding into its previews and the environments it was deployed to);
+ * - the agents' runs on the activity line. The side column keeps properties, followers, dates and execution history.
  *
  * While a run is open the issue may change under it, so the page polls it, and reloads it when a run opens or ends.
  * Its child routes (`new-subtask`, the plugin's; a run's transcript at `runs/:runId`) render beside the covering page.
@@ -52,11 +51,7 @@ import { cn } from 'cn';
 import { DESIGN_PROPOSAL_KIND } from '../../../../shared/design.js';
 import { AskAgent } from '../../../agents/ask-agent.js';
 import { DesignSection } from '../../../agents/design/section.js';
-import {
-  IssueLiveRun,
-  IssueRunPanel,
-  IssueRunRow,
-} from '../../../agents/issue-runs.js';
+import { IssueLiveRun, IssueRunRow } from '../../../agents/issue-runs.js';
 import { useIssueRuns } from '../../../agents/use-issue-runs.js';
 import { IssueInitSection } from '../../../projects/init-card.js';
 import { IssueWaitingSection } from '../../../inbox/issue-waiting.js';
@@ -256,7 +251,6 @@ function IssuePage({
             <IssuePlansSection issue={detail} />
             <IssueInitSection issue={detail} />
             <IssueCodeSection issue={detail} {...linking} />
-            <IssueRunPanel issue={detail} />
           </IssueFileDrop>
         </IssueActivity>
       }

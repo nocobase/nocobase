@@ -12,6 +12,20 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'issueRuns.model': '模型：{{model}}',
+  'issueRuns.configuredModel': '配置模型：{{model}}',
+  'issueRuns.modelUnknown': '模型尚未报告',
+  'issueRuns.clearFilters': '清除筛选',
+  'issueRuns.emptyHint': '请在属性中确认执行者和任务状态，以启动 Agent 工作。',
+  'issueRuns.loading': '正在加载执行记录…',
+  'issueRuns.failed': '执行记录加载失败，请重试。',
+  'issueRuns.refreshFailed': '执行记录刷新失败，当前显示上次加载的记录。',
+  'issueRuns.forbidden': '无权查看执行记录，请联系项目负责人申请权限。',
+  'issueRuns.unavailable': '执行记录不可用，请返回任务列表确认任务是否仍存在。',
+  'issueRuns.unauthenticated': '登录已失效，请重新登录后查看执行记录。',
+  'issueRuns.signIn': '重新登录',
+  'issueRuns.retry': '重试',
+
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {

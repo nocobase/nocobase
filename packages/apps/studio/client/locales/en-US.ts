@@ -12,6 +12,25 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'issueRuns.model': 'Model: {{model}}',
+  'issueRuns.configuredModel': 'Configured model: {{model}}',
+  'issueRuns.modelUnknown': 'Model not reported',
+  'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.emptyHint':
+    'Check the executor and status in Properties to start agent work.',
+  'issueRuns.loading': 'Loading execution log…',
+  'issueRuns.failed': 'Could not load the execution log. Try again.',
+  'issueRuns.refreshFailed':
+    'Could not refresh the execution log. Showing the last loaded records.',
+  'issueRuns.forbidden':
+    'You do not have permission to view these runs. Contact the project owner to request access.',
+  'issueRuns.unavailable':
+    'These records are unavailable. Return to the issue list and check whether the issue still exists.',
+  'issueRuns.unauthenticated':
+    'Your session has expired. Sign in again to view the execution log.',
+  'issueRuns.signIn': 'Sign in',
+  'issueRuns.retry': 'Retry',
+
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {

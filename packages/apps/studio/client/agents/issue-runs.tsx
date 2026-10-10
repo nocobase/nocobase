@@ -19,7 +19,14 @@ import { useNotify } from '@nocobase/app-plugin-projects/client/issues';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { EraserIcon, FileTextIcon } from 'lucide-react';
-import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -52,9 +59,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent } from '@/components/ui/card';
+import { rememberRunFocus, runReturnFocus } from './run-focus.js';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { useIssueRuns } from './use-issue-runs.js';
+import { useIssueRunsState, useRefreshIssueRuns } from './use-issue-runs.js';
 
 const SUBJECT = 'issue';
 const AGENT_KIND = 'agent';
@@ -95,6 +105,7 @@ function useRunWording(): {
   readonly failure: (reason: string | null | undefined) => string | null;
 } {
   const { t } = useTranslation(AGENTS_NS);
+  const { t: studioText } = useTranslation();
   return useMemo(() => {
     const keep = (...names: string[]) =>
       Object.fromEntries(names.map((name) => [name, `{${name}}`]));
@@ -133,6 +144,7 @@ function useRunWording(): {
         allAgents: t('runs.filters.allAgents'),
         allStatuses: t('runs.filters.allStatuses'),
         noMatch: t('runs.noMatch'),
+        clearFilters: studioText('issueRuns.clearFilters'),
       },
       transcript: {
         waiting: t('transcript.waiting'),
@@ -148,7 +160,7 @@ function useRunWording(): {
       failure: (reason) =>
         reason ? t(`failures.${reason}`, { defaultValue: reason }) : null,
     };
-  }, [t]);
+  }, [t, studioText]);
 }
 
 function useHistoryRuns(
@@ -157,10 +169,16 @@ function useHistoryRuns(
   unknownAgent: string,
 ): readonly AgentRunHistoryRun[] {
   const agentName = useAgentNames();
+  const { t } = useTranslation();
   return runs.map((run) => ({
     id: run.id,
     agentId: run.agentId,
     agentName: agentName(run.agentId) ?? unknownAgent,
+    model: run.actualModels?.length
+      ? t('issueRuns.model', { model: run.actualModels.join(', ') })
+      : run.model
+        ? t('issueRuns.configuredModel', { model: run.model })
+        : t('issueRuns.modelUnknown'),
     status: run.status,
     stopping: run.cancelRequestedAt !== null,
     createdAt: run.createdAt,
@@ -173,27 +191,31 @@ function useHistoryRuns(
 function useIssueHistoryRuns(issue: IssueDetail): {
   readonly runs: readonly AgentRunHistoryRun[] | undefined;
   readonly wording: ReturnType<typeof useRunWording>;
+  readonly state: ReturnType<typeof useIssueRunsState>;
 } {
   const wording = useRunWording();
-  const subjectRuns = useIssueRuns(issue);
+  const state = useIssueRunsState(issue);
   const runs = useHistoryRuns(
-    subjectRuns,
+    state.runs,
     wording.failure,
     wording.t('runs.unknownAgent'),
   );
-  return { runs, wording };
+  return { runs, wording, state };
 }
 
 /** Confirms, then asks a run to stop. */
 function StopConfirm({
+  returnFocusRef,
   run,
   onClose,
 }: {
+  readonly returnFocusRef: RefObject<HTMLElement | null>;
   readonly run: AgentRunHistoryRun | null;
   readonly onClose: () => void;
 }): ReactElement {
   const { t } = useTranslation(AGENTS_NS);
   const stop = useStopRun();
+  const refresh = useRefreshIssueRuns();
   const notify = useNotify();
   return (
     <AlertDialog
@@ -202,7 +224,13 @@ function StopConfirm({
         if (!open) onClose();
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent
+        finalFocus={() =>
+          returnFocusRef.current?.isConnected
+            ? returnFocusRef.current
+            : runReturnFocus()
+        }
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>{t('runs.cancelTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -216,7 +244,10 @@ function StopConfirm({
             onClick={() => {
               if (run)
                 stop.mutate(run.id, {
-                  onSuccess: () => notify.success(t('runs.cancelRequested')),
+                  onSuccess: () => {
+                    void refresh();
+                    notify.success(t('runs.cancelRequested'));
+                  },
                   onError: (error) => notify.error(error),
                 });
               onClose();
@@ -239,10 +270,13 @@ function WorkspaceReset({
   const { t } = useTranslation(AGENTS_NS);
   const notify = useNotify();
   const reset = useWorkspaceReset(SUBJECT, issueId);
+  const refresh = useRefreshIssueRuns();
+  const targetRef = useRef<HTMLButtonElement>(null);
   const [confirming, setConfirming] = useState(false);
   return (
     <>
       <Button
+        ref={targetRef}
         variant='ghost'
         size='xs'
         disabled={reset.isPending}
@@ -252,7 +286,13 @@ function WorkspaceReset({
         {t('runs.workspaceReset.button')}
       </Button>
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          finalFocus={() =>
+            targetRef.current?.isConnected
+              ? targetRef.current
+              : runReturnFocus()
+          }
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t('runs.workspaceReset.title')}
@@ -268,8 +308,10 @@ function WorkspaceReset({
               onClick={() => {
                 setConfirming(false);
                 reset.mutate(undefined, {
-                  onSuccess: () =>
-                    notify.success(t('runs.workspaceReset.done')),
+                  onSuccess: () => {
+                    void refresh(issueId);
+                    notify.success(t('runs.workspaceReset.done'));
+                  },
                   onError: (error) => notify.error(error),
                 });
               }}
@@ -293,25 +335,88 @@ export function IssueRunPanel({
   readonly issue: IssueDetail;
 }): ReactElement | null {
   const navigate = useNavigate();
-  const { runs, wording } = useIssueHistoryRuns(issue);
+  const { runs, wording, state } = useIssueHistoryRuns(issue);
   const [stopping, setStopping] = useState<AgentRunHistoryRun | null>(null);
-  const { i18n } = useTranslation();
-  if (issue.executor?.type !== AGENT_KIND && (runs?.length ?? 0) === 0)
-    return null;
+  const stopTargetRef = useRef<HTMLElement | null>(null);
+  const { i18n, t } = useTranslation();
+  if (
+    !state.loading &&
+    !state.error &&
+    issue.executor?.type !== AGENT_KIND &&
+    (runs?.length ?? 0) === 0
+  )
+    return (
+      <h2
+        data-slot='issue-run-focus'
+        tabIndex={-1}
+        className='sr-only focus:not-sr-only'
+      >
+        {wording.history.title}
+      </h2>
+    );
+  const failure = state.error ? (
+    <Alert variant='destructive'>
+      <AlertDescription>
+        {t(
+          state.status === 401
+            ? 'issueRuns.unauthenticated'
+            : state.status === 403
+              ? 'issueRuns.forbidden'
+              : state.status === 404
+                ? 'issueRuns.unavailable'
+                : runs?.length
+                  ? 'issueRuns.refreshFailed'
+                  : 'issueRuns.failed',
+        )}
+        {state.status === 401 ? (
+          <Button
+            variant='link'
+            size='xs'
+            onClick={() => void navigate('/login')}
+          >
+            {t('issueRuns.signIn')}
+          </Button>
+        ) : !state.restricted ? (
+          <Button
+            variant='outline'
+            size='xs'
+            disabled={state.refreshing}
+            onClick={() => void state.retry()}
+          >
+            {t('issueRuns.retry')}
+          </Button>
+        ) : null}
+      </AlertDescription>
+    </Alert>
+  ) : undefined;
   return (
-    <>
-      <AgentRunHistory
-        runs={runs}
-        runHref={runHref}
-        onOpenRun={(run) => void navigate(runHref(run))}
-        onStop={setStopping}
-        actions={<WorkspaceReset issueId={issue.id} />}
-        locale={i18n.language}
-        labels={wording.history}
-        className='border-t pt-6'
-      />
-      <StopConfirm run={stopping} onClose={() => setStopping(null)} />
-    </>
+    <Card>
+      <CardContent>
+        <AgentRunHistory
+          runs={
+            state.loading || (state.error && !runs?.length) ? undefined : runs
+          }
+          busy={state.refreshing}
+          loadingLabel={t('issueRuns.loading')}
+          emptyDescription={t('issueRuns.emptyHint')}
+          error={failure}
+          runHref={runHref}
+          onOpenRun={(run) => void navigate(runHref(run))}
+          onStop={(run, target) => {
+            stopTargetRef.current = target ?? null;
+            setStopping(run);
+          }}
+          actions={<WorkspaceReset issueId={issue.id} />}
+          locale={i18n.language}
+          labels={wording.history}
+        />
+        <StopConfirm
+          returnFocusRef={stopTargetRef}
+          run={stopping}
+          onClose={() => setStopping(null)}
+        />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -327,7 +432,10 @@ export function IssueLiveRun({
     <RunLivePill
       runs={runs}
       runHref={runHref}
-      onOpenRun={(run) => void navigate(runHref(run))}
+      onOpenRun={(run, target) => {
+        rememberRunFocus(target ?? null, null);
+        void navigate(runHref(run));
+      }}
       labels={wording.history}
     />
   );
@@ -350,7 +458,10 @@ export function IssueRunRow({
     <RunActivityRow
       run={run}
       runHref={runHref}
-      onOpenRun={(target) => void navigate(runHref(target))}
+      onOpenRun={(run, target) => {
+        rememberRunFocus(target ?? null, null);
+        void navigate(runHref(run));
+      }}
       locale={i18n.language}
       labels={wording.history}
     />
@@ -424,7 +535,9 @@ export function IssueRunTranscript({
   const notify = useNotify();
   const { run, events, failed, trigger } = useRunWithTranscript(runId);
   const retry = useRetryRun();
+  const refresh = useRefreshIssueRuns();
   const [stopping, setStopping] = useState<AgentRunHistoryRun | null>(null);
+  const stopTargetRef = useRef<HTMLElement | null>(null);
   const [shown] = useHistoryRuns(
     run.data ? [run.data] : [],
     wording.failure,
@@ -458,10 +571,14 @@ export function IssueRunTranscript({
             run={shown}
             labels={wording.history}
             busy={retry.isPending}
-            onStop={() => setStopping(shown)}
+            onStop={(target) => {
+              stopTargetRef.current = target ?? null;
+              setStopping(shown);
+            }}
             onRetry={() =>
               retry.mutate(runId, {
                 onSuccess: (next) => {
+                  void refresh();
                   notify.success(t('runs.retried'));
                   void navigate(`../${encodeURIComponent(next.id)}`, {
                     relative: 'path',
@@ -534,7 +651,11 @@ export function IssueRunTranscript({
         labels={wording.transcript}
         {...(renderMarkdown ? { renderMarkdown } : {})}
       />
-      <StopConfirm run={stopping} onClose={() => setStopping(null)} />
+      <StopConfirm
+        returnFocusRef={stopTargetRef}
+        run={stopping}
+        onClose={() => setStopping(null)}
+      />
     </>
   );
 }
