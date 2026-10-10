@@ -13,6 +13,7 @@ export const STORAGE_PATH = 'storage/uploads';
 export const SETTINGS = 'backupSettings';
 export const BACKUPS = 'backups';
 export const FILE_ENCRYPTION_SALT = 'backup salt';
+export const ENCRYPTION_FIELD_KEYS_DIRECTORY = 'encryption-field-keys';
 export const BACKUP_TASKS_CACHE_NAME = 'backup-task-results';
 export const RESTORE_TASKS_CACHE_NAME = 'restore-task-results';
 export const RESTORE_TASKS_CACHE_TTL = 24 * 60 * 60 * 1000;
