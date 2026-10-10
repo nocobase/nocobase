@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/studio-cli",
-  "version": "0.0.1",
+  "version": "1.0.0-beta.51",
   "description": "nb-studio, the command line of NocoBase Studio: signs in to a Studio server and runs the business commands it publishes.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

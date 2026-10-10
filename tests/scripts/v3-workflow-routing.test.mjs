@@ -338,6 +338,13 @@ test('a beta release that publishes Studio builds its public release image from 
     image,
     /workflow_dispatch|ALI_DOCKER_REGISTRY\b|runners-dist/u,
   );
+  // Studio's own `pnpm build` packs the runner and nb-studio into dist/runners, which the prebuilt image carries.
+  assert.doesNotMatch(image, /cli build|upload-artifact|studio-dist/u);
+  assert.match(
+    image,
+    /- name: Build dist for linux-x64\n\s+working-directory: packages\/apps\/studio\n[\s\S]*?run: pnpm build --target linux-x64\n/u,
+  );
+  assert.match(image, /build-args: DIST=prebuilt\n/u);
   const name = (version) => {
     const tagWorkspace = path.join(directory, `tags-${version || 'none'}`);
     mkdirSync(path.join(tagWorkspace, 'packages/apps/studio'), {
