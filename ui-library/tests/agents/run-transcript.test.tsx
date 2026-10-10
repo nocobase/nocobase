@@ -24,6 +24,31 @@ const list = (): HTMLElement =>
 const toggle = (name: string): void => {
   fireEvent.click(screen.getByRole('button', { name, exact: true }));
 };
+
+// Model browser clamping and layout changes from rendered rows, without relying on JSDOM's zero-sized boxes.
+function scrollViewport(): HTMLElement {
+  const element = list().parentElement!;
+  const height = () =>
+    list().querySelectorAll('[data-type]').length * 100 +
+    within(list()).queryAllByRole('button', { name: /^Hidden events:/u })
+      .length *
+      40;
+  let top = 0;
+  Object.defineProperties(element, {
+    clientHeight: { configurable: true, get: () => 200 },
+    scrollHeight: { configurable: true, get: height },
+    scrollTop: {
+      configurable: true,
+      get: () => (top = Math.min(top, Math.max(0, height() - 200))),
+      set: (value: number) => {
+        top = Math.max(0, Math.min(value, height() - 200));
+      },
+    },
+  });
+  element.scrollTop = element.scrollHeight;
+  fireEvent.scroll(element);
+  return element;
+}
 // Vitest exposes its JSDOM instance; Node's native web storage can shadow the browser global.
 declare const jsdom: JSDOM;
 beforeEach(() => {
@@ -111,6 +136,63 @@ it('keeps an expanded trailing segment open as events arrive and keeps errors ou
   expect(list().querySelectorAll('[data-type]')).toHaveLength(5);
   toggle('System');
   expect(within(list()).getByText('event 6')).toBeVisible();
+});
+
+it('keeps following the bottom when filters reveal more rows without new events', () => {
+  const events = Array.from({ length: 8 }, (_, i) => event(i + 1, 'text'));
+  events.push(event(9, 'toolUse'), event(10, 'toolResult'));
+  render(<RunTranscript events={events} open />);
+  const viewport = scrollViewport();
+  toggle('Tools');
+  expect(viewport.scrollTop).toBe(
+    viewport.scrollHeight - viewport.clientHeight,
+  );
+  toggle('Tools');
+  expect(viewport.scrollTop).toBe(
+    viewport.scrollHeight - viewport.clientHeight,
+  );
+});
+
+it('lets the reader inspect expanded history during live updates and resumes following after collapse', () => {
+  const events = Array.from({ length: 4 }, (_, i) => event(i + 1, 'text'));
+  events.push(...Array.from({ length: 5 }, (_, i) => event(i + 5, 'toolUse')));
+  const view = render(<RunTranscript events={events} open />);
+  const viewport = scrollViewport();
+  const readingPosition = viewport.scrollTop;
+  toggle('Hidden events: 5 Tools');
+  expect(viewport.scrollTop).toBe(readingPosition);
+  const updated = [...events, event(10, 'toolUse')];
+  view.rerender(<RunTranscript events={updated} open />);
+  expect(viewport.scrollTop).toBe(readingPosition);
+  toggle('Hidden events: 6 Tools');
+  view.rerender(
+    <RunTranscript events={[...updated, event(11, 'text')]} open />,
+  );
+  expect(viewport.scrollTop).toBe(
+    viewport.scrollHeight - viewport.clientHeight,
+  );
+});
+
+it('resumes following when a filter shrinks a scrolled-away list to the viewport', () => {
+  const events = Array.from({ length: 8 }, (_, i) => event(i + 1, 'text'));
+  events.push(event(9, 'toolUse'));
+  const view = render(<RunTranscript events={events} open />);
+  const viewport = scrollViewport();
+  viewport.scrollTop = 100;
+  fireEvent.scroll(viewport);
+  toggle('Tools');
+  expect(viewport.scrollTop).toBe(100);
+  toggle('Agent');
+  expect(viewport.scrollTop).toBe(0);
+  view.rerender(
+    <RunTranscript
+      events={[...events, event(10, 'toolUse'), event(11, 'toolUse')]}
+      open
+    />,
+  );
+  expect(viewport.scrollTop).toBe(
+    viewport.scrollHeight - viewport.clientHeight,
+  );
 });
 
 it.each(['permission', 'allowed', 'denied', 'toolUse', 'toolResult'])(

@@ -13,7 +13,9 @@ import {
   SquareIcon,
 } from 'lucide-react';
 import {
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -1173,15 +1175,24 @@ function transcriptSegments(
 function HiddenTranscriptEvents({
   events,
   filterLabels,
+  onLayoutChange,
   ...rowProps
 }: {
   readonly events: readonly RunTranscriptEvent[];
   readonly filterLabels: RunTranscriptFilterLabels;
+  readonly onLayoutChange: () => void;
   readonly renderMarkdown: (text: string) => ReactNode;
   readonly locale: string | undefined;
   readonly labels: RunTranscriptLabels;
 }): ReactElement {
   const [expanded, setExpanded] = useState(false);
+  const previousExpandedRef = useRef(expanded);
+  useLayoutEffect(() => {
+    if (previousExpandedRef.current === expanded) return;
+    previousExpandedRef.current = expanded;
+    // Expanding history keeps the reading position; collapse may bring the viewport back to the bottom.
+    onLayoutChange();
+  }, [expanded, onLayoutChange]);
   const counts = new Map<RunTranscriptFilterGroup, number>();
   for (const event of events) {
     const group = transcriptGroup(event);
@@ -1280,11 +1291,19 @@ function FilteredRunTranscript({
   };
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
+  const updatePinned = useCallback(() => {
+    const element = listRef.current;
+    if (element)
+      pinnedRef.current =
+        element.scrollHeight - element.scrollTop - element.clientHeight < 48;
+  }, []);
   const count = events?.length ?? 0;
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = listRef.current;
     if (element && pinnedRef.current) element.scrollTop = element.scrollHeight;
-  }, [count]);
+    // A filter can shrink the list to the viewport without dispatching a scroll event.
+    updatePinned();
+  }, [count, groups, updatePinned]);
   const markdown = renderMarkdown ?? plainText;
   return (
     <div className='flex min-h-0 flex-col gap-3' data-testid='run-transcript'>
@@ -1318,12 +1337,7 @@ function FilteredRunTranscript({
       <div
         ref={listRef}
         className='max-h-[60svh] min-h-40 overflow-y-auto rounded-lg border'
-        onScroll={(event) => {
-          const element = event.currentTarget;
-          pinnedRef.current =
-            element.scrollHeight - element.scrollTop - element.clientHeight <
-            48;
-        }}
+        onScroll={updatePinned}
       >
         {!events ? (
           <div role='status' className='space-y-2 p-4'>
@@ -1345,6 +1359,7 @@ function FilteredRunTranscript({
                   key={key}
                   events={segment.events}
                   filterLabels={filterLabels}
+                  onLayoutChange={updatePinned}
                   renderMarkdown={markdown}
                   locale={locale}
                   labels={labels}

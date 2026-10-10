@@ -5,6 +5,8 @@
  * API key name it.
  */
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
+import { parseCommandLine } from '@nocobase/app-cli-client/parse';
+import { fillRequest } from '@nocobase/app-cli-client/request';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -24,7 +26,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { apiRoutes } from '../server/routes/index.js';
 import { agentsSecurityFragment } from '../server/routes/openapi.js';
 import { agentsToken } from '../server/tokens.js';
-import { createHarness, type Harness } from './harness.js';
+import { claim, createHarness, type Harness } from './harness.js';
 
 let h: Harness;
 let api: Hono;
@@ -120,6 +122,77 @@ describe('agents API document', () => {
 
   it('has sound schemas', () => {
     expect(findApiDocumentSchemaProblems(document)).toEqual([]);
+  });
+
+  it('sends repeated CLI types to the event API and retains them on the next page', async () => {
+    const command = deriveAllCliCommands(document).find(
+      (entry) => entry.id === 'run:events',
+    );
+    if (!command) throw new Error('Missing run:events command');
+    const runId = await h.enqueue(await h.createAgent(), 'cli-filter', {
+      actorUserId: 'bob',
+    });
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    const stored = await h.request(
+      'POST',
+      `/agents/runners/runs/${runId}/events`,
+      {
+        runnerKey: runner.key,
+        body: {
+          events: ['status', 'text', 'toolUse', 'input', 'text'].map(
+            (type, index) => ({
+              seq: index + 1,
+              at: '2026-10-10T00:00:00Z',
+              type,
+              content: `event ${index + 1}`,
+            }),
+          ),
+        },
+      },
+    );
+    expect(stored.status).toBe(200);
+    const args = [runId, '--type', 'text', '--type', 'input', '--limit', '2'];
+    const options = {
+      bin: 'nocobase',
+      io: { readText: () => Promise.resolve(undefined), env: () => undefined },
+    };
+    const firstCall = await parseCommandLine(command, args, options);
+    const firstRequest = fillRequest(command, firstCall.values);
+    expect(
+      new URL(firstRequest.path, 'http://example.test').searchParams.getAll(
+        'type',
+      ),
+    ).toEqual(['text', 'input']);
+    const first = await h.request(
+      firstRequest.method,
+      firstRequest.path.replace(/^\/api/u, ''),
+      {
+        user: 'bob',
+      },
+    );
+    expect(first.status).toBe(200);
+    expect(first.body.data.map((row: { seq: number }) => row.seq)).toEqual([
+      2, 4,
+    ]);
+    const token: unknown = first.body.meta.nextPageToken;
+    if (typeof token !== 'string') throw new Error('Missing next page token');
+    const nextCall = await parseCommandLine(
+      command,
+      [...args, '--page-token', token],
+      options,
+    );
+    const nextRequest = fillRequest(command, nextCall.values);
+    const next = await h.request(
+      nextRequest.method,
+      nextRequest.path.replace(/^\/api/u, ''),
+      {
+        user: 'bob',
+      },
+    );
+    expect(next.status).toBe(200);
+    expect(next.body.data.map((row: { seq: number }) => row.seq)).toEqual([5]);
+    expect(next.body.meta).toEqual({ lastSeq: 5 });
   });
 
   it('lists every operation under Agents with a unique agents operationId', () => {
