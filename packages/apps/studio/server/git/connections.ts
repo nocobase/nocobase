@@ -31,6 +31,7 @@ import {
   GIT_TOKEN_MAX,
   WEBHOOK_SECRET_MAX,
   WEBHOOK_SECRET_MIN,
+  connectionState,
   type CreateGitRepoRequest,
   type CreatedGitRepo,
   type GenerateGitRepoRequest,
@@ -871,7 +872,7 @@ export function createGitConnections(deps: {
       readonly url: string | null;
     } = { missing: [], url: null },
   ): GitConnection {
-    return {
+    const connection = {
       ...choiceOf(row, granted.url),
       appId: row.appId,
       clientId: row.clientId,
@@ -896,6 +897,7 @@ export function createGitConnections(deps: {
       permissionsUrl: granted.url,
       updatedAt: row.updatedAt,
     };
+    return { ...connection, state: connectionState(connection) };
   }
 
   async function viewOf(row: ConnectionRow): Promise<GitConnection> {
@@ -2083,6 +2085,8 @@ export function createGitConnections(deps: {
       const organization = field(input, 'organization', 39) ?? null;
       if (organization !== null && !ACCOUNT_NAME.test(organization))
         throw invalid('organization is the organization’s login.');
+      // GitHub truncates past its own limit (`buildAppManifest`); this bound is only to keep the input sane.
+      const name = field(input, 'name', 200) ?? null;
       // The connection's id is chosen now: the app's webhook URL names it.
       const connectionId = randomUUID();
       const { webUrl } = changes(
@@ -2110,7 +2114,7 @@ export function createGitConnections(deps: {
       const form = platform.appManifestForm({
         webUrl,
         organization,
-        name: `Studio ${new URL(urls.homepage).host}`,
+        name: name ?? `Studio ${new URL(urls.homepage).host}`,
         homepageUrl: urls.homepage,
         webhookUrl: urls.webhook(connectionId),
         webhookActive,

@@ -445,13 +445,17 @@ function CreateApp({
   const publicOrigin = useGitStatus().data?.publicOrigin ?? null;
   const [owner, setOwner] = useState<'personal' | 'organization'>('personal');
   const [organization, setOrganization] = useState('');
+  const [name, setName] = useState('');
   const [webUrl, setWebUrl] = useState(ui.defaultWebUrl);
   const [missing, setMissing] = useState(false);
   const host = webUrl.trim() || ui.defaultWebUrl;
   const reachable = webhooksReachable(publicOrigin, host, ui.defaultWebUrl);
   const start = useMutation({
-    mutationFn: (input: { organization: string | null; webUrl: string }) =>
-      api.startAppManifest({ provider, ...input }),
+    mutationFn: (input: {
+      organization: string | null;
+      webUrl: string;
+      name?: string;
+    }) => api.startAppManifest({ provider, ...input }),
     // The browser leaves for the host, which creates the app and sends it back.
     onSuccess: (form) => postForm(form.action, { manifest: form.manifest }),
     onError: (error) => notify.error(error),
@@ -466,6 +470,7 @@ function CreateApp({
     start.mutate({
       organization: owner === 'organization' ? org : null,
       webUrl: host,
+      name: name.trim() || undefined,
     });
   };
   return (
@@ -474,6 +479,20 @@ function CreateApp({
         {t(`${key}.create.intro`)}
       </p>
       <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor='git-app-name'>
+            {t(`${key}.create.name`)}
+          </FieldLabel>
+          <Input
+            id='git-app-name'
+            autoComplete='off'
+            maxLength={34}
+            placeholder={t(`${key}.create.namePlaceholder`)}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <FieldDescription>{t(`${key}.create.nameHint`)}</FieldDescription>
+        </Field>
         <Field>
           <FieldLabel id='git-app-owner'>{t(`${key}.create.owner`)}</FieldLabel>
           <RadioGroup

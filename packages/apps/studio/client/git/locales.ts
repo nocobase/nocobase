@@ -273,7 +273,11 @@ export const gitEnUS = {
       personalTokenLink: 'Create a token on GitHub',
       create: {
         intro:
-          'Studio creates a GitHub App for you on GitHub, with the permissions and events it needs. You name it there, then install it on the accounts Studio should reach.',
+          'Studio creates a GitHub App for you on GitHub, with the permissions and events it needs, then installs it on the accounts Studio should reach.',
+        name: 'App name',
+        namePlaceholder: 'Studio',
+        nameHint:
+          'Up to 34 characters. Leave blank for “Studio” and this server’s address.',
         owner: 'Owner of the app',
         ownerKind: { personal: 'My account', organization: 'An organization' },
         organization: 'Organization',
@@ -763,7 +767,10 @@ export const gitZhCN: typeof gitEnUS = {
       personalTokenLink: '在 GitHub 上创建令牌',
       create: {
         intro:
-          'Studio 会在 GitHub 上为你创建一个 GitHub App，带好所需的权限和事件。你在 GitHub 上为它命名，然后安装到 Studio 需要访问的账号上。',
+          'Studio 会在 GitHub 上为你创建一个 GitHub App，带好所需的权限和事件，然后安装到 Studio 需要访问的账号上。',
+        name: 'App 名称',
+        namePlaceholder: 'Studio',
+        nameHint: '最多 34 个字符。留空则使用「Studio」加这台服务器的地址。',
         owner: 'App 的所有者',
         ownerKind: { personal: '我的账号', organization: '组织' },
         organization: '组织',

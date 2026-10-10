@@ -531,6 +531,57 @@ export interface GitConnection extends GitConnectionChoice {
   /** Where the installation's account reviews and accepts the app's permissions; null when unknown. */
   readonly permissionsUrl: string | null;
   readonly updatedAt: string;
+  /** How the connection is doing (`connectionState`), spelled out so a list need not infer it. */
+  readonly state: GitConnectionState;
+}
+
+export const GIT_CONNECTION_STATES = [
+  'ready',
+  'notInstalled',
+  'incomplete',
+  'webhookFailing',
+  'noWebhook',
+] as const;
+
+/**
+ * How a connection is doing, by what Studio has: `notInstalled` is an app Studio created on the host that is not
+ * installed anywhere yet; `incomplete` lacks what it cannot work without (an app's private key or installation, a
+ * token); `webhookFailing` when its webhook's last delivery could not be verified or processed; `noWebhook` for an
+ * app without a webhook secret (changes arrive only by polling); otherwise `ready`.
+ */
+export type GitConnectionState = (typeof GIT_CONNECTION_STATES)[number];
+
+/** What `connectionState` reads off a connection; kept narrow so it can run against a row still being assembled. */
+export type ConnectionStateInput = Pick<
+  GitConnection,
+  | 'kind'
+  | 'hasToken'
+  | 'installUrl'
+  | 'installationId'
+  | 'appId'
+  | 'hasPrivateKey'
+  | 'lastDelivery'
+  | 'hasWebhookSecret'
+>;
+
+export function connectionState(
+  connection: ConnectionStateInput,
+): GitConnectionState {
+  if (connection.kind === 'token')
+    return connection.hasToken ? 'ready' : 'incomplete';
+  if (connection.installUrl && !connection.installationId)
+    return 'notInstalled';
+  if (
+    !connection.appId ||
+    !connection.hasPrivateKey ||
+    !connection.installationId
+  )
+    return 'incomplete';
+  const delivery = connection.lastDelivery?.status;
+  if (delivery === 'invalidSignature' || delivery === 'failed')
+    return 'webhookFailing';
+  if (!connection.hasWebhookSecret) return 'noWebhook';
+  return 'ready';
 }
 
 /**
@@ -603,6 +654,8 @@ export interface StartGitAppManifestRequest {
   readonly organization?: string | null;
   /** The provider's default host unless given (a GitHub Enterprise Server's origin). */
   readonly webUrl?: string;
+  /** The app's name on the host; `Studio <host>` unless given. Truncated to the host's limit. */
+  readonly name?: string;
 }
 
 /** The form the browser posts to the host: `manifest` is the field's value (JSON), `action` where it goes. */
