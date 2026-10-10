@@ -138,6 +138,10 @@ export interface ProposalRecord {
   readonly decidedAt: string | null;
   readonly comment: string | null;
   readonly appliedVersion: number | null;
+  /** The proposal sent back that this one replaces. */
+  readonly replacesId: string | null;
+  /** `document` for a document's version sent back for changes; null for a proposal. */
+  readonly origin: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -240,6 +244,35 @@ export async function filesOf(
     filter: (f) => f.or(wanted.map((id) => f.string('id').eq(id))),
   });
   return new Map(rows.map((row) => [row.id, row]));
+}
+
+/** What the proposals of `ids` replaced (the proposal or the version sent back), by the replacing proposal's id. */
+export async function replacedOf(
+  conn: DatabaseConnection,
+  ids: readonly (string | null)[],
+): Promise<Map<string, ProposalRecord>> {
+  const wanted = [...new Set(ids.filter((id): id is string => Boolean(id)))];
+  if (wanted.length === 0) return new Map();
+  const revisions = (
+    await proposalsRepo(conn).findMany({
+      filter: (f) => f.or(wanted.map((id) => f.string('id').eq(id))),
+    })
+  ).filter((row) => row.replacesId);
+  if (revisions.length === 0) return new Map();
+  const replaced = new Map(
+    (
+      await proposalsRepo(conn).findMany({
+        filter: (f) =>
+          f.or(revisions.map((row) => f.string('id').eq(row.replacesId))),
+      })
+    ).map((row) => [row.id, row]),
+  );
+  const found = new Map<string, ProposalRecord>();
+  for (const row of revisions) {
+    const before = replaced.get(row.replacesId!);
+    if (before) found.set(row.id, before);
+  }
+  return found;
 }
 
 /** The current versions of `docs` (files only, or any), by document id. */

@@ -398,16 +398,42 @@ const zhCN: KnowledgeClientResource = {
       reranked: '重排 {{score}}',
       notReranked: '未重排',
     },
+    revisions: {
+      sendBack: '退回修改',
+      askAgent: '让 Agent 修改',
+      sendBackHint:
+        '会带着你的意见唤醒 {{name}}，它重新提交的提议会替代这一条。',
+      askAgentHint:
+        '第 {{version}} 版由 {{name}} 写成。会带着你的意见唤醒它，它提交的修订提议照常审阅。',
+      comment: '要修改什么',
+      commentHint: 'Agent 按这段意见修改，请写清楚哪里不对、希望怎样。',
+      send: '发送',
+      sent: '已退回给 {{name}}。',
+      sentBackBy: '{{name}} 退回修改',
+      waitingTitle: '已退回修改',
+      waiting: '等待 {{name}} 提交修订。',
+      superseded: '这条提议已被修订后的提议替代。',
+      revises: '修订自',
+      revisesProposal: '{{name}} 退回的提议',
+      revisesDocument: '{{name}} 退回的文档',
+      diffSentBack: '与退回版本的差异',
+      documentNote:
+        '退回的是文档第 {{version}} 版；Agent 提交的修订提议会替代这一条。',
+      history: '按 {{name}} 的意见修改',
+    },
     proposals: {
       listTitle: '提议',
       statuses: {
         pending: '待审阅',
+        revising: '待修改',
         accepted: '已接受',
         rejected: '已拒绝',
         withdrawn: '已撤回',
+        superseded: '已被替代',
       },
       none: {
         pending: '没有等待审阅的提议。',
+        revising: '没有等待修改的提议。',
         accepted: '还没有已接受的提议。',
         rejected: '没有被拒绝的提议。',
       },
@@ -450,6 +476,9 @@ const zhCN: KnowledgeClientResource = {
     },
   },
   errors: {
+    NOT_REVISABLE: '只有 Agent 写的版本才能退回给它；请直接编辑文档。',
+    KNOWLEDGE_PROPOSAL_NOT_REVISING: '那条提议已不在等待修改。',
+    INVALID_COMMENT: '请写下要修改什么（最多 1000 字）。',
     KNOWLEDGE_PROPOSAL_PENDING:
       '你之前对这篇文档的提议还在等待决定，需先处理它。',
     KNOWLEDGE_PROPOSAL_REJECTED: '同样的修改之前被拒绝过，请提出不同的修改。',

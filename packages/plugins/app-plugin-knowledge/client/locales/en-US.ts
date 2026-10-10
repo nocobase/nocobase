@@ -423,16 +423,43 @@ const enUS = {
       reranked: 'Reranked {{score}}',
       notReranked: 'Not reranked',
     },
+    revisions: {
+      sendBack: 'Send back',
+      askAgent: 'Ask the agent to revise',
+      sendBackHint:
+        '{{name}} is woken with your comment and proposes again; the new proposal replaces this one.',
+      askAgentHint:
+        '{{name}} wrote version {{version}}. It is woken with your comment and proposes a revision, reviewed like any proposal.',
+      comment: 'What should change',
+      commentHint:
+        'The agent works from this; say what is wrong and what you expect.',
+      send: 'Send',
+      sent: 'Sent back to {{name}}.',
+      sentBackBy: '{{name}} sent it back',
+      waitingTitle: 'Sent back for changes',
+      waiting: 'Waiting for {{name}} to propose a revision.',
+      superseded: 'A revision replaced this proposal.',
+      revises: 'Revises',
+      revisesProposal: 'A proposal {{name}} sent back',
+      revisesDocument: 'The document, sent back by {{name}}',
+      diffSentBack: 'Changes since the version sent back',
+      documentNote:
+        'Version {{version}} of the document was sent back; the revision the agent proposes replaces this.',
+      history: 'Revised as {{name}} asked',
+    },
     proposals: {
       listTitle: 'Proposals',
       statuses: {
         pending: 'Pending',
+        revising: 'Sent back',
         accepted: 'Accepted',
         rejected: 'Rejected',
         withdrawn: 'Withdrawn',
+        superseded: 'Superseded',
       },
       none: {
         pending: 'Nothing is waiting for review.',
+        revising: 'Nothing is waiting for a revision.',
         accepted: 'No accepted proposals yet.',
         rejected: 'No rejected proposals.',
       },
@@ -476,6 +503,11 @@ const enUS = {
     },
   },
   errors: {
+    NOT_REVISABLE:
+      'Only a version an agent wrote is sent back to it; edit the document instead.',
+    KNOWLEDGE_PROPOSAL_NOT_REVISING:
+      'That proposal is no longer waiting for a revision.',
+    INVALID_COMMENT: 'Say what should change (at most 1000 characters).',
     KNOWLEDGE_PROPOSAL_PENDING:
       'Your earlier proposal for this document is still waiting; it has to be decided first.',
     KNOWLEDGE_PROPOSAL_REJECTED:

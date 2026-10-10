@@ -1,6 +1,6 @@
 /**
  * What the knowledge view shows, in the URL beside the page's own parameters, so a link opens it again: `?doc=` (with
- * `&version=`, `&mode=edit|history`, and `&lines=12-30` for lines to highlight), `?proposal=`, `?proposals=pending|accepted|rejected` (with `&about=` a
+ * `&version=`, `&mode=edit|history`, and `&lines=12-30` for lines to highlight), `?proposal=`, `?proposals=pending|revising|accepted|rejected` (with `&about=` a
  * document), or `?q=` search results. Nothing of these is the space's home.
  */
 import { useSearchParams } from 'react-router';
@@ -12,11 +12,12 @@ export type DocMode = 'read' | 'edit' | 'history';
 /** The proposal lists the view shows, by status. */
 export type ProposalListStatus = Extract<
   KnowledgeProposalStatus,
-  'pending' | 'accepted' | 'rejected'
+  'pending' | 'revising' | 'accepted' | 'rejected'
 >;
 
 export const PROPOSAL_LIST_STATUSES: readonly ProposalListStatus[] = [
   'pending',
+  'revising',
   'accepted',
   'rejected',
 ];

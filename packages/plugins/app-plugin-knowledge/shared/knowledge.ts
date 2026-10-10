@@ -325,6 +325,8 @@ export interface KnowledgeVersion {
   readonly proposalId: string | null;
   readonly approvedBy: KnowledgeAuthor | null;
   readonly note: string | null;
+  /** The proposal it applied was a revision: what was sent back, and the comment it was sent back with. */
+  readonly revision: KnowledgeRevisionRequest | null;
   readonly createdAt: string;
 }
 
@@ -366,8 +368,22 @@ export interface MoveKnowledgeDocRequest {
 
 export type KnowledgeProposalKind = 'update' | 'create' | 'verify';
 
+/**
+ * `revising`: sent back for changes, waiting for its proposer to propose again; `superseded`: replaced by the proposal
+ * that came back.
+ */
 export type KnowledgeProposalStatus =
-  'pending' | 'accepted' | 'rejected' | 'withdrawn';
+  'pending' | 'revising' | 'accepted' | 'rejected' | 'withdrawn' | 'superseded';
+
+/** What a proposal or a version was sent back with, and by whom. */
+export interface KnowledgeRevisionRequest {
+  /** The record sent back: a proposal, or the one that stands for a document's version (`origin` `document`). */
+  readonly proposalId: string;
+  readonly origin: 'proposal' | 'document';
+  readonly comment: string | null;
+  readonly requestedBy: KnowledgeAuthor | null;
+  readonly requestedAt: string | null;
+}
 
 export interface KnowledgeProposal {
   readonly id: string;
@@ -407,8 +423,22 @@ export interface KnowledgeProposal {
   readonly decidedAt: string | null;
   readonly comment: string | null;
   readonly appliedVersion: number | null;
+  /**
+   * `document` when it stands for a document's version sent back for changes (status `revising` or `superseded`): its
+   * content is that version's, and it was never proposed; `proposal` otherwise.
+   */
+  readonly origin: 'proposal' | 'document';
+  /** What it replaces: the proposal or the version sent back, with the comment it was sent back with. */
+  readonly replaces: KnowledgeRevisionRequest | null;
+  /** The content sent back, for the diff from it; absent unless asked for. */
+  readonly replacedContent?: string | null;
+  /** The proposal that replaced it, once superseded. */
+  readonly supersededById: string | null;
   readonly createdAt: string;
-  /** Whether the viewer may accept or reject it now. */
+  /**
+   * Whether the viewer may decide it now: accept, reject or send back a pending one, or reject one waiting for its
+   * revision.
+   */
   readonly canDecide: boolean;
 }
 
@@ -429,6 +459,11 @@ export interface ProposeKnowledgeRequest {
   readonly summary?: string;
   readonly content?: string;
   readonly baseVersion?: number;
+  /**
+   * The proposal sent back (`revising`) that this one revises. Left out, a proposal from the same source for the same
+   * document replaces the one sent back on its own.
+   */
+  readonly replacesId?: string;
 }
 
 /** `POST /api/knowledge/proposals/:proposalId/accept`. */
@@ -436,6 +471,14 @@ export interface AcceptKnowledgeProposalRequest {
   readonly comment?: string;
   /** Accept a stale proposal anyway: its content becomes the next version whole. */
   readonly confirmStale?: boolean;
+}
+
+/**
+ * `POST /api/knowledge/proposals/:proposalId/requestChanges`, and `POST /api/knowledge/docs/:docId/requestChanges` for
+ * a document's version an actor wrote: what should change, for its proposer to propose again.
+ */
+export interface RequestKnowledgeChangesRequest {
+  readonly comment: string;
 }
 
 /** A search hit: one section of an article or a file's text that answers the query, with an excerpt around the match. */
