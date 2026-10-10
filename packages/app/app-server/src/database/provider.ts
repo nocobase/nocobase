@@ -40,7 +40,7 @@ export interface DatabaseProviderApplication {
 /**
  * Set by `nocobase dev` on the server process it starts, to that
  * application's root. Naming the root rather than switching the behavior on
- * matters for a Hub: applications it hosts in the same process see the same
+ * matters for a host: applications it runs in the same process see the same
  * environment, and their directories are deployed revisions a cache must not
  * be written into.
  */

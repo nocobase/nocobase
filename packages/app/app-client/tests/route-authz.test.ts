@@ -9,8 +9,6 @@ import {
 } from 'vitest';
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
-  defineDevRoutes,
   resolveAppClientContributions,
   type AppClientRoutePageDefinition,
 } from '../src/plugins.js';
@@ -125,7 +123,7 @@ describe('a page without authz', () => {
 
   it('lets a child override what its descendants inherit', () => {
     const result = settle(
-      defineSettingsRoutes([
+      defineAppRoutes([
         {
           name: 'orders',
           path: '/orders',
@@ -143,12 +141,12 @@ describe('a page without authz', () => {
         },
       ]),
     );
-    const report = result.settingsRouteTree[0]!.children![0]!;
+    const report = result.routes[0]!.children![0]!;
     expect(report.authz).toEqual(check);
     expect(report.children![0]!.authz).toEqual(check);
   });
 
-  it('defaults the first page by surface and auth, without throwing', () => {
+  it('defaults the first page by auth, without throwing', () => {
     const result = settle([
       defineAppRoutes([
         { name: 'protected', path: '/protected', componentLoader },
@@ -170,10 +168,6 @@ describe('a page without authz', () => {
           children: [{ name: 'grouped', path: '/grouped', componentLoader }],
         },
       ]),
-      defineSettingsRoutes([
-        { name: 'settings', path: '/example', componentLoader },
-      ]),
-      defineDevRoutes([{ name: 'dev', path: '/example', componentLoader }]),
     ]);
     expect(result.routes.map((route) => route.authz)).toEqual([
       'unrestricted',
@@ -182,8 +176,6 @@ describe('a page without authz', () => {
       'skip',
     ]);
     expect(result.routes[3]!.children![0]!.authz).toBe('unrestricted');
-    expect(result.settings[0]!.authz).toBe('unrestricted');
-    expect(result.devRoutes[0]!.authz).toBe('skip');
   });
 
   it('warns once per defaulted route with its id, path and default', () => {
@@ -195,15 +187,20 @@ describe('a page without authz', () => {
           componentLoader,
           children: [{ name: 'detail', path: ':id', componentLoader }],
         },
+        {
+          name: 'public',
+          path: '/public',
+          auth: 'optional',
+          componentLoader,
+        },
       ]),
-      defineDevRoutes([{ name: 'dev', path: '/example', componentLoader }]),
     ]);
     expect(warn).toHaveBeenCalledTimes(2);
     expect(warn.mock.calls[0]![0]).toMatch(
       /"example:orders" at "\/orders".*"unrestricted".*Declare authz/,
     );
     expect(warn.mock.calls[1]![0]).toMatch(
-      /"dev" at "\/dev\/example".*"skip".*Declare authz/,
+      /"example:public" at "\/public".*"skip".*Declare authz/,
     );
   });
 });

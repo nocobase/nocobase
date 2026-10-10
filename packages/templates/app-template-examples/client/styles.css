@@ -120,3 +120,14 @@
 [data-slot='toast-viewport'] {
   z-index: 100;
 }
+
+/* Brand tint belongs to the application shell, independent of each page's content. */
+.app-brand-surface {
+  background-image: radial-gradient(
+    ellipse at 100% 0%,
+    color-mix(in srgb, var(--primary) 6%, transparent),
+    transparent 70%
+  );
+  background-size: 100% 18rem;
+  background-repeat: no-repeat;
+}

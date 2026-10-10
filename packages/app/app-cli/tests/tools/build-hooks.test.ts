@@ -241,7 +241,6 @@ describe('build pipeline hook stages', () => {
         'pnpm --filter fixture-app^... build',
         'pnpm exec tsc -p tsconfig.server.json',
         'pnpm exec tsc-alias -p tsconfig.server.json',
-        'node copy-ai-skills.mjs',
         'node after-server.mjs',
         'pnpm exec nocobase config variables --out dist/variables.json',
         'node build-server-dist-package.mjs',

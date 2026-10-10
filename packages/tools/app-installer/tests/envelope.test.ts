@@ -150,7 +150,7 @@ describe('the --json envelope', () => {
           message: 'Read the error log:',
           run: {
             command: 'tail',
-            args: ['-n', '100', '/srv/my hub/logs/error.log'],
+            args: ['-n', '100', '/srv/my shop/logs/error.log'],
           },
         },
       ],
@@ -159,7 +159,7 @@ describe('the --json envelope', () => {
       [
         'Error: It did not start.',
         '  Read the error log:',
-        "    tail -n 100 '/srv/my hub/logs/error.log'",
+        "    tail -n 100 '/srv/my shop/logs/error.log'",
       ].join('\n'),
     );
   });

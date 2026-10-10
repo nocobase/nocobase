@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authorization",
   "displayName": "Authorization App Plugin",
   "description": "Authorization integration and permission management UI for NocoBase applications.",
-  "version": "1.0.0-beta.25",
+  "version": "1.0.0-beta.26",
   "type": "module",
   "sideEffects": false,
   "prettier": "@nocobase/dev-config/prettier",
@@ -26,19 +26,11 @@
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
     },
-    "./client/routes": {
-      "types": "./client/routes.ts",
-      "import": "./client/routes.ts"
-    },
     "./client/react-providers": {
       "types": "./client/react-providers.ts",
       "import": "./client/react-providers.ts"
     },
     "./package.json": "./package.json",
-    "./client/management": {
-      "types": "./client/management.ts",
-      "import": "./client/management.ts"
-    },
     "./server/extension": {
       "types": "./server/extension/index.ts",
       "import": "./server/extension/index.ts"
@@ -68,19 +60,11 @@
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
       },
-      "./client/routes": {
-        "types": "./dist/client/routes.d.ts",
-        "import": "./dist/client/routes.js"
-      },
       "./client/react-providers": {
         "types": "./dist/client/react-providers.d.ts",
         "import": "./dist/client/react-providers.js"
       },
       "./package.json": "./package.json",
-      "./client/management": {
-        "types": "./dist/client/management.d.ts",
-        "import": "./dist/client/management.js"
-      },
       "./server/extension": {
         "types": "./dist/server/extension/index.d.ts",
         "import": "./dist/server/extension/index.js"
@@ -106,18 +90,13 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
-    "class-variance-authority": "catalog:",
-    "cn": "catalog:",
-    "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-router": "catalog:",
     "@nocobase/authorization": "workspace:^"
   },
   "devDependencies": {
@@ -126,7 +105,6 @@
     "@nocobase/repository-input": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
-    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

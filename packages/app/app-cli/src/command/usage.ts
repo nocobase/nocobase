@@ -4,7 +4,7 @@
 //
 // oclif raises these before a command's `run()` starts, as parse errors inside the command or as "command not found"
 // in the runner, and describes them only in prose that quotes the input: `Parsing --timeout … received: abc`,
-// `--hub=<value> cannot also be provided`, `Unexpected argument: <value>`. A mistyped command line can put a secret in
+// `--config=<value> cannot also be provided`, `Unexpected argument: <value>`. A mistyped command line can put a secret in
 // any of those places — `--apikey <key>` leaves the key behind as an unexpected argument — so no value is echoed. Names
 // the command declares, its flags, its arguments and their allowed values, are repeated; so is an unknown flag's name,
 // reduced to its name first. Both places turn the error into the same `INVALID_USAGE` failure, so an agent reads

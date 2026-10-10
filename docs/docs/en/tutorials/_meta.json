@@ -22,11 +22,11 @@
   {
     "type": "file",
     "name": "notifications",
-    "label": "5. Send notifications"
+    "label": "4. Send notifications"
   },
   {
     "type": "file",
     "name": "deploy",
-    "label": "6. Go live"
+    "label": "5. Go live"
   }
 ]

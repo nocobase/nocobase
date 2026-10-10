@@ -4,62 +4,19 @@ import routes from '../../client/routes.js';
 
 describe('client routes', () => {
   // Loading a page module transforms its whole import graph on first use, which can outlast the default 5 s timeout
-  // when a release runner runs every package's tests at once. Both tests below load one.
-  it('defines App, Settings, and Dev Routes through one Client entry', async () => {
-    const [appContribution, settingsContribution] = routes;
-    if (
-      appContribution?.parent !== 'app' ||
-      settingsContribution?.parent !== 'settings'
-    ) {
-      throw new Error('Missing Routes example Client contributions.');
-    }
-
-    const [appRoute] = appContribution.routes;
-    const [settingsRoute] = settingsContribution.routes;
+  // when a release runner runs every package's tests at once.
+  it('defines the App Route through one Client entry', async () => {
+    expect(routes.parent).toBe('app');
+    const [appRoute] = routes.routes;
 
     expect(appRoute).toMatchObject({
       name: 'index',
       path: '/routes-example',
       auth: 'required',
+      authz: { resource: { type: 'page', id: 'index' }, action: 'access' },
       componentLoader: expect.any(Function),
     });
-    expect(settingsRoute).toMatchObject({
-      name: 'routes-example',
-      path: '/routes-example',
-      navigation: { title: 'title' },
-      authz: {
-        resource: { type: 'page', id: 'routes-example.settings' },
-        action: 'access',
-      },
-      componentLoader: expect.any(Function),
-    });
-    await expect(appRoute?.componentLoader()).resolves.toHaveProperty(
-      'default',
-    );
-    await expect(settingsRoute?.componentLoader()).resolves.toHaveProperty(
-      'default',
-    );
-  }, 30_000);
-
-  it('declares a dev page that a production build would drop', async () => {
-    // Tests run under Node, where `import.meta.env` is undefined. That is a development context, so the routes are
-    // present here; the production behaviour is covered by the template build test.
-    const devContribution = routes.find(
-      (contribution) => contribution.parent === 'dev',
-    );
-    if (devContribution?.parent !== 'dev') {
-      throw new Error('Missing Routes example Dev Route contribution.');
-    }
-
-    const [devRoute] = devContribution.routes;
-
-    expect(devRoute).toMatchObject({
-      name: 'routes-example',
-      path: '/routes-example',
-      navigation: { title: 'title' },
-      componentLoader: expect.any(Function),
-    });
-    await expect(devRoute?.componentLoader()).resolves.toHaveProperty(
+    await expect(appRoute?.componentLoader?.()).resolves.toHaveProperty(
       'default',
     );
   }, 30_000);

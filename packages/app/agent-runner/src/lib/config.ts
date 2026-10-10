@@ -16,6 +16,7 @@ import {
   type ToolSlots,
 } from '../protocol/index.ts';
 import { ENV_NAME_PATTERN, forbidden } from '../agent/env.ts';
+import type { AgentTools } from '../agent/runner-tools.ts';
 import { ApiClient } from './http.ts';
 import {
   ensureHome,
@@ -41,6 +42,11 @@ export interface RunnerSettings {
    */
   toolSlots?: ToolSlots;
   agentHome: AgentHome;
+  /**
+   * The Node.js and pnpm agents get (`config set agent-tools`): the runner's own, first on their PATH (`runner`, the
+   * default), or the machine's (`system`).
+   */
+  agentTools: AgentTools;
   /**
    * Whether a runner installed by the install script updates itself between runs when an application serves a newer
    * version (`nocobase-runner update --auto off` turns it off).
@@ -118,6 +124,7 @@ export async function readSettings(
       ? { toolSlots: toolSlots.data }
       : {}),
     agentHome: stored?.agentHome === 'real' ? 'real' : 'isolated',
+    agentTools: stored?.agentTools === 'system' ? 'system' : 'runner',
     autoUpdate: stored?.autoUpdate !== false,
     ...(typeof stored?.serviceLabel === 'string' && stored.serviceLabel !== ''
       ? { serviceLabel: stored.serviceLabel }

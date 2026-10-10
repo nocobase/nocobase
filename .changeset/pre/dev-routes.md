@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-client': minor
 '@nocobase/app-template-default': minor
-'@nocobase/app-template-hub': minor
 '@nocobase/app-plugin-routes-example': minor
 '@nocobase/create-plugin': patch
 ---

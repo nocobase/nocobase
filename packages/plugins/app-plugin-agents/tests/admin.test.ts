@@ -75,9 +75,9 @@ describe('admin API', () => {
     });
     expect(invalid.status).toBe(400);
     expect(invalid.body.error.reason).toBe('INVALID_INPUT');
-    // Each entry's effort is one its tool takes: Codex has no `max`, Claude Code no `minimal`.
+    // Each entry's effort is one its tool takes: neither Codex nor Claude Code has `minimal`.
     for (const entry of [
-      { tool: 'codex', effort: 'max' },
+      { tool: 'codex', effort: 'minimal' },
       { tool: 'claude', effort: 'minimal' },
     ]) {
       const refused = await h.request('POST', '/agents', {
@@ -98,7 +98,7 @@ describe('admin API', () => {
         can: ADMIN,
         body: {
           modelEntries: [
-            { tool: 'codex', model: 'gpt-5', effort: 'minimal' },
+            { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
             { tool: 'claude', effort: 'max' },
             { tool: 'pi', effort: '' },
           ],
@@ -107,7 +107,7 @@ describe('admin API', () => {
       },
     );
     expect(efforts.body.data.modelEntries).toEqual([
-      { tool: 'codex', model: 'gpt-5', effort: 'minimal' },
+      { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
       { tool: 'claude', model: null, effort: 'max' },
       { tool: 'pi', model: null, effort: null },
     ]);
@@ -152,6 +152,40 @@ describe('admin API', () => {
     expect(deleted.status).toBe(204);
   });
 
+  it('keeps an effort its tool no longer takes until the entry changes it', async () => {
+    h = await createHarness();
+    const id = await h.createAgent({ name: 'Coder' });
+    // Saved while Codex still listed `minimal`.
+    await h.database
+      .connection()
+      .repository('agAgents')
+      .updateOne({
+        filter: { id },
+        values: {
+          modelEntries: [{ tool: 'codex', model: 'gpt-5', effort: 'minimal' }],
+        },
+      });
+    const { revision } = await h.services.agents.get(id);
+    const renamed = await h.request('PATCH', `/agents/${id}`, {
+      user: 'alice',
+      can: ADMIN,
+      body: { name: 'Builder', expectedRevision: revision },
+    });
+    expect(renamed.status).toBe(200);
+    const moved = await h.request('PATCH', `/agents/${id}`, {
+      user: 'alice',
+      can: ADMIN,
+      body: {
+        modelEntries: [{ tool: 'codex', model: 'gpt-6', effort: 'minimal' }],
+        expectedRevision: revision + 1,
+      },
+    });
+    expect(moved.status).toBe(400);
+    expect(moved.body.error.metadata).toMatchObject({
+      reason: 'EFFORT_UNSUPPORTED',
+    });
+  });
+
   it('lists agents with their active runs and the runners online for them', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();
@@ -178,6 +212,13 @@ describe('admin API', () => {
       ['Coder', 1, 1],
       ['Elsewhere', 0, 0],
     ]);
+    // Whether the caller owns each, for the list's order.
+    const owned = await h.request('GET', '/agents', {
+      user: 'owner',
+      can: ['agents.agents/read'],
+    });
+    expect(owned.body.data[0].owned).toBe(true);
+    expect(list.body.data[0].owned).toBe(false);
     // Runners are visible to whoever may read agents, to pick where they run.
     const runners = await h.request('GET', '/agents/runners', {
       user: 'alice',
@@ -610,6 +651,90 @@ describe('admin API', () => {
     expect(next.body.data).toEqual([
       expect.objectContaining({ seq: 3, content: 'e3' }),
     ]);
+  });
+
+  it('filters raw event types before paging and preserves access checks', async () => {
+    h = await createHarness();
+    const runId = await h.enqueue(await h.createAgent(), '1', {
+      actorUserId: 'bob',
+    });
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    const types = [
+      'status',
+      'text',
+      'toolUse',
+      'input',
+      'permission',
+      'text',
+      'error',
+      'usage',
+    ] as const;
+    const stored = await h.request(
+      'POST',
+      `/agents/runners/runs/${runId}/events`,
+      {
+        runnerKey: runner.key,
+        body: {
+          events: types.map((type, index) => ({
+            seq: index + 1,
+            at: 'x',
+            type,
+            content: `e${index + 1}`,
+          })),
+        },
+      },
+    );
+    expect(stored.status).toBe(200);
+    const base = `/agents/runs/${runId}/events`;
+    const filtered = `${base}?type=text&type=input&type=text&pageSize=2`;
+    const first = await h.request('GET', filtered, { user: 'bob' });
+    expect(first.status).toBe(200);
+    expect(first.body.data.map((row: { seq: number }) => row.seq)).toEqual([
+      2, 4,
+    ]);
+    expect(first.body.meta.lastSeq).toBe(4);
+    const next = await h.request(
+      'GET',
+      `${filtered}&pageToken=${first.body.meta.nextPageToken}`,
+      { user: 'bob' },
+    );
+    expect(next.body.data.map((row: { seq: number }) => row.seq)).toEqual([6]);
+    expect(next.body.meta).toEqual({ lastSeq: 6 });
+    const empty = await h.request('GET', `${base}?type=text&after=6`, {
+      user: 'bob',
+    });
+    expect(empty.body).toEqual({ data: [], meta: { lastSeq: 6 } });
+    const single = await h.request('GET', `${base}?type=permission`, {
+      user: 'bob',
+    });
+    expect(single.body.data.map((row: { seq: number }) => row.seq)).toEqual([
+      5,
+    ]);
+    const all = await h.request('GET', base, { user: 'bob' });
+    expect(all.body.data).toHaveLength(types.length);
+    expect(
+      (await h.services.runs.events(runId, 0, 2, ['text'])).events.map(
+        (row) => row.seq,
+      ),
+    ).toEqual([2, 6]);
+    expect(
+      (await h.services.runs.events(runId, 0, 100, [])).events,
+    ).toHaveLength(types.length);
+    for (const query of ['type=tools', 'type=', 'type=text&type=unknown']) {
+      expect(
+        (await h.request('GET', `${base}?${query}`, { user: 'bob' })).status,
+      ).toBe(400);
+    }
+    expect((await h.request('GET', filtered)).status).toBe(401);
+    expect((await h.request('GET', filtered, { user: 'carol' })).status).toBe(
+      404,
+    );
+    // Invisible runs remain hidden before filter validation.
+    expect(
+      (await h.request('GET', `${base}?type=unknown`, { user: 'carol' }))
+        .status,
+    ).toBe(404);
   });
 
   it("lets a personal runner's owner share it with the team", async () => {

@@ -1,9 +1,6 @@
 import type { InAppNotificationClientResource } from './en-US.js';
 
 const zhCN: InAppNotificationClientResource = {
-  nav: {
-    devInbox: '站内信',
-  },
   inbox: {
     eyebrow: '个人收件箱',
     title: '消息中心',

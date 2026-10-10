@@ -9,6 +9,7 @@ import {
   FailureReasonSchema,
   PERMISSION_MODES,
   RUN_INPUT_TYPES,
+  RUN_EVENT_TYPES,
   RUN_STATUSES,
   RunEventSchema,
   RunnerFeatureSchema,
@@ -18,6 +19,7 @@ import {
   ToolLoadSchema,
   ToolSlotsSchema,
   type RunEvent,
+  type RunEventType,
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
@@ -224,9 +226,25 @@ export const RunListQuery: z.ZodType<
  * events, beyond the usual cap of 100.
  */
 export const RunEventsQuery: z.ZodType<
-  Paging & { readonly after?: number | undefined }
+  Paging & {
+    readonly after?: number | undefined;
+    readonly type?: RunEventType[] | undefined;
+  }
 > = z.object({
   after: z.coerce.number().int().min(0).optional(),
+  // Hono represents one query value as a string and repeated values as an array.
+  type: z
+    .preprocess(
+      (value) => (typeof value === 'string' ? [value] : value),
+      z.array(z.enum(RUN_EVENT_TYPES)).min(1).max(100),
+    )
+    .optional()
+    .meta({
+      type: 'array',
+      items: { type: 'string', enum: [...RUN_EVENT_TYPES] },
+      description:
+        'Only these raw event types (repeat for more). Omit to read every type.',
+    }),
   pageSize: pageSize(500, 1000),
   pageToken,
 });
@@ -492,6 +510,7 @@ export const AgentSummarySchema: z.ZodType<AgentSummary> = agentObject
     activeRuns: z.number().int(),
     onlineRunners: z.number().int(),
     canEdit: z.boolean(),
+    owned: z.boolean(),
     canCopy: z.boolean(),
   })
   .meta({ ref: 'AgentsAgentSummary' });

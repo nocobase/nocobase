@@ -83,8 +83,10 @@ import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { createPolicy } from '../core/command-policy.ts';
 import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
+import { writeRunnerTools } from './runner-tools.ts';
 import {
   agentCwd,
+  agentWorkingTrees,
   agentWritableRoots,
   PREPARE_STEPS,
   PrepareError,
@@ -163,6 +165,12 @@ export function workspaceNotes(options: {
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (the only branch you can push).`,
       );
+    }
+    for (const dir of dirs) {
+      if (dir.repo?.initializing)
+        lines.push(
+          `The remote ${dir.repo.url} has no refs. This checkout is initializing it on ${dir.repo.branch}, with no base commit. Implement the task in this directory, verify the result, then commit and push this branch. This first delivery needs no pull request, even if the usual workflow asks for one: there is no base branch yet. The push may only create the branch, not overwrite a branch created by someone else. Preserve existing files and commits on a retry. Report the actual checks and any failure; do not claim the task is complete merely because the first push succeeded.`,
+        );
     }
     lines.push('Keep every file you write inside these directories.');
   }
@@ -651,6 +659,10 @@ export class RunWorker {
           );
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    const runnerTools =
+      deps.settings.agentTools === 'system'
+        ? []
+        : await writeRunnerTools(binDir);
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
     const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
@@ -678,6 +690,7 @@ export class RunWorker {
       tmpDir,
       pnpmStoreDir,
       pnpmImportMethod: importMethod,
+      pinPnpm: runnerTools.includes('pnpm'),
       hooksDir: deps.paths.hooksDir,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),
       ...(deps.settings.passEnv === undefined
@@ -763,6 +776,7 @@ export class RunWorker {
       const handle = adapter.start({
         workDir: cwd,
         writableRoots: agentWritableRoots(context.dirs, cwd, [pnpmStoreDir]),
+        workingTrees: agentWorkingTrees(context.dirs),
         prompt,
         systemPrompt: system,
         ...(payload.tool.model === undefined

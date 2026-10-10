@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { symlink } from 'node:fs/promises';
 import {
+  chmod,
   lstat,
   mkdir,
   mkdtemp,
@@ -8,6 +9,7 @@ import {
   readdir,
   readlink,
   rm,
+  stat,
   writeFile,
 } from 'node:fs/promises';
 import os from 'node:os';
@@ -96,17 +98,17 @@ async function syncApp(appRoot: string, plugin?: string): Promise<void> {
 
 describe('pluginSkillPrefix', () => {
   it('drops the scope and keeps the package name', () => {
-    expect(pluginSkillPrefix('@nocobase/app-plugin-workflow')).toBe(
-      'nocobase-app-plugin-workflow',
+    expect(pluginSkillPrefix('@nocobase/app-plugin-scheduler')).toBe(
+      'nocobase-app-plugin-scheduler',
     );
   });
 
   it('rejects a package outside the scope', () => {
-    expect(() => pluginSkillPrefix('workflow')).toThrow('must start with');
+    expect(() => pluginSkillPrefix('scheduler')).toThrow('must start with');
   });
 
   it('claims its own name and its suffixed names only', () => {
-    const prefix = 'nocobase-app-plugin-workflow';
+    const prefix = 'nocobase-app-plugin-scheduler';
     expect(isOwnedSkillName(prefix, prefix)).toBe(true);
     expect(isOwnedSkillName(prefix, `${prefix}-trigger`)).toBe(true);
     expect(isOwnedSkillName(prefix, 'nocobase-app-plugin-other')).toBe(false);
@@ -152,6 +154,68 @@ describe('skills synchronization', () => {
       'utf8',
     );
     expect(contents).toBe('# upstream');
+  });
+
+  it('writes nothing when every skill is already current, so a read-only .agents passes', async () => {
+    const appRoot = await createApp({
+      '@nocobase/app-plugin-demo': { enabled: true },
+    });
+    await installPlugin(appRoot, '@nocobase/app-plugin-demo', {
+      'nocobase-app-plugin-demo': '# main',
+    });
+    await syncApp(appRoot);
+    const skillFile = path.join(
+      appRoot,
+      '.agents/skills/nocobase-app-plugin-demo/SKILL.md',
+    );
+    const ownershipFile = path.join(appRoot, '.agents/.skills-sync.json');
+    const linkPath = path.join(
+      appRoot,
+      '.claude/skills/nocobase-app-plugin-demo',
+    );
+    const before = await Promise.all(
+      [skillFile, ownershipFile, linkPath].map((file) => lstat(file)),
+    );
+    // What a coding tool's sandbox does to `.agents/`: nothing in it may be created, replaced or removed.
+    const readOnly = [
+      path.join(appRoot, '.agents'),
+      path.join(appRoot, '.agents/skills'),
+      path.join(appRoot, '.agents/skills/nocobase-app-plugin-demo'),
+      path.join(appRoot, '.claude/skills'),
+    ];
+    await Promise.all(readOnly.map((directory) => chmod(directory, 0o555)));
+    try {
+      await syncApp(appRoot);
+    } finally {
+      await Promise.all(readOnly.map((directory) => chmod(directory, 0o755)));
+    }
+
+    const after = await Promise.all(
+      [skillFile, ownershipFile, linkPath].map((file) => lstat(file)),
+    );
+    for (const [index, entry] of after.entries()) {
+      expect(entry.ino).toBe(before[index]!.ino);
+      expect(entry.mtimeMs).toBe(before[index]!.mtimeMs);
+    }
+  });
+
+  it('replaces a skill holding a file its source does not have', async () => {
+    const appRoot = await createApp({
+      '@nocobase/app-plugin-demo': { enabled: true },
+    });
+    await installPlugin(appRoot, '@nocobase/app-plugin-demo', {
+      'nocobase-app-plugin-demo': '# main',
+    });
+    await syncApp(appRoot);
+    const extra = path.join(
+      appRoot,
+      '.agents/skills/nocobase-app-plugin-demo/stale.md',
+    );
+    await writeFile(extra, 'stale');
+
+    await syncApp(appRoot);
+
+    await expect(stat(extra)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
   it('removes a skill the plugin no longer ships', async () => {

@@ -89,6 +89,7 @@ describe('nocobase-runner cli', () => {
       name: 'test-runner',
       slots: 3,
       agentHome: 'isolated',
+      agentTools: 'runner',
       running: false,
     });
     expect(parsed.apps.map((app) => app.key).sort()).toEqual(

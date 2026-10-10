@@ -9,7 +9,7 @@
 //
 // Usage:
 //   node scripts/check-openapi.mjs                 # every template
-//   node scripts/check-openapi.mjs default hub     # the named templates only
+//   node scripts/check-openapi.mjs default         # the named templates only
 //
 // Another repository reuses the check by importing `runOpenApiCheck` and passing its own targets, each an application
 // directory plus an optional `extend` module that adds plugins to it. NocoBase 3 Pro does this through its
@@ -54,8 +54,12 @@ export function templateTargets(root = repositoryRoot) {
       appDir: template('examples'),
       connections: ['main', 'analytics'],
     },
-    { name: 'hub', appDir: template('hub') },
   ];
+}
+
+/** The product applications under `packages/apps` this repository checks, by name. */
+export function applicationTargets(root = repositoryRoot) {
+  return [{ name: 'studio', appDir: path.join(root, 'packages/apps/studio') }];
 }
 
 /**
@@ -105,7 +109,7 @@ export const openApiFixes = Object.freeze({
     'dispatcher. A route declared outside the forwarded path is never reached: move it under that path or delete it.',
   missing:
     'Complete its describeRoute(...): tags is the plugin name in PascalCase, summary an English verb phrase, and ' +
-    'operationId namespace + verb + resource in camelCase, such as hubDeployApp.',
+    'operationId namespace + verb + resource in camelCase, such as workflowsListWorkflowRuns.',
   duplicate:
     'Rename one of the two operationIds. They are unique across the application, so start each with the namespace ' +
     'of the plugin that owns the route.',
@@ -260,7 +264,7 @@ export async function runOpenApiCheck(
   {
     inspect = inspectApplication,
     log = console.log,
-    rerun = 'node scripts/check-openapi.mjs <default|examples|hub>',
+    rerun = 'node scripts/check-openapi.mjs <default|examples>',
     error = console.error,
   } = {},
 ) {
@@ -307,14 +311,14 @@ export async function runOpenApiCheck(
 }
 
 async function main(argv) {
-  const all = templateTargets();
+  const all = [...templateTargets(), ...applicationTargets()];
   const names = argv.filter((argument) => !argument.startsWith('-'));
   const unknown = names.filter(
     (name) => !all.some((target) => target.name === name),
   );
   if (unknown.length > 0) {
     console.error(
-      `Unknown template ${unknown.join(', ')}; expected ${all.map(({ name }) => name).join(', ')}.`,
+      `Unknown application ${unknown.join(', ')}; expected ${all.map(({ name }) => name).join(', ')}.`,
     );
     return 2;
   }

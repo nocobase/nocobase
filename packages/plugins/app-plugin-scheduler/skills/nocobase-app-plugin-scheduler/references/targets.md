@@ -175,7 +175,7 @@ Work that must wait before it starts, such as a follow-up an hour after the firi
 
 ## Historical Occurrences After Retargeting
 
-Changing a definition's target affects later executions; it does not transfer ownership of an existing occurrence. For example, if a definition changes from `app.export` to `workflow` while an export is waiting, that occurrence still belongs to `app.export`.
+Changing a definition's target affects later executions; it does not transfer ownership of an existing occurrence. For example, if a definition changes from `app.export` to `app.archive` while an export is waiting, that occurrence still belongs to `app.export`.
 
 A valid completion requires all three conditions together:
 

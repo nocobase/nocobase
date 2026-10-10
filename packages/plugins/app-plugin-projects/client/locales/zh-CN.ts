@@ -5,6 +5,7 @@ import plansZhCN from './plans.zh-CN.js';
 const pages = {
   actions: {
     cancel: '取消',
+    close: '关闭',
     save: '保存',
   },
   activity: {

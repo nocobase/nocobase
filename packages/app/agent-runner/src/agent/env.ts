@@ -10,7 +10,8 @@
 // or its key from a variable is detected as it will run.
 //
 // The runner then sets what it owns: HOME (the agent's home, see agent-home.ts), TMPDIR (inside the working
-// directory), the machine's shared pnpm store (core/pnpm-store.ts), the run's process tag (`AGENT_RUN_PROCESS_TAG`,
+// directory), the machine's shared pnpm store (core/pnpm-store.ts), the runner's own Node.js and pnpm with pnpm kept from
+// switching versions (runner-tools.ts), the run's process tag (`AGENT_RUN_PROCESS_TAG`,
 // which marks what the tool starts as the run's, see core/process-tree.ts), the application CLI's directory first on
 // PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
 // git the agent runs uses the runner's hooks (push-guard.ts) whatever the repository configures. With the run's git
@@ -34,6 +35,7 @@ import {
   type PnpmImportMethod,
 } from '../core/pnpm-store.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
+import { PINNED_PNPM_ENV } from './runner-tools.ts';
 import { TRAILERS_ENV } from '../core/push-guard.ts';
 import {
   CREDENTIAL_NONCE_ENV,
@@ -108,6 +110,8 @@ export interface BuildEnvOptions {
   credentialHelper?: CredentialHelperOptions;
   /** The run's process tag (core/process-tree.ts), which marks what the tool starts as the run's. */
   processTag?: string;
+  /** The runner's own pnpm is on PATH (runner-tools.ts): keep a repository's `packageManager` from replacing it. */
+  pinPnpm?: boolean;
 }
 
 /** Names a run may not set and the runner's owner may not pass: the runner's own, and what it sets itself. */
@@ -200,6 +204,7 @@ export function buildAgentEnv(
       env,
       pnpmStoreEnv(options.pnpmStoreDir, options.pnpmImportMethod ?? 'copy'),
     );
+  if (options.pinPnpm === true) Object.assign(env, PINNED_PNPM_ENV);
   if (options.processTag !== undefined)
     env[PROCESS_TAG_ENV] = options.processTag;
   const config: [string, string][] = [];

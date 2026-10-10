@@ -2,16 +2,17 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { errorMessage } from './api.js';
 
-/** How often an open page refreshes; effects and sweeps finish in the background. */
-const REFRESH_MS = 4000;
-
 /**
- * Loads `load` now and every few seconds while `key` stays the same, and
- * returns a `reload` for after an action. A failed load keeps the last data.
+ * Loads `load` now, again whenever `key` names something else, and again
+ * whenever `refresh` changes, and returns a `reload` for after an action.
+ * It never polls: the page reloads when told something changed. A failed
+ * load keeps the last data.
  */
 export function useLoader<T>(
   load: (() => Promise<T>) | undefined,
   key: string,
+  /** Changes when what was loaded may have changed: reloads, keeping the data meanwhile. */
+  refresh: string | number = '',
 ): {
   readonly data: T | undefined;
   readonly error: string;
@@ -34,14 +35,10 @@ export function useLoader<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps, @eslint-react/exhaustive-deps
   }, [key]);
   useEffect(() => {
-    // The first load also waits a tick, so every refresh comes from a timer.
+    // Loaded from a timer, not during the effect's own run.
     const first = setTimeout(() => void reload(), 0);
-    const timer = setInterval(() => void reload(), REFRESH_MS);
-    return () => {
-      clearTimeout(first);
-      clearInterval(timer);
-    };
-  }, [reload]);
+    return () => clearTimeout(first);
+  }, [reload, refresh]);
   return {
     data: loaded?.key === key ? loaded.data : undefined,
     error,

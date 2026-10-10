@@ -13,7 +13,7 @@ cases:
       - 'Selects Scheduler for administrator visibility and an application-owned target for the short Service call.'
       - 'Includes Client registration, page access, explicit Asia/Shanghai timezone and actual business completion.'
     forbidden:
-      - 'Introducing Workflow solely because the task repeats.'
+      - 'Introducing a heavier execution system solely because the task repeats.'
       - 'Treating server dispatch logs as sufficient UI observability.'
     skillMode: 'implicit'
   - id: implicit-internal-maintenance
@@ -24,7 +24,7 @@ cases:
       - 'Uses a ScheduleExecutor of its own from the application jobs service, with an hourly rule registered and set up in a Provider.'
       - 'Explains why Scheduler UI management is unnecessary.'
     forbidden:
-      - 'Introducing Scheduler or Workflow merely for periodicity.'
+      - 'Introducing Scheduler merely for periodicity.'
       - 'Inventing an unsupported jobs API, or using a queue or JobExecutor for the recurring rule.'
     skillMode: 'implicit'
   - id: implicit-delayed-job
@@ -35,18 +35,6 @@ cases:
       - 'Chooses a one-time delayed queue publish, since JobExecutor has no delay, and checks the installed queue API.'
     forbidden:
       - 'Creating a recurring Cron schedule.'
-    skillMode: 'implicit'
-  - id: implicit-staged-reconciliation
-    action: 'explain'
-    risk: 'read-only'
-    prompt: '每天凌晨三点对账，需要按阶段处理、差异分支、节点状态和失败诊断；管理员也要看到定时执行历史。请设计边界，不改代码。'
-    expected:
-      - 'Selects Scheduler for timing and Workflow for supported orchestration, with typed business Services.'
-      - 'Checks installed Workflow Instruction contracts and uses its skill when authoring becomes necessary.'
-      - 'Keeps target.type workflow and separate workflow readiness checks.'
-    forbidden:
-      - 'Adding an extra job solely to wrap a workflow trigger.'
-      - 'Promising exactly-once external effects.'
     skillMode: 'implicit'
   - id: define-short-target
     action: 'define'
@@ -133,17 +121,6 @@ cases:
       - 'Requires actual terminal executor evidence and the matching reference.'
     forbidden:
       - 'Completing another target’s occurrence or routing historical observation through the current definition.'
-  - id: review-workflow-readiness
-    action: 'validate'
-    risk: 'read-only'
-    prompt: 'scheduler sync 成功了，target.type 是 workflow，config.workflowKey 填了工作流标题。为什么还不执行？只给排查步骤。'
-    expected:
-      - 'Uses workflow directory key rather than title or revision ID and checks input schema.'
-      - 'Separately verifies workflow checker, Artifact build, sync, enablement and current version.'
-      - 'Reads occurrence status/reason; uses built-in workflow completion integration and stable schedule event identity.'
-    forbidden:
-      - 'Claiming scheduler sync builds or enables workflows.'
-      - 'Triggering a second independent workflow to repair the occurrence.'
   - id: partial-manifest-finalize
     action: 'explain'
     risk: 'read-only'

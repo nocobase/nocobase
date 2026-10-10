@@ -268,6 +268,10 @@ export interface CheckedOutRepo {
   cache: string;
   /** The clone's `.git`, or a legacy worktree's own directory under the cache. */
   gitDir: string;
+  /** The submodules checked out in `dir`, nested ones included, as absolute paths. */
+  submodules: string[];
+  /** This run may create, but never update, the empty remote's default branch. */
+  initializing?: true;
 }
 
 /** A working directory as the run uses it. */
@@ -555,7 +559,10 @@ async function addClone(
     ]))
   ) {
     // An empty repository whose first commit this run makes: the default branch starts with no parent.
-    if (repo.initial === true) {
+    if (
+      repo.initial === true &&
+      (await git(['for-each-ref', '--format=%(refname)'], cache)) === ''
+    ) {
       await taskGit(context, [
         'symbolic-ref',
         'HEAD',
@@ -805,6 +812,27 @@ export async function initSubmodules(
   return selected;
 }
 
+/** The submodules initialized in the worktree `dir`, nested ones included, as absolute paths. */
+export async function listSubmodules(dir: string): Promise<string[]> {
+  if (!existsSync(path.join(dir, '.gitmodules'))) return [];
+  // `foreach` visits only checked-out submodules; `displaypath` is relative to this top-level worktree even in recursion.
+  // The ./ prefix and NUL terminator preserve leading/trailing whitespace through git()'s trim().
+  const listed = await git(
+    [
+      'submodule',
+      'foreach',
+      '--quiet',
+      '--recursive',
+      'printf "%s\\0" "./$displaypath"',
+    ],
+    dir,
+  );
+  return listed
+    .split('\0')
+    .filter((entry) => entry !== '')
+    .map((entry) => path.resolve(dir, entry));
+}
+
 /** The subject's working directory, locked for one run. */
 export interface WorkspaceLock {
   workDir: string;
@@ -900,7 +928,8 @@ export async function prepareDirs(
   };
   try {
     const dirs: PreparedDir[] = [];
-    for (const [index, entry] of options.dirs.entries()) {
+    for (const [index, requested] of options.dirs.entries()) {
+      let entry = requested;
       const primary = index === 0;
       const common = {
         primary,
@@ -957,12 +986,55 @@ export async function prepareDirs(
         `checkout: ${entry.url} -> ${entry.path} (${entry.branch})`,
       );
       const retry = options.retry === undefined ? {} : { retry: options.retry };
-      const cache = await withRepoAuth(options.auth, entry.url, (auth) =>
-        updateCache(paths, entry.url, {
+      const repoUrl = entry.url;
+      const cache = await withRepoAuth(options.auth, repoUrl, (auth) =>
+        updateCache(paths, repoUrl, {
           ...(auth === undefined ? {} : { auth }),
           ...retry,
         }),
       );
+      // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
+      // above; read all advertised refs before granting the narrowly scoped first-push exception.
+      let initializing = false;
+      if (
+        entry.initializeIfEmpty === true &&
+        entry.initial !== true &&
+        !(await gitOk(
+          [
+            'show-ref',
+            '--verify',
+            '--quiet',
+            `refs/remotes/origin/${entry.defaultBranch}`,
+          ],
+          cache,
+        )) &&
+        !(await gitOk(
+          [
+            'show-ref',
+            '--verify',
+            '--quiet',
+            `refs/remotes/origin/${entry.branch}`,
+          ],
+          cache,
+        ))
+      ) {
+        const refs = await withRepoAuth(options.auth, repoUrl, (auth) =>
+          retryGit(
+            `git ls-remote ${repoUrl}`,
+            () =>
+              git(
+                [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
+                cache,
+                gitAuthEnv(auth),
+              ),
+            options.retry,
+          ),
+        );
+        if (refs.trim() === '') {
+          initializing = true;
+          entry = { ...entry, branch: entry.defaultBranch, initial: true };
+        }
+      }
       const created = await ensureCheckout(cache, dir, entry);
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
@@ -987,7 +1059,9 @@ export async function prepareDirs(
       // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
-      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir);
+      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir, {
+        createOnly: initializing,
+      });
       const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
         initSubmodules(dir, {
           all: created,
@@ -1007,6 +1081,8 @@ export async function prepareDirs(
         dir,
         cache,
         gitDir,
+        submodules: await listSubmodules(dir),
+        ...(initializing ? { initializing: true as const } : {}),
       };
       const key = preparedKey(entry);
       // A checkout created again (removed by GC, say) needs its initialization again.

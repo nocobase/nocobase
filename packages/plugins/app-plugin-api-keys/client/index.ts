@@ -1,12 +1,6 @@
 // The plugin's public client surface. The default export is the registration
 // factory an application lists in its client/plugins.ts.
 export { default } from './plugin.js';
-export type { ApiKeysClientOptions } from './plugin.js';
-export {
-  createApiKeysRoutes,
-  API_KEYS_PAGE_ACCESS,
-  API_KEYS_ROUTE_ID,
-} from './routes.js';
 export { apiKeyClient, type ApiKeySummary } from './api-keys-client.js';
 export {
   API_KEY_EXPIRY_CHOICES,

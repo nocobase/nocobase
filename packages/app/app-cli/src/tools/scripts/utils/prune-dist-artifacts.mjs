@@ -55,8 +55,8 @@ const isDocumentation = (fileName) =>
  * Paths kept whole, each because something reads a file the rules above would otherwise remove.
  *
  * `typescript/lib` holds `lib.*.d.ts`, which are inputs to the compiler rather than declarations describing it.
- * `@nocobase/app-plugin-workflow` runs `ts.createProgram` at run time to typecheck a workflow's source, and a program
- * without its standard library reports every global as undefined. TypeScript is an optional peer, so it is usually
+ * A plugin that runs `ts.createProgram` at run time to typecheck source needs them, and a program without its
+ * standard library reports every global as undefined. TypeScript is an optional peer, so it is usually
  * absent from the tree entirely — but a deployment that installs it must get a working one.
  */
 const PRESERVED_PATHS = [path.join('typescript', 'lib')];

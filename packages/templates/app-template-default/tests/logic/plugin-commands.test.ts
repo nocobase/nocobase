@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 // Users develop, build and start their app through these scripts. Nothing at runtime depends on them, so dropping or
-// renaming one — a bad merge resolution did exactly that once — breaks the documented workflow silently: the app still
+// renaming one — a bad merge resolution did exactly that once — breaks the documented development steps silently: the app still
 // builds, starts, and passes every other test. These assertions are the alarm.
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';

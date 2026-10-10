@@ -10,8 +10,10 @@
  *   started as the next turn; the run ends when a turn completes with
  *   nothing left to deliver.
  * - Permissions: approval policy `untrusted` with the `workspaceWrite`
- *   sandbox (writable: the work directory and the session's
- *   `writableRoots`, such as each worktree's Git directory; network on, since the agent
+ *   sandbox (writable: the work directory, the session's `writableRoots`,
+ *   such as each worktree's Git directory, and the `.agents` directory of
+ *   each working tree, which Codex otherwise keeps read-only as its own
+ *   skills root although an application's `skills sync` writes there; network on, since the agent
  *   reaches its application through the application CLI). Codex then asks
  *   before every command and file change, and each request is answered by
  *   the runner's policy (`shell` with the unwrapped script, `edit` per
@@ -23,7 +25,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, mkdir, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
@@ -81,7 +83,6 @@ import type {
 export const DEFAULT_MIN_CODEX_VERSION = '0.158.0';
 
 const EFFORTS = new Set(TOOL_EFFORTS.codex);
-const EFFORT_ALIASES: Readonly<Record<string, string>> = { max: 'xhigh' };
 /** How long a stop waits for the interrupted turn before ending the process. */
 const INTERRUPT_GRACE_MS = 1500;
 /** Shutdown steps: stdin closed, then SIGTERM, then SIGKILL. */
@@ -345,6 +346,59 @@ interface Steer {
   prompt?: boolean;
 }
 
+/**
+ * The directory Codex's `workspaceWrite` sandbox keeps read-only inside every writable root, as the root of its own
+ * skills and plugins (seen on macOS, with seatbelt). An application keeps its synchronized Skills there
+ * (`<repo>/.agents/skills`), so `pnpm install` and `skills sync` fail with `EPERM` unless it is a writable root itself.
+ */
+export const CODEX_AGENTS_DIR = '.agents';
+
+/** Creates missing `.agents` directories and opens only each working tree's canonical `.agents` itself. */
+export async function codexAgentsDirs(
+  session: AdapterSession,
+): Promise<string[]> {
+  const trees = [
+    ...new Set([session.workDir, ...(session.workingTrees ?? [])]),
+  ];
+  const allowed = await Promise.all(trees.map((tree) => realpath(tree)));
+  const dirs: string[] = [];
+  for (const tree of allowed) {
+    const dir = path.join(tree, CODEX_AGENTS_DIR);
+    try {
+      // A sandbox cannot open a missing root. Do this before starting Codex, without replacing existing paths.
+      await mkdir(dir);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    }
+    let target: string;
+    try {
+      target = await realpath(dir);
+    } catch {
+      // Keep dangling or inaccessible paths intact and let Codex run without this extra writable root.
+      continue;
+    }
+    // An internal link must not open protected siblings (.codex/.git) or the whole working tree either.
+    if (target !== dir) continue;
+    if (!(await stat(target)).isDirectory()) continue;
+    // Use the canonical target so replacing a link later cannot redirect this sandbox root elsewhere.
+    dirs.push(target);
+  }
+  return [...new Set(dirs)];
+}
+
+/** What the sandbox lets the agent write: the work directory, the session's writable roots and their `.agents`. */
+export async function codexWritableRoots(
+  session: AdapterSession,
+): Promise<string[]> {
+  return [
+    ...new Set([
+      session.workDir,
+      ...(session.writableRoots ?? []),
+      ...(await codexAgentsDirs(session)),
+    ]),
+  ];
+}
+
 class CodexRun {
   private readonly events = new Channel<AdapterEvent>();
   private readonly session: AdapterSession;
@@ -511,12 +565,10 @@ class CodexRun {
       if (!steer.prompt) this.pendingSteers.set(steer.clientId, steer);
     this.turnRunning = true;
     this.turnSummary = undefined;
-    const effort = session.effort
-      ? (EFFORT_ALIASES[session.effort] ?? session.effort)
-      : undefined;
+    const effort = session.effort || undefined;
     const sandboxPolicy: SandboxPolicy = {
       type: 'workspaceWrite',
-      writableRoots: [session.workDir, ...(session.writableRoots ?? [])],
+      writableRoots: await codexWritableRoots(session),
       networkAccess: true,
       excludeTmpdirEnvVar: false,
       excludeSlashTmp: false,
@@ -1064,6 +1116,7 @@ class CodexRun {
             : 'Codex is not installed (codex executable not found)',
         );
       }
+      await codexAgentsDirs(this.session);
       // A stop or a dead process ends the run even while still connecting.
       const connecting = this.connect(detection.path ?? 'codex');
       connecting.catch(() => {

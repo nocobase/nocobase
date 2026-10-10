@@ -183,6 +183,13 @@ describe('agent protocol', () => {
       path: 'new',
       initial: true,
     };
+    expect(RepoDirSchema.parse({ ...dir, initializeIfEmpty: true })).toEqual({
+      ...dir,
+      initializeIfEmpty: true,
+    });
+    expect(
+      RepoDirSchema.safeParse({ ...dir, initializeIfEmpty: false }).success,
+    ).toBe(false);
     expect(RepoDirSchema.parse(dir)).toEqual(dir);
     expect(RepoDirSchema.safeParse({ ...dir, initial: false }).success).toBe(
       false,

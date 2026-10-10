@@ -90,10 +90,21 @@ it('builds a business attachment feature from the shipped Skill and materialized
     }
     // The receiving application owns the primitives and resolves their imports in its own package scope.
     mkdirSync(path.join(appRoot, 'client/components/ui'), { recursive: true });
-    for (const name of ['button', 'dialog']) {
+    for (const name of ['button', 'dialog', 'spinner']) {
       cpSync(
         path.join(templateRoot, `client/components/ui/${name}.tsx`),
         path.join(appRoot, `client/components/ui/${name}.tsx`),
+      );
+    }
+    // Include the application's Spinner implementation and its brand dependencies.
+    for (const file of [
+      'brand-spinner.tsx',
+      'brand-loading-mark.tsx',
+      'brand-mark-geometry.ts',
+    ]) {
+      cpSync(
+        path.join(templateRoot, 'client/components', file),
+        path.join(appRoot, 'client/components', file),
       );
     }
     writeFileSync(

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authz-default-access",
   "displayName": "Authz Default Access App Plugin",
   "description": "Default Access authorization rules and administration UI.",
-  "version": "1.0.0-beta.10",
+  "version": "1.0.0-beta.11",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -21,10 +21,6 @@
     "./client/plugin": {
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
-    },
-    "./client/routes": {
-      "types": "./client/routes.ts",
-      "import": "./client/routes.ts"
     },
     "./package.json": "./package.json"
   },
@@ -49,10 +45,6 @@
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
       },
-      "./client/routes": {
-        "types": "./dist/client/routes.d.ts",
-        "import": "./dist/client/routes.js"
-      },
       "./package.json": "./package.json"
     }
   },
@@ -68,26 +60,18 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "peerDependencies": {
-    "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
-    "lucide-react": "catalog:",
-    "react": "^19.0.0",
-    "react-router": "catalog:",
-    "@nocobase/app-plugin-authorization": "workspace:^",
-    "class-variance-authority": "catalog:",
-    "cn": "catalog:"
+    "@nocobase/app-plugin-authorization": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
-    "@testing-library/react": "catalog:",
-    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",

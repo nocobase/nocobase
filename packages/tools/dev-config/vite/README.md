@@ -31,7 +31,7 @@ config when Vite runs from another directory.
 
 ## Mount path
 
-A build does not know where it will be mounted. With a relative `base`, Vite resolves every chunk, preload dependency and asset against the module that references it, and CSS `url()` against its own file. The only relative references left are in `index.html` — its `./assets/` chunks and every `public/` file it names, such as `./favicon.svg` — which the application server rewrites to the mount path when it serves the page, together with the client configuration it renders there. The mount path is chosen at run time, through `APP_BASE_PATH` for a standalone server or by the Hub for an application it hosts.
+A build does not know where it will be mounted. With a relative `base`, Vite resolves every chunk, preload dependency and asset against the module that references it, and CSS `url()` against its own file. The only relative references left are in `index.html` — its `./assets/` chunks and every `public/` file it names, such as `./favicon.svg` — which the application server rewrites to the mount path when it serves the page, together with the client configuration it renders there. The mount path is chosen at run time, through `APP_BASE_PATH` for a standalone server or by the host that runs the application.
 
 The development server cannot use a relative base, so it serves from the mount path in `APP_BASE_PATH` and refuses to start without one. `pnpm dev` always sets it. The same applies to anything else that resolves the configuration in serve mode, such as `vite preview`, which is not a way to look at a build anyway: the page needs the client configuration only the application server renders into it, so a build is previewed with `pnpm start`.
 

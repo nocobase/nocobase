@@ -15,12 +15,12 @@ Integrate and maintain the authenticated, user-isolated in-app inbox while keepi
 
 # Ownership and Placement
 
-This Skill is published with `@nocobase/app-plugin-notification-in-app`. The plugin owns its Server runtime, persistence, APIs, realtime contract, Client inbox components, and development-only page. The target application owns whether both Client and Server entries are registered.
+This Skill is published with `@nocobase/app-plugin-notification-in-app`. The plugin owns its Server runtime, persistence, APIs, realtime contract, and Client inbox components. The target application owns whether both Client and Server entries are registered.
 
 # Scope
 
 - Register the Client and Server plugin entries and the core notification dependency.
-- Open and verify the plugin-owned inbox example under the built-in Dev Route.
+- Render the exported inbox components in an application-owned page.
 - Consume the public realtime topic and event types from the `/realtime` package entry.
 - Verify or diagnose inbox HTTP access, mutations, user isolation, and reconnect refresh.
 
@@ -28,7 +28,7 @@ This Skill is published with `@nocobase/app-plugin-notification-in-app`. The plu
 
 - Do not replace durable notifications with transient browser toasts.
 - Do not edit inbox tables directly or publish forged realtime events as notification state.
-- Do not expose the Dev Route as a production inbox page.
+- Do not expect the plugin to contribute an inbox page; the application owns the route.
 
 # Input Contract
 
@@ -56,11 +56,11 @@ Rules:
 1. Read [Inbox Integration Contract](references/inbox-integration.md) for package requirements, public surfaces, and runtime semantics.
 2. Inspect the target application's Server plugin list, Client composition, authentication setup, `api.baseURL`, `api.realtimeURL`, and installed package versions.
 3. Register `@nocobase/app-plugin-notification` before `@nocobase/app-plugin-notification-in-app/server` when the application needs the `in-app` Channel contribution.
-4. Register `@nocobase/app-plugin-notification-in-app/client` in the Client composition root. In a development build, verify the page at `/dev/notification-in-app` relative to the App base path; dev pages have no navigation entry, so open the URL directly.
+4. Register `@nocobase/app-plugin-notification-in-app/client` in the Client composition root. The plugin contributes no pages: render `NotificationInAppInbox` inside `NotificationInAppProvider` in a page the application declares among its own routes.
 5. In React components and custom Hooks, use `useApiClient()` from `@nocobase/app-client` for inbox reads and mutations, and `useService(realtimeClientToken)` for subscriptions. Outside React, resolve the corresponding tokens from the application's services or receive the clients explicitly. Do not reconstruct `/api` from the browser location or Portal base.
 6. Keep HTTP state authoritative. On a validated `inbox.changed` event, realtime connection open, or window focus, trigger a bounded HTTP refetch.
 7. Use the public `@nocobase/app-plugin-notification-in-app/realtime` entry for shared topic or event types; do not import Server internals.
-8. Test allowed and denied users, mutations without a CSRF token, cross-site cookie writes rejected with `INVALID_CSRF_ORIGIN`, pagination, custom API hosts, realtime invalidation, reconnect recovery, and Dev Route registration.
+8. Test allowed and denied users, mutations without a CSRF token, cross-site cookie writes rejected with `INVALID_CSRF_ORIGIN`, pagination, custom API hosts, realtime invalidation, and reconnect recovery.
 9. Run lint, typecheck, tests, and build for the plugin and affected application.
 
 # Reference Loading Map
@@ -92,9 +92,8 @@ Rollback guidance:
 
 - The target application and package versions are identified.
 - Authentication, database, core notification, and in-app notification Server plugins are registered as required.
-- The package's Client entry is registered and contributes `/dev/notification-in-app` in development.
-- The Dev Route and page module are absent from production builds.
-- The page-local Provider mounts only while the inbox page is open.
+- The package's Client entry is registered; it contributes no routes.
+- The page-local Provider mounts only while the application's inbox page is open.
 - HTTP calls use the injected `ApiClient` and honor custom `api.baseURL` configuration.
 - Realtime connects through the configured application client and uses the public topic constant.
 - Realtime connection open, valid invalidation events, and window focus refetch durable state.

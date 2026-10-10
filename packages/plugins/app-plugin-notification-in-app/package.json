@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification-in-app",
   "displayName": "In-app Notification App Plugin",
   "description": "Provides an authenticated in-app inbox, notification Channel, and development-only Client inbox page.",
-  "version": "1.0.0-beta.22",
+  "version": "1.0.0-beta.23",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -38,10 +38,6 @@
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
     },
-    "./client/routes": {
-      "types": "./client/routes.ts",
-      "import": "./client/routes.ts"
-    },
     "./realtime": {
       "types": "./shared/realtime.ts",
       "import": "./shared/realtime.ts"
@@ -70,10 +66,6 @@
       "./client/plugin": {
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
-      },
-      "./client/routes": {
-        "types": "./dist/client/routes.d.ts",
-        "import": "./dist/client/routes.js"
       },
       "./realtime": {
         "types": "./dist/shared/realtime.d.ts",
