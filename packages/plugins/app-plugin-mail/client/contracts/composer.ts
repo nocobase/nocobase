@@ -1,10 +1,13 @@
 import type {
   MailAccountView,
+  MailBulkComposeInput,
+  MailComposeInput,
   MailIdentity,
   MailMessage,
   MailOutboundAttachmentView,
   MailProviderView,
   MailPublicError,
+  MailSubmissionView,
 } from '../../shared/mail.js';
 
 /** Safe variables available when a saved mail template is applied. */
@@ -71,6 +74,46 @@ export type MailComposerCompletionResult =
   | 'partial'
   | (string & {});
 
+/** Client-submitted content, not final MIME, server-prepared content or delivery proof. */
+export type MailComposerSubmissionSnapshot =
+  | {
+      readonly kind: 'normal';
+      readonly input: Omit<
+        MailComposeInput,
+        'deliverySnapshot' | 'deliveryContext' | 'sourceDraft'
+      >;
+    }
+  | {
+      readonly kind: 'bulk';
+      readonly input: Omit<
+        MailBulkComposeInput,
+        'deliverySnapshot' | 'deliveryContext' | 'sourceDraft'
+      >;
+    };
+
+/** Records returned for this operation; an unknown transport outcome may have no records. */
+export type MailComposerCompletionDetails =
+  | (MailComposerSubmissionSnapshot & {
+      readonly submissions: readonly MailSubmissionView[];
+    })
+  | {
+      readonly kind: 'draft';
+      readonly submissions: readonly [];
+      readonly draft: Pick<MailMessage, 'id' | 'accountId'>;
+    };
+
+type MailComposerCompletionArguments = [
+  result: MailComposerCompletionResult,
+  rejectedRecipients?: readonly string[],
+  error?: MailPublicError,
+  details?: MailComposerCompletionDetails,
+];
+
+/** Observe async completion while retaining legacy callbacks whose return values are discarded. */
+export type MailComposerCompletionCallback =
+  | ((...args: MailComposerCompletionArguments) => void)
+  | ((...args: MailComposerCompletionArguments) => Promise<void>);
+
 /** Inputs shared by the embedded and account-aware workspace composers. */
 export interface MailComposerProps {
   readonly allowBulkSend?: boolean;
@@ -87,11 +130,9 @@ export interface MailComposerProps {
   readonly providers: readonly MailProviderView[];
   readonly templateVariables?: MailTemplateVariables;
   readonly onClose: () => void;
-  readonly onComplete: (
-    result: MailComposerCompletionResult,
-    rejectedRecipients?: readonly string[],
-    error?: MailPublicError,
-  ) => void;
+  readonly onComplete: MailComposerCompletionCallback;
+  /** Integration failures do not change the mail result or delay closing the composer. */
+  readonly onCompletionError?: (error: unknown) => void | Promise<void>;
 }
 
 export interface MailComposerComponentProps extends MailComposerProps {

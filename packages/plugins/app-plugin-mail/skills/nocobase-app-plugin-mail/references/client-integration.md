@@ -111,6 +111,39 @@ Keep composer state and errors independent of mailbox queries so a refresh does 
 
 Signatures belong to accounts and are shared across their sending addresses, with one default and selectable alternatives. Templates belong to the current user. For custom sending, scheduled delivery, batch actions or draft persistence, read [Sending and drafts](sending-and-drafts.md) before replacing those interactions.
 
+### Associate composer completion with business records
+
+Both composers keep `onComplete(result, rejectedRecipients?, error?, details?)`. The first three arguments are unchanged; `details` is an optional `MailComposerCompletionDetails` exported from `/client/components`. For `kind: 'normal'`, `input` is the actual single-message request; for `kind: 'bulk'`, it is the actual separate-send request, including deduplicated `recipients` and copied attachment IDs. These detached snapshots preserve account, identity, subject, body (including the editor's signature and reply/forward quote), scheduling, and attachment references before the composer is cleared. They describe client-submitted content, not final MIME, server-prepared content or proof of delivery. Internal delivery snapshots and provider context are not part of this public contract.
+
+`details.submissions` contains every record returned by this specific send operation, with its real status and public error unchanged. Never query the latest history row to identify this send: concurrent operations can complete out of order, and a bulk send returns multiple records. The legacy aggregate result is only a UI summary; in particular, bulk records may still be `pending` even when the summary is `accepted`. Treat scheduled/pending, accepted, failed, partial recipient rejection and unknown outcomes separately rather than recording every completion as sent or delivered.
+
+```tsx
+import type { MailSubmissionView } from '@nocobase/app-plugin-mail/client';
+import type {
+  MailComposerProps,
+  MailComposerSubmissionSnapshot,
+} from '@nocobase/app-plugin-mail/client/components';
+
+function customerMailCompletion(
+  upsertActivity: (
+    submission: MailSubmissionView,
+    snapshot: MailComposerSubmissionSnapshot,
+  ) => Promise<void>,
+): MailComposerProps['onComplete'] {
+  return async (_result, _rejectedRecipients, _error, details) => {
+    if (!details || details.kind === 'draft') return;
+    for (const submission of details.submissions) {
+      // Use submission.id as the activity's unique key; preserve submission.status.
+      await upsertActivity(submission, details);
+    }
+  };
+}
+```
+
+A transport failure after submission returns `unknown` with the request snapshot and an empty submissions list when the response was not received. The server may already have created or sent the record: do not fabricate an ID, use the newest history entry, or automatically resend. A saved draft instead returns `kind: 'draft'`, a separate `{ id, accountId }` draft reference and no submissions; it is not a sent-mail activity.
+
+Completion callbacks may return `void` or `Promise<void>`. Legacy callbacks that incidentally return a value remain assignable; return values are discarded, but returned promises are observed for failures. The composer closes at its existing time without waiting for activity persistence. Synchronous throws and asynchronous rejections are isolated from the send result and reported through optional `onCompletionError(error)`; they never cause a second completion or send retry. Handle/display integration failures in that handler or inside `onComplete`. A missing or failing error handler emits only a generic diagnostic, never the exception or message content. The application must persist activities idempotently by submission ID and provide server-side reconciliation when reliability matters: closing the browser can prevent a client callback, and this is not a durable server event.
+
 ## Management and pagination
 
 All-user detail and attachment APIs live under `/api/mail/management/accounts/:accountId/messages/:messageId`, with `/attachments/:attachmentId` for downloads. They require management permission. Opening management detail is read-only and does not mark mail read; draft rows use draft status and skip read-state actions. Moving to folders belongs to the personal workspace. Keep personal and all-user client paths explicit instead of retrying permission failures against a broader API.
