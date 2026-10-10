@@ -36,7 +36,7 @@ nb-studio access me
 
 List the members with their roles
 
-Needs `pm.members` `read`. System administrators and API key identities are not listed.
+Needs `pm.members` `read`. System administrators and API key identities are not listed; `meta.systemAdministratorCount` says how many administrators are not.
 
 ```bash
 nb-studio access member list

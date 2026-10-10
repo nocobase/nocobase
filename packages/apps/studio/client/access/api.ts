@@ -10,6 +10,7 @@ import type {
   AccessMe,
   AccessSettings,
   MemberWithRoles,
+  MembersListMeta,
   Role,
   SaveRoleRequest,
 } from '../../shared/access.js';
@@ -60,8 +61,16 @@ export class StudioApi {
     return this.send(`access/roles/${id(key)}`, 'DELETE');
   }
 
-  public members(): Promise<MemberWithRoles[]> {
-    return this.get('access/members');
+  /** The listed members, and `meta.systemAdministratorCount` for the system administrators not among them. */
+  public async members(): Promise<{
+    readonly members: MemberWithRoles[];
+    readonly meta: MembersListMeta;
+  }> {
+    const { data, meta } = await this.api.request<{
+      readonly data: MemberWithRoles[];
+      readonly meta: MembersListMeta;
+    }>({ path: 'access/members' });
+    return { members: data, meta };
   }
 
   public replaceMemberRoles(

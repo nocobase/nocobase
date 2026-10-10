@@ -5,6 +5,7 @@ import {
   type CatalogSettingsAction,
   type CatalogText,
   type Level,
+  type MemberWithRoles,
   type Role,
   type RoleTitle,
 } from '../../../../shared/access.js';
@@ -47,6 +48,17 @@ export function rolesOf(roles: readonly Role[], userId: string): string[] {
   return roles
     .filter((role) => role.holderIds.includes(userId))
     .map((role) => role.key);
+}
+
+/** The display name used when the role deletion refusal lists its holders. */
+export function memberNameOf(
+  membersResponse: { readonly members: readonly MemberWithRoles[] } | undefined,
+  userId: string,
+): string {
+  return (
+    membersResponse?.members.find((member) => member.userId === userId)?.name ??
+    userId
+  );
 }
 
 export interface RoleOption {

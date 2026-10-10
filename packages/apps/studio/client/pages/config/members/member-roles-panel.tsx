@@ -176,6 +176,8 @@ export function MemberRolesPanel(): ReactElement {
   );
   const canInvite = inviteAll || invitable.length > 0;
   const failed = members.isError ? members : roles.isError ? roles : null;
+  const systemAdministratorCount =
+    members.data?.meta.systemAdministratorCount ?? 0;
 
   let content: ReactElement;
   if (failed && !(members.data && roleRows)) {
@@ -190,13 +192,22 @@ export function MemberRolesPanel(): ReactElement {
     content = <PmListSkeleton rows={4} />;
   } else {
     content = (
-      <DataTable
-        columns={columns}
-        data={members.data}
-        pageSize={50}
-        showSelectedCount={false}
-        getRowId={(member) => member.userId}
-      />
+      <>
+        <DataTable
+          columns={columns}
+          data={members.data.members}
+          pageSize={50}
+          showSelectedCount={false}
+          getRowId={(member) => member.userId}
+        />
+        {systemAdministratorCount > 0 ? (
+          <p className='text-sm text-muted-foreground'>
+            {t('members.systemAdministratorNote', {
+              count: systemAdministratorCount,
+            })}
+          </p>
+        ) : null}
+      </>
     );
   }
 

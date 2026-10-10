@@ -90,6 +90,8 @@ export interface RoleService {
   update(viewer: AccessViewer, key: string, input: unknown): Promise<Role>;
   remove(viewer: AccessViewer, key: string): Promise<void>;
   members(viewer: AccessViewer): Promise<MemberWithRoles[]>;
+  /** How many system administrators hold the superuser set; they are not among `members`. */
+  systemAdministratorCount(viewer: AccessViewer): Promise<number>;
   assign(
     viewer: AccessViewer,
     userId: string,
@@ -561,6 +563,15 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
           email: user.email,
           roles: heldBy(assignments, user.id),
         }));
+    },
+
+    async systemAdministratorCount(viewer) {
+      requireSetting(
+        viewer,
+        'pm.members/read',
+        'You may not read the member settings.',
+      );
+      return (await superusers(database.connection())).size;
     },
 
     async assign(viewer, userId, input) {

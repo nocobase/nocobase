@@ -20,6 +20,7 @@ import {
   type CatalogText,
   type CreatedOrgApiKey,
   type MemberWithRoles,
+  type MembersListMeta,
   type OrgApiKey,
   type OrgApiKeyEvent,
   type Role,
@@ -189,6 +190,20 @@ export const MemberSchema: z.ZodType<MemberWithRoles> = z
     roles: z.array(z.string()),
   })
   .meta({ ref: 'StudioMember' });
+
+export const MembersMetaSchema: z.ZodType<MembersListMeta> = z
+  .object({
+    total: z.number().int(),
+    message: z.string().optional().meta({
+      description:
+        'A human-readable note for CLI users about system administrators excluded from the list.',
+    }),
+    systemAdministratorCount: z.number().int().meta({
+      description:
+        'System administrators hold every permission; they are not among the members listed above, and this is how many there are.',
+    }),
+  })
+  .meta({ ref: 'StudioMembersMeta' });
 
 export const AccessSettingsSchema: z.ZodType<AccessSettings> = z
   .object({

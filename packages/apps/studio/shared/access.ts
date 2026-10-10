@@ -210,6 +210,23 @@ export interface MemberWithRoles {
   readonly roles: readonly string[];
 }
 
+/** `GET /api/access/members`'s `meta`: how many are listed, and how many system administrators are not. */
+export interface MembersListMeta {
+  readonly total: number;
+  readonly systemAdministratorCount: number;
+  readonly message?: string;
+}
+
+/** A concise CLI note explaining system administrators omitted from the member rows. */
+export function membersListMessage(
+  systemAdministratorCount: number,
+): string | undefined {
+  if (systemAdministratorCount === 0) return undefined;
+  return systemAdministratorCount === 1
+    ? '1 system administrator holds every permission and is not listed.'
+    : `${systemAdministratorCount} system administrators hold every permission and are not listed.`;
+}
+
 /** `PATCH /api/access/members/:userId`: the user's complete set of roles. */
 export interface ReplaceMemberRolesRequest {
   readonly roles: readonly string[];
