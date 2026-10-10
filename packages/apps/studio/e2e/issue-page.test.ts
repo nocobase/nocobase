@@ -196,5 +196,58 @@ test.describe('issue page', () => {
         page.getByRole('list', { name: '动态' }).getByText(reason),
       ).toBeVisible();
     });
+
+    test('the comment box sends it back with what is written as the reason', async ({
+      page,
+      api,
+    }) => {
+      const runner = new FakeRunner(api, `issue-composer-${unique()}`);
+      const proposal = await runner.issueWithDesignProposal(
+        `流式导出（评论框决定）${unique()}`,
+        { ownerUserId: me.userId },
+      );
+      await open(page, `/issues/${proposal.identifier}`);
+      const back = page.getByRole('button', { name: '退回', exact: true });
+      await expect(back).toBeDisabled();
+      const reason = `请先说明分页方式 ${unique()}`;
+      const editor = page.getByRole('textbox', { name: '评论' });
+      await editor.click();
+      await editor.pressSequentially(reason);
+      await back.click();
+
+      await expect
+        .poll(
+          async () =>
+            (await api.get<Issue>(`projects/issues/${proposal.id}`)).statusKey,
+        )
+        .toBe('analysis');
+      await expect(
+        page.getByRole('list', { name: '动态' }).getByText(reason),
+      ).toBeVisible();
+      await expect(back).toBeHidden();
+    });
+
+    test('the comment box approves it without a comment', async ({
+      page,
+      api,
+    }) => {
+      const runner = new FakeRunner(api, `issue-composer-ok-${unique()}`);
+      const proposal = await runner.issueWithDesignProposal(
+        `流式导出（评论框批准）${unique()}`,
+        { ownerUserId: me.userId },
+      );
+      await open(page, `/issues/${proposal.identifier}`);
+      await page.getByRole('button', { name: '批准方案', exact: true }).click();
+
+      await expect
+        .poll(
+          async () =>
+            (await api.get<Issue>(`projects/issues/${proposal.id}`)).statusKey,
+        )
+        .toBe('in_progress');
+      await expect(
+        page.getByRole('button', { name: '批准方案', exact: true }),
+      ).toBeHidden();
+    });
   });
 });

@@ -1040,6 +1040,23 @@ export interface CommentComposerMode {
   readonly send?: string;
 }
 
+/**
+ * A decision made from the comment box instead of a comment, such as approving or sending back what the page waits on:
+ * a button beside the send button, given what is written as its comment.
+ */
+export interface CommentComposerAction {
+  readonly key: string;
+  readonly label: string;
+  readonly icon?: ReactNode;
+  /** What the action does with what is written, on hover. */
+  readonly title?: string;
+  /** It needs something written (a reason), and stays disabled until there is. */
+  readonly needsContent?: boolean;
+  readonly disabled?: boolean;
+  /** Runs with what is written, trimmed and possibly empty; answering `true` clears the box. */
+  readonly onRun: (content: string) => Promise<boolean>;
+}
+
 export interface CommentComposerProps {
   /**
    * Posts the comment in `mode` and answers the posted comment's id: the box clears and the comment, once the timeline
@@ -1065,6 +1082,8 @@ export interface CommentComposerProps {
   readonly attachments?: ReactNode;
   /** Something must finish (an upload) before the comment can go. */
   readonly busy?: boolean;
+  /** Decisions beside the send button, given what is written. */
+  readonly actions?: readonly CommentComposerAction[];
   readonly editorRef?: Ref<RichTextHandle>;
   readonly labels?: CommentComposerLabels;
   readonly className?: string;
@@ -1149,6 +1168,7 @@ export function CommentComposer({
   onAttach,
   attachments,
   busy = false,
+  actions,
   editorRef,
   labels = defaultComposerLabels,
   className,
@@ -1156,6 +1176,7 @@ export function CommentComposer({
   const [content, setContent] = useState('');
   const [mode, setMode] = useState<string | null>(modes?.[0]?.value ?? null);
   const [pending, setPending] = useState(false);
+  const [running, setRunning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const current = modes?.find((item) => item.value === mode);
@@ -1172,6 +1193,22 @@ export function CommentComposer({
       })
       .catch(() => undefined)
       .finally(() => setPending(false));
+  };
+
+  const run = (action: CommentComposerAction): void => {
+    if (pending || busy) return;
+    setPending(true);
+    setRunning(action.key);
+    void action
+      .onRun(content.trim())
+      .then((done) => {
+        if (done) setContent('');
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        setPending(false);
+        setRunning(null);
+      });
   };
 
   const files = (list: FileList | null | undefined): File[] => [
@@ -1288,6 +1325,29 @@ export function CommentComposer({
         <span className='mr-auto hidden text-xs text-muted-foreground sm:inline'>
           {labels.hint}
         </span>
+        {actions?.map((action, index) => (
+          <Button
+            key={action.key}
+            variant='outline'
+            size='sm'
+            className={cn(index === 0 && 'ml-auto')}
+            {...(action.title ? { title: action.title } : {})}
+            disabled={
+              pending ||
+              busy ||
+              Boolean(action.disabled) ||
+              (Boolean(action.needsContent) && content.trim() === '')
+            }
+            onClick={() => run(action)}
+          >
+            {running === action.key ? (
+              <Loader2Icon data-icon='inline-start' className='animate-spin' />
+            ) : (
+              action.icon
+            )}
+            {action.label}
+          </Button>
+        ))}
         <Button
           size='sm'
           className='ml-auto'

@@ -51,6 +51,7 @@ import { cn } from 'cn';
 
 import { DESIGN_PROPOSAL_KIND } from '../../../../shared/design.js';
 import { AskAgent } from '../../../agents/ask-agent.js';
+import { useDesignComposerActions } from '../../../agents/design/composer-actions.js';
 import { DesignSection } from '../../../agents/design/section.js';
 import {
   IssueLiveRun,
@@ -158,6 +159,7 @@ function IssuePage({
   const [stageRunRefresh, setStageRunRefresh] = useState(0);
   const runs = useIssueRuns(detail, stageRunRefresh);
   const approvalCovered = useWaitingCoversApproval(detail);
+  const designActions = useDesignComposerActions(detail);
   const main = useIssueMainState(pageActions);
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
   const linking = {
@@ -207,6 +209,7 @@ function IssuePage({
           runs={runs}
           renderRun={(runId) => <IssueRunRow issue={detail} runId={runId} />}
           kindLabels={kindLabels}
+          composerActions={designActions}
         >
           <IssueFileDrop
             {...(main.canUpload ? { onFiles: main.upload } : {})}

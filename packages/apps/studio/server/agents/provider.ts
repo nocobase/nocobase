@@ -60,6 +60,7 @@ import { createStudioReports } from '../reports/service.js';
 import { studioReportsToken } from '../reports/token.js';
 import { studioGitToken } from '../git/token.js';
 import { bindStudioAgents } from './bind.js';
+import { pageUrlOf } from './issue-subject.js';
 import {
   createDelegations,
   gitPullRequests,
@@ -294,6 +295,8 @@ export function connectProjects(
   agents: Agents,
   options: {
     readonly basePath?: string;
+    /** `app.publicOrigin`: with it, the brief links to Studio's pages by their full address. */
+    readonly publicOrigin?: string | null;
     /** `studio.agents.queuedExpiryHours`: how long an issue's run waits for a runner; 0 waits forever. */
     readonly queuedExpiryHours?: number;
   } = {},
@@ -356,6 +359,7 @@ export function connectProjects(
     ...(container.has(studioDelegationsToken)
       ? { delegations: container.resolve(studioDelegationsToken) }
       : {}),
+    pageUrl: pageUrlOf(options.publicOrigin, options.basePath),
     ...(options.queuedExpiryHours === undefined
       ? {}
       : { queuedExpiryMs: options.queuedExpiryHours * 3_600_000 }),
@@ -433,6 +437,7 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
     const agents = container.resolve(agentsToken);
     const disconnect = connectProjects(container, agents, {
       basePath: this.app.publicBasePath,
+      publicOrigin: this.app.config.get<string>('app.publicOrigin') ?? null,
       ...queuedExpiryOf(
         this.app.config.get<unknown>('studio.agents.queuedExpiryHours'),
       ),

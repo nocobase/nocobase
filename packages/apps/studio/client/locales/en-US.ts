@@ -835,6 +835,12 @@ const enUS = {
   'design.done.approve': 'Approved. The issue moves to development.',
   'design.done.requestChanges':
     'Sent back. The agent revises the proposal from your comment.',
+  'design.composer.approve': 'Approve proposal',
+  'design.composer.approveHint':
+    'Approve the design proposal for development; anything written here goes with it as a comment',
+  'design.composer.requestChanges': 'Send back',
+  'design.composer.requestChangesHint':
+    'Send the design proposal back with what is written here as your feedback',
   'inbox.suggestion.accept': 'Accept',
   'inbox.suggestion.dismiss': 'Dismiss',
   'inbox.suggestion.done.accept': 'Accepted. The agent works on the issue now.',

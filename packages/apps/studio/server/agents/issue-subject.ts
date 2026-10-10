@@ -23,7 +23,11 @@ import type {
 } from '@nocobase/app-plugin-agents/server/tokens';
 import { sampleValue } from '@nocobase/app-plugin-agents/shared/briefs';
 
-import { ANALYSIS_STATUS } from '../../shared/design.js';
+import {
+  ANALYSIS_STATUS,
+  DESIGN_SECTION_ANCHOR,
+  PROPOSAL_REVIEW_STATUS,
+} from '../../shared/design.js';
 import { runBranches } from '../git/run-git.js';
 import { initialDirOf } from '../projects-init/store.js';
 import { ATTACH_ACTION } from './capabilities.js';
@@ -144,13 +148,34 @@ function stagesOf(inputs: readonly RunInput[]): Stage[] {
   });
 }
 
+/** Turns a page's path (`/issues/PM-12`) into the link people open it by: absolute when Studio knows its address. */
+export type PageUrl = (path: string) => string;
+
+/** `<app.publicOrigin><base path><path>`; without a public origin, the path alone. */
+export function pageUrlOf(
+  publicOrigin: string | null | undefined,
+  basePath = '',
+): PageUrl {
+  const origin =
+    publicOrigin && URL.canParse(publicOrigin)
+      ? new URL(publicOrigin).origin
+      : '';
+  const base = origin ? basePath.replace(/\/+$/u, '') : '';
+  return (path) => `${origin}${base}${path}`;
+}
+
 /**
  * The task layer: why the agent runs now, and how to finish. Where to work is the system layer's. A run a workflow
  * stage started carries the stage and its instruction ("Workflow stage instruction").
+ *
+ * In Proposal review a person decides the proposal on the issue page, and a comment such as "go ahead" decides
+ * nothing: the agent, which cannot decide it either, is told so and to answer with the link to the decision
+ * (`pageUrl`, the issue page's `#design`).
  */
 export function renderTask(
   context: IssueContext,
   inputs: readonly RunInput[],
+  pageUrl: PageUrl = (path) => path,
 ): string {
   const reasons = triggersOf(inputs)
     .map((trigger) => TRIGGER_TASKS[trigger])
@@ -185,11 +210,21 @@ export function renderTask(
           ? `- Move the issue to the status that fits (\`nb-studio issue update ${context.identifier} --status <status>\`); you may move it to: ${moves.join(', ')}.`
           : '- Leave the status as it is: the workflow does not let you move it from here.',
       ];
+  const review =
+    context.status.key === PROPOSAL_REVIEW_STATUS
+      ? [
+          '',
+          '## Waiting for a decision on the proposal',
+          '',
+          `The design proposal of ${context.identifier} waits for a person to approve it or send it back. A comment decides nothing, and you cannot decide it either: only a person can, with Approve or Send back beside the comment box or on the proposal card. When a comment asks to go ahead, to start, or to change the proposal, answer it in its thread with the link where they decide: [Approve or send back the proposal](${pageUrl(`${context.url}#${DESIGN_SECTION_ANCHOR}`)}). Sending it back takes their comment as the reason. Do not start the work the proposal describes before it is approved.`,
+        ]
+      : [];
   return [
     `Issue ${context.identifier}: ${context.title}`,
     '',
     ...(reasons.length > 0 ? reasons : ['Continue the work on this issue.']),
     ...stages,
+    ...review,
     '',
     'When you finish:',
     ...finish,
@@ -391,6 +426,7 @@ export function initialNote(defaultBranch: string): string {
 export function createIssueContextProvider(
   agents: Pick<Agents, 'runs' | 'briefs'>,
   projects: () => Pick<Projects, 'issueContext'>,
+  pageUrl?: PageUrl,
 ): ContextProvider {
   return {
     async assemble(conn, claim) {
@@ -426,7 +462,7 @@ export function createIssueContextProvider(
           attach: claim.agent.actions.includes(ATTACH_ACTION),
           design: isDesignStage(context),
         }),
-        task: renderTask(context, claim.inputs),
+        task: renderTask(context, claim.inputs, pageUrl),
         context: initial
           ? [
               renderIssueContext(context),
@@ -569,6 +605,7 @@ export function issueBinding(
   projects: () => Pick<Projects, 'issueContext'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
+  pageUrl?: PageUrl,
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
@@ -579,7 +616,7 @@ export function issueBinding(
     groupPath: '/projects/{id}',
     triggers: ISSUE_TRIGGER_TITLES,
     preview: issueSample(agents),
-    context: createIssueContextProvider(agents, projects),
+    context: createIssueContextProvider(agents, projects, pageUrl),
     ...(sink ? { sink } : {}),
   };
 }

@@ -6,7 +6,9 @@
  * installed `comment-thread` over
  * the projects plugin's headless hooks (`useIssueTimeline`, `useIssueCommentActions`, `useMentionSearch`), in the
  * projects plugin's words. A link with `?comment=<id>` highlights that comment and loads older threads until it is
- * found. Without `issues/comment` the composer and the reply buttons do not render.
+ * found. Without `issues/comment` the composer and the reply buttons do not render. `composerActions` are decisions beside
+ * the send button, such as the design proposal's; they take a top-level comment without files, so they are disabled while
+ * replying or with files waiting.
  */
 import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
 import {
@@ -53,6 +55,7 @@ import {
 import {
   CommentComposer,
   CommentTimeline,
+  type CommentComposerAction,
   type CommentItem,
   type CommentTag,
   type CommentTimelineEntry,
@@ -74,6 +77,7 @@ export function IssueActivity({
   runs,
   renderRun,
   kindLabels,
+  composerActions,
   children,
 }: {
   readonly detail: IssueDetail;
@@ -82,6 +86,8 @@ export function IssueActivity({
   readonly renderRun: (runId: string) => ReactNode;
   /** The names of the comment kinds Studio writes, tagged on their comments. */
   readonly kindLabels: Readonly<Record<string, string>>;
+  /** Decisions beside the send button, given what is written. */
+  readonly composerActions?: readonly CommentComposerAction[];
   readonly children?: ReactNode;
 }): ReactElement {
   const { i18n, t: appT } = useTranslation();
@@ -350,6 +356,17 @@ export function IssueActivity({
                 />
               }
               busy={uploads.uploading}
+              {...(composerActions && composerActions.length > 0
+                ? {
+                    actions: composerActions.map((action) => ({
+                      ...action,
+                      disabled:
+                        Boolean(action.disabled) ||
+                        replyTo !== null ||
+                        uploads.uploads.length > 0,
+                    })),
+                  }
+                : {})}
               onSubmit={async (content, mode) => {
                 const comment = await actions.create({
                   content,

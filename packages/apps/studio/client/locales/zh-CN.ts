@@ -779,6 +779,12 @@ const zhCN: AppResource = {
   'design.requestChanges': '打回修改',
   'design.done.approve': '方案已批准，任务进入开发。',
   'design.done.requestChanges': '已打回，Agent 会根据你的意见修改方案。',
+  'design.composer.approve': '批准方案',
+  'design.composer.approveHint':
+    '批准方案进入开发；输入框里写的内容会作为评论一并发出',
+  'design.composer.requestChanges': '退回',
+  'design.composer.requestChangesHint':
+    '退回方案，输入框里写的内容作为修改意见',
   'inbox.suggestion.accept': '采纳',
   'inbox.suggestion.dismiss': '忽略',
   'inbox.suggestion.done.accept': '已采纳，Agent 开始处理这个任务。',

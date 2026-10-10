@@ -43,6 +43,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 
 import { SOFTWARE_TEMPLATE_KEY } from '../agents/catalog/workflow-templates.js';
 import { AGENT_KIND } from '../agents/tx.js';
+import { DESIGN_PROPOSAL_KIND } from '../../shared/design.js';
 import {
   DEMO_AGENTS,
   DEMO_ISSUES,
@@ -83,6 +84,8 @@ const CREATE_STATUS: Readonly<Record<string, string>> = {
   done: 'todo',
   cancelled: 'todo',
   in_review: 'in_progress',
+  // Entering Analysis would run the agent; the proposal is written first, then the issue moves on (`proposal`).
+  proposal_review: 'todo',
 };
 
 /** The status the demo's review checklist is on. */
@@ -402,6 +405,16 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
     });
     issueIds.set(spec.key, issue.id);
     created('issues');
+    // The design proposal, written as its agent as `nb-studio issue design-proposal` would (`agents/design.ts`).
+    if (spec.proposal && executor?.type === 'agent') {
+      await projects.comments.post(
+        { type: AGENT_KIND, id: executor.id },
+        issue.id,
+        { content: spec.proposal },
+        { kind: DESIGN_PROPOSAL_KIND, trigger: false },
+      );
+      created('design proposals');
+    }
     if (issue.statusKey !== spec.status)
       issue = await projects.issues.update(admin, issue.id, {
         revision: issue.revision,
