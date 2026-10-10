@@ -70,9 +70,6 @@ const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([]);
 const routes: readonly AppClientRouteContribution[] = [
   appRoutes,
   settingsRoutes,
-  ...(import.meta.env.DEV
-    ? [(await import('./pages/theme-lab/routes.js')).themeLabRoutes]
-    : []),
 ];
 
 export default routes;
