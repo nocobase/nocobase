@@ -207,6 +207,24 @@ test.describe('issue page', () => {
       .getByRole('button', { name: 'Toggle Sidebar', exact: true })
       .click();
     await check(1280, true);
+    const verifySummaryFocus = async () => {
+      for (const trigger of [
+        page.locator('a').filter({ has: page.getByTestId('run-live') }),
+        page.getByTestId('run-row-sidebar-run-0').getByRole('link'),
+      ]) {
+        await trigger.focus();
+        await trigger.press('Enter');
+        await expect(
+          page.getByRole('dialog', { name: '运行记录', exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(
+          page.getByRole('dialog', { name: '运行记录', exact: true }),
+        ).toBeHidden();
+        await expect(trigger).toBeFocused();
+      }
+    };
+    await verifySummaryFocus();
     const link = history.getByRole('link').first();
     await link.focus();
     await page.setViewportSize({ width: 1600, height: 900 });
@@ -232,6 +250,7 @@ test.describe('issue page', () => {
       page.getByRole('dialog', { name: '运行记录', exact: true }),
     ).toBeHidden();
     await expect(all).toBeFocused();
+    await verifySummaryFocus();
     for (const locale of ['en-US', 'zh-CN']) {
       for (const mode of ['light', 'dark']) {
         await api.patch('users/me/preferences', { locale, 'theme.mode': mode });

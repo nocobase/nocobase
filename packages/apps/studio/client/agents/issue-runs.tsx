@@ -61,7 +61,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { runReturnFocus } from './run-focus.js';
+import { rememberRunFocus, runReturnFocus } from './run-focus.js';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { useIssueRunsState, useRefreshIssueRuns } from './use-issue-runs.js';
@@ -432,7 +432,10 @@ export function IssueLiveRun({
     <RunLivePill
       runs={runs}
       runHref={runHref}
-      onOpenRun={(run) => void navigate(runHref(run))}
+      onOpenRun={(run, target) => {
+        rememberRunFocus(target ?? null, null);
+        void navigate(runHref(run));
+      }}
       labels={wording.history}
     />
   );
@@ -455,7 +458,10 @@ export function IssueRunRow({
     <RunActivityRow
       run={run}
       runHref={runHref}
-      onOpenRun={(target) => void navigate(runHref(target))}
+      onOpenRun={(run, target) => {
+        rememberRunFocus(target ?? null, null);
+        void navigate(runHref(run));
+      }}
       locale={i18n.language}
       labels={wording.history}
     />

@@ -359,6 +359,38 @@ describe('issue execution history', () => {
     await user.keyboard('{Escape}');
     await waitFor(() => expect(link).toHaveFocus());
   });
+  it.each([
+    ['title', false],
+    ['activity', false],
+    ['title', true],
+    ['activity', true],
+  ] as const)(
+    'returns focus to the current %s entry after a prior sidebar opening: %s',
+    async (entry, priorSidebar) => {
+      mocks.runs.mockResolvedValue([run('run', 'running')]);
+      await show({ consumers: true });
+      const user = userEvent.setup();
+      const sidebar = (await screen.findByTestId('run-run')).querySelector(
+        'a',
+      )!;
+      if (priorSidebar) {
+        sidebar.focus();
+        await user.keyboard('{Enter}');
+        await screen.findByText('Transcript body');
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(sidebar).toHaveFocus());
+      }
+      const trigger =
+        entry === 'title'
+          ? screen.getByTestId('run-live').closest('a')!
+          : screen.getByTestId('run-row-run').querySelector('a')!;
+      trigger.focus();
+      await user.keyboard('{Enter}');
+      await screen.findByText('Transcript body');
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(trigger).toHaveFocus());
+    },
+  );
   it('returns focus to View all after choosing a transcript there', async () => {
     mocks.runs.mockResolvedValue([
       run('one'),
