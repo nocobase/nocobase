@@ -168,7 +168,7 @@ const enUS = {
   },
   errors: {
     INVITATION_LINK_FORBIDDEN:
-      'Only the inviter can copy this invitation link.',
+      'This link can only be copied by its inviter in the application that created the invitation.',
     SELF_DELETE_NOT_ALLOWED: 'You cannot delete your own account.',
     LAST_ASSIGNMENT:
       'This user is the last one holding a permission set that must stay assigned.',

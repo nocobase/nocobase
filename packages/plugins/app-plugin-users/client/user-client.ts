@@ -76,6 +76,7 @@ export interface UserInvitation {
   readonly status: 'pending' | 'expired' | 'accepted' | 'revoked';
   readonly invitedBy: { readonly id: string; readonly name: string };
   readonly roleScopes: Readonly<Record<string, UserRoleValue>>;
+  readonly data: Readonly<Record<string, unknown>>;
   readonly summary: readonly string[];
   readonly expiresAt: string;
   readonly sentAt: string | null;

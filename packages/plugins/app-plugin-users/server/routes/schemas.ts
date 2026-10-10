@@ -292,7 +292,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Returned for new invitations and authorized resends by the original inviter, whether or not email was sent.',
+          'Returned for new invitations and authorized resends by the original inviter of invitations with empty plugin data, whether or not email was sent.',
       }),
     }),
     z.object({

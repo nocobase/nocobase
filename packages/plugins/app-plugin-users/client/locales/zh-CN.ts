@@ -158,7 +158,7 @@ const zhCN: UsersResource = {
     },
   },
   errors: {
-    INVITATION_LINK_FORBIDDEN: '只有邀请发起人可以复制此邀请链接。',
+    INVITATION_LINK_FORBIDDEN: '此链接只能由邀请发起人在创建邀请的应用中复制。',
     SELF_DELETE_NOT_ALLOWED: '不能删除当前登录的账号。',
     LAST_ASSIGNMENT: '该用户是某个必须保留分配的权限集的最后持有者。',
     USER_HAS_APPS: '该用户名下还有应用，请先移交或删除应用。',

@@ -205,12 +205,15 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         const own =
           invitation.invitedBy.id ===
           context.get('authz').identity.principal.id;
-        if (!own && !sendEmail)
+        // Plugin-owned credentials must be retrieved through their domain's authorization checks.
+        const canReturnLink = own && Object.keys(invitation.data).length === 0;
+        if (!canReturnLink && !sendEmail)
           throw new ApiError({
             status: 'PERMISSION_DENIED',
             domain: 'users',
             reason: 'INVITATION_LINK_FORBIDDEN',
-            message: 'Only the inviter can obtain an invitation link.',
+            message:
+              'Retrieve this link as its inviter through the application that created the invitation.',
           });
         if (own && Object.keys(invitation.roleScopes).length > 0)
           await requireUserAction(context, '*', 'assign-role');
@@ -219,8 +222,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           origin: new URL(context.req.url).origin,
         });
         return context.json({
-          // Even failed email delivery must not expose another inviter's registration credential.
-          data: own ? result : { ...result, inviteUrl: undefined },
+          // Failed delivery must not bypass the credential authorization boundary either.
+          data: canReturnLink ? result : { ...result, inviteUrl: undefined },
         });
       },
     );

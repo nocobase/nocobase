@@ -160,6 +160,53 @@ describe('@nocobase/app-plugin-users API routes', () => {
     },
   );
 
+  it.each([true, false])(
+    'keeps owned plugin invitation credentials behind their domain authorization when emailSent=%s',
+    async (emailSent) => {
+      const service = userService();
+      const invitation = await service.getInvitation('invitation-1');
+      if (!invitation) throw new Error('Missing fixture');
+      vi.mocked(service.getInvitation).mockResolvedValue({
+        ...invitation,
+        status: 'expired',
+        expiresAt: '2020-01-01T00:00:00.000Z',
+        roleScopes: {},
+        data: {
+          '@nocobase/app-plugin-projects': { projectIds: ['private-project'] },
+        },
+      });
+      vi.mocked(service.resendInvitation).mockResolvedValue({
+        email: invitation.email,
+        outcome: 'invited',
+        invitationId: invitation.id,
+        emailSent,
+        inviteUrl: 'https://example.test/invite/secret',
+      });
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service),
+      );
+      const copy = await router.request(
+        '/users/invitations/invitation-1/resend?sendEmail=false',
+        { method: 'POST' },
+      );
+      expect(copy.status).toBe(403);
+      expect(service.resendInvitation).not.toHaveBeenCalled();
+      const resend = await router.request(
+        '/users/invitations/invitation-1/resend',
+        { method: 'POST' },
+      );
+      expect(resend.status).toBe(200);
+      expect(await resend.json()).toEqual({
+        data: {
+          email: invitation.email,
+          outcome: 'invited',
+          invitationId: invitation.id,
+          emailSent,
+        },
+      });
+    },
+  );
+
   it('takes the acceptance identity only from the session', async () => {
     const service = userService();
     const router = await apiRoutes.createRouter(

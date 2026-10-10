@@ -606,6 +606,7 @@ export default function UsersPage(): ReactElement {
           busy={busy}
           canCopyLink={(invitation) =>
             invitation.invitedBy.id === session?.user.id &&
+            Object.keys(invitation.data).length === 0 &&
             (Object.keys(invitation.roleScopes).length === 0 ||
               globalCapabilities['assign-role'])
           }
