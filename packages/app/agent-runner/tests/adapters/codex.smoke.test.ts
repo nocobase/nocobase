@@ -8,7 +8,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -74,12 +74,7 @@ function sessionFor(workDir: string, prompt: string): AdapterSession {
     systemPrompt: 'You are a Acme test agent. Keep answers to one sentence.',
     effort: 'low',
     env: whitelistedEnv(),
-    permission: async (tool, input) => {
-      const command = typeof input.command === 'string' ? input.command : '';
-      if (tool === 'shell' && /^\s*rm\b/.test(command))
-        return { deny: 'rm is not allowed in this run' };
-      return 'allow';
-    },
+    permission: async () => 'allow',
     abort: new AbortController().signal,
   };
 }
@@ -129,17 +124,24 @@ describe.skipIf(!enabled)('codex adapter against a real Codex', () => {
     expect(detection.authenticated).toBe(true);
   });
 
-  it('creates a file, is denied rm, and takes a steer', async () => {
+  it('works with full access: writes its home, removes files, commits, and takes a steer', async () => {
     traffic = [];
     const workDir = await repo();
+    const marker = path.join(
+      homedir(),
+      '.cache',
+      'nocobase-runner-smoke',
+      `codex-${Date.now()}.txt`,
+    );
     const handle = adapter.start(
       sessionFor(
         workDir,
         [
           'Do these steps one at a time, one tool call per step:',
           '1. Create hello.txt containing exactly "hello".',
-          '2. Run the shell command `rm -f nothing.tmp`.',
-          '3. Run the shell command `ls`.',
+          `2. Run the shell command \`mkdir -p "${path.dirname(marker)}" && echo ok > "${marker}"\`.`,
+          '3. Run the shell command `rm -f nothing.tmp`.',
+          '4. Run the shell command `git add hello.txt && git -c user.name=Smoke -c user.email=smoke@example.com commit -q -m smoke`.',
           'Then reply "done".',
         ].join('\n'),
       ),
@@ -154,7 +156,7 @@ describe.skipIf(!enabled)('codex adapter against a real Codex', () => {
       }
     });
     const result = await handle.result;
-    await save('steer-deny');
+    await save('full-access');
     print(events);
     console.log('result', {
       ...result,
@@ -166,11 +168,25 @@ describe.skipIf(!enabled)('codex adapter against a real Codex', () => {
     expect(
       (await readFile(path.join(workDir, 'hello.txt'), 'utf8')).trim(),
     ).toBe('hello');
+    expect((await readFile(marker, 'utf8')).trim()).toBe('ok');
+    expect(
+      execFileSync('git', ['log', '--oneline'], {
+        cwd: workDir,
+        encoding: 'utf8',
+      }),
+    ).toContain('smoke');
     expect(
       events.some(
         (e) => e.type === 'permission' && e.meta?.decision === 'deny',
       ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      events.some(
+        (e) =>
+          e.type === 'toolResult' &&
+          /Operation not permitted|EPERM/.test(e.output ?? ''),
+      ),
+    ).toBe(false);
     expect(
       events.some((e) => e.type === 'input' && e.meta?.inputId === 'steer-1'),
     ).toBe(true);

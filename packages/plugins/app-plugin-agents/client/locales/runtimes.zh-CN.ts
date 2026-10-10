@@ -164,7 +164,7 @@ const runtimesZhCN: RuntimesLocale = {
   connect: {
     title: '添加运行环境',
     description:
-      '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。',
+      '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。Agent 在那里以运行执行机的用户身份完全放开地运行，能读写该用户能访问的一切，包括 SSH 密钥和其他凭证。执行机不是安全边界：请用专用系统用户、容器或虚拟机来运行它。',
     createCredential: '生成安装命令',
     advanced: '高级：按编码工具限制',
     run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI，注册 runner 并设置为登录后自动启动：',
