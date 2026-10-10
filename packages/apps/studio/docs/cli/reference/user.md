@@ -197,14 +197,14 @@ List users
 nb-studio user list
 ```
 
-| Flag           | Type       | Description |
-| -------------- | ---------- | ----------- |
-| `--page`       | integer    |             |
-| `--limit`      | integer    |             |
-| `--q`          | string     |             |
-| `--status`     | enabled \\ | disabled    |     |
-| `--role-scope` | string     |             |
-| `--role`       | string     |             |
+| Flag           | Type                | Description |
+| -------------- | ------------------- | ----------- |
+| `--page`       | integer             |             |
+| `--limit`      | integer             |             |
+| `--q`          | string              |             |
+| `--status`     | enabled \| disabled |             |
+| `--role-scope` | string              |             |
+| `--role`       | string              |             |
 
 **Output:** A list (table columns: `id`, `name`, `email`, `disabledAt`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

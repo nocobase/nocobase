@@ -76,10 +76,11 @@ nb-studio run events <run>
 | -------- | ----------- |
 | `run`    | The run id. |
 
-| Flag      | Type    | Description                                                                  |
-| --------- | ------- | ---------------------------------------------------------------------------- |
-| `--after` | integer | Only events after this sequence number, oldest first; the newest without it. |
-| `--limit` | integer | At most this many events (200). (default 50)                                 |
+| Flag      | Type                                                                                                     | Description                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `--type`  | text \| thinking \| toolUse \| toolResult \| permission \| input \| checkout \| status \| error \| usage | Only these event types; repeat to include more. All types when omitted. (repeatable) |
+| `--after` | integer                                                                                                  | Only events after this sequence number, oldest first; the newest without it.         |
+| `--limit` | integer                                                                                                  | At most this many events (200). (default 50)                                         |
 
 **Output:** A list (table columns: `seq`, `at`, `type`, `tool`, `text`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -92,6 +93,7 @@ nb-studio run events <run>
 ```bash
 nb-studio run events <run>
 nb-studio run events <run> --after 120
+nb-studio run events <run> --type text --type input
 ```
 
 ## run get
@@ -130,14 +132,14 @@ Newest first, a page at a time. The caller sees the runs they started or own, an
 nb-studio run list
 ```
 
-| Flag             | Type      | Description   |
-| ---------------- | --------- | ------------- |
-| `--subject-kind` | string    |               |
-| `--subject`      | string    |               |
-| `--agent`        | string    |               |
-| `--status`       | queued \\ | dispatched \\ | running \\ | completed \\ | failed \\ | cancelled |     |
-| `--limit`        | integer   | (default 50)  |
-| `--page-token`   | string    |               |
+| Flag             | Type                                                                | Description  |
+| ---------------- | ------------------------------------------------------------------- | ------------ |
+| `--subject-kind` | string                                                              |              |
+| `--subject`      | string                                                              |              |
+| `--agent`        | string                                                              |              |
+| `--status`       | queued \| dispatched \| running \| completed \| failed \| cancelled |              |
+| `--limit`        | integer                                                             | (default 50) |
+| `--page-token`   | string                                                              |              |
 
 **Output:** A list (table columns: `id`, `agentId`, `subject.kind`, `subject.id`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -206,15 +208,15 @@ The run requests the caller answers for or asked, newest first, a page at a time
 nb-studio run request list
 ```
 
-| Flag             | Type           | Description  |
-| ---------------- | -------------- | ------------ |
-| `--role`         | responsible \\ | requester    | `responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out. |
-| `--status`       | pending \\     | confirmed \\ | rejected \\                                                                                                                  | withdrawn \\ | expired \\ | superseded |     |
-| `--subject-kind` | string         |              |
-| `--subject`      | string         |              |
-| `--agent`        | string         |              |
-| `--limit`        | integer        | (default 50) |
-| `--page-token`   | string         |              |
+| Flag             | Type                                                                   | Description                                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `--role`         | responsible \| requester                                               | `responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out. |
+| `--status`       | pending \| confirmed \| rejected \| withdrawn \| expired \| superseded |                                                                                                                              |
+| `--subject-kind` | string                                                                 |                                                                                                                              |
+| `--subject`      | string                                                                 |                                                                                                                              |
+| `--agent`        | string                                                                 |                                                                                                                              |
+| `--limit`        | integer                                                                | (default 50)                                                                                                                 |
+| `--page-token`   | string                                                                 |                                                                                                                              |
 
 **Output:** A list (table columns: `id`, `agentName`, `subject.kind`, `subject.id`, `requestedByName`, `responsibleName`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

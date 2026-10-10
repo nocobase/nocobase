@@ -61,16 +61,16 @@ nb-studio app create <app> --name <string> --env <string>
 | -------- | ----------- |
 | `app`    |             |
 
-| Flag                    | Type     | Description                                          |
-| ----------------------- | -------- | ---------------------------------------------------- |
-| `--name`                | string   | (required)                                           |
-| `--env`                 | string   | (required)                                           |
-| `--description`         | string   |                                                      |
-| `--label`               | json     | A label (key=value); repeat for more.                |
-| `--preview-of`          | string   | Makes it a preview App of that App, removed with it. |
-| `--activation`          | eager \\ | onDemand                                             |     |
-| `--idle-stop-minutes`   | number   |                                                      |
-| `--dormant-after-hours` | number   |                                                      |
+| Flag                    | Type              | Description                                          |
+| ----------------------- | ----------------- | ---------------------------------------------------- |
+| `--name`                | string            | (required)                                           |
+| `--env`                 | string            | (required)                                           |
+| `--description`         | string            |                                                      |
+| `--label`               | json              | A label (key=value); repeat for more.                |
+| `--preview-of`          | string            | Makes it a preview App of that App, removed with it. |
+| `--activation`          | eager \| onDemand |                                                      |
+| `--idle-stop-minutes`   | number            |                                                      |
+| `--dormant-after-hours` | number            |                                                      |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -309,15 +309,15 @@ nb-studio app logs <app>
 | -------- | ----------- |
 | `app`    |             |
 
-| Flag           | Type     | Description |
-| -------------- | -------- | ----------- |
-| `--page-token` | string   |             |
-| `--level`      | trace \\ | debug \\    | info \\ | warn \\ | error \\ | fatal |     |
-| `--source`     | string   |             |
-| `--search`     | string   |             |
-| `--since`      | string   |             |
-| `--until`      | string   |             |
-| `--from-start` | boolean  |             |
+| Flag           | Type                                             | Description |
+| -------------- | ------------------------------------------------ | ----------- |
+| `--page-token` | string                                           |             |
+| `--level`      | trace \| debug \| info \| warn \| error \| fatal |             |
+| `--source`     | string                                           |             |
+| `--search`     | string                                           |             |
+| `--since`      | string                                           |             |
+| `--until`      | string                                           |             |
+| `--from-start` | boolean                                          |             |
 
 **Output:** A list (table columns: `time`, `level`, `msg`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -423,14 +423,14 @@ nb-studio app update <app>
 | -------- | ----------- |
 | `app`    |             |
 
-| Flag                    | Type     | Description                           |
-| ----------------------- | -------- | ------------------------------------- |
-| `--name`                | string   |                                       |
-| `--description`         | string   |                                       |
-| `--label`               | json     | A label (key=value); repeat for more. |
-| `--activation`          | eager \\ | onDemand                              |     |
-| `--idle-stop-minutes`   | number   |                                       |
-| `--dormant-after-hours` | number   |                                       |
+| Flag                    | Type              | Description                           |
+| ----------------------- | ----------------- | ------------------------------------- |
+| `--name`                | string            |                                       |
+| `--description`         | string            |                                       |
+| `--label`               | json              | A label (key=value); repeat for more. |
+| `--activation`          | eager \| onDemand |                                       |
+| `--idle-stop-minutes`   | number            |                                       |
+| `--dormant-after-hours` | number            |                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

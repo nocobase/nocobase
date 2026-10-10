@@ -106,16 +106,16 @@ Requires `edit` on the parent, or on the space at the top. The slug is derived f
 nb-studio kb doc create --scope <string> --title <string>
 ```
 
-| Flag        | Type       | Description                                                                                                         |
-| ----------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
-| `--scope`   | string     | (required)                                                                                                          |
-| `--owner`   | string     | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
-| `--kind`    | article \\ | folder                                                                                                              |     |
-| `--parent`  | string     |                                                                                                                     |
-| `--title`   | string     | (required)                                                                                                          |
-| `--slug`    | string     |                                                                                                                     |
-| `--summary` | string     |                                                                                                                     |
-| `--content` | string     | (or --content-file <path>)                                                                                          |
+| Flag        | Type              | Description                                                                                                         |
+| ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `--scope`   | string            | (required)                                                                                                          |
+| `--owner`   | string            | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
+| `--kind`    | article \| folder |                                                                                                                     |
+| `--parent`  | string            |                                                                                                                     |
+| `--title`   | string            | (required)                                                                                                          |
+| `--slug`    | string            |                                                                                                                     |
+| `--summary` | string            |                                                                                                                     |
+| `--content` | string            | (or --content-file <path>)                                                                                          |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -208,12 +208,12 @@ nb-studio kb doc permission set <doc>
 | -------- | ----------- |
 | `doc`    |             |
 
-| Flag        | Type       | Description                                                       |
-| ----------- | ---------- | ----------------------------------------------------------------- |
-| `--mode`    | inherit \\ | custom                                                            |     |
-| `--entries` | json       |                                                                   |
-| `--file`    | path       | The request body as a JSON object; the flags override its fields. |
-| `--yes`     | boolean    | Go ahead without asking “Replace the document's permissions?”     |
+| Flag        | Type              | Description                                                       |
+| ----------- | ----------------- | ----------------------------------------------------------------- |
+| `--mode`    | inherit \| custom |                                                                   |
+| `--entries` | json              |                                                                   |
+| `--file`    | path              | The request body as a JSON object; the flags override its fields. |
+| `--yes`     | boolean           | Go ahead without asking “Replace the document's permissions?”     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -595,15 +595,15 @@ Proposals of `status` (`pending` by default) in the spaces the caller reads, nar
 nb-studio kb proposal list
 ```
 
-| Flag          | Type       | Description                                                                                                         |
-| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
-| `--status`    | pending \\ | accepted \\                                                                                                         | rejected \\ | withdrawn | (default "pending") |
-| `--scope`     | string     |                                                                                                                     |
-| `--owner`     | string     | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
-| `--doc`       | string     |                                                                                                                     |
-| `--decidable` | boolean    |                                                                                                                     |
-| `--page`      | integer    | (default 1)                                                                                                         |
-| `--limit`     | integer    | (default 20)                                                                                                        |
+| Flag          | Type                                         | Description                                                                                                         |
+| ------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `--status`    | pending \| accepted \| rejected \| withdrawn | (default "pending")                                                                                                 |
+| `--scope`     | string                                       |                                                                                                                     |
+| `--owner`     | string                                       | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
+| `--doc`       | string                                       |                                                                                                                     |
+| `--decidable` | boolean                                      |                                                                                                                     |
+| `--page`      | integer                                      | (default 1)                                                                                                         |
+| `--limit`     | integer                                      | (default 20)                                                                                                        |
 
 **Output:** A list (table columns: `id`, `kind`, `status`, `docTitle`, `proposer.name`, `reason`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -676,19 +676,19 @@ For someone who may edit to decide: an update (`doc` with `content`), a verifica
 nb-studio kb propose --reason <string>
 ```
 
-| Flag        | Type       | Description                                                                                                                                                       |
-| ----------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--doc`     | string     | The document to update or verify (slug or id).                                                                                                                    |
-| `--title`   | string     | A new document’s title.                                                                                                                                           |
-| `--slug`    | string     | A new document’s slug.                                                                                                                                            |
-| `--parent`  | string     | A new document’s parent (slug or id).                                                                                                                             |
-| `--space`   | project \\ | system                                                                                                                                                            | Where a new document goes without a parent: the project read (default) or the system. |
-| `--content` | string     | The whole new Markdown content. (or --content-file <path>)                                                                                                        |
-| `--summary` | string     | A one-line summary.                                                                                                                                               |
-| `--reason`  | string     | Why it should change, for the person deciding (at most 500 characters). (required)                                                                                |
-| `--project` | string     | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about.                            |
-| `--verify`  | boolean    | With `doc`: the document still holds; nothing in it changes.                                                                                                      |
-| `--changed` | boolean    | Propose every file you changed or added in .nocobase-runner/knowledge (compared with its .manifest.json). (sends the files changed in .nocobase-runner/knowledge) |
+| Flag        | Type              | Description                                                                                                                                                       |
+| ----------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--doc`     | string            | The document to update or verify (slug or id).                                                                                                                    |
+| `--title`   | string            | A new document’s title.                                                                                                                                           |
+| `--slug`    | string            | A new document’s slug.                                                                                                                                            |
+| `--parent`  | string            | A new document’s parent (slug or id).                                                                                                                             |
+| `--space`   | project \| system | Where a new document goes without a parent: the project read (default) or the system.                                                                             |
+| `--content` | string            | The whole new Markdown content. (or --content-file <path>)                                                                                                        |
+| `--summary` | string            | A one-line summary.                                                                                                                                               |
+| `--reason`  | string            | Why it should change, for the person deciding (at most 500 characters). (required)                                                                                |
+| `--project` | string            | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about.                            |
+| `--verify`  | boolean           | With `doc`: the document still holds; nothing in it changes.                                                                                                      |
+| `--changed` | boolean           | Propose every file you changed or added in .nocobase-runner/knowledge (compared with its .manifest.json). (sends the files changed in .nocobase-runner/knowledge) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -876,16 +876,16 @@ A new file, or with `doc` a new version of a file, for someone who may edit to d
 nb-studio kb upload --reason <string> --file <path>
 ```
 
-| Flag        | Type       | Description                                                                                                                            |
-| ----------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `--doc`     | string     | The file to replace (slug or id).                                                                                                      |
-| `--title`   | string     | A new file's title; its name when absent.                                                                                              |
-| `--parent`  | string     | A new file's folder or document (slug or id).                                                                                          |
-| `--space`   | project \\ | system                                                                                                                                 | Where a new document goes without a parent: the project read (default) or the system. |
-| `--summary` | string     | A one-line summary.                                                                                                                    |
-| `--reason`  | string     | Why it belongs in the knowledge base, for the person deciding (at most 500 characters). (required)                                     |
-| `--project` | string     | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about. |
-| `--file`    | path       | The file to propose. (required; streamed to an upload ticket, at most 104857600 bytes)                                                 |
+| Flag        | Type              | Description                                                                                                                            |
+| ----------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `--doc`     | string            | The file to replace (slug or id).                                                                                                      |
+| `--title`   | string            | A new file's title; its name when absent.                                                                                              |
+| `--parent`  | string            | A new file's folder or document (slug or id).                                                                                          |
+| `--space`   | project \| system | Where a new document goes without a parent: the project read (default) or the system.                                                  |
+| `--summary` | string            | A one-line summary.                                                                                                                    |
+| `--reason`  | string            | Why it belongs in the knowledge base, for the person deciding (at most 500 characters). (required)                                     |
+| `--project` | string            | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about. |
+| `--file`    | path              | The file to propose. (required; streamed to an upload ticket, at most 104857600 bytes)                                                 |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

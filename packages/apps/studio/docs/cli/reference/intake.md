@@ -72,15 +72,15 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio intake ai start --mode <string>
 ```
 
-| Flag            | Type     | Description                                                               |
-| --------------- | -------- | ------------------------------------------------------------------------- |
-| `--mode`        | split \\ | revise \\                                                                 | breakdown | (required) |
-| `--text`        | string   | (or --text-file <path>)                                                   |
-| `--project`     | string   |                                                                           |
-| `--plan`        | string   |                                                                           |
-| `--instruction` | string   | (or --instruction-file <path>)                                            |
-| `--issue`       | string   |                                                                           |
-| `--file`        | path     | A file whose text goes with it (repeatable). (uploaded first, repeatable) |
+| Flag            | Type                         | Description                                                               |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------- |
+| `--mode`        | split \| revise \| breakdown | (required)                                                                |
+| `--text`        | string                       | (or --text-file <path>)                                                   |
+| `--project`     | string                       |                                                                           |
+| `--plan`        | string                       |                                                                           |
+| `--instruction` | string                       | (or --instruction-file <path>)                                            |
+| `--issue`       | string                       |                                                                           |
+| `--file`        | path                         | A file whose text goes with it (repeatable). (uploaded first, repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
