@@ -1,7 +1,7 @@
 ---
 title: '路由'
 description: '了解 NocoBase 3 服务端和客户端路由的声明方式、挂载路径以及访问控制。'
-keywords: 'NocoBase,路由,服务端路由,客户端路由,defineRootRoutes,defineApiRoutes,defineAppRoutes,defineSettingsRoutes,defineDevRoutes'
+keywords: 'NocoBase,路由,服务端路由,客户端路由,defineRootRoutes,defineApiRoutes,defineAppRoutes'
 ---
 
 # 路由
@@ -13,27 +13,23 @@ NocoBase 3 的路由分为服务端路由和客户端路由：
 
 路由声明只写应用内部路径。部署前缀由运行时统一处理，不要写进 `path`。
 
-## 五种路由
+## 三种路由
 
-| 用途                           | 声明函数                 | 声明位置           | 应用内部路径         |
-| ------------------------------ | ------------------------ | ------------------ | -------------------- |
-| 顶层 HTTP 入口、Webhook 和回调 | `defineRootRoutes()`     | `server/routes/`   | `/callbacks/payment` |
-| 业务接口                       | `defineApiRoutes()`      | `server/routes/`   | `/orders`            |
-| 普通业务页面                   | `defineAppRoutes()`      | `client/routes.ts` | `/orders`            |
-| 设置和管理页面                 | `defineSettingsRoutes()` | `client/routes.ts` | `/orders`            |
-| 开发工具页面                   | `defineDevRoutes()`      | `client/routes.ts` | `/orders`            |
+| 用途                           | 声明函数             | 声明位置           | 应用内部路径         |
+| ------------------------------ | -------------------- | ------------------ | -------------------- |
+| 顶层 HTTP 入口、Webhook 和回调 | `defineRootRoutes()` | `server/routes/`   | `/callbacks/payment` |
+| 业务接口                       | `defineApiRoutes()`  | `server/routes/`   | `/orders`            |
+| 普通业务页面                   | `defineAppRoutes()`  | `client/routes.ts` | `/orders`            |
 
-服务端路由的路径由声明函数决定：`defineRootRoutes()` 保留你在 router 中写的路径，`defineApiRoutes()` 会自动在前面加上 `/api`。例如，`defineRootRoutes()` 中的 `/callbacks/payment` 最终是 `/callbacks/payment`，`defineApiRoutes()` 中的 `/orders` 最终是 `/api/orders`。客户端设置页和开发页分别自动加上 `/settings` 和 `/dev` 前缀，普通客户端页面不增加额外前缀。
+服务端路由的路径由声明函数决定：`defineRootRoutes()` 保留你在 router 中写的路径，`defineApiRoutes()` 会自动在前面加上 `/api`。例如，`defineRootRoutes()` 中的 `/callbacks/payment` 最终是 `/callbacks/payment`，`defineApiRoutes()` 中的 `/orders` 最终是 `/api/orders`。客户端页面不增加额外前缀。
 
 例如，应用部署在 `/main` 下时：
 
-| 声明方式                 | `path`               | 浏览器或 HTTP 地址        |
-| ------------------------ | -------------------- | ------------------------- |
-| `defineAppRoutes()`      | `/orders`            | `/main/orders`            |
-| `defineSettingsRoutes()` | `/orders`            | `/main/settings/orders`   |
-| `defineDevRoutes()`      | `/orders`            | `/main/dev/orders`        |
-| `defineApiRoutes()`      | `/orders`            | `/main/api/orders`        |
-| `defineRootRoutes()`     | `/callbacks/payment` | `/main/callbacks/payment` |
+| 声明方式             | `path`               | 浏览器或 HTTP 地址        |
+| -------------------- | -------------------- | ------------------------- |
+| `defineAppRoutes()`  | `/orders`            | `/main/orders`            |
+| `defineApiRoutes()`  | `/orders`            | `/main/api/orders`        |
+| `defineRootRoutes()` | `/callbacks/payment` | `/main/callbacks/payment` |
 
 ## 服务端路由
 
@@ -204,45 +200,37 @@ defineAppRoutes([
 
 客户端页面的 `navigation`、`breadcrumb`、`auth`、`authz`、路由分组和子路由用法见 [页面和菜单](../pages-and-routes)。
 
-### 设置页
+### 设置类页面
 
-设置页使用 `defineSettingsRoutes()`，声明的 `path` 不要重复写 `/settings`：
+应用没有单独的设置区，也没有 `/settings` 或 `/dev` 前缀。配置类页面和其他页面一样用 `defineAppRoutes()` 声明，放进应用的主导航，例如放在一个名为「设置」的导航分组下：
 
 ```ts
-defineSettingsRoutes([
+defineAppRoutes([
   {
-    name: 'orders',
-    path: '/orders',
-    navigation: { title: 'navigation.orders' },
-    authz: { resource: { type: 'settings', id: 'orders' }, action: 'read' },
-    componentLoader: () => import('./pages/orders-settings.js'),
+    name: 'settings',
+    path: '/settings',
+    navigation: { title: 'navigation.settings' },
+    children: [
+      {
+        name: 'orders-settings',
+        path: '/orders',
+        navigation: { title: 'navigation.ordersSettings' },
+        authz: {
+          resource: { type: 'page', id: 'orders-settings' },
+          action: 'access',
+        },
+        componentLoader: () => import('./pages/orders-settings.js'),
+      },
+    ],
   },
 ]);
 ```
 
-`authz` 的值是 `'skip'`、`'unrestricted'` 或一个 `{ resource: { type, id }, action }` 对象，用来指定要检查的资源和操作；系统不会根据路由名称推断。在每条路径的第一个页面上声明它：子页面省略时继承最近的上级页面的值（可以跨越分组和多个层级），子页面自己声明的值会覆盖继承值。第一个页面省略 `authz` 时仍会注册，并在开发环境输出一条警告，说明路由、路径和采用的默认值：需要登录的应用页面（`auth: 'required'`）和设置页默认为 `'unrestricted'`，只有 root 等拥有无限制权限的身份可以打开；`guest`、`optional` 应用页面和开发页默认为 `'skip'`。`'unrestricted'` 也可以显式声明，用于只允许 root 打开的页面，它不会出现在权限配置中。例如，`{ resource: { type: 'settings', id: 'orders' }, action: 'read' }` 表示检查当前用户是否有读取订单设置页的权限。客户端会在加载页面组件前执行这项检查；`authz: 'skip'` 仅跳过当前页面的权限检查，不跳过登录和父级检查。
+插件不再向应用贡献设置页。插件需要管理界面时，由应用决定是否以及在哪里提供对应页面。
 
-检查被拒绝时，页面不会出现在设置导航中，直接访问它的 URL 也不会加载页面组件。请为设置页声明它所属的设置项，或者对所有登录用户都可打开的页面显式声明 `'skip'`；省略时设置页只有 root 可以打开。`authz` 只控制客户端页面，页面调用的服务端接口仍需自行完成认证和权限校验。
+`authz` 的值是 `'skip'`、`'unrestricted'` 或一个 `{ resource: { type, id }, action }` 对象，用来指定要检查的资源和操作；系统不会根据路由名称推断。在每条路径的第一个页面上声明它：子页面省略时继承最近的上级页面的值（可以跨越分组和多个层级），子页面自己声明的值会覆盖继承值。第一个页面省略 `authz` 时仍会注册，并在开发环境输出一条警告，说明路由、路径和采用的默认值：需要登录的页面（`auth: 'required'`）默认为 `'unrestricted'`，只有 root 等拥有无限制权限的身份可以打开；`guest`、`optional` 页面默认为 `'skip'`。`'unrestricted'` 也可以显式声明，用于只允许 root 打开的页面，它不会出现在权限配置中。客户端会在加载页面组件前执行这项检查；`authz: 'skip'` 仅跳过当前页面的权限检查，不跳过登录和父级检查。
 
-### 开发页
-
-开发页使用 `defineDevRoutes()`，声明的 `path` 不要重复写 `/dev`：
-
-```ts
-defineDevRoutes([
-  {
-    name: 'inspect',
-    path: '/inspect',
-    navigation: { title: 'navigation.inspect' },
-    authz: 'skip',
-    componentLoader: () => import('./pages/inspect.js'),
-  },
-]);
-```
-
-开发页在生产环境中会被移除，也不会被包含进构建产物。
-
-开发页同样应当声明 `authz`，可以是 `'skip'` 或 `{ resource: { type, id }, action }`；省略时默认为 `'skip'`。声明权限请求时，客户端会在开发环境中加载页面前检查这项权限；没有权限时，页面不会出现在开发导航中，直接访问 URL 也不会加载组件。
+检查被拒绝时，页面不会出现在导航中，直接访问它的 URL 也不会加载页面组件。`authz` 只控制客户端页面，页面调用的服务端接口仍需自行完成认证和权限校验。
 
 ## 路由之间不会自动配对
 

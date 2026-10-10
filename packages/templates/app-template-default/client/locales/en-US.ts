@@ -68,7 +68,6 @@ const enUS = {
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',
-  'status.loadingSettings': 'Loading settings',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
@@ -81,18 +80,6 @@ const enUS = {
   shell: {
     buildFreely: 'AI builds freely.',
     reliability: '<brand>NocoBase</brand> keeps it reliable.',
-  },
-  surface: {
-    backToApp: 'Back to app',
-    loading: 'Loading {{title}}',
-    navigation: '{{title}} navigation',
-    page: '{{title}} page',
-  },
-  settings: {
-    title: 'Settings',
-    emptyTitle: 'No settings available',
-    emptyDescription:
-      'No enabled plugin contributes a settings page you have access to.',
   },
   home: {
     title: 'Start building your application',

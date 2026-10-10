@@ -7,16 +7,13 @@
 '@nocobase/app-plugin-authz-default-access': patch
 '@nocobase/app-plugin-authz-restriction-rules': patch
 '@nocobase/app-plugin-authz-sharing-rules': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-notification-in-app': patch
 '@nocobase/app-plugin-notification-providers': patch
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Pass `locales` the same way on the client and the server

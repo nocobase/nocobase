@@ -3,9 +3,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { Hono } from 'hono';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { injectSpaRuntimeHtml, registerSpaRoutes } from '../src/spa/index.js';
+import type { SpaClientConfigMap } from '../src/spa/types.js';
 
 const tempDirs: string[] = [];
 
@@ -210,6 +211,231 @@ describe('SPA routes', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'Not found',
     });
+  });
+});
+
+describe('proxied SPA cache validators', () => {
+  const etag = 'W/"upstream-html"';
+  const lastModified = 'Wed, 01 Jan 2025 00:00:00 GMT';
+  const conditionalHeaders = {
+    'if-none-match': etag,
+    'if-modified-since': lastModified,
+  };
+
+  it.each([
+    { 'if-none-match': etag },
+    { 'if-modified-since': lastModified },
+    conditionalHeaders,
+  ])(
+    'refreshes public configuration with old validators %j',
+    async (conditions) => {
+      let publicConfig: SpaClientConfigMap = {
+        app: { version: 'fixture-old', displayName: 'Old application' },
+        i18n: { defaultLocale: 'en-US' },
+      };
+      const handler = vi.fn((request: Request) => {
+        if (
+          request.headers.has('if-none-match') ||
+          request.headers.has('if-modified-since')
+        ) {
+          return new Response(null, { status: 304 });
+        }
+        return new Response('<html lang="en-US"><body>page</body></html>', {
+          headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'content-length': '53',
+            etag,
+            'last-modified': lastModified,
+          },
+        });
+      });
+      const router = new Hono();
+      registerSpaRoutes(router, {
+        basePath: '/main',
+        indexPath: '/unused',
+        handler,
+        publicConfig: () => publicConfig,
+      });
+      const url = 'http://localhost/main/settings';
+      const first = await router.request(url);
+      expect(await first.text()).toContain('fixture-old');
+      publicConfig = {
+        app: { version: 'fixture-new', displayName: 'New application' },
+        i18n: { defaultLocale: 'zh-CN' },
+      };
+      const request = new Request(url, {
+        headers: { ...conditions, accept: 'text/html', 'x-test': 'preserved' },
+      });
+      const response = await router.request(request);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('cache-control')).toBe('no-cache');
+      for (const header of ['etag', 'last-modified', 'content-length']) {
+        expect(response.headers.has(header)).toBe(false);
+      }
+      const html = await response.text();
+      expect(html).toContain('"version":"fixture-new"');
+      expect(html).toContain('"displayName":"New application"');
+      expect(html).toContain('<html lang="zh-CN">');
+      const upstream = handler.mock.calls.at(-1)![0];
+      expect(upstream.headers.get('x-test')).toBe('preserved');
+      expect(upstream.url).toBe(request.url);
+      expect(request.headers.get('if-none-match')).toBe(
+        conditions['if-none-match'] ?? null,
+      );
+    },
+  );
+
+  it.each([
+    ['/main', undefined],
+    ['/main/', '*/*'],
+    ['/main/admin/users/42?tab=profile', undefined],
+    ['/main/admin/users/42', '*/*'],
+    ['/main/index.html?fresh=1', '*/*'],
+    ['/main/reports.html', 'text/html,application/xhtml+xml'],
+    ['/', undefined],
+    ['/admin/users/42', 'text/html'],
+  ])(
+    'removes validators from page %s accepting %s',
+    async (pathname, accept) => {
+      const handler = vi.fn<(request: Request) => Response>(
+        () =>
+          new Response('<html></html>', {
+            headers: { 'content-type': 'text/html' },
+          }),
+      );
+      const router = new Hono();
+      registerSpaRoutes(router, {
+        basePath: pathname.startsWith('/main') ? '/main' : '',
+        indexPath: '/unused',
+        handler,
+      });
+      const response = await router.request(`http://localhost${pathname}`, {
+        headers: { ...conditionalHeaders, ...(accept ? { accept } : {}) },
+      });
+      expect(response.status).toBe(200);
+      const upstream = handler.mock.calls[0]![0];
+      expect(upstream.headers.has('if-none-match')).toBe(false);
+      expect(upstream.headers.has('if-modified-since')).toBe(false);
+    },
+  );
+
+  it('returns HTML HEAD headers without injecting a body', async () => {
+    const handler = vi.fn<(request: Request) => Response>(
+      () =>
+        new Response(null, {
+          headers: {
+            'content-type': 'text/html',
+            etag,
+            'last-modified': lastModified,
+          },
+        }),
+    );
+    const publicConfig = vi.fn(() => ({ app: { version: 'fixture' } }));
+    const router = new Hono();
+    registerSpaRoutes(router, {
+      basePath: '/main',
+      indexPath: '/unused',
+      handler,
+      publicConfig,
+    });
+    const response = await router.request('http://localhost/main/', {
+      method: 'HEAD',
+      headers: conditionalHeaders,
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-cache');
+    expect(response.headers.has('etag')).toBe(false);
+    expect(response.headers.has('last-modified')).toBe(false);
+    await expect(response.text()).resolves.toBe('');
+    expect(publicConfig).not.toHaveBeenCalled();
+    const upstream = handler.mock.calls[0]![0];
+    expect(upstream.method).toBe('HEAD');
+    expect(upstream.headers.has('if-none-match')).toBe(false);
+    expect(upstream.headers.has('if-modified-since')).toBe(false);
+  });
+
+  it.each([
+    ['/src/main.js', '*/*', ''],
+    ['/src/main.tsx', 'text/html', ''],
+    ['/src/style.css', '*/*', ''],
+    ['/favicon.svg', '*/*', ''],
+    ['/@vite/client', '*/*', ''],
+    ['/@react-refresh', undefined, ''],
+    ['/@id/virtual:client', '*/*', ''],
+    ['/@fs/source/module', '*/*', ''],
+    ['/assets/extensionless', '*/*', ''],
+    ['/index.html?html-proxy&index=0.js', '*/*', ''],
+    ['/index.html?import', '*/*', ''],
+    ['/index.html?raw', '*/*', ''],
+    ['/module?url', '*/*', ''],
+    ['/module?worker', '*/*', ''],
+    ['/module?sharedworker', '*/*', ''],
+    ['/extensionless', '*/*', 'script'],
+    ['/extensionless', '*/*', 'style'],
+    ['/extensionless', 'application/json', ''],
+  ])(
+    'preserves resource caching for %s',
+    async (pathname, accept, destination) => {
+      const handler = vi.fn(
+        (request: Request) =>
+          new Response(
+            request.headers.has('if-none-match') ? null : 'resource',
+            {
+              status: request.headers.has('if-none-match') ? 304 : 200,
+              headers: {
+                etag,
+                'last-modified': lastModified,
+                'content-length': '8',
+              },
+            },
+          ),
+      );
+      const router = new Hono();
+      registerSpaRoutes(router, {
+        basePath: '/main',
+        indexPath: '/unused',
+        handler,
+      });
+      const url = `http://localhost/main${pathname}`;
+      const initial = await router.request(url);
+      expect(initial.headers.get('etag')).toBe(etag);
+      expect(initial.headers.get('last-modified')).toBe(lastModified);
+      expect(initial.headers.get('content-length')).toBe('8');
+      await expect(initial.text()).resolves.toBe('resource');
+      const request = new Request(url, {
+        headers: {
+          ...conditionalHeaders,
+          ...(accept ? { accept } : {}),
+          ...(destination ? { 'sec-fetch-dest': destination } : {}),
+        },
+      });
+      const response = await router.request(request);
+      expect(response.status).toBe(304);
+      expect(handler.mock.calls.at(-1)![0]).toBe(request);
+      expect(response.headers.get('etag')).toBe(etag);
+      expect(response.headers.get('last-modified')).toBe(lastModified);
+    },
+  );
+
+  it('preserves non-page request bodies and validators', async () => {
+    const handler = vi.fn(
+      async (request: Request) => new Response(await request.text()),
+    );
+    const router = new Hono();
+    registerSpaRoutes(router, {
+      basePath: '/main',
+      indexPath: '/unused',
+      handler,
+    });
+    const request = new Request('http://localhost/main/action', {
+      method: 'POST',
+      headers: conditionalHeaders,
+      body: 'payload',
+    });
+    await expect((await router.request(request)).text()).resolves.toBe(
+      'payload',
+    );
+    expect(handler.mock.calls[0]![0]).toBe(request);
   });
 });
 

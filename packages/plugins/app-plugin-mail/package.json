@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-mail",
   "displayName": "Mail App Plugin",
   "description": "Provides mail sending and resumable mailbox synchronization architecture.",
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.9",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -92,8 +92,7 @@
     "format:check": "prettier . --check",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
-    "test:postgres": "NOCOBASE_TEST_DB_DIALECT=postgres vitest run tests/server/message-queries.test.ts",
-    "test:e2e": "playwright test --config tests/playwright/playwright.config.ts"
+    "test:postgres": "NOCOBASE_TEST_DB_DIALECT=postgres vitest run tests/server/message-queries.test.ts"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",
@@ -109,7 +108,6 @@
     "lucide-react": "catalog:",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router": "catalog:",
     "date-fns": "^4.4.0",
     "react-day-picker": "^10.0.1",
     "cn": "catalog:"
@@ -141,12 +139,11 @@
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "@nocobase/app-testing": "workspace:*",
-    "@playwright/test": "catalog:"
+    "@nocobase/app-testing": "workspace:*"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/app-plugin-mail"
   }
 }

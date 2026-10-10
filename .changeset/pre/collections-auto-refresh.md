@@ -5,7 +5,6 @@
 '@nocobase/db': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Refresh the Collection cache when migrations change a schema

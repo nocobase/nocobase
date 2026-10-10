@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-plugin-authorization-example': major
-'@nocobase/app-plugin-departments-example': major
 '@nocobase/app-plugin-file-example': major
 '@nocobase/app-plugin-jobs-example': major
 '@nocobase/app-plugin-notification-example': major

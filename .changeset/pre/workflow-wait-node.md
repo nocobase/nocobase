@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-skills': patch
 ---
 

@@ -6,6 +6,7 @@ import pricesEnUS from './prices.en-US.js';
 import skillsEnUS from './skills.en-US.js';
 import servicesEnUS from './services.en-US.js';
 import runtimesEnUS from './runtimes.en-US.js';
+import runWaitEnUS from './runWait.en-US.js';
 
 const pages = {
   actions: {
@@ -169,6 +170,7 @@ const pages = {
       high: 'High',
       xhigh: 'Extra high',
       max: 'Max',
+      ultra: 'Ultra',
     },
     created: 'Created agent {{name}}',
   },
@@ -272,6 +274,16 @@ const pages = {
     moveDown: 'Move down',
     remove: 'Remove',
     suggestions: 'Type any model, or pick a common one',
+    availableRunners_one: '{{count}} runtime available',
+    availableRunners_other: '{{count}} runtimes available',
+    runnerReady: 'Ready',
+    runnerNotReady: 'Not ready',
+    reportHint:
+      'Runtime model reports are suggestions and take effect only after you save. Tool support does not guarantee permission, account quota or a successful call.',
+    reportedEfforts: 'Reported efforts you can choose: {{efforts}}.',
+    noReportedEfforts: 'none',
+    effortNotReported:
+      'The saved effort {{effort}} was not reported; it stays until you change it.',
     required: 'Add at least one.',
     runnerNeedsOne:
       'A runner agent needs at least one tool and model, so its last one stays.',
@@ -382,7 +394,7 @@ const pages = {
   envVars: {
     title: 'Environment variables',
     description:
-      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving.',
+      'Passed to the coding tool on every run and masked in run records; values are not shown again after saving. Anyone who may use a shared agent can receive these values on their own computer; mark high-risk secrets "Team runtimes only".',
     add: 'Add variable',
     addTitle: 'Add environment variable',
     editTitle: 'Replace {{name}}',
@@ -391,6 +403,16 @@ const pages = {
     nameHint: 'Upper-case letters, digits and underscores.',
     value: 'Value',
     valueTooLong: 'The value is larger than 8 KB.',
+    keepValueHint: 'Leave it empty to keep the current value.',
+    teamRunnersOnly: 'Team runtimes only',
+    teamRunnersOnlyHint:
+      'Without it, a run sends the value to the runtime that takes it, including the personal runtime of anyone who may use the agent. With it, only a team runtime takes runs that get this variable.',
+    teamRunnersOnlyBadge: 'Team runtimes only',
+    fromRunner: 'Take from the runtime',
+    fromRunnerHint:
+      'No value is kept here: the runtime that takes a run provides it from its own machine, set there with `{{command}}` or passed with `--pass-env`. A runtime that does not provide it fails the run before it starts.',
+    fromRunnerBadge: 'From the runtime',
+    valueRequired: 'Enter a value, or keep taking it from the runtime.',
     empty: 'No environment variables.',
     scope: 'Scope',
     updated: 'Updated',
@@ -636,6 +658,8 @@ const pages = {
     modelUnavailable: 'The agent’s model is not available.',
     stepLimit: 'The agent called tools too many times without answering.',
     policyRefused: 'No runtime’s policy lets it take this work.',
+    prepareNetwork:
+      'The runtime could not reach the repository host while preparing the run.',
     unknown: 'The run failed.',
   },
 };
@@ -647,13 +671,15 @@ const enUS: typeof pages &
   typeof chatEnUS &
   typeof servicesEnUS &
   typeof pricesEnUS &
-  typeof skillsEnUS = {
+  typeof skillsEnUS &
+  typeof runWaitEnUS = {
   ...pages,
   ...runtimesEnUS,
   ...chatEnUS,
   ...servicesEnUS,
   ...pricesEnUS,
   ...skillsEnUS,
+  ...runWaitEnUS,
   access: accessEnUS.access,
 };
 

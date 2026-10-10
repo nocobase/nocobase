@@ -1,70 +1,127 @@
 ---
 title: 'Notifications'
-description: 'Learn what NocoBase 3 notifications can do, and ask an Agent to connect in-app messages, email, or group messages to business workflows.'
-keywords: 'NocoBase,notifications,in-app,email,instant messaging,Agent'
+description: 'Send business notifications and use a complete prompt to add in-app messages to an order approval application.'
+keywords: 'NocoBase,notifications,in-app messages,email,Feishu,DingTalk,Agent'
 ---
 
 # Notifications
 
-Notifications send approval results, task updates, and business reminders to app users or external channels. To have an application Agent connect notifications to your app, describe when to send a message, who should receive it, what it should say, and where it should lead when clicked.
+Notifications send messages to specified recipients when a business event occurs. Applications can deliver results and reminders through in-app messages, email, or group bots. Messages can also include links to business records.
 
-Notification email is sent by the application for business reminders. If employees need to connect their personal mailboxes, read correspondence, or reply to customers, use [Mail](./mail/index.md).
+For example, notify an applicant when an order is approved or rejected, notify an assignee when a task is assigned, or remind an owner before a certification expires.
 
-## What notifications can do
+## Available capabilities
 
-- Send in-app messages to application users.
-- Send business email to customers or applicants.
-- Send reminders to team chats through Feishu or DingTalk bots.
-- Extend a custom Provider to connect SMS or another notification service that is not built in.
+| Notification type                  | Use cases                                                 | What you need                                                |
+| ---------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
+| In-app messages                    | Approval results and task reminders for application users | Application users and an enabled in-app channel              |
+| Email                              | Business results and reminders sent to an email address   | An SMTP or Resend service, a sender, and recipient addresses |
+| Feishu and DingTalk group messages | Team reminders sent to a specific group                   | A group bot and its Webhook configuration                    |
 
-Notifications do not determine trigger conditions, recipients, or business-data access rules automatically. They also do not switch to another channel automatically when a delivery fails. Describe these rules in your request.
+Notifications handle message delivery. Your application's business rules determine when to send a message, who receives it, and what it says. When using multiple channels, specify the recipients and sending conditions for each channel.
 
-## What to prepare
+Email here means business notifications sent by the application. To connect a personal mailbox, read correspondence, and reply to customers, see [Mail](./mail).
 
-The default application template registers the notification capability and configures an in-app channel. For a custom application, ask the Agent to check which plugins and channels are installed.
+## Before you start
 
-In-app messages can be sent to application users directly. Email and group messages require an administrator to prepare a sending service or bot Webhook and configure its credentials securely in the server-side `config.yml`. Do not give credentials to the Agent. Use the notification Settings page to send test messages and inspect delivery logs. Test emails and group messages are sent to real destinations.
+The following example uses in-app messages, so you do not need an email service or a group bot. You need:
 
-## Example: notify an applicant after approval
+- **A running NocoBase application**: Your development Agent must be able to read and modify its source code. If you do not have an application yet, follow [Create an app with a Coding Agent](../get-started/create-app-with-agent).
+- **Applicant and reviewer accounts**: The applicant receives messages, and the reviewer processes orders. Use existing business accounts or ask the Agent to create example accounts.
 
-Give the following prompt to your application Agent and replace the page and field names with those used in your app:
+Tell the Agent which event triggers the notification, who receives it, what the message contains, and where its link should lead. The Agent connects the business trigger and record link to the application; administrators can view notification logs in Settings.
 
-```text
-When an order's approval result changes to approved or rejected, send an in-app notification to the applicant. Include the result and order number in the message. Clicking the message should open the corresponding order detail page.
+## Complete example: order approval notifications
 
-First check the order fields, applicant, approval workflow, notification channels, and user permissions in the current app. Do not guess field names or expose orders to users who cannot access them. Repeated processing of the same approval result must send only one notification. A notification failure must not undo a completed approval.
+In an order approval application, an applicant submits an order, and a reviewer approves or rejects it. After the decision, the applicant should receive an in-app message with a link to the order.
 
-When finished, tell me where to view notifications. Use two applicant accounts to verify the recipient scope, order link, and duplicate handling.
-```
-
-### Expected result
-
-The applicant receives an in-app message with the approval result and order number. Clicking it opens the corresponding order, and other applicants cannot see it. Administrators can inspect the delivery result in the notification logs.
-
-<!-- Add a genuine screenshot showing an applicant's order approval message on the notifications page and its link to the corresponding order detail page. -->
-
-## Extend the example
-
-To add email, tell the Agent which business field contains the recipient's email address, what the subject and message should say, and whether an employee must review it before sending. To send Feishu or DingTalk messages, specify the target group, trigger conditions, and message content. An administrator is responsible for securely configuring the corresponding bot Webhook.
-
-### Add a messaging service
-
-NocoBase includes in-app, SMTP, Resend, Feishu, and DingTalk Providers. A Provider submits a message to a specific service. A Channel is a named route that the application configures and selects. To use an SMS provider or another service that is not supported yet, the Agent must extend a Provider in an application plugin; a Settings page alone cannot add a new service.
-
-Provide the service's official API documentation and describe the message type, recipient format, and sending requirements. An administrator must configure credentials securely on the server; do not include them in the prompt. Give the following request to an application Agent that can read the current project's Skills:
+Give the following requirements to your development Agent. Reuse existing order data and pages if they are available; otherwise, ask the Agent to create them.
 
 ```text
-Add notification support for [provider name] to this NocoBase application so it can send [SMS or another message type].
+I want to add order approval to the current application and notify applicants
+of the results through in-app messages.
 
-First read the notification Skill available in this application and the provider's official API documentation. Inspect the existing notification plugin and Providers. Tell me what information is still needed, then integrate the service with the existing notification capability. Credentials must remain in secure server-side configuration; never put them in the frontend, repository, or logs.
+Orders include a number, name, applicant, amount, and approval status.
+Applicants can view their own orders. Reviewers can view pending orders
+and approve or reject them. Reuse existing order and approval features if available.
 
-When finished, verify that a business workflow can send through the new channel, delivery results appear in notification logs, and test sends do not expose credentials. Handle explicit acceptance, explicit rejection, and uncertain results appropriately. Explain how an administrator configures and tests the new channel, and how a business Agent can select it later.
+After approval or rejection, send one in-app message only to the order's applicant.
+The title indicates whether the order was approved or rejected.
+The body includes the order number, name, and approval result.
+Clicking the message opens the corresponding order details.
+Do not send while approval is pending. Notify only once for the same approval result.
+
+Applicants view messages in their Inbox. Administrators can view delivery records
+in notification logs. A notification failure does not affect the saved approval result.
 ```
 
-If the Agent needs to confirm which channels the current application supports or how it handles delivery results, ask it to read the notification Skill shipped with the installed version. For a complete example, see [Send notifications](../tutorials/notifications.md).
+### Complete the integration and process orders
+
+After the Agent finishes, the application should have an order list, approval actions, and a link from each notification to its order. Reuse the application's existing Inbox and notification logs.
+
+Sign in as a reviewer, open Orders, open a pending order, and click Approve. You can also open another order, click Reject, and confirm.
+
+The following example shows both results: applicant Alice's order `PO-2026-001` was approved, and `PO-2026-002` was rejected.
+
+### See the results
+
+**Step 1: open the notification center to view approval results.**
+
+Sign in as applicant Alice and click the Inbox icon with the unread count in the upper-right corner. The Inbox shows two messages, `Order approved` and `Order rejected`. Their bodies include the order number, name, and approval result.
+
+![Click the upper-right Inbox icon to view approval notifications](../../cn/capabilities/assets/notification/inbox-open-center.svg)
+
+**Step 2: click the message to view the order details.**
+
+Select `Order rejected` on the left, then click the message title link on the right.
+
+![Click the Order rejected title link on the right](../../cn/capabilities/assets/notification/inbox-open-order.svg)
+
+The application opens the corresponding order, `PO-2026-002`, with status `Rejected`. This takes the recipient from the notification to the business record.
+
+![Open the corresponding order details from its rejection notification](../../cn/capabilities/assets/notification/inbox-rejected-order-detail.png)
+
+Messages remain available in the Inbox after a refresh. This example sends to the order's applicant; other business rules can send to a task assignee or owner in the same way.
+
+## View notification logs
+
+The notification capability includes a Notification logs page in Settings. Administrators with the required permissions can open **Settings → Notifications → Notification logs** to view notifications and delivery status. This page records notifications from different business features. In this example, the two order decisions each created a record with status `completed`.
+
+![Notification logs showing delivery records for two order decisions](../../cn/capabilities/assets/notification/notification-logs.png)
+
+The **Send test notification** button in the upper-right corner is also provided by the notification capability. Administrators can select a configured channel and recipient to send a message directly and check delivery, without first processing an order.
+
+If an applicant does not receive an approval message, look for its record here. If there is no record, ask the Agent to check the business trigger. If delivery failed, check the channel configuration and recipient.
+
+## Further use: email and group notifications
+
+Email and group notifications require an external service. The person responsible for developing or deploying the application configures these channels.
+
+| Notification type                  | Who supplies the information                                                                                              | How to configure the application                                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| SMTP email                         | The email service owner supplies the SMTP host, port, sending account, password or authorization code, and sender address | The developer or deployment operator configures an SMTP channel under `notification.channels` in `config.yml`   |
+| Resend email                       | The Resend account owner supplies an API Key and a valid sender address                                                   | The developer or deployment operator adds a Resend channel in the same configuration section                    |
+| Feishu and DingTalk group messages | Someone with permission to manage the target group adds a bot and obtains its Webhook URL                                 | The developer or deployment operator adds the corresponding group bot channel in the same configuration section |
+
+Ask the development Agent to prepare the configuration fields for the selected service. The person responsible for configuration fills in passwords, authorization codes, API Keys, and Webhook URLs in the application's runtime environment. The Notification logs page provides delivery records and test messages.
+
+After configuring a channel, give the Agent the business requirements. For example, add email alongside the existing in-app messages:
+
+```text
+Add email to the existing order approval notifications,
+using the application's configured email channel.
+
+After an order is approved or rejected, send the result to the applicant's account email.
+Include the order number in the subject and the order name and result in the body.
+Keep the existing in-app messages. If the applicant has no email address,
+send only the in-app message.
+An email failure must not affect the approval result or in-app message.
+Administrators can view delivery records in notification logs.
+```
 
 ## Related links
 
-- [Send notifications](../tutorials/notifications.md) — Connect and verify notifications with an order approval example.
-- [Mail](./mail/index.md) — Connect a personal mailbox to a business page and handle correspondence.
-- [Workflow quick start](./workflow/quick-start.md) — Try the example processes, then ask an Agent to build a first approval process with notifications.
+- [Send notifications](../tutorials/notifications) — Connect notifications to order pages and approval actions.
+- [Mail](./mail) — Connect personal mailboxes and handle correspondence.
+- [Scheduled tasks](./scheduler) — Trigger business reminders on a schedule.
+- [Workflow quick start](./workflow/quick-start) — Try the example processes, then ask an Agent to build a first approval process with notifications.

@@ -62,6 +62,11 @@ export interface MailWorkspacePageProps {
   readonly description?: string;
   /** Values available to `{{path.to.value}}` placeholders in mail templates. */
   readonly templateVariables?: MailTemplateVariables;
+  /**
+   * The application page that renders `MailAccountsPage`, relative to the application's base path. A user with no
+   * account is linked there; without it the empty state shows no link, because the plugin ships no such page.
+   */
+  readonly accountsHref?: string;
 }
 
 const LAST_COMPOSE_ACCOUNT_KEY_PREFIX =
@@ -71,6 +76,7 @@ export default function MailWorkspacePage({
   title,
   description,
   templateVariables = {},
+  accountsHref,
 }: MailWorkspacePageProps = {}): ReactElement {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
   const mail = useMailClient();
@@ -852,13 +858,9 @@ export default function MailWorkspacePage({
                   })}
                 </p>
               </div>
-              {(
-                import.meta as ImportMeta & {
-                  readonly env?: { readonly DEV?: boolean };
-                }
-              ).env?.DEV ? (
+              {accountsHref ? (
                 <Button
-                  render={<a href={resolveAppUrl('/dev/mail/accounts')} />}
+                  render={<a href={resolveAppUrl(accountsHref)} />}
                   nativeButton={false}
                   role='link'
                 >

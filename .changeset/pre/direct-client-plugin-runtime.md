@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-client': major
 '@nocobase/app-template-default': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Pass the complete client plugin composition to `defineAppRuntime()`.

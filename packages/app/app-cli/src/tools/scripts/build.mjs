@@ -234,7 +234,7 @@ const writeDistEnv = () => {
 
 /**
  * Records what a deployment cannot read back from the built files. `relocatable` says the client was built with a
- * relative base, so an installer or a Hub may mount it at any path; an archive without it was built for the
+ * relative base, so an installer may mount it at any path; an archive without it was built for the
  * `basePath` it records instead, and has to be mounted there. `builtAt` tells two builds of the same version apart.
  */
 const recordDeploymentMetadata = () => {
@@ -319,11 +319,6 @@ writeCliEntry();
 // deployment resolves every external Collection without titles or relations and reports nothing wrong.
 // `database/<connection>/collections/` is not copied: it is a local cache of the database nothing reads back.
 copyCollectionMetadata();
-// Same reason, different asset: a Skill is a `SKILL.md`, and the AI Employee plugin reads the application's from
-// `<applicationRoot>/ai/skills`, which is `dist` once deployed.
-run('Copy application AI Skills', 'node', [
-  fileURLToPath(new URL('./utils/copy-ai-skills.mjs', import.meta.url)),
-]);
 runHookStage(buildHooks, 'afterServerBuild', run);
 await generateDatabaseManifests({
   sourceDir: path.join(rootDir, 'database'),

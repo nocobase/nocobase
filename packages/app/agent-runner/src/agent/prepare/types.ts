@@ -9,6 +9,7 @@ import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import type { ApiClient } from '../../lib/http.ts';
 import type { PreparedDir, WorkspaceLock } from '../../core/checkout.ts';
+import type { GitRetryOptions } from '../../core/git-retry.ts';
 import type { PlacedMount } from '../mounts.ts';
 import type { SpoolEvent } from '../../core/events.ts';
 
@@ -17,6 +18,8 @@ export interface PrepareContext {
   readonly payload: RunPayload;
   readonly paths: RunnerPaths;
   readonly registration: AppRegistration;
+  /** The names the runner's owner passes from its environment (`--pass-env`). */
+  readonly passEnv: readonly string[];
   readonly client: ApiClient;
   readonly tool: AgentTool;
   readonly log: (message: string) => void;
@@ -24,6 +27,8 @@ export interface PrepareContext {
   readonly event: (event: SpoolEvent) => void;
   /** Called, last first, when the run ends, prepared or not. */
   readonly onRelease: (release: () => Promise<void>) => void;
+  /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
+  readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;
   /** The run's working directories, the primary one first; empty when the run names none. */
   dirs: PreparedDir[];
@@ -45,15 +50,55 @@ export interface PrepareStep {
   run(context: PrepareContext): Promise<void>;
 }
 
-/** A step's failure with its own reason. */
+/** A step's failure with its own reason, and what its error event records besides the step (`meta`). */
 export class PrepareError extends Error {
   override name = 'PrepareError';
   readonly reason: FailureReason;
+  readonly meta: Readonly<Record<string, unknown>>;
 
-  constructor(reason: FailureReason, message: string) {
+  constructor(
+    reason: FailureReason,
+    message: string,
+    meta: Readonly<Record<string, unknown>> = {},
+  ) {
     super(message);
     this.reason = reason;
+    this.meta = meta;
   }
+}
+
+/**
+ * What the agent writes besides `cwd`, for a tool's own sandbox (`AdapterSession.writableRoots`): the other working
+ * directories, each checkout's own Git directory (`.git` inside new clones, or `<cache>/worktrees/<name>` for legacy
+ * worktrees), which holds its index, HEAD and submodules, and `shared`, the directories every run on the machine
+ * writes, such as the pnpm store (core/pnpm-store.ts). Never the shared repository cache itself.
+ * The explicit clone .git root also permits local hooks/config; host-side Git treats both as untrusted (task-git.ts).
+ */
+export function agentWritableRoots(
+  dirs: readonly PreparedDir[],
+  cwd: string,
+  shared: readonly string[] = [],
+): string[] {
+  const roots = [
+    ...dirs.flatMap((dir) => [
+      dir.dir,
+      ...(dir.repo === undefined ? [] : [dir.repo.gitDir]),
+    ]),
+    ...shared,
+  ];
+  return [...new Set(roots)].filter((root) => root !== cwd);
+}
+
+/**
+ * The run's working trees, for a tool that protects paths inside its writable roots (`AdapterSession.workingTrees`):
+ * every working directory and each submodule checked out in a repository among them.
+ */
+export function agentWorkingTrees(dirs: readonly PreparedDir[]): string[] {
+  const trees = dirs.flatMap((dir) => [
+    dir.dir,
+    ...(dir.repo === undefined ? [] : dir.repo.submodules),
+  ]);
+  return [...new Set(trees)];
 }
 
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */

@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-file
 
+## 1.0.0-beta.21
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- Updated dependencies [487921c]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/app-client@2.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.20
 
 ### Patch Changes

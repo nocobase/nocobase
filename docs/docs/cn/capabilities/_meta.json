@@ -2,11 +2,6 @@
   {
     "type": "file",
     "name": "index",
-    "label": "内置能力"
-  },
-  {
-    "type": "file",
-    "name": "overview",
     "label": "总览"
   },
   {
@@ -67,12 +62,6 @@
     "type": "file",
     "name": "theme",
     "label": "主题"
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
-    "name": "ai-employee",
-    "label": "AI 员工"
   },
   {
     "type": "dir",

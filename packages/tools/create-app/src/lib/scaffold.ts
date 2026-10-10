@@ -41,7 +41,7 @@ export async function assertTargetIsUsable(directory: string): Promise<void> {
 
 /**
  * The minimum a generated project must ignore. `config.yml` carries the `secrets.keys` that `config init` generates
- * and `.env` carries a hub's settings, so committing either would publish local configuration; the rest are build
+ * and `.env` carries local settings, so committing either would publish local configuration; the rest are build
  * output and local state.
  */
 const FALLBACK_GITIGNORE = [

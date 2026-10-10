@@ -11,7 +11,7 @@ Use the installed version's public exports, without importing plugin internals. 
 
 ## Decide Whether to Use Scheduler
 
-The primary reason to define tasks through Scheduler is **UI observability for business administrators**. Developers define schedules and execution logic in code. Business administrators use the application's task list and detail pages to view schedules, track individual executions, and enable or disable tasks when authorized.
+The primary reason to define tasks through Scheduler is **UI observability for business administrators**. Developers define schedules and execution logic in code. Business administrators use the task list and detail pages the application builds on the Scheduler API to view schedules, track individual executions, and enable or disable tasks when authorized.
 
 Tasks that do not need to be viewed and tracked through the UI must not be managed by the Scheduler plugin. Give recurring ones a `ScheduleExecutor` of their own from the application's jobs service (`jobExecutorServiceToken` in `@nocobase/app-server/jobs`), and one-off background work a `JobExecutor`; the application development Skill describes both. For administrator-visible tasks, deliver Client registration, access permissions, meaningful task names, and accurate final execution status together; successful server-side dispatch alone is incomplete.
 

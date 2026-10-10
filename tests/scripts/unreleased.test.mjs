@@ -19,7 +19,10 @@ import {
 
 test('unreleased arguments select templates and reject incomplete database configuration', () => {
   assert.equal(parseArgs(['smoke']).template, 'default');
-  assert.equal(parseArgs(['smoke', '--template', 'hub']).template, 'hub');
+  assert.equal(
+    parseArgs(['smoke', '--template', 'examples']).template,
+    'examples',
+  );
   assert.equal(parseArgs(['prepare', '--port', '4874']).port, 4874);
   assert.equal(
     parseArgs(['smoke', '--dialect', 'postgres', '--config', '/tmp/test.yml'])
@@ -192,7 +195,7 @@ test('create accepts a name and creation options without requiring database cred
     'create',
     'crm',
     '--template',
-    'hub',
+    'examples',
     '--dialect',
     'postgres',
     '--json',
@@ -201,7 +204,7 @@ test('create accepts a name and creation options without requiring database cred
     '/tmp/apps',
   ]);
   assert.equal(options.name, 'crm');
-  assert.equal(options.template, 'hub');
+  assert.equal(options.template, 'examples');
   assert.equal(options.dialect, 'postgres');
   assert.equal(options.json, true);
   assert.equal(options['no-install'], true);
@@ -215,33 +218,27 @@ test('create accepts a name and creation options without requiring database cred
     assert.throws(() => parseArgs(args));
 });
 
-test('installer-smoke takes a source, its own ports and a workdir, not the registry port', () => {
+test('installer-smoke takes its own port and a workdir, not the registry port', () => {
   const options = parseArgs(['installer-smoke']);
-  assert.equal(options['hub-port'], 13200);
   assert.equal(options['app-port'], 13100);
-  assert.equal(options.source, undefined);
-  assert.equal(
-    parseArgs(['installer-smoke', '--source', 'archive']).source,
-    'archive',
-  );
   assert.equal(
     parseArgs([
       'installer-smoke',
-      '--hub-port',
+      '--app-port',
       '13300',
       '--workdir',
-      '/tmp/hub',
-    ])['hub-port'],
+      '/tmp/crm',
+    ])['app-port'],
     13300,
   );
   for (const args of [
     ['installer-smoke', '--port', '4874'],
-    ['installer-smoke', '--hub-port', '70000'],
-    ['installer-smoke', '--hub-port', '13010'],
-    ['installer-smoke', '--template', 'hub'],
-    ['installer-smoke', '--source', 'docker'],
-    ['installer-smoke', '--app-port', '13200'],
-    ['smoke', '--hub-port', '13300'],
+    ['installer-smoke', '--app-port', '70000'],
+    ['installer-smoke', '--template', 'default'],
+    ['installer-smoke', '--source', 'archive'],
+    ['installer-smoke', '--hub-port', '13200'],
+    ['smoke', '--app-port', '13300'],
+    ['smoke', '--template', 'hub'],
   ])
     assert.throws(() => parseArgs(args));
 });

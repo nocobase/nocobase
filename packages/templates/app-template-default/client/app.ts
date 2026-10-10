@@ -28,8 +28,6 @@ export function createApp(runtime: AppRuntimeContext): ClientApplication {
         ],
         routes: createElement(AppRouter, {
           clientRoutes: runtime.routes,
-          settingsRouteTree: runtime.settingsRouteTree,
-          devRouteTree: runtime.devRouteTree,
         }),
       }),
   });

@@ -10,7 +10,8 @@
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { ActivityVia } from '../../shared/plans.js';
+import type { ActivityVia, ActivityExecution } from '../../shared/plans.js';
+import type { Viewer } from '../access/viewer.js';
 import type { Actor, ActorTrace } from './actor.js';
 import type { IdSource } from './ids.js';
 
@@ -80,6 +81,35 @@ export async function readActivities(
 /** The kind whose principals act for people through `via: 'agent'` (`ActorTrace.agentId`). */
 export const AGENT_VIA_KIND = 'agent';
 
+/** Safe without a host-provided machine permission decision, including internal comment reader output. */
+export function activityExecutionForViewer(
+  execution: ActivityExecution,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
+): ActivityExecution {
+  const visible =
+    viewer &&
+    (execution.runnerOwnerUserId === viewer.userId ||
+      viewer.seesExecutionMachine?.(execution) === true);
+  // Select the public contract: an opaque trace can also contain private fields that projects does not understand.
+  return {
+    attempt: execution.attempt,
+    runnerId: execution.runnerId,
+    runnerOwnerUserId: execution.runnerOwnerUserId,
+    runnerName: visible ? execution.runnerName : null,
+    runnerOwnerName: visible ? execution.runnerOwnerName : null,
+    runnerTrust: visible ? execution.runnerTrust : null,
+    machineHidden: !visible || execution.machineHidden === true,
+    tool: execution.tool,
+    toolVersion: execution.toolVersion,
+    model: execution.model,
+    actualModels: execution.actualModels,
+    effort: execution.effort,
+    actualEffort: execution.actualEffort,
+    actualEffortSource: execution.actualEffortSource,
+    actualEffortAt: execution.actualEffortAt,
+  };
+}
+
 /**
  * Splits an activity's stored details into what the change was (`details`) and how the person made it (`via`), naming
  * the agent with `agentName`.
@@ -87,6 +117,7 @@ export const AGENT_VIA_KIND = 'agent';
 export function splitVia(
   stored: Readonly<Record<string, unknown>> | null,
   agentName: (agentId: string) => string | null,
+  viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): {
   readonly details: Readonly<Record<string, unknown>>;
   readonly via: ActivityVia | null;
@@ -95,6 +126,9 @@ export function splitVia(
   const t = (trace && typeof trace === 'object' ? trace : {}) as ActorTrace;
   const ids = {
     ...(t.runId ? { runId: t.runId } : {}),
+    ...(t.execution
+      ? { execution: activityExecutionForViewer(t.execution, viewer) }
+      : {}),
     ...(t.conversationId ? { conversationId: t.conversationId } : {}),
     ...(t.planId ? { planId: t.planId } : {}),
   };

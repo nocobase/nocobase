@@ -5,7 +5,6 @@
 '@nocobase/app-plugin-file': minor
 '@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-routes-example': minor
-'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-template-default': minor
 ---
 

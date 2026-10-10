@@ -1,6 +1,7 @@
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
 import {
   existsSync,
+  chmodSync,
   mkdirSync,
   readFileSync,
   statSync,
@@ -99,6 +100,44 @@ describe('runner end to end', () => {
     expect(server.lastHeartbeat()?.load).toEqual({ slots: 1, free: 1 });
   });
 
+  it('reports the installed Pi model table on a later heartbeat while continuing to claim', async () => {
+    const toolDir = path.join(scratch, 'tools');
+    mkdirSync(toolDir);
+    const pi = path.join(toolDir, 'pi');
+    writeFileSync(
+      pi,
+      '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "0.99.2"; else printf "provider model context max-out thinking images\\nopenai gpt-6-sol 200K 64K yes yes\\n"; fi\n',
+    );
+    chmodSync(pi, 0o755);
+    const realEnv = {
+      ...env,
+      NOCOBASE_RUNNER_ADAPTER: '',
+      PATH: toolDir,
+      HOME: home,
+    };
+    const started = startDaemon(realEnv);
+    daemons.push(started);
+    await waitFor(
+      () =>
+        server
+          .lastHeartbeat()
+          ?.tools.some(
+            (tool) =>
+              tool.kind === 'pi' && tool.modelsDetectionStatus === 'detected',
+          ),
+      10_000,
+      'Pi model capabilities',
+    );
+    expect(
+      server.lastHeartbeat()?.tools.find((tool) => tool.kind === 'pi')?.models,
+    ).toEqual([{ id: 'openai/gpt-6-sol' }]);
+    await waitFor(
+      () => ([...server.runners.values()][0]?.claims ?? 0) > 0,
+      10_000,
+      'claims during capability detection',
+    );
+  });
+
   it('claims, checks out, starts, streams events, pushes and completes', async () => {
     const remote = makeRemote(scratch);
     const run = server.enqueue({
@@ -179,6 +218,13 @@ describe('runner end to end', () => {
     expect(envOutput).toContain(`TMPDIR=${workDir}/.nocobase-runner/tmp`);
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
     expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
+    // The runner's own Node.js and pnpm are first on PATH, and pnpm keeps to its version.
+    for (const tool of ['node', 'pnpm'])
+      expect(
+        statSync(path.join(workDir, '.nocobase-runner', 'bin', tool)).mode &
+          0o777,
+      ).toBe(0o700);
+    expect(envOutput).toContain('pnpm_config_pm_on_fail=ignore');
 
     // The application's CLI is on the PATH and finds the run's credential, with the server filled in; the run token
     // it read is redacted from the transcript, which stays valid JSON.
@@ -239,6 +285,32 @@ describe('runner end to end', () => {
       5_000,
       'record',
     );
+  });
+
+  it("leaves the machine's Node.js and pnpm to agents with agent-tools system", async () => {
+    expect(
+      (await cli(['config', 'set', 'agent-tools', 'system'], env)).code,
+    ).toBe(0);
+    const run = server.enqueue({
+      prompt: { system: '', session: 'fresh', turn: 'bash env\nsay done' },
+    });
+    daemon();
+    await waitFor(() => run.status === 'completed', 20_000, 'the run to end');
+    const bin = path.join(
+      workDirOf(run.payload.subject.key),
+      '.nocobase-runner',
+      'bin',
+    );
+    expect(existsSync(path.join(bin, 'appcli'))).toBe(true);
+    expect(existsSync(path.join(bin, 'node'))).toBe(false);
+    expect(existsSync(path.join(bin, 'pnpm'))).toBe(false);
+    const envOutput = server
+      .events(run.payload.run.id)
+      .find(
+        (event) =>
+          event.type === 'toolResult' && event.output?.includes('PATH='),
+      )?.output;
+    expect(envOutput).not.toContain('pnpm_config_pm_on_fail');
   });
 
   it("writes a 0600 credentials file for the application's CLI and removes it on cancel", async () => {

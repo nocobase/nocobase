@@ -5,10 +5,8 @@
 '@nocobase/queue': minor
 '@nocobase/app-server': minor
 '@nocobase/app-client': minor
-'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': patch
 ---
 
 Add code-defined Cron scheduling with timezone support, transactional synchronization, and stable schedule identities. Applications and plugins register schedules with `SchedulerService.defineSchedule(definition)` and execution targets with `registerTarget()` during provider registration or boot.

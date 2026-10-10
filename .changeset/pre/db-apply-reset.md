@@ -6,7 +6,6 @@
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Add `db apply` and `db reset`, and retire `migrate --fresh`.

@@ -5,7 +5,6 @@
 '@nocobase/app-plugin-authz-sharing-rules': patch
 '@nocobase/app-plugin-authz-restriction-rules': patch
 '@nocobase/app-plugin-authorization-example': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-users': patch
 '@nocobase/app-plugin-notification': patch
 ---

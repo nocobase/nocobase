@@ -17,7 +17,7 @@ export const workspaceStep: PrepareStep = {
     context.workspace = lock;
     if (context.payload.workspace.clean === true) {
       context.log(`workspace: cleaning ${lock.workDir}`);
-      await cleanWorkspace(lock.workDir);
+      await cleanWorkspace(context.paths, lock.workDir);
       context.event({
         type: 'status',
         content: 'Started from a clean working directory.',

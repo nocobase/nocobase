@@ -1,5 +1,13 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- Updated dependencies [a6758ec]
+  - @nocobase/dev-config@0.1.0-beta.20
+
 ## 0.1.0-beta.17
 
 ### Minor Changes

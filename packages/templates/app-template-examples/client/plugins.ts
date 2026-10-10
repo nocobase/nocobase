@@ -7,13 +7,10 @@ import {
   defineClientPlugins,
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
-import aiEmployee from '@nocobase/app-plugin-ai-employee/client';
-import aiEmployeeExample from '@nocobase/app-plugin-ai-employee-example/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
 import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
-import departmentsExample from '@nocobase/app-plugin-departments-example/client';
 import users from '@nocobase/app-plugin-users/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
@@ -34,18 +31,15 @@ import apiKeys from '@nocobase/app-plugin-api-keys/client';
 // list; removing its entry and its import disables it.
 const clientPlugins: AppClientPlugins = defineClientPlugins([
   authentication(),
-  aiEmployee(),
-  aiEmployeeExample(),
   authorization(),
   defaultAccess(),
   sharingRules(),
   restrictionRules(),
   authorizationExample(),
   templatePrintExample(),
-  departmentsExample(),
-  users({ mount: 'settings', path: '/users' }),
+  users(),
   databaseExplorer(),
-  apiKeys({ path: '/api-keys' }),
+  apiKeys(),
   i18n(),
   notificationInApp(),
   notificationExample(),

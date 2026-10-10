@@ -106,7 +106,3 @@ node ./dist/server/standalone.js
 | 重启服务           | 订单和通知仍存在                                                 |
 
 失败时先分清配置、迁移、原生依赖和业务执行错误，避免通过清空数据库“修复上线”。
-
-## 通过 Hub 部署
-
-团队已有 Hub（需要专业版授权）时，也可以将应用发布到 Hub，由 Hub 负责解压和进程管理。`pnpm nocobase hub deploy` 会按 Hub 报告的平台构建部署包，无需使用上面选择的 `--target`。操作步骤见[手动部署：Hub](/deployment/hub)；由 AI Agent 执行时，提示词见[用 AI Agent 部署](/deployment/with-agent)。

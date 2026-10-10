@@ -45,7 +45,7 @@ description: '配置业务员和主管，并用不同账号验证服务端的数
 为后续审批保留主管操作权限；提交接口还要检查本人归属。前端按权限展示操作，服务端独立校验。
 ```
 
-完整的职责设计流程见[向 AI 描述业务权限](../capabilities/authorization/develop-with-ai)。
+岗位职责的配置与人员分配见[权限集与分配](../capabilities/authorization/permission-sets)。
 
 应用代码使用的数据库资源 ID 是 `tutorialOrders`。权限集配置、页面资源名和接口中的检查必须对应；不要用可见的中文标题代替资源 ID。
 

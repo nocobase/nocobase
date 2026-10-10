@@ -82,7 +82,7 @@ export interface AppCliPluginDefinition {
   /**
    * The top-level topic the commands mount under. It is the package name without its scope and `app-plugin-` prefix,
    * or without its `-cli` suffix for a package that is not an application plugin, so `@nocobase/app-plugin-scheduler`
-   * mounts under `scheduler` and `@nocobase/hub-cli` under `hub`; declaring it is optional and a different value is
+   * mounts under `scheduler` and a `@nocobase/audit-cli` under `audit`; declaring it is optional and a different value is
    * rejected. Tying the topic to the package name is what lets the built-in commands grow without ever colliding with a
    * plugin: they avoid every plugin name, and each plugin owns exactly one.
    */

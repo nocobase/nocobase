@@ -1,16 +1,13 @@
 ---
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-skills': patch
 '@nocobase/app-client': minor
 '@nocobase/app-plugin-authz-default-access': patch
 '@nocobase/app-plugin-authz-sharing-rules': patch
 '@nocobase/app-plugin-authz-restriction-rules': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-database-explorer': patch
@@ -18,7 +15,6 @@
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-plugin-scheduler': patch
-'@nocobase/app-plugin-dag-flow': patch
 ---
 
 Remove Refine from client authorization checks. Use `AuthorizationClient.can({ resource, action })` instead of the removed two-argument signature, and import `useCan` from `@nocobase/app-plugin-authorization/client`. Migrate page guards, navigation, and notification visibility while preserving session isolation and realtime permission invalidation.

@@ -61,7 +61,7 @@ routes.post(
 
 ## One localized name
 
-Pick one term, such as 部门 / Departments, and use it for the settings menu entry, the settings item and its workspace subsection, and the subject type's `administration.title`, each as a `{ key, ns }` descriptor with a translation in every locale. An administrator who assigns a set to "部门" in the workspace then finds the same word in the menu. `ns` is the application's package name, which is its translation namespace. Register the settings item in the provider's `boot`, as the authorization Skill's `references/runtime-api.md` "Settings items" shows:
+Pick one term, such as 部门 / Departments, and use it for the menu entry, the settings item and its workspace subsection, and the subject type's `administration.title`, each as a `{ key, ns }` descriptor with a translation in every locale. An administrator who assigns a set to "部门" in the workspace then finds the same word in the menu. `ns` is the application's package name, which is its translation namespace. Register the settings item in the provider's `boot`, as the authorization Skill's `references/runtime-api.md` "Settings items" shows:
 
 ```ts
 const label = (key: string) => ({ key, ns: 'my-app' });
@@ -90,11 +90,13 @@ A department an administrator creates stores its title as plain text. A seeded d
 
 ## Settings page
 
-Declare one settings page in `client/routes.ts` with `defineSettingsRoutes`, titled with the same key; the department details are a child route, so they inherit the entry page's `authz`:
+Declare one page in `client/routes.ts` with `defineAppRoutes`, titled with the same key and placed under the application's Settings navigation group (a group whose `path` is `/settings`, see [section 5 of `page.md`](../frontend/references/page.md#5-settings-pages)); the department details are a child route, so they inherit the entry page's `authz`:
 
 ```ts
-defineSettingsRoutes([
+defineAppRoutes([
   {
+    // Appended to the application's own Settings group; the page is at /settings/departments.
+    parent: 'settings',
     name: 'departments',
     path: '/departments',
     navigation: { title: 'navigation.departments', icon: Network },
@@ -115,4 +117,4 @@ defineSettingsRoutes([
 ]);
 ```
 
-Lay the page out like the permission workspace: a searchable tree on the left with create-child, rename and enable or disable, and the selected department on the right with a members tab (a table with a primary badge, add through a user picker, remove, set primary) and a basic-info tab. Show loading, empty and error states, translate every label and every error code, and hide each write unless `useCan({ resource: { type: 'settings', id: 'departments' }, action: 'update' })`. Render every title with `titleText` from `@nocobase/app-plugin-authorization/client/management`, which translates a descriptor and passes plain text through; reuse its `PermissionsPage`, `ManagementTable`, `ConfirmDialog` and `SelectField` so the page matches the workspace. Follow [pages and routes](../frontend/references/page.md), [child routes](../frontend/references/child-routes.md), [dialogs and drawers](../frontend/references/overlay.md), [list pages](../frontend/references/table.md) and [theme](../frontend/references/theme.md). Permission-set assignment stays in Settings → Authorization; do not build a second assignment editor.
+Lay the page out as a searchable tree on the left with create-child, rename and enable or disable, and the selected department on the right with a members tab (a table with a primary badge, add through a user picker, remove, set primary) and a basic-info tab. Show loading, empty and error states, translate every label and every error code, and hide each write unless `useCan({ resource: { type: 'settings', id: 'departments' }, action: 'update' })`. Follow [pages and routes](../frontend/references/page.md), [child routes](../frontend/references/child-routes.md), [dialogs and drawers](../frontend/references/overlay.md), [list pages](../frontend/references/table.md) and [theme](../frontend/references/theme.md). Assigning permission sets is not part of this page.

@@ -2,11 +2,6 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Built-in capabilities"
-  },
-  {
-    "type": "file",
-    "name": "overview",
     "label": "Overview"
   },
   {
@@ -67,12 +62,6 @@
     "type": "file",
     "name": "theme",
     "label": "Themes"
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
-    "name": "ai-employee",
-    "label": "AI employees"
   },
   {
     "type": "dir",

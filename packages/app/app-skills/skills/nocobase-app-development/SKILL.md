@@ -41,16 +41,15 @@ Build the feature in the application. Do not run a plugin generator, create a `p
 
 NocoBase packages may publish Skills under `.agents/skills/`. Current application templates run `pnpm nocobase skills sync` automatically through `postinstall`; run it manually if install scripts were disabled or that directory is missing or stale. Confirm that the package is a direct `@nocobase/*` dependency or a registered plugin before relying on its Skill. The common capability mappings are:
 
-| The requirement sounds like                                                                   | Read the Skill for                    |
-| --------------------------------------------------------------------------------------------- | ------------------------------------- |
-| An assistant in the app: chat, reading files dropped into it, acting through tools you define | `@nocobase/app-plugin-ai-employee`    |
-| Email, IM, or in-app messages                                                                 | `@nocobase/app-plugin-notification`   |
-| Roles, permissions, per-user or per-record access                                             | `@nocobase/app-plugin-authorization`  |
-| Sign-in, registration, sessions                                                               | `@nocobase/app-plugin-authentication` |
-| File upload and metadata through Repository                                                   | `@nocobase/app-plugin-file`           |
-| Translated text and language switching                                                        | `@nocobase/app-plugin-i18n`           |
-| User administration and application-owned role assignment                                     | `@nocobase/app-plugin-users`          |
-| Reading or writing data, schema changes, migrations                                           | `@nocobase/db`                        |
+| The requirement sounds like                               | Read the Skill for                    |
+| --------------------------------------------------------- | ------------------------------------- |
+| Email, IM, or in-app messages                             | `@nocobase/app-plugin-notification`   |
+| Roles, permissions, per-user or per-record access         | `@nocobase/app-plugin-authorization`  |
+| Sign-in, registration, sessions                           | `@nocobase/app-plugin-authentication` |
+| File upload and metadata through Repository               | `@nocobase/app-plugin-file`           |
+| Translated text and language switching                    | `@nocobase/app-plugin-i18n`           |
+| User administration and application-owned role assignment | `@nocobase/app-plugin-users`          |
+| Reading or writing data, schema changes, migrations       | `@nocobase/db`                        |
 
 Read the relevant Skill before writing the feature, but treat this table as a map rather than an installed-package list. Implementing a permission system, a notification sender, or a scheduler by hand when a registered plugin provides one is the most expensive mistake available here.
 
@@ -72,7 +71,7 @@ The running application describes every `/api` endpoint it serves — its own ro
 curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
 ```
 
-Replace `/main` with the application's `APP_BASE_PATH`. Swagger UI for people is at `<APP_BASE_PATH>/api/swagger/docs`. Reading either needs a signed-in session or an API key, which a user creates at `<APP_BASE_PATH>/settings/api-keys`; without one the routes answer `401`, and an application with no access check registered, such as one without the authentication plugin, answers `404`. Ask the user for a key rather than creating one yourself. [HTTP API design](references/http-api.md#api-documentation) explains how to read the document and how a new route declares itself in it.
+Replace `/main` with the application's `APP_BASE_PATH`. Swagger UI for people is at `<APP_BASE_PATH>/api/swagger/docs`. Reading either needs a signed-in session or an API key, which a signed-in user creates with `POST <APP_BASE_PATH>/api/apiKeys`; without one the routes answer `401`, and an application with no access check registered, such as one without the authentication plugin, answers `404`. Ask the user for a key rather than creating one yourself. [HTTP API design](references/http-api.md#api-documentation) explains how to read the document and how a new route declares itself in it.
 
 ## Removing a direct NocoBase package
 
@@ -140,7 +139,7 @@ Everything else — `client/routing/`, `client/layouts/`, `client/theme/`, the s
 
 When the built-in mechanism genuinely cannot express the requirement, changing that structure is a legitimate answer. Comment what you changed and why the built-in path did not fit, and update the application's `AGENTS.md` in the same change so it still describes the real application. The synchronized NocoBase Skills are package-owned; propose a change to their source package when the shared framework guidance itself is wrong.
 
-When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): the Settings header entry, dev pages inside the App shell, the language submenu, navigation group state, permission refresh and sign-out handling.
+When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): a single App shell with no settings area, the language submenu, navigation group state, permission refresh and sign-out handling.
 
 ## Ownership
 
@@ -214,18 +213,14 @@ After adding or removing a language in `client/locales/` or `server/locales/`, r
 
 Application startup defaults belong in `config.yml`: `i18n.defaultLocale` for the language, and `client.app.defaultColorScheme` and `client.app.defaultTheme` for appearance. Valid browser-local choices take precedence. Which languages the interface offers is not configured — `client/locales/` is that list, while `server/locales/` independently defines the server's translated languages. See [internationalization](references/i18n.md), [frontend copy](references/frontend/references/i18n.md) and [themes and tokens](references/frontend/references/theme.md).
 
-## Publish application releases
-
-Deploying to a Hub uses the `pnpm nocobase hub` commands, which the application has while it depends on `@nocobase/hub-cli`: `hub remote add` records the target App in `.nocobase/hub.json`, `hub auth login` saves its API key outside the project, and `hub deploy` builds for the Hub, uploads and deploys. Read `.agents/skills/nocobase-hub-cli/SKILL.md`, which that package ships, before running them, and the `nocobase-deployment` Skill for the rest of a production deployment.
-
-## Logging and hosted applications
+## Logging
 
 Use the application logging service for diagnostics so entries carry application identity and follow its level and output policy. Development pretty output uses local time and displays `[appId/logger]`; file and JSON console output retain UTC timestamps and structured context. Request starts and headers, configuration diagnostics and AI resource loading stages are DEBUG; request completions and AI resource totals are INFO. Default optional `ai/skills` directories may be absent; explicitly configured missing directories still warn.
 
-The Hub configures hosted application output under `hub.logging.apps`; its own output uses `logging`. Deployed releases carry their own runtime and logging packages: updating the Hub cannot repair an old application formatter that prints numeric levels or omits context, or make an old runtime understand the structured console policy. Upgrade the application dependencies, rebuild and deploy a new release; never edit a deployed artifact or intercept process-wide stdout to rewrite other applications’ logs. Verify console enablement and pretty mode after upgrading.
+Deployed releases carry their own runtime and logging packages: an old release keeps the formatter it was built with. Upgrade the application dependencies, rebuild and deploy a new release; never edit a deployed artifact or intercept process-wide stdout to rewrite its logs. Verify console enablement and pretty mode after upgrading.
 
 Authentication diagnostics use the application `auth` logger unless an explicit authentication logger is configured. A missing Better Auth base URL is a configuration warning, not a logging error: configure `app.publicOrigin` with the externally reachable origin in the application deployment configuration. Do not substitute the internal Host bind address or suppress the warning to make startup appear clean.
 
-## Hub storage maintenance
+## Storage
 
-Hub storage separates Hub-owned state, Host runtime files, release archives, expanded revisions and persistent application volumes. Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
+Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.

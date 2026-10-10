@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-dag-flow': patch
 '@nocobase/app-server': patch
 ---
 

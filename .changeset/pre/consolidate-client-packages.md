@@ -1,14 +1,12 @@
 ---
 '@nocobase/app-client': major
 '@nocobase/app-template-default': major
-'@nocobase/app-template-hub': major
 '@nocobase/app-server': major
 '@nocobase/app-plugin-authentication': minor
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-file': minor
 '@nocobase/app-plugin-i18n': minor
 '@nocobase/app-plugin-notification': minor
-'@nocobase/app-plugin-dag-flow': minor
 '@nocobase/app-plugin-routes-example': minor
 '@nocobase/create-app': minor
 '@nocobase/dev-config': minor

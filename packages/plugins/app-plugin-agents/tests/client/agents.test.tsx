@@ -242,6 +242,30 @@ describe('agent pages', () => {
     });
   });
 
+  it('sets the online fallback agent from the online agents only', async () => {
+    api.routes['agents/chatSettings'] = () => ({ defaultAgentId: 'a4' });
+    renderPage(<AgentsPage />);
+    const section = await screen.findByTestId('chat-settings');
+    const picker = await within(section).findByRole('button', {
+      name: /^chat\.settings\.onlineFallback\.title: /,
+    });
+    expect(picker).toHaveTextContent('chat.settings.none');
+    await userEvent.click(picker);
+    const items = await screen.findAllByRole('menuitem');
+    expect(items.map((item) => item.textContent)).toEqual([
+      'chat.settings.none',
+      expect.stringContaining('PM'),
+    ]);
+    expect(items[1]).not.toHaveTextContent('chat.agents.systemDefault');
+    await userEvent.click(screen.getByRole('menuitem', { name: /^PM/ }));
+    await waitFor(() =>
+      expect(callsTo('PATCH', 'agents/chatSettings')).toHaveLength(1),
+    );
+    expect(callsTo('PATCH', 'agents/chatSettings')[0]?.json).toEqual({
+      onlineFallbackAgentId: 'a4',
+    });
+  });
+
   it('shows the system default chat agent as text to who does not manage agents', async () => {
     granted.delete('agents.agents/manage');
     renderPage(<AgentsPage />);
@@ -408,6 +432,29 @@ describe('agent pages', () => {
     expect(
       within(screen.getByTestId('agent-a1')).getByText('agentTypes.runner'),
     ).toBeInTheDocument();
+  });
+
+  it('lists everyone agents first, then the caller’s own, by shown name', async () => {
+    renderPage(<AgentsPage />);
+    await screen.findByTestId('agent-a1');
+    expect(
+      screen
+        .getAllByTestId(/^agent-a\d$/)
+        .map((row) => row.getAttribute('data-testid')),
+    ).toEqual(['agent-a2', 'agent-a4', 'agent-a1']);
+  });
+
+  it('wraps a long description inside the name column, two lines at most, with the full text on hover', async () => {
+    const long = 'Reviews pull requests '.repeat(20).trim();
+    agents[0] = { ...agents[0]!, description: long };
+    renderPage(<AgentsPage />);
+    const row = await screen.findByTestId('agent-a1');
+    const description = within(row).getByText(long);
+    expect(description).toHaveAttribute('title', long);
+    expect(description).toHaveClass('line-clamp-2', 'break-words');
+    const cell = within(row).getByTestId('agent-name-cell');
+    expect(cell).toHaveClass('max-w-72');
+    expect(cell.closest('td')).toHaveClass('whitespace-normal');
   });
 
   it("shows a built-in agent's name and description in the viewer's language until someone edits them", async () => {

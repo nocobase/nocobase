@@ -104,7 +104,7 @@ export function normalizeAppClientBasename(
 }
 
 /**
- * `import.meta.env` is read through a local type and an optional access, as in `defineDevRoutes`: consumers compile
+ * `import.meta.env` is read through a local type and an optional access, as in `plugins.ts`: consumers compile
  * this module without bundler ambient types, and Vitest runs it where `import.meta.env` is undefined — a development
  * context, which is where these checks are meant to speak up.
  */

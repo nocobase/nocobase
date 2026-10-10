@@ -106,7 +106,3 @@ Configure an HTTPS reverse proxy for the domain, retaining API, static asset, an
 | Service restart              | Orders and notifications persist                                                                     |
 
 Distinguish configuration, migration, native dependency, and business errors; do not reset a database to fix deployment.
-
-## Deploy through Hub
-
-When the team has a Hub, which requires a Professional license, the application can be published to it instead, and Hub takes over unpacking and process management. `pnpm nocobase hub deploy` builds the archive for the platform Hub reports, so the `--target` chosen above is not needed there. The steps are described in [Manual: Hub](/deployment/hub); for an AI Agent, use the prompts in [Deploy with an AI Agent](/deployment/with-agent).

@@ -1,6 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "Configuration overview" },
-  { "type": "file", "name": "llm", "label": "LLM services" },
-  { "type": "file", "name": "storage", "label": "Attachment storage" },
-  { "type": "file", "name": "mcp", "label": "MCP servers" }
-]
