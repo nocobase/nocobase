@@ -1,8 +1,8 @@
 /**
- * Distribution: the application serves the agent runner and its own CLI itself (`DIST_ROUTES`), as standalone
- * tarballs that bundle Node, one per target, so neither is published to a registry and a machine needs nothing
- * installed first. The install script, the runner's self-update and the runner's CLI installs all read the same
- * answers.
+ * Distribution: the application serves the agent runner and its own CLI itself (`DIST_ROUTES`), as tarballs that either
+ * bundle Node, one per target, or carry none and run on the machine's own Node.js 24 or newer, one for every target
+ * (`UNIVERSAL_TARGET`). Neither is published to a registry. The install script, the runner's self-update and the
+ * runner's CLI installs all read the same answers.
  */
 import { z } from 'zod';
 
@@ -11,6 +11,14 @@ import { z } from 'zod';
  * (`process.platform` and `process.arch`).
  */
 export const DIST_TARGET_PATTERN: RegExp = /^[a-z0-9]+-[a-z0-9]+$/u;
+
+/**
+ * The key a product's manifest lists its platform-independent tarball under: one package without a bundled Node that
+ * runs on the machine's own Node.js 24 or newer. It is served to any target that has no tarball of its own, and the
+ * answer then names the target that was asked for and sets `universal` (`DistArtifact.universal`). Not a target name
+ * (`DIST_TARGET_PATTERN`): nobody asks for it.
+ */
+export const UNIVERSAL_TARGET = 'universal';
 
 /** A product the application serves, by its command name: the runner (`RUNNER_PRODUCT`) or the application's CLI, such as `acme`. */
 export const DIST_PRODUCT_PATTERN: RegExp = /^[a-z][a-z0-9-]{0,63}$/u;
@@ -40,6 +48,11 @@ export interface DistArtifact {
   readonly size: number;
   /** The channel the application serves (`stable` unless configured). */
   readonly channel: string;
+  /**
+   * True when the tarball is the platform-independent one (`UNIVERSAL_TARGET`): it carries no Node, so the machine
+   * needs Node.js 24 or newer of its own. Absent for a tarball built for `target`, which bundles its Node.
+   */
+  readonly universal?: boolean;
 }
 
 export const DistArtifactSchema: z.ZodType<DistArtifact> = z.object({
@@ -50,6 +63,7 @@ export const DistArtifactSchema: z.ZodType<DistArtifact> = z.object({
   sha256: z.string().regex(/^[0-9a-f]{64}$/u),
   size: z.number().int().nonnegative(),
   channel: z.string().min(1),
+  universal: z.boolean().optional(),
 });
 
 /** What the application serves now: each product's current version and the targets it was built for. */

@@ -7,7 +7,9 @@ import { readCliApplication, requireCliBrand } from '../../lib/cli-brand.ts';
 import {
   CLI_TARGETS,
   packCli,
+  packTargets,
   RUNNER_COMMAND,
+  UNIVERSAL_TARGET,
   type CliPackResult,
 } from '../../lib/cli-pack.ts';
 
@@ -19,12 +21,15 @@ export default class CliBuild extends AppCommand {
   <out>/<channel>/<product>/manifest.json
   <out>/<channel>/<product>/<version>/<product>-v<version>-<target>.tar.gz
 
-The agents plugin serves them from storage/runners/dist (agents.dist.dir) to its install script, to runners and to the CLI's own update. Workspace packages the tarball needs are built and vendored; other dependencies are installed from the registry with npm. Node.js for each platform is downloaded from nodejs.org and checked against its SHASUMS256.txt; --host-node uses this machine's Node.js for its own platform instead.`;
+The agents plugin serves them from storage/runners/dist (agents.dist.dir) to its install script, to runners and to the CLI's own update. Workspace packages the tarball needs are built and vendored; other dependencies are installed from the registry with npm. Node.js for each platform is downloaded from nodejs.org and checked against its SHASUMS256.txt; --host-node uses this machine's Node.js for its own platform instead.
+
+--universal packs one more tarball, <product>-v<version>-${UNIVERSAL_TARGET}.tar.gz, that carries no Node.js and runs on the machine's own Node.js 24 or newer on every platform; alone (without --targets) it packs only that one. The application serves it to every platform that has no tarball of its own.`;
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --runner',
     '<%= config.bin %> <%= command.id %> --out /tmp/dist --targets darwin-arm64 --host-node',
+    '<%= config.bin %> <%= command.id %> --universal',
   ];
 
   static override flags: {
@@ -32,6 +37,7 @@ The agents plugin serves them from storage/runners/dist (agents.dist.dir) to its
     out: Interfaces.OptionFlag<string | undefined>;
     channel: Interfaces.OptionFlag<string>;
     targets: Interfaces.OptionFlag<string | undefined>;
+    universal: Interfaces.BooleanFlag<boolean>;
     version: Interfaces.OptionFlag<string | undefined>;
     'node-version': Interfaces.OptionFlag<string | undefined>;
     'host-node': Interfaces.BooleanFlag<boolean>;
@@ -52,6 +58,10 @@ The agents plugin serves them from storage/runners/dist (agents.dist.dir) to its
     }),
     targets: Flags.string({
       description: `Comma-separated platforms. Defaults to ${CLI_TARGETS.join(',')}.`,
+    }),
+    universal: Flags.boolean({
+      default: false,
+      description: `Also pack the ${UNIVERSAL_TARGET} tarball, which carries no Node.js and runs on the machine's own Node.js 24 or newer; without --targets, only that one.`,
     }),
     version: Flags.string({
       description:
@@ -88,12 +98,7 @@ The agents plugin serves them from storage/runners/dist (agents.dist.dir) to its
         flags.out ?? path.join('storage', 'runners', 'dist'),
       ),
       channel: flags.channel,
-      targets: flags.targets
-        ? flags.targets
-            .split(',')
-            .map((target) => target.trim())
-            .filter(Boolean)
-        : CLI_TARGETS,
+      targets: packTargets(flags.targets, flags.universal),
       ...(flags.version === undefined ? {} : { version: flags.version }),
       nodeVersion: flags['node-version'] ?? process.versions.node,
       hostNode: flags['host-node'],
@@ -103,7 +108,7 @@ The agents plugin serves them from storage/runners/dist (agents.dist.dir) to its
     });
     this.log(
       [
-        `Packed ${result.product} ${result.version} (${result.channel}, Node.js ${result.node}) into ${result.dir}:`,
+        `Packed ${result.product} ${result.version} (${result.channel}, ${result.node === 'system' ? "the machine's Node.js" : `Node.js ${result.node}`}) into ${result.dir}:`,
         ...Object.entries(result.targets).map(
           ([target, packed]) =>
             `  ${target}  ${packed.file}  ${packed.size} bytes  sha256 ${packed.sha256}`,

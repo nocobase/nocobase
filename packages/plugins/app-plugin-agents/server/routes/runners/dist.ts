@@ -19,6 +19,7 @@ import {
   HEADERS,
   ProtocolError,
   type DistArtifact,
+  UNIVERSAL_TARGET,
 } from '@nocobase/agent-protocol';
 import {
   apiErrorResponse,
@@ -68,6 +69,8 @@ export function artifactEnv(artifact: DistArtifact): string {
     `sha256=${parsed.sha256}`,
     `size=${parsed.size}`,
     `channel=${parsed.channel}`,
+    // Only for the universal tarball, so the answer for a tarball built for the platform stays as it was.
+    ...(parsed.universal === true ? ['universal=true'] : []),
     '',
   ].join('\n');
 }
@@ -90,9 +93,10 @@ export function createDistRoutes(
       // Checked before the file is looked up, so an invalid token learns nothing about which files there are.
       await services.downloadTokens.admit(token, { product });
       const found = await services.dist.file(product, version, file);
+      // The universal tarball serves every platform, so it downloads under whichever one the token is bound to.
       await services.downloadTokens.admit(token, {
         product,
-        target: found.target,
+        ...(found.target === UNIVERSAL_TARGET ? {} : { target: found.target }),
         download: true,
       });
       return;
@@ -198,12 +202,12 @@ export function createDistRoutes(
       operationId: 'agentsResolveDistArtifact',
       // Plumbing: the runner, its install script and `acme` itself download from here.
       ...cliRoute(false),
-      description: `The current version of \`product\` (the application's CLI, which carries the runner, or \`nocobase-runner\`) for \`target\` (such as \`darwin-arm64\` or \`linux-x64\`), with its download path and SHA-256. \`format=env\` answers the same as \`key=value\` lines a POSIX shell reads, as the install script does. Never cached. ${credentials}`,
+      description: `The current version of \`product\` (the application's CLI, which carries the runner, or \`nocobase-runner\`) for \`target\` (such as \`darwin-arm64\` or \`linux-x64\`), with its download path and SHA-256: the tarball built for that platform, else the universal one (\`universal: true\`), which carries no Node and needs Node.js 24 or newer on the machine. \`format=env\` answers the same as \`key=value\` lines a POSIX shell reads, as the install script does. Never cached. ${credentials}`,
       security: downloadSecurity,
       responses: {
         200: {
           description:
-            'The artifact: `{ data }` in JSON, or with `format=env` the lines `product=`, `version=`, `target=`, `url=`, `sha256=`, `size=` and `channel=` as `text/plain`.',
+            'The artifact: `{ data }` in JSON, or with `format=env` the lines `product=`, `version=`, `target=`, `url=`, `sha256=`, `size=` and `channel=` as `text/plain`, and `universal=true` when the platform gets the universal tarball, which needs Node.js 24 or newer on the machine.',
           content: {
             'application/json': {
               schema: resolver(z.object({ data: DistArtifactSchema })),
