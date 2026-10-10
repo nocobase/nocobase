@@ -61,6 +61,7 @@ grants from before roles moved to the App; the App converts them (for example, `
   `permissionsOf` says which for each request. Settings items (`pm.general`, `pm.labels`, `pm.workflows`: read,
   update; `pm.members`: read, invite, assign, define-roles) are registered by the plugin. Creating an issue needs `pm.issues` `create`, not `edit`. `GET /api/projects/me` returns what the caller
   holds.
+- Authorized original inviters can generate and privately deliver invitation links using an unscoped person credential, without global user creation permissions or an email channel. New accounts register from the link and remain email-unverified; existing users sign in with the matching account. Links use `app.publicOrigin` or the request origin. Generating a new link invalidates the old link; current access to every remaining project is rechecked. Other managers and scoped credentials remain email-only.
 - Issue updates need the `revision` the caller read; a stale revision is 409 `REVISION_CONFLICT` (`ABORTED`).
 - An issue cannot be created in a terminal status, and moving it to another project needs a status that project's
   workflow has. A status change the workflow does not allow for the caller is 400 `TRANSITION_NOT_ALLOWED`.
@@ -129,3 +130,5 @@ Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnbl
 
 `GET /api/projects/me` as a signed-in user returns 200 with `permissions`; `POST /api/projects/issues` with a `title` returns 201
 with an identifier such as `PM-1`.
+
+Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.

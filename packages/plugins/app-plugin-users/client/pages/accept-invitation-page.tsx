@@ -65,8 +65,8 @@ type Lookup =
 
 /**
  * `/invite/:token`, the page an invitation email links to. It shows who invited the visitor, takes a name and a
- * password, creates the account and signs in. A visitor who is signed in already is asked to sign out first, so an
- * invitation is never accepted into the wrong session. Applications may replace it (`INVITE_ROUTE_ID`) to match their
+ * password, creates the account and signs in. Existing accounts accept only from their matching session; visitors
+ * signed in as another account must sign out first. Applications may replace it (`INVITE_ROUTE_ID`) to match their
  * own sign-in pages.
  */
 export default function AcceptInvitationPage(): ReactElement {
@@ -184,13 +184,21 @@ function Problem({ children }: { readonly children: ReactNode }): ReactElement {
   );
 }
 
-function LoginLink(): ReactElement {
+function LoginLink({ redirect }: { readonly redirect?: string }): ReactElement {
   const { t } = useTranslation(NS);
   return (
     <Button
       className='w-full'
       nativeButton={false}
-      render={<Link to='/login' />}
+      render={
+        <Link
+          to={
+            redirect
+              ? `/login?redirect=${encodeURIComponent(redirect)}`
+              : '/login'
+          }
+        />
+      }
     >
       {t('accept.goToLogin')}
     </Button>
@@ -218,8 +226,10 @@ function AcceptForm({
   const [problem, setProblem] = useState<string>();
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState<'signedUp' | 'existing'>();
+  const invitedSession =
+    session?.user.email.toLowerCase() === invitation.email.toLowerCase();
 
-  if (session && !done) {
+  if (session && !invitedSession && !done) {
     const signOut = async (): Promise<void> => {
       // Better Auth reports failures as data rather than throwing.
       const result = await client.signOut().catch(() => ({ error: true }));
@@ -239,7 +249,11 @@ function AcceptForm({
         <Button
           className='w-full'
           variant='outline'
-          onClick={() => void signOut()}
+          onClick={() => {
+            signOut().catch(() => {
+              toaster.show({ type: 'error', title: t('accept.signOutFailed') });
+            });
+          }}
         >
           {t('accept.signOut')}
         </Button>
@@ -251,65 +265,82 @@ function AcceptForm({
     return (
       <div className='space-y-5'>
         <p className='text-sm'>{t('accept.existingAccount')}</p>
-        <LoginLink />
+        <LoginLink redirect={`/invite/${encodeURIComponent(token)}`} />
       </div>
     );
 
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
-    if (!name.trim()) return setProblem(t('accept.nameRequired'));
-    if (password.length < MIN_PASSWORD)
+    if (!invitedSession && !name.trim())
+      return setProblem(t('accept.nameRequired'));
+    if (!invitedSession && password.length < MIN_PASSWORD)
       return setProblem(t('accept.passwordTooShort', { min: MIN_PASSWORD }));
     setProblem(undefined);
     setSaving(true);
     try {
       const accepted = await users.acceptInvitation({
         token,
-        name: name.trim(),
-        password,
+        name: invitedSession
+          ? session?.user.name || invitation.email
+          : name.trim(),
+        password: invitedSession ? '' : password,
       });
-      if (accepted.existingAccount) {
-        setDone('existing');
-        return;
-      }
       setDone('signedUp');
       onJoined();
-      await login.submit({ identifier: accepted.email, password });
-    } catch (error) {
-      setProblem(t(`accept.errors.${errorKey(error)}`));
+      if (!accepted.existingAccount)
+        await login.submit({ identifier: accepted.email, password });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <form className='space-y-5' onSubmit={(event) => void submit(event)}>
+    <form
+      className='space-y-5'
+      onSubmit={(event) => {
+        submit(event).catch((error: unknown) => {
+          if (
+            error instanceof ApiClientError &&
+            error.reason === 'INVITATION_SIGN_IN_REQUIRED'
+          )
+            setDone('existing');
+          else setProblem(t(`accept.errors.${errorKey(error)}`));
+        });
+      }}
+    >
       <div className='space-y-2'>
         <Label htmlFor='invite-email'>{t('accept.email')}</Label>
         <Input id='invite-email' readOnly value={invitation.email} />
       </div>
-      <div className='space-y-2'>
-        <Label htmlFor='invite-name'>{t('accept.name')}</Label>
-        <Input
-          id='invite-name'
-          autoComplete='name'
-          autoFocus
-          maxLength={100}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-      </div>
-      <div className='space-y-2'>
-        <Label htmlFor='invite-password'>{t('accept.password')}</Label>
-        <Input
-          id='invite-password'
-          type='password'
-          autoComplete='new-password'
-          maxLength={128}
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-      </div>
+      {!invitedSession ? (
+        <>
+          <div className='space-y-2'>
+            <Label htmlFor='invite-name'>{t('accept.name')}</Label>
+            <Input
+              id='invite-name'
+              autoComplete='name'
+              autoFocus
+              maxLength={100}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='invite-password'>{t('accept.password')}</Label>
+            <Input
+              id='invite-password'
+              type='password'
+              autoComplete='new-password'
+              maxLength={128}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
+        </>
+      ) : null}
+      {!session ? (
+        <LoginLink redirect={`/invite/${encodeURIComponent(token)}`} />
+      ) : null}
       {problem ? <Problem>{problem}</Problem> : null}
       {done === 'signedUp' && login.error ? (
         <>
@@ -327,7 +358,7 @@ function AcceptForm({
         ) : null}
         {saving || login.isPending
           ? t('accept.submitting')
-          : t('accept.submit')}
+          : t(invitedSession ? 'accept.join' : 'accept.submit')}
       </Button>
     </form>
   );

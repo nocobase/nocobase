@@ -15,6 +15,7 @@ const zhCN: UsersResource = {
     nameRequired: '请填写姓名。',
     passwordTooShort: '密码至少需要 {{min}} 个字符。',
     submit: '创建账号并加入',
+    join: '接受邀请',
     submitting: '正在加入…',
     signedIn: '你当前以 {{name}} 登录。请先退出，再用新账号接受邀请。',
     signOut: '退出登录',

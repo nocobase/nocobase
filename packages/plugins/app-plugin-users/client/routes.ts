@@ -7,7 +7,7 @@ export const INVITE_ROUTE_ID = '@nocobase/app-plugin-users:invite';
 
 /**
  * The page an invitation email links to. Public (`optional`) because the invitee has no account yet; the token in the
- * path is the only credential, and the page asks a signed-in visitor to sign out first.
+ * path identifies the invitation. New accounts register with the link; existing accounts sign in.
  */
 const routes: AppClientRouteContribution = defineAppRoutes([
   {

@@ -98,7 +98,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     projects.route('/', createMentionRoutes(services.commentQueries));
     projects.route(
       '/invitations',
-      createInvitationRoutes(services.invitations),
+      createInvitationRoutes(services.invitations, authentication),
     );
     projects.route('/settings', createSettingsRoutes(services.settings));
     projects.route('/labels', createLabelRoutes(services.labels));

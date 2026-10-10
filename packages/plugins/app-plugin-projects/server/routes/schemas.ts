@@ -747,6 +747,18 @@ export const InvitationSchema: z.ZodType<Invitation> = z.object({
   createdAt: dateTime,
 });
 
+export const ResendInvitationQuery: z.ZodObject<
+  {
+    sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+  },
+  z.core.$strip
+> = z.object({
+  sendEmail: z.enum(['true', 'false']).optional().meta({
+    description:
+      'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
+  }),
+});
+
 export const InvitationResultSchema: z.ZodType<InvitationResult> = z
   .object({
     email: z.string(),
@@ -754,7 +766,7 @@ export const InvitationResultSchema: z.ZodType<InvitationResult> = z
     emailSent: z.boolean().optional(),
     inviteUrl: z.string().optional().meta({
       description:
-        'When sending failed, the link, once, for the inviter to forward.',
+        'The new shareable invitation link, returned to an authorized original inviter using an unscoped person credential, regardless of email delivery.',
     }),
   })
   .meta({ ref: 'ProjectsInvitationResult' });

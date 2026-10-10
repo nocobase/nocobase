@@ -45,8 +45,8 @@ export interface InviteProjectOption {
 /**
  * "Invite members": several addresses at once (one per line, or separated by commas or spaces) and the projects the
  * invitees join as members. Owner/admin may leave the projects empty; a project lead chooses among the projects they
- * lead (`projects` is already narrowed to those). After sending, the dialog shows each address's outcome; an address
- * whose email could not be sent shows its link to copy and forward.
+ * lead (`projects` is already narrowed to those). After sending, the dialog shows each address's outcome and any
+ * registration link the caller is authorized to retrieve.
  */
 export function InviteDialog({
   open,
@@ -243,11 +243,13 @@ function outcomeLabel(
     : t('invitations.outcome.notSent');
 }
 
-/** One row per address; a link that could not be emailed is shown once, with a copy button. */
+/** One row per address; each newly generated link is shown once, with a copy button. */
 export function InviteResults({
   results,
+  linkOnly = false,
 }: {
   readonly results: readonly InvitationResult[];
+  readonly linkOnly?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   return (
@@ -258,12 +260,12 @@ export function InviteResults({
             <span className='min-w-0 truncate text-sm'>{result.email}</span>
             <PmTag
               tone={
-                result.outcome === 'invited' && !result.emailSent
+                result.outcome === 'invited' && !result.emailSent && !linkOnly
                   ? 'amber'
                   : 'green'
               }
             >
-              {outcomeLabel(t, result)}
+              {linkOnly ? t('invitations.linkReady') : outcomeLabel(t, result)}
             </PmTag>
           </div>
           {result.inviteUrl ? <CopyLink url={result.inviteUrl} /> : null}
@@ -297,11 +299,12 @@ function CopyLink({ url }: { readonly url: string }): ReactElement {
       <Button
         type='button'
         variant='outline'
-        size='icon'
-        aria-label={copied ? t('connect.copied') : t('connect.copy')}
+        size='sm'
+        aria-label={copied ? t('connect.copied') : t('invitations.copyLink')}
         onClick={() => void copy()}
       >
         {copied ? <CheckIcon /> : <CopyIcon />}
+        {copied ? t('connect.copied') : t('invitations.copyLink')}
       </Button>
     </div>
   );

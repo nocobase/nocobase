@@ -2,7 +2,12 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useToaster } from '@nocobase/app-client';
-import { MoreHorizontalIcon, SendIcon, Trash2Icon } from 'lucide-react';
+import {
+  CopyIcon,
+  MoreHorizontalIcon,
+  SendIcon,
+  Trash2Icon,
+} from 'lucide-react';
 import { type ReactElement, useMemo, useState } from 'react';
 
 import { DataTable } from '../../../components/data-table.js';
@@ -40,6 +45,7 @@ import type {
 import { pmKeys } from '../../../api/keys.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
+import { useViewer } from '../../../hooks/use-viewer.js';
 import { usePmFormatters } from '../../../lib/format.js';
 import { InviteResults } from './invite-dialog.js';
 import { SectionHeading } from '../section-heading.js';
@@ -51,12 +57,17 @@ import { SectionHeading } from '../section-heading.js';
 export function InvitationsSection(): ReactElement | null {
   const { t } = useTranslation();
   const api = usePmApi();
+  const viewer = useViewer();
   const notify = useNotify();
   const toaster = useToaster();
   const queryClient = useQueryClient();
   const format = usePmFormatters();
+  const [generating, setGenerating] = useState<Invitation | null>(null);
   const [revoking, setRevoking] = useState<Invitation | null>(null);
-  const [resent, setResent] = useState<InvitationResult | null>(null);
+  const [resent, setResent] = useState<{
+    result: InvitationResult;
+    linkOnly: boolean;
+  } | null>(null);
   const invitations = useQuery({
     queryKey: pmKeys.invitations,
     queryFn: () => api.invitations(),
@@ -66,15 +77,27 @@ export function InvitationsSection(): ReactElement | null {
   const failed = (error: unknown) => notify.error(error);
 
   const resend = useMutation({
-    mutationFn: (invitation: Invitation) => api.resendInvitation(invitation.id),
-    onSuccess: (result) => {
-      if (result.emailSent === false) {
-        void toaster.show({
+    mutationFn: ({
+      invitation,
+      sendEmail,
+    }: {
+      invitation: Invitation;
+      sendEmail: boolean;
+    }) => api.resendInvitation(invitation.id, sendEmail),
+    onSuccess: (result, { sendEmail }) => {
+      setResent(result.inviteUrl ? { result, linkOnly: !sendEmail } : null);
+      if (!sendEmail && !result.inviteUrl) {
+        toaster.show({
+          type: 'warning',
+          title: t('invitations.linkUnavailable'),
+        });
+      } else if (sendEmail && result.emailSent === false) {
+        toaster.show({
           type: 'warning',
           title: t('invitations.outcome.notSent'),
         });
-        setResent(result);
-      } else notify.success(t('invitations.resent', { email: result.email }));
+      } else if (sendEmail)
+        notify.success(t('invitations.resent', { email: result.email }));
     },
     onError: failed,
     onSettled: refresh,
@@ -121,7 +144,7 @@ export function InvitationsSection(): ReactElement | null {
           ) : row.original.sentAt ? (
             <PmTag tone='blue'>{t('invitations.pending')}</PmTag>
           ) : (
-            <PmTag tone='amber'>{t('invitations.notSent')}</PmTag>
+            <PmTag tone='grey'>{t('invitations.notSent')}</PmTag>
           ),
       },
       {
@@ -166,11 +189,25 @@ export function InvitationsSection(): ReactElement | null {
               <DropdownMenuContent align='end' className='w-auto min-w-40'>
                 <DropdownMenuItem
                   disabled={resending}
-                  onClick={() => resendInvitation(row.original)}
+                  onClick={() =>
+                    resendInvitation({
+                      invitation: row.original,
+                      sendEmail: true,
+                    })
+                  }
                 >
                   <SendIcon />
                   {t('invitations.resend')}
                 </DropdownMenuItem>
+                {row.original.invitedBy.userId === viewer?.userId ? (
+                  <DropdownMenuItem
+                    disabled={resending}
+                    onClick={() => setGenerating(row.original)}
+                  >
+                    <CopyIcon />
+                    {t('invitations.generateLink')}
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant='destructive'
@@ -185,7 +222,7 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [t, format, resending, resendInvitation],
+    [t, format, resending, resendInvitation, viewer?.userId],
   );
 
   const rows = invitations.data;
@@ -216,6 +253,36 @@ export function InvitationsSection(): ReactElement | null {
         showSelectedCount={false}
         getRowId={(invitation) => invitation.id}
       />
+      <AlertDialog
+        open={generating !== null}
+        onOpenChange={(open) => {
+          if (!open) setGenerating(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('invitations.generateLink')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('invitations.generateDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (generating)
+                  resendInvitation({
+                    invitation: generating,
+                    sendEmail: false,
+                  });
+                setGenerating(null);
+              }}
+            >
+              {t('invitations.generateLink')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog
         open={revoking !== null}
         onOpenChange={(open) => {
@@ -255,7 +322,15 @@ export function InvitationsSection(): ReactElement | null {
           <DialogHeader>
             <DialogTitle>{t('invitations.linkTitle')}</DialogTitle>
           </DialogHeader>
-          {resent ? <InviteResults results={[resent]} /> : null}
+          <p className='text-sm text-muted-foreground'>
+            {t('invitations.newLinkDescription')}
+          </p>
+          {resent ? (
+            <InviteResults
+              results={[resent.result]}
+              linkOnly={resent.linkOnly}
+            />
+          ) : null}
           <DialogFooter>
             <Button type='button' onClick={() => setResent(null)}>
               {t('invitations.done')}

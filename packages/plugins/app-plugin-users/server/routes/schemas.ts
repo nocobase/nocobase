@@ -135,12 +135,17 @@ export const InvitationTokenInput: z.ZodObject<
 > = z.strictObject({ token: nonEmpty });
 
 export const AcceptInvitationInput: z.ZodObject<
-  { token: z.ZodString; name: z.ZodString; password: z.ZodString },
+  {
+    token: z.ZodString;
+    name: z.ZodString;
+    password: z.ZodString;
+  },
   z.core.$strict
 > = z.strictObject({
   token: nonEmpty,
   name: nonEmpty,
-  password: nonEmpty,
+  // Existing accounts authenticate through their session; account creation still validates password strength.
+  password: z.string(),
 });
 
 export const PreferenceParams: z.ZodObject<
@@ -272,6 +277,18 @@ export const UserInvitationSchema: z.ZodType<UserInvitation> = z
   })
   .meta({ ref: 'UsersInvitation' });
 
+export const ResendInvitationQuery: z.ZodObject<
+  {
+    sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+  },
+  z.core.$strip
+> = z.object({
+  sendEmail: z.enum(['true', 'false']).optional().meta({
+    description:
+      'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
+  }),
+});
+
 export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
   .discriminatedUnion('outcome', [
     z.object({
@@ -281,7 +298,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Returned once when sending failed, for the inviter to forward.',
+          'Shareable invitation link, returned regardless of email delivery. Resends require the original inviter and empty plugin data.',
       }),
     }),
     z.object({
@@ -309,7 +326,7 @@ export const AcceptedInvitationSchema: z.ZodType<{
   email: z.string(),
   existingAccount: z.boolean().meta({
     description:
-      'The address had an account already: nothing was created, and it signs in with its own password.',
+      'The address had an account already: the signed-in invited account accepted it; no password was changed.',
   }),
 });
 

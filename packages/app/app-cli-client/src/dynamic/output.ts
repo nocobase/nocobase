@@ -22,6 +22,9 @@ function cell(value: unknown): string {
         ? String(value)
         : JSON.stringify(value);
   const line = text.replace(/\s+/gu, ' ').trim();
+  // URLs must remain usable when copied, including invitation tokens and query strings.
+  if (typeof value === 'string' && /^https?:\/\/\S+$/u.test(value))
+    return value;
   return line.length > 80 ? `${line.slice(0, 79)}…` : line;
 }
 

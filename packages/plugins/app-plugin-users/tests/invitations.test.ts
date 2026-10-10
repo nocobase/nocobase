@@ -13,9 +13,11 @@ import {
   type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { InvitationEmail } from '../server/invitations/mail.js';
+import { hashToken } from '../server/invitations/rules.js';
+import * as invitationStore from '../server/invitations/store.js';
 import {
   createUserManagementService,
   createUserRoleScopeRegistry,
@@ -78,7 +80,7 @@ describe('user invitations', () => {
           return Promise.resolve();
         },
       },
-      site: { publicBasePath: '/main', appTitle: 'Acme' },
+      site: { publicOrigin: ORIGIN, publicBasePath: '/main', appTitle: 'Acme' },
     });
     service.onInvitationAccepted((context) => {
       accepted.push(context);
@@ -88,11 +90,136 @@ describe('user invitations', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
     await testDatabase.destroy();
   });
 
   const tokenOf = (email: InvitationEmail) =>
     /\/main\/invite\/([\w-]+)/u.exec(email.text)?.[1] ?? '';
+  it('bounds slow batch delivery and omits queued links that were revoked or rotated', async () => {
+    const send = vi.fn((email: InvitationEmail) =>
+      email.to === 'batch-0@example.test'
+        ? Promise.resolve()
+        : new Promise<void>(() => {}),
+    );
+    const batchService = createUserManagementService({
+      database,
+      users: userAdministration(database.connection()),
+      roleScopes: createUserRoleScopeRegistry(),
+      mailer: { send },
+      site: {
+        publicOrigin: ORIGIN,
+        publicBasePath: '/main',
+        appTitle: 'Acme',
+      },
+    });
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    const emails = Array.from(
+      { length: 50 },
+      (_, i) => `batch-${i}@example.test`,
+    );
+    const pending = batchService.invite({ emails, invitedBy: 'ann' });
+    // One completed send frees a slot; the other five stay in flight until the common deadline.
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6));
+    const queued = await batchService.listInvitations();
+    const revoked = queued.find((row) => row.email === emails[6]);
+    const rotated = queued.find((row) => row.email === emails[7]);
+    if (!revoked || !rotated) throw new Error('Missing queued invitations');
+    await batchService.revokeInvitation(revoked.id);
+    await batchService.resendInvitation(rotated.id, { sendEmail: false });
+    await vi.advanceTimersByTimeAsync(30_000);
+    const results = await pending;
+    expect(results.map((result) => result.email)).toEqual(emails);
+    expect(results[0]).toMatchObject({ emailSent: true });
+    expect(results.slice(1)).toEqual(
+      emails.slice(1).map((email) =>
+        email === emails[6] || email === emails[7]
+          ? {
+              email,
+              outcome: 'invited',
+              invitationId: expect.any(String),
+              emailSent: false,
+            }
+          : expect.objectContaining({
+              email,
+              emailSent: false,
+              inviteUrl: expect.stringContaining('/invite/'),
+            }),
+      ),
+    );
+    expect(send).toHaveBeenCalledTimes(6);
+    const rows = await batchService.listInvitations();
+    expect(rows).toHaveLength(49);
+    const deliveries = await database
+      .connection()
+      .repository<{ sendError: string | null }>('userInvitations')
+      .findMany();
+    expect(
+      deliveries.filter((row) =>
+        row.sendError?.includes('delivery is unknown'),
+      ),
+    ).toHaveLength(5);
+    const last = results.at(-1);
+    if (last?.outcome !== 'invited') throw new Error('Missing invitation');
+    await expect(
+      batchService.lookupInvitation(last.inviteUrl?.split('/').at(-1) ?? ''),
+    ).resolves.toMatchObject({ email: emails.at(-1) });
+  });
+
+  it.each([true, false])(
+    'uses the request origin without publicOrigin and accepts the link when mail succeeds: %s',
+    async (emailAvailable) => {
+      const local = createUserManagementService({
+        database,
+        users: userAdministration(database.connection()),
+        roleScopes: createUserRoleScopeRegistry(),
+        site: { publicBasePath: '/main', appTitle: 'Acme' },
+        ...(emailAvailable
+          ? {
+              mailer: {
+                send: async (email: InvitationEmail) => {
+                  mail.push(email);
+                },
+              },
+            }
+          : {}),
+      });
+      const [result] = await local.invite({
+        emails: ['local@example.test'],
+        invitedBy: 'ann',
+        origin: ORIGIN,
+      });
+      if (result.outcome !== 'invited') throw new Error('Expected invitation');
+      expect(result.emailSent).toBe(emailAvailable);
+      expect(result.inviteUrl).toContain(`${ORIGIN}/main/invite/`);
+      if (emailAvailable) expect(mail[0].text).toContain(result.inviteUrl);
+      const token = result.inviteUrl?.split('/').at(-1) ?? '';
+      const joined = await local.acceptInvitation({
+        token,
+        name: 'Local',
+        password: 'secret-password',
+      });
+      const account = await database
+        .connection()
+        .repository('user')
+        .findOne({ filter: { id: joined.userId } });
+      expect(Boolean(account?.emailVerified)).toBe(false);
+    },
+  );
+
+  it('prefers the configured origin over the request origin', async () => {
+    const [result] = await service.invite({
+      emails: ['origin@example.test'],
+      invitedBy: 'ann',
+      origin: 'https://other.example',
+    });
+    expect(result).toMatchObject({
+      inviteUrl: expect.stringContaining(ORIGIN),
+    });
+    expect(mail[0].text).toContain(ORIGIN);
+    expect(mail[0].text).not.toContain('other.example');
+  });
 
   it('sends a link to a new address and reports an existing account', async () => {
     const results = await service.invite({
@@ -107,6 +234,7 @@ describe('user invitations', () => {
         email: 'new@example.com',
         outcome: 'invited',
         emailSent: true,
+        inviteUrl: expect.stringContaining(`${ORIGIN}/main/invite/`),
       }),
       { email: 'ann@example.com', outcome: 'existingUser', userId: 'ann' },
     ]);
@@ -185,28 +313,55 @@ describe('user invitations', () => {
     await expect(service.listInvitations()).resolves.toEqual([]);
   });
 
-  it('accepts every pending invitation of the address at once', async () => {
-    for (const projectId of ['p1', 'p2'])
+  it('accepts only the supplied token and leaves other project invitations pending', async () => {
+    for (const projectId of ['private-project', 'lead-project'])
       await service.invite({
         emails: ['new@example.com'],
         invitedBy: 'ann',
         data: { projectId },
         origin: ORIGIN,
       });
-
-    await service.acceptInvitation({
-      token: tokenOf(mail[1] as InvitationEmail),
+    const privateToken = tokenOf(mail[0] as InvitationEmail);
+    const leadToken = tokenOf(mail[1] as InvitationEmail);
+    const created = await service.acceptInvitation({
+      token: leadToken,
       name: 'Nia',
       password: 'secret-password',
     });
-
     expect(accepted.map((context) => context.data)).toEqual([
-      { projectId: 'p2' },
-      { projectId: 'p1' },
+      { projectId: 'lead-project' },
+    ]);
+    await expect(service.lookupInvitation(privateToken)).resolves.toMatchObject(
+      { email: 'new@example.com' },
+    );
+    // Even the real recipient opening the other link must first authenticate to the account it would grant access to.
+    for (const authenticatedUserId of [undefined, 'ann']) {
+      await expect(
+        service.acceptInvitation(
+          { token: privateToken, name: 'Nia', password: 'different-password' },
+          authenticatedUserId,
+        ),
+      ).rejects.toMatchObject({ code: 'INVITATION_SIGN_IN_REQUIRED' });
+    }
+    expect(accepted).toHaveLength(1);
+    await expect(service.lookupInvitation(privateToken)).resolves.toMatchObject(
+      { email: 'new@example.com' },
+    );
+    await service.acceptInvitation(
+      { token: privateToken, name: 'Nia', password: '' },
+      created.userId,
+    );
+    expect(accepted.map((context) => context.data)).toEqual([
+      { projectId: 'lead-project' },
+      { projectId: 'private-project' },
     ]);
     await expect(
-      service.lookupInvitation(tokenOf(mail[0] as InvitationEmail)),
+      service.acceptInvitation(
+        { token: privateToken, name: 'Nia', password: '' },
+        created.userId,
+      ),
     ).rejects.toMatchObject({ code: 'INVITATION_ACCEPTED' });
+    expect(accepted).toHaveLength(2);
   });
 
   it('rolls the whole acceptance back when a handler fails', async () => {
@@ -241,11 +396,14 @@ describe('user invitations', () => {
     });
     await insertUser('bob', 'Bob');
 
-    const result = await service.acceptInvitation({
-      token: tokenOf(mail[0] as InvitationEmail),
-      name: 'Someone else',
-      password: 'secret-password',
-    });
+    const result = await service.acceptInvitation(
+      {
+        token: tokenOf(mail[0] as InvitationEmail),
+        name: 'Someone else',
+        password: 'secret-password',
+      },
+      'bob',
+    );
 
     expect(result).toEqual({
       email: 'bob@example.com',
@@ -265,7 +423,11 @@ describe('user invitations', () => {
     const [invitation] = await service.listInvitations();
     const id = invitation?.id ?? '';
 
-    await service.resendInvitation(id, { origin: ORIGIN });
+    const result = await service.resendInvitation(id, { origin: ORIGIN });
+    expect(result).toMatchObject({
+      emailSent: true,
+      inviteUrl: `${ORIGIN}/main/invite/${tokenOf(mail[1] as InvitationEmail)}`,
+    });
     await expect(
       service.lookupInvitation(tokenOf(mail[0] as InvitationEmail)),
     ).rejects.toMatchObject({ code: 'INVITATION_NOT_FOUND' });
@@ -277,6 +439,94 @@ describe('user invitations', () => {
     await expect(service.revokeInvitation(id)).rejects.toMatchObject({
       code: 'INVITATION_CLOSED',
     });
+  });
+
+  it('rotates a link without email, rejects the old token and stores only the hash', async () => {
+    await service.invite({
+      emails: ['new@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+    const [invitation] = await service.listInvitations();
+    const id = invitation?.id ?? '';
+    const oldToken = tokenOf(mail[0] as InvitationEmail);
+    const result = await service.resendInvitation(id, {
+      origin: ORIGIN,
+      sendEmail: false,
+    });
+    expect(result.outcome).toBe('invited');
+    if (result.outcome !== 'invited') throw new Error('Expected an invitation');
+    expect(result.emailSent).toBe(false);
+    const token = result.inviteUrl?.split('/').at(-1) ?? '';
+    expect(token).not.toBe(oldToken);
+    expect(token).not.toBe('');
+    expect(mail).toHaveLength(1);
+    await expect(service.lookupInvitation(oldToken)).rejects.toMatchObject({
+      code: 'INVITATION_NOT_FOUND',
+    });
+    await expect(service.lookupInvitation(token)).resolves.toMatchObject({
+      email: 'new@example.com',
+    });
+    const row = await invitationStore.findInvitation(database.connection(), {
+      id,
+    });
+    expect(row).toMatchObject({
+      tokenHash: hashToken(token),
+      sentAt: null,
+      sendError: null,
+    });
+    expect(JSON.stringify(row)).not.toContain(token);
+    expect(JSON.stringify(await service.listInvitations())).not.toContain(
+      token,
+    );
+    await service.revokeInvitation(id);
+    await expect(
+      service.resendInvitation(id, { origin: ORIGIN, sendEmail: false }),
+    ).rejects.toMatchObject({ code: 'INVITATION_CLOSED' });
+  });
+
+  it('accepts a rotated link with unavailable email without verifying the email address', async () => {
+    failMail = true;
+    const [invited] = await service.invite({
+      emails: ['manual@example.com'],
+      invitedBy: 'ann',
+      origin: ORIGIN,
+    });
+    if (invited?.outcome !== 'invited') throw new Error('Expected invitation');
+    const oldToken = invited.inviteUrl?.split('/').at(-1) ?? '';
+    const result = await service.resendInvitation(invited.invitationId, {
+      origin: ORIGIN,
+      sendEmail: false,
+    });
+    if (result.outcome !== 'invited') throw new Error('Expected invitation');
+    const token = result.inviteUrl?.split('/').at(-1) ?? '';
+    expect(await service.lookupInvitation(token)).toMatchObject({
+      email: 'manual@example.com',
+    });
+    await expect(service.lookupInvitation(oldToken)).rejects.toMatchObject({
+      code: 'INVITATION_NOT_FOUND',
+    });
+    const accepted = await service.acceptInvitation({
+      token,
+      name: 'Manual recipient',
+      password: 'secure-password',
+    });
+    expect(accepted.existingAccount).toBe(false);
+    expect(mail).toHaveLength(0);
+    const user = await database
+      .connection()
+      .query.selectFrom('user')
+      .selectAll()
+      .where('id', '=', accepted.userId)
+      .executeTakeFirst();
+    expect(Boolean(user?.['emailVerified'])).toBe(false);
+    await expect(
+      service.acceptInvitation({
+        token,
+        name: 'Again',
+        password: 'secure-password',
+      }),
+    ).rejects.toMatchObject({ code: 'INVITATION_ACCEPTED' });
   });
 
   it('refuses invalid addresses and unknown role scopes', async () => {
