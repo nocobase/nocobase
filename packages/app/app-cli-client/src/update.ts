@@ -3,8 +3,9 @@
 // A CLI installed alone by the install script (`install.json` says `mode: cli`) updates itself from the server the
 // person is signed in to, with their key: it resolves the newest version the server serves for this platform, downloads
 // it, checks its SHA-256, unpacks it beside the running version and switches `current`, keeping the previous version
-// for a rollback (`install.ts`). An installation the script made for a runner (`mode: runner`) is the runner's, which
-// updates itself.
+// for a rollback (`install.ts`). A server that serves no tarball and names the CLI on npm instead (`accept=npm`) is
+// followed the same way, with `npm install` of that exact version in place of the download. An installation the
+// script made for a runner (`mode: runner`) is the runner's, which updates itself.
 //
 // The hint asks at most every `HINT_INTERVAL_MS` per server and remembers the answer in `<state dir>/cache/update.json`,
 // so a command waits for the network at most once in that time, and never longer than `HINT_TIMEOUT_MS`.
@@ -17,7 +18,7 @@ import { Flags, type Command } from '@oclif/core';
 import {
   currentTarget,
   EXIT_CODES,
-  type DistArtifact,
+  type DistResolution,
 } from '@nocobase/agent-protocol';
 
 import { appCliHome, type AppCliConfig, type AppCliSession } from './config.ts';
@@ -26,7 +27,8 @@ import {
   applyUpdate,
   detectInstallation,
   isNewer,
-  latestArtifact,
+  latestResolution,
+  updateTargetOf,
   type Installation,
 } from './install.ts';
 import { AppCommand, UsageError } from './lib/command.ts';
@@ -52,6 +54,8 @@ export interface UpdateEnvironment {
   readonly cacheFile?: string;
   readonly now?: () => number;
   readonly fetch?: typeof fetch;
+  /** The environment npm runs in, and where it is looked for (`findNpm`), for a version installed from npm. */
+  readonly env?: NodeJS.ProcessEnv;
 }
 
 /** Who updates the installation `environment` describes. */
@@ -121,7 +125,7 @@ export async function updateHint(
   else {
     try {
       latest = (
-        await latestArtifact(
+        await latestResolution(
           clientOf(session, environment, HINT_TIMEOUT_MS),
           environment.product ?? environment.bin,
           environment.target ?? currentTarget(),
@@ -168,7 +172,7 @@ export async function updateCli(
       `This ${bin} was installed for a runner, which keeps it up to date itself.`,
     );
   const client = clientOf(session, environment);
-  const latest: DistArtifact = await latestArtifact(
+  const latest: DistResolution = await latestResolution(
     client,
     environment.product ?? bin,
     environment.target ?? currentTarget(),
@@ -195,11 +199,8 @@ export async function updateCli(
     installation,
     bin,
     client,
-    update: {
-      version: latest.version,
-      url: latest.url,
-      sha256: latest.sha256,
-    },
+    update: updateTargetOf(latest),
+    ...(environment.env === undefined ? {} : { env: environment.env }),
   });
   options.log?.(
     `Updated ${bin} ${environment.running} → ${latest.version}; ${previous ?? 'the previous version'} stays in ` +
@@ -241,9 +242,9 @@ export function updateCommand(app: AppCliConfig): Command.Class {
   return class Update extends AppCommand {
     static override summary = `Update ${app.bin} to the newest version the server serves.`;
     static override description =
-      `Asks the server you are signed in to for the newest ${app.bin} it serves for this platform, downloads it, ` +
-      `checks its SHA-256 and switches to it, keeping the previous version beside it. For ${app.bin} installed alone ` +
-      'by the install script.';
+      `Asks the server you are signed in to for the newest ${app.bin} it serves for this platform, downloads it ` +
+      `and checks its SHA-256 (or installs the exact version it names on npm), and switches to it, keeping the ` +
+      `previous version beside it. For ${app.bin} installed alone by the install script.`;
     static override examples = [
       '<%= config.bin %> update',
       '<%= config.bin %> update --check',
