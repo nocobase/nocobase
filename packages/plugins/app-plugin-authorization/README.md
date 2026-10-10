@@ -79,27 +79,30 @@ All registration runs in a provider's `boot`, before the first request.
 ```ts
 authz.ui.sections.add({
   name: 'automation',
-  title: { key: 'nav.automation', ns: '@nocobase/app-plugin-workflow' },
+  title: { key: 'nav.automation', ns: '@nocobase/app-plugin-scheduler' },
   parent: 'administration',
 });
 authz.settings.add({
-  id: 'workflow',
-  title: { key: 'authorization.title', ns: '@nocobase/app-plugin-workflow' },
+  id: 'scheduler.schedules',
+  title: { key: 'authorization.title', ns: '@nocobase/app-plugin-scheduler' },
   actions: [
     {
-      name: 'manage',
+      name: 'read',
       title: {
-        key: 'authorization.manage',
-        ns: '@nocobase/app-plugin-workflow',
+        key: 'authorization.read',
+        ns: '@nocobase/app-plugin-scheduler',
       },
     },
   ],
 });
-authz.ui.place({ type: 'settings', id: 'workflow' }, { section: 'automation' });
-const grant = authz.settings.grant('workflow', ['manage']);
+authz.ui.place(
+  { type: 'settings', id: 'scheduler.schedules' },
+  { section: 'automation' },
+);
+const grant = authz.settings.grant('scheduler.schedules', ['read']);
 ```
 
-A settings item may declare any action names. `settings.grant` refuses an id or action nobody registered. Where a permission management page lists it is a separate `authz.ui.place`; an unplaced item is listed under the "Other" subsection of `administration`, the `settings` type's default section, and startup logs a warning. Check a settings action on the server with `requireSettings` from `./server/extension` or with `context.require({ resource: { type: 'settings', id: 'workflow' }, action: 'manage' })`.
+A settings item may declare any action names. `settings.grant` refuses an id or action nobody registered. Where a permission management page lists it is a separate `authz.ui.place`; an unplaced item is listed under the "Other" subsection of `administration`, the `settings` type's default section, and startup logs a warning. Check a settings action on the server with `requireSettings` from `./server/extension` or with `context.require({ resource: { type: 'settings', id: 'scheduler.schedules' }, action: 'read' })`.
 
 ### Collection
 
@@ -221,7 +224,7 @@ authz.ui.defaultSection('report', 'administration');
 | `place(ref, { section, group?, order? })`                | Lists a resource, `{ type, id }` or a `CompositeResourceReference`, in a subsection and optionally a group. `order` positions it within the subsection; unordered resources follow in registration order. Placing in a top-level section throws; placing the same resource elsewhere throws.                                                                                                           |
 | `defaultSection(type, section)`                          | Unplaced resources of `type` are listed under `<section>.other`. Types with no default section and no placement are not displayed; `database.collection` and `user` are such types.                                                                                                                                                                                                                    |
 
-A placement may name a subsection, group or resource that registers later. Startup validation runs in the provider's `start` hook, after every plugin's `boot`: it reports a placement whose subsection or group is unknown, a placement of an unregistered resource, and any composite data scope whose target type lacks `recordAccess`, throwing in development and logging a warning when `NODE_ENV` is `production`. It also warns about each unplaced composite or settings item, which is then listed under its default section's "Other". Workflow owns `automation` and scheduler extends it, so the owner's title wins whichever boots first. The Pages entry is filled on the client from the route tree, with navigation groups as resource groups in menu order.
+A placement may name a subsection, group or resource that registers later. Startup validation runs in the provider's `start` hook, after every plugin's `boot`: it reports a placement whose subsection or group is unknown, a placement of an unregistered resource, and any composite data scope whose target type lacks `recordAccess`, throwing in development and logging a warning when `NODE_ENV` is `production`. It also warns about each unplaced composite or settings item, which is then listed under its default section's "Other". A plugin that extends a subsection another owns, as the scheduler extends `automation`, yields to the owner's title whichever boots first. The Pages entry is filled on the client from the route tree, with navigation groups as resource groups in menu order.
 
 ### Record access
 
@@ -254,7 +257,7 @@ await authz.permissionSets.create(
   definePermissionSet('sales-engineer')
     .title('Sales engineer')
     .grant(authz.pages.grant('sales.quotes'))
-    .grant(authz.settings.grant('workflow', ['manage']))
+    .grant(authz.settings.grant('scheduler.schedules', ['read']))
     .grant(
       quotes.reference().grant({
         view: { quotes: 'allRecords' },
@@ -312,8 +315,8 @@ router.use('*', authentication.required(), authz.middleware());
 router.post('/quotes/:id/submit', async (c) => {
   const context = c.get('authz');
   await context.require({
-    resource: { type: 'settings', id: 'workflow' },
-    action: 'manage',
+    resource: { type: 'settings', id: 'scheduler.schedules' },
+    action: 'read',
   });
   const decision = await context.authorize({
     resource: { type: 'composite', id: 'sales.quotes' },
@@ -403,9 +406,12 @@ defineRoutes([
     componentLoader,
   },
   {
-    name: 'workflow',
-    path: '/workflow',
-    authz: { resource: { type: 'settings', id: 'workflow' }, action: 'manage' },
+    name: 'schedules',
+    path: '/schedules',
+    authz: {
+      resource: { type: 'settings', id: 'scheduler.schedules' },
+      action: 'read',
+    },
     componentLoader,
   },
 ]);

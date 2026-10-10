@@ -63,6 +63,7 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",
     "@nocobase/lifecycle": "workspace:^",
+    "@nocobase/markdown-mermaid": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",

@@ -63,13 +63,12 @@ const systemEnUS = {
   'auth.marketingTitleSecond': 'NocoBase keeps it',
   'auth.marketingTitleThird': 'reliable.',
   'auth.marketingDescription':
-    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions, workflows and governance underneath.',
+    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions and governance underneath.',
   'auth.frontend': 'AI-native frontend',
   'auth.frontendDescription':
     'Compose interfaces freely on a flexible framework.',
   'auth.foundation': 'NocoBase foundation',
-  'auth.foundationDescription':
-    'Reliable data, access control, workflows and governance.',
+  'auth.foundationDescription': 'Reliable data, access control and governance.',
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',

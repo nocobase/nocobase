@@ -1367,6 +1367,9 @@ importers:
       '@nocobase/lifecycle':
         specifier: workspace:^
         version: link:../../libs/lifecycle
+      '@nocobase/markdown-mermaid':
+        specifier: workspace:^
+        version: link:../../libs/markdown-mermaid
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
@@ -4854,133 +4857,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
-  packages/plugins/app-plugin-workflow:
-    dependencies:
-      '@base-ui/react':
-        specifier: 'catalog:'
-        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@nocobase/app-cli':
-        specifier: workspace:^
-        version: link:../../app/app-cli
-      '@nocobase/app-client':
-        specifier: workspace:^
-        version: link:../../app/app-client
-      '@nocobase/app-plugin-authentication':
-        specifier: workspace:^
-        version: link:../app-plugin-authentication
-      '@nocobase/app-plugin-authorization':
-        specifier: workspace:^
-        version: link:../app-plugin-authorization
-      '@nocobase/app-plugin-scheduler':
-        specifier: workspace:^
-        version: link:../app-plugin-scheduler
-      '@nocobase/app-server':
-        specifier: workspace:^
-        version: link:../../app/app-server
-      '@nocobase/db':
-        specifier: workspace:^
-        version: link:../../libs/db
-      '@nocobase/drive':
-        specifier: workspace:^
-        version: link:../../libs/drive
-      '@nocobase/i18n':
-        specifier: workspace:^
-        version: link:../../libs/i18n
-      '@nocobase/jobs':
-        specifier: workspace:^
-        version: link:../../libs/jobs
-      '@nocobase/logging':
-        specifier: workspace:^
-        version: link:../../libs/logging
-      '@nocobase/service-provider':
-        specifier: workspace:^
-        version: link:../../libs/service-provider
-      '@nocobase/snowflake':
-        specifier: workspace:^
-        version: link:../../libs/snowflake
-      '@oclif/core':
-        specifier: 'catalog:'
-        version: 4.14.0
-      '@sinclair/typebox':
-        specifier: 'catalog:'
-        version: 0.34.52
-      '@xyflow/react':
-        specifier: ^12.11.3
-        version: 12.11.5(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.16)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      cn:
-        specifier: 'catalog:'
-        version: 0.4.0
-      elkjs:
-        specifier: ^0.10.2
-        version: 0.10.2
-      hono:
-        specifier: 'catalog:'
-        version: 4.13.2
-      lucide-react:
-        specifier: 'catalog:'
-        version: 0.487.0(react@19.2.8)
-      react:
-        specifier: 'catalog:'
-        version: 19.2.8
-      react-router:
-        specifier: 'catalog:'
-        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.12
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vite:
-        specifier: 'catalog:'
-        version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0)
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.5
-    devDependencies:
-      '@nocobase/app-testing':
-        specifier: workspace:*
-        version: link:../../tools/app-testing
-      '@nocobase/db-sqlite':
-        specifier: workspace:*
-        version: link:../../libs/db-sqlite
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@testing-library/user-event':
-        specifier: 'catalog:'
-        version: 14.6.4(@testing-library/dom@10.4.1)
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.18
-      eslint:
-        specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
-      jsdom:
-        specifier: 'catalog:'
-        version: 30.0.1(@noble/hashes@2.3.0)
-      knex:
-        specifier: 'catalog:'
-        version: 3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.9.6
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.8(react@19.2.8)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
-      yaml:
-        specifier: 'catalog:'
-        version: 2.9.0
-
   packages/templates/app-template-default:
     dependencies:
       '@nocobase/app-cli':
@@ -5028,9 +4904,6 @@ importers:
       '@nocobase/app-plugin-users':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-users
-      '@nocobase/app-plugin-workflow':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-workflow
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
@@ -5395,9 +5268,6 @@ importers:
       '@nocobase/app-plugin-users':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-users
-      '@nocobase/app-plugin-workflow':
-        specifier: workspace:^
-        version: link:../../plugins/app-plugin-workflow
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
@@ -5489,6 +5359,9 @@ importers:
       '@nocobase/logging':
         specifier: workspace:^
         version: link:../../libs/logging
+      '@nocobase/markdown-mermaid':
+        specifier: workspace:^
+        version: link:../../libs/markdown-mermaid
       '@nocobase/session':
         specifier: workspace:^
         version: link:../../libs/session
@@ -9592,22 +9465,6 @@ packages:
     resolution: {integrity: sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A==}
     engines: {node: '>=14.6'}
 
-  '@xyflow/react@12.11.5':
-    resolution: {integrity: sha512-QqoryGkqEhWBuQN9bZWRKhwr3Uoj9lCGj/tg0NnIWHHEOXV+5c8cYsc7Q9TST63V92lHqcNV9P5cjvJ9ZAmblQ==}
-    peerDependencies:
-      '@types/react': '>=17'
-      '@types/react-dom': '>=17'
-      react: '>=17'
-      react-dom: '>=17'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
-  '@xyflow/system@0.0.81':
-    resolution: {integrity: sha512-hfbafW4i7uLq7ILok8QWFFm4KMFw22lbZNJHKfHOMSOOoCk5e5m8yfr84UV9NaJajmogWaLVnp2XFU9JQejlqg==}
-
   '@zone-eu/mailsplit@5.4.20':
     resolution: {integrity: sha512-6B2w0zRBWOwbO5h7SL5N/2z1AuNchTP3OT33MObUr4/cz9bWPrZ6KadLKxnSrOZG0AGu7Q03p4X7eQhZHc1u/A==}
 
@@ -10288,9 +10145,6 @@ packages:
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
-
-  classcat@5.0.5:
-    resolution: {integrity: sha512-JhZUT7JFcQy/EzW605k/ktHtncoo9vnyW/2GspNYwFlN1C/WmjuV/xtS04e9SOkL2sTdw0VAZ2UGCcQ9lR6p6w==}
 
   clean-stack@2.2.0:
     resolution: {integrity: sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==}
@@ -11150,9 +11004,6 @@ packages:
 
   electron-to-chromium@1.5.407:
     resolution: {integrity: sha512-4R8XgQOdfxexCd/u63lRm6wCHjECwI45MV9wxAs2ggtfWe2hwlo1ql97jKsju2IcJ+jFSTwBssyYoiWhh7mauQ==}
-
-  elkjs@0.10.2:
-    resolution: {integrity: sha512-Yx3ORtbAFrXelYkAy2g0eYyVY8QG0XEmGdQXmy0eithKKjbWRfl3Xe884lfkszfBF6UKyIy4LwfcZ3AZc8oxFw==}
 
   elkjs@0.9.3:
     resolution: {integrity: sha512-f/ZeWvW/BCXbhGEf1Ujp29EASo/lk1FDnETgNKwJrsVvGZhUWCZyg3xLJjAsxfOmt8KjswHmI5EwCQcPMpOYhQ==}
@@ -16362,21 +16213,6 @@ packages:
   zrender@5.6.1:
     resolution: {integrity: sha512-OFXkDJKcrlx5su2XbzJvj/34Q3m6PvyCZkVPHGYpcCJ52ek4U/ymZyfuV1nKE23AyBJ51E/6Yr0mhZ7xGTO4ag==}
 
-  zustand@4.5.7:
-    resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
-    engines: {node: '>=12.7.0'}
-    peerDependencies:
-      '@types/react': '>=16.8'
-      immer: '>=9.0.6'
-      react: '>=16.8'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      immer:
-        optional: true
-      react:
-        optional: true
-
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -20396,31 +20232,6 @@ snapshots:
 
   '@xmldom/xmldom@0.9.12': {}
 
-  '@xyflow/react@12.11.5(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.16)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      '@xyflow/system': 0.0.81
-      classcat: 5.0.5
-      react: 19.2.8
-      react-dom: 19.2.8(react@19.2.8)
-      zustand: 4.5.7(@types/react@19.2.18)(immer@11.1.16)(react@19.2.8)
-    optionalDependencies:
-      '@types/react': 19.2.18
-      '@types/react-dom': 19.2.4(@types/react@19.2.18)
-    transitivePeerDependencies:
-      - immer
-
-  '@xyflow/system@0.0.81':
-    dependencies:
-      '@types/d3-drag': 3.0.7
-      '@types/d3-interpolate': 3.0.4
-      '@types/d3-selection': 3.0.11
-      '@types/d3-transition': 3.0.9
-      '@types/d3-zoom': 3.0.8
-      d3-drag: 3.0.0
-      d3-interpolate: 3.0.1
-      d3-selection: 3.0.0
-      d3-zoom: 3.0.0
-
   '@zone-eu/mailsplit@5.4.20':
     dependencies:
       libbase64: 1.3.2
@@ -21207,8 +21018,6 @@ snapshots:
   class-variance-authority@0.7.1:
     dependencies:
       clsx: 2.1.1
-
-  classcat@5.0.5: {}
 
   clean-stack@2.2.0: {}
 
@@ -22061,8 +21870,6 @@ snapshots:
   ejs@6.0.1: {}
 
   electron-to-chromium@1.5.407: {}
-
-  elkjs@0.10.2: {}
 
   elkjs@0.9.3: {}
 
@@ -28314,13 +28121,5 @@ snapshots:
   zrender@5.6.1:
     dependencies:
       tslib: 2.3.0
-
-  zustand@4.5.7(@types/react@19.2.18)(immer@11.1.16)(react@19.2.8):
-    dependencies:
-      use-sync-external-store: 1.6.0(react@19.2.8)
-    optionalDependencies:
-      '@types/react': 19.2.18
-      immer: 11.1.16
-      react: 19.2.8
 
   zwitch@2.0.4: {}

@@ -275,14 +275,6 @@ describe('app server', () => {
     }
   });
 
-  it('starts without optional plugins or workflow routes', async () => {
-    const app = createTestApp();
-
-    expect(
-      app.router.routes.some((route) => route.path.includes('/workflows')),
-    ).toBe(false);
-  });
-
   it('creates embedded apps from a scope', async () => {
     const app = await createEmbeddedServer(
       await createEmbeddedTestScope({
@@ -1513,12 +1505,6 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     logging: createSilentLoggingConfig(),
     queue: options.queue ?? createTestQueueConfig(),
     session: createNullSessionConfig(),
-    workflow: {
-      sourceRoot: path.resolve(process.cwd(), 'workflows'),
-      distRoot: path.resolve(process.cwd(), 'dist/workflows'),
-      artifactDisk: 'local',
-      production: false,
-    },
     snowflake: {
       workerId: 0,
     },

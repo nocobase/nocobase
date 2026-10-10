@@ -3,7 +3,6 @@
 '@nocobase/app-plugin-queue-example': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-plugin-database-example': patch
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-notification': patch

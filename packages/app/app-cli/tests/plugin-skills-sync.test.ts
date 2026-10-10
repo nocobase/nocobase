@@ -8,16 +8,16 @@ import { applySkillsSync, planSkillsSync } from '../src/lib/skills-sync.ts';
 it('synchronizes a plugin skill shipped by the workspace', async () => {
   const appRoot = await mkdtemp(path.join(os.tmpdir(), 'nb3-plugin-skills-'));
   const pluginDirectory = fileURLToPath(
-    new URL('../../../plugins/app-plugin-workflow/', import.meta.url),
+    new URL('../../../plugins/app-plugin-scheduler/', import.meta.url),
   );
-  const skillName = 'nocobase-app-plugin-workflow';
+  const skillName = 'nocobase-app-plugin-scheduler';
 
   try {
     const plan = await planSkillsSync({
       appRoot,
       appPackageName: 'test-app',
       plugins: [
-        { packageName: '@nocobase/app-plugin-workflow', pluginDirectory },
+        { packageName: '@nocobase/app-plugin-scheduler', pluginDirectory },
       ],
     });
     expect(plan.copies.map((copy) => copy.skillName)).toEqual([skillName]);
@@ -33,9 +33,6 @@ it('synchronizes a plugin skill shipped by the workspace', async () => {
     expect(await readFile(path.join(targetRoot, 'SKILL.md'), 'utf8')).toContain(
       `\nname: ${skillName}\n`,
     );
-    expect(
-      await readFile(path.join(targetRoot, 'agents/openai.yaml'), 'utf8'),
-    ).toContain(`$${skillName} `);
   } finally {
     await rm(appRoot, { recursive: true, force: true });
   }

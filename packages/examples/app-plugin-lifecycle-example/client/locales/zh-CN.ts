@@ -2,9 +2,14 @@ import type { LifecycleExampleResource } from './en-US.js';
 
 const zhCN: LifecycleExampleResource = {
   navigation: {
-    group: 'Lifecycle 示例',
+    group: '工作流',
     tickets: '客服工单',
     expenses: '费用报销',
+    orders: '订单支付',
+    exports: '数据导出',
+    purchases: '限时抢购',
+    fulfilments: '发货物流',
+    subscriptions: '订阅续费',
   },
   identity: { label: '当前身份' },
   roles: {
@@ -16,6 +21,7 @@ const zhCN: LifecycleExampleResource = {
     finance: '财务',
   },
   common: {
+    signedInUser: '登录用户',
     system: '系统',
     unassigned: '未分配',
     loading: '加载中…',
@@ -194,6 +200,456 @@ const zhCN: LifecycleExampleResource = {
     },
     withdraw: '撤回',
   },
+  flows: {
+    customer: '客户',
+    final: '流程已结束，不会再变化。',
+    process: '流程',
+    legend:
+      '实心为记录当前状态，描边为经过的状态。⚙ 仅服务端触发，⏱ 由触发器触发，✓/✗ 由副作用成功/失败后续接。',
+    nothing: '现在没有你要做的事，正在等待外部系统。',
+  },
+  webhooks: {
+    title: 'Webhook',
+    hint: '沙箱发出的事件（暂扣或已投递）以及每次投递的应答。再投递一次可看到重放，暂扣的事件可以换个顺序投递。',
+    empty: '还没有 webhook。',
+    hold: '暂扣 webhook',
+    deliver: '投递',
+    deliverAgain: '再次投递',
+    deliveries_one: '已投递 {{count}} 次',
+    deliveries_other: '已投递 {{count}} 次',
+    occurred: '发生于 {{time}}',
+    outcomes: {
+      applied: '已应用',
+      replayed: '重放',
+      ignored: '已忽略',
+      retry: '将重试',
+      held: '暂扣中',
+    },
+  },
+  orders: {
+    title: '订单支付',
+    list: '订单',
+    new: '新订单',
+    empty: '这里还没有订单。',
+    pick: '选择一个订单，查看支付进度。',
+    shows:
+      '支付由支付服务商的 webhook 确认，而不是页面：订单以一个状态等待，webhook 无论来得早、晚还是重复，都只推动它一次。订单取消后才到账的钱会被退回。',
+    description:
+      '客户在支付服务商的托管收银台付款，服务商的 webhook 到达后订单才继续。未支付的订单 {{minutes}} 分钟后关闭。',
+    nothing: '现在没有你要做的事：订单在等待支付服务商。',
+    actions: {
+      checkout: '去付款',
+      cancel: '取消订单',
+      ship: '发货',
+      refundOrder: '退款',
+      retryRefund: '重试退款',
+    },
+    form: {
+      title: '下单',
+      item: '商品',
+      amount: '金额（¥）',
+      failCheckouts: '故意失败的收银台创建次数',
+      failRefunds: '故意失败的退款次数',
+      failHint:
+        '创建收银台和退款都是带重试的副作用；让它们失败，观察重试和订单停在哪里。',
+      submit: '下单',
+    },
+    fields: {
+      customer: '客户',
+      amount: '金额',
+      attempt: '支付轮次',
+      session: '收银台会话',
+      paymentRef: '支付单号',
+      refundRef: '退款单号',
+    },
+    banner: {
+      draft: '尚未支付。',
+      creatingCheckout: '正在创建服务商收银台……',
+      awaitingPayment: '等待支付服务商通知。{{time}} 内未支付将关闭。',
+      overdue: '支付时限已过，下一次巡检会关闭它。',
+      paymentFailed: '{{error}} 可以重新付款，否则 {{time}} 后关闭。',
+      paid: '已支付，可以发货。',
+      cancelled: {
+        customer: '客户已取消。',
+        timeout: '已关闭：未在时限内支付。',
+        refundRequested: '已应客户要求退款。',
+      },
+      refunding: '退款中……',
+      refundNeedsAttention: '退款失败：{{error}} 等待人工重试。',
+      refunded: '已退款。',
+      fulfilled: '已支付并发货。',
+    },
+    sessionStatus: {
+      open: '可支付',
+      paid: '已支付',
+      declined: '已拒付',
+      expired: '已失效',
+    },
+    outside: {
+      title: '支付服务商（沙箱）',
+      description:
+        '扮演在服务商收银台付款的客户，以及发送 webhook 的服务商。暂扣 webhook，可以让它迟到、重复，或者在取消之后才到。',
+      checkout: '托管收银台',
+      session: '会话 {{id}}：{{status}}。',
+      noSession: '当前没有打开的收银台，客户需要先付款。',
+      pay: '付款',
+      decline: '银行卡被拒',
+      tryThis:
+        '试试：勾选暂扣，付款，然后取消订单，再投递暂扣的 webhook——钱在取消后才到账，会被自动退回。',
+    },
+  },
+  exports: {
+    title: '数据导出',
+    list: '导出任务',
+    new: '新建导出',
+    empty: '这里还没有导出任务。',
+    pick: '选择一个导出任务，观察它如何轮询。',
+    shows:
+      '供应商没有 webhook，所以由生命周期主动去问：触发器每隔几秒触发一次自转换，重新进入状态时轮询供应商；记录上固定的截止时间结束等待。',
+    description:
+      '供应商渲染导出很慢，也不会回调，所以每个导出每 {{seconds}} 秒轮询一次，{{minutes}} 分钟后放弃。',
+    nothing: '现在没有你要做的事：导出正在轮询供应商。',
+    actions: {
+      submit: '开始导出',
+      retry: '重新导出',
+      cancel: '取消',
+    },
+    outcomes: {
+      success: '成功',
+      failure: '失败',
+      stuck: '卡在 60%',
+    },
+    jobStatus: {
+      running: '进行中',
+      succeeded: '已完成',
+      failed: '失败',
+      cancelled: '已取消',
+    },
+    form: {
+      title: '申请导出',
+      name: '名称',
+      duration: '供应商耗时（秒）',
+      outcome: '供应商任务结果',
+      hint: '卡住的任务永远不会完成：导出会在截止时间超时，并停止该任务。',
+      submit: '创建',
+    },
+    fields: {
+      vendor: '供应商',
+      vendorValue: '{{seconds}} 秒，{{outcome}}',
+      job: '供应商任务',
+      polls: '轮询次数',
+      deadline: '截止时间',
+    },
+    banner: {
+      draft: '尚未开始。',
+      starting: '正在向供应商提交任务……',
+      processing: '供应商处理中，{{time}} 后放弃。',
+      done: '已完成：{{url}}',
+      failed: '失败：{{error}}',
+      timedOut: '供应商未在截止时间前完成，任务已停止。',
+      cancelled: '已取消。',
+    },
+    outside: {
+      title: '供应商（沙箱）',
+      description:
+        '导出对供应商任务的了解：只有上一次轮询看到的情况。供应商不发 webhook，也没有别的途径。',
+      lifecycleSide: '导出所知道的进度',
+      lifecycleHint: '任务 {{id}}，以上一次轮询看到的为准；下一次轮询会更新。',
+      lastPoll: '上次轮询看到：{{status}}，{{progress}}%（共 {{count}} 次）。',
+      noPoll: '尚未轮询。',
+      nextPoll: '约 {{time}} 后再次轮询。',
+      pollDue: '下一次巡检会轮询。',
+      noJob: '供应商那里还没有任务。',
+    },
+  },
+  purchases: {
+    title: '限时抢购',
+    list: '购买记录',
+    new: '新购买',
+    empty: '这里还没有购买。',
+    pick: '选择一个购买，跟踪它的每一步。',
+    shows:
+      '一次购买横跨两个系统，数据库回滚撤销不了。每一步都是带一个副作用的状态；扣款被拒时，预留由单独的一步撤销——所以还欠着什么，永远就是记录的状态。',
+    description:
+      '先由仓库锁定库存，再由支付服务商扣款。银行卡被拒时，由补偿步骤归还库存；补偿一直失败时，停下来等人处理。',
+    nothing: '现在没有你要做的事：购买正在执行各个步骤。',
+    actions: {
+      submit: '下单',
+      abandon: '放弃',
+      retryRelease: '重试释放库存',
+    },
+    items: {
+      headphones: '降噪耳机',
+      keyboard: '机械键盘',
+      lamp: '台灯',
+    },
+    form: {
+      title: '参与抢购',
+      item: '商品',
+      quantity: '数量',
+      total: '合计 {{total}}',
+      declineCharge: '银行卡被拒',
+      failReleases: '故意失败的库存释放次数',
+      failHint:
+        '勾选银行卡被拒可观察补偿；让释放失败 3 次以上，可观察它停下来等人处理。',
+      submit: '创建',
+    },
+    fields: {
+      customer: '客户',
+      amount: '金额',
+      reservation: '库存预留',
+      paymentRef: '支付单号',
+    },
+    banner: {
+      draft: '尚未下单。',
+      reserving: '正在锁定库存……',
+      charging: '库存已锁定，正在扣款……',
+      releasing: '扣款失败（{{error}}），正在归还库存……',
+      compensationNeedsAttention: '库存未能归还：{{error}} 等待人工重试释放。',
+      confirmed: '已确认：库存已锁定且已付款。',
+      cancelled: {
+        customer: '已放弃。',
+        outOfStock: '已取消：{{error}}',
+        paymentDeclined: '已取消：银行卡被拒，库存已归还。',
+      },
+    },
+    outside: {
+      title: '仓库与支付服务商（沙箱）',
+      description: '每一步都是对应用之外的系统的副作用；撤销也是一步。',
+      steps: '步骤',
+      stepsHint: '每一步副作用的最近一次执行。',
+      reserve: '锁定库存',
+      charge: '银行卡扣款',
+      release: '释放库存（补偿）',
+      notYet: '未执行',
+      stock: '仓库库存',
+      stockHint: '观察库存被锁定、再被归还。',
+      item: '商品',
+      available: '可售',
+      reserved: '已预留',
+    },
+  },
+  fulfilments: {
+    title: '发货物流',
+    list: '发货单',
+    new: '新发货单',
+    empty: '这里还没有发货单。',
+    pick: '选择一个发货单，扮演支付、仓库和承运商。',
+    shows:
+      '发货单以任意顺序等待来自两个系统的两个信号，然后跟随承运商的事件——按事件发生的时间应用，而不是到达的时间。',
+    description:
+      '支付已确认且仓库已拣货（先后不限）后才能发货。之后承运商的 webhook 会迟到、乱序；只有更新的事件才会推动它。',
+    nothing: '现在没有你要做的事：发货单在等待外部系统。',
+    actions: {
+      ship: '交给承运商',
+      cancel: '取消发货',
+    },
+    signals: {
+      payment: '支付已确认',
+      pick: '仓库已拣货',
+    },
+    and: '、',
+    carrier: {
+      booked: '已预约',
+      pickedUp: '已揽收',
+      inTransit: '运输中',
+      outForDelivery: '派送中',
+      delivered: '已签收',
+      exception: '异常',
+    },
+    form: {
+      title: '创建发货单',
+      name: '名称',
+      customer: '客户',
+      submit: '创建',
+    },
+    fields: {
+      customer: '客户',
+      paid: '支付确认',
+      picked: '拣货',
+      tracking: '运单号',
+      carrier: '承运商状态',
+      carrierAt: '事件时间',
+    },
+    banner: {
+      preparing: '等待：{{waiting}}。',
+      readyToShip: '已支付且已拣货，可以交给承运商。',
+      booking: '正在预约承运商……',
+      shipped: '运输中。',
+      exception: '承运商报告异常；更新的事件会解除。',
+      delivered: '已签收。',
+      cancelled: '已取消。',
+    },
+    outside: {
+      title: '支付服务商、仓库与承运商（沙箱）',
+      description:
+        '发送各系统的 webhook，立即或暂扣。换个顺序投递暂扣的事件，看哪些会被应用。',
+      signals: '两个信号',
+      signalsHint: '哪个先到都行，第二个到达时发货单继续。',
+      capture: '支付已确认',
+      pick: '仓库已拣货',
+      carrierTitle: '承运商',
+      carrierHint: '包裹的事件，各带发生时间。',
+      status: '状态',
+      location: '地点',
+      offset: '距现在（分钟）',
+      send: '发送',
+      offsetHint: '最后一栏调整扫描发生的时间：负数表示一个更早的扫描。',
+      scramble: '暂扣三条扫描，按任意顺序投递',
+    },
+  },
+  subscriptions: {
+    title: '订阅续费',
+    list: '订阅',
+    new: '订阅',
+    empty: '这里还没有订阅。',
+    pick: '选择一个订阅，跟踪它的扣款。',
+    shows:
+      '订阅在整个生命期里每个周期走一圈 生效 → 扣款 → 生效。续费在订阅自己的周期结束时到期，由巡检找出；银行卡被拒由触发器重试，直到放弃。',
+    description:
+      '每 {{period}} 分钟扣款一次。扣款被拒后每 {{dunning}} 分钟重试，{{tries}} 次后取消订阅。',
+    nothing: '现在没有你要做的事：扣款会自动进行。',
+    actions: {
+      updateCard: '更换银行卡',
+      cancel: '退订',
+    },
+    plans: {
+      basic: '基础版',
+      pro: '专业版',
+    },
+    periodN_one: '{{count}} 个周期',
+    periodN_other: '{{count}} 个周期',
+    form: {
+      title: '订阅',
+      plan: '套餐',
+      charge: '现在以及每个周期开始时扣款 {{price}}。',
+      cardDeclines: '银行卡拒付的次数',
+      failHint:
+        '拒付是回答而不是故障：不会立即重试，而是由催缴触发器用新的幂等键重试。',
+      submit: '订阅',
+    },
+    fields: {
+      customer: '客户',
+      periods: '已付周期',
+      periodEnd: '周期结束',
+      dunning: '失败次数',
+      lastCharge: '最近扣款',
+      card: '银行卡',
+      cardWorks: '正常',
+      cardValue_one: '下一次扣款会被拒',
+      cardValue_other: '接下来 {{count}} 次扣款会被拒',
+    },
+    banner: {
+      renewing: '正在扣款……',
+      active: '生效中，{{time}} 后续费。',
+      due: '本周期已结束，下一次巡检会续费。',
+      pastDue: '{{error}} 第 {{tries}}/{{max}} 次，{{time}} 后再试。',
+      cancelled: {
+        customer: '已退订。',
+        unpaid: '已取消：银行卡一直被拒。',
+      },
+    },
+    outside: {
+      title: '账单（沙箱）',
+      description:
+        '每次扣款都是一次扣款副作用的执行，幂等键由周期和尝试次数组成。',
+      charges: '扣款记录',
+      chargesHint: '按时间先后。',
+      noCharges: '还没有扣款。',
+      sweep: '续费巡检',
+      sweepHint:
+        '续费由巡检在每个订阅的周期结束时找出；每 10 秒运行一次，也可以立即运行。',
+    },
+  },
+  guide: {
+    title: '关于这个示例',
+    show: '展开',
+    hide: '收起',
+    purpose: '示例目的',
+    howTo: '操作步骤',
+    samples:
+      '样例数据会在以样例数据方式安装应用时（APP_SAMPLE_DATA=true）载入。未载入样例数据的数据库，可以运行「pnpm nocobase db sample」补充载入。',
+    tickets: {
+      purpose:
+        '工单的进度保存在它自己的状态字段里，受理、回复、解决、重新打开等每一次变化，都是源码中声明的一个转换。对话内容就是转换日志：每条消息是它所触发的转换的输入。发邮件作为副作用在转换提交后执行并自动重试；一直等不到客户回复的工单会被条件触发自动关闭。',
+      step1:
+        '用右上角的「当前身份」在客服和客户之间切换。客服看到全部工单队列，客户只看到自己提交的工单。',
+      step2:
+        '以客服身份打开新工单「无法登录管理后台」并回复。工单进入等待客户状态，客户几分钟不回复就会自动关闭（条件触发每 10 秒巡检一次）。',
+      step3:
+        '切换到王女士，回复一个正在等她回复的工单：工单回到负责的客服手中。已关闭的工单在 7 天内可以由客户重新打开——以李先生身份在「如何导出本月的订单报表？」上试试。',
+      step4:
+        '以客户身份新建工单，在「演示选项」里设置「故意失败的邮件发送次数」，再以客服身份回复：在「生命周期详情」中可以看到邮件副作用失败并重试。',
+    },
+    expenses: {
+      purpose:
+        '报销单按金额走不同的审批路线：5,000 元以内自动通过，超过则由申请人的经理审批，超过 50,000 元还需要财务总监审批。审批人可以通过、退回补充或带理由驳回；经理长时间不处理会被条件触发升级给上级；审批通过后由付款副作用完成付款并把报销单标记为已付款。',
+      step1:
+        '用「当前身份」切换扮演员工林晓、何东，他们的经理、高管和财务总监。员工看到自己的报销单，审批人看到等待自己处理的报销单。',
+      step2:
+        '以林晓身份提交草稿「杭州客户拜访」（872 元）：它会自动通过，片刻后完成付款。「生命周期详情」里能看到付款副作用以及它触发的「付款完成」转换。',
+      step3:
+        '切换到财务总监赵静，审批已由陈明通过的「法兰克福展会参展」：超过 50,000 元需要两级审批。',
+      step4:
+        '以何东身份重新提交被退回补充的「北京客户现场支持」，再切换到孙磊审批通过。如果报销单在经理那里停留 3 分钟，会自动升级给经理的上级。',
+      step5:
+        '「生命周期详情」中的「当前身份可执行的转换」会说明当前身份不能执行某个操作的原因。在两个窗口中打开同一张待审批的报销单并分别操作：第二次操作会因版本已过期而被拒绝。',
+    },
+    orders: {
+      purpose:
+        '订单只能由支付服务商的 webhook 标记为已支付，页面本身做不到。等待期间它只是记录上的一个状态——没有计时器，也没有挂起的请求——webhook 无论来得早、晚还是重复，都只推动它一次。订单取消后才到账的钱会被退回。',
+      step1:
+        '打开样例订单「降噪耳机 × 1」，点击「去付款」：副作用在支付服务商处创建托管收银台，订单进入等待支付。',
+      step2:
+        '在虚线框的「支付服务商（沙箱）」卡片中付款或模拟银行卡被拒。推动订单的是服务商发来的 webhook；点击「再次投递」会得到「重放」。',
+      step3:
+        '勾选「暂扣 webhook」后付款，再点击「取消订单」，最后投递暂扣的 webhook：钱在订单取消之后到账，于是被退回。',
+      step4:
+        '样例订单「机械键盘 × 1」的第一次创建收银台会故意失败，用来演示副作用重试。未支付的订单 3 分钟后自动关闭。',
+    },
+    exports: {
+      purpose:
+        '供应商不发 webhook，导出只能轮询：条件触发执行自转换「poll」，重新进入「处理中」时运行检查，记录上写下的截止时间决定何时放弃。',
+      step1:
+        '打开「9 月订单明细」，点击「开始导出」。供应商需要 30 秒；观察「供应商的实际进度」如何领先于导出记录所知道的进度，直到下一次轮询。',
+      step2:
+        '开始导出「全年客户名单」，它的供应商任务会卡住：到达截止时间后导出超时，并停止供应商的任务。「重新导出」会开始新的一轮。',
+      step3:
+        '在「生命周期详情」中，每次轮询都是日志里的一个转换，每次检查都是一次副作用执行。',
+    },
+    purchases: {
+      purpose:
+        '秒杀下单横跨两个系统：先由仓库锁定库存，再由支付服务商扣款。扣款被拒时，库存由一个专门的补偿步骤释放；补偿反复失败时，流程停在一个等待人工重试的状态。',
+      step1:
+        '打开购买两盏台灯的样例记录，点击「下单」：库存被锁定、扣款成功，购买完成。',
+      step2:
+        '为银行卡会被拒的样例键盘订单下单，观察「仓库库存」中的数量先减少、后恢复。',
+      step3:
+        '新建一条记录，勾选「银行卡被拒」，并把「故意失败的库存释放次数」设为 3：释放库存会停下来，等待你点击「重试释放库存」。',
+    },
+    fulfilments: {
+      purpose:
+        '发货要等两个系统的两个信号——支付已确认和仓库已拣货，先后顺序不限，然后跟踪承运商。承运商事件按发生时间而不是到达时间生效，更早的事件会作为过期事件被拒绝。',
+      step1:
+        '打开样例发货单，按任意顺序发送「仓库已拣货」和「支付已确认」：第二个信号到达后进入待发货。',
+      step2:
+        '点击「交给承运商」，然后发送承运商的扫描事件，每条带有状态和地点。',
+      step3:
+        '勾选「暂扣三条扫描，按任意顺序投递」，先投递最新的一条：更早的扫描会作为过期事件被忽略。',
+      step4:
+        '「距现在（分钟）」填负数表示更早发生的扫描，这就是迟到事件的样子。',
+    },
+    subscriptions: {
+      purpose:
+        '订阅在存续期间每个周期开始时扣款一次。插件的巡检在每个订阅自己的周期结束时续费；扣款被拒时由催缴触发以新的幂等键重试，直到恢复或订阅被取消。',
+      step1:
+        '点击「订阅」并选择套餐：首次扣款立即执行。这里没有样例订阅，因为创建订阅就会立即扣款。',
+      step2:
+        '把「银行卡拒付的次数」设为 1 再订阅：订阅进入逾期，一分钟后重试并恢复；点击「更换银行卡」可以立即恢复。',
+      step3:
+        '每个周期 3 分钟；「续费巡检」中的「立即执行条件触发」会马上续费到期的订阅，不必等下一次巡检。',
+    },
+  },
   blockers: {
     agentOnly: '只有客服可以处理工单',
     requesterOnly: '只有提交工单的客户可以操作',
@@ -204,6 +660,10 @@ const zhCN: LifecycleExampleResource = {
     topApprover: '当前审批人已是最高一级',
     customersOnly: '只有客户可以为自己提交工单',
     applicantsOnly: '只有员工可以为自己发起报销',
+    alreadyPaid: '支付已经确认过了。',
+    alreadyPicked: '仓库已经拣过货了。',
+    staleCarrierEvent: '已经应用了更新的物流事件。',
+    periodNotOver: '当前周期还没有结束。',
   },
   problems: {
     message: '请填写内容',
@@ -212,12 +672,24 @@ const zhCN: LifecycleExampleResource = {
     description: '请填写问题描述',
     category: '请选择问题分类',
     priority: '请选择优先级',
+    title: '填写名称。',
+    amountCents: '金额必须大于 0。',
+    durationSeconds: '供应商耗时须在 5 到 600 秒之间。',
+    vendorOutcome: '选择任务的结果。',
+    sku: '选择商品。',
+    quantity: '购买 1 到 5 件。',
+    plan: '选择套餐。',
+    customerId: '选择客户。',
   },
   errors: {
     EXPENSE_NOT_FOUND: '报销单不存在',
     OWN_EXPENSE_ONLY: '只能修改自己的报销单',
     EXPENSE_LOCKED: '审批中的报销单不能修改，请先撤回',
     EXPENSE_CHANGED: '报销单在编辑期间被改动，请刷新后重试',
+    SANDBOX_SESSION_CLOSED: '收银台已经关闭。',
+    SANDBOX_NOT_FOUND: '沙箱中没有这个对象。',
+    UNKNOWN_WEBHOOK_EVENT: '沙箱不发送这种事件。',
+    WEBHOOK_EVENT_NOT_FOUND: '没有这个 webhook 事件。',
   },
   lifecycle: {
     title: '生命周期详情',
@@ -268,6 +740,33 @@ const zhCN: LifecycleExampleResource = {
     approved: '已通过',
     rejected: '已驳回',
     paid: '已付款',
+    creatingCheckout: '创建收银台',
+    awaitingPayment: '等待支付',
+    paymentFailed: '支付失败',
+    cancelled: '已取消',
+    refunding: '退款中',
+    refundNeedsAttention: '退款待处理',
+    refunded: '已退款',
+    fulfilled: '已发货',
+    starting: '提交中',
+    processing: '处理中',
+    done: '已完成',
+    failed: '失败',
+    timedOut: '已超时',
+    reserving: '锁定库存',
+    charging: '扣款中',
+    releasing: '释放库存',
+    compensationNeedsAttention: '补偿受阻',
+    confirmed: '已确认',
+    preparing: '备货中',
+    readyToShip: '待发货',
+    booking: '预约承运',
+    shipped: '运输中',
+    exception: '物流异常',
+    delivered: '已签收',
+    renewing: '扣款中',
+    active: '生效中',
+    pastDue: '欠费',
   },
   transitions: {
     create: '创建',

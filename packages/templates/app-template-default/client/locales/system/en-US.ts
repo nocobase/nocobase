@@ -63,13 +63,12 @@ const systemEnUS = {
   'auth.marketingTitleSecond': 'NocoBase keeps it',
   'auth.marketingTitleThird': 'reliable.',
   'auth.marketingDescription':
-    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions, workflows and governance underneath.',
+    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions and governance underneath.',
   'auth.frontend': 'AI-native frontend',
   'auth.frontendDescription':
     'Compose interfaces freely on a flexible framework.',
   'auth.foundation': 'NocoBase foundation',
-  'auth.foundationDescription':
-    'Reliable data, access control, workflows and governance.',
+  'auth.foundationDescription': 'Reliable data, access control and governance.',
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',
@@ -87,10 +86,10 @@ const systemEnUS = {
     reliability: '<brand>NocoBase</brand> keeps it reliable.',
   },
   home: {
-    badge: 'Built with your coding agent',
+    platform: 'NocoBase · AI-native application platform',
     title: 'Describe it, and your agent builds it',
     description:
-      'This application is developed by talking to your coding agent. Tell it what the business needs in plain words, and it writes the pages, data models, APIs, and workflows in this project.',
+      'This application is developed by talking to your coding agent. Tell it what the business needs in plain words, and it writes the pages, data models, APIs, and business processes in this project.',
     steps: {
       describe: {
         title: 'Describe the need',

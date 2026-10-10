@@ -9,7 +9,6 @@ import {
 import { type ReactElement, useState } from 'react';
 
 import { PageContainer } from '#components/page-container';
-import { Badge } from '#components/ui/badge';
 import { Button } from '#components/ui/button';
 import {
   Card,
@@ -83,13 +82,13 @@ function AgentIntro(): ReactElement {
   const example = t('home.example.text');
 
   return (
-    <section className='grid gap-8 rounded-2xl border border-border bg-linear-to-br from-muted/70 via-card to-card p-6 md:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center'>
+    <section className='grid gap-8 rounded-2xl border border-border bg-linear-to-br from-primary/5 via-card to-card p-6 md:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center'>
       <div className='flex flex-col gap-6'>
         <div className='flex flex-col gap-4'>
-          <Badge variant='outline' className='bg-background'>
-            <SparklesIcon data-icon='inline-start' />
-            {t('home.badge')}
-          </Badge>
+          <p className='flex items-center gap-2 text-sm font-medium text-primary'>
+            <SparklesIcon className='size-4' aria-hidden />
+            {t('home.platform')}
+          </p>
           <h1 className='font-heading text-3xl font-semibold tracking-[-0.035em] text-balance md:text-4xl'>
             {t('home.title')}
           </h1>
@@ -119,7 +118,7 @@ function AgentIntro(): ReactElement {
         <figcaption className='flex items-center justify-between gap-2 border-b border-border px-4 py-2.5'>
           <span className='flex items-center gap-2 text-sm font-medium'>
             <MessageSquareTextIcon
-              className='size-4 text-muted-foreground'
+              className='size-4 text-primary'
               aria-hidden
             />
             {t('home.example.title')}
@@ -163,9 +162,9 @@ function CapabilityCard({
     >
       <Card className='w-full transition-[translate,box-shadow] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:shadow-md group-hover:ring-foreground/20 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0'>
         <CardHeader className='gap-3'>
-          {/* The chip darkens rather than inverting: swapping a light background and a dark icon passes both through
-              the same grey halfway, where the icon vanishes for a moment and the hover reads as a flicker. */}
-          <span className='flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-transparent transition-[background-color,color,box-shadow] duration-200 ease-out group-hover:bg-background group-hover:text-foreground group-hover:ring-foreground/15 motion-reduce:transition-none'>
+          {/* The chip only deepens its tint on hover rather than inverting: swapping a light background and a dark icon
+              passes both through the same color halfway, where the icon vanishes for a moment and reads as a flicker. */}
+          <span className='flex size-9 items-center justify-center rounded-lg bg-primary/5 text-primary ring-1 ring-transparent transition-[background-color,box-shadow] duration-200 ease-out group-hover:bg-primary/10 group-hover:ring-primary/20 motion-reduce:transition-none'>
             <Icon
               className='size-4 transition-transform duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none'
               aria-hidden
