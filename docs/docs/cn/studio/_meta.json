@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "概览"
+  },
+  {
+    "type": "file",
+    "name": "connect-agent",
+    "label": "在本地 Agent 中使用 Studio"
+  },
+  {
+    "type": "file",
+    "name": "runtimes",
+    "label": "添加运行环境"
+  },
+  {
+    "type": "file",
+    "name": "first-project",
+    "label": "创建第一个项目"
+  },
+  {
+    "type": "file",
+    "name": "review-notes",
+    "label": "本轮待确认问题（审阅）"
+  }
+]

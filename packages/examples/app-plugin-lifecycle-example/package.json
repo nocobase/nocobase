@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-lifecycle-example",
   "displayName": "Lifecycle Example App Plugin",
   "description": "Example app plugin showing record lifecycles: a support ticket that waits for its customer and an expense report that goes through approval.",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
+    "name": "connect-agent",
+    "label": "Use Studio in your local agent"
+  },
+  {
+    "type": "file",
+    "name": "runtimes",
+    "label": "Add a runtime"
+  },
+  {
+    "type": "file",
+    "name": "first-project",
+    "label": "Create your first project"
+  },
+  {
+    "type": "file",
+    "name": "review-notes",
+    "label": "Review notes (local)"
+  }
+]

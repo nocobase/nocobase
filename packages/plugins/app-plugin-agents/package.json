@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agents",
   "displayName": "Agents",
   "description": "Agents for NocoBase applications: agents, the model services online agents call, their runs and conversations, and the runners people connect to run them (registration, the long-poll claim, slots, the sweeper, build jobs, and the runner and CLI tarballs the application serves).",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
