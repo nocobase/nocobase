@@ -51,6 +51,13 @@ const runtimesZhCN: RuntimesLocale = {
       subjects: '对象',
       repos: '仓库',
     },
+    variables: {
+      title: '本机提供的变量',
+      description:
+        '它能提供给「从运行环境取」的变量，只显示名字，值留在那台机器上。在那台机器上用 `nocobase-runner env set NAME` 设置，或用 `--pass-env NAME` 放行。',
+      none: '没有：需要从运行环境取变量的运行会在开始前失败。',
+      unknown: '未上报：它的执行机版本较旧。更新执行机后可以看到。',
+    },
     jobs: {
       allow: '允许执行构建作业',
       hint: '本应用配置的构建等步骤，不调用模型。这个运行环境支持：{{kinds}}。',

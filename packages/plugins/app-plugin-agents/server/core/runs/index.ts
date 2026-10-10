@@ -60,6 +60,7 @@ export {
   type SubjectFacts,
   type SubjectRegistry,
   type SubjectReports,
+  type SubjectWorkspaces,
   type SubjectScope,
   type WorkSink,
 } from './ports.js';
@@ -102,6 +103,11 @@ export {
   type RunRequestService,
 } from './run-requests.js';
 export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
+export {
+  executionForViewer,
+  runForViewer,
+  type RunMachineViewer,
+} from './execution-view.js';
 export {
   createAvailability,
   type AgentAvailability,

@@ -1,15 +1,11 @@
 /**
  * An agent's tools and models, in order, as a compact list: one header row names the columns, and each row is one entry
- * with its reasoning effort. A runner agent's rows pair a coding tool with a model (free text, suggested from what the
- * tool is commonly run with; empty for the tool's default), an online agent's rows a model service with one of its
+ * with its reasoning effort. A runner agent's rows pair a coding tool with a model (free text, suggested from built-ins
+ * and visible runner reports; empty for the tool's default), an online agent's rows a model service with one of its
  * models. The efforts offered are the row's tool's or the online ones. The first row is the default. Rows are added,
  * removed and moved up or down; an online agent may remove its last row and wait for a model, a runner agent may not.
  */
-import { Autocomplete } from '@base-ui/react';
-import {
-  TOOL_MODEL_SUGGESTIONS,
-  type AgentTool,
-} from '@nocobase/agent-protocol';
+import { type AgentTool } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   ArrowDownIcon,
@@ -27,6 +23,11 @@ import {
 } from '../../shared/agents.js';
 import type { ModelCatalog } from '../../shared/models.js';
 import type { RunnerSummary } from '../../shared/runners.js';
+import {
+  modelSuggestions,
+  type ModelSuggestion,
+  type ModelSuggestionRunner,
+} from '../lib/model-suggestions.js';
 import { cn } from 'cn';
 import {
   moveEntry,
@@ -37,13 +38,59 @@ import { EffortSelect, ToolSelect } from './agent-fields.js';
 import { ModelFields } from './agent-type.js';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
-import { InputGroup, InputGroupInput } from './ui/input-group.js';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from './ui/combobox.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip.js';
 
-/** A model typed freely, with the tool's common models suggested as the person types. */
+function ModelSources({
+  suggestion,
+}: {
+  readonly suggestion: ModelSuggestion;
+}): ReactElement {
+  const { t } = useTranslation();
+  const available = suggestion.runners.filter(
+    (runner) => runner.available,
+  ).length;
+  return (
+    <span className='ml-auto inline-flex shrink-0 flex-nowrap items-center gap-1 whitespace-nowrap'>
+      {suggestion.builtIn ? (
+        <Badge variant='secondary'>{t('modelEntries.builtIn')}</Badge>
+      ) : null}
+      {suggestion.runners.length > 0 ? (
+        <Tooltip>
+          <TooltipTrigger render={<Badge variant='outline' />}>
+            {t('modelEntries.availableRunners', { count: available })}
+          </TooltipTrigger>
+          <TooltipContent>
+            <ul>
+              {suggestion.runners.map((runner) => (
+                <li key={runner.id}>
+                  {runner.name} ·{' '}
+                  {t(
+                    runner.available
+                      ? 'modelEntries.runnerReady'
+                      : 'modelEntries.runnerNotReady',
+                  )}
+                </li>
+              ))}
+            </ul>
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
+    </span>
+  );
+}
+
+/** A model typed freely, with common models and the visible runners' reports suggested as the person types. */
 export function ModelInput({
   id,
   tool,
+  runners,
   value,
   disabled,
   placeholder,
@@ -52,6 +99,7 @@ export function ModelInput({
 }: {
   readonly id: string;
   readonly tool: AgentTool;
+  readonly runners?: readonly ModelSuggestionRunner[];
   readonly value: string;
   readonly disabled?: boolean;
   readonly placeholder?: string;
@@ -60,49 +108,50 @@ export function ModelInput({
   readonly onChange: (model: string) => void;
 }): ReactElement {
   const { t } = useTranslation();
+  const suggestions = modelSuggestions(tool, runners);
+  const byId = new Map(
+    suggestions.map((suggestion) => [suggestion.id, suggestion]),
+  );
   return (
-    <Autocomplete.Root
-      items={TOOL_MODEL_SUGGESTIONS[tool]}
-      value={value}
+    // The typed text is the value: selecting it keeps a model that is not suggested from being reset when the list closes.
+    <Combobox<string>
+      items={suggestions.map((suggestion) => suggestion.id)}
+      value={value || null}
+      inputValue={value}
+      onValueChange={(next) => onChange(next ?? '')}
+      onInputValueChange={(next) => onChange(next)}
       openOnInputClick
       disabled={disabled}
-      onValueChange={(next: string) => onChange(next)}
     >
-      <InputGroup className='w-full'>
-        <Autocomplete.Input
-          id={id}
-          render={<InputGroupInput disabled={disabled} />}
-          placeholder={placeholder}
-          aria-label={ariaLabel}
-          title={t('modelEntries.suggestions')}
-        />
-      </InputGroup>
-      <Autocomplete.Portal>
-        <Autocomplete.Positioner
-          side='bottom'
-          sideOffset={6}
-          align='start'
-          className='isolate z-50'
-        >
-          <Autocomplete.Popup
-            data-slot='combobox-content'
-            className='max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95'
-          >
-            <Autocomplete.List className='max-h-72 scroll-py-1 overflow-y-auto overscroll-contain p-1 data-empty:p-0'>
-              {(item: string) => (
-                <Autocomplete.Item
-                  key={item}
-                  value={item}
-                  className='relative flex w-full cursor-default items-center gap-2 rounded-md px-1.5 py-1 font-mono text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground'
-                >
-                  {item}
-                </Autocomplete.Item>
-              )}
-            </Autocomplete.List>
-          </Autocomplete.Popup>
-        </Autocomplete.Positioner>
-      </Autocomplete.Portal>
-    </Autocomplete.Root>
+      <ComboboxInput
+        id={id}
+        className='w-full'
+        disabled={disabled}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        title={t('modelEntries.suggestions')}
+      />
+      <ComboboxContent
+        // Fit the model and both source badges even when the form's input is narrow; cap growth at the viewport.
+        style={{
+          width: 'max-content',
+          minWidth:
+            'min(var(--available-width), max(var(--anchor-width), calc(var(--spacing) * 144)))',
+          maxWidth: 'var(--available-width)',
+        }}
+      >
+        <ComboboxList>
+          {(item: string) => (
+            <ComboboxItem key={item} value={item} className='flex-nowrap'>
+              <span title={item} className='min-w-0 truncate font-mono'>
+                {item}
+              </span>
+              <ModelSources suggestion={byId.get(item)!} />
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }
 
@@ -178,7 +227,7 @@ export function ModelEntriesEditor({
   readonly idPrefix: string;
   readonly type: AgentType;
   readonly value: readonly EntryDraft[];
-  /** For the count of runners each tool can run on now. */
+  /** For each tool's readiness count and optional reported model suggestions. */
   readonly runners?: readonly RunnerSummary[] | undefined;
   /** The services and models online rows choose from. */
   readonly catalog?: ModelCatalog | undefined;
@@ -232,6 +281,17 @@ export function ModelEntriesEditor({
             >
               {value.map((entry, index) => {
                 const rowId = `${idPrefix}-${index}`;
+                const reportedEfforts =
+                  type === 'runner'
+                    ? modelSuggestions(entry.tool, runners).find(
+                        (item) => item.id === entry.model.trim(),
+                      )?.efforts
+                    : undefined;
+                const allowedEfforts = effortsFor(
+                  type === 'online'
+                    ? { modelService: entry.modelService }
+                    : { tool: entry.tool },
+                );
                 return (
                   <li
                     key={entry.key}
@@ -278,6 +338,7 @@ export function ModelEntriesEditor({
                         <ModelInput
                           id={`${rowId}-model`}
                           tool={entry.tool}
+                          runners={runners}
                           value={entry.model}
                           disabled={disabled}
                           placeholder={t('agents.defaultModel')}
@@ -286,18 +347,35 @@ export function ModelEntriesEditor({
                         />
                       </>
                     )}
-                    <EffortSelect
-                      id={`${rowId}-effort`}
-                      efforts={effortsFor(
-                        type === 'online'
-                          ? { modelService: entry.modelService }
-                          : { tool: entry.tool },
-                      )}
-                      value={entry.effort}
-                      disabled={disabled}
-                      ariaLabel={t('agentForm.reasoningEffort')}
-                      onChange={(effort) => replace(index, { effort })}
-                    />
+                    <div className='flex flex-col gap-1'>
+                      <EffortSelect
+                        id={`${rowId}-effort`}
+                        efforts={
+                          reportedEfforts === undefined
+                            ? allowedEfforts
+                            : allowedEfforts.filter((effort) =>
+                                reportedEfforts.includes(effort),
+                              )
+                        }
+                        value={entry.effort}
+                        disabled={disabled}
+                        ariaLabel={t('agentForm.reasoningEffort')}
+                        onChange={(effort) => replace(index, { effort })}
+                      />
+                      {reportedEfforts !== undefined ? (
+                        <p className='text-xs text-muted-foreground'>
+                          {t('modelEntries.reportedEfforts', {
+                            efforts: reportedEfforts.length
+                              ? reportedEfforts.join(', ')
+                              : t('modelEntries.noReportedEfforts'),
+                          })}
+                          {entry.effort &&
+                          !reportedEfforts.includes(entry.effort)
+                            ? ` ${t('modelEntries.effortNotReported', { effort: entry.effort })}`
+                            : ''}
+                        </p>
+                      ) : null}
+                    </div>
                     <div className='flex items-center'>
                       {type === 'online' && onTest ? (
                         <Button
@@ -364,6 +442,11 @@ export function ModelEntriesEditor({
           {t('modelEntries.required')}
         </p>
       )}
+      {type === 'runner' ? (
+        <p className='text-xs text-muted-foreground'>
+          {t('modelEntries.reportHint')}
+        </p>
+      ) : null}
       <div>
         <Button
           type='button'

@@ -103,7 +103,11 @@ export const noApprovals: IssueApprovals = {
  * sub-issues and dependencies, the newest threads and who follows it.
  */
 export interface IssueExtras {
-  threads(conn: DatabaseConnection, issue: Issue): Promise<ThreadPage>;
+  threads(
+    conn: DatabaseConnection,
+    issue: Issue,
+    viewer?: Viewer,
+  ): Promise<ThreadPage>;
   /** The issue's own files, as the viewer sees them (who may remove which). */
   attachments(
     conn: DatabaseConnection,
@@ -216,7 +220,11 @@ export interface IssueTriggers {
   /** Nothing holds the issue any more (another issue finished or was deleted, or a `blockedBy` was removed). */
   onUnblocked?(
     tx: Tx,
-    input: { readonly issue: Issue; readonly releasedBy: Issue },
+    input: {
+      readonly issue: Issue;
+      readonly releasedBy: Issue;
+      readonly actor?: Actor;
+    },
   ): Promise<void>;
   /** A `blockedBy` was added and the issue is held now. */
   onBlocked?(
@@ -230,6 +238,7 @@ export interface IssueTriggers {
       readonly parent: Issue;
       readonly stage: number | null;
       readonly childIssueIds: readonly string[];
+      readonly actor?: Actor;
     },
   ): Promise<void>;
 }

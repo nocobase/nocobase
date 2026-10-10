@@ -14,6 +14,7 @@ import type {
   FailureReason,
   RunEventType,
   RunnerFeature,
+  ToolCapabilities,
 } from '../../protocol/index.ts';
 
 export type { FailureReason, RunEventType, RunnerFeature };
@@ -103,6 +104,12 @@ export interface AdapterSession {
    * them; a tool without a sandbox ignores them.
    */
   writableRoots?: readonly string[];
+  /**
+   * The run's working trees: every working directory, `workDir` among them, and each submodule checked out in a
+   * repository. A tool whose sandbox protects paths inside a writable root, such as Codex with `.agents`, opens there
+   * what the agent's own commands write; a tool without a sandbox ignores them.
+   */
+  workingTrees?: readonly string[];
   /** The first user message of the run. */
   prompt: string;
   /** The rendered brief (system, task, context, agent layers joined). */
@@ -156,6 +163,8 @@ export interface AdapterHandle {
 export interface AgentAdapter {
   kind: ToolKind;
   detect(): Promise<ToolDetection>;
+  /** Fresh capability discovery, independent of cached installation detection. No method means unsupported. */
+  detectModels?(signal: AbortSignal): Promise<ToolCapabilities>;
   features(): RunnerFeature[];
   start(session: AdapterSession): AdapterHandle;
 }

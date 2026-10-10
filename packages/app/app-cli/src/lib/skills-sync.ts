@@ -1,7 +1,8 @@
 // Copies skills from an application's direct NocoBase dependencies and registered plugins.
 //
-// Upstream is the single source of truth: every synchronized directory is
-// replaced wholesale, and a directory whose name does not start with
+// Upstream is the single source of truth: every synchronized directory that
+// differs from upstream is replaced wholesale (one that matches is left
+// untouched), and a directory whose name does not start with
 // `nocobase-` is never touched, so an application can keep local skills
 // alongside the synchronized ones. The entire app-side `.agents/` tree is
 // ignored generated state, not a version-controlled source of truth.
@@ -26,6 +27,7 @@ import {
   mkdir,
   readFile,
   readdir,
+  readlink,
   rm,
   symlink,
   unlink,
@@ -275,7 +277,13 @@ export async function planSkillsSync({
   };
 }
 
-/** Executes a plan. Upstream wins: every target directory is replaced wholesale. */
+/**
+ * Executes a plan. Upstream wins: every target directory that differs from its source is replaced wholesale.
+ *
+ * A target already identical to its source, a link already pointing at it and an unchanged ownership record are left
+ * untouched, so a sync with nothing new writes nothing. That keeps `pnpm install` from rewriting `.agents/` on every
+ * run, and lets it pass where `.agents/` is read-only but already current, as in a coding tool's sandbox.
+ */
 export async function applySkillsSync(
   plan: SkillsSyncPlan,
 ): Promise<SkillsSyncPlan> {
@@ -283,16 +291,35 @@ export async function applySkillsSync(
     await rm(removal.targetPath, { force: true, recursive: true });
     await unlinkClaudeSkill(plan.appRoot, removal.skillName);
   }
-  if (plan.copies.length > 0) {
-    await mkdir(plan.skillsRoot, { recursive: true });
-  }
   for (const copy of plan.copies) {
-    await rm(copy.targetPath, { force: true, recursive: true });
-    await cp(copy.sourcePath, copy.targetPath, { recursive: true });
+    if (!(await isSameSkill(copy))) {
+      await mkdir(plan.skillsRoot, { recursive: true });
+      await rm(copy.targetPath, { force: true, recursive: true });
+      await cp(copy.sourcePath, copy.targetPath, { recursive: true });
+    }
     await linkClaudeSkill(plan.appRoot, copy.skillName);
   }
   await writeSkillsOwnership(plan.appRoot, plan.ownership);
   return plan;
+}
+
+/** Whether a skill's target holds exactly its source's files, byte for byte, and nothing else. */
+async function isSameSkill(copy: SkillCopy): Promise<boolean> {
+  const targetFiles = await listFiles(copy.targetPath);
+  if (
+    targetFiles.length !== copy.files.length ||
+    targetFiles.some((file, index) => file !== copy.files[index])
+  ) {
+    return false;
+  }
+  for (const file of copy.files) {
+    const [source, target] = await Promise.all([
+      readFile(path.join(copy.sourcePath, file)),
+      readFile(path.join(copy.targetPath, file)).catch(() => undefined),
+    ]);
+    if (target === undefined || !source.equals(target)) return false;
+  }
+  return true;
 }
 
 /** Plans removal from recorded ownership even when the package has already been uninstalled. */
@@ -566,8 +593,11 @@ async function writeSkillsOwnership(
   ownership: Readonly<Record<string, string>>,
 ): Promise<void> {
   const filePath = path.join(appRoot, OWNERSHIP_FILE);
+  const contents = `${JSON.stringify(ownership, null, 2)}\n`;
+  const current = await readFile(filePath, 'utf8').catch(() => undefined);
+  if (current === contents) return;
   await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(ownership, null, 2)}\n`);
+  await writeFile(filePath, contents);
 }
 
 /**
@@ -582,13 +612,24 @@ async function linkClaudeSkill(
   skillName: string,
 ): Promise<void> {
   const linkPath = path.join(appRoot, CLAUDE_SKILLS_DIRECTORY, skillName);
+  const relativeTarget = path.join('..', '..', APP_SKILLS_DIRECTORY, skillName);
+  const absoluteTarget = path.join(appRoot, APP_SKILLS_DIRECTORY, skillName);
+  const current = await readlink(linkPath).catch(() => undefined);
+  // A Windows junction reads back as its absolute target, sometimes with a trailing separator.
+  if (
+    current !== undefined &&
+    (current === relativeTarget ||
+      (path.isAbsolute(current) &&
+        path.resolve(current) === path.resolve(absoluteTarget)))
+  ) {
+    return;
+  }
   if (!(await removeSymbolicLink(linkPath))) {
     throw new Error(
       `Cannot link ${skillName} into ${CLAUDE_SKILLS_DIRECTORY}: ${linkPath} exists and is not a symbolic link. Remove it and run the sync again.`,
     );
   }
   await mkdir(path.dirname(linkPath), { recursive: true });
-  const relativeTarget = path.join('..', '..', APP_SKILLS_DIRECTORY, skillName);
   try {
     await symlink(relativeTarget, linkPath, 'dir');
   } catch (error) {
@@ -597,11 +638,7 @@ async function linkClaudeSkill(
     }
     // Windows refuses symbolic links without developer mode or elevation. A junction needs neither, but only accepts
     // an absolute target, so on that platform alone the application directory stops being movable.
-    await symlink(
-      path.join(appRoot, APP_SKILLS_DIRECTORY, skillName),
-      linkPath,
-      'junction',
-    );
+    await symlink(absoluteTarget, linkPath, 'junction');
   }
 }
 

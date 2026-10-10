@@ -10,8 +10,10 @@
  *   started as the next turn; the run ends when a turn completes with
  *   nothing left to deliver.
  * - Permissions: approval policy `untrusted` with the `workspaceWrite`
- *   sandbox (writable: the work directory and the session's
- *   `writableRoots`, such as each worktree's Git directory; network on, since the agent
+ *   sandbox (writable: the work directory, the session's `writableRoots`,
+ *   such as each worktree's Git directory, and the `.agents` directory of
+ *   each working tree, which Codex otherwise keeps read-only as its own
+ *   skills root although an application's `skills sync` writes there; network on, since the agent
  *   reaches its application through the application CLI). Codex then asks
  *   before every command and file change, and each request is answered by
  *   the runner's policy (`shell` with the unwrapped script, `edit` per
@@ -21,16 +23,22 @@
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
-import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, mkdir, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
+import {
+  MAX_TOOL_MODELS,
+  type ToolCapabilities,
+} from '@nocobase/agent-protocol';
+import { boundedModels } from './models.ts';
+import { withDetectionEnvironment } from './detection.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
+import { detectExec } from './detect-exec.ts';
 import type {
   CommandApprovalParams,
   FileChangeApprovalParams,
@@ -45,7 +53,7 @@ import type {
   TurnError,
   UserTextInput,
 } from './codex/protocol.ts';
-import { RpcConnection, spawnCodexProcess } from './codex/rpc.ts';
+import { RpcConnection, RpcError, spawnCodexProcess } from './codex/rpc.ts';
 import type { CodexExit, CodexProcess, SpawnCodex } from './codex/rpc.ts';
 import {
   Channel,
@@ -88,6 +96,14 @@ const CLIENT_INFO = {
   version: '1',
 };
 
+interface ModelListPage {
+  data: {
+    model: string;
+    supportedReasoningEfforts?: { reasoningEffort: string }[];
+  }[];
+  nextCursor?: string | null;
+}
+
 export interface ExecResult {
   code: number;
   stdout: string;
@@ -97,8 +113,10 @@ export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
 
 export interface CodexAdapterOptions {
   minVersion?: string;
-  /** PATH searched for `codex`; defaults to the runner's PATH. */
+  /** PATH searched for `codex`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   /** Runs a command for detection; replaceable in tests. */
   exec?: ExecFn;
   /** Starts the app-server; replaceable in tests. */
@@ -108,23 +126,6 @@ export interface CodexAdapterOptions {
 // ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 async function findOnPath(
   name: string,
@@ -180,18 +181,23 @@ function mcpResultText(
 export class CodexAdapter implements AgentAdapter {
   readonly kind = 'codex' as const;
   private readonly options: Required<
-    Omit<CodexAdapterOptions, 'searchPath'>
+    Omit<CodexAdapterOptions, 'searchPath' | 'env'>
   > & {
-    searchPath?: string;
+    searchPath: string;
+    env: NodeJS.ProcessEnv;
   };
+  private readonly detectionEnv?: Record<string, string>;
   private detection?: Promise<ToolDetection>;
 
   constructor(options: CodexAdapterOptions = {}) {
+    const env = options.env ?? process.env;
+    this.detectionEnv = options.env;
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CODEX_VERSION,
-      exec: options.exec ?? defaultExec,
+      exec: options.exec ?? detectExec(options.env),
       spawn: options.spawn ?? spawnCodexProcess,
-      searchPath: options.searchPath,
+      searchPath: options.searchPath ?? env.PATH ?? '',
+      env,
     };
   }
 
@@ -204,16 +210,109 @@ export class CodexAdapter implements AgentAdapter {
     return this.detection;
   }
 
+  async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
+    const detection = await this.detect();
+    if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
+    const binary = detection.path;
+    return withDetectionEnvironment(
+      signal,
+      async (cwd, env) => {
+        const proc = this.options.spawn({
+          command: binary,
+          args: [
+            '-c',
+            'allow_login_shell=false',
+            'app-server',
+            '--listen',
+            'stdio://',
+          ],
+          cwd,
+          env,
+        });
+        const rpc = new RpcConnection(proc, {
+          notification() {},
+          request: () => Promise.resolve({}),
+        });
+        const exited = new Promise<void>((resolve) => {
+          proc.onExit(() => {
+            rpc.close(new Error('Model detection failed'));
+            resolve();
+          });
+        });
+        const abort = () => {
+          rpc.close(new Error('Model detection timed out'));
+          proc.kill('SIGKILL');
+        };
+        signal.addEventListener('abort', abort, { once: true });
+        if (signal.aborted) abort();
+        try {
+          await rpc.request('initialize', {
+            clientInfo: CLIENT_INFO,
+            capabilities: { experimentalApi: false },
+          });
+          rpc.notify('initialized');
+          const models: { id: unknown; efforts?: unknown[] }[] = [];
+          let cursor: string | null = null;
+          const cursors = new Set<string>();
+          do {
+            // https://github.com/openai/codex/tree/main/codex-rs/app-server-protocol
+            const page: ModelListPage = await rpc.request<ModelListPage>(
+              'model/list',
+              { cursor, limit: 100, includeHidden: false },
+            );
+            if (!Array.isArray(page.data))
+              return {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Invalid model listing response',
+              };
+            models.push(
+              ...page.data.map((model) => ({
+                id: model.model,
+                efforts: model.supportedReasoningEfforts?.map(
+                  (effort) => effort.reasoningEffort,
+                ),
+              })),
+            );
+            cursor = page.nextCursor ?? null;
+            if (cursor && cursors.has(cursor))
+              return {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: 'Invalid model listing response',
+              };
+            if (cursor) cursors.add(cursor);
+          } while (cursor && models.length < MAX_TOOL_MODELS);
+          return {
+            modelsDetectionStatus: 'detected',
+            models: boundedModels(models),
+          };
+        } catch (error) {
+          return error instanceof RpcError && error.code === -32601
+            ? { modelsDetectionStatus: 'unsupported' }
+            : {
+                modelsDetectionStatus: 'failed',
+                modelsDetectionError: signal.aborted
+                  ? 'Model detection timed out'
+                  : 'Model detection failed',
+              };
+        } finally {
+          signal.removeEventListener('abort', abort);
+          rpc.close(new Error('Model discovery finished'));
+          proc.end();
+          proc.kill('SIGKILL');
+          await exited;
+        }
+      },
+      this.detectionEnv,
+    );
+  }
+
   private async runDetection(): Promise<ToolDetection> {
-    const { exec, minVersion } = this.options;
-    const searchPath = this.options.searchPath ?? process.env.PATH ?? '';
+    const { exec, minVersion, searchPath, env } = this.options;
     const found = await findOnPath('codex', searchPath);
     if (!found) {
       return {
         installed: false,
-        authenticated: Boolean(
-          process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY,
-        ),
+        authenticated: Boolean(env.OPENAI_API_KEY || env.CODEX_API_KEY),
       };
     }
     const v = await exec(found, ['--version']);
@@ -246,6 +345,59 @@ interface Steer {
   inputId?: string;
   /** The run's prompt, which is not reported as an input. */
   prompt?: boolean;
+}
+
+/**
+ * The directory Codex's `workspaceWrite` sandbox keeps read-only inside every writable root, as the root of its own
+ * skills and plugins (seen on macOS, with seatbelt). An application keeps its synchronized Skills there
+ * (`<repo>/.agents/skills`), so `pnpm install` and `skills sync` fail with `EPERM` unless it is a writable root itself.
+ */
+export const CODEX_AGENTS_DIR = '.agents';
+
+/** Creates missing `.agents` directories and opens only each working tree's canonical `.agents` itself. */
+export async function codexAgentsDirs(
+  session: AdapterSession,
+): Promise<string[]> {
+  const trees = [
+    ...new Set([session.workDir, ...(session.workingTrees ?? [])]),
+  ];
+  const allowed = await Promise.all(trees.map((tree) => realpath(tree)));
+  const dirs: string[] = [];
+  for (const tree of allowed) {
+    const dir = path.join(tree, CODEX_AGENTS_DIR);
+    try {
+      // A sandbox cannot open a missing root. Do this before starting Codex, without replacing existing paths.
+      await mkdir(dir);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    }
+    let target: string;
+    try {
+      target = await realpath(dir);
+    } catch {
+      // Keep dangling or inaccessible paths intact and let Codex run without this extra writable root.
+      continue;
+    }
+    // An internal link must not open protected siblings (.codex/.git) or the whole working tree either.
+    if (target !== dir) continue;
+    if (!(await stat(target)).isDirectory()) continue;
+    // Use the canonical target so replacing a link later cannot redirect this sandbox root elsewhere.
+    dirs.push(target);
+  }
+  return [...new Set(dirs)];
+}
+
+/** What the sandbox lets the agent write: the work directory, the session's writable roots and their `.agents`. */
+export async function codexWritableRoots(
+  session: AdapterSession,
+): Promise<string[]> {
+  return [
+    ...new Set([
+      session.workDir,
+      ...(session.writableRoots ?? []),
+      ...(await codexAgentsDirs(session)),
+    ]),
+  ];
 }
 
 class CodexRun {
@@ -419,7 +571,7 @@ class CodexRun {
       : undefined;
     const sandboxPolicy: SandboxPolicy = {
       type: 'workspaceWrite',
-      writableRoots: [session.workDir, ...(session.writableRoots ?? [])],
+      writableRoots: await codexWritableRoots(session),
       networkAccess: true,
       excludeTmpdirEnvVar: false,
       excludeSlashTmp: false,
@@ -432,6 +584,14 @@ class CodexRun {
       sandboxPolicy,
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
+    if (effort && EFFORTS.has(effort))
+      this.emit({
+        type: 'status',
+        tool: 'codex',
+        content: 'executionSettings',
+        // turn/start does not return the resolved effort. Its request cannot stand in for a report.
+        meta: { execution: { effort: null, source: 'codex.turn/start' } },
+      });
     // The first input of a turn is its user message; the rest ride along.
     for (const steer of inputs.slice(1)) this.acknowledge(steer.clientId);
     if (this.turnRunning && !this.activeTurnId) {
@@ -959,6 +1119,7 @@ class CodexRun {
             : 'Codex is not installed (codex executable not found)',
         );
       }
+      await codexAgentsDirs(this.session);
       // A stop or a dead process ends the run even while still connecting.
       const connecting = this.connect(detection.path ?? 'codex');
       connecting.catch(() => {
@@ -1084,8 +1245,15 @@ class CodexRun {
         sessionId: thread.thread.id,
         model: thread.model,
         ...(thread.reasoningEffort ? { effort: thread.reasoningEffort } : {}),
+        execution: {
+          effort: thread.reasoningEffort ?? null,
+          source: session.resumeSessionId
+            ? 'codex.thread/resume'
+            : 'codex.thread/start',
+        },
         ...(session.resumeSessionId ? { resumed: true } : {}),
       },
+      tool: 'codex',
     });
     if (this.stopping) return;
     const prompt: Steer = {

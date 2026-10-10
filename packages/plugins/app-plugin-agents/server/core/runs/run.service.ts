@@ -506,6 +506,47 @@ export function createRunService(deps: RunServiceDeps): RunService {
     return [...totals.values()];
   }
 
+  /** Legacy runs have no snapshots; report their known primary-tool models without inventing attempt boundaries. */
+  async function readRuns(records: readonly RunRecord[]): Promise<Run[]> {
+    const runs = records.map(toRun);
+    const legacy = runs.filter(
+      (run) =>
+        run.executions?.length === 0 &&
+        (run.dispatchedAt !== null ||
+          run.tool !== null ||
+          run.modelService !== null),
+    );
+    if (legacy.length === 0) return runs;
+    const usage = await usageRepo(tx.read()).findMany({
+      select: (select) => select.fields('runId', 'tool', 'model'),
+      distinct: ['runId', 'tool', 'model'],
+      filter: (f) =>
+        f.and([
+          f.string('model').ne(null),
+          f.or(
+            legacy.map((run) =>
+              f.and([
+                f.string('runId').eq(run.id),
+                f.string('tool').eq(run.tool ?? 'online'),
+              ]),
+            ),
+          ),
+        ]),
+    });
+    const models = new Map<string, string[]>();
+    for (const row of usage)
+      if (row.model)
+        models.set(row.runId, [...(models.get(row.runId) ?? []), row.model]);
+    return runs.map((run) =>
+      run.executions?.length
+        ? run
+        : {
+            ...run,
+            actualModels: models.get(run.id) ?? [],
+          },
+    );
+  }
+
   /**
    * Queues `work` for `agent`: it joins the run working on its key while that run can still be told, else the run
    * waiting for it, else starts a new run.
@@ -855,7 +896,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
         return toRun(await require(unit.conn, newId));
       }),
 
-    get: async (runId) => toRun(await require(tx.read(), runId)),
+    get: async (runId) =>
+      (await readRuns([await require(tx.read(), runId)]))[0],
 
     async detail(runId) {
       const conn = tx.read();
@@ -877,7 +919,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             (await findAgent(conn, child.agentId))?.name ?? null,
           );
       return {
-        ...toRun(run),
+        ...(await readRuns([run]))[0],
         inputs: inputs.map(toInputView),
         repos: repos.map(toRepo),
         usage: await usageOf(conn, runId),
@@ -922,7 +964,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         limit: Math.min(Math.max(filter.limit ?? 50, 1), 200),
         ...(filter.cursor ? { cursor: filter.cursor } : {}),
       });
-      return records.map(toRun);
+      return readRuns(records);
     },
 
     async lastEnded(subjectKind, subjectIds) {
@@ -948,7 +990,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         const key = `${record.agentId}:${record.subjectId}`;
         if (!newest.has(key)) newest.set(key, record);
       }
-      return [...newest.values()].map(toRun);
+      return readRuns([...newest.values()]);
     },
 
     workload(query) {
