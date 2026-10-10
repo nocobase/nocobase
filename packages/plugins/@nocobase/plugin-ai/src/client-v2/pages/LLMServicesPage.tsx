@@ -374,6 +374,8 @@ const getProviderDescription = (provider: string, t: ReturnType<typeof useT>) =>
     mistral: 'Mistral models',
     orcarouter: 'OrcaRouter (model routing gateway)',
     shengsuanyun: '300+ latest mainstream models across leading model families',
+    cheaperinference:
+      'Models from many labs through one OpenAI-compatible API. Each model costs 15–60% less than the list price of its lab.',
   };
   return descriptions[provider] ? t(descriptions[provider]) : '';
 };

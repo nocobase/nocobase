@@ -199,6 +199,7 @@
   "Messages": "消息",
   "Mistral models": "Mistral 模型",
   "300+ latest mainstream models across leading model families": "300+最新各系列主流模型",
+  "Models from many labs through one OpenAI-compatible API. Each model costs 15–60% less than the list price of its lab.": "通过一个 OpenAI 兼容 API 使用多家实验室的模型。每个模型比其实验室的官方价格低 15–60%。",
   "Model": "模型",
   "Model ID already exists": "模型标识已存在",
   "Model ID is required": "请输入模型标识",
