@@ -152,7 +152,10 @@ export class APIClient {
 
   interceptors() {
     this.axios.interceptors.request.use((config) => {
-      config.paramsSerializer = (params) => {
+      config.paramsSerializer = (params: unknown) => {
+        if (params instanceof URLSearchParams) {
+          return params.toString();
+        }
         return qs.stringify(params, {
           strictNullHandling: true,
           arrayFormat: 'brackets',

@@ -105,6 +105,60 @@ describe('api-client', () => {
     expect(api.axios.defaults.withCredentials).toBe(true);
   });
 
+  test.each([
+    { appName: 'main', baseURL: 'https://localhost:8000/api' },
+    { appName: 'myApp', baseURL: 'https://localhost:8000/apps/myApp/api' },
+  ])('preserves direct-upload query parameters in $appName', async ({ appName, baseURL }) => {
+    const api = new APIClient({ appName, baseURL });
+    const mock = new MockAdapter(api.axios);
+    let requestUrl = '';
+    mock.onPost('attachments:create').reply((config) => {
+      // Normalize function serializers so the test also exercises them with older installed Axios versions.
+      const paramsSerializer =
+        typeof config.paramsSerializer === 'function'
+          ? { serialize: config.paramsSerializer }
+          : config.paramsSerializer;
+      requestUrl = api.axios.getUri({ ...config, paramsSerializer });
+      return [200, { data: { id: 1, storageId: 11 } }];
+    });
+
+    await api.request({
+      url: 'attachments:create',
+      method: 'post',
+      params: new URLSearchParams('attachmentField=customers.file&uploadDataSourceKey=external'),
+      data: { filename: 'report.txt', storageId: 11 },
+    });
+
+    const url = new URL(requestUrl);
+    expect(url.pathname).toBe(`${new URL(baseURL).pathname}/attachments:create`);
+    expect(url.searchParams.get('attachmentField')).toBe('customers.file');
+    expect(url.searchParams.get('uploadDataSourceKey')).toBe('external');
+  });
+
+  test('keeps structured query parameters compatible with qs', async () => {
+    const api = new APIClient({ baseURL: 'https://localhost:8000/api' });
+    const mock = new MockAdapter(api.axios);
+    let requestUrl = '';
+    mock.onGet('attachments:list').reply((config) => {
+      const paramsSerializer =
+        typeof config.paramsSerializer === 'function'
+          ? { serialize: config.paramsSerializer }
+          : config.paramsSerializer;
+      requestUrl = api.axios.getUri({ ...config, paramsSerializer });
+      return [200, { data: [] }];
+    });
+
+    await api.request({
+      url: 'attachments:list',
+      params: { appends: ['storage', 'users'], filter: { storageId: 11 }, empty: null },
+    });
+
+    const url = new URL(requestUrl);
+    expect(url.searchParams.getAll('appends[]')).toEqual(['storage', 'users']);
+    expect(url.searchParams.get('filter[storageId]')).toBe('11');
+    expect(url.search).toMatch(/&empty$/);
+  });
+
   test('signIn', async () => {
     const api = new APIClient({
       baseURL: 'https://localhost:8000/api',
