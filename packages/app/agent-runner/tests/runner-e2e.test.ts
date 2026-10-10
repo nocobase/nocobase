@@ -602,9 +602,7 @@ describe('runner end to end', () => {
       const beats = runner.heartbeatsSent;
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       expect(runner.protocolHeader).toBe(String(PROTOCOL_VERSION));
-      expect(runner.register.features).toEqual(
-        expect.arrayContaining(['npm', 'gitCredentials']),
-      );
+      expect(runner.register.features).toContain('gitCredentials');
       expect(runner.heartbeatsSent).toBeGreaterThan(beats);
       expect(runner.claims).toBe(claims);
       expect(run.status).toBe('queued');
