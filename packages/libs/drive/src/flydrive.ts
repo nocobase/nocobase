@@ -73,6 +73,8 @@ function createS3Driver(disk: S3DriveDiskConfig): DriverContract {
     encryption: disk.encryption,
     credentials: createS3Credentials(disk),
     visibility: disk.visibility,
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   }) as S3DriverOptions;
 
   return new S3Driver(options);
