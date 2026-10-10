@@ -46,6 +46,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 
+import { bundledPnpmEntry } from '../agent/runner-tools.ts';
 import type { RunnerPaths } from '../lib/home.ts';
 
 /** How a run's pnpm imports a package from the store into `node_modules`: never as a hard link. */
@@ -189,22 +190,28 @@ export interface PruneOptions {
   paths: RunnerPaths;
   /** The runner's environment, for PATH and HOME. */
   source?: NodeJS.ProcessEnv;
+  /** The pnpm entry run with the runner's Node; the bundled one when absent, null for the `pnpm` on PATH. */
+  pnpmEntry?: string | null;
   log?: (message: string) => void;
 }
 
 /**
- * Runs `pnpm store prune` on the shared store. Returns whether it ran: not without a store, or without pnpm on the
- * runner's PATH. Never throws; a failure is logged.
+ * Runs `pnpm store prune` on the shared store with the runner's own pnpm, or the `pnpm` on its PATH when none is
+ * bundled. Returns whether it ran: not without a store, or without a pnpm. Never throws; a failure is logged.
  */
 export async function prunePnpmStore(options: PruneOptions): Promise<boolean> {
   const { paths, log } = options;
   if (!existsSync(paths.pnpmStoreDir)) return false;
   await ensureToolCwd(paths);
   const command = pruneCommand(paths, options.source ?? process.env);
+  const entry =
+    options.pnpmEntry === undefined
+      ? bundledPnpmEntry()
+      : (options.pnpmEntry ?? undefined);
   return new Promise((resolve) => {
     execFile(
-      'pnpm',
-      [...command.args],
+      entry === undefined ? 'pnpm' : process.execPath,
+      entry === undefined ? [...command.args] : [entry, ...command.args],
       { cwd: command.cwd, env: command.env, timeout: 30 * 60_000 },
       (error, _stdout, stderr) => {
         if (error === null) {
