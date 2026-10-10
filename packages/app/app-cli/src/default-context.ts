@@ -13,6 +13,8 @@ export interface AppCommandContextOptions {
    * a configuration of their own, such as one naming a test database.
    */
   readonly configPath?: string;
+  /** Storage directory for the conventional runtime, overriding APP_STORAGE_DIR without changing process.env. */
+  readonly storageDir?: string;
   readonly loadRuntime?: AppCommandContext['loadRuntime'];
   readonly createApp?: AppCommandContext['createApp'];
 }
@@ -45,6 +47,13 @@ export function createDefaultCommandContext(
           ...(options.configPath === undefined
             ? {}
             : { configPath: options.configPath }),
+          ...(options.storageDir === undefined
+            ? {}
+            : {
+                env: {
+                  APP_STORAGE_DIR: path.resolve(rootDir, options.storageDir),
+                },
+              }),
           // The command's result owns stdout; what the application logs while it runs goes to stderr.
           consoleLogStream: 'stderr',
         });
