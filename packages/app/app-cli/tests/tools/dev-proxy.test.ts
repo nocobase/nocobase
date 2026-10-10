@@ -347,6 +347,24 @@ describe('remote development runner', () => {
     );
   });
 
+  it('leaves the configured public origin to the application instead of overriding it', async () => {
+    const run = await runDevMode(undefined);
+
+    expect(run.spawnDevProcess.mock.calls[1]?.[3]).not.toHaveProperty(
+      'APP_PUBLIC_ORIGIN',
+    );
+  });
+
+  it('preserves an explicitly supplied public origin', async () => {
+    const run = await runDevMode(undefined, {
+      watchEnvironment: { APP_PUBLIC_ORIGIN: 'http://192.168.50.145:13001' },
+    });
+
+    expect(run.spawnDevProcess.mock.calls[1]?.[3]).toMatchObject({
+      APP_PUBLIC_ORIGIN: 'http://192.168.50.145:13001',
+    });
+  });
+
   it('keeps preflight hooks but omits the local backend lifecycle', async () => {
     const run = await runDevMode('http://remote.example.com/remote');
 
