@@ -12,19 +12,36 @@ export interface PasswordResetCapabilityQuery {
   readonly refetch: () => Promise<void>;
 }
 
-let cachedCapability:
-  | { readonly value: PasswordResetCapability; readonly expiresAt: number }
-  | undefined;
-let capabilityRequest: Promise<PasswordResetCapability> | undefined;
+interface CapabilityHostState {
+  cached?: {
+    readonly value: PasswordResetCapability;
+    readonly expiresAt: number;
+  };
+  request?: Promise<PasswordResetCapability>;
+}
+
+// Keyed by the host's own `ApiClient` instance, which the application's service container creates one of per
+// application, so one host's cached or in-flight capability is never handed to another.
+const hostState = new WeakMap<ApiClient, CapabilityHostState>();
+
+function stateOf(api: ApiClient): CapabilityHostState {
+  let state = hostState.get(api);
+  if (!state) {
+    state = {};
+    hostState.set(api, state);
+  }
+  return state;
+}
 
 async function requestCapability(
   api: ApiClient,
   refresh = false,
 ): Promise<PasswordResetCapability> {
-  if (refresh) cachedCapability = undefined;
-  if (cachedCapability && cachedCapability.expiresAt > Date.now())
-    return cachedCapability.value;
-  capabilityRequest ??= api
+  const state = stateOf(api);
+  if (refresh) state.cached = undefined;
+  if (state.cached && state.cached.expiresAt > Date.now())
+    return state.cached.value;
+  state.request ??= api
     .request<{
       readonly data?: { readonly passwordResetAvailable?: unknown };
     }>({ path: 'authentication/capabilities' })
@@ -37,13 +54,13 @@ async function requestCapability(
       const value = {
         passwordResetAvailable: response.data.passwordResetAvailable,
       };
-      cachedCapability = { value, expiresAt: Date.now() + 60_000 };
+      state.cached = { value, expiresAt: Date.now() + 60_000 };
       return value;
     })
     .finally(() => {
-      capabilityRequest = undefined;
+      state.request = undefined;
     });
-  return capabilityRequest;
+  return state.request;
 }
 
 /** Reads and briefly caches the server's password-reset policy. */
@@ -53,14 +70,14 @@ export function usePasswordResetCapability(): PasswordResetCapabilityQuery {
     readonly data?: PasswordResetCapability;
     readonly isPending: boolean;
     readonly isError: boolean;
-  }>(() => ({
-    data:
-      cachedCapability && cachedCapability.expiresAt > Date.now()
-        ? cachedCapability.value
-        : undefined,
-    isPending: !cachedCapability || cachedCapability.expiresAt <= Date.now(),
-    isError: false,
-  }));
+  }>(() => {
+    const cached = hostState.get(api)?.cached;
+    return {
+      data: cached && cached.expiresAt > Date.now() ? cached.value : undefined,
+      isPending: !cached || cached.expiresAt <= Date.now(),
+      isError: false,
+    };
+  });
 
   useEffect(() => {
     let active = true;
