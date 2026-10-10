@@ -1,4 +1,11 @@
-import { expect, open, test, unique, url } from './support/fixtures.ts';
+import {
+  expect,
+  horizontalOverflow,
+  open,
+  test,
+  unique,
+  url,
+} from './support/fixtures.ts';
 import { FakeRunner } from './support/runner.ts';
 
 interface Issue {
@@ -50,6 +57,98 @@ test.describe('issues', () => {
         .getByRole('group', { name: '视图' })
         .getByRole('button', { name: '看板' }),
     ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('filters stay in a popover and the desktop view keeps its height', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await open(page, '/issues?view=list');
+
+    const toolbar = page.getByTestId('issues-toolbar');
+    const content = page.getByTestId('issues-view-content');
+    await expect(toolbar).toBeVisible();
+    expect((await toolbar.boundingBox())?.height).toBeLessThanOrEqual(40);
+    expect((await content.boundingBox())?.height).toBeGreaterThan(500);
+
+    const trigger = toolbar.getByRole('button', { name: /^筛选/ });
+    await trigger.click();
+    const filters = page.getByRole('dialog');
+    const status = filters.getByRole('combobox', { name: '状态' });
+    await status.click();
+    await page.getByRole('option').nth(1).click();
+    await expect(page).toHaveURL(/status=/);
+    await expect(trigger).toContainText('1');
+
+    await page.keyboard.press('Escape');
+    await expect(filters).toBeHidden();
+    await trigger.click();
+    await expect(
+      filters.getByRole('combobox', { name: '状态' }),
+    ).not.toContainText('全部状态');
+    await page.getByRole('button', { name: '清除筛选' }).click();
+    await expect(page).not.toHaveURL(/status=/);
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    expect(await horizontalOverflow(page)).toBe(0);
+    await trigger.click();
+    expect(await horizontalOverflow(page)).toBe(0);
+    const mobileSearch = filters.getByRole('textbox', { name: '搜索任务' });
+    await mobileSearch.fill('PM-1');
+    await expect(page).toHaveURL(/q=PM-1/);
+    await mobileSearch.press('Escape');
+    await expect(filters).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await toolbar.getByRole('button', { name: '清除筛选' }).click();
+    await expect(page).not.toHaveURL(/q=PM-1/);
+  });
+
+  test('both task pages retain their content height and controls across desktop widths', async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      "localStorage.setItem('nocobase:sidebar:collapsed', 'false'); localStorage.setItem('nocobase:main:theme:preset', 'default'); localStorage.setItem('nocobase:main:theme:color-scheme', 'light')",
+    );
+    await page.setViewportSize({ width: 1366, height: 768 });
+
+    const pages = ['/issues?view=board', '/my-issues/owned?view=board'];
+    const heights: number[] = [];
+    for (const path of pages) {
+      await open(page, path);
+      const toolbar = page.getByTestId('issues-toolbar');
+      await expect(toolbar).toBeVisible();
+      expect((await toolbar.boundingBox())?.height).toBeLessThanOrEqual(40);
+      heights.push(
+        (await page.getByTestId('issues-view-content').boundingBox())?.height ??
+          0,
+      );
+    }
+    expect(heights.every((height) => height > 500)).toBe(true);
+
+    await page.route('**/api/projects/issues*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await route.continue();
+    });
+    for (const width of [768, 896, 1024]) {
+      await page.setViewportSize({ width, height: 768 });
+      await open(page, '/issues?view=list&status=todo');
+      const toolbar = page.getByTestId('issues-toolbar');
+      const filters = toolbar.getByRole('button', { name: /^筛选/ });
+      const clear = toolbar.getByRole('button', { name: '清除筛选' });
+      const views = toolbar.getByRole('group', { name: '视图' });
+      await expect(filters).toBeVisible();
+      await expect(clear).toBeVisible();
+      await expect(views.getByRole('button', { name: '列表' })).toBeVisible();
+      await toolbar
+        .getByRole('textbox', { name: '搜索任务' })
+        .fill(`width-check-${width}`);
+      await expect(toolbar.getByLabel('加载中')).toBeVisible();
+      expect(await horizontalOverflow(page)).toBe(0);
+      await expect(
+        views.getByRole('button', { name: 'Agent 队列' }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: '清除筛选' }).click();
+    }
   });
 
   test('the Agent queue shows each agent’s issues in queue order', async ({

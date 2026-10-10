@@ -25,6 +25,7 @@ export const issuesEnUS = {
   searchLabel: 'Search issues',
   searchPlaceholder: 'Search issues…',
   filtersToggle: 'Filters',
+  searchActive: 'search active',
   filters: {
     statusKey: 'Status',
     projectId: 'Project',
@@ -200,6 +201,7 @@ export const issuesZhCN: IssuesWording = {
   searchLabel: '搜索任务',
   searchPlaceholder: '搜索任务…',
   filtersToggle: '筛选',
+  searchActive: '搜索已生效',
   filters: {
     statusKey: '状态',
     projectId: '项目',

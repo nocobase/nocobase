@@ -27,10 +27,9 @@ export default function MyIssuesPage(): ReactElement {
       <Navigate replace to={{ pathname: 'owned', search: location.search }} />
     );
   return (
-    <PageContainer className='flex h-full min-h-0 flex-col gap-6 space-y-0'>
+    <PageContainer className='flex h-full min-h-0 flex-col gap-4 space-y-0 py-4 md:py-4'>
       <PageHeader
         title={t('issuesPage.myTitle')}
-        description={t('issuesPage.myDescription')}
         actions={
           <>
             <PmShortcuts showTrigger canCreate={canCreate} />
@@ -38,15 +37,17 @@ export default function MyIssuesPage(): ReactElement {
           </>
         }
       />
-      <RouteTabs
-        label={t('issuesPage.myTabsLabel')}
-        tabs={[
-          { path: 'owned', label: t('issuesPage.myTabs.owned') },
-          { path: 'executing', label: t('issuesPage.myTabs.executing') },
-        ]}
-      />
-      <div className='min-h-0 flex-1'>
-        <Outlet />
+      <div className='flex min-h-0 flex-1 flex-col gap-2'>
+        <RouteTabs
+          label={t('issuesPage.myTabsLabel')}
+          tabs={[
+            { path: 'owned', label: t('issuesPage.myTabs.owned') },
+            { path: 'executing', label: t('issuesPage.myTabs.executing') },
+          ]}
+        />
+        <div className='min-h-0 flex-1'>
+          <Outlet />
+        </div>
       </div>
     </PageContainer>
   );
