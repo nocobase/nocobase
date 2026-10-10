@@ -78,7 +78,7 @@ defineAppRoutes([
 
 Use `'skip'` for pages such as the signed-in landing page that need no additional authorization. Replacing it with a permission request restricts the page to users granted that permission.
 
-The Permission Sets page lists every route whose `authz` checks `page` `access`, keyed by `authz.resource.id` and listed under the Pages entry with its navigation groups as resource groups in menu order, and deduplicates the ids. The id is what stored grants reference, so changing it changes the permission identifier; renaming the route alone does not. For released features, assess how existing grants should be handled. For unreleased features, do not add migrations, backfills, or compatibility branches for temporary development data. If the release status is unclear, confirm it with the user before proceeding.
+The authorization plugin's permission workspace lists every route whose `authz` checks `page` `access`, keyed by `authz.resource.id` and listed under the Pages entry with its navigation groups as resource groups in menu order, and deduplicates the ids. The id is what stored grants reference, so changing it changes the permission identifier; renaming the route alone does not. For released features, assess how existing grants should be handled. For unreleased features, do not add migrations, backfills, or compatibility branches for temporary development data. If the release status is unclear, confirm it with the user before proceeding.
 
 `auth` governs browser navigation. It is not server security: an endpoint the page calls must authenticate independently. See [server routes](server.md).
 
