@@ -147,12 +147,21 @@ export interface DeployMarksService {
    */
   pullRequestUnlinked(issueId: string, pullRequestId: string): Promise<void>;
   marksFor(viewer: Viewer, issueIds: readonly string[]): Promise<DeployMarks>;
-  unreleased(viewer: Viewer, projectId: string): Promise<UnreleasedIssues>;
+  unreleased(
+    viewer: Viewer,
+    projectId: string,
+    allowUnlinked?: boolean,
+  ): Promise<UnreleasedIssues>;
   /** What runs on each staging and production App of the project's repositories (404 for a project not visible). */
   environments(viewer: Viewer, projectId: string): Promise<ProjectEnvironments>;
 }
 
 export interface DeployMarksDeps {
+  readonly hasProjectPreviews: (
+    viewer: Viewer,
+    projectId: string,
+    allowUnlinked: boolean,
+  ) => Promise<boolean>;
   readonly database: Pick<DatabaseManager, 'connection' | 'transaction'>;
   readonly projects: () => Pick<Projects, 'issueQueries' | 'issues'>;
   /**
@@ -873,7 +882,7 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
       return answer;
     },
 
-    async unreleased(viewer, projectId) {
+    async unreleased(viewer, projectId, allowUnlinked = false) {
       const visible = await visibleProjects(viewer, [projectId]);
       if (!visible.has(projectId)) throw notFound('Project');
       const links = await conn()
@@ -886,18 +895,10 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
         .select(['link.role as role'])
         .where('resource.projectId', '=', projectId)
         .execute<Row>();
-      // CI deploys previews: the project has some once a repository's CI deployed one.
-      const hasPreview = Boolean(
-        await conn()
-          .query.selectFrom('studioPreviews as preview')
-          .innerJoin(
-            'pmProjectResources as resource',
-            'resource.id',
-            'preview.resourceId',
-          )
-          .select('preview.id')
-          .where('resource.projectId', '=', projectId)
-          .executeTakeFirst(),
+      const hasPreview = await deps.hasProjectPreviews(
+        viewer,
+        projectId,
+        allowUnlinked,
       );
       if (!links.some((row) => row.role === 'production'))
         return { projectId, hasProduction: false, hasPreview, items: [] };

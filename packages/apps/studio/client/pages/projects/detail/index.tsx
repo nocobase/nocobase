@@ -35,7 +35,7 @@ import type { ProjectDetail } from '@nocobase/app-plugin-projects/shared/project
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { PlusIcon } from 'lucide-react';
-import { useMemo, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import {
   Link,
   Navigate,
@@ -168,7 +168,12 @@ function ProjectPage({
   });
 
   const progress = progressFromCounts(project.issueCounts);
-  const withReleases = hasReleases(releases.data);
+  const availableReleases = hasReleases(releases.data);
+  const [retainedReleases, setRetainedReleases] = useState(false);
+  // Retain the active tab after its last preview is cleaned up, until the person leaves it.
+  const retain = view === 'releases' && (availableReleases || retainedReleases);
+  if (retain !== retainedReleases) setRetainedReleases(retain);
+  const withReleases = availableReleases || retain;
   const tabs: { path: TabPath; label: string }[] = [
     { path: 'overview', label: studio('projectPage.tabs.overview') },
     {

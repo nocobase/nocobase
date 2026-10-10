@@ -101,6 +101,7 @@ import { inboxRoutes } from '../../server/inbox/routes.js';
 import { studioInboxSourceToken } from '../../server/inbox/token.js';
 import { gitRoutes } from '../../server/git/routes.js';
 import { studioGitToken } from '../../server/git/token.js';
+import { studioDeploysToken } from '../../server/deploys/token.js';
 import { previewsRoutes } from '../../server/previews/routes.js';
 import { studioPreviewApiToken } from '../../server/previews/token.js';
 import { createAskerLookup } from '../../server/agents/conversation/acting.js';
@@ -887,6 +888,8 @@ export async function createBridgeHarness(
       access: () => access,
     });
     const api = createPreviewApi({
+      projects: () => projects,
+      releases: () => releaseServices,
       database,
       previews: () => service,
       issues,
@@ -936,6 +939,8 @@ export async function createBridgeHarness(
       await service.pullRequestChanged(pr.id);
     });
     const marks = createDeployMarks({
+      hasProjectPreviews: (viewer, projectId, allowUnlinked) =>
+        api.hasProjectPreviews(viewer, projectId, allowUnlinked),
       database,
       projects: () => projects,
       contains: async (resourceId, head, shas) => {
@@ -1152,6 +1157,7 @@ export async function createBridgeHarness(
     repoEvents: () => gitRepoEvents,
   });
   if (previewApi) container.instance(studioPreviewApiToken, previewApi);
+  if (deploys) container.instance(studioDeploysToken, deploys);
   const appLike: AppPluginApplication = {
     appName: 'main',
     publicBasePath: '',

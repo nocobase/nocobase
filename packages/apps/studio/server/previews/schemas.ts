@@ -167,14 +167,19 @@ const PreviewSchema: z.ZodType<PreviewView> = z
   .object(previewFields)
   .meta({ ref: 'StudioPreview' });
 
+export const ProjectPreviewParams = z.object({
+  projectId: z.string().min(1),
+  previewId: z.string().min(1),
+});
+
 export const PreviewListItemSchema: z.ZodType<PreviewListItem> = z.object({
   ...previewFields,
-  issueId: z.string().meta({
-    description:
-      'The first issue linked to its pull request that the caller sees.',
-  }),
-  identifier: z.string(),
-  title: z.string(),
+  issueId: z.string().nullable(),
+  identifier: z.string().nullable(),
+  title: z.string().nullable(),
+  canDestroy: z.boolean(),
+  repo: z.string(),
+  number: z.number(),
 });
 
 export const IssuePreviewsSchema: z.ZodType<IssuePreviews> = z.object({

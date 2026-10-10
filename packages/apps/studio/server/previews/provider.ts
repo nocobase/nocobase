@@ -166,6 +166,8 @@ export default class StudioPreviewsProvider extends ServiceProvider<Application>
       createPreviewApi({
         database: resolver.resolve(databaseManagerToken),
         previews: () => resolver.resolve(studioPreviewsToken),
+        projects: () => resolver.resolve(projectsToken),
+        releases: () => resolver.resolve(releasesToken),
         issues: createIssueAccess({
           projects: () => resolver.resolve(projectsToken),
           access,
@@ -185,6 +187,10 @@ export default class StudioPreviewsProvider extends ServiceProvider<Application>
     );
     container.singleton(studioDeploysToken, (resolver) =>
       createDeployMarks({
+        hasProjectPreviews: (viewer, projectId, allowUnlinked) =>
+          resolver
+            .resolve(studioPreviewApiToken)
+            .hasProjectPreviews(viewer, projectId, allowUnlinked),
         database: resolver.resolve(databaseManagerToken),
         projects: () => resolver.resolve(projectsToken),
         // Without Studio's git nothing can say what a deployment contains: its marks stay as they were.

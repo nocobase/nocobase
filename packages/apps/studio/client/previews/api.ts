@@ -128,3 +128,15 @@ export function absoluteUrl(url: string): string {
   if (/^https?:\/\//iu.test(url)) return url;
   return new URL(url, window.location.origin).toString();
 }
+
+/** Cleans up one currently unlinked preview, rechecking its project and App permissions on the server. */
+export async function destroyProjectPreview(
+  api: ApiClient,
+  projectId: string,
+  previewId: string,
+): Promise<void> {
+  await api.request({
+    method: 'POST',
+    path: `previews/projects/${encodeURIComponent(projectId)}/${encodeURIComponent(previewId)}/down`,
+  });
+}

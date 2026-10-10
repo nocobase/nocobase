@@ -35,7 +35,7 @@ nb-studio preview down --issue PM-12 --app web
 
 List live previews
 
-The live previews of the pull requests linked to issues the caller may see, each with the first such issue, of one project when `projectId` is given. A bounded list; never a first administrator.
+Without `projectId`, the live previews linked to visible issues. For a project the caller sees and may view issues in, previews of its currently bound repository identities, excluding destroyed records. Each has a visible issue or nullable issue fields when no live issue is linked. Hidden issue associations are excluded. Unlinked previews require preview App view permission and a session or unrestricted personal key; runs and restricted keys cannot see them. `canDestroy` reports cleanup permission. A bounded list; never administrator credentials.
 
 ```bash
 nb-studio preview list
