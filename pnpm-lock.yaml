@@ -1003,6 +1003,427 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/apps/studio:
+    dependencies:
+      '@noble/ciphers':
+        specifier: ^2.3.0
+        version: 2.3.0
+      '@noble/hashes':
+        specifier: ^2.3.0
+        version: 2.3.0
+      '@nocobase/agent-protocol':
+        specifier: workspace:^
+        version: link:../../libs/agent-protocol
+      '@nocobase/app-cli':
+        specifier: workspace:^
+        version: link:../../app/app-cli
+      '@nocobase/app-host-docker':
+        specifier: workspace:^
+        version: link:../../app/app-host-docker
+      '@nocobase/app-plugin-agents':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-agents
+      '@nocobase/app-plugin-api-keys':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-api-keys
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authorization
+      '@nocobase/app-plugin-authz-default-access':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authz-default-access
+      '@nocobase/app-plugin-authz-restriction-rules':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authz-restriction-rules
+      '@nocobase/app-plugin-authz-sharing-rules':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authz-sharing-rules
+      '@nocobase/app-plugin-database-explorer':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-database-explorer
+      '@nocobase/app-plugin-file':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-file
+      '@nocobase/app-plugin-i18n':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-i18n
+      '@nocobase/app-plugin-knowledge':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-knowledge
+      '@nocobase/app-plugin-notification':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-notification
+      '@nocobase/app-plugin-notification-in-app':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-notification-in-app
+      '@nocobase/app-plugin-notification-providers':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-notification-providers
+      '@nocobase/app-plugin-projects':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-projects
+      '@nocobase/app-plugin-releases':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-releases
+      '@nocobase/app-plugin-scheduler':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-scheduler
+      '@nocobase/app-plugin-users':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-users
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/authorization':
+        specifier: workspace:^
+        version: link:../../libs/authorization
+      '@nocobase/caching':
+        specifier: workspace:^
+        version: link:../../libs/caching
+      '@nocobase/config':
+        specifier: workspace:^
+        version: link:../../libs/config
+      '@nocobase/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nocobase/db-postgres':
+        specifier: workspace:^
+        version: link:../../libs/db-postgres
+      '@nocobase/db-sqlite':
+        specifier: workspace:^
+        version: link:../../libs/db-sqlite
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
+      '@nocobase/markdown-mermaid':
+        specifier: workspace:^
+        version: link:../../libs/markdown-mermaid
+      '@nocobase/queue':
+        specifier: workspace:^
+        version: link:../../libs/queue
+      '@nocobase/repository-input':
+        specifier: workspace:^
+        version: link:../../libs/repository-input
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      '@nocobase/snowflake':
+        specifier: workspace:^
+        version: link:../../libs/snowflake
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.14.0
+      '@octokit/auth-app':
+        specifier: ^8.3.1
+        version: 8.3.1
+      '@octokit/core':
+        specifier: ^7.0.8
+        version: 7.0.8
+      '@octokit/graphql':
+        specifier: ^9.0.5
+        version: 9.0.5
+      '@octokit/oauth-methods':
+        specifier: ^6.0.5
+        version: 6.0.5
+      '@octokit/request-error':
+        specifier: ^7.1.2
+        version: 7.1.2
+      '@octokit/webhooks-methods':
+        specifier: ^6.0.0
+        version: 6.0.0
+      better-auth:
+        specifier: 'catalog:'
+        version: 1.7.5(@opentelemetry/api@1.9.0)(mysql2@3.23.3(@types/node@24.13.3))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@codemirror/lang-yaml':
+        specifier: ^6.1.3
+        version: 6.1.3
+      '@codemirror/state':
+        specifier: ^6.7.2
+        version: 6.7.2
+      '@codemirror/view':
+        specifier: ^6.43.10
+        version: 6.43.10
+      '@dnd-kit/core':
+        specifier: 'catalog:'
+        version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@dnd-kit/sortable':
+        specifier: 'catalog:'
+        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      '@dnd-kit/utilities':
+        specifier: 'catalog:'
+        version: 3.2.2(react@19.2.8)
+      '@gchust/agent-annotations':
+        specifier: 0.1.9
+        version: 0.1.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+      '@hookform/resolvers':
+        specifier: ^5.0.1
+        version: 5.8.0(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.6.5)
+      '@nocobase/agent-runner':
+        specifier: workspace:^
+        version: link:../../app/agent-runner
+      '@nocobase/app-cli-client':
+        specifier: workspace:^
+        version: link:../../app/app-cli-client
+      '@nocobase/app-client':
+        specifier: workspace:^
+        version: link:../../app/app-client
+      '@nocobase/app-plugin-template-print':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-template-print
+      '@nocobase/app-skills':
+        specifier: workspace:*
+        version: link:../../app/app-skills
+      '@nocobase/app-testing':
+        specifier: workspace:*
+        version: link:../../tools/app-testing
+      '@nocobase/app-websocket':
+        specifier: workspace:^
+        version: link:../../app/app-websocket
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@nocobase/drive':
+        specifier: workspace:^
+        version: link:../../libs/drive
+      '@nocobase/logging':
+        specifier: workspace:^
+        version: link:../../libs/logging
+      '@nocobase/session':
+        specifier: workspace:^
+        version: link:../../libs/session
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.1
+      '@refinedev/cli':
+        specifier: ^2.16.48
+        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@refinedev/core':
+        specifier: 'catalog:'
+        version: 5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@refinedev/react-hook-form':
+        specifier: ^5.0.0
+        version: 5.0.4(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-hook-form@7.85.0(react@19.2.8))(react@19.2.8)
+      '@refinedev/react-router':
+        specifier: ^2.0.0
+        version: 2.0.4(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-router@7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      '@refinedev/react-table':
+        specifier: ^6.0.0
+        version: 6.0.1(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@tanstack/react-table@8.21.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@shadcn/react':
+        specifier: ^0.3.1
+        version: 0.3.1(@types/react@19.2.18)(react@19.2.8)
+      '@silurus/ooxml':
+        specifier: 0.85.1
+        version: 0.85.1
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.3.3
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/react-table':
+        specifier: 'catalog:'
+        version: 8.21.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.4(@testing-library/dom@10.4.1)
+      '@tiptap/core':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/pm@3.30.2)
+      '@tiptap/extension-file-handler':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/extension-text-style@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2)))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-link':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-list':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-mention':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))
+      '@tiptap/extension-placeholder':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/extensions@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))
+      '@tiptap/extension-table':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-text-style':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))
+      '@tiptap/markdown':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/pm':
+        specifier: 'catalog:'
+        version: 3.30.2
+      '@tiptap/react':
+        specifier: 'catalog:'
+        version: 3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tiptap/starter-kit':
+        specifier: 'catalog:'
+        version: 3.30.2
+      '@tiptap/suggestion':
+        specifier: 'catalog:'
+        version: 3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 4.7.0(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cmdk:
+        specifier: ^1.1.1
+        version: 1.1.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
+      codemirror:
+        specifier: ^6.0.2
+        version: 6.0.2
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.4.0
+      dayjs:
+        specifier: ^1.10.7
+        version: 1.11.21
+      dingtalk-jsapi:
+        specifier: 3.1.1
+        version: 3.1.1
+      embla-carousel-react:
+        specifier: ^8.6.0
+        version: 8.6.0(react@19.2.8)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      ignore:
+        specifier: 'catalog:'
+        version: 7.0.6
+      input-otp:
+        specifier: ^1.4.2
+        version: 1.5.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
+      knex:
+        specifier: 'catalog:'
+        version: 3.3.0(mysql2@3.23.3(@types/node@24.13.3))(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.487.0(react@19.2.8)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      postcss:
+        specifier: 'catalog:'
+        version: 8.5.26
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-day-picker:
+        specifier: 10.0.1
+        version: 10.0.1(@types/react@19.2.18)(react@19.2.8)
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      react-error-boundary:
+        specifier: ^6.0.0
+        version: 6.1.2(react@19.2.8)
+      react-hook-form:
+        specifier: ^7.57.0
+        version: 7.85.0(react@19.2.8)
+      react-i18next:
+        specifier: 'catalog:'
+        version: 17.0.12(i18next@26.4.0(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+      react-markdown:
+        specifier: ^10.1.0
+        version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
+      react-resizable-panels:
+        specifier: ^4.12.2
+        version: 4.14.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-virtuoso:
+        specifier: 'catalog:'
+        version: 4.18.16(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      recharts:
+        specifier: ^3.8.0
+        version: 3.10.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@17.0.2)(react@19.2.8)(redux@5.0.1)
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
+      shadcn:
+        specifier: 'catalog:'
+        version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      tar:
+        specifier: 'catalog:'
+        version: 7.5.22
+      tsc-alias:
+        specifier: ^1.9.2
+        version: 1.9.2
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.12
+      tw-animate-css:
+        specifier: 'catalog:'
+        version: 1.4.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/examples/app-plugin-authorization-example:
     dependencies:
       '@base-ui/react':
@@ -6824,6 +7245,30 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
+  '@codemirror/autocomplete@6.20.3':
+    resolution: {integrity: sha512-tlosUqb+3BbxCxZdu4tKeRghPFC+QM7q4X5YhKV2eCmPG+1r2F3f4AaSz5sCrFqUtX4Jh20VFTKecl16MgiV9g==}
+
+  '@codemirror/commands@6.11.0':
+    resolution: {integrity: sha512-/K4Rl5BN0OtTiPWmJCdqODu38XnDMsDxKY5rgrPnCkutPTJf2wVbkoixLfealF5Kwse/s8P8M5jAiURiwSwnFA==}
+
+  '@codemirror/lang-yaml@6.1.3':
+    resolution: {integrity: sha512-AZ8DJBuXGVHybpBQhmZtgew5//4hv3tdkXnr3vDmOUMJRuB6vn/uuwtmTOTlqEaQFg3hQSVeA90NmvIQyUV6FQ==}
+
+  '@codemirror/language@6.12.4':
+    resolution: {integrity: sha512-1q4PaT+o6PbgpkJt4Q8Fv5XJxTy4FUZ4MWETtyiDw3J0Pyr9E2vqcKL+k9wcvjNTIsauxvE7OfmWj3FRPHQ76A==}
+
+  '@codemirror/lint@6.9.7':
+    resolution: {integrity: sha512-28/+iWLYxKxsvGYhSYL7zaCZqLz5+FFFDq9tVsvGv9kv8RY4fFAchJ5WX9M3YrrRlTIsECjsXPqeNgnSmNP2dg==}
+
+  '@codemirror/search@6.7.2':
+    resolution: {integrity: sha512-gUYkYhT2+n/+VGZ+8EzE5WFkYZUZYm1VOKDudIsNqh42uRVQJ0a6Yss9sdKT3MeOYfuL1N6AZA57oza0Oyr0LA==}
+
+  '@codemirror/state@6.7.2':
+    resolution: {integrity: sha512-U3RiPX62Wl/Gx4ftQ7UxLlloSfsFTQqKa+7vFBYteZGCzkp6oBqcsD7iSwniWRGobCAmDcwZSY+Six3+3ztdfg==}
+
+  '@codemirror/view@6.43.10':
+    resolution: {integrity: sha512-vVWLvd4fKWYN/pMcwUrg6dWeublxmSz+V+52ZjW3h64IVN9cRUYLk5Km4JDT9vifxAFfDtNOIFxKYENthcolJQ==}
+
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
@@ -7619,6 +8064,18 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
+  '@lezer/common@1.5.2':
+    resolution: {integrity: sha512-sxQE460fPZyU3sdc8lafxiPwJHBzZRy/udNFynGQky1SePYBdhkBl1kOagA9uT3pxR8K09bOrmTUqA9wb/PjSQ==}
+
+  '@lezer/highlight@1.2.3':
+    resolution: {integrity: sha512-qXdH7UqTvGfdVBINrgKhDsVTJTxactNNxLk7+UMwZhU13lMHaOBlJe9Vqp907ya56Y3+ed2tlqzys7jDkTmW0g==}
+
+  '@lezer/lr@1.4.10':
+    resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
+
+  '@lezer/yaml@1.0.4':
+    resolution: {integrity: sha512-2lrrHqxalACEbxIbsjhqGpSW8kWpUKuY6RHgnSAFZa6qK62wvnPxA8hGOwOoDbwHcOFs5M4o27mjGu+P7TvBmw==}
+
   '@loaderkit/resolve@1.0.6':
     resolution: {integrity: sha512-G8FdIoF5CypfwmD9rl8BXod5HDn8JqB0CCNBXDTaRZ+yRYhARrrSToX1zg1zy9jX3zLqigsELwhT4gNtkdQAUg==}
 
@@ -7633,6 +8090,9 @@ packages:
   '@manypkg/tools@2.1.2':
     resolution: {integrity: sha512-6QEf6yqFbETdwGITKq57aYoPfX/3K8XFNwsAlx0C1M7o8cb79sv1M3w+tWuWvIcSbNqrLF7OD7YpZMVVz335hQ==}
     engines: {node: '>=20.0.0'}
+
+  '@marijn/find-cluster-break@1.0.4':
+    resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
 
   '@mdx-js/mdx@3.1.1':
     resolution: {integrity: sha512-f6ZO2ifpwAQIpzGWaBQT2TXxPv6z3RBzQKpVftEWN78Vl/YweF1uwussDx8ECAXVtr3Rs89fKyG9YlzUs9DyGQ==}
@@ -7798,6 +8258,64 @@ packages:
   '@oclif/core@4.14.0':
     resolution: {integrity: sha512-QCJIZoVJxV7jywgVAUlsQwl3dr3Sa21kfi5z9KrYolbexWJUtFSEtMoNiBWojD05mYycLnB50gp/VxlGdaOCRA==}
     engines: {node: '>=18.0.0'}
+
+  '@octokit/auth-app@8.3.1':
+    resolution: {integrity: sha512-XHWxZsF4mvGTQCv7AOxgby9t9OjVO19FBuKq+QmyBxFrf+B2hR/P5j/MTF8g95bITf8cRtR17KIXThpFNqiKbg==}
+    engines: {node: '>= 20'}
+
+  '@octokit/auth-oauth-app@9.0.5':
+    resolution: {integrity: sha512-Hn2yAlIDjFLGjAz7t+CRu7e9VYoFW1W3LLyOLyahFoJGlCf4PtDkHKtRET8w/2CJpsrC0FxIF5g5Xtx9E4O78w==}
+    engines: {node: '>= 20'}
+
+  '@octokit/auth-oauth-device@8.0.5':
+    resolution: {integrity: sha512-kdJtjRhykMLJrMdcoC56XUBDfoUAuWEFKpkDxwYim+bNwYw1MreLolk+PLnwEYT8djm589YepeMuJ8+ECAIzVQ==}
+    engines: {node: '>= 20'}
+
+  '@octokit/auth-oauth-user@6.0.4':
+    resolution: {integrity: sha512-eya2pMJ9pCBq1jrm1Rf6J3NI+NemEpzDMLo9J/GpRoK0KgdxIVXWX4LESIfwJ+GYeoq6QFIlUJNi1lVp5FBgmw==}
+    engines: {node: '>= 20'}
+
+  '@octokit/auth-token@6.0.0':
+    resolution: {integrity: sha512-P4YJBPdPSpWTQ1NU4XYdvHvXJJDxM6YwpS0FZHRgP7YFkdVxsWcpWGy/NVqlAA7PcPCnMacXlRm1y2PFZRWL/w==}
+    engines: {node: '>= 20'}
+
+  '@octokit/core@7.0.8':
+    resolution: {integrity: sha512-L7y8eYc+AwxGr2PWI4WFt1VG4TiJ66c26BD16mXpYIlXxG0SMigM1+m4aTSlYyBr5BlQsGAlz8uDCoZN4SEMcg==}
+    engines: {node: '>= 20'}
+
+  '@octokit/endpoint@11.0.5':
+    resolution: {integrity: sha512-iXa654H3yFafF/ieHkukfbgWo2rmXD2ceD0ZOtrPhw1bc3FDch1d9N/TNs0FQ1/cIbwb7kspUX8jzIs8nzb9DQ==}
+    engines: {node: '>= 20'}
+
+  '@octokit/graphql@9.0.5':
+    resolution: {integrity: sha512-bt/hm03LeU6Vy7FwTrkkC9p3XGT/lBwClglMqxBSe5/q0E5CdJTXeAqEI0vlw89/LF/G6tryTIH8HirZ3prMVg==}
+    engines: {node: '>= 20'}
+
+  '@octokit/oauth-authorization-url@8.0.0':
+    resolution: {integrity: sha512-7QoLPRh/ssEA/HuHBHdVdSgF8xNLz/Bc5m9fZkArJE5bb6NmVkDm3anKxXPmN1zh6b5WKZPRr3697xKT/yM3qQ==}
+    engines: {node: '>= 20'}
+
+  '@octokit/oauth-methods@6.0.5':
+    resolution: {integrity: sha512-/mAz7taDZD7DcV4zcG6TDw3Kr6TOldmYBRpvA62C3WIxRMmcgX8XxsTvVQomqKE7VEk/BgYhUao1aR2tYGyIKg==}
+    engines: {node: '>= 20'}
+
+  '@octokit/openapi-types@29.0.1':
+    resolution: {integrity: sha512-9qWOMFNxxLokERcms42rU0PTLqQmVs7g5E41TI4mCOxmpFayD1rfC7XxOL55cG9MBZLFlC31BrR37myMKardwg==}
+
+  '@octokit/request-error@7.1.2':
+    resolution: {integrity: sha512-XZRuT3xZ84D3gYErI1DZvhJ33dCWVV6uzBtWkaBB4TvA/L6eOeTZodxLFVB44bBEEo3vEx7y00UfX1tBLrtLRg==}
+    engines: {node: '>= 20'}
+
+  '@octokit/request@10.0.16':
+    resolution: {integrity: sha512-A0zWGjHzISIb+9ccG8s0dq7LKO5zVpJLRICjgUb+sJxEWqn8RUHB1rD3AE51+PECvXHIxqZ1VVvs4fHTSD9nUQ==}
+    engines: {node: '>= 20'}
+
+  '@octokit/types@18.0.0':
+    resolution: {integrity: sha512-l6bAF43PNxkJp6g+W4PjoUSSkxHomXw2nOum5CTftJz1NlV3vu93NImgOYtLf6CbBUb5j+fiuzW0PPQ5JTSvZA==}
+
+  '@octokit/webhooks-methods@6.0.0':
+    resolution: {integrity: sha512-MFlzzoDJVw/GcbfzVC1RLR36QqkTLUf79vLVO3D+xn7r0QgxnFoLZgtrzxiQErAjFUOdH6fas2KeQJ1yr/qaXQ==}
+    engines: {node: '>= 20'}
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -8585,6 +9103,17 @@ packages:
     resolution: {integrity: sha512-oELmoyA6ML9jDRMV3kgcMQFKxUfBU0yFVn6yTctVaLT5ygXnxH52I3TZEgV9EhXJC68/uFvE5Daj1/25c0Xa/A==}
     peerDependencies:
       selderee: ~0.12.0
+
+  '@shadcn/react@0.3.1':
+    resolution: {integrity: sha512-2gOR0HDMtWeRsCZfNDaU0YDFdgH3zsDQ6lz67Fv/y/qjY9y+R8kJqAn6q56phqv7/zHi0wqURjntrNO9zL7vnQ==}
+    peerDependencies:
+      '@types/react': '>=19'
+      react: '>=19'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      react:
+        optional: true
 
   '@shikijs/core@4.4.3':
     resolution: {integrity: sha512-QCR4q2ZO/ILJEuwiBMel4wdcTDb1JGwfjKTxPDF6x8ixOaluPrVqIn06C99AcRPhmYlBR56d/Fb+GN58GzExpg==}
@@ -9759,6 +10288,9 @@ packages:
   bcrypt-pbkdf@1.0.2:
     resolution: {integrity: sha512-qeFIXtP4MSoi6NLqO12WfqARWWuCKi2Rn/9hJLEmtB5yTNr9DqFWkJRCf2qShWzPeAMRnOgCrq0sg/KLv5ES9w==}
 
+  before-after-hook@4.0.0:
+    resolution: {integrity: sha512-q6tR3RPqIB1pMiTRMFcZwuG5T8vwp+vUvEG0vuI6B+Rikh5BfPp2fQ82c925FOs+b0lcFQ8CFrL+KbilfZFhOQ==}
+
   better-auth@1.7.5:
     resolution: {integrity: sha512-aKE0Zt2EPTpFvmq4/oATNyG/mAfc6JUqWkW9pzGlrVnzUb0lso7GJ9BPxD6JPhLqYV1a9zOAb0uAz1Q5fm+eHA==}
     peerDependencies:
@@ -10235,6 +10767,9 @@ packages:
   code-block-writer@13.0.3:
     resolution: {integrity: sha512-Oofo0pq3IKnsFtuHqSF7TqBfr71aeyZDVJ0HpmqB7FBM2qEigL0iPONSCZSO9pE9dZTAxANe5XHG9Uy0YMv8cg==}
 
+  codemirror@6.0.2:
+    resolution: {integrity: sha512-VhydHotNW5w1UGK0Qj96BwSk/Zqbp9WbnyK2W/eVMv4QyF41INRGpjUhFJY7/uDNuudSc33a/PKr4iDqRduvHw==}
+
   codepage@1.15.0:
     resolution: {integrity: sha512-3g6NUTPd/YtuuGrhMnOMRjFc+LJw/bnMp3+0r/Wcz3IXUuCosKRJvMphm5+Q+bvTVGcJJuRvVLuYba+WojaFaA==}
     engines: {node: '>=0.8'}
@@ -10359,6 +10894,10 @@ packages:
     resolution: {integrity: sha512-mj7UPXE0jaqaOsukNZRUEfEi2AcL7C/vwmwcHV0O97eO1E1pxBZuyjlZrx5seTaNBg1U6+o35wpa35Qfcc+7ag==}
     engines: {node: '>=18'}
 
+  content-type@3.1.1:
+    resolution: {integrity: sha512-GW4qUsfFo59d0HbUibDlWv5wPz+vAAcaTWbKIuKCf0JkC7wWkSyf8f13IpXn5JkeMlB2P8iTSSIjwXljorg2vA==}
+    engines: {node: '>=22'}
+
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
@@ -10429,6 +10968,9 @@ packages:
 
   create-hmac@1.1.7:
     resolution: {integrity: sha512-MJG9liiZ+ogc4TzUwuvbER1JRdgvUFSB5+VR/g5h82fGaIRWMWddtKBHi7/sVhfjQZ6SehlyhvQYrcYkaUIpLg==}
+
+  crelt@1.0.7:
+    resolution: {integrity: sha512-aK6BbWfhf4U/wCcLHKPJl/xa6VkVstRaPywWtMKGwuOLc/wZTyQYuoxgvZnNsBvv7Kg3YTBQYYBCggcviQczuA==}
 
   cron-parser@5.10.0:
     resolution: {integrity: sha512-izNAxJyRWUP8ljBoDSub5WyrVOUlT4SLGShswE7eoRBpp6QUsSycYxLBMJlbshgPBMcPT/nrfgjNY2918ayv2A==}
@@ -11013,6 +11555,19 @@ packages:
 
   elliptic@6.6.1:
     resolution: {integrity: sha512-RaddvvMatK2LJHqFJ+YA4WysVN5Ita9E35botqIYspQ4TkRAlCicdzKOjlyv/1Za5RyTNn7di//eEV0uTAfe3g==}
+
+  embla-carousel-react@8.6.0:
+    resolution: {integrity: sha512-0/PjqU7geVmo6F734pmPqpyHqiM99olvyecY7zdweCw+6tKEXnrE90pBiBbMMU8s5tICemzpQ3hi5EpxzGW+JA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+
+  embla-carousel-reactive-utils@8.6.0:
+    resolution: {integrity: sha512-fMVUDUEx0/uIEDM0Mz3dHznDhfX+znCCDCeIophYb1QGVM7YThSWX+wz11zlYwWFOr74b4QLGg0hrGPJeG2s4A==}
+    peerDependencies:
+      embla-carousel: 8.6.0
+
+  embla-carousel@8.6.0:
+    resolution: {integrity: sha512-SjWyZBHJPbqxHOzckOfo8lHisEaJWmwd23XppYFYVh10bU66/Pn5tkVkbkCMZVdbUE5eTCI2nD8OyIP4Z+uwkA==}
 
   emoji-regex@10.6.0:
     resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
@@ -12092,6 +12647,12 @@ packages:
   inline-style-parser@0.2.7:
     resolution: {integrity: sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==}
 
+  input-otp@1.5.0:
+    resolution: {integrity: sha512-3AcfdW1sNG0FmSA5hHMBXG7jNW5CdcdKs8ln8JOmn6S2SRkoXoJx+2UwC+ZvjflfnOdHJx0SfQ9/YjlxVYLtGQ==}
+    peerDependencies:
+      react: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+
   inquirer-autocomplete-prompt@2.0.1:
     resolution: {integrity: sha512-jUHrH0btO7j5r8DTQgANf2CBkTZChoVySD8zF/wp5fZCOLIuUbleXhf4ZY5jNBOc1owA3gdfWtfZuppfYBhcUg==}
     engines: {node: '>=12'}
@@ -12521,6 +13082,9 @@ packages:
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
+
+  json-with-bigint@3.5.12:
+    resolution: {integrity: sha512-uwbF/wSSuOgC7qqlq27Xp5B6a2MHVug3t0idZdTqu0JnlFvgJuH7ju+KAk/J06C7GfhoYy2gnb9wz2INqcne7w==}
 
   json5@2.2.3:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
@@ -14988,10 +15552,6 @@ packages:
     resolution: {integrity: sha512-e0VyvkVTwVYViNovRkZ9aodhxVlyoMn7eJhVUPxZ+eK9P/7CBkxvvsBOHqFPEH416726W8tLXXXjKwqgTErrCQ==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
 
-  socks@2.8.9:
-    resolution: {integrity: sha512-LJhUYUvItdQ0LkJTmPeaEObWXAqFyfmP85x0tch/ez9cahmhlBBLbIqDFnvBnUJGagb0JbIQrkBs1wJ+yRYpEw==}
-    engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
-
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
 
@@ -15232,6 +15792,9 @@ packages:
     resolution: {integrity: sha512-ki4hZQfh5rX0QDLLkOCj+h+CVNkqmp/CMf8v8kZpkNVK6jGQooMytqzLZYUVYIZcFZ6yDB70EfD8POcFXiF5oA==}
     engines: {node: '>=18'}
 
+  style-mod@4.1.3:
+    resolution: {integrity: sha512-i/n8VsZydrugj3Iuzll8+x/00GH2vnYsk1eomD8QiRrSAeW6ItbCQDtfXCeJHd0iwiNagqjQkvpvREEPtW3IoQ==}
+
   style-to-js@1.1.21:
     resolution: {integrity: sha512-RjQetxJrrUJLQPHbLku6U/ocGtzyjbJMP9lCNK7Ag0CNh690nSH8woqWH9u16nMjYBAok+i7JO1NP2pOy8IsPQ==}
 
@@ -15417,6 +15980,10 @@ packages:
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
+
+  toad-cache@3.7.4:
+    resolution: {integrity: sha512-m1TdR/rvT7kgGJZhspNtXdsdYk0fddFpJJFlG5s+UkPFo6lkLoZ3YLOaovPYjq1R75NP5JfeTlSHaOsE09peCg==}
+    engines: {node: '>=20'}
 
   toggle-selection@1.0.6:
     resolution: {integrity: sha512-BiZS+C1OS8g/q2RRbJmy59xpyghNBqrr6k5L/uKBGRsTfxmu3ffiRnd8mlGPUVayg8pvfi5urfnu8TU7DVOkLQ==}
@@ -15662,6 +16229,12 @@ packages:
 
   unist-util-visit@5.1.0:
     resolution: {integrity: sha512-m+vIdyeCOpdr/QeQCu2EzxX/ohgS8KbnPDgFni4dQsfSCtpz8UqDyY5GjRru8PDKuYn7Fq19j1CQ+nJSsGKOzg==}
+
+  universal-github-app-jwt@2.2.2:
+    resolution: {integrity: sha512-dcmbeSrOdTnsjGjUfAlqNDJrhxXizjAz94ija9Qw8YkZ1uu0d+GoZzyH+Jb9tIIqvGsadUfwg+22k5aDqqwzbw==}
+
+  universal-user-agent@7.0.3:
+    resolution: {integrity: sha512-TmnEAEAsBJVZM/AADELsK76llnwcf9vMKuPz8JflO1frO8Lchitr0fNaN9d+Ap0BjKtqWqd/J17qeDnXh8CL2A==}
 
   universalify@2.0.1:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
@@ -17415,6 +17988,62 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
+  '@codemirror/autocomplete@6.20.3':
+    dependencies:
+      '@codemirror/language': 6.12.4
+      '@codemirror/state': 6.7.2
+      '@codemirror/view': 6.43.10
+      '@lezer/common': 1.5.2
+
+  '@codemirror/commands@6.11.0':
+    dependencies:
+      '@codemirror/language': 6.12.4
+      '@codemirror/state': 6.7.2
+      '@codemirror/view': 6.43.10
+      '@lezer/common': 1.5.2
+
+  '@codemirror/lang-yaml@6.1.3':
+    dependencies:
+      '@codemirror/autocomplete': 6.20.3
+      '@codemirror/language': 6.12.4
+      '@codemirror/state': 6.7.2
+      '@lezer/common': 1.5.2
+      '@lezer/highlight': 1.2.3
+      '@lezer/lr': 1.4.10
+      '@lezer/yaml': 1.0.4
+
+  '@codemirror/language@6.12.4':
+    dependencies:
+      '@codemirror/state': 6.7.2
+      '@codemirror/view': 6.43.10
+      '@lezer/common': 1.5.2
+      '@lezer/highlight': 1.2.3
+      '@lezer/lr': 1.4.10
+      style-mod: 4.1.3
+
+  '@codemirror/lint@6.9.7':
+    dependencies:
+      '@codemirror/state': 6.7.2
+      '@codemirror/view': 6.43.10
+      crelt: 1.0.7
+
+  '@codemirror/search@6.7.2':
+    dependencies:
+      '@codemirror/state': 6.7.2
+      '@codemirror/view': 6.43.10
+      crelt: 1.0.7
+
+  '@codemirror/state@6.7.2':
+    dependencies:
+      '@marijn/find-cluster-break': 1.0.4
+
+  '@codemirror/view@6.43.10':
+    dependencies:
+      '@codemirror/state': 6.7.2
+      crelt: 1.0.7
+      style-mod: 4.1.3
+      w3c-keyname: 2.2.8
+
   '@colors/colors@1.5.0':
     optional: true
 
@@ -18068,6 +18697,22 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
+  '@lezer/common@1.5.2': {}
+
+  '@lezer/highlight@1.2.3':
+    dependencies:
+      '@lezer/common': 1.5.2
+
+  '@lezer/lr@1.4.10':
+    dependencies:
+      '@lezer/common': 1.5.2
+
+  '@lezer/yaml@1.0.4':
+    dependencies:
+      '@lezer/common': 1.5.2
+      '@lezer/highlight': 1.2.3
+      '@lezer/lr': 1.4.10
+
   '@loaderkit/resolve@1.0.6':
     dependencies:
       '@braidai/lang': 1.1.2
@@ -18086,6 +18731,8 @@ snapshots:
       jju: 1.4.0
       tinyglobby: 0.2.17
       yaml: 2.9.0
+
+  '@marijn/find-cluster-break@1.0.4': {}
 
   '@mdx-js/mdx@3.1.1':
     dependencies:
@@ -18320,6 +18967,93 @@ snapshots:
       wordwrap: 1.0.0
       wrap-ansi: 7.0.0
       wsl-utils: 0.4.0
+
+  '@octokit/auth-app@8.3.1':
+    dependencies:
+      '@octokit/auth-oauth-app': 9.0.5
+      '@octokit/auth-oauth-user': 6.0.4
+      '@octokit/request': 10.0.16
+      '@octokit/request-error': 7.1.2
+      '@octokit/types': 18.0.0
+      toad-cache: 3.7.4
+      universal-github-app-jwt: 2.2.2
+      universal-user-agent: 7.0.3
+
+  '@octokit/auth-oauth-app@9.0.5':
+    dependencies:
+      '@octokit/auth-oauth-device': 8.0.5
+      '@octokit/auth-oauth-user': 6.0.4
+      '@octokit/request': 10.0.16
+      '@octokit/types': 18.0.0
+      universal-user-agent: 7.0.3
+
+  '@octokit/auth-oauth-device@8.0.5':
+    dependencies:
+      '@octokit/oauth-methods': 6.0.5
+      '@octokit/request': 10.0.16
+      '@octokit/types': 18.0.0
+      universal-user-agent: 7.0.3
+
+  '@octokit/auth-oauth-user@6.0.4':
+    dependencies:
+      '@octokit/auth-oauth-device': 8.0.5
+      '@octokit/oauth-methods': 6.0.5
+      '@octokit/request': 10.0.16
+      '@octokit/types': 18.0.0
+      universal-user-agent: 7.0.3
+
+  '@octokit/auth-token@6.0.0': {}
+
+  '@octokit/core@7.0.8':
+    dependencies:
+      '@octokit/auth-token': 6.0.0
+      '@octokit/graphql': 9.0.5
+      '@octokit/request': 10.0.16
+      '@octokit/request-error': 7.1.2
+      '@octokit/types': 18.0.0
+      before-after-hook: 4.0.0
+      universal-user-agent: 7.0.3
+
+  '@octokit/endpoint@11.0.5':
+    dependencies:
+      '@octokit/types': 18.0.0
+      universal-user-agent: 7.0.3
+
+  '@octokit/graphql@9.0.5':
+    dependencies:
+      '@octokit/request': 10.0.16
+      '@octokit/types': 18.0.0
+      universal-user-agent: 7.0.3
+
+  '@octokit/oauth-authorization-url@8.0.0': {}
+
+  '@octokit/oauth-methods@6.0.5':
+    dependencies:
+      '@octokit/oauth-authorization-url': 8.0.0
+      '@octokit/request': 10.0.16
+      '@octokit/request-error': 7.1.2
+      '@octokit/types': 18.0.0
+
+  '@octokit/openapi-types@29.0.1': {}
+
+  '@octokit/request-error@7.1.2':
+    dependencies:
+      '@octokit/types': 18.0.0
+
+  '@octokit/request@10.0.16':
+    dependencies:
+      '@octokit/endpoint': 11.0.5
+      '@octokit/request-error': 7.1.2
+      '@octokit/types': 18.0.0
+      content-type: 3.1.1
+      json-with-bigint: 3.5.12
+      universal-user-agent: 7.0.3
+
+  '@octokit/types@18.0.0':
+    dependencies:
+      '@octokit/openapi-types': 29.0.1
+
+  '@octokit/webhooks-methods@6.0.0': {}
 
   '@opentelemetry/api@1.9.0': {}
 
@@ -18584,7 +19318,7 @@ snapshots:
       package-manager-detector: 1.8.0
       picocolors: 1.1.1
       prompts: 2.4.2
-      tinyexec: 1.3.0
+      tinyexec: 1.3.1
 
   '@reduxjs/toolkit@2.13.0(react-redux@9.3.0(@types/react@19.2.18)(react@19.2.8)(redux@5.0.1))(react@19.2.8)':
     dependencies:
@@ -19214,6 +19948,11 @@ snapshots:
       domelementtype: 2.3.0
       domhandler: 5.0.3
       selderee: 0.12.0
+
+  '@shadcn/react@0.3.1(@types/react@19.2.18)(react@19.2.8)':
+    optionalDependencies:
+      '@types/react': 19.2.18
+      react: 19.2.8
 
   '@shikijs/core@4.4.3':
     dependencies:
@@ -20564,6 +21303,8 @@ snapshots:
     dependencies:
       tweetnacl: 0.14.5
 
+  before-after-hook@4.0.0: {}
+
   better-auth@1.7.5(@opentelemetry/api@1.9.0)(mysql2@3.23.3(@types/node@24.13.3))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10):
     dependencies:
       '@better-auth/core': 1.7.5(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.6.5))(jose@6.2.9)(kysely@0.29.5)(nanostores@1.5.1)
@@ -21111,6 +21852,16 @@ snapshots:
 
   code-block-writer@13.0.3: {}
 
+  codemirror@6.0.2:
+    dependencies:
+      '@codemirror/autocomplete': 6.20.3
+      '@codemirror/commands': 6.11.0
+      '@codemirror/language': 6.12.4
+      '@codemirror/lint': 6.9.7
+      '@codemirror/search': 6.7.2
+      '@codemirror/state': 6.7.2
+      '@codemirror/view': 6.43.10
+
   codepage@1.15.0: {}
 
   collapse-white-space@2.1.0: {}
@@ -21200,6 +21951,8 @@ snapshots:
 
   content-type@2.1.0: {}
 
+  content-type@3.1.1: {}
+
   convert-source-map@2.0.0: {}
 
   cookie-es@1.2.3: {}
@@ -21276,6 +22029,8 @@ snapshots:
       ripemd160: 2.0.3
       safe-buffer: 5.2.1
       sha.js: 2.4.12
+
+  crelt@1.0.7: {}
 
   cron-parser@5.10.0:
     dependencies:
@@ -21885,6 +22640,18 @@ snapshots:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
       minimalistic-crypto-utils: 1.0.1
+
+  embla-carousel-react@8.6.0(react@19.2.8):
+    dependencies:
+      embla-carousel: 8.6.0
+      embla-carousel-reactive-utils: 8.6.0(embla-carousel@8.6.0)
+      react: 19.2.8
+
+  embla-carousel-reactive-utils@8.6.0(embla-carousel@8.6.0):
+    dependencies:
+      embla-carousel: 8.6.0
+
+  embla-carousel@8.6.0: {}
 
   emoji-regex@10.6.0: {}
 
@@ -23488,6 +24255,11 @@ snapshots:
 
   inline-style-parser@0.2.7: {}
 
+  input-otp@1.5.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
   inquirer-autocomplete-prompt@2.0.1(inquirer@8.2.7(@types/node@24.13.3)):
     dependencies:
       ansi-escapes: 4.3.2
@@ -23899,6 +24671,8 @@ snapshots:
   json-schema@0.4.0: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
+
+  json-with-bigint@3.5.12: {}
 
   json5@2.2.3: {}
 
@@ -26780,7 +27554,7 @@ snapshots:
       postcss-selector-parser: 7.1.5
       prompts: 2.4.2
       recast: 0.23.21
-      socks: 2.8.9
+      socks: 2.8.10
       stringify-object: 5.0.0
       tailwind-merge: 3.6.0
       ts-morph: 26.0.0
@@ -26876,7 +27650,7 @@ snapshots:
     dependencies:
       agent-base: 6.0.2
       debug: 4.4.3(supports-color@8.1.1)
-      socks: 2.8.9
+      socks: 2.8.10
     transitivePeerDependencies:
       - supports-color
 
@@ -26884,16 +27658,11 @@ snapshots:
     dependencies:
       agent-base: 6.0.2
       debug: 4.4.3(supports-color@8.1.1)
-      socks: 2.8.9
+      socks: 2.8.10
     transitivePeerDependencies:
       - supports-color
 
   socks@2.8.10:
-    dependencies:
-      ip-address: 10.5.0
-      smart-buffer: 4.2.0
-
-  socks@2.8.9:
     dependencies:
       ip-address: 10.5.0
       smart-buffer: 4.2.0
@@ -27134,6 +27903,8 @@ snapshots:
     dependencies:
       '@tokenizer/token': 0.3.0
 
+  style-mod@4.1.3: {}
+
   style-to-js@1.1.21:
     dependencies:
       style-to-object: 1.0.14
@@ -27340,6 +28111,8 @@ snapshots:
   to-regex-range@5.0.1:
     dependencies:
       is-number: 7.0.0
+
+  toad-cache@3.7.4: {}
 
   toggle-selection@1.0.6: {}
 
@@ -27614,6 +28387,10 @@ snapshots:
       '@types/unist': 3.0.3
       unist-util-is: 6.0.1
       unist-util-visit-parents: 6.0.2
+
+  universal-github-app-jwt@2.2.2: {}
+
+  universal-user-agent@7.0.3: {}
 
   universalify@2.0.1: {}
 
