@@ -14,11 +14,11 @@
 // switching versions (runner-tools.ts), the run's process tag (`AGENT_RUN_PROCESS_TAG`,
 // which marks what the tool starts as the run's, see core/process-tree.ts), the application CLI's directory first on
 // PATH, and `core.hooksPath` through `GIT_CONFIG_*`, so every
-// git the agent runs uses the runner's hooks (push-guard.ts) whatever the repository configures. With the run's git
+// git the agent runs uses the runner's commit hook (git-hooks.ts) whatever the repository configures. With the run's git
 // (`workspace.git`): the commit author and committer (`GIT_AUTHOR_*`, `GIT_COMMITTER_*`), the trailers the
 // `prepare-commit-msg` hook adds, and for each repository with a short-lived credential a credential helper scoped to
 // its URL that answers with it from the environment. The credential lives only in the agent's environment, never on
-// disk; the push guard still decides what may be pushed.
+// disk.
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -34,7 +34,7 @@ import {
 } from '../core/pnpm-store.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { PINNED_PNPM_ENV } from './runner-tools.ts';
-import { TRAILERS_ENV } from '../core/push-guard.ts';
+import { TRAILERS_ENV } from '../core/git-hooks.ts';
 
 /** The proxy variables, in both cases: tools read either. Their values may hold a user and password. */
 export const PROXY_ENV: readonly string[] = [
@@ -86,7 +86,7 @@ export interface BuildEnvOptions {
   pnpmStoreDir?: string;
   /** How pnpm imports packages from that store (`pnpmImportMethod`); `copy` when absent. */
   pnpmImportMethod?: PnpmImportMethod;
-  /** The push guard's hooks directory. */
+  /** The runner's hooks directory (git-hooks.ts). */
   hooksDir?: string;
   /** The run's process tag (core/process-tree.ts), which marks what the tool starts as the run's. */
   processTag?: string;

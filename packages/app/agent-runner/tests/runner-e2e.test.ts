@@ -166,7 +166,6 @@ describe('runner end to end', () => {
           'read /etc/hosts',
           'write notes.txt hello from the agent',
           `bash ${COMMIT} add notes.txt && ${COMMIT} commit -q -m agent-work`,
-          `bash ${COMMIT} push origin HEAD:main`,
           'say all done',
         ].join('\n'),
       },
@@ -249,15 +248,6 @@ describe('runner end to end', () => {
           event.type === 'permission' && event.meta?.decision !== 'allow',
       ),
     ).toEqual([]);
-    // The push guard refused a push to main.
-    expect(
-      events.some(
-        (event) =>
-          event.type === 'toolResult' &&
-          event.output?.includes('may push only the branch agent/PM-7'),
-      ),
-    ).toBe(true);
-
     // The branch reached the remote.
     expect(run.complete?.repos).toEqual([
       expect.objectContaining({

@@ -34,7 +34,6 @@ export default class Start extends RunnerCommand {
   static override flags: {
     foreground: Interfaces.BooleanFlag<boolean>;
     slots: Interfaces.OptionFlag<string | undefined>;
-    'agent-home': Interfaces.OptionFlag<string | undefined>;
     'pass-env': Interfaces.OptionFlag<string[] | undefined>;
   } = {
     foreground: Flags.boolean({
@@ -43,12 +42,6 @@ export default class Start extends RunnerCommand {
     slots: Flags.string({
       description:
         'How many runs at once, for this start: a total (3), limits per coding tool (claude=2,codex=1), or both. Defaults to the registered ones.',
-    }),
-    // Accepted for older service definitions and ignored: agents always get the real home.
-    'agent-home': Flags.string({
-      description: 'Ignored. Agents always get the runner user’s real home.',
-      options: ['isolated', 'real'],
-      hidden: true,
     }),
     'pass-env': passEnvFlag,
   };

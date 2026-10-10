@@ -16,8 +16,7 @@
 //   ~/.nocobase-runner/cli/<name>/<version>/       application CLIs installed for runs
 //   ~/.nocobase-runner/skills/<app>/<slug>/<hash>/ skill bundles fetched for runs, by content hash
 //   ~/.nocobase-runner/locks/<sha1>.lock           one lock per directory used in place (one run at a time in it)
-//   ~/.nocobase-runner/hooks/pre-push              the push guard every agent's git runs
-//   ~/.nocobase-runner/push-allow/<sha256>         push permissions keyed by a checkout's real Git directory
+//   ~/.nocobase-runner/hooks/prepare-commit-msg    the commit hook every agent's git runs (core/git-hooks.ts)
 //   ~/.nocobase-runner/workspaces/<sha256>.json    the runner's record of each work directory, keyed by its path
 //   ~/.nocobase-runner/tools/cwd/                  the empty directory the runner's own pnpm and du start in
 //                                                  (core/pnpm-store.ts, core/workspaces.ts)
@@ -73,7 +72,6 @@ export interface RunnerPaths {
   mountsDir: string;
   locksDir: string;
   hooksDir: string;
-  pushAllowDir: string;
   workspacesDir: string;
   /** An empty directory the runner's own pnpm and du start in, outside every directory an agent may write. */
   toolCwd: string;
@@ -102,7 +100,6 @@ export function runnerPaths(
     mountsDir: path.join(home, 'mounts'),
     locksDir: path.join(home, 'locks'),
     hooksDir: path.join(home, 'hooks'),
-    pushAllowDir: path.join(home, 'push-allow'),
     workspacesDir: path.join(home, 'workspaces'),
     toolCwd: path.join(home, 'tools', 'cwd'),
     workRoot: work,

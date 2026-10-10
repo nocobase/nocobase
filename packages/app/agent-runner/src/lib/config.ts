@@ -119,7 +119,6 @@ export async function readSettings(
     Object.keys(toolSlots.data).length > 0
       ? { toolSlots: toolSlots.data }
       : {}),
-    // A stored `agentHome` is ignored: agents always get the real home.
     agentTools: stored?.agentTools === 'system' ? 'system' : 'runner',
     autoUpdate: stored?.autoUpdate !== false,
     ...(typeof stored?.serviceLabel === 'string' && stored.serviceLabel !== ''

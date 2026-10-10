@@ -5,7 +5,7 @@
 //
 // The agent starts in the run's primary working directory (or the subject's work directory when the run names none),
 // with the real HOME of the user the runner runs as, its own TMPDIR (and Codex its own CODEX_HOME) inside the work
-// directory, the application's CLI first on its PATH and the push guard as its git hooks. Nothing restricts what its
+// directory, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
 // tools do: the runner is not a security boundary, so run it as a dedicated user, in a container or in a VM.
 //
 // While it runs, the lease is renewed every 15 s and the run's status is polled every few seconds; both answers carry
@@ -149,7 +149,7 @@ export function workspaceNotes(options: {
       lines.push(
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
-          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (the only branch you can push).`,
+          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
       );
     }
     lines.push('Keep every file you write inside these directories.');
