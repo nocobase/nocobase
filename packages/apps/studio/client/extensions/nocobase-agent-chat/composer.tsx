@@ -7,19 +7,20 @@
  * plugin and go with the message.
  */
 import {
-  buildPageContext,
-  contextChips,
   useChatAttachments,
   useChatPanel,
-  useChatSources,
-  type ChatContextInput,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type {
   MessageAttachment,
   PageContext,
 } from '@nocobase/app-plugin-agents/shared/conversations';
 import { useMemo, type ReactElement, type ReactNode } from 'react';
-import { useLocation } from 'react-router';
+import { useStudioChatContext } from '../../agents/use-chat-context.js';
+import {
+  chatEditorKey,
+  useChatEditor,
+  useStudioChat,
+} from '../../agents/chat-state.js';
 
 import {
   AgentComposer,
@@ -27,11 +28,16 @@ import {
   type AgentComposerContext,
 } from '@/components/agent-composer';
 
+import { Button } from '@/components/ui/button';
+import { useTranslation } from '@nocobase/i18n/client';
+import { STUDIO_NAMESPACE } from '../../../shared/access.js';
 import { useComposerLabels } from './chat-i18n.js';
 
 export interface ComposerProps {
   /** A run is open: the agent is working or waiting for a runner. */
   readonly running: boolean;
+  readonly conversationId: string | null;
+  readonly disabled?: boolean;
   readonly stopping: boolean;
   readonly notice?: ReactNode;
   /** Shown beside the send button, such as the model choice. */
@@ -54,6 +60,8 @@ export interface ComposerProps {
 
 export function Composer({
   running,
+  conversationId,
+  disabled,
   stopping,
   notice,
   toolbar,
@@ -63,10 +71,13 @@ export function Composer({
   variant = 'panel',
   registerAddFiles,
 }: ComposerProps): ReactElement {
-  const location = useLocation();
   const panel = useChatPanel();
-  const sources = useChatSources();
+  const snapshot = useStudioChatContext();
+  const state = useStudioChat();
+  const editorKey = chatEditorKey(variant, conversationId, state.temporaryKey);
+  const editor = useChatEditor(editorKey);
   const labels = useComposerLabels();
+  const { t: words } = useTranslation(STUDIO_NAMESPACE);
   const files = useChatAttachments();
   const attachments = useMemo(
     (): AgentComposerAttachments => ({
@@ -77,39 +88,63 @@ export function Composer({
     [files, registerAddFiles],
   );
 
-  const input: ChatContextInput = {
-    route: `${location.pathname}${location.search}`,
-    pinned: panel.pinned,
-    sources: sources.items,
-    filter: sources.filter,
-    selection: sources.selection,
-    removed: sources.removed,
-  };
   const context: AgentComposerContext = {
-    chips: contextChips(input),
-    onRemove: sources.remove,
-    build: () => buildPageContext(input),
+    chips: snapshot.chips,
+    onRemove: snapshot.remove,
+    build: () => snapshot.context,
   };
+  const conflict = state.transfer?.key === editorKey ? state.transfer : null;
 
   return (
-    <AgentComposer
-      variant={variant}
-      running={running}
-      stopping={stopping}
-      notice={notice}
-      toolbar={toolbar}
-      {...(placeholder === undefined ? {} : { placeholder })}
-      labels={labels}
-      context={context}
-      attachments={attachments}
-      draft={panel.draft}
-      registerFocus={panel.registerComposer}
-      onStop={onStop}
-      onSend={(content, carried, sent) => {
-        const taken = onSend(content, carried, sent);
-        if (taken) panel.clearPinned();
-        return taken;
-      }}
-    />
+    <>
+      {conflict ? (
+        <div className='flex flex-wrap gap-2 text-sm' role='status'>
+          <p>{words('globalChat.draftConflict')}</p>
+          <Button variant='outline' onClick={() => state.setTransfer(null)}>
+            {words('globalChat.keepDraft')}
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() => {
+              editor.append(conflict.text);
+              state.top.setter(
+                'content',
+                '',
+              )((value) => (value === conflict.text ? '' : value));
+              state.setTransfer(null);
+              panel.focusComposer();
+            }}
+          >
+            {words('globalChat.appendDraft')}
+          </Button>
+        </div>
+      ) : null}
+      {snapshot.truncated ? (
+        <p className='text-xs text-muted-foreground'>
+          {words('globalChat.truncated')}
+        </p>
+      ) : null}
+      <AgentComposer
+        session={editor}
+        disabled={disabled}
+        variant={variant}
+        running={running}
+        stopping={stopping}
+        notice={notice}
+        toolbar={toolbar}
+        {...(placeholder === undefined ? {} : { placeholder })}
+        labels={labels}
+        context={context}
+        attachments={attachments}
+        draft={panel.draft}
+        registerFocus={panel.registerComposer}
+        onStop={onStop}
+        onSend={(content, carried, sent) => {
+          const taken = onSend(content, carried, sent);
+          if (taken) panel.clearPinned();
+          return taken;
+        }}
+      />
+    </>
   );
 }

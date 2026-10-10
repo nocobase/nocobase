@@ -42,6 +42,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ClipboardEvent,
   type DragEvent,
   type KeyboardEvent,
@@ -58,6 +59,7 @@ import {
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from 'cn';
+import { ComposerSession } from './composer-session.js';
 
 export interface AgentComposerLabels {
   /** The box's accessible name. */
@@ -185,6 +187,8 @@ export interface AgentComposerDraft {
 }
 
 export interface AgentComposerProps {
+  /** Stable application-owned editor state; uploads continue while the view is unmounted. */
+  readonly session?: ComposerSession;
   /** A run is open: the agent is working or waiting for a runner. */
   readonly running?: boolean;
   readonly stopping?: boolean;
@@ -440,13 +444,18 @@ export function AgentComposer({
   labels,
   className,
   inputClassName,
+  session: externalSession,
 }: AgentComposerProps): ReactElement {
   const words = labels
     ? { ...defaultAgentComposerLabels, ...labels }
     : defaultAgentComposerLabels;
   const inputId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [content, setContent] = useState('');
+  const [localSession] = useState(() => new ComposerSession());
+  const session = externalSession ?? localSession;
+  useSyncExternalStore(session.subscribe, session.snapshot, session.snapshot);
+  const content = session.read('content', '');
+  const setContent = session.setter('content', '');
   // The box registers how to focus it as it mounts, and undoes that as it unmounts.
   const attach = useCallback(
     (node: HTMLTextAreaElement | null) => {
@@ -463,21 +472,31 @@ export function AgentComposer({
 
   // A draft fills the box once (while rendering), then takes the focus: an empty box, or one that still holds the
   // previous draft as it was put there; never what the person wrote.
-  const [seenDraft, setSeenDraft] = useState<AgentComposerDraft | null>(null);
-  if (draft && draft.nonce !== seenDraft?.nonce) {
-    setSeenDraft(draft);
-    if (!content.trim() || content === seenDraft?.text) setContent(draft.text);
-  }
+  const seenDraft = session.read<AgentComposerDraft | null>('seenDraft', null);
+  const setSeenDraft = session.setter<AgentComposerDraft | null>(
+    'seenDraft',
+    null,
+  );
+  useEffect(() => {
+    if (draft && draft.nonce !== seenDraft?.nonce) {
+      setSeenDraft(draft);
+      if (!content.trim() || content === seenDraft?.text)
+        setContent(draft.text);
+    }
+  }, [draft, seenDraft, content, setSeenDraft, setContent]);
   const draftNonce = draft?.nonce;
   useEffect(() => {
     if (draftNonce !== undefined) textareaRef.current?.focus();
   }, [draftNonce]);
 
   // The files the next message carries; `filesRef` is what unmounting and the uploads see.
-  const [files, setFiles] = useState<readonly ComposerFile[]>([]);
+  const files = session.read<readonly ComposerFile[]>('files', []);
+  const setFiles = session.setter<readonly ComposerFile[]>('files', []);
   const filesRef = useRef<readonly ComposerFile[]>(files);
-  const [tooMany, setTooMany] = useState(false);
-  const [waiting, setWaiting] = useState(false);
+  const tooMany = session.read('tooMany', false);
+  const setTooMany = session.setter('tooMany', false);
+  const waiting = session.read('waiting', false);
+  const setWaiting = session.setter('waiting', false);
   const maxCount = attachments?.maxCount ?? CHAT_ATTACHMENTS_PER_MESSAGE_MAX;
   const maxSize = attachments?.maxSize ?? CHAT_ATTACHMENT_SIZE_MAX;
   const attachmentsRef = useRef(attachments);
@@ -485,10 +504,16 @@ export function AgentComposer({
   useLayoutEffect(() => {
     filesRef.current = files;
     attachmentsRef.current = attachments;
+    session.setDiscard(
+      attachments?.discard ? (file) => attachments.discard?.(file) : undefined,
+    );
   });
   // Each upload's outcome by file key: the file, or null when it failed or was removed.
   const uploadsRef = useRef(
-    new Map<string, Promise<MessageAttachment | null>>(),
+    session.read(
+      'uploads',
+      new Map<string, Promise<MessageAttachment | null>>(),
+    ),
   );
 
   const update = useCallback(
@@ -498,14 +523,17 @@ export function AgentComposer({
           file.key === key ? { ...file, ...change } : file,
         ),
       ),
-    [],
+    [setFiles],
   );
 
   const addFiles = useCallback(
     (added: readonly File[]): void => {
       const source = attachmentsRef.current;
       if (!source || added.length === 0) return;
-      const room = Math.max(0, maxCount - filesRef.current.length);
+      const room = Math.max(
+        0,
+        maxCount - session.read<readonly ComposerFile[]>('files', []).length,
+      );
       setTooMany(added.length > room);
       const taken = added.slice(0, room).map((file): ComposerFile => {
         fileKeys += 1;
@@ -551,19 +579,24 @@ export function AgentComposer({
         uploadsRef.current.set(entry.key, outcome);
       }
     },
-    [maxCount, maxSize, update],
+    [maxCount, maxSize, update, session, setFiles, setTooMany],
   );
 
-  const removeFile = useCallback((key: string): void => {
-    const file = filesRef.current.find((entry) => entry.key === key);
-    if (!file) return;
-    file.controller?.abort();
-    if (file.attachment) attachmentsRef.current?.discard?.(file.attachment);
-    if (file.preview) URL.revokeObjectURL(file.preview);
-    uploadsRef.current.delete(key);
-    setTooMany(false);
-    setFiles((current) => current.filter((entry) => entry.key !== key));
-  }, []);
+  const removeFile = useCallback(
+    (key: string): void => {
+      const file = session
+        .read<readonly ComposerFile[]>('files', [])
+        .find((entry) => entry.key === key);
+      if (!file) return;
+      file.controller?.abort();
+      if (file.attachment) attachmentsRef.current?.discard?.(file.attachment);
+      if (file.preview) URL.revokeObjectURL(file.preview);
+      uploadsRef.current.delete(key);
+      setTooMany(false);
+      setFiles((current) => current.filter((entry) => entry.key !== key));
+    },
+    [session, setFiles, setTooMany],
+  );
 
   // The view around the box adds what is dropped on it.
   const registerAdd = attachments?.registerAdd;
@@ -572,13 +605,14 @@ export function AgentComposer({
   // Leaving: uploads stop, files never sent are discarded, thumbnails freed.
   useEffect(
     () => () => {
+      if (externalSession) return;
       for (const file of filesRef.current) {
         file.controller?.abort();
         if (file.attachment) attachmentsRef.current?.discard?.(file.attachment);
         if (file.preview) URL.revokeObjectURL(file.preview);
       }
     },
-    [],
+    [externalSession],
   );
 
   const length = [...content].length;
@@ -610,6 +644,7 @@ export function AgentComposer({
     }
     // The files are not all uploaded yet: the message goes once they are, and stays in the box when one failed.
     setWaiting(true);
+    const intent = session.beginIntent();
     void Promise.all(
       carried.map((file) =>
         file.attachment
@@ -617,6 +652,7 @@ export function AgentComposer({
           : (uploadsRef.current.get(file.key) ?? Promise.resolve(null)),
       ),
     ).then((uploaded) => {
+      if (!session.active || session.intent !== intent) return;
       setWaiting(false);
       if (uploaded.every((file) => file !== null)) send(uploaded, carried);
     });
@@ -626,6 +662,7 @@ export function AgentComposer({
     uploaded: readonly MessageAttachment[],
     carried: readonly ComposerFile[],
   ): void {
+    if (!session.active || disabled) return;
     const sent = content;
     const taken = onSend(sent, context?.build(), uploaded);
     const clear = (): void => {
@@ -638,7 +675,7 @@ export function AgentComposer({
       setTooMany(false);
     };
     if (taken === true) {
-      setContent('');
+      setContent((current) => (current === sent ? '' : current));
       clear();
     } else if (taken !== false)
       void taken.then(

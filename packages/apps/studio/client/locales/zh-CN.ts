@@ -12,6 +12,36 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  globalChat: {
+    notSubmitted: '问题未发送',
+    editRejected: '将问题和附件放回编辑区',
+    placeholder: '向 Agent 提问…',
+    label: '向 Agent 提问',
+    edit: '在面板中继续编辑',
+    preview: '预览页面上下文',
+    send: '发送问题',
+    target: '与 {{name}} 新建会话',
+    continue: '继续：{{title}} · {{name}}',
+    newConversation: '新会话',
+    noAgent: '请在面板选择 Agent',
+    replying: 'Agent 正在回复',
+    truncated: '页面上下文已按长度预算精简。',
+    unknown: '发送结果待确认',
+    creationUnknown: '会话创建结果待确认',
+    sending: '正在发送…',
+    unknownHelp: '此问题可能已保存。请核对会话后再继续提问。',
+    check: '刷新核对',
+    viewConversation: '查看会话',
+    creationHelp:
+      '问题尚未发送。请选择会话继续，或另建会话；可能已有一个空会话。',
+    refreshConversations: '刷新会话列表',
+    chooseConversation: '在“{{title}}”中继续',
+    moreConversations: '更多会话',
+    createAnother: '另建会话（可能已有空会话）',
+    draftConflict: '面板已有草稿，如何处理顶部问题？',
+    keepDraft: '保留面板草稿',
+    appendDraft: '追加顶部问题',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
