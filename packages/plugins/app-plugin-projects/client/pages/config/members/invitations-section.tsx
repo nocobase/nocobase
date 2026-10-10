@@ -137,7 +137,7 @@ export function InvitationsSection(): ReactElement | null {
           ) : row.original.sentAt ? (
             <PmTag tone='blue'>{t('invitations.pending')}</PmTag>
           ) : (
-            <PmTag tone='amber'>{t('invitations.notSent')}</PmTag>
+            <PmTag tone='grey'>{t('invitations.notSent')}</PmTag>
           ),
       },
       {

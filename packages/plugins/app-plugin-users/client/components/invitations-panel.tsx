@@ -87,10 +87,7 @@ export function InvitationsPanel({
                         )}
                       </Badge>
                       {invitation.sentAt === null ? (
-                        <Badge
-                          variant='secondary'
-                          className='bg-destructive/10 text-destructive'
-                        >
+                        <Badge variant='secondary'>
                           {t('invitations.notSent')}
                         </Badge>
                       ) : null}

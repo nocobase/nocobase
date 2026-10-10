@@ -117,7 +117,7 @@ const zhCN: UsersResource = {
     status: '状态',
     pending: '待接受',
     expired: '已过期',
-    notSent: '未发出',
+    notSent: '未发送邮件',
     resend: '重新发送',
     copyNewLink: '复制新链接',
     linkReady: '新链接已生成',

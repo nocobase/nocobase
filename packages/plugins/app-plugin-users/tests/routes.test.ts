@@ -753,7 +753,15 @@ describe('@nocobase/app-plugin-users API routes', () => {
       manifest.commands.find(
         (command) => command.id === 'user:invitation:create',
       )?.output.columns,
-    ).toContain('inviteUrl');
+    ).toEqual(['email', 'outcome', 'invitationId', 'emailSent', 'inviteUrl']);
+    const acceptResponses =
+      document.paths?.['/api/users/invitations/accept']?.post?.responses;
+    expect(Object.keys(acceptResponses ?? {})).toEqual(
+      expect.arrayContaining(['200', '400', '401', '403', '409', '500']),
+    );
+    expect(JSON.stringify(acceptResponses?.['400'])).toContain(
+      'INVITATION_SIGN_IN_REQUIRED',
+    );
     expect(
       manifest.commands.find(
         (command) => command.id === 'user:invitation:resend',

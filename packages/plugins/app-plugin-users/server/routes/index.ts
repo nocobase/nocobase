@@ -134,7 +134,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         operationId: 'usersInviteUsers',
         ...cliRoute({
           command: 'user invitation create',
-          columns: ['email', 'outcome', 'emailSent', 'inviteUrl'],
+          columns: [
+            'email',
+            'outcome',
+            'invitationId',
+            'emailSent',
+            'inviteUrl',
+          ],
           examples: ['user invitation create --emails ann@example.com'],
         }),
         description:
@@ -585,7 +591,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       ),
     );
     const closedInvitation = apiErrorResponse(
-      409,
+      400,
       'The invitation has expired, been accepted or been revoked (`INVITATION_EXPIRED`, `INVITATION_ACCEPTED`, `INVITATION_REVOKED`).',
     );
     invitations.post(
@@ -601,7 +607,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         security: [],
         responses: {
           200: dataResponse(PublicUserInvitationSchema),
-          409: closedInvitation,
+          400: closedInvitation,
           500: apiErrorResponse(500),
         },
       }),
@@ -624,8 +630,15 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         security: [],
         responses: {
           200: dataResponse(AcceptedInvitationSchema),
-          409: closedInvitation,
-          500: apiErrorResponse(500),
+          400: apiErrorResponse(
+            400,
+            'The invitation is unknown or closed, the account input is invalid, or the invited account must sign in (`INVITATION_SIGN_IN_REQUIRED`).',
+          ),
+          ...apiErrorResponses,
+          409: apiErrorResponse(
+            409,
+            'The new account conflicts with an existing account.',
+          ),
         },
       }),
       authentication.optional(),

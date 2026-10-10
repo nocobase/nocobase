@@ -123,7 +123,7 @@ const enUS = {
     status: 'Status',
     pending: 'Pending',
     expired: 'Expired',
-    notSent: 'Not sent',
+    notSent: 'Email not sent',
     resend: 'Send again',
     copyNewLink: 'Copy new link',
     linkReady: 'New link ready',
