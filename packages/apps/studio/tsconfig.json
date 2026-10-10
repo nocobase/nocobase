@@ -1,0 +1,11 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/client.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    "paths": {
+      "@/*": ["./client/*"]
+    }
+  },
+  "include": ["client"],
+  "exclude": ["registry"]
+}

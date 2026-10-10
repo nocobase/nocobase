@@ -130,6 +130,51 @@ describe('distribution service', () => {
       path.join(dir, 'stable', 'nocobase-runner', '0.3.0', name),
     );
   });
+
+  it('serves the universal tarball to a platform without one of its own, and the own one where there is', async () => {
+    const dir = path.join(root, 'universal');
+    writeDist(dir, {
+      acme: { '0.4.0': ['universal', 'darwin-arm64'] },
+      'nocobase-runner': { '0.5.0': ['universal'] },
+    });
+    const dist = createDistService({ dir });
+    const universal = await dist.find('acme', 'linux-x64');
+    expect(universal).toEqual({
+      product: 'acme',
+      version: '0.4.0',
+      target: 'linux-x64',
+      url: '/api/agents/dist/products/acme/versions/0.4.0/files/acme-v0.4.0-universal.tar.gz',
+      sha256: sha('acme 0.4.0 universal'),
+      size: 'acme 0.4.0 universal'.length,
+      channel: 'stable',
+      universal: true,
+    });
+    // A tarball built for the platform wins, and its answer is the one it always was.
+    expect(await dist.find('acme', 'darwin-arm64')).toEqual({
+      product: 'acme',
+      version: '0.4.0',
+      target: 'darwin-arm64',
+      url: '/api/agents/dist/products/acme/versions/0.4.0/files/acme-v0.4.0-darwin-arm64.tar.gz',
+      sha256: sha('acme 0.4.0 darwin-arm64'),
+      size: 'acme 0.4.0 darwin-arm64'.length,
+      channel: 'stable',
+    });
+    expect(await dist.resolve('nocobase-runner', 'linux-arm64')).toMatchObject({
+      target: 'linux-arm64',
+      universal: true,
+    });
+    // It is not a platform anyone asks for.
+    await expect(dist.resolve('acme', 'universal')).rejects.toMatchObject({
+      code: 'PLATFORM_UNSUPPORTED',
+    });
+    expect(
+      (await dist.file('acme', '0.4.0', 'acme-v0.4.0-universal.tar.gz')).target,
+    ).toBe('universal');
+    expect((await dist.manifest()).products['acme']).toEqual({
+      version: '0.4.0',
+      targets: ['darwin-arm64', 'universal'],
+    });
+  });
 });
 
 describe('distribution routes', () => {
@@ -312,6 +357,58 @@ describe('distribution routes', () => {
         .status,
     ).toBe(404);
     expect((await get('/agents/dist/manifest', auth)).status).toBe(200);
+  });
+
+  it('answers the universal tarball with universal set, and lets a download token bound to a platform fetch it', async () => {
+    writeDist(dir, { acme: { '0.6.0': ['universal'] } });
+    const { token } = await harness.services.downloadTokens.create('someone');
+    const auth = { [HEADERS.downloadToken]: token };
+    const { data: json } = await (
+      await get('/agents/dist/products/acme/targets/linux-x64', auth)
+    ).json();
+    expect(json).toMatchObject({
+      version: '0.6.0',
+      target: 'linux-x64',
+      url: '/api/agents/dist/products/acme/versions/0.6.0/files/acme-v0.6.0-universal.tar.gz',
+      universal: true,
+    });
+    const env = await (
+      await get('/agents/dist/products/acme/targets/linux-x64?format=env', auth)
+    ).text();
+    expect(env).toContain('target=linux-x64\n');
+    expect(env).toContain('universal=true\n');
+    // Bound to linux-x64 by its first request, it still downloads the one tarball every platform gets, counted.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const response = await get(json.url.replace(/^\/api/u, ''), auth);
+      expect(response.status).toBe(200);
+      expect(Buffer.from(await response.arrayBuffer()).toString()).toBe(
+        'acme 0.6.0 universal',
+      );
+    }
+    expect((await get(json.url.replace(/^\/api/u, ''), auth)).status).toBe(401);
+    expect(
+      (await get('/agents/dist/products/acme/targets/darwin-arm64', auth))
+        .status,
+    ).toBe(401);
+  });
+
+  it('answers a tarball built for the platform as before, without universal', async () => {
+    const auth = { 'x-test-user': 'someone' };
+    const env = await (
+      await get('/agents/dist/products/acme/targets/linux-x64?format=env', auth)
+    ).text();
+    expect(env).toBe(
+      [
+        'product=acme',
+        'version=0.5.0',
+        'target=linux-x64',
+        'url=/api/agents/dist/products/acme/versions/0.5.0/files/acme-v0.5.0-linux-x64.tar.gz',
+        `sha256=${sha('acme 0.5.0 linux-x64')}`,
+        `size=${'acme 0.5.0 linux-x64'.length}`,
+        'channel=stable',
+        '',
+      ].join('\n'),
+    );
   });
 
   it('serves a listed file with its checksum, and nothing else', async () => {

@@ -1,7 +1,7 @@
 /**
  * Distribution: the runner (`nocobase-runner`) and the application's CLI (such as `acme`), served by the application
- * itself as standalone tarballs (one per target, each bundling Node), so nothing is published to a registry and a
- * machine needs nothing installed.
+ * itself as tarballs, so nothing is published to a registry: one per target, each bundling Node, or one for every
+ * target (`UNIVERSAL_TARGET`, `nocobase cli build --universal`) that runs on the machine's own Node.js 24 or newer.
  *
  * `nocobase cli build` of `@nocobase/app-cli` (`--runner` for the runner) builds each product into a directory of its
  * own, with its own manifest, so the products are built and mounted apart (in CI, one artifact each):
@@ -10,7 +10,8 @@
  *   <dir>/<channel>/<product>/<version>/<product>-v<version>-<target>.tar.gz
  *
  * where a product's manifest lists its versions with each target's file (relative to the product's directory),
- * SHA-256 and size. The application serves one channel (`agents.dist.channel`, `stable` by default); a product's
+ * SHA-256 and size. A target without a file of its own gets the version's universal one, if it has one, answered with
+ * `universal: true`; a file built for the target wins over it. The application serves one channel (`agents.dist.channel`, `stable` by default); a product's
  * current version is the one `agents.dist.versions` pins, or the highest the channel has. Only files a manifest lists
  * are ever served.
  */
@@ -27,6 +28,7 @@ import {
   routePath,
   type DistArtifact,
   type DistManifest,
+  UNIVERSAL_TARGET,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
 
@@ -73,7 +75,7 @@ interface StoredManifest {
 
 /** A file the application may serve, found through the manifest. */
 export interface DistFile {
-  /** The platform it is built for. */
+  /** The platform it is built for: `UNIVERSAL_TARGET` for the one that serves every platform. */
   readonly target: string;
   readonly path: string;
   readonly sha256: string;
@@ -189,7 +191,9 @@ export function createDistService(config: DistConfig = {}): DistService {
   ): DistArtifact | null => {
     const version = currentVersion(stored, product);
     if (version === null) return null;
-    const entry = stored.products[product]?.versions[version]?.targets[target];
+    const targets = stored.products[product]?.versions[version]?.targets;
+    const own = targets?.[target];
+    const entry = own ?? targets?.[UNIVERSAL_TARGET];
     if (entry === undefined) return null;
     return {
       product,
@@ -203,6 +207,7 @@ export function createDistService(config: DistConfig = {}): DistService {
       sha256: entry.sha256,
       size: entry.size,
       channel,
+      ...(own === undefined ? { universal: true } : {}),
     };
   };
 

@@ -9,6 +9,7 @@ Every package published from this repository lives here, grouped by what it is r
 | `plugins/`   | Application plugins that ship as product features                                     |
 | `examples/`  | Application plugins that exist to demonstrate a capability                            |
 | `templates/` | Complete applications that `create-app` scaffolds from                                |
+| `apps/`      | Complete product applications this repository builds and deploys itself               |
 | `tools/`     | Development and build tooling, not shipped inside an application                      |
 
 ## `libs/`
@@ -50,9 +51,15 @@ For everyday development and exploring examples in this repository, run `pnpm ex
 
 Inside a template's own directory, use `pnpm dev`, `pnpm build`, and `pnpm start`.
 
+## `apps/`
+
+Complete applications that are products in their own right rather than starting points. `studio` (`@nocobase/studio`) is NocoBase Studio, the AI application workspace that assembles the projects, agents, knowledge and releases plugins. An application here is published as its own source, like a template, so it can be installed and built elsewhere, but `create-app` never scaffolds from it and nothing depends on it.
+
+It is not kept in step with the templates: it takes a newer template through its `nocobase-app-upgrade` Skill, as any generated application does. Its migrations are immutable history from the moment they merge, because installations of it keep their data across updates.
+
 ## `tools/`
 
-Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project.
+Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project. `studio-cli` publishes `nb-studio`, NocoBase Studio's command line, on its own: `@nocobase/app-cli-client` with Studio's brand and Skill, so a machine can install it from npm instead of from a Studio server.
 
 ## Adding a package
 

@@ -1,5 +1,29 @@
 # @nocobase/app-plugin-jobs-example
 
+## 1.0.0-beta.5
+
+### Minor Changes
+
+- c796cb9: Remove the Settings and Dev route surfaces. `@nocobase/app-client` no longer exports `defineSettingsRoutes()`, `defineDevRoutes()`, `isAppClientSettingsRouteGroup()`, `isAppClientDevRouteGroup()` or their definition, contribution and registered-route types, and the resolved runtime no longer carries `settingsRouteTree`, `devRouteTree`, `settings`, `settingGroups`, `devRoutes` or `devRouteGroups`. `AppClientSettingsRouteNavigation` is renamed `AppClientRouteNavigation` and `AppClientSettingIcon` is renamed `AppClientRouteIcon`. A contribution to any parent other than `app` now fails registration with a message that names `defineAppRoutes()`. Plugins contribute no settings or dev pages; an application that wants a configuration page declares it with `defineAppRoutes()` in its own navigation, for example under a Settings group.
+
+  The default and examples templates drop the settings layout, the `/settings/*` route, the dev route plumbing, and the Settings and Inbox buttons in the header; the `/inbox` page and the inbox block stay. The examples template no longer registers `@nocobase/app-plugin-departments-example`, which is removed. Upgrading an application means removing `defineSettingsRoutes([])` from `client/routes.ts`, the `settingsRouteTree` and `devRouteTree` props passed to `AppRouter`, and any settings layout it kept, and moving its own settings pages to `defineAppRoutes()`. Every package that depends on or peers with `@nocobase/app-client` is released again so that its published range accepts `3.0.0-beta.0`.
+
+### Patch Changes
+
+- 98e79a5: Reorganize the examples application's menu around workflows. The menu group of `@nocobase/app-plugin-lifecycle-example` is now called **Workflow** (工作流 in Chinese) instead of **Lifecycle Example**, and uses the workflow icon. The group of `@nocobase/app-plugin-office-flows-example` is now called **Workflow: Lightweight Approval** (工作流：轻量审批) instead of **Office Flows Example** and uses a stamp icon, and the group of `@nocobase/app-plugin-jobs-example` uses a cog icon, so neither shares the workflow icon any more. The examples template no longer has its own **Workflow** menu group or the **Waiting tasks** pages under `/workflow/waiting-tasks`, which went with the Workflow plugin.
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [98e79a5]
+- Updated dependencies [fb7b576]
+  - @nocobase/app-server@2.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.3
+  - @nocobase/app-plugin-authorization@1.0.0-beta.26
+  - @nocobase/app-client@3.0.0-beta.0
+  - @nocobase/i18n@1.0.0-beta.6
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.4
 
 ### Patch Changes

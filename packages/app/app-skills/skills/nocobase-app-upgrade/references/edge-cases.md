@@ -135,6 +135,10 @@ An application without an external connection only needs step 4.
 
 A release whose Default or Examples template has `testDir: './tests/playwright'` in `playwright.config.ts` keeps Playwright tests in `tests/playwright/`; earlier releases kept them in `e2e/`. Move the application's own files from `e2e/` to `tests/playwright/` with `git mv`, then take the template's `playwright.config.ts`, add `exclude: ['tests/playwright/**']` to the `test` section of `vitest.config.ts` so Vitest does not run them, and replace `e2e/**/*.ts` with `tests/playwright/**/*.ts` in `tsconfig.node.json`. Update any `globalSetup` path or script that names `e2e/`. Earlier templates shipped no tests in `e2e/`, so everything there belongs to the application. Run `pnpm exec vitest run` and `pnpm test:e2e` afterward to confirm each runner picks up only its own files.
 
+### The template's copy moved to `client/locales/system/`
+
+A release whose template has `client/locales/system/en-US.ts` keeps the template's own copy there — the shell, the sign-in pages, shared components and the homepage — and `client/locales/en-US.ts` and `zh-CN.ts` spread it before the application's own groups. Earlier releases kept everything in one file per language. Take the template's `client/locales/system/` as it is, then reduce each application locale file to `...systemEnUS` (or `...systemZhCN`) followed by the groups the application added itself: compare each group with the template's previous locale file, drop the ones the application never changed, and keep a reworded template key after the spread. A shared group the application extended, such as `navigation`, becomes `navigation: { ...systemEnUS.navigation, <the application's entries> }`. Run `pnpm exec tsc -p tsconfig.json --noEmit` and `tests/logic/app-locale-coverage.test.ts` afterward. From then on, an upgrade replaces `client/locales/system/` and leaves the application's locale files alone.
+
 ## Where the user's code lives
 
 ```text
@@ -143,7 +147,7 @@ Rarely touched by the template — a change landing here deserves a careful read
   server/routes/  server/providers/  database/  cli/commands/  tests/
 
 Template structure — where most of the delta lands
-  client/routing/  client/layouts/  client/theme/
+  client/routing/  client/layouts/  client/theme/  client/locales/system/
   client/app.ts  client/runtime.ts  client/startup.tsx  server/*.ts
   vite.config.ts  vitest.config.ts  eslint.config.js
   tsconfig*.json  index.html  components.json

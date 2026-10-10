@@ -1,8 +1,11 @@
 // Where an application's CLI is installed when it came from the application's install script
 // (`/api/agents/dist/installScript`), and how a newer version replaces it:
 //
-//   <prefix>/versions/<version>/    one unpacked standalone tarball per version (bin/<bin>, bin/node, dist/, …)
+//   <prefix>/versions/<version>/    one unpacked tarball per version (bin/<bin>, dist/, …, and bin/node when it
+//                                   bundles its Node)
 //   <prefix>/current -> versions/<version>
+//   <prefix>/node                   the Node a universal tarball (one without bin/node) runs on: a link the install
+//                                   script makes to the node it checked, or what an update leaves (`pinNode`)
 //   <prefix>/install.json           what the script set up: the command link (`binLink`), and `mode`, `cli` for the
 //                                   CLI alone or `runner` once the script ran with `--runner` (absent: `runner`)
 //   <bin-dir>/<bin> -> <prefix>/current/bin/<bin>
@@ -13,8 +16,11 @@
 // This module reads no CLI configuration, so the CLI's `update` and a runner carried by the CLI share it.
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { constants, existsSync, readFileSync } from 'node:fs';
 import {
+  access,
+  copyFile,
+  chmod,
   mkdir,
   readdir,
   readlink,
@@ -174,6 +180,49 @@ export async function pruneVersions(
   return removed;
 }
 
+async function isExecutable(file: string): Promise<boolean> {
+  try {
+    await access(file, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Makes sure `<prefix>/node` is a Node a universal version (one without `bin/node`) can start on, as its launcher looks
+ * there before PATH: a user service (launchd, systemd) usually runs without the PATH that finds the shell's `node`.
+ * Nothing changes when it is one already. Otherwise it becomes `node`, the Node this process runs on: copied when it is
+ * one an installed version bundles, since that version is removed by a later update, and linked when it is the
+ * machine's own. Returns what it did.
+ */
+export async function pinNode(
+  installation: Pick<Installation, 'prefix'>,
+  node: string = process.execPath,
+): Promise<'kept' | 'copied' | 'linked'> {
+  const pinned = path.join(installation.prefix, 'node');
+  if (await isExecutable(pinned)) return 'kept';
+  const temporary = path.join(
+    installation.prefix,
+    `.node-${process.pid}-${Date.now()}`,
+  );
+  const inside = path.relative(
+    path.join(installation.prefix, 'versions'),
+    node,
+  );
+  const bundled = !inside.startsWith('..') && !path.isAbsolute(inside);
+  try {
+    if (bundled) {
+      await copyFile(node, temporary);
+      await chmod(temporary, 0o755);
+    } else await symlink(node, temporary);
+    await rename(temporary, pinned);
+  } finally {
+    await rm(temporary, { force: true });
+  }
+  return bundled ? 'copied' : 'linked';
+}
+
 /** What to update to: a version, where its tarball is, and its checksum. */
 export interface UpdateTarget {
   version: string;
@@ -224,7 +273,9 @@ export interface AppliedUpdate {
 
 /**
  * Installs `update` beside the running version and makes it current; the previous version stays until the next
- * update, so a bad one can be switched back by hand. The process has to restart to run it.
+ * update, so a bad one can be switched back by hand. The process has to restart to run it. A universal version (no
+ * `bin/node`) gets a Node to run on first (`pinNode`): the one this process runs on, which keeps a runner whose service
+ * has no `node` on its PATH starting when it moves from a version that bundles Node to one that does not.
  */
 export async function applyUpdate(
   options: ApplyUpdateOptions,
@@ -238,6 +289,13 @@ export async function applyUpdate(
     options.log?.(`update: downloading ${bin} ${update.version}`);
     const bytes = await client.download(update.url);
     await unpackTarball(bytes, update.sha256, dest);
+  }
+  if (!existsSync(path.join(dest, 'bin', 'node'))) {
+    const pinned = await pinNode(installation);
+    if (pinned !== 'kept')
+      options.log?.(
+        `update: ${bin} ${update.version} runs on ${path.join(installation.prefix, 'node')} (${pinned} from ${process.execPath})`,
+      );
   }
   await activateVersion(installation, update.version);
   options.log?.(

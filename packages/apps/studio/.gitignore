@@ -1,0 +1,30 @@
+node_modules/
+dist/
+coverage/
+
+# Local configuration, including the generated secrets key.
+/config.yml
+/config.toml
+/.env
+/.env.local
+
+# Local application state.
+/storage/
+/database.sqlite
+/database.sqlite-journal
+/database.sqlite-wal
+/database.sqlite-shm
+/database/*/collections/
+/.agents/
+/.claude/skills/
+/.agent-annotations/
+/.nocobase/
+*.log
+
+# Browser test output: screenshots (pnpm test:screenshots) and Playwright results.
+/output/
+
+# Tarballs built for the image (Dockerfile).
+/runners-dist/
+/test-results/
+/playwright-report/
