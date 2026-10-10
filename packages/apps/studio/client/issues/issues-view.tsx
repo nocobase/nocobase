@@ -91,7 +91,7 @@ export function IssuesView({
   }));
 
   return (
-    <div className='flex h-full min-h-0 flex-col gap-4'>
+    <div className='flex h-full min-h-0 flex-col gap-2'>
       {deleted ? (
         <Alert data-testid='issues-trash-banner'>
           <Trash2Icon />
@@ -115,7 +115,7 @@ export function IssuesView({
         views={options}
         fetching={fetching && view !== 'agent'}
       />
-      <div className='min-h-0 flex-1'>
+      <div className='min-h-0 flex-1' data-testid='issues-view-content'>
         {view === 'agent' ? (
           <AgentQueueView
             page={page}

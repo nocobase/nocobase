@@ -43,10 +43,9 @@ export default function IssuesPage(): ReactElement {
   // The page is exactly the content area's height: header, toolbar, then the view filling the rest and scrolling
   // inside, so the page itself never scrolls.
   return (
-    <PageContainer className='flex h-full min-h-0 flex-col gap-6 space-y-0'>
+    <PageContainer className='flex h-full min-h-0 flex-col gap-4 space-y-0 py-4 md:py-4'>
       <PageHeader
         title={t('issuesPage.title')}
-        description={t('issuesPage.description')}
         actions={
           <>
             <PmShortcuts

@@ -1,11 +1,7 @@
-/**
- * Search, filters and the view switch above Studio's issues. Everything writes to the query string through the page
- * (`use-issues-page.ts`); the search box keeps its own text (`useUrlSearch`). Below `md` the search and the filters
- * fold behind a "Filters" button with the active count, so the view below gets the height.
- */
+/** Search, filters and the view switch above Studio's issues. */
 import { useTranslation } from '@nocobase/i18n/client';
 import { ListFilterIcon, SearchIcon, XIcon } from 'lucide-react';
-import { useId, useState, type ComponentType, type ReactElement } from 'react';
+import { useRef, useState, type ComponentType, type ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +9,12 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '@/components/ui/input-group';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -22,7 +24,6 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { cn } from 'cn';
 
 import type { IssueToolbarFilter, IssuesPage } from './use-issues-page.js';
 
@@ -47,24 +48,29 @@ function FilterSelect({
       ? filter.value
       : 'all';
   return (
-    <Select
-      items={items}
-      value={selected}
-      onValueChange={(next) =>
-        onChange(next && next !== 'all' ? next : undefined)
-      }
-    >
-      <SelectTrigger className='w-full md:w-40' aria-label={filter.label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className='flex min-w-0 flex-col gap-1'>
+      <span className='text-xs font-medium text-muted-foreground'>
+        {filter.label}
+      </span>
+      <Select
+        items={items}
+        value={selected}
+        onValueChange={(next) =>
+          onChange(next && next !== 'all' ? next : undefined)
+        }
+      >
+        <SelectTrigger className='w-full' aria-label={filter.label}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -78,8 +84,8 @@ export function IssueToolbar({
   readonly fetching: boolean;
 }): ReactElement {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
-  const fieldsId = useId();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
   const {
     toolbarFilters,
     searchText,
@@ -87,69 +93,125 @@ export function IssueToolbar({
     scheduleSearch,
     searchRef,
   } = page;
-  const active =
-    toolbarFilters.filter((filter) => filter.value !== undefined).length +
-    (searchText.trim() === '' ? 0 : 1);
+  const selectedFilters = toolbarFilters.filter(
+    (filter) => filter.value !== undefined,
+  );
+  const filterCount = selectedFilters.length;
+  const summary = [
+    ...selectedFilters.map((filter) => {
+      const value = filter.options.find(
+        (option) => option.value === filter.value,
+      )?.label;
+      return `${filter.label}: ${value ?? filter.value}`;
+    }),
+    ...(searchText.trim()
+      ? [`${t('issuesPage.searchLabel')}: ${searchText.trim()}`]
+      : []),
+  ].join(' · ');
+
+  const searchField = (ref: typeof searchRef) => (
+    <InputGroup className='w-full'>
+      <InputGroupAddon>
+        <SearchIcon />
+      </InputGroupAddon>
+      <InputGroupInput
+        ref={ref}
+        value={searchText}
+        placeholder={t('issuesPage.searchPlaceholder')}
+        aria-label={t('issuesPage.searchLabel')}
+        onChange={(event) => {
+          setSearchText(event.target.value);
+          if (!(event.nativeEvent as InputEvent).isComposing)
+            scheduleSearch(event.target.value);
+        }}
+        onCompositionEnd={(event) => scheduleSearch(event.currentTarget.value)}
+      />
+    </InputGroup>
+  );
+
+  const clearFilters = () => {
+    page.clearFilters();
+    if (!window.matchMedia('(min-width: 768px)').matches) {
+      setFiltersOpen(true);
+      window.requestAnimationFrame(() => mobileSearchRef.current?.focus());
+    }
+  };
+
   return (
-    <div className='flex flex-wrap items-center gap-2'>
-      <Button
-        variant='outline'
-        size='sm'
-        className='md:hidden'
-        aria-expanded={expanded}
-        aria-controls={fieldsId}
-        onClick={() => setExpanded((open) => !open)}
-      >
-        <ListFilterIcon data-icon='inline-start' />
-        {t('issuesPage.filtersToggle')}
-        {active > 0 ? (
-          <span className='text-muted-foreground tabular-nums'>{active}</span>
-        ) : null}
-      </Button>
-      {/* Below md: a two-column block on its own line, shown only when expanded; from md: part of the row. */}
-      <div
-        id={fieldsId}
-        className={cn(
-          'order-last w-full grid-cols-2 gap-2 md:contents',
-          expanded ? 'grid' : 'hidden',
-        )}
-      >
-        <InputGroup className='col-span-2 w-full md:w-64'>
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-          <InputGroupInput
-            ref={searchRef}
-            value={searchText}
-            placeholder={t('issuesPage.searchPlaceholder')}
-            aria-label={t('issuesPage.searchLabel')}
-            onChange={(event) => {
-              setSearchText(event.target.value);
-              if (!(event.nativeEvent as InputEvent).isComposing)
-                scheduleSearch(event.target.value);
-            }}
-            onCompositionEnd={(event) =>
-              scheduleSearch(event.currentTarget.value)
-            }
-          />
-        </InputGroup>
-        {toolbarFilters.map((filter) => (
-          <FilterSelect
-            key={filter.key}
-            filter={filter}
-            onChange={(value) => page.setFilter(filter.key, value)}
-          />
-        ))}
+    <div
+      className='flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap'
+      data-testid='issues-toolbar'
+    >
+      <div className='hidden min-w-24 max-w-64 flex-[1_1_12rem] md:block'>
+        {searchField(searchRef)}
       </div>
+      <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <PopoverTrigger
+          render={
+            <Button
+              variant='outline'
+              size='sm'
+              className='shrink-0'
+              aria-label={`${t('issuesPage.filtersToggle')}${searchText.trim() ? `, ${t('issuesPage.searchActive')}` : ''}${filterCount ? `, ${filterCount}` : ''}`}
+            />
+          }
+        >
+          <ListFilterIcon data-icon='inline-start' />
+          <span>{t('issuesPage.filtersToggle')}</span>
+          {filterCount > 0 ? (
+            <span className='text-muted-foreground tabular-nums'>
+              {filterCount}
+            </span>
+          ) : null}
+          {searchText.trim() ? (
+            <SearchIcon className='size-3 text-primary md:hidden' />
+          ) : null}
+        </PopoverTrigger>
+        <PopoverContent
+          align='start'
+          className='max-h-[calc(100dvh-2rem)] w-[min(24rem,calc(100vw-1rem))] overflow-y-auto md:w-96'
+        >
+          <PopoverTitle className='px-1'>
+            {t('issuesPage.filtersToggle')}
+          </PopoverTitle>
+          <div className='md:hidden'>{searchField(mobileSearchRef)}</div>
+          <div className='flex flex-col gap-2'>
+            {toolbarFilters.map((filter) => (
+              <FilterSelect
+                key={filter.key}
+                filter={filter}
+                onChange={(value) => page.setFilter(filter.key, value)}
+              />
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+      {summary ? (
+        <span
+          className='hidden min-w-0 flex-1 truncate text-sm text-muted-foreground md:block'
+          title={summary}
+          aria-label={summary}
+        >
+          {summary}
+        </span>
+      ) : null}
       {page.filtered || searchText.trim() !== '' ? (
-        <Button variant='ghost' size='sm' onClick={page.clearFilters}>
+        <Button
+          variant='ghost'
+          size='sm'
+          className='shrink-0 px-2 sm:px-3'
+          aria-label={t('issuesPage.clearFilters')}
+          onClick={clearFilters}
+        >
           <XIcon data-icon='inline-start' />
-          {t('issuesPage.clearFilters')}
+          <span className='hidden sm:inline'>
+            {t('issuesPage.clearFilters')}
+          </span>
         </Button>
       ) : null}
       {fetching ? (
         <Spinner
-          className='size-4 text-muted-foreground'
+          className='size-4 shrink-0 text-muted-foreground'
           aria-label={t('issuesPage.loading')}
         />
       ) : null}
@@ -157,7 +219,7 @@ export function IssueToolbar({
         variant='outline'
         size='sm'
         spacing={0}
-        className='ml-auto'
+        className='ml-auto shrink-0'
         value={[page.view]}
         onValueChange={(values: string[]) => {
           const [next] = values;
