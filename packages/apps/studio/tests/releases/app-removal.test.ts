@@ -83,6 +83,7 @@ function fakeKeys(): CiKeys {
               id,
               name: 'acme/shop CI',
               expiresAt: null,
+              lastUsedAt: null,
               status: 'active' as const,
               appIds,
             }

@@ -116,6 +116,7 @@ export function orgCiKeys(resolver: ServiceResolver): CiKeys {
         id: key.id,
         name: key.name,
         expiresAt: key.expiresAt,
+        lastUsedAt: key.lastUsedAt,
         status: key.status,
         appIds: Array.isArray(objects) ? [...(objects as string[])] : 'all',
       };

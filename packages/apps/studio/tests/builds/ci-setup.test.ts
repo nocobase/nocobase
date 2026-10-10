@@ -124,6 +124,7 @@ function fakeKeys(): CiKeys {
               id: key.id,
               name: key.name,
               expiresAt: key.expiresAt,
+              lastUsedAt: null,
               status: key.status,
               appIds: key.appIds,
             }

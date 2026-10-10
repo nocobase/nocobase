@@ -240,8 +240,6 @@ export const ciSetupEnUS = {
         'Store it in the repository’s CI as the secret {{secret}} (on GitHub, an Actions secret).',
     },
     generate: 'Generate the repository’s CI key',
-    replaces:
-      'The repository already has its CI key: generating gives it a new secret, the current one stops working, and Studio no longer writes or rotates it for you.',
     manageOnly: 'Only someone who manages the project can generate it.',
     revealed: {
       title: 'The repository’s CI key',
@@ -263,6 +261,14 @@ export const ciSetupEnUS = {
     actions: 'Key actions',
     rotate: 'Rotate key',
     rotateReveal: 'Rotate and show the new key',
+    confirmReplacement: {
+      title: 'Replace the repository’s CI key?',
+      description:
+        'The current key will stop working immediately. CI using NB_STUDIO_API_KEY will fail to authenticate until you update it.',
+      lastUsed: 'Last used: {{date}}',
+      cancel: 'Cancel',
+      confirm: 'Replace and show new key',
+    },
     rotated: 'Key rotated',
     expires: 'Expires {{date}}',
     never: 'Never expires',
@@ -557,8 +563,6 @@ export const ciSetupZhCN: typeof ciSetupEnUS = {
         '把它保存为仓库 CI 的密钥 {{secret}}（在 GitHub 上是 Actions 密钥）。',
     },
     generate: '生成仓库的 CI 密钥',
-    replaces:
-      '仓库已经有 CI 密钥：生成会为它换一个新值，当前的值随即失效，Studio 也不再替你写入或轮换它。',
     manageOnly: '只有项目的管理者可以生成。',
     revealed: {
       title: '仓库的 CI 密钥',
@@ -580,6 +584,14 @@ export const ciSetupZhCN: typeof ciSetupEnUS = {
     actions: '密钥操作',
     rotate: '轮换密钥',
     rotateReveal: '轮换并显示新密钥',
+    confirmReplacement: {
+      title: '替换仓库 CI 密钥？',
+      description:
+        '当前密钥会立即失效。在更新密钥前，使用 NB_STUDIO_API_KEY 的 CI 都会认证失败。',
+      lastUsed: '最近使用时间：{{date}}',
+      cancel: '取消',
+      confirm: '替换并显示新密钥',
+    },
     rotated: '密钥已轮换',
     expires: '{{date}} 到期',
     never: '不过期',

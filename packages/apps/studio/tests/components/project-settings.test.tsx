@@ -44,6 +44,7 @@ const configured: { resourceId: string; run: CiRunRequest }[] = [];
 const removed: { path: string; query: unknown }[] = [];
 const generated: { app: CiApp; target: CiTarget; managed: boolean }[] = [];
 const revealed: { path: string; json: unknown }[] = [];
+let failRevealRequests = 0;
 
 const ENVIRONMENTS: CiEnvironment[] = [
   { id: 'preview', name: 'Preview', protected: false },
@@ -116,6 +117,10 @@ const request = vi.fn(
       options.method === 'POST'
     ) {
       revealed.push({ path: match[2], json: options.json });
+      if (failRevealRequests > 0) {
+        failRevealRequests -= 1;
+        return Promise.reject(new Error('Failed'));
+      }
       const next: CiConnectionView = {
         ...connections.get(match[1]!)!,
         state: 'manual',
@@ -123,6 +128,7 @@ const request = vi.fn(
           id: 'k1',
           name: 'acme/shop CI',
           expiresAt: null,
+          lastUsedAt: null,
           status: 'active',
         },
       };
@@ -274,6 +280,7 @@ const connection = (
     id: 'k1',
     name: 'acme/shop CI',
     expiresAt: '2026-12-01T00:00:00.000Z',
+    lastUsedAt: '2026-10-09T12:30:00.000Z',
     status: 'active',
   },
   secretName: 'NB_STUDIO_API_KEY',
@@ -361,6 +368,7 @@ beforeEach(() => {
   configured.length = 0;
   removed.length = 0;
   revealed.length = 0;
+  failRevealRequests = 0;
   project.resources = [repo('r1', 'acme/shop')];
   connections.set('r1', connection('r1'));
 });
@@ -947,7 +955,7 @@ describe('Deployment', () => {
     expect(document.body.textContent).not.toContain('nbk_secret_1');
   });
 
-  it('says generating gives a key already there a new secret', async () => {
+  it('confirms before replacing an existing key and cancellation leaves it unchanged', async () => {
     connections.set(
       'r1',
       connection('r1', {
@@ -959,11 +967,86 @@ describe('Deployment', () => {
       }),
     );
     render(page('?section=ci&configure=1'));
-    await screen.findByRole('button', { name: 'ciSetup.manual.generate' });
-    expect(screen.getByText('ciSetup.manual.replaces')).toBeTruthy();
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'ciSetup.manual.generate' }),
+    );
+    expect(
+      await screen.findByRole('alertdialog', {
+        name: 'ciSetup.key.confirmReplacement.title',
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('ciSetup.key.confirmReplacement.description'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('ciSetup.key.confirmReplacement.lastUsed'),
+    ).toBeTruthy();
+    expect(revealed).toEqual([]);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'ciSetup.key.confirmReplacement.cancel',
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('alertdialog', {
+          name: 'ciSetup.key.confirmReplacement.title',
+        }),
+      ).toBeNull(),
+    );
+    expect(revealed).toEqual([]);
   });
 
-  it('rotates a key whose secret the person holds by showing the new one once', async () => {
+  it('replaces an existing key only after confirmation', async () => {
+    connections.set(
+      'r1',
+      connection('r1', {
+        state: 'manual',
+        connected: false,
+        connection: 'none',
+        reported: false,
+        apps: [],
+      }),
+    );
+    render(page('?section=ci&configure=1'));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'ciSetup.manual.generate' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'ciSetup.key.confirmReplacement.confirm',
+      }),
+    );
+    await screen.findByLabelText('ciSetup.manual.revealed.label');
+    expect(revealed).toEqual([{ path: 'ci/setup', json: { reveal: true } }]);
+  });
+
+  it('generates a key directly when the repository has none', async () => {
+    connections.set(
+      'r1',
+      connection('r1', {
+        state: 'disabled',
+        key: null,
+        connected: false,
+        connection: 'none',
+        reported: false,
+        apps: [],
+      }),
+    );
+    render(page('?section=ci&configure=1'));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'ciSetup.manual.generate' }),
+    );
+    await screen.findByLabelText('ciSetup.manual.revealed.label');
+    expect(
+      screen.queryByRole('alertdialog', {
+        name: 'ciSetup.key.confirmReplacement.title',
+      }),
+    ).toBeNull();
+    expect(revealed).toEqual([{ path: 'ci/setup', json: { reveal: true } }]);
+  });
+
+  it('confirms once, closes on success, and shows the rotated key once', async () => {
     connections.set('r1', connection('r1', { state: 'manual' }));
     render(page('?section=ci'));
     const actions = await screen.findByRole('button', {
@@ -972,11 +1055,60 @@ describe('Deployment', () => {
     actions.focus();
     await userEvent.keyboard('{ArrowDown}');
     fireEvent.click(await screen.findByText('ciSetup.key.rotateReveal'));
+    expect(
+      await screen.findByRole('alertdialog', {
+        name: 'ciSetup.key.confirmReplacement.title',
+      }),
+    ).toBeTruthy();
+    expect(revealed).toEqual([]);
+    const confirm = screen.getByRole('button', {
+      name: 'ciSetup.key.confirmReplacement.confirm',
+    });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
     const secret = await screen.findByLabelText(
       'ciSetup.manual.revealed.label',
     );
     expect((secret as HTMLInputElement).value).toBe('nbk_secret_1');
     expect(revealed).toEqual([{ path: 'ci/rotate', json: { reveal: true } }]);
+    expect(
+      screen.queryByRole('alertdialog', {
+        name: 'ciSetup.key.confirmReplacement.title',
+      }),
+    ).toBeNull();
+  });
+
+  it('keeps the replacement confirmation open after failure so it can be retried', async () => {
+    failRevealRequests = 1;
+    connections.set('r1', connection('r1', { state: 'manual' }));
+    render(page('?section=ci'));
+    const actions = await screen.findByRole('button', {
+      name: 'ciSetup.key.actions',
+    });
+    actions.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    fireEvent.click(await screen.findByText('ciSetup.key.rotateReveal'));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'ciSetup.key.confirmReplacement.confirm',
+      }),
+    );
+    await screen.findByRole('alertdialog', {
+      name: 'ciSetup.key.confirmReplacement.title',
+    });
+    expect(revealed).toEqual([{ path: 'ci/rotate', json: { reveal: true } }]);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'ciSetup.key.confirmReplacement.confirm',
+      }),
+    );
+    await screen.findByLabelText('ciSetup.manual.revealed.label');
+    expect(revealed).toHaveLength(2);
+    expect(
+      screen.queryByRole('alertdialog', {
+        name: 'ciSetup.key.confirmReplacement.title',
+      }),
+    ).toBeNull();
   });
 
   it('shows every build, filtered by a row: pull requests’ Apps counting as their row', async () => {
