@@ -21,6 +21,11 @@
   },
   {
     "type": "file",
+    "name": "testing",
+    "label": "插件测试"
+  },
+  {
+    "type": "file",
     "name": "skills",
     "label": "让 AI 会用你的插件"
   },

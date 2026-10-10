@@ -66,48 +66,33 @@ The filename and exported `name` should match and remain globally stable. Task s
 
 ### Test a Migration against a real database
 
-Every Migration needs a migration-level test that runs `up()` through the real Migrator and, when reversible, `down()`. Verify both logical metadata and the physical schema: Collection and field definitions, table and column names, types, nullability, relations, foreign keys, indexes, and constraints relevant to the change. An import test or `validateMigrations()` proves only shape and discovery, not DDL correctness.
+Every Migration needs a test with `describeMigration()` from `@nocobase/app-testing/server`. It applies earlier migrations, applies this migration, rolls it back, and reapplies it, checking physical schema against metadata at each step and comparing the rolled-back schema with its original state. Assert fields, relations, indexes and constraints through `expectCollection()`. An import test or `validateMigrations()` proves only shape and discovery, not DDL correctness.
 
-For the `auditLogs` migration above, place this in the plugin's `tests/database.test.ts`. The plugin must provide its usual test dependencies, including the SQLite adapter. This fixture points at the plugin's own migration directory and assumes the example migration is part of the fresh batch:
+For the `auditLogs` migration above, place this in `tests/database/migrations.test.ts`. Declare `@nocobase/app-testing` in `devDependencies`; the fixture selects the dialect and owns cleanup. Include the migration sources of any dependencies whose tables this migration needs.
 
 ```ts
-// @vitest-environment node
-import path from 'node:path';
-import { createDatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { expect, it } from 'vitest';
+import { fileURLToPath } from 'node:url';
+import { describeMigration } from '@nocobase/app-testing/server';
+import packageMetadata from '../../package.json' with { type: 'json' };
 
-it('creates logical and physical audit schema and rolls it back', async () => {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  try {
-    const migrator = database.createMigrator({
-      directory: path.resolve(import.meta.dirname, '../database/migrations'),
-      packageName: '@nocobase/app-plugin-audit-log',
+describeMigration('202609180001_create_audit_logs', {
+  sources: [{
+    packageName: packageMetadata.name,
+    directory: fileURLToPath(new URL('../../database/migrations', import.meta.url)),
+  }],
+  up: async ({ expectCollection }) => {
+    await expectCollection('auditLogs').toHaveField('action', {
+      type: 'string', nullable: false, length: 255,
     });
-    await migrator.latest();
-    const collections = database.connection().collections;
-    expect((await collections.get('auditLogs'))?.fields).toContainEqual(
-      expect.objectContaining({ name: 'action', type: 'string' }),
-    );
-    expect(
-      (await collections.getPhysical('auditLogs'))?.columns,
-    ).toContainEqual(
-      expect.objectContaining({ columnName: 'action', nullable: false }),
-    );
-
-    await migrator.rollback();
-    expect(await collections.get('auditLogs')).toBeUndefined();
-    expect(await collections.getPhysical('auditLogs')).toBeUndefined();
-  } finally {
-    await database.destroy();
-  }
+    await expectCollection('auditLogs').toHaveField('createdAt', { nullable: false });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('auditLogs').not.toExist();
+  },
 });
 ```
 
-The maintained Repository migration test (`packages/examples/app-plugin-repository-example/tests/database.test.ts`) additionally verifies relation metadata, physical foreign keys, indexes, optimistic-lock fields, and reverse deletion order.
+For data migrations, use `before` to prepare rows in the prior schema and `up` to verify their transformed values. Set `reversible: false` only when the migration deliberately has no reverse operation. Do not import a dialect adapter or configure a database in the test. The maintained Repository migration test (`packages/examples/app-plugin-repository-example/tests/database.test.ts`) covers relations, indexes and reverse deletion order.
 
 Run the dialect integration suites selected by `packages/libs/db-testkit/docs/integration-testing.md` when the change affects shared `packages/libs/db*` behavior. A normal plugin-specific Migration usually needs its real test database and target App upgrade path rather than every dialect locally.
 

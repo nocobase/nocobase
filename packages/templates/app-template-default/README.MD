@@ -407,6 +407,16 @@ The button remains visible so configuration problems are discoverable. The
 server enforces the `notification:test` `send` permission only when the message
 is submitted.
 
+Application tests use `@nocobase/app-testing` from `devDependencies`:
+
+| Entry                          | Use                                                                                                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@nocobase/app-testing/server` | Start the real application with `createAppTest()`, use isolated databases with `createDatabaseTest()`, and verify migrations with `describeMigration()`   |
+| `@nocobase/app-testing/client` | Render pages with `renderWithApp()`, answer requests with `answerApi()`, and assert notifications through `toasts()`                                      |
+| `@nocobase/app-testing/cli`    | Run commands with `bindAppCommand()` and `runAppCommand()`; use `createTestAppConfig()` and `bindTestAppCommand()` when the command opens the application |
+
+Start a page test from `tests/components/page-harness.test.tsx`. It keeps the application hooks real, loads translations strictly, tests permission-dependent actions, and opens and closes a child-route dialog. Supply application locale resources with `namespace` and `namespaces`, register required plugins through `plugins`, and replace external services through `services` without registering their plugins too. Database fixtures select SQLite by default or `NOCOBASE_TEST_DB_DIALECT`; tests do not choose a driver. Server/database tests run under Node, page tests under jsdom. `createAppTest()` shares one application per file unless `scope: 'test'` is selected. See `.agents/skills/nocobase-app-development/references/testing.md` for the complete workflow.
+
 ## API documentation
 
 The application documents every `/api` endpoint it serves — its own routes, every registered plugin's, the data endpoints and Better Auth's sign-in endpoints — in an OpenAPI 3.1 document:

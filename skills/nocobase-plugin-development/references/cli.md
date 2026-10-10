@@ -103,10 +103,10 @@ The command tree is assembled for `--help` too, so every command module is impor
 
 ### Test
 
-`@nocobase/app-cli/testing` runs a command without the runner:
+`@nocobase/app-testing/cli` runs a command without the runner:
 
 ```ts
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 
 const Bound = bindAppCommand(OrdersExport, {
   rootDir: fixtureRoot,
@@ -122,6 +122,44 @@ expect(run.json()).toMatchObject({
 ```
 
 `bindAppCommand()` pins the command to a fixture application, the way the runner would point it at the one it located; `id` is the id the runner would give it, colon-separated, so the document names the command. Pass `loadRuntime` and `createApp` as well to replace the application with a stub. `runAppCommand()` returns what `run()` returned as `result`, what escaped it as `error`, the `exitCode`, the captured `stdout` and `stderr`, and `json()` for the `--json` document. Assert on those rather than on printed text.
+
+A command that opens the real application needs isolated databases and storage too. Use `createTestAppConfig()` and `bindTestAppCommand()` from the same entry. The fixture runtime must register the plugin and load `configPath`. For a TypeScript fixture under `tests/fixtures/app`, import its composition roots explicitly so Vitest resolves their `.js` specifiers to source; the conventional loader uses Node and otherwise needs compiled JavaScript or an active TypeScript loader. A custom `loadRuntime` must pass the test configuration itself:
+
+```ts
+// Inside tests/cli/orders-export.test.ts, with OrdersExport imported from the plugin's CLI source.
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
+import { bindTestAppCommand, createTestAppConfig, runAppCommand } from '@nocobase/app-testing/cli';
+import { expect } from 'vitest';
+import runtime from '../fixtures/app/server/runtime.ts';
+import { createApp } from '../fixtures/app/server/app.ts';
+
+const fixtureRoot = fileURLToPath(new URL('../fixtures/app', import.meta.url));
+const config = await createTestAppConfig({
+  config: { auth: { secret: 'test-only-auth-secret-at-least-32-characters' } },
+});
+try {
+  const Bound = bindTestAppCommand(OrdersExport, {
+    rootDir: fixtureRoot,
+    id: 'orders:export',
+    config,
+    createApp,
+    loadRuntime: () => resolveStandaloneAppRuntime(runtime, {
+      rootDir: fixtureRoot,
+      configPath: config.path,
+      env: { APP_STORAGE_DIR: path.join(config.directory, 'storage') },
+      consoleLogStream: 'stderr',
+    }),
+  });
+  const run = await runAppCommand(Bound, ['--dry-run', '--json']);
+  expect(run.json()).toMatchObject({ ok: true, status: 'success-noop' });
+} finally {
+  await config.dispose();
+}
+```
+
+Put the configuration and run inside a test, provision every connection it writes, and direct command output files into the temporary directory too. The configuration fixture provisions databases; it does not start an application, apply migrations itself or redirect arbitrary file writes. Prepare schema and records before a command that assumes an installed database; `app.start()` installs with auto-run enabled, but `app.registerProviders()` alone does not.
 
 ## Example command
 
