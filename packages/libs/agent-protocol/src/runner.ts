@@ -20,7 +20,11 @@ import {
   type ActiveJob,
   type JobPayload,
 } from './jobs.js';
-import { DIST_PRODUCT_PATTERN } from './dist.js';
+import {
+  DIST_PRODUCT_PATTERN,
+  EXACT_VERSION_PATTERN,
+  NPM_PACKAGE_PATTERN,
+} from './dist.js';
 import { RunnerPolicySchema, type RunnerPolicy } from './policy.js';
 import {
   WorkspaceReportingSchema,
@@ -353,6 +357,26 @@ export interface UpgradeNotice {
 }
 
 /**
+ * A newer runner the application names on the npm registry instead of serving it as a tarball: install
+ * `<package>@<latestVersion>` (an exact version) with the Node.js the machine has, and restart on it between runs.
+ * Sent in `HeartbeatResponse.npmUpgrade`, only to a runner with the `npm` feature and never together with `upgrade`; a
+ * runner without the feature is offered no update for a product the application has no tarball of, as before.
+ */
+export interface NpmUpgradeNotice {
+  readonly latestVersion: string;
+  readonly package: string;
+  readonly reason: string;
+  readonly channel?: string;
+}
+
+export const NpmUpgradeNoticeSchema: z.ZodType<NpmUpgradeNotice> = z.object({
+  latestVersion: z.string().max(64).regex(EXACT_VERSION_PATTERN),
+  package: z.string().max(214).regex(NPM_PACKAGE_PATTERN),
+  reason: z.string(),
+  channel: z.string().optional(),
+});
+
+/**
  * The server cannot work with a runner speaking this protocol. It keeps the runner connected and shows it as needing
  * an upgrade, answers its claims with no work and releases what it holds; the runner stays up, keeps sending
  * heartbeats and stops claiming until an answer comes without it (it was upgraded, or the server was).
@@ -379,6 +403,8 @@ export interface HeartbeatResponse {
   readonly ok: true;
   readonly serverTime: string;
   readonly upgrade?: UpgradeNotice;
+  /** A newer runner to install from npm (`NpmUpgradeNotice`), for a runner with the `npm` feature only. */
+  readonly npmUpgrade?: NpmUpgradeNotice;
   /** Present when the server cannot work with the runner's protocol: claim nothing until it is gone. */
   readonly compatibility?: UpgradeRequired;
   /** Runs among `active` whose cancellation was requested: stop them and acknowledge (`cancelAck`). */
@@ -410,6 +436,7 @@ export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
       channel: z.string().optional(),
     })
     .optional(),
+  npmUpgrade: NpmUpgradeNoticeSchema.optional(),
   compatibility: UpgradeRequiredSchema.optional(),
   cancelRequested: z.array(z.string()),
   release: z.array(z.string()),

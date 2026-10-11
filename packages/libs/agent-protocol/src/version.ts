@@ -51,10 +51,19 @@ import { z } from 'zod';
  * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
  * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
  *
+ * `RepoDir.initializeIfEmpty` optionally permits a coding run to make the first commit of a verified empty remote.
+ * Older runners ignore it and retain their missing-branch refusal. Unlike `initial`, it never allows a default-branch
+ * update: the runner only grants branch creation after checking all remote refs.
+ *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
+ *
+ * Version 8 added the `npm` feature: a runner that has it may be told to update from the npm registry
+ * (`HeartbeatResponse.npmUpgrade`) when the application serves no tarball of it. Nothing of version 7 changed, so a
+ * server speaking 8 serves runners speaking 3 to 7 and offers them only what it offered before. The number moved so
+ * that a runner announcing `npm` is refused cleanly by a server that does not know it.
  */
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 8;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -82,6 +91,8 @@ export function isProtocolSupported(version: number): boolean {
  *   kind `archive`).
  * - `jobs.build`: executes build jobs (`jobs.ts`, `jobFeature`).
  * - `mounts`: places the run's mounts (`RunPayload.mounts`) in its work directory before the agent starts.
+ * - `npm` (`NPM_UPGRADE_FEATURE`, protocol 8): updates itself from the npm registry when the application names a
+ *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
  */
 export const RUNNER_FEATURES = [
   'input',
@@ -94,9 +105,13 @@ export const RUNNER_FEATURES = [
   'archives',
   'jobs.build',
   'mounts',
+  'npm',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];
+
+/** The feature with which a runner says it reads `HeartbeatResponse.npmUpgrade`. */
+export const NPM_UPGRADE_FEATURE: RunnerFeature = 'npm';
 
 export const RunnerFeatureSchema: z.ZodType<RunnerFeature> =
   z.enum(RUNNER_FEATURES);
