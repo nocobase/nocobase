@@ -104,7 +104,10 @@ export const clientMocks = {
     }),
     useLocale: () => ({ locale: 'en-US' }),
   }),
-  authorization: () => ({ useAuthorizationRevision: () => 0 }),
+  authorization: () => ({
+    useAuthorizationRevision: () => 0,
+    useCan: vi.fn(() => ({ can: true })),
+  }),
 };
 /* eslint-enable @eslint-react/no-unnecessary-use-prefix */
 

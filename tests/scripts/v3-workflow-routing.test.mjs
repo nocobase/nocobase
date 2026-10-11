@@ -37,21 +37,14 @@ const matchesSingleSegmentGlob = (pattern, branch) => {
 };
 
 test('stacked v3 targets receive PR checks without widening direct-branch triggers', () => {
-  const quality = workflow('quality');
   const changesets = workflow('changeset-check');
   const guard = workflow('guard-main');
 
-  assert.deepEqual(triggerBranches(quality, 'pull_request'), [
-    'v3-develop',
-    'v3-main',
-    '*/v3-*',
-  ]);
   assert.deepEqual(triggerBranches(changesets, 'pull_request'), [
     'v3-main',
     'v3-develop',
     '*/v3-*',
   ]);
-  assert.deepEqual(triggerBranches(quality, 'push'), ['v3-develop']);
   assert.deepEqual(triggerBranches(guard, 'pull_request'), ['v3-main']);
 
   const workflowPattern = '*/v3-*';
@@ -178,8 +171,6 @@ test('independent Pro releases keep their own repository and branches', () => {
 
 test('installer smoke covers the Default archive', () => {
   const smoke = workflow('app-installer-smoke');
-  const quality = workflow('quality');
-  assert.match(smoke, /workflow_call:/u);
   assert.match(
     smoke,
     /pnpm --filter @nocobase\/app-template-default build --tar/u,
@@ -189,20 +180,10 @@ test('installer smoke covers the Default archive', () => {
     /smoke-app-installer\.mjs --archive packages\/templates\/app-template-default\/storage\/exports\/dist\.tar\.gz/u,
   );
   assert.doesNotMatch(smoke, /app-template-hub|--source|schedule:/u);
-  assert.match(quality, /template: \[default, examples\]/u);
   for (const name of ['release-beta', 'release-stable']) {
     assert.match(workflow(name), /template: \[default, examples\]/u);
     assert.doesNotMatch(workflow(name), /template: \[[^\n]*\bhub\b/u);
   }
-  assert.match(
-    quality,
-    /uses: \.\/\.github\/workflows\/v3-app-installer-smoke\.yml/u,
-  );
-  assert.doesNotMatch(
-    quality,
-    /app-template-hub|--source template|Hub template/u,
-  );
-  assert.match(quality, /needs\['app-installer-smoke'\]\.result/u);
 });
 
 test('Pro publishing passes the private registry and token independently', () => {

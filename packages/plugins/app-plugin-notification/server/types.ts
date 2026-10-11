@@ -28,6 +28,11 @@ export type ConfiguredNotificationChannels<
 export type NotificationChannelMap = Record<string, NotificationChannelSchema>;
 
 export interface NotificationService {
+  /** Sends a sensitive message once, in memory only: no history, queue, retries, or durable deduplication. */
+  sendTransient(input: {
+    readonly channel: string;
+    readonly message: object;
+  }): Promise<readonly ProviderSendResult[]>;
   send(
     input: NotificationSendInput<NotificationChannelMap>,
   ): Promise<NotificationSendResult>;

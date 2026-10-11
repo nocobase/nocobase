@@ -181,6 +181,10 @@ nb-studio user invitation resend <invitation>
 | ------------ | ----------- |
 | `invitation` |             |
 
+| Flag           | Type    | Description                                                                                                |
+| -------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `--send-email` | boolean | Defaults to true. Set false to generate a new link without sending email. The previous link stops working. |
+
 **Output:** One record, field by field; with `--json`, `result.data`.
 
 **Who:** People (a sign-in or an API key).

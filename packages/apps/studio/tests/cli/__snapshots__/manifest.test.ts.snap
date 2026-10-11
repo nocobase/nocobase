@@ -268,7 +268,7 @@ project delete <project> -> DELETE /api/projects/{projectId} (person) pm.project
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project invitation create [--email! --project] -> POST /api/projects/invitations (person)
 project invitation list -> GET /api/projects/invitations (person)
-project invitation resend <invitation> -> POST /api/projects/invitations/{invitationId}/resend (person)
+project invitation resend <invitation> [--send-email] -> POST /api/projects/invitations/{invitationId}/resend (person)
 project invitation revoke <invitation> -> DELETE /api/projects/invitations/{invitationId} (person) confirm
 project list -> GET /api/projects (person,run) pm.projects/view
 project location add <project> [--code-location --init-agent --new-repo --existing-repo --runner-directory --label --deploy --ci --file] -> POST /api/projects/{projectId}/codeLocations (person)
@@ -352,7 +352,7 @@ user enable <user> -> POST /api/users/{userId}/enable (person)
 user invitation create [--emails! --role-scopes] -> POST /api/users/invitations (person)
 user invitation delete <invitation> -> DELETE /api/users/invitations/{invitationId} (person) confirm
 user invitation list -> GET /api/users/invitations (person)
-user invitation resend <invitation> -> POST /api/users/invitations/{invitationId}/resend (person)
+user invitation resend <invitation> [--send-email] -> POST /api/users/invitations/{invitationId}/resend (person)
 user list [--page --limit --q --status --role-scope --role] -> GET /api/users (person)
 user options -> GET /api/users/options (person)
 user preference delete <key> -> DELETE /api/users/me/preferences/{key} (person)
