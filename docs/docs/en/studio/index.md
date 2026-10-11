@@ -11,7 +11,7 @@ Studio brings projects, issues, and agent collaboration into one workspace. This
 - **Studio CLI**: A command-line tool that local agents use to query and manage projects, issues, and other workspace content. Install it through **Use Studio in your agent** and authorize access with a Studio account.
 - **Runner**: A task execution service running on a computer, server, or virtual machine. It receives tasks from Studio and invokes local coding tools. Connect it through **Add runtime**.
 
-This example uses a local Codex subscription sign-in. It connects the CLI, adds a Runner, and then starts a conversation with the Project lead. No API model service is required for this route.
+This example uses a local Codex subscription sign-in. It connects the CLI, adds a Runner, then manually creates a project, links its repository, and configures CI before dispatching development work.
 
 1. [Use Studio in your local agent](./connect-agent).
 2. [Add a runtime](./runtimes).

@@ -86,6 +86,7 @@ interface Wake {
   /** Who the work comes from; the issue's owner answers for it. */
   readonly source: WorkSource;
   readonly triggerType: string;
+  readonly freshSession?: boolean;
   readonly input: {
     readonly type: RunInputType;
     readonly actor: ActorRef;
@@ -197,6 +198,7 @@ export function createAgentWork(deps: {
           : { requestedByUserId: source.userId }),
         ownerUserId: responsible,
         priority: runPriorityOf(issue.priority),
+        freshSession: request.freshSession,
         input: {
           ...request.input,
           payload: {
@@ -260,6 +262,7 @@ export function createAgentWork(deps: {
     agentId: string,
   ): Promise<{
     readonly agentId: string;
+    readonly freshSession: boolean;
     readonly payload: {
       readonly status: string;
       readonly instruction?: string;
@@ -274,6 +277,7 @@ export function createAgentWork(deps: {
     return stage
       ? {
           agentId: stage.agentId,
+          freshSession: stage.session === 'fresh',
           payload: {
             status: issue.statusKey,
             ...(stage.instruction ? { instruction: stage.instruction } : {}),
@@ -282,10 +286,10 @@ export function createAgentWork(deps: {
       : null;
   }
 
-  /** The stage of the status the issue is in when it is `agentId`'s own: its payload, or null. */
+  /** The stage of the status the issue is in when it is `agentId`'s own, or null. */
   async function ownStageOf(tx: ProjectsTx, issue: Issue, agentId: string) {
     const stage = await stageOf(tx, issue, agentId);
-    return stage?.agentId === agentId ? stage.payload : null;
+    return stage?.agentId === agentId ? stage : null;
   }
 
   /**
@@ -323,12 +327,17 @@ export function createAgentWork(deps: {
   function startStage(
     tx: ProjectsTx,
     issue: Issue,
-    stage: { readonly agentId: string; readonly payload: object },
+    stage: {
+      readonly agentId: string;
+      readonly freshSession: boolean;
+      readonly payload: object;
+    },
     who: WorkSource,
     triggerType: string,
   ): Promise<RunAttempt> {
     return wake(tx, {
       agentId: stage.agentId,
+      freshSession: stage.freshSession,
       issue,
       source: who,
       triggerType,
@@ -381,6 +390,7 @@ export function createAgentWork(deps: {
       issue,
       source: who,
       triggerType: 'assigned',
+      freshSession: stage?.freshSession,
       input: {
         type: 'signal',
         actor: who.ref,
@@ -452,6 +462,7 @@ export function createAgentWork(deps: {
       issue,
       source: { userId: move.byUserId, ref: move.by },
       triggerType: PROJECT_CHANGED,
+      freshSession: stage?.freshSession,
       input: {
         type: 'signal',
         actor: move.by,
@@ -459,7 +470,7 @@ export function createAgentWork(deps: {
         payload: {
           fromProject: move.from?.id ?? null,
           toProject: move.to?.id ?? null,
-          ...(stage ?? {}),
+          ...(stage?.payload ?? {}),
         },
       },
     });
@@ -626,6 +637,7 @@ export function createAgentWork(deps: {
           issue: after,
           source: who,
           triggerType: 'statusChange',
+          freshSession: stage?.freshSession,
           input: {
             type: 'statusChange',
             actor: who.ref,
@@ -771,6 +783,7 @@ export function createAgentWork(deps: {
           issue,
           source,
           triggerType: 'unblocked',
+          freshSession: stage?.freshSession,
           input: {
             type: 'signal',
             actor: source.ref,

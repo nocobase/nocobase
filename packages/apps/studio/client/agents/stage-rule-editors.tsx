@@ -147,6 +147,24 @@ export function RunAgentEditor({
           </span>
         </label>
       ) : null}
+      <label
+        htmlFor={`${idPrefix}-session`}
+        className='flex items-start gap-3 text-sm'
+      >
+        <Switch
+          id={`${idPrefix}-session`}
+          checked={config.session === 'fresh'}
+          onCheckedChange={(on) => set({ session: on ? 'fresh' : undefined })}
+        />
+        <span>
+          <span className='font-medium'>
+            {t('studioAgents.stageRules.freshSession')}
+          </span>
+          <span className='block text-muted-foreground'>
+            {t('studioAgents.stageRules.freshSessionHint')}
+          </span>
+        </span>
+      </label>
       <div className='grid gap-3 sm:grid-cols-2'>
         {(['maxRuns', 'windowHours'] as const).map((field) => (
           <Field key={field}>
@@ -213,6 +231,8 @@ export function RunAgentSummary({
           })
         : t('studioAgents.stageRules.runAgentAgent', { agent: name(agentId) });
   const instruction = excerpt(textOf(config.instruction));
+  if (config.session === 'fresh')
+    text = t('studioAgents.stageRules.withFreshSession', { summary: text });
   text = t('studioAgents.stageRules.withLimit', {
     summary: text,
     maxRuns: config.maxRuns ?? 3,
