@@ -76,7 +76,6 @@ import {
   AccessSection,
   ActionsSection,
   BasicsSection,
-  CommandPolicySection,
   ConfirmSection,
   ModelSection,
   PlacementSection,
@@ -318,11 +317,6 @@ function AgentDetailView({
                     key={key('placement')}
                     agent={current}
                     runners={runners.data}
-                    canEdit={canEdit}
-                  />
-                  <CommandPolicySection
-                    key={key('commands')}
-                    agent={current}
                     canEdit={canEdit}
                   />
                   <VariablesPanel

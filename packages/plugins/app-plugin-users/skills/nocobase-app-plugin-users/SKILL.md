@@ -68,26 +68,9 @@ uses it for list pages and falls back to `get()` for existing scopes.
 
 ## Invite users
 
-Holders of `invite` on the `user` resource may invite users through
-`POST /api/users/invitations` or `UsersClient`. An
-address without an account gets an email with a link to `/invite/:token`, where
-the invitee sets a name and password; an address that already has an account is
-reported back and nothing is sent. Choosing roles in the invitation also needs
-`assign-role`, and they are checked like account creation's.
+Holders of `invite` on `user` can create invitations through `POST /api/users/invitations` or `UsersClient`; choosing roles also requires `assign-role`. Results include a shareable link even when email succeeds. A queued invitation closed or rotated by another request returns `emailSent=false` without a link, while the other recipients still complete. Original inviters can renew with `sendEmail=false`, which invalidates the old link. Plugin-specific invitations must use their domain endpoint, which rechecks its own grants. Other managers may resend email but receive no link. Tokens last seven days; only hashes are stored.
 
-- Emails go through the notification plugin on the Channel named by
-  `users.invitations.emailChannel` (`system-email` by default). Without that
-  Channel, the inviter gets the link to forward by hand.
-- Links start at `app.publicOrigin`, or the request origin when it is unset.
-- A link works once, for seven days. Only the token's hash is stored.
-- Server code invites through `UserManagementService.invite`, may attach `data`
-  and a `summary` the invitee sees (for example project names), and registers
-  `onInvitationAccepted` to act on acceptance. Handlers run in the acceptance
-  transaction; one that throws rolls the account creation back. Accepting one
-  invitation accepts every pending invitation of the address, and the handlers
-  run once per invitation.
-- Replace the accept page with `inviteComponentLoader` to match the
-  application's own sign-in pages.
+New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.
 
 ## Ownership
 
@@ -128,3 +111,5 @@ reported back and nothing is sent. Choosing roles in the invitation also needs
   synchronization alone proves only that the copy matches this source.
 
 Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Historical user identities are retained but cannot sign in or appear in management lists.
+
+Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.

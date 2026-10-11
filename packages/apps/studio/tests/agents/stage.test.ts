@@ -275,6 +275,7 @@ describe('the AI-reviewed development template', () => {
         type: 'runAgent',
         config: {
           agentId: 'studio-proposal-reviewer',
+          session: 'fresh',
           assign: false,
           instruction: PROPOSAL_REVIEW_INSTRUCTION,
         },
@@ -285,6 +286,7 @@ describe('the AI-reviewed development template', () => {
         type: 'runAgent',
         config: {
           agentId: 'studio-code-reviewer',
+          session: 'fresh',
           assign: false,
           instruction: CODE_REVIEW_INSTRUCTION,
         },
@@ -564,6 +566,132 @@ describe('the AI-reviewed development template', () => {
 });
 
 describe('runAgent', () => {
+  it.each(['invalid', true, null, 1])(
+    'rejects invalid session choice %j',
+    async (session) => {
+      await expect(
+        setRules({ in_review: [{ type: 'runAgent', config: { session } }] }),
+      ).rejects.toMatchObject({ code: 'INVALID_WORKFLOW' });
+    },
+  );
+
+  it('round trips the session choice through workflow definitions and describes it in preview', async () => {
+    const workflow = await defaultWorkflow();
+    await asAdmin(async () => {
+      const definition = JSON.parse(
+        JSON.stringify({
+          ...workflow.definition,
+          states: workflow.definition.states.map((state) =>
+            state.key === 'in_review'
+              ? {
+                  ...state,
+                  rules: [{ type: 'runAgent', config: { session: 'fresh' } }],
+                }
+              : state,
+          ),
+        }),
+      );
+      const preview = await h.projects.workflows.preview(alice(), workflow.id, {
+        definition,
+      });
+      expect(preview.rules).toContainEqual(
+        expect.objectContaining({
+          statusKey: 'in_review',
+          change: 'added',
+          summary: expect.stringContaining('fresh session every time'),
+        }),
+      );
+      const saved = await h.projects.workflows.update(alice(), workflow.id, {
+        revision: workflow.revision,
+        definition,
+      });
+      const exported = JSON.parse(
+        JSON.stringify(
+          (await h.projects.workflows.get(alice(), saved.id)).definition,
+        ),
+      );
+      const imported = await h.projects.workflows.create(alice(), {
+        name: 'Imported workflow',
+        copyFrom: null,
+      });
+      const restored = await h.projects.workflows.update(alice(), imported.id, {
+        revision: imported.revision,
+        definition: exported,
+      });
+      expect(
+        restored.definition.states.find((state) => state.key === 'in_review')
+          ?.rules,
+      ).toEqual([{ type: 'runAgent', config: { session: 'fresh' } }]);
+    });
+    await setRules({
+      in_review: [{ type: 'runAgent', config: { session: 'resume' } }],
+    });
+  });
+
+  it('starts repeated reviews fresh and resumes the developer when work returns', async () => {
+    const coder = await h.createAgent({ name: 'Coder' });
+    const reviewer = await h.createAgent({ name: 'Reviewer' });
+    await setRules({
+      in_progress: [{ type: 'runAgent', config: {} }],
+      in_review: [
+        {
+          type: 'runAgent',
+          config: { agentId: reviewer, assign: false, session: 'fresh' },
+        },
+      ],
+    });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Review cycle',
+      executor: { type: 'agent', id: coder },
+      start: false,
+    });
+    const complete = async (sessionId: string) => {
+      const payload = await h.claimOne();
+      expect(payload).toBeDefined();
+      expect(payload.workspace).not.toHaveProperty('clean');
+      expect(
+        (
+          await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+            workDir: '/tmp/stage-work',
+            adapter: { kind: 'claude' },
+            acceptsInput: true,
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+            summary: 'Done',
+            sessionId,
+            handledInputIds: payload.inputs.map(
+              (input: { id: string }) => input.id,
+            ),
+          })
+        ).status,
+      ).toBe(200);
+      return payload;
+    };
+    await moveTo(issue, 'in_progress');
+    await complete('developer-session');
+    for (const session of ['first-review', 'second-review']) {
+      await moveTo(issue, 'in_review');
+      const review = await complete(session);
+      expect(review.prompt.session).toBe('fresh');
+      expect((await h.agents.runs.get(review.run.id)).freshSession).toBe(true);
+      const view = await h.request('GET', `/issueRuns/${review.run.id}`, {
+        user: 'alice',
+      });
+      expect(view.status).toBe(200);
+      expect(view.body.data.freshSession).toBe(true);
+      await moveTo(issue, 'in_progress');
+      const development = await complete('developer-session');
+      expect(development.prompt).toMatchObject({
+        session: 'resume',
+        resumeSessionId: 'developer-session',
+      });
+    }
+  });
+
   it('makes a named agent the executor and runs it', async () => {
     const agentId = await h.createAgent({ name: 'Builder' });
     await setRules({
@@ -622,6 +750,7 @@ describe('runAgent', () => {
           agentId,
           assign: false,
           instruction: `${words} {{issue.identifier}}.`,
+          session: 'fresh',
         },
       },
     ],
@@ -745,7 +874,10 @@ describe('runAgent', () => {
       in_progress: [
         {
           type: 'runAgent',
-          config: { instruction: 'Build {{issue.identifier}}.' },
+          config: {
+            instruction: 'Build {{issue.identifier}}.',
+            session: 'fresh',
+          },
         },
       ],
     });
@@ -765,6 +897,7 @@ describe('runAgent', () => {
     });
     const [run] = await runsOf(issue.id);
     expect(run?.agentId).toBe(coder);
+    expect(run?.freshSession).toBe(true);
     expect((await h.agents.runs.detail(run!.id)).inputs[0]).toMatchObject({
       payload: {
         trigger: 'assigned',
@@ -858,6 +991,7 @@ describe('runAgent', () => {
       .poll(async () => (await runsOf(waiting.id)).map((run) => run.agentId))
       .toEqual([designer]);
     const [run] = await runsOf(waiting.id);
+    expect(run!.freshSession).toBe(true);
     expect((await h.agents.runs.detail(run!.id)).inputs[0]).toMatchObject({
       payload: { trigger: 'unblocked', status: 'analysis' },
     });
@@ -910,11 +1044,15 @@ describe('runAgent', () => {
         issue,
         'coder',
       ),
-    ).toEqual({ agentId: 'coder', instruction: null });
+    ).toEqual({ agentId: 'coder', instruction: null, session: 'resume' });
     // Without one, the status is the reviewer's.
     expect(
       await currentStage(projects([reviewerRule]), conn, issue, 'coder'),
-    ).toEqual({ agentId: 'reviewer', instruction: 'Review.' });
+    ).toEqual({
+      agentId: 'reviewer',
+      instruction: 'Review.',
+      session: 'resume',
+    });
   });
 
   it('proposes the agent to the owner instead when the mover may not wake it', async () => {
@@ -1109,7 +1247,10 @@ describe('runAgent', () => {
     await setRules(
       {
         in_progress: [
-          { type: 'runAgent', config: { maxRuns: 1, windowHours: 2 } },
+          {
+            type: 'runAgent',
+            config: { maxRuns: 1, windowHours: 2, session: 'fresh' },
+          },
         ],
       },
       { agentMoves: true },
@@ -1147,6 +1288,9 @@ describe('runAgent', () => {
       200, 400,
     ]);
     const continued = attempts.find((attempt) => attempt.status === 200)!;
+    expect(
+      (await h.agents.runs.get(continued.body.data.runId)).freshSession,
+    ).toBe(true);
     expect(
       (await h.agents.runs.detail(continued.body.data.runId)).inputs[0]
         ?.payload,

@@ -1,5 +1,5 @@
 // Step `dirs`: the run's working directories, in its order. A repository is checked out (a bare cache and the
-// subject's long-lived worktree on the run's branch, behind the push guard); a directory used in place must exist and
+// subject's long-lived worktree on the run's branch); a directory used in place must exist and
 // is held for this run alone. Each gets a `checkout` event saying whether it was prepared fresh for the subject.
 //
 // Cloning, fetching and the submodules' update are retried on this runner when they fail for a passing cause, each
@@ -9,7 +9,7 @@
 // the last error.
 import path from 'node:path';
 
-import { prepareDirs } from '../../core/checkout.ts';
+import { prepareDirs, RepoAccessFailure } from '../../core/checkout.ts';
 import { GitNetworkError } from '../../core/git-retry.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
@@ -31,9 +31,7 @@ async function prepare(
       runId: context.payload.run.id,
       workDir,
       dirs: context.payload.workspace.dirs,
-      ...(context.payload.workspace.git?.credentials
-        ? { credentials: context.payload.workspace.git.credentials }
-        : {}),
+      ...(context.gitAuth === undefined ? {} : { auth: context.gitAuth }),
       log: context.log,
       retry: {
         ...context.gitRetry,
@@ -58,6 +56,12 @@ async function prepare(
       },
     });
   } catch (error) {
+    // A repository whose credential the application could not issue says why, so the run is retried or not.
+    if (error instanceof RepoAccessFailure && error.kind !== 'leaseLost')
+      throw new PrepareError(
+        error.kind === 'denied' ? 'repoAccessDenied' : 'repoAccessUnavailable',
+        error.message,
+      );
     if (error instanceof GitNetworkError)
       throw new PrepareError(
         acceptedFailure('prepareNetwork', context.payload.run.acceptedFailures),
@@ -99,7 +103,11 @@ export const dirsStep: PrepareStep = {
           fresh: dir.fresh,
           ...(dir.repo === undefined
             ? {}
-            : { url: dir.repo.url, branch: dir.repo.branch }),
+            : {
+                url: dir.repo.url,
+                branch: dir.repo.branch,
+                ...(dir.repo.initializing ? { initializing: true } : {}),
+              }),
         },
       });
     }

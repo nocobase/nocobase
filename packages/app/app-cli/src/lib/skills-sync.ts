@@ -145,6 +145,16 @@ export async function collectPluginSkills({
 }: PluginLocation): Promise<PluginSkills> {
   const skillsDirectory = path.join(pluginDirectory, PLUGIN_SKILLS_DIRECTORY);
   const prefix = pluginSkillPrefix(packageName);
+  // A packaged application CLI (`nocobase.cli` in its manifest, such as `@nocobase/studio-cli`) ships the Skill its
+  // own users read beside the command, not one for developing the application that depends on it.
+  if (await isPackagedCli(pluginDirectory))
+    return {
+      packageName,
+      pluginDirectory,
+      prefix,
+      skills: [],
+      skillsDirectory,
+    };
   const entries = await readDirectoryEntries(skillsDirectory);
 
   const skills: SkillSource[] = [];
@@ -682,6 +692,20 @@ async function isPackageDirectory(
   try {
     const manifest = await readJson(path.join(directory, 'package.json'));
     return manifest.name === packageName;
+  } catch {
+    return false;
+  }
+}
+
+async function isPackagedCli(directory: string): Promise<boolean> {
+  try {
+    const manifest = await readJson(path.join(directory, 'package.json'));
+    const nocobase = manifest.nocobase;
+    return (
+      typeof nocobase === 'object' &&
+      nocobase !== null &&
+      typeof (nocobase as { cli?: unknown }).cli === 'object'
+    );
   } catch {
     return false;
   }

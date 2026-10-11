@@ -3,11 +3,10 @@
  *
  * - An address that already has an account is reported back (`existingUser`) and nothing is sent; the caller decides
  *   what that account gets.
- * - An address may hold several pending invitations, each with its own link, roles and data. Accepting any one of them
- *   accepts them all, in one transaction: the account is created with the accepted invitation's roles, and the
- *   `onInvitationAccepted` handlers run once per invitation, so what each inviter attached takes effect.
- * - Only the token's hash is stored. Emails are submitted after the rows commit; when submitting fails, the inviter
- *   gets the link once, to forward by hand, and the row keeps the error.
+ * - Each invitation's token authorizes only that invitation's roles and data. Other invitations for the same address
+ *   need their own tokens; an existing account must also authenticate before accepting an invitation.
+ * - Only token hashes are stored. Authorized inviters may deliver the link themselves when email is unavailable.
+ *   Accepting an invitation creates an account without claiming that its email address has been verified.
  */
 import { randomUUID } from 'node:crypto';
 
@@ -35,6 +34,7 @@ import {
 } from './rules.js';
 import {
   claimInvitation,
+  recordInvitationDelivery,
   findInvitation,
   insertInvitation,
   listPending,
@@ -44,7 +44,7 @@ import {
 
 /** Where links point and what the email calls the application. */
 export interface InvitationSite {
-  /** `app.publicOrigin`; without it, the origin the caller passes. */
+  /** Configured origin, falling back to the invitation request origin when omitted. */
   readonly publicOrigin?: string;
   readonly publicBasePath: string;
   readonly appTitle: string;
@@ -74,6 +74,9 @@ export type InvitationManager = Pick<
   | 'acceptInvitation'
   | 'onInvitationAccepted'
 >;
+
+const DELIVERY_CONCURRENCY = 5;
+const DELIVERY_BUDGET_MS = 30_000;
 
 /** A link to deliver once the rows have committed. */
 interface Outgoing {
@@ -117,44 +120,101 @@ export function createInvitationManager(
     return `${start.replace(/\/+$/u, '')}${options.site.publicBasePath.replace(/\/+$/u, '')}`;
   }
 
+  /** Emails a committed invitation once; failure does not prevent private delivery of its link. */
+  async function sendInvitation(
+    row: InvitationRecord,
+    url: string,
+    deadline: number,
+  ): Promise<boolean> {
+    let error: string | null = null;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const inviterName = await nameOf(row.invitedById);
+      const remaining = deadline - Date.now();
+      if (remaining <= 0)
+        throw new Error('Invitation email delivery budget exhausted.');
+      await Promise.race([
+        options.mailer.send(
+          buildInvitationEmail({
+            to: row.email,
+            appTitle: options.site.appTitle,
+            inviterName,
+            summary: row.summary,
+            url,
+            expiresAt: new Date(row.expiresAt),
+          }),
+        ),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Invitation email delivery timed out; delivery is unknown.',
+                ),
+              ),
+            remaining,
+          );
+        }),
+      ]);
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : String(cause);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+    await recordInvitationDelivery(database.connection(), row, error);
+    return error === null;
+  }
+
   /** Submits each email after the rows committed and records the outcome on the row. */
   async function deliver(
     outgoing: readonly Outgoing[],
     origin: string | undefined,
+    sendEmail: boolean = true,
   ): Promise<UserInvitationResult[]> {
     const base = linkBase(origin);
-    const connection = database.connection();
-    const results: UserInvitationResult[] = [];
-    for (const { row, token } of outgoing) {
-      const url = `${base}/invite/${token}`;
-      let error: string | null = null;
-      try {
-        await options.mailer.send(
-          buildInvitationEmail({
-            to: row.email,
-            appTitle: options.site.appTitle,
-            inviterName: await nameOf(row.invitedById),
-            summary: row.summary,
-            url,
-            expiresAt: new Date(row.expiresAt),
-            idempotencyKey: `user-invitation:${hashToken(token)}`,
-          }),
-        );
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+    const deadline = Date.now() + DELIVERY_BUDGET_MS;
+    const results = new Array<UserInvitationResult>(outgoing.length);
+    const pending = outgoing.entries();
+    async function sendNext(): Promise<void> {
+      for (const [index, { row, token }] of pending) {
+        let emailSent = false;
+        // Check before sending and again afterwards so concurrent closure or rotation never returns a stale link.
+        const before = await findInvitation(database.connection(), {
+          id: row.id,
+        });
+        if (
+          sendEmail &&
+          Date.now() < deadline &&
+          before?.tokenHash === row.tokenHash &&
+          statusOf(before) === 'pending'
+        )
+          emailSent = await sendInvitation(
+            row,
+            `${base}/invite/${token}`,
+            deadline,
+          );
+        const current = await findInvitation(database.connection(), {
+          id: row.id,
+        });
+        const isOpen =
+          current?.tokenHash === row.tokenHash &&
+          statusOf(current) === 'pending';
+        results[index] = {
+          email: row.email,
+          outcome: 'invited',
+          invitationId: row.id,
+          emailSent: isOpen && emailSent,
+          ...(isOpen ? { inviteUrl: `${base}/invite/${token}` } : {}),
+        };
       }
-      await updateInvitation(connection, row.id, {
-        sentAt: error ? null : new Date().toISOString(),
-        sendError: error ? error.slice(0, 1000) : null,
-      });
-      results.push({
-        email: row.email,
-        outcome: 'invited',
-        invitationId: row.id,
-        emailSent: !error,
-        ...(error ? { inviteUrl: url } : {}),
-      });
     }
+    // Share a deadline across workers so slow delivery cannot consume the CLI's request timeout.
+    await Promise.all(
+      Array.from(
+        { length: Math.min(DELIVERY_CONCURRENCY, outgoing.length) },
+        sendNext,
+      ),
+    );
     return results;
   }
 
@@ -244,6 +304,7 @@ export function createInvitationManager(
     },
 
     async resendInvitation(id, input = {}) {
+      linkBase(input.origin);
       const outgoing = await database.transaction(async (connection) => {
         const row = await findInvitation(connection, { id });
         if (!row) throw notFound();
@@ -257,10 +318,15 @@ export function createInvitationManager(
         const expiresAt = new Date(
           Date.now() + INVITATION_TTL_MS,
         ).toISOString();
-        await updateInvitation(connection, id, { tokenHash: hash, expiresAt });
+        await updateInvitation(connection, id, {
+          tokenHash: hash,
+          expiresAt,
+          sentAt: null,
+          sendError: null,
+        });
         return { row: { ...row, tokenHash: hash, expiresAt }, token };
       });
-      const [result] = await deliver([outgoing], input.origin);
+      const [result] = await deliver([outgoing], input.origin, input.sendEmail);
       return result;
     },
 
@@ -292,7 +358,10 @@ export function createInvitationManager(
       };
     },
 
-    async acceptInvitation(input): Promise<AcceptedUserInvitation> {
+    async acceptInvitation(
+      input,
+      authenticatedUserId,
+    ): Promise<AcceptedUserInvitation> {
       const accepted = await database.transaction(async (connection) => {
         const row = requireOpen(
           await findInvitation(connection, {
@@ -300,6 +369,12 @@ export function createInvitationManager(
           }),
         );
         const existing = await userIdByEmail(row.email, connection);
+        if (existing && existing !== authenticatedUserId)
+          throw new UserManagementError(
+            'INVITATION_SIGN_IN_REQUIRED',
+            'Sign in with the invited account before accepting this invitation.',
+            409,
+          );
         let userId = existing;
         if (!userId) {
           const created = await users.withConnection(connection).create({
@@ -311,28 +386,21 @@ export function createInvitationManager(
           for (const [key, value] of Object.entries(row.roleScopes))
             await options.requireScope(key).replace(userId, value, connection);
         }
-        const others = (
-          await listPending(connection, { email: row.email })
-        ).filter(
-          (other) => other.id !== row.id && statusOf(other) === 'pending',
-        );
-        for (const invitation of [row, ...others]) {
-          if (!(await claimInvitation(connection, invitation.id, userId)))
-            throw new UserManagementError(
-              'INVITATION_ACCEPTED',
-              'This invitation has already been accepted.',
-              409,
-            );
-          for (const handler of handlers)
-            await handler({
-              connection,
-              invitationId: invitation.id,
-              userId,
-              email: row.email,
-              createdAccount: !existing,
-              data: invitation.data,
-            });
-        }
+        if (!(await claimInvitation(connection, row.id, userId, row.tokenHash)))
+          throw new UserManagementError(
+            'INVITATION_ACCEPTED',
+            'This invitation has already been accepted.',
+            409,
+          );
+        for (const handler of handlers)
+          await handler({
+            connection,
+            invitationId: row.id,
+            userId,
+            email: row.email,
+            createdAccount: !existing,
+            data: row.data,
+          });
         return { email: row.email, userId, existingAccount: !!existing };
       });
       await options.onRoleScopesChanged?.(accepted.userId);

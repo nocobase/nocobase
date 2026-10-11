@@ -4,7 +4,7 @@
 
 ## Install
 
-Studio serves `nb-studio` itself, as a standalone tarball per platform that bundles its own Node, so nothing else needs to be installed first; the install script needs `curl`, `tar` and `sha256sum` or `shasum`, runs on macOS and Linux (WSL on Windows), and never asks for `sudo`.
+`nb-studio` runs on the machine's own **Node.js 24 or newer**, which has to be installed first (https://nodejs.org/en/download, or `nvm install 24`), with the `npm` that comes with it. A published Studio serves no tarball of its own: it names the exact version of `@nocobase/studio-cli` (and of the runner, `@nocobase/agent-runner`) it was built with, and the install script installs that version from npm, with your npm configuration (registry, proxy). A Studio that has tarballs in its storage serves those instead. The install script also needs `curl`, runs on macOS and Linux (WSL on Windows), and never asks for `sudo`; it stops before installing anything, saying what to install, when Node.js 24 or npm is missing.
 
 The quickest way is from the home page: "Use Studio in your agent" (「在你的 Agent 中使用 Studio」) under the composer gives a prompt to paste into a coding agent such as Claude Code or Codex. It carries a download token Studio has just created for you, valid for 30 minutes and for the CLI alone; the agent installs `nb-studio`, runs `nb-studio login` and asks you to confirm the code in your browser. To install it yourself, run the same line:
 
@@ -13,7 +13,7 @@ curl -fsSL https://studio.example.com/api/agents/dist/installScript | sh -s -- -
 nb-studio login --server https://studio.example.com
 ```
 
-It puts `nb-studio` in `~/.local/share/studio/versions/<version>` and links `~/.local/bin/nb-studio` to it (`--prefix`, `--bin-dir` move them; `--dry-run` shows what it would do). A download token downloads the CLI for one platform, three times at most, and registers nothing; to make a machine a runtime as well, use Agent team › Runtimes › Add runtime, whose line adds `--runner` and a registration token: it also installs the runner, `nocobase-runner`, in `~/.local/share/nocobase-runner` (`--runner-prefix`), registers it and starts it as a user service, or with `--no-service` registers it without starting it. A token of the other kind is refused before anything is installed. In this repository, `pnpm nocobase cli link` in this repository makes `nb-studio` a command in `node_modules/.bin` (`pnpm exec studio`; `--bin-dir ~/.local/bin` puts it on your PATH) that runs from the sources.
+It puts `nb-studio` in `~/.local/share/nb-studio/versions/<version>` (the package Studio's build packed, or `node_modules/@nocobase/studio-cli` from npm on a Studio without one, and a launcher in `bin/`, which runs it on the Node.js the script found, linked as `~/.local/share/nb-studio/node`) and links `~/.local/bin/nb-studio` to it (`--prefix`, `--bin-dir` move them; `--dry-run` shows what it would do). A download token downloads the CLI for one platform, three times at most, and registers nothing; to make a machine a runtime as well, use Agent team › Runtimes › Add runtime, whose line adds `--runner` and a registration token: it also installs the runner, `nocobase-runner`, in `~/.local/share/nocobase-runner` (`--runner-prefix`), registers it and starts it as a user service, or with `--no-service` registers it without starting it. The CLI install directory can also be set with `NOCOBASE_CLI_INSTALL_DIR`; the runner and command-link directories use `NOCOBASE_RUNNER_INSTALL_DIR` and `NOCOBASE_CLI_BIN_DIR`. `NB_STUDIO_HOME` moves the CLI's state directory; it does not change where the CLI is installed. A token of the other kind is refused before anything is installed. In this repository, `pnpm nocobase cli link` makes `nb-studio` a command in `node_modules/.bin` (`pnpm exec nb-studio`; `--bin-dir ~/.local/bin` puts it on your PATH) that runs from the sources.
 
 ### Update
 
@@ -22,11 +22,13 @@ nb-studio update           # the newest nb-studio the server serves for this pla
 nb-studio update --check   # only say whether there is one
 ```
 
-`nb-studio update` asks the server you are signed in to, checks the download's SHA-256, switches to it and keeps the previous version beside it. `nb-studio login` and business commands print a line when a newer version is served, at most every 12 hours. The runner is installed and updated apart: it updates itself between runs, and `nocobase-runner update` updates it now.
+`nb-studio update` asks the server you are signed in to which version it names, installs it beside the running one (with npm, or from the server's tarball, checking its SHA-256), switches to it and keeps the previous version beside it. `nb-studio login` and business commands print a line when a newer version is served, at most every 12 hours. The runner is installed and updated apart: it updates itself between runs, and `nocobase-runner update` updates it now.
 
-### Serving the CLI from a local Studio
+### Where the CLI and the runner come from
 
-A Studio started from this repository serves only what has been built into its storage, `storage/runners/dist` (`agents.dist.dir` moves it). Studio's image carries them already, in `/app/runners/dist`; for a local Studio, build them by hand in this repository. `cli build` packs `nb-studio` as `package.json` declares it under `nocobase.cli`, and `cli build --runner` packs `nocobase-runner`; `--targets` narrows the platforms to the ones you need, `--host-node` uses this machine's Node.js for its own platform instead of downloading it, and `--version` packs a later version to try `nb-studio update`:
+A deployed Studio serves `nb-studio` and `nocobase-runner` from its own build: `pnpm build` packs both, as universal packages without Node.js, into `dist/runners/stable/<product>/`, at the versions it records in `dist/server/agents/served-versions.json` (`nb-studio` at `@nocobase/studio-cli`'s version, the runner at `@nocobase/agent-runner`'s), and fails when they differ. Packing installs their dependencies with npm, so the build needs the npm registry. `NB_STUDIO_RUNNERS_DIST` or `agents.dist.dir` in `config.yml` serve another directory instead.
+
+A Studio started from this repository with `pnpm dev` has no build, so it names the same versions on npm, where they exist only once released. To try unreleased ones, serve packages from its storage, `storage/runners/dist` (`agents.dist.dir` moves it), which win over npm. Build them by hand in this repository. `cli build` packs `nb-studio` as `package.json` declares it under `nocobase.cli`, and `cli build --runner` packs `nocobase-runner`; `--targets` narrows the platforms to the ones you need, `--host-node` uses this machine's Node.js for its own platform instead of downloading it, `--universal` packs one tarball without Node.js for every platform, and `--version` packs a later version to try `nb-studio update`:
 
 ```bash
 pnpm nocobase cli build --targets darwin-arm64 --host-node
@@ -96,7 +98,7 @@ Shell completion reads the commands the server last offered you, so it works off
 ```bash
 nb-studio completion zsh > "${fpath[1]}/_nb-studio"                     # zsh
 echo 'source <(nb-studio completion bash)' >> ~/.bashrc              # bash
-nb-studio completion fish > ~/.config/fish/completions/studio.fish    # fish
+nb-studio completion fish > ~/.config/fish/completions/nb-studio.fish # fish
 ```
 
 ## Every command takes

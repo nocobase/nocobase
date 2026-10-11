@@ -130,6 +130,51 @@ describe('distribution service', () => {
       path.join(dir, 'stable', 'nocobase-runner', '0.3.0', name),
     );
   });
+
+  it('serves the universal tarball to a platform without one of its own, and the own one where there is', async () => {
+    const dir = path.join(root, 'universal');
+    writeDist(dir, {
+      acme: { '0.4.0': ['universal', 'darwin-arm64'] },
+      'nocobase-runner': { '0.5.0': ['universal'] },
+    });
+    const dist = createDistService({ dir });
+    const universal = await dist.find('acme', 'linux-x64');
+    expect(universal).toEqual({
+      product: 'acme',
+      version: '0.4.0',
+      target: 'linux-x64',
+      url: '/api/agents/dist/products/acme/versions/0.4.0/files/acme-v0.4.0-universal.tar.gz',
+      sha256: sha('acme 0.4.0 universal'),
+      size: 'acme 0.4.0 universal'.length,
+      channel: 'stable',
+      universal: true,
+    });
+    // A tarball built for the platform wins, and its answer is the one it always was.
+    expect(await dist.find('acme', 'darwin-arm64')).toEqual({
+      product: 'acme',
+      version: '0.4.0',
+      target: 'darwin-arm64',
+      url: '/api/agents/dist/products/acme/versions/0.4.0/files/acme-v0.4.0-darwin-arm64.tar.gz',
+      sha256: sha('acme 0.4.0 darwin-arm64'),
+      size: 'acme 0.4.0 darwin-arm64'.length,
+      channel: 'stable',
+    });
+    expect(await dist.resolve('nocobase-runner', 'linux-arm64')).toMatchObject({
+      target: 'linux-arm64',
+      universal: true,
+    });
+    // It is not a platform anyone asks for.
+    await expect(dist.resolve('acme', 'universal')).rejects.toMatchObject({
+      code: 'PLATFORM_UNSUPPORTED',
+    });
+    expect(
+      (await dist.file('acme', '0.4.0', 'acme-v0.4.0-universal.tar.gz')).target,
+    ).toBe('universal');
+    expect((await dist.manifest()).products['acme']).toEqual({
+      version: '0.4.0',
+      targets: ['darwin-arm64', 'universal'],
+    });
+  });
 });
 
 describe('distribution routes', () => {
@@ -314,6 +359,58 @@ describe('distribution routes', () => {
     expect((await get('/agents/dist/manifest', auth)).status).toBe(200);
   });
 
+  it('answers the universal tarball with universal set, and lets a download token bound to a platform fetch it', async () => {
+    writeDist(dir, { acme: { '0.6.0': ['universal'] } });
+    const { token } = await harness.services.downloadTokens.create('someone');
+    const auth = { [HEADERS.downloadToken]: token };
+    const { data: json } = await (
+      await get('/agents/dist/products/acme/targets/linux-x64', auth)
+    ).json();
+    expect(json).toMatchObject({
+      version: '0.6.0',
+      target: 'linux-x64',
+      url: '/api/agents/dist/products/acme/versions/0.6.0/files/acme-v0.6.0-universal.tar.gz',
+      universal: true,
+    });
+    const env = await (
+      await get('/agents/dist/products/acme/targets/linux-x64?format=env', auth)
+    ).text();
+    expect(env).toContain('target=linux-x64\n');
+    expect(env).toContain('universal=true\n');
+    // Bound to linux-x64 by its first request, it still downloads the one tarball every platform gets, counted.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const response = await get(json.url.replace(/^\/api/u, ''), auth);
+      expect(response.status).toBe(200);
+      expect(Buffer.from(await response.arrayBuffer()).toString()).toBe(
+        'acme 0.6.0 universal',
+      );
+    }
+    expect((await get(json.url.replace(/^\/api/u, ''), auth)).status).toBe(401);
+    expect(
+      (await get('/agents/dist/products/acme/targets/darwin-arm64', auth))
+        .status,
+    ).toBe(401);
+  });
+
+  it('answers a tarball built for the platform as before, without universal', async () => {
+    const auth = { 'x-test-user': 'someone' };
+    const env = await (
+      await get('/agents/dist/products/acme/targets/linux-x64?format=env', auth)
+    ).text();
+    expect(env).toBe(
+      [
+        'product=acme',
+        'version=0.5.0',
+        'target=linux-x64',
+        'url=/api/agents/dist/products/acme/versions/0.5.0/files/acme-v0.5.0-linux-x64.tar.gz',
+        `sha256=${sha('acme 0.5.0 linux-x64')}`,
+        `size=${'acme 0.5.0 linux-x64'.length}`,
+        'channel=stable',
+        '',
+      ].join('\n'),
+    );
+  });
+
   it('serves a listed file with its checksum, and nothing else', async () => {
     const auth = { 'x-test-user': 'someone' };
     const response = await get(
@@ -396,5 +493,194 @@ describe('distribution routes', () => {
       },
     });
     expect(unknown.body.data.upgrade).toBeUndefined();
+  });
+});
+
+const npmSources = {
+  'nocobase-runner': { package: '@nocobase/agent-runner', version: '1.2.0' },
+  acme: { package: '@acme/cli', version: '0.9.0' },
+};
+
+describe('npm distribution', () => {
+  it('names a product on npm only when the directory has none of it, and only when configured', async () => {
+    const dir = path.join(root, 'npm-service');
+    writeDist(dir, { acme: { '0.5.0': ['linux-x64'] } });
+    const dist = createDistService({ dir, npm: npmSources });
+    // The directory wins: acme is served as a tarball, never from npm.
+    expect(await dist.npmPackage('acme')).toBeNull();
+    expect(await dist.npmPackage('nocobase-runner')).toEqual({
+      kind: 'npm',
+      product: 'nocobase-runner',
+      version: '1.2.0',
+      package: '@nocobase/agent-runner',
+      channel: 'stable',
+    });
+    // Nothing about the tarballs changes.
+    expect(await dist.find('nocobase-runner', 'linux-x64')).toBeNull();
+    expect((await dist.manifest()).products).toEqual({
+      acme: { version: '0.5.0', targets: ['linux-x64'] },
+    });
+    expect(
+      await createDistService({ dir }).npmPackage('nocobase-runner'),
+    ).toBeNull();
+    // A pinned version the directory does not have leaves the product to npm.
+    expect(
+      await createDistService({
+        dir,
+        versions: { acme: '9.9.9' },
+        npm: npmSources,
+      }).npmPackage('acme'),
+    ).toMatchObject({ kind: 'npm', package: '@acme/cli', version: '0.9.0' });
+    expect(
+      await createDistService({
+        dir: path.join(root, 'nothing'),
+        npm: npmSources,
+      }).npmPackage('acme'),
+    ).toMatchObject({ kind: 'npm', version: '0.9.0' });
+  });
+
+  it('refuses a range or a malformed package when it starts', () => {
+    expect(() =>
+      createDistService({
+        npm: { acme: { package: '@acme/cli', version: '^0.9.0' } },
+      }),
+    ).toThrow(/agents\.dist\.npm/u);
+    expect(() =>
+      createDistService({
+        npm: { acme: { package: 'Not A Package', version: '0.9.0' } },
+      }),
+    ).toThrow(/agents\.dist\.npm/u);
+  });
+});
+
+describe('npm distribution routes', () => {
+  const dir = path.join(root, 'npm-routes');
+  let harness: Harness;
+
+  beforeEach(async () => {
+    rmSync(dir, { recursive: true, force: true });
+    writeDist(dir, { acme: { '0.5.0': ['darwin-arm64', 'linux-x64'] } });
+    harness = await createHarness({ dist: { dir, npm: npmSources } });
+  });
+  afterEach(() => harness.close());
+
+  const auth = { 'x-test-user': 'someone' };
+  const get = (url: string) => harness.app.request(url, { headers: auth });
+
+  it('answers npm only to a caller that opted in, and the old answer to everyone else', async () => {
+    const runnerUrl = '/agents/dist/products/nocobase-runner/targets/linux-x64';
+    // Without the opt-in: exactly as before, 404.
+    const before = await get(runnerUrl);
+    expect(before.status).toBe(404);
+    expect((await get(`${runnerUrl}?format=env`)).status).toBe(404);
+    expect((await get(`${runnerUrl}?accept=other`)).status).toBe(404);
+
+    const json = await get(`${runnerUrl}?accept=npm`);
+    expect(json.status).toBe(200);
+    expect((await json.json()).data).toEqual({
+      kind: 'npm',
+      product: 'nocobase-runner',
+      version: '1.2.0',
+      package: '@nocobase/agent-runner',
+      channel: 'stable',
+    });
+    const env = await get(`${runnerUrl}?accept=other,npm&format=env`);
+    expect(await env.text()).toBe(
+      'kind=npm\nproduct=nocobase-runner\nversion=1.2.0\npackage=@nocobase/agent-runner\nchannel=stable\n',
+    );
+    // Still a platform name.
+    expect(
+      (
+        await get(
+          '/agents/dist/products/nocobase-runner/targets/Not%20A%20Target?accept=npm',
+        )
+      ).status,
+    ).toBe(404);
+
+    // A product with a tarball is answered the same either way, with no kind.
+    const acmeUrl = '/agents/dist/products/acme/targets/linux-x64';
+    const plain = await (await get(acmeUrl)).json();
+    const optedIn = await (await get(`${acmeUrl}?accept=npm`)).json();
+    expect(optedIn).toEqual(plain);
+    expect(plain.data).not.toHaveProperty('kind');
+    expect(await (await get(`${acmeUrl}?accept=npm&format=env`)).text()).toBe(
+      await (await get(`${acmeUrl}?format=env`)).text(),
+    );
+    // And a platform it was not built for stays PLATFORM_UNSUPPORTED: the directory has the product.
+    const unsupported = await get(
+      '/agents/dist/products/acme/targets/win32-x64?accept=npm',
+    );
+    expect(unsupported.status).toBe(404);
+    expect(await unsupported.json()).toMatchObject({
+      error: { reason: 'PLATFORM_UNSUPPORTED' },
+    });
+  });
+
+  const heartbeat = (
+    key: string,
+    body: { version: string; product?: string; features: string[] },
+  ) =>
+    harness.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: key,
+      body: {
+        ...body,
+        tools: [{ kind: 'claude', authenticated: true }],
+        active: [],
+        load: { slots: 1, free: 1 },
+      },
+    });
+
+  it('offers the npm package only to a runner with the npm feature, and the tarball whenever there is one', async () => {
+    const runner = await harness.registerRunner();
+
+    // Without the feature: nothing new, as before npm answers existed.
+    const old = await heartbeat(runner.key, {
+      version: '1.0.0',
+      product: 'nocobase-runner',
+      features: [],
+    });
+    expect(old.body.data.upgrade).toBeUndefined();
+    expect(old.body.data.npmUpgrade).toBeUndefined();
+    const listed = await harness.request('GET', '/agents/runners', {
+      user: 'owner',
+    });
+    expect(listed.body.data[0].updateVersion).toBeNull();
+
+    const capable = await heartbeat(runner.key, {
+      version: '1.0.0',
+      product: 'nocobase-runner',
+      features: ['npm'],
+    });
+    expect(capable.body.data.upgrade).toBeUndefined();
+    expect(capable.body.data.npmUpgrade).toEqual({
+      latestVersion: '1.2.0',
+      package: '@nocobase/agent-runner',
+      channel: 'stable',
+      reason: expect.stringContaining('@nocobase/agent-runner@1.2.0'),
+    });
+    expect(
+      (await harness.request('GET', '/agents/runners', { user: 'owner' })).body
+        .data[0].updateVersion,
+    ).toBe('1.2.0');
+
+    // The pinned version, not a newer one: a runner already on it, or ahead of it, is offered nothing.
+    for (const version of ['1.2.0', '1.3.0']) {
+      const current = await heartbeat(runner.key, {
+        version,
+        product: 'nocobase-runner',
+        features: ['npm'],
+      });
+      expect(current.body.data.npmUpgrade).toBeUndefined();
+      expect(current.body.data.upgrade).toBeUndefined();
+    }
+
+    // A product the directory serves is offered as a tarball, also to a runner with the feature.
+    const carried = await heartbeat(runner.key, {
+      version: '0.4.0',
+      product: 'acme',
+      features: ['npm'],
+    });
+    expect(carried.body.data.npmUpgrade).toBeUndefined();
+    expect(carried.body.data.upgrade).toMatchObject({ latestVersion: '0.5.0' });
   });
 });
