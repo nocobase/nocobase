@@ -892,6 +892,136 @@ describe('dependency graph concurrency over HTTP', () => {
 });
 
 describe('dependencies over HTTP', () => {
+  it.each(['id', 'target'] as const)(
+    'removes converted relationships through the %s endpoint with the current direction and release effects',
+    async (endpoint) => {
+      const viewer = h.viewer('alice');
+      const a = await h.services.issues.create(viewer, { title: 'A' });
+      const b = await h.services.issues.create(viewer, { title: 'B' });
+      const released: { issueId: string; releasedBy: string }[] = [];
+      h.services.events.on('issue.dependencyReleased', (event) => {
+        released.push({
+          issueId: event.issueId,
+          releasedBy: event.releasedBy.issueId,
+        });
+      });
+      const remove = (
+        issueId: string,
+        otherId: string,
+        dependencyId: string,
+        type: 'blockedBy' | 'relatedTo',
+        role: string | undefined = 'member',
+      ) =>
+        endpoint === 'id'
+          ? call(`/issues/${issueId}/dependencies/${dependencyId}`, {
+              role,
+              method: 'DELETE',
+            })
+          : call(`/issues/${issueId}/removeDependency`, {
+              role,
+              method: 'POST',
+              body: JSON.stringify({ dependsOnIssueId: otherId, type }),
+            });
+      const convert = (dependencyId: string, type: 'blockedBy' | 'relatedTo') =>
+        call(`/issues/${b.id}/dependencies/${dependencyId}`, {
+          role: 'member',
+          method: 'PATCH',
+          body: JSON.stringify({
+            type,
+            expectedType: type === 'blockedBy' ? 'relatedTo' : 'blockedBy',
+          }),
+        });
+      const related = await h.services.subtasks.addDependency(viewer, a.id, {
+        dependsOnIssueId: b.id,
+        type: 'relatedTo',
+      });
+      expect((await convert(related.dependencyId, 'blockedBy')).status).toBe(
+        200,
+      );
+      const before = await h.services.issueQueries.detail(viewer, b.id);
+      expect(before.blockers).toEqual([
+        expect.objectContaining({ issueId: a.id }),
+      ]);
+      // Conversion from the reverse end makes B the waiting issue. Only that end may now remove the prerequisite.
+      expect(
+        (await remove(a.id, b.id, related.dependencyId, 'blockedBy')).status,
+      ).toBe(404);
+      expect(
+        (await remove(b.id, a.id, related.dependencyId, 'blockedBy', 'none'))
+          .status,
+      ).toBe(404);
+      expect(
+        (await h.services.issueQueries.detail(viewer, b.id)).activities,
+      ).toEqual(before.activities);
+      expect(released).toEqual([]);
+      expect(
+        (await remove(b.id, a.id, related.dependencyId, 'blockedBy')).status,
+      ).toBe(204);
+      const after = await h.services.issueQueries.detail(viewer, b.id);
+      expect(after.blockedBy).toEqual([]);
+      expect(after.blockers).toEqual([]);
+      expect(
+        (await h.services.issueQueries.detail(viewer, a.id)).blocks,
+      ).toEqual([]);
+      expect(
+        after.activities.filter(
+          (activity) => activity.action === 'dependency_removed',
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          details: expect.objectContaining({
+            dependencyId: related.dependencyId,
+            dependsOnIssueId: a.id,
+            type: 'blockedBy',
+          }),
+        }),
+      ]);
+      expect(released).toEqual([{ issueId: b.id, releasedBy: a.id }]);
+      expect(
+        (await remove(b.id, a.id, related.dependencyId, 'blockedBy')).status,
+      ).toBe(404);
+      expect(
+        (await h.services.issueQueries.detail(viewer, b.id)).activities,
+      ).toEqual(after.activities);
+      expect(released).toHaveLength(1);
+
+      const blocker = await h.services.subtasks.addDependency(viewer, b.id, {
+        dependsOnIssueId: a.id,
+      });
+      expect((await convert(blocker.dependencyId, 'relatedTo')).status).toBe(
+        200,
+      );
+      expect(released).toHaveLength(2);
+      // Once converted back to related, either end can remove it without another release notification.
+      expect(
+        (await remove(a.id, b.id, blocker.dependencyId, 'relatedTo')).status,
+      ).toBe(204);
+      for (const issue of [a, b])
+        expect(
+          (await h.services.issueQueries.detail(viewer, issue.id)).relatedTo,
+        ).toEqual([]);
+      const final = await h.services.issueQueries.detail(viewer, b.id);
+      expect(
+        final.activities.filter(
+          (activity) =>
+            activity.action === 'dependency_removed' &&
+            activity.details.type === 'relatedTo',
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          details: expect.objectContaining({
+            dependencyId: blocker.dependencyId,
+            dependsOnIssueId: a.id,
+          }),
+        }),
+      ]);
+      expect(released).toEqual([
+        { issueId: b.id, releasedBy: a.id },
+        { issueId: b.id, releasedBy: a.id },
+      ]);
+    },
+  );
+
   it('refuses delegated conversion without changing the relationship', async () => {
     const viewer = h.viewer('alice');
     const a = await h.services.issues.create(viewer, { title: 'A' });

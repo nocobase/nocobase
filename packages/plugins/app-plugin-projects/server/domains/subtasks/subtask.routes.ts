@@ -162,6 +162,10 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         204: emptyResponse(),
         ...apiErrorResponses,
         404: apiErrorResponse(404),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (DEPENDENCY_GRAPH_CHANGED): reload and retry.',
+        ),
       },
     }),
     apiValidator('param', DependencyParams),
@@ -199,6 +203,10 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         204: emptyResponse(),
         ...apiErrorResponses,
         404: apiErrorResponse(404),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (DEPENDENCY_GRAPH_CHANGED): reload and retry.',
+        ),
       },
     }),
     apiValidator('param', IssueParams),

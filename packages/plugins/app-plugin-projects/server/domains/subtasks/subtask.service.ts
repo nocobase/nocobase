@@ -217,6 +217,8 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     await deps.tx.run(async (tx) => {
       const issue = await requireVisible(tx.conn, viewer, idOrKey);
       requireEditor(viewer);
+      // Conversion keeps the link id: protect the type and endpoints used by removal and its release effects.
+      await lockIssueGraph(tx.conn);
       const dependency = await find(tx.conn, issue);
       if (!dependency) throw notFound('Dependency');
       await deleteDependency(tx.conn, dependency.id);
