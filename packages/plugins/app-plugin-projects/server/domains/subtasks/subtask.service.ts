@@ -46,6 +46,7 @@ import {
   type Catalogs,
 } from './subtask.blocking.js';
 import { assertNoCycleThrough } from './subtask.graph.js';
+import { lockIssueGraph } from '../settings/index.js';
 import {
   onTerminal,
   releaseIfFree,
@@ -256,6 +257,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
       : undefined;
 
   const relations: IssueRelations = {
+    lock: (tx) => lockIssueGraph(tx.conn),
     async created(tx, issue, blockedBy, viewer) {
       const links = new Set<string>();
       for (const ref of blockedBy) {
@@ -297,6 +299,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         const issue = await requireVisible(tx.conn, viewer, idOrKey);
         requireEditor(viewer);
         const type = dependencyType(input?.type);
+        if (type === 'blockedBy') await lockIssueGraph(tx.conn);
         const other = await target(
           tx.conn,
           viewer,
@@ -318,6 +321,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     async updateDependency(viewer, idOrKey, dependencyId, input) {
       requireEditor(viewer);
       return deps.tx.run(async (tx) => {
+        if (input?.type === 'blockedBy') await lockIssueGraph(tx.conn);
         const issue = await requireVisible(tx.conn, viewer, idOrKey);
         const before = removable(
           issue,

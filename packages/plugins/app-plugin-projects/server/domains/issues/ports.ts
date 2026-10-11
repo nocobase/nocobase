@@ -173,6 +173,8 @@ export interface CommentChange {
  * caller's transaction.
  */
 export interface IssueRelations {
+  /** Before writing a change that can add waiting edges; held until the outer transaction ends. */
+  lock(tx: Tx): Promise<void>;
   /** A new issue: 400 unless every `blockedBy` is an issue the viewer sees; inserts them, then checks for a cycle. */
   created(
     tx: Tx,
@@ -196,6 +198,7 @@ export interface IssueRelations {
 }
 
 export const noRelations: IssueRelations = {
+  lock: () => Promise.resolve(),
   created: () => Promise.resolve(),
   placed: () => Promise.resolve(),
   changed: () => Promise.resolve(),

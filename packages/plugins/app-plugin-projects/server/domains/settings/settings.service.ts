@@ -32,8 +32,8 @@ export interface SettingsService {
     viewer: Viewer,
     patch: UpdateSettingsRequest,
   ): Promise<WorkspaceSettings>;
-  /** Allocates the next issue number inside `tx` (see `nextIssueNumber`). */
-  allocateIssueNumber(tx: Tx): Promise<AllocatedNumber>;
+  /** Protects the issue graph, then allocates its next number inside `tx` (see `nextIssueNumber`). */
+  allocateIssueNumber(tx: Tx, addsWaits?: boolean): Promise<AllocatedNumber>;
 }
 
 function validPrefix(value: unknown): string {
@@ -84,8 +84,8 @@ export function createSettingsService(deps: {
       });
     },
 
-    async allocateIssueNumber(tx) {
-      const { number, prefix } = await nextIssueNumber(tx.conn);
+    async allocateIssueNumber(tx, addsWaits = false) {
+      const { number, prefix } = await nextIssueNumber(tx.conn, addsWaits);
       return { number, identifier: `${prefix}-${number}` };
     },
   };

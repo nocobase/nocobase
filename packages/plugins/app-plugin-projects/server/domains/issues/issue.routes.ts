@@ -147,6 +147,10 @@ export function createIssueRoutes(deps: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
         400: apiErrorResponse(400, workflowRefused),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry.',
+        ),
       },
     }),
     apiValidator('json', CreateIssueBody),
@@ -333,7 +337,7 @@ export function createIssueRoutes(deps: {
         404: notFound,
         409: apiErrorResponse(
           409,
-          'When the issue changed since `revision` (`REVISION_CONFLICT`): read it again.',
+          'When the issue changed since `revision` (`REVISION_CONFLICT`), or its dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): read it again and retry.',
         ),
       },
     }),
@@ -418,6 +422,14 @@ export function createIssueRoutes(deps: {
         200: dataResponse(IssueSchema),
         ...apiErrorResponses,
         404: apiErrorResponse(404, 'When no deleted issue has that id.'),
+        400: apiErrorResponse(
+          400,
+          'When restoring its waits would create a cycle (`DEPENDENCY_CYCLE`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry.',
+        ),
       },
     }),
     apiValidator('param', IssueParams),

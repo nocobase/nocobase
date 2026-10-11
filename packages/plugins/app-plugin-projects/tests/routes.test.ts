@@ -416,6 +416,294 @@ describe('a caller acting for someone else', () => {
   });
 });
 
+describe('dependency graph concurrency over HTTP', () => {
+  const convert = (issueId: string, dependencyId: string) =>
+    call(`/issues/${issueId}/dependencies/${dependencyId}`, {
+      role: 'member',
+      method: 'PATCH',
+      body: JSON.stringify({ expectedType: 'relatedTo', type: 'blockedBy' }),
+    });
+
+  async function assertConflict(response: Response) {
+    expect([400, 409]).toContain(response.status);
+    const body = await response.json();
+    expect(['DEPENDENCY_CYCLE', 'DEPENDENCY_GRAPH_CHANGED']).toContain(
+      body.error.reason,
+    );
+    if (response.status === 409) expect(body.error.status).toBe('ABORTED');
+  }
+
+  it('keeps concurrent standalone creation successful without advancing the graph revision', async () => {
+    const graph = h.database.connection().repository('pmIssueGraph');
+    const before = await graph.findOne({ filter: { id: 'default' } });
+    const titles = ['Independent one', 'Independent two'];
+    const responses = await Promise.all(
+      titles.map((title) =>
+        call('/issues', {
+          role: 'member',
+          method: 'POST',
+          body: JSON.stringify({ title }),
+        }),
+      ),
+    );
+    expect(responses.map((response) => response.status)).toEqual([201, 201]);
+    const issues = h.database.connection().repository('pmIssues');
+    for (const title of titles)
+      expect(await issues.count({ filter: { title } })).toBe(1);
+    const rows = await issues.findMany();
+    expect(rows.map((row) => row.identifier).sort()).toEqual(['PM-1', 'PM-2']);
+    expect(await graph.findOne({ filter: { id: 'default' } })).toEqual(before);
+  });
+
+  it('uses one lock order for plans that create then link and link then create', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const c = await h.services.issues.create(viewer, { title: 'C' });
+    const d = await h.services.issues.create(viewer, { title: 'D' });
+    // These are the same ambient units that execute plan rows. Both orders must acquire the graph before the counter.
+    const operations = [
+      () =>
+        h.services.tx.unit(async () => {
+          await h.services.issues.create(viewer, {
+            title: 'Created before link',
+          });
+          await h.services.subtasks.addDependency(viewer, a.id, {
+            dependsOnIssueId: b.id,
+          });
+        }),
+      () =>
+        h.services.tx.unit(async () => {
+          await h.services.subtasks.addDependency(viewer, c.id, {
+            dependsOnIssueId: d.id,
+          });
+          await h.services.issues.create(viewer, {
+            title: 'Created after link',
+          });
+        }),
+    ];
+    const results = await Promise.allSettled(operations.map((run) => run()));
+    expect(results.some((result) => result.status === 'fulfilled')).toBe(true);
+    for (const [index, result] of results.entries()) {
+      if (result.status === 'rejected') {
+        // A conflict is retryable as a whole; native lock-order deadlocks are not accepted by this regression.
+        expect(result.reason).toMatchObject({
+          code: 'DEPENDENCY_GRAPH_CHANGED',
+        });
+        const source = index === 0 ? a : c;
+        expect(
+          (await h.services.issueQueries.detail(viewer, source.id)).blockedBy,
+        ).toEqual([]);
+        await operations[index]!();
+      }
+    }
+    expect(
+      (await h.services.issueQueries.detail(viewer, a.id)).blockedBy,
+    ).toHaveLength(1);
+    expect(
+      (await h.services.issueQueries.detail(viewer, c.id)).blockedBy,
+    ).toHaveLength(1);
+    for (const title of ['Created before link', 'Created after link']) {
+      expect(
+        await h.database
+          .connection()
+          .repository('pmIssues')
+          .count({ filter: { title } }),
+      ).toBe(1);
+    }
+  });
+
+  it('rolls back restoring a deleted node when its waits would now close a cycle', async () => {
+    const viewer = h.viewer('alice', 'admin');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const c = await h.services.issues.create(viewer, { title: 'C' });
+    await h.services.subtasks.addDependency(viewer, b.id, {
+      dependsOnIssueId: c.id,
+    });
+    await h.services.subtasks.addDependency(viewer, c.id, {
+      dependsOnIssueId: a.id,
+    });
+    const ab = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    expect(
+      (await call(`/issues/${c.id}`, { role: 'admin', method: 'DELETE' }))
+        .status,
+    ).toBe(204);
+    expect((await convert(a.id, ab.dependencyId)).status).toBe(200);
+    const events: string[] = [];
+    const off = h.services.events.on('issue.restored', (event) => {
+      events.push(event.issueId);
+    });
+    const response = await call(`/issues/${c.id}/restore`, {
+      role: 'admin',
+      method: 'POST',
+    });
+    off();
+    await assertConflict(response);
+    expect(events).toEqual([]);
+    expect(
+      await h.database
+        .connection()
+        .repository('pmIssues')
+        .findOne({ filter: { id: c.id } }),
+    ).toMatchObject({ deletedAt: expect.anything() });
+  });
+
+  it('keeps three concurrent conversions acyclic and preserves rejected links', async () => {
+    const viewer = h.viewer('alice');
+    for (let trial = 0; trial < 4; trial += 1) {
+      const issues = [];
+      for (const title of ['A', 'B', 'C'])
+        issues.push(await h.services.issues.create(viewer, { title }));
+      const links = [];
+      for (const [index, issue] of issues.entries()) {
+        links.push(
+          await h.services.subtasks.addDependency(viewer, issue.id, {
+            dependsOnIssueId: issues[(index + 1) % 3]!.id,
+            type: 'relatedTo',
+          }),
+        );
+      }
+      const responses = await Promise.all(
+        issues.map((issue, index) =>
+          convert(issue.id, links[index]!.dependencyId),
+        ),
+      );
+      expect(
+        responses.filter((response) => response.ok).length,
+      ).toBeGreaterThan(0);
+      expect(responses.filter((response) => response.ok).length).toBeLessThan(
+        3,
+      );
+      for (const [index, response] of responses.entries()) {
+        const detail = await h.services.issueQueries.detail(
+          viewer,
+          issues[index]!.id,
+        );
+        if (response.ok) {
+          expect(detail.blockedBy).toEqual([
+            expect.objectContaining({
+              dependencyId: links[index]!.dependencyId,
+            }),
+          ]);
+        } else {
+          await assertConflict(response);
+          expect(detail.blockedBy).toEqual([]);
+          expect(detail.relatedTo).toContainEqual(
+            expect.objectContaining({
+              dependencyId: links[index]!.dependencyId,
+            }),
+          );
+        }
+      }
+    }
+  });
+
+  it.each(['conversion', 'addition'] as const)(
+    'protects disjoint endpoints when racing another %s',
+    async (operation) => {
+      const viewer = h.viewer('alice');
+      const a = await h.services.issues.create(viewer, { title: 'A' });
+      const b = await h.services.issues.create(viewer, { title: 'B' });
+      const c = await h.services.issues.create(viewer, { title: 'C' });
+      const d = await h.services.issues.create(viewer, { title: 'D' });
+      await h.services.subtasks.addDependency(viewer, b.id, {
+        dependsOnIssueId: c.id,
+      });
+      await h.services.subtasks.addDependency(viewer, d.id, {
+        dependsOnIssueId: a.id,
+      });
+      const ab = await h.services.subtasks.addDependency(viewer, a.id, {
+        dependsOnIssueId: b.id,
+        type: 'relatedTo',
+      });
+      const cd =
+        operation === 'conversion'
+          ? await h.services.subtasks.addDependency(viewer, c.id, {
+              dependsOnIssueId: d.id,
+              type: 'relatedTo',
+            })
+          : undefined;
+      const responses = await Promise.all([
+        convert(a.id, ab.dependencyId),
+        cd
+          ? convert(c.id, cd.dependencyId)
+          : call(`/issues/${c.id}/dependencies`, {
+              role: 'member',
+              method: 'POST',
+              body: JSON.stringify({
+                dependsOnIssueId: d.id,
+                type: 'blockedBy',
+              }),
+            }),
+      ]);
+      expect(responses.filter((response) => response.ok)).toHaveLength(1);
+      await assertConflict(responses.find((response) => !response.ok)!);
+      const details = await Promise.all(
+        [a, c].map((issue) => h.services.issueQueries.detail(viewer, issue.id)),
+      );
+      expect(details.flatMap((detail) => detail.blockedBy)).toHaveLength(1);
+    },
+  );
+
+  it.each(['parent', 'stage', 'create'] as const)(
+    'protects implicit waits when racing a %s change',
+    async (operation) => {
+      const viewer = h.viewer('alice');
+      const parent = await h.services.issues.create(viewer, {
+        title: 'Parent',
+      });
+      const a = await h.services.issues.create(viewer, {
+        title: 'A',
+        ...(operation === 'stage'
+          ? { parentIssueId: parent.id, stage: 0 }
+          : {}),
+      });
+      const b = await h.services.issues.create(viewer, {
+        title: 'B',
+        ...(operation === 'stage'
+          ? { parentIssueId: parent.id, stage: 0 }
+          : {}),
+      });
+      const ab = await h.services.subtasks.addDependency(viewer, a.id, {
+        dependsOnIssueId: b.id,
+        type: 'relatedTo',
+      });
+      const responses = await Promise.all([
+        convert(a.id, ab.dependencyId),
+        operation === 'create'
+          ? call('/issues', {
+              role: 'member',
+              method: 'POST',
+              body: JSON.stringify({
+                title: 'Child',
+                parentIssueId: b.id,
+                blockedBy: [a.id],
+              }),
+            })
+          : call(`/issues/${operation === 'parent' ? a.id : b.id}`, {
+              role: 'member',
+              method: 'PATCH',
+              body: JSON.stringify(
+                operation === 'parent'
+                  ? { revision: a.revision, parentIssueId: b.id }
+                  : { revision: b.revision, stage: 1 },
+              ),
+            }),
+      ]);
+      expect(responses.filter((response) => response.ok)).toHaveLength(1);
+      await assertConflict(responses.find((response) => !response.ok)!);
+      const detail = await h.services.issueQueries.detail(viewer, a.id);
+      expect(detail.blockedBy).toHaveLength(responses[0]!.ok ? 1 : 0);
+      if (!responses[1]!.ok && operation === 'parent')
+        expect(detail.parentIssueId).toBeNull();
+    },
+  );
+});
+
 describe('dependencies over HTTP', () => {
   it('refuses delegated conversion without changing the relationship', async () => {
     const viewer = h.viewer('alice');

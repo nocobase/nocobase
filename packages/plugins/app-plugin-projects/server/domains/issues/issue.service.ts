@@ -266,8 +266,10 @@ export function createIssueService(deps: IssueDeps): IssueService {
           { ...deps, conn: tx.conn, viewer },
           input,
         );
-        const { number, identifier } =
-          await deps.settings.allocateIssueNumber(tx);
+        const { number, identifier } = await deps.settings.allocateIssueNumber(
+          tx,
+          Boolean(values.parentIssueId) || values.blockedBy.length > 0,
+        );
         const id = deps.ids.next();
         const now = new Date().toISOString();
         await insertIssue(tx.conn, {
@@ -340,6 +342,9 @@ export function createIssueService(deps: IssueDeps): IssueService {
       return deps.tx.run(async (tx) => {
         const before = await requireVisible(tx.conn, viewer, idOrKey);
         requireEditor(viewer);
+        if (patch.parentIssueId !== undefined || patch.stage !== undefined) {
+          await deps.relations().lock(tx);
+        }
         const { values, activities, labelIds, status, placed } =
           await resolveUpdate(
             { ...deps, conn: tx.conn, viewer },
@@ -578,6 +583,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     async restore(viewer, idOrKey) {
       requireDeleter(viewer);
       return deps.tx.run(async (tx) => {
+        await deps.relations().lock(tx);
         const issue = await findIssue(tx.conn, idOrKey);
         if (!issue?.deletedAt) throw notFound('Deleted issue');
         const now = new Date().toISOString();
@@ -586,6 +592,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           deletedById: null,
           updatedAt: now,
         });
+        await deps.relations().placed(tx, await reload(tx, issue.id));
         await record(tx, issue.id, viewer.actor, 'issue_restored');
         tx.emit({ type: 'issue.changed', issueId: issue.id });
         tx.emit({

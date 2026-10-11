@@ -1,8 +1,10 @@
 /**
- * The `pmSettings` row. It is created by the seed `202609300005_pm_default_settings`; a missing row reads as the
- * defaults and is recreated by the first write.
+ * Workspace settings/counter and the separate dependency graph revision. `pmSettings` is created by the seed
+ * `202609300005_pm_default_settings`; a missing settings row reads as the defaults and is recreated by the first write.
  */
 import type { DatabaseConnection } from '@nocobase/db';
+
+import { conflict } from '../../kernel/errors.js';
 
 export const SETTINGS = 'pmSettings';
 const ROW_ID = 'default';
@@ -41,6 +43,35 @@ export async function readSettings(
   return settings(conn).findOne({ filter: { id: ROW_ID } });
 }
 
+/**
+ * Serialize graph additions across projects and processes until the outermost transaction commits. The conditional
+ * update also rejects an old repeatable-read snapshot: taking a write lock alone would not refresh the graph.
+ * This row must be separate from settings/counters: writing those in a plan could otherwise expose the latest row
+ * version through MySQL's read-your-own-writes, while graph reads still use the old snapshot. Always take this guard
+ * before the issue counter, including creates without dependencies, so plans take these locks in the same order.
+ * A standalone create locks without advancing the revision, preserving concurrent independent creates. The database
+ * adapter reports matched rows for this no-op update (including mysql2's default FOUND_ROWS), not changed values.
+ */
+export async function lockIssueGraph(
+  conn: DatabaseConnection,
+  advance = true,
+): Promise<void> {
+  const graph = conn.repository<{ id: string; revision: number }>(
+    'pmIssueGraph',
+  );
+  const row = await graph.findOne({ filter: { id: ROW_ID } });
+  if (!row) throw new Error('The issue dependency graph is not initialized.');
+  const { updatedCount } = await graph.updateMany({
+    filter: { id: ROW_ID, revision: row.revision },
+    values: { revision: { increment: advance ? 1 : 0 } },
+  });
+  if (updatedCount !== 1)
+    throw conflict(
+      'DEPENDENCY_GRAPH_CHANGED',
+      'The issue dependency graph changed meanwhile. Reload and retry.',
+    );
+}
+
 export async function writeSettings(
   conn: DatabaseConnection,
   values: Partial<Pick<SettingsRow, 'issuePrefix' | 'values'>>,
@@ -53,12 +84,14 @@ export async function writeSettings(
 }
 
 /**
- * The next issue number and the current prefix. An atomic increment in the caller's transaction: concurrent creates
- * wait for each other, and a rolled-back create releases its number.
+ * The next issue number and the current prefix. Take the graph guard before the counter even for a standalone issue:
+ * a later row of the same plan may add dependencies. A rolled-back create releases its number.
  */
 export async function nextIssueNumber(
   conn: DatabaseConnection,
+  addsWaits = false,
 ): Promise<{ readonly number: number; readonly prefix: string }> {
+  await lockIssueGraph(conn, addsWaits);
   await ensureRow(conn);
   const { record } = await settings(conn).updateOne({
     filter: { id: ROW_ID },

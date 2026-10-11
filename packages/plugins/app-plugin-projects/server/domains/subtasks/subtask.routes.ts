@@ -68,7 +68,7 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         404: apiErrorResponse(404),
         409: apiErrorResponse(
           409,
-          'When the issues are already linked (`DEPENDENCY_EXISTS`).',
+          'When the issues are already linked (`DEPENDENCY_EXISTS`), or concurrent graph changes require reloading and retrying (`DEPENDENCY_GRAPH_CHANGED`).',
         ),
       },
     }),
@@ -131,7 +131,7 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         404: apiErrorResponse(404),
         409: apiErrorResponse(
           409,
-          'The relationship changed (DEPENDENCY_CHANGED) or the target type already exists (DEPENDENCY_EXISTS).',
+          'The relationship changed (DEPENDENCY_CHANGED), the target type already exists (DEPENDENCY_EXISTS), or concurrent graph changes require reloading and retrying (DEPENDENCY_GRAPH_CHANGED).',
         ),
       },
     }),
