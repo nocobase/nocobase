@@ -533,23 +533,26 @@ class ClaudeRun {
         if (this.stopping) break;
         let attemptError: unknown;
         let missing = false;
-        // A startup error result is held back until stderr and a thrown
-        // error have been seen too: handling it acknowledges the inputs it
-        // lists, which a recovered conversation still has to receive.
-        let heldResult: SDKMessage | undefined;
+        // Resuming has three phases: collect startup messages, decide whether
+        // recovery is needed, then commit their effects. Notifications cannot
+        // commit input acknowledgements from an attempt that may be discarded.
+        let collectingStartup = Boolean(options.resume && !this.recovered);
+        const startupMessages: SDKMessage[] = [];
+        const commitStartup = () => {
+          collectingStartup = false;
+          for (const message of startupMessages) this.onMessage(message);
+          startupMessages.length = 0;
+        };
         try {
           const q = query({ prompt: this.input, options });
           this.closeQuery = () => q.close();
           try {
             for await (const message of q) {
-              if (heldResult) {
-                this.onMessage(heldResult);
-                heldResult = undefined;
-              }
               if (
                 message.type === 'assistant' ||
                 (message.type === 'result' &&
-                  (message.num_turns > 0 ||
+                  ((message.subtype === 'success' && !message.is_error) ||
+                    message.num_turns > 0 ||
                     message.usage.input_tokens > 0 ||
                     message.usage.output_tokens > 0))
               )
@@ -563,12 +566,15 @@ class ClaudeRun {
                   message.subtype === 'success'
                     ? message.result
                     : message.errors.join('\n');
-                missing = /No conversation found/i.test(errors);
-                if (missing && options.resume && !this.recovered) break;
-                if (options.resume && !this.recovered) {
-                  heldResult = message;
+                missing ||= /No conversation found/i.test(errors);
+              }
+              if (collectingStartup) {
+                if (!this.executionBegun) {
+                  startupMessages.push(message);
+                  if (missing) break;
                   continue;
                 }
+                commitStartup();
               }
               this.onMessage(message);
             }
@@ -596,7 +602,7 @@ class ClaudeRun {
           !missing ||
           this.stopping
         ) {
-          if (heldResult) this.onMessage(heldResult);
+          commitStartup();
           if (attemptError !== undefined)
             throw attemptError instanceof Error
               ? attemptError

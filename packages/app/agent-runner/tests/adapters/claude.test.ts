@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { chmod, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -110,6 +111,7 @@ describe('missing conversations', () => {
     'stderr',
     'generic result before stderr',
     'generic result after stderr',
+    'generic result before notifications and stderr',
   ])(
     'recovers once from a startup %s, preserving unconfirmed inputs',
     async (mode) => {
@@ -140,6 +142,18 @@ describe('missing conversations', () => {
               yield failure;
             } else {
               yield failure;
+              if (mode.includes('notifications')) {
+                yield init();
+                yield {
+                  type: 'system',
+                  subtype: 'session_state_changed',
+                  state: 'idle',
+                  session_id: 'old',
+                  uuid: randomUUID(),
+                };
+                // Even a second error result must remain uncommitted.
+                yield failure;
+              }
               ctx.options.stderr?.('No conversation found with session ID old');
             }
             return;
@@ -211,6 +225,35 @@ describe('missing conversations', () => {
     expect(calls).toHaveLength(1);
     expect(events.filter((e) => e.type === 'input')).toHaveLength(1);
     expect(events.some((e) => e.content === 'turnCompleted')).toBe(true);
+  });
+
+  it('commits buffered input confirmations only when execution begins and never retries a late missing error', async () => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      const steer = await ctx.nextInput();
+      yield result({
+        subtype: 'error_during_execution',
+        errors: ['Process exited with code 1'],
+        num_turns: 0,
+        usage: {},
+        user_message_uuids: [steer?.uuid],
+      });
+      yield init();
+      yield assistant([{ type: 'text', text: 'working' }]);
+      ctx.options.stderr?.('No conversation found');
+      throw new Error('late failure');
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect(await handle.steer('early', 'early-input')).toBe(true);
+    const events = await collect(handle.events);
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+    expect(events.filter((event) => event.type === 'input')).toHaveLength(1);
+    expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
+      false,
+    );
   });
 
   it.each([
