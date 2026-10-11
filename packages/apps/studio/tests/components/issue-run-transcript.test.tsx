@@ -3,7 +3,14 @@ import {
   createTestI18nRuntime,
   TestI18nProvider,
 } from '@nocobase/i18n/testing';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -85,6 +92,35 @@ async function setup(locale = 'en-US') {
   return { ...result, refresh: () => result.rerender(view()), runtime };
 }
 
+// JSDOM has no layout; derive height from rendered rows and clamp scrollTop as a browser does.
+function scrollViewport(): HTMLElement {
+  const list = within(screen.getByTestId('run-transcript')).getByRole('list');
+  const viewport = list.parentElement!;
+  const height = () =>
+    list.querySelectorAll('[data-type]').length * 100 +
+    within(list).queryAllByRole('button', { name: /^Hidden events:/u }).length *
+      40;
+  let top = 0;
+  Object.defineProperties(viewport, {
+    clientHeight: { configurable: true, get: () => 200 },
+    scrollHeight: { configurable: true, get: height },
+    scrollTop: {
+      configurable: true,
+      get: () => (top = Math.min(top, Math.max(0, height() - 200))),
+      set: (value: number) => {
+        top = Math.max(0, Math.min(value, height() - 200));
+      },
+    },
+  });
+  viewport.scrollTop = viewport.scrollHeight;
+  fireEvent.scroll(viewport);
+  return viewport;
+}
+
+function event(seq: number, type: string): RunTranscriptEvent {
+  return { seq, type, at: '2026-10-01T00:00:00.000Z', content: `Event ${seq}` };
+}
+
 beforeEach(() => {
   window.localStorage.clear();
   state.userId = 'alice';
@@ -94,6 +130,82 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Studio issue run transcript', () => {
+  it('keeps the reading position in expanded history during live updates and follows again after collapse', async () => {
+    state.events = [
+      event(1, 'text'),
+      ...Array.from({ length: 30 }, (_, index) => event(index + 2, 'thinking')),
+    ];
+    const view = await setup();
+    const viewport = scrollViewport();
+    const readingPosition = viewport.scrollTop;
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Hidden events: 30 Thinking' }),
+    );
+    expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight);
+    expect(viewport.scrollTop).toBe(readingPosition);
+    state.events = [...state.events, event(32, 'thinking')];
+    view.refresh();
+    expect(viewport.scrollTop).toBe(readingPosition);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Hidden events: 31 Thinking' }),
+    );
+    state.events = [...state.events, event(33, 'text')];
+    view.refresh();
+    expect(viewport.scrollTop).toBe(
+      viewport.scrollHeight - viewport.clientHeight,
+    );
+  });
+
+  it('follows the bottom when a type switch reveals more rows without new events', async () => {
+    state.events = [
+      ...Array.from({ length: 8 }, (_, index) => event(index + 1, 'text')),
+      event(9, 'thinking'),
+      event(10, 'thinking'),
+    ];
+    await setup();
+    const viewport = scrollViewport();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Thinking', exact: true }),
+    );
+    expect(viewport.scrollTop).toBe(
+      viewport.scrollHeight - viewport.clientHeight,
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Thinking', exact: true }),
+    );
+    expect(viewport.scrollTop).toBe(
+      viewport.scrollHeight - viewport.clientHeight,
+    );
+  });
+
+  it('resumes following when filtering reduces a scrolled-away transcript to the viewport', async () => {
+    state.events = [
+      ...Array.from({ length: 8 }, (_, index) => event(index + 1, 'text')),
+      event(9, 'thinking'),
+    ];
+    const view = await setup();
+    const viewport = scrollViewport();
+    viewport.scrollTop = 100;
+    fireEvent.scroll(viewport);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Thinking', exact: true }),
+    );
+    expect(viewport.scrollTop).toBe(100);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Agent', exact: true }),
+    );
+    expect(viewport.scrollTop).toBe(0);
+    state.events = [
+      ...state.events,
+      event(10, 'thinking'),
+      event(11, 'thinking'),
+    ];
+    view.refresh();
+    expect(viewport.scrollTop).toBe(
+      viewport.scrollHeight - viewport.clientHeight,
+    );
+  });
+
   it('defaults a 200-event run to messages, input and errors, and expands only the selected hidden segment', async () => {
     await setup();
     expect(screen.getByText('Recorded event 1')).toBeInTheDocument();
