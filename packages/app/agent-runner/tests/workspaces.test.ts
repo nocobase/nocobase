@@ -459,6 +459,7 @@ describe('working directories', () => {
       const headSha = git(['rev-parse', 'HEAD'], app);
       const draft = path.join(app, 'draft.md');
       writeFileSync(draft, 'draft\n');
+      commit(app, 'local-only.txt');
       const requests: WorkspacesRequest[] = [];
       const report = (
         request: WorkspacesRequest,
@@ -585,17 +586,32 @@ describe('working directories', () => {
     ).toBe(true);
   });
 
-  it('removes a directory whose work is over even when it holds unpushed work', async () => {
+  it('keeps unpushed work when a legacy application only returns a remove list', async () => {
     const done = await finishedRun('TASK-1', 'run-1', (dir) =>
       writeFileSync(path.join(dir, 'notes.md'), 'draft\n'),
     );
     const { reporters } = reporter({ remove: ['run-1'] });
     const result = await collectWorkspaces({ paths, reporters });
-    expect(result.removed).toEqual([
-      { workDir: done.workDir, reason: 'ended' },
+    expect(result.removed).toEqual([]);
+    expect(result.entries[0]?.unpushed).toBe(true);
+    expect(result.kept).toEqual([
+      { workDir: done.workDir, reason: 'unpushed' },
     ]);
-    expect(result.kept).toEqual([]);
-    expect(existsSync(done.workDir)).toBe(false);
+    expect(existsSync(done.workDir)).toBe(true);
+  });
+
+  it('rechecks Git under the lock when a legacy remove reply follows a cached pushed report', async () => {
+    const done = await finishedRun('TASK-1', 'run-1');
+    commit(path.join(done.workDir, 'app'), 'local-only.txt');
+    expect(meta(done.workDir).unpushed).not.toBe(true);
+    const { reporters } = reporter({ remove: ['run-1'] });
+    const result = await collectWorkspaces({ paths, reporters });
+    expect(result.removed).toEqual([]);
+    expect(result.kept).toEqual([
+      { workDir: done.workDir, reason: 'unpushed' },
+    ]);
+    expect(meta(done.workDir).unpushed).toBe(true);
+    expect(existsSync(done.workDir)).toBe(true);
   });
 
   it('never touches a directory a run holds', async () => {
@@ -730,6 +746,18 @@ describe('what goes', () => {
     status: 'unknown',
     ...options,
   });
+  const confirmed = (entry: WorkspaceEntry): WorkspaceEntry => ({
+    ...entry,
+    decision: {
+      reportId: 'report',
+      workDir: entry.workDir,
+      runId: entry.lastRunId,
+      lastUsedAt: entry.lastUsedAt,
+      settled: true,
+      reason: 'settled',
+      commits: [],
+    },
+  });
   const removed = (plan: ReturnType<typeof planRemovals>) =>
     plan.remove.map((item) => `${item.entry.subjectKey}:${item.reason}`);
 
@@ -744,7 +772,8 @@ describe('what goes', () => {
         lastUsedAt: '2026-12-01T00:00:00.000Z',
       }),
       entry('ended', { status: 'ended' }),
-      entry('ended-unpushed', { status: 'ended', unpushed: true }),
+      confirmed(entry('ended-unpushed', { status: 'ended', unpushed: true })),
+      entry('legacy-ended', { status: 'ended', unpushed: true }),
       entry('newest'),
     ];
     const plan = planRemovals(entries);
@@ -753,7 +782,9 @@ describe('what goes', () => {
       'ended-unpushed:ended',
       'ended-newer:ended',
     ]);
-    expect(plan.kept).toEqual([]);
+    expect(plan.kept.map((item) => item.entry.subjectKey)).toEqual([
+      'legacy-ended',
+    ]);
     expect(
       planRemovals([
         entry('ended-busy', { status: 'ended', inUse: true }),
@@ -791,13 +822,25 @@ describe('what goes', () => {
     expect(
       removed(planRemovals(entries, { now, filters: { ended: true } })),
     ).toEqual([]);
-    // A directory whose work is over goes without forcing, unpushed work and all.
+    // A legacy ended status does not waive unpushed protection for manual filters.
     expect(
       removed(
         planRemovals([entry('TASK-84', { unpushed: true, status: 'ended' })], {
           now,
           filters: { subject: 'TASK-84' },
         }),
+      ),
+    ).toEqual([]);
+    // A settled directory decision allows discarding unpushed work without force.
+    expect(
+      removed(
+        planRemovals(
+          [confirmed(entry('TASK-84', { unpushed: true, status: 'ended' }))],
+          {
+            now,
+            filters: { subject: 'TASK-84' },
+          },
+        ),
       ),
     ).toEqual(['TASK-84:selected']);
   });

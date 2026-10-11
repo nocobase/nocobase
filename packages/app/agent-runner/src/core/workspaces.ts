@@ -432,8 +432,8 @@ const filtered = (filters: WorkspaceFilters | undefined): boolean =>
 
 /**
  * Which directories go. By default: those whose work is over, least recently used first. With filters: the directories
- * every filter matches. A directory a run holds is never removed, nor one with unpushed work unless its work is over or
- * the removal is forced.
+ * every filter matches. A directory a run holds is never removed, nor one with unpushed work unless a directory
+ * decision confirms its work is over or the removal is forced. Legacy remove replies retain the unpushed-work protection.
  */
 export function planRemovals(
   entries: readonly WorkspaceEntry[],
@@ -449,7 +449,7 @@ export function planRemovals(
     if (entry.inUse) kept.push({ entry, reason: 'inUse' });
     else if (
       entry.unpushed &&
-      entry.status !== 'ended' &&
+      entry.decision?.settled !== true &&
       options.force !== true
     )
       kept.push({ entry, reason: 'unpushed' });
@@ -482,7 +482,7 @@ export function planRemovals(
 
 /**
  * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or (not forced,
- * and its work not over) it has unpushed work now. Returns why it was kept, or undefined when it was removed.
+ * and no settled directory decision) it has unpushed work now. Returns why it was kept, or undefined when it was removed.
  */
 export async function removePlanned(
   paths: RunnerPaths,
@@ -505,7 +505,7 @@ export async function removePlanned(
       return 'changed';
     if (
       options.force !== true &&
-      entry.status !== 'ended' &&
+      entry.decision?.settled !== true &&
       (await checkWorkspaceGit(entry.workDir, meta, options.log)).reason !==
         'allowed'
     ) {
