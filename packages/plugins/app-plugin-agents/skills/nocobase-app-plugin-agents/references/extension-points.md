@@ -35,3 +35,5 @@ Rules that are easy to miss:
 - `GET /api/agents/vocabulary` hands the browser the subjects, sources and scopes the App contributed; the browser never imports server code for them.
 
 The README's example under "Extension points" shows a subject registered and work enqueued and withdrawn.
+
+For issue/card work indicators, use `runs.workingOn(subjectKind, subjectIds)` after filtering visible subjects. It returns unique `{ subjectId, agentId, working: true }` pairs for dispatched/running runs in that exact scope, with no run details or global board cap. Match the current executor and apply the application's pending approval rules separately; queued/terminal runs do not appear. Pass a bounded batch from a view, rather than querying each card's full history.

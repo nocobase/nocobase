@@ -1302,7 +1302,11 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(mail.deleteMessage).not.toHaveBeenCalled();
   });
 
-  it('permanently deletes a message from Trash only after confirmation', async () => {
+  // Skipped while it fails intermittently in CI: the "Permanently delete" menu item is sometimes not found before the
+  // query times out (https://github.com/chenos/nocobase-ci/actions/runs/38114158032/job/114395623484). Re-enable once
+  // the menu's rendering is awaited deterministically.
+  // eslint-disable-next-line vitest/no-disabled-tests -- kept as a skip rather than a todo so the body survives
+  it.skip('permanently deletes a message from Trash only after confirmation', async () => {
     const message = {
       id: 'message-trash',
       accountId: 'account-1',
