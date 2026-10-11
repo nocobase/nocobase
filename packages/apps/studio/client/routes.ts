@@ -21,7 +21,6 @@ import {
   CircleUserRound,
   Cpu,
   FolderKanban,
-  House,
   InboxIcon,
   LayoutDashboard,
   ListTodo,
@@ -144,9 +143,16 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/home/index.js'),
+    name: 'chat-new',
+    path: '/chat',
+  },
+  {
+    // Bookmarked home URLs now open the chat composer without a homepage menu entry.
+    authz: 'skip',
+    auth: 'required',
     name: 'home',
     path: '/home',
-    navigation: { title: 'navigation.home', icon: House, order: 1 },
+    componentLoader: () => import('./pages/home/redirect.js'),
   },
   {
     // How delivery goes, how the agents perform and what is stuck (`pages/dashboard`), behind the `reports` grant,
@@ -158,15 +164,15 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     navigation: {
       title: 'navigation.dashboard',
       icon: LayoutDashboard,
-      order: 3,
+      order: 2,
     },
     breadcrumb: { title: 'navigation.dashboard' },
     componentLoader: () => import('./pages/dashboard/index.js'),
   },
   {
-    // One conversation, full screen (`pages/chat`): where the home page's composer and recent conversations lead, and
+    // One conversation, full screen (`pages/chat`): where the chat composer and recent conversations lead, and
     // the chat panel's "Open full screen". A conversation is its owner's alone, which its API checks, so it needs no
-    // page grant. No menu entry: conversations are reached from the home page, the panel and its history.
+    // page grant. No menu entry: conversations are reached from the chat composer, the panel and its history.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/chat/index.js'),
@@ -196,7 +202,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     auth: 'required',
     componentLoader: () => import('./pages/inbox/index.js'),
     name: 'inbox',
-    navigation: { title: 'navigation.inbox', icon: InboxIcon, order: 0 },
+    navigation: { title: 'navigation.inbox', icon: InboxIcon, order: 1 },
     breadcrumb: { title: 'navigation.inbox' },
     path: '/inbox',
   },
@@ -209,7 +215,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     navigation: {
       title: 'navigation.myIssues',
       icon: CircleUserRound,
-      order: 2,
+      order: 0,
     },
     breadcrumb: { title: 'navigation.myIssues' },
     componentLoader: () => import('./pages/my-issues/index.js'),

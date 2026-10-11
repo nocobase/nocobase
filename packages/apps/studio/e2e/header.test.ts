@@ -163,11 +163,19 @@ test.describe('sidebar inbox', () => {
     test('the inbox is reachable in the mobile menu without horizontal overflow', async ({
       page,
     }) => {
-      await open(page, '/home');
+      await open(page, '/my-issues');
       await page
         .getByRole('banner')
         .getByRole('button', { name: /导航/ })
         .click();
+      const nav = page.getByRole('navigation', { name: '应用导航' });
+      const links = nav.getByRole('link');
+      await expect(links.nth(0)).toHaveAccessibleName('我的任务');
+      await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
+      await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
+      await expect(
+        nav.getByRole('link', { name: '首页', exact: true }),
+      ).toHaveCount(0);
       await expect(inboxButton(page)).toBeVisible();
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       await inboxButton(page).click();
@@ -224,10 +232,12 @@ test.describe('default landing navigation', () => {
     await expect(page).toHaveURL(url('/inbox'));
     const nav = page.getByRole('navigation', { name: '应用导航' });
     const links = nav.getByRole('link');
-    await expect(links.nth(0)).toHaveAccessibleName(/^收件箱/);
-    await expect(links.nth(1)).toHaveAccessibleName('首页');
-    await expect(links.nth(2)).toHaveAccessibleName('我的任务');
-    await expect(links.nth(3)).toHaveAccessibleName('仪表盘');
+    await expect(links.nth(0)).toHaveAccessibleName('我的任务');
+    await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
+    await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
+    await expect(
+      nav.getByRole('link', { name: '首页', exact: true }),
+    ).toHaveCount(0);
     await nav.getByRole('link', { name: '仪表盘' }).click();
     await expect(page).toHaveURL(url('/dashboard'));
     await page.reload();
@@ -246,6 +256,16 @@ test.describe('default landing navigation', () => {
     ).toBeVisible();
   });
 
+  test('legacy home redirects to the chat composer with query and fragment preserved', async ({
+    page,
+  }) => {
+    await open(page, '/home?account=preferences#detail');
+    await expect(page).toHaveURL(url('/chat?account=preferences#detail'));
+    await expect(page.getByRole('dialog', { name: '个人设置' })).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(url('/chat?account=preferences#detail'));
+  });
+
   test('root preserves account settings and fragment', async ({ page }) => {
     await open(page, '/?account=preferences#detail');
     await expect(page).toHaveURL(url('/inbox?account=preferences#detail'));
@@ -261,6 +281,14 @@ test.describe('default landing navigation', () => {
       .getByRole('banner')
       .getByRole('button', { name: /导航/ })
       .click();
+    const nav = page.getByRole('navigation', { name: '应用导航' });
+    const links = nav.getByRole('link');
+    await expect(links.nth(0)).toHaveAccessibleName('我的任务');
+    await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
+    await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
+    await expect(
+      nav.getByRole('link', { name: '首页', exact: true }),
+    ).toHaveCount(0);
     const link = inboxButton(page);
     await expect(link).toHaveAccessibleName('收件箱，120 项待处理');
     await expect(link.getByTestId('studio-inbox-badge')).toBeVisible();

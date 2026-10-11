@@ -1,5 +1,5 @@
 /**
- * The landing page, with the restraint of the AI products people already know (ChatGPT, Claude.ai, the Codex app): a
+ * The chat composer at `/chat`, with the restraint of the AI products people already know (ChatGPT, Claude.ai, the Codex app): a
  * greeting, one composer (the UI Library's `agent-composer`), and the person's recent conversations under it, nothing
  * else. Inside the composer's toolbar, beside the attach button, the person picks the agent among all they may chat
  * with, grouped by type (Online: a model on the server answers in seconds; Runner: a coding agent on a runtime) with
@@ -47,7 +47,7 @@ import { cn } from 'cn';
 
 const MODE_ICONS = { online: MessageSquareIcon, runner: CodeXmlIcon } as const;
 
-export default function HomePage(): ReactElement | null {
+export default function NewConversationPage(): ReactElement | null {
   const { t } = useTranslation();
   const api = useStudioApi();
   const me = useQuery({ queryKey: studioKeys.me, queryFn: () => api.me() });

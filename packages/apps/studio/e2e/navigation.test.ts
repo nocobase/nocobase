@@ -36,6 +36,20 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
         const nav = page.getByRole('navigation', {
           name: locale === 'en-US' ? 'Application navigation' : '应用导航',
         });
+        const links = nav.getByRole('link');
+        await expect(links.nth(0)).toHaveAccessibleName(
+          locale === 'en-US' ? 'My issues' : '我的任务',
+        );
+        await expect(links.nth(1)).toHaveAccessibleName(name);
+        await expect(links.nth(2)).toHaveAccessibleName(
+          locale === 'en-US' ? 'Dashboard' : '仪表盘',
+        );
+        await expect(
+          nav.getByRole('link', {
+            name: locale === 'en-US' ? 'Home' : '首页',
+            exact: true,
+          }),
+        ).toHaveCount(0);
         const toggle = page.getByRole('banner').getByRole('button', {
           name: locale === 'en-US' ? /navigation/i : /导航/,
         });

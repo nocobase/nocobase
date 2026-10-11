@@ -54,10 +54,10 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   // Inside the workspace settings the sidebar shows their navigation instead of the app's.
   const inSettings = isSettingsPath(pathname);
   const selectedKey = selectedNavigationId(routes, pathname, denied);
-  // The home page's composer and a full-page conversation are where the person talks to an agent already; the
+  // The chat composer and a full-page conversation are where the person talks to an agent already; the
   // floating launcher would only sit on their send button.
   const conversationPage =
-    pathname === '/home' || pathname.startsWith('/chat/');
+    pathname === '/chat' || pathname.startsWith('/chat/');
 
   return (
     // The shell owns the business route tree used by its pages and navigation.

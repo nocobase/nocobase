@@ -1,5 +1,5 @@
 /**
- * The home page's composer: pick an agent (online or runner) in its toolbar, send, and land on the conversation full screen
+ * The chat composer: pick an agent (online or runner) in its toolbar, send, and land on the conversation full screen
  * (`/chat/:id`). Online is answered on the server by the mock model global setup starts; Runner hands the message to a
  * coding agent on a runner, and none runs here, so the test checks what was sent rather than an answer. The recent
  * conversations under the composer open full screen too, and a conversation moves from there to the side panel.
@@ -13,15 +13,15 @@ interface Conversation {
   readonly agent: { readonly name: string } | null;
 }
 
-// This file reads the person's recent conversations, so it uses an account no other test opens the home page as.
+// This file reads the person's recent conversations, so it uses an account no other test opens the chat composer as.
 test.use({ user: 'leo' });
 
-test.describe('home composer', () => {
+test.describe('chat composer', () => {
   test('picks a coding agent in the composer, hands the message to it and opens it full screen', async ({
     page,
     api,
   }) => {
-    await open(page, '/home');
+    await open(page, '/chat');
     const main = page.getByRole('main');
     await expect(
       main.getByRole('heading', { name: '今天要做什么？', level: 1 }),
@@ -79,7 +79,7 @@ test.describe('home composer', () => {
     page,
     api,
   }) => {
-    await open(page, '/home');
+    await open(page, '/chat');
     const main = page.getByRole('main');
     // The team's default, an online agent, is chosen to start with.
     await expect(main.getByTestId('chat-agent-picker')).toContainText(
@@ -135,7 +135,7 @@ test.describe('home composer', () => {
       title,
     });
 
-    await open(page, '/home');
+    await open(page, '/chat');
     const recent = page.getByRole('list', { name: '最近的对话' });
     await recent.getByRole('button', { name: new RegExp(title, 'u') }).click();
     await expect(page).toHaveURL(new RegExp(`/chat/${conversation.id}$`, 'u'));
@@ -146,7 +146,7 @@ test.describe('home composer', () => {
     await view.getByRole('button', { name: '在侧栏中打开' }).click();
     await expect
       .poll(() => new URL(page.url()).pathname.replace(/\/$/u, ''))
-      .toBe(new URL(url('/home')).pathname);
+      .toBe(new URL(url('/chat')).pathname);
     const panel = page.getByRole('complementary', { name: 'Agent 对话' });
     await expect(panel).toBeVisible();
     await expect(panel.getByTestId('chat-title')).toHaveText(title);
@@ -159,7 +159,7 @@ test.describe('home composer', () => {
       .getByTestId('chat-page')
       .getByRole('button', { name: '新对话', exact: true })
       .click();
-    await expect(page).toHaveURL(url('/home'));
+    await expect(page).toHaveURL(url('/chat'));
     await expect(page.getByTestId('chat-floating-button')).toHaveCount(0);
   });
 });

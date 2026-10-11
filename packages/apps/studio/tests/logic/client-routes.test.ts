@@ -86,16 +86,15 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders the sidebar with Inbox first and Dashboard below My tasks, followed by the existing sections', () => {
+  it('orders My tasks, Inbox and Dashboard without a Home entry, followed by the existing sections', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
       );
     const { routes } = resolveRoutes();
     expect(menu(routes)).toEqual([
-      'navigation.inbox',
-      'navigation.home',
       'navigation.myIssues',
+      'navigation.inbox',
       'navigation.dashboard',
       'navigation.development',
       'navigation.releases',
@@ -156,17 +155,14 @@ describe('app client routes', () => {
     }
     expect(all.filter((page) => !teamNames.has(page.name))).toEqual([
       { name: 'landing', authorizedAs: null },
+      // Chat actions reach the composer; bookmarked home links redirect there.
+      { name: 'chat-new', authorizedAs: null },
+      { name: 'home', authorizedAs: null },
       // One conversation full screen: a conversation is its owner's alone, which its API checks.
       { name: 'chat', authorizedAs: null },
       // The person's own settings; every category's API checks what it serves.
       { name: 'account', authorizedAs: null },
       { name: 'account-category', authorizedAs: null },
-      // The viewer's own inbox, first in the menu and available without page grants.
-      { name: 'inbox', authorizedAs: null },
-      // Legacy `/pm` links: redirects that open the agents' chat panel, which checks what it opens.
-      { name: 'chat-pm', authorizedAs: null },
-      { name: 'chat-pm-conversation', authorizedAs: null },
-      { name: 'home', authorizedAs: null },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
       // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).
@@ -191,6 +187,10 @@ describe('app client routes', () => {
         name: 'pm-my-issues-executing-issue-run',
         authorizedAs: 'pm-my-issues',
       },
+      // Legacy `/pm` links open the chat panel; the inbox needs no page grant.
+      { name: 'chat-pm', authorizedAs: null },
+      { name: 'chat-pm-conversation', authorizedAs: null },
+      { name: 'inbox', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
       { name: 'pm-issues', authorizedAs: 'pm-issues' },

@@ -9,6 +9,7 @@ import {
 } from 'react-router';
 import { expect, it } from 'vitest';
 import LandingPage from '../../client/pages/landing/index.js';
+import HomeRedirect from '../../client/pages/home/redirect.js';
 
 function Destination() {
   const location = useLocation();
@@ -43,4 +44,25 @@ it('preserves search and fragment under the deployment base and replaces the roo
   );
   await userEvent.click(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByRole('status')).toHaveTextContent('/dashboard');
+});
+
+it('redirects legacy home URLs to the chat composer with search and fragment, replacing history', async () => {
+  render(
+    <MemoryRouter
+      basename='/main'
+      initialEntries={['/main/inbox', '/main/home?account=preferences#detail']}
+      initialIndex={1}
+    >
+      <Routes>
+        <Route path='/home' element={<HomeRedirect />} />
+        <Route path='/chat' element={<Destination />} />
+        <Route path='/inbox' element={<Destination />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  expect(screen.getByRole('status')).toHaveTextContent(
+    '/chat?account=preferences#detail',
+  );
+  await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+  expect(screen.getByRole('status')).toHaveTextContent('/inbox');
 });
