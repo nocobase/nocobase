@@ -185,6 +185,7 @@ export interface IssueRunDetail {
   readonly attempt: number;
   readonly maxAttempts: number;
   readonly retryOfRunId: string | null;
+  readonly freshSession?: boolean;
   readonly createdAt: string;
   readonly startedAt: string | null;
   readonly finishedAt: string | null;
@@ -223,6 +224,7 @@ const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
     attempt: z.number().int(),
     maxAttempts: z.number().int(),
     retryOfRunId: z.string().nullable(),
+    freshSession: z.boolean().optional(),
     createdAt: z.string(),
     startedAt: z.string().nullable(),
     finishedAt: z.string().nullable(),
@@ -608,6 +610,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           attempt: run.attempt,
           maxAttempts: run.maxAttempts,
           retryOfRunId: run.retryOfRunId,
+          freshSession: run.freshSession === true,
           createdAt: run.createdAt,
           startedAt: run.startedAt,
           finishedAt: run.finishedAt,

@@ -1,7 +1,7 @@
 import { defineMigration, type MigrationDefinition } from '@nocobase/db';
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202610110001_ag_add_work_controls',
+  name: '202610110002_ag_add_work_controls',
   async up({ builder }): Promise<void> {
     // tool already stores the claimed entry. Keep the enqueue choice separately so old callers still fall back.
     await builder.alterCollection('agRuns', (collection) => {

@@ -1174,6 +1174,10 @@ const enUS = {
       },
     },
     stageRules: {
+      freshSession: 'Start a new session every time',
+      freshSessionHint:
+        'On: each stage run starts a new Agent session, useful for reviews to avoid carrying over earlier conclusions. The working directory is kept.',
+      withFreshSession: '{{summary}} · New session every time',
       agent: 'Agent',
       agentsUnavailable:
         'You cannot list agents here; the rule keeps the agent it names.',

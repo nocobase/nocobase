@@ -106,6 +106,8 @@ export interface EnqueueRequest {
   readonly subject: { readonly kind: string; readonly id: string };
   /** Separates conversations about one subject; `main` by default. */
   readonly threadScope?: string;
+  /** Starts a new session without resetting the subject's working directory. */
+  readonly freshSession?: boolean;
   /**
    * Who woke the agent, for work on a subject nobody answers for (no `responsibleUserId`): their permissions bound the
    * run. With a `responsibleUserId` the run acts as the responsible, or as the source under `execution` `mine`, and
@@ -346,6 +348,7 @@ interface Work {
   readonly tool?: AgentTool | null;
   readonly subject: EnqueueRequest['subject'];
   readonly threadScope: string;
+  readonly freshSession?: boolean;
   readonly actorUserId: string;
   readonly requestedByUserId: string;
   readonly confirmedByUserId: string | null;
@@ -431,6 +434,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly tool?: AgentTool | null;
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
+      readonly freshSession?: boolean;
       readonly actorUserId: string;
       readonly requestedByUserId: string;
       readonly confirmedByUserId: string | null;
@@ -462,6 +466,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         attempt: 1,
         maxAttempts: values.maxAttempts ?? agent.maxAttempts,
         retryOfRunId: values.retryOfRunId,
+        freshSession: values.freshSession === true,
         parentRunId: values.parentRunId ?? null,
         subjectKind: values.subject.kind,
         subjectId: values.subject.id,
@@ -631,6 +636,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     );
     const working = open.find(
       (run) =>
+        !work.freshSession &&
         (!work.tool || run.tool === work.tool) &&
         (run.status === 'dispatched' ||
           (run.status === 'running' && Boolean(run.acceptsInput))),
@@ -644,6 +650,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
     if (!working && waiting)
       await hurry(unit, waiting, work.priority, work.fireAt);
     if (target) {
+      if (!working && work.freshSession && !target.freshSession)
+        await runsRepo(unit.conn).updateMany({
+          filter: { id: target.id, status: 'queued' },
+          values: { freshSession: true, updatedAt: clock.now().toISOString() },
+        });
       const inputId = await insertInput(unit, target.id, work.input);
       return {
         runId: target.id,
@@ -654,6 +665,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     }
     const runId = await createRun(unit, agent, {
       tool: work.tool,
+      freshSession: work.freshSession,
       subject: work.subject,
       threadScope: work.threadScope,
       actorUserId: work.actorUserId,
@@ -772,6 +784,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     direct: (unit, run) =>
       queue(unit, run.agent, {
         tool: run.tool,
+        freshSession: run.freshSession,
         subject: run.subject,
         threadScope: run.threadScope,
         actorUserId: run.actorUserId,
@@ -818,6 +831,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             {
               agentId: agent.id,
               tool: request.tool,
+              freshSession: request.freshSession,
               subject: request.subject,
               threadScope,
               responsibleUserId: responsible,
@@ -859,6 +873,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
           );
         return queue(unit, agent, {
           tool: request.tool,
+          freshSession: request.freshSession,
           subject: request.subject,
           threadScope,
           actorUserId,
@@ -935,7 +950,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
               ]),
             values: { runId: target.id, deliveredAt: null },
           });
-          // The merged work still needs whatever either run asked a runner to have.
+          // The merged work still needs whatever either run asked a runner to have, and a fresh session if either asked.
           await runsRepo(unit.conn).updateMany({
             filter: { id: target.id, status: 'queued' },
             values: {
@@ -943,6 +958,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
                 ...toRun(target).requires,
                 ...toRun(run).requires,
               ]),
+              ...(run.freshSession ? { freshSession: true } : {}),
               teamOnlyVariables: null,
               updatedAt: now,
             },
@@ -1084,6 +1100,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
+          freshSession: run.freshSession,
         });
         for (const input of await pendingInputs(unit.conn, run.id))
           await insertInput(unit, newId, {

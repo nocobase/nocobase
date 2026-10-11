@@ -898,6 +898,7 @@ const runObject = z.object({
   attempt: z.number().int(),
   maxAttempts: z.number().int(),
   retryOfRunId: z.string().nullable(),
+  freshSession: z.boolean().optional(),
   parentRunId: z.string().nullable().meta({
     description:
       'A consultation: the run whose agent asked this one a question (`ask_agent`); null for every other run.',
@@ -1655,6 +1656,7 @@ export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =
 
 const runRequestObject = z.object({
   tool: AgentToolSchema.nullable().optional(),
+  freshSession: z.boolean().optional(),
   id: z.string(),
   agentId: z.string(),
   subject: z.object({ kind: z.string(), id: z.string() }),

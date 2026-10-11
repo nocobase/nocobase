@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { describeMigration } from '@nocobase/app-testing/server';
 
-describeMigration('202610110001_ag_add_work_controls', {
+describeMigration('202610110002_ag_add_work_controls', {
   sources: [
     {
       packageName: '@nocobase/app-plugin-agents',
@@ -20,6 +20,11 @@ describeMigration('202610110001_ag_add_work_controls', {
     await expectCollection('agRuns').toHaveField('gitCredentialUrls', {
       type: 'json',
       nullable: true,
+    });
+    // Applies after the fresh-session columns of the same day and leaves them in place.
+    await expectCollection('agRuns').toHaveField('freshSession', {
+      type: 'boolean',
+      nullable: false,
     });
     await expectCollection('agRuns').toHaveField('requestedTool', {
       type: 'string',

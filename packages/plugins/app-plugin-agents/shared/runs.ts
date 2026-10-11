@@ -127,6 +127,8 @@ export interface Run {
   readonly parentRunId: string | null;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  /** The run was asked to start a new session; absent on older servers. */
+  readonly freshSession?: boolean;
   /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
   readonly actorUserId: string;
   /**
@@ -414,6 +416,8 @@ export interface RunRequest {
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  /** The run was asked to start a new session; absent on older servers. */
+  readonly freshSession?: boolean;
   /** Who answers for the subject: the only person who may confirm or reject the request. */
   readonly responsibleUserId: string;
   /** Who the chain of work started with: the only person who may withdraw it or run it as themselves. */

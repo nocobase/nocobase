@@ -55,6 +55,7 @@ export interface RunRequestRecord {
   readonly subjectKind: string;
   readonly subjectId: string;
   readonly threadScope: string;
+  readonly freshSession?: boolean;
   readonly responsibleUserId: string;
   readonly requestedByUserId: string;
   readonly ownerUserId: string | null;
@@ -92,6 +93,7 @@ export function toRunRequest(record: RunRequestRecord): RunRequest {
     agentId: record.agentId,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
+    freshSession: Boolean(record.freshSession),
     responsibleUserId: record.responsibleUserId,
     requestedByUserId: record.requestedByUserId,
     ownerUserId: record.ownerUserId,
@@ -126,6 +128,7 @@ export interface NewRunRequest {
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  readonly freshSession?: boolean;
   readonly responsibleUserId: string;
   readonly requestedByUserId: string;
   readonly ownerUserId: string | null;
@@ -176,6 +179,7 @@ export async function insertRunRequest(
       (record.tool ?? null) === (request.tool ?? null) &&
       record.ownerUserId === request.ownerUserId &&
       Number(record.priority) === request.priority &&
+      Boolean(record.freshSession) === (request.freshSession === true) &&
       isDeepStrictEqual(
         stringArray(record.requires),
         cleanList([...request.requires]),
@@ -204,6 +208,7 @@ export async function insertRunRequest(
       subjectKind: request.subject.kind,
       subjectId: request.subject.id,
       threadScope: request.threadScope,
+      freshSession: request.freshSession === true,
       responsibleUserId: request.responsibleUserId,
       requestedByUserId: request.requestedByUserId,
       ownerUserId: request.ownerUserId,
@@ -250,6 +255,7 @@ export interface DirectRun {
   readonly agent: Agent;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  readonly freshSession?: boolean;
   readonly actorUserId: string;
   readonly requestedByUserId: string;
   readonly confirmedByUserId: string | null;
@@ -509,6 +515,7 @@ export function createRunRequestService(
     tool: record.tool ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
+    freshSession: Boolean(record.freshSession),
     ownerUserId: record.ownerUserId,
     priority: Number(record.priority),
     requires: stringArray(record.requires),
@@ -792,6 +799,7 @@ export function createRunRequestService(
               agentId: record.agentId,
               subject: { kind: record.subjectKind, id: record.subjectId },
               threadScope: record.threadScope,
+              freshSession: Boolean(record.freshSession),
               responsibleUserId: request.toUserId,
               requestedByUserId: record.requestedByUserId,
               ownerUserId: record.ownerUserId,
