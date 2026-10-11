@@ -7,11 +7,11 @@ description: 'Describe a complete process to an Agent by topic: business modelin
 
 The Agent writes the process into the application's source. You do not need to learn any API. Your part is three things: explain the business clearly, confirm the diagram before code is written, and accept the evidence the Agent gives you.
 
-[Quick start](./quick-start.md) builds a fixed order payment example. Use this page to design your own process, looking up the topics you need without repeating the tutorial. Order fulfillment illustrates each topic; replace its records, roles and rules with your own. See [Scenarios](./scenarios.md) for more examples.
+[Quick start](./quick-start.md) builds a fixed order payment example. Use this page to design your own process, looking up the topics you need without repeating the tutorial. Order fulfillment illustrates each topic; replace its records, roles and rules with your own. See [Waiting, timeouts and reliable execution](./execution.md) for examples of waiting and recovery.
 
 ## Using this guide
 
-Decide whether the process belongs to an existing record or needs a new one. See [adopting an existing table](./extension.md#adopting-an-existing-table) in Extension. Describe your business requirements and let the Agent implement them within the application. If something goes wrong, report what you did and the error you received.
+Decide whether the process belongs to an existing record or needs a new one. See [adopting an existing table](./extension.md#existing-tables-and-exchanges) in Extension. Describe your business requirements and let the Agent implement them within the application. If something goes wrong, report what you did and the error you received.
 
 | Your question                                             | Topic                                                           |
 | --------------------------------------------------------- | --------------------------------------------------------------- |
@@ -111,7 +111,7 @@ Sending notifications and calling external systems happen only after the action 
 - **Unexpected notifications**: what a duplicate, an early one, or one arriving after the record was cancelled each leads to.
 - **No duplicate execution**: however many times something is retried, the external system does it once.
 
-Notification channels use the application's [notification](../notification.md) capability. Polling external progress and undoing work after a failure are covered in [Scenarios](./scenarios.md).
+Notification channels use the application's [notification](../notification.md) capability. See [Waiting, timeouts and reliable execution](./execution.md) for examples of external results and recovery.
 
 ```text
 Payment: when the customer pays, open the payment platform's checkout; only a notification confirmed to come from the payment platform can mark the order as paid; a forged notification must not change the order status, and the same notification delivered more than once counts once; money received after the order was cancelled is refunded automatically.

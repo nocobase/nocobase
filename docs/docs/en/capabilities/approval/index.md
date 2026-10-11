@@ -1,13 +1,37 @@
 ---
-title: 'Overview'
-description: 'Approval use cases, group decision rules, user interfaces, and their relationship to business processes.'
+title: 'Approval overview'
 ---
 
-# Overview
+# Approval overview
 
-Expense claims, leave, purchasing, company seal requests, and contracts all need clear answers to who reviews, in what order, and what counts as approval. Simple submission, approval, and rejection can use [Workflow](../workflow/index.md) directly. The approval plugin coordinates multiple participants within a stage and preserves each person's opinion and responsibility history.
+**Approval organizes the review and decisions for business requests, defining who reviews them, in which order and what constitutes approval.** It coordinates multiple opinions, supports added reviewers, transfers and returns, and records decisions and changes in responsibility.
 
-Approval belongs to the business record's complete process: drafts, review, corrections, execution after approval, and completion share one lifecycle. A partial opinion does not advance the business record. The record moves to the next stage only when the current stage's decision rule is satisfied.
+## Available capabilities
+
+| Capability                                             | What it provides                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| [Multiple stages and conditional routing](./stages.md) | Sequential reviewers and routes based on amount or request type.                                 |
+| [Joint review and decision rules](./joint-review.md)   | All, any, first-answer or vote-threshold decisions among multiple participants.                  |
+| [Added reviewers and transfers](./handover.md)         | Add a reviewer or hand a current task to an eligible person.                                     |
+| [Request handling and progress](./requests.md)         | Return for correction, withdrawal, resubmission, copy and acknowledgement, progress and history. |
+
+Northstar special transport requests illustrate these capabilities: applicants submit extra fees, operations and finance review according to policy, and other people participate when needed.
+
+## Design the pages
+
+Approval pages can be freely designed for business needs. Embed them in orders or expense details, or provide My requests, Pending review, Reviewed and Copied to me lists. Preview the expected route before submission and show current reviewers and progress afterwards.
+
+## Integrate approval
+
+Approval uses the Pro plugin `@nocobase/app-plugin-approval`, requiring authorization and a compatible version. Describe your approval business requirements to the Agent to build request pages, tasks and details. Keep credentials in server configuration.
+
+Use [Workflows](../workflow/index.md) for simple single-person confirmation, and approval capabilities for multi-stage circulation, coordinated decisions and task management.
+
+:::tip Important notes
+
+Approval is a decision; payment, resource reservation and updates to official records are subsequent execution. Display execution results and define retries or human follow-up for failures, so Approved does not imply execution succeeded.
+
+:::
 
 ## Explore approvals in the example
 
@@ -16,37 +40,6 @@ With `@nocobase/app-plugin-approval` and `@nocobase/app-plugin-approval-example`
 ![Approval center in English](https://static-docs.nocobase.com/images/capabilities/approval/inbox-8c49a6543c924c96.png)
 
 The identity selector lets you act as example applicants, managers, and finance staff, with the selection shared across business pages. It does not switch signed-in accounts: the example lets signed-in users act as these personas and read example records. Production applications must identify the actor from the signed-in user and authorize records, tasks, attachments, and administrative operations separately.
-
-## What the approval plugin provides
-
-| Capability                              | Business rules to define                                                                                             |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Multiple levels and conditional routing | Managers and finance review in order; amounts or types determine additional stages                                   |
-| Group decisions                         | Everyone approves, any approval, first response, sequential review, or a minimum number of votes                     |
-| People and responsibilities             | Resolve managers, roles, departments, or teams; claim tasks; refuse entry or await appointment when nobody qualifies |
-| Operations                              | Approve, reject, return, transfer, add reviewers before, after, or alongside, and request materials                  |
-| Copies and read receipts                | Copy recipients view progress and mark it read; they do not vote                                                     |
-| Time limits                             | Reminders, escalation, and claim expiry, optionally measured against a working calendar                              |
-| Approval evidence                       | Preserve submitted content, opinions, and responsibility changes; explicitly define whether opinions survive returns |
-
-For proportional voting, specify membership, the ratio, and rounding before converting the requirement to a vote count. Itemized decisions, partial approval, abstention, and vetoes are covered in [Scenarios](./scenarios.md) and [Extensions](./extension.md).
-
-## What users see
-
-- Before submission: the business form and expected approval route; actual participants are resolved on stage entry.
-- Applicants: their requests, current progress, and permitted withdrawal, editing, and resubmission.
-- Reviewers: pending and handled tasks, submitted content, available operations, and reasons they cannot act.
-- Copy recipients: requests copied to them, approval history, and read confirmation.
-- Details: progress, aggregated opinions, action history, and execution results after approval.
-- Administrators: a management center developed for the business, with appointment, reassignment, and execution recovery. Redispatch and process reset require explicit business rules and leave a history.
-
-The plugin supplies tasks, rules, and data for the interface. The Agent integrates business pages, APIs, and visibility rules for the application. Approvals can appear in an existing record's details or in a shared approval center. Installing the plugin does not generate these pages automatically.
-
-## After approval
-
-Approval and successful execution are recorded separately. For example, a payment may be approved while the bank call fails. Show the execution failure and let an authorized person retry; unchanged payment content does not require another human approval. Notifications and external calls use the process's execution facilities after transaction commit.
-
-Contract and price changes also distinguish the change request from the currently effective data. Before applying an approval to the official record, check whether someone else has changed it to avoid overwriting a newer version.
 
 ## Changing approval rules
 

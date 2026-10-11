@@ -155,7 +155,7 @@ export function workspaceNotes(options: {
   ];
   if (dirs.length > 0) {
     lines.push(
-      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Ended tasks may discard untracked repository files during cleanup.`,
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Once the task is done or cancelled, its working directory is removed, with anything never pushed.`,
     );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
@@ -325,6 +325,7 @@ export class RunWorker {
   private idleTimer: NodeJS.Timeout | undefined;
   private lastActivity = Date.now();
   private sessionId: string | undefined;
+  private confirmedSessionId: string | undefined;
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
@@ -474,6 +475,18 @@ export class RunWorker {
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
   private recordEvent(event: AdapterEvent): void {
+    if (event.type === 'status' && event.content === 'sessionRecovery') {
+      this.sessionId = undefined;
+      this.confirmedSessionId = undefined;
+    }
+    if (
+      event.type === 'status' &&
+      event.content === 'started' &&
+      typeof event.meta?.sessionId === 'string'
+    ) {
+      this.sessionId = event.meta.sessionId;
+      this.confirmedSessionId = event.meta.sessionId;
+    }
     if (event.type === 'input') {
       const inputId = event.meta?.inputId;
       if (typeof inputId === 'string' && this.inputs.has(inputId)) {
@@ -799,6 +812,7 @@ export class RunWorker {
       this.steered.clear();
       this.usage.push(...result.usage);
       this.sessionId = result.sessionId ?? this.sessionId;
+      this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       this.summaryText = result.summary ?? this.summaryText;
 
       if (this.ending !== undefined) return this.finishEnding();
@@ -820,19 +834,36 @@ export class RunWorker {
         this.deliverInPrompt(pending, 'turn');
         continue;
       }
+      const late = await this.completeOrCollect();
+      if (!Array.isArray(late)) return late;
+      prompt = formatInputs(late);
+      this.deliverInPrompt(late, 'turn');
+    }
+  }
+
+  /**
+   * Completes the run, or returns the input the server held it open for. The server may withdraw pending input it no
+   * longer lets the run act on (its subject moved on) between answering `RUN_INPUT_PENDING` and delivering, so when
+   * nothing new arrives the run completes again rather than starting a turn with an empty prompt.
+   */
+  private async completeOrCollect(): Promise<WorkerOutcome | RunInput[]> {
+    let empty = 0;
+    for (;;) {
       const outcome = await this.finishCompleted();
       if (outcome !== 'inputPending') return outcome;
       await this.pollStatus();
       if (this.ending !== undefined) return this.finishEnding();
-      const next = this.undelivered();
-      if (next.length === 0) {
+      if (this.undelivered().length === 0) {
         // The server says inputs are pending but sent none we have not seen; ask once more after a pause.
         await delay(1_000);
         await this.pollStatus();
+        if (this.ending !== undefined) return this.finishEnding();
       }
       const late = this.undelivered();
-      prompt = formatInputs(late);
-      this.deliverInPrompt(late, 'turn');
+      if (late.length > 0) return late;
+      empty += 1;
+      // An older server that keeps answering so without sending anything gets the turn it used to.
+      if (empty >= 3) return late;
     }
   }
 
@@ -852,6 +883,7 @@ export class RunWorker {
       if (result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
+        this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
     }
   }
@@ -990,6 +1022,9 @@ export class RunWorker {
           await this.report(
             routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
             {
+              ...(this.confirmedSessionId === undefined
+                ? {}
+                : { sessionId: this.confirmedSessionId }),
               handledInputIds: [...this.delivered],
               usage: this.usage,
             },

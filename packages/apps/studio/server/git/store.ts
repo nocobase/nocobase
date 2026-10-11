@@ -456,6 +456,22 @@ export async function linkedOpenPullRequests(
   return withRepos(conn, rows);
 }
 
+/** Open pull requests whose preview labels Studio manages, including those no issue links anymore. */
+export async function previewManagedOpenPullRequests(
+  conn: DatabaseConnection,
+  repoId: string,
+): Promise<PullRequestRow[]> {
+  const rows = await conn.query
+    .selectFrom('studioPreviewLabels as label')
+    .innerJoin(`${PULL_REQUESTS} as pr`, 'pr.id', 'label.pullRequestId')
+    .selectAll('pr')
+    .where('pr.repoId', '=', repoId)
+    .where('pr.state', '=', 'open')
+    .where('label.managed', '=', true)
+    .execute();
+  return withRepos(conn, rows);
+}
+
 /** Every open pull request Studio keeps of a repository, linked or not (a repository whose previews are on). */
 export async function openPullRequestsOf(
   conn: DatabaseConnection,

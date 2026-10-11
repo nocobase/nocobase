@@ -206,6 +206,9 @@ export function ActivityRow({
   // Studio's own namespace, for the actions Studio records itself; `t` is the projects plugin's.
   const { i18n, t: studioT } = useTranslation();
   const prAction = PR_ACTIVITY_LABELS[activity.action];
+  const cannotImplement =
+    activity.action === 'stage_action_skipped' &&
+    activity.details.reason === 'executorCannotImplement';
   const planTo = usePlanLinkTo();
   const apiKeys = useApiKeyActors();
   const eventTitle = useEventTitle();
@@ -260,18 +263,25 @@ export function ActivityRow({
       <span>
         {prAction
           ? studioT(prAction)
-          : activity.action === EXECUTOR_WAITS_ACTIVITY
-            ? studioT('studioAgents.activity.executorWaits', {
+          : cannotImplement
+            ? studioT('studioAgents.activity.executorCannotImplement', {
                 name:
-                  (text(activity.details.agentId)
-                    ? agentName(text(activity.details.agentId) ?? '')
-                    : null) ??
                   text(activity.details.name) ??
+                  text(activity.details.agentId) ??
                   t('common.unknown'),
               })
-            : t(actionLabel(activity.action, activity.details), {
-                name: text(activity.details.name) ?? t('common.unknown'),
-              })}
+            : activity.action === EXECUTOR_WAITS_ACTIVITY
+              ? studioT('studioAgents.activity.executorWaits', {
+                  name:
+                    (text(activity.details.agentId)
+                      ? agentName(text(activity.details.agentId) ?? '')
+                      : null) ??
+                    text(activity.details.name) ??
+                    t('common.unknown'),
+                })
+              : t(actionLabel(activity.action, activity.details), {
+                  name: text(activity.details.name) ?? t('common.unknown'),
+                })}
       </span>
       {prAction ? (
         <PullRequestActivity activity={activity} t={studioT} />

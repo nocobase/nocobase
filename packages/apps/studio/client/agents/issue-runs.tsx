@@ -4,6 +4,8 @@
  * run's transcript in the issue's `runs/:runId` dialog. Every transcript link is relative to the issue page. The wording
  * is the agents plugin's own (its namespace), filled into the item's labels here.
  */
+import { useClientApplication } from '@nocobase/app-client';
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import {
   useAgentNames,
@@ -418,11 +420,16 @@ export function IssueRunTranscript({
   readonly renderMarkdown?: (text: string) => ReactNode;
 }): ReactElement {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { i18n, t: appT } = useTranslation();
   const wording = useRunWording();
   const { t } = wording;
   const notify = useNotify();
   const { run, events, failed, trigger } = useRunWithTranscript(runId);
+  const { session } = useAuthentication();
+  const app = useClientApplication();
+  const preferenceKey = session?.user.id
+    ? `studio:run-transcript:${JSON.stringify([app.config.get<string>('app.basePath', '/'), session.user.id])}`
+    : undefined;
   const retry = useRetryRun();
   const [stopping, setStopping] = useState<AgentRunHistoryRun | null>(null);
   const [shown] = useHistoryRuns(
@@ -528,6 +535,25 @@ export function IssueRunTranscript({
         header={header}
         summary={summary}
         events={events}
+        {...(preferenceKey ? { preferenceKey } : {})}
+        filterLabels={{
+          title: appT('runTranscriptFilters.title'),
+          groups: {
+            agent: appT('runTranscriptFilters.agent'),
+            input: appT('runTranscriptFilters.input'),
+            tools: appT('runTranscriptFilters.tools'),
+            thinking: appT('runTranscriptFilters.thinking'),
+            system: appT('runTranscriptFilters.system'),
+          },
+          hiddenGroup: appT('runTranscriptFilters.hiddenGroup', {
+            count: '{count}',
+            group: '{group}',
+          }),
+          expandHidden: appT('runTranscriptFilters.expandHidden', {
+            summary: '{summary}',
+          }),
+          errorsAlwaysVisible: appT('runTranscriptFilters.errorsAlwaysVisible'),
+        }}
         open={!detail || OPEN.has(detail.status)}
         failed={failed}
         locale={i18n.language}

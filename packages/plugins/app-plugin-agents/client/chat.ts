@@ -72,6 +72,8 @@ export {
 export { useAgentText, type AgentText } from './hooks/use-vocabulary.js';
 export { useFormatters, type Formatters } from './lib/format.js';
 export { chatKeys } from './chat/keys.js';
+/** The cache used by the chat data hooks, for application-owned submission coordinators. */
+export { agentsQueryClient } from './query.js';
 export {
   ChatExtensionsContext,
   type ChatExtensions,
