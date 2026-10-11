@@ -46,7 +46,11 @@ beforeEach(() => {
     }),
   });
 });
-afterEach(cleanup);
+afterEach(async () => {
+  cleanup();
+  // Tiptap defers editor destruction to the next timer tick; keep jsdom alive until it runs.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+});
 
 const renderNewIssue = (search = '?tab=manual') =>
   renderAt(`/issues/new${search}`, [
