@@ -68,5 +68,17 @@
     "name": "mail",
     "label": "邮件",
     "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI 员工",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-knowledge-base",
+    "label": "AI 知识库",
+    "collapsed": true
   }
 ]

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "AI 员工概览"
+  },
+  {
+    "type": "file",
+    "name": "page-context",
+    "label": "理解页面上下文"
+  },
+  {
+    "type": "file",
+    "name": "business-data",
+    "label": "查询业务数据"
+  }
+]

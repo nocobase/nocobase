@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "AI 知识库概览"
+  },
+  {
+    "type": "file",
+    "name": "answers",
+    "label": "依据知识回答问题"
+  }
+]
