@@ -23,7 +23,7 @@ Approval pages can be freely designed for business needs. Embed them in orders o
 
 ## Integrate approval
 
-Approval uses the Pro plugin `@nocobase/app-plugin-approval`, requiring authorization and a compatible version. Give the Agent integration information and business requirements to build request pages, tasks and details. Keep credentials in server configuration.
+Approval uses the Pro plugin `@nocobase/app-plugin-approval`, requiring authorization and a compatible version. Describe your approval business requirements to the Agent to build request pages, tasks and details. Keep credentials in server configuration.
 
 Use [Workflows](../workflow/index.md) for simple single-person confirmation, and approval capabilities for multi-stage circulation, coordinated decisions and task management.
 

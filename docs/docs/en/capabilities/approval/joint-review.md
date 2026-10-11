@@ -62,3 +62,15 @@ Create a routine transport adjustment with **Any reviewer may approve**. After O
 Define both approval and rejection policies. Proportional decisions also require a participant count, rounding rules and a concrete vote threshold. Some approvals do not necessarily complete a stage.
 
 :::
+
+## Clarify aggregation rules
+
+For voting, define the participant count, votes required, abstentions, veto seats and whether all opinions must arrive. Item-level decisions, partial approval and ratio conversion are business-specific rules for the Agent to implement; "two-thirds approval" alone is insufficient.
+
+A team claim differs from joint review: one member may represent the team, while joint review requires individual opinions. Choose the model before defining claim, release and timeout rules.
+
+```text
+Assign finance review for ordinary Northstar dispatch requests to qualified finance staff as a team. A member claims the task and acts for the team; others cannot handle it until it is released. Explain how this differs from requiring two finance reviewers to agree, then implement the option I confirm.
+```
+
+For joint review, the first approval must not advance the request early. When any-reviewer approval closes other tasks, it does not imply those reviewers agreed. Repeated or concurrent submissions must not double-count votes or overwrite opinions.

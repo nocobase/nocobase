@@ -67,3 +67,14 @@ The same capabilities support invoicing, monthly exports, reservations and excep
 Notifications are one capability a workflow can call. The workflow controls waiting, progress and failure handling. Successful message delivery does not complete the business, and failed delivery should not discard saved business results. Define how retries avoid duplicate payments, invoices or reservations.
 
 :::
+
+## Define deadlines and recovery
+
+Specify when deadlines start, whether reassignment or resubmission restarts them, and whether to remind before escalation. Completed records should receive no waiting reminders. Define retry limits, who handles final failures, and how duplicate, late or unknown results are reconciled. Ask the Agent to build any recovery page for the required responsibilities and permissions.
+
+```text
+For Northstar orders awaiting acceptance, remind dispatch after 30 minutes and escalate to the duty manager after 60. Reassigning the driver restarts the deadline; departed orders receive no acceptance reminders. Record automatic actions with reasons and System as the actor. Application restarts must not lose due handling.
+Retry failed transport report generation 3 times, then show the reason on the report page for an authorized manager to retry. Repeated requests must not create duplicate reports. Handle duplicate or late carrier notifications according to current progress without reopening cancelled orders; reconcile unknown results before retrying. Confirm the expected outcomes first.
+```
+
+Verify deadlines, handling after restarts, duplicate and late results, final failures and manual recovery as well as successful execution.
