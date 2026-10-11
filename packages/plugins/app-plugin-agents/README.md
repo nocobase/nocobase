@@ -238,3 +238,7 @@ The plugin registers no routes of its own: an application mounts its pages and j
 Each exported component brings the plugin's translations and its own query cache, so it works inside another plugin's tree.
 
 A subject assembly may return `inputs` to select the effective claim inputs. Use the same selection when rendering its task and turn; runner and online claims deliver that selection and pass it to brief sections and mounts. Omitting `inputs` preserves delivery of all queued input. Omitted inputs are resolved in the claim transaction and stay in the audit history; they cannot reappear during polling or prevent completion.
+
+### Scoped work summaries
+
+`agents.runs.workingOn(subjectKind, subjectIds)` returns each subject/agent pair with a `dispatched` or `running` run once, as `{ subjectId, agentId, working: true }`. Empty scopes return nothing. Reads are restricted to the supplied kind and IDs, without the workload board's global limit; queued and terminal runs are excluded. This service exposes no run details and does not enforce viewer permissions or approval rules: the consuming application must filter visible subjects first and apply its own waiting rules.

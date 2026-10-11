@@ -68,6 +68,7 @@ attachment get <file> -> GET /api/projects/attachments/{attachmentId} (person)
 attachment upload [--file!] -> POST /api/projects/attachments (person,run) pm.attachments/upload
 board failed-run decide <run> [--action! --user] -> POST /api/failedRuns/{runId}/decide (person)
 board get [--q --project --label --owner --executor] -> GET /api/agentBoard (person)
+board issue-work [--issue-ids!] -> POST /api/agentBoard/issueWork (person)
 board start <issue> -> POST /api/agentBoard/issues/{issueId}/start (person)
 build ci configure <repo> [--method --app --target --workflow-files --agent-id --file] -> POST /api/repositoryDeployments/{resourceId}/ci/configure (person)
 build ci connection <repo> -> GET /api/repositoryDeployments/{resourceId}/ci/connection (person)

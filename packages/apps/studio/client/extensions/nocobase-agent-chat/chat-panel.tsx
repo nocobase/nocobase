@@ -2,8 +2,9 @@
  * The chat panel, which the application renders beside its content area (Studio: a sibling of `<main>` inside a
  * `relative flex` row, so it survives page changes). From 1280px it docks beside the content (22rem, 26.25rem from
  * 1536px); between `md` and 1280px it floats over the content's right side (22rem); "full width" covers the content
- * area. Neither is a dialog nor traps focus; Escape restores the width, then closes. Below `md` it is a full-screen
- * dialog. Once opened it stays mounted while closed, so the conversation's subscriptions carry on.
+ * area with the existing history list beside the conversation. Neither is a dialog nor traps focus; Escape restores
+ * the width, then closes. Below `md` it is a full-screen dialog. Once opened it stays mounted while closed, so the
+ * conversation's subscriptions carry on.
  *
  * It needs `ChatProvider` above it, and a positioned parent: a `relative flex` row beside the content area.
  */
@@ -13,6 +14,7 @@ import {
   CHAT_PANEL_ATTRIBUTE,
   CHAT_PANEL_ID,
   useChatPanel,
+  useConversation,
 } from '@nocobase/app-plugin-agents/client/chat';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 
@@ -41,7 +43,7 @@ function PanelFrame(): ReactElement | null {
   const dialogRef = useRef<HTMLDivElement>(null);
   if (panel.open && !mounted) setMounted(true);
 
-  const { mode, setMode, closeChat, open } = panel;
+  const { mode, setMode, setView, focusComposer, closeChat, open } = panel;
   useEffect(() => {
     const element = asideRef.current;
     if (!element || !open) return undefined;
@@ -49,12 +51,15 @@ function PanelFrame(): ReactElement | null {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       event.preventDefault();
-      if (mode === 'expanded') setMode('docked');
-      else closeChat();
+      if (mode === 'expanded') {
+        setView('chat');
+        setMode('docked');
+        focusComposer();
+      } else closeChat();
     }
     element.addEventListener('keydown', onKeyDown);
     return () => element.removeEventListener('keydown', onKeyDown);
-  }, [open, mode, setMode, closeChat, mounted, mobile]);
+  }, [open, mode, setMode, setView, focusComposer, closeChat, mounted, mobile]);
 
   if (!mounted) return null;
   const marker = { [CHAT_PANEL_ATTRIBUTE]: '' };
@@ -81,7 +86,7 @@ function PanelFrame(): ReactElement | null {
         >
           <DialogTitle className='sr-only'>{t('chat.title')}</DialogTitle>
           <PanelHeader compact />
-          <PanelBody />
+          <PanelBody mobile />
         </DialogContent>
       </Dialog>
     );
@@ -97,7 +102,7 @@ function PanelFrame(): ReactElement | null {
       data-mode={expanded ? 'expanded' : wide ? 'docked' : 'floating'}
       data-testid='chat-panel'
       className={cn(
-        'flex min-h-0 flex-col bg-background',
+        'flex min-h-0 min-w-0 flex-col bg-background',
         expanded
           ? 'absolute inset-0 z-30'
           : wide
@@ -111,30 +116,74 @@ function PanelFrame(): ReactElement | null {
   );
 }
 
-function PanelBody(): ReactElement {
+function PanelBody({
+  mobile = false,
+}: {
+  readonly mobile?: boolean;
+}): ReactElement {
+  const { t } = useChatTranslation();
   const panel = useChatPanel();
-  const expanded = panel.mode === 'expanded';
+  const expanded = !mobile && panel.mode === 'expanded';
+  const history = panel.view === 'history';
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const focusIdRef = useRef<string | null>(null);
+  const detail = useConversation(panel.conversationId);
+  const { conversationId, focusComposer } = panel;
+  useEffect(() => {
+    // An uncached conversation first renders a skeleton. Focus only after its composer has registered.
+    if (detail.data && conversationId === focusIdRef.current) {
+      focusIdRef.current = null;
+      focusComposer();
+    }
+  }, [detail.data, conversationId, focusComposer]);
   return (
-    <div
-      className={cn(
-        'flex min-h-0 flex-1 flex-col p-3',
-        expanded && 'mx-auto w-full max-w-3xl',
-      )}
-    >
-      {panel.view === 'history' ? (
-        <div className='min-h-0 flex-1 overflow-y-auto'>
+    <div ref={bodyRef} className='flex min-h-0 min-w-0 flex-1'>
+      {expanded || history ? (
+        <section
+          key='history'
+          aria-label={t('chat.history.title')}
+          className={cn(
+            'min-h-0 min-w-0 overflow-y-auto p-3',
+            // A fixed reading column; the conversation takes the remaining width.
+            expanded ? 'w-[18rem] shrink-0 border-r' : 'flex-1',
+          )}
+        >
           <HistoryList
             activeId={panel.conversationId}
             onOpen={(id) => {
+              // On a phone the row is removed immediately; keep focus on a visible control during loading or errors.
+              bodyRef.current?.parentElement
+                ?.querySelector<HTMLButtonElement>(
+                  '[data-testid="chat-history-button"]',
+                )
+                ?.focus();
+              focusIdRef.current = id;
               panel.selectConversation(id);
               panel.focusComposer();
             }}
             onOpenPage={panel.openPage}
           />
-        </div>
-      ) : (
-        <ConversationView conversationId={panel.conversationId} />
-      )}
+        </section>
+      ) : null}
+      {/* Keep this wrapper and its key across size changes: remounting would discard composer drafts and files. */}
+      <div
+        key='conversation'
+        className={cn(
+          'min-h-0 min-w-0 flex-1 p-3',
+          !expanded && history && 'hidden',
+        )}
+      >
+        {expanded || !history ? (
+          <div
+            className={cn(
+              'flex h-full min-h-0 min-w-0 flex-col',
+              expanded && 'mx-auto w-full max-w-3xl',
+            )}
+          >
+            <ConversationView conversationId={panel.conversationId} />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

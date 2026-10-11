@@ -1,7 +1,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { UserPlusIcon } from 'lucide-react';
+import { KeyRoundIcon, MoreHorizontalIcon, UserPlusIcon } from 'lucide-react';
 import { type ReactElement, useMemo, useState } from 'react';
 import {
   canManageProject,
@@ -18,13 +18,61 @@ import {
   usePmApi,
   useViewer,
 } from '@nocobase/app-plugin-projects/client/kit';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 
 import type { MemberWithRoles, Role } from '../../../../shared/access.js';
 import { Button } from '@/components/ui/button';
-import { nextRoles, roleOptions, roleTitle, sameRoles } from './roles-model.js';
-import { useRoleError } from './use-role-error.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Link } from 'react-router';
 import { studioKeys, useStudioApi } from '../../../access/api.js';
 import { useNotify } from '../../../access/notify.js';
+import { nextRoles, roleOptions, roleTitle, sameRoles } from './roles-model.js';
+import { useRoleError } from './use-role-error.js';
+
+export function MemberActions({
+  member,
+  viewerId,
+}: {
+  readonly member: MemberWithRoles;
+  readonly viewerId?: string;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  const access = useCan({
+    resource: { type: 'user', id: member.userId },
+    action: 'reset-password',
+  });
+  if (!access.can || member.userId === viewerId) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label={t('members.actions')}
+          />
+        }
+      >
+        <MoreHorizontalIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-auto min-w-40'>
+        <DropdownMenuItem
+          render={
+            <Link to={`${member.userId}/reset-password`} relative='path' />
+          }
+        >
+          <KeyRoundIcon />
+          {t('members.resetPassword')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function MemberRolesCell({
   member,
@@ -165,6 +213,13 @@ export function MemberRolesPanel(): ReactElement {
             busy={change.isPending}
             onChange={(next) => change.mutate({ member: row.original, next })}
           />
+        ),
+      },
+      {
+        id: 'actions',
+        meta: { className: 'w-12' },
+        cell: ({ row }) => (
+          <MemberActions member={row.original} viewerId={viewer?.userId} />
         ),
       },
     ],
