@@ -19,6 +19,7 @@ import {
 } from '@nocobase/app-server/router';
 
 import { expenseLifecycle } from '../server/lifecycles/expense.js';
+import { invoiceLifecycle } from '../server/lifecycles/invoice.js';
 import { orderLifecycle } from '../server/lifecycles/order.js';
 import { createExampleServices } from '../server/lifecycles/services.js';
 import { ticketLifecycle } from '../server/lifecycles/ticket.js';
@@ -51,6 +52,22 @@ function application(authentication: Auth) {
   runtime.register(ticketLifecycle, { services });
   // No step below reaches the sandbox: cancelling a draft has no checkout to close.
   runtime.register(orderLifecycle, { services: {} as never });
+  runtime.register(invoiceLifecycle, { services: {} as never });
+  store.insertRecord('lifecycleExampleInvoices', {
+    id: 9,
+    status: 'issued',
+    title: 'Example company',
+    taxNumber: '91310000MA1K000001',
+    orderRef: '1024',
+    customerId: 'customer-li',
+    amountCents: 39900,
+    queryCount: 0,
+    providerRequestId: 'inv_demo',
+    invoiceNumber: 'DEMO-ABC',
+    pdfUrl: '/api/lifecycleExample/invoices/9/pdf',
+    statusChangedAt: '2026-10-01T09:00:00.000Z',
+    lifecycleVersion: 3,
+  });
   store.insertRecord('lifecycleExampleOrders', {
     id: 3,
     title: '降噪耳机',
@@ -661,6 +678,36 @@ describe('lifecycle example routes', () => {
     });
   });
 
+  it('protects invoice creation, platform actions and PDF downloads', async () => {
+    const router = await apiRoutes.createRouter(application(deny).app);
+    for (const request of [
+      post('/lifecycleExample/invoices', {}),
+      post('/lifecycleExample/sandbox/invoices/9/complete', {
+        outcome: 'issued',
+      }),
+      new Request('http://localhost/lifecycleExample/invoices/9/pdf'),
+    ])
+      expect((await router.request(request)).status).toBe(401);
+  });
+
+  it('downloads an issued sample PDF and refuses a missing invoice', async () => {
+    const router = await apiRoutes.createRouter(application(allow).app);
+    const response = await router.request('/lifecycleExample/invoices/9/pdf');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/pdf');
+    expect(response.headers.get('content-disposition')).toContain(
+      'invoice-9.pdf',
+    );
+    const pdf = await response.text();
+    expect(pdf).toContain('SANDBOX INVOICE - NOT VALID FOR TAX');
+    expect(pdf).toContain('DEMO-ABC');
+    const offset = Number(/startxref\n(\d+)/.exec(pdf)?.[1]);
+    expect(pdf.slice(offset, offset + 4)).toBe('xref');
+    expect(
+      (await router.request('/lifecycleExample/invoices/999/pdf')).status,
+    ).toBe(404);
+  });
+
   it('declares every route in the API document', async () => {
     const router = await apiRoutes.createRouter(application(allow).app);
     expect(findUndeclaredApiRoutes(router)).toEqual([]);
@@ -676,6 +723,7 @@ describe('lifecycle example routes', () => {
       'Export',
       'Fulfilment',
       'Order',
+      'Invoice',
       'Purchase',
       'Subscription',
       'Ticket',
@@ -694,6 +742,8 @@ describe('lifecycle example routes', () => {
           `lifecycleExampleRetry${noun}EffectRun`,
         ]),
         'lifecycleExampleDeliverSandboxEvent',
+        'lifecycleExampleCompleteSandboxInvoice',
+        'lifecycleExampleDownloadInvoice',
         'lifecycleExampleGetSandboxCheckout',
         'lifecycleExampleListSandboxEvents',
         'lifecycleExampleListSandboxStock',
