@@ -20,6 +20,8 @@ nocobase-runner uninstall [--purge] [--dry-run]
 nocobase-runner unregister --server https://app.example.com
 ```
 
+Applications advertising workspace decisions can return repository-scoped merged pull request head commits for ended tasks, including legacy workspaces. The runner checks local commit ancestry without fetching and checks submodule commits independently. Only ended workspaces with proven commits and no tracked changes may discard untracked files; the collection log and `gc` show this explicitly. Application evidence is matched to the current report, path, last run and last use, and deletion checks the same evidence again under the workspace lock. Unknown or insufficient evidence preserves the directory. Keep drafts and temporary tools in the task's temporary directory outside its repositories.
+
 ### The runner is not a security boundary
 
 Agents run with full access, as the user the runner runs as, with that user's real home: Codex with approval policy `never` and the `dangerFullAccess` sandbox, accepting any approval it still asks for; Claude Code in `bypassPermissions` mode with no hooks; OpenCode and Pi with every permission request allowed. Nothing restricts what an agent reads or writes on the machine, including the user's SSH keys, cloud credentials, other repositories and `~/.nocobase-runner` itself. Put the boundary around the runner: run it as a dedicated OS user that holds only what agents need, in a container, or in a VM. Claude Code refuses `bypassPermissions` as root, so do not run the runner as root.

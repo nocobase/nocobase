@@ -143,6 +143,9 @@ export function workspaceNotes(options: {
       : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
   ];
   if (dirs.length > 0) {
+    lines.push(
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Ended tasks may discard untracked repository files during cleanup.`,
+    );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
       const name = dir.name === undefined ? '' : ` (${dir.name})`;
@@ -158,7 +161,9 @@ export function workspaceNotes(options: {
           `The remote ${dir.repo.url} has no refs. This checkout is initializing it on ${dir.repo.branch}, with no base commit. Implement the task in this directory, verify the result, then commit and push this branch. This first delivery needs no pull request, even if the usual workflow asks for one: there is no base branch yet. The push may only create the branch, not overwrite a branch created by someone else. Preserve existing files and commits on a retry. Report the actual checks and any failure; do not claim the task is complete merely because the first push succeeded.`,
         );
     }
-    lines.push('Keep every file you write inside these directories.');
+    lines.push(
+      `Keep every file you write inside these directories or the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}).`,
+    );
   }
   if (options.pnpmStoreDir !== undefined)
     lines.push(
