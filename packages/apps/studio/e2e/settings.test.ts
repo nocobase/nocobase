@@ -247,20 +247,22 @@ test.describe('settings', () => {
       expect(await page.content()).not.toContain(secret);
 
       // Right after the reload the list may still re-render from its refetch and close a menu opened too early, so
-      // open it again until the item shows.
+      // retry opening and selecting together until the confirmation shows.
       const rotate = page.getByRole('menuitem', { name: /轮换/ });
+      const confirm = page.getByRole('alertdialog', {
+        name: `轮换密钥 ${name}？`,
+      });
       await expect(async () => {
+        if (await confirm.isVisible()) return;
         if (!(await rotate.isVisible()))
           await page
             .getByRole('region', { name: 'API 密钥' })
             .getByRole('button', { name: `${name} 的操作` })
-            .click();
+            .click({ timeout: 2000 });
         await expect(rotate).toBeVisible({ timeout: 2000 });
+        await rotate.click({ timeout: 2000 });
+        await expect(confirm).toBeVisible({ timeout: 2000 });
       }).toPass({ timeout: 20_000 });
-      await rotate.click();
-      const confirm = page.getByRole('alertdialog', {
-        name: `轮换密钥 ${name}？`,
-      });
       await expect(confirm).toContainText('当前的立即失效');
       await confirm.getByRole('button', { name: '轮换' }).click();
 

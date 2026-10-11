@@ -65,7 +65,10 @@ describe('createKeyring', () => {
     expect(isSealedSecret(sealed)).toBe(true);
     expect(isSealedSecret('nbs1.x.a.b.c')).toBe(false);
     const parts = sealed.split('.');
-    parts[4] = Buffer.from('y').toString('base64url');
+    const ciphertext = Buffer.from(parts[4]!, 'base64url');
+    // A fixed replacement can equal the random ciphertext; flipping a bit always changes it.
+    ciphertext[0] = ciphertext[0]! ^ 1;
+    parts[4] = ciphertext.toString('base64url');
     expect(() => v1.open(parts.join('.'), { purpose })).toThrow(
       expect.objectContaining({ code: 'SECRETS_AUTH_FAILED' }),
     );

@@ -240,7 +240,7 @@ export function createDistRoutes(
       responses: {
         200: {
           description:
-            'The artifact: `{ data }` in JSON, or with `format=env` the lines `product=`, `version=`, `target=`, `url=`, `sha256=`, `size=` and `channel=` as `text/plain`, and `universal=true` when the platform gets the universal tarball, which needs Node.js 24 or newer on the machine. An npm answer (only with `accept=npm`) is `{ data: { kind: \'npm\', ... } }`, or the lines `kind=npm`, `product=`, `version=`, `package=` and `channel=`.',
+            "The artifact: `{ data }` in JSON, or with `format=env` the lines `product=`, `version=`, `target=`, `url=`, `sha256=`, `size=` and `channel=` as `text/plain`, and `universal=true` when the platform gets the universal tarball, which needs Node.js 24 or newer on the machine. An npm answer (only with `accept=npm`) is `{ data: { kind: 'npm', ... } }`, or the lines `kind=npm`, `product=`, `version=`, `package=` and `channel=`.",
           content: {
             'application/json': {
               schema: resolver(z.object({ data: DistResolutionSchema })),

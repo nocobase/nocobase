@@ -83,6 +83,7 @@ describe("a runner's working directories", () => {
     expect(response.status).toBe(200);
     expect(response.body.data.workspaces).toEqual({
       intervalMs: WORKSPACE_REPORT_INTERVAL_MS,
+      decisions: true,
     });
   });
 
@@ -97,6 +98,140 @@ describe("a runner's working directories", () => {
     });
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual({ remove: [ended], keep: [ongoing] });
+  });
+
+  it('resolves legacy keys on whichever runner reports them, and gives no commit evidence', async () => {
+    h = await createHarness();
+    h.settled = new Set(['1']);
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    const binding = h.services.subjects.get('sample')!;
+    h.services.subjects.register({
+      ...binding,
+      kind: 'legacySample',
+      workspaces: {
+        settled: async () => new Set(['1']),
+        resolveKeys: async () => new Map([['SMP-1', ['1']]]),
+        commits: async () =>
+          new Map([
+            [
+              '1',
+              [
+                {
+                  repository: 'https://example.com/app.git',
+                  headSha: 'a'.repeat(40),
+                },
+              ],
+            ],
+          ]),
+      },
+    });
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runIds[0] },
+        values: { subjectKind: 'legacySample', runnerId: null },
+      });
+    const body = {
+      reportId: 'first',
+      workspaces: [],
+      directories: [
+        { ...workspace(runIds[0]!), runId: undefined, subjectKey: 'SMP-1' },
+      ],
+    };
+    const response = await report(runner, body);
+    expect(response.body.data.decisions).toMatchObject([
+      { settled: true, reason: 'settled', commits: [] },
+    ]);
+    // Another runner keeping a directory of the same subject removes it too: the work is over everywhere.
+    const other = await h.registerRunner({ name: 'other' });
+    expect((await report(other, body)).body.data.decisions).toMatchObject([
+      { settled: true, reason: 'settled', commits: [] },
+    ]);
+    // A run the application no longer has falls back to the directory's key.
+    const missing = await report(other, {
+      ...body,
+      directories: [{ ...body.directories[0], runId: 'gone' }],
+    });
+    expect(missing.body.data).toMatchObject({
+      remove: ['gone'],
+      decisions: [{ runId: 'gone', settled: true, reason: 'settled' }],
+    });
+    // Nor while a run on the subject has not finished, on any runner.
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runIds[0] },
+        values: { status: 'queued' },
+      });
+    expect((await report(other, body)).body.data.decisions).toMatchObject([
+      { settled: false, reason: 'active' },
+    ]);
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runIds[0] },
+        values: { status: 'completed' },
+      });
+    const cleanup = {
+      reportId: 'first',
+      reason: 'allowed',
+      discardsUntracked: true,
+    };
+    await report(runner, {
+      ...body,
+      reportId: 'next',
+      directories: [{ ...body.directories[0], cleanup }],
+    });
+    expect(
+      (await h.services.runners.get(runner.runnerId)).workspaceUsage
+        ?.workspaces[0]?.cleanup,
+    ).toEqual(cleanup);
+    await report(runner, {
+      ...body,
+      reportId: 'later',
+      directories: [
+        {
+          ...body.directories[0],
+          lastUsedAt: '2026-10-02T00:00:00.000Z',
+          cleanup: { ...cleanup, reportId: 'next' },
+        },
+      ],
+    });
+    expect(
+      (await h.services.runners.get(runner.runnerId)).workspaceUsage
+        ?.workspaces[0]?.cleanup,
+    ).toBeUndefined();
+  });
+
+  it('distinguishes missing runs and bindings without exposing subjects', async () => {
+    h = await createHarness();
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    const other = await h.registerRunner();
+    const body = {
+      reportId: 'report',
+      workspaces: [],
+      directories: [
+        { ...workspace(runIds[0]!), subjectKey: 'SMP-1' },
+        { ...workspace('missing'), subjectKey: 'missing' },
+      ],
+    };
+    expect((await report(other, body)).body.data.decisions).toMatchObject([
+      { reason: 'bindingUnavailable' },
+      { reason: 'runNotFound' },
+    ]);
+    expect((await report(runner, body)).body.data.decisions).toMatchObject([
+      { reason: 'bindingUnavailable' },
+      { reason: 'runNotFound' },
+    ]);
+    const hidden = runnerForViewer(
+      await h.services.runners.get(runner.runnerId),
+      false,
+    );
+    expect(hidden.canSeeMachine).toBe(false);
+    expect(hidden.workspaceUsage?.workspaces).toEqual([]);
   });
 
   it('preserves variable names across workspace reports and workspace usage across heartbeats', async () => {
@@ -217,7 +352,7 @@ describe("a runner's working directories", () => {
     expect(response.body.data).toEqual({ remove: [], keep: [runIds[0]] });
   });
 
-  it("answers only for the runner's own runs", async () => {
+  it('answers for a run whichever runner reports it, and not for a run it does not know', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);
     const { runIds } = await runnerWithRuns(['1']);
@@ -226,7 +361,7 @@ describe("a runner's working directories", () => {
       workspaces: [workspace(runIds[0]), workspace('unknown')],
     });
     expect(response.status).toBe(200);
-    expect(response.body.data).toEqual({ remove: [], keep: [] });
+    expect(response.body.data).toEqual({ remove: [runIds[0]], keep: [] });
   });
 
   it('refuses a report without a runner key', async () => {

@@ -381,6 +381,12 @@ export function IntakePanel({
               placeholder={t('intake.textPlaceholder')}
               aria-invalid={tooLong ? true : undefined}
               onChange={(event) => setText(event.target.value)}
+              onPaste={(event) => {
+                const images = [...event.clipboardData.files].filter((file) =>
+                  file.type.startsWith('image/'),
+                );
+                if (images.length > 0) uploads.add(images);
+              }}
               onDragOver={uploads.onDragOver}
               onDrop={uploads.onDrop}
             />

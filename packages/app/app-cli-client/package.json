@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-cli-client",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "A branded command line for a NocoBase application: signs in, and runs the business commands the application's command manifest publishes over its API",
   "type": "module",
   "license": "Apache-2.0",

@@ -65,14 +65,14 @@ function describeFlags(flags: Record<string, FlagHelp>): string[] {
 /** Every usage line and example is a command that runs as-is, the same way error suggestions are. */
 export function formatHelp(): string {
   return [
-    'Install and manage a NocoBase 3 application on a server, from a deployment archive.',
+    'Install and manage a NocoBase 3 application on a server, from an npm application package or deployment archive.',
     '',
     'USAGE',
     `  $ ${installerCommand('COMMAND [FLAGS]')}`,
     '',
     'COMMANDS',
-    '  install DIRECTORY  Install into DIRECTORY (or --dir DIRECTORY) from --archive, and start it with pm2.',
-    '  upgrade            Upgrade the installation in --dir, the current directory by default, to a new --archive.',
+    '  install DIRECTORY  Install into DIRECTORY (or --dir DIRECTORY) from --app or --archive, and start it with pm2.',
+    '  upgrade            Upgrade the installation in --dir, the current directory by default, to the latest npm application or a new --archive.',
     '  rollback           Return to the release the last upgrade came from, or to --to.',
     '  status             Report the release, endpoints, health, pm2 process and releases on disk.',
     '',
@@ -89,6 +89,8 @@ export function formatHelp(): string {
     ...describeFlags(STATUS_FLAGS),
     '',
     'EXAMPLES',
+    `  $ ${installerCommand('install /srv/nocobase/studio --app studio --origin https://studio.example.com')}`,
+    `  $ ${installerCommand('upgrade --dir /srv/nocobase/studio --yes')}`,
     `  $ ${installerCommand('install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com')}`,
     `  $ ${installerCommand('upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz --yes')}`,
     `  $ ${installerCommand('install /srv/nocobase/crm --archive /tmp/crm.tar.gz --dialect postgres --set database.connections.main.host=db.internal --set-from-env database.connections.main.password=CRM_DB_PASSWORD')}`,
