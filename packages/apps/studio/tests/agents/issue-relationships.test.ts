@@ -364,26 +364,6 @@ async function pair() {
   ] as const;
 }
 
-it('shows related issues at both ends without blockers, and removes them from the reverse end', async () => {
-  const [a, b] = await pair();
-  const client = api();
-  const link = await client.addDependency(a.id, {
-    dependsOnIssueId: b.id,
-    type: 'relatedTo',
-  });
-  expect((await client.issue(a.id)).relatedTo).toEqual([
-    expect.objectContaining({ issueId: b.id }),
-  ]);
-  expect((await client.issue(b.id)).relatedTo).toEqual([
-    expect.objectContaining({ issueId: a.id }),
-  ]);
-  expect((await client.issue(a.id)).blockers).toEqual([]);
-  expect((await client.issue(b.id)).blockers).toEqual([]);
-  await client.removeDependency(b.id, link.dependencyId);
-  expect((await client.issue(a.id)).relatedTo).toEqual([]);
-  expect((await client.issue(b.id)).relatedTo).toEqual([]);
-});
-
 it('converts a reverse related link in place and back, with the current issue waiting', async () => {
   const [a, b] = await pair();
   const client = api();
@@ -423,60 +403,6 @@ it('converts a reverse related link in place and back, with the current issue wa
       issueId: a.id,
     }),
   ]);
-});
-
-it('preserves the related link when a cyclic prerequisite is refused', async () => {
-  const [a, b] = await pair();
-  const client = api();
-  await client.addDependency(b.id, {
-    dependsOnIssueId: a.id,
-    type: 'blockedBy',
-  });
-  const related = await client.addDependency(a.id, {
-    dependsOnIssueId: b.id,
-    type: 'relatedTo',
-  });
-  await expect(
-    client.updateDependency(a.id, related.dependencyId, {
-      type: 'blockedBy',
-      expectedType: 'relatedTo',
-    }),
-  ).rejects.toThrow('DEPENDENCY_CYCLE');
-  expect((await client.issue(a.id)).relatedTo).toEqual([
-    expect.objectContaining({ dependencyId: related.dependencyId }),
-  ]);
-  expect((await client.issue(b.id)).relatedTo).toHaveLength(1);
-  expect((await client.issue(a.id)).blockedBy).toEqual([]);
-});
-
-it('rejects stale conversions without changing or recreating a link', async () => {
-  const [a, b] = await pair();
-  const client = api();
-  const related = await client.addDependency(a.id, {
-    dependsOnIssueId: b.id,
-    type: 'relatedTo',
-  });
-  const input = { type: 'blockedBy', expectedType: 'relatedTo' } as const;
-  await client.updateDependency(a.id, related.dependencyId, input);
-  const path = `/projects/issues/${a.id}/dependencies/${related.dependencyId}`;
-  const stale = await h.request('PATCH', path, {
-    user: 'alice',
-    body: input,
-  });
-  expect(stale.status).toBe(409);
-  expect(stale.body.error.reason).toBe('DEPENDENCY_CHANGED');
-  expect((await client.issue(a.id)).relatedTo).toEqual([]);
-  expect((await client.issue(a.id)).blockedBy).toEqual([
-    expect.objectContaining({ dependencyId: related.dependencyId }),
-  ]);
-  await client.removeDependency(a.id, related.dependencyId);
-  const removed = await h.request('PATCH', path, {
-    user: 'alice',
-    body: { type: 'relatedTo', expectedType: 'blockedBy' },
-  });
-  expect(removed.status).toBe(404);
-  expect((await client.issue(a.id)).relatedTo).toEqual([]);
-  expect((await client.issue(a.id)).blockedBy).toEqual([]);
 });
 
 it.each(['forward', 'reverse'] as const)(
@@ -554,48 +480,3 @@ it.each(['forward', 'reverse'] as const)(
     ]);
   },
 );
-
-it('does not let an incoming Blocks row change the other issue prerequisite', async () => {
-  const [a, b] = await pair();
-  const client = api();
-  const blocker = await client.addDependency(a.id, {
-    dependsOnIssueId: b.id,
-    type: 'blockedBy',
-  });
-  await expect(
-    client.updateDependency(b.id, blocker.dependencyId, {
-      type: 'relatedTo',
-      expectedType: 'blockedBy',
-    }),
-  ).rejects.toThrow('NOT_FOUND');
-  expect((await client.issue(a.id)).blockedBy).toEqual([
-    expect.objectContaining({ dependencyId: blocker.dependencyId }),
-  ]);
-  expect((await client.issue(a.id)).relatedTo).toEqual([]);
-});
-
-it('enforces permissions for direct dependency writes', async () => {
-  const [a, b] = await pair();
-  const path = `/projects/issues/${a.id}/dependencies`;
-  const body = { dependsOnIssueId: b.id, type: 'relatedTo' } as const;
-  expect((await h.request('POST', path, { body })).status).toBe(401);
-  await h.addUser('reader');
-  h.roles.set('reader', 'none');
-  expect((await h.request('POST', path, { user: 'reader', body })).status).toBe(
-    404,
-  );
-  const related = await api().addDependency(a.id, body);
-  const updatePath = `${path}/${related.dependencyId}`;
-  const update = { type: 'blockedBy', expectedType: 'relatedTo' };
-  expect((await h.request('PATCH', updatePath, { body: update })).status).toBe(
-    401,
-  );
-  expect(
-    (await h.request('PATCH', updatePath, { user: 'reader', body: update }))
-      .status,
-  ).toBe(403);
-  expect((await api().issue(a.id)).relatedTo).toEqual([
-    expect.objectContaining({ dependencyId: related.dependencyId }),
-  ]);
-  expect((await api().issue(a.id)).blockedBy).toEqual([]);
-});

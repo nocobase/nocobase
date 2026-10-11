@@ -13,3 +13,4 @@ export {
   findDependencyBetween,
   type DependencyRecord,
 } from './subtask.store.js';
+export { lockIssueGraph } from './subtask.guard.js';

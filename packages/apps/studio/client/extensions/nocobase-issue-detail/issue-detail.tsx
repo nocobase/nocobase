@@ -12,7 +12,6 @@
  * quiet buttons that add its first item, and `IssueFileDrop` lets files dropped or pasted anywhere on the body upload.
  */
 import {
-  ArrowLeftRightIcon,
   CheckIcon,
   ChevronDownIcon,
   CornerLeftUpIcon,
@@ -22,6 +21,7 @@ import {
   ListChecksIcon,
   ListTreeIcon,
   Loader2Icon,
+  MoreHorizontalIcon,
   PaperclipIcon,
   PencilIcon,
   ShieldCheckIcon,
@@ -1299,7 +1299,7 @@ export function IssueDependencies({
     if (pendingRef.current) return;
     pendingRef.current = true;
     setBusy(true);
-    void Promise.resolve()
+    Promise.resolve()
       .then(action)
       .catch(() => undefined)
       .finally(() => {
@@ -1328,59 +1328,54 @@ export function IssueDependencies({
               link={cardLink}
               className='px-3 py-2'
               trailing={
-                kind && onAdd ? (
-                  <div className='flex items-center gap-1'>
-                    {onChangeType ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              variant='ghost'
-                              size='icon-xs'
-                              disabled={busy}
-                              aria-label={fill(labels.dependencies.changeType, {
-                                identifier: item.identifier,
-                              })}
-                            />
+                kind && onAdd && (onChangeType || onRemove) ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant='ghost'
+                          size='icon-xs'
+                          disabled={busy}
+                          aria-label={fill(labels.dependencies.actions, {
+                            identifier: item.identifier,
+                          })}
+                        />
+                      }
+                    >
+                      <MoreHorizontalIcon />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align='end' className='w-max max-w-xs'>
+                      {onChangeType ? (
+                        <DropdownMenuItem
+                          disabled={busy}
+                          onClick={() =>
+                            run(() =>
+                              onChangeType(
+                                item,
+                                kind === 'blockedBy'
+                                  ? 'relatedTo'
+                                  : 'blockedBy',
+                              ),
+                            )
                           }
                         >
-                          <ArrowLeftRightIcon />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align='end'>
-                          <DropdownMenuItem
-                            disabled={busy}
-                            onClick={() =>
-                              run(() =>
-                                onChangeType(
-                                  item,
-                                  kind === 'blockedBy'
-                                    ? 'relatedTo'
-                                    : 'blockedBy',
-                                ),
-                              )
-                            }
-                          >
-                            {kind === 'blockedBy'
-                              ? labels.dependencies.toRelated
-                              : labels.dependencies.toBlocker}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null}
-                    {onRemove ? (
-                      <Button
-                        variant='ghost'
-                        size='icon-xs'
-                        disabled={busy}
-                        aria-label={fill(labels.dependencies.remove, {
-                          identifier: item.identifier,
-                        })}
-                        onClick={() => run(() => onRemove(item))}
-                      >
-                        <XIcon />
-                      </Button>
-                    ) : null}
-                  </div>
+                          {kind === 'blockedBy'
+                            ? labels.dependencies.toRelated
+                            : labels.dependencies.toBlocker}
+                        </DropdownMenuItem>
+                      ) : null}
+                      {onRemove ? (
+                        <DropdownMenuItem
+                          disabled={busy}
+                          onClick={() => run(() => onRemove(item))}
+                        >
+                          {fill(labels.dependencies.remove, {
+                            identifier: item.identifier,
+                          })}
+                        </DropdownMenuItem>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : null
               }
             />

@@ -65,7 +65,7 @@ export interface IssueDetailLabels {
     readonly type: string;
     readonly prerequisite: string;
     readonly hint: string;
-    readonly changeType: string;
+    readonly actions: string;
     readonly toRelated: string;
     readonly toBlocker: string;
   };
@@ -153,7 +153,7 @@ export const defaultIssueDetailLabels: IssueDetailLabels = {
     type: 'Relationship type',
     prerequisite: 'Prerequisite (wait for it)',
     hint: 'A prerequisite holds this issue until it finishes. Related issues do not block each other.',
-    changeType: 'Change relationship with {identifier}',
+    actions: 'Relationship actions for {identifier}',
     toRelated: 'Change to related',
     toBlocker: 'Make a prerequisite (this issue waits)',
   },

@@ -173,8 +173,8 @@ export interface CommentChange {
  * caller's transaction.
  */
 export interface IssueRelations {
-  /** Before the first issue write that can change waits or release work; held until the outer transaction ends. */
-  lock(tx: Tx): Promise<void>;
+  /** Before issue/counter writes; held until the outer transaction ends. Pass false when adding no waits. */
+  lock(tx: Tx, advance?: boolean): Promise<void>;
   /** A new issue: 400 unless every `blockedBy` is an issue the viewer sees; inserts them, then checks for a cycle. */
   created(
     tx: Tx,

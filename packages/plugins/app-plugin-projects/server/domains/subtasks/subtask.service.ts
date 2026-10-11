@@ -46,7 +46,7 @@ import {
   type Catalogs,
 } from './subtask.blocking.js';
 import { assertNoCycleThrough } from './subtask.graph.js';
-import { lockIssueGraph } from '../settings/index.js';
+import { lockIssueGraph } from './subtask.guard.js';
 import {
   onTerminal,
   releaseIfFree,
@@ -257,7 +257,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
       : undefined;
 
   const relations: IssueRelations = {
-    lock: (tx) => lockIssueGraph(tx.conn),
+    lock: (tx, advance) => lockIssueGraph(tx.conn, advance),
     async created(tx, issue, blockedBy, viewer) {
       const links = new Set<string>();
       for (const ref of blockedBy) {

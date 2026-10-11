@@ -266,10 +266,15 @@ export function createIssueService(deps: IssueDeps): IssueService {
           { ...deps, conn: tx.conn, viewer },
           input,
         );
-        const { number, identifier } = await deps.settings.allocateIssueNumber(
-          tx,
-          Boolean(values.parentIssueId) || values.blockedBy.length > 0,
-        );
+        // Take the graph before the counter even without waits: a later plan row may add relationships.
+        await deps
+          .relations()
+          .lock(
+            tx,
+            Boolean(values.parentIssueId) || values.blockedBy.length > 0,
+          );
+        const { number, identifier } =
+          await deps.settings.allocateIssueNumber(tx);
         const id = deps.ids.next();
         const now = new Date().toISOString();
         await insertIssue(tx.conn, {

@@ -26,7 +26,7 @@ import type { KindRegistry } from '../../kernel/kinds.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { collectRunAttempts, type RunAttempt } from '../../kernel/work.js';
 import { findIssue } from '../issues/index.js';
-import { lockIssueGraph } from '../settings/index.js';
+import { lockIssueGraph } from '../subtasks/index.js';
 import {
   dependencyExists,
   issueFields,

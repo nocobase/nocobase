@@ -310,6 +310,7 @@ const pages = {
     WORKFLOW_STATUS_CONFLICT:
       '还有任务处在这次修改要删除的状态里，请先把它们移走。',
     DEPENDENCY_CYCLE: '这个依赖会形成循环。',
+    DEPENDENCY_CHANGED: '任务关联已发生变化，请刷新后重试。',
     DEPENDENCY_GRAPH_CHANGED: '任务依赖已发生变化，请刷新后重试。',
     DEPENDENCY_EXISTS: '这个依赖已经存在。',
     DEPENDENCY_TOO_DEEP: '依赖链过长。',

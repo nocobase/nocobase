@@ -68,7 +68,7 @@ describe('existing relationships', () => {
         />,
       );
       await user.click(
-        screen.getByRole('button', { name: 'Change relationship with PM-2' }),
+        screen.getByRole('button', { name: 'Relationship actions for PM-2' }),
       );
       await user.click(
         await screen.findByRole('menuitem', {
@@ -87,14 +87,13 @@ describe('existing relationships', () => {
     },
   );
 
-  it('removes related links and keeps all controls disabled until the request settles, then allows retry', async () => {
-    let fail!: (error: Error) => void;
-    const onRemove = vi.fn(
-      () =>
-        new Promise<void>((_resolve, reject) => {
-          fail = reject;
-        }),
-    );
+  it('removes through the keyboard menu, blocks duplicate requests and allows retry after failure', async () => {
+    const user = userEvent.setup();
+    const pending = Promise.withResolvers<void>();
+    const onRemove = vi
+      .fn()
+      .mockReturnValueOnce(pending.promise)
+      .mockResolvedValue(undefined);
     render(
       <IssueDependencies
         blockedBy={[]}
@@ -106,22 +105,30 @@ describe('existing relationships', () => {
         onSearch={() => Promise.resolve([])}
       />,
     );
-    const remove = screen.getByRole('button', { name: 'Remove PM-2' });
+    const actions = screen.getByRole('button', {
+      name: 'Relationship actions for PM-2',
+    });
+    actions.focus();
+    await user.keyboard('{Enter}');
+    const remove = await screen.findByRole('menuitem', { name: 'Remove PM-2' });
     fireEvent.click(remove);
     fireEvent.click(remove);
     await waitFor(() =>
       expect(onRemove).toHaveBeenCalledExactlyOnceWith(other),
     );
-    expect(remove).toBeDisabled();
+    expect(actions).toBeDisabled();
     expect(
       screen.getByRole('combobox', { name: 'Relationship type' }),
     ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Change relationship with PM-2' }),
-    ).toBeDisabled();
-    fail(new Error('Failed to remove'));
-    await waitFor(() => expect(remove).toBeEnabled());
+    pending.reject(new Error('Failed to remove'));
+    await waitFor(() => expect(actions).toBeEnabled());
     expect(screen.getByRole('link', { name: /Other issue/ })).toBeVisible();
+    actions.focus();
+    await user.keyboard('{Enter}');
+    const retry = await screen.findByRole('menuitem', { name: 'Remove PM-2' });
+    retry.focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(onRemove).toHaveBeenCalledTimes(2));
   });
 
   it('hides editing actions for viewers and incoming blockers', () => {
@@ -136,7 +143,7 @@ describe('existing relationships', () => {
       />,
     );
     expect(
-      screen.queryByRole('button', { name: /Change relationship|Remove/ }),
+      screen.queryByRole('button', { name: /Relationship actions|Remove/ }),
     ).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
     rerender(
@@ -151,7 +158,7 @@ describe('existing relationships', () => {
       />,
     );
     expect(
-      screen.queryByRole('button', { name: /Change relationship|Remove/ }),
+      screen.queryByRole('button', { name: /Relationship actions|Remove/ }),
     ).toBeNull();
   });
 

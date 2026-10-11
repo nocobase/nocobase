@@ -84,7 +84,12 @@ describe('IssueDependencies', () => {
         onSearch={() => Promise.resolve([])}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Remove PM-2' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Relationship actions for PM-2' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Remove PM-2' }),
+    );
     await waitFor(() => expect(onRemove).toHaveBeenCalledWith(blocker));
     rerender(
       <IssueDependencies
@@ -94,7 +99,9 @@ describe('IssueDependencies', () => {
         onSearch={() => Promise.resolve([])}
       />,
     );
-    expect(screen.queryByRole('button', { name: 'Remove PM-2' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Relationship actions for PM-2' }),
+    ).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 });

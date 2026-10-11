@@ -149,7 +149,7 @@ export function useIssuePageWording(): IssuePageWording {
           type: appT('issuesPage.relationships.type'),
           prerequisite: appT('issuesPage.relationships.prerequisite'),
           hint: appT('issuesPage.relationships.hint'),
-          changeType: appT('issuesPage.relationships.changeType'),
+          actions: appT('issuesPage.relationships.actions'),
           toRelated: appT('issuesPage.relationships.toRelated'),
           toBlocker: appT('issuesPage.relationships.toBlocker'),
           addPlaceholder: t('dependencies.addPlaceholder'),
