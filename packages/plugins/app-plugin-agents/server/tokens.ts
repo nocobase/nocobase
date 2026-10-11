@@ -110,8 +110,6 @@ export type {
   RunMountProvider,
   RunMountRegistry,
   RunService,
-  ReconcileQueuedRequest,
-  ReconcileQueuedResult,
   SubjectAssembly,
   SubjectSample,
   SubjectBinding,

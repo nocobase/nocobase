@@ -5,4 +5,4 @@
 "@nocobase/agent-runner": patch
 ---
 
-Require an eligible development executor when approving proposals, route waiting-stage comments to the current stage, and defer pull request signals until development resumes. Reconcile obsolete queued stage inputs by exact run and input versions under the enqueue lock. Requeue a run whose working directory another live process holds without using up its attempts, bounded by a six-hour wait, with a compatible failure fallback for older applications. Tell a status change only to runs already working, so a queued run of the left stage stays withdrawable.
+Check a subject’s admission policy in the claim transaction and cancel outdated issue runs without failing or retrying them. Studio permits its executor only in execution statuses and workflow agents only in their current stage, independently of trigger or mixed comments. Keep eligible executor selection when approving proposals. Requeue live workspace contention without consuming execution attempts, bounded by a six-hour wait, with a compatible failure fallback for older applications.

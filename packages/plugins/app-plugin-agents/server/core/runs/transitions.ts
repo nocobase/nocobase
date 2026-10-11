@@ -31,7 +31,7 @@ export interface TransitionDeps {
 
 export interface FinishOutcome {
   readonly status: 'completed' | 'failed' | 'cancelled';
-  readonly reason?: FailureReason;
+  readonly reason?: FailureReason | null;
   readonly detail?: string;
   readonly summary?: string;
   readonly sessionId?: string;

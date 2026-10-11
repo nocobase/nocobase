@@ -130,6 +130,16 @@ export interface SubjectAssembly {
 
 export interface ContextProvider {
   /**
+   * Optional subject policy, checked once when queued work is claimed, inside that transaction and before assembly.
+   * Return a rejection to cancel this run normally: no payload, token, failure count, or retry is produced. Throwing
+   * remains an assembly failure. Not called for previews or reading an already working run's context.
+   */
+  admit?(
+    conn: DatabaseConnection,
+    claim: ClaimContext,
+  ): Promise<{ readonly reason: string; readonly detail?: string } | null>;
+
+  /**
    * Called inside the claim's transaction, again for `GET /api/agents/runs/current/context`, and for a brief preview (a run
    * that is not stored, and no runner). Database reads only: no network, no model. Throwing leaves the run queued; a
    * run that fails to assemble three times fails `setupFailed`.

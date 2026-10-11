@@ -24,9 +24,6 @@ import type {
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import { IN_PROGRESS_STATUS } from '../../shared/design.js';
-import { jsonObject } from '../agents/values.js';
-import { canImplement } from '../agents/executor.js';
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 
 import {
@@ -50,7 +47,6 @@ import type { PullRequestSnapshot } from './platform.js';
 import { GIT_NOTICE, type MergedAnnouncement } from './notices.js';
 import {
   linksOfPullRequest,
-  findRepoById,
   pullRequestsOfIssue,
   updatePullRequest,
   upsertPullRequest,
@@ -88,7 +84,6 @@ export interface StoreOptions {
 }
 
 export interface GitFlow {
-  resumeSignals(issueId: string): Promise<void>;
   /** Stores what was read and runs the flow of what changed; answers the stored pull request. */
   store(
     repo: RepoRow,
@@ -244,36 +239,19 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
     signal: 'checks' | 'conflict',
     count: number,
     after: After,
-    onlyIssueId?: string,
-  ): Promise<string[]> {
+  ): Promise<void> {
     const agents = deps.agents();
-    const woken: string[] = [];
     for (const link of await linksOfPullRequest(tx.conn, pr.id)) {
-      if (onlyIssueId && link.issueId !== onlyIssueId) continue;
       const issue = await deps
         .projects()
         .issueContext.contextFor(tx.conn, link.issueId);
       if (
         !issue ||
-        issue.status.key !== IN_PROGRESS_STATUS ||
         issue.status.category === 'done' ||
         issue.status.category === 'closed' ||
         issue.executor?.type !== AGENT_KIND
       )
         continue;
-      if (!agents) continue;
-      const agent = await agents.agents.findWorkable(
-        tx.conn,
-        issue.executor.id,
-      );
-      if (
-        !agent ||
-        !canImplement(agent) ||
-        !agents.agents.mayInvoke(agent, issue.owner.id)
-      )
-        continue;
-      // Eligible delivery, including a loop-limit notice, consumes this head once.
-      woken.push(issue.id);
       if (count > SIGNAL_WAKE_LIMIT) {
         const port = deps.inbox();
         const card = await cardIssue(tx.conn, issue.id);
@@ -281,65 +259,37 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
           after.push(() => sendSignalStopped(port, card, pr, signal));
         continue;
       }
-      const input = {
-        type: 'signal' as const,
-        actor: { kind: 'system' as const, id: 'system', name: 'Studio' },
-        text: signalText(pr, signal),
-        payload: {
-          trigger: TRIGGERS[signal],
-          pullRequestId: pr.id,
-          repo: pr.repo,
-          number: pr.number,
-          url: pr.url,
-          headRef: pr.headRef,
-          headSha: pr.headSha,
-          attempt: count,
-        },
-      };
-      if (onlyIssueId) {
-        const current = await cardIssue(tx.conn, issue.id);
-        const open = await agents.runs.openOn(
-          tx.conn,
-          { kind: ISSUE_SUBJECT, id: issue.id },
-          agent.id,
-        );
-        let target: string | null = null;
-        for (const run of open) {
-          if (run.status !== 'queued') continue;
-          const pending = await agents.runs.pendingInputs(tx.conn, run.id);
-          if (
-            current &&
-            pending.some((item) => {
-              const payload = jsonObject(item.payload);
-              return (
-                payload.trigger === 'stageEntered' &&
-                payload.to === IN_PROGRESS_STATUS &&
-                jsonObject(payload.stageInputVersion).revision ===
-                  current.revision
-              );
-            })
-          ) {
-            target = run.id;
-            break;
-          }
-        }
-        if (target) {
-          await agents.runs.addInput(target, input, agentsTx(tx));
-          continue;
-        }
-      }
+      if (!agents) continue;
+      const agent = await agents.agents.findWorkable(
+        tx.conn,
+        issue.executor.id,
+      );
+      if (!agent || !agents.agents.mayInvoke(agent, issue.owner.id)) continue;
       await agents.runs.enqueue(
         {
           agentId: agent.id,
           subject: { kind: ISSUE_SUBJECT, id: issue.id },
           actorUserId: issue.owner.id,
           ownerUserId: issue.owner.id,
-          input,
+          input: {
+            type: 'signal',
+            actor: { kind: 'system', id: 'system', name: 'Studio' },
+            text: signalText(pr, signal),
+            payload: {
+              trigger: TRIGGERS[signal],
+              pullRequestId: pr.id,
+              repo: pr.repo,
+              number: pr.number,
+              url: pr.url,
+              headRef: pr.headRef,
+              headSha: pr.headSha,
+              attempt: count,
+            },
+          },
         },
         agentsTx(tx),
       );
     }
-    return woken;
   }
 
   async function signals(
@@ -382,20 +332,10 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       const key = `${signal}@${pr.headSha}`;
       if (stored?.key === key) continue;
       const count = (stored?.count ?? 0) + 1;
-      const enabled =
-        signal === 'checks' ? repo.wakeOnChecks : repo.wakeOnConflict;
-      const woken = enabled ? await wake(tx, pr, signal, count, after) : [];
-      const pendingIssueIds = enabled
-        ? (await linksOfPullRequest(tx.conn, pr.id))
-            .map((link) => link.issueId)
-            .filter((id) => !woken.includes(id))
-        : [];
-      next[signal] = {
-        key,
-        count: woken.length ? count : (stored?.count ?? 0),
-        pendingIssueIds,
-      };
+      next[signal] = { key, count };
       changed = true;
+      if (signal === 'checks' ? repo.wakeOnChecks : repo.wakeOnConflict)
+        await wake(tx, pr, signal, count, after);
     }
     if (changed) await updatePullRequest(tx.conn, pr.id, { signals: next });
   }
@@ -408,44 +348,6 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
   }
 
   return {
-    async resumeSignals(issueId) {
-      const after: After = [];
-      await deps.projects().tx.run(async (tx) => {
-        for (const { pr } of await pullRequestsOfIssue(tx.conn, issueId)) {
-          if (pr.state !== 'open') continue;
-          const repo = await findRepoById(tx.conn, pr.repoId);
-          if (!repo) continue;
-          const next = { ...pr.signals };
-          let changed = false;
-          for (const signal of ['checks', 'conflict'] as const) {
-            const stored = pr.signals[signal];
-            if (!stored?.pendingIssueIds?.includes(issueId)) continue;
-            const stillFailing =
-              signal === 'checks'
-                ? repo.wakeOnChecks && pr.ciState === 'failure'
-                : repo.wakeOnConflict && pr.mergeableState === 'dirty';
-            const valid =
-              stillFailing && stored.key === `${signal}@${pr.headSha}`;
-            const count = stored.count + 1;
-            const woken = valid
-              ? await wake(tx, pr, signal, count, after, issueId)
-              : [];
-            if (valid && woken.length === 0) continue;
-            next[signal] = {
-              ...stored,
-              count: woken.length ? count : stored.count,
-              pendingIssueIds: stored.pendingIssueIds.filter(
-                (id) => id !== issueId,
-              ),
-            };
-            changed = true;
-          }
-          if (changed)
-            await updatePullRequest(tx.conn, pr.id, { signals: next });
-        }
-      });
-      await runAfter(after);
-    },
     async store(repo, snapshot, options = {}) {
       const after: After = [];
       const pr = await deps.projects().tx.run(async (tx) => {

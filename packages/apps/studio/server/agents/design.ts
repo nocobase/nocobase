@@ -131,7 +131,8 @@ export function createDesignService(deps: DesignDeps) {
       (agent) =>
         agent.type === 'runner' &&
         canImplement(agent) &&
-        deps.agents.agents.mayInvoke(agent, viewer.userId),
+        deps.agents.agents.mayInvoke(agent, viewer.userId) &&
+        deps.agents.agents.mayInvoke(agent, issue.ownerUserId),
     );
     const result: DesignExecutorCandidate[] = agents.map((agent) => ({
       type: 'agent',

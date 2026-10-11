@@ -187,31 +187,7 @@ export interface RunFilter {
   readonly cursor?: { readonly createdAt: string; readonly id: string };
 }
 
-/** Compare and change one queued run under the same database lock as enqueue and claim. */
-export interface ReconcileQueuedRequest {
-  readonly runId: string;
-  readonly expectedPendingInputIds: readonly string[];
-  readonly operation:
-    | {
-        readonly type: 'cancel';
-        readonly byUserId: string;
-        readonly detail: string;
-      }
-    | {
-        readonly type: 'signal';
-        readonly key: string;
-        readonly input: NewInput;
-      };
-}
-
-export type ReconcileQueuedResult =
-  'notQueued' | 'inputsChanged' | 'cancelled' | 'signalled';
-
 export interface RunService {
-  /** Own transaction; never changes a claimed run or an input set that changed after the caller read it. */
-  reconcileQueued(
-    request: ReconcileQueuedRequest,
-  ): Promise<ReconcileQueuedResult>;
   /**
    * Queues work for an agent, or, when someone other than the subject's responsible caused it, asks the responsible
    * to confirm it first (`outcome` `pending`). In `outer`, joins the caller's transaction (the caller publishes its
@@ -785,84 +761,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
 
     requests,
 
-    reconcileQueued: async (request) => {
-      // Resolve the immutable agent id before opening the transaction, so a repeatable-read snapshot
-      // cannot be established before the agent lock is acquired.
-      const found = await require(tx.read(), request.runId);
-      for (let retry = 0; ; retry += 1) {
-        try {
-          return await tx.run(async (unit) => {
-            await lockAgentForClaim(
-              unit.conn,
-              found.agentId,
-              clock.now().toISOString(),
-            );
-            const run = await require(unit.conn, request.runId);
-            if (run.status !== 'queued' || run.runnerId !== null)
-              return 'notQueued';
-            const inputs = await pendingInputs(unit.conn, run.id);
-            const expected = new Set(request.expectedPendingInputIds);
-            if (
-              inputs.length !== expected.size ||
-              inputs.some((input) => !expected.has(input.id))
-            )
-              return 'inputsChanged';
-            if (request.operation.type === 'cancel') {
-              const ended = await finishRun(unit, deps, run, {
-                status: 'cancelled',
-                reason: 'cancelled',
-                cancelledById: request.operation.byUserId,
-                detail: request.operation.detail,
-              });
-              return ended ? 'cancelled' : 'notQueued';
-            }
-            const operation = request.operation;
-            if (
-              !inputs.some(
-                (input) =>
-                  jsonObject(input.payload).reconciliationKey === operation.key,
-              )
-            )
-              await insertInput(unit, run.id, {
-                ...operation.input,
-                payload: {
-                  ...jsonObject(operation.input.payload),
-                  reconciliationKey: operation.key,
-                },
-              });
-            return 'signalled';
-          });
-        } catch (error) {
-          // Own the whole transaction: a lock or snapshot conflict must restart from a fresh committed view.
-          if (retry >= 4 || error instanceof ProtocolError) throw error;
-          await new Promise((resolve) => setTimeout(resolve, 10 * 2 ** retry));
-        }
-      }
-    },
-
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
-        const found = await require(unit.conn, runId);
-        await lockAgentForClaim(
-          unit.conn,
-          found.agentId,
-          clock.now().toISOString(),
-        );
-        // A current guarded write also protects callers joining an older outer snapshot.
-        const active = await runsRepo(unit.conn).updateMany({
-          filter: (f) =>
-            f.and([
-              f.string('id').eq(runId),
-              f.or(
-                ['queued', ...ACTIVE].map((status) =>
-                  f.string('status').eq(status),
-                ),
-              ),
-            ]),
-          values: { updatedAt: clock.now().toISOString() },
-        });
         const run = await require(unit.conn, runId);
-        if (active.updatedCount !== 1 || isTerminal(run.status))
+        if (isTerminal(run.status))
           throw new ProtocolError(
             'RUN_NOT_ACTIVE',
             `The run is ${run.status}.`,

@@ -303,7 +303,6 @@ export async function reposToPoll(
 // --- Pull requests -------------------------------------------------------------------------------------------------
 
 export interface SignalState {
-  readonly pendingIssueIds?: readonly string[];
   /** `<kind>@<headSha>` of the signal last reported. */
   readonly key: string;
   /** How many heads in a row it was reported for. */

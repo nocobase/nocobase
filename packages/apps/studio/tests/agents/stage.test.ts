@@ -596,11 +596,25 @@ describe('runAgent', () => {
     ]);
   });
 
+  /** A rule handing `status` to `agentId` without making it the executor, as the template's reviews do. */
+  const handOver = (status: string, agentId: string, words: string) => ({
+    [status]: [
+      {
+        type: 'runAgent',
+        config: {
+          agentId,
+          assign: false,
+          instruction: `${words} {{issue.identifier}}.`,
+        },
+      },
+    ],
+  });
+
   /** The issue's activities of `action`. */
   const activitiesOf = async (issueId: string, action: string) =>
     (await activities(issueId)).filter((entry) => entry.action === action);
 
-  it('only records an executor set in a status whose stage is another agent’s, and wakes it on entering In progress', async () => {
+  it('queues assignment normally and merges the current development stage when approved', async () => {
     const reviewer = await h.createAgent({ name: 'Reviewer' });
     const coder = await h.createAgent({ name: 'Coder' });
     await setRules({
@@ -620,20 +634,16 @@ describe('runAgent', () => {
     expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
       reviewer,
     ]);
-    // Setting the executor in review records it and wakes nobody, the reviewer included.
+    // Assignment queues normally; claim admission decides whether it can run.
     const current = await h.projects.issueQueries.detail(alice(), issue.id);
     await h.projects.issues.update(alice(), issue.id, {
       revision: current.revision,
       executor: { type: 'agent', id: coder },
     });
-    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
-      reviewer,
-    ]);
-    expect(
-      (await activitiesOf(issue.id, 'executor_waits')).map(
-        (entry) => entry.details,
-      ),
-    ).toEqual([{ agentId: coder, name: 'Coder', status: 'proposal_review' }]);
+    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
+      [reviewer, coder].sort(),
+    );
+    expect(await activitiesOf(issue.id, 'executor_waits')).toEqual([]);
     // Approved, it enters In progress: the executor is woken once, with the stage's instruction.
     await moveTo(issue, 'in_progress');
     const coderRuns = (await runsOf(issue.id)).filter(
@@ -641,8 +651,8 @@ describe('runAgent', () => {
     );
     expect(coderRuns).toHaveLength(1);
     const inputs = (await h.agents.runs.detail(coderRuns[0]!.id)).inputs;
-    expect(inputs).toHaveLength(1);
-    expect(inputs[0]).toMatchObject({
+    expect(inputs).toHaveLength(2);
+    expect(inputs[1]).toMatchObject({
       payload: {
         trigger: 'stageEntered',
         instruction: `Build ${issue.identifier}.`,
@@ -676,14 +686,16 @@ describe('runAgent', () => {
       revision: current.revision,
       executor: { type: 'agent', id: second },
     });
-    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual(before);
+    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
+      [...before, second].sort(),
+    );
     // Changes requested: back in In progress, the new executor takes it over with the stage's instruction.
     await moveTo(issue, 'in_progress');
     const taken = (await runsOf(issue.id)).filter(
       (run) => run.agentId === second,
     );
     expect(taken).toHaveLength(1);
-    expect((await h.agents.runs.detail(taken[0]!.id)).inputs[0]).toMatchObject({
+    expect((await h.agents.runs.detail(taken[0]!.id)).inputs[1]).toMatchObject({
       payload: {
         trigger: 'stageEntered',
         instruction: `Fix ${issue.identifier}.`,
@@ -766,7 +778,7 @@ describe('runAgent', () => {
     expect(
       (await h.projects.issueQueries.detail(alice(), bare.id)).executor,
     ).toBeNull();
-    // With an executor: the designer runs once, and the executor waits.
+    // Both are queued normally; only the current phase agent passes admission.
     const given = await h.projects.issues.create(alice(), {
       title: 'B',
       statusKey: 'analysis',
@@ -774,14 +786,11 @@ describe('runAgent', () => {
     });
     await expect
       .poll(async () => (await runsOf(given.id)).map((run) => run.agentId))
-      .toEqual([designer]);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect((await runsOf(given.id)).map((run) => run.agentId)).toEqual([
-      designer,
-    ]);
-    expect(
-      (await h.agents.runs.detail((await runsOf(given.id))[0]!.id)).inputs,
-    ).toHaveLength(1);
+      .toEqual(expect.arrayContaining([coder, designer]));
+    const designerRun = (await runsOf(given.id)).find(
+      (run) => run.agentId === designer,
+    )!;
+    expect((await h.agents.runs.detail(designerRun.id)).inputs).toHaveLength(1);
     // Where no agent is handed the status, nothing starts.
     const plain = await h.projects.issues.create(alice(), { title: 'C' });
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -1022,7 +1031,6 @@ describe('runAgent', () => {
     'leaseExpired',
     'toolNetwork',
     'prepareNetwork',
-    'workspaceBusy',
     'cancelled',
   ] as const)('does not count %s failures after starting', async (reason) => {
     const agentId = await h.createAgent({ maxAttempts: 1 });
@@ -1406,225 +1414,4 @@ describe('suggestExecutor', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(await openPlans('alice')).toEqual([]);
   });
-});
-
-/** A rule handing `status` to `agentId` without making it the executor, as the template's reviews do. */
-const handOver = (status: string, agentId: string, words: string) => ({
-  [status]: [
-    {
-      type: 'runAgent',
-      config: {
-        agentId,
-        assign: false,
-        instruction: `${words} {{issue.identifier}}.`,
-      },
-    },
-  ],
-});
-
-describe('development startup and waiting executor boundaries', () => {
-  it('skips a designer on entry and on backlog exit, then starts a developer after reassignment', async () => {
-    const designer = await h.createAgent({
-      name: 'Designer',
-      actions: ['pm.issues/view'],
-    });
-    const coder = await h.createAgent();
-    await setRules({
-      in_progress: [
-        {
-          type: 'runAgent',
-          config: { instruction: 'Implement {{issue.identifier}}.' },
-        },
-      ],
-    });
-    const issue = await h.projects.issues.create(alice(), {
-      title: 'Build it',
-      statusKey: 'backlog',
-      executor: { type: 'agent', id: designer },
-    });
-    await moveTo(issue, 'in_progress');
-    expect(await runsOf(issue.id)).toEqual([]);
-    await expect
-      .poll(
-        () =>
-          planned.filter(
-            (notice) => notice.params?.reason === 'executorCannotImplement',
-          ).length,
-      )
-      .toBe(1);
-    const current = await h.projects.issueQueries.detail(alice(), issue.id);
-    await h.projects.issues.update(alice(), issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: coder },
-    });
-    const runs = await runsOf(issue.id);
-    expect(runs).toHaveLength(1);
-    expect((await h.agents.runs.detail(runs[0]!.id)).inputs).toHaveLength(1);
-  });
-
-  it('withdraws a non-developer executor’s queued stage work when a person moves the issue to In progress', async () => {
-    const designer = await h.createAgent({
-      name: 'Designer',
-      actions: ['pm.issues/view'],
-    });
-    await setRules({
-      analysis: [
-        {
-          type: 'runAgent',
-          config: { instruction: 'Design {{issue.identifier}}.' },
-        },
-      ],
-      in_progress: [
-        {
-          type: 'runAgent',
-          config: { instruction: 'Implement {{issue.identifier}}.' },
-        },
-      ],
-    });
-    const issue = await h.projects.issues.create(alice(), {
-      title: 'Build it',
-      executor: { type: 'agent', id: designer },
-      start: false,
-    });
-    await moveTo(issue, 'analysis');
-    const [queued] = await runsOf(issue.id);
-    expect(queued).toMatchObject({ agentId: designer, status: 'queued' });
-    await moveTo(issue, 'in_progress');
-    await expect
-      .poll(async () => (await h.agents.runs.get(queued!.id)).status)
-      .toBe('cancelled');
-    expect(
-      (await h.agents.runs.detail(queued!.id)).inputs.map(
-        (input) => (input.payload as { trigger?: string } | null)?.trigger,
-      ),
-    ).toEqual(['stageEntered']);
-    expect(
-      (await runsOf(issue.id)).filter((run) => run.status !== 'cancelled'),
-    ).toEqual([]);
-    await expect
-      .poll(
-        () =>
-          planned.filter(
-            (notice) => notice.params?.reason === 'executorCannotImplement',
-          ).length,
-      )
-      .toBe(1);
-  });
-
-  it('tells a working run of a status change without queueing new work', async () => {
-    const coder = await h.createAgent();
-    const issue = await h.projects.issues.create(alice(), {
-      title: 'Build it',
-      executor: { type: 'agent', id: coder },
-    });
-    const payload = await h.claimOne();
-    expect((await runsOf(issue.id)).map((run) => run.id)).toEqual([
-      payload.run.id,
-    ]);
-    await h.runner(RUNNER_ROUTES.start, payload.run.id, {
-      workDir: '/tmp/stage-work',
-      adapter: { kind: 'claude' },
-      acceptsInput: true,
-    });
-    await moveTo(issue, 'in_review');
-    const runs = await runsOf(issue.id);
-    expect(runs.map((run) => run.id)).toEqual([payload.run.id]);
-    expect(
-      (await h.agents.runs.detail(payload.run.id)).inputs.at(-1),
-    ).toMatchObject({
-      type: 'statusChange',
-      payload: { trigger: 'statusChange', to: 'in_review' },
-    });
-  });
-
-  it('routes ordinary comments and old replies to the current stage, explicit mentions only to their target', async () => {
-    const designer = await h.createAgent({ name: 'Designer' });
-    const coder = await h.createAgent();
-    await setRules(handOver('analysis', designer, 'Design'));
-    const issue = await h.projects.issues.create(alice(), {
-      title: 'Plan it',
-      statusKey: 'analysis',
-      executor: { type: 'agent', id: coder },
-      start: false,
-    });
-    await expect.poll(async () => (await runsOf(issue.id)).length).toBe(1);
-    await h.projects.comments.post(alice().actor, issue.id, {
-      content: 'Add this constraint',
-    });
-    const runs = await runsOf(issue.id);
-    expect(runs.map((run) => run.agentId)).toEqual([designer]);
-    expect(
-      (await h.agents.runs.detail(runs[0]!.id)).inputs.at(-1),
-    ).toMatchObject({
-      type: 'comment',
-      payload: {
-        instruction: `Design ${issue.identifier}.`,
-        status: 'analysis',
-      },
-    });
-    const old = await h.projects.comments.post(
-      { type: 'agent', id: coder },
-      issue.id,
-      { content: 'Previous developer response' },
-      { trigger: false },
-    );
-    await h.projects.comments.post(alice().actor, issue.id, {
-      parentId: old.comment.id,
-      content: 'A reply in an old thread',
-    });
-    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
-      designer,
-    ]);
-    await h.projects.comments.post(alice().actor, issue.id, {
-      content: `[@Coder](mention://agent/${coder}) Please answer`,
-    });
-    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
-      [designer, coder].sort(),
-    );
-  });
-});
-
-it('withdraws a pure old stage queue for a human executor but preserves a mixed comment queue', async () => {
-  const designer = await h.createAgent({ name: 'Designer' });
-  await setRules(handOver('analysis', designer, 'Design'));
-  const first = await h.projects.issues.create(alice(), {
-    title: 'Human executor',
-    executor: { type: 'user', id: 'alice' },
-    start: false,
-  });
-  await moveTo(first, 'analysis');
-  const [pure] = await runsOf(first.id);
-  expect(pure!.status).toBe('queued');
-  await moveTo(first, 'in_progress');
-  await expect
-    .poll(async () => (await h.agents.runs.get(pure!.id)).status)
-    .toBe('cancelled');
-
-  const second = await h.projects.issues.create(alice(), {
-    title: 'A mixed queue',
-    start: false,
-  });
-  await moveTo(second, 'analysis');
-  const [mixed] = await runsOf(second.id);
-  await h.agents.runs.addInput(mixed!.id, {
-    type: 'comment',
-    actor: { kind: 'user', id: 'alice', name: 'Alice' },
-    text: 'Keep this comment',
-  });
-  await moveTo(second, 'in_progress');
-  await expect
-    .poll(async () =>
-      (await h.agents.runs.detail(mixed!.id)).inputs.some(
-        (input) =>
-          (input.payload as { trigger?: string } | null)?.trigger ===
-          'stageLeft',
-      ),
-    )
-    .toBe(true);
-  expect((await h.agents.runs.get(mixed!.id)).status).toBe('queued');
-  expect(
-    (await h.agents.runs.detail(mixed!.id)).inputs.some(
-      (input) => input.text === 'Keep this comment',
-    ),
-  ).toBe(true);
 });

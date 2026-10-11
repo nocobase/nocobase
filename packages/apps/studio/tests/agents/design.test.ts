@@ -168,3 +168,21 @@ describe('design approval executor eligibility', () => {
     ).toBe('in_progress');
   });
 });
+
+it('does not let an approver choose a developer the issue owner cannot invoke', async () => {
+  h.roles.set('bob', 'admin');
+  const privateDeveloper = await h.createAgent({
+    access: 'ownerOnly',
+    ownerUserId: 'bob',
+  });
+  const issue = await proposal();
+  const state = await service().state(h.viewer('bob'), issue.id);
+  expect(
+    state.executorCandidates.map((candidate) => candidate.id),
+  ).not.toContain(privateDeveloper);
+  await expect(
+    service().approve(h.viewer('bob'), issue.id, {
+      executor: { type: 'agent', id: privateDeveloper },
+    }),
+  ).rejects.toMatchObject({ details: { code: 'DESIGN_EXECUTOR_INVALID' } });
+});

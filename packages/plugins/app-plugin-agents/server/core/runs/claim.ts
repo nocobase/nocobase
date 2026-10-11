@@ -803,6 +803,33 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     });
   }
 
+  async function admit(
+    unit: Tx,
+    run: RunRecord,
+    agent: Agent,
+    runner: Runner | null,
+    inputs: readonly RunInput[],
+  ): Promise<boolean> {
+    const rejection = await deps.subjects
+      .get(run.subjectKind)
+      ?.context.admit?.(unit.conn, {
+        run: toRun(run),
+        agent,
+        runner,
+        inputs,
+        cli: deps.cli.name,
+        appName: deps.app.name,
+        dialect: dialectOf(agent),
+      });
+    if (!rejection) return true;
+    await finishRun(unit, deps, run, {
+      status: 'cancelled',
+      reason: null,
+      detail: `${rejection.reason}${rejection.detail ? `: ${rejection.detail}` : ''}`,
+    });
+    return false;
+  }
+
   async function attempt(
     runner: Runner,
     agent: Agent,
@@ -877,6 +904,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const pending = await pendingInputs(conn, run.id);
         let assembled: Assembled;
         try {
+          if (!(await admit(unit, run, agent, runner, pending.map(toInput))))
+            return null;
           assembled = await assemble(
             unit,
             run,
@@ -1068,6 +1097,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const inputs = pending.map(toInput);
       let claimed: ServerClaim;
       try {
+        if (!(await admit(unit, run, agent, null, inputs))) return null;
         claimed = await assembleServer(
           unit,
           run,

@@ -29,12 +29,6 @@
  * kind refuses an executor or a mention the person may not give (`kind.ts`). Nothing here calls a model or the
  * network.
  */
-import { randomUUID } from 'node:crypto';
-import {
-  canImplement,
-  requireImplementer,
-  stageInputVersion,
-} from './executor.js';
 
 import type { ActorRef, RunInputType } from '@nocobase/agent-protocol';
 import type {
@@ -54,7 +48,6 @@ import type {
   SubjectBinding,
 } from '@nocobase/app-plugin-agents/server/tokens';
 import { systemViewer } from '../previews/sources.js';
-import { EXECUTOR_WAITS_ACTIVITY } from '../../shared/design.js';
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
 import {
   describeMove,
@@ -80,15 +73,6 @@ interface Wake {
     readonly text: string;
     readonly payload?: unknown;
   };
-}
-
-/** The agents service's answer for a run that ended before it could be given input. */
-function isRunNotActive(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    (error as { code?: unknown }).code === 'RUN_NOT_ACTIVE'
-  );
 }
 
 /** A person's display name, or their id. */
@@ -286,7 +270,6 @@ export function createAgentWork(deps: {
     readonly agentId: string;
     readonly payload: {
       readonly status: string;
-      readonly stageInputVersion: ReturnType<typeof stageInputVersion>;
       readonly instruction?: string;
     };
   } | null> {
@@ -301,7 +284,6 @@ export function createAgentWork(deps: {
           agentId: stage.agentId,
           payload: {
             status: issue.statusKey,
-            stageInputVersion: stageInputVersion(issue),
             ...(stage.instruction ? { instruction: stage.instruction } : {}),
           },
         }
@@ -312,37 +294,6 @@ export function createAgentWork(deps: {
   async function ownStageOf(tx: ProjectsTx, issue: Issue, agentId: string) {
     const stage = await stageOf(tx, issue, agentId);
     return stage?.agentId === agentId ? stage.payload : null;
-  }
-
-  /**
-   * One line on the issue's activity: `agentId` became the executor in a status whose stage is another agent's, so its
-   * work starts once the issue enters a status of its own (In progress). Studio writes it to the projects plugin's
-   * activity log, which the issue timeline reads (`client/issues/detail/activity-row.tsx`).
-   */
-  async function recordWaiting(
-    tx: ProjectsTx,
-    issue: Issue,
-    agentId: string,
-    actor: Actor,
-  ): Promise<void> {
-    if (tx.rehearsal) return;
-    const agent = await deps.agents.agents.findWorkable(tx.conn, agentId);
-    await tx.conn.repository('pmActivities').createOne({
-      values: {
-        id: randomUUID(),
-        issueId: issue.id,
-        actorType: actor.type,
-        actorId: actor.id,
-        action: EXECUTOR_WAITS_ACTIVITY,
-        details: {
-          agentId,
-          name: agent?.name ?? agentId,
-          status: issue.statusKey,
-        },
-        createdAt: new Date(),
-      },
-    });
-    tx.emit({ type: 'issue.changed', issueId: issue.id });
   }
 
   /** Wakes `stage`'s agent for the stage of the status `issue` is in, as `who`'s. */
@@ -381,117 +332,18 @@ export function createAgentWork(deps: {
     ...(reason ? { skipped: reason } : {}),
   });
 
-  async function mayStart(
-    tx: ProjectsTx,
-    issue: Issue,
-    agentId: string,
-    actor: Actor,
-  ): Promise<boolean> {
-    return requireImplementer(
-      tx,
-      issue,
-      await deps.agents.agents.findWorkable(tx.conn, agentId),
-      actor,
-    );
-  }
-
-  async function alreadyEntered(
-    tx: ProjectsTx,
-    issue: Issue,
-    agentId: string,
-  ): Promise<boolean> {
-    for (const run of await runs.openOn(tx.conn, subjectOf(issue), agentId))
-      for (const input of await runs.pendingInputs(tx.conn, run.id)) {
-        const payload = jsonObject(input.payload);
-        const version = jsonObject(payload.stageInputVersion);
-        if (
-          payload.trigger === 'stageEntered' &&
-          payload.to === issue.statusKey &&
-          version.issueId === issue.id &&
-          version.revision === issue.revision
-        )
-          return true;
-      }
-    return false;
-  }
-
-  /**
-   * A status change outside Backlog starts nothing: it is told to the executor's runs that are already working, so they
-   * can stop or adjust. A queued run is left as it is: the status rules give the new status its own input, and the
-   * stage-run reconciliation ends or flags what the old status queued. Adding a status input there would make a run
-   * holding only the old stage's work look mixed, keep it from being withdrawn, and start an executor the new status
-   * may not allow (one that cannot implement in In progress).
-   */
-  async function notifyWorking(
-    tx: ProjectsTx,
-    before: Issue,
-    after: Issue,
-    agentId: string,
-    who: { readonly userId: string; readonly ref: ActorRef },
-  ): Promise<RunAttempt[]> {
-    const working = (
-      await runs.openOn(tx.conn, subjectOf(after), agentId)
-    ).filter((run) => run.status !== 'queued');
-    if (working.length === 0 || tx.rehearsal) return [];
-    const attempts: RunAttempt[] = [];
-    for (const run of working) {
-      try {
-        await runs.addInput(
-          run.id,
-          {
-            type: 'statusChange',
-            actor: who.ref,
-            text: `${who.ref.name} moved ${after.identifier} from ${before.statusKey} to ${after.statusKey}.`,
-            payload: {
-              trigger: 'statusChange',
-              from: before.statusKey,
-              to: after.statusKey,
-            },
-          },
-          agentsTx(tx),
-        );
-      } catch (error) {
-        // The run ended since it was read: there is nobody left to tell.
-        if (!isRunNotActive(error)) throw error;
-        continue;
-      }
-      attempts.push({
-        kind: AGENT_KIND,
-        principalId: agentId,
-        subjectId: after.id,
-        triggerType: 'statusChange',
-        started: true,
-        runId: run.id,
-      });
-    }
-    return attempts;
-  }
-
-  /**
-   * The work `agentId` was given on `issue` starts, as `who`'s, for `actor`: at once in a status of its own or one
-   * that runs no agent (Todo), with the stage's instruction when it has one. In a status whose stage is another agent's
-   * (Analysis, Proposal review, UI review, In review), the executor is only recorded: neither it nor that stage's agent
-   * is woken, and it starts with its stage's instruction once the issue enters In progress (`runAgent` there).
-   */
+  /** Queue an assignment; the subject's admission policy decides whether it may be claimed now. */
   async function assigned(
     tx: ProjectsTx,
     issue: Issue,
     agentId: string,
     who: { readonly userId: string; readonly ref: ActorRef },
-    actor: Actor,
+    _actor: Actor,
   ): Promise<RunAttempt> {
     // In backlog, or finished: the work starts when the issue leaves backlog.
     if (await dormant(tx.conn, issue))
       return skipped(agentId, issue, 'assigned', 'dormant');
-    if (!(await mayStart(tx, issue, agentId, actor)))
-      return skipped(agentId, issue, 'assigned', 'deferred');
-    if (await alreadyEntered(tx, issue, agentId))
-      return skipped(agentId, issue, 'assigned', 'deferred');
     const stage = await stageOf(tx, issue, agentId);
-    if (stage && stage.agentId !== agentId) {
-      await recordWaiting(tx, issue, agentId, actor);
-      return skipped(agentId, issue, 'assigned', 'deferred');
-    }
     return wake(tx, {
       agentId,
       issue,
@@ -562,10 +414,6 @@ export function createAgentWork(deps: {
     agentId: string,
     move: ProjectMove,
   ): Promise<RunAttempt> {
-    if (
-      !(await mayStart(tx, issue, agentId, { type: 'user', id: move.byUserId }))
-    )
-      return skipped(agentId, issue, PROJECT_CHANGED, 'deferred');
     const stage = await ownStageOf(tx, issue, agentId);
     return wake(tx, {
       agentId,
@@ -587,7 +435,8 @@ export function createAgentWork(deps: {
 
   return {
     async onRunFinished(tx, run) {
-      if (run.subject.kind !== ISSUE_SUBJECT) return;
+      if (run.subject.kind !== ISSUE_SUBJECT || run.status === 'cancelled')
+        return;
       const marks = (
         await runs.inputsSince(tx.conn, run.subject, new Date(run.createdAt))
       ).flatMap((input) => {
@@ -610,7 +459,6 @@ export function createAgentWork(deps: {
       if (!move) return;
       const agent = await deps.agents.agents.findWorkable(conn, run.agentId);
       if (!agent || !deps.agents.agents.mayInvoke(agent, move.byUserId)) return;
-      if (issue.status.key === 'in_progress' && !canImplement(agent)) return;
       await runs.enqueue(
         {
           agentId: agent.id,
@@ -705,14 +553,19 @@ export function createAgentWork(deps: {
         !isDormant(after.statusKey, category);
       if (leftBacklog && !change.start)
         return [skipped(to, after, 'statusChange', 'deferred')];
-      if (!leftBacklog) return notifyWorking(tx, before, after, to, who);
-      if (await alreadyEntered(tx, after, to)) return [];
-      if (!(await mayStart(tx, after, to, change.actor)))
-        return [skipped(to, after, 'statusChange', 'deferred')];
-      const stage = await stageOf(tx, after, to);
-      // A status the workflow hands to another agent: entering it started that agent's stage, and the executor waits.
-      if (stage && stage.agentId !== to)
-        return [skipped(to, after, 'statusChange', 'deferred')];
+      const open = await runs.openOn(tx.conn, subjectOf(after), to);
+      if (open.length === 0 && !leftBacklog) return [];
+      // A workflow stage that started work for this status told the agent already, with its instruction.
+      for (const run of open)
+        for (const input of await runs.pendingInputs(tx.conn, run.id)) {
+          const payload = jsonObject(input.payload);
+          if (
+            payload.trigger === 'stageEntered' &&
+            payload.to === after.statusKey
+          )
+            return [];
+        }
+      const stage = leftBacklog ? await stageOf(tx, after, to) : null;
       return [
         await wake(tx, {
           agentId: to,
@@ -726,12 +579,7 @@ export function createAgentWork(deps: {
             payload: {
               from: before.statusKey,
               to: after.statusKey,
-              ...(stage
-                ? {
-                    instruction: stage.payload.instruction,
-                    stageInputVersion: stageInputVersion(after),
-                  }
-                : {}),
+              ...(stage ? { instruction: stage.payload.instruction } : {}),
             },
           },
         }),
@@ -745,28 +593,12 @@ export function createAgentWork(deps: {
       for (const ref of change.mentions)
         if (ref.kind === AGENT_KIND && !targets.has(ref.id))
           targets.set(ref.id, 'mention');
+      if (parent?.authorType === AGENT_KIND && parent.authorId)
+        if (!targets.has(parent.authorId))
+          targets.set(parent.authorId, 'reply');
       const executing = agentOf(issue);
-      let stage: Awaited<ReturnType<typeof currentStage>> = null;
-      if (targets.size === 0) {
-        try {
-          stage = await currentStage(
-            deps.projects(),
-            tx.conn,
-            issue,
-            executing ?? '',
-          );
-        } catch {
-          return [];
-        }
-        if (stage?.agentId && stage.agentId !== executing)
-          targets.set(stage.agentId, 'comment');
-        else {
-          if (parent?.authorType === AGENT_KIND && parent.authorId)
-            targets.set(parent.authorId, 'reply');
-          if (executing && !targets.has(executing))
-            targets.set(executing, 'comment');
-        }
-      }
+      if (executing && !targets.has(executing))
+        targets.set(executing, 'comment');
       const actor: ActorRef = {
         kind: 'user',
         id: change.actor.id,
@@ -784,17 +616,7 @@ export function createAgentWork(deps: {
               type: 'comment',
               actor,
               text: comment.content,
-              payload: {
-                commentId: comment.id,
-                parentId: comment.parentId,
-                ...(stage?.agentId === agentId
-                  ? {
-                      status: issue.statusKey,
-                      instruction: stage.instruction,
-                      stageInputVersion: stageInputVersion(issue),
-                    }
-                  : {}),
-              },
+              payload: { commentId: comment.id, parentId: comment.parentId },
             },
           }),
         );
@@ -807,12 +629,7 @@ export function createAgentWork(deps: {
         agentsTx(tx),
       );
       const attempts: RunAttempt[] = [];
-      for (const agentId of new Set(withdrawn.map((run) => run.agentId))) {
-        if (
-          agentId === agentOf(issue) &&
-          !(await mayStart(tx, issue, agentId, { type: 'user', id: to }))
-        )
-          continue;
+      for (const agentId of new Set(withdrawn.map((run) => run.agentId)))
         attempts.push(
           await wake(tx, {
             agentId,
@@ -831,7 +648,6 @@ export function createAgentWork(deps: {
             },
           }),
         );
-      }
       return attempts;
     },
 
@@ -859,8 +675,6 @@ export function createAgentWork(deps: {
       if (!agentId) return [];
       if (await dormant(tx.conn, issue))
         return [skipped(agentId, issue, 'unblocked', 'dormant')];
-      if (!(await mayStart(tx, issue, agentId, { type: 'system', id: null })))
-        return [skipped(agentId, issue, 'unblocked', 'deferred')];
       // In a status the workflow hands to another agent, that agent's stage resumes.
       const stage = await stageOf(tx, issue, agentId);
       return [
@@ -882,8 +696,6 @@ export function createAgentWork(deps: {
     async onSubtasksFinished(tx, { parent, stage, childIssueIds }) {
       const agentId = agentOf(parent);
       if (!agentId) return [];
-      if (!(await mayStart(tx, parent, agentId, { type: 'system', id: null })))
-        return [skipped(agentId, parent, 'subtasksFinished', 'deferred')];
       return [
         await wake(tx, {
           agentId,
@@ -921,19 +733,18 @@ export function startHandedOverStages(
     actor: { readonly type: Actor['type']; readonly id: string | null },
     triggerType: string,
   ) => {
-    void projects.tx
-      .unit(async (tx) => {
-        const issue = await projects.issueQueries.detail(
-          systemViewer(),
-          issueId,
-        );
-        return work.startHandedOverStage(
-          tx,
-          issue,
-          { type: actor.type, id: actor.id },
-          triggerType,
-        );
-      })
+    void projects.issueQueries
+      .detail(systemViewer(), issueId)
+      .then((issue) =>
+        projects.tx.run((tx) =>
+          work.startHandedOverStage(
+            tx,
+            issue,
+            { type: actor.type, id: actor.id },
+            triggerType,
+          ),
+        ),
+      )
       .catch(onError);
   };
   const stops = [

@@ -5,6 +5,7 @@
  * issue to Done, failing checks waking the agent, merging from Studio, the `prMerged` entry condition), against a
  * GitHub stand-in.
  */
+import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -66,7 +67,6 @@ const AGENT_ACTIONS = [
   'pm.issues/comment',
   'pm.issues/edit',
   'pm.issues/create',
-  'studio.git/open-pr',
 ];
 
 async function detail(issue: Pick<Issue, 'id'>) {
@@ -183,6 +183,7 @@ describe('design first', () => {
       statusKey: 'analysis',
       ownerUserId: 'alice',
       executor: { type: 'agent', id: developerId },
+      start: false,
     });
     // The designer's stage starts once the creation commits.
     await expect.poll(async () => (await runsOf(issue.id)).length).toBe(1);
@@ -271,9 +272,9 @@ describe('design first', () => {
 
     // Only the owner, the project lead or an administrator approves: bob, who woke the run, may not as a member.
     const design = createDesignService({
+      projects: () => h.projects,
       agents: h.agents,
       kinds: h.projects.kinds,
-      projects: () => h.projects,
       inbox: () => undefined,
     });
     h.roles.set('bob', 'member');
@@ -326,9 +327,9 @@ describe('design first', () => {
     const { token, issue } = await analysisRun();
     await propose(token, issue);
     const design = createDesignService({
+      projects: () => h.projects,
       agents: h.agents,
       kinds: h.projects.kinds,
-      projects: () => h.projects,
       inbox: () => undefined,
     });
     await expect(
@@ -574,10 +575,6 @@ describe('pull requests', () => {
 
   it('wakes the agent when checks fail, once per head, then tells the owner', async () => {
     const { issue, agentId } = await reviewIssue();
-    await h.projects.issues.update(alice(), issue.id, {
-      revision: (await detail(issue)).revision,
-      statusKey: 'in_progress',
-    });
     const repo = await repoWithToken();
     h.github.addPull(REPO, {
       number: 5,
@@ -616,7 +613,6 @@ describe('pull requests', () => {
 
   it('wakes the agent when its pull request conflicts', async () => {
     const { issue } = await reviewIssue();
-    await move(issue, 'in_progress');
     const repo = await repoWithToken();
     h.github.addPull(REPO, {
       number: 6,
@@ -637,6 +633,85 @@ describe('pull requests', () => {
       ),
     ).toBe(true);
   });
+
+  for (const signal of ['checks', 'conflict'] as const) {
+    it(`counts one ${signal} head once across linked issues and supplies its current state after review`, async () => {
+      const repo = await repoWithToken();
+      h.github.addPull(REPO, {
+        number: 30,
+        head: { ref: 'shared-development', sha: 'shared-head' },
+      });
+      const issues = [];
+      for (let index = 0; index < 4; index++) {
+        const agentId = await h.createAgent({ name: `Developer ${index}` });
+        const issue = await h.projects.issues.create(alice(), {
+          title: `Linked work ${index}`,
+          statusKey: index === 0 ? 'in_progress' : 'in_review',
+          executor: { type: 'agent', id: agentId },
+          start: false,
+        });
+        await h.git.link(alice(), issue.id, PR_URL(30), {
+          type: 'user',
+          id: 'alice',
+        });
+        issues.push(issue);
+      }
+      if (signal === 'checks')
+        h.github.setStatus(REPO, 'shared-head', 'failure');
+      else h.github.pull(REPO, 30).mergeable_state = 'dirty';
+      await h.git.pollRepo(repo);
+      const pull = (await h.git.list(alice(), issues[0]!.id)).data[0]!;
+      expect(
+        (await findPullRequestById(h.projects.tx.read(), pull.id))?.signals[
+          signal
+        ],
+      ).toMatchObject({ count: 1 });
+      for (const issue of issues) {
+        const inputs = (
+          await Promise.all(
+            (await runsOf(issue.id)).map((run) => h.agents.runs.detail(run.id)),
+          )
+        ).flatMap((run) => run.inputs);
+        expect(
+          inputs.filter(
+            (input) =>
+              (input.payload as { trigger?: string }).trigger ===
+              (signal === 'checks' ? 'prChecksFailed' : 'prConflict'),
+          ),
+        ).toHaveLength(1);
+        if (issue.statusKey !== 'in_progress') await move(issue, 'in_progress');
+        const payload = await h.claimOne();
+        expect((await h.agents.runs.get(payload.run.id)).subject.id).toBe(
+          issue.id,
+        );
+        expect(payload.prompt.system).toContain('shared-head');
+        expect(payload.prompt.system).toContain(
+          signal === 'checks' ? 'failure' : 'dirty',
+        );
+        await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+          workDir: '/tmp/work',
+          adapter: { kind: 'claude' },
+          acceptsInput: false,
+        });
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+              summary: 'Done',
+              handledInputIds: payload.inputs.map(
+                (input: { id: string }) => input.id,
+              ),
+            })
+          ).status,
+        ).toBe(200);
+      }
+      await h.git.pollRepo(repo);
+      expect(
+        (await findPullRequestById(h.projects.tx.read(), pull.id))?.signals[
+          signal
+        ],
+      ).toMatchObject({ count: 1 });
+    });
+  }
 
   it('tells GitHub’s rate limit apart from a refusal, when merging and when polling', async () => {
     const { issue } = await reviewIssue();
@@ -972,43 +1047,6 @@ describe('pull requests', () => {
       actorType: 'agent',
       actorId: agentId,
       details: { reason: 'Superseded', unlinked: true },
-    });
-  });
-  it('retains a failed head during review without waking and replays only an effective signal on return', async () => {
-    const { issue } = await reviewIssue();
-    const repo = await repoWithToken();
-    h.github.addPull(REPO, {
-      number: 91,
-      head: { ref: `agent/${issue.identifier}`, sha: 'review-head' },
-    });
-    await h.git.pollRepo(repo);
-    h.github.setStatus(REPO, 'review-head', 'failure');
-    await h.git.pollRepo(repo);
-    const listed = (await h.git.list(alice(), issue.id)).data[0]!;
-    const stored = await findPullRequestById(h.projects.tx.read(), listed.id);
-    expect(stored?.signals.checks).toMatchObject({
-      count: 0,
-      pendingIssueIds: [issue.id],
-    });
-    const checks = async () =>
-      (
-        await Promise.all(
-          (await runsOf(issue.id)).map((run) => h.agents.runs.detail(run.id)),
-        )
-      )
-        .flatMap((run) => run.inputs)
-        .filter(
-          (input) =>
-            (input.payload as { trigger?: string }).trigger ===
-            'prChecksFailed',
-        );
-    expect(await checks()).toEqual([]);
-    await move(issue, 'in_progress');
-    await expect.poll(async () => (await checks()).length).toBe(1);
-    const current = await findPullRequestById(h.projects.tx.read(), listed.id);
-    expect(current?.signals.checks).toMatchObject({
-      count: 1,
-      pendingIssueIds: [],
     });
   });
 });

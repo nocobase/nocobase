@@ -164,6 +164,35 @@ describe('a run on an issue', () => {
   });
 
   it('does not ask an analysis run to capture learnings', async () => {
+    h.roles.set('root', 'admin');
+    const root = h.viewer('root');
+    const workflow =
+      (await h.projects.workflows.list(root)).find((item) => item.isDefault) ??
+      (await h.projects.workflows.setDefault(
+        root,
+        (
+          await h.projects.workflows.create(root, {
+            name: 'Standard',
+            copyFrom: null,
+          })
+        ).id,
+      ));
+    await h.projects.workflows.update(root, workflow.id, {
+      revision: workflow.revision,
+      definition: {
+        ...workflow.definition,
+        states: workflow.definition.states.map((status) =>
+          status.key === 'analysis'
+            ? {
+                ...status,
+                rules: [
+                  { type: 'runAgent', config: { agentId, assign: false } },
+                ],
+              }
+            : status,
+        ),
+      },
+    });
     const issue = await h.projects.issues.create(h.viewer('bob'), {
       title: 'Why are lists slow?',
       projectId,

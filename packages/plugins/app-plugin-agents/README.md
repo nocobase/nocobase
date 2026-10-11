@@ -127,20 +127,16 @@ const agents = container.resolve(agentsToken);
 agents.subjects.register({
   kind: 'ticket',
   title: { key: 'subjects.ticket', ns: '@acme/app' },
-  context: { assemble: (conn, claim) => /* task, context, working directories; database reads only */ },
+  context: {
+    // Optional: the subject's current policy, in the claim transaction. Rejecting cancels without consuming a retry.
+    admit: (conn, claim) => /* null, or { reason, detail? }; database reads only */,
+    assemble: (conn, claim) => /* task, context, working directories; database reads only */,
+  },
   sink: { onRunFinished: (tx, run) => /* tell people how the run ended */ },
 });
 await agents.runs.enqueue({ agentId, subject: { kind: 'ticket', id }, actorUserId, priority: -2, input });
 // Withdraws the work no runner took yet, keeping why as the run's failure detail.
 await agents.runs.withdrawQueued({ subject: { kind: 'ticket', id }, byUserId: null, detail: 'The ticket is on hold.' });
-
-// Conditionally end precisely this queued run, keeping other actors and threads intact.
-// Read pendingInputs first. Reclassify and retry after inputsChanged; notQueued leaves claimed work untouched.
-await agents.runs.reconcileQueued({
-  runId, expectedPendingInputIds: inputs.map((input) => input.id),
-  operation: { type: 'cancel', byUserId, detail: 'These inputs are obsolete.' },
-});
-// A signal operation takes { type: 'signal', key, input }; key deduplicates it on the run.
 
 // Work on a subject someone answers for: the ticket's assignee confirms what anyone else causes.
 const result = await agents.runs.enqueue({ agentId, subject, responsibleUserId: assigneeId, requestedByUserId: commenterId, input });

@@ -31,8 +31,6 @@
  * the plan is no longer open, whoever or whatever closed it (`settleSuggestions`).
  */
 import { randomUUID } from 'node:crypto';
-import { IN_PROGRESS_STATUS } from '../../shared/design.js';
-import { canImplement, stageInputVersion } from './executor.js';
 import type { ActorRef } from '@nocobase/agent-protocol';
 import type {
   Actor,
@@ -183,8 +181,6 @@ interface StageNotice {
 
 /** Why a skip happened, in words for the owner. */
 const REASONS: Readonly<Record<string, string>> = {
-  executorCannotImplement:
-    'the executor cannot implement: assign a developer agent or a person',
   ownerCannotInvoke: 'the owner may not give work to the agent',
   noAgentExecutor: 'no executor is assigned: assign one and it starts at once',
   agentUnavailable: 'the agent is archived or deleted',
@@ -395,22 +391,6 @@ export function createStageRules(deps: {
         return report(entry, RUN_AGENT, skip('agentUnavailable', { agentId }), {
           agentId,
         });
-      if (
-        !preset &&
-        status.key === IN_PROGRESS_STATUS &&
-        !canImplement(agent)
-      ) {
-        return report(
-          entry,
-          RUN_AGENT,
-          skip('executorCannotImplement', {
-            agentId,
-            name: agent.name,
-            revision: issue.revision,
-          }),
-          { agentId, agentName: agent.name, agentNameText: agent.nameText },
-        );
-      }
       if (actor.type === AGENT_KIND && actor.id === agentId)
         return skip('selfTriggered', { agentId });
       const limit = Number(config.maxRuns ?? STAGE_RUN_LIMIT);
@@ -561,7 +541,6 @@ export function createStageRules(deps: {
             ].join('\n'),
             payload: {
               trigger: STAGE_TRIGGER,
-              stageInputVersion: stageInputVersion(issue),
               from: entry.from,
               to: status.key,
               statusName: status.name,
