@@ -4,6 +4,8 @@ title: 'Customizing sign-in pages'
 
 # Customizing sign-in pages
 
+After setting up [Password authentication and accounts](./password.md), customize the sign-in page for your company.
+
 The sign-in page belongs to the application source. Its name, logo, copy, imagery, layout, and colors can follow a company brand while preserving authentication, error feedback, and password recovery.
 
 ## Example: Northstar employee sign-in

@@ -9,7 +9,7 @@ Northstar account managers, dispatchers, and drivers sign in with company-manage
 
 ## Sign in and sign out
 
-Enter a username or email and password, then click **Sign in**. This example uses Northstar’s customized sign-in page with NocoBase authentication and sessions.
+Enter a username or email and password, then click **Sign in**. This example uses the blue Northstar sign-in page with NocoBase authentication and sessions.
 
 ![Sign in to Northstar](../assets/northstar-password-login-en.png)
 

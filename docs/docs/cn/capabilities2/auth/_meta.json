@@ -6,13 +6,13 @@
   },
   {
     "type": "file",
-    "name": "login-pages",
-    "label": "定制登录页面"
+    "name": "password",
+    "label": "密码认证与账号"
   },
   {
     "type": "file",
-    "name": "password",
-    "label": "密码认证与账号"
+    "name": "login-pages",
+    "label": "定制登录页面"
   },
   {
     "type": "file",

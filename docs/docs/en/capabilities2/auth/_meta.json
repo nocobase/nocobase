@@ -6,13 +6,13 @@
   },
   {
     "type": "file",
-    "name": "login-pages",
-    "label": "Customizing sign-in pages"
+    "name": "password",
+    "label": "Password authentication and accounts"
   },
   {
     "type": "file",
-    "name": "password",
-    "label": "Password authentication and accounts"
+    "name": "login-pages",
+    "label": "Customizing sign-in pages"
   },
   {
     "type": "file",
