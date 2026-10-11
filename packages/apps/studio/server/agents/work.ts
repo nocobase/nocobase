@@ -435,7 +435,14 @@ export function createAgentWork(deps: {
 
   return {
     async onRunFinished(tx, run) {
-      if (run.subject.kind !== ISSUE_SUBJECT || run.status === 'cancelled')
+      if (run.subject.kind !== ISSUE_SUBJECT) return;
+      // Admission cancellations never restart old work; acknowledged project moves still do.
+      if (
+        run.status === 'cancelled' &&
+        (run.failureDetail?.startsWith('stageMismatch') ||
+          run.failureDetail?.startsWith('executorCannotImplement') ||
+          run.failureDetail?.startsWith('subjectMissing'))
+      )
         return;
       const marks = (
         await runs.inputsSince(tx.conn, run.subject, new Date(run.createdAt))

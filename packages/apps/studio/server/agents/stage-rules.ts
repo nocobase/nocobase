@@ -181,6 +181,8 @@ interface StageNotice {
 
 /** Why a skip happened, in words for the owner. */
 const REASONS: Readonly<Record<string, string>> = {
+  executorCannotImplement:
+    'the agent lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it',
   ownerCannotInvoke: 'the owner may not give work to the agent',
   noAgentExecutor: 'no executor is assigned: assign one and it starts at once',
   agentUnavailable: 'the agent is archived or deleted',
@@ -661,6 +663,10 @@ export function stageNoticeRule(): NoticeRule {
         reason === 'suppressed'
           ? `${notice.limit ?? STAGE_RUN_LIMIT} runs started for this status within ${notice.windowHours ?? STAGE_RUN_WINDOW_HOURS} hours. Continue on the issue to start another run and reset the count`
           : REASONS[reason];
+      const body =
+        reason === 'executorCannotImplement'
+          ? `${notice.agentName ?? notice.agentId ?? 'The agent'} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.`
+          : `The ${notice.rule} action of ${notice.statusName} was skipped (${reason})${why ? `: ${why}` : ''}.`;
       notices.push({
         ...base,
         key: `agents:stage:${issue.id}:${notice.statusKey}:${notice.rule}:${notice.at}`,
@@ -668,7 +674,7 @@ export function stageNoticeRule(): NoticeRule {
         type: STAGE_ACTION_PROBLEM,
         params: {
           title: `A stage action of ${issue.identifier} was skipped`,
-          body: `The ${notice.rule} action of ${notice.statusName} was skipped (${reason})${why ? `: ${why}` : ''}.`,
+          body,
           identifier: issue.identifier,
           status: notice.statusKey,
           statusName: notice.statusName,
@@ -685,6 +691,7 @@ export function stageNoticeRule(): NoticeRule {
             : {}),
           ...(notice.agentId ? { agentId: notice.agentId } : {}),
           ...(notice.agentName ? { agentName: notice.agentName } : {}),
+          ...agentNameParams(notice.agentNameText),
         },
       });
     }

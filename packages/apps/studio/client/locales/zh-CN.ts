@@ -889,7 +889,7 @@ const zhCN: AppResource = {
   'inbox.stageRules.runAgent': '运行 Agent',
   'inbox.stageRules.suggestExecutor': '建议执行者',
   'inbox.stageSkips.executorCannotImplement':
-    '执行者不能实现（没有开 PR 的权限），请改派给开发 agent 或人',
+    '{{agentName}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
   'errors.INTERNAL': '请求失败，请重试。',
   'errors.DESIGN_EXECUTOR_REQUIRED': '当前执行者已变化，请选择执行者后批准。',
   'errors.DESIGN_EXECUTOR_INVALID': '所选执行者已失效，请重新选择。',
@@ -1036,7 +1036,7 @@ const zhCN: AppResource = {
     },
     activity: {
       executorCannotImplement:
-        '执行者 {{name}} 不能实现，请改派给开发 agent 或人。',
+        '{{name}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
       executorWaits: '执行者设为 {{name}}，进入开发中时开始',
     },
     presets: {

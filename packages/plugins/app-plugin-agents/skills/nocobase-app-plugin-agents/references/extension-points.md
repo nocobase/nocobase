@@ -35,3 +35,5 @@ Rules that are easy to miss:
 - `GET /api/agents/vocabulary` hands the browser the subjects, sources and scopes the App contributed; the browser never imports server code for them.
 
 The README's example under "Extension points" shows a subject registered and work enqueued and withdrawn.
+
+A subject assembly may return `inputs` containing only the effective inputs for its current task. Render the task and turn from that same selection. Runner and online claims use it for delivery, brief sections and mounts; omitted inputs are resolved in the claim transaction and retained in the audit history, so polling and completion do not replay obsolete work. Omit the field to deliver all queued inputs.

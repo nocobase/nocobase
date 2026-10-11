@@ -963,7 +963,7 @@ const enUS = {
   'inbox.stageRules.runAgent': 'Run agent',
   'inbox.stageRules.suggestExecutor': 'Suggest executor',
   'inbox.stageSkips.executorCannotImplement':
-    'the executor cannot implement (no permission to open pull requests); assign a developer agent or a person',
+    '{{agentName}} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.',
   'errors.INTERNAL': 'The request failed. Try again.',
   'errors.DESIGN_EXECUTOR_REQUIRED':
     'The executor changed. Choose an executor before approving.',
@@ -1141,7 +1141,7 @@ const enUS = {
     },
     activity: {
       executorCannotImplement:
-        'Executor {{name}} cannot implement. Assign a developer agent or a person.',
+        '{{name}} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.',
       executorWaits:
         'made {{name}} the executor; it starts when the issue enters In progress',
     },

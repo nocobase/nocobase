@@ -233,3 +233,5 @@ The plugin registers no routes of its own: an application mounts its pages and j
 - `@nocobase/app-plugin-agents/client/config` exports `AgentActionCatalogContext`: the agent editor's business actions come from the server (`GET /api/agents/actions`: what the application offers, none without it) unless an application gives another catalog.
 
 Each exported component brings the plugin's translations and its own query cache, so it works inside another plugin's tree.
+
+A subject assembly may return `inputs` to select the effective claim inputs. Use the same selection when rendering its task and turn; runner and online claims deliver that selection and pass it to brief sections and mounts. Omitting `inputs` preserves delivery of all queued input. Omitted inputs are resolved in the claim transaction and stay in the audit history; they cannot reappear during polling or prevent completion.

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { RUNNER_ROUTES, type RunInput } from '@nocobase/agent-protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   issueClaimRejection,
   sampleIssue,
@@ -266,4 +266,214 @@ it('reads a stage change committed after candidate selection and before the clai
       await h.agents.runs.list({ subjectKind: 'issue', subjectId: issue.id })
     ).every((run) => run.status === 'cancelled'),
   ).toBe(true);
+});
+
+for (const order of [
+  ['analysis', 'in_progress'],
+  ['in_progress', 'analysis'],
+]) {
+  it(`delivers only current stage inputs when merged in order ${order.join(', ')}`, async () => {
+    h = await createBridgeHarness();
+    await h.addUser('alice');
+    const agent = await h.createAgent();
+    const issue = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Late stage input',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: agent },
+      start: false,
+    });
+    for (const to of order) {
+      const instruction =
+        to === 'analysis' ? 'OBSOLETE_DESIGN_ONLY' : 'IMPLEMENT_NOW';
+      await h.agents.runs.enqueue({
+        agentId: agent,
+        actorUserId: 'alice',
+        subject: { kind: 'issue', id: issue.id },
+        input: {
+          type: 'signal',
+          actor: { kind: 'system', id: 'system', name: 'Studio' },
+          text: `Workflow stage instruction: ${instruction}`,
+          payload: { trigger: 'stageEntered', to, instruction },
+        },
+      });
+    }
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: 'Keep the human requirement.',
+    });
+    const payload = await h.claimOne();
+    expect(payload.prompt.system).not.toContain('OBSOLETE_DESIGN_ONLY');
+    expect(payload.prompt.turn).not.toContain('OBSOLETE_DESIGN_ONLY');
+    expect(JSON.stringify(payload.inputs)).not.toContain(
+      'OBSOLETE_DESIGN_ONLY',
+    );
+    expect(payload.prompt.turn).toContain('IMPLEMENT_NOW');
+    expect(payload.prompt.turn).toContain('Keep the human requirement.');
+    expect(
+      payload.inputs.some((item: RunInput) => item.type === 'comment'),
+    ).toBe(true);
+    await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+      workDir: '/tmp/work',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    const done = await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+      summary: 'Implemented current requirements.',
+      handledInputIds: payload.inputs.map((item: RunInput) => item.id),
+    });
+    expect(done.status).toBe(200);
+    expect((await h.agents.runs.get(payload.run.id)).status).toBe('completed');
+  });
+}
+
+it('records a permission rejection and tells the owner once, then starts after reassignment', async () => {
+  h = await createBridgeHarness();
+  await h.addUser('alice');
+  const agent = await h.createAgent({ actions: ['pm.issues/view'] });
+  const notices: {
+    type: string;
+    userIds: readonly string[];
+    params: Record<string, string>;
+  }[] = [];
+  h.projects.events.on('notice.planned', (event) => {
+    notices.push(event.notice);
+  });
+  const issue = await h.projects.issues.create(h.viewer('alice'), {
+    title: 'Missing pull request capability',
+    statusKey: 'in_progress',
+    executor: { type: 'agent', id: agent },
+  });
+  expect(await h.claimOne()).toBeUndefined();
+  const [run] = await h.agents.runs.list({
+    subjectKind: 'issue',
+    subjectId: issue.id,
+  });
+  expect(run).toMatchObject({
+    status: 'cancelled',
+    failureDetail: expect.stringContaining('studio.git/open-pr'),
+  });
+  const activity = h.projects.tx
+    .read()
+    .repository<{ details: Record<string, unknown> }>('pmActivities');
+  expect(
+    (await activity.findMany({ filter: { issueId: issue.id } })).filter(
+      (row) => row.details?.reason === 'executorCannotImplement',
+    ),
+  ).toHaveLength(1);
+  await vi.waitFor(() =>
+    expect(
+      notices.filter(
+        (notice) => notice.params.reason === 'executorCannotImplement',
+      ),
+    ).toHaveLength(1),
+  );
+  expect(
+    notices.find(
+      (notice) => notice.params.reason === 'executorCannotImplement',
+    ),
+  ).toMatchObject({
+    userIds: ['alice'],
+    params: {
+      body: expect.stringContaining('studio.git/open-pr'),
+      agentId: agent,
+    },
+  });
+  const planning = vi.spyOn(h.projects.tx, 'run');
+  for (let delivery = 0; delivery < 3; delivery++)
+    h.agents.events.emit({
+      type: 'run.changed',
+      runId: run.id,
+      status: 'cancelled',
+    });
+  await vi.waitFor(() =>
+    expect(planning.mock.calls.length).toBeGreaterThanOrEqual(3),
+  );
+  await Promise.all(planning.mock.results.map((result) => result.value));
+  planning.mockRestore();
+  expect(await h.claimOne()).toBeUndefined();
+  expect(
+    notices.filter(
+      (notice) => notice.params.reason === 'executorCannotImplement',
+    ),
+  ).toHaveLength(1);
+  const developer = await h.createAgent();
+  const current = await h.projects.issueQueries.detail(
+    h.viewer('alice'),
+    issue.id,
+  );
+  await h.projects.issues.update(h.viewer('alice'), issue.id, {
+    revision: current.revision,
+    executor: { type: 'agent', id: developer },
+    start: true,
+  });
+  expect((await h.claimOne()).run.id).not.toBe(run.id);
+});
+
+it('does not notify the owner for a normal stage mismatch', async () => {
+  h = await createBridgeHarness();
+  await h.addUser('alice');
+  const agent = await h.createAgent();
+  const notices: unknown[] = [];
+  h.projects.events.on('notice.planned', (event) => {
+    notices.push(event.notice);
+  });
+  const issue = await h.projects.issues.create(h.viewer('alice'), {
+    title: 'Old executor work',
+    statusKey: 'in_review',
+    executor: { type: 'agent', id: agent },
+    start: true,
+  });
+  notices.length = 0;
+  expect(await h.claimOne()).toBeUndefined();
+  const activities = await h.projects.tx
+    .read()
+    .repository('pmActivities')
+    .findMany({ filter: { issueId: issue.id } });
+  expect(
+    activities.some((row) => row.details?.reason === 'executorCannotImplement'),
+  ).toBe(false);
+  expect(notices).toEqual([]);
+});
+
+it('rolls back the cancellation and its activity when the claim transaction fails', async () => {
+  h = await createBridgeHarness();
+  await h.addUser('alice');
+  const agent = await h.createAgent({ actions: ['pm.issues/view'] });
+  const issue = await h.projects.issues.create(h.viewer('alice'), {
+    title: 'Atomic rejection',
+    statusKey: 'in_progress',
+    executor: { type: 'agent', id: agent },
+  });
+  const sink = h.agents.subjects.get('issue')!.sink!;
+  const finish = sink.onRunFinished!;
+  const spy = vi
+    .spyOn(sink, 'onRunFinished')
+    .mockImplementationOnce(async (tx, run) => {
+      await finish(tx, run);
+      throw new Error('Abort cancellation transaction');
+    });
+  try {
+    await h.claimOne();
+  } catch {
+    /* The claim endpoint may return the transaction failure. */
+  }
+  expect(
+    (await h.agents.runs.list({ subjectKind: 'issue', subjectId: issue.id }))[0]
+      .status,
+  ).toBe('queued');
+  const activities = await h.projects.tx
+    .read()
+    .repository('pmActivities')
+    .findMany({ filter: { issueId: issue.id } });
+  expect(
+    activities.some((row) => row.details?.reason === 'executorCannotImplement'),
+  ).toBe(false);
+  spy.mockRestore();
+  expect(await h.claimOne()).toBeUndefined();
+  const recorded = await h.projects.tx
+    .read()
+    .repository('pmActivities')
+    .findMany({ filter: { issueId: issue.id } });
+  expect(
+    recorded.filter((row) => row.details?.reason === 'executorCannotImplement'),
+  ).toHaveLength(1);
 });

@@ -88,3 +88,72 @@ describe('subject admission during claim', () => {
     });
   });
 });
+
+for (const type of ['runner', 'online'] as const) {
+  it(`delivers the subject-selected inputs to ${type} claims`, async () => {
+    h = await createHarness();
+    const binding = h.services.subjects.get('sample')!;
+    const assemble = binding.context.assemble;
+    h.services.subjects.register({
+      ...binding,
+      kind: 'filtered',
+      agentTypes: [type],
+      context: {
+        ...binding.context,
+        assemble: async (conn, candidate) => {
+          const inputs = candidate.inputs.filter(
+            (item) => item.text !== 'Obsolete',
+          );
+          return {
+            ...(await assemble(conn, { ...candidate, inputs })),
+            inputs,
+          };
+        },
+      },
+    });
+    const agent = await h.createAgent({
+      type,
+      ...(type === 'online' ? { modelEntries: [] } : {}),
+    });
+    for (const text of ['Current', 'Obsolete'])
+      await h.services.runs.enqueue({
+        agentId: agent,
+        subject: { kind: 'filtered', id: 'issue' },
+        actorUserId: 'owner',
+        input: {
+          type: 'signal',
+          actor: { kind: 'system', id: 'system', name: 'System' },
+          text,
+        },
+      });
+    if (type === 'runner') {
+      const runner = await h.registerRunner();
+      const [payload] = await claim(h, runner);
+      expect(payload.inputs.map((input) => input.text)).toEqual(['Current']);
+      expect(payload.prompt.turn).not.toContain('Obsolete');
+      expect(
+        (
+          await h.services.runs.pendingInputs(
+            h.database.connection(),
+            payload.run.id,
+          )
+        ).map((input) => input.text),
+      ).toEqual(['Current']);
+    } else {
+      const [payload] = await h.services.claims.claimServer(
+        { id: 'server:test' },
+        1,
+      );
+      expect(payload.inputs.map((input) => input.text)).toEqual(['Current']);
+      expect(payload.turn).not.toContain('Obsolete');
+      expect(
+        (
+          await h.services.runs.pendingInputs(
+            h.database.connection(),
+            payload.runId,
+          )
+        ).map((input) => input.text),
+      ).toEqual(['Current']);
+    }
+  });
+}

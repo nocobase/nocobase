@@ -109,6 +109,8 @@ export interface SubjectAssembly {
   readonly task: string;
   /** The brief's context layer: the subject as it is now. */
   readonly context: string;
+  /** Effective inputs selected by the subject for this turn; absent, deliver all claim inputs. */
+  readonly inputs?: readonly RunInput[];
   readonly turn: {
     readonly prompt: string;
     readonly previousSummary?: string;

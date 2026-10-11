@@ -149,6 +149,24 @@ function stagesOf(inputs: readonly RunInput[]): Stage[] {
   });
 }
 
+/** Drop obsolete stage signals before rendering or delivering a turn. Other input stays intact. */
+export function currentIssueInputs(
+  context: IssueContext,
+  inputs: readonly RunInput[],
+): readonly RunInput[] {
+  return inputs.filter((input) => {
+    const payload = jsonObject(input.payload);
+    if (
+      payload.trigger !== 'stageEntered' &&
+      payload.trigger !== 'retrospective' &&
+      !payload.instruction
+    )
+      return true;
+    const status = payload.to ?? payload.status;
+    return typeof status !== 'string' || status === context.status.key;
+  });
+}
+
 /**
  * The task layer: why the agent runs now, and how to finish. Where to work is the system layer's. A run a workflow
  * stage started carries the stage and its instruction ("Workflow stage instruction").
@@ -422,7 +440,7 @@ export function initialNote(defaultBranch: string): string {
 /** The subject's only admission policy; every trigger is judged from the state read at claim time. */
 export function issueClaimRejection(
   context: IssueContext,
-  agent: Pick<Agent, 'id' | 'actions'>,
+  agent: Pick<Agent, 'id' | 'actions'> & { readonly name?: string },
   inputs: readonly RunInput[],
   rules: readonly {
     readonly type: string;
@@ -468,7 +486,7 @@ export function issueClaimRejection(
   )
     return {
       reason: 'executorCannotImplement',
-      detail: 'Assign a developer agent or a person.',
+      detail: `${agent.name ?? agent.id} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.`,
     };
   if (currentStageAgent) return null;
   if (
@@ -513,6 +531,7 @@ export function createIssueContextProvider(
         { kind: AGENT_KIND },
       );
       if (!context) throw new Error('The issue is gone.');
+      const inputs = currentIssueInputs(context, claim.inputs);
       const subject = { noun: SUBJECT_NOUN, key: context.identifier };
       const previousSummary = await agents.runs.lastSummary(
         conn,
@@ -563,7 +582,8 @@ export function createIssueContextProvider(
           attach: claim.agent.actions.includes(ATTACH_ACTION),
           design: isDesignStage(context),
         }),
-        task: renderTask(context, claim.inputs),
+        inputs,
+        task: renderTask(context, inputs),
         context: initial
           ? [
               renderIssueContext(context) + pullContext,
@@ -574,7 +594,7 @@ export function createIssueContextProvider(
               ...(initializeIfEmpty ? [EMPTY_REPOSITORY_NOTE] : []),
             ].join('\n\n'),
         turn: {
-          prompt: agents.briefs.turnPrompt(claim.inputs, { subject }),
+          prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
         },
         data: { kind: ISSUE_SUBJECT, issue: context, pullRequests: pulls },

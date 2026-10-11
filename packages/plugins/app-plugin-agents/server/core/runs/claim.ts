@@ -122,6 +122,8 @@ import {
   findRunRecord,
   markDelivered,
   pendingInputs,
+  inputsRepo,
+  type InputRecord,
   runsOfKey,
   runsRepo,
   sessionsRepo,
@@ -528,6 +530,31 @@ async function directoryBusy(
   );
 }
 
+/** Resolve omitted subject input in the claim transaction, keeping it in the audit history. */
+async function settleClaimInputs(
+  conn: DatabaseConnection,
+  pending: readonly InputRecord[],
+  effective: readonly RunInput[],
+  now: string,
+): Promise<void> {
+  const ids = new Set(effective.map((input) => input.id));
+  const omitted = pending.filter((input) => !ids.has(input.id));
+  if (omitted.length > 0)
+    await inputsRepo(conn).updateMany({
+      filter: (f) =>
+        f.and([
+          f.or(omitted.map((input) => f.string('id').eq(input.id))),
+          f.date('handledAt').empty(),
+        ]),
+      values: { handledAt: now },
+    });
+  await markDelivered(
+    conn,
+    pending.filter((input) => ids.has(input.id)),
+    now,
+  );
+}
+
 export function createClaimService(deps: ClaimDeps): ClaimService {
   const { tx, clock } = deps;
 
@@ -557,6 +584,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       dialect: 'cli',
     };
     const assembly = await binding.context.assemble(conn, claim);
+    inputs = assembly.inputs ?? inputs;
+    const effectiveClaim = { ...claim, inputs };
     // Its owner's local policy keeps this runner off the subject, or off one of the repositories: another runner takes
     // the run.
     if (
@@ -651,7 +680,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     });
     const brief = briefOf(
       agent,
-      await withSections(conn, deps.sections, claim, assembly, prepared),
+      await withSections(
+        conn,
+        deps.sections,
+        effectiveClaim,
+        assembly,
+        prepared,
+      ),
       skills,
       deps.cli.name,
       deps.app.name,
@@ -669,7 +704,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           conn,
           deps.mounts,
           {
-            claim,
+            claim: effectiveClaim,
             assembly,
             session: resume ? 'resume' : 'fresh',
             sessionKey: sessionKeyOf(view),
@@ -923,7 +958,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             error,
           );
         }
-        await markDelivered(conn, pending, nowText);
+        await settleClaimInputs(
+          conn,
+          pending,
+          assembled.payload.inputs,
+          nowText,
+        );
         await runsRepo(conn).updateMany({
           filter: { id: run.id },
           values: {
@@ -1113,7 +1153,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           error,
         );
       }
-      await markDelivered(conn, pending, nowText);
+      await settleClaimInputs(conn, pending, claimed.inputs, nowText);
       await runsRepo(conn).updateMany({
         filter: { id: run.id },
         values: {
@@ -1179,6 +1219,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       dialect: 'tools',
     };
     const assembly = await binding.context.assemble(conn, claim);
+    inputs = assembly.inputs ?? inputs;
+    const effectiveClaim = { ...claim, inputs };
     if (assembly.dirs.length > 0)
       throw new Error(
         'An online agent has no working directory, and this work needs one.',
@@ -1191,7 +1233,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const own = new Set(skills.map((skill) => skill.slug));
     const rendered = briefOf(
       agent,
-      await withSections(conn, deps.sections, claim, assembly, prepared),
+      await withSections(
+        conn,
+        deps.sections,
+        effectiveClaim,
+        assembly,
+        prepared,
+      ),
       [],
       deps.cli.name,
       deps.app.name,
