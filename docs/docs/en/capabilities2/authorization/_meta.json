@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Authorization"
+  },
+  {
+    "type": "file",
+    "name": "permission-sets",
+    "label": "Permission sets and assignments"
+  },
+  {
+    "type": "file",
+    "name": "data-scopes",
+    "label": "Data scopes and rules"
+  },
+  {
+    "type": "file",
+    "name": "default-access",
+    "label": "Default data access"
+  },
+  {
+    "type": "file",
+    "name": "sharing-rules",
+    "label": "Sharing rules"
+  },
+  {
+    "type": "file",
+    "name": "restriction-rules",
+    "label": "Restriction rules"
+  },
+  {
+    "type": "file",
+    "name": "inspector",
+    "label": "Inspecting permissions"
+  }
+]

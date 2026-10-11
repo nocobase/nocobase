@@ -1,0 +1,76 @@
+---
+title: 'Quick start'
+description: 'Create and start a NocoBase application, then build a transport workspace with one prompt.'
+---
+
+# Quick start
+
+Start a NocoBase application, describe your business to an AI Agent, and begin building your system. This guide uses Northstar Logistics to create customers, drivers, transport orders, and a workspace with one prompt. Later chapters extend the same application with more capabilities.
+
+## 1. Create and start the application
+
+Prepare Node.js 24 or later and pnpm. In the directory where you keep projects, run this command to download the default application template from npm and install its dependencies:
+
+```bash
+pnpm create @nocobase/app northstar-logistics
+```
+
+Enter the application directory, initialize its configuration, and start it. This example uses SQLite, which requires no separate database service:
+
+```bash
+cd northstar-logistics
+pnpm nocobase config init --dialect sqlite
+pnpm nocobase config check
+pnpm dev
+```
+
+Open the application URL printed in the terminal and sign in with the administrator account configured during initialization. An Agent can also complete these steps for you; see [Create an application](../get-started/create-app.md).
+
+## 2. Build the business with one prompt
+
+Northstar Logistics provides regional transportation and delivery services to business customers. It needs to manage customers, drivers, and transport orders, while helping dispatchers find orders that need a driver.
+
+Start an AI Agent session with the new application directory as its working directory and send this request:
+
+```text
+Build a transport management application for Northstar Logistics with customers, drivers, and transport orders. Support order search, filtering, creation, editing, details, and driver assignment.
+Create a blue transport workspace with business statistics cards, order stage distribution, orders awaiting dispatch, and recent orders. Show related orders in customer and driver details.
+Add English demo data so I can open the application and see complete business pages.
+```
+
+The Agent builds the data model, business pages, and navigation. Once it finishes, open the application to see the result.
+
+## 3. View the result
+
+### Transport workspace
+
+The workspace brings together total orders, orders awaiting dispatch, customers, and completed orders. Stage distribution shows overall progress, and the dispatch list highlights orders that need a driver. Recent orders link to their details.
+
+This example contains ten orders and four customers. Statistics and lists use the application's order data.
+
+![Northstar transport workspace with statistics, stage distribution, dispatch priorities, and recent orders](./assets/northstar-workspace-en.png)
+
+### Order details
+
+Open **NS-2026-001** to view its customer, route, cargo, owner, fee, and expected delivery. This order is awaiting dispatch, with editing and driver assignment available.
+
+![Northstar order details and driver assignment](./assets/northstar-order-detail-en.png)
+
+The application now has baseline customer, driver, and order management pages. Continue describing business needs to add branded sign-in, role permissions, transport workflows, approvals, attachments, and messages in the same application.
+
+## Extend the same application
+
+Later chapters introduce capabilities through Northstar's transport operations. Account managers record requirements, dispatchers assign drivers, drivers deliver goods and upload proof of delivery, operations supervisors monitor progress, and finance reviews additional transport costs.
+
+| Role                      | Responsibilities                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| Account manager           | Maintain customers, create transport orders, track deliveries, and communicate with customers. |
+| Dispatcher                | Assign drivers and resolve delays.                                                             |
+| Driver                    | Handle assigned transport tasks and upload proof of delivery.                                  |
+| Operations supervisor     | Monitor progress and review special transport requests.                                        |
+| Finance reviewer          | Review additional costs and relevant financial information.                                    |
+| Application administrator | Manage access and inspect scheduled tasks and delivery logs.                                   |
+
+Authentication brings employees into the system, authorization controls which orders each role can access and handle, and workflows advance transport operations. Files, notifications, and email support collaboration, while document templates generate consistent transport documents. Scheduled reminders, external data sources, languages, and themes are added as business needs arise.
+
+The Agent integrates these capabilities and builds business pages and management interfaces around the company's working practices.

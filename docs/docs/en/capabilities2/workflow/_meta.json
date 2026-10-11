@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Workflow"
+  },
+  {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick start"
+  },
+  {
+    "type": "file",
+    "name": "develop",
+    "label": "Developing with an Agent"
+  },
+  {
+    "type": "file",
+    "name": "scenarios",
+    "label": "Scenario examples"
+  },
+  {
+    "type": "file",
+    "name": "extension",
+    "label": "Extension reference"
+  }
+]
