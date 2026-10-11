@@ -12,6 +12,17 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  runTranscriptFilters: {
+    title: '事件类型',
+    agent: 'Agent',
+    input: '输入',
+    tools: '工具',
+    thinking: '思考',
+    system: '系统',
+    hiddenGroup: '{{count}} 条{{group}}',
+    expandHidden: '隐藏事件：{{summary}}',
+    errorsAlwaysVisible: '错误始终显示',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
@@ -1103,6 +1114,10 @@ const zhCN: AppResource = {
       },
     },
     stageRules: {
+      freshSession: '每次新开会话',
+      freshSessionHint:
+        '开启后，每次阶段运行时 Agent 不续接上一轮会话，适合评审，避免沿用上次的结论；工作目录保留。',
+      withFreshSession: '{{summary}} · 每次新开会话',
       agent: 'Agent',
       agentsUnavailable: '你无法在这里列出 Agent；规则会保留它指定的 Agent。',
       assign: '设为执行者',

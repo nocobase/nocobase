@@ -4,19 +4,21 @@
 // reach by checkout.ts) holds the last run that worked there (`lastRunId`) and whether it holds unpushed work
 // (`hasUnpushedWork`): changes not committed, or a HEAD past both where the runner started the checkout and what it
 // last saw the remote task branch hold. It is never judged from the default branch's history, so a branch merged with
-// a squash is not unpushed once it was pushed. A fresh application decision also rechecks cached Git state against
-// repository-specific merged PR heads, including legacy records without a remote tracking reference.
+// a squash is not unpushed once it was pushed.
 //
 // The runner cannot tell on its own when the work on a subject is over. An application that accepts reports
 // (`HeartbeatResponse.workspaces`) is told about each of its directories and answers which runs belong to subjects
-// whose work is over (`WorkspacesResponse.remove`); those directories go, least recently used first. Nothing else goes
+// whose work is over (`WorkspacesResponse.remove`, or a directory's `WorkspaceDecision`); those directories go, least
+// recently used first, whatever they still hold: once the work on a subject is over its checkout is not kept for
+// commits or changes never pushed, which are logged as they go. Nothing else goes
 // on its own: a pushed directory whose work goes on is still that subject's checkout. The runner watches the disk
 // holding them (`RunnerSettings.minFreeDisk`, 5 GB free by default), reading the free space from the file system
 // (`statfs`) rather than measuring directories, which meant reading every file under every `node_modules`; when it is
 // still low once the directories whose work is over are gone, it says once per pass what is left and that
-// `nocobase-runner gc` can remove it. A directory a run holds (its lock is taken) is never touched, and one with unpushed
-// work is only ever removed when a person forces it (`nocobase-runner gc --force`). Untracked leftovers are allowed
-// only when the application confirms settlement and all repositories pass the tracked-change and commit checks.
+// `nocobase-runner gc` can remove it. A directory a run holds (its lock is taken), or one a run used since it was
+// reported, is never touched, and a removal the application's second answer no longer confirms is taken back. A
+// directory whose work goes on, or whose status is unknown, with unpushed work is only ever removed when a person
+// forces it (`nocobase-runner gc --force`).
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readdir, readFile, stat, statfs } from 'node:fs/promises';
@@ -290,7 +292,10 @@ export function applyStatuses(
   }
 }
 
-/** New decisions are tied to this request, directory, last run and last use. Recompute even when the old check was cached. */
+/**
+ * New decisions are tied to this request, directory, last run and last use. A directory used since it was reported is
+ * not taken as ended; one whose work is over is not checked for unpushed work again, as that no longer keeps it.
+ */
 export async function applyDecisions(
   paths: RunnerPaths,
   entries: readonly WorkspaceEntry[],
@@ -333,20 +338,15 @@ export async function applyDecisions(
       };
       continue;
     }
-    const check = entry.inUse
-      ? { reason: 'inUse' as const, discardsUntracked: false }
-      : await checkWorkspaceGit(
-          entry.workDir,
-          meta,
-          decision.commits,
-          true,
-          log,
-        );
-    entry.unpushed = check.reason !== 'allowed';
-    entry.cleanup = { reportId: decision.reportId, ...check };
-    if (check.reason === 'allowed' && check.discardsUntracked)
+    // The work is over: the directory goes whatever it holds, so its Git state is not checked again.
+    entry.cleanup = {
+      reportId: decision.reportId,
+      reason: entry.inUse ? 'inUse' : 'allowed',
+      discardsUntracked: !entry.inUse && entry.unpushed,
+    };
+    if (!entry.inUse && entry.unpushed)
       log?.(
-        `workspaces: ${entry.workDir}: cleanup will discard untracked files`,
+        `workspaces: ${entry.workDir}: its work is over; cleanup will discard work that was never pushed`,
       );
   }
 }
@@ -354,7 +354,7 @@ export async function applyDecisions(
 /**
  * Takes back the removal of each of `appKey`'s ended directories that `response`, a later answer, does not confirm:
  * one whose matching decision now says the work goes on or cannot tell, one it leaves out, or every one when the answer
- * never came. Such a directory is no longer ended and loses the decision that let cleanup discard untracked files.
+ * never came. Such a directory is no longer ended, and its unpushed work keeps it again.
  */
 export function revokeUnconfirmed(
   entries: readonly WorkspaceEntry[],
@@ -431,8 +431,9 @@ const filtered = (filters: WorkspaceFilters | undefined): boolean =>
     filters.subject !== undefined);
 
 /**
- * Which directories go. By default: those whose work is over, least recently used first. With filters: the directories every filter matches. A directory a run
- * holds is never removed, nor one with unpushed work unless forced.
+ * Which directories go. By default: those whose work is over, least recently used first. With filters: the directories
+ * every filter matches. A directory a run holds is never removed, nor one with unpushed work unless a directory
+ * decision confirms its work is over or the removal is forced. Legacy remove replies retain the unpushed-work protection.
  */
 export function planRemovals(
   entries: readonly WorkspaceEntry[],
@@ -446,7 +447,11 @@ export function planRemovals(
     if (taken.has(entry.workDir)) return;
     taken.add(entry.workDir);
     if (entry.inUse) kept.push({ entry, reason: 'inUse' });
-    else if (entry.unpushed && options.force !== true)
+    else if (
+      entry.unpushed &&
+      entry.decision?.settled !== true &&
+      options.force !== true
+    )
       kept.push({ entry, reason: 'unpushed' });
     else remove.push({ entry, reason });
   };
@@ -476,8 +481,8 @@ export function planRemovals(
 }
 
 /**
- * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or (not forced)
- * it has unpushed work now. Returns why it was kept, or undefined when it was removed.
+ * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or (not forced,
+ * and no settled directory decision) it has unpushed work now. Returns why it was kept, or undefined when it was removed.
  */
 export async function removePlanned(
   paths: RunnerPaths,
@@ -500,15 +505,9 @@ export async function removePlanned(
       return 'changed';
     if (
       options.force !== true &&
-      (
-        await checkWorkspaceGit(
-          entry.workDir,
-          meta,
-          entry.decision?.settled === true ? entry.decision.commits : [],
-          entry.decision?.settled === true,
-          options.log,
-        )
-      ).reason !== 'allowed'
+      entry.decision?.settled !== true &&
+      (await checkWorkspaceGit(entry.workDir, meta, options.log)).reason !==
+        'allowed'
     ) {
       await writeWorkspaceMeta(paths, entry.workDir, {
         ...meta,
@@ -635,14 +634,11 @@ export async function collectWorkspaces(
     );
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
-      log?.(`workspaces: removed ${entry.workDir} (its work is over)`);
+      log?.(
+        `workspaces: removed ${entry.workDir} (its work is over${entry.unpushed ? '; it held work that was never pushed' : ''})`,
+      );
     } else kept.push({ workDir: entry.workDir, reason: why });
   }
-  for (const item of plan.kept)
-    if (item.reason === 'unpushed' && item.entry.status === 'ended')
-      log?.(
-        `workspaces: kept ${item.entry.workDir}: its work is over, but it holds work that was never pushed`,
-      );
   const after = await read(paths.workRoot);
   const gone = new Set(removed.map((item) => item.workDir));
   const warning = lowDiskWarning(

@@ -96,3 +96,24 @@ test('the reference has an index and a file per area', () => {
     /\| \[issue\]\(issue\.md\) \| `issue comment add` \|/u,
   );
 });
+
+test('repeatable enum flags stay within one Markdown table cell', () => {
+  const section = commandSection(
+    {
+      ...comment,
+      parameters: [
+        {
+          name: 'type',
+          field: 'type',
+          in: 'query',
+          type: 'string[]',
+          required: false,
+          enum: ['text', 'input'],
+        },
+      ],
+    },
+    'nb-studio',
+  );
+  assert.ok(section.includes('| `--type` | text \\| input | (repeatable) |'));
+  assert.ok(!section.includes('text \\\\| input'));
+});

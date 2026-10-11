@@ -238,6 +238,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       ['tickets', 'Ticket'],
       ['expenses', 'Expense'],
       ['orders', 'Order'],
+      ['invoices', 'Invoice'],
       ['exports', 'Export'],
       ['purchases', 'Purchase'],
       ['fulfilments', 'Fulfilment'],

@@ -174,6 +174,7 @@ const RULES: Readonly<Record<string, readonly WorkflowStatusRule[]>> = {
       type: RUN_AGENT,
       config: {
         agentId: ROLE_AGENT_IDS.proposalReviewer,
+        session: 'fresh',
         assign: false,
         instruction: PROPOSAL_REVIEW_INSTRUCTION,
       },
@@ -198,6 +199,7 @@ const RULES: Readonly<Record<string, readonly WorkflowStatusRule[]>> = {
       type: RUN_AGENT,
       config: {
         agentId: ROLE_AGENT_IDS.codeReviewer,
+        session: 'fresh',
         assign: false,
         instruction: CODE_REVIEW_INSTRUCTION,
       },

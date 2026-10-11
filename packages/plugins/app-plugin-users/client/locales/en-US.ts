@@ -15,6 +15,7 @@ const enUS = {
     nameRequired: 'Enter your name.',
     passwordTooShort: 'The password needs at least {{min}} characters.',
     submit: 'Create account and join',
+    join: 'Accept invitation',
     submitting: 'Joining…',
     signedIn:
       'You are signed in as {{name}}. Sign out to accept this invitation with a new account.',
