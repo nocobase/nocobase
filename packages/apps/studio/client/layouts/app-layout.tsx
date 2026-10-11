@@ -10,7 +10,7 @@ import { isSettingsPath } from '../pages/config/sections.js';
 import { StudioChat } from '../agents/chat.js';
 import { RouteTreeProvider } from '../routing/route-context.js';
 import { ChatPanel } from '@/extensions/nocobase-agent-chat/chat-panel';
-import { ChatFloatingButton } from '@/extensions/nocobase-agent-chat/launchers';
+import { HeaderChat } from '../agents/header-chat.js';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 
 import { useTranslation } from '@nocobase/i18n/client';
@@ -52,9 +52,6 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   // Inside the workspace settings the sidebar shows their navigation instead of the app's.
   const inSettings = isSettingsPath(pathname);
   const selectedKey = selectedNavigationId(routes, pathname, denied);
-  // The home page's composer and a full-page conversation are where the person talks to an agent already; the
-  // floating launcher would only sit on their send button.
-  const conversationPage = pathname === '/' || pathname.startsWith('/chat/');
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
@@ -81,17 +78,20 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
                 )}
               </AppSidebar>
               <div className='flex min-w-0 flex-1 flex-col'>
-                <LayoutHeader className='sticky top-0 z-40 justify-between'>
-                  <div className='flex min-w-0 items-center gap-3'>
-                    <AppSidebarToggle />
-                    <div className='md:hidden'>
-                      <AppBrand />
+                <LayoutHeader className='sticky top-0 z-40 h-auto max-h-[7rem] flex-col gap-2 py-2 md:h-16 md:flex-row md:justify-between md:py-0'>
+                  <div className='flex h-[2.5rem] w-full min-w-0 items-center justify-between gap-2'>
+                    <div className='flex min-w-0 flex-1 items-center gap-2 md:gap-3'>
+                      <AppSidebarToggle />
+                      <div className='md:hidden'>
+                        <AppBrand compact />
+                      </div>
+                      <div className='hidden h-5 w-px shrink-0 bg-border md:block' />
+                      {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
+                      <Breadcrumbs denied={denied} />
                     </div>
-                    <div className='h-5 w-px shrink-0 bg-border' />
-                    {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
-                    <Breadcrumbs denied={denied} />
+                    <HeaderActions />
                   </div>
-                  <HeaderActions />
+                  <HeaderChat mobile />
                 </LayoutHeader>
                 {/* The chat panel docks beside main on wide screens and floats over it (or covers it) otherwise, so main
           and the panel share a positioned row. */}
@@ -107,7 +107,6 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
                 </div>
               </div>
             </AppSidebarProvider>
-            {conversationPage ? null : <ChatFloatingButton />}
             {/* The person's own settings open over any page (`?account=<category>`). */}
             <AccountSettingsDialog />
           </StudioChat>
