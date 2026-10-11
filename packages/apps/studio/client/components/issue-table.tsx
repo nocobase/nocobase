@@ -505,12 +505,15 @@ export function IssueTable({
                             <Badge
                               key={label.id}
                               variant='secondary'
+                              title={label.name}
                               className={cn(
                                 issueColorClass[label.color],
-                                'max-w-full [&]:overflow-hidden [&]:text-ellipsis',
+                                'min-w-0 max-w-full',
                               )}
                             >
-                              {label.name}
+                              <span className='min-w-0 truncate'>
+                                {label.name}
+                              </span>
                             </Badge>
                           ))}
                           {row.labels.length > 3 ? (

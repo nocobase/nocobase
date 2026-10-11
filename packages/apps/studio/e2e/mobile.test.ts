@@ -149,14 +149,15 @@ test.describe('floating chat button at phone width', () => {
   }
 });
 
-test('deep issue tables fit narrow screens in both languages and modes and retain sorting', async ({
+test('deep issue tables retain label prefixes and sorting on phone and desktop in both languages and modes', async ({
   page,
   api,
 }) => {
   test.setTimeout(120_000);
   const tag = `hierarchy-${Date.now()}`;
+  const labelName = `SECURITY: customer data export review ${tag}`;
   const label = await api.post<{ id: string }>('projects/labels', {
-    name: `Long label 标签 ${tag}`,
+    name: labelName,
     color: 'purple',
   });
   const issueIds: string[] = [];
@@ -206,7 +207,7 @@ test('deep issue tables fit narrow screens in both languages and modes and retai
   });
   // The fixture signs in through the API; navigate before accessing origin-scoped storage.
   await open(page, `/issues?view=list&q=${tag}`);
-  for (const width of [375, 390]) {
+  for (const width of [375, 390, 1024, 1440]) {
     await page.setViewportSize({ width, height: 844 });
     for (const locale of ['zh-CN', 'en-US']) {
       for (const mode of ['light', 'dark']) {
@@ -222,6 +223,37 @@ test('deep issue tables fit narrow screens in both languages and modes and retai
           identifiers,
         );
         await expect(table.locator('[data-deploy-mark]').first()).toBeVisible();
+        const badges = table.getByTitle(labelName, { exact: true });
+        await expect(badges).toHaveCount(9);
+        // Check the visible prefix and real text ellipsis, not only page overflow.
+        const labelLayout = await page.evaluate<
+          { prefixVisible: boolean; ellipsis: boolean; clipped: boolean }[]
+        >(`(() => {
+          const badges = Array.from(document.querySelectorAll('table [data-slot="badge"]'))
+            .filter((badge) => badge.title === ${JSON.stringify(labelName)});
+          return badges.map((badge) => {
+          const text = badge.firstElementChild;
+          if (!text || !text.firstChild) return { prefixVisible: false, ellipsis: false, clipped: false };
+          const range = document.createRange();
+          range.setStart(text.firstChild, 0);
+          range.setEnd(text.firstChild, 'SECURITY'.length);
+          const prefix = range.getBoundingClientRect();
+          const bounds = text.getBoundingClientRect();
+          const badgeBounds = badge.getBoundingClientRect();
+          const style = getComputedStyle(text);
+          return {
+            prefixVisible: prefix.left >= bounds.left - 1 && prefix.right <= bounds.right + 1 && bounds.left >= badgeBounds.left && bounds.right <= badgeBounds.right,
+            ellipsis: style.textOverflow === 'ellipsis' && style.overflowX === 'hidden' && style.whiteSpace === 'nowrap',
+            clipped: text.scrollWidth > text.clientWidth,
+          };
+          });
+        })()`);
+        expect(labelLayout).toHaveLength(9);
+        expect(labelLayout.every((label) => label.prefixVisible)).toBe(true);
+        expect(labelLayout.every((label) => label.ellipsis)).toBe(true);
+        if (width <= 1024) {
+          expect(labelLayout.some((label) => label.clipped)).toBe(true);
+        }
         expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
         // A page may fit while the generic Table wrapper still scrolls horizontally.
         const overflow = await page.evaluate<number[]>(`(() => {
@@ -234,13 +266,17 @@ test('deep issue tables fit narrow screens in both languages and modes and retai
         })()`);
         expect(Math.max(...overflow)).toBeLessThanOrEqual(0);
         const priority = locale === 'zh-CN' ? '优先级' : 'Priority';
-        await page.getByRole('button', { name: priority, exact: true }).click();
+        await page
+          .getByRole('button', { name: priority, exact: true })
+          .filter({ visible: true })
+          .click();
         await expect(page).toHaveURL(/sort=priority/);
         await page
           .getByRole('button', {
             name: locale === 'zh-CN' ? '更新时间' : 'Updated',
             exact: true,
           })
+          .filter({ visible: true })
           .click();
         await expect
           .poll(() => new URL(page.url()).searchParams.get('sort'))
