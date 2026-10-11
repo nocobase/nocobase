@@ -25,6 +25,11 @@ describe('resolveAuthenticationActionError', () => {
     ['INVALID_EMAIL_OR_PASSWORD', 401, '邮箱或密码不正确。'],
     ['INVALID_USERNAME_OR_PASSWORD', 401, '用户名或密码不正确。'],
     ['ACCOUNT_DISABLED', 403, '该账号已停用，请联系管理员。'],
+    [
+      'INVALID_ORIGIN',
+      403,
+      '当前访问地址未获允许，无法登录。请使用管理员提供的地址，或联系管理员检查应用访问地址配置。',
+    ],
     ['USERNAME_IS_ALREADY_TAKEN', 422, '这个用户名已被占用。'],
   ])('localizes the server code %s', (code, status, message) => {
     const error = fetchError(status, 'Unauthorized', {

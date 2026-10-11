@@ -3,7 +3,7 @@ import { lstat, readdir, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
 import { CheckoutError, git } from './git.ts';
-import { isInside } from './command-policy.ts';
+import { isInside } from '../lib/paths.ts';
 import { GIT_LOW_SPEED_CONFIG } from './git-retry.ts';
 
 export interface TaskGitContext {
