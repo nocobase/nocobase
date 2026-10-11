@@ -22,7 +22,7 @@ Client: list `@nocobase/app-plugin-releases/client`. Pass `routes: false` and us
 
 ## Artifact storage
 
-`releases.artifact` accepts either a complete disk configuration or `{ disk: <name>, prefix?: <prefix> }`. A reference selects the named disk from the application's final `drive.disks` configuration; it never falls back to `drive.default`. Only `disk` and `prefix` are allowed in a reference: configure drivers, credentials and other storage options on the disk itself.
+`releases.artifact` accepts either a complete disk configuration or `{ disk: <name>, prefix?: <prefix> }`. A reference selects the named disk from the application's final `drive.disks` configuration; it never falls back to `drive.default`. Only `disk` and `prefix` are allowed in a reference: configure drivers, credentials and other storage options on the disk itself. The referenced disk is validated by `@nocobase/drive` with the same rules as any other disk, so options the driver defaults, such as `forcePathStyle` and `supportsACL` on S3, may be omitted. The referenced disk must have `visibility: private`: release archives carry server code and configuration templates, and on a public disk who can read them is decided by the storage itself, such as an S3 bucket policy when the disk has no ACL support, rather than by this plugin's permission checks, so a public disk is rejected at startup.
 
 ```yaml
 drive:
@@ -48,7 +48,7 @@ releases:
   dataDir: storage/releases
 ```
 
-Use `disk: local` to store archives on the filesystem. A prefix is relative to the disk root: `releases` stores new uploads and promoted archives at `releases/<appId>/<releaseId>.tar.gz` on both filesystem and S3 disks. Omit `prefix` or set it to an empty string to use the root; trailing `/` characters are removed. Absolute paths, backslashes, `.` or `..` path segments and control characters are rejected. A prefix organizes files; it is not a permission boundary.
+Use `disk: local` to store archives on the filesystem. A prefix is relative to the disk root: `releases` stores new uploads and promoted archives at `releases/<appId>/<releaseId>.tar.gz` on both filesystem and S3 disks. Omit `prefix` or set it to an empty string to use the root; repeated `/` characters are collapsed into one, so `releases//archives` is `releases/archives`, and trailing `/` characters are removed. Absolute paths, backslashes, `.` or `..` path segments and control characters are rejected. A prefix organizes files; it is not a permission boundary.
 
 Existing complete configurations continue to work:
 

@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import type { AppDriveConfig, AppDriveDiskConfig } from '@nocobase/drive';
+import {
+  parseDriveDiskConfig,
+  type AppDriveConfig,
+  type AppDriveDiskConfig,
+} from '@nocobase/drive';
 import { resolveArtifact } from '../server/artifact-config.js';
 import type { ReleasesPluginConfig } from '../server/config.js';
 
@@ -29,7 +33,7 @@ describe('artifact disk references', () => {
     (disk) => {
       const before = structuredClone(drive);
       const resolved = resolveArtifact(
-        { disk, prefix: 'releases/nested///' },
+        { disk, prefix: 'releases//nested///' },
         drive,
       );
       expect(resolved).toEqual({
@@ -45,12 +49,19 @@ describe('artifact disk references', () => {
     },
   );
 
+  it('collapses repeated slashes in a prefix', () => {
+    expect(
+      resolveArtifact({ disk: 'local', prefix: 'a//b///c/' }, drive).prefix,
+    ).toBe('a/b/c');
+  });
+
   it.each([undefined, ''])('uses the root for prefix %s', (prefix) => {
     expect(resolveArtifact({ disk: 'local', prefix }, drive).prefix).toBe('');
   });
 
   it.each([
     '/absolute',
+    '//absolute',
     'C:/absolute',
     'C:relative',
     '\\absolute',
@@ -113,5 +124,35 @@ describe('artifact disk references', () => {
         { default: 'bad', disks: { bad: disk as AppDriveDiskConfig } },
       ),
     ).toThrow('drive.disks');
+  });
+
+  it.each([
+    { ...fs, visibility: 'public' },
+    { ...s3, visibility: 'public' },
+    { ...s3, visibility: 'public', supportsACL: true },
+  ])('rejects a public disk', (disk) => {
+    expect(() =>
+      resolveArtifact(
+        { disk: 'assets' },
+        { default: 'assets', disks: { assets: disk as AppDriveDiskConfig } },
+      ),
+    ).toThrow('release artifacts must be stored on a private disk');
+  });
+
+  it('accepts an S3 disk that leaves forcePathStyle and supportsACL to the driver defaults', () => {
+    const defaulted: AppDriveDiskConfig = {
+      driver: 's3',
+      bucket: 'archives',
+      region: 'auto',
+      credentials: {},
+      visibility: 'private',
+    };
+    const resolved = resolveArtifact(
+      { disk: 'oss' },
+      { default: 'oss', disks: { oss: defaulted } },
+    );
+    expect(resolved.disk).toEqual(parseDriveDiskConfig(defaulted));
+    expect(resolved.disk).not.toHaveProperty('forcePathStyle');
+    expect(resolved.disk).not.toHaveProperty('supportsACL');
   });
 });

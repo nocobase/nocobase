@@ -8,6 +8,7 @@ import { databaseManagerToken } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
 import type { AppConfigAccessor } from '@nocobase/app-server/config';
 import type { AppDriveConfig, AppDriveDiskConfig } from '@nocobase/drive';
+import { createReleases } from '../server/composition.js';
 import { ReleasesProvider } from '../server/providers/releases.js';
 import type { ReleasesPluginConfig } from '../server/config.js';
 import { releasesToken } from '../server/tokens.js';
@@ -115,28 +116,79 @@ it.each(['fs', 's3'] as const)(
   },
 );
 
-it('rejects an invalid reference before initializing any Host or creating services', async () => {
-  const initialize = vi.spyOn(AppHostSupervisor, 'initialize');
-  const create = vi.spyOn(AppHostSupervisor, 'create');
-  const container = new ServiceContainer();
-  const provider = new ReleasesProvider({
-    container,
-    config: accessor(
-      {
-        artifact: { disk: 'missing' },
-        dataDir: 'storage/releases',
-        host: {
-          enabled: true,
-          configPath: 'unused.yml',
-          appVolumesDir: 'volumes',
-          appRevisionsDir: 'revisions',
+it.each([
+  [{ default: 'missing', disks: {} }, 'drive.disks'],
+  [
+    {
+      default: 'assets',
+      disks: {
+        missing: {
+          driver: 's3',
+          bucket: 'public-assets',
+          region: 'auto',
+          credentials: {},
+          supportsACL: false,
+          visibility: 'public',
         },
       },
-      { default: 'missing', disks: {} },
-    ),
-  });
-  provider.register();
-  expect(() => container.resolve(releasesToken)).toThrow('drive.disks');
-  expect(initialize).not.toHaveBeenCalled();
-  expect(create).not.toHaveBeenCalled();
+    },
+    'release artifacts must be stored on a private disk',
+  ],
+] satisfies [AppDriveConfig, string][])(
+  'rejects an unusable reference before initializing any Host or creating services (%#)',
+  (drive, message) => {
+    const initialize = vi.spyOn(AppHostSupervisor, 'initialize');
+    const create = vi.spyOn(AppHostSupervisor, 'create');
+    const container = new ServiceContainer();
+    const provider = new ReleasesProvider({
+      container,
+      config: accessor(
+        {
+          artifact: { disk: 'missing' },
+          dataDir: 'storage/releases',
+          host: {
+            enabled: true,
+            configPath: 'unused.yml',
+            appVolumesDir: 'volumes',
+            appRevisionsDir: 'revisions',
+          },
+        },
+        drive,
+      ),
+    });
+    provider.register();
+    expect(() => container.resolve(releasesToken)).toThrow(message);
+    expect(initialize).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  },
+);
+
+it('rejects a public referenced disk in the direct composition entry', async () => {
+  const harness = await createHarness();
+  try {
+    expect(() =>
+      createReleases({
+        database: harness.database,
+        config: {
+          artifact: { disk: 'assets', prefix: 'releases' },
+          dataDir: path.join(harness.rootDir, 'data'),
+        },
+        drive: {
+          default: 'assets',
+          disks: {
+            assets: {
+              driver: 'fs',
+              location: path.join(harness.rootDir, 'public'),
+              url: '/storage',
+              visibility: 'public',
+            },
+          },
+        },
+        drivers: harness.services.drivers,
+        access: () => harness.application,
+      }),
+    ).toThrow('release artifacts must be stored on a private disk');
+  } finally {
+    await harness.close();
+  }
 });

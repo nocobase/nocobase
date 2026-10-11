@@ -1,6 +1,11 @@
 import path from 'node:path';
 
-import type { AppDriveConfig, AppDriveDiskConfig } from '@nocobase/drive';
+import {
+  DriveDiskConfigError,
+  parseDriveDiskConfig,
+  type AppDriveConfig,
+  type AppDriveDiskConfig,
+} from '@nocobase/drive';
 
 import type { ReleasesPluginConfig } from './config.js';
 
@@ -40,49 +45,28 @@ export function resolveArtifact(
     )
   )
     throw invalid('releases.artifact.prefix');
-  const disk =
-    drive?.disks && Object.hasOwn(drive.disks, name)
-      ? drive.disks[name]
-      : undefined;
-  if (
-    !isRecord(disk) ||
-    (disk.visibility !== 'private' && disk.visibility !== 'public')
-  )
+  const prefix = rawPrefix.replace(/\/{2,}/gu, '/').replace(/\/+$/u, '');
+  if (!drive?.disks || !Object.hasOwn(drive.disks, name))
     throw invalid('drive.disks');
-  if (disk.driver === 'fs') {
-    if (
-      !nonempty(disk.location) ||
-      (disk.url !== undefined && typeof disk.url !== 'string')
-    )
-      throw invalid('drive.disks');
-    return { disk: { ...disk }, prefix: rawPrefix.replace(/\/+$/u, '') };
+  let disk: AppDriveDiskConfig;
+  try {
+    disk = parseDriveDiskConfig(drive.disks[name]);
+  } catch (error) {
+    if (!(error instanceof DriveDiskConfigError)) throw error;
+    throw new Error(
+      `Invalid drive.disks ${JSON.stringify(name)} for releases.artifact.disk: ${error.message}`,
+    );
   }
-  if (
-    disk.driver !== 's3' ||
-    ['endpoint', 'cdnUrl', 'encryption'].some(
-      (key) => disk[key] !== undefined && typeof disk[key] !== 'string',
-    ) ||
-    !nonempty(disk.bucket) ||
-    !nonempty(disk.region) ||
-    typeof disk.forcePathStyle !== 'boolean' ||
-    typeof disk.supportsACL !== 'boolean' ||
-    !isRecord(disk.credentials) ||
-    [disk.credentials.accessKeyId, disk.credentials.secretAccessKey].some(
-      (value) => value !== undefined && typeof value !== 'string',
-    )
-  )
-    throw invalid('drive.disks');
-  // Empty credentials preserve the S3 driver's default credential provider chain.
-  return {
-    disk: { ...disk, credentials: { ...disk.credentials } },
-    prefix: rawPrefix.replace(/\/+$/u, ''),
-  };
+  // Release archives carry server code and configuration templates, so they must not be readable without the
+  // plugin's permission checks. A public disk cannot promise that: on S3 without ACL support the bucket policy, not
+  // the per-object visibility, decides who reads a file, and a prefix does not change it.
+  if (disk.visibility !== 'private')
+    throw new Error(
+      `Invalid drive.disks ${JSON.stringify(name)} for releases.artifact.disk: release artifacts must be stored on a private disk.`,
+    );
+  return { disk, prefix };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function nonempty(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0;
 }
