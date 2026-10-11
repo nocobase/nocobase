@@ -1,0 +1,443 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Studio’s command manifest > offers a person every Studio area, and nothing Studio does not serve 1`] = `
+"access catalog -> GET /api/access/catalog (person)
+access me -> GET /api/access/me (person)
+access member list -> GET /api/access/members (person)
+access member update <user> [--roles!] -> PATCH /api/access/members/{userId} (person)
+access org-key create [--name --description --expires-in-days --scope --file] -> POST /api/organizationKeys (person)
+access org-key delete <key> -> DELETE /api/organizationKeys/{keyId} (person) confirm
+access org-key disable <key> -> POST /api/organizationKeys/{keyId}/disable (person)
+access org-key enable <key> -> POST /api/organizationKeys/{keyId}/enable (person)
+access org-key events <key> -> GET /api/organizationKeys/{keyId}/events (person)
+access org-key get <key> -> GET /api/organizationKeys/{keyId} (person)
+access org-key list -> GET /api/organizationKeys (person)
+access org-key rotate <key> -> POST /api/organizationKeys/{keyId}/rotate (person) confirm
+access org-key scope-options -> GET /api/organizationKeys/scopeOptions (person)
+access org-key scope set <key> [--scope --file] -> PUT /api/organizationKeys/{keyId}/scope (person)
+access org-key update <key> [--name --description] -> PATCH /api/organizationKeys/{keyId} (person)
+access role create [--title --pages --settings --abilities --file] -> POST /api/access/roles (person)
+access role delete <role> -> DELETE /api/access/roles/{roleKey} (person) confirm
+access role get <role> -> GET /api/access/roles/{roleKey} (person)
+access role list -> GET /api/access/roles (person)
+access role update <role> [--title --pages --settings --abilities --file] -> PATCH /api/access/roles/{roleKey} (person)
+access settings get -> GET /api/access/settings (person)
+access settings set [--default-role!] -> PUT /api/access/settings (person)
+agent action list -> GET /api/agents/actions (person)
+agent archive <agent> -> POST /api/agents/{agentId}/archive (person) confirm
+agent brief <agent> [--scenario] -> GET /api/agents/{agentId}/previewBrief (person)
+agent copy <agent> [--name --make-default] -> POST /api/agents/{agentId}/copy (person)
+agent create [--name --description --avatar --models --instructions --runtimes --skills --actions --confirm-changes --access --users --owner --max-concurrent-runs --max-attempts --tool-policy --type --file] -> POST /api/agents (person)
+agent delete <agent> -> DELETE /api/agents/{agentId} (person) confirm
+agent get <agent> -> GET /api/agents/{agentId} (person)
+agent history <agent> [--after --limit --page-token] -> GET /api/agents/{agentId}/history (person)
+agent list -> GET /api/agents/available (person,run) agents.agents/view
+agent list-all [--archived] -> GET /api/agents (person)
+agent preset list -> GET /api/agents/presets (person)
+agent restore <agent> -> POST /api/agents/{agentId}/restore (person)
+agent update <agent> [--name --description --avatar --models --instructions --runtimes --skills --actions --confirm-changes --access --users --owner --max-concurrent-runs --max-attempts --tool-policy --revision --type --file] -> PATCH /api/agents/{agentId} (person)
+api-key create [--name --description --expires-in-days --scope --file] -> POST /api/apiKeys (person)
+api-key delete <key> -> DELETE /api/apiKeys/{keyId} (person) confirm
+api-key list -> GET /api/apiKeys (person)
+api-key rotate <key> -> POST /api/apiKeys/{keyId}/rotate (person) confirm
+api-key scope-objects <group> [--q --id] -> GET /api/apiKeys/scopeObjects/{group} (person)
+api-key scope-options -> GET /api/apiKeys/scopeOptions (person)
+app config get <app> -> GET /api/releases/apps/{appId}/config (person) rel.apps/configure
+app config set <app> [--content! --secret-changes] -> PUT /api/releases/apps/{appId}/config (person) rel.apps/configure
+app create <app> [--name! --env! --description --label --preview-of --activation --idle-stop-minutes --dormant-after-hours] -> POST /api/releases/apps (person) rel.apps/create
+app delete <app> [--confirm] -> DELETE /api/releases/apps/{appId} (person) rel.apps/delete confirm
+app deploy <app> [--wait --release! --config] -> POST /api/releases/apps/{appId}/deploy (person,run) rel.apps/deploy
+app ensure <app> [--environment! --repository@env] -> POST /api/builds/apps/{appId}/ensure (person) rel.apps/upload
+app env list <app> [--release] -> GET /api/releases/apps/{appId}/variables (person,run) rel.apps/view
+app env set <app> <name> <value> [--secret] -> PUT /api/releases/apps/{appId}/variables/{name} (person) rel.apps/configure
+app env unset <app> <name> -> DELETE /api/releases/apps/{appId}/variables/{name} (person) rel.apps/configure
+app get <app> -> GET /api/releases/apps/{appId} (person,run) rel.apps/view
+app list [--page --limit --search --env --label] -> GET /api/releases/apps (person,run) rel.apps/view
+app logs <app> [--page-token --level --source --search --since --until --from-start] -> GET /api/releases/apps/{appId}/logs (person,run) rel.apps/read-logs
+app restart <app> -> POST /api/releases/apps/{appId}/restart (person) rel.apps/operate
+app rollback <app> [--deployment!] -> POST /api/releases/apps/{appId}/rollback (person,run) rel.apps/deploy
+app start <app> -> POST /api/releases/apps/{appId}/start (person) rel.apps/operate
+app stop <app> -> POST /api/releases/apps/{appId}/stop (person) rel.apps/operate
+app update <app> [--name --description --label --activation --idle-stop-minutes --dormant-after-hours] -> PATCH /api/releases/apps/{appId} (person) rel.apps/configure
+approval approve <approval> [--comment] -> POST /api/projects/approvals/{approvalId}/approve (person)
+approval list -> GET /api/projects/approvals (person)
+approval reject <approval> [--comment] -> POST /api/projects/approvals/{approvalId}/reject (person)
+approval withdraw <approval> -> POST /api/projects/approvals/{approvalId}/withdraw (person)
+attachment delete <file> -> DELETE /api/projects/attachments/{attachmentId} (person,run) pm.attachments/upload confirm
+attachment get <file> -> GET /api/projects/attachments/{attachmentId} (person)
+attachment upload [--file!] -> POST /api/projects/attachments (person,run) pm.attachments/upload
+board failed-run decide <run> [--action! --user] -> POST /api/failedRuns/{runId}/decide (person)
+board get [--q --project --label --owner --executor] -> GET /api/agentBoard (person)
+board start <issue> -> POST /api/agentBoard/issues/{issueId}/start (person)
+build ci configure <repo> [--method --app --target --workflow-files --agent-id --file] -> POST /api/repositoryDeployments/{resourceId}/ci/configure (person)
+build ci connection <repo> -> GET /api/repositoryDeployments/{resourceId}/ci/connection (person)
+build ci environments -> GET /api/repositoryDeployments/ciWorkflows/environments (person)
+build ci get <repo> -> GET /api/repositoryDeployments/{resourceId}/ci (person)
+build ci remove <repo> <app> [--environment! --pull-requests] -> DELETE /api/repositoryDeployments/{resourceId}/ci/apps/{appId} (person) confirm
+build ci rotate <repo> [--reveal] -> POST /api/repositoryDeployments/{resourceId}/ci/rotate (person)
+build ci setup <repo> [--reveal] -> POST /api/repositoryDeployments/{resourceId}/ci/setup (person)
+build ci workflows [--app --target --default-branch --managed --file] -> POST /api/repositoryDeployments/ciWorkflows/generate (person)
+build list <repo> [--page --page-size] -> GET /api/repositoryDeployments/{resourceId}/builds (person)
+build repo get <repo> -> GET /api/repositoryDeployments/{resourceId} (person)
+build repo list [--app-id!] -> GET /api/repositoryDeployments (person)
+build repo set <repo> [--apps --plan --file] -> PUT /api/repositoryDeployments/{resourceId} (person)
+build status [--app! --sha!@env --repository@env --state! --logs --message] -> POST /api/builds/report (person) rel.apps/upload
+build workflow <repo> -> GET /api/repositoryDeployments/{resourceId}/ciWorkflow (person)
+comment delete <comment> -> DELETE /api/projects/comments/{commentId} (person) confirm
+comment react <comment> <emoji> -> POST /api/projects/comments/{commentId}/react (person)
+comment resolve <comment> -> POST /api/projects/comments/{commentId}/resolve (person)
+comment unreact <comment> <emoji> -> POST /api/projects/comments/{commentId}/unreact (person)
+comment unresolve <comment> -> POST /api/projects/comments/{commentId}/unresolve (person)
+comment update <comment> [--content!] -> PATCH /api/projects/comments/{commentId} (person)
+conversation attachment upload [--file!] -> POST /api/agents/chatAttachments (person)
+conversation create [--agent --title --source --model] -> POST /api/agents/conversations (person)
+conversation fallback <conversation> -> POST /api/agents/conversations/{conversationId}/fallback (person)
+conversation get <conversation> -> GET /api/agents/conversations/{conversationId} (person)
+conversation list [--query --archived --agent --source --limit --page-token] -> GET /api/agents/conversations (person)
+conversation message list <conversation> [--after --limit --page-token] -> GET /api/agents/conversations/{conversationId}/messages (person)
+conversation message send <conversation> [--content! --attach] -> POST /api/agents/conversations/{conversationId}/messages (person)
+conversation preferences get -> GET /api/agents/chatPreferences (person)
+conversation preferences update [--default-agent] -> PATCH /api/agents/chatPreferences (person)
+conversation restore <conversation> -> POST /api/agents/conversations/{conversationId}/restore (person)
+conversation settings get -> GET /api/agents/chatSettings (person)
+conversation settings update [--default-agent --online-fallback-agent] -> PATCH /api/agents/chatSettings (person)
+conversation stop <conversation> -> POST /api/agents/conversations/{conversationId}/stop (person)
+conversation update <conversation> [--title --archived --model] -> PATCH /api/agents/conversations/{conversationId} (person)
+delegation get <delegation> -> GET /api/delegations/{delegationId} (person)
+delegation list [--conversation!] -> GET /api/delegations (person)
+delegation update <delegation> [--followed!] -> PATCH /api/delegations/{delegationId} (person)
+deploy [--app! --sha@env --release --repository@env --file] -> POST /api/builds/deploy (person) rel.apps/deploy
+deploy get <app> <deployment> -> GET /api/releases/apps/{appId}/deployments/{deploymentId} (person,run) rel.apps/view
+deploy list <app> [--page --limit] -> GET /api/releases/apps/{appId}/deployments (person,run) rel.apps/view
+deploy logs <app> <deployment> [--page-token --level --source --search --since --until --from-start] -> GET /api/releases/apps/{appId}/deployments/{deploymentId}/logs (person,run) rel.apps/read-logs
+deploy reopen-suggestion decide <app> [--action!] -> POST /api/deploys/reopenSuggestions/{appId}/decide (person)
+deploy request <app> [--release --rollback-to --note --label] -> POST /api/releases/apps/{appId}/deploymentRequests (person,run) rel.apps/deploy
+deploy request approve <request> [--note --confirm] -> POST /api/releases/deploymentRequests/{requestId}/approve (person) confirm
+deploy request cancel <request> -> POST /api/releases/deploymentRequests/{requestId}/cancel (person)
+deploy request get <request> -> GET /api/releases/deploymentRequests/{requestId} (person)
+deploy request list [--page --limit --app --status --awaiting-me] -> GET /api/releases/deploymentRequests (person)
+deploy request reject <request> [--note] -> POST /api/releases/deploymentRequests/{requestId}/reject (person)
+deploy status <project> -> GET /api/deploys/projects/{projectId}/environments (person)
+design approve <issue> [--comment] -> POST /api/designProposals/{issueId}/approve (person)
+design get <issue> -> GET /api/designProposals/{issueId} (person)
+design request-changes <issue> [--comment] -> POST /api/designProposals/{issueId}/requestChanges (person)
+env check <env> -> POST /api/releases/environments/{environmentId}/check (person) rel.environments/read
+env create [env] [--name --config --secret --secret-changes --url --protected --approvers --max-apps --default-idle-stop-minutes --default-dormant-after-hours --registry --sample-data-on-first-deploy --driver --file] -> POST /api/releases/environments (person) rel.environments/manage
+env delete <env> -> DELETE /api/releases/environments/{environmentId} (person) rel.environments/manage confirm
+env driver list -> GET /api/releases/drivers (person) rel.environments/read
+env get <env> -> GET /api/releases/environments/{environmentId} (person,run) rel.environments/read
+env list -> GET /api/releases/environments (person,run) rel.environments/read
+env update <env> [--name --config --secret --secret-changes --url --protected --approvers --max-apps --default-idle-stop-minutes --default-dormant-after-hours --registry --sample-data-on-first-deploy --driver --file] -> PATCH /api/releases/environments/{environmentId} (person) rel.environments/manage
+env var declared <env> -> GET /api/releases/environments/{environmentId}/declaredVariables (person) rel.environments/read
+env var list <env> -> GET /api/releases/environments/{environmentId}/variables (person) rel.environments/read
+env var set <env> <name> <value> [--secret --description] -> PUT /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
+env var unset <env> <name> -> DELETE /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
+git authorization delete <connection> -> DELETE /api/git/authorizations/{connectionId} (person) confirm
+git authorization list -> GET /api/git/authorizations (person)
+git authorization poll <connection> [--handle!] -> POST /api/git/authorizations/{connectionId}/pollDeviceFlow (person)
+git authorization start <connection> -> POST /api/git/authorizations/{connectionId}/startDeviceFlow (person)
+git authorization use-token <connection> [--token!] -> POST /api/git/authorizations/{connectionId}/useToken (person)
+git connection create [--provider --kind --same-app-as --name --web-url --account --app-id --installation-id --client-id --private-key --client-secret --token --webhook-secret --allow-personal-tokens] -> POST /api/git/connections (person)
+git connection delete <connection> -> DELETE /api/git/connections/{connectionId} (person) confirm
+git connection list -> GET /api/git/connections (person)
+git connection reach <connection> -> GET /api/git/connections/{connectionId}/reach (person)
+git connection update <connection> [--provider --kind --same-app-as --name --web-url --account --app-id --installation-id --client-id --private-key --client-secret --token --webhook-secret --allow-personal-tokens] -> PATCH /api/git/connections/{connectionId} (person)
+git connection usage <connection> -> GET /api/git/connections/{connectionId}/usage (person)
+git project get <project> -> GET /api/git/projects/{projectId} (person)
+git project set <project> [--attribution!] -> PUT /api/git/projects/{projectId} (person)
+git repo create <connection> [--owner --name! --private! --description --empty] -> POST /api/git/connections/{connectionId}/repositories (person)
+git repo list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/repositories (person)
+git resource get <resource> -> GET /api/git/resources/{resourceId} (person)
+git resource update <resource> [--webhook-secret --wake-on-checks --wake-on-conflict --branch-rules] -> PATCH /api/git/resources/{resourceId} (person)
+git status -> GET /api/git/status (person)
+git template get <connection> <owner> <name> -> GET /api/git/connections/{connectionId}/templateRepositories/{owner}/{name} (person)
+git template list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/templateRepositories (person)
+git workflow list <connection> <owner> <name> -> GET /api/git/connections/{connectionId}/repositories/{owner}/{name}/workflows (person)
+inbox delete <message> -> DELETE /api/notificationInApp/messages/{messageId} (person) confirm
+inbox list [--unread --limit --page-token] -> GET /api/inbox/items (person,run) studio.inbox/read
+inbox mark-all-read -> POST /api/notificationInApp/messages/markAllRead (person)
+inbox mark-read <message> -> POST /api/notificationInApp/messages/{messageId}/markRead (person)
+inbox mark-unread <message> -> POST /api/notificationInApp/messages/{messageId}/markUnread (person)
+inbox pending -> GET /api/inbox/pending (person)
+inbox unread-count -> GET /api/notificationInApp/messages/unreadCount (person)
+inbox waiting [--subject] -> GET /api/inbox/waiting (person)
+intake ai availability -> GET /api/projects/intake/aiAvailability (person)
+intake ai cancel <job> -> POST /api/projects/intake/aiJobs/{jobId}/cancel (person) confirm
+intake ai get <job> -> GET /api/projects/intake/aiJobs/{jobId} (person)
+intake ai start [--mode! --text --project --plan --instruction --issue --file] -> POST /api/projects/intake/aiJobs (person)
+intake extract [--file] -> POST /api/projects/intake/extractTexts (person)
+intake file delete <file> -> DELETE /api/projects/intake/files/{fileId} (person) confirm
+intake file upload [--file!] -> POST /api/projects/intake/files (person)
+intake organize [--text! --title --agent --project --files] -> POST /api/organizeIntake (person)
+intake split [--text --project --file] -> POST /api/projects/intake/split (person)
+issue activity list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/activities (person) pm.issues/view
+issue attachment add <issue> [--file!] -> POST /api/projects/issues/{issueId}/attachments (person) pm.attachments/upload
+issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}/content (person,run) pm.issues/view
+issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
+issue checklist list <issue> -> GET /api/projects/issues/{issueId}/checklists (person) pm.issues/view
+issue checklist mark <issue> <status> <item> [--checked!] -> PATCH /api/projects/issues/{issueId}/checklists/{statusKey}/items/{itemKey} (person) pm.issues/edit
+issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
+issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
+issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
+issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
+issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
+issue executor list -> GET /api/projects/executors (person)
+issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/view
+issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
+issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
+issue search [--status --project --owner --executor --label --parent --q --deleted --order-by --limit --page-token] -> GET /api/projects/issues (person,run) pm.issues/view
+issue status list [--project] -> GET /api/projects/issues/statuses (person)
+issue subscribe <issue> -> POST /api/projects/issues/{issueId}/subscribe (person) pm.issues/view
+issue unsubscribe <issue> -> POST /api/projects/issues/{issueId}/unsubscribe (person) pm.issues/view
+issue update <issue> [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
+kb chunking get [--scope! --owner] -> GET /api/knowledge/chunking (person)
+kb chunking set [--scope --owner --override --file] -> PUT /api/knowledge/chunking (person)
+kb doc access get <doc> -> GET /api/knowledge/docs/{docId}/access (person)
+kb doc archive <doc> -> POST /api/knowledge/docs/{docId}/archive (person) confirm
+kb doc create [--scope! --owner --kind --parent --title! --slug --summary --content] -> POST /api/knowledge/docs (person)
+kb doc index <doc> -> GET /api/knowledge/docs/{docId}/index (person)
+kb doc move <doc> [--parent! --sort-order] -> POST /api/knowledge/docs/{docId}/move (person)
+kb doc permission get <doc> -> GET /api/knowledge/docs/{docId}/permissions (person)
+kb doc permission set <doc> [--mode --entries --file] -> PUT /api/knowledge/docs/{docId}/permissions (person) confirm
+kb doc reindex <doc> -> POST /api/knowledge/docs/{docId}/reindex (person)
+kb doc reparse <doc> [--version] -> POST /api/knowledge/docs/{docId}/reparse (person)
+kb doc replace-file <doc> [--file! --expected-version --note] -> POST /api/knowledge/docs/{docId}/replaceFile (person)
+kb doc restore <doc> -> POST /api/knowledge/docs/{docId}/restore (person)
+kb doc update <doc> [--expected-version! --title --summary --content --note] -> PATCH /api/knowledge/docs/{docId} (person)
+kb doc upload [--file! --scope! --owner --parent --title --slug --summary] -> POST /api/knowledge/docs/upload (person)
+kb doc verify <doc> -> POST /api/knowledge/docs/{docId}/verify (person)
+kb doc version get <doc> <version> -> GET /api/knowledge/docs/{docId}/versions/{version} (person)
+kb doc version list <doc> [--page --limit] -> GET /api/knowledge/docs/{docId}/versions (person)
+kb download <doc> [--version --project] -> GET /api/kb/docs/{doc}/file (person,run) kb.knowledge/read
+kb list [--q --parent --project] -> GET /api/kb/docs (person,run) kb.knowledge/read
+kb proposal accept <proposal> [--comment --confirm-stale] -> POST /api/knowledge/proposals/{proposalId}/accept (person)
+kb proposal download <proposal> -> GET /api/knowledge/proposals/{proposalId}/file (person)
+kb proposal get <proposal> -> GET /api/knowledge/proposals/{proposalId} (person)
+kb proposal list [--status --scope --owner --doc --decidable --page --limit] -> GET /api/knowledge/proposals (person)
+kb proposal reject <proposal> [--comment] -> POST /api/knowledge/proposals/{proposalId}/reject (person) confirm
+kb proposal withdraw <proposal> -> POST /api/knowledge/proposals/{proposalId}/withdraw (person) confirm
+kb propose [--doc --title --slug --parent --space --content --summary --reason! --project --verify --changed] -> POST /api/kb/proposals (person,run) kb.knowledge/propose
+kb read <doc> [--version --project] -> GET /api/kb/docs/{doc} (person,run) kb.knowledge/read
+kb search <query> [--limit --project] -> GET /api/kb/search (person,run) kb.knowledge/read
+kb settings get -> GET /api/knowledgeSearch (person)
+kb settings set [--embedding --rerank --context-model --contextual --whole-tokens --chunking --recall --file] -> PUT /api/knowledgeSearch (person)
+kb subject list [--scope! --owner --q --type --limit] -> GET /api/knowledge/subjects (person)
+kb tree [--project] -> GET /api/kb/tree (person,run) kb.knowledge/read
+kb upload [--doc --title --parent --space --summary --reason! --project --file!] -> POST /api/kb/uploadTickets (person,run) kb.knowledge/propose
+label create <name> [--color] -> POST /api/projects/labels (person)
+label delete <label> -> DELETE /api/projects/labels/{labelId} (person) confirm
+label list -> GET /api/projects/labels (person)
+label update <label> [--name --color] -> PATCH /api/projects/labels/{labelId} (person)
+model check [--service! --model!] -> POST /api/agents/checkModel (person)
+model default get -> GET /api/agents/defaultModels (person)
+model default set [--service! --model!] -> PUT /api/agents/defaultModels/chat (person)
+model list [--kind] -> GET /api/agents/models (person)
+model price get -> GET /api/agents/prices (person)
+model price set [--prices --subscriptions --file] -> PUT /api/agents/prices (person) confirm
+model usage [--from --to] -> GET /api/agents/usage/models (person)
+plan create [--title --description --source --rows --file] -> POST /api/projects/plans (person,run) pm.plans/use
+plan execute <plan> [--revision!] -> POST /api/projects/plans/{planId}/execute (person)
+plan get <plan> -> GET /api/projects/plans/{planId} (person,run) pm.plans/use
+plan list [--status --source-kind --source-key --issue --all --limit --page-token] -> GET /api/projects/plans (person,run) pm.plans/use
+plan rehearse [--title --description --source --rows --file] -> POST /api/projects/plans/rehearse (person)
+plan retry <plan> [--revision!] -> POST /api/projects/plans/{planId}/retry (person)
+plan undo <plan> [--dry-run] -> POST /api/projects/plans/{planId}/undo (person) confirm
+plan update <plan> [--revision --title --description --rows --file] -> PATCH /api/projects/plans/{planId} (person)
+plan void <plan> [--revision!] -> POST /api/projects/plans/{planId}/void (person) confirm
+pr check-merge <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/checkMerge (person)
+pr close <issue> <pr> [--reason! --unlink] -> POST /api/git/pullRequests/{pullRequestId}/close (person,run) studio.git/open-pr
+pr edit <issue> <pr> [--title --body --base --draft --ready] -> POST /api/git/pullRequests/{pullRequestId}/edit (person,run) studio.git/open-pr
+pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/open-pr
+pr list [--issue] -> GET /api/git/pullRequests (person,run) pm.issues/view
+pr mark-merged <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/markMerged (person) confirm
+pr merge <issue> <pr> [--expected-head!] -> POST /api/git/pullRequests/{pullRequestId}/merge (person) confirm
+pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/pullRequests/open (person,run) studio.git/open-pr
+pr refresh <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/refresh (person) pm.issues/view
+pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
+pr suggestion dismiss <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId}/suggestion (person) pm.issues/edit confirm
+pr unlink <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId} (person) pm.issues/edit confirm
+pr update <issue> <pr> [--auto-complete-disabled!] -> PATCH /api/git/pullRequests/{pullRequestId} (person) pm.issues/edit
+preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
+preview list [--project] -> GET /api/previews (person,run) pm.issues/view
+preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview retry <issue> <app> -> POST /api/previews/retry (person)
+preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
+project create <name> [--description --visibility --status --priority --lead --start-date --due-date --workflow] -> POST /api/projects (person) pm.projects/create
+project delete <project> -> DELETE /api/projects/{projectId} (person) pm.projects/delete confirm
+project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
+project invitation create [--email! --project] -> POST /api/projects/invitations (person)
+project invitation list -> GET /api/projects/invitations (person)
+project invitation resend <invitation> -> POST /api/projects/invitations/{invitationId}/resend (person)
+project invitation revoke <invitation> -> DELETE /api/projects/invitations/{invitationId} (person) confirm
+project list -> GET /api/projects (person,run) pm.projects/view
+project location add <project> [--code-location --init-agent --new-repo --existing-repo --runner-directory --label --deploy --ci --file] -> POST /api/projects/{projectId}/codeLocations (person)
+project member add <project> <user> -> POST /api/projects/{projectId}/members (person)
+project member candidates -> GET /api/projects/members (person)
+project member remove <project> <user> -> DELETE /api/projects/{projectId}/members/{userId} (person) confirm
+project resource add <project> [--type! --url --default-ref --binding --runner --path --label --init-prompt] -> POST /api/projects/{projectId}/resources (person)
+project resource remove <project> <resource> -> DELETE /api/projects/{projectId}/resources/{resourceId} (person) confirm
+project resource update <project> <resource> [--url --default-ref --binding --runner --path --label --init-prompt --position] -> PATCH /api/projects/{projectId}/resources/{resourceId} (person)
+project settings get -> GET /api/projects/settings (person)
+project settings update [--issue-prefix] -> PATCH /api/projects/settings (person)
+project setup create [--name --description --workflow --code-location --init-agent --new-repo --existing-repo --runner-directory --label --deploy --ci --file] -> POST /api/projectSetups (person)
+project setup get <project> -> GET /api/projectSetups/{projectId} (person)
+project setup retry <project> -> POST /api/projectSetups/{projectId}/retry (person)
+project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date --workflow] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
+registry check <registry> -> POST /api/releases/registries/{registryId}/check (person) rel.environments/read
+registry create [registry] [--name --url --namespace --pull-username --secret-changes --file] -> POST /api/releases/registries (person) rel.environments/manage
+registry delete <registry> -> DELETE /api/releases/registries/{registryId} (person) rel.environments/manage confirm
+registry get <registry> -> GET /api/releases/registries/{registryId} (person) rel.environments/read
+registry list -> GET /api/releases/registries (person) rel.environments/read
+registry update <registry> [--name --url --namespace --pull-username --secret-changes --file] -> PATCH /api/releases/registries/{registryId} (person) rel.environments/manage
+release config-template <app> <release> -> GET /api/releases/apps/{appId}/releases/{releaseId}/configTemplate (person) rel.apps/configure
+release get <app> <release> -> GET /api/releases/apps/{appId}/releases/{releaseId} (person) rel.apps/view
+release image <app> [--deploy --version! --ref! --digest! --platform --commit --build --label --variables] -> POST /api/releases/apps/{appId}/imageReleases (person) rel.apps/upload
+release list <app> [--page --limit --label] -> GET /api/releases/apps/{appId}/releases (person,run) rel.apps/view
+release pending <project> -> GET /api/deploys/projects/{projectId}/unreleasedIssues (person)
+release permissions -> GET /api/releases/me (person)
+release promote <app> <release> [--to! --label] -> POST /api/releases/apps/{appId}/releases/{releaseId}/promote (person) rel.apps/upload
+release update <app> <release> [--label!] -> PATCH /api/releases/apps/{appId}/releases/{releaseId} (person) rel.apps/upload
+release upload [--app! --sha!@env --repository@env --file!] -> POST /api/builds/uploadTickets (person) rel.apps/upload
+release variables <app> <release> -> GET /api/releases/apps/{appId}/releases/{releaseId}/variables (person) rel.apps/view
+report attention -> GET /api/reports/attention (person)
+report dashboard [--days] -> GET /api/reports/dashboard (person)
+report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
+report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
+run brief <run> -> GET /api/agents/runs/{runId}/brief (person)
+run cancel <run> -> POST /api/agents/runs/{runId}/cancel (person) confirm
+run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
+run list [--subject-kind --subject --agent --status --limit --page-token] -> GET /api/agents/runs (person)
+run request confirm <request> -> POST /api/agents/runRequests/{requestId}/confirm (person) confirm
+run request get <request> -> GET /api/agents/runRequests/{requestId} (person)
+run request list [--role --status --subject-kind --subject --agent --limit --page-token] -> GET /api/agents/runRequests (person)
+run request reject <request> [--note] -> POST /api/agents/runRequests/{requestId}/reject (person)
+run request run-as-me <request> -> POST /api/agents/runRequests/{requestId}/runAsMe (person)
+run request withdraw <request> -> POST /api/agents/runRequests/{requestId}/withdraw (person)
+run retry <run> -> POST /api/agents/runs/{runId}/retry (person)
+run workspace reset <kind> <subject> -> POST /api/agents/workspaces/{subjectKind}/{subjectId}/reset (person) confirm
+runtime delete <runtime> -> DELETE /api/agents/runners/{runnerId} (person) confirm
+runtime get <runtime> -> GET /api/agents/runners/{runnerId} (person)
+runtime list -> GET /api/agents/runners (person)
+runtime revoke <runtime> -> POST /api/agents/runners/{runnerId}/revoke (person) confirm
+runtime runs <runtime> -> GET /api/agents/runners/{runnerId}/runs (person)
+runtime token create [--trust --enabled-tools --slots --tool-slots] -> POST /api/agents/runners/registrationTokens (person)
+runtime update <runtime> [--name --trust --slots --tool-slots --enabled-tools --accept-jobs] -> PATCH /api/agents/runners/{runnerId} (person)
+runtime work <runtime> -> GET /api/agents/runners/{runnerId}/work (person)
+service check [--service --provider --base-url --api-key --model! --kind --dimensions] -> POST /api/agents/checkConnection (person)
+service create [--title --provider --base-url --api-key --models --enabled --file] -> POST /api/agents/services (person)
+service delete <service> -> DELETE /api/agents/services/{serviceName} (person) confirm
+service discover [--service --provider --base-url --api-key] -> POST /api/agents/discoverModels (person)
+service list -> GET /api/agents/services (person)
+service update <service> [--title --base-url --api-key --models --enabled --file] -> PATCH /api/agents/services/{serviceName} (person)
+skill attachment get <kind> <scope> -> GET /api/agents/skillAttachments/{scopeKind}/{scopeId} (person)
+skill attachment set <kind> <scope> [--skills!] -> PUT /api/agents/skillAttachments/{scopeKind}/{scopeId} (person)
+skill create [--content --files --file] -> POST /api/agents/skills (person)
+skill delete <skill> -> DELETE /api/agents/skills/{skillId} (person) confirm
+skill export <skill> [--version] -> GET /api/agents/skills/{skillId}/archive (person)
+skill file get <skill> <version> [--path!] -> GET /api/agents/skills/{skillId}/versions/{version}/file (person)
+skill get <skill> -> GET /api/agents/skills/{skillId} (person)
+skill import [--skill --revision --note --archive] -> POST /api/agents/skills/import (person)
+skill list -> GET /api/agents/skills (person)
+skill update <skill> [--content --files --note --revision --file] -> PATCH /api/agents/skills/{skillId} (person)
+skill upload [--file!] -> POST /api/agents/skills/uploads (person)
+skill version get <skill> <version> -> GET /api/agents/skills/{skillId}/versions/{version} (person)
+skill version list <skill> -> GET /api/agents/skills/{skillId}/versions (person)
+skill version restore <skill> <version> [--revision!] -> POST /api/agents/skills/{skillId}/versions/{version}/restore (person) confirm
+user create [--name! --username --email! --password! --role-scopes] -> POST /api/users (person)
+user delete <user> [--confirm!] -> DELETE /api/users/{userId} (person)
+user disable <user> -> POST /api/users/{userId}/disable (person) confirm
+user enable <user> -> POST /api/users/{userId}/enable (person)
+user invitation create [--emails! --role-scopes] -> POST /api/users/invitations (person)
+user invitation delete <invitation> -> DELETE /api/users/invitations/{invitationId} (person) confirm
+user invitation list -> GET /api/users/invitations (person)
+user invitation resend <invitation> -> POST /api/users/invitations/{invitationId}/resend (person)
+user list [--page --limit --q --status --role-scope --role] -> GET /api/users (person)
+user options -> GET /api/users/options (person)
+user preference delete <key> -> DELETE /api/users/me/preferences/{key} (person)
+user preference list -> GET /api/users/me/preferences (person)
+user preference set <key> [--value!] -> PUT /api/users/me/preferences/{key} (person)
+user preference update [--file] -> PATCH /api/users/me/preferences (person)
+user reset-password <user> [--password!] -> POST /api/users/{userId}/resetPassword (person)
+user revoke-sessions <user> -> POST /api/users/{userId}/revokeSessions (person) confirm
+user role-scope set <user> <scope> [--value!] -> PUT /api/users/{userId}/roleScopes/{scope} (person)
+user update <user> [--name --username --email] -> PATCH /api/users/{userId} (person)
+variable audit list <kind> <scope> [--limit --page-token] -> GET /api/agents/variables/{scopeKind}/{scopeId}/audits (person)
+variable delete <kind> <scope> <name> -> DELETE /api/agents/variables/{scopeKind}/{scopeId}/{variableName} (person) confirm
+variable list <kind> <scope> -> GET /api/agents/variables/{scopeKind}/{scopeId} (person)
+variable reveal <kind> <scope> -> POST /api/agents/variables/{scopeKind}/{scopeId}/reveal (person) confirm
+variable set <kind> <scope> <name> [--value --team-runners-only --from-runner] -> PUT /api/agents/variables/{scopeKind}/{scopeId}/{variableName} (person)
+workflow create <name> [--copy-from!] -> POST /api/projects/workflows (person)
+workflow delete <workflow> -> DELETE /api/projects/workflows/{workflowId} (person) confirm
+workflow get <workflow> -> GET /api/projects/workflows/{workflowId} (person)
+workflow list -> GET /api/projects/workflows (person)
+workflow preview <workflow> [--definition --file] -> POST /api/projects/workflows/{workflowId}/preview (person)
+workflow set-default <workflow> -> POST /api/projects/workflows/{workflowId}/setDefault (person)
+workflow update <workflow> [--revision --name --description --definition --file] -> PATCH /api/projects/workflows/{workflowId} (person)"
+`;
+
+exports[`Studio’s command manifest > offers a run what its agent may do, on the routes that take a run token 1`] = `
+"agent list -> GET /api/agents/available (person,run) agents.agents/view
+app deploy <app> [--wait --release! --config] -> POST /api/releases/apps/{appId}/deploy (person,run) rel.apps/deploy
+app env list <app> [--release] -> GET /api/releases/apps/{appId}/variables (person,run) rel.apps/view
+app get <app> -> GET /api/releases/apps/{appId} (person,run) rel.apps/view
+app list [--page --limit --search --env --label] -> GET /api/releases/apps (person,run) rel.apps/view
+app logs <app> [--page-token --level --source --search --since --until --from-start] -> GET /api/releases/apps/{appId}/logs (person,run) rel.apps/read-logs
+app rollback <app> [--deployment!] -> POST /api/releases/apps/{appId}/rollback (person,run) rel.apps/deploy
+attachment delete <file> -> DELETE /api/projects/attachments/{attachmentId} (person,run) pm.attachments/upload confirm
+attachment upload [--file!] -> POST /api/projects/attachments (person,run) pm.attachments/upload
+conversation attachment download <file> -> GET /api/agents/chatAttachments/{attachmentId}/content (person,run) agents.runs/self
+conversation title set <title> -> PATCH /api/agents/runs/current/conversation (run) agents.runs/self
+deploy get <app> <deployment> -> GET /api/releases/apps/{appId}/deployments/{deploymentId} (person,run) rel.apps/view
+deploy list <app> [--page --limit] -> GET /api/releases/apps/{appId}/deployments (person,run) rel.apps/view
+deploy logs <app> <deployment> [--page-token --level --source --search --since --until --from-start] -> GET /api/releases/apps/{appId}/deployments/{deploymentId}/logs (person,run) rel.apps/read-logs
+deploy request <app> [--release --rollback-to --note --label] -> POST /api/releases/apps/{appId}/deploymentRequests (person,run) rel.apps/deploy
+env get <env> -> GET /api/releases/environments/{environmentId} (person,run) rel.environments/read
+env list -> GET /api/releases/environments (person,run) rel.environments/read
+inbox list [--unread --limit --page-token] -> GET /api/inbox/items (person,run) studio.inbox/read
+issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}/content (person,run) pm.issues/view
+issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
+issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
+issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
+issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
+issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
+issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
+issue design-proposal [issue] [--content!] -> POST /api/designProposals (run) pm.issues/comment
+issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/view
+issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
+issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
+issue search [--status --project --owner --executor --label --parent --q --deleted --order-by --limit --page-token] -> GET /api/projects/issues (person,run) pm.issues/view
+issue update <issue> [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
+kb download <doc> [--version --project] -> GET /api/kb/docs/{doc}/file (person,run) kb.knowledge/read
+kb list [--q --parent --project] -> GET /api/kb/docs (person,run) kb.knowledge/read
+kb propose [--doc --title --slug --parent --space --content --summary --reason! --project --verify --changed] -> POST /api/kb/proposals (person,run) kb.knowledge/propose
+kb read <doc> [--version --project] -> GET /api/kb/docs/{doc} (person,run) kb.knowledge/read
+kb search <query> [--limit --project] -> GET /api/kb/search (person,run) kb.knowledge/read
+kb tree [--project] -> GET /api/kb/tree (person,run) kb.knowledge/read
+kb upload [--doc --title --parent --space --summary --reason! --project --file!] -> POST /api/kb/uploadTickets (person,run) kb.knowledge/propose
+plan create [--title --description --source --rows --file] -> POST /api/projects/plans (person,run) pm.plans/use
+plan get <plan> -> GET /api/projects/plans/{planId} (person,run) pm.plans/use
+plan list [--status --source-kind --source-key --issue --all --limit --page-token] -> GET /api/projects/plans (person,run) pm.plans/use
+pr close <issue> <pr> [--reason! --unlink] -> POST /api/git/pullRequests/{pullRequestId}/close (person,run) studio.git/open-pr
+pr edit <issue> <pr> [--title --body --base --draft --ready] -> POST /api/git/pullRequests/{pullRequestId}/edit (person,run) studio.git/open-pr
+pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/open-pr
+pr list [--issue] -> GET /api/git/pullRequests (person,run) pm.issues/view
+pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/pullRequests/open (person,run) studio.git/open-pr
+pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
+preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
+preview list [--project] -> GET /api/previews (person,run) pm.issues/view
+preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
+project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
+project list -> GET /api/projects (person,run) pm.projects/view
+project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date --workflow] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
+release list <app> [--page --limit --label] -> GET /api/releases/apps/{appId}/releases (person,run) rel.apps/view
+report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
+report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
+run context -> GET /api/agents/runs/current/context (run) agents.runs/self
+run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
+run self -> GET /api/agents/runs/current (run) agents.runs/self"
+`;

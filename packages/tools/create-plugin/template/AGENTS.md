@@ -136,6 +136,8 @@ Execution history records this package name alongside each migration, so history
 
 How to write the files themselves — self-contained, immutable once merged, `builder` for structure and `query` for data — is in the repository root `AGENTS.md`.
 
+**A merged migration is never edited; the schema changes incrementally.** This plugin is published, and an installation records each migration as executed and never runs it again, so an edited migration leaves existing installations on the old schema while fresh ones get the new one. Leave a merged migration's file untouched, its formatting and comments included, and add a new migration that sorts after it and takes an installation from what the earlier migrations left behind to the target. Test that upgrade path with `describeMigration()`.
+
 A seed is data the installing application needs in order to run. Sample or demonstration data is not: declare it as `defineSeed({ name, sample: true, run })` in the same `database/seeds`, or, when it has to go through other plugins' services, register it from a service provider's `boot()` on `sampleDataToken` from `@nocobase/app-server/sample-data` with a `name` prefixed by this package. Either loads only when the installing application installs its database with `app.sampleData` set, and is recorded as skipped otherwise. A plugin's configuration section maps its environment variables in `env` with a `description` and, where it applies, `secret`, `required`, `generate` or `firstStartOnly`, so `pnpm nocobase config variables` can tell a deployment what to supply.
 
 ## Server resource base and database builds

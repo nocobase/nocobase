@@ -30,6 +30,11 @@ import {
   type SkillBundle,
   type StartRequest,
   type UpgradeNotice,
+  type NpmUpgradeNotice,
+  type DistResolution,
+  NPM_UPGRADE_FEATURE,
+  DIST_ACCEPT_NPM,
+  distAccepts,
   type WorkspaceReporting,
   type WorkspacesRequest,
   type WorkspacesResponse,
@@ -158,6 +163,13 @@ export class FakeServer {
   readonly mountFetches = new Map<string, number>();
   /** Sent with every heartbeat answer while set. */
   upgrade: UpgradeNotice | undefined;
+  /** Sent with every heartbeat answer while set, to a runner whose heartbeat declares the `npm` feature. */
+  npmUpgrade: NpmUpgradeNotice | undefined;
+  /**
+   * What the resolve route answers for the runner while set: `npm` only to a caller that sent `accept=npm`, then
+   * `artifact`; 404 otherwise.
+   */
+  resolution: { artifact?: DistResolution; npm?: DistResolution } = {};
   /**
    * While set, the server cannot work with the runner's protocol: `verdict` answers heartbeats with `compatibility`
    * and claims with no work, as a current server does; `refuse` answers both `PROTOCOL_UNSUPPORTED`, as an older one.
@@ -516,6 +528,10 @@ export class FakeServer {
         ok: true,
         serverTime: new Date().toISOString(),
         ...(this.upgrade === undefined ? {} : { upgrade: this.upgrade }),
+        ...(this.npmUpgrade === undefined ||
+        !heartbeat.features.includes(NPM_UPGRADE_FEATURE)
+          ? {}
+          : { npmUpgrade: this.npmUpgrade }),
         ...(this.unsupported === 'verdict'
           ? {
               compatibility: {
@@ -541,6 +557,17 @@ export class FakeServer {
         return error(c, 404, 'ROUTE_NOT_FOUND');
       this.workspaceReports.push((await c.req.json()) as WorkspacesRequest);
       return ok(c, this.workspaceAnswer);
+    });
+
+    app.get(DIST_ROUTES.resolve, (c) => {
+      if (this.runnerFor(c) === undefined)
+        return error(c, 401, 'RUNNER_KEY_INVALID');
+      const answer =
+        (distAccepts(c.req.query('accept'), DIST_ACCEPT_NPM)
+          ? this.resolution.npm
+          : undefined) ?? this.resolution.artifact;
+      if (answer === undefined) return error(c, 404, 'PRODUCT_NOT_FOUND');
+      return ok(c, answer);
     });
 
     app.get(DIST_ROUTES.file, (c) => {

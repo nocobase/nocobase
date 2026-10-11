@@ -70,11 +70,27 @@ describe('app client theme', () => {
       );
       await openAppearance(appearance);
       const option = await screen.findByRole('radio', { name: label });
-      expect(option).toHaveAttribute('value', 'default');
       await userEvent.click(option);
+      expect(option).toBeChecked();
       expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
     },
   );
+
+  it('changes presets with arrow keys and returns focus on Escape', async () => {
+    render(
+      <AppThemeProvider>
+        <ThemeSettings />
+      </AppThemeProvider>,
+    );
+    await openAppearance();
+    const compact = await screen.findByRole('radio', { name: 'Compact' });
+    act(() => compact.focus());
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'Default' })).toBeChecked();
+    expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Appearance' })).toHaveFocus();
+  });
 
   it('falls back from the removed Ant Design preset without changing mode', async () => {
     localStorage.setItem('nocobase:crm:theme:preset', 'ant-design');

@@ -23,6 +23,8 @@ const zhCN: AuthenticationResource = {
     TOKEN_EXPIRED: '链接已过期。',
     ACCOUNT_DISABLED: '该账号已停用，请联系管理员。',
     SERVICE_ACCOUNT_NO_LOGIN: '服务账号不能登录，只能通过 API 密钥操作。',
+    INVALID_ORIGIN:
+      '当前访问地址未获允许，无法登录。请使用管理员提供的地址，或联系管理员检查应用访问地址配置。',
     INVALID_CSRF_ORIGIN: '请求来自其他站点，已被拒绝。请刷新页面后重试。',
   },
 };

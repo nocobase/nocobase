@@ -12,7 +12,9 @@ Write each prose paragraph in Markdown source on a single physical line, includi
 
 ## Branches, Commits and Pull Requests
 
-Name a branch after the kind of change it carries: `feat/<name>` for a feature and `fix/<name>` for a bug fix, where `<name>` is a short kebab-case description such as `feat/app-installer`. A change that is neither takes its Conventional Commits type the same way, such as `docs/<name>`, `refactor/<name>` or `chore/<name>`. Never push a branch under a tool's own prefix, such as the `claude/` or `codex/` branch an agent's worktree starts on: rename it with `git branch -m` before its first push. Renaming it once a pull request is open does not carry the pull request along: GitHub closes the pull request as if its head branch had been deleted, and a pull request's head branch cannot be changed afterwards, so the change has to be reopened as a new pull request from the renamed branch, and the review on the old one stays there.
+Name a branch after the kind of change it carries. V3 development branches use `feat/v3-<name>` for a feature and `fix/v3-<name>` for a bug fix, where `<name>` is a non-empty short kebab-case description such as `feat/v3-app-installer`; other change kinds use their Conventional Commits type the same way, such as `docs/v3-<name>`, `refactor/v3-<name>` or `chore/v3-<name>`. GitHub Actions writes the valid stacked v3 pull request target pattern as the glob `*/v3-*`; under this naming rule, where both the type and name are non-empty and contain no slash, it covers the same branches as the bot and CI regular expression `/^[^/]+\/v3-[^/]+$/`. Never push a branch under a tool's own prefix, such as the `claude/` or `codex/` branch an agent's worktree starts on: rename it with `git branch -m` before its first push. Renaming it once a pull request is open does not carry the pull request along: GitHub closes the pull request as if its head branch had been deleted, and a pull request's head branch cannot be changed afterwards, so the change has to be reopened as a new pull request from the renamed branch, and the review on the old one stays there.
+
+A run NocoBase Studio starts for an issue works on a branch named `agent/<issue key>`, such as `agent/PM-42`, which Studio's branch rules create and track; that prefix is Studio's, not a tool's, and is allowed. Its pull request title still follows Conventional Commits.
 
 Commit messages and pull request descriptions carry no attribution to an AI tool: no `Co-Authored-By` trailer naming a model or an agent, and no "Generated with …" line. A trailer naming a human co-author is unaffected. The repository's `.claude/settings.json` turns Claude Code's own attribution off for everyone working here; the rule holds whichever tool writes the commit, so a tool that adds such lines by default has to be told not to.
 
@@ -45,7 +47,7 @@ A new changeset goes in `.changeset/`, never in `.changeset/pre/`. That subdirec
 
 ## Repository Layout
 
-Every published package lives under `packages/`, grouped into six directories by what the package is. The grouping is a convention for readers: pnpm resolves packages by name, so which directory a package sits in changes nothing about how it is depended on or filtered.
+Every published package lives under `packages/`, grouped into seven directories by what the package is. The grouping is a convention for readers: pnpm resolves packages by name, so which directory a package sits in changes nothing about how it is depended on or filtered.
 
 | Directory             | What belongs here                                                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -54,11 +56,12 @@ Every published package lives under `packages/`, grouped into six directories by
 | `packages/plugins/`   | Application plugins that ship as product features, such as `app-plugin-authentication`                                        |
 | `packages/examples/`  | Application plugins that exist to demonstrate a capability, such as `app-plugin-routes-example`                               |
 | `packages/templates/` | Complete applications that `create-app` scaffolds from: `app-template-default` and `app-template-examples`                    |
+| `packages/apps/`      | Complete product applications this repository builds and deploys itself, such as `studio` (NocoBase Studio)                   |
 | `packages/tools/`     | Development and build tooling that never ships inside an application, such as `dev-config`, `create-app`, and `create-plugin` |
 
 `packages/README.md` describes each directory in more detail and is the place to look when a new package does not obviously belong to one of them. `pnpm plugin:create` scaffolds into `packages/plugins/`.
 
-`docs/` is the seventh workspace member and the one exception to the table above. It is the documentation site rather than something an application depends on, so it sits at the repository root rather than under `packages/`, and it is the only workspace package that sets `private: true`. That placement is what keeps it out of `pnpm pack:check`, which discovers publishable packages by descending into `packages/<category>/` and would otherwise reject it for being private. See the "Documentation Site" section below before changing anything under it.
+`docs/` and `ui-library/` are the workspace members outside `packages/`, and the exceptions to the table above. `docs/` is the documentation site rather than something an application depends on, so it sits at the repository root rather than under `packages/`, and like `ui-library/` it sets `private: true`. That placement is what keeps both out of `pnpm pack:check`, which discovers publishable packages by descending into `packages/<category>/` and would otherwise reject them for being private. See the "Documentation Site" section below before changing anything under `docs/`.
 
 ## Repository Skills
 
@@ -190,6 +193,8 @@ They drift otherwise, and the drift is invisible until someone hits it. Both tem
 
 Not everything transfers. Examples owns its demonstration homepage, article module, and example plugin composition. Each template keeps its own identity and the parts that follow from what it is: `package.json` name, `displayName`, and version; `nocobase.templateKind` and its plugin list; the pages, locales, and branding that make it that product. When a documentation change mentions the other template by name, reword it rather than copying the sentence.
 
+`packages/apps/` is outside this rule. An application there, such as NocoBase Studio, is built on a template rather than being one, and takes a newer template through its `nocobase-app-upgrade` Skill like any generated application; a framework change it needs is made in the same pull request as the Studio change, but the templates are not edited to match it.
+
 Apply all applicable sides in one change and run each affected template's `check`. A framework change that lands in only one template is incomplete, and a reviewer cannot tell whether the omission was a decision or an oversight; if it genuinely does not apply, say so in the pull request.
 
 When a template, application runtime, or CLI change affects how an agent develops, configures, builds, deploys, or upgrades an application, review `packages/app/app-skills` and update the relevant Skill or reference in the same change. Keep the guidance concise and actionable; record the current rule rather than implementation history, and link to existing detail instead of duplicating it.
@@ -236,7 +241,15 @@ The loader flattens the application's sources and every registered plugin's into
 
 `packages/tools/create-plugin/template/AGENTS.md` carries this for generated plugins; change both together.
 
-Before editing an existing migration, check its Git history and the status of the branch that introduced it. An existing migration may be corrected directly only while its introducing feature branch has not yet been merged. Once that branch has been merged into its target branch, never modify the migration again; implement every correction or subsequent schema change in a new migration. Do not use hard-coded previous checksum hashes to make an edited migration appear compatible.
+### Migrations change incrementally
+
+Every package under `packages/` is published to npm, and `v3-develop` publishes a prerelease of every changed package, so a migration merged there reaches installed applications with the next release, and a beta release counts. Some plugins used to correct a merged migration in place while nothing outside this repository ran it; that is no longer allowed, and the existing migrations of those plugins are not an example to follow.
+
+Before editing an existing migration, check its Git history and the status of the branch that introduced it. An existing migration may be corrected directly only while its introducing feature branch has not yet been merged. Once that branch has been merged into its target branch, never modify the migration again, not its operations, not its `down`, and not its name or filename; implement every correction or subsequent schema change in a new migration. Do not use hard-coded previous checksum hashes to make an edited migration appear compatible.
+
+The reason is that an installation never runs a migration twice. One that already ran the old version records it as executed and skips the edited file, keeping the schema the old version produced, while a fresh installation runs the new version: the two now disagree, and nothing reports it beyond a checksum warning that `nocobase db repair` silences without changing the schema. A new migration is the only change both reach. Write it so that it brings an installation from what the earlier migrations left behind to the target, and so that it also holds on a fresh installation that runs every migration in order. Name it after the earlier one so it sorts after it, and cover the upgrade path in its `describeMigration()` test.
+
+A correction that only reformats a migration or edits a comment changes no schema, but it still changes the checksum every existing installation recorded and warns each of them on the next run. Leave a merged migration's file untouched for those too.
 
 The one exception is a released migration that has never succeeded on a supported database and that no later migration can get past, because the failing statement is the one that creates the table — for example a unique index declared on a `varchar(1024)`, which exceeds MySQL's key length, so the plugin cannot be installed there at all. Such a migration may be corrected in place, and only to the extent that makes it succeed. The changeset must say that it edits a released migration and why, and must tell operators of installations that already ran it to expect a checksum warning on the next `nocobase db apply` and to clear it with `nocobase db repair`.
 
