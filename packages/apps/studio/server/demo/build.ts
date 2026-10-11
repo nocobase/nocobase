@@ -296,7 +296,7 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
         name: agent.name,
         modelEntries: agent.tools.map((entry) => ({
           tool: entry.tool as AgentTool,
-          model: entry.model ?? null,
+          model: entry.model,
         })),
         description: agent.description,
         instructions: agent.instructions,

@@ -1369,7 +1369,7 @@ export async function createBridgeHarness(
     async createAgent(input = {}) {
       const agent = await agents.agents.create('alice', {
         name: 'Coder',
-        modelEntries: [{ tool: 'claude', model: null }],
+        modelEntries: [{ tool: 'claude', model: 'opus' }],
         access: 'everyone',
         actions: ['pm.issues/view', 'pm.issues/comment', 'pm.issues/edit'],
         instructions: 'Prefer small commits.',

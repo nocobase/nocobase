@@ -54,7 +54,7 @@ export interface DemoSkill {
 export interface DemoAgent {
   readonly name: string;
   /** Its coding tools and models, in order: a runtime takes its work with the first one it has signed in. */
-  readonly tools: readonly { readonly tool: string; readonly model?: string }[];
+  readonly tools: readonly { readonly tool: string; readonly model: string }[];
   readonly description: string;
   readonly instructions: string;
   readonly skills: readonly string[];
@@ -300,7 +300,10 @@ The body explains why the change was made and what it affects, rather than repea
 export const DEMO_AGENTS: readonly DemoAgent[] = [
   {
     name: 'Frontend Developer',
-    tools: [{ tool: 'claude' }, { tool: 'codex' }],
+    tools: [
+      { tool: 'claude', model: 'opus' },
+      { tool: 'codex', model: 'gpt-6.1-sol' },
+    ],
     description:
       'Builds frontend pages and components; knows React, Tailwind and i18n.',
     instructions:
@@ -318,7 +321,10 @@ export const DEMO_AGENTS: readonly DemoAgent[] = [
   },
   {
     name: 'Code Reviewer',
-    tools: [{ tool: 'codex' }, { tool: 'claude', model: 'opus' }],
+    tools: [
+      { tool: 'codex', model: 'gpt-6.1-sol' },
+      { tool: 'claude', model: 'opus' },
+    ],
     description:
       'Reviews submitted changes and gives structured review feedback.',
     instructions:

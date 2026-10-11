@@ -112,7 +112,7 @@ describe('the demo data', () => {
     ).toMatchObject({
       type: 'runner',
       modelEntries: [
-        { tool: 'codex', model: null, effort: null },
+        { tool: 'codex', model: 'gpt-6.1-sol', effort: null },
         { tool: 'claude', model: 'opus', effort: null },
       ],
     });

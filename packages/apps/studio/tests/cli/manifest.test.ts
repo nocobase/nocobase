@@ -159,7 +159,7 @@ describe('Studio’s command manifest', () => {
     const agents = application.container.resolve(agentsToken);
     const agent = await agents.agents.create(me.user.id, {
       name: 'Coder',
-      modelEntries: [{ tool: 'claude', model: null }],
+      modelEntries: [{ tool: 'claude', model: 'opus' }],
       access: 'everyone',
       actions: [...agents.actions.keys()],
     });

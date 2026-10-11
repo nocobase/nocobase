@@ -144,7 +144,7 @@ describe('an agent run calling Studio’s API', () => {
     const agents = container.resolve(agentsToken);
     const agent = await agents.agents.create(userId, {
       name: 'Coder',
-      modelEntries: [{ tool: 'claude', model: null }],
+      modelEntries: [{ tool: 'claude', model: 'opus' }],
       access: 'everyone',
       actions: ['pm.issues/view', 'pm.issues/comment'],
     });
