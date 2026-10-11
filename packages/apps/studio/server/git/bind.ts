@@ -1,3 +1,4 @@
+import { IN_PROGRESS_STATUS } from '../../shared/design.js';
 /**
  * Studio's pull requests joined to the projects plugin, the agents plugin and Studio's inbox; neither plugin knows about
  * branches, pull requests or code hosts. Binding:
@@ -135,6 +136,12 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
     deps.projects().events.on('issue.updated', (event) => {
       const status = event.changes.status;
       if (!status) return;
+      if (status.to === IN_PROGRESS_STATUS)
+        void flow
+          .resumeSignals(event.issueId)
+          .catch((error: unknown) =>
+            onError('Studio could not resume pull request signals.', error),
+          );
       const work =
         status.to === IN_REVIEW
           ? flow.requestMerges(event.issueId)

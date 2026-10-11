@@ -69,6 +69,7 @@ import {
 } from './conversation/context-kinds.js';
 import type { StudioInboxPort } from '../inbox/port.js';
 import type { InboxSource } from './conversation/inbox.js';
+import { bindStageRuns } from './stage-runs.js';
 import { createDesignService } from './design.js';
 import type { Delegations } from './conversation/delegation.js';
 import { createPlanHooks } from './conversation/plan-hooks.js';
@@ -168,6 +169,8 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
   const direct = createDirectWrites({ agents, projects: deps.projects });
   const design = createDesignService({
+    agents,
+    kinds: deps.kinds,
     projects: deps.projects,
     inbox: deps.inboxPort ?? (() => undefined),
   });
@@ -260,6 +263,9 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       onError('Agents could not clear a removed agent as executor.', error),
     ),
     // The owner's card of a design proposal, while the issue waits in Proposal review.
+    bindStageRuns(deps.projects(), agents, (error) =>
+      onError('Agents could not reconcile queued stage work.', error),
+    ),
     design.bindCards((error) =>
       onError('Agents could not update a design review card.', error),
     ),

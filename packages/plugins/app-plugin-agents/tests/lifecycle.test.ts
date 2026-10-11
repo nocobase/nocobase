@@ -300,6 +300,32 @@ describe('run lifecycle', () => {
     ]);
   });
 
+  it('requeues live workspace contention with a delay and releases its runner slot', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    expect(first.run.acceptedFailures).toContain('workspaceBusy');
+    expect(
+      (
+        await post(runner, runId, 'fail', {
+          reason: 'workspaceBusy',
+          detail: 'Another live process holds this workspace.',
+        })
+      ).body.data,
+    ).toMatchObject({ status: 'queued' });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      runnerId: null,
+      attempt: 2,
+    });
+    expect(await claim(h, runner)).toEqual([]);
+    h.clock.advance(30_000);
+    const [again] = await claim(h, runner);
+    expect(again.run.id).toBe(runId);
+  });
+
   it('fails a non-retryable failure at once', async () => {
     h = await createHarness();
     const { runner, runId } = await claimed();

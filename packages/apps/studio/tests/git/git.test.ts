@@ -66,6 +66,7 @@ const AGENT_ACTIONS = [
   'pm.issues/comment',
   'pm.issues/edit',
   'pm.issues/create',
+  'studio.git/open-pr',
 ];
 
 async function detail(issue: Pick<Issue, 'id'>) {
@@ -270,6 +271,8 @@ describe('design first', () => {
 
     // Only the owner, the project lead or an administrator approves: bob, who woke the run, may not as a member.
     const design = createDesignService({
+      agents: h.agents,
+      kinds: h.projects.kinds,
       projects: () => h.projects,
       inbox: () => undefined,
     });
@@ -323,6 +326,8 @@ describe('design first', () => {
     const { token, issue } = await analysisRun();
     await propose(token, issue);
     const design = createDesignService({
+      agents: h.agents,
+      kinds: h.projects.kinds,
       projects: () => h.projects,
       inbox: () => undefined,
     });
@@ -569,6 +574,10 @@ describe('pull requests', () => {
 
   it('wakes the agent when checks fail, once per head, then tells the owner', async () => {
     const { issue, agentId } = await reviewIssue();
+    await h.projects.issues.update(alice(), issue.id, {
+      revision: (await detail(issue)).revision,
+      statusKey: 'in_progress',
+    });
     const repo = await repoWithToken();
     h.github.addPull(REPO, {
       number: 5,
@@ -607,6 +616,7 @@ describe('pull requests', () => {
 
   it('wakes the agent when its pull request conflicts', async () => {
     const { issue } = await reviewIssue();
+    await move(issue, 'in_progress');
     const repo = await repoWithToken();
     h.github.addPull(REPO, {
       number: 6,
@@ -962,6 +972,43 @@ describe('pull requests', () => {
       actorType: 'agent',
       actorId: agentId,
       details: { reason: 'Superseded', unlinked: true },
+    });
+  });
+  it('retains a failed head during review without waking and replays only an effective signal on return', async () => {
+    const { issue } = await reviewIssue();
+    const repo = await repoWithToken();
+    h.github.addPull(REPO, {
+      number: 91,
+      head: { ref: `agent/${issue.identifier}`, sha: 'review-head' },
+    });
+    await h.git.pollRepo(repo);
+    h.github.setStatus(REPO, 'review-head', 'failure');
+    await h.git.pollRepo(repo);
+    const listed = (await h.git.list(alice(), issue.id)).data[0]!;
+    const stored = await findPullRequestById(h.projects.tx.read(), listed.id);
+    expect(stored?.signals.checks).toMatchObject({
+      count: 0,
+      pendingIssueIds: [issue.id],
+    });
+    const checks = async () =>
+      (
+        await Promise.all(
+          (await runsOf(issue.id)).map((run) => h.agents.runs.detail(run.id)),
+        )
+      )
+        .flatMap((run) => run.inputs)
+        .filter(
+          (input) =>
+            (input.payload as { trigger?: string }).trigger ===
+            'prChecksFailed',
+        );
+    expect(await checks()).toEqual([]);
+    await move(issue, 'in_progress');
+    await expect.poll(async () => (await checks()).length).toBe(1);
+    const current = await findPullRequestById(h.projects.tx.read(), listed.id);
+    expect(current?.signals.checks).toMatchObject({
+      count: 1,
+      pendingIssueIds: [],
     });
   });
 });

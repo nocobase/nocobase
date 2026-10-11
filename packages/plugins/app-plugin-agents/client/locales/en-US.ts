@@ -636,6 +636,8 @@ const pages = {
     idleTimeout: 'The agent stopped making progress.',
     setupFailed: 'The run could not be prepared.',
     cliUnavailable: 'The runtime could not install the application CLI.',
+    workspaceBusy:
+      'The working directory is busy; waiting for another attempt.',
     checkoutFailed: 'The repository checkout failed.',
     toolAuth: 'The coding tool is not signed in on the runtime.',
     toolQuota: 'The coding tool ran out of quota.',

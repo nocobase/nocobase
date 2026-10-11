@@ -137,6 +137,11 @@ export interface Lock {
   release(): Promise<void>;
 }
 
+/** A live process still holds a working directory; another attempt may take it later. */
+export class WorkspaceBusyError extends CheckoutError {
+  override name = 'WorkspaceBusyError';
+}
+
 export async function acquireLock(
   lockDir: string,
   options: { timeoutMs?: number; pollMs?: number } = {},
@@ -163,7 +168,7 @@ export async function acquireLock(
       continue;
     }
     if (Date.now() >= deadline)
-      throw new CheckoutError(
+      throw new WorkspaceBusyError(
         `${lockDir} is held by process ${owner || 'unknown'}`,
       );
     await delay(options.pollMs ?? 200);

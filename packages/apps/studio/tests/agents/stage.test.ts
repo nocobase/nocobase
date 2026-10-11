@@ -596,20 +596,6 @@ describe('runAgent', () => {
     ]);
   });
 
-  /** A rule handing `status` to `agentId` without making it the executor, as the template's reviews do. */
-  const handOver = (status: string, agentId: string, words: string) => ({
-    [status]: [
-      {
-        type: 'runAgent',
-        config: {
-          agentId,
-          assign: false,
-          instruction: `${words} {{issue.identifier}}.`,
-        },
-      },
-    ],
-  });
-
   /** The issue's activities of `action`. */
   const activitiesOf = async (issueId: string, action: string) =>
     (await activities(issueId)).filter((entry) => entry.action === action);
@@ -1036,6 +1022,7 @@ describe('runAgent', () => {
     'leaseExpired',
     'toolNetwork',
     'prepareNetwork',
+    'workspaceBusy',
     'cancelled',
   ] as const)('does not count %s failures after starting', async (reason) => {
     const agentId = await h.createAgent({ maxAttempts: 1 });
@@ -1419,4 +1406,150 @@ describe('suggestExecutor', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(await openPlans('alice')).toEqual([]);
   });
+});
+
+/** A rule handing `status` to `agentId` without making it the executor, as the template's reviews do. */
+const handOver = (status: string, agentId: string, words: string) => ({
+  [status]: [
+    {
+      type: 'runAgent',
+      config: {
+        agentId,
+        assign: false,
+        instruction: `${words} {{issue.identifier}}.`,
+      },
+    },
+  ],
+});
+
+describe('development startup and waiting executor boundaries', () => {
+  it('skips a designer on entry and on backlog exit, then starts a developer after reassignment', async () => {
+    const designer = await h.createAgent({
+      name: 'Designer',
+      actions: ['pm.issues/view'],
+    });
+    const coder = await h.createAgent();
+    await setRules({
+      in_progress: [
+        {
+          type: 'runAgent',
+          config: { instruction: 'Implement {{issue.identifier}}.' },
+        },
+      ],
+    });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Build it',
+      statusKey: 'backlog',
+      executor: { type: 'agent', id: designer },
+    });
+    await moveTo(issue, 'in_progress');
+    expect(await runsOf(issue.id)).toEqual([]);
+    await expect
+      .poll(
+        () =>
+          planned.filter(
+            (notice) => notice.params?.reason === 'executorCannotImplement',
+          ).length,
+      )
+      .toBe(1);
+    const current = await h.projects.issueQueries.detail(alice(), issue.id);
+    await h.projects.issues.update(alice(), issue.id, {
+      revision: current.revision,
+      executor: { type: 'agent', id: coder },
+    });
+    const runs = await runsOf(issue.id);
+    expect(runs).toHaveLength(1);
+    expect((await h.agents.runs.detail(runs[0]!.id)).inputs).toHaveLength(1);
+  });
+
+  it('routes ordinary comments and old replies to the current stage, explicit mentions only to their target', async () => {
+    const designer = await h.createAgent({ name: 'Designer' });
+    const coder = await h.createAgent();
+    await setRules(handOver('analysis', designer, 'Design'));
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Plan it',
+      statusKey: 'analysis',
+      executor: { type: 'agent', id: coder },
+      start: false,
+    });
+    await expect.poll(async () => (await runsOf(issue.id)).length).toBe(1);
+    await h.projects.comments.post(alice().actor, issue.id, {
+      content: 'Add this constraint',
+    });
+    const runs = await runsOf(issue.id);
+    expect(runs.map((run) => run.agentId)).toEqual([designer]);
+    expect(
+      (await h.agents.runs.detail(runs[0]!.id)).inputs.at(-1),
+    ).toMatchObject({
+      type: 'comment',
+      payload: {
+        instruction: `Design ${issue.identifier}.`,
+        status: 'analysis',
+      },
+    });
+    const old = await h.projects.comments.post(
+      { type: 'agent', id: coder },
+      issue.id,
+      { content: 'Previous developer response' },
+      { trigger: false },
+    );
+    await h.projects.comments.post(alice().actor, issue.id, {
+      parentId: old.comment.id,
+      content: 'A reply in an old thread',
+    });
+    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
+      designer,
+    ]);
+    await h.projects.comments.post(alice().actor, issue.id, {
+      content: `[@Coder](mention://agent/${coder}) Please answer`,
+    });
+    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
+      [designer, coder].sort(),
+    );
+  });
+});
+
+it('withdraws a pure old stage queue for a human executor but preserves a mixed comment queue', async () => {
+  const designer = await h.createAgent({ name: 'Designer' });
+  await setRules(handOver('analysis', designer, 'Design'));
+  const first = await h.projects.issues.create(alice(), {
+    title: 'Human executor',
+    executor: { type: 'user', id: 'alice' },
+    start: false,
+  });
+  await moveTo(first, 'analysis');
+  const [pure] = await runsOf(first.id);
+  expect(pure!.status).toBe('queued');
+  await moveTo(first, 'in_progress');
+  await expect
+    .poll(async () => (await h.agents.runs.get(pure!.id)).status)
+    .toBe('cancelled');
+
+  const second = await h.projects.issues.create(alice(), {
+    title: 'A mixed queue',
+    start: false,
+  });
+  await moveTo(second, 'analysis');
+  const [mixed] = await runsOf(second.id);
+  await h.agents.runs.addInput(mixed!.id, {
+    type: 'comment',
+    actor: { kind: 'user', id: 'alice', name: 'Alice' },
+    text: 'Keep this comment',
+  });
+  await moveTo(second, 'in_progress');
+  await expect
+    .poll(async () =>
+      (await h.agents.runs.detail(mixed!.id)).inputs.some(
+        (input) =>
+          (input.payload as { trigger?: string } | null)?.trigger ===
+          'stageLeft',
+      ),
+    )
+    .toBe(true);
+  expect((await h.agents.runs.get(mixed!.id)).status).toBe('queued');
+  expect(
+    (await h.agents.runs.detail(mixed!.id)).inputs.some(
+      (input) => input.text === 'Keep this comment',
+    ),
+  ).toBe(true);
 });

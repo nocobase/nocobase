@@ -134,6 +134,14 @@ await agents.runs.enqueue({ agentId, subject: { kind: 'ticket', id }, actorUserI
 // Withdraws the work no runner took yet, keeping why as the run's failure detail.
 await agents.runs.withdrawQueued({ subject: { kind: 'ticket', id }, byUserId: null, detail: 'The ticket is on hold.' });
 
+// Conditionally end precisely this queued run, keeping other actors and threads intact.
+// Read pendingInputs first. Reclassify and retry after inputsChanged; notQueued leaves claimed work untouched.
+await agents.runs.reconcileQueued({
+  runId, expectedPendingInputIds: inputs.map((input) => input.id),
+  operation: { type: 'cancel', byUserId, detail: 'These inputs are obsolete.' },
+});
+// A signal operation takes { type: 'signal', key, input }; key deduplicates it on the run.
+
 // Work on a subject someone answers for: the ticket's assignee confirms what anyone else causes.
 const result = await agents.runs.enqueue({ agentId, subject, responsibleUserId: assigneeId, requestedByUserId: commenterId, input });
 if (result.outcome === 'pending') {

@@ -103,6 +103,8 @@ export {
   type RunFilter,
   type RunRequestPending,
   type RunService,
+  type ReconcileQueuedRequest,
+  type ReconcileQueuedResult,
 } from './run.service.js';
 export {
   RUN_REQUEST_TTL_MS,

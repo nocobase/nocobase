@@ -30,6 +30,11 @@ export const DecideFailedRunInput = z
 export const DesignDecisionInput = z.strictObject({
   comment: z.string().optional(),
 });
+export const DesignApproveInput = DesignDecisionInput.extend({
+  executor: z
+    .strictObject({ type: z.enum(['agent', 'user']), id: z.string().min(1) })
+    .optional(),
+});
 
 const filter = z
   .string()
@@ -102,6 +107,15 @@ export const DesignStateSchema: z.ZodType<DesignState> = z
     proposal: DesignProposalSchema.nullable().meta({
       description: 'The newest proposal; null before the first.',
     }),
+    executorOk: z.boolean(),
+    recommendedAgentId: z.string().nullable(),
+    executorCandidates: z.array(
+      z.object({
+        type: z.enum(['agent', 'user']),
+        id: z.string(),
+        name: z.string(),
+      }),
+    ),
     canApprove: z.boolean(),
     canRequestChanges: z.boolean(),
   })

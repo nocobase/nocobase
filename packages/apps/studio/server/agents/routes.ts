@@ -84,6 +84,7 @@ import {
   DelegationPatchInput,
   DelegationSchema,
   DesignDecisionInput,
+  DesignApproveInput,
   DesignProposalSubmittedSchema,
   DesignStateSchema,
   FailedRunResultSchema,
@@ -380,6 +381,8 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
     // Design-first proposals (`design.ts`): the issue page's section and the owner's inbox card read and decide here.
     if (container.has(projectsToken)) {
       const design = createDesignService({
+        agents: container.resolve(agentsToken),
+        kinds: container.resolve(projectsToken).kinds,
         projects: () => container.resolve(projectsToken),
         inbox: () =>
           container.has(studioInboxPortToken)
@@ -522,6 +525,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
               flags: {
                 issueId: { name: 'issue' },
                 comment: { contentFile: true },
+                ...(action === 'approve' ? { executor: {} } : {}),
               },
               ...(action === 'approve'
                 ? { examples: ['design approve PM-12'] }
@@ -533,6 +537,10 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             }),
             responses: {
               200: dataResponse(DesignStateSchema),
+              409: apiErrorResponse(
+                409,
+                'DESIGN_EXECUTOR_REQUIRED: choose an eligible executor; or the proposal changed.',
+              ),
               400: apiErrorResponse(
                 400,
                 'When the issue does not wait in Proposal review, has no proposal, or the comment is missing or too long.',
@@ -542,7 +550,10 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             },
           }),
           apiValidator('param', IssueParams),
-          apiValidator('json', DesignDecisionInput),
+          apiValidator(
+            'json',
+            action === 'approve' ? DesignApproveInput : DesignDecisionInput,
+          ),
           async (context) => {
             const request = context.req.valid('json');
             const viewer = await viewerOf(userIdOf(context));
