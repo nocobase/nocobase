@@ -54,9 +54,9 @@ The Server entry exports API-safe account, identity, folder, label, message, att
 - Personal message/conversation reads, deferred-content retry, message state updates, label changes, moves and deletion.
 - Single and bulk sending, draft save/conflict resolution, and outbound attachment upload/read.
 - Sync run and submission history, pagination, retry and cancellation, plus unread counts.
-- Server-only synchronization insert subscriptions and personal/managed event-log reads with persistent account checkpoints.
+- Server-only queue-backed synchronization insert subscriptions.
 
-`onMessagesSynced(listener)` returns an idempotent `MailUnsubscribe`. `MailMessagesSyncedEvent`, `MailMessagesSyncedListener`, `MailUnsubscribe`, `MailListMessageSyncEventsInput` and `MailMessageSyncEventsPage` are exported from the Server entry. `listMessageSyncEvents(context, input)` enforces personal account ownership; `listManagedMessageSyncEvents(context, input)` requires the caller's explicit managed authorization or trusted system policy. Both provide local-time initial positioning and opaque account-bound checkpoints, with a fixed upper bound during pagination. Notification registration does not grant message-read permission. See [Server synchronization events](message-sync-events.md) for semantics, lifecycle and durable consumer examples; these methods are not Client or HTTP APIs.
+`onMessagesSynced(listener)` returns an idempotent asynchronous `MailUnsubscribe`. `MailMessagesSyncedEvent`, `MailMessagesSyncedListener` and `MailUnsubscribe` are exported from the Server entry. The listener receives `(event, signal)`, and its Promise is awaited by the application's queue worker, not by synchronization. Await cancellation during Provider shutdown; honor the signal and keep effects idempotent for queue retries. There are no event-log reads or checkpoints, and subscription grants no message-read permission. See [Server synchronization events](message-sync-events.md) for authorization, delivery limits, lifecycle and consumer examples; this is not a Client or HTTP API.
 
 Output status, folder-type and Provider error category/reason types have `Known...` aliases for currently recognized values and open `Mail...` types for values added by a later compatible release. Inputs that trigger a specific operation remain constrained to the values Mail currently accepts.
 

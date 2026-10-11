@@ -1,94 +1,224 @@
-import { describe, expect, it, vi } from 'vitest';
-import { MailMessageSyncEventsService } from '../../server/services/message-sync-events.js';
-import type { MailAccount } from '../../shared/mail.js';
+import type { DatabaseManager } from '@nocobase/db';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MailMessageSyncNotifier } from '../../server/message-sync-notifier.js';
+import { DefaultMailService } from '../../server/service.js';
+import { createDatabaseMailStore } from '../../server/store.js';
+import type { MailMessagesSyncedEvent } from '../../server/index.js';
+import type { MailStore } from '../../server/contracts/persistence.js';
+import type { MailProviderAdapterResolver } from '../../server/contracts/provider.js';
+import {
+  createMailTestDatabase,
+  destroyMailTestDatabase,
+} from '../helpers/database.js';
+import {
+  createMailTestQueue,
+  mailQueueBackends,
+  type MailTestQueue,
+} from '../helpers/queue.js';
+import { testId } from '../helpers/test-id.js';
 
-function fixture(status: MailAccount['status'] = 'active') {
-  const getAccount = vi.fn(
-    async () => ({ id: 'account-1', userId: 'owner-1', status }) as MailAccount,
-  );
-  const page = { items: [], checkpoint: 'opaque-checkpoint' };
-  const listMessageSyncEvents = vi.fn(async () => page);
-  return {
-    service: new MailMessageSyncEventsService({
-      store: { getAccount, listMessageSyncEvents },
+const accountId = testId('account');
+const adapters: MailProviderAdapterResolver = {
+  resolve: async () => ({
+    identity: { type: 'fixture', name: 'fixture' },
+    capabilities: { receive: true },
+    setRead: async () => ({ ok: true, value: undefined }),
+    setStarred: async () => ({ ok: true, value: undefined }),
+    deleteMessage: async () => ({ ok: true, value: undefined }),
+    getMessage: async () => ({
+      ok: true,
+      value: { ...message, text: 'Recovered body', contentStatus: 'complete' },
     }),
-    getAccount,
-    listMessageSyncEvents,
-    page,
-  };
-}
+  }),
+};
+const message = {
+  providerMessageId: 'remote',
+  providerFolderIds: [],
+  subject: 'Message',
+  to: [],
+  cc: [],
+  bcc: [],
+  replyTo: [],
+  references: [],
+  read: false,
+  starred: false,
+  draft: false,
+  attachments: [],
+};
 
-describe('Mail public message sync event reads', () => {
-  it('authorizes the owner before reading and delegates opaque paging unchanged', async () => {
-    const { service, getAccount, listMessageSyncEvents, page } = fixture();
-    const input = {
-      accountId: 'account-1',
-      pageToken: 'opaque-page',
-      pageSize: 2,
-    };
-    expect(
-      await service.listMessageSyncEvents({ actorId: 'owner-1' }, input),
-    ).toBe(page);
-    expect(listMessageSyncEvents).toHaveBeenCalledExactlyOnceWith(input);
-    expect(getAccount.mock.invocationCallOrder[0]).toBeLessThan(
-      listMessageSyncEvents.mock.invocationCallOrder[0]!,
-    );
-  });
+describe.each(mailQueueBackends)(
+  'Mail public queue subscriptions (%s)',
+  (backend) => {
+    let database: DatabaseManager;
+    let store: MailStore;
+    let queue: MailTestQueue;
+    let notifier: MailMessageSyncNotifier;
+    let service: DefaultMailService;
 
-  it('never reads another owner, missing or removing account even with a token', async () => {
-    const { service, getAccount, listMessageSyncEvents } = fixture();
-    await expect(
-      service.listMessageSyncEvents(
-        { actorId: 'other' },
-        { accountId: 'account-1', after: 'token' },
-      ),
-    ).rejects.toMatchObject({ reason: 'MAIL_ACCOUNT_NOT_FOUND' });
-    getAccount.mockResolvedValueOnce(undefined as unknown as MailAccount);
-    await expect(
-      service.listMessageSyncEvents(
-        { actorId: 'owner-1' },
-        { accountId: 'account-1' },
-      ),
-    ).rejects.toMatchObject({ reason: 'MAIL_ACCOUNT_NOT_FOUND' });
-    getAccount.mockResolvedValueOnce({
-      id: 'account-1',
-      userId: 'owner-1',
-      status: 'removing',
-    } as MailAccount);
-    await expect(
-      service.listMessageSyncEvents(
-        { actorId: 'owner-1' },
-        { accountId: 'account-1' },
-      ),
-    ).rejects.toMatchObject({ reason: 'MAIL_ACCOUNT_REMOVING' });
-    expect(listMessageSyncEvents).not.toHaveBeenCalled();
-  });
+    beforeEach(async () => {
+      database = await createMailTestDatabase();
+      store = createDatabaseMailStore(database);
+      await store.saveAccount({
+        id: accountId,
+        userId: 'owner',
+        provider: { type: 'fixture', name: 'fixture' },
+        address: 'owner@example.test',
+        credentialReference: 'fixture',
+        scopes: [],
+        status: 'active',
+      });
+      queue = await createMailTestQueue(backend);
+      notifier = new MailMessageSyncNotifier(queue.hostQueue);
+      service = new DefaultMailService({
+        store,
+        adapters,
+        outbox: { kick() {} },
+        messageSyncNotifier: notifier,
+      });
+      await queue.setup();
+    });
 
-  it('keeps committed history readable while reauthorization is required', async () => {
-    const { service, page } = fixture('reauthorizationRequired');
-    expect(
-      await service.listMessageSyncEvents(
-        { actorId: 'owner-1' },
-        { accountId: 'account-1' },
-      ),
-    ).toBe(page);
-  });
+    afterEach(async () => {
+      try {
+        await notifier.close();
+      } finally {
+        await queue.close();
+        await destroyMailTestDatabase(database);
+        vi.restoreAllMocks();
+      }
+    });
 
-  it('uses the existing trusted management boundary, not the owners identity', async () => {
-    const { service, page, listMessageSyncEvents, getAccount } = fixture();
-    expect(
-      await service.listManagedMessageSyncEvents(
-        { actorId: 'trusted-admin' },
-        { accountId: 'account-1' },
-      ),
-    ).toBe(page);
-    getAccount.mockResolvedValueOnce(undefined as unknown as MailAccount);
-    await expect(
-      service.listManagedMessageSyncEvents(
-        { actorId: 'trusted-admin' },
-        { accountId: 'missing' },
-      ),
-    ).rejects.toMatchObject({ reason: 'MAIL_ACCOUNT_NOT_FOUND' });
-    expect(listMessageSyncEvents).toHaveBeenCalledOnce();
-  });
-});
+    async function commit(): Promise<readonly MailMessagesSyncedEvent[]> {
+      const created = await store.createSyncRun({
+        id: testId('run'),
+        accountId,
+        requestedBy: 'owner',
+        mode: 'incremental',
+        policy: { batchSize: 10 },
+      });
+      const prepared = await store.claimSyncRun(
+        created.id,
+        0,
+        'preparing',
+        'prepare',
+        new Date(Date.now() + 60000).toISOString(),
+      );
+      if (!prepared) throw new Error('Missing preparation lease.');
+      await store.commitSyncStep({
+        run: prepared,
+        messages: [],
+        phase: 'incremental',
+        status: 'running',
+        createNextTask: false,
+      });
+      const claimed = await store.claimSyncRun(
+        created.id,
+        1,
+        'incremental',
+        'import',
+        new Date(Date.now() + 60000).toISOString(),
+      );
+      if (!claimed) throw new Error('Missing import lease.');
+      const result = await store.commitSyncStep({
+        run: claimed,
+        messages: [message],
+        phase: 'completed',
+        status: 'completed',
+        createNextTask: false,
+      });
+      return result.messageSyncEvents;
+    }
+
+    it('delivers committed snapshots through the supplied host queue and awaits idempotent unsubscription', async () => {
+      const received: MailMessagesSyncedEvent[] = [];
+      const listener = vi.fn(
+        async (event: MailMessagesSyncedEvent, signal: AbortSignal) => {
+          received.push(event);
+          expect(signal).toBeInstanceOf(AbortSignal);
+          expect(signal.aborted).toBe(false);
+          expect(
+            await service.getMessage(
+              { actorId: 'owner' },
+              event.accountId,
+              event.messageIds[0]!,
+            ),
+          ).toMatchObject({ providerMessageId: 'remote' });
+        },
+      );
+      const cancel = service.onMessagesSynced(listener);
+      const events = await commit();
+      await notifier.publish(events);
+      await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce());
+      expect(received).toEqual(events);
+      await cancel();
+      await cancel();
+      await notifier.publish([{ ...events[0]!, eventId: 'after-cancel' }]);
+      await notifier.close();
+      expect(listener).toHaveBeenCalledOnce();
+      // The plugin's cleanup never owns the shared queue service.
+      await expect(
+        queue.hostQueue.producer('unrelated').publish('test', {}),
+      ).resolves.toMatchObject({ jobId: expect.any(String) });
+    });
+
+    it('does not turn legacy batches, draft or sent writes, body recovery, flag edits or deletions into sync events', async () => {
+      const listener = vi.fn();
+      service.onMessagesSynced(listener);
+      const publish = vi.spyOn(queue.hostQueue, 'producer');
+      await store.commitSyncBatch({
+        accountId,
+        folders: [],
+        messages: [{ ...message, contentStatus: 'deferred' }],
+        deletedProviderMessageIds: [],
+        nextCursor: { value: 'legacy' },
+      });
+      const detail = (
+        await service.listMessages(
+          { actorId: 'owner' },
+          { accountIds: [accountId] },
+        )
+      ).items[0]!;
+      await service.updateMessage(
+        { actorId: 'owner' },
+        { accountId, messageId: detail.id, read: true, starred: true },
+      );
+      expect(
+        await service.retryMessageContent(
+          { actorId: 'owner' },
+          accountId,
+          detail.id,
+        ),
+      ).toMatchObject({ text: 'Recovered body', contentStatus: 'complete' });
+      await store.saveMessage(accountId, {
+        ...message,
+        providerMessageId: 'remote-draft',
+        draft: true,
+      });
+      await store.saveMessage(accountId, {
+        ...message,
+        providerMessageId: 'sent-confirmation',
+      });
+      await service.deleteMessage(
+        { actorId: 'owner' },
+        { accountId, messageId: detail.id, permanently: true },
+      );
+      expect(
+        await service.getMessage({ actorId: 'owner' }, accountId, detail.id),
+      ).toBeUndefined();
+      await notifier.close();
+      expect(publish).not.toHaveBeenCalled();
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('fails actionably when a standalone service has no host-backed event notifier', () => {
+      const standalone = new DefaultMailService({
+        store,
+        adapters,
+        outbox: { kick() {} },
+      });
+      expect(() => standalone.onMessagesSynced(() => {})).toThrow(
+        expect.objectContaining({ reason: 'MAIL_EVENTS_UNAVAILABLE' }),
+      );
+    });
+  },
+);

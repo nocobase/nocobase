@@ -7,6 +7,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import { queueServiceToken } from '@nocobase/app-server/queue';
 import type { JobExecutor } from '@nocobase/jobs';
 import {
   driveManagerToken,
@@ -57,14 +58,8 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   private realtimeTopic?: RealtimeUserTopic<MailRealtimeEvent>;
   private missingMailConfigWarningLogged = false;
   private productionOAuthReturnWarningLogged = false;
-  private readonly messageSyncNotifier = new MailMessageSyncNotifier({
-    error: (data, message): void => {
-      this.app.container
-        .resolveIfCreated(loggingToken)
-        ?.getLogger()
-        .error(data, message);
-    },
-  });
+  private messageSyncNotifier?: MailMessageSyncNotifier;
+  private closing = false;
   private readonly messageChangeNotifier: MailMessageChangeNotifier = {
     notify: (userId) => {
       this.realtimeTopic?.publishFor(userId, { kind: 'mail.changed' });
@@ -115,7 +110,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           .getLogger()
           .child({ module: 'mail' }),
         messageChangeNotifier: this.messageChangeNotifier,
-        messageSyncNotifier: this.messageSyncNotifier,
+        messageSyncNotifier: this.resolveMessageSyncNotifier(container),
       }),
     );
     this.app.container.singleton(
@@ -157,9 +152,32 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
             mailOutboundAttachmentStorageToken,
           ),
           messageChangeNotifier: this.messageChangeNotifier,
-          messageSyncNotifier: this.messageSyncNotifier,
+          messageSyncNotifier: this.resolveMessageSyncNotifier(container),
         }),
     );
+  }
+
+  private resolveMessageSyncNotifier(
+    container: ServiceResolver,
+  ): MailMessageSyncNotifier {
+    if (this.closing)
+      throw new Error('The Mail message sync notifier is closed.');
+    if (!container.has(queueServiceToken))
+      throw new Error(
+        'Mail synchronization events require the application queue service. Add QueueServiceProvider from @nocobase/app-server/queue to server/app.ts.',
+      );
+    this.messageSyncNotifier ??= new MailMessageSyncNotifier(
+      container.resolve(queueServiceToken),
+      {
+        error: (data, message): void => {
+          this.app.container
+            .resolveIfCreated(loggingToken)
+            ?.getLogger()
+            .error(data, message);
+        },
+      },
+    );
+    return this.messageSyncNotifier;
   }
 
   private resolveJobExecutor(container: ServiceResolver): JobExecutor {
@@ -300,14 +318,29 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   }
 
   public override async shutdown(): Promise<void> {
-    // Stop accepting wakeups immediately, even while workers drain or closure rejects.
-    this.messageSyncNotifier.close();
+    this.closing = true;
+    // Keep accepting committed steps while synchronization workers drain.
+    const errors: unknown[] = [];
     try {
       await this.app.container.resolveIfCreated(mailRuntimeToken)?.close();
+    } catch (error) {
+      errors.push(error);
+    }
+    try {
+      await this.messageSyncNotifier?.close();
+    } catch (error) {
+      errors.push(error);
     } finally {
       const topic = this.realtimeTopic;
       this.realtimeTopic = undefined;
-      topic?.close();
+      try {
+        topic?.close();
+      } catch (error) {
+        errors.push(error);
+      }
     }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1)
+      throw new AggregateError(errors, 'Mail shutdown failed.');
   }
 }

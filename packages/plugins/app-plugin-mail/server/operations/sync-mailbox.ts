@@ -276,8 +276,25 @@ export class SyncMailboxOperation {
     input: MailSyncStepCommit,
   ): Promise<MailSyncRun> {
     const result = await this.dependencies.store.commitSyncStep(input);
-    // The commit carries its own snapshot: notify before any logging or readback can fail.
-    this.dependencies.messageSyncNotifier?.notify(result.messageSyncEvents);
+    // Publish committed snapshots before any fallible post-commit inspection.
+    // Queue acceptance is awaited; business handlers never run in this sync step.
+    try {
+      await this.dependencies.messageSyncNotifier?.publish(
+        result.messageSyncEvents,
+      );
+    } catch {
+      // Even an unexpected transport failure cannot undo or retry this committed step.
+      writeMailLog(
+        this.dependencies.logger,
+        'error',
+        {
+          event: 'mail.message_sync.publication_failed',
+          accountId: result.accountId,
+          syncRunId: result.id,
+        },
+        'Mail message sync event publication failed.',
+      );
+    }
     writeMailLog(
       this.dependencies.logger,
       result.status === 'partial' || input.restart ? 'warn' : 'info',

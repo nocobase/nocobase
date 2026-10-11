@@ -15,8 +15,6 @@ import {
 } from '../helpers/database.js';
 
 const COLLECTIONS = [
-  'mailMessageSyncEvents',
-  'mailMessageSyncEventStates',
   'mailDraftStates',
   'mailCredentials',
   'mailOutboundAttachments',
@@ -45,7 +43,6 @@ const MIGRATIONS = [
   '202609200001_backfill_mail_conversations',
   '202609210001_normalize_mail_folders',
   '202609260001_add_mail_sync_retry_attempts',
-  '202609270001_app_plugin_mail_create_message_sync_events',
   '202610090001_mail_create_message_participants',
 ] as const;
 const sources = [

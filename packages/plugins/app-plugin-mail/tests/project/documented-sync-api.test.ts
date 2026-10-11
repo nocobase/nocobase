@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { expect, it } from 'vitest';
 
-it('typechecks the published Provider and checkpoint consumer examples against public Server exports', () => {
+it('typechecks the published Provider and queue business consumer examples against public Server exports', () => {
   const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
   const documentation = readFileSync(
     resolve(

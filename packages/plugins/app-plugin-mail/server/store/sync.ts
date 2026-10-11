@@ -34,7 +34,7 @@ import {
 } from './rows.js';
 import { chunks, jsonOrNull, parseJson } from './serialization.js';
 import { insertOutbox, upsertSyncState } from './sync-writes.js';
-import { appendMessageSyncEvents } from './message-sync-events.js';
+import { makeMessageSyncEvents } from './message-sync-snapshots.js';
 
 export class MailSyncStore {
   public constructor(
@@ -581,7 +581,7 @@ export class MailSyncStore {
       if (result.updatedCount !== 1) {
         throw new Error('Mail sync run lease was lost before commit.');
       }
-      const messageSyncEvents = await appendMessageSyncEvents(
+      const messageSyncEvents = await makeMessageSyncEvents(
         connection.query,
         {
           ...input.run,

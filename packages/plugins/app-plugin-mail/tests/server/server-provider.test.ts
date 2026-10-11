@@ -8,7 +8,17 @@ import {
   type RealtimeService,
 } from '@nocobase/app-server/realtime';
 import { Hono } from 'hono';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { queueServiceToken } from '@nocobase/app-server/queue';
+import { createMailTestQueue, type MailTestQueue } from '../helpers/queue.js';
+
+let queue: MailTestQueue;
+beforeEach(async () => {
+  queue = await createMailTestQueue('inMemory');
+});
+afterEach(async () => {
+  await queue.close();
+});
 
 import { MailCoreProvider } from '../../server/providers/mail-core.js';
 import {
@@ -28,6 +38,7 @@ import type { MailCredentialVault } from '../../server/types.js';
 describe('@nocobase/app-plugin-mail', () => {
   it('registers the Provider Registry and lazy Mail runtime services', () => {
     const container = new ServiceContainer();
+    container.instance(queueServiceToken, queue.hostQueue);
     const provider = new MailCoreProvider({
       appName: 'test',
       publicBasePath: '/test',
@@ -50,6 +61,7 @@ describe('@nocobase/app-plugin-mail', () => {
 
   it('keeps a credential vault registered by another plugin', () => {
     const container = new ServiceContainer();
+    container.instance(queueServiceToken, queue.hostQueue);
     const credentialVault = {} as MailCredentialVault;
     container.instance(mailCredentialVaultToken, credentialVault);
     const provider = new MailCoreProvider({
@@ -77,6 +89,7 @@ describe('@nocobase/app-plugin-mail', () => {
       const publishFor = vi.fn();
       const close = vi.fn();
       const container = new ServiceContainer();
+      container.instance(queueServiceToken, queue.hostQueue);
       const provider = new MailCoreProvider({
         appName: 'test',
         publicBasePath: '/test',
@@ -160,8 +173,10 @@ describe('@nocobase/app-plugin-mail', () => {
     const createRuntime = (
       sections: Record<string, unknown>,
       jobsService: boolean,
+      queueService: boolean = true,
     ) => {
       const container = new ServiceContainer();
+      if (queueService) container.instance(queueServiceToken, queue.hostQueue);
       const dependencies = new Map<unknown, unknown>([
         [mailStoreToken, {}],
         [mailProviderAdapterResolverToken, {}],
@@ -203,6 +218,13 @@ describe('@nocobase/app-plugin-mail', () => {
       const { resolveRuntime } = createRuntime({}, false);
       expect(resolveRuntime).toThrow(
         'Add JobExecutorServiceProvider from @nocobase/app-server/jobs',
+      );
+    });
+
+    it('requires the application queue service instead of constructing a private backend', () => {
+      const { resolveRuntime } = createRuntime({}, true, false);
+      expect(resolveRuntime).toThrow(
+        'Add QueueServiceProvider from @nocobase/app-server/queue',
       );
     });
 

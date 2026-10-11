@@ -24,7 +24,7 @@ On failure, leave writes and synchronization stopped, inspect the migration erro
 
 ## Consume newly synchronized messages
 
-Use the public Server `onMessagesSynced()` subscription for quick application-owned Job wakeups, and the personal or explicitly authorized managed event-log reads for restart and periodic compensation. Register in `boot()`, unsubscribe in `shutdown()`, and save a final account checkpoint only after every event is processed, deliberately skipped, or reliably submitted to durable application tasks. See [Server synchronization events and incremental consumption](message-sync-events.md) for the complete contract, Provider example, fixed-bound pagination, body recovery, history backfill and retention. The ordinary mailbox pagination cursor and Provider `receivedAfter` are not consumption checkpoints.
+Business integrations consume committed local insertions through the Server-only `onMessagesSynced(listener)` subscription backed by the application's queue. Register in `boot()`, await unsubscription in `shutdown()`, honor cancellation and make processing idempotent for queue retries. Mail has no event journal or incremental event checkpoints; a commit-to-publication failure can lose an event, and Redis workers compete rather than broadcasting to every instance. See [Server synchronization events](message-sync-events.md) for the complete contract, Provider examples, permission boundaries, content recovery and backend retention.
 
 ## Gmail quota, HTTP batch, and retry behavior
 

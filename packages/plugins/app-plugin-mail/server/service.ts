@@ -10,11 +10,9 @@ import { MailAuthorizationService } from './services/authorization.js';
 import { type DefaultMailServiceDependencies } from './services/dependencies.js';
 import { MailDraftsService } from './services/drafts.js';
 import { MailManagementService } from './services/management.js';
-import { MailMessageSyncEventsService } from './services/message-sync-events.js';
-import { MailMessageSyncNotifier } from './message-sync-notifier.js';
+import type { MailMessageSyncNotifier } from './message-sync-notifier.js';
+import { mailFailedPrecondition } from './services/errors.js';
 import type {
-  MailListMessageSyncEventsInput,
-  MailMessageSyncEventsPage,
   MailMessagesSyncedListener,
   MailUnsubscribe,
 } from './contracts/message-sync-events.js';
@@ -66,8 +64,7 @@ export class DefaultMailService implements MailService {
   private readonly sync: MailSyncService;
   private readonly submissions: MailSubmissionsService;
   private readonly management: MailManagementService;
-  private readonly messageSyncEvents: MailMessageSyncEventsService;
-  private readonly messageSyncNotifier: MailMessageSyncNotifier;
+  private readonly messageSyncNotifier: MailMessageSyncNotifier | undefined;
   public constructor(dependencies: DefaultMailServiceDependencies) {
     const syncBatchSize = resolveMailSyncBatchSize(dependencies.syncBatchSize);
     const defaultAutomaticSyncIntervalMinutes =
@@ -93,30 +90,18 @@ export class DefaultMailService implements MailService {
     this.attachments = new MailAttachmentsService(dependencies);
     this.submissions = new MailSubmissionsService(dependencies, sendMail);
     this.management = new MailManagementService(dependencies);
-    this.messageSyncEvents = new MailMessageSyncEventsService(dependencies);
-    this.messageSyncNotifier =
-      dependencies.messageSyncNotifier ??
-      new MailMessageSyncNotifier(dependencies.logger);
+    this.messageSyncNotifier = dependencies.messageSyncNotifier;
   }
 
   public onMessagesSynced(
     listener: MailMessagesSyncedListener,
   ): MailUnsubscribe {
+    if (!this.messageSyncNotifier)
+      throw mailFailedPrecondition(
+        'MAIL_EVENTS_UNAVAILABLE',
+        'Mail event subscriptions require the application queue service.',
+      );
     return this.messageSyncNotifier.subscribe(listener);
-  }
-
-  public listMessageSyncEvents(
-    context: MailOperationContext,
-    input: MailListMessageSyncEventsInput,
-  ): Promise<MailMessageSyncEventsPage> {
-    return this.messageSyncEvents.listMessageSyncEvents(context, input);
-  }
-
-  public listManagedMessageSyncEvents(
-    context: MailOperationContext,
-    input: MailListMessageSyncEventsInput,
-  ): Promise<MailMessageSyncEventsPage> {
-    return this.messageSyncEvents.listManagedMessageSyncEvents(context, input);
   }
 
   public listProviders(): Promise<readonly MailProviderView[]> {

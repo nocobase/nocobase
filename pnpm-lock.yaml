@@ -4480,6 +4480,9 @@ importers:
       '@nocobase/jobs':
         specifier: workspace:^
         version: link:../../libs/jobs
+      '@nocobase/queue':
+        specifier: workspace:^
+        version: link:../../libs/queue
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider

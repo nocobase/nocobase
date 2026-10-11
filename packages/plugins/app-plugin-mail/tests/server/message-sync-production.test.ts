@@ -3,6 +3,7 @@ import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { realtimeServiceToken } from '@nocobase/app-server/realtime';
+import { queueServiceToken } from '@nocobase/app-server/queue';
 import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import {
@@ -32,6 +33,12 @@ import {
   destroyMailTestDatabase,
 } from '../helpers/database.js';
 import { InlineJobExecutor } from '../helpers/inline-job-executor.js';
+import {
+  createMailTestQueue,
+  mailQueueBackends,
+  type MailTestQueue,
+} from '../helpers/queue.js';
+import type { QueueAdapter } from '@nocobase/queue';
 import type { MailAccount, NormalizedMailMessage } from '../../shared/mail.js';
 
 const account: MailAccount = {
@@ -64,9 +71,15 @@ function message(id: string): NormalizedMailMessage {
 
 async function fixture(
   database: DatabaseManager,
+  backend: QueueAdapter,
   listener?: MailMessagesSyncedListener,
 ) {
+  const queue = await createMailTestQueue(backend);
   const container = new ServiceContainer();
+  container.instance(queueServiceToken, queue.hostQueue);
+  const queueSetup = vi.spyOn(queue.hostQueue, 'setup');
+  const queueShutdown = vi.spyOn(queue.hostQueue, 'shutdown');
+  const queueConsumer = vi.spyOn(queue.hostQueue, 'consumer');
   const config = new AppConfig();
   await config.loadAll();
   config.mergeDefaults({
@@ -103,8 +116,15 @@ async function fixture(
     container,
   });
   const lifecycle = new ServiceProviderRegistry();
+  class HostQueueProvider extends ServiceProvider<Record<string, never>> {
+    public readonly name = 'fixture-host-queue';
+    public override start(): Promise<void> {
+      return queue.setup();
+    }
+  }
+  lifecycle.add(new HostQueueProvider({}));
   lifecycle.add(provider);
-  let cancel: MailUnsubscribe = () => {};
+  let cancel: MailUnsubscribe = async () => {};
   class ConsumerProvider extends ServiceProvider<{
     container: ServiceContainer;
   }> {
@@ -116,9 +136,8 @@ async function fixture(
           .onMessagesSynced(listener);
       return Promise.resolve();
     }
-    public override shutdown(): Promise<void> {
-      cancel();
-      return Promise.resolve();
+    public override async shutdown(): Promise<void> {
+      await cancel();
     }
   }
   lifecycle.add(new ConsumerProvider({ container }));
@@ -182,234 +201,265 @@ async function fixture(
     logger,
     topic,
     cancel: () => cancel(),
+    queue,
+    queueSetup,
+    queueShutdown,
+    queueConsumer,
   };
 }
 
-describe('production Mail public token and lifecycle message sync wiring', () => {
-  const databases: DatabaseManager[] = [];
-  const lifecycles: ServiceProviderRegistry[] = [];
-  async function setup(listener?: MailMessagesSyncedListener) {
-    const database = await createMailTestDatabase();
-    databases.push(database);
-    const result = await fixture(database, listener);
-    lifecycles.push(result.lifecycle);
-    return result;
-  }
-  afterEach(async () => {
-    for (const lifecycle of lifecycles.splice(0))
-      await lifecycle.shutdown().catch(() => {});
-    for (const database of databases.splice(0))
-      await destroyMailTestDatabase(database);
-    vi.restoreAllMocks();
-  });
+describe.each(mailQueueBackends)(
+  'production Mail public token and queue lifecycle (%s)',
+  (backend) => {
+    const queues: MailTestQueue[] = [];
+    const databases: DatabaseManager[] = [];
+    const lifecycles: ServiceProviderRegistry[] = [];
+    async function setup(listener?: MailMessagesSyncedListener) {
+      const database = await createMailTestDatabase();
+      databases.push(database);
+      const result = await fixture(database, backend, listener);
+      lifecycles.push(result.lifecycle);
+      queues.push(result.queue);
+      return result;
+    }
+    afterEach(async () => {
+      for (const lifecycle of lifecycles.splice(0))
+        await lifecycle.shutdown().catch(() => {});
+      for (const queue of queues.splice(0)) await queue.close();
+      for (const database of databases.splice(0))
+        await destroyMailTestDatabase(database);
+      vi.restoreAllMocks();
+    });
 
-  it('registers in consumer boot before start consumes restored tasks, and isolates instances', async () => {
-    const received: MailMessagesSyncedEvent[] = [];
-    const reads: Promise<unknown>[] = [];
-    const other = vi.fn();
-    const first = await setup((event) => {
-      received.push(event);
-      const read = Promise.all(
-        event.messageIds.map(async (id) => {
-          const detail = await service.getMessage(
-            { actorId: 'owner-1' },
-            event.accountId,
-            id,
-          );
-          const folders = await service.listFolders(
-            { actorId: 'owner-1' },
-            event.accountId,
-          );
-          expect(detail?.folderIds).toContain(
-            folders.find((folder) => folder.providerFolderId === 'inbox')
-              ?.providerFolderId,
-          );
-          expect(detail?.id).toBe(id);
-        }),
-      ).then(() => undefined);
-      reads.push(read);
-      return read;
-    });
-    const second = await setup(other);
-    const service = first.container.resolve(mailServiceToken);
-    const cancel = first.cancel;
-    const store = first.container.resolve(mailStoreToken);
-    await store.saveAccount(account);
-    await store.createSyncRun({
-      id: testId('restored'),
-      accountId: account.id,
-      requestedBy: account.userId,
-      mode: 'initial',
-      policy: {
-        batchSize: 10,
-        receivedAfter: account.initialSyncReceivedAfter,
-      },
-    });
-    await first.lifecycle.bootAll();
-    await second.lifecycle.bootAll();
-    expect(received).toEqual([]);
-    await first.lifecycle.startAll();
-    await vi.waitFor(
-      () =>
-        expect(received.map((event) => event.phase)).toEqual([
-          'history',
-          'catchUp',
-        ]),
-      { timeout: 10000 },
-    );
-    await service.startSync({ actorId: 'owner-1' }, { accountId: account.id });
-    await vi.waitFor(
-      () =>
-        expect(received.map((event) => event.phase)).toEqual([
-          'history',
-          'catchUp',
-          'incremental',
-        ]),
-      { timeout: 10000 },
-    );
-    await Promise.all(reads);
-    expect(other).not.toHaveBeenCalled();
-    expect(received).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          accountId: account.id,
-          ownerId: account.userId,
-          syncRunId: testId('restored'),
-          messageIds: [expect.any(String)],
-        }),
-      ]),
-    );
-    const page = await service.listMessageSyncEvents(
-      { actorId: 'owner-1' },
-      { accountId: account.id },
-    );
-    expect(page.items).toEqual(received);
-    await expect(
-      service.listMessageSyncEvents(
-        { actorId: 'another-owner' },
-        { accountId: account.id, after: page.checkpoint },
-      ),
-    ).rejects.toMatchObject({ reason: 'MAIL_ACCOUNT_NOT_FOUND' });
-    expect(
-      await service.listManagedMessageSyncEvents(
-        { actorId: 'admin' },
+    it('subscribes in boot before host queue setup and restored sync, with isolated fixture namespaces', async () => {
+      const received: MailMessagesSyncedEvent[] = [];
+      const reads: Promise<unknown>[] = [];
+      const other = vi.fn();
+      const first = await setup((event) => {
+        received.push(event);
+        const read = Promise.all(
+          event.messageIds.map(async (id) => {
+            const detail = await service.getMessage(
+              { actorId: 'owner-1' },
+              event.accountId,
+              id,
+            );
+            const folders = await service.listFolders(
+              { actorId: 'owner-1' },
+              event.accountId,
+            );
+            expect(detail?.folderIds).toContain(
+              folders.find((folder) => folder.providerFolderId === 'inbox')
+                ?.providerFolderId,
+            );
+            expect(detail?.id).toBe(id);
+          }),
+        ).then(() => undefined);
+        reads.push(read);
+        return read;
+      });
+      const second = await setup(other);
+      const service = first.container.resolve(mailServiceToken);
+      const cancel = first.cancel;
+      const store = first.container.resolve(mailStoreToken);
+      await store.saveAccount(account);
+      await store.createSyncRun({
+        id: testId('restored'),
+        accountId: account.id,
+        requestedBy: account.userId,
+        mode: 'initial',
+        policy: {
+          batchSize: 10,
+          receivedAfter: account.initialSyncReceivedAfter,
+        },
+      });
+      await first.lifecycle.bootAll();
+      await second.lifecycle.bootAll();
+      expect(received).toEqual([]);
+      expect(first.queueSetup).not.toHaveBeenCalled();
+      expect(first.queueConsumer).toHaveBeenCalled();
+      await first.lifecycle.startAll();
+      await second.lifecycle.startAll();
+      await vi.waitFor(
+        () =>
+          expect(received.map((event) => event.phase)).toEqual([
+            'history',
+            'catchUp',
+          ]),
+        { timeout: 10000 },
+      );
+      await service.startSync(
+        { actorId: 'owner-1' },
         { accountId: account.id },
-      ),
-    ).toEqual(page);
-    cancel();
-    cancel();
-    await service.startSync({ actorId: 'owner-1' }, { accountId: account.id });
-    await vi.waitFor(
-      async () =>
-        expect(
-          (await store.listMessageSyncEvents({ accountId: account.id })).items,
-        ).toHaveLength(4),
-      { timeout: 10000 },
-    );
-    expect(received).toHaveLength(3);
-    await first.lifecycle.shutdown();
-  });
-
-  it('closes even uncreated services without resolving them during shutdown', async () => {
-    const { container, lifecycle, executor } = await setup();
-    expect(container.resolveIfCreated(mailServiceToken)).toBeUndefined();
-    expect(container.resolveIfCreated(mailRuntimeToken)).toBeUndefined();
-    await lifecycle.shutdown();
-    expect(container.resolveIfCreated(mailServiceToken)).toBeUndefined();
-    expect(container.resolveIfCreated(mailRuntimeToken)).toBeUndefined();
-    // A late lazy service must share the already closed notifier, not create a fresh one.
-    const service = container.resolve(mailServiceToken);
-    const listener = vi.fn();
-    const cancel = service.onMessagesSynced(listener);
-    const store = container.resolve(mailStoreToken);
-    await store.saveAccount(account);
-    await executor.setup();
-    await service.startSync(
-      { actorId: account.userId },
-      { accountId: account.id },
-    );
-    const runtime = container.resolve(mailRuntimeToken);
-    try {
-      await runtime.start();
+      );
+      await vi.waitFor(
+        () =>
+          expect(received.map((event) => event.phase)).toEqual([
+            'history',
+            'catchUp',
+            'incremental',
+          ]),
+        { timeout: 10000 },
+      );
+      await Promise.all(reads);
+      expect(other).not.toHaveBeenCalled();
+      expect(received).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            accountId: account.id,
+            ownerId: account.userId,
+            syncRunId: testId('restored'),
+            messageIds: [expect.any(String)],
+          }),
+        ]),
+      );
+      expect(new Set(received.map((event) => event.eventId)).size).toBe(3);
+      await cancel();
+      await cancel();
+      await service.startSync(
+        { actorId: 'owner-1' },
+        { accountId: account.id },
+      );
       await vi.waitFor(
         async () =>
           expect(
-            (await store.listMessageSyncEvents({ accountId: account.id }))
-              .items,
-          ).toHaveLength(2),
+            (
+              await service.listMessages(
+                { actorId: account.userId },
+                { accountIds: [account.id] },
+              )
+            ).items,
+          ).toHaveLength(4),
         { timeout: 10000 },
       );
-      expect(listener).not.toHaveBeenCalled();
-      cancel();
-      cancel();
-    } finally {
-      await runtime.close();
-    }
-  });
-
-  it('does not await subscriber tasks on shutdown and safely isolates their late rejection', async () => {
-    const pending = Promise.withResolvers<void>();
-    const listener = vi.fn(() => pending.promise);
-    const { container, lifecycle, logger } = await setup(listener);
-    const store = container.resolve(mailStoreToken);
-    await store.saveAccount(account);
-    await store.createSyncRun({
-      id: testId('restored'),
-      accountId: account.id,
-      requestedBy: account.userId,
-      mode: 'initial',
-      policy: {
-        batchSize: 10,
-        receivedAfter: account.initialSyncReceivedAfter,
-      },
+      expect(received).toHaveLength(3);
+      await first.lifecycle.shutdown();
+      expect(first.queueShutdown).not.toHaveBeenCalled();
+      await expect(
+        first.queue.hostQueue.producer('unrelated').publish('alive', {}),
+      ).resolves.toMatchObject({ jobId: expect.any(String) });
     });
-    await lifecycle.bootAll();
-    await lifecycle.startAll();
-    await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(2), {
-      timeout: 10000,
-    });
-    await lifecycle.shutdown();
-    pending.reject(new Error('private-consumer-data'));
-    await vi.waitFor(() => expect(logger.error).toHaveBeenCalledTimes(2));
-    expect(JSON.stringify(logger.error.mock.calls)).not.toContain(
-      'private-consumer-data',
-    );
-  });
 
-  it('rejects runtime closure without retaining listeners or realtime resources', async () => {
-    const { container, lifecycle, provider, topic } = await setup();
-    const service = container.resolve(mailServiceToken);
-    const runtime = container.resolve(mailRuntimeToken);
-    const listener = vi.fn(() => new Promise<void>(() => {}));
-    const cancel = service.onMessagesSynced(listener);
-    await lifecycle.bootAll();
-    await lifecycle.startAll();
-    const close = vi
-      .spyOn(runtime, 'close')
-      .mockRejectedValueOnce(new Error('shutdown failed'));
-    await expect(provider.shutdown()).rejects.toThrow('shutdown failed');
-    expect(topic.close).toHaveBeenCalledOnce();
-    const late = vi.fn();
-    service.onMessagesSynced(late);
-    const store = container.resolve(mailStoreToken);
-    await store.saveAccount(account);
-    await service.startSync(
-      { actorId: account.userId },
-      { accountId: account.id },
-    );
-    await vi.waitFor(
-      async () =>
-        expect(
-          (await store.listMessageSyncEvents({ accountId: account.id })).items,
-        ).toHaveLength(2),
-      { timeout: 10000 },
-    );
-    expect(listener).not.toHaveBeenCalled();
-    expect(late).not.toHaveBeenCalled();
-    cancel();
-    cancel();
-    close.mockRestore();
-    await lifecycle.shutdown();
-    expect(topic.close).toHaveBeenCalledOnce();
-  });
-});
+    it('closes even uncreated services without resolving them during shutdown', async () => {
+      const { container, lifecycle, queueShutdown } = await setup();
+      expect(container.resolveIfCreated(mailServiceToken)).toBeUndefined();
+      expect(container.resolveIfCreated(mailRuntimeToken)).toBeUndefined();
+      await lifecycle.shutdown();
+      expect(container.resolveIfCreated(mailServiceToken)).toBeUndefined();
+      expect(container.resolveIfCreated(mailRuntimeToken)).toBeUndefined();
+      // A late lazy resolution must not create a fresh notifier after Mail closes.
+      expect(() => container.resolve(mailServiceToken)).toThrow('closed');
+      expect(queueShutdown).not.toHaveBeenCalled();
+    });
+
+    it('awaits cooperative subscriber cancellation before completing shutdown', async () => {
+      const pending = Promise.withResolvers<void>();
+      let signal: AbortSignal | undefined;
+      const listener = vi.fn(
+        (_event: MailMessagesSyncedEvent, cancellation: AbortSignal) => {
+          signal = cancellation;
+          return pending.promise;
+        },
+      );
+      const { container, lifecycle, logger, queueShutdown } =
+        await setup(listener);
+      const store = container.resolve(mailStoreToken);
+      await store.saveAccount(account);
+      await store.createSyncRun({
+        id: testId('restored'),
+        accountId: account.id,
+        requestedBy: account.userId,
+        mode: 'initial',
+        policy: {
+          batchSize: 10,
+          receivedAfter: account.initialSyncReceivedAfter,
+        },
+      });
+      await lifecycle.bootAll();
+      await lifecycle.startAll();
+      await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce(), {
+        timeout: 10000,
+      });
+      let closed = false;
+      const closing = lifecycle.shutdown().then(() => {
+        closed = true;
+      });
+      try {
+        await vi.waitFor(() => expect(signal?.aborted).toBe(true));
+        expect(closed).toBe(false);
+        pending.reject(new Error('private-consumer-data'));
+        await closing;
+        expect(closed).toBe(true);
+        expect(queueShutdown).not.toHaveBeenCalled();
+        expect(JSON.stringify(logger.error.mock.calls)).not.toContain(
+          'private-consumer-data',
+        );
+      } finally {
+        pending.resolve();
+        await closing;
+      }
+    });
+
+    it('drains the runtime before awaiting subscriptions and closes realtime even when runtime closure fails', async () => {
+      const { container, lifecycle, provider, topic, queueShutdown } =
+        await setup();
+      const service = container.resolve(mailServiceToken);
+      const runtime = container.resolve(mailRuntimeToken);
+      const pending = Promise.withResolvers<void>();
+      let signal: AbortSignal | undefined;
+      const listener = vi.fn(
+        (_event: MailMessagesSyncedEvent, cancellation: AbortSignal) => {
+          signal = cancellation;
+          return pending.promise;
+        },
+      );
+      const cancel = service.onMessagesSynced(listener);
+      await container.resolve(mailStoreToken).saveAccount(account);
+      await lifecycle.bootAll();
+      await lifecycle.startAll();
+      await service.startSync(
+        { actorId: account.userId },
+        { accountId: account.id },
+      );
+      await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce(), {
+        timeout: 10000,
+      });
+      const close = vi
+        .spyOn(runtime, 'close')
+        .mockImplementationOnce(async () => {
+          expect(signal?.aborted).toBe(false);
+          throw new Error('shutdown failed');
+        });
+      let closed = false;
+      const closing = provider.shutdown().finally(() => {
+        closed = true;
+      });
+      // Attach a rejection handler immediately while cancellation is still draining.
+      const outcome = closing.then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+      try {
+        await vi.waitFor(() => expect(signal?.aborted).toBe(true));
+        expect(closed).toBe(false);
+        pending.resolve();
+        await expect(outcome).resolves.toMatchObject({
+          message: 'shutdown failed',
+        });
+        expect(topic.close).toHaveBeenCalledOnce();
+        expect(queueShutdown).not.toHaveBeenCalled();
+        expect(() => service.onMessagesSynced(vi.fn())).toThrow();
+        await cancel();
+        await cancel();
+        close.mockRestore();
+        await lifecycle.shutdown();
+        expect(topic.close).toHaveBeenCalledOnce();
+        expect(queueShutdown).not.toHaveBeenCalled();
+      } finally {
+        pending.resolve();
+        await outcome;
+        close.mockRestore();
+      }
+    });
+  },
+);

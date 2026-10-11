@@ -1,3 +1,4 @@
+/** A bounded snapshot of local records inserted by a committed synchronization step. */
 export interface MailMessagesSyncedEvent {
   readonly eventId: string;
   readonly accountId: string;
@@ -8,22 +9,11 @@ export interface MailMessagesSyncedEvent {
   readonly messageIds: readonly string[];
 }
 
+/** Queue handlers may run again; use idempotent effects and honor cancellation. */
 export type MailMessagesSyncedListener = (
   event: MailMessagesSyncedEvent,
+  signal: AbortSignal,
 ) => void | Promise<void>;
 
-export type MailUnsubscribe = () => void;
-
-export interface MailListMessageSyncEventsInput {
-  readonly accountId: string;
-  readonly syncedSince?: string;
-  readonly after?: string;
-  readonly pageToken?: string;
-  readonly pageSize?: number;
-}
-
-export interface MailMessageSyncEventsPage {
-  readonly items: readonly MailMessagesSyncedEvent[];
-  readonly nextPageToken?: string;
-  readonly checkpoint?: string;
-}
+/** Removes the subscription and waits for its already-started calls to settle. */
+export type MailUnsubscribe = () => Promise<void>;
