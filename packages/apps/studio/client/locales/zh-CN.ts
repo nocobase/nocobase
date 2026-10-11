@@ -889,6 +889,7 @@ const zhCN: AppResource = {
     toolNetwork: '编码工具网络错误',
     toolProcess: '编码工具崩溃',
     contextOverflow: '上下文超限',
+    toolChanged: '更换工具后已并入另一个排队中的运行。',
     queuedExpired: '排队超时',
     modelUnavailable: '模型不可用',
     stepLimit: '工具调用次数过多',

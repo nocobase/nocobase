@@ -5,6 +5,9 @@
  */
 import {
   apiErrorResponses,
+  apiErrorResponse,
+  apiValidator,
+  dataResponse,
   cliRoute,
   describeRoute,
   listResponse,
@@ -17,7 +20,13 @@ import { AGENTS_VIEW_ACTION } from '../core/callers/index.js';
 import { domainRouter } from '../kernel/http.js';
 import type { AdminEnv } from './admin.js';
 import { personOrRunSecurity, tags } from './openapi.js';
-import { AvailableAgentSchema } from './schemas.js';
+import { notFound } from '../kernel/errors.js';
+import {
+  AvailableAgentSchema,
+  AgentParams,
+  ToolAvailabilityQuery,
+  ToolAvailabilitySchema,
+} from './schemas.js';
 
 /** `guard` authenticates the request (a run token included) and sets `caller`. */
 export function createRosterRoutes(
@@ -74,6 +83,52 @@ export function createRosterRoutes(
         busy: availability.get(agent.id)?.busy ?? 0,
       }));
       return context.json({ data, meta: { total: data.length } });
+    },
+  );
+  router.get(
+    '/:agentId/availability',
+    guard,
+    async (context, next) => {
+      const agent = await services.agents.get(context.req.param('agentId'));
+      if (!services.agents.mayInvoke(agent, context.get('caller').userId))
+        throw notFound('Agent');
+      await next();
+    },
+    describeRoute({
+      tags,
+      summary: 'Get tool availability for the caller',
+      operationId: 'agentsGetToolAvailability',
+      security: personOrRunSecurity,
+      ...cliRoute({
+        command: 'agent availability',
+        action: AGENTS_VIEW_ACTION,
+        examples: [
+          'agent availability <agent> --tool codex',
+          'agent availability <agent> --tool codex --requires checkout',
+        ],
+      }),
+      responses: {
+        200: dataResponse(ToolAvailabilitySchema),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The agent does not list this tool (`TOOL_NOT_LISTED`).',
+        ),
+        404: apiErrorResponse(404),
+      },
+    }),
+    apiValidator('param', AgentParams),
+    apiValidator('query', ToolAvailabilityQuery),
+    async (context) => {
+      const { tool, requires } = context.req.valid('query');
+      return context.json({
+        data: await services.runs.toolAvailability(
+          context.req.valid('param').agentId,
+          tool,
+          context.get('caller').userId,
+          requires,
+        ),
+      });
     },
   );
   return router;

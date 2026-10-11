@@ -35,3 +35,11 @@ Rules that are easy to miss:
 - `GET /api/agents/vocabulary` hands the browser the subjects, sources and scopes the App contributed; the browser never imports server code for them.
 
 The README's example under "Extension points" shows a subject registered and work enqueued and withdrawn.
+
+## Subject controls and tool availability
+
+Use `runs.pauseSubject(subject, byUserId, outer?)` and `runs.resumeSubject(...)` to suspend queued work on a subject across every agent and thread. They emit `subject.paused` / `subject.resumed` with `{ subject, byUserId, at }` after commit. Use these events for application activity and notifications. `runs.subjectPause(subject)` reads `{ subject, paused, pausedBy, pausedAt }` without writing. Applications calling services directly own permission checks; the plugin cannot infer issue or document permissions.
+
+Provide `SubjectBinding.canControl(subjectId, userId)` for non-private subjects to override default HTTP access with `allow`, `deny` (403) or `hidden` (404). Without this binding, the current responsible or a caller holding `agents.agents/manage` controls the subject. Private subjects always restrict control to participants, regardless of this callback or management grants.
+
+Pass `tool` to `runs.enqueue()` when the dispatch selects a coding tool; omit it for follow-up comments that should join current work. `runs.changeTool(runId, toolOrNull, byUserId)` affects queued runs only and may merge them with an existing queued run of the same actor and selected tool. Read the chosen entry and current user's runners with `runs.toolAvailability(agentId, tool, userId, requires?)`; the public HTTP endpoint is `GET /api/agents/{agentId}/availability`. This preview uses the caller's required features and agent variables; payload-specific requirements are checked during actual claim.

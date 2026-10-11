@@ -16,6 +16,7 @@
  */
 import type {
   ActorKind,
+  AgentTool,
   RunInputType,
   RunStatus,
 } from '@nocobase/agent-protocol';
@@ -48,6 +49,7 @@ export const RUN_REQUEST_TTL_MS: number = 7 * 24 * 60 * 60 * 1000;
 const EXPIRE_BATCH = 100;
 
 export interface RunRequestRecord {
+  readonly tool?: AgentTool | null;
   readonly id: string;
   readonly agentId: string;
   readonly subjectKind: string;
@@ -86,6 +88,7 @@ export function runRequestsRepo(
 export function toRunRequest(record: RunRequestRecord): RunRequest {
   return {
     id: record.id,
+    tool: record.tool ?? null,
     agentId: record.agentId,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
@@ -119,6 +122,7 @@ export function toRunRequest(record: RunRequestRecord): RunRequest {
 
 /** What a new request holds: the work as `enqueue` was asked for it. */
 export interface NewRunRequest {
+  readonly tool?: AgentTool | null;
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
@@ -156,6 +160,7 @@ export async function insertRunRequest(
   await lockAgentForClaim(unit.conn, request.agentId, now.toISOString());
   const pending = await runRequestsRepo(unit.conn).findMany({
     filter: {
+      tool: request.tool ?? null,
       agentId: request.agentId,
       subjectKind: request.subject.kind,
       subjectId: request.subject.id,
@@ -168,6 +173,7 @@ export async function insertRunRequest(
   const duplicate = pending.find(
     (record) =>
       Date.parse(record.expiresAt) > now.getTime() &&
+      (record.tool ?? null) === (request.tool ?? null) &&
       record.ownerUserId === request.ownerUserId &&
       Number(record.priority) === request.priority &&
       isDeepStrictEqual(
@@ -193,6 +199,7 @@ export async function insertRunRequest(
   await runRequestsRepo(unit.conn).createOne({
     values: {
       id,
+      tool: request.tool ?? null,
       agentId: request.agentId,
       subjectKind: request.subject.kind,
       subjectId: request.subject.id,
@@ -239,6 +246,7 @@ export interface RequestedRun {
 
 /** Work queued straight away, as `runs.enqueue` queues it once nobody needs to confirm it. */
 export interface DirectRun {
+  readonly tool?: AgentTool | null;
   readonly agent: Agent;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
@@ -359,6 +367,7 @@ export interface RunRequestDeps {
     agent: Agent,
     userId: string,
     requires: readonly string[],
+    tool?: AgentTool | null,
   ) => Promise<void>;
   /** Queues work at once (`run.service.ts`). */
   readonly direct: (unit: Tx, run: DirectRun) => Promise<RequestedRun>;
@@ -497,6 +506,7 @@ export function createRunRequestService(
     'actorUserId' | 'requestedByUserId' | 'confirmedByUserId'
   > => ({
     agent,
+    tool: record.tool ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
     ownerUserId: record.ownerUserId,
@@ -679,7 +689,13 @@ export function createRunRequestService(
           byUserId,
         );
         const work = workOf(record, agent);
-        await deps.requireRunnerFor(unit, agent, byUserId, work.requires);
+        await deps.requireRunnerFor(
+          unit,
+          agent,
+          byUserId,
+          work.requires,
+          work.tool,
+        );
         if (record.status === 'pending')
           await settle(unit, record, {
             status: expired ? 'expired' : 'withdrawn',
@@ -772,6 +788,7 @@ export function createRunRequestService(
             );
           } else if (usable) {
             const next = await insertRunRequest(unit, deps, {
+              tool: record.tool ?? null,
               agentId: record.agentId,
               subject: { kind: record.subjectKind, id: record.subjectId },
               threadScope: record.threadScope,

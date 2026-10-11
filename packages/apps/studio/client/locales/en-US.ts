@@ -961,6 +961,7 @@ const enUS = {
     toolNetwork: 'Tool network',
     toolProcess: 'Tool crashed',
     contextOverflow: 'Context overflow',
+    toolChanged: 'Merged into another queued run after its tool changed.',
     queuedExpired: 'Queue expired',
     modelUnavailable: 'Model unavailable',
     stepLimit: 'Too many tool calls',

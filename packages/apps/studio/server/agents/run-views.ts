@@ -16,7 +16,6 @@
 import {
   FailureReasonSchema,
   RunStatusSchema,
-  type FailureReason,
   type RunEvent,
   type RunStatus,
 } from '@nocobase/agent-protocol';
@@ -142,7 +141,7 @@ export interface IssueRunRow {
   readonly startedAt: string | null;
   readonly finishedAt: string | null;
   readonly summary: string;
-  readonly failureReason: FailureReason | null;
+  readonly failureReason: Run['failureReason'];
   readonly failure: string;
 }
 
@@ -163,7 +162,9 @@ const IssueRunRowSchema: z.ZodType<IssueRunRow> = z
     summary: z
       .string()
       .meta({ description: 'Its summary, cut to 200 characters.' }),
-    failureReason: FailureReasonSchema.nullable(),
+    failureReason: z
+      .union([FailureReasonSchema, z.literal('toolChanged')])
+      .nullable(),
     failure: z
       .string()
       .meta({ description: 'Its failure detail, cut to 200 characters.' }),
@@ -188,7 +189,7 @@ export interface IssueRunDetail {
   readonly startedAt: string | null;
   readonly finishedAt: string | null;
   readonly summary: string | null;
-  readonly failureReason: FailureReason | null;
+  readonly failureReason: Run['failureReason'];
   readonly failureDetail: string | null;
   readonly inputs: readonly {
     readonly type: string;
@@ -226,7 +227,9 @@ const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
     startedAt: z.string().nullable(),
     finishedAt: z.string().nullable(),
     summary: z.string().nullable(),
-    failureReason: FailureReasonSchema.nullable(),
+    failureReason: z
+      .union([FailureReasonSchema, z.literal('toolChanged')])
+      .nullable(),
     failureDetail: z.string().nullable(),
     inputs: z.array(
       z.object({

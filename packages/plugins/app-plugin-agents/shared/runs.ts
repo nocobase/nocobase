@@ -57,6 +57,33 @@ export interface RunExecutionSnapshot {
   readonly failureReason: string | null;
 }
 
+export type RunFailureReason = FailureReason | 'toolChanged';
+
+export interface SubjectPause {
+  readonly subject: { readonly kind: string; readonly id: string };
+  readonly paused: boolean;
+  readonly pausedBy: string | null;
+  readonly pausedAt: string | null;
+}
+
+export interface ToolAvailability {
+  readonly agentId: string;
+  readonly tool: AgentTool;
+  readonly model: string | null;
+  readonly effort: string | null;
+  readonly available: boolean;
+  readonly wait: Omit<RunWait, 'position' | 'agentPosition'>;
+  readonly runners: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly slots: { readonly used: number; readonly limit: number };
+    readonly toolSlots: {
+      readonly used: number;
+      readonly limit: number | null;
+    };
+  }[];
+}
+
 export interface Run {
   readonly id: string;
   readonly agentId: string;
@@ -76,6 +103,8 @@ export interface Run {
   readonly actualEffortSource?: string | null;
   readonly actualEffortAt?: string | null;
   readonly machineHidden?: boolean;
+  /** The tool chosen before claim; null preserves fallback. Absent on older servers. */
+  readonly requestedTool?: AgentTool | null;
   /**
    * The entry of the agent's list it works with (`AgentModelEntry`): a runner run's coding tool and model (null: the
    * tool's default), set when a runner claims it; an online run's model service and model, set when it is claimed (a
@@ -117,7 +146,7 @@ export interface Run {
   readonly finishedAt: string | null;
   readonly lastActivityAt: string | null;
   readonly cancelRequestedAt: string | null;
-  readonly failureReason: FailureReason | null;
+  readonly failureReason: RunFailureReason | null;
   readonly failureDetail: string | null;
   readonly summary: string | null;
   readonly createdAt: string;
@@ -174,7 +203,7 @@ export interface RunChild {
   /** The agent's name; null when it was deleted. */
   readonly agentName: string | null;
   readonly status: RunStatus;
-  readonly failureReason: FailureReason | null;
+  readonly failureReason: RunFailureReason | null;
   /** Its answer. */
   readonly summary: string | null;
   readonly createdAt: string;
@@ -201,6 +230,7 @@ export interface RunEventPage {
  * this order:
  *
  * - `agentArchived`: its agent is archived or gone; the sweeper cancels it.
+ * - `paused`: this subject is suspended; held runs continue, queued runs wait.
  * - `delayed`: it was given a moment (`fireAt`, or a retry's backoff) that has not come; `until` says when.
  * - `noRunnerOnline`: no runner is online at all.
  * - `runnersOffline`: the agent names its runners, and none of them is online.
@@ -220,6 +250,7 @@ export interface RunEventPage {
  */
 export const RUN_WAIT_REASONS = [
   'agentArchived',
+  'paused',
   'delayed',
   'noRunnerOnline',
   'runnersOffline',
@@ -241,8 +272,9 @@ export type RunWaitReason = (typeof RUN_WAIT_REASONS)[number];
  * What a wait's words need, by reason: the server sends codes and these, never text, and the client words them
  * (`formatRunWait` in `client/runs.ts`, or the application's own). Absent for a reason that needs nothing.
  *
+ * - `paused`: `by` (user id), `at` (RFC 3339).
  * - `delayed`: `until` (RFC 3339).
- * - `toolUnavailable`: `tool`, the agent's default coding tool.
+ * - `toolUnavailable`: `tool`, the fixed coding tool, or the agent's default when no tool was requested.
  * - `missingFeatures`: `features`, what no fitting runner has.
  * - `secretsNotAllowed`: `variables`, the names of the variables for team runners only.
  * - `concurrencyFull`: `active`, `limit`, the agent's runs held and its limit.
@@ -257,15 +289,15 @@ export type RunWaitParams = Readonly<
 /** Where a queued run stands and what holds it. */
 export interface RunWait {
   readonly reason: RunWaitReason;
-  /** Its place among the runs that may be claimed now, in claim order (1 first); null while delayed. */
+  /** Its place among the runs that may be claimed now, in claim order (1 first); null while delayed or paused. */
   readonly position: number | null;
   /** Its place among its agent's queued runs, in claim order (1 first). */
   readonly agentPosition: number;
   /** When a delayed run may be claimed. */
   readonly until: string | null;
   /**
-   * For `toolUnavailable`: the agent's default coding tool (its first entry's); any of its tools would do. For
-   * `toolSlotsFull`: the first of the agent's tools the free runners run, all of whose slots are taken.
+   * The fixed tool for `toolUnavailable` and `toolSlotsFull`. Without a fixed tool, the agent's first listed or
+   * first full tool, respectively; any of its tools may be used.
    */
   readonly tool: AgentTool | null;
   /** For `missingFeatures`: what no fitting runner has. */
@@ -377,6 +409,7 @@ export interface RunRequestInput {
  * runs only once the responsible confirms it, as them, or when the person who asked runs it as themselves.
  */
 export interface RunRequest {
+  readonly tool?: AgentTool | null;
   readonly id: string;
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };

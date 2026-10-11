@@ -9,6 +9,7 @@
  */
 import {
   ProtocolError,
+  type AgentTool,
   TERMINAL_RUN_STATUSES,
   type ActorRef,
   type RunEvent,
@@ -22,7 +23,7 @@ import {
 import type { Runner } from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { Agent } from '../../../shared/agents.js';
+import { runnerEntries, type Agent } from '../../../shared/agents.js';
 import type { RunBrief } from '../../../shared/briefs.js';
 import type {
   Run,
@@ -30,6 +31,8 @@ import type {
   RunEventPage,
   RunExecution,
   RunUsageTotal,
+  SubjectPause,
+  ToolAvailability,
   Workload,
   WorkloadQuery,
 } from '../../../shared/runs.js';
@@ -78,6 +81,13 @@ import {
 import { dialectOf, takesType, type SubjectRegistry } from './ports.js';
 import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
+import { ApiError } from '@nocobase/app-server/router';
+import {
+  lockSubject,
+  readSubjectPause,
+  writeSubjectPause,
+} from './subject-controls.js';
+import { readToolAvailability } from './tool-availability.js';
 import { findBrief, requestReset } from './workspace.store.js';
 
 export const DEFAULT_THREAD = 'main';
@@ -90,6 +100,8 @@ export interface NewInput {
 }
 
 export interface EnqueueRequest {
+  /** Pins this run to an entry of the agent; omitted inputs follow existing work. */
+  readonly tool?: AgentTool | null;
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   /** Separates conversations about one subject; `main` by default. */
@@ -188,6 +200,31 @@ export interface RunFilter {
 }
 
 export interface RunService {
+  /** Changes queued work; same-actor collisions merge pending input and cancel the source. */
+  changeTool(
+    runId: string,
+    tool: AgentTool | null,
+    byUserId: string,
+  ): Promise<Run>;
+  /** Suspends queued work on this subject; direct callers must check subject access. */
+  pauseSubject(
+    subject: SubjectPause['subject'],
+    byUserId: string,
+    outer?: Tx,
+  ): Promise<SubjectPause>;
+  /** Restarts the queue expiry window and releases suspended work. */
+  resumeSubject(
+    subject: SubjectPause['subject'],
+    byUserId: string,
+    outer?: Tx,
+  ): Promise<SubjectPause>;
+  subjectPause(subject: SubjectPause['subject']): Promise<SubjectPause>;
+  toolAvailability(
+    agentId: string,
+    tool: AgentTool,
+    userId: string,
+    requires?: readonly RunnerFeature[],
+  ): Promise<ToolAvailability>;
   /**
    * Queues work for an agent, or, when someone other than the subject's responsible caused it, asks the responsible
    * to confirm it first (`outcome` `pending`). In `outer`, joins the caller's transaction (the caller publishes its
@@ -296,13 +333,17 @@ export interface RunServiceDeps extends TransitionDeps {
     find(conn: DatabaseConnection, id: string): Promise<Runner | null>;
   };
   /** Whether a runner would take work run as a person, for work someone asks to run as themselves. */
-  readonly eligibility: Pick<ClaimEligibility, 'canClaim'>;
+  readonly eligibility: Pick<
+    ClaimEligibility,
+    'canClaim' | 'runnersFor' | 'requirements'
+  >;
   /** Names of people, for the lists of run requests. */
   readonly people: Pick<People, 'names'>;
 }
 
 /** Work to queue now, as the person it runs as. */
 interface Work {
+  readonly tool?: AgentTool | null;
   readonly subject: EnqueueRequest['subject'];
   readonly threadScope: string;
   readonly actorUserId: string;
@@ -387,6 +428,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     unit: Tx,
     agent: Agent,
     values: {
+      readonly tool?: AgentTool | null;
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
       readonly actorUserId: string;
@@ -412,6 +454,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       values: {
         id,
         agentId: agent.id,
+        requestedTool: values.tool ?? null,
         agentType: agent.type,
         runnerId: null,
         status: 'queued',
@@ -547,6 +590,19 @@ export function createRunService(deps: RunServiceDeps): RunService {
     );
   }
 
+  function validateTool(agent: Agent, tool?: AgentTool | null): void {
+    if (tool && !runnerEntries(agent).some((entry) => entry.tool === tool))
+      throw new ApiError({
+        status: 'INVALID_ARGUMENT',
+        domain: 'agents',
+        reason: 'TOOL_NOT_LISTED',
+        message: 'The agent does not list this tool.',
+        fieldViolations: [
+          { field: 'tool', description: 'Choose a tool listed by this agent.' },
+        ],
+      });
+  }
+
   /**
    * Queues `work` for `agent`: it joins the run working on its key while that run can still be told, else the run
    * waiting for it, else starts a new run.
@@ -558,6 +614,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
   ): Promise<RunEnqueued> {
     // Serializes enqueues and claims for this agent, so a key never gets two waiting runs.
     await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
+    validateTool(agent, work.tool);
     const key = {
       agentId: agent.id,
       subjectKind: work.subject.kind,
@@ -574,10 +631,15 @@ export function createRunService(deps: RunServiceDeps): RunService {
     );
     const working = open.find(
       (run) =>
-        run.status === 'dispatched' ||
-        (run.status === 'running' && Boolean(run.acceptsInput)),
+        (!work.tool || run.tool === work.tool) &&
+        (run.status === 'dispatched' ||
+          (run.status === 'running' && Boolean(run.acceptsInput))),
     );
-    const waiting = open.find((run) => run.status === 'queued');
+    const waiting = open.find(
+      (run) =>
+        run.status === 'queued' &&
+        (!work.tool || run.requestedTool === work.tool),
+    );
     const target = working ?? waiting;
     if (!working && waiting)
       await hurry(unit, waiting, work.priority, work.fireAt);
@@ -591,6 +653,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       };
     }
     const runId = await createRun(unit, agent, {
+      tool: work.tool,
       subject: work.subject,
       threadScope: work.threadScope,
       actorUserId: work.actorUserId,
@@ -632,12 +695,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
     agent: Agent,
     userId: string,
     requires: readonly string[],
+    tool?: AgentTool | null,
   ): Promise<void> {
     if (agent.type !== 'runner') return;
     // By the claim's own rules, the agent's variables included; the subject's are the claim's to check.
     if (
       !(await deps.eligibility.canClaim(unit.conn, agent, {
         actorUserId: userId,
+        tool,
         requires: requires as RunnerFeature[],
       }))
     )
@@ -646,6 +711,50 @@ export function createRunService(deps: RunServiceDeps): RunService {
         'No runner you may use can run this agent now: connect one of your own, or ask the person who answers for this to confirm it.',
         { agentId: agent.id },
       );
+  }
+
+  async function setSubjectPause(
+    subject: SubjectPause['subject'],
+    byUserId: string,
+    paused: boolean,
+    outer?: Tx,
+  ): Promise<SubjectPause> {
+    return tx.run(async (unit) => {
+      const at = clock.now().toISOString();
+      const current = await lockSubject(unit.conn, subject, at);
+      if (current.paused === paused) return current;
+      const state = await writeSubjectPause(
+        unit.conn,
+        subject,
+        paused ? byUserId : null,
+        paused ? at : null,
+      );
+      const queued = await runsRepo(unit.conn).findMany({
+        filter: {
+          subjectKind: subject.kind,
+          subjectId: subject.id,
+          status: 'queued',
+        },
+      });
+      if (!paused)
+        await runsRepo(unit.conn).updateMany({
+          filter: {
+            subjectKind: subject.kind,
+            subjectId: subject.id,
+            status: 'queued',
+          },
+          values: { updatedAt: at },
+        });
+      unit.emit({
+        type: paused ? 'subject.paused' : 'subject.resumed',
+        subject,
+        byUserId,
+        at,
+      });
+      for (const run of queued)
+        unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+      return state;
+    }, outer);
   }
 
   const requests = createRunRequestService({
@@ -662,6 +771,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     requireRunnerFor,
     direct: (unit, run) =>
       queue(unit, run.agent, {
+        tool: run.tool,
         subject: run.subject,
         threadScope: run.threadScope,
         actorUserId: run.actorUserId,
@@ -692,6 +802,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             );
           // Someone else's work waits for the responsible, who must be able to run it once they confirm it.
           const agent = await requireInvocable(unit, request.agentId, source);
+          validateTool(agent, request.tool);
           if (!deps.agents.mayInvoke(agent, responsible))
             throw forbidden(
               'The person who answers for this may not wake this agent.',
@@ -706,6 +817,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             { ids, clock },
             {
               agentId: agent.id,
+              tool: request.tool,
               subject: request.subject,
               threadScope,
               responsibleUserId: responsible,
@@ -736,14 +848,17 @@ export function createRunService(deps: RunServiceDeps): RunService {
           request.agentId,
           actorUserId,
         );
+        validateTool(agent, request.tool);
         if (foreign)
           await requireRunnerFor(
             unit,
             agent,
             actorUserId,
             request.requires ?? [],
+            request.tool,
           );
         return queue(unit, agent, {
+          tool: request.tool,
           subject: request.subject,
           threadScope,
           actorUserId,
@@ -760,6 +875,87 @@ export function createRunService(deps: RunServiceDeps): RunService {
       }, outer),
 
     requests,
+    pauseSubject: (subject, byUserId, outer) =>
+      setSubjectPause(subject, byUserId, true, outer),
+    resumeSubject: (subject, byUserId, outer) =>
+      setSubjectPause(subject, byUserId, false, outer),
+    subjectPause: (subject) => readSubjectPause(tx.read(), subject),
+    async toolAvailability(agentId, tool, userId, requires = []) {
+      const conn = tx.read();
+      const agent = await findAgent(conn, agentId);
+      if (!agent || !deps.agents.mayInvoke(agent, userId))
+        throw notFound('Agent');
+      validateTool(agent, tool);
+      return readToolAvailability(
+        conn,
+        agent,
+        tool,
+        userId,
+        requires,
+        deps.runners,
+        deps.eligibility,
+        clock.now(),
+      );
+    },
+    changeTool: (runId, tool, byUserId) =>
+      tx.run(async (unit) => {
+        const initial = await require(unit.conn, runId);
+        const now = clock.now().toISOString();
+        await lockAgentForClaim(unit.conn, initial.agentId, now);
+        const run = await require(unit.conn, runId);
+        if (run.status !== 'queued')
+          throw conflict('Only a queued run can change its tool.');
+        const agent = await findAgent(unit.conn, run.agentId);
+        if (!agent) throw notFound('Agent');
+        validateTool(agent, tool);
+        // Even clearing the pin merges only into the same actor and the exact target choice.
+        const target = (
+          await runsOfKey(unit.conn, run, ['queued'], run.actorUserId)
+        ).find(
+          (other) =>
+            other.id !== run.id && (other.requestedTool ?? null) === tool,
+        );
+        const changed = await runsRepo(unit.conn).updateMany({
+          filter: { id: run.id, status: 'queued' },
+          values: {
+            requestedTool: tool,
+            teamOnlyVariables: null,
+            updatedAt: now,
+          },
+        });
+        if (changed.updatedCount !== 1)
+          throw conflict('The run changed; read it again.');
+        if (target) {
+          await hurry(unit, target, Number(run.priority), run.availableAt);
+          await inputsRepo(unit.conn).updateMany({
+            filter: (f) =>
+              f.and([
+                f.string('runId').eq(run.id),
+                f.date('handledAt').empty(),
+              ]),
+            values: { runId: target.id, deliveredAt: null },
+          });
+          await runsRepo(unit.conn).updateMany({
+            filter: { id: target.id, status: 'queued' },
+            values: { teamOnlyVariables: null, updatedAt: now },
+          });
+          const ended = await finishRun(unit, deps, run, {
+            status: 'cancelled',
+            reason: 'toolChanged',
+            detail: `Merged into run ${target.id}.`,
+            cancelledById: byUserId,
+          });
+          if (!ended) throw conflict('The run changed; read it again.');
+          unit.emit({
+            type: 'run.changed',
+            runId: target.id,
+            status: 'queued',
+          });
+          return toRun(ended);
+        }
+        unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+        return toRun(await require(unit.conn, run.id));
+      }),
 
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
@@ -870,6 +1066,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             },
           );
         const newId = await createRun(unit, agent, {
+          tool: run.requestedTool,
           subject: { kind: run.subjectKind, id: run.subjectId },
           threadScope: run.threadScope,
           actorUserId: byUserId,

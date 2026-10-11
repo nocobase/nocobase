@@ -328,4 +328,44 @@ describe('an agent run calling Studio’s API', () => {
     expect(ids).not.toContain('app:create');
     expect(ids).not.toContain('label:list');
   });
+
+  it('shows queued work cancelled by a tool change in the list and detail', async () => {
+    const agents = server.application.container.resolve(agentsToken);
+    const listed = await call('GET', '/issueRuns', { runToken: token });
+    const own = await agents.runs.get(listed.body.data[0].id as string);
+    const request = {
+      agentId: own.agentId,
+      subject: own.subject,
+      threadScope: 'tool-change',
+      actorUserId: 'u-ada',
+      input: {
+        type: 'comment' as const,
+        actor: { kind: 'user' as const, id: 'u-ada', name: 'Ada' },
+        text: 'Continue the work.',
+      },
+    };
+    const target = await agents.runs.enqueue(request);
+    const source = await agents.runs.enqueue({ ...request, tool: 'claude' });
+    await agents.runs.changeTool(source.runId!, null, 'u-ada');
+    const rows = await call('GET', '/issueRuns', { runToken: token });
+    expect(rows.status).toBe(200);
+    expect(rows.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: source.runId,
+          status: 'cancelled',
+          failureReason: 'toolChanged',
+        }),
+      ]),
+    );
+    const detail = await call('GET', `/issueRuns/${source.runId}`, {
+      runToken: token,
+    });
+    expect(detail.status).toBe(200);
+    expect(detail.body.data).toMatchObject({
+      status: 'cancelled',
+      failureReason: 'toolChanged',
+      failureDetail: `Merged into run ${target.runId}.`,
+    });
+  });
 });

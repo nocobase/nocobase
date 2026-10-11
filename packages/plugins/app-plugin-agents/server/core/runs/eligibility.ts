@@ -9,7 +9,7 @@
  * assembly, merged as a run gets them; the features are those the caller names besides `secrets`, which follows from
  * the variables. What only the assembled payload tells (working directories, skills) is the claim's to check.
  */
-import type { RunnerFeature } from '@nocobase/agent-protocol';
+import type { AgentTool, RunnerFeature } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -21,6 +21,7 @@ import { fitsActor } from './claim.js';
 
 /** Work as `actorUserId` would be: who it runs as, and what else its run would need. */
 export interface EligibilityRequest {
+  readonly tool?: AgentTool | null;
   readonly actorUserId: string;
   /** Scopes the work's variables come from besides the agent's, such as its subject's; none by default. */
   readonly scopes?: readonly VariableTarget[];
@@ -31,6 +32,14 @@ export interface EligibilityRequest {
 }
 
 export interface ClaimEligibility {
+  requirements(
+    conn: DatabaseConnection,
+    agent: Agent,
+    request: EligibilityRequest,
+  ): Promise<{
+    readonly requires: readonly RunnerFeature[];
+    readonly teamOnly: readonly VariableRef[];
+  }>;
   /** The online runners that would take the work now; none for an online or archived agent. */
   runnersFor(
     conn: DatabaseConnection,
@@ -85,7 +94,13 @@ export function createClaimEligibility(deps: {
     if (agent.archivedAt || agent.type !== 'runner') return [];
     // No variable reads when the tool, policy and trust rules already rule every runner out.
     const possible = candidates.filter((runner) =>
-      fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
+      fitsActor(
+        runner,
+        agent,
+        request.actorUserId,
+        request.requires ?? [],
+        request.tool,
+      ),
     );
     if (possible.length === 0) return [];
     const targets = targetsOf(agent, request);
@@ -98,12 +113,23 @@ export function createClaimEligibility(deps: {
     const teamOnly = (await deps.variables.teamOnly(conn, targets)).length > 0;
     return possible.filter(
       (runner) =>
-        fitsActor(runner, agent, request.actorUserId, requires) &&
+        fitsActor(runner, agent, request.actorUserId, requires, request.tool) &&
         (!teamOnly || runner.trust === 'team'),
     );
   }
 
   return {
+    async requirements(conn, agent, request) {
+      const targets = targetsOf(agent, request);
+      const held = await deps.variables.holding(conn, targets);
+      return {
+        requires: cleanList([
+          ...(request.requires ?? []),
+          ...(held.length ? ['secrets'] : []),
+        ]) as RunnerFeature[],
+        teamOnly: await deps.variables.teamOnly(conn, targets),
+      };
+    },
     runnersFor: async (conn, agent, request) =>
       eligible(
         conn,
@@ -130,7 +156,13 @@ export function createClaimEligibility(deps: {
       ).filter(
         (runner) =>
           runner.status !== 'revoked' &&
-          fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
+          fitsActor(
+            runner,
+            agent,
+            request.actorUserId,
+            request.requires ?? [],
+            request.tool,
+          ),
       );
       if (registered.length === 0) return true;
       return (await eligible(conn, agent, request, registered)).length > 0;

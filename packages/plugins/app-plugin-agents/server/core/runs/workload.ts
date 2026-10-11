@@ -34,6 +34,9 @@ import {
   type RunRecord,
 } from './run.store.js';
 
+import { subjectControlsRepo, toSubjectPause } from './subject-controls.js';
+import type { SubjectPause } from '../../../shared/runs.js';
+
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
 /** Queued runs read for the claim order, of every kind. */
@@ -61,6 +64,7 @@ export function claimOrder(
 
 /** What `explainWait` needs to know about everything but the run itself. */
 export interface WaitContext {
+  readonly pause?: SubjectPause;
   readonly now: Date;
   readonly agent: Agent | null;
   /** Online runners. */
@@ -82,7 +86,7 @@ type WaitFacts = Pick<
   RunRecord,
   'actorUserId' | 'availableAt' | 'claimFailures' | 'failureDetail'
 > &
-  Partial<Pick<RunRecord, 'teamOnlyVariables'>> & {
+  Partial<Pick<RunRecord, 'teamOnlyVariables' | 'requestedTool'>> & {
     readonly requires: readonly RunnerFeature[];
   };
 
@@ -109,6 +113,13 @@ export function explainWait(
 ): Omit<RunWait, 'position' | 'agentPosition'> {
   const { agent } = context;
   if (!agent || agent.archivedAt) return wait('agentArchived');
+  if (context.pause?.paused)
+    return wait('paused', {
+      params: {
+        by: context.pause.pausedBy ?? '',
+        at: context.pause.pausedAt ?? '',
+      },
+    });
   const availableAt = time(run.availableAt);
   if (availableAt !== null && availableAt > context.now.getTime()) {
     const until = iso(run.availableAt);
@@ -116,10 +127,15 @@ export function explainWait(
   }
   // An online run needs no runner: the application takes it as soon as an instance looks.
   if (agent.type === 'online') return wait('next');
-  const tools = entryTools(agent);
-  const tool = tools[0] ?? null;
+  const tools = run.requestedTool
+    ? entryTools(agent).filter((tool) => tool === run.requestedTool)
+    : entryTools(agent);
+  const tool = run.requestedTool ?? tools[0] ?? null;
   let fitting = context.runners;
-  if (fitting.length === 0) return wait('noRunnerOnline');
+  if (fitting.length === 0)
+    return run.requestedTool
+      ? wait('toolUnavailable', { tool, params: { tool: run.requestedTool } })
+      : wait('noRunnerOnline');
   if (agent.runnerIds.length > 0) {
     fitting = fitting.filter((runner) => agent.runnerIds.includes(runner.id));
     if (fitting.length === 0) return wait('runnersOffline');
@@ -264,6 +280,19 @@ export async function readWorkload(
   const truncated = open.length > limit;
   const mine = open.slice(0, limit);
 
+  const pauses = new Map(
+    (
+      await subjectControlsRepo(conn).findMany({
+        filter: (f) => f.date('pausedAt').notEmpty(),
+      })
+    ).map((row) => [
+      JSON.stringify([row.subjectKind, row.subjectId]),
+      toSubjectPause(row),
+    ]),
+  );
+  const pauseFor = (run: RunRecord): SubjectPause | undefined =>
+    pauses.get(JSON.stringify([run.subjectKind, run.subjectId]));
+
   const queued = (
     await runsRepo(conn).findMany({
       filter: { status: 'queued' },
@@ -306,7 +335,7 @@ export async function readWorkload(
   let claimable = 0;
   for (const run of queued) {
     const at = time(run.availableAt);
-    if (at === null || at <= now.getTime())
+    if (!pauseFor(run) && (at === null || at <= now.getTime()))
       position.set(run.id, (claimable += 1));
     const count = (agentQueued.get(run.agentId) ?? 0) + 1;
     agentQueued.set(run.agentId, count);
@@ -364,6 +393,7 @@ export async function readWorkload(
               { ...record, requires: run.requires },
               {
                 now,
+                pause: pauseFor(record),
                 agent: agentById.get(run.agentId) ?? null,
                 runners: online,
                 runnerUsed,

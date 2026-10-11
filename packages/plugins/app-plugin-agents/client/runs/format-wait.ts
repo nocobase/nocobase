@@ -33,6 +33,7 @@ export interface FormatRunWaitOptions {
 /** The reasons that need someone to act (an administrator, an agent's owner) rather than time. */
 export const BLOCKING_RUN_WAIT_REASONS: readonly string[] = [
   'agentArchived',
+  'paused',
   'noRunnerOnline',
   'runnersOffline',
   'toolUnavailable',
@@ -52,6 +53,8 @@ export function runWaitBlocks(
 /** The values a reason's text may name; each one the server did not send reads as `runWait.unknownValue`. */
 const NAMES = [
   'until',
+  'by',
+  'at',
   'tool',
   'features',
   'variables',
@@ -83,7 +86,10 @@ export function formatRunWait(
   for (const [name, value] of Object.entries(given)) {
     if (Array.isArray(value)) {
       if (value.length > 0) values[name] = value.join(', ');
-    } else if (name === 'until' && typeof value === 'string') {
+    } else if (
+      (name === 'until' || name === 'at') &&
+      typeof value === 'string'
+    ) {
       const at = new Date(value);
       values[name] = Number.isNaN(at.getTime())
         ? value

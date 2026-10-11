@@ -5,10 +5,11 @@ const runWaitZhCN: RunWaitLocale = {
   runWait: {
     reasons: {
       agentArchived: 'Agent 已归档',
+      paused: '已由 {{by}} 于 {{at}} 挂起',
       delayed: '计划于 {{until}} 开始',
       noRunnerOnline: '没有在线的运行环境',
       runnersOffline: '它的运行环境都不在线',
-      toolUnavailable: '没有运行环境登录了 {{tool}}',
+      toolUnavailable: '没有在线且具备 {{tool}} 的执行机',
       noSharedRunner: '在线的只有别人的运行环境',
       missingFeatures: '没有运行环境支持 {{features}}',
       secretsNotAllowed: '需要团队运行环境：{{variables}} 仅限团队运行环境',

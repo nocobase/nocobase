@@ -229,3 +229,17 @@ The plugin registers no routes of its own: an application mounts its pages and j
 - `@nocobase/app-plugin-agents/client/config` exports `AgentActionCatalogContext`: the agent editor's business actions come from the server (`GET /api/agents/actions`: what the application offers, none without it) unless an application gives another catalog.
 
 Each exported component brings the plugin's translations and its own query cache, so it works inside another plugin's tree.
+
+## Work controls
+
+Pass `tool` to `runs.enqueue()` to pin runner work to one of the agent's model entries. `Run.requestedTool` preserves this choice through retries; `Run.tool` continues to describe the actual claimed tool. Inputs without a tool follow existing work of the same actor, including pinned work. Explicit tools append only to held work using that tool or merge into queued work pinned to it. The subject and thread still admit only one held run per agent.
+
+`runs.changeTool(runId, tool, byUserId)` changes queued work only (`null` clears the pin). When another queued run of the same key, actor and target choice exists, pending inputs move there, its priority and availability take the more urgent values, and the source ends as `cancelled` with `toolChanged` and the target id in its detail. Both runs emit `run.changed`. `POST /api/agents/runs/{runId}/changeTool` uses the same manage access as cancel and retry.
+
+`GET /api/agents/{agentId}/availability?tool=codex&requires=checkout` returns the entry's model and effort, current-user eligible online runners with total/tool slot usage, and a structured wait reason. It uses claim eligibility, including agent variables and required features. It does not assemble subject workspaces. CLI: `agent availability <agent> --tool codex [--requires checkout]`.
+
+`runs.pauseSubject(subject, byUserId, outer?)`, `resumeSubject(...)` and `subjectPause(subject)` control queued work across all agents and threads on a subject, including online agents. Pause leaves held work alone; new inputs still queue and merge. Paused work never expires in the queue; resume restarts its expiry window. Changes emit `subject.paused` / `subject.resumed` after commit, carrying `{ subject, byUserId, at }`, and `run.changed` for queued work. Repeated pause/resume is idempotent.
+
+HTTP controls are `GET /api/agents/subjects/{kind}/{id}` and `POST` to its `/pause` and `/resume` actions; CLI commands are `subject get`, `subject pause` and `subject resume`. Private subjects permit only run participants and hide access from everyone else. For other subjects `SubjectBinding.canControl(subjectId, userId)` overrides default access completely: `allow`, `deny` (403), or `hidden` (404). Without it the current responsible or callers with `agents.agents/manage` may control work; readers without control get 403 and others get 404. Applications calling the service directly must check their own subject permissions.
+
+Execution requests retain `tool` when confirmed, reassigned, or run by the requester, without changing consent or execution identity rules. The `202610110001_ag_add_work_controls` migration adds nullable requested-tool fields and a persistent subject-control table; it leaves historical runs and requests unpinned.

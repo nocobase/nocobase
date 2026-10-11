@@ -130,6 +130,7 @@ import {
   type RunRecord,
 } from './run.store.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
+import { lockSubject, subjectControlsRepo } from './subject-controls.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
 /** Queued runs looked at per claim, oldest first by priority. */
@@ -303,10 +304,14 @@ export function pickOpenEntry(
   runner: Runner,
   agent: Pick<Agent, 'modelEntries'>,
   open: (tool: AgentTool) => boolean,
+  requestedTool?: AgentTool | null,
 ): RunnerModelEntry | null {
   return (
     runnerEntries(agent).find(
-      (entry) => runsTool(runner, entry.tool) && open(entry.tool),
+      (entry) =>
+        (!requestedTool || entry.tool === requestedTool) &&
+        runsTool(runner, entry.tool) &&
+        open(entry.tool),
     ) ?? null
   );
 }
@@ -345,10 +350,19 @@ export function fitsActor(
   agent: Agent,
   actorUserId: string,
   requires: readonly RunnerFeature[],
+  requestedTool?: AgentTool | null,
 ): boolean {
   if (agent.archivedAt || agent.type !== 'runner') return false;
   if (!covers(runner.features, requires)) return false;
-  if (!hasTool(runner, agent)) return false;
+  if (
+    requestedTool
+      ? !runnerEntries(agent).some(
+          (entry) =>
+            entry.tool === requestedTool && runsTool(runner, requestedTool),
+        )
+      : !hasTool(runner, agent)
+  )
+    return false;
   if (!policyAllowsAgent(runner.policy, agent)) return false;
   if (agent.runnerIds.length > 0 && !agent.runnerIds.includes(runner.id))
     return false;
@@ -357,7 +371,13 @@ export function fitsActor(
 
 /** Whether `runner` may run `run` of `agent`, before any lock is taken and before its payload is known. */
 export function fits(runner: Runner, agent: Agent, run: RunRecord): boolean {
-  return fitsActor(runner, agent, run.actorUserId, toRun(run).requires);
+  return fitsActor(
+    runner,
+    agent,
+    run.actorUserId,
+    toRun(run).requires,
+    run.requestedTool,
+  );
 }
 
 /** The runner features a payload needs. */
@@ -836,6 +856,23 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const nowText = now.toISOString();
         await lockAgentForClaim(conn, agent.id, nowText);
         if (
+          (
+            await lockSubject(
+              conn,
+              { kind: candidate.subjectKind, id: candidate.subjectId },
+              nowText,
+            )
+          ).paused
+        )
+          return null;
+        const current = await findRunRecord(conn, candidate.id);
+        if (
+          !current ||
+          current.status !== 'queued' ||
+          !fits(runner, agent, current)
+        )
+          return null;
+        if (
           (await countActive(conn, 'agentId', agent.id)) >=
           agent.maxConcurrentRuns
         )
@@ -850,6 +887,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           agent,
           (tool) =>
             (byTool[tool] ?? 0) < toolLimit(runner, tool) && reported.has(tool),
+          current.requestedTool,
         );
         if (!entry) return null;
         const busy = await runsOfKey(conn, candidate, ACTIVE);
@@ -1005,11 +1043,20 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   /** Queued runs of agents of `type` that may be claimed now, in claim order. */
   async function candidatesOf(type: 'online' | 'runner'): Promise<RunRecord[]> {
     const now = clock.now();
+    const paused = await subjectControlsRepo(tx.read()).findMany({
+      filter: (f) => f.date('pausedAt').notEmpty(),
+    });
     return runsRepo(tx.read()).findMany({
       filter: (f) =>
         f.and([
           f.string('status').eq('queued'),
           f.string('agentType').eq(type),
+          ...paused.map((row) =>
+            f.or([
+              f.string('subjectKind').ne(row.subjectKind),
+              f.string('subjectId').ne(row.subjectId),
+            ]),
+          ),
           // A consultation is taken by the holder of the run that asked it, never from the queue.
           f.string('parentRunId').empty(),
           f.or([
@@ -1044,6 +1091,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const nowText = now.toISOString();
       // Serializes claims and enqueues of this agent, so one key never has two runs held.
       await lockAgentForClaim(conn, agent.id, nowText);
+      if (
+        (
+          await lockSubject(
+            conn,
+            { kind: candidate.subjectKind, id: candidate.subjectId },
+            nowText,
+          )
+        ).paused
+      )
+        return null;
       if ((await runsOfKey(conn, candidate, ACTIVE)).length > 0) return null;
       const leaseExpiresAt = later(now, TIMINGS.leaseMs);
       const taken = await runsRepo(conn).updateMany({
@@ -1242,7 +1299,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const agent = agents.get(candidate.agentId);
       if (!agent || !fits(runner, agent, candidate)) continue;
       // None of its tools has room on the runner's side: the runs behind it may still fit.
-      if (!pickOpenEntry(runner, agent, (tool) => reported.has(tool))) continue;
+      if (
+        !pickOpenEntry(
+          runner,
+          agent,
+          (tool) => reported.has(tool),
+          candidate.requestedTool,
+        )
+      )
+        continue;
       try {
         const result = await attempt(runner, agent, candidate, reported);
         if (result.kind === 'claimed') return result.payload;

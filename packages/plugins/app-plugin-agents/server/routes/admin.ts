@@ -81,8 +81,12 @@ import {
   encodePageToken,
 } from '../kernel/http.js';
 import { WORKDIR_TITLE } from '../kernel/scopes.js';
+import { runsRepo } from '../core/runs/run.store.js';
 import { tags } from './openapi.js';
 import {
+  ChangeToolInput,
+  SubjectParams,
+  SubjectPauseSchema,
   AgentActionOptionSchema,
   AgentChangeSchema,
   AgentHistoryQuery,
@@ -1340,6 +1344,135 @@ export function createAdminRoutes(
       await visibleRun(context, action);
       await next();
     };
+  router.post(
+    '/runs/:runId/changeTool',
+    guard,
+    runAccess('manage'),
+    describeRoute({
+      tags,
+      summary: "Change a queued run's tool",
+      operationId: 'agentsChangeRunTool',
+      ...cliRoute({
+        command: 'run changeTool',
+        examples: ['run changeTool <run> --tool codex'],
+      }),
+      responses: {
+        200: dataResponse(RunSchema),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The agent does not list this tool (`TOOL_NOT_LISTED`).',
+        ),
+        404: noRun,
+        409: apiErrorResponse(409),
+      },
+    }),
+    runParam,
+    apiValidator('json', ChangeToolInput),
+    async (context) =>
+      context.json({
+        data: await services.runs.changeTool(
+          context.req.valid('param').runId,
+          context.req.valid('json').tool,
+          caller(context).userId,
+        ),
+      }),
+  );
+  const subjectAccess: MiddlewareHandler<AdminEnv> = async (context, next) => {
+    const who = caller(context);
+    const kind = context.req.param('kind') ?? '';
+    const id = context.req.param('id') ?? '';
+    const binding = services.subjects.get(kind);
+    if (!binding) throw notFound('Run context');
+    if (binding.private || kind === 'private') {
+      const participant = await runsRepo(services.tx.read()).count({
+        filter: (f) =>
+          f.and([
+            f.string('subjectKind').eq(kind),
+            f.string('subjectId').eq(id),
+            f.or([
+              f.string('actorUserId').eq(who.userId),
+              f.string('ownerUserId').eq(who.userId),
+            ]),
+          ]),
+      });
+      if (!participant) throw notFound('Run context');
+    } else if (binding.canControl) {
+      const access = await binding.canControl(id, who.userId);
+      if (access === 'hidden') throw notFound('Run context');
+      if (access !== 'allow')
+        throw forbidden('You may not control work on this subject.');
+    } else {
+      const responsible = await binding.responsibleUserId?.(
+        services.tx.read(),
+        id,
+      );
+      if (
+        responsible !== who.userId &&
+        !(await who.can('agents.agents', 'manage'))
+      ) {
+        if (!(await who.can('agents.agents', 'read')))
+          throw notFound('Run context');
+        throw forbidden('You may not control work on this subject.');
+      }
+    }
+    await next();
+  };
+  router.get(
+    '/subjects/:kind/:id',
+    guard,
+    subjectAccess,
+    describeRoute({
+      tags,
+      summary: 'Get subject work controls',
+      operationId: 'agentsGetSubjectControl',
+      ...cliRoute({
+        command: 'subject get',
+        examples: ['subject get <kind> <id>'],
+      }),
+      responses: {
+        200: dataResponse(SubjectPauseSchema),
+        ...apiErrorResponses,
+        404: notFoundAs('The subject'),
+      },
+    }),
+    apiValidator('param', SubjectParams),
+    async (context) =>
+      context.json({
+        data: await services.runs.subjectPause(context.req.valid('param')),
+      }),
+  );
+  for (const action of ['pause', 'resume'] as const) {
+    router.post(
+      `/subjects/:kind/:id/${action}`,
+      guard,
+      subjectAccess,
+      describeRoute({
+        tags,
+        summary: `${action === 'pause' ? 'Pause' : 'Resume'} work on a subject`,
+        operationId:
+          action === 'pause' ? 'agentsPauseSubject' : 'agentsResumeSubject',
+        ...cliRoute({
+          command: `subject ${action}`,
+          examples: [`subject ${action} <kind> <id>`],
+        }),
+        responses: {
+          200: dataResponse(SubjectPauseSchema),
+          ...apiErrorResponses,
+          404: notFoundAs('The subject'),
+        },
+      }),
+      apiValidator('param', SubjectParams),
+      async (context) => {
+        const subject = context.req.valid('param');
+        return context.json({
+          data: await services.runs[
+            action === 'pause' ? 'pauseSubject' : 'resumeSubject'
+          ](subject, caller(context).userId),
+        });
+      },
+    );
+  }
   router.get(
     '/runs',
     guard,

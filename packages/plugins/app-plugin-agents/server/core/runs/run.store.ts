@@ -5,7 +5,6 @@
 import type {
   ActorKind,
   AgentTool,
-  FailureReason,
   RunInput,
   RunInputType,
   RunnerFeature,
@@ -31,6 +30,7 @@ export interface RunRecord {
   readonly agentType: string;
   readonly runnerId: string | null;
   readonly executionHistory?: JsonColumn;
+  readonly requestedTool?: AgentTool | null;
   readonly tool?: string | null;
   readonly modelService?: string | null;
   readonly model?: string | null;
@@ -238,6 +238,7 @@ export function toRun(record: RunRecord): Run {
     actualEffort: latest?.actualEffort ?? null,
     actualEffortSource: latest?.actualEffortSource ?? null,
     actualEffortAt: latest?.actualEffortAt ?? null,
+    requestedTool: record.requestedTool ?? null,
     tool: (record.tool as AgentTool | null | undefined) ?? null,
     modelService: record.modelService ?? null,
     model: record.model ?? null,
@@ -263,7 +264,7 @@ export function toRun(record: RunRecord): Run {
     finishedAt: record.finishedAt,
     lastActivityAt: record.lastActivityAt,
     cancelRequestedAt: record.cancelRequestedAt,
-    failureReason: record.failureReason as FailureReason | null,
+    failureReason: record.failureReason as Run['failureReason'],
     failureDetail: record.failureDetail,
     summary: record.summary,
     createdAt: record.createdAt,

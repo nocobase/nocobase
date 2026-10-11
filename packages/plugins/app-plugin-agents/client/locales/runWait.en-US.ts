@@ -6,10 +6,11 @@ const runWaitEnUS = {
   runWait: {
     reasons: {
       agentArchived: 'The agent is archived',
+      paused: 'Paused by {{by}} since {{at}}',
       delayed: 'Scheduled for {{until}}',
       noRunnerOnline: 'No runtime online',
       runnersOffline: 'Its runtimes are offline',
-      toolUnavailable: 'No runtime has {{tool}} signed in',
+      toolUnavailable: 'No online runner has {{tool}}',
       noSharedRunner: 'Only other people’s runtimes are online',
       missingFeatures: 'No runtime supports {{features}}',
       secretsNotAllowed:

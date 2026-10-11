@@ -643,6 +643,7 @@ const pages = {
     toolNetwork: 'The coding tool could not reach its service.',
     toolProcess: 'The coding tool exited unexpectedly.',
     contextOverflow: 'The conversation grew too long for the model.',
+    toolChanged: 'Merged into another queued run after its tool changed.',
     queuedExpired: 'No runtime took the run in time.',
     modelUnavailable: 'The agent’s model is not available.',
     stepLimit: 'The agent called tools too many times without answering.',

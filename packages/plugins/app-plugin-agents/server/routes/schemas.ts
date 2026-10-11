@@ -20,6 +20,8 @@ import {
   ToolSlotsSchema,
   WorkspaceDecisionSchema,
   WorkspaceCleanupResultSchema,
+  type AgentTool,
+  type RunnerFeature,
   type RunEvent,
   type RunEventType,
   type RunStatus,
@@ -91,7 +93,10 @@ import {
 } from '../../shared/runners.js';
 import {
   RUN_REQUEST_STATUSES,
+  RUN_WAIT_REASONS,
   type Run,
+  type SubjectPause,
+  type ToolAvailability,
   type RunDetail,
   type RunExecutionSnapshot,
   type RunEffortReport,
@@ -915,7 +920,9 @@ const runObject = z.object({
   finishedAt: dateTime.nullable(),
   lastActivityAt: dateTime.nullable(),
   cancelRequestedAt: dateTime.nullable(),
-  failureReason: FailureReasonSchema.nullable(),
+  failureReason: z
+    .union([FailureReasonSchema, z.literal('toolChanged')])
+    .nullable(),
   failureDetail: z.string().nullable(),
   summary: z.string().nullable(),
   createdAt: dateTime,
@@ -975,7 +982,9 @@ export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
         agentId: z.string(),
         agentName: z.string().nullable(),
         status: RunStatusSchema,
-        failureReason: FailureReasonSchema.nullable(),
+        failureReason: z
+          .union([FailureReasonSchema, z.literal('toolChanged')])
+          .nullable(),
         summary: z.string().nullable().meta({ description: 'Its answer.' }),
         createdAt: dateTime,
         finishedAt: dateTime.nullable(),
@@ -1265,7 +1274,7 @@ const notice = z.discriminatedUnion('code', [
   z.object({
     code: z.literal('runFailed'),
     runId: z.string(),
-    reason: FailureReasonSchema.nullable(),
+    reason: z.union([FailureReasonSchema, z.literal('toolChanged')]).nullable(),
   }),
   z.object({ code: z.literal('runCancelled'), runId: z.string() }),
   z.object({
@@ -1639,6 +1648,7 @@ export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =
   });
 
 const runRequestObject = z.object({
+  tool: AgentToolSchema.nullable().optional(),
   id: z.string(),
   agentId: z.string(),
   subject: z.object({ kind: z.string(), id: z.string() }),
@@ -1730,3 +1740,68 @@ export const RunRequestOutcomeSchema: z.ZodType<{
     }),
   })
   .meta({ ref: 'AgentsRunRequestOutcome' });
+
+export const ChangeToolInput: z.ZodType<{ tool: AgentTool | null }> =
+  z.strictObject({ tool: AgentToolSchema.nullable() });
+export const SubjectParams: z.ZodType<{ kind: string; id: string }> = z.object({
+  kind: id,
+  id,
+});
+export const SubjectPauseSchema: z.ZodType<SubjectPause> = z
+  .object({
+    subject: z.object({ kind: z.string(), id: z.string() }),
+    paused: z.boolean(),
+    pausedBy: z.string().nullable(),
+    pausedAt: dateTime.nullable(),
+  })
+  .meta({ ref: 'AgentsSubjectControl' });
+export const ToolAvailabilityQuery: z.ZodType<{
+  tool: AgentTool;
+  requires: RunnerFeature[];
+}> = z.object({
+  tool: AgentToolSchema,
+  requires: z.preprocess(
+    (value) =>
+      typeof value === 'string' ? value.split(',').filter(Boolean) : value,
+    z.array(RunnerFeatureSchema).default([]),
+  ),
+});
+export const ToolAvailabilitySchema: z.ZodType<ToolAvailability> = z
+  .object({
+    agentId: z.string(),
+    tool: AgentToolSchema,
+    model: z.string().nullable(),
+    effort: z.string().nullable(),
+    available: z.boolean(),
+    wait: z.object({
+      reason: z.enum(RUN_WAIT_REASONS),
+      until: dateTime.nullable(),
+      tool: AgentToolSchema.nullable(),
+      missing: z.array(RunnerFeatureSchema),
+      detail: z.string().nullable(),
+      variables: z
+        .array(
+          z.object({
+            scope: z.string(),
+            scopeId: z.string(),
+            name: z.string(),
+          }),
+        )
+        .optional(),
+      params: z
+        .record(
+          z.string(),
+          z.union([z.string(), z.number(), z.array(z.string())]),
+        )
+        .optional(),
+    }),
+    runners: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        slots: z.object({ used: z.number(), limit: z.number() }),
+        toolSlots: z.object({ used: z.number(), limit: z.number().nullable() }),
+      }),
+    ),
+  })
+  .meta({ ref: 'AgentsToolAvailability' });

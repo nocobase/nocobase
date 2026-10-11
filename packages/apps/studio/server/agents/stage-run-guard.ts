@@ -1,5 +1,4 @@
 /** Persistent loop-guard state and a read-only projection of runs and their stage inputs, on the move's connection. */
-import type { FailureReason } from '@nocobase/agent-protocol';
 import type { Run } from '@nocobase/app-plugin-agents/shared/runs';
 import type { DatabaseConnection } from '@nocobase/db';
 import { jsonObject } from './values.js';
@@ -23,23 +22,24 @@ export const stageGuards = (conn: DatabaseConnection) =>
   conn.repository<StageRunGuard>(STAGE_RUN_GUARDS);
 
 /** These failures describe the execution environment or network, rather than work the agent finished attempting. */
-const ENVIRONMENT_FAILURES: ReadonlySet<FailureReason> = new Set([
-  'runnerOffline',
-  'leaseExpired',
-  'startTimeout',
-  'setupFailed',
-  'checkoutFailed',
-  'cliUnavailable',
-  'toolAuth',
-  'toolQuota',
-  'toolRateLimit',
-  'toolNetwork',
-  'prepareNetwork',
-  'queuedExpired',
-  'modelUnavailable',
-  'policyRefused',
-  'cancelled',
-]);
+const ENVIRONMENT_FAILURES: ReadonlySet<NonNullable<Run['failureReason']>> =
+  new Set([
+    'runnerOffline',
+    'leaseExpired',
+    'startTimeout',
+    'setupFailed',
+    'checkoutFailed',
+    'cliUnavailable',
+    'toolAuth',
+    'toolQuota',
+    'toolRateLimit',
+    'toolNetwork',
+    'prepareNetwork',
+    'queuedExpired',
+    'modelUnavailable',
+    'policyRefused',
+    'cancelled',
+  ]);
 
 export function countsAsStageRun(
   run: Pick<

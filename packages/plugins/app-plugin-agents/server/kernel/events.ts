@@ -55,6 +55,18 @@ type RunRequestEvent<T extends string> = {
 };
 
 export type AgentsEvent =
+  | {
+      readonly type: 'subject.paused';
+      readonly subject: { readonly kind: string; readonly id: string };
+      readonly byUserId: string;
+      readonly at: string;
+    }
+  | {
+      readonly type: 'subject.resumed';
+      readonly subject: { readonly kind: string; readonly id: string };
+      readonly byUserId: string;
+      readonly at: string;
+    }
   | RunRequestEvent<'runRequest.created'>
   | RunRequestEvent<'runRequest.confirmed'>
   | RunRequestEvent<'runRequest.rejected'>

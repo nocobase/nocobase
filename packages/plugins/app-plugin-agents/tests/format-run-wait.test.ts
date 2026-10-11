@@ -44,7 +44,7 @@ describe('formatRunWait', () => {
       'Concurrency full (2/2)',
     );
     expect(words('toolUnavailable', { tool: 'codex' })).toBe(
-      'No runtime has codex signed in',
+      'No online runner has codex',
     );
     expect(words('missingFeatures', { features: ['secrets', 'mounts'] })).toBe(
       'No runtime supports secrets, mounts',
@@ -52,6 +52,9 @@ describe('formatRunWait', () => {
     expect(words('setupRetrying', { detail: 'No repo.' })).toBe(
       'Preparing it failed; retrying: No repo.',
     );
+    expect(
+      words('paused', { by: 'alice', at: '2026-10-11T12:00:00Z' }),
+    ).toContain('Paused by alice since');
     expect(words('next')).toBe('Next for a free runtime');
     // Every reason the server knows has its own words.
     for (const reason of RUN_WAIT_REASONS)

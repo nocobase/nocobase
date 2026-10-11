@@ -213,6 +213,11 @@ export interface SubjectReports {
 }
 
 export interface SubjectBinding {
+  /** Overrides default subject control access for non-private subjects. */
+  readonly canControl?: (
+    subjectId: string,
+    userId: string,
+  ) => Promise<'allow' | 'deny' | 'hidden'>;
   readonly kind: string;
   /**
    * Reads the current responsible inside the request's transaction, before confirming or rejecting. Null means

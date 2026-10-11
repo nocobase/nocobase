@@ -63,7 +63,8 @@
  * no content (`ConversationChanged`). A page that hears one fetches through the API. Pages also poll while a run is
  * open, because announcements reach only the browsers connected to the instance that made the change.
  */
-import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
+import type { RunFailureReason } from './runs.js';
+import type { RunStatus } from '@nocobase/agent-protocol';
 
 import type { OnlineModelEntry } from './agents.js';
 import type { I18nText } from './i18n.js';
@@ -391,7 +392,7 @@ export type ConversationNotice =
   | {
       readonly code: 'runFailed';
       readonly runId: string;
-      readonly reason: FailureReason | null;
+      readonly reason: RunFailureReason | null;
     }
   /** The owner stopped the run. */
   | { readonly code: 'runCancelled'; readonly runId: string }

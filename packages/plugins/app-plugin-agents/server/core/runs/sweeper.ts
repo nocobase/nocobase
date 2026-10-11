@@ -43,6 +43,7 @@ import {
   usageRepo,
   type RunRecord,
 } from './run.store.js';
+import { lockSubject } from './subject-controls.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
 
 export interface SweepReport {
@@ -144,8 +145,30 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
         outcome: Parameters<typeof finishRun>[3],
       ) => {
         await tx.run(async (unit) => {
+          if (outcome.reason === 'queuedExpired') {
+            if (
+              (
+                await lockSubject(
+                  unit.conn,
+                  { kind: run.subjectKind, id: run.subjectId },
+                  clock.now().toISOString(),
+                )
+              ).paused
+            )
+              return;
+          }
           const current = await findRunRecord(unit.conn, run.id);
           if (!current || current.status !== run.status) return;
+          if (outcome.reason === 'queuedExpired') {
+            const expiry =
+              deps.subjects.get(current.subjectKind)?.queuedExpiryMs ?? 0;
+            const cutoff = clock.now().getTime() - expiry;
+            if (
+              Date.parse(current.updatedAt) >= cutoff ||
+              (current.availableAt && Date.parse(current.availableAt) >= cutoff)
+            )
+              return;
+          }
           if (current.status !== 'queued')
             await salvageUsage(unit, deps, current);
           const ended = await finishRun(unit, deps, current, outcome);

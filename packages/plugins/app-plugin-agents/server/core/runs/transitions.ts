@@ -5,6 +5,8 @@
  */
 import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
 
+import type { RunFailureReason } from '../../../shared/runs.js';
+
 import { later, type Clock } from '../../kernel/clock.js';
 import type { Tx } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
@@ -26,7 +28,7 @@ export interface TransitionDeps {
 
 export interface FinishOutcome {
   readonly status: 'completed' | 'failed' | 'cancelled';
-  readonly reason?: FailureReason;
+  readonly reason?: RunFailureReason;
   readonly detail?: string;
   readonly summary?: string;
   readonly sessionId?: string;

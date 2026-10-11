@@ -93,6 +93,34 @@ describe('agents API document', () => {
     expect(operations()).toHaveLength(routes.length);
   });
 
+  it('documents work controls and derives the availability CLI', () => {
+    expect(
+      operation('GET', '/api/agents/{agentId}/availability').operationId,
+    ).toBe('agentsGetToolAvailability');
+    expect(
+      operation('POST', '/api/agents/runs/{runId}/changeTool').operationId,
+    ).toBe('agentsChangeRunTool');
+    expect(
+      operation('GET', '/api/agents/subjects/{kind}/{id}').operationId,
+    ).toBe('agentsGetSubjectControl');
+    expect(
+      operation('POST', '/api/agents/subjects/{kind}/{id}/pause').operationId,
+    ).toBe('agentsPauseSubject');
+    expect(
+      operation('POST', '/api/agents/subjects/{kind}/{id}/resume').operationId,
+    ).toBe('agentsResumeSubject');
+    const commands = deriveAllCliCommands(document);
+    const availability = commands.find(
+      (entry) => entry.id === 'agent:availability',
+    );
+    expect(availability).toBeDefined();
+    expect(availability?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'tool', required: true }),
+      ]),
+    );
+  });
+
   it('derives repeatable raw event type flags from the query schema', () => {
     const command = deriveAllCliCommands(document).find(
       (entry) => entry.id === 'run:events',
