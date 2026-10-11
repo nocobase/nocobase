@@ -100,6 +100,7 @@ import {
   linkedOpenPullRequests,
   linksOfPullRequest,
   openPullRequestsOf,
+  previewManagedOpenPullRequests,
   pullRequestsOfIssue,
   pullRequestsOfIssues,
   pullRequestView,
@@ -114,6 +115,8 @@ import {
   type RepoRow,
 } from './store.js';
 import { hasLivePreviews } from '../previews/store.js';
+import { createPreviewLabelSync } from './preview-labels.js';
+import { previewLabelState } from '../previews/preferences.js';
 import type { PullRequestEvents, RepoEvents } from './events.js';
 import { createWebhookReceiver, type WebhookReceiver } from './webhooks.js';
 
@@ -205,6 +208,8 @@ export interface ClosePullRequestInput {
 }
 
 export interface StudioGit {
+  syncPreviewLabels(issueId: string): Promise<void>;
+
   list(viewer: Viewer, issue: string): Promise<IssuePullRequests>;
   link(
     viewer: Viewer,
@@ -487,6 +492,8 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   const readAuth = async (repo: RepoRow): Promise<GitAuth> =>
     (await connections.connectionAuth(repo)).auth;
 
+  const previewLabels = createPreviewLabelSync({ conn, platformOf, readAuth });
+
   /** Whether Studio keeps every open pull request of the repository, linked or not: one of them has a live preview. */
   const tracks = (repo: RepoRow): Promise<boolean> =>
     hasLivePreviews(conn(), repo.repo);
@@ -714,7 +721,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     };
   }
 
-  /** Reads one linked pull request with its validators; writes only when something changed. */
+  /** Reads one watched pull request with its validators; writes only when something changed. */
   async function pollPullRequest(
     repo: RepoRow,
     pr: PullRequestRow,
@@ -745,6 +752,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
 
   /** A new link: the owner is asked to merge it when the issue is in review, and the rest of Studio hears of it. */
   async function afterLink(issueId: string, pullRequestId: string) {
+    await previewLabels.sync(pullRequestId);
     await flow.requestMerges(issueId, pullRequestId);
     await deps.events?.emit({ type: 'linked', issueId, pullRequestId });
   }
@@ -927,6 +935,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     if (links.length === 0 && created === 0 && !tracked)
       return 'notLinked' as const;
     const pr = await findPullRequest(conn(), repo.id, number);
+    if (pr?.state === 'open' && created === 0) await previewLabels.sync(pr.id);
     if (pr?.state === 'open' && !pr.draft) {
       if (MERGE_CHECK_ACTIONS.has(event.action))
         await scheduleMergeChecks(
@@ -1427,7 +1436,10 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           { pullRequestId: pr.id },
           new Date(now().getTime() + MERGE_CHECK_DELAY_SECONDS * 1000),
         );
-      return viewOf(issue.id, pr.id);
+      return {
+        ...(await viewOf(issue.id, pr.id)),
+        previewLabelSyncFailed: (await previewLabelState(conn(), pr.id)).failed,
+      };
     },
 
     async edit(viewer, idOrKey, pullRequestId, input, actingUserId) {
@@ -1598,6 +1610,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         throw forbidden('You may not change this issue’s pull requests.');
       if (!(await deleteLink(conn(), issue.id, pullRequestId)))
         throw notFound('The pull request link');
+      await previewLabels.sync(pullRequestId);
       await deps.events?.emit({
         type: 'unlinked',
         issueId: issue.id,
@@ -1642,6 +1655,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         pullEtag: full.pullEtag,
         ci: full.ci,
       });
+      await previewLabels.sync(pullRequestId);
       return viewOf(issue.id, pullRequestId);
     },
 
@@ -1879,6 +1893,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       return { attribution };
     },
 
+    syncPreviewLabels: (issueId) => previewLabels.syncIssue(issueId),
     repoOfResource,
 
     async syncRepos() {
@@ -1923,8 +1938,15 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         }
         const open = (await tracks(repo))
           ? await openPullRequestsOf(conn(), repo.id)
-          : await linkedOpenPullRequests(conn(), repo.id);
-        for (const pr of open) await pollPullRequest(repo, pr);
+          : [
+              ...(await linkedOpenPullRequests(conn(), repo.id)),
+              ...(await previewManagedOpenPullRequests(conn(), repo.id)),
+            ];
+        // Unlinked PRs still retry label removal, but must stop once the host closes or merges them.
+        for (const pr of new Map(open.map((pr) => [pr.id, pr])).values()) {
+          await pollPullRequest(repo, pr);
+          await previewLabels.sync(pr.id);
+        }
         await updateRepo(conn(), repo.id, {
           polledAt: new Date(),
           pollError: null,
