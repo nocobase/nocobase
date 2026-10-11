@@ -366,7 +366,7 @@ describe('dependency type changes', () => {
     const b = await create('B');
     const link = await block(a, b);
     // Both callers submit the same snapshot. A dialect may serialize the transactions;
-    // the stale caller must still conflict instead of releasing or recording twice.
+    // the stale caller must still conflict on the link or graph version instead of releasing or recording twice.
     const results = await Promise.allSettled(
       [1, 2].map(() =>
         h.services.subtasks.updateDependency(admin(), a.id, link.dependencyId, {
@@ -381,7 +381,10 @@ describe('dependency type changes', () => {
     expect(results.filter((result) => result.status === 'rejected')).toEqual([
       {
         status: 'rejected',
-        reason: expect.objectContaining({ code: 'DEPENDENCY_CHANGED' }),
+        reason: expect.objectContaining({
+          kind: 'conflict',
+          code: expect.stringMatching(/^DEPENDENCY_(CHANGED|GRAPH_CHANGED)$/),
+        }),
       },
     ]);
     expect((await detail(a)).blockedBy).toEqual([]);

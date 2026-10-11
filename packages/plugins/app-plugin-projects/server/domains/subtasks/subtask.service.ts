@@ -299,7 +299,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         const issue = await requireVisible(tx.conn, viewer, idOrKey);
         requireEditor(viewer);
         const type = dependencyType(input?.type);
-        if (type === 'blockedBy') await lockIssueGraph(tx.conn);
+        await lockIssueGraph(tx.conn);
         const other = await target(
           tx.conn,
           viewer,
@@ -321,7 +321,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     async updateDependency(viewer, idOrKey, dependencyId, input) {
       requireEditor(viewer);
       return deps.tx.run(async (tx) => {
-        if (input?.type === 'blockedBy') await lockIssueGraph(tx.conn);
+        await lockIssueGraph(tx.conn);
         const issue = await requireVisible(tx.conn, viewer, idOrKey);
         const before = removable(
           issue,
