@@ -5,12 +5,12 @@ This directory holds every Skill this repository commits. `pnpm install` links e
 | Skill                                                                 | Who uses it                                                                                                     | What it does                                                                                                                                       |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`nocobase-create-app`](nocobase-create-app/SKILL.md)                 | Users starting a project to develop, installed globally                                                         | Creates an application with `pnpm create @nocobase/app`, configures it with `nocobase config init`, `config set` and `config check`, and starts it |
-| [`nocobase-app-installer`](nocobase-app-installer/SKILL.md)           | Users installing a built application where it runs, from its archive, installed globally                       | Installs, upgrades, rolls back and checks an application's deployment archive with `@nocobase/app-installer`                                      |
+| [`nocobase-app-installer`](nocobase-app-installer/SKILL.md)           | Users deploying a built application locally or over SSH, installed globally                       | Installs, upgrades, rolls back and checks an application's deployment archive with `@nocobase/app-installer`                                      |
 | [`nocobase-plugin-development`](nocobase-plugin-development/SKILL.md) | Contributors developing plugins in a NocoBase 3 source workspace, linked by this checkout or installed globally | Scaffolds, implements, registers and verifies a NocoBase 3 plugin                                                                                  |
 
 The two global Skills split by what the user ends up with. A project — source code someone changes, developed locally — is `nocobase-create-app`. An installation — built NocoBase that only runs, usually in production — is `nocobase-app-installer`. An application goes from one to the other: it is created and developed as a project, its own `nocobase-deployment` Skill builds the archive, and `nocobase-app-installer` installs it.
 
-The rest of this file is about the two Skills users install globally. `nocobase-create-app` is how an agent reaches NocoBase 3 before any application exists; everything it needs after that ships inside the application, under `.agents/skills/`, synchronized from the installed packages. `nocobase-app-installer` is for the server: it installs a deployment archive built in an application project, and a server has no project and no application Skills, so this Skill stays in use for every later upgrade.
+The rest of this file is about the two Skills users install globally. `nocobase-create-app` is how an agent reaches NocoBase 3 before any application exists; everything it needs after that ships inside the application, under `.agents/skills/`, synchronized from the installed packages. `nocobase-app-installer` runs where the Agent works: it installs an application archive locally or over SSH and stays in use for later upgrades. With SSH, the server needs no Agent or Skill.
 
 Each is used against the published packages, which is what users do, or against the unreleased checkout, published to a local npm registry, which is how a change is tested before it is released.
 
@@ -80,11 +80,9 @@ pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PA
 
 ### Requirements
 
-On the server that will run the application:
+For SSH deployment, the local machine needs Node.js 24+, SSH, scp and an Agent that loads Skills. The remote Linux server needs Node.js 24+, pm2 4.3+ and tar on its non-interactive PATH, but no Agent, Skill or npm access. Prepare those runtimes before deploying to an offline server.
 
-- Linux or macOS; on Windows, WSL.
-- Node.js 24 or later, and pm2 4.3 or later installed globally with `npm install -g pm2`.
-- An agent that loads Skills.
+For installation on the same machine as the Agent, use Linux or macOS (WSL on Windows), with Node.js 24+ and pm2 4.3+.
 
 ### Install the Skill
 
@@ -94,7 +92,13 @@ npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocob
 
 ### Ask the agent
 
-On the server, with the archive copied over, ask for the application, for example:
+In the local application project, ask for remote deployment, for example:
+
+> Build this application and deploy it over SSH to deploy@server in /app/my-app, for https://app.example.com.
+
+The Agent follows the project’s build guidance, then runs `deploy --ssh` locally. The installer uploads its offline runtime bundle and the application archive, and installs or upgrades on the server. See [remote deployment](nocobase-app-installer/references/remote-deployment.md) for prerequisites, verification and recovery.
+
+Alternatively, on the server with the archive copied over, ask:
 
 > Install the NocoBase application in /tmp/crm.tar.gz into /srv/nocobase/crm for https://apps.example.com.
 
@@ -105,7 +109,7 @@ Later, in the installation directory, ask it to check, upgrade or roll back. It 
 ### Without an agent
 
 ```bash
-npx --yes @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
+npx --yes @nocobase/app-installer@beta install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
 ```
 
 `upgrade`, `rollback` and `status` take `--dir` with the installation directory; `upgrade` takes the new archive with `--archive`. The package README, `packages/tools/app-installer/README.md`, documents every flag, the directory layout and the exit codes.
