@@ -10,11 +10,11 @@ A knowledge base organizes articles, files and business instructions into mainta
 
 | Capability | Purpose |
 | --- | --- |
-| Organize material | Spaces, folders, articles and files for different purposes. |
-| Read and search | Read source material, find content and connect semantic retrieval as needed. |
+| [Organize and import material](./organize.md) | Spaces, folders, articles and files for different purposes. |
+| [Read and search](./search.md) | Read source material, find content and connect semantic retrieval as needed. |
 | [Knowledge-based answers](./answers.md) | Use company material in answers and link to sources. |
-| Access and collaboration | Assign read, propose, edit and manage permissions. |
-| Versions and maintenance | Keep versions and view file parsing and indexing status. |
+| [Access and collaboration](./access.md) | Assign read, propose, edit and manage permissions. |
+| [Versions and processing status](./maintenance.md) | Keep versions and view file parsing and indexing status. |
 
 The application composes the knowledge center's layout and entry points. Permissions, history and editing belong beside the relevant material rather than requiring a shared settings page.
 
