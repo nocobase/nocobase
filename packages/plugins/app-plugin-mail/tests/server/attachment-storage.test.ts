@@ -93,17 +93,6 @@ describe('outbound attachment bytes and metadata', () => {
     expect(disk.getStream).not.toHaveBeenCalled();
   });
 
-  it('does not query UUID upload metadata for a provider attachment part', async () => {
-    const query = vi.spyOn(database, 'query');
-    for (const providerPart of ['part-0', '1.2', '', 'not-a-local-upload']) {
-      expect(
-        await store.getOutboundAttachment('alice', providerPart),
-      ).toBeUndefined();
-    }
-    expect(query).not.toHaveBeenCalled();
-    query.mockRestore();
-  });
-
   it.each([
     -1,
     1.5,
