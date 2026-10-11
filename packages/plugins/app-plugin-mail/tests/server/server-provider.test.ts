@@ -182,6 +182,7 @@ describe('@nocobase/app-plugin-mail', () => {
         [mailProviderAdapterResolverToken, {}],
         [mailCredentialVaultToken, {}],
         [mailOutboundAttachmentStorageToken, {}],
+        [userAdministrationServiceToken, {}],
       ]);
       const resolve = container.resolve.bind(container);
       vi.spyOn(container, 'resolve').mockImplementation(
@@ -235,6 +236,60 @@ describe('@nocobase/app-plugin-mail', () => {
       expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
         { event: 'mail.message_sync.queue_unavailable' },
         expect.stringContaining('QueueServiceProvider'),
+      );
+    });
+
+    it('selects mail.queue independently of the synchronization jobs configuration', async () => {
+      const consumer = vi.spyOn(queue.hostQueue, 'consumer');
+      const { getJobExecutor, container } = createRuntime(
+        {
+          mail: { queue: 'test', jobs: 'mailTasks' },
+          queue: queue.config,
+          jobs: { mailTasks: { adapter: 'memory' } },
+        },
+        true,
+      );
+      const service = container.resolve(mailServiceToken);
+      const cancel = service.onMessagesSynced(vi.fn());
+      expect(consumer).toHaveBeenCalledWith('mail/message-sync', 'test');
+      expect(getJobExecutor).toHaveBeenCalledWith(
+        '@nocobase/app-plugin-mail',
+        'mailTasks',
+      );
+      await cancel();
+    });
+
+    it.each(['typo', 'default', 'alias', 'arrayConfig', '__proto__'])(
+      'rejects an invalid configured event queue name "%s" instead of falling back',
+      (name) => {
+        const { resolveRuntime } = createRuntime(
+          {
+            mail: { queue: name },
+            queue: {
+              default: 'test',
+              test: { adapter: 'inMemory' },
+              alias: 'test',
+              arrayConfig: [],
+            },
+          },
+          true,
+        );
+        expect(resolveRuntime).toThrow(
+          `mail.queue names "${name}", which is not a queue configuration.`,
+        );
+      },
+    );
+
+    it('ignores a configured event queue when the host queue service is absent', () => {
+      const { resolveRuntime, logger } = createRuntime(
+        { mail: { queue: 'unavailableEvents' } },
+        true,
+        false,
+      );
+      expect(resolveRuntime).not.toThrow();
+      expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+        { event: 'mail.message_sync.queue_unavailable' },
+        expect.any(String),
       );
     });
 

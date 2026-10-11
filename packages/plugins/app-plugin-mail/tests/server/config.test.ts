@@ -27,11 +27,16 @@ describe('mail environment variables', () => {
       'MAIL_OAUTH_RETURN_URL',
       'MAIL_PUSH_WEBHOOK_SECRET',
       'MAIL_PUSH_WEBHOOK_URL',
+      'MAIL_QUEUE',
       'MAIL_SYNC_BATCH_SIZE',
     ]);
     expect(
       [...packageMetadata.nocobase.appConfig.environmentVariables].sort(),
     ).toEqual(declared);
+    expect(mailEnvironmentMappings.MAIL_QUEUE).toMatchObject({
+      path: 'mail.queue',
+      type: 'string',
+    });
   });
 });
 
@@ -92,6 +97,24 @@ describe('mail namespace configuration', () => {
       jobs: 'mail',
     });
   });
+  it('keeps the event queue configuration separate from the jobs configuration', () => {
+    expect(resolveMailConfig({})).not.toHaveProperty('queue');
+    expect(
+      resolveMailConfig({ queue: 'mailEvents', jobs: 'mailTasks' }),
+    ).toMatchObject({
+      queue: 'mailEvents',
+      jobs: 'mailTasks',
+    });
+  });
+
+  it.each(['', '   ', 1, false, null, [], {}])(
+    'rejects a malformed mail.queue value: %j',
+    (queue) => {
+      expect(() => resolveMailConfig({ queue })).toThrow(
+        'Mail configuration at "mail.queue" must be a non-empty string.',
+      );
+    },
+  );
 });
 
 describe('mail automatic sync configuration', () => {

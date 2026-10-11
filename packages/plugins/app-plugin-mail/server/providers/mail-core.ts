@@ -180,8 +180,32 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
             .warn(data, message);
         },
       },
+      container.has(queueServiceToken) ? this.queueConfiguration() : undefined,
     );
     return this.messageSyncNotifier;
+  }
+
+  /** Reject a misspelled event configuration instead of silently using the queue default. */
+  private queueConfiguration(): string | undefined {
+    const name = this.getMailConfig().queue;
+    if (name === undefined) return undefined;
+    const configurations =
+      this.app.config.get<Record<string, unknown>>('queue');
+    const selected = configurations?.[name];
+    if (
+      // The host strips legacy keys before selecting a queue configuration.
+      ['default', 'connections', 'worker', 'jobs'].includes(name) ||
+      !configurations ||
+      !Object.hasOwn(configurations, name) ||
+      !selected ||
+      typeof selected !== 'object' ||
+      Array.isArray(selected)
+    ) {
+      throw new Error(
+        `mail.queue names "${name}", which is not a queue configuration.`,
+      );
+    }
+    return name;
   }
 
   private resolveJobExecutor(container: ServiceResolver): JobExecutor {

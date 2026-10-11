@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import {
   createQueueService,
   type QueueAdapter,
+  type QueueConfig,
+  type QueueConfigEntry,
   type QueueService,
 } from '@nocobase/queue';
 
@@ -16,6 +18,7 @@ export const mailQueueBackends: readonly QueueAdapter[] = [
 
 export interface MailTestQueue {
   readonly hostQueue: QueueService;
+  readonly config: QueueConfig;
   setup(): Promise<void>;
   close(): Promise<void>;
 }
@@ -24,35 +27,47 @@ export interface MailTestQueue {
 export async function createMailTestQueue(
   backend: QueueAdapter,
   sharedNamespace?: string,
+  namedConfigKey?: string,
 ): Promise<MailTestQueue> {
   const path = await mkdtemp(join(tmpdir(), 'mail-queue-test-'));
   const namespace = sharedNamespace ?? `mail-test-${randomUUID()}`;
-  const hostQueue = createQueueService(
-    {
-      default: 'test',
-      test: {
-        adapter: backend,
-        namespace,
-        ...(backend === 'redis'
-          ? { connection: { host: '127.0.0.1', port: Number(redisPort) } }
-          : { persistence: { path } }),
-        shutdownTimeoutMs: 1000,
-        cancellationGraceMs: 1000,
-      },
+  const entry: QueueConfigEntry = {
+    adapter: backend,
+    namespace,
+    ...(backend === 'redis'
+      ? { connection: { host: '127.0.0.1', port: Number(redisPort) } }
+      : { persistence: { path } }),
+    shutdownTimeoutMs: 1000,
+    cancellationGraceMs: 1000,
+  };
+  const config: QueueConfig = {
+    default: 'test',
+    test: namedConfigKey
+      ? {
+          adapter: 'inMemory',
+          namespace,
+          persistence: { path: join(path, 'default') },
+          shutdownTimeoutMs: 1000,
+          cancellationGraceMs: 1000,
+        }
+      : entry,
+    ...(namedConfigKey
+      ? { [namedConfigKey]: { ...entry, concurrency: 2, attempts: 2 } }
+      : {}),
+  };
+  const hostQueue = createQueueService(config, {
+    appName: namespace,
+    storagePath: path,
+    logger: {
+      debug() {},
+      info() {},
+      warn() {},
+      error() {},
     },
-    {
-      appName: namespace,
-      storagePath: path,
-      logger: {
-        debug() {},
-        info() {},
-        warn() {},
-        error() {},
-      },
-    },
-  );
+  });
   return {
     hostQueue,
+    config,
     setup: () => hostQueue.setup(),
     async close() {
       try {

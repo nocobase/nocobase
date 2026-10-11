@@ -8,7 +8,31 @@ A new message means a record first inserted locally by synchronization, not nece
 
 There are **no Mail event-log or event-sequence tables, incremental event-read methods, or event checkpoints**. The plugin uses the application's `queueServiceToken`, not a privately constructed queue. The internal queue is `mail/message-sync` and its channel is `messages.synced`; applications use the public subscription rather than publishing directly to these implementation names. To enable events, the application composition includes `QueueServiceProvider` from `@nocobase/app-server/queue`. Without the queue service, Mail logs one warning when its event notifier is created, ignores publication and subscriptions, and returns a no-op asynchronous unsubscribe function. Mail startup, synchronization, sending and realtime invalidation remain available; ignored events are not retained or replayed. Mail does not set up or shut down the shared backend.
 
-Events use the application queue's default configuration; `mail.jobs` still chooses the synchronization/sending executor and does not choose the event backend. Configure the queue default's adapter, retry and retention settings through the normal application queue configuration.
+`mail.queue` (environment override `MAIL_QUEUE`) selects a named configuration under the application's `queue` section for both event publication and subscription. Omitted, events follow `queue.default`, or the host queue's built-in memory fallback if no default is selected. An explicit name must identify a configuration object; when the host queue service is available, an unknown name or a reserved key (`default`, `connections`, `worker` or `jobs`) fails initialization instead of silently falling back. If the queue service itself is absent, events remain disabled with a warning. `mail.jobs` independently selects the synchronization/sending executor and does not choose the event backend.
+
+For example, keep other queues on the application default while running Mail events on Redis. Register the application's Queue configuration factory in `server/config/index.ts`; templates already do so. Apply these settings in the application's `config.yml` and restart:
+
+```yaml
+queue:
+  default: general
+  general:
+    adapter: inMemory
+  mailEvents:
+    adapter: redis
+    connection:
+      host: 127.0.0.1
+      port: 6379
+      db: 0
+    concurrency: 2
+    attempts: 3
+    backoff:
+      type: exponential
+      delay: 1000
+mail:
+  queue: mailEvents
+```
+
+The configuration key is not the logical queue name or its channel. Retry, retention, concurrency, connection and namespace come from the selected configuration. Configuration keys do not create a new physical queue identity; backend, connection target, namespace and logical queue name determine shared work, so every instance of an application must select consistent settings. Composing `mailConfig` under `mail` activates `MAIL_QUEUE` through the factory's section-relative environment rules. The exported `mailEnvironmentMappings` remains available for legacy application-level providers; do not pass its fully prefixed paths as a section's `env`.
 
 ## Delivery, retries and limits
 

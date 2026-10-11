@@ -52,7 +52,8 @@
         "MAIL_SYNC_BATCH_SIZE",
         "MAIL_PUSH_WEBHOOK_URL",
         "MAIL_PUSH_WEBHOOK_SECRET",
-        "MAIL_JOBS"
+        "MAIL_JOBS",
+        "MAIL_QUEUE"
       ]
     }
   },

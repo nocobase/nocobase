@@ -74,8 +74,9 @@ async function fixture(
   backend: QueueAdapter,
   listener?: MailMessagesSyncedListener,
   queueService: boolean = true,
+  queueConfigKey?: string,
 ) {
-  const queue = await createMailTestQueue(backend);
+  const queue = await createMailTestQueue(backend, undefined, queueConfigKey);
   const container = new ServiceContainer();
   if (queueService) container.instance(queueServiceToken, queue.hostQueue);
   const queueSetup = vi.spyOn(queue.hostQueue, 'setup');
@@ -85,7 +86,11 @@ async function fixture(
   const config = new AppConfig();
   await config.loadAll();
   config.mergeDefaults({
-    mail: { providers: { fixture: { type: 'fixture' } } },
+    mail: {
+      providers: { fixture: { type: 'fixture' } },
+      ...(queueConfigKey ? { queue: queueConfigKey } : {}),
+    },
+    queue: queue.config,
   });
   const executor = new InlineJobExecutor();
   const topic = { publishFor: vi.fn(), close: vi.fn() };
@@ -286,6 +291,113 @@ describe('production Mail without an application queue service', () => {
         await expect(result.lifecycle.shutdown()).resolves.toBeUndefined();
         expect(result.topic.close).toHaveBeenCalledOnce();
         expect(result.queueShutdown).not.toHaveBeenCalled();
+      } finally {
+        await result.lifecycle.shutdown().catch(() => {});
+        await result.queue.close();
+        await destroyMailTestDatabase(database);
+        vi.restoreAllMocks();
+      }
+    },
+  );
+});
+
+describe.each(mailQueueBackends)(
+  'named Mail event queue configuration (%s)',
+  (backend) => {
+    it('uses the selected host producer/consumer and retry policy without changing queue.default', async () => {
+      const database = await createMailTestDatabase();
+      const received: MailMessagesSyncedEvent[] = [];
+      let historyAttempts = 0;
+      const listener = vi.fn((event: MailMessagesSyncedEvent) => {
+        if (event.phase === 'history' && ++historyAttempts === 1)
+          throw new Error('Retry this business handler on the selected queue.');
+        received.push(event);
+      });
+      const result = await fixture(
+        database,
+        backend,
+        listener,
+        true,
+        'mailEvents',
+      );
+      try {
+        expect(result.queue.config.default).toBe('test');
+        expect(result.queue.config.test).toMatchObject({ adapter: 'inMemory' });
+        const store = result.container.resolve(mailStoreToken);
+        await store.saveAccount(account);
+        const restoredId = testId('named-queue-restored');
+        await store.createSyncRun({
+          id: restoredId,
+          accountId: account.id,
+          requestedBy: account.userId,
+          mode: 'initial',
+          policy: {
+            batchSize: 10,
+            receivedAfter: account.initialSyncReceivedAfter,
+          },
+        });
+        await result.lifecycle.bootAll();
+        await result.lifecycle.startAll();
+        await vi.waitFor(() => expect(received).toHaveLength(2), {
+          timeout: 10000,
+        });
+        expect(received.map((event) => event.phase).sort()).toEqual([
+          'catchUp',
+          'history',
+        ]);
+        expect(historyAttempts).toBe(2);
+        expect(listener).toHaveBeenCalledTimes(3);
+        expect(await store.getSyncRun(restoredId)).toMatchObject({
+          status: 'completed',
+        });
+        expect(result.queueConsumer).toHaveBeenCalledWith(
+          'mail/message-sync',
+          'mailEvents',
+        );
+        expect(result.queueProducer).toHaveBeenCalledWith(
+          'mail/message-sync',
+          'mailEvents',
+        );
+        expect(result.queueConsumer).not.toHaveBeenCalledWith(
+          'mail/message-sync',
+          undefined,
+        );
+        expect(result.queueProducer).not.toHaveBeenCalledWith(
+          'mail/message-sync',
+          undefined,
+        );
+        expect(result.queue.config.default).toBe('test');
+        expect(result.logger.warn).not.toHaveBeenCalled();
+        await result.lifecycle.shutdown();
+        expect(result.queueShutdown).not.toHaveBeenCalled();
+      } finally {
+        await result.lifecycle.shutdown().catch(() => {});
+        await result.queue.close();
+        await destroyMailTestDatabase(database);
+        vi.restoreAllMocks();
+      }
+    });
+  },
+);
+
+describe('Mail event configuration names removed by host normalization', () => {
+  it.each(['connections', 'worker', 'jobs'])(
+    'rejects the legacy key "%s" instead of using the host default',
+    async (name) => {
+      const database = await createMailTestDatabase();
+      const result = await fixture(database, 'inMemory', vi.fn(), true, name);
+      try {
+        expect(result.queue.config[name]).toMatchObject({
+          adapter: 'inMemory',
+        });
+        // The real host strips this key, so its normal API would silently select the default.
+        expect(
+          result.queue.hostQueue.producer('normalization-probe', name),
+        ).toBe(result.queue.hostQueue.producer('normalization-probe'));
+        expect(() => result.container.resolve(mailServiceToken)).toThrow(
+          `mail.queue names "${name}", which is not a queue configuration.`,
+        );
+        expect(result.queueConsumer).not.toHaveBeenCalled();
       } finally {
         await result.lifecycle.shutdown().catch(() => {});
         await result.queue.close();

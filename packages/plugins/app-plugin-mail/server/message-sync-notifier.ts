@@ -51,6 +51,7 @@ export class MailMessageSyncNotifier {
   public constructor(
     private readonly queue: QueueService | undefined,
     private readonly logger: MailLogger | undefined = undefined,
+    private readonly configKey: string | undefined = undefined,
   ) {
     if (!queue)
       writeMailLog(
@@ -68,29 +69,31 @@ export class MailMessageSyncNotifier {
     const cancellation = new AbortController();
     const subscription: Subscription = {
       cancellation,
-      unregister: this.queue.consumer(MAIL_MESSAGE_SYNC_QUEUE).consume(
-        withChannel(
-          MAIL_MESSAGE_SYNC_CHANNEL,
-          async (_channel, payload, signal): Promise<void> => {
-            let event: MailMessagesSyncedEvent;
-            try {
-              event = snapshotEvent(payload);
-            } catch {
-              this.logFailure('payload_invalid');
-              throw new Error('Invalid Mail message sync event payload.');
-            }
-            const combined = AbortSignal.any([signal, cancellation.signal]);
-            try {
-              combined.throwIfAborted();
-              await listener(event, combined);
-            } catch {
-              this.logFailure('listener_failed', event);
-              // Queue owns retries; neither the exception nor its cause may leak secrets.
-              throw new Error('Mail message sync listener failed.');
-            }
-          },
+      unregister: this.queue
+        .consumer(MAIL_MESSAGE_SYNC_QUEUE, this.configKey)
+        .consume(
+          withChannel(
+            MAIL_MESSAGE_SYNC_CHANNEL,
+            async (_channel, payload, signal): Promise<void> => {
+              let event: MailMessagesSyncedEvent;
+              try {
+                event = snapshotEvent(payload);
+              } catch {
+                this.logFailure('payload_invalid');
+                throw new Error('Invalid Mail message sync event payload.');
+              }
+              const combined = AbortSignal.any([signal, cancellation.signal]);
+              try {
+                combined.throwIfAborted();
+                await listener(event, combined);
+              } catch {
+                this.logFailure('listener_failed', event);
+                // Queue owns retries; neither the exception nor its cause may leak secrets.
+                throw new Error('Mail message sync listener failed.');
+              }
+            },
+          ),
         ),
-      ),
     };
     this.subscriptions.add(subscription);
     // As with Queue consumers, never await this drain from its own listener.
@@ -115,7 +118,7 @@ export class MailMessageSyncNotifier {
       const publication = Promise.resolve().then(async (): Promise<void> => {
         try {
           await queue
-            .producer(MAIL_MESSAGE_SYNC_QUEUE)
+            .producer(MAIL_MESSAGE_SYNC_QUEUE, this.configKey)
             .publish(MAIL_MESSAGE_SYNC_CHANNEL, snapshot, {
               jobIdProducer: (): string => snapshot.eventId,
             });
