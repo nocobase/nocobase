@@ -804,6 +804,29 @@ const zhCN: AppResource = {
   'design.by': '{{name}}，{{time}}',
   'design.expand': '展开全文',
   'design.collapse': '收起',
+  'design.executor.clear': '清空执行者',
+  'design.executor.search': '搜索执行者',
+  'design.executor.signIn': '重新登录',
+  'design.executor.notFound': '议题已不存在，请关闭对话框返回。',
+  'design.executor.clearSearch': '清空搜索',
+  'design.executor.sessionExpired': '登录已失效，请重新登录后继续。',
+  'design.executor.forbidden':
+    '批准权限已撤销，请关闭对话框并联系负责人恢复权限。',
+  'design.executor.title': '批准方案',
+  'design.executor.description': '请选择进入开发中的执行者。',
+  'design.executor.label': '执行者',
+  'design.executor.placeholder': '请选择执行者',
+  'design.executor.noMatches': '没有匹配的执行者',
+  'design.executor.agent': '开发 agent',
+  'design.executor.user': '项目成员',
+  'design.executor.empty':
+    '没有可选的开发 agent 或项目成员，请联系负责人调整。',
+  'design.executor.reload': '重新加载候选',
+  'design.executor.confirm': '批准并进入开发中',
+  'design.executor.invalid': '所选执行者已失效，请重新选择。',
+  'design.executor.unavailable': '阶段或批准权限已变化，无法继续批准。',
+  'design.executor.changed': '当前执行者已变化，请选择执行者后批准。',
+  'design.executor.loadFailed': '加载执行者候选失败，请重试。',
   'design.approve': '批准进入开发',
   'design.requestChanges': '打回修改',
   'design.done.approve': '方案已批准，任务进入开发。',
@@ -890,6 +913,11 @@ const zhCN: AppResource = {
     '状态「{{status}}」的「{{rule}}」被跳过：{{why}}。',
   'inbox.stageRules.runAgent': '运行 Agent',
   'inbox.stageRules.suggestExecutor': '建议执行者',
+  'inbox.stageSkips.executorCannotImplement':
+    '{{agentName}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
+  'errors.INTERNAL': '请求失败，请重试。',
+  'errors.DESIGN_EXECUTOR_REQUIRED': '当前执行者已变化，请选择执行者后批准。',
+  'errors.DESIGN_EXECUTOR_INVALID': '所选执行者已失效，请重新选择。',
   'inbox.stageSkips.ownerCannotInvoke': '负责人无权把工作交给这个 Agent',
   'inbox.stageSkips.noAgentExecutor':
     '还没有执行者，请指派执行者，指派后立即开始',
@@ -906,6 +934,7 @@ const zhCN: AppResource = {
     cancelled: '已取消',
     idleTimeout: '长时间无响应',
     setupFailed: '准备失败',
+    workspaceBusy: '工作目录被另一个运行占用，等待重试。',
     checkoutFailed: '检出失败',
     cliUnavailable: 'CLI 不可用',
     toolAuth: '编码工具未登录',
@@ -1031,6 +1060,8 @@ const zhCN: AppResource = {
       knowledge: '知识',
     },
     activity: {
+      executorCannotImplement:
+        '{{name}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
       executorWaits: '执行者设为 {{name}}，进入开发中时开始',
     },
     presets: {

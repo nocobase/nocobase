@@ -192,4 +192,10 @@ Expand the PR under the issue's **Code and deployments** to check Preview. After
 
 Open the Preview entry to access the application. Preview is ready in this example, and the application PR remains unmerged.
 
+For the first sign-in, return to the Preview section above and expand **First administrator**. Copy **Username** and **Password**, then enter them on the application login page. Only people who can edit the issue linked to the PR can view these credentials. Actual passwords are omitted from this guide and its screenshots.
+
+After signing in, the **Northstar Logistics** home page shows the **Home, Orders, Customers, and Drivers** navigation entries. This is the base application delivered by the initialization issue. Subsequent issues will implement business features in these pages.
+
+![Application home and created page navigation](./assets/application-home-clean-header-en.png)
+
 Public uploads timed out in this walkthrough. The deployment shown above completed after a local supplementary upload. See the [review notes](./review-notes#upload-locally-and-view-preview) for the issue and workaround.
