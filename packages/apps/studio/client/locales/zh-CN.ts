@@ -1072,6 +1072,10 @@ const zhCN: AppResource = {
       },
     },
     stageRules: {
+      freshSession: '每次新开会话',
+      freshSessionHint:
+        '开启后，每次阶段运行时 Agent 不续接上一轮会话，适合评审，避免沿用上次的结论；工作目录保留。',
+      withFreshSession: '{{summary}} · 每次新开会话',
       agent: 'Agent',
       agentsUnavailable: '你无法在这里列出 Agent；规则会保留它指定的 Agent。',
       assign: '设为执行者',
