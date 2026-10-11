@@ -7,6 +7,10 @@ description: 'For developers who review or extend process code: extension points
 
 This page is for developers who review or extend the code the Agent generates; you do not need it for everyday development.
 
+The example application's order detail page has an **Under the hood** section. Expand it to inspect the current state, available transitions, parameters, transition history and effect execution results. The transition history is the history described in the business documentation. Payment callbacks run as the system, so their actor is shown as System. This is a developer debugging view; business pages should present the history according to their users' needs.
+
+![Developer view of the order state, available transitions, parameters, history and effect results](https://static-docs.nocobase.com/order-history-83a64dbc00ce2b5b.png)
+
 Processes are implemented by `@nocobase/lifecycle`. Its core idea is that **the record is the process**. A record's current step is kept in a field of the record itself, with no separate "process instance", so where a record stands is recorded in exactly one place. Every change of step is an action (transition) declared in source, which checks its conditions and writes the record and its history entry in one transaction; external work such as notifications and calls to external systems runs after the transaction commits.
 
 ```ts
@@ -80,7 +84,7 @@ const remove = runtime.addGuard(
 You can hand it to the Agent like this:
 
 ```text
-Add a risk plugin. When a customer is flagged as suspicious, their orders cannot be shipped, with the message "The customer is under risk review and the order cannot be shipped yet". Do not change the process in the orders plugin.
+Add a customer risk rule: when a customer is flagged as suspicious, their orders cannot be shipped, with the message "The customer is under risk review and the order cannot be shipped yet". Other orders should still follow the existing rules.
 ```
 
 ## Subscribing to events
@@ -130,7 +134,7 @@ To adopt an existing table:
 3. Close off the forms, imports and APIs that used to change the step field directly, so that from then on a step changes only through an action.
 
 ```text
-The application already has a contracts table, whose status field is currently changed directly by a form. Put it under a process: first list every place that changes this field directly and the number of existing records in each status, and propose how existing contracts map to the steps of the new process; implement it after I confirm, and make sure the form can no longer change a contract's status directly.
+The application already has contracts, and users can currently change their status directly in a form. I want contracts to follow a process: first list where their status can be changed directly, how many contracts are in each status, and how existing contracts will carry on; implement it after I confirm. From then on, a contract’s status must change only through the prescribed actions and cannot be freely edited in the form.
 ```
 
 ## API reference

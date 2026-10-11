@@ -17,7 +17,7 @@
  *   deployments (one row per pull request, unfolding into its previews and the environments it was deployed to);
  * - the agents' runs on the activity line. The side column keeps properties, followers, dates and execution history.
  *
- * While a run is open the issue may change under it, so the page polls it, and reloads it when a run opens or ends.
+ * The page polls the issue and its runs even while idle, speeds up after an action, and reloads on run transitions.
  * Its child routes (`new-subtask`, the plugin's; a run's transcript at `runs/:runId`) render beside the covering page.
  */
 import { ApiClientError } from '@nocobase/app-client';
@@ -31,12 +31,10 @@ import {
   PmLoadError,
   pmKeys,
   usePageContextSource,
-  usePmApi,
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { RouteChildPage } from '@/components/route-child-page';
@@ -52,7 +50,6 @@ import { DESIGN_PROPOSAL_KIND } from '../../../../shared/design.js';
 import { AskAgent } from '../../../agents/ask-agent.js';
 import { DesignSection } from '../../../agents/design/section.js';
 import { IssueLiveRun, IssueRunRow } from '../../../agents/issue-runs.js';
-import { useIssueRuns } from '../../../agents/use-issue-runs.js';
 import { IssueInitSection } from '../../../projects/init-card.js';
 import { IssueWaitingSection } from '../../../inbox/issue-waiting.js';
 import { useWaitingCoversApproval } from '../../../inbox/use-waiting.js';
@@ -79,9 +76,7 @@ import { useIssueParent } from '../../../issues/detail/issue-parent.js';
 import { useIssuePageWording } from '../../../issues/detail/labels.js';
 import { IssueMarks } from '../../../issues/issue-marks.js';
 import { IssuePageAside } from './aside.js';
-
-/** How often the issue is reloaded while a run on it is open, in case an announcement is missed. */
-const RUN_POLL_MS = 5000;
+import { useLiveIssue } from './use-live-issue.js';
 
 export default function IssueDetailPage(): ReactElement {
   const { issueId = '' } = useParams();
@@ -145,13 +140,11 @@ function IssuePage({
 }): ReactElement {
   const { t } = useTranslation();
   const wording = useIssuePageWording();
-  const api = usePmApi();
-  const queryClient = useQueryClient();
   const detailKey = useMemo(() => pmKeys.issue(issueId), [issueId]);
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
   const [stageRunRefresh, setStageRunRefresh] = useState(0);
-  const runs = useIssueRuns(detail, stageRunRefresh);
+  const runs = useLiveIssue(detail, issueId, detailKey, stageRunRefresh);
   const approvalCovered = useWaitingCoversApproval(detail);
   const main = useIssueMainState(pageActions);
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
@@ -173,24 +166,6 @@ function IssuePage({
     [detail.id, detail.identifier, detail.title],
   );
   usePageContextSource(entry);
-
-  // While a run is open the issue may change under it: poll it, and reload it when a run opens or ends.
-  const working = runs.some((run) => run.open);
-  useQuery({
-    queryKey: detailKey,
-    queryFn: () => api.issue(issueId),
-    refetchInterval: working ? RUN_POLL_MS : false,
-  });
-  const openRuns = runs
-    .filter((run) => run.open)
-    .map((run) => run.id)
-    .join(',');
-  const seenRef = useRef(openRuns);
-  useEffect(() => {
-    if (seenRef.current === openRuns) return;
-    seenRef.current = openRuns;
-    void queryClient.invalidateQueries({ queryKey: detailKey });
-  }, [openRuns, queryClient, detailKey]);
 
   return (
     <IssueDetailLayout

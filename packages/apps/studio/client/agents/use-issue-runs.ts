@@ -15,7 +15,14 @@ const OPEN = new Set(['queued', 'dispatched', 'running']);
 const NONE: readonly SubjectRun[] = [];
 const refreshSeen = new WeakMap<
   QueryClient,
-  Map<string, { revision: number; signal?: number }>
+  Map<
+    string,
+    {
+      revision: number;
+      lastActivityAt: IssueDetail['lastActivityAt'];
+      signal?: unknown;
+    }
+  >
 >();
 const issueRunsKey = (id: string) => ['studio', 'issue-runs', id] as const;
 
@@ -29,7 +36,7 @@ export function useRefreshIssueRuns() {
 }
 
 /** One query shared by the panel, live summary, activity and issue polling. */
-export function useIssueRunsState(issue: IssueDetail, refreshSignal?: number) {
+export function useIssueRunsState(issue: IssueDetail, refreshSignal?: unknown) {
   const api = useAgentsApi();
   const client = useQueryClient();
   const query = useQuery({
@@ -68,14 +75,19 @@ export function useIssueRunsState(issue: IssueDetail, refreshSignal?: number) {
     const changed =
       !previous ||
       previous.revision !== issue.revision ||
+      previous.lastActivityAt !== issue.lastActivityAt ||
       (refreshSignal !== undefined && previous.signal !== refreshSignal);
     seen.set(issue.id, {
       revision: issue.revision,
-      signal: refreshSignal ?? previous?.signal,
+      lastActivityAt: issue.lastActivityAt,
+      signal: refreshSignal === undefined ? previous?.signal : refreshSignal,
     });
     if (changed)
-      void client.invalidateQueries({ queryKey: issueRunsKey(issue.id) });
-  }, [client, issue.id, issue.revision, refreshSignal]);
+      void client.invalidateQueries(
+        { queryKey: issueRunsKey(issue.id) },
+        { cancelRefetch: false },
+      );
+  }, [client, issue.id, issue.revision, issue.lastActivityAt, refreshSignal]);
   const status =
     query.error instanceof ApiClientError ? query.error.status : undefined;
   const restricted = status !== undefined && [401, 403, 404].includes(status);
@@ -101,7 +113,7 @@ export function useIssueRunsState(issue: IssueDetail, refreshSignal?: number) {
 /** The agents' runs on an issue, newest first and current. */
 export function useIssueRuns(
   issue: IssueDetail,
-  refreshSignal?: number,
+  refreshSignal?: unknown,
 ): readonly SubjectRun[] {
   return useIssueRunsState(issue, refreshSignal).runs;
 }

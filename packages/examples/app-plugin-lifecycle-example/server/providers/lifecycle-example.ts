@@ -19,6 +19,7 @@ import {
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import { expenseLifecycle } from '../lifecycles/expense.js';
+import { invoiceLifecycle } from '../lifecycles/invoice.js';
 import { exportLifecycle } from '../lifecycles/export.js';
 import {
   createFailureSwitch,
@@ -30,7 +31,12 @@ import { purchaseLifecycle } from '../lifecycles/purchase.js';
 import { createExampleServices } from '../lifecycles/services.js';
 import { subscriptionLifecycle } from '../lifecycles/subscription.js';
 import { ticketLifecycle } from '../lifecycles/ticket.js';
-import { buildSampleRecords, SAMPLE_DATA_NAME } from '../samples.js';
+import {
+  buildSampleRecords,
+  SAMPLE_DATA_NAME,
+  buildInvoiceSampleRecords,
+  INVOICE_SAMPLE_DATA_NAME,
+} from '../samples.js';
 import { RepositorySandboxObjects } from '../sandbox/objects.js';
 import { WebhookOutbox } from '../sandbox/outbox.js';
 import { Sandbox } from '../sandbox/sandbox.js';
@@ -97,6 +103,11 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
           this.app.container.resolve(lifecycleExampleServiceToken),
           this.durableFlows(),
         ),
+    });
+    this.app.container.resolve(sampleDataToken).register({
+      name: INVOICE_SAMPLE_DATA_NAME,
+      packageName: LIFECYCLE_EXAMPLE_SCOPE,
+      run: () => buildInvoiceSampleRecords(this.durableFlows()),
     });
   }
 
@@ -168,6 +179,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       },
     };
     runtime.register(orderLifecycle, { services: flowServices });
+    runtime.register(invoiceLifecycle, { services: flowServices });
     runtime.register(exportLifecycle, { services: flowServices });
     runtime.register(purchaseLifecycle, { services: flowServices });
     runtime.register(fulfilmentLifecycle, { services: flowServices });
