@@ -123,7 +123,9 @@ In the browser, the panel opens only when the person opens it; its launcher is a
 - **List** (`client/components/issue-table.tsx`, the `issue-table` component): the default on `/my-issues`, since people execute most of those issues.
 - **Board** (`client/components/kanban.tsx`, the `kanban` component, adapted from the Kibo UI kanban): dropping a card in another column changes its status through the projects plugin's `useBoardMove`.
 
-A person's last choice on a page is remembered and wins over the default; `?view=agent|list|board` overrides both. The items do not translate: Studio gives them their words from `issuesPage.table`, `issuesPage.kanban` and `issuesPage.agentQueue` in its locales (`client/issues/locales.ts`). A project's Issues tab is still the projects plugin's own list and board.
+A person's last choice on a page is remembered and wins over the default; `?view=agent|list|board` overrides both. The items do not translate: Studio gives them their words from `issuesPage.table`, `issuesPage.kanban` and `issuesPage.agentQueue` in its locales (`client/issues/locales.ts`). A project's Issues tab uses the same Studio views with its project fixed as a filter.
+
+List rows and board cards show an `Agent working` mark when the current executing agent has a dispatched or running run on that issue and no pending approval requested by that same agent on that issue. Workflow stages alone do not suppress this mark; queued and terminal runs do not trigger it. The read-only `/agentBoard/issueWork` endpoint accepts at most 100 issue IDs and returns only visible issues' current executor ID and work boolean, using the agents plugin's scoped `runs.workingOn` service. The views refresh every ten seconds while visible and on issue/runtime announcements or reconnect, hide marks after a failed refresh, and retry on the next interval. Reduced motion leaves the icon and wording visible without rotation.
 
 The Agent queue shows one lane per Runner agent, ordered by activity: the most running first, then the longest queue, then those waiting for a person, then those merely assigned. A lane's header shows the agent's avatar, name, state, its taken slots (`2/3`) and "No runtime online" when no runtime could take its work. Inside a lane, in queue order:
 
@@ -279,3 +281,11 @@ studio:
       github.example.com: https://github.example.com/api/v3
     poll: false # stop polling (a second instance)
 ```
+
+### Choosing whether an issue needs a preview
+
+The issue's **No preview needed** property defaults to off. People who can edit the issue can change it; the CLI offers `nb-studio preview preference set --issue PM-12 --not-required` and `--no-not-required` to turn it back off. `preview status` reports the preference and each linked open PR's last observed label state. An agent may recommend a preview choice in its design proposal; neither the proposal nor its approval changes the preference automatically.
+
+Studio adds `no-preview` when every linked, non-deleted issue opts out. Creating or linking a PR, unlinking an issue, or changing the preference reconciles the label. A linked issue that still needs a preview takes precedence. Studio removes only a label it manages, preserves other labels, and leaves a pre-existing manual `no-preview` label for someone to remove on GitHub. Once Studio attempts to add the label, it manages that PR's label for the rest of its open lifetime, even while the label is absent. A failed label request does not undo a saved preference or an opened PR: the response reports it and repository polling retries from the current settings. Concurrent instances or a timeout can briefly leave the host behind the latest preference; retained ownership and a separately validated label observation let polling reconcile it, including an addition that completes after the preference was switched off.
+
+The Code and deployments section distinguishes a confirmed `no-preview` label from a synchronization failure and preserves existing preview links. The setting never destroys an existing preview or cancels running CI. Opening a PR and adding its label are separate GitHub requests: the Preview workflow reads live labels before building, but a run that has already passed that check may still deploy. Removing the label restores eligibility for a subsequent CI run; it does not itself start one.

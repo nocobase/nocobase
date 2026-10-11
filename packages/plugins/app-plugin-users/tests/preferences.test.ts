@@ -155,6 +155,9 @@ describe('user preferences', () => {
     let signedIn: string | null = 'ann';
     const container = new ServiceContainer();
     container.instance(authenticationToken, {
+      optional: () => async (_context, next) => {
+        await next();
+      },
       required: () => async (context, next) => {
         if (!signedIn) return context.json({ code: 'UNAUTHORIZED' }, 401);
         context.set('auth', { user: { id: signedIn } } as never);

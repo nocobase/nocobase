@@ -41,6 +41,7 @@ import {
   type PullRequestMergePreflight,
   type UpdateGitRepoRequest,
 } from '../../shared/git.js';
+import { previewKeys } from '../previews/api.js';
 
 export const gitKeys = {
   all: ['studio', 'git'] as const,
@@ -474,10 +475,10 @@ export function useGitApi(): GitApi {
 
 /**
  * Follows `STUDIO_GIT_TOPIC` while mounted: when the server stores something new about a pull request (a webhook
- * delivery, a poll, a merge), the pull requests are read again at once. An open merge confirmation keeps its own read
- * of GitHub.
+ * delivery, a poll, a merge), the pull requests and the issue's preview labels are read again at once. An open merge
+ * confirmation keeps its own read of GitHub.
  */
-export function useGitRealtime(): void {
+export function useGitRealtime(issueId?: string): void {
   const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
   useEffect(
@@ -487,8 +488,12 @@ export function useGitRealtime(): void {
           queryKey: gitKeys.all,
           predicate: (query) => query.queryKey[2] !== 'preflight',
         });
+        if (issueId)
+          void queryClient.invalidateQueries({
+            queryKey: previewKeys.issue(issueId),
+          });
       }),
-    [realtime, queryClient],
+    [realtime, queryClient, issueId],
   );
 }
 
@@ -497,7 +502,7 @@ export function useIssuePullRequests(
   revision: number,
 ): UseQueryResult<IssuePullRequests> {
   const api = useGitApi();
-  useGitRealtime();
+  useGitRealtime(issueId);
   return useQuery({
     queryKey: [...gitKeys.issue(issueId), revision],
     queryFn: ({ signal }) => api.list(issueId, signal),

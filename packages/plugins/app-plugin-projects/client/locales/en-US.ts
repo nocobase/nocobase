@@ -393,6 +393,8 @@ const pages = {
     invitedBy: 'Invited by',
     link: 'Invitation link',
     linkTitle: 'Forward this link',
+    linkUnavailable:
+      'The invitation has changed. Refresh the list and try again.',
     listSeparator: ', ',
     loadFailed: 'Unable to load invitations',
     noProjects: 'No projects',
@@ -400,7 +402,7 @@ const pages = {
     outcome: {
       added: 'Has an account — added to the projects',
       alreadyMember: 'Already a member',
-      notSent: 'Email not sent — copy the link',
+      notSent: 'Email not sent',
       sent: 'Email sent',
     },
     pending: 'Waiting',
@@ -409,6 +411,13 @@ const pages = {
     projectsHint: 'Invitees join these projects as members.',
     projectsPlaceholder: 'Choose projects',
     resend: 'Send again',
+    generateLink: 'Generate new link',
+    generateDescription:
+      'The previous invitation link will stop working. No email will be sent. Copy the new link after generating it.',
+    linkReady: 'New link ready',
+    newLinkDescription:
+      'The previous link no longer works. Copy and share the new link below.',
+    copyLink: 'Copy invitation link',
     resent: 'Invitation sent again to {{email}}',
     resultsLabel: 'Invitation results',
     revoke: 'Revoke',

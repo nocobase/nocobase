@@ -18,6 +18,7 @@ import type { GitPlatform } from '../../server/git/platform.js';
 import { openSealedBox } from '../../server/git/sealed-box.js';
 
 export interface FakePull {
+  labels?: { name: string }[];
   number: number;
   title: string;
   body?: string | null;
@@ -356,6 +357,7 @@ export function createFakeGitHub(
   function payload(repo: string, pull: FakePull) {
     return {
       ...pull,
+      labels: pull.labels ?? [],
       node_id: nodeIdOf(repo, pull.number),
       html_url: `${origin}/${repo}/pull/${pull.number}`,
       closed_at: pull.state === 'closed' ? pull.merged_at : null,
@@ -1023,6 +1025,20 @@ export function createFakeGitHub(
       touch(pull);
       record(200);
       return json(200, payload(repo, pull));
+    }
+    const labelsMatch = /^issues\/(\d+)\/labels(?:\/(.+))?$/u.exec(rest);
+    if (labelsMatch?.[1] && (method === 'POST' || method === 'DELETE')) {
+      if (!readable()) return refuse(401);
+      const pull = of(repo).get(Number(labelsMatch[1]));
+      if (!pull) return refuse(404);
+      const labels = new Set((pull.labels ?? []).map((label) => label.name));
+      if (method === 'POST')
+        for (const label of body.labels as string[]) labels.add(label);
+      else labels.delete(decodeURIComponent(labelsMatch[2]!));
+      pull.labels = [...labels].map((name) => ({ name }));
+      touch(pull);
+      record(200);
+      return json(200, pull.labels);
     }
     const commentsMatch = /^issues\/(\d+)\/comments$/u.exec(rest);
     if (commentsMatch?.[1] && method === 'POST') {

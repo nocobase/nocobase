@@ -13,6 +13,7 @@ import {
 } from '@nocobase/lifecycle/testing';
 import { describe, expect, it } from 'vitest';
 
+import { invoiceLifecycle } from '../server/lifecycles/invoice.js';
 import { exportLifecycle } from '../server/lifecycles/export.js';
 import {
   createFailureSwitch,
@@ -526,5 +527,189 @@ describe('subscription renewed every period', () => {
       dunningCount: 0,
       cardDeclines: 0,
     });
+  });
+});
+
+describe('invoice callbacks with timeout queries', () => {
+  const request = {
+    orderRef: '1024',
+    customerId: 'customer-li',
+    title: 'Example company',
+    taxNumber: '91310000MA1K000001',
+    amountCents: 39900,
+    queryCount: 0,
+    failSubmissions: 0,
+  };
+  it('waits for a signed callback, stores the PDF, and applies a duplicate once', async () => {
+    const { kit, sandbox, receiver, event } = setup(invoiceLifecycle);
+    const created = await kit.start(request);
+    await kit.fire(created, 'submit');
+    expect(kit.get(created).status).toBe('awaitingIssue');
+    const result = await sandbox.completeInvoice(
+      String(kit.get(created).providerRequestId),
+      'issued',
+    );
+    const callback = event('invoice.issued', created.id, {
+      providerRequestId: result.providerRequestId,
+      invoiceNumber: result.invoiceNumber!,
+      pdfUrl: result.pdfUrl!,
+    });
+    const body = JSON.stringify(callback);
+    await expect(
+      receiver.receiveSigned('invoicing', body, 'bad'),
+    ).rejects.toMatchObject({ reason: 'INVALID_SIGNATURE' });
+    expect(kit.get(created).status).toBe('awaitingIssue');
+    await receiver.receiveSigned('invoicing', body, receiver.sign(body));
+    expect(kit.get(created)).toMatchObject({
+      status: 'issued',
+      invoiceNumber: result.invoiceNumber,
+      pdfUrl: result.pdfUrl,
+    });
+    expect(await receiver.receive('invoicing', callback)).toMatchObject({
+      outcome: 'replayed',
+    });
+    expect(await kit.history(created)).toEqual([
+      '$create',
+      'submit',
+      'submitted',
+      'issued',
+    ]);
+    expect(
+      (await kit.effectRuns(created)).filter(
+        (run) => run.effect === 'invoices.notifyCustomer',
+      ),
+    ).toHaveLength(1);
+  });
+  it('queries a missing callback, and a late callback cannot issue another invoice', async () => {
+    const { kit, sandbox, receiver, event } = setup(invoiceLifecycle);
+    const created = await kit.start(request);
+    await kit.fire(created, 'submit');
+    const result = await sandbox.completeInvoice(
+      String(kit.get(created).providerRequestId),
+      'issued',
+    );
+    kit.advance({ seconds: 29 });
+    expect(await kit.runTriggers()).toBe(0);
+    kit.advance({ seconds: 2 });
+    expect(await kit.runTriggers()).toBe(1);
+    expect(kit.get(created)).toMatchObject({
+      status: 'issued',
+      queryCount: 1,
+      invoiceNumber: result.invoiceNumber,
+    });
+    expect(
+      await receiver.receive(
+        'invoicing',
+        event('invoice.issued', created.id, {
+          providerRequestId: result.providerRequestId,
+          invoiceNumber: result.invoiceNumber!,
+          pdfUrl: result.pdfUrl!,
+        }),
+      ),
+    ).toMatchObject({ outcome: 'ignored' });
+    expect(
+      await sandbox.submitInvoice({
+        idempotencyKey: `invoice:${created.id}`,
+        invoiceId: String(created.id),
+        title: request.title,
+        taxNumber: request.taxNumber,
+        amountCents: request.amountCents,
+      }),
+    ).toEqual({ providerRequestId: result.providerRequestId });
+  });
+  it('returns to waiting when a query says pending', async () => {
+    const { kit } = setup(invoiceLifecycle);
+    const created = await kit.start(request);
+    await kit.fire(created, 'submit');
+    kit.advance({ seconds: 31 });
+    await kit.runTriggers();
+    expect(kit.get(created)).toMatchObject({
+      status: 'awaitingIssue',
+      queryCount: 1,
+    });
+    kit.advance({ seconds: 31 });
+    await kit.runTriggers();
+    expect(kit.get(created)).toMatchObject({
+      status: 'awaitingIssue',
+      queryCount: 2,
+    });
+  });
+  it('retries outages, stops after three failed submissions and recovers manually', async () => {
+    for (const failSubmissions of [2, 3]) {
+      const { kit } = setup(invoiceLifecycle);
+      const created = await kit.start({ ...request, failSubmissions });
+      await kit.fire(created, 'submit');
+      expect(kit.get(created).status).toBe(
+        failSubmissions === 2 ? 'awaitingIssue' : 'issueFailed',
+      );
+      expect(
+        (await kit.effectRuns(created)).find(
+          (run) => run.effect === 'invoices.submit',
+        )?.attempts,
+      ).toBe(3);
+      if (failSubmissions === 3) {
+        await kit.fire(created, 'retryInvoice');
+        expect(kit.get(created).status).toBe('awaitingIssue');
+      }
+    }
+  });
+  it('keeps the provider request when a rejected invoice is retried', async () => {
+    const { kit, sandbox, receiver, event } = setup(invoiceLifecycle);
+    const created = await kit.start(request);
+    await kit.fire(created, 'submit');
+    const id = String(kit.get(created).providerRequestId);
+    await sandbox.completeInvoice(id, 'failed');
+    await receiver.receive(
+      'invoicing',
+      event('invoice.failed', created.id, {
+        providerRequestId: id,
+        error: 'Rejected by the platform.',
+      }),
+    );
+    expect(kit.get(created)).toMatchObject({
+      status: 'issueFailed',
+      lastError: 'Rejected by the platform.',
+    });
+    await kit.fire(created, 'retryInvoice');
+    expect(kit.get(created)).toMatchObject({
+      status: 'awaitingIssue',
+      providerRequestId: id,
+    });
+    const result = await sandbox.completeInvoice(id, 'issued');
+    await receiver.receive(
+      'invoicing',
+      event('invoice.issued', created.id, {
+        providerRequestId: id,
+        invoiceNumber: result.invoiceNumber!,
+        pdfUrl: result.pdfUrl!,
+      }),
+    );
+    expect(kit.get(created).status).toBe('issued');
+  });
+  it('refuses unrelated provider results, invalid tax numbers and manual completion', async () => {
+    const { kit, receiver, event } = setup(invoiceLifecycle);
+    await expect(
+      kit.start({ ...request, taxNumber: 'invalid' }),
+    ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    const created = await kit.start(request);
+    await kit.fire(created, 'submit');
+    expect(
+      await receiver.receive(
+        'invoicing',
+        event('invoice.issued', created.id, {
+          providerRequestId: 'another',
+          invoiceNumber: 'DEMO-WRONG',
+          pdfUrl: `/api/lifecycleExample/invoices/${created.id}/pdf`,
+        }),
+      ),
+    ).toMatchObject({ outcome: 'ignored', code: 'GUARD_REJECTED' });
+    await expect(
+      kit.runtime.fire('invoices', created.id, 'issued', {
+        actor: { id: 'tester' },
+        manual: true,
+        input: {},
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_MANUAL' });
+    expect(kit.get(created).status).toBe('awaitingIssue');
   });
 });

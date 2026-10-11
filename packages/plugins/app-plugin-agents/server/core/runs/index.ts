@@ -32,12 +32,21 @@ export {
   type ExtensionPrepare,
   type MountContext,
   type MountOffer,
+  RepoAccessError,
   type RepoAccessContext,
   type RepoAccessProvider,
   type RepoAccessRegistry,
+  type RepoCredentialGrant,
+  type RepoCredentialRequest,
+  type RepoPrepareOptions,
   type RunMountProvider,
   type RunMountRegistry,
 } from './extensions.js';
+export {
+  createGitCredentialService,
+  ISSUE_TIMEOUT_MS,
+  type GitCredentialService,
+} from './git-credentials.js';
 export { createBriefPreviewer, type BriefPreviewer } from './preview.js';
 export { findBrief, requestReset } from './workspace.store.js';
 export {

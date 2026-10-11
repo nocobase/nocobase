@@ -16,8 +16,10 @@
 import {
   FailureReasonSchema,
   RunStatusSchema,
+  RUN_EVENT_TYPES,
   type FailureReason,
   type RunEvent,
+  type RunEventType,
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
@@ -184,6 +186,7 @@ export interface IssueRunDetail {
   readonly attempt: number;
   readonly maxAttempts: number;
   readonly retryOfRunId: string | null;
+  readonly freshSession?: boolean;
   readonly createdAt: string;
   readonly startedAt: string | null;
   readonly finishedAt: string | null;
@@ -222,6 +225,7 @@ const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
     attempt: z.number().int(),
     maxAttempts: z.number().int(),
     retryOfRunId: z.string().nullable(),
+    freshSession: z.boolean().optional(),
     createdAt: z.string(),
     startedAt: z.string().nullable(),
     finishedAt: z.string().nullable(),
@@ -326,6 +330,18 @@ const IssueRunsQuery = z.object({
 const RunParams = z.object({ runId: z.string().min(1) });
 
 const RunEventsQuery = z.object({
+  type: z
+    .preprocess(
+      (value) => (typeof value === 'string' ? [value] : value),
+      z.array(z.enum(RUN_EVENT_TYPES)).min(1).max(100),
+    )
+    .optional()
+    .meta({
+      type: 'array',
+      items: { type: 'string', enum: [...RUN_EVENT_TYPES] },
+      description:
+        'Only these event types; repeat to include more. All types when omitted.',
+    }),
   after: z.coerce.number().int().min(0).optional().meta({
     description:
       'Only events after this sequence number, oldest first; the newest without it.',
@@ -435,15 +451,16 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
       return { run, issue };
     }
 
-    /** The newest `limit` events, reading the transcript page by page. */
+    /** The newest `limit` matching events, applying the service filter before each page limit. */
     async function newestEvents(
       runId: string,
       limit: number,
+      types?: readonly RunEventType[],
     ): Promise<{ events: RunEvent[]; lastSeq: number }> {
       let kept: RunEvent[] = [];
       let after = 0;
       for (let page = 0; page < EVENT_PAGES_MAX; page += 1) {
-        const read = await agents.runs.events(runId, after, EVENT_PAGE);
+        const read = await agents.runs.events(runId, after, EVENT_PAGE, types);
         kept = [...kept, ...read.events].slice(-limit);
         if (read.events.length < EVENT_PAGE) break;
         after = read.lastSeq;
@@ -605,6 +622,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           attempt: run.attempt,
           maxAttempts: run.maxAttempts,
           retryOfRunId: run.retryOfRunId,
+          freshSession: run.freshSession === true,
           createdAt: run.createdAt,
           startedAt: run.startedAt,
           finishedAt: run.finishedAt,
@@ -654,7 +672,11 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           flags: { ...runFlags, pageSize: { name: 'limit' } },
           columns: ['seq', 'at', 'type', 'tool', 'text'],
           action: VIEW_ACTION,
-          examples: ['run events <run>', 'run events <run> --after 120'],
+          examples: [
+            'run events <run>',
+            'run events <run> --after 120',
+            'run events <run> --type text --type input',
+          ],
         }),
       }),
       apiValidator('param', RunParams),
@@ -664,11 +686,11 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           context,
           context.req.valid('param').runId,
         );
-        const { after, pageSize } = context.req.valid('query');
+        const { after, pageSize, type } = context.req.valid('query');
         const read =
           after === undefined
-            ? await newestEvents(run.id, pageSize)
-            : await agents.runs.events(run.id, after, pageSize);
+            ? await newestEvents(run.id, pageSize, type)
+            : await agents.runs.events(run.id, after, pageSize, type);
         const data: IssueRunEventRow[] = read.events.map((event) => ({
           seq: event.seq,
           at: event.at,

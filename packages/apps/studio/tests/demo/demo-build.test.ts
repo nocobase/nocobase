@@ -300,6 +300,8 @@ describe('the demo data', { timeout: 120_000 }, () => {
     expect(issue).toMatchObject({ title: 'Export the issue list to Excel' });
     const state = await createDesignService({
       projects: () => h.projects,
+      agents: h.agents,
+      kinds: h.projects.kinds,
       inbox: () => undefined,
     }).state(admin(), issue!.id);
     expect(state).toMatchObject({

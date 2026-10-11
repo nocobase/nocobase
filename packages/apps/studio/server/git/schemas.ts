@@ -504,6 +504,7 @@ export const IssuePullRequestSchema: z.ZodType<IssuePullRequest> = z
       id: z.string().nullable(),
       name: z.string().nullable(),
     }),
+    previewLabelSyncFailed: z.boolean().optional(),
     autoCompleteDisabled: z.boolean(),
     linkedAt: dateTime(),
     mergeBlocker: mergeBlocker.meta({

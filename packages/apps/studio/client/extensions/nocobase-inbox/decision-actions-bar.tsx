@@ -11,6 +11,7 @@ export type ApprovalDecision = 'approve' | 'reject';
 
 export interface DecisionActionsBarProps {
   readonly itemTitle: string;
+  readonly allowed?: Partial<Record<ApprovalDecision, boolean>>;
   /** Other words for the two decisions, such as a design proposal's "Approve for development" and "Send back". */
   readonly labels?: Partial<Record<ApprovalDecision, string>>;
   /** The decision in flight. */
@@ -30,6 +31,7 @@ export function DecisionActionsBar({
   disabled,
   onRun,
   labels,
+  allowed,
 }: DecisionActionsBarProps): ReactElement {
   const { t } = useTranslation();
   const [commenting, setCommenting] = useState<ApprovalDecision | null>(null);
@@ -83,7 +85,12 @@ export function DecisionActionsBar({
           <Button variant='outline' onClick={reset}>
             {t('inbox.cancel', { defaultValue: 'Cancel' })}
           </Button>
-          <Button disabled={disabled || !comment.trim()} onClick={send}>
+          <Button
+            disabled={
+              disabled || !comment.trim() || allowed?.[commenting] === false
+            }
+            onClick={send}
+          >
             <SendIcon data-icon='inline-start' />
             {label(commenting)}
           </Button>
@@ -93,23 +100,27 @@ export function DecisionActionsBar({
 
   return (
     <div className='flex flex-wrap items-center gap-2'>
-      <Button
-        disabled={disabled || pending !== null}
-        data-action='approve'
-        onClick={() => onRun('approve', '')}
-      >
-        {pending === 'approve' ? <Spinner data-icon='inline-start' /> : null}
-        {label('approve')}
-      </Button>
-      <Button
-        variant='outline'
-        disabled={disabled || pending !== null}
-        data-action='reject'
-        onClick={() => setCommenting('reject')}
-      >
-        {pending === 'reject' ? <Spinner data-icon='inline-start' /> : null}
-        {label('reject')}
-      </Button>
+      {allowed?.approve !== false ? (
+        <Button
+          disabled={disabled || pending !== null}
+          data-action='approve'
+          onClick={() => onRun('approve', '')}
+        >
+          {pending === 'approve' ? <Spinner data-icon='inline-start' /> : null}
+          {label('approve')}
+        </Button>
+      ) : null}
+      {allowed?.reject !== false ? (
+        <Button
+          variant='outline'
+          disabled={disabled || pending !== null}
+          data-action='reject'
+          onClick={() => setCommenting('reject')}
+        >
+          {pending === 'reject' ? <Spinner data-icon='inline-start' /> : null}
+          {label('reject')}
+        </Button>
+      ) : null}
     </div>
   );
 }
