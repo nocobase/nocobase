@@ -20,6 +20,7 @@ import {
   type WebhookDeliveryStatus,
 } from '../../shared/git.js';
 import type { PullRequestSnapshot } from './platform.js';
+import { repositoryIdentity } from './repository-identity.js';
 
 export const REPOS = 'studioGitRepos';
 export const PULL_REQUESTS = 'studioPullRequests';
@@ -341,6 +342,7 @@ export interface PullRequestRow {
    * read and a person's mark, so it proves nothing on its own.
    */
   readonly mergedHeadSha: string | null;
+  readonly mergedHeadRepository: string | null;
   readonly mergedHeadSource: MergedHeadSource | 'conflict' | null;
   readonly mergedHeadAt: string | null;
   /** When Git sync last asked the host for the merged head of a pull request that had none (`mergedHeadsToConfirm`). */
@@ -361,6 +363,7 @@ export type MergedHeadSource = 'webhook' | 'api' | 'merge';
 
 /** A merged head the host confirmed, for `upsertPullRequest`. */
 export interface ConfirmedMergedHead {
+  readonly repository: string;
   readonly sha: string;
   readonly source: MergedHeadSource;
   /** Git sync re-reading a pull request without one: replaces a conflict with what the host says now. */
@@ -386,20 +389,31 @@ function mergedHeadValues(
   confirmed: ConfirmedMergedHead | undefined,
   now: Date,
 ): Record<string, unknown> {
-  if (!confirmed || !FULL_SHA.test(confirmed.sha)) return {};
+  if (
+    !confirmed ||
+    !FULL_SHA.test(confirmed.sha) ||
+    !repositoryIdentity(confirmed.repository)
+  )
+    return {};
   const set = {
     mergedHeadSha: confirmed.sha,
+    mergedHeadRepository: confirmed.repository,
     mergedHeadSource: confirmed.source,
     mergedHeadAt: now,
   };
   if (!previous) return set;
-  if (previous.mergedHeadSha === confirmed.sha) return {};
+  if (
+    previous.mergedHeadSha === confirmed.sha &&
+    previous.mergedHeadRepository === confirmed.repository
+  )
+    return {};
   if (confirmed.reconcile) return set;
   if (previous.mergedHeadSource === 'conflict') return {};
   if (previous.mergedHeadSha === null) return set;
   // Two confirmations disagree: neither is evidence until Git sync reads the host again.
   return {
     mergedHeadSha: null,
+    mergedHeadRepository: null,
     mergedHeadSource: 'conflict',
     mergedHeadAt: now,
   };
@@ -448,6 +462,7 @@ function pullRequestOf(row: Row, repo: string): PullRequestRow {
     mergedManually: bool(row.mergedManually),
     mergeCommitSha: str(row.mergeCommitSha),
     mergedHeadSha: str(row.mergedHeadSha),
+    mergedHeadRepository: str(row.mergedHeadRepository),
     mergedHeadSource: mergedHeadSourceOf(row.mergedHeadSource),
     mergedHeadAt: iso(row.mergedHeadAt),
     mergedHeadCheckedAt: iso(row.mergedHeadCheckedAt),
@@ -665,7 +680,12 @@ export async function mergedHeadsToConfirm(
       .selectAll()
       .where('repoId', '=', repoId)
       .where('state', '=', 'merged')
-      .where('mergedHeadSha', 'is', null)
+      .where((eb) =>
+        eb.or([
+          eb('mergedHeadSha', 'is', null),
+          eb('mergedHeadRepository', 'is', null),
+        ]),
+      )
       .where('id', 'in', linked);
   const never = await base()
     .where('mergedHeadCheckedAt', 'is', null)

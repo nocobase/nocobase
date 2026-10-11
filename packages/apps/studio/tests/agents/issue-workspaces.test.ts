@@ -103,7 +103,11 @@ async function linkPullRequest(
     } as never,
     {},
     options.confirmed
-      ? { sha: options.confirmed, source: 'webhook' }
+      ? {
+          sha: options.confirmed,
+          source: 'webhook',
+          repository: `https://github.com/${FULL_NAME}.git`,
+        }
       : undefined,
   );
   await insertLink(conn, {
@@ -214,6 +218,63 @@ async function boundProject(): Promise<void> {
 }
 
 describe('commit evidence', () => {
+  it('checks the saved host identity after normal resource URL updates, allowing equivalent HTTPS and SSH transports', async () => {
+    const connection = await tokenConnection(h);
+    const repo = await connectedRepo(h, FULL_NAME, connection);
+    const resource = await h.projects.projects.addResource(alice(), projectId, {
+      type: 'gitRepo',
+      url: URL,
+      defaultRef: 'main',
+      binding: bindingOf(connection, FULL_NAME),
+    });
+    const issue = await issueIn('done');
+    const number = nextNumber++;
+    h.github.addPull(FULL_NAME, {
+      number,
+      head: { ref: 'feature/cleanup', sha: SHA },
+    });
+    await h.git.link(
+      alice(),
+      issue.id,
+      `https://github.com/${FULL_NAME}/pull/${number}`,
+      { type: 'user', id: 'alice' },
+    );
+    h.github.merge(FULL_NAME, number, 'alice');
+    await h.git.pollRepo(repo);
+    const evidence = async () =>
+      (await binding().commits!(h.database.connection(), [issue.id])).get(
+        issue.id,
+      ) ?? [];
+    expect(await evidence()).toEqual([{ repository: URL, headSha: SHA }]);
+    for (const url of [
+      'https://other.example/acme/app.git',
+      'https://github.com/acme/other.git',
+      'git@other.example:acme/app.git',
+      'ssh://git@github.com/acme/other.git',
+    ]) {
+      await h.projects.projects.updateResource(
+        alice(),
+        projectId,
+        resource.id,
+        { url },
+      );
+      expect(await evidence()).toEqual([]);
+    }
+    for (const url of [
+      'https://github.com/acme/app',
+      'git@github.com:acme/app.git',
+      'ssh://git@github.com/acme/app.git',
+      'ssh://git@github.com:22/acme/app.git',
+    ]) {
+      await h.projects.projects.updateResource(
+        alice(),
+        projectId,
+        resource.id,
+        { url },
+      );
+      expect(await evidence()).toEqual([{ repository: url, headSha: SHA }]);
+    }
+  });
   it('names the confirmed merged heads under the URL the project checks the repository out from', async () => {
     await boundProject();
     const issue = await issueIn('done');

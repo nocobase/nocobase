@@ -119,6 +119,7 @@ import {
 import { hasLivePreviews } from '../previews/store.js';
 import type { PullRequestEvents, RepoEvents } from './events.js';
 import { createWebhookReceiver, type WebhookReceiver } from './webhooks.js';
+import { confirmedRepositoryUrl } from './repository-identity.js';
 
 /** The first merge check waits a little: the host starts working out mergeability only after the push. */
 export const MERGE_CHECK_DELAY_SECONDS = 20;
@@ -460,7 +461,7 @@ function mergeFailure(error: unknown): ProtocolError {
  * in the repository itself. A fork's head names a commit of another repository, which proves nothing about this one.
  */
 export function confirmedMergedHead(
-  repo: Pick<RepoRow, 'repo'>,
+  repo: Pick<RepoRow, 'repo' | 'apiBaseUrl' | 'provider'>,
   snapshot: PullRequestSnapshot,
   source: ConfirmedMergedHead['source'],
   sha: string = snapshot.headSha,
@@ -471,7 +472,11 @@ export function confirmedMergedHead(
     snapshot.headRepo.toLowerCase() !== repo.repo.toLowerCase()
   )
     return undefined;
-  return { sha, source };
+  const repository =
+    repo.provider === 'github'
+      ? confirmedRepositoryUrl(repo.apiBaseUrl, repo.repo)
+      : null;
+  return repository ? { sha, source, repository } : undefined;
 }
 
 /** A stored row as a snapshot, for a write that changes only what Studio decides (a mark, a merge the host lags on). */

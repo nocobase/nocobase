@@ -125,6 +125,7 @@ describe('merged heads', () => {
     expect(stored).toMatchObject({
       state: 'merged',
       mergedHeadSha: sha(7),
+      mergedHeadRepository: `https://github.com/${REPO}.git`,
       mergedHeadSource: 'api',
     });
     expect(stored?.mergeCommitSha).toMatch(/^[0-9a-f]{40}$/u);
@@ -179,88 +180,127 @@ describe('merged heads', () => {
     });
   });
 
-  it('keeps a confirmed head through later reads, and stops trusting it when two confirmations disagree', async () => {
+  it.each([
+    { sha: sha(32), repository: `https://github.com/${REPO}.git` },
+    { sha: sha(3), repository: `https://other.example/${REPO}.git` },
+  ])(
+    'keeps a confirmed head through later reads, disabling conflicting $sha at $repository',
+    async (confirmation) => {
+      const repo = await connectedRepo(h, REPO);
+      const issue = await reviewIssue();
+      const { pr, snapshot } = await legacyMerged(repo, issue, 3);
+      const conn = h.projects.tx.read();
+      await upsertPullRequest(
+        conn,
+        repo.id,
+        snapshot,
+        {},
+        {
+          sha: sha(3),
+          source: 'webhook',
+          repository: `https://github.com/${REPO}.git`,
+        },
+      );
+      // An older open snapshot, an empty head, or a confirmation of an open pull request change nothing.
+      await upsertPullRequest(conn, repo.id, {
+        ...snapshot,
+        state: 'open',
+        headSha: sha(30),
+      });
+      await upsertPullRequest(
+        conn,
+        repo.id,
+        { ...snapshot, headSha: '' },
+        {},
+        {
+          sha: '',
+          source: 'api',
+          repository: `https://github.com/${REPO}.git`,
+        },
+      );
+      await upsertPullRequest(
+        conn,
+        repo.id,
+        { ...snapshot, state: 'open' },
+        {},
+        {
+          sha: sha(31),
+          source: 'api',
+          repository: `https://github.com/${REPO}.git`,
+        },
+      );
+      expect(await findPullRequestById(conn, pr.id)).toMatchObject({
+        mergedHeadSha: sha(3),
+        mergedHeadSource: 'webhook',
+      });
+
+      await upsertPullRequest(
+        conn,
+        repo.id,
+        snapshot,
+        {},
+        {
+          ...confirmation,
+          source: 'api',
+        },
+      );
+      expect(await findPullRequestById(conn, pr.id)).toMatchObject({
+        mergedHeadSha: null,
+        mergedHeadRepository: null,
+        mergedHeadSource: 'conflict',
+      });
+      // Only Git sync's own read settles it again.
+      await upsertPullRequest(
+        conn,
+        repo.id,
+        snapshot,
+        {},
+        {
+          sha: sha(3),
+          source: 'webhook',
+          repository: `https://github.com/${REPO}.git`,
+        },
+      );
+      expect(await findPullRequestById(conn, pr.id)).toMatchObject({
+        mergedHeadSha: null,
+        mergedHeadRepository: null,
+        mergedHeadSource: 'conflict',
+      });
+      await upsertPullRequest(
+        conn,
+        repo.id,
+        snapshot,
+        {},
+        {
+          sha: sha(3),
+          source: 'api',
+          repository: `https://github.com/${REPO}.git`,
+          reconcile: true,
+        },
+      );
+      expect(await findPullRequestById(conn, pr.id)).toMatchObject({
+        mergedHeadSha: sha(3),
+        mergedHeadSource: 'api',
+      });
+    },
+  );
+
+  it('reconfirms a stored head that has no confirmed repository identity', async () => {
     const repo = await connectedRepo(h, REPO);
     const issue = await reviewIssue();
-    const { pr, snapshot } = await legacyMerged(repo, issue, 3);
+    const { pr } = await legacyMerged(repo, issue, 18);
     const conn = h.projects.tx.read();
-    await upsertPullRequest(
-      conn,
-      repo.id,
-      snapshot,
-      {},
-      {
-        sha: sha(3),
-        source: 'webhook',
-      },
-    );
-    // An older open snapshot, an empty head, or a confirmation of an open pull request change nothing.
-    await upsertPullRequest(conn, repo.id, {
-      ...snapshot,
-      state: 'open',
-      headSha: sha(30),
+    await updatePullRequest(conn, pr.id, {
+      mergedHeadSha: sha(18),
+      mergedHeadSource: 'api',
+      mergedHeadAt: new Date(),
     });
-    await upsertPullRequest(
-      conn,
-      repo.id,
-      { ...snapshot, headSha: '' },
-      {},
-      { sha: '', source: 'api' },
-    );
-    await upsertPullRequest(
-      conn,
-      repo.id,
-      { ...snapshot, state: 'open' },
-      {},
-      { sha: sha(31), source: 'api' },
-    );
+    h.github.addPull(REPO, { number: 18, head: { ref: 'work', sha: sha(18) } });
+    h.github.merge(REPO, 18);
+    await h.git.pollRepo(repo);
     expect(await findPullRequestById(conn, pr.id)).toMatchObject({
-      mergedHeadSha: sha(3),
-      mergedHeadSource: 'webhook',
-    });
-
-    await upsertPullRequest(
-      conn,
-      repo.id,
-      snapshot,
-      {},
-      {
-        sha: sha(32),
-        source: 'api',
-      },
-    );
-    expect(await findPullRequestById(conn, pr.id)).toMatchObject({
-      mergedHeadSha: null,
-      mergedHeadSource: 'conflict',
-    });
-    // Only Git sync's own read settles it again.
-    await upsertPullRequest(
-      conn,
-      repo.id,
-      snapshot,
-      {},
-      {
-        sha: sha(3),
-        source: 'webhook',
-      },
-    );
-    expect(await findPullRequestById(conn, pr.id)).toMatchObject({
-      mergedHeadSha: null,
-      mergedHeadSource: 'conflict',
-    });
-    await upsertPullRequest(
-      conn,
-      repo.id,
-      snapshot,
-      {},
-      {
-        sha: sha(3),
-        source: 'api',
-        reconcile: true,
-      },
-    );
-    expect(await findPullRequestById(conn, pr.id)).toMatchObject({
-      mergedHeadSha: sha(3),
+      mergedHeadSha: sha(18),
+      mergedHeadRepository: `https://github.com/${REPO}.git`,
       mergedHeadSource: 'api',
     });
   });

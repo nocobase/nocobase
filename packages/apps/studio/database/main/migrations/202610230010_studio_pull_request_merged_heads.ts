@@ -10,6 +10,7 @@ const migration: MigrationDefinition = defineMigration({
   async up({ builder }) {
     await builder.alterCollection('studioPullRequests', (collection) => {
       collection.string('mergedHeadSha', { length: 64 }).nullable();
+      collection.string('mergedHeadRepository', { length: 500 }).nullable();
       collection.string('mergedHeadSource', { length: 32 }).nullable();
       collection.datetimeTz('mergedHeadAt').nullable();
       collection.datetimeTz('mergedHeadCheckedAt').nullable();
@@ -21,6 +22,7 @@ const migration: MigrationDefinition = defineMigration({
       collection.dropField('mergedHeadAt');
       collection.dropField('mergedHeadSource');
       collection.dropField('mergedHeadSha');
+      collection.dropField('mergedHeadRepository');
     });
   },
 });

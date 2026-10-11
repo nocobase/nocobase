@@ -6,6 +6,7 @@ import { expect } from 'vitest';
 
 const FIELDS = [
   'mergedHeadSha',
+  'mergedHeadRepository',
   'mergedHeadSource',
   'mergedHeadAt',
   'mergedHeadCheckedAt',
@@ -48,7 +49,7 @@ describeMigration('202610230010_studio_pull_request_merged_heads', {
         title: 'Old',
         state: 'merged',
         draft: false,
-        headRef: 'agent/PM-1',
+        headRef: 'feature/cleanup',
         baseRef: 'main',
         headSha: 'a'.repeat(40),
         authorLogin: 'agent',
@@ -69,6 +70,7 @@ describeMigration('202610230010_studio_pull_request_merged_heads', {
       .executeTakeFirst();
     expect(row?.headSha).toBe('a'.repeat(40));
     expect(row?.mergedHeadSha ?? null).toBeNull();
+    expect(row?.mergedHeadRepository ?? null).toBeNull();
     expect(row?.mergedHeadSource ?? null).toBeNull();
   },
   down: async ({ connection, expectCollection }) => {

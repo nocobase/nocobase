@@ -24,6 +24,7 @@ import type { SubjectWorkspaces } from '@nocobase/app-plugin-agents/server/token
 import type { DatabaseConnection } from '@nocobase/db';
 
 import { LINKS, REPOS, pullRequestsOfIssues } from '../git/store.js';
+import { repositoryIdentity } from '../git/repository-identity.js';
 import { categoriesOf, findIssues } from '../previews/sources.js';
 
 export function issueWorkspaces(
@@ -126,13 +127,28 @@ async function mergedHeads(
     conn,
     issues.map((issue) => issue.id),
   );
-  const confirmed = new Map<string, { repoId: string; sha: string }[]>();
+  const confirmed = new Map<
+    string,
+    { repoId: string; sha: string; repository: string }[]
+  >();
   const repoIds = new Set<string>();
   for (const [issueId, items] of pulls)
     for (const { pr } of items) {
-      if (pr.state !== 'merged' || pr.mergedHeadSha === null) continue;
+      if (
+        pr.state !== 'merged' ||
+        pr.mergedHeadSha === null ||
+        pr.mergedHeadRepository === null ||
+        !pr.mergedHeadAt ||
+        !['api', 'webhook', 'merge'].includes(pr.mergedHeadSource ?? '') ||
+        !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u.test(pr.mergedHeadSha)
+      )
+        continue;
       const list = confirmed.get(issueId) ?? [];
-      list.push({ repoId: pr.repoId, sha: pr.mergedHeadSha });
+      list.push({
+        repoId: pr.repoId,
+        sha: pr.mergedHeadSha,
+        repository: pr.mergedHeadRepository,
+      });
       confirmed.set(issueId, list);
       repoIds.add(pr.repoId);
     }
@@ -183,7 +199,7 @@ async function mergedHeads(
   );
   for (const issue of issues) {
     const evidence = new Map<string, WorkspaceCommitEvidence>();
-    for (const { repoId, sha } of confirmed.get(issue.id) ?? []) {
+    for (const { repoId, sha, repository } of confirmed.get(issue.id) ?? []) {
       const repo = repos.get(repoId);
       if (!repo || typeof repo.connectionId !== 'string') continue;
       for (const resource of resources)
@@ -191,7 +207,9 @@ async function mergedHeads(
           resource.projectId === issue.projectId &&
           resource.connectionId === repo.connectionId &&
           resource.provider === repo.provider &&
-          resource.fullName.toLowerCase() === String(repo.repo).toLowerCase()
+          resource.fullName.toLowerCase() === String(repo.repo).toLowerCase() &&
+          repositoryIdentity(repository) !== null &&
+          repositoryIdentity(resource.url) === repositoryIdentity(repository)
         )
           evidence.set(`${resource.url}\n${sha}`, {
             repository: resource.url,
