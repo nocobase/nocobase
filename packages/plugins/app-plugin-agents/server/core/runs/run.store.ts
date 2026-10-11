@@ -69,6 +69,8 @@ export interface RunRecord {
   readonly payloadFingerprint: string | null;
   /** While queued: the variables for team runners only that kept a personal runner off it (`VariableRef[]`). */
   readonly teamOnlyVariables?: JsonColumn;
+  /** While held: the repository URLs its runner may ask credentials for on demand (`RunGit.onDemand`); null otherwise. */
+  readonly gitCredentialUrls?: JsonColumn;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -124,6 +126,8 @@ export interface RepoRecord {
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha: string | null;
+  readonly failureReason?: string | null;
+  readonly failureDetail?: string | null;
   readonly updatedAt: string;
 }
 
@@ -307,6 +311,13 @@ export function toRepo(record: RepoRecord): RunRepo {
     branch: record.branch,
     pushed: Boolean(record.pushed),
     headSha: record.headSha,
+    failure:
+      record.failureReason === null || record.failureReason === undefined
+        ? null
+        : {
+            reason: record.failureReason,
+            message: record.failureDetail ?? '',
+          },
     updatedAt: record.updatedAt,
   };
 }

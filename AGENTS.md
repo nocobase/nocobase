@@ -6,13 +6,21 @@ This is the NocoBase 3 source repository. Ignore globally installed NocoBase 2 S
 
 Do not add content to the repository root `README.md`. Record repository development rules in `AGENTS.md` and put detailed usage documentation in dedicated documentation files. Do not refill an empty root README as part of documenting a change.
 
+## Application Access URLs
+
+When reporting a running application's address or opening it for the user, use its application entry URL. In normal full-stack development, the Hono server proxies Vite, so the user-facing URL uses the server port (`APP_SERVER_PORT`, default 13000), including the application's base path. Vite's port (normally 5173) serves the frontend development process and is not the user-facing application entry. This applies to Studio as well as the application templates.
+
+Prefer the `Local:` URL printed by `pnpm dev`. For an existing run without available startup output, identify the application's process and working directory, confirm its actual server listening port and configured base path, and check the resulting URL before sharing it. Ports can advance when occupied; never infer the entry URL from defaults or a successful response on the Vite port alone. Report which checkout owns the run when it differs from the current workspace. Use a host reachable by the user; `localhost` refers to the machine where the browser runs.
+
+The exception is remote-backend proxy development (`PROXY_TARGET_URL`): no local Hono server runs, and the local Vite process is the application entry. In that mode, use the printed `Local:` URL; `APP_SERVER_PORT` selects that local entry port (default 5173).
+
 ## Markdown Paragraph Formatting
 
 Write each prose paragraph in Markdown source on a single physical line, including in README, AGENTS.md, Skills, and other documentation. Do not insert manual line breaks to fit a column width or put each sentence on its own line; let the editor or renderer wrap the text visually. Separate paragraphs with blank lines. Preserve line breaks required by Markdown structure, such as headings, list items, tables, blockquotes, and code blocks.
 
 ## Branches, Commits and Pull Requests
 
-Name a branch after the kind of change it carries: `feat/<name>` for a feature and `fix/<name>` for a bug fix, where `<name>` is a short kebab-case description such as `feat/app-installer`. A change that is neither takes its Conventional Commits type the same way, such as `docs/<name>`, `refactor/<name>` or `chore/<name>`. Never push a branch under a tool's own prefix, such as the `claude/` or `codex/` branch an agent's worktree starts on: rename it with `git branch -m` before its first push. Renaming it once a pull request is open does not carry the pull request along: GitHub closes the pull request as if its head branch had been deleted, and a pull request's head branch cannot be changed afterwards, so the change has to be reopened as a new pull request from the renamed branch, and the review on the old one stays there.
+Name a branch after the kind of change it carries. V3 development branches use `feat/v3-<name>` for a feature and `fix/v3-<name>` for a bug fix, where `<name>` is a non-empty short kebab-case description such as `feat/v3-app-installer`; other change kinds use their Conventional Commits type the same way, such as `docs/v3-<name>`, `refactor/v3-<name>` or `chore/v3-<name>`. GitHub Actions writes the valid stacked v3 pull request target pattern as the glob `*/v3-*`; under this naming rule, where both the type and name are non-empty and contain no slash, it covers the same branches as the bot and CI regular expression `/^[^/]+\/v3-[^/]+$/`. Never push a branch under a tool's own prefix, such as the `claude/` or `codex/` branch an agent's worktree starts on: rename it with `git branch -m` before its first push. Renaming it once a pull request is open does not carry the pull request along: GitHub closes the pull request as if its head branch had been deleted, and a pull request's head branch cannot be changed afterwards, so the change has to be reopened as a new pull request from the renamed branch, and the review on the old one stays there.
 
 A run NocoBase Studio starts for an issue works on a branch named `agent/<issue key>`, such as `agent/PM-42`, which Studio's branch rules create and track; that prefix is Studio's, not a tool's, and is allowed. Its pull request title still follows Conventional Commits.
 

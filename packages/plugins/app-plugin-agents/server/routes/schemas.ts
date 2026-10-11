@@ -18,6 +18,8 @@ import {
   ToolInfoSchema,
   ToolLoadSchema,
   ToolSlotsSchema,
+  WorkspaceDecisionSchema,
+  WorkspaceCleanupResultSchema,
   type RunEvent,
   type RunEventType,
   type RunStatus,
@@ -313,7 +315,14 @@ export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
 
 export const DistTargetQuery: z.ZodType<{
   format?: 'json' | 'env' | undefined;
-}> = z.object({ format: z.enum(['json', 'env']).optional() });
+  accept?: string | undefined;
+}> = z.object({
+  format: z.enum(['json', 'env']).optional(),
+  accept: z.string().max(200).optional().meta({
+    description:
+      'The other answers the caller understands, comma-separated. `npm`: when the application has no tarball of the product but names its npm package, answer that package and exact version (`kind: npm`) instead of 404. Unknown values are ignored.',
+  }),
+});
 
 export const VariableValueInput: z.ZodType<{
   value?: string;
@@ -938,6 +947,13 @@ export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
       branch: z.string(),
       pushed: z.boolean(),
       headSha: z.string().nullable(),
+      failure: z
+        .object({ reason: z.string(), message: z.string() })
+        .nullable()
+        .meta({
+          description:
+            'Why the runner could not push the repository at the end of the run; null when it pushed or did not try.',
+        }),
       updatedAt: dateTime,
     }),
   ),
@@ -1408,7 +1424,12 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
 
 // A runner's working directories, as it last reported them.
 const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
-  runId: z.string().meta({ description: 'The last run that worked in it.' }),
+  decision: WorkspaceDecisionSchema.optional(),
+  cleanup: WorkspaceCleanupResultSchema.optional(),
+  runId: z
+    .string()
+    .optional()
+    .meta({ description: 'The last run that worked in it.' }),
   workDir: z.string().meta({ description: 'Where it is on the runner.' }),
   unpushed: z.boolean().meta({
     description:
@@ -1439,6 +1460,7 @@ const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
         description:
           "The disk holding the runner's working directories; null when it did not say.",
       }),
+    intervalMs: z.number().int().positive().optional(),
     count: z.number().int(),
     unpushedCount: z.number().int(),
     measuredAt: dateTime,
@@ -1514,6 +1536,7 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
         'The runs it holds now by the coding tool each runs with; a tool it runs nothing of is left out.',
     }),
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
+    canSeeMachine: z.boolean().optional(),
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
