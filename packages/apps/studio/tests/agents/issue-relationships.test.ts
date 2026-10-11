@@ -1,5 +1,9 @@
 // @vitest-environment node
-import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
+import type {
+  CreateIssueRequest,
+  Issue,
+  IssueDetail,
+} from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
@@ -18,6 +22,8 @@ function api() {
     return result.body?.data;
   };
   return {
+    createIssue: (input: CreateIssueRequest): Promise<Issue> =>
+      request('POST', '/projects/issues', input),
     issue: (id: string): Promise<IssueDetail> =>
       request('GET', `/projects/issues/${id}`),
     addDependency: (
@@ -37,6 +43,127 @@ function api() {
     },
   };
 }
+
+it.each(
+  [
+    'convert',
+    'remove by id',
+    'remove by target',
+    'delete issue',
+    'finish issue',
+  ].flatMap((operation) =>
+    [false, true].map((completed) => ({ operation, completed })),
+  ),
+)(
+  '$operation releases an actual wait only (prerequisite completed: $completed)',
+  async ({ operation, completed }) => {
+    h.roles.set('alice', 'admin');
+    const client = api();
+    const agentId = await h.createAgent();
+    const b = await client.createIssue({ title: 'Prerequisite' });
+    const finish = async () => {
+      const current = await client.issue(b.id);
+      const response = await h.request('PATCH', `/projects/issues/${b.id}`, {
+        user: 'alice',
+        body: { revision: current.revision, statusKey: 'done' },
+      });
+      expect(response.status).toBe(200);
+    };
+    if (completed) await finish();
+    const a = await client.createIssue({
+      title: 'Intentionally not started',
+      statusKey: 'todo',
+      executor: { type: 'agent', id: agentId },
+      start: false,
+    });
+    const link = await client.addDependency(a.id, {
+      dependsOnIssueId: b.id,
+      type: 'blockedBy',
+    });
+    const runs = () =>
+      h.agents.runs.list({ subjectKind: 'issue', subjectId: a.id });
+    expect((await client.issue(a.id)).blockers).toHaveLength(completed ? 0 : 1);
+    expect(await runs()).toEqual([]);
+    const released: string[] = [];
+    h.projects.events.on('issue.dependencyReleased', (event) => {
+      released.push(event.issueId);
+    });
+
+    if (operation === 'convert') {
+      await client.updateDependency(a.id, link.dependencyId, {
+        expectedType: 'blockedBy',
+        type: 'relatedTo',
+      });
+    } else if (operation === 'remove by id') {
+      await client.removeDependency(a.id, link.dependencyId);
+    } else if (operation === 'remove by target') {
+      const response = await h.request(
+        'POST',
+        `/projects/issues/${a.id}/removeDependency`,
+        {
+          user: 'alice',
+          body: { dependsOnIssueId: b.id, type: 'blockedBy' },
+        },
+      );
+      expect(response.status).toBe(204);
+    } else if (operation === 'delete issue') {
+      const response = await h.request('DELETE', `/projects/issues/${b.id}`, {
+        user: 'alice',
+      });
+      expect(response.status).toBe(204);
+    } else await finish();
+
+    expect((await client.issue(a.id)).blockers).toEqual([]);
+    expect(released).toEqual(completed ? [] : [a.id]);
+    const queued = await runs();
+    if (completed) expect(queued).toEqual([]);
+    else {
+      expect(queued).toEqual([expect.objectContaining({ status: 'queued' })]);
+      const run = await h.agents.runs.detail(queued[0]!.id);
+      expect(run.inputs).toEqual([
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            trigger: 'unblocked',
+            releasedBy: b.id,
+          }),
+        }),
+      ]);
+    }
+  },
+);
+
+it('waits for the remaining prerequisite after conversion and wakes once it is removed', async () => {
+  const client = api();
+  const agentId = await h.createAgent();
+  const a = await client.createIssue({
+    title: 'Waiting',
+    executor: { type: 'agent', id: agentId },
+    start: false,
+  });
+  const b = await client.createIssue({ title: 'First prerequisite' });
+  const c = await client.createIssue({ title: 'Last prerequisite' });
+  const first = await client.addDependency(a.id, { dependsOnIssueId: b.id });
+  const last = await client.addDependency(a.id, { dependsOnIssueId: c.id });
+  const released: string[] = [];
+  h.projects.events.on('issue.dependencyReleased', (event) =>
+    released.push(event.issueId),
+  );
+  await client.updateDependency(a.id, first.dependencyId, {
+    expectedType: 'blockedBy',
+    type: 'relatedTo',
+  });
+  expect((await client.issue(a.id)).blockers).toHaveLength(1);
+  expect(
+    await h.agents.runs.list({ subjectKind: 'issue', subjectId: a.id }),
+  ).toEqual([]);
+  expect(released).toEqual([]);
+  await client.removeDependency(a.id, last.dependencyId);
+  expect((await client.issue(a.id)).blockers).toEqual([]);
+  expect(released).toEqual([a.id]);
+  expect(
+    await h.agents.runs.list({ subjectKind: 'issue', subjectId: a.id }),
+  ).toEqual([expect.objectContaining({ status: 'queued' })]);
+});
 
 async function pair() {
   const viewer = h.viewer('alice');

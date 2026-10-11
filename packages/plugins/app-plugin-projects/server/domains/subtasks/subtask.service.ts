@@ -221,13 +221,18 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
       await lockIssueGraph(tx.conn);
       const dependency = await find(tx.conn, issue);
       if (!dependency) throw notFound('Dependency');
-      await deleteDependency(tx.conn, dependency.id);
       const ends = await findIssues(tx.conn, [
         dependency.issueId,
         dependency.dependsOnIssueId,
       ]);
       const waiting = ends.find((end) => end.id === dependency.issueId);
       const other = ends.find((end) => end.id === dependency.dependsOnIssueId);
+      const catalogs = catalogsFor(deps.statuses, tx.conn);
+      const wasBlocked =
+        dependency.type === 'blockedBy' &&
+        waiting &&
+        (await blockersOf(tx.conn, catalogs, waiting)).length > 0;
+      await deleteDependency(tx.conn, dependency.id);
       if (waiting)
         await record(tx, waiting.id, viewer.actor, 'dependency_removed', {
           dependencyId: dependency.id,
@@ -237,15 +242,8 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         });
       for (const id of [dependency.issueId, dependency.dependsOnIssueId])
         tx.emit({ type: 'issue.changed', issueId: id });
-      if (dependency.type === 'blockedBy' && waiting && other)
-        await releaseIfFree(
-          deps,
-          tx,
-          catalogsFor(deps.statuses, tx.conn),
-          waiting,
-          other,
-          viewer.actor,
-        );
+      if (wasBlocked && waiting && other)
+        await releaseIfFree(deps, tx, catalogs, waiting, other, viewer.actor);
     });
   }
 
@@ -368,6 +366,10 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
           dependsOnIssueId: other.id,
           type,
         };
+        // A completed prerequisite is still a relationship, but converting it releases no work.
+        const wasBlocked =
+          before.type === 'blockedBy' &&
+          (await blockersOf(tx.conn, catalogs, issue)).length > 0;
         try {
           const changed = await tx.conn.transaction((conn) =>
             updateDependency(conn, before, after),
@@ -405,7 +407,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
           const blockers = await blockersOf(tx.conn, catalogs, issue);
           if (blockers.length > 0)
             await deps.triggers().onBlocked?.(tx, { issue, blockers });
-        } else {
+        } else if (wasBlocked) {
           await releaseIfFree(deps, tx, catalogs, issue, other, viewer.actor);
         }
         return dependencyView(catalogs, after, other);
