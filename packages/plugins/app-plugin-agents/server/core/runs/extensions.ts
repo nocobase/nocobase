@@ -13,7 +13,10 @@
  *
  * - Repository access is asked per run (`forRun`, in the claim's transaction) once the run has repositories to check
  *   out. Its credentials are minted in `prepare` (a network call is fine there), handed to the runner in the payload
- *   and never stored; the claim remembers them as secrets, so nothing the run reports carries them.
+ *   and never stored; the claim remembers them as secrets, so nothing the run reports carries them. When the runner
+ *   asks for credentials on demand (the `gitCredentials` feature, `RepoAccessContext.onDemand`), a provider that can
+ *   `issue` one lists its repositories in `RunGit.onDemand` instead and mints nothing at the claim: the runner asks
+ *   for each credential whenever git needs one, for as long as it holds the run (`git-credentials.ts`).
  *
  * Inside the claim's transaction a provider reads through the claim's connection only: on SQLite that transaction
  * holds the one connection there is, so anything else (a person's permissions, another plugin's services) would wait
@@ -227,12 +230,63 @@ export interface RepoAccessContext {
   readonly claim: ClaimContext;
   /** The run's checkouts, as the runner receives them. */
   readonly repos: readonly RepoDir[];
+  /**
+   * Whether the runner asks for credentials on demand (the `gitCredentials` feature). Then a provider that implements
+   * `issue` answers `onDemand` with the URLs it issues for, and no `credentials`.
+   */
+  readonly onDemand: boolean;
+}
+
+/** What a repository access provider's `prepare` is told besides the run. */
+export interface RepoPrepareOptions {
+  /** As `RepoAccessContext.onDemand`: when true, a provider that implements `issue` has nothing to mint now. */
+  readonly onDemand: boolean;
+}
+
+/** A runner asks for the credential of one of its run's on-demand repositories. */
+export interface RepoCredentialRequest {
+  /** The run, held by `runnerId` under a live lease: the server checked before asking. */
+  readonly run: Run;
+  readonly runnerId: string;
+  readonly attempt: number;
+  /** Exactly as the run's `RepoDir` names it, and listed in `RunGit.onDemand` at the claim. */
+  readonly url: string;
+  /** The runner's last credential for it was refused by the remote: issue a new one rather than a cached one. */
+  readonly refresh: boolean;
+  /** Aborted when the server stops waiting (`ISSUE_TIMEOUT_MS`). */
+  readonly signal: AbortSignal;
+}
+
+/** A credential for one repository and when it stops working. */
+export interface RepoCredentialGrant {
+  readonly username: string;
+  readonly password: string;
+  /** RFC 3339, in the future. */
+  readonly expiresAt: string;
+}
+
+/**
+ * What a provider throws from `issue` when it cannot give a credential, with a message safe to show the run's people
+ * and the agent (no credential, no internal detail): `unavailable` when its code host is down or slow and asking again
+ * later may work, `denied` when it will not issue one (no access to the repository, an installation gone).
+ */
+export class RepoAccessError extends Error {
+  override name = 'RepoAccessError';
+  readonly kind: 'unavailable' | 'denied';
+
+  constructor(kind: 'unavailable' | 'denied', message: string) {
+    super(message);
+    this.kind = kind;
+  }
 }
 
 export interface RepoAccessProvider {
   /** Unique among the providers. */
   readonly key: string;
-  readonly prepare?: ExtensionPrepare;
+  readonly prepare?: (
+    run: Run,
+    options: RepoPrepareOptions,
+  ) => Promise<unknown>;
   /** Outside the transaction: revoke credentials prepared for a claim that was not delivered. Required when prepare mints credentials; idempotent. */
   readonly discard?: (run: Run, prepared: unknown) => Promise<void>;
   /** In the claim's transaction, through its connection: database reads only. Null gives nothing. */
@@ -241,6 +295,16 @@ export interface RepoAccessProvider {
     context: RepoAccessContext,
     prepared: unknown,
   ): Promise<RunGit | null>;
+  /**
+   * Outside any transaction (a network call is fine): a credential for `request.url`, a repository this provider listed
+   * in `onDemand`, or null when it is not this provider's. Throws `RepoAccessError` when it cannot issue one. Called
+   * whenever the run's git needs a credential the runner does not hold, so a provider decides itself whether to answer
+   * from a cache (and for how long a cached credential still has to last) or to issue a new one; with `refresh` it
+   * issues a new one.
+   */
+  readonly issue?: (
+    request: RepoCredentialRequest,
+  ) => Promise<RepoCredentialGrant | null>;
 }
 
 export interface RepoAccessRegistry {
@@ -269,7 +333,9 @@ export function createRepoAccessRegistry(): RepoAccessRegistry {
 
 /**
  * The run's git, from every provider: the first author given, every trailer and credential in order (one credential
- * per URL, the first).
+ * per URL, the first). With `context.onDemand`, the URLs any provider lists in `onDemand` (only repositories of the
+ * run) are asked for on demand, and no credential of the claim is handed out for them; without it, `onDemand` is
+ * dropped.
  */
 export async function repoAccessFor(
   conn: DatabaseConnection,
@@ -284,6 +350,8 @@ export async function repoAccessFor(
     string,
     NonNullable<RunGit['credentials']>[number]
   >();
+  const repoUrls = new Set(context.repos.map((repo) => repo.url));
+  const onDemand = new Set<string>();
   for (const provider of registry?.list() ?? []) {
     const given = await provider.forRun(
       conn,
@@ -297,12 +365,23 @@ export async function repoAccessFor(
     for (const credential of given.credentials ?? [])
       if (!credentials.has(credential.url))
         credentials.set(credential.url, credential);
+    if (context.onDemand)
+      for (const url of given.onDemand ?? [])
+        if (repoUrls.has(url)) onDemand.add(url);
   }
-  if (!author && trailers.length === 0 && credentials.size === 0) return null;
+  for (const url of onDemand) credentials.delete(url);
+  if (
+    !author &&
+    trailers.length === 0 &&
+    credentials.size === 0 &&
+    onDemand.size === 0
+  )
+    return null;
   return {
     ...(author ? { author } : {}),
     ...(trailers.length > 0 ? { trailers } : {}),
     ...(credentials.size > 0 ? { credentials: [...credentials.values()] } : {}),
+    ...(onDemand.size > 0 ? { onDemand: [...onDemand] } : {}),
   };
 }
 
@@ -319,6 +398,7 @@ export async function prepareExtensions(
   mounts: RunMountRegistry | undefined,
   onError?: (error: unknown) => void,
   repoAccess?: RepoAccessRegistry,
+  repoOptions: RepoPrepareOptions = { onDemand: false },
 ): Promise<Prepared> {
   const prepared = new Map<string, unknown>();
   const hooks: [string, ExtensionPrepare][] = [
@@ -342,16 +422,17 @@ export async function prepareExtensions(
           ]
         : [],
     ),
-    ...(repoAccess?.list() ?? []).flatMap((provider) =>
-      provider.prepare
+    ...(repoAccess?.list() ?? []).flatMap((provider) => {
+      const prepare = provider.prepare;
+      return prepare
         ? [
-            [`repo:${provider.key}`, provider.prepare] as [
-              string,
-              ExtensionPrepare,
-            ],
+            [
+              `repo:${provider.key}`,
+              (each: Run) => prepare(each, repoOptions),
+            ] as [string, ExtensionPrepare],
           ]
-        : [],
-    ),
+        : [];
+    }),
   ];
   for (const [key, prepare] of hooks)
     try {

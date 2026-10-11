@@ -2,7 +2,7 @@ import { statSync } from 'node:fs';
 import path from 'node:path';
 import { EXIT_INVALID, InstallerError, type Suggestion } from './errors.ts';
 import { quoteForShell } from '@nocobase/cli-envelope';
-import { installerCommand } from './invocation.ts';
+import { installerCommand, installerCommandLine } from './invocation.ts';
 import { rebuildCommandLine } from './prechecks.ts';
 import type { InstallerState } from './state.ts';
 
@@ -40,9 +40,19 @@ export function resolveArchivePath(cwd: string, value: string): string {
  * the installation upgrades to it.
  */
 export function nodeRebuildAdvice(
-  state: Pick<InstallerState, 'registry'>,
+  state: Pick<InstallerState, 'registry' | 'source'>,
   root: string,
 ): Suggestion[] {
+  if (state.source.kind === 'app') {
+    return [
+      {
+        message: 'Rebuild the installed application for this machine:',
+        run: installerCommandLine(['upgrade', '--dir', root, '--rebuild'], {
+          registry: state.registry,
+        }),
+      },
+    ];
+  }
   return [
     {
       message:

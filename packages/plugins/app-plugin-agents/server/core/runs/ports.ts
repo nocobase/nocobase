@@ -3,7 +3,11 @@
  * `{ kind, id }`; the application that owns the kind registers a binding for it (this plugin registers its own
  * `conversation`).
  */
-import type { RunInput, WorkspaceDir } from '@nocobase/agent-protocol';
+import type {
+  RunInput,
+  WorkspaceDir,
+  WorkspaceCommitEvidence,
+} from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type {
@@ -179,6 +183,16 @@ export interface SubjectFacts {
 
 /** Whether the work on subjects of a kind is over (`SubjectBinding.workspaces`). */
 export interface SubjectWorkspaces {
+  /** Resolve legacy directory keys; the framework still verifies runner ownership from saved runs. */
+  resolveKeys?(
+    conn: DatabaseConnection,
+    keys: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly string[]>>;
+  /** Trusted merged PR head commits, grouped by subject and repository URL. Never squash merge commits. */
+  commits?(
+    conn: DatabaseConnection,
+    subjectIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly WorkspaceCommitEvidence[]>>;
   /**
    * Of `subjectIds` (of the binding's kind, each at most once), the ones whose work is over, such as a ticket that is
    * done or cancelled with every pull request merged or closed: runners may remove the working directories they keep

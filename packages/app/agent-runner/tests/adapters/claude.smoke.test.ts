@@ -9,7 +9,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
@@ -75,12 +75,7 @@ function sessionFor(
     systemPrompt: 'You are a Acme test agent. Keep answers to one sentence.',
     model: MODEL,
     env: whitelistedEnv(),
-    permission: async (tool, input) => {
-      const command = typeof input.command === 'string' ? input.command : '';
-      if (tool === 'Bash' && /^\s*rm\b/.test(command))
-        return { deny: 'rm is not allowed in this run' };
-      return 'allow';
-    },
+    permission: async () => 'allow',
     abort: new AbortController().signal,
     maxTurns: 20,
     ...overrides,
@@ -121,16 +116,23 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
     expect(detection.authenticated).toBe(true);
   });
 
-  it('creates a file, is denied rm, and takes a steer between tool calls', async () => {
+  it('works with full access: writes its home, removes files, commits, and takes a steer', async () => {
     const workDir = await repo();
+    const marker = path.join(
+      homedir(),
+      '.cache',
+      'nocobase-runner-smoke',
+      `claude-${Date.now()}.txt`,
+    );
     const handle = adapter.start(
       sessionFor(
         workDir,
         [
           'Do these steps one at a time, one tool call per step:',
           '1. Create hello.txt containing exactly "hello".',
-          '2. Run the shell command `rm -f nothing.tmp`.',
-          '3. Run the shell command `ls`.',
+          `2. Run the shell command \`mkdir -p "${path.dirname(marker)}" && echo ok > "${marker}"\`.`,
+          '3. Run the shell command `rm -f nothing.tmp`.',
+          '4. Run the shell command `git add hello.txt && git -c user.name=Smoke -c user.email=smoke@example.com commit -q -m smoke`.',
           'Then reply "done".',
         ].join('\n'),
       ),
@@ -145,7 +147,7 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
       }
     });
     const result = await handle.result;
-    await save('create-file');
+    await save('full-access');
     console.log(
       events
         .map(
@@ -164,11 +166,14 @@ describe.skipIf(!enabled)('claude adapter against a real Claude Code', () => {
     expect(
       (await readFile(path.join(workDir, 'hello.txt'), 'utf8')).trim(),
     ).toBe('hello');
+    expect((await readFile(marker, 'utf8')).trim()).toBe('ok');
     expect(
-      events.some(
-        (e) => e.type === 'permission' && e.meta?.decision === 'deny',
-      ),
-    ).toBe(true);
+      execFileSync('git', ['log', '--oneline'], {
+        cwd: workDir,
+        encoding: 'utf8',
+      }),
+    ).toContain('smoke');
+    expect(events.filter((e) => e.type === 'permission')).toEqual([]);
     expect(
       events.some((e) => e.type === 'input' && e.meta?.inputId === 'steer-1'),
     ).toBe(true);

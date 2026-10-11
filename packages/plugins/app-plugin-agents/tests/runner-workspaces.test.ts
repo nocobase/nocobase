@@ -83,6 +83,7 @@ describe("a runner's working directories", () => {
     expect(response.status).toBe(200);
     expect(response.body.data.workspaces).toEqual({
       intervalMs: WORKSPACE_REPORT_INTERVAL_MS,
+      decisions: true,
     });
   });
 
@@ -97,6 +98,104 @@ describe("a runner's working directories", () => {
     });
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual({ remove: [ended], keep: [ongoing] });
+  });
+
+  it('resolves legacy keys but requires saved execution ownership, and returns repository evidence', async () => {
+    h = await createHarness();
+    h.settled = new Set(['1']);
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    const binding = h.services.subjects.get('sample')!;
+    const commits = [
+      { repository: 'https://example.com/app.git', headSha: 'a'.repeat(40) },
+    ];
+    h.services.subjects.register({
+      ...binding,
+      kind: 'legacySample',
+      workspaces: {
+        settled: async () => new Set(['1']),
+        resolveKeys: async () => new Map([['SMP-1', ['1']]]),
+        commits: async () => new Map([['1', commits]]),
+      },
+    });
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runIds[0] },
+        values: { subjectKind: 'legacySample', runnerId: null },
+      });
+    const body = {
+      reportId: 'first',
+      workspaces: [],
+      directories: [
+        { ...workspace(runIds[0]!), runId: undefined, subjectKey: 'SMP-1' },
+      ],
+    };
+    const response = await report(runner, body);
+    expect(response.body.data.decisions).toMatchObject([
+      { settled: true, reason: 'settled', commits },
+    ]);
+    const other = await h.registerRunner({ name: 'other' });
+    expect((await report(other, body)).body.data.decisions).toMatchObject([
+      { settled: null, reason: 'ownershipUnknown', commits: [] },
+    ]);
+    const cleanup = {
+      reportId: 'first',
+      reason: 'allowed',
+      discardsUntracked: true,
+    };
+    await report(runner, {
+      ...body,
+      reportId: 'next',
+      directories: [{ ...body.directories[0], cleanup }],
+    });
+    expect(
+      (await h.services.runners.get(runner.runnerId)).workspaceUsage
+        ?.workspaces[0]?.cleanup,
+    ).toEqual(cleanup);
+    await report(runner, {
+      ...body,
+      reportId: 'later',
+      directories: [
+        {
+          ...body.directories[0],
+          lastUsedAt: '2026-10-02T00:00:00.000Z',
+          cleanup: { ...cleanup, reportId: 'next' },
+        },
+      ],
+    });
+    expect(
+      (await h.services.runners.get(runner.runnerId)).workspaceUsage
+        ?.workspaces[0]?.cleanup,
+    ).toBeUndefined();
+  });
+
+  it('distinguishes missing runs and bindings from another runner without exposing subjects', async () => {
+    h = await createHarness();
+    const { runner, runIds } = await runnerWithRuns(['1']);
+    const other = await h.registerRunner();
+    const body = {
+      reportId: 'report',
+      workspaces: [],
+      directories: [
+        { ...workspace(runIds[0]!), subjectKey: 'SMP-1' },
+        { ...workspace('missing'), subjectKey: 'missing' },
+      ],
+    };
+    expect((await report(other, body)).body.data.decisions).toMatchObject([
+      { reason: 'ownershipUnknown' },
+      { reason: 'runNotFound' },
+    ]);
+    expect((await report(runner, body)).body.data.decisions).toMatchObject([
+      { reason: 'bindingUnavailable' },
+      { reason: 'runNotFound' },
+    ]);
+    const hidden = runnerForViewer(
+      await h.services.runners.get(runner.runnerId),
+      false,
+    );
+    expect(hidden.canSeeMachine).toBe(false);
+    expect(hidden.workspaceUsage?.workspaces).toEqual([]);
   });
 
   it('preserves variable names across workspace reports and workspace usage across heartbeats', async () => {
