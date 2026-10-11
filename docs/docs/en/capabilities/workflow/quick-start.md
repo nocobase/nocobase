@@ -49,20 +49,9 @@ The step table is fine; start implementing. Use a simulated service for the paym
 
 ## Step 4: Walk through it on the page
 
-Walk through each of these four cases:
+First follow the normal path: place an order → open checkout → pay → receive the payment notification. The order should become paid, with history showing that the payment platform moved it forward.
 
-| Case                   | What to do                                                  | What you should see                                                    |
-| ---------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Normal payment         | Place → pay → release the notification                      | The order becomes paid; the history says the payment platform moved it |
-| Cancelled, then paid   | Hold the notification while paying, cancel, then release it | The order stays cancelled and the money is refunded                    |
-| Duplicate notification | Send the same notification again                            | It is reported as already processed; nothing is credited twice         |
-| No payment             | Place an order and do not pay until the time is up          | The order expires; the actor in the history is "System"                |
-
-You do not need to wait 30 minutes for the last case: ask the Agent to shorten the time temporarily, and change it back afterwards.
-
-### Walk through the example pages
-
-These screenshots come from **Workflow → Order payment** in the example application. A sandbox simulates the payment platform, and the unpaid order timeout is shortened to 3 minutes; the prompt on this page specifies 30 minutes. The example also includes shipping, refunds initiated by a user and refund result states. The pages and steps the Agent builds from this prompt may differ.
+These screenshots use the English interface of **Workflow → Order payment** in the example application, with a simulated payment provider. The example shortens the unpaid timeout to 3 minutes; this tutorial specifies 30 minutes. Actions such as shipping are outside this exercise.
 
 **Open checkout**: select an order and click **Pay** on the order. It moves to awaiting payment, enabling **Pay** in **Payment provider (sandbox)**. This sandbox action simulates payment on the provider's platform; the order waits for the webhook before becoming paid.
 
@@ -72,6 +61,10 @@ These screenshots come from **Workflow → Order payment** in the example applic
 
 ![Payment notification applied and the order marked paid with its payment reference](https://static-docs.nocobase.com/order-paid-b6b1944c9e482001.png)
 
+### Check exceptional cases
+
+After completing the normal path, check duplicate notifications, payments arriving after cancellation and unpaid timeouts.
+
 **Duplicate notification**: click **Deliver again** for the same notification. Its result becomes Replayed, the order stays paid, and payment is not credited twice.
 
 ![Duplicate payment notification reported as replayed without changing the order](https://static-docs.nocobase.com/order-replayed-43f5d67da8ae48a6.png)
@@ -80,20 +73,22 @@ These screenshots come from **Workflow → Order payment** in the example applic
 
 ![Payment completed at the provider while the held webhook leaves the order awaiting payment](https://static-docs.nocobase.com/order-held-e016bd6dea47a3df.png)
 
-Next, cancel the order and click **Deliver** for the notification. The example passes through Refunding to Refunded and shows the refund reference; it never returns to Paid. The table above specifies keeping the order cancelled while refunding. Settle this choice of states in Step 2 and accept the implementation against the step table you confirmed.
+Next, cancel the order and click **Deliver** for the notification. The example passes through Refunding to Refunded and shows the refund reference; it never returns to Paid. Your order can remain cancelled while showing refund progress separately. Accept the implementation against the step table confirmed in Step 2.
 
 ![Late payment after cancellation automatically refunded with its refund reference](https://static-docs.nocobase.com/order-refunded-014dfd556b48f8b1.png)
 
+**Unpaid timeout**: create another order and leave it unpaid. It should expire when due, with "System" as the actor in its history. Ask the Agent for a shorter demonstration deadline, restored to 30 minutes after acceptance.
+
 ## Step 5: Accept
 
-Passing on the page is not enough; some cases are hard to cover by hand. Ask the Agent to prove every case with tests and to give you the build result:
+Give the Agent business acceptance requirements and ask for verification results, including cases that are difficult to reproduce manually:
 
 ```text
-Add tests and give me the results: only the payment platform's notification can mark an order as paid; a duplicate notification counts once; an order unpaid for 30 minutes expires (advance time in the test); a payment received after cancellation or expiry is refunded; after 3 failed refunds the order stays at refund failed. Finally complete the application’s quality checks and build, and give me the results.
+Check the order payment outcomes: a normal payment makes the order paid; only a genuine payment platform notification can change payment status; duplicate notifications never credit money twice; unpaid orders expire after 30 minutes; payments received after cancellation or expiry are refunded automatically; after 3 failed retries, the refund is marked "refund failed". Tell me whether each requirement is met, what problems remain, and confirm that the demonstration deadline has been restored to 30 minutes.
 ```
 
-When every test passes and the build succeeds, your first process is done.
+Review the step table and verification results to finish the exercise. Connecting a real payment platform is further development and requires confirming production accounts and actual payment and refund outcomes.
 
 ## Next
 
-- [Develop with an Agent](./develop.md): add shipping, delivery and more rules to this order, and learn every step of developing a complete process
+- [Develop with an Agent](./develop.md): design your own process by topic, including business modeling, permissions, deadlines and external systems
