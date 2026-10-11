@@ -37,6 +37,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { cn } from 'cn';
 
 import { IssueMarks } from './issue-marks.js';
+import { useIssueAgentWork } from './use-agent-work.js';
 import { toneColor } from './rows.js';
 import type { IssuesPage } from './use-issues-page.js';
 
@@ -81,10 +82,12 @@ function CardFace({
   card,
   href,
   onOpen,
+  workingAgentName,
 }: {
   readonly card: Card;
   readonly href?: string;
   readonly onOpen?: () => void;
+  readonly workingAgentName?: string;
 }): ReactElement {
   return (
     <IssueCard
@@ -94,7 +97,12 @@ function CardFace({
       {...(href ? { href } : {})}
       {...(onOpen ? { onSelect: () => onOpen() } : {})}
       marks={
-        <IssueMarks issue={card.issue} placement='card' className='flex' />
+        <IssueMarks
+          issue={card.issue}
+          placement='card'
+          className='flex'
+          {...(workingAgentName ? { workingAgentName } : {})}
+        />
       }
     />
   );
@@ -120,6 +128,12 @@ export function IssueBoardView({
     [groups, move.overrides],
   );
   const statuses = columns.map((column) => column.status);
+  const work = useIssueAgentWork(
+    board.query.isPlaceholderData
+      ? []
+      : columns.flatMap((column) => column.issues),
+    JSON.stringify(page.filters),
+  );
 
   if (board.query.isError && !board.query.isFetching)
     return (
@@ -168,7 +182,15 @@ export function IssueBoardView({
         }}
         overlay={(card) => (
           <div className='rounded-lg bg-card shadow-lg ring-1 ring-primary/30'>
-            <CardFace card={card} />
+            <CardFace
+              card={card}
+              {...(work.has(card.id)
+                ? {
+                    workingAgentName:
+                      card.issue.executorName ?? work.get(card.id)!,
+                  }
+                : {})}
+            />
           </div>
         )}
       >
@@ -225,6 +247,12 @@ export function IssueBoardView({
                   >
                     <CardFace
                       card={card}
+                      {...(work.has(card.id)
+                        ? {
+                            workingAgentName:
+                              card.issue.executorName ?? work.get(card.id)!,
+                          }
+                        : {})}
                       href={issueHref(card.id)}
                       onOpen={() => onOpen(card.id)}
                     />
