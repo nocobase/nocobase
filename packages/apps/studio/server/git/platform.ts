@@ -360,12 +360,6 @@ export interface WebhookParse {
 }
 
 export interface GitPlatform {
-  hasPullRequestLabel(
-    auth: GitAuth,
-    repo: string,
-    number: number,
-    label: string,
-  ): Promise<boolean>;
   addPullRequestLabel(
     auth: GitAuth,
     repo: string,

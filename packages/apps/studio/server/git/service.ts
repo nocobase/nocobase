@@ -724,7 +724,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   async function pollPullRequest(
     repo: RepoRow,
     pr: PullRequestRow,
-  ): Promise<boolean | undefined> {
+  ): Promise<void> {
     const auth = await readAuth(repo);
     const pull = await platformOf(repo).getPullRequest(
       auth,
@@ -742,16 +742,11 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         ? { status: null, runs: null }
         : { status: pr.statusEtag, runs: pr.runsEtag },
     );
-    // Reuse the conditional read: unchanged PRs must not cost an extra unvalidated label request.
-    const labelPresent = pull.notModified
-      ? ((await previewLabelState(conn(), pr.id)).present ?? undefined)
-      : snapshot.labels?.includes('no-preview');
-    if (pull.notModified && !ci) return labelPresent;
+    if (pull.notModified && !ci) return;
     await flow.store(repo, snapshot, {
       ...(pull.notModified ? {} : { pullEtag: pull.etag }),
       ...(ci ? { ci } : {}),
     });
-    return labelPresent;
   }
 
   /** A new link: the owner is asked to merge it when the issue is in review, and the rest of Studio hears of it. */
@@ -1944,8 +1939,8 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           ? await openPullRequestsOf(conn(), repo.id)
           : await linkedOpenPullRequests(conn(), repo.id);
         for (const pr of open) {
-          const labelPresent = await pollPullRequest(repo, pr);
-          await previewLabels.sync(pr.id, labelPresent);
+          await pollPullRequest(repo, pr);
+          await previewLabels.sync(pr.id);
         }
         // Also retry removal after the last issue was unlinked.
         await previewLabels.syncManaged(

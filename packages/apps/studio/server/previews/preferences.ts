@@ -30,10 +30,26 @@ export interface PreviewLabelState {
   readonly failed: boolean;
 }
 
+/** The observation and its validator belong to the same GitHub response. */
+export interface PreviewLabelSnapshot extends PreviewLabelState {
+  readonly etag: string | null;
+}
+
 export async function previewLabelState(
   conn: DatabaseConnection,
   pullRequestId: string,
 ): Promise<PreviewLabelState> {
+  const { etag: _etag, ...state } = await previewLabelSnapshot(
+    conn,
+    pullRequestId,
+  );
+  return state;
+}
+
+export async function previewLabelSnapshot(
+  conn: DatabaseConnection,
+  pullRequestId: string,
+): Promise<PreviewLabelSnapshot> {
   const row = await conn
     .repository('studioPreviewLabels')
     .findOne({ filter: { pullRequestId } });
@@ -42,16 +58,24 @@ export async function previewLabelState(
     managed: row?.managed === true,
     present: typeof row?.present === 'boolean' ? row.present : null,
     failed: row?.failed === true,
+    etag: typeof row?.etag === 'string' ? row.etag : null,
   };
 }
 
-export async function savePreviewLabelState(
+export async function savePreviewLabelSnapshot(
   conn: DatabaseConnection,
-  state: PreviewLabelState,
+  state: PreviewLabelSnapshot,
 ): Promise<void> {
   await conn.repository('studioPreviewLabels').upsertOne({
     filter: { pullRequestId: state.pullRequestId },
     create: { ...state },
-    update: { ...state },
+    // Ownership lasts for this PR. A stale observation from another instance must never release it, including
+    // while an earlier ADD is still in flight or its outcome is unknown after a timeout.
+    update: {
+      ...(state.managed ? { managed: true } : {}),
+      present: state.present,
+      failed: state.failed,
+      etag: state.etag,
+    },
   });
 }

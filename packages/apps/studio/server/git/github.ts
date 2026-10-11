@@ -1016,13 +1016,6 @@ export function createGitHubPlatform(
       };
     },
 
-    async hasPullRequestLabel(auth, repo, number, label) {
-      const pull = await read<{ labels: { name: string }[] }>(
-        bearer(auth),
-        `${repoPath(repo)}/pulls/${number}`,
-      );
-      return pull.labels.some((item) => item.name === label);
-    },
     async addPullRequestLabel(auth, repo, number, label) {
       await read(bearer(auth), `${repoPath(repo)}/issues/${number}/labels`, {
         method: 'POST',

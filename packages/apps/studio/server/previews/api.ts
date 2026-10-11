@@ -171,9 +171,9 @@ export function createPreviewApi(deps: {
       identifier: issue.identifier,
       notRequired: await previewNotRequired(conn(), issue.id),
       labels: await Promise.all(
-        (await pullRequestsOfIssue(conn(), issue.id)).map(({ pr }) =>
-          previewLabelState(conn(), pr.id),
-        ),
+        (await pullRequestsOfIssue(conn(), issue.id))
+          .filter(({ pr }) => pr.state === 'open')
+          .map(({ pr }) => previewLabelState(conn(), pr.id)),
       ),
       previews,
       blocker: records.length > 0 ? null : await blockerOf(issue),

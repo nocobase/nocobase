@@ -6,6 +6,7 @@ import {
 } from '../agents/bridge-harness.js';
 import { connectedRepo, tokenConnection } from './helpers.js';
 import { previewLabelState } from '../../server/previews/preferences.js';
+import { scheduleMergeChecks } from '../../server/git/store.js';
 
 const REPO = 'acme/preview';
 let h: BridgeHarness;
@@ -85,6 +86,83 @@ describe('issue preview preferences', () => {
       present: true,
     });
   });
+  it.each(['preflight', 'worker'] as const)(
+    'reconciles an external label change after %s consumes the PR ETag',
+    async (reader) => {
+      const { issue, repo } = await setup();
+      const pr = await link(issue.id);
+      await h.previewApi!.setPreference(h.viewer('alice'), issue.id, true);
+      // Populate the label's own observation before another reader learns of the host change.
+      await h.git.pollRepo(repo);
+      const { auth } = await h.gitConnections.connectionAuth(repo);
+      await h.github.platform.removePullRequestLabel(
+        auth,
+        REPO,
+        1,
+        'no-preview',
+      );
+      if (reader === 'preflight') {
+        const response = await h.request(
+          'POST',
+          `/git/pullRequests/${pr.id}/checkMerge?issueId=${issue.id}`,
+          {
+            user: 'alice',
+          },
+        );
+        expect(response.status).toBe(200);
+      } else {
+        await scheduleMergeChecks(
+          h.projects.tx.read(),
+          { pullRequestId: pr.id },
+          new Date(0),
+        );
+        await h.git.runMergeChecks();
+      }
+      await h.git.pollRepo(repo);
+      expect(labels()).toContain('no-preview');
+      expect(
+        await previewLabelState(h.projects.tx.read(), pr.id),
+      ).toMatchObject({
+        managed: true,
+        present: true,
+        failed: false,
+      });
+      // Once stable, observations use conditional reads instead of an unconditional label request every tick.
+      await h.git.pollRepo(repo);
+      const before = h.github.requests.length;
+      await h.git.pollRepo(repo);
+      const reads = h.github.requests
+        .slice(before)
+        .filter((request) => request.path === `/repos/${REPO}/pulls/1`);
+      expect(reads.length).toBeGreaterThan(0);
+      for (const read of reads)
+        expect(read).toMatchObject({ conditional: true, status: 304 });
+    },
+  );
+
+  it.each(['closed', 'merged'] as const)(
+    'does not expose unknown label state for historical %s PRs',
+    async (state) => {
+      const { issue } = await setup();
+      const pull = h.github.pull(REPO, 1);
+      pull.state = 'closed';
+      if (state === 'merged') {
+        pull.merged = true;
+        pull.merged_at = new Date().toISOString();
+      }
+      const pr = await link(issue.id);
+      expect(
+        (await previewLabelState(h.projects.tx.read(), pr.id)).present,
+      ).toBeNull();
+      const response = await h.request(
+        'GET',
+        `/previews/status?issueId=${issue.id}`,
+        { user: 'alice' },
+      );
+      expect(response.status).toBe(200);
+      expect(response.body.data.labels).toEqual([]);
+    },
+  );
   it('saves failed synchronization and the poller retries it from the latest preference', async () => {
     const { issue, repo } = await setup();
     const pr = await link(issue.id);
