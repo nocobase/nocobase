@@ -33,7 +33,7 @@ Studio's database migrations follow `AGENTS.md`: once a migration has been merge
 ## Build
 
 - `pnpm build` builds `dist/`, and `pnpm build --tar` packs it for a deployment.
-- The `Dockerfile` builds an image from the sources with the repository root as the build context, `docker build -f packages/apps/studio/Dockerfile --build-arg APP_DIR=packages/apps/studio .`, or from a `dist/` built with `pnpm build --target linux-x64` and `--build-arg DIST=prebuilt`.
+- The `Dockerfile` builds an image from the sources with the repository root as the build context, `docker build -f packages/apps/studio/Dockerfile --build-arg APP_DIR=packages/apps/studio .`, or from a `dist/` built with `pnpm build --target linux-x64` and `--build-arg DIST=prebuilt`. `pnpm build` also packs the `nb-studio` and `nocobase-runner` packages Studio serves into `dist/runners/` (it needs the npm registry for their dependencies), so every build and image serves the CLI and runner it was built with.
 
 ## Documentation
 

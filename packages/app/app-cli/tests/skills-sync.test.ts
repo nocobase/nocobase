@@ -456,6 +456,29 @@ describe('NocoBase dependency skills', () => {
     });
   });
 
+  it('leaves the Skill a packaged CLI ships for its own users alone', async () => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      devDependencies: { '@nocobase/studio-cli': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/studio-cli', {
+      'nb-studio-cli': '# use nb-studio',
+    });
+    const pluginRoot = path.join(appRoot, 'node_modules/@nocobase/studio-cli');
+    await writeFile(
+      path.join(pluginRoot, 'package.json'),
+      JSON.stringify({
+        name: '@nocobase/studio-cli',
+        version: '1.0.0',
+        nocobase: { cli: { bin: 'nb-studio' } },
+      }),
+    );
+    await syncApp(appRoot);
+    await expect(
+      readFile(path.join(appRoot, '.agents/skills/nb-studio-cli/SKILL.md')),
+    ).rejects.toThrow();
+  });
+
   it('removes tracked skills dropped upstream, without guessing ownership of local names', async () => {
     const appRoot = await createApp();
     await declareDependencies(appRoot, {

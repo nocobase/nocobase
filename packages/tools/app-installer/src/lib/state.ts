@@ -12,13 +12,9 @@ export interface BuildTarget {
   nodeMajor: number;
 }
 
-/**
- * Where an installation's releases come from: a deployment archive built elsewhere. Earlier installers also built a
- * published template on the server and recorded `{ kind: 'template' }`, which this installer refuses to manage.
- */
-export interface ReleaseSource {
-  kind: 'archive';
-}
+/** The published application package or deployment archives used for this installation. */
+export type ReleaseSource =
+  { kind: 'archive' } | { kind: 'app'; package: string };
 
 export interface ReleaseRecord {
   /** `<version>_<build time>`, also the directory under `releases/`. */
@@ -147,10 +143,17 @@ export async function readState(layout: Layout): Promise<InstallerState> {
     );
   }
   // `{ kind: 'template' }` was the published Hub template built on the server, which this installer no longer offers.
-  if ((state.source as { kind: string }).kind !== 'archive') {
+  if (
+    state.source?.kind !== 'archive' &&
+    !(
+      state.source?.kind === 'app' &&
+      typeof state.source.package === 'string' &&
+      state.source.package === state.appName
+    )
+  ) {
     throw new InstallerError(
       'STATE_UNSUPPORTED',
-      `${layout.root} was installed from a published template, which this app-installer no longer builds; it manages installations from deployment archives only.`,
+      `${layout.root} was installed from a published template, which this app-installer no longer builds; use the installer version that created it.`,
       {
         exitCode: EXIT_INVALID,
         suggestions: [

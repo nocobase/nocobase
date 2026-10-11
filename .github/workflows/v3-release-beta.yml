@@ -431,6 +431,7 @@ jobs:
     outputs:
       tag: ${{ needs.prepare.outputs.release_branch }}
       merged: ${{ steps.merge.outputs.merged }}
+      studio_version: ${{ steps.studio.outputs.version }}
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -568,6 +569,18 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Set only once the publish above succeeded, and only when this release versions @nocobase/studio: the
+      # studio-image job builds a release image of exactly that version.
+      - name: Find the published Studio version
+        if: '!inputs.dry_run'
+        id: studio
+        run: |
+          VERSION=$(node scripts/list-package-versions.mjs \
+            --released-specs "$RUNNER_TEMP/release-state/versions-before.json" \
+            | sed -n 's|^@nocobase/studio@||p')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Studio version in this release: ${VERSION:-none}"
+
       # changesets may assign latest when a package has only prerelease versions. Reassert beta for every package in
       # this release so beta always points to the version that was just published.
       - name: Point the beta dist-tag at this release
@@ -700,6 +713,22 @@ jobs:
           CONTENT: |
             预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
         run: ./scripts/feishu-notify.sh
+
+  # Studio's public release image (v3-studio-image.yml), from this release's tag and without baked runner packages, so
+  # the image answers npm with the versions just published. It runs only when this release published
+  # @nocobase/studio, even if a later step of the release job failed, and its failure does not fail the release.
+  studio-image:
+    name: Build the Studio release image
+    needs: release
+    if: >-
+      !cancelled() && !inputs.dry_run
+      && needs.release.outputs.tag != '' && needs.release.outputs.studio_version != ''
+    uses: ./.github/workflows/v3-studio-image.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit
+    permissions:
+      contents: read
 
   # npm is already published at this point. Rendering a GitHub Release is recoverable and stays in a separate job.
   github-release:
