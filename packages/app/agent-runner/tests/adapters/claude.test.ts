@@ -243,6 +243,7 @@ describe('missing conversations', () => {
 
   it('does not retry a failed fresh conversation', async () => {
     setScript(async function* (ctx) {
+      yield* [];
       await ctx.nextInput();
       throw new Error('No conversation found');
     });
