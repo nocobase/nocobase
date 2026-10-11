@@ -65,6 +65,7 @@ import {
 } from '../core/checkout.ts';
 import { deleteRunCredentials } from './credentials.ts';
 import { prepareCodexHome } from './codex-home.ts';
+import { migrateLegacySessions } from './session-migration.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
@@ -274,6 +275,7 @@ export class RunWorker {
   private idleTimer: NodeJS.Timeout | undefined;
   private lastActivity = Date.now();
   private sessionId: string | undefined;
+  private confirmedSessionId: string | undefined;
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
@@ -401,6 +403,18 @@ export class RunWorker {
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
   private recordEvent(event: AdapterEvent): void {
+    if (event.type === 'status' && event.content === 'sessionRecovery') {
+      this.sessionId = undefined;
+      this.confirmedSessionId = undefined;
+    }
+    if (
+      event.type === 'status' &&
+      event.content === 'started' &&
+      typeof event.meta?.sessionId === 'string'
+    ) {
+      this.sessionId = event.meta.sessionId;
+      this.confirmedSessionId = event.meta.sessionId;
+    }
     if (event.type === 'input') {
       const inputId = event.meta?.inputId;
       if (typeof inputId === 'string' && this.inputs.has(inputId)) {
@@ -606,6 +620,18 @@ export class RunWorker {
       localVariables: registration.variables,
       workspace: payload.workspace,
     });
+    const migration = await migrateLegacySessions(
+      runnerDir,
+      payload.tool.kind,
+      env.HOME ?? '',
+    );
+    if (migration && !migration.alreadyAttempted)
+      this.spool.push({
+        type: 'status',
+        tool: payload.tool.kind,
+        content: 'sessionMigration',
+        meta: { ...migration },
+      });
     // The runner is not a security boundary: every call a tool asks about is allowed.
     const permission: PermissionCheck = () => {
       this.lastActivity = Date.now();
@@ -704,6 +730,7 @@ export class RunWorker {
       this.steered.clear();
       this.usage.push(...result.usage);
       this.sessionId = result.sessionId ?? this.sessionId;
+      this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       this.summaryText = result.summary ?? this.summaryText;
 
       if (this.ending !== undefined) return this.finishEnding();
@@ -757,6 +784,7 @@ export class RunWorker {
       if (result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
+        this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
     }
   }
@@ -887,6 +915,9 @@ export class RunWorker {
           await this.report(
             routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
             {
+              ...(this.confirmedSessionId === undefined
+                ? {}
+                : { sessionId: this.confirmedSessionId }),
               handledInputIds: [...this.delivered],
               usage: this.usage,
             },

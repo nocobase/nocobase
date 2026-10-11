@@ -24,6 +24,7 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import type { ToolCapabilities } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 
 import { detectExec } from './detect-exec.ts';
@@ -484,9 +485,24 @@ class OpencodeRun {
     void this.consume(stream);
 
     const model = await this.resolveModel(client);
-    let sessionId: string;
+    let sessionId: string | undefined;
+    let recovered = false;
     if (session.resumeSessionId) {
-      sessionId = (await client.getSession(session.resumeSessionId)).id;
+      try {
+        sessionId = (await client.getSession(session.resumeSessionId)).id;
+      } catch (error) {
+        if (
+          !(error instanceof OpencodeHttpError) ||
+          error.status !== 404 ||
+          this.stopping
+        )
+          throw error;
+        recovered = true;
+        this.emit(recoveryEvent('opencode'));
+      }
+    }
+    if (this.stopping) return { kind: 'stopped' };
+    if (sessionId) {
       await client.updateSession(sessionId, {
         permissions: [...ASK_EVERYTHING],
       });
@@ -504,7 +520,7 @@ class OpencodeRun {
     this.sessionId = sessionId;
     this.sessions.add(sessionId);
 
-    let prompt = session.prompt;
+    let prompt = recovered ? recoveryPrompt(session.prompt) : session.prompt;
     if (session.systemPrompt) {
       try {
         await client.putInstruction(
@@ -513,7 +529,7 @@ class OpencodeRun {
           session.systemPrompt,
         );
       } catch {
-        prompt = `<instructions>\n${session.systemPrompt}\n</instructions>\n\n${session.prompt}`;
+        prompt = `<instructions>\n${session.systemPrompt}\n</instructions>\n\n${prompt}`;
       }
     }
     this.emit({
@@ -523,7 +539,8 @@ class OpencodeRun {
         sessionId,
         ...(model ? { model: `${model.providerID}/${model.id}` } : {}),
         ...(detection.version ? { opencodeVersion: detection.version } : {}),
-        ...(session.resumeSessionId ? { resumed: true } : {}),
+        ...(session.resumeSessionId ? { resumed: !recovered } : {}),
+        ...(recovered ? { sessionRecovery: true } : {}),
       },
     });
     if (this.stopping) return { kind: 'stopped' };

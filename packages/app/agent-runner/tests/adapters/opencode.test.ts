@@ -81,8 +81,13 @@ describe('model capabilities', () => {
   });
 });
 
-function adapterFor(fake: FakeOpencode, version = '2.0.12'): OpencodeAdapter {
+function adapterFor(
+  fake: FakeOpencode,
+  version = '2.0.12',
+  fetchFn?: typeof fetch,
+): OpencodeAdapter {
   return new OpencodeAdapter({
+    ...(fetchFn ? { fetch: fetchFn } : {}),
     launch: fake.launch,
     exec: async (_file, args) =>
       args[0] === '--version'
@@ -362,6 +367,57 @@ describe('session setup', () => {
     expect(
       fake.requestsTo('PATCH', /^\/api\/session\/ses_test$/)[0].body,
     ).toEqual({ permissions: ASK_EVERYTHING });
+  });
+
+  it.each([
+    ['GET', 401],
+    ['GET', 503],
+    ['PATCH', 404],
+  ])(
+    'does not recover from a %s session request returning %s',
+    async (method, status) => {
+      const fake = new FakeOpencode({ script: [], knownSessions: [SID] });
+      const fetchFn: typeof fetch = (input, options) => {
+        if (
+          String(input).endsWith(`/api/session/${SID}`) &&
+          options?.method === method
+        )
+          return Promise.resolve(new Response('{}', { status }));
+        return fetch(input, options);
+      };
+      const handle = adapterFor(fake, '2.0.12', fetchFn).start(
+        session({ resumeSessionId: SID }),
+      );
+      const events = await collect(handle.events);
+      expect((await handle.result).exit).toBe('error');
+      expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(0);
+      expect(events.some((e) => e.content === 'sessionRecovery')).toBe(false);
+    },
+  );
+
+  it('creates a session on a missing session query and retains the recovery prompt when instructions return 404', async () => {
+    const fake = new FakeOpencode({
+      script: [...begin(), succeeded],
+      instructionStatus: 404,
+    });
+    const handle = adapterFor(fake).start(
+      session({ resumeSessionId: 'missing' }),
+    );
+    const events = await collect(handle.events);
+    expect(await handle.result).toMatchObject({
+      exit: 'completed',
+      sessionId: SID,
+    });
+    expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(1);
+    const prompt = (
+      fake.requestsTo('POST', /\/prompt$/)[0].body as { text: string }
+    ).text;
+    expect(prompt).toContain('BRIEF');
+    expect(prompt).toContain('Do the task');
+    expect(prompt).toContain('previous conversation');
+    expect(events.find((e) => e.content === 'started')).toMatchObject({
+      meta: { resumed: false, sessionRecovery: true },
+    });
   });
 
   it('prepends the brief to the prompt when instructions are refused', async () => {

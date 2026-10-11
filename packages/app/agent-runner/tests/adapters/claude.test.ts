@@ -71,6 +71,111 @@ beforeEach(async () => {
   dir = await fakeClaudeDir();
 });
 
+describe('missing conversations', () => {
+  it('does not retry a failed fresh query or restart after cancellation during recovery', async () => {
+    const abort = new AbortController();
+    setScript(async function* (ctx) {
+      yield* [];
+      await ctx.nextInput();
+      if (!ctx.options.resume) throw new Error('No conversation found');
+      abort.abort();
+      throw new Error('No conversation found');
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old', abort: abort.signal }),
+    );
+    expect((await handle.result).exit).toBe('aborted');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('retries once and reports a fresh query failure without a stale session id', async () => {
+    setScript(async function* (ctx) {
+      yield* [];
+      await ctx.nextInput();
+      throw new Error(
+        ctx.options.resume ? 'No conversation found' : 'network timeout',
+      );
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    const outcome = await handle.result;
+    expect(outcome.exit).toBe('error');
+    expect(outcome.sessionId).toBeUndefined();
+    expect(calls).toHaveLength(2);
+  });
+  it.each(['throw', 'result', 'stderr'])(
+    'recovers once from a startup %s, preserving unconfirmed inputs',
+    async (mode) => {
+      const prompts: string[] = [];
+      setScript(async function* (ctx) {
+        const prompt = await ctx.nextInput();
+        prompts.push(String(prompt?.message.content));
+        if (ctx.options.resume) {
+          await ctx.nextInput();
+          if (mode === 'throw')
+            throw new Error('No conversation found with session ID old');
+          if (mode === 'stderr') {
+            ctx.options.stderr?.('No conver');
+            ctx.options.stderr?.('sation found with session ID old');
+            throw new Error('exit 1');
+          }
+          yield result({
+            subtype: 'error_during_execution',
+            errors: ['No conversation found'],
+            num_turns: 0,
+            usage: {},
+          });
+          return;
+        }
+        expect(ctx.options.systemPrompt).toMatchObject({ append: 'BRIEF' });
+        yield init();
+        const steer = await ctx.nextInput();
+        expect(steer?.message.content).toBe('early');
+        yield assistant([{ type: 'text', text: 'ok' }], {
+          user_message_uuids: [steer?.uuid],
+        });
+        yield result();
+      });
+      const handle = adapterWith('9.0.0', dir).start(
+        session({ resumeSessionId: 'old' }),
+      );
+      expect(await handle.steer('early', 'early-input')).toBe(true);
+      const events = await collect(handle.events);
+      expect(await handle.result).toMatchObject({
+        exit: 'completed',
+        sessionId: SESSION_ID,
+      });
+      expect(calls).toHaveLength(2);
+      expect(calls[0].closed).toBe(true);
+      expect(calls[1].options.resume).toBeUndefined();
+      expect(prompts[1]).toContain('previous conversation');
+      expect(prompts[1]).toContain('Create hello.txt');
+      expect(events.filter((e) => e.type === 'input')).toHaveLength(1);
+      expect(events.find((e) => e.content === 'started')).toMatchObject({
+        meta: { resumed: false, sessionRecovery: true },
+      });
+    },
+  );
+
+  it.each([
+    'authentication failed',
+    'No conversation found after model execution',
+  ])('does not replay an unrelated or late error: %s', async (message) => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      if (message.includes('after model'))
+        yield assistant([{ type: 'text', text: 'working' }]);
+      throw new Error(message);
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+  });
+});
+
 describe('detect and executable', () => {
   it('uses the claude on PATH, by its absolute path, with its version', async () => {
     const adapter = adapterWith('9.0.0', dir);

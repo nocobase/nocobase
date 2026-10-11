@@ -37,6 +37,7 @@ import { classifyClaudeFailure } from './classify.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
@@ -360,12 +361,15 @@ export class ClaudeAdapter implements AgentAdapter {
 
 class ClaudeRun {
   private readonly events = new Channel<AdapterEvent>();
-  private readonly input = new Channel<SDKUserMessage>();
+  private input = new Channel<SDKUserMessage>();
+  private recovered = false;
+  private executionBegun = false;
+  private stderrTail = '';
   private readonly abortController = new AbortController();
   /** Steered inputs not yet seen by the agent, by message uuid. */
   private readonly pendingSteers = new Map<
     string,
-    { text: string; inputId?: string }
+    { text: string; inputId?: string; message: SDKUserMessage }
   >();
   private readonly toolNames = new Map<string, string>();
   private readonly reportedDecisions = new Set<string>();
@@ -430,7 +434,7 @@ class ClaudeRun {
     if (this.finished || this.stopping || this.input.isClosed)
       return Promise.resolve(false);
     const message = this.userMessage(text);
-    this.pendingSteers.set(message.uuid!, { text, inputId });
+    this.pendingSteers.set(message.uuid!, { text, inputId, message });
     return Promise.resolve(this.input.push(message));
   }
 
@@ -498,6 +502,7 @@ class ClaudeRun {
       abortController: this.abortController,
       includePartialMessages: false,
       stderr: (data: string) => {
+        this.stderrTail = (this.stderrTail + data).slice(-8192);
         this.stderrLines.push(...data.split('\n').filter(Boolean));
         this.stderrLines.splice(
           0,
@@ -523,10 +528,84 @@ class ClaudeRun {
     let thrown: unknown;
     try {
       if (this.stopping) throw new Error('aborted before start');
-      const options = await this.buildOptions();
-      const q = query({ prompt: this.input, options });
-      this.closeQuery = () => q.close();
-      for await (const message of q) this.onMessage(message);
+      let options = await this.buildOptions();
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        if (this.stopping) break;
+        let attemptError: unknown;
+        let missing = false;
+        try {
+          const q = query({ prompt: this.input, options });
+          this.closeQuery = () => q.close();
+          try {
+            for await (const message of q) {
+              if (
+                message.type === 'assistant' ||
+                (message.type === 'result' &&
+                  (message.num_turns > 0 ||
+                    message.usage.input_tokens > 0 ||
+                    message.usage.output_tokens > 0))
+              )
+                this.executionBegun = true;
+              if (
+                message.type === 'result' &&
+                !this.executionBegun &&
+                (message.subtype !== 'success' || message.is_error)
+              ) {
+                const errors =
+                  message.subtype === 'success'
+                    ? message.result
+                    : message.errors.join('\n');
+                missing = /No conversation found/i.test(errors);
+                if (missing && options.resume && !this.recovered) break;
+              }
+              this.onMessage(message);
+            }
+          } finally {
+            q.close();
+            this.closeQuery = undefined;
+          }
+        } catch (error) {
+          attemptError = error;
+        }
+        missing ||= /No conversation found/i.test(
+          [
+            attemptError instanceof Error
+              ? attemptError.message
+              : typeof attemptError === 'string'
+                ? attemptError
+                : '',
+            this.stderrTail,
+          ].join('\n'),
+        );
+        if (
+          !options.resume ||
+          this.recovered ||
+          this.executionBegun ||
+          !missing ||
+          this.stopping
+        ) {
+          if (attemptError !== undefined)
+            throw attemptError instanceof Error
+              ? attemptError
+              : new Error('Claude query failed', { cause: attemptError });
+          break;
+        }
+        this.recovered = true;
+        this.emit(recoveryEvent('claude'));
+        options = { ...options };
+        delete options.resume;
+        this.input.close();
+        this.input = new Channel<SDKUserMessage>();
+        this.input.push(this.userMessage(recoveryPrompt(this.session.prompt)));
+        for (const steer of this.pendingSteers.values())
+          this.input.push(steer.message);
+        this.sessionId = undefined;
+        this.lastResult = undefined;
+        this.lastAssistantError = undefined;
+        this.model = undefined;
+        this.stderrLines.length = 0;
+        this.stderrTail = '';
+      }
     } catch (error) {
       thrown = error;
     } finally {
@@ -593,7 +672,7 @@ class ClaudeRun {
    * of each turn is summed instead.
    */
   private usage(): Usage[] {
-    if (this.session.resumeSessionId) {
+    if (this.session.resumeSessionId && !this.recovered) {
       return this.turnUsage.inputTokens || this.turnUsage.outputTokens
         ? [{ ...this.turnUsage, ...(this.model ? { model: this.model } : {}) }]
         : [];
@@ -746,6 +825,10 @@ class ClaudeRun {
             model: message.model,
             claudeCodeVersion: message.claude_code_version,
             permissionMode: message.permissionMode,
+            ...(this.session.resumeSessionId
+              ? { resumed: !this.recovered }
+              : {}),
+            ...(this.recovered ? { sessionRecovery: true } : {}),
           },
         });
         return;

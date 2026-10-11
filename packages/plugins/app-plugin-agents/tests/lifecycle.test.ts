@@ -48,6 +48,100 @@ describe('run lifecycle', () => {
       body,
     });
 
+  it.each(['complete', 'fail', 'cancelAck'])(
+    'remembers a replacement session after %s and resumes it on the next claim',
+    async (action) => {
+      h = await createHarness();
+      const agentId = await h.createAgent();
+      const runner = await h.registerRunner();
+      await h.enqueue(agentId);
+      const [first] = await claim(h, runner);
+      await post(runner, first.run.id, 'start', start);
+      expect(
+        (
+          await post(runner, first.run.id, 'complete', {
+            summary: 'done',
+            handledInputIds: first.inputs.map((i: { id: string }) => i.id),
+            sessionId: 'old-session',
+          })
+        ).status,
+      ).toBe(200);
+      await h.enqueue(agentId);
+      const [second] = await claim(h, runner);
+      expect(second.prompt.resumeSessionId).toBe('old-session');
+      await post(runner, second.run.id, 'start', start);
+      if (action === 'cancelAck')
+        await h.services.runs.cancel(second.run.id, 'owner');
+      expect(
+        (
+          await post(runner, second.run.id, action, {
+            summary: 'done',
+            reason: 'unknown',
+            handledInputIds: second.inputs.map((i: { id: string }) => i.id),
+            sessionId: 'replacement-session',
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await h.database
+            .connection()
+            .repository<{ sessionId: string }>('agRuns')
+            .findOne({ filter: { id: second.run.id } })
+        )?.sessionId,
+      ).toBe('replacement-session');
+      await h.enqueue(agentId);
+      const [third] = await claim(h, runner);
+      expect(third.prompt).toMatchObject({
+        session: 'resume',
+        resumeSessionId: 'replacement-session',
+      });
+      const rows = await h.database
+        .connection()
+        .repository<{ sessionId: string }>('agSessions')
+        .findMany({ filter: { agentId } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].sessionId).toBe('replacement-session');
+    },
+  );
+
+  it('preserves the previous session when cancellation has no confirmed session and rejects a lost lease', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    await h.enqueue(agentId);
+    const [first] = await claim(h, runner);
+    await post(runner, first.run.id, 'start', start);
+    await post(runner, first.run.id, 'complete', {
+      summary: 'done',
+      handledInputIds: first.inputs.map((i: { id: string }) => i.id),
+      sessionId: 'old-session',
+    });
+    await h.enqueue(agentId);
+    const [second] = await claim(h, runner);
+    await post(runner, second.run.id, 'start', start);
+    await h.services.runs.cancel(second.run.id, 'owner');
+    expect((await post(runner, second.run.id, 'cancelAck')).status).toBe(200);
+    await h.enqueue(agentId);
+    const [third] = await claim(h, runner);
+    expect(third.prompt.resumeSessionId).toBe('old-session');
+    await post(runner, third.run.id, 'start', start);
+    h.clock.advance(46_000);
+    await h.sweep();
+    const lost = await post(runner, third.run.id, 'cancelAck', {
+      sessionId: 'unconfirmed',
+    });
+    expect(lost.body.error.reason).toBe('LEASE_LOST');
+    expect(
+      (
+        await h.database
+          .connection()
+          .repository<{ sessionId: string }>('agSessions')
+          .findOne({ filter: { agentId } })
+      )?.sessionId,
+    ).toBe('old-session');
+  });
+
   it('runs from start to completion, recording events once', async () => {
     h = await createHarness();
     const { runner, runId, inputIds } = await claimed();

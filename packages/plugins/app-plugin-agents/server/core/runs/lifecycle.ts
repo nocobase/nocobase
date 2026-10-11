@@ -540,9 +540,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
         await recordOutcome(unit, run, request);
+        await rememberSession(unit, run, request.sessionId, false);
         const ended = await finishRun(unit, deps, run, {
           status: 'cancelled',
           reason: 'cancelled',
+          ...(request.sessionId ? { sessionId: request.sessionId } : {}),
         });
         if (!ended)
           throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ClaimRequestSchema,
+  CancelAckRequestSchema,
   ClaimResponseSchema,
   UploadTicketSchema,
   CompleteRequestSchema,
@@ -32,6 +33,16 @@ import {
   type RunPayload,
   RepoDirSchema,
 } from '../src/index.js';
+
+it('accepts an optional confirmed session on cancellation and remains compatible with old runners', () => {
+  expect(CancelAckRequestSchema.parse({})).toEqual({});
+  expect(CancelAckRequestSchema.parse({ sessionId: 'replacement' })).toEqual({
+    sessionId: 'replacement',
+  });
+  expect(
+    CancelAckRequestSchema.safeParse({ sessionId: 'x'.repeat(201) }).success,
+  ).toBe(false);
+});
 
 const payload: RunPayload = {
   run: {

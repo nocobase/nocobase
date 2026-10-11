@@ -620,11 +620,13 @@ export const FailRequestSchema: z.ZodType<FailRequest> = z.object({
 });
 
 export interface CancelAckRequest {
+  readonly sessionId?: string;
   readonly handledInputIds?: readonly string[];
   readonly usage?: readonly Usage[];
 }
 
 export const CancelAckRequestSchema: z.ZodType<CancelAckRequest> = z.object({
+  sessionId: z.string().max(200).optional(),
   handledInputIds: z.array(z.string()).optional(),
   usage: z.array(UsageSchema).optional(),
 });
