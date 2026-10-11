@@ -7,7 +7,7 @@ description: Install, deploy, upgrade, roll back and check NocoBase Studio or an
 
 This Skill deploys NocoBase applications as services. `@nocobase/app-installer` puts each release under `releases/<version>_<build time>/app` and runs it under pm2; `config.yml`, `app.env`, `storage/`, `backups/` and `logs/` sit beside the releases and survive every upgrade. Use `--app` for a published application package, which is downloaded and built on the server, or `--archive` for a deployment archive built elsewhere. This Skill decides when to use it and how to act on what it reports; `--help` is the reference for every flag.
 
-For **NocoBase Studio**, read [the Studio deployment reference](references/studio.md) before selecting a release or installation directory. It covers installing the published npm application without a repository checkout, upgrading the same installation and verifying its business data. Source builds below are for users who explicitly request a custom build, not a prerequisite for installing published Studio.
+For **NocoBase Studio**, read [the Studio deployment reference](references/studio.md) before selecting a release or installation directory. It covers installing the published npm application without a repository checkout, upgrading the same installation and verifying its business data. The Two machines, Build the archive and archive transfer steps below apply only to `--archive`; skip them for `--app`, which needs no user-provided repository or archive.
 
 ## Run it
 
@@ -46,11 +46,11 @@ A project is source code someone changes, created by `nocobase-create-app` and d
 
 ## Two machines
 
-Build the archive where the sources are, usually the user's computer or CI, and install it where NocoBase runs. If the authorized checkout is already available on the server, building there is also supported: keep the source checkout and installation in separate directories and follow the project's build instructions. If neither sources nor a deployment archive are available, ask for the intended source revision or archive; do not substitute another application or invent a download URL.
+For `--archive` only, build the archive where the sources are, usually the user's computer or CI, and install it where NocoBase runs. If the authorized checkout is already available on the server, building there is also supported: keep the source checkout and installation in separate directories and follow the project's build instructions. If neither sources nor a deployment archive are available, ask for the intended source revision or archive; do not substitute another application or invent a download URL.
 
 ## Build the archive
 
-In the application project, whose own `AGENTS.md` and `nocobase-deployment` Skill are the authority on building:
+For `--archive` only, in the application project, whose own `AGENTS.md` and `nocobase-deployment` Skill are the authority on building:
 
 ```bash
 pnpm build --target linux-x64 --node-version 24 --tar
@@ -74,6 +74,8 @@ The archive is `storage/exports/dist.tar.gz`; the user copies it to the machine 
 Reuse the destination, port, database and authorization already established in the conversation. Ask only for missing decisions; approval to deploy does not require a second approval for the same installation. Before exposing a fresh installation, supply a user-chosen or generated administrator password with `--set-from-env users.initialAdmin.password=<VARIABLE>`, and tell the user where to retrieve it securely. Keep passwords out of command arguments and logs.
 
 ### Run it
+
+Before an npm installation, check the selected installer's `install --help` includes `--app` and the application version exists in the chosen registry. Use that installer version for the installation and subsequent commands.
 
 `install <dir> --app studio --origin <origin> --json` installs the official Studio npm application; the full name `--app @nocobase/studio` is equivalent. Add `@<version or tag>` to select a release. This route requires npm and pnpm 11+ and builds in a temporary directory that is removed afterwards.
 
