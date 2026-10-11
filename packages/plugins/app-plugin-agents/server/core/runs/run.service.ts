@@ -79,7 +79,7 @@ import {
 import { dialectOf, takesType, type SubjectRegistry } from './ports.js';
 import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
-import { gateInputs } from './input-gate.js';
+import { gateInputs, gatePending } from './input-gate.js';
 import { findBrief, requestReset } from './workspace.store.js';
 
 export const DEFAULT_THREAD = 'main';
@@ -1111,7 +1111,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
         subjectRef: { kind: run.subjectKind, id: run.subjectId },
         actorUserId: run.actorUserId,
         cancelRequested: run.cancelRequestedAt !== null,
-        inputs: (await pendingInputs(conn, run.id)).map(toInput),
+        // What the run may act on: a read never withholds anything, it only leaves out what delivery would.
+        inputs: (await gatePending(conn, deps, run)).kept.map(toInput),
       };
     },
 

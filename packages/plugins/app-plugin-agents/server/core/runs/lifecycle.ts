@@ -38,9 +38,8 @@ import {
 } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { asJson, jsonObject, truncateBytes } from '../../kernel/values.js';
-import { findAgent } from '../agents/index.js';
 import { recordActualModels } from './execution.js';
-import { dropInputs, gateInputs, type InputGateDeps } from './input-gate.js';
+import { dropInputs, gatePending, type InputGateDeps } from './input-gate.js';
 import { everHeld } from './run-tokens.js';
 import {
   eventsRepo,
@@ -49,7 +48,6 @@ import {
   isActive,
   isTerminal,
   markDelivered,
-  pendingInputs,
   reposRepo,
   runsRepo,
   sessionsRepo,
@@ -179,25 +177,24 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
    */
   async function deliver(conn: DatabaseConnection, run: RunRecord) {
     const now = clock.now().toISOString();
-    let pending = await pendingInputs(conn, run.id);
-    const fresh = pending.filter((input) => !input.deliveredAt);
-    const agent = fresh.length > 0 ? await findAgent(conn, run.agentId) : null;
-    if (agent) {
-      const kept = new Set(
-        (await gateInputs(conn, deps, run, agent, fresh.map(toInput))).map(
-          (input) => input.id,
-        ),
-      );
-      const dropped = fresh.filter((input) => !kept.has(input.id));
-      await dropInputs(
-        conn,
-        dropped.map((input) => input.id),
-        now,
-      );
-      pending = pending.filter((input) => !dropped.includes(input));
-    }
+    const pending = await settlePending(conn, run, now);
     await markDelivered(conn, pending, now);
     return pending.map(toInput);
+  }
+
+  /** The run's unhandled input it may act on, marking what it may no longer act on handled. */
+  async function settlePending(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    now: string,
+  ) {
+    const { kept, withheld } = await gatePending(conn, deps, run);
+    await dropInputs(
+      conn,
+      withheld.map((input) => input.id),
+      now,
+    );
+    return kept;
   }
 
   /** Records what every ending reports: handled inputs, usage, branches. */
@@ -493,9 +490,10 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
         const handled = new Set(request.handledInputIds);
-        const missing = (await pendingInputs(unit.conn, run.id)).filter(
-          (input) => !handled.has(input.id),
-        );
+        // Input the run may no longer act on does not hold it open: the runner would get none of it.
+        const missing = (
+          await settlePending(unit.conn, run, clock.now().toISOString())
+        ).filter((input) => !handled.has(input.id));
         if (missing.length > 0)
           throw new ProtocolError(
             'RUN_INPUT_PENDING',

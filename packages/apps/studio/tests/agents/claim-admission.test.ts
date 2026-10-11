@@ -11,6 +11,7 @@ const coder = { id: 'developer', actions: ['studio.git/open-pr'] };
 const triggers = [
   'comment',
   'mention',
+  'reply',
   'statusChange',
   'prChecksFailed',
   'prConflict',
@@ -75,7 +76,7 @@ describe('issue claim admission', () => {
             role === 'current-stage' ||
             (role === 'executor'
               ? ['todo', 'blocked', 'in_progress'].includes(status)
-              : trigger === 'mention');
+              : trigger === 'mention' || trigger === 'reply');
           expect(issueClaimRejection(context, agent, inputs, rules)).toEqual(
             permitted
               ? null
@@ -148,25 +149,26 @@ describe('issue claim admission', () => {
       ),
     ).toMatchObject({ reason: 'stageMismatch' });
   });
-  it('runs an agent mentioned by name in any stage, but keeps the executor to its statuses', () => {
-    for (const status of ['analysis', 'proposal_review', 'in_review']) {
-      const context = {
-        ...sampleIssue('issue'),
-        executor: { type: 'agent', id: coder.id, name: 'Developer' },
-        status: { key: status, name: status, category: 'started' as const },
-      };
-      expect(
-        issueClaimRejection(
-          context,
-          { id: 'consultant', actions: [] },
-          [input('mention')],
-          [],
-        ),
-      ).toBeNull();
-      expect(
-        issueClaimRejection(context, coder, [input('mention')], []),
-      ).toMatchObject({ reason: 'stageMismatch' });
-    }
+  it('runs an agent mentioned by name or answered in any stage, but keeps the executor to its statuses', () => {
+    for (const trigger of ['mention', 'reply'])
+      for (const status of ['analysis', 'proposal_review', 'in_review']) {
+        const context = {
+          ...sampleIssue('issue'),
+          executor: { type: 'agent', id: coder.id, name: 'Developer' },
+          status: { key: status, name: status, category: 'started' as const },
+        };
+        expect(
+          issueClaimRejection(
+            context,
+            { id: 'consultant', actions: [] },
+            [input(trigger)],
+            [],
+          ),
+        ).toBeNull();
+        expect(
+          issueClaimRejection(context, coder, [input(trigger)], []),
+        ).toMatchObject({ reason: 'stageMismatch' });
+      }
   });
   it('uses current stage work even when an obsolete entry merges before or after it', () => {
     const context = {
@@ -331,6 +333,40 @@ describe('claiming queued issue work', () => {
       handledInputIds: payload.inputs.map((item: RunInput) => item.id),
     });
     expect(done.status).toBe(200);
+  });
+
+  it('completes a working executor without another turn when its undelivered comment belongs to development only', async () => {
+    h = await createBridgeHarness();
+    await h.addUser('alice');
+    const agent = await h.createAgent();
+    const issue = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Complete after leaving development',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: agent },
+    });
+    const payload = await h.claimOne();
+    await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+      workDir: '/tmp/work',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: 'LATE_DEVELOPMENT_COMMENT',
+    });
+    const current = await h.projects.issueQueries.detail(
+      h.viewer('alice'),
+      issue.id,
+    );
+    await h.projects.issues.update(h.viewer('alice'), issue.id, {
+      revision: current.revision,
+      statusKey: 'in_review',
+    });
+    const done = await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+      summary: 'Finished the development turn.',
+      handledInputIds: payload.inputs.map((item: RunInput) => item.id),
+    });
+    expect(done.status).toBe(200);
+    expect((await h.agents.runs.get(payload.run.id)).status).toBe('completed');
   });
 
   it('keeps a comment that joined queued development work after the issue went back to todo', async () => {

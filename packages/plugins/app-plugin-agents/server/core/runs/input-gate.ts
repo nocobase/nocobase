@@ -6,7 +6,15 @@ import type { RunInput } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
-import { inputsRepo, toRun, type RunRecord } from './run.store.js';
+import { findAgent } from '../agents/index.js';
+import {
+  inputsRepo,
+  pendingInputs,
+  toInput,
+  toRun,
+  type InputRecord,
+  type RunRecord,
+} from './run.store.js';
 import { dialectOf, type SubjectRegistry } from './ports.js';
 
 export interface InputGateDeps {
@@ -58,4 +66,37 @@ export async function dropInputs(
       ]),
     values: { handledAt: now },
   });
+}
+
+/** A working run's unhandled input, split by whether the run may still act on it. */
+export interface GatedPending {
+  /** What the run was already given, and the new input the subject still admits and selects. */
+  readonly kept: readonly InputRecord[];
+  /** New input the subject no longer lets the run act on. */
+  readonly withheld: readonly InputRecord[];
+}
+
+/**
+ * Splits `run`'s unhandled input by the subject's policy. Input already delivered stays with the run, whatever
+ * happened since; only input not yet delivered is judged.
+ */
+export async function gatePending(
+  conn: DatabaseConnection,
+  deps: InputGateDeps,
+  run: RunRecord,
+): Promise<GatedPending> {
+  const pending = await pendingInputs(conn, run.id);
+  const fresh = pending.filter((input) => !input.deliveredAt);
+  const agent = fresh.length > 0 ? await findAgent(conn, run.agentId) : null;
+  if (!agent) return { kept: pending, withheld: [] };
+  const admitted = new Set(
+    (await gateInputs(conn, deps, run, agent, fresh.map(toInput))).map(
+      (input) => input.id,
+    ),
+  );
+  const withheld = fresh.filter((input) => !admitted.has(input.id));
+  return {
+    kept: pending.filter((input) => !withheld.includes(input)),
+    withheld,
+  };
 }

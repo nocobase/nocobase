@@ -436,6 +436,9 @@ export function initialNote(defaultBranch: string): string {
   ].join('\n');
 }
 
+/** Triggers that address one agent directly: a mention of it, or a reply to its comment. */
+const ADDRESSED_TRIGGERS: ReadonlySet<string> = new Set(['mention', 'reply']);
+
 /** The statuses an issue's executor works in. */
 const EXECUTOR_STATUSES: ReadonlySet<string> = new Set([
   'todo',
@@ -488,8 +491,10 @@ export function issueClaimRejection(
   if (agent.id === executor) {
     if (EXECUTOR_STATUSES.has(status)) return null;
   } else if (
-    // Someone asked this agent by name; only the executor stays bound to its statuses.
-    current.some((input) => jsonObject(input.payload).trigger === 'mention')
+    // Someone asked this agent by name or answered its comment; only the executor stays bound to its statuses.
+    current.some((input) =>
+      ADDRESSED_TRIGGERS.has(String(jsonObject(input.payload).trigger)),
+    )
   )
     return null;
   return {

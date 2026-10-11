@@ -164,7 +164,9 @@ describe('subject admission for a working run', () => {
     const agent = await h.createAgent();
     const runId = await h.enqueue(agent, 'issue');
     const runner = await h.registerRunner();
-    expect((await claim(h, runner))[0].run.id).toBe(runId);
+    const [payload] = await claim(h, runner);
+    expect(payload.run.id).toBe(runId);
+    const payloadInputs = payload.inputs.map((input) => input.id);
     await h.request('POST', `/agents/runners/runs/${runId}/start`, {
       runnerKey: runner.key,
       body: { workDir: '/tmp/work', acceptsInput: true },
@@ -187,7 +189,12 @@ describe('subject admission for a working run', () => {
           body: {},
         })
       ).body.data.inputs.map((input: { text: string }) => input.text);
-    return { runId, send, lease };
+    const complete = (handledInputIds: readonly string[]) =>
+      h.request('POST', `/agents/runners/runs/${runId}/complete`, {
+        runnerKey: runner.key,
+        body: { summary: 'Done', handledInputIds },
+      });
+    return { runId, send, lease, complete, claimed: payloadInputs };
   }
 
   it('queues rejected input in a separate run instead of appending it', async () => {
@@ -227,5 +234,21 @@ describe('subject admission for a working run', () => {
         (input) => input.text,
       ),
     ).not.toContain('Obsolete');
+  });
+
+  it('completes without asking for input the subject no longer lets the run act on', async () => {
+    const { runId, send, complete, claimed } = await working();
+    expect(await send('Arrived in time')).toMatchObject({
+      runId,
+      outcome: 'appended',
+    });
+    h.services.subjects.get('sample')!.context.admit = async () => ({
+      reason: 'stageMismatch',
+    });
+    const done = await complete(claimed);
+    expect(done.status).toBe(200);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'completed',
+    });
   });
 });
