@@ -335,12 +335,74 @@ export interface PullRequestRow {
   readonly mergedManually: boolean;
   /** The commit the merge made on the base branch, when known. */
   readonly mergeCommitSha: string | null;
+  /**
+   * The head the host confirmed the pull request merged at (`MergedHeadSource`), never the squash commit; null while
+   * unconfirmed, or after two confirmations disagreed (`mergedHeadSource` is then `conflict`). `headSha` follows every
+   * read and a person's mark, so it proves nothing on its own.
+   */
+  readonly mergedHeadSha: string | null;
+  readonly mergedHeadSource: MergedHeadSource | 'conflict' | null;
+  readonly mergedHeadAt: string | null;
+  /** When Git sync last asked the host for the merged head of a pull request that had none (`mergedHeadsToConfirm`). */
+  readonly mergedHeadCheckedAt: string | null;
   readonly closedAt: string | null;
   readonly pullEtag: string | null;
   readonly statusEtag: string | null;
   readonly runsEtag: string | null;
   readonly signals: Signals;
   readonly snapshotAt: string | null;
+}
+
+/**
+ * Who confirmed a merged head: a verified webhook delivery, a read of the merged pull request from the host, or the
+ * head Studio's own merge named (the host merges only that head). A person's mark and a runner's report never do.
+ */
+export type MergedHeadSource = 'webhook' | 'api' | 'merge';
+
+/** A merged head the host confirmed, for `upsertPullRequest`. */
+export interface ConfirmedMergedHead {
+  readonly sha: string;
+  readonly source: MergedHeadSource;
+  /** Git sync re-reading a pull request without one: replaces a conflict with what the host says now. */
+  readonly reconcile?: boolean;
+}
+
+const FULL_SHA = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u;
+
+function mergedHeadSourceOf(
+  value: unknown,
+): PullRequestRow['mergedHeadSource'] {
+  return value === 'webhook' ||
+    value === 'api' ||
+    value === 'merge' ||
+    value === 'conflict'
+    ? value
+    : null;
+}
+
+/** The columns a confirmed merged head changes, or nothing to change. */
+function mergedHeadValues(
+  previous: PullRequestRow | null,
+  confirmed: ConfirmedMergedHead | undefined,
+  now: Date,
+): Record<string, unknown> {
+  if (!confirmed || !FULL_SHA.test(confirmed.sha)) return {};
+  const set = {
+    mergedHeadSha: confirmed.sha,
+    mergedHeadSource: confirmed.source,
+    mergedHeadAt: now,
+  };
+  if (!previous) return set;
+  if (previous.mergedHeadSha === confirmed.sha) return {};
+  if (confirmed.reconcile) return set;
+  if (previous.mergedHeadSource === 'conflict') return {};
+  if (previous.mergedHeadSha === null) return set;
+  // Two confirmations disagree: neither is evidence until Git sync reads the host again.
+  return {
+    mergedHeadSha: null,
+    mergedHeadSource: 'conflict',
+    mergedHeadAt: now,
+  };
 }
 
 function stateOf(value: unknown): PullRequestState {
@@ -385,6 +447,10 @@ function pullRequestOf(row: Row, repo: string): PullRequestRow {
     mergedByUserId: str(row.mergedByUserId),
     mergedManually: bool(row.mergedManually),
     mergeCommitSha: str(row.mergeCommitSha),
+    mergedHeadSha: str(row.mergedHeadSha),
+    mergedHeadSource: mergedHeadSourceOf(row.mergedHeadSource),
+    mergedHeadAt: iso(row.mergedHeadAt),
+    mergedHeadCheckedAt: iso(row.mergedHeadCheckedAt),
     closedAt: iso(row.closedAt),
     pullEtag: str(row.pullEtag),
     statusEtag: str(row.statusEtag),
@@ -472,13 +538,15 @@ export async function openPullRequestsOf(
 
 /**
  * Inserts or refreshes a pull request from a snapshot; answers it with the row it replaced. A row a person marked
- * merged stays merged whatever GitHub says until GitHub says merged too.
+ * merged stays merged whatever GitHub says until GitHub says merged too. The merged head changes only with `confirmed`,
+ * for a merged snapshot: a later snapshot without it, open or empty, leaves the confirmed one alone.
  */
 export async function upsertPullRequest(
   conn: DatabaseConnection,
   repoId: string,
   snapshot: PullRequestSnapshot,
   extra: Readonly<Record<string, unknown>> = {},
+  confirmed?: ConfirmedMergedHead,
 ): Promise<{ pr: PullRequestRow; previous: PullRequestRow | null }> {
   const previous = await findPullRequest(conn, repoId, snapshot.number);
   const keepMerged =
@@ -514,6 +582,11 @@ export async function upsertPullRequest(
     ...(headMoved
       ? { ciState: null, checks: null, statusEtag: null, runsEtag: null }
       : {}),
+    ...mergedHeadValues(
+      previous,
+      snapshot.state === 'merged' ? confirmed : undefined,
+      now,
+    ),
     snapshotAt: now,
     updatedAt: now,
     ...extra,
@@ -559,7 +632,7 @@ export async function upsertPullRequest(
       });
     } catch (error) {
       if (!isUniqueViolation(error)) throw error;
-      return upsertPullRequest(conn, repoId, snapshot, extra);
+      return upsertPullRequest(conn, repoId, snapshot, extra, confirmed);
     }
   }
   return {
@@ -570,6 +643,46 @@ export async function upsertPullRequest(
     )) as PullRequestRow,
     previous,
   };
+}
+
+/**
+ * Up to `limit` merged pull requests of a repository that some issue links and whose merged head the host has not
+ * confirmed (`mergedHeadSha`), for Git sync to read again: those never asked first, then those last asked before
+ * `askedBefore`, longest ago first, so a pull request that keeps failing neither holds back the rest nor is read on
+ * every poll.
+ */
+export async function mergedHeadsToConfirm(
+  conn: DatabaseConnection,
+  repoId: string,
+  limit: number,
+  askedBefore: Date,
+): Promise<PullRequestRow[]> {
+  const linked = await linkedIds(conn);
+  if (linked.length === 0 || limit <= 0) return [];
+  const base = () =>
+    conn.query
+      .selectFrom(PULL_REQUESTS)
+      .selectAll()
+      .where('repoId', '=', repoId)
+      .where('state', '=', 'merged')
+      .where('mergedHeadSha', 'is', null)
+      .where('id', 'in', linked);
+  const never = await base()
+    .where('mergedHeadCheckedAt', 'is', null)
+    .orderBy('id', 'asc')
+    .limit(limit)
+    .execute();
+  const asked =
+    never.length >= limit
+      ? []
+      : await base()
+          .where('mergedHeadCheckedAt', 'is not', null)
+          .where('mergedHeadCheckedAt', '<', askedBefore)
+          .orderBy('mergedHeadCheckedAt', 'asc')
+          .orderBy('id', 'asc')
+          .limit(limit - never.length)
+          .execute();
+  return withRepos(conn, [...never, ...asked]);
 }
 
 export async function updatePullRequest(

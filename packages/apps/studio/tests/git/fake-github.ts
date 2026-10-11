@@ -28,7 +28,12 @@ export interface FakePull {
   /** The squash commit, once merged. */
   merge_commit_sha?: string | null;
   draft: boolean;
-  head: { ref: string; sha: string };
+  /** `repo` is the repository the head branch lives in: this one unless set, another for a fork, null once gone. */
+  head: {
+    ref: string;
+    sha: string;
+    repo?: { full_name: string } | null;
+  };
   base: { ref: string };
   user: { login: string };
   mergeable_state: string;
@@ -356,6 +361,11 @@ export function createFakeGitHub(
   function payload(repo: string, pull: FakePull) {
     return {
       ...pull,
+      head: {
+        ...pull.head,
+        repo:
+          pull.head.repo === undefined ? { full_name: repo } : pull.head.repo,
+      },
       node_id: nodeIdOf(repo, pull.number),
       html_url: `${origin}/${repo}/pull/${pull.number}`,
       closed_at: pull.state === 'closed' ? pull.merged_at : null,

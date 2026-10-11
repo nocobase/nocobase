@@ -50,6 +50,7 @@ import {
   pullRequestsOfIssue,
   updatePullRequest,
   upsertPullRequest,
+  type ConfirmedMergedHead,
   type PullRequestRow,
   type RepoRow,
 } from './store.js';
@@ -81,6 +82,8 @@ export interface StoreOptions {
   /** The Studio user who merged it (Studio merged it, or they marked it merged). */
   readonly mergedByUserId?: string;
   readonly mergedManually?: boolean;
+  /** The merged head the host confirmed (`confirmedMergedHead`); without it the stored one stays as it is. */
+  readonly mergedHead?: ConfirmedMergedHead;
 }
 
 export interface GitFlow {
@@ -365,6 +368,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
               : {}),
             ...(options.mergedManually ? { mergedManually: true } : {}),
           },
+          options.mergedHead,
         );
         if (stored.state !== previous?.state && previous) {
           if (stored.state === 'merged') await onMerged(tx, stored, after);

@@ -107,7 +107,11 @@ export interface GitHubPullRequestPayload {
   /** The merge (or squash) commit once merged; before that, GitHub's test merge commit, which Studio ignores. */
   readonly merge_commit_sha?: string | null;
   readonly closed_at?: string | null;
-  readonly head?: { readonly ref?: string; readonly sha?: string };
+  readonly head?: {
+    readonly ref?: string;
+    readonly sha?: string;
+    readonly repo?: { readonly full_name?: string } | null;
+  };
   readonly base?: { readonly ref?: string };
   readonly user?: { readonly login?: string };
   readonly mergeable_state?: string | null;
@@ -150,6 +154,10 @@ export function snapshotFromPayload(
     headRef: (payload.head?.ref ?? '').slice(0, 255),
     baseRef: (payload.base?.ref ?? '').slice(0, 255),
     headSha: (payload.head?.sha ?? '').slice(0, 64),
+    headRepo:
+      typeof payload.head?.repo?.full_name === 'string'
+        ? payload.head.repo.full_name
+        : null,
     authorLogin: (payload.user?.login ?? '').slice(0, 255),
     mergeableState:
       typeof payload.mergeable_state === 'string'

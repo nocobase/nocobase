@@ -99,6 +99,11 @@ export interface PullRequestSnapshot {
   readonly headRef: string;
   readonly baseRef: string;
   readonly headSha: string;
+  /**
+   * The repository the head branch lives in (`owner/name`), when the host said: another repository's for a fork, null
+   * when that repository is gone. Absent from a snapshot Studio rebuilt from its own row.
+   */
+  readonly headRepo?: string | null;
   readonly authorLogin: string;
   readonly mergeableState: string | null;
   readonly mergedAt: string | null;

@@ -168,6 +168,11 @@ function pullPayload(number: number, action = 'opened') {
     repository: { full_name: REPO },
     pull_request: {
       ...pull,
+      head: {
+        ...pull.head,
+        repo:
+          pull.head.repo === undefined ? { full_name: REPO } : pull.head.repo,
+      },
       html_url: PR_URL(number),
       closed_at: pull.state === 'closed' ? pull.merged_at : null,
     },
@@ -626,6 +631,58 @@ describe('webhook events', () => {
     );
     expect(moves).toHaveLength(1);
     expect(moves[0]).toMatchObject({ actorType: 'user', actorId: 'bob' });
+  });
+
+  it('pull_request: a verified merge delivery confirms the merged head, a fork head or an unsigned one does not', async () => {
+    const row = await repo();
+    const issue = await issueIn('in_review');
+    const head = 'b'.repeat(40);
+    const forkHead = 'c'.repeat(40);
+    h.github.addPull(REPO, {
+      number: 4,
+      head: { ref: `agent/${issue.identifier}`, sha: head },
+    });
+    h.github.addPull(REPO, {
+      number: 5,
+      head: {
+        ref: `agent/${issue.identifier}`,
+        sha: forkHead,
+        repo: { full_name: 'someone/studio' },
+      },
+    });
+    await deliver(row, 'pull_request', pullPayload(4));
+    await deliver(row, 'pull_request', pullPayload(5));
+    h.github.merge(REPO, 4, 'bob');
+    h.github.merge(REPO, 5, 'bob');
+    const unsigned = await deliver(
+      row,
+      'pull_request',
+      pullPayload(4, 'closed'),
+      {
+        signature: 'sha256=0000',
+      },
+    );
+    expect(unsigned.status).toBe(401);
+    expect(
+      (await findPullRequest(h.projects.tx.read(), row.id, 4))?.mergedHeadSha,
+    ).toBeNull();
+
+    await deliver(row, 'pull_request', pullPayload(4, 'closed'));
+    await deliver(row, 'pull_request', pullPayload(5, 'closed'));
+    const merged = await findPullRequest(h.projects.tx.read(), row.id, 4);
+    expect(merged).toMatchObject({
+      state: 'merged',
+      mergedHeadSha: head,
+      mergedHeadSource: 'webhook',
+    });
+    expect(merged?.mergeCommitSha).not.toBe(head);
+    expect(
+      await findPullRequest(h.projects.tx.read(), row.id, 5),
+    ).toMatchObject({
+      state: 'merged',
+      mergedHeadSha: null,
+      mergedHeadSource: null,
+    });
   });
 
   it('pull_request: ignores a pull request no issue links, and actions Studio does not read', async () => {

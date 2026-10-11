@@ -99,6 +99,7 @@ import {
   linkedOpenAtHead,
   linkedOpenPullRequests,
   linksOfPullRequest,
+  mergedHeadsToConfirm,
   openPullRequestsOf,
   pullRequestsOfIssue,
   pullRequestsOfIssues,
@@ -107,8 +108,10 @@ import {
   setAutoComplete,
   setMergeCheck,
   suggestionsOfIssue,
+  updatePullRequest,
   updateRepo,
   webhookHealthy,
+  type ConfirmedMergedHead,
   type LinkRow,
   type PullRequestRow,
   type RepoRow,
@@ -123,6 +126,10 @@ export const MERGE_CHECK_RETRY_SECONDS = 30;
 export const MERGE_CHECK_ATTEMPTS = 5;
 /** Merge checks per run, the oldest first; the rest wait for the next. */
 export const MERGE_CHECK_BATCH = 20;
+/** How many merged pull requests without a confirmed head one poll of a repository reads again (`pollRepo`). */
+export const MERGED_HEAD_BATCH = 10;
+/** How long one that could not be confirmed waits before it is read again. */
+export const MERGED_HEAD_RETRY_SECONDS = 6 * 60 * 60;
 export const PR_TITLE_MAX = 256;
 export const PR_BODY_MAX = 65_000;
 export const PR_CLOSE_REASON_MAX = 2_000;
@@ -448,6 +455,25 @@ function mergeFailure(error: unknown): ProtocolError {
   return hostFailure(error);
 }
 
+/**
+ * The merged head a snapshot the host just gave confirms (`source`): only a merged pull request whose head branch lives
+ * in the repository itself. A fork's head names a commit of another repository, which proves nothing about this one.
+ */
+export function confirmedMergedHead(
+  repo: Pick<RepoRow, 'repo'>,
+  snapshot: PullRequestSnapshot,
+  source: ConfirmedMergedHead['source'],
+  sha: string = snapshot.headSha,
+): ConfirmedMergedHead | undefined {
+  if (snapshot.state !== 'merged') return undefined;
+  if (
+    typeof snapshot.headRepo !== 'string' ||
+    snapshot.headRepo.toLowerCase() !== repo.repo.toLowerCase()
+  )
+    return undefined;
+  return { sha, source };
+}
+
 /** A stored row as a snapshot, for a write that changes only what Studio decides (a mark, a merge the host lags on). */
 function snapshotOfRow(pr: PullRequestRow): PullRequestSnapshot {
   return {
@@ -714,6 +740,48 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     };
   }
 
+  /**
+   * Reads again, from the host, up to `MERGED_HEAD_BATCH` linked merged pull requests whose merged head was never
+   * confirmed (recorded before Studio kept it, marked merged by a person, merged from a fork, or two confirmations
+   * disagreed), so runners can be shown the head. A pull request the host does not say is merged keeps none, and its
+   * state is left as Studio has it; one that cannot be read or confirmed is tried again `MERGED_HEAD_RETRY_SECONDS`
+   * later, after the others. A rate
+   * limit stops the batch and is reported like any poll failure.
+   */
+  async function confirmMergedHeads(repo: RepoRow): Promise<void> {
+    const pending = await mergedHeadsToConfirm(
+      conn(),
+      repo.id,
+      MERGED_HEAD_BATCH,
+      new Date(now().getTime() - MERGED_HEAD_RETRY_SECONDS * 1000),
+    );
+    if (pending.length === 0) return;
+    const auth = await readAuth(repo);
+    for (const pr of pending) {
+      await updatePullRequest(conn(), pr.id, { mergedHeadCheckedAt: now() });
+      let snapshot: PullRequestSnapshot;
+      try {
+        const pull = await platformOf(repo).getPullRequest(
+          auth,
+          repo.repo,
+          pr.number,
+          null,
+        );
+        if (pull.notModified) continue;
+        snapshot = pull.body.snapshot;
+      } catch (error) {
+        // No access, gone (404) or a passing failure: kept without one, and asked again after the others.
+        if (error instanceof GitApiError && error.rateLimited) throw error;
+        continue;
+      }
+      const confirmed = confirmedMergedHead(repo, snapshot, 'api');
+      if (!confirmed) continue;
+      await flow.store(repo, snapshot, {
+        mergedHead: { ...confirmed, reconcile: true },
+      });
+    }
+  }
+
   /** Reads one linked pull request with its validators; writes only when something changed. */
   async function pollPullRequest(
     repo: RepoRow,
@@ -737,9 +805,13 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         : { status: pr.statusEtag, runs: pr.runsEtag },
     );
     if (pull.notModified && !ci) return;
+    const mergedHead = pull.notModified
+      ? undefined
+      : confirmedMergedHead(repo, snapshot, 'api');
     await flow.store(repo, snapshot, {
       ...(pull.notModified ? {} : { pullEtag: pull.etag }),
       ...(ci ? { ci } : {}),
+      ...(mergedHead ? { mergedHead } : {}),
     });
   }
 
@@ -848,6 +920,8 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     issueId: string;
     repo: RepoRow;
     pr: PullRequestRow;
+    /** What the host answered for the preflight; absent when Studio has no credential to read it with. */
+    snapshot?: PullRequestSnapshot;
     auth: GitAuth;
   }> {
     const issue = await visibleIssue(viewer, idOrKey);
@@ -883,14 +957,17 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     } catch (error) {
       throw hostFailure(error);
     }
+    const confirmed = confirmedMergedHead(repo, full.snapshot, 'api');
     const stored = await flow.store(repo, full.snapshot, {
       pullEtag: full.pullEtag,
       ci: full.ci,
+      ...(confirmed ? { mergedHead: confirmed } : {}),
     });
     return {
       issueId: issue.id,
       repo,
       pr: stored,
+      snapshot: full.snapshot,
       auth: acting.auth,
       preflight: {
         blocker: mergeBlockerOf(
@@ -922,7 +999,10 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     const links = existing ? await linksOfPullRequest(conn(), existing.id) : [];
     // Every pull request of a repository with live previews is kept: one closing removes its previews.
     const tracked = links.length === 0 && (await tracks(repo));
-    if (links.length > 0 || tracked) await flow.store(repo, snapshot);
+    // Deliveries reach this only once verified (`webhooks.ts`).
+    const mergedHead = confirmedMergedHead(repo, snapshot, 'webhook');
+    if (links.length > 0 || tracked)
+      await flow.store(repo, snapshot, mergedHead ? { mergedHead } : {});
     const created = await autoLink(repo, [snapshot]);
     if (links.length === 0 && created === 0 && !tracked)
       return 'notLinked' as const;
@@ -1656,11 +1736,14 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           'expectedHeadSha must be the head commit shown when confirming.',
           { code: 'INVALID_EXPECTED_HEAD' },
         );
-      const { preflight, repo, pr, issueId, auth } = await check(
-        viewer,
-        idOrKey,
-        pullRequestId,
-      );
+      const {
+        preflight,
+        repo,
+        pr,
+        issueId,
+        auth,
+        snapshot: checked,
+      } = await check(viewer, idOrKey, pullRequestId);
       if (preflight.blocker) throw notMergeable(preflight.blocker);
       if (preflight.headSha !== expectedHeadSha.trim()) throw prChanged();
       let merged: { sha: string };
@@ -1694,9 +1777,22 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
               mergedAt: now().toISOString(),
               mergeCommitSha,
             };
+      // The host merged only the head the preflight read (`sha` above), when that read was the host's own answer.
+      const mergedHead =
+        full?.snapshot.state === 'merged'
+          ? confirmedMergedHead(repo, full.snapshot, 'api')
+          : checked
+            ? confirmedMergedHead(
+                repo,
+                { ...checked, state: 'merged' },
+                'merge',
+                preflight.headSha,
+              )
+            : undefined;
       await flow.store(repo, snapshot, {
         mergedByUserId: viewer.userId,
         ...(full ? { pullEtag: full.pullEtag } : {}),
+        ...(mergedHead ? { mergedHead } : {}),
       });
       return viewOf(issueId, pullRequestId);
     },
@@ -1925,6 +2021,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           ? await openPullRequestsOf(conn(), repo.id)
           : await linkedOpenPullRequests(conn(), repo.id);
         for (const pr of open) await pollPullRequest(repo, pr);
+        await confirmMergedHeads(repo);
         await updateRepo(conn(), repo.id, {
           polledAt: new Date(),
           pollError: null,
@@ -1969,9 +2066,11 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           }
           const full = await readFull(repo, pr.number);
           read += 1;
+          const mergedHead = confirmedMergedHead(repo, full.snapshot, 'api');
           await flow.store(repo, full.snapshot, {
             pullEtag: full.pullEtag,
             ci: full.ci,
+            ...(mergedHead ? { mergedHead } : {}),
           });
           // Still computing: read it again later.
           await again(full.mergeable === null);
