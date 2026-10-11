@@ -6,6 +6,8 @@ Do not create a plugin to add a feature. Plugins are separately published packag
 
 ## This repository
 
+Studio does not use the discontinued Hub CLI or DSL Workflow plugin. Do not add their dependencies or default configuration back when reconciling with an older template. Studio's project status workflows belong to the projects and agents services, independently of the removed DSL plugin.
+
 NocoBase Studio lives in the public `nocobase/nocobase` repository at `packages/apps/studio` and is published to npm as `@nocobase/studio`. The repository root's `AGENTS.md` applies here as well: branches, commits, pull requests, changesets, migrations and dependency declarations follow it. What this file adds is how to work on Studio itself.
 
 - Studio depends on the framework packages and the plugins in this repository through `workspace:` ranges. A framework or plugin change Studio needs goes in the same pull request as the Studio change that needs it.
@@ -284,15 +286,14 @@ Route overrides must stay lazy, declare a `componentEntry`, and load a default-e
 
 **You are not starting from scratch.** This application ships with NocoBase packages that already solve whole categories of requirement, and packages may publish a Skill explaining how to use them. `pnpm nocobase skills sync` copies Skills from direct `@nocobase/*` dependencies and registered plugins into `.agents/skills/`. Before implementing a feature, check whether an installed and registered plugin already covers it:
 
-| The requirement sounds like                                                                       | Read the Skill for                    |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Approvals, multi-step processes, "when X happens then Y", business rules that outlive one request | `@nocobase/app-plugin-workflow`       |
-| Email, IM, or in-app messages; notifying someone that something happened                          | `@nocobase/app-plugin-notification`   |
-| Roles, permissions, "user A may only see their own records", field-level or row-level access      | `@nocobase/app-plugin-authorization`  |
-| Sign-in, registration, sessions, password reset                                                   | `@nocobase/app-plugin-authentication` |
-| User listing, account state, password reset, and application-owned role assignment                | `@nocobase/app-plugin-users`          |
-| File upload and metadata through Repository                                                       | `@nocobase/app-plugin-file`           |
-| Translated text and language switching                                                            | `@nocobase/app-plugin-i18n`           |
+| The requirement sounds like                                                                  | Read the Skill for                    |
+| -------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Email, IM, or in-app messages; notifying someone that something happened                     | `@nocobase/app-plugin-notification`   |
+| Roles, permissions, "user A may only see their own records", field-level or row-level access | `@nocobase/app-plugin-authorization`  |
+| Sign-in, registration, sessions, password reset                                              | `@nocobase/app-plugin-authentication` |
+| User listing, account state, password reset, and application-owned role assignment           | `@nocobase/app-plugin-users`          |
+| File upload and metadata through Repository                                                  | `@nocobase/app-plugin-file`           |
+| Translated text and language switching                                                       | `@nocobase/app-plugin-i18n`           |
 
 Run `pnpm nocobase skills sync` if `.agents/skills/` is missing or looks out of date, then read the Skill for the plugin you need. It documents that plugin's public entries, the ownership boundary, and how to verify the result — which is faster and more correct than inferring an API from its source.
 
