@@ -68,5 +68,17 @@
     "name": "mail",
     "label": "Mail",
     "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI employees",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-knowledge-base",
+    "label": "AI knowledge bases",
+    "collapsed": true
   }
 ]

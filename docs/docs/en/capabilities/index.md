@@ -22,8 +22,8 @@ NocoBase provides reusable capabilities for business applications. Describe your
 | [Scheduled tasks](./scheduler.md)         | Reminders, reports, synchronization, execution records, and enablement controls.        |
 | [Languages](./i18n.md)                    | Language switching, translations, and application defaults.                             |
 | [Themes](./theme.md)                      | Colors, typography, density, color modes, and custom presets.                           |
-| AI employees                              | AI collaboration with models, tools, and business context.                              |
-| AI knowledge bases                        | Knowledge content and retrieval for AI.                                                 |
+| [AI employees](./ai-employee/index.md) | AI collaboration with models, tools, and business context.                              |
+| [AI knowledge bases](./ai-knowledge-base/index.md) | Knowledge content and retrieval for AI.                                                 |
 
 Requirements differ by capability: external mail needs provider configuration, and complex approval needs its plugin. Application pages follow business needs rather than requiring a shared settings area.
 

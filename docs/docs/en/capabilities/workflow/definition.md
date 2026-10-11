@@ -31,7 +31,7 @@ Check stages and required inputs on the server and prevent concurrent actions fr
 
 ## View the result
 
-Open order **NS-2026-003**. In the captured Awaiting acceptance stage, **Transport process** offers acceptance, rejection and cancellation, without the later delivery action.
+Open order **NS-2026-010**. In the captured Awaiting acceptance stage, **Transport process** offers acceptance, rejection and cancellation, without the later delivery action.
 
 ![Order awaiting acceptance with applicable actions](../assets/northstar-process-before-en.png)
 
