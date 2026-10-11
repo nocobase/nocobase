@@ -82,6 +82,8 @@ import { AgentQueueDemo } from './demo/agents/agent-queue';
 import { IssueCardDemo } from './demo/projects/issue-card';
 import { PlanCardDemo } from './demo/projects/plan-card';
 import { IssueTableDemo } from './demo/projects/issue-table';
+import { FlowDiagramDemo } from './demo/components/flow-diagram';
+import { LifecycleDiagramDemo } from './demo/lifecycle/lifecycle-diagram';
 import { KanbanDemo } from './demo/components/kanban';
 import { ApprovalDemo } from './demo/approval';
 import { AuthenticationDemo } from './demo/auth';
@@ -164,6 +166,11 @@ const itemPreviews: Record<string, ItemPreview> = {
   'permission-editor': {
     path: '/demo/authorization/permission-editor',
     icon: ToggleRight,
+  },
+  'flow-diagram': { path: '/demo/components/flow-diagram', icon: Layers },
+  'lifecycle-diagram': {
+    path: '/demo/lifecycle/lifecycle-diagram',
+    icon: Layers,
   },
   kanban: { path: '/demo/components/kanban', icon: Columns3 },
   'issue-table': { path: '/demo/projects/issue-table', icon: Table2 },
@@ -271,6 +278,10 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/route-overlays')) {
     return <RouteOverlaysDemo />;
   }
+  if (pathname.startsWith('/demo/components/flow-diagram'))
+    return <FlowDiagramDemo />;
+  if (pathname.startsWith('/demo/lifecycle/lifecycle-diagram'))
+    return <LifecycleDiagramDemo />;
   if (pathname.startsWith('/demo/components/kanban')) {
     return <KanbanDemo />;
   }
