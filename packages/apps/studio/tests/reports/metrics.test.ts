@@ -143,8 +143,8 @@ describe('metrics', () => {
         activeMembers: 2,
       },
       aiShare: { share: 1, deliveredByAgent: 2, deliveredTotal: 2 },
-      // The unfinished issue keeps Bob's comment and Alice's status-triggered work in separate runs.
-      reliability: { runs: 7, completedRuns: 3, failedRuns: 0, lostRuns: 0 },
+      // Three completed runs and three comment runs; status changes do not queue extra executor work.
+      reliability: { runs: 6, completedRuns: 3, failedRuns: 0, lostRuns: 0 },
       cost: {
         inputTokens: 3_000_000,
         outputTokens: 6000,

@@ -118,7 +118,7 @@ deploy request get <request> -> GET /api/releases/deploymentRequests/{requestId}
 deploy request list [--page --limit --app --status --awaiting-me] -> GET /api/releases/deploymentRequests (person)
 deploy request reject <request> [--note] -> POST /api/releases/deploymentRequests/{requestId}/reject (person)
 deploy status <project> -> GET /api/deploys/projects/{projectId}/environments (person)
-design approve <issue> [--comment] -> POST /api/designProposals/{issueId}/approve (person)
+design approve <issue> [--comment --executor] -> POST /api/designProposals/{issueId}/approve (person)
 design get <issue> -> GET /api/designProposals/{issueId} (person)
 design request-changes <issue> [--comment] -> POST /api/designProposals/{issueId}/requestChanges (person)
 env check <env> -> POST /api/releases/environments/{environmentId}/check (person) rel.environments/read

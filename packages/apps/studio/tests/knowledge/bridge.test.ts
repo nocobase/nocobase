@@ -8,6 +8,8 @@ import { MountBundleSchema } from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { OPEN_PR_ACTION } from '../../server/agents/capabilities.js';
+
 import { RUN_LAYOUT } from '../../server/knowledge/mount.js';
 
 import {
@@ -76,6 +78,7 @@ beforeEach(async () => {
   );
   agentId = await h.createAgent({
     actions: [
+      OPEN_PR_ACTION,
       'pm.issues/view',
       'pm.issues/comment',
       'pm.issues/edit',
@@ -192,7 +195,7 @@ describe('a run on an issue', () => {
   it('says nothing of knowledge to an agent not configured to read it', async () => {
     agentId = await h.createAgent({
       name: 'Plain',
-      actions: ['pm.issues/view', 'pm.issues/comment'],
+      actions: [OPEN_PR_ACTION, 'pm.issues/view', 'pm.issues/comment'],
     });
     await startWork();
     const payload = await h.claimOne(withMounts);
@@ -593,7 +596,7 @@ describe('nb-studio kb for a person and a run without the actions', () => {
   it('refuses a run whose agent may not read or propose knowledge', async () => {
     agentId = await h.createAgent({
       name: 'Plain',
-      actions: ['pm.issues/view', 'pm.issues/comment'],
+      actions: [OPEN_PR_ACTION, 'pm.issues/view', 'pm.issues/comment'],
     });
     await startWork();
     const payload = await h.claimOne(withMounts);
@@ -615,7 +618,7 @@ describe('nb-studio kb for a person and a run without the actions', () => {
   it('lets a run that only reads read, and refuses its proposals', async () => {
     agentId = await h.createAgent({
       name: 'Reader',
-      actions: ['pm.issues/view', 'kb.knowledge/read'],
+      actions: [OPEN_PR_ACTION, 'pm.issues/view', 'kb.knowledge/read'],
     });
     await startWork();
     const payload = await h.claimOne(withMounts);

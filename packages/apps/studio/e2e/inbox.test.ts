@@ -184,6 +184,9 @@ test.describe('inbox decisions', () => {
             (await api.get<Issue>(`projects/issues/${issue.id}`)).statusKey,
         )
         .toBe('in_progress');
+      expect(
+        (await api.get<Issue>(`projects/issues/${issue.id}`)).executor,
+      ).toEqual({ type: 'agent', id: developer.id });
     });
 
     test('the owner sends it back from the inbox with a comment', async ({

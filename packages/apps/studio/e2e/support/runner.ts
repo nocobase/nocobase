@@ -232,7 +232,13 @@ export async function approveWithDeveloper(
 ): Promise<void> {
   const dialog = page.getByRole('dialog', { name: '批准方案' });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('combobox', { name: /执行者/ }).fill(developer.name);
+  const input = dialog.getByRole('combobox', { name: /执行者/ });
+  await expect(input).toBeEnabled();
+  await input.click();
+  await input.fill(developer.name);
+  await expect(input).toHaveValue(developer.name);
+  // Open the search results explicitly before choosing an option.
+  await input.press('ArrowDown');
   await page.getByRole('option', { name: new RegExp(developer.name) }).click();
   await dialog.getByRole('button', { name: '批准并进入开发中' }).click();
   await expect(dialog).toBeHidden();
