@@ -44,7 +44,7 @@ export async function readSettings(
 }
 
 /**
- * Serialize all relationship writes across projects and processes until the outermost transaction
+ * Serialize relationship writes and issue transitions that change blockers across projects and processes until the outermost transaction
  * commits. The conditional update also rejects an old repeatable-read snapshot: a write lock cannot refresh the graph.
  * This row must be separate from settings/counters: writing those in a plan could otherwise expose the latest row
  * version through MySQL's read-your-own-writes, while graph reads still use the old snapshot. Always take this guard

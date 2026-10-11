@@ -342,7 +342,16 @@ export function createIssueService(deps: IssueDeps): IssueService {
       return deps.tx.run(async (tx) => {
         const before = await requireVisible(tx.conn, viewer, idOrKey);
         requireEditor(viewer);
-        if (patch.parentIssueId !== undefined || patch.stage !== undefined) {
+        // Status/workflow changes can release waits, including a parent's automatic move. Take the graph guard
+        // before this issue's first write, in the same order as relationship edits and plan execution.
+        if (
+          patch.parentIssueId !== undefined ||
+          patch.stage !== undefined ||
+          (patch.statusKey !== undefined &&
+            patch.statusKey !== before.statusKey) ||
+          (patch.projectId !== undefined &&
+            patch.projectId !== before.projectId)
+        ) {
           await deps.relations().lock(tx);
         }
         const { values, activities, labelIds, status, placed } =
@@ -413,6 +422,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     },
 
     async applyApproved(tx, request, approver) {
+      await deps.relations().lock(tx);
       const issue = await findIssue(tx.conn, request.issueId);
       if (!issue || issue.deletedAt)
         return { code: 'ISSUE_GONE', message: 'The issue was deleted.' };
@@ -474,6 +484,8 @@ export function createIssueService(deps: IssueDeps): IssueService {
     },
 
     async fireEvent(tx, issueId, event, cause) {
+      // A contributed event batch enters here before its first issue write; subtask joins already hold the guard.
+      await deps.relations().lock(tx);
       const issue = await findIssue(tx.conn, issueId);
       if (!issue || issue.deletedAt)
         return { issueId, outcome: 'ignored', reason: 'notFound' };
@@ -613,6 +625,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     retracted: boolean,
   ): Promise<void> {
     await deps.tx.run(async (tx) => {
+      await deps.relations().lock(tx);
       const issue = await requireVisible(tx.conn, viewer, idOrKey);
       if (
         retracted &&

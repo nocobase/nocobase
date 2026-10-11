@@ -1,10 +1,12 @@
 // @vitest-environment node
+import { setTimeout as delay } from 'node:timers/promises';
+
 import type {
   CreateIssueRequest,
   Issue,
   IssueDetail,
 } from '@nocobase/app-plugin-projects/shared/issues';
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
@@ -43,6 +45,195 @@ function api() {
     },
   };
 }
+
+it.each(['done', 'cancelled', 'approval', 'event batch', 'parent'] as const)(
+  'does not lose the last release when conversion overlaps %s',
+  async (operation) => {
+    h.roles.set('alice', 'admin');
+    await h.addUser('bob');
+    const client = api();
+    const workflow = await h.projects.workflows.create(h.viewer('alice'), {
+      name: 'Concurrent releases',
+      copyFrom: null,
+    });
+    h.projects.workflowEvents.types.add({ key: 'test.finished' });
+    await h.projects.workflows.update(h.viewer('alice'), workflow.id, {
+      revision: workflow.revision,
+      definition: {
+        ...workflow.definition,
+        transitions: [
+          { from: '*', to: '*', actors: ['user'] },
+          {
+            from: 'todo',
+            to: 'done',
+            actors: ['system'],
+            on: operation === 'parent' ? 'subtasks.done' : 'test.finished',
+          },
+          ...(operation === 'approval'
+            ? [
+                {
+                  from: 'todo',
+                  to: 'done',
+                  actors: ['user'],
+                  approval: { approvers: ['projectLead' as const] },
+                },
+              ]
+            : []),
+        ],
+      },
+    });
+    await h.projects.workflows.setDefault(h.viewer('alice'), workflow.id);
+    const project = await h.projects.projects.create(h.viewer('bob'), {
+      name: 'Release work',
+    });
+    const b = await client.createIssue({ title: 'First prerequisite' });
+    const c = await client.createIssue({
+      title: 'Last prerequisite',
+      projectId: project.id,
+    });
+    const child =
+      operation === 'parent'
+        ? await client.createIssue({
+            title: 'Last child',
+            parentIssueId: c.id,
+            stage: 0,
+          })
+        : null;
+    const agentId = await h.createAgent();
+    const a = await client.createIssue({
+      title: 'Waiting for both',
+      statusKey: 'todo',
+      executor: { type: 'agent', id: agentId },
+      blockedBy: [b.id, c.id],
+      start: true,
+    });
+    const before = await client.issue(a.id);
+    expect(before.blockers).toHaveLength(2);
+    const link = before.blockedBy.find((item) => item.issueId === b.id)!;
+    const runs = () =>
+      h.agents.runs.list({ subjectKind: 'issue', subjectId: a.id });
+    expect(await runs()).toEqual([]);
+    const move = async (issue: Issue, statusKey: string) =>
+      h.request('PATCH', `/projects/issues/${issue.id}`, {
+        user: 'alice',
+        body: { revision: (await client.issue(issue.id)).revision, statusKey },
+      });
+    let approvalId: string | undefined;
+    if (operation === 'approval') {
+      const pending = await move(c, 'done');
+      expect(pending.status).toBe(202);
+      approvalId = pending.body.data.pendingApproval.id;
+    }
+    const released: string[] = [];
+    h.projects.events.on('issue.dependencyReleased', (event) => {
+      if (event.issueId === a.id) released.push(event.issueId);
+    });
+    const releaseChecked = Promise.withResolvers<void>();
+    const allowCommit = Promise.withResolvers<void>();
+    const changed = h.projects.subtasks.relations.changed.bind(
+      h.projects.subtasks.relations,
+    );
+    const spy = vi
+      .spyOn(h.projects.subtasks.relations, 'changed')
+      .mockImplementation(async (tx, change) => {
+        await changed(tx, change);
+        if (change.after.id === c.id) {
+          // C has really moved and checked its dependents, but its transaction has not committed. A still waits for B.
+          releaseChecked.resolve();
+          await allowCommit.promise;
+        }
+      });
+    const finish = async () => {
+      if (operation === 'event batch') {
+        expect(
+          await h.projects.workflowEvents.fire({
+            event: 'test.finished',
+            issueIds: [c.id],
+          }),
+        ).toEqual([expect.objectContaining({ outcome: 'moved', to: 'done' })]);
+      } else if (operation === 'approval') {
+        const response = await h.request(
+          'POST',
+          `/projects/approvals/${approvalId!}/approve`,
+          {
+            user: 'bob',
+            body: {},
+          },
+        );
+        expect(response.status).toBe(200);
+        expect(response.body.data.status).toBe('approved');
+      } else {
+        expect(
+          (
+            await move(
+              child ?? c,
+              operation === 'cancelled' ? 'cancelled' : 'done',
+            )
+          ).status,
+        ).toBe(200);
+      }
+    };
+    const finishing = finish();
+    let converting: ReturnType<BridgeHarness['request']> | undefined;
+    try {
+      await Promise.race([
+        releaseChecked.promise,
+        finishing.then(() => {
+          throw new Error('Completion did not check the dependent issue.');
+        }),
+      ]);
+      const convert = () =>
+        h.request(
+          'PATCH',
+          `/projects/issues/${a.id}/dependencies/${link.dependencyId}`,
+          {
+            user: 'alice',
+            body: { expectedType: 'blockedBy', type: 'relatedTo' },
+          },
+        );
+      converting = convert();
+      // Without serialization both writes finish against the other's old blocker and neither emits a release.
+      // With it, conversion waits for C; do not hold C forever waiting for a correctly blocked request.
+      await Promise.race([converting, delay(200)]);
+      allowCommit.resolve();
+      await finishing;
+      let response = await converting;
+      if (response.status === 409) {
+        expect(response.body.error.reason).toBe('DEPENDENCY_GRAPH_CHANGED');
+        expect((await client.issue(a.id)).blockers).toEqual([
+          expect.objectContaining({ issueId: b.id }),
+        ]);
+        expect(released).toEqual([]);
+        expect(await runs()).toEqual([]);
+        // A caller retries the rejected operation after reloading, as the API contract requires.
+        response = await convert();
+      }
+      expect(response.status).toBe(200);
+      expect((await client.issue(c.id)).statusKey).toBe(
+        operation === 'cancelled' ? 'cancelled' : 'done',
+      );
+      expect((await client.issue(a.id)).blockers).toEqual([]);
+      expect(released).toEqual([a.id]);
+      const queued = await runs();
+      expect(queued).toEqual([expect.objectContaining({ status: 'queued' })]);
+      expect((await h.agents.runs.detail(queued[0]!.id)).inputs).toEqual([
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            trigger: 'unblocked',
+            releasedBy: b.id,
+          }),
+        }),
+      ]);
+    } finally {
+      allowCommit.resolve();
+      await Promise.allSettled([
+        finishing,
+        ...(converting ? [converting] : []),
+      ]);
+      spy.mockRestore();
+    }
+  },
+);
 
 it.each(
   [

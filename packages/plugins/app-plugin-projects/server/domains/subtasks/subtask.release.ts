@@ -3,8 +3,8 @@
  *
  * 1. Release: each issue that waited for it, or a later-stage sibling, that is unfinished and held by nothing now gets
  *    one `issue.dependencyReleased` (and the `onUnblocked` hook).
- * 2. Join: when it has a parent, the parent's row is written first (`lastActivityAt`), which locks it, so two siblings
- *    finishing at once take turns here and the second reads what the first committed. Then, if every live sub-issue
+ * 2. Join: when it has a parent, the parent's row is updated (`lastActivityAt`) under the graph guard already held
+ *    by the issue transition. Then, if every live sub-issue
  *    is finished, one `issue.batchDone` for all of them and the workflow event `subtasks.done` on the parent; else, if
  *    its stage is finished, one `issue.batchDone` for the stage.
  *
@@ -74,7 +74,7 @@ async function join(
   if (!parentId) return;
   const before = await findIssue(tx.conn, parentId);
   if (!before || before.deletedAt) return;
-  // Writing the parent's row locks it until the transaction ends: siblings finishing at once take turns here.
+  // The originating transition took the graph guard before writing the child; keep that order for this parent too.
   await updateIssue(tx.conn, parentId, {
     lastActivityAt: new Date().toISOString(),
   });

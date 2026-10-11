@@ -392,6 +392,10 @@ export function createIssueRoutes(deps: {
         204: emptyResponse(),
         ...apiErrorResponses,
         404: notFound,
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry the deletion.',
+        ),
       },
     }),
     apiValidator('param', IssueParams),
