@@ -35,6 +35,8 @@ agents:
     dir: storage/runners/dist # the default; relative to the App root
     channel: stable
     versions: { acme: 0.1.0 } # pin a product instead of the channel's highest
+    npm: # a product with no tarball in dir, named on npm instead (exact versions)
+      nocobase-runner: { package: '@nocobase/agent-runner', version: 1.0.0 }
   server: # online agents, run by every instance
     enabled: true
     maxSteps: 16

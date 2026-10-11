@@ -890,6 +890,7 @@ export async function createBridgeHarness(
     const api = createPreviewApi({
       projects: () => projects,
       releases: () => releaseServices,
+      syncPreviewLabels: (issueId) => git.syncPreviewLabels(issueId),
       database,
       previews: () => service,
       issues,

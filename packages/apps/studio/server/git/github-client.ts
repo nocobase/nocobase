@@ -34,7 +34,7 @@ export interface Caller {
   readonly authorization: string | null;
 }
 
-export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH';
+export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /** A REST answer: conditional, with the `Link` header (paging) and a personal token's expiry header. */
 export type GitHubAnswer<T> = Conditional<T> & {

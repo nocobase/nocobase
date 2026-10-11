@@ -152,8 +152,14 @@ export class PmApi {
     return results;
   }
 
-  public resendInvitation(invitationId: string): Promise<InvitationResult> {
-    return this.send(`projects/invitations/${id(invitationId)}/resend`, 'POST');
+  public resendInvitation(
+    invitationId: string,
+    sendEmail: boolean = true,
+  ): Promise<InvitationResult> {
+    return this.send(
+      `projects/invitations/${id(invitationId)}/resend?sendEmail=${sendEmail}`,
+      'POST',
+    );
   }
 
   public revokeInvitation(invitationId: string): Promise<void> {

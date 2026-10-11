@@ -17,12 +17,15 @@ const zhCN: AuthenticationResource = {
     USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
       '这个邮箱已经注册过账号，请换一个邮箱。',
     PASSWORD_TOO_SHORT: '密码太短。',
+    RESET_PASSWORD_DISABLED: '未开启自助找回，请联系管理员重置密码。',
     PASSWORD_TOO_LONG: '密码太长。',
     EMAIL_NOT_VERIFIED: '请先验证邮箱再登录。',
     INVALID_TOKEN: '链接无效或已过期。',
     TOKEN_EXPIRED: '链接已过期。',
     ACCOUNT_DISABLED: '该账号已停用，请联系管理员。',
     SERVICE_ACCOUNT_NO_LOGIN: '服务账号不能登录，只能通过 API 密钥操作。',
+    INVALID_ORIGIN:
+      '当前访问地址未获允许，无法登录。请使用管理员提供的地址，或联系管理员检查应用访问地址配置。',
     INVALID_CSRF_ORIGIN: '请求来自其他站点，已被拒绝。请刷新页面后重试。',
   },
 };

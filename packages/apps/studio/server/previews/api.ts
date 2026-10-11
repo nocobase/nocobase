@@ -25,6 +25,10 @@ import {
   previewIssues,
   visiblePreviewIssue,
 } from './project-selection.js';
+  previewLabelState,
+  previewNotRequired,
+  setPreviewNotRequired,
+} from './preferences.js';
 import type { PreviewService } from './service.js';
 import { findIssue, type IssueRecord } from './sources.js';
 import {
@@ -47,6 +51,11 @@ export interface PreviewApi {
     projectId: string,
     previewId: string,
   ): Promise<void>;
+  setPreference(
+    viewer: Viewer,
+    issue: string,
+    notRequired: boolean,
+  ): Promise<IssuePreviews>;
   read(viewer: Viewer, issue: string): Promise<IssuePreviews>;
   /** Destroys the previews of the issue's pull requests, or the one `appId` names. */
   down(viewer: Viewer, issue: string, appId?: string): Promise<IssuePreviews>;
@@ -84,6 +93,7 @@ export function previewsNamed(
 export function createPreviewApi(deps: {
   readonly database: Pick<DatabaseManager, 'connection'>;
   readonly previews: () => PreviewService;
+  readonly syncPreviewLabels: (issueId: string) => Promise<void>;
   readonly issues: IssueAccess;
   readonly projects: () => Pick<Projects, 'issueQueries'>;
   readonly releases: () => Releases;
@@ -175,6 +185,12 @@ export function createPreviewApi(deps: {
     return {
       issueId: issue.id,
       identifier: issue.identifier,
+      notRequired: await previewNotRequired(conn(), issue.id),
+      labels: await Promise.all(
+        (await pullRequestsOfIssue(conn(), issue.id))
+          .filter(({ pr }) => pr.state === 'open')
+          .map(({ pr }) => previewLabelState(conn(), pr.id)),
+      ),
       previews,
       blocker: records.length > 0 ? null : await blockerOf(issue),
       canEdit,
@@ -292,6 +308,12 @@ export function createPreviewApi(deps: {
               );
           });
       }
+    },
+    async setPreference(viewer, key, notRequired) {
+      const issue = await editable(viewer, key);
+      await setPreviewNotRequired(conn(), issue.id, notRequired);
+      await deps.syncPreviewLabels(issue.id);
+      return read(viewer, issue.id);
     },
     async down(viewer, key, appId) {
       const issue = await editable(viewer, key);

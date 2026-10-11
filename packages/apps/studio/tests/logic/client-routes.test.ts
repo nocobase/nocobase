@@ -233,6 +233,7 @@ describe('app client routes', () => {
       { name: 'config', authorizedAs: null },
       { name: 'config-general', authorizedAs: 'settings:pm.general' },
       { name: 'config-members', authorizedAs: 'settings:pm.members' },
+      { name: 'config-member-reset-password', authorizedAs: null },
       { name: 'config-roles', authorizedAs: 'settings:pm.members' },
       { name: 'config-role', authorizedAs: 'settings:pm.members' },
       { name: 'config-api-keys', authorizedAs: 'settings:studio.apiKeys' },

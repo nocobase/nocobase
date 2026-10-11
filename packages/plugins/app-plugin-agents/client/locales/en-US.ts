@@ -308,13 +308,6 @@ const pages = {
     none: 'No capability can be granted here.',
     notGrantable: 'Cannot be granted to an agent',
     notGrantableBecause: 'Cannot be granted to an agent: {{reason}}',
-    allowedCommands: 'Allowed commands',
-    allowedCommandsHint:
-      'Regular expressions, one per line; a shell command must match one. The defaults are shown.',
-    deniedPatterns: 'Denied patterns',
-    deniedPatternsHint:
-      'Regular expressions, one per line; a command matching one is refused even when allowed.',
-    patternInvalid: 'Not a valid regular expression: {{pattern}}',
     confirmChanges: 'Changes on your behalf in conversations',
     confirmChangesHint:
       'When the agent changes projects and issues in your name in a conversation, which changes it first proposes as a plan for you to confirm. This is not a permission: what the agent may change is set by its capabilities above.',
@@ -325,10 +318,6 @@ const pages = {
       largerHint:
         'Small: at most two objects per turn, and none that finishes or closes an issue, changes its owner, makes an agent its executor, wakes an agent or creates a project.',
     },
-  },
-  commandPolicy: {
-    title: 'Command policy',
-    hint: 'Which shell commands the agent may run on the runtime’s machine.',
   },
   placement: {
     title: 'Where it runs',
@@ -660,6 +649,10 @@ const pages = {
     policyRefused: 'No runtime’s policy lets it take this work.',
     prepareNetwork:
       'The runtime could not reach the repository host while preparing the run.',
+    repoAccessUnavailable:
+      'A repository’s credential could not be issued just now; the run will be tried again.',
+    repoAccessDenied:
+      'The application will not issue a credential for one of the run’s repositories.',
     unknown: 'The run failed.',
   },
 };

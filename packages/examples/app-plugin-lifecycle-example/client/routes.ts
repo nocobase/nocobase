@@ -38,6 +38,15 @@ const routes: readonly AppClientRouteContribution[] = [
           breadcrumb: { title: 'navigation.expenses' },
           componentLoader: () => import('./pages/expenses.js'),
         },
+        {
+          name: 'lifecycleExampleInvoices',
+          path: '/lifecycle-example/invoices',
+          auth: 'required',
+          authz: 'skip',
+          navigation: { title: 'navigation.invoices', icon: Receipt },
+          breadcrumb: { title: 'navigation.invoices' },
+          componentLoader: () => import('./pages/invoices.js'),
+        },
         // Processes that stop to wait for the outside and are moved on by it.
         {
           name: 'lifecycleExampleOrders',
