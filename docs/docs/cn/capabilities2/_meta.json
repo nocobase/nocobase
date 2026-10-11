@@ -64,11 +64,6 @@
     "label": "定时任务"
   },
   {
-    "type": "file",
-    "name": "template-print",
-    "label": "模板打印"
-  },
-  {
     "type": "dir",
     "name": "mail",
     "label": "邮件",

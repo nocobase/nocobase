@@ -76,6 +76,6 @@ Later chapters introduce capabilities through Northstar's transport operations. 
 | Finance reviewer          | Review additional costs and relevant financial information.                                    |
 | Application administrator | Manage access and inspect scheduled tasks and delivery logs.                                   |
 
-Authentication brings employees into the system, authorization controls which orders each role can access and handle, and workflows advance transport operations. Files, notifications, and email support collaboration, while document templates generate consistent transport documents. Scheduled reminders, external data sources, languages, and themes are added as business needs arise.
+Authentication brings employees into the system, authorization controls which orders each role can access and handle, and workflows advance transport operations. Files, notifications, and email support collaboration. Scheduled reminders, external data sources, languages, and themes are added as business needs arise.
 
 The Agent integrates these capabilities and builds business pages and management interfaces around the company's working practices.

@@ -4,7 +4,7 @@ title: 'Developer reference'
 
 # Developer reference
 
-For developers reviewing or extending generated code. Business users can begin with [Quick start](./quick-start.md).
+For developers reviewing or extending generated code. Business users can begin with [Process definition and action control](./definition.md).
 
 ## Why handling and notification results are separate
 
