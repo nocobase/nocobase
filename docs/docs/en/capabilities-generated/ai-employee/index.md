@@ -12,8 +12,8 @@ An AI employee is an application assistant with a defined responsibility. It can
 | --- | --- |
 | [Page context](./page-context.md) | Answer about the order, customer or form currently open. |
 | [Business queries](./business-data.md) | Find records using natural language and link results to application pages. |
-| Permitted actions | Connect business actions with server-side authorization and execution records. |
-| Responsibilities and instructions | Define tasks, response style and permitted operations. |
+| [Business actions](./business-actions.md) | Connect business actions with server-side authorization and execution records. |
+| [Responsibilities and working rules](./work-rules.md) | Define tasks, response style and permitted operations. |
 | [Company knowledge](../ai-knowledge-base/answers.md) | Find supporting material and link answers to readable sources. |
 
 Conversations can appear on a dedicated page, in a business block or beside the current page.
