@@ -311,6 +311,34 @@ function plainClick(event: MouseEvent): boolean {
   );
 }
 
+/** Continue ancestor rails only while another sibling remains in the loaded subtree. */
+function treeGuides(rows: readonly IssueTableRow[]): {
+  level: number;
+  continues: boolean;
+  branch: boolean;
+}[][] {
+  const followingSibling: boolean[] = [];
+  const nextDepths: number[] = [];
+  for (let index = rows.length - 1; index >= 0; index--) {
+    const depth = rows[index].depth ?? 0;
+    while (nextDepths.length && nextDepths.at(-1)! > depth) nextDepths.pop();
+    followingSibling[index] = nextDepths.at(-1) === depth;
+    nextDepths.push(depth);
+  }
+  const ancestors: boolean[] = [];
+  return rows.map((row, index) => {
+    const depth = row.depth ?? 0;
+    ancestors.length = depth + 1;
+    ancestors[depth] = followingSibling[index];
+    // Bound decorative elements for extreme trees; the innermost branch still follows the exact depth.
+    return Array.from({ length: Math.min(depth, 32) }, (_, index) => {
+      const branch = index === Math.min(depth, 32) - 1;
+      const level = branch ? depth : index + 1;
+      return { level, branch, continues: ancestors[level] ?? false };
+    });
+  });
+}
+
 export function IssueTable({
   rows,
   sort,
@@ -338,6 +366,14 @@ export function IssueTable({
     day: 'numeric',
   });
   const columns = 7 + (selectable ? 1 : 0) + (rowAction ? 1 : 0);
+  const guides = treeGuides(rows);
+  const guideLevels = rows.reduce(
+    (maximum, row) => Math.max(maximum, row.depth ?? 0),
+    1,
+  );
+  // Use the same step for every row so ancestor rails stay aligned when the gutter shrinks on a phone.
+  const guideStep = `min(16px, calc(25cqw / ${guideLevels}))`;
+  const indent = (depth: number): string => `calc(${depth} * ${guideStep})`;
 
   function toggle(id: string, checked: boolean): void {
     if (!selectable) return;
@@ -432,7 +468,7 @@ export function IssueTable({
               </TableCell>
             </TableRow>
           ) : null}
-          {rows.map((row) => {
+          {rows.map((row, rowIndex) => {
             const href = rowHref?.(row);
             const checked = selectedIds?.has(row.id) ?? false;
             return (
@@ -477,17 +513,57 @@ export function IssueTable({
                     </span>
                   )}
                 </TableCell>
-                <TableCell className='min-w-0 whitespace-normal lg:max-w-0'>
+                <TableCell className='relative min-w-0 whitespace-normal lg:max-w-0'>
                   <div className='min-w-0 [container-type:inline-size]'>
+                    {guides[rowIndex].length > 0 ? (
+                      <span
+                        aria-hidden
+                        data-issue-tree
+                        className='pointer-events-none absolute inset-y-0 start-2 flex'
+                        style={{
+                          width: indent(row.depth ?? 0),
+                        }}
+                      >
+                        {guides[rowIndex].map(
+                          ({ continues, level, branch }) => {
+                            return (
+                              <span
+                                key={level}
+                                className='absolute inset-y-0'
+                                style={{
+                                  insetInlineStart: `calc(${level - 1} * ${guideStep})`,
+                                  width: guideStep,
+                                }}
+                              >
+                                {continues || branch ? (
+                                  <span
+                                    data-tree-rail={
+                                      continues ? 'continue' : 'end'
+                                    }
+                                    className={cn(
+                                      'absolute start-1/2 top-0 border-s border-muted-foreground/40',
+                                      continues ? 'bottom-0' : 'h-[1.125rem]',
+                                    )}
+                                  />
+                                ) : null}
+                                {branch ? (
+                                  <span className='absolute inset-x-0 start-1/2 top-[1.125rem] border-t border-muted-foreground/40' />
+                                ) : null}
+                              </span>
+                            );
+                          },
+                        )}
+                      </span>
+                    ) : null}
                     <div
                       data-issue-depth={row.depth ?? 0}
                       style={{
-                        paddingInlineStart: `min(${(row.depth ?? 0) * 16}px, 25cqw)`,
+                        paddingInlineStart: indent(row.depth ?? 0),
                       }}
                       className='flex min-w-0 flex-wrap items-center gap-2'
                     >
                       {(row.depth ?? 0) > 0 ? (
-                        <span className='w-full text-xs text-muted-foreground'>
+                        <span className='sr-only'>
                           {(
                             labels.depth ?? defaultIssueTableLabels.depth!
                           ).replace('{depth}', String(row.depth))}

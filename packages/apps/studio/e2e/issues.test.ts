@@ -251,6 +251,12 @@ test('table hierarchy keeps subtrees together at every list entry and after sort
     ownerUserId: me.userId,
     parentIssueId: child.id,
   });
+  const sibling = await api.post<Issue>('projects/issues', {
+    title: `Sibling ${tag}`,
+    projectId,
+    ownerUserId: me.userId,
+    parentIssueId: parent.id,
+  });
   for (const path of [
     '/issues',
     '/my-issues',
@@ -262,23 +268,63 @@ test('table hierarchy keeps subtrees together at every list entry and after sort
       .getByRole('rowgroup')
       .last()
       .getByRole('row');
-    await expect(rows).toHaveCount(3);
+    await expect(rows).toHaveCount(4);
     expect(await rows.getByRole('link').allTextContents()).toEqual([
       parent.identifier,
+      sibling.identifier,
       child.identifier,
       grandchild.identifier,
     ]);
-    await expect(rows.nth(2).locator('[data-issue-depth]')).toHaveAttribute(
+    await expect(rows.nth(3).locator('[data-issue-depth]')).toHaveAttribute(
       'data-issue-depth',
       '2',
     );
     await page.getByRole('button', { name: '编号', exact: true }).click();
     await expect(page).toHaveURL(/direction=asc/);
-    expect(await rows.getByRole('link').allTextContents()).toEqual([
-      parent.identifier,
-      child.identifier,
-      grandchild.identifier,
-    ]);
+    await expect
+      .poll(() => rows.getByRole('link').allTextContents())
+      .toEqual([
+        parent.identifier,
+        child.identifier,
+        grandchild.identifier,
+        sibling.identifier,
+      ]);
+    await expect(rows.nth(1).locator('[data-tree-rail]')).toHaveAttribute(
+      'data-tree-rail',
+      'continue',
+    );
+    await expect(
+      rows.nth(2).locator('[data-tree-rail]').first(),
+    ).toHaveAttribute('data-tree-rail', 'continue');
+    await expect(rows.nth(3).locator('[data-tree-rail]')).toHaveAttribute(
+      'data-tree-rail',
+      'end',
+    );
+    const childRail = await rows
+      .nth(1)
+      .locator('[data-tree-rail]')
+      .boundingBox();
+    const ancestorRail = await rows
+      .nth(2)
+      .locator('[data-tree-rail]')
+      .first()
+      .boundingBox();
+    expect(childRail).not.toBeNull();
+    expect(ancestorRail).not.toBeNull();
+    expect(Math.abs(childRail!.x - ancestorRail!.x)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(childRail!.y + childRail!.height - ancestorRail!.y),
+    ).toBeLessThanOrEqual(1);
+    if (path === '/issues') {
+      await page.screenshot({
+        path: 'storage/ui-workflow/issue-hierarchy/screenshots/sibling-tree-desktop.png',
+      });
+      await page.setViewportSize({ width: 375, height: 844 });
+      await page.screenshot({
+        path: 'storage/ui-workflow/issue-hierarchy/screenshots/sibling-tree-phone.png',
+      });
+      await page.setViewportSize({ width: 1440, height: 900 });
+    }
   }
   await open(page, `/issues?view=list&q=${encodeURIComponent(child.title)}`);
   const rows = page
@@ -291,4 +337,5 @@ test('table hierarchy keeps subtrees together at every list entry and after sort
     'data-issue-depth',
     '0',
   );
+  await expect(rows.first().locator('[data-issue-tree]')).toHaveCount(0);
 });

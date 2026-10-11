@@ -20,20 +20,64 @@ const root: IssueTableRow = {
 };
 
 describe('issue table hierarchy', () => {
-  it('defaults to zero depth and indents only the title, with the exact localized depth', () => {
+  it('uses a bounded tree gutter and keeps exact localized depth visually hidden', () => {
     const { container } = render(
       <IssueTable
-        rows={[root, { ...root, id: 'child', title: 'Child', depth: 20 }]}
+        rows={[root, { ...root, id: 'child', title: 'Child', depth: 20000 }]}
         labels={issuesZhCN.table}
       />,
     );
     expect(container.querySelector('[data-issue-depth="0"]')).toContainElement(
       screen.getByText('Parent'),
     );
-    const child = container.querySelector('[data-issue-depth="20"]');
-    expect(child).toContainElement(screen.getByText('第 20 层'));
-    expect(child).toHaveStyle({ paddingInlineStart: 'min(320px, 25cqw)' });
+    const child = container.querySelector('[data-issue-depth="20000"]');
+    expect(child).toContainElement(screen.getByText('第 20000 层'));
+    expect(screen.getByText('第 20000 层')).toHaveClass('sr-only');
+    expect(child).toHaveStyle({
+      paddingInlineStart: 'calc(20000 * min(16px, calc(25cqw / 20000)))',
+    });
     expect(child).not.toContainElement(screen.getAllByText('TASK-1')[1]!);
+    const tree = screen
+      .getByText('Child')
+      .closest('td')!
+      .querySelector('[data-issue-tree]');
+    expect(tree).toHaveAttribute('aria-hidden', 'true');
+    expect(tree?.children).toHaveLength(32);
+    expect(
+      screen
+        .getByText('Parent')
+        .closest('td')!
+        .querySelector('[data-issue-tree]'),
+    ).toBeNull();
+  });
+
+  it('continues sibling rails through descendants and stops them before the next root', () => {
+    const { container } = render(
+      <IssueTable
+        rows={[
+          root,
+          { ...root, id: 'first', title: 'First child', depth: 1 },
+          { ...root, id: 'nested', title: 'Grandchild', depth: 2 },
+          { ...root, id: 'last', title: 'Last child', depth: 1 },
+          { ...root, id: 'other', title: 'Other parent' },
+          { ...root, id: 'only', title: 'Only child', depth: 1 },
+        ]}
+      />,
+    );
+    const rails = (title: string) =>
+      Array.from(
+        screen
+          .getByText(title)
+          .closest('td')!
+          .querySelectorAll('[data-tree-rail]'),
+        (rail) => rail.getAttribute('data-tree-rail'),
+      );
+    expect(rails('First child')).toEqual(['continue']);
+    expect(rails('Grandchild')).toEqual(['continue', 'end']);
+    expect(rails('Last child')).toEqual(['end']);
+    expect(rails('Other parent')).toEqual([]);
+    expect(rails('Only child')).toEqual(['end']);
+    expect(container.querySelectorAll('[data-issue-tree]')).toHaveLength(4);
   });
 
   it('opens plain links and rows while leaving modifier clicks to the browser', () => {

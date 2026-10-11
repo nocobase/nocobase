@@ -197,7 +197,11 @@ test('deep issue tables retain label prefixes and sorting on phone and desktop i
     });
   });
   // Keep appearance changes local to this test; other workers use the same demo account.
-  let appearance = { locale: 'zh-CN', 'theme.mode': 'light' };
+  let appearance = {
+    locale: 'zh-CN',
+    'theme.mode': 'light',
+    'theme.preset': 'compact',
+  };
   await page.route('**/api/users/me/preferences**', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({ json: { data: appearance } });
@@ -211,14 +215,32 @@ test('deep issue tables retain label prefixes and sorting on phone and desktop i
     await page.setViewportSize({ width, height: 844 });
     for (const locale of ['zh-CN', 'en-US']) {
       for (const mode of ['light', 'dark']) {
-        appearance = { locale, 'theme.mode': mode };
+        const preset = mode === 'light' ? 'compact' : 'default';
+        appearance = { locale, 'theme.mode': mode, 'theme.preset': preset };
         await page.evaluate(
           `localStorage.setItem('nocobase.locale', ${JSON.stringify(locale)});` +
+            `localStorage.setItem('nocobase:main:theme:preset', ${JSON.stringify(preset)});` +
             `localStorage.setItem('nocobase:main:theme:color-scheme', ${JSON.stringify(mode)});`,
         );
         await open(page, `/issues?view=list&q=${tag}`);
         const table = page.getByRole('table');
         await expect(table.getByRole('link')).toHaveCount(9);
+        await expect(table.locator('[data-issue-tree]')).toHaveCount(8);
+        // Depth remains available to assistive technology without occupying a visible line.
+        const depthText = table.getByText(
+          locale === 'zh-CN' ? '第 1 层' : 'Level 1',
+          { exact: true },
+        );
+        await expect(depthText).toHaveClass('sr-only');
+        const depthBounds = await depthText.boundingBox();
+        expect(depthBounds?.width).toBeLessThanOrEqual(1);
+        expect(depthBounds?.height).toBeLessThanOrEqual(1);
+        const rails = table
+          .locator('[data-issue-tree]')
+          .first()
+          .locator('[data-tree-rail]');
+        await expect(rails).toHaveCount(1);
+        await expect(rails).toHaveAttribute('data-tree-rail', 'end');
         expect(await table.getByRole('link').allTextContents()).toEqual(
           identifiers,
         );
