@@ -1,0 +1,17 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick start"
+  },
+  {
+    "type": "file",
+    "name": "automation",
+    "label": "Time limits and external coordination"
+  }
+]

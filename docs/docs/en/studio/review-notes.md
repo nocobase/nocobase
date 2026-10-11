@@ -245,3 +245,11 @@ The SHA must match the commit the archive was built from. The approximately 82 M
 Expand the PR under the issue's **Code and deployments** and open its Preview entry. The preview returned HTTP 200 at `http://localhost:14100/northstar-logistics-pr-2/`. The application PR remains unmerged.
 
 Result update, 2026-10-11: Actions run 38101994173 built successfully through the public IP HTTP relay, but upload returned HTTP 408 after approximately 329 seconds; the specific timeout source remains unconfirmed. After switching to saved artifacts, run 38102660812 succeeded. The local machine downloaded the 82,076,714-byte archive for commit 4a0c6f7c352ed02cf63722cc636cb44587fd9903 and uploaded it through the local CLI. Studio recorded a succeeded build, Preview became Ready, and local access returned HTTP 200. This verifies the build, archive reception, and deployment; it does not establish that automatic cloud uploads are fixed.
+
+## Preview login credentials are difficult to discover
+
+**User feedback, 2026-10-11:** Preview is ready, but the application requires a username and password. Credentials are nested under the issue’s Code and deployments → expanded PR → First administrator. Without guidance, users struggle to find them and cannot continue signing in even though deployment is complete.
+
+**Documentation workaround:** The main guide now explains where to find and copy the credentials, without recording the actual password. This does not establish that the UI issue has been fixed.
+
+**Suggestion, pending developer confirmation:** Add a visible “View login information” entry beside the Preview link, or explain the credential location when Preview is first opened, while preserving access controls.
