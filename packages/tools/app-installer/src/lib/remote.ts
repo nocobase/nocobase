@@ -5,11 +5,13 @@ import { createReadStream } from 'node:fs';
 import { mkdtemp, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Flags } from '@oclif/core';
 import { quoteForShell } from '@nocobase/cli-envelope';
 import { createOfflineBundle } from './offline-bundle.ts';
 import { CommandFailedError, runCommand } from './run-command.ts';
-import { EXIT_INVALID, InstallerError } from './errors.ts';
+import { EXIT_INVALID, InstallerError, type Suggestion } from './errors.ts';
+import { INSTALLER_PACKAGE } from './invocation.ts';
 import { checkHealth } from './health.ts';
 import type { CommandDeps, CommandOutcome } from '../commands/install.ts';
 
@@ -83,6 +85,52 @@ export function sshArgs(flags: RemoteFlags, scp = false): string[] {
   if (flags['ssh-identity']) args.push('-i', String(flags['ssh-identity']));
   if (flags['ssh-config']) args.push('-F', String(flags['ssh-config']));
   return args;
+}
+
+/** Keep recovery commands on the machine whose files and processes they address. */
+function remoteSuggestion(
+  suggestion: Suggestion,
+  flags: RemoteFlags,
+): Suggestion {
+  const run = suggestion.run;
+  if (!run) return suggestion;
+  const installerIndex =
+    run.command === 'npx'
+      ? run.args.findIndex((arg) => arg.startsWith(INSTALLER_PACKAGE + '@'))
+      : -1;
+  if (installerIndex >= 0) {
+    const connection = Object.entries(flags)
+      .filter(([key, value]) => key in SSH_FLAGS && value !== undefined)
+      .flatMap(([key, value]) => [`--${key}`, String(value)]);
+    return {
+      ...suggestion,
+      run: {
+        command: process.execPath,
+        args: [
+          fileURLToPath(new URL('../../bin/run.js', import.meta.url)),
+          ...run.args.slice(installerIndex + 1),
+          ...connection,
+        ],
+      },
+    };
+  }
+  // Archive rebuilds and dependency changes belong in the local application project.
+  if (run.command === 'pnpm')
+    return {
+      ...suggestion,
+      message: `In the local application project: ${suggestion.message}`,
+    };
+  return {
+    ...suggestion,
+    run: {
+      command: 'ssh',
+      args: [
+        ...sshArgs(flags),
+        String(flags.ssh),
+        [run.command, ...run.args].map(quoteForShell).join(' '),
+      ],
+    },
+  };
 }
 
 /** Read the manifest without extracting executable files on the local machine. */
@@ -292,6 +340,11 @@ export async function runRemote(
         { input: JSON.stringify(request), timeoutMs },
       );
     } catch (error) {
+      if (error instanceof InstallerError && error.code === 'INTERRUPTED')
+        throw new Error(
+          'Local SSH execution was interrupted before returning a remote result.',
+          { cause: error },
+        );
       if (
         !(error instanceof CommandFailedError) ||
         error.exitCode === 255 ||
@@ -308,6 +361,7 @@ export async function runRemote(
       error?: {
         code: string;
         message: string;
+        suggestions?: Suggestion[];
         details?: Record<string, unknown>;
       };
       warnings?: string[];
@@ -334,12 +388,9 @@ export async function runRemote(
             directory: root,
             staging,
           },
-          suggestions: [
-            {
-              message:
-                'Retry the same SSH command after addressing this error; for a confirmation request, review the notes before adding --yes.',
-            },
-          ],
+          suggestions: (envelope.error?.suggestions ?? []).map((suggestion) =>
+            remoteSuggestion(suggestion, flags),
+          ),
         },
       );
     const result = envelope.result ?? {};
