@@ -29,7 +29,7 @@ title: '会签、或签与通过规则'
 
 ## 查看规则示意
 
-![会签需要全部同意，或签只需任一人同意](../assets/approval-joint-rules.svg)
+![会签需要全部同意，或签只需任一人同意](../assets/approval-joint-rules.png)
 
 **同样是多人参与，会签等待全部同意，或签在任一人同意后通过。**
 
