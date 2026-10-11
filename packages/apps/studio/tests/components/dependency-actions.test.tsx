@@ -4,7 +4,12 @@ import type { ReactNode } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
 const { api, error } = vi.hoisted(() => ({
-  api: { issue: vi.fn(), addDependency: vi.fn(), removeDependency: vi.fn() },
+  api: {
+    issue: vi.fn(),
+    addDependency: vi.fn(),
+    removeDependency: vi.fn(),
+    updateDependency: vi.fn(),
+  },
   error: vi.fn(),
 }));
 vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
@@ -18,6 +23,15 @@ vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
 const { useDependencyActions } =
   await import('../../client/issues/detail/dependency-actions.js');
 beforeEach(() => vi.resetAllMocks());
+
+const dependency = {
+  id: 'link',
+  issueId: 'b',
+  identifier: 'PM-2',
+  title: 'Second',
+  href: '/issues/b',
+  status: { name: 'Todo', color: 'gray' },
+} as const;
 
 function setup() {
   const client = new QueryClient({
@@ -52,30 +66,37 @@ it('passes the selected type and invalidates both details, identifier aliases an
   expect(error).not.toHaveBeenCalled();
 });
 
-it('reports a refused conversion, leaves the original link and refreshes stale details', async () => {
+it.each(['blockedBy', 'relatedTo'] as const)(
+  'converts to %s in one conditional server update and refreshes both ends',
+  async (type) => {
+    const { result, client, keys } = setup();
+    await act(() => result.current.change(dependency, type));
+    expect(api.updateDependency).toHaveBeenCalledExactlyOnceWith('a', 'link', {
+      type,
+      expectedType: type === 'blockedBy' ? 'relatedTo' : 'blockedBy',
+    });
+    expect(api.issue).not.toHaveBeenCalled();
+    expect(api.addDependency).not.toHaveBeenCalled();
+    expect(api.removeDependency).not.toHaveBeenCalled();
+    for (const key of keys)
+      expect(client.getQueryState(key)?.isInvalidated).toBe(true);
+    expect(error).not.toHaveBeenCalled();
+  },
+);
+
+it('reports a refused conversion and refreshes stale details without retrying destructive writes', async () => {
   const { result, client, keys } = setup();
-  api.issue.mockResolvedValue({
-    blockedBy: [],
-    relatedTo: [{ dependencyId: 'link', issueId: 'b', type: 'relatedTo' }],
-  });
-  const refused = new Error('Cyclic dependency');
-  api.addDependency.mockRejectedValue(refused);
+  const refused = new Error('DEPENDENCY_CHANGED');
+  api.updateDependency.mockRejectedValue(refused);
   await act(async () => {
-    await expect(
-      result.current.change(
-        {
-          id: 'link',
-          issueId: 'b',
-          identifier: 'PM-2',
-          title: 'Second',
-          href: '/issues/b',
-          status: { name: 'Todo', color: 'gray' },
-        },
-        'blockedBy',
-      ),
-    ).rejects.toBe(refused);
+    await expect(result.current.change(dependency, 'blockedBy')).rejects.toBe(
+      refused,
+    );
   });
   expect(error).toHaveBeenCalledExactlyOnceWith(refused);
+  expect(api.updateDependency).toHaveBeenCalledTimes(1);
+  expect(api.issue).not.toHaveBeenCalled();
+  expect(api.addDependency).not.toHaveBeenCalled();
   expect(api.removeDependency).not.toHaveBeenCalled();
   for (const key of keys)
     expect(client.getQueryState(key)?.isInvalidated).toBe(true);

@@ -122,6 +122,7 @@ import {
   type AddDependencyRequest,
   type DependencyType,
   type IssueDependency,
+  type UpdateDependencyRequest,
 } from '../../shared/subtasks.js';
 import type {
   CreateWorkflowRequest,
@@ -479,6 +480,15 @@ export const AddDependencyBody: z.ZodType<AddDependencyRequest> =
 /** `POST /projects/issues/{issueId}/removeDependency`: the link to another issue, by that issue and the type. */
 export const RemoveDependencyBody: z.ZodType<AddDependencyRequest> =
   AddDependencyBody;
+
+export const UpdateDependencyBody: z.ZodType<UpdateDependencyRequest> =
+  z.strictObject({
+    type: z.enum(['blockedBy', 'relatedTo']),
+    expectedType: z.enum(['blockedBy', 'relatedTo']).meta({
+      description:
+        'The relationship type the caller read; a stale value is a conflict.',
+    }),
+  });
 
 // Comments and approvals
 

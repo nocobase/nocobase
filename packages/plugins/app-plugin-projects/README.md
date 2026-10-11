@@ -182,6 +182,7 @@ Everything is under `/api/projects` and needs a session (401 otherwise). Respons
 | `GET /issues/{issueId}/checklists`                                                 | Every checklist the issue has had                           |
 | `PATCH /issues/{issueId}/checklists/{statusKey}/items/{itemKey}`                   | Checks or unchecks an item (`{ checked }`)                  |
 | `POST /issues/{issueId}/dependencies`                                              | Adds a link (`{ dependsOnIssueId, type }`)                  |
+| `PATCH /issues/{issueId}/dependencies/{dependencyId}`                              | Changes a link type (`{ type, expectedType }`) atomically   |
 | `DELETE /issues/{issueId}/dependencies/{dependencyId}`                             | Removes a link                                              |
 | `POST /issues/{issueId}/removeDependency`                                          | Removes the link to an issue (`{ dependsOnIssueId, type }`) |
 | `GET /approvals`                                                                   | Status changes waiting for the caller's approval            |
@@ -195,6 +196,8 @@ Everything is under `/api/projects` and needs a session (401 otherwise). Respons
 | `POST /intake/split`, `POST /intake/extractTexts`                                  | The rule split; the uploads' text                           |
 | `GET /intake/aiAvailability`                                                       | Whether AI can be asked                                     |
 | `POST /intake/aiJobs`, `GET …/{jobId}`, `POST …/{jobId}/cancel`                    | A request to AI; cancelling it                              |
+
+Relationship conversion preserves the link ID and checks the type the caller read (`expectedType`). A stale change returns 409 `DEPENDENCY_CHANGED`; if the target relationship already exists, it returns 409 `DEPENDENCY_EXISTS` and keeps both links. A related link may be converted from either end: the current issue becomes the waiting issue when changed to `blockedBy`.
 
 Cursor lists (issues, activities, comment threads, plans) take `pageSize` (20 by default, at most 100; plans 50) and `pageToken`, and answer `meta.nextPageToken` until the last page. `orderBy` on issues is `updatedAt`, `createdAt`, `number` or `priority`, optionally followed by `asc` or `desc` (`updatedAt desc` by default). The other lists are answered whole with `meta.total`. A scoped API key may not use `/intake` or `/plans` (403 `SCOPED_KEY_FORBIDDEN`).
 

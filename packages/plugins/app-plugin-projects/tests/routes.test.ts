@@ -417,6 +417,148 @@ describe('a caller acting for someone else', () => {
 });
 
 describe('dependencies over HTTP', () => {
+  it('refuses delegated conversion without changing the relationship', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const link = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    const write = vi.fn();
+    container.instance(projectsDelegatedWritesToken, {
+      covers: () => true,
+      write,
+    });
+    const response = await call(
+      `/issues/${a.identifier}/dependencies/${link.dependencyId}`,
+      {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({ expectedType: 'relatedTo', type: 'blockedBy' }),
+      },
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: { status: 'FAILED_PRECONDITION', reason: 'PLAN_REQUIRED' },
+    });
+    expect(write).not.toHaveBeenCalled();
+    const detail = await h.services.issueQueries.detail(viewer, a.id);
+    expect(detail.relatedTo).toEqual([link]);
+    expect(detail.blockedBy).toEqual([]);
+  });
+
+  it('changes a relationship in place and reports a stale expected type as 409', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const link = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    const path = `/issues/${a.identifier}/dependencies/${link.dependencyId}`;
+    const body = JSON.stringify({
+      expectedType: 'relatedTo',
+      type: 'blockedBy',
+    });
+    const changed = await call(path, { role: 'member', method: 'PATCH', body });
+    expect(changed.status).toBe(200);
+    expect(await changed.json()).toMatchObject({
+      data: {
+        dependencyId: link.dependencyId,
+        issueId: b.id,
+        type: 'blockedBy',
+      },
+    });
+    const stale = await call(path, { role: 'member', method: 'PATCH', body });
+    expect(stale.status).toBe(409);
+    expect(await stale.json()).toMatchObject({
+      error: {
+        status: 'ABORTED',
+        reason: 'DEPENDENCY_CHANGED',
+        domain: 'projects',
+      },
+    });
+    const detail = await h.services.issueQueries.detail(viewer, a.id);
+    expect(detail.blockedBy).toEqual([
+      expect.objectContaining({
+        dependencyId: link.dependencyId,
+        type: 'blockedBy',
+      }),
+    ]);
+    expect(detail.relatedTo).toEqual([]);
+  });
+
+  it('returns two conflicts and keeps both relationships for opposite concurrent changes', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const blocking = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+    });
+    const related = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    const responses = await Promise.all([
+      call(`/issues/${a.identifier}/dependencies/${blocking.dependencyId}`, {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({ expectedType: 'blockedBy', type: 'relatedTo' }),
+      }),
+      call(`/issues/${a.identifier}/dependencies/${related.dependencyId}`, {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({ expectedType: 'relatedTo', type: 'blockedBy' }),
+      }),
+    ]);
+    for (const response of responses) {
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({
+        error: { reason: 'DEPENDENCY_EXISTS', domain: 'projects' },
+      });
+    }
+    const detail = await h.services.issueQueries.detail(viewer, a.id);
+    expect(detail.blockedBy).toEqual([blocking]);
+    expect(detail.relatedTo).toEqual([related]);
+    expect(detail.blockers).toHaveLength(1);
+  });
+
+  it('authenticates and authorizes conversion before validating input', async () => {
+    const path = '/issues/PM-1/dependencies/missing';
+    const anonymous = await call(path, { method: 'PATCH', body: '{}' });
+    expect(anonymous.status).toBe(401);
+    const forbidden = await call(path, {
+      role: 'none',
+      method: 'PATCH',
+      body: '[]',
+    });
+    expect(forbidden.status).toBe(403);
+    expect(await forbidden.json()).toMatchObject({
+      error: {
+        status: 'PERMISSION_DENIED',
+        reason: 'FORBIDDEN',
+        domain: 'projects',
+      },
+    });
+  });
+
+  it.each([
+    { type: 'relatedTo' },
+    { expectedType: 'blockedBy', type: 'blocks' },
+    { expectedType: 'blockedBy', type: 'relatedTo', dependsOnIssueId: 'PM-2' },
+  ])('rejects an invalid conversion body %j', async (body) => {
+    const response = await call('/issues/PM-1/dependencies/missing', {
+      role: 'member',
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: { reason: 'INVALID_INPUT', fieldViolations: expect.any(Array) },
+    });
+  });
+
   it('links with 201, refuses a cycle with 400, and unlinks with 204', async () => {
     for (const title of ['A', 'B'])
       await call('/issues', {

@@ -43,6 +43,7 @@ const ALREADY_EXISTS_CODES: ReadonlySet<string> = new Set([
 ]);
 /** A concurrent change won: read again and retry. */
 const ABORTED_CODES: ReadonlySet<string> = new Set([
+  'DEPENDENCY_CHANGED',
   'REVISION_CONFLICT',
   'UNDO_STALE',
 ]);

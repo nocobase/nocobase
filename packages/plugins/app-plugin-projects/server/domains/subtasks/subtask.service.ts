@@ -16,6 +16,7 @@ import {
   type DependencyType,
   type IssueDependency,
   type SubtaskSummary,
+  type UpdateDependencyRequest,
 } from '../../../shared/subtasks.js';
 import type { Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
@@ -57,6 +58,7 @@ import {
   incoming,
   insertDependency,
   outgoing,
+  updateDependency,
   type DependencyRecord,
 } from './subtask.store.js';
 
@@ -65,6 +67,13 @@ export interface SubtaskService {
     viewer: Viewer,
     idOrKey: string,
     input: AddDependencyRequest,
+  ): Promise<IssueDependency>;
+  /** Changes one link in place. An existing target type is refused rather than merging two links. */
+  updateDependency(
+    viewer: Viewer,
+    idOrKey: string,
+    dependencyId: string,
+    input: UpdateDependencyRequest,
   ): Promise<IssueDependency>;
   removeDependency(
     viewer: Viewer,
@@ -303,6 +312,97 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
             await deps.triggers().onBlocked?.(tx, { issue, blockers });
         }
         return dependencyView(catalogs, dependency, other);
+      });
+    },
+
+    async updateDependency(viewer, idOrKey, dependencyId, input) {
+      requireEditor(viewer);
+      return deps.tx.run(async (tx) => {
+        const issue = await requireVisible(tx.conn, viewer, idOrKey);
+        const before = removable(
+          issue,
+          await findDependency(tx.conn, dependencyId),
+        );
+        if (!before) throw notFound('Dependency');
+        if (input?.type === undefined || input.expectedType === undefined)
+          throw invalid(
+            'INVALID_DEPENDENCY',
+            'type and expectedType are required.',
+          );
+        const type = dependencyType(input.type);
+        if (before.type !== dependencyType(input.expectedType))
+          throw conflict(
+            'DEPENDENCY_CHANGED',
+            'The relationship was changed meanwhile. Reload and retry.',
+          );
+        const other = await target(
+          tx.conn,
+          viewer,
+          issue,
+          before.issueId === issue.id
+            ? before.dependsOnIssueId
+            : before.issueId,
+        );
+        const catalogs = catalogsFor(deps.statuses, tx.conn);
+        if (before.type === type)
+          return dependencyView(catalogs, before, other);
+        // Do not merge two links by deleting one: two opposite conversions could otherwise delete both.
+        if (
+          (await findDependencyBetween(tx.conn, issue.id, other.id, type)) ||
+          (type === 'relatedTo' &&
+            (await findDependencyBetween(tx.conn, other.id, issue.id, type)))
+        )
+          throw conflict(
+            'DEPENDENCY_EXISTS',
+            'The target relationship already exists. Remove the unwanted link explicitly.',
+          );
+        const after = {
+          ...before,
+          issueId: issue.id,
+          dependsOnIssueId: other.id,
+          type,
+        };
+        try {
+          const changed = await tx.conn.transaction((conn) =>
+            updateDependency(conn, before, after),
+          );
+          if (!changed)
+            throw conflict(
+              'DEPENDENCY_CHANGED',
+              'The relationship was changed or removed meanwhile. Reload and retry.',
+            );
+        } catch (error) {
+          if (isUniqueViolation(error))
+            throw conflict(
+              'DEPENDENCY_EXISTS',
+              'The target relationship already exists. Remove the unwanted link explicitly.',
+            );
+          throw error;
+        }
+        if (type === 'blockedBy') await assertNoCycleThrough(tx.conn, issue.id);
+        await record(tx, before.issueId, viewer.actor, 'dependency_removed', {
+          dependencyId,
+          dependsOnIssueId: before.dependsOnIssueId,
+          identifier:
+            before.issueId === issue.id ? other.identifier : issue.identifier,
+          type: before.type,
+        });
+        await record(tx, issue.id, viewer.actor, 'dependency_added', {
+          dependencyId,
+          dependsOnIssueId: other.id,
+          identifier: other.identifier,
+          type,
+        });
+        tx.emit({ type: 'issue.changed', issueId: issue.id });
+        tx.emit({ type: 'issue.changed', issueId: other.id });
+        if (type === 'blockedBy') {
+          const blockers = await blockersOf(tx.conn, catalogs, issue);
+          if (blockers.length > 0)
+            await deps.triggers().onBlocked?.(tx, { issue, blockers });
+        } else {
+          await releaseIfFree(deps, tx, catalogs, issue, other, viewer.actor);
+        }
+        return dependencyView(catalogs, after, other);
       });
     },
 
