@@ -17,8 +17,34 @@ export function subjectControlsRepo(
   return conn.repository<SubjectControlRecord>('agSubjectControls');
 }
 
-const idOf = (subject: SubjectPause['subject']): string =>
+export const subjectControlId = (subject: SubjectPause['subject']): string =>
   JSON.stringify([subject.kind, subject.id]);
+
+const PAUSE_LOOKUP_CHUNK = 50;
+
+/**
+ * The pauses of those of `subjects` that are paused, by control id. Looks them up in fixed-size chunks so no query
+ * grows with the number of paused subjects or of subjects given.
+ */
+export async function pausesAmong(
+  conn: DatabaseConnection,
+  subjects: readonly SubjectPause['subject'][],
+): Promise<Map<string, SubjectPause>> {
+  const ids = [...new Set(subjects.map(subjectControlId))];
+  const pauses = new Map<string, SubjectPause>();
+  for (let start = 0; start < ids.length; start += PAUSE_LOOKUP_CHUNK) {
+    const chunk = ids.slice(start, start + PAUSE_LOOKUP_CHUNK);
+    const rows = await subjectControlsRepo(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.or(chunk.map((id) => f.string('id').eq(id))),
+          f.date('pausedAt').notEmpty(),
+        ]),
+    });
+    for (const row of rows) pauses.set(row.id, toSubjectPause(row));
+  }
+  return pauses;
+}
 
 export function toSubjectPause(row: SubjectControlRecord): SubjectPause {
   return {
@@ -35,7 +61,7 @@ export async function readSubjectPause(
   subject: SubjectPause['subject'],
 ): Promise<SubjectPause> {
   const row = await subjectControlsRepo(conn).findOne({
-    filter: { id: idOf(subject) },
+    filter: { id: subjectControlId(subject) },
   });
   return row
     ? toSubjectPause(row)
@@ -48,7 +74,7 @@ export async function lockSubject(
   subject: SubjectPause['subject'],
   now: string,
 ): Promise<SubjectPause> {
-  const id = idOf(subject);
+  const id = subjectControlId(subject);
   await subjectControlsRepo(conn).upsertOne({
     filter: { id },
     create: {
@@ -71,7 +97,7 @@ export async function writeSubjectPause(
   at: string | null,
 ): Promise<SubjectPause> {
   await subjectControlsRepo(conn).updateMany({
-    filter: { id: idOf(subject) },
+    filter: { id: subjectControlId(subject) },
     values: { pausedByUserId: byUserId, pausedAt: at },
   });
   return readSubjectPause(conn, subject);

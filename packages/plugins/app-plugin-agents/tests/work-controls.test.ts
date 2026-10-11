@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import type { EnqueueRequest } from '../server/core/runs/index.js';
 import type { AgentsEvent } from '../server/kernel/events.js';
+import { RunSchema } from '../server/routes/schemas.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const BOTH = [
@@ -771,6 +772,80 @@ describe('work controls', () => {
     expect((await h.services.runs.detail(unpinned.runId!)).inputs).toHaveLength(
       2,
     );
+  });
+
+  it('keeps both runs’ required features when a tool change merges them', async () => {
+    const id = await agent();
+    const target = await enqueue(id, 'claude');
+    const source = await enqueue(id, 'codex', { requires: ['checkout'] });
+    await h.services.runs.changeTool(source.runId!, 'claude', 'owner');
+    const unpinned = await enqueue(id, undefined, {
+      subject: { kind: 'sample', id: '2' },
+    });
+    const pinned = await enqueue(id, 'codex', {
+      subject: { kind: 'sample', id: '2' },
+      requires: ['checkout'],
+    });
+    await h.services.runs.changeTool(pinned.runId!, null, 'owner');
+    for (const runId of [target.runId!, unpinned.runId!])
+      expect((await h.services.runs.get(runId)).requires).toEqual(['checkout']);
+    const bare = await h.registerRunner({ tools: [...BOTH], features: [] });
+    expect(await claim(h, bare, 4)).toHaveLength(0);
+    const able = await h.registerRunner({
+      tools: [...BOTH],
+      features: ['checkout'],
+      slots: 4,
+    });
+    expect((await claim(h, able, 4)).map((payload) => payload.run.id).sort()).toEqual(
+      [target.runId!, unpinned.runId!].sort(),
+    );
+  });
+
+  it('claims unrelated work however many subjects are paused', async () => {
+    const id = await agent();
+    const now = h.clock.now().toISOString();
+    await h.services.tx.run(async ({ conn }) => {
+      for (let i = 0; i < 1000; i++) {
+        const subjectId = `paused-${i}`;
+        await conn.repository('agSubjectControls').createOne({
+          values: {
+            id: JSON.stringify(['sample', subjectId]),
+            subjectKind: 'sample',
+            subjectId,
+            pausedByUserId: 'owner',
+            pausedAt: now,
+            lockAt: now,
+          },
+        });
+      }
+    });
+    // More paused work than one page of candidates, all ahead of the unrelated run in claim order.
+    for (let i = 0; i < 60; i++)
+      await enqueue(id, undefined, {
+        subject: { kind: 'sample', id: `paused-${i}` },
+      });
+    const active = await enqueue(id, undefined, {
+      subject: { kind: 'sample', id: 'active' },
+    });
+    const runner = await h.registerRunner({ tools: [...BOTH] });
+    expect((await claim(h, runner)).map((payload) => payload.run.id)).toEqual([
+      active.runId,
+    ]);
+    const { runs } = await h.services.runs.workload({
+      subjectKind: 'sample',
+      limit: 100,
+    });
+    expect(
+      runs.find((run) => run.subject.id === 'paused-0')?.wait,
+    ).toMatchObject({ reason: 'paused' });
+  });
+
+  it('keeps the requested tool through the public run schema', async () => {
+    const id = await agent();
+    const queued = await enqueue(id, 'codex');
+    expect(
+      RunSchema.parse(await h.services.runs.get(queued.runId!)).requestedTool,
+    ).toBe('codex');
   });
 
   it('does not expire paused work and restarts the expiry window on resume', async () => {

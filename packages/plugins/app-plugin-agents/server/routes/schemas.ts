@@ -875,6 +875,12 @@ const runObject = z.object({
     description:
       "A runner run's coding tool, the entry of the agent's list the runner took it with; null for an online run or before a claim.",
   }),
+  requestedTool: AgentToolSchema.nullable()
+    .optional()
+    .meta({
+      description:
+        'The coding tool chosen when the work was queued. A runner takes the run only with this tool and waits while its slots are full; null lets the runner take any listed tool. Absent from servers that predate it.',
+    }),
   modelService: z.string().nullable().meta({
     description:
       "An online run's model service, set when it is claimed; null for a runner run.",

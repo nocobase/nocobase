@@ -935,9 +935,17 @@ export function createRunService(deps: RunServiceDeps): RunService {
               ]),
             values: { runId: target.id, deliveredAt: null },
           });
+          // The merged work still needs whatever either run asked a runner to have.
           await runsRepo(unit.conn).updateMany({
             filter: { id: target.id, status: 'queued' },
-            values: { teamOnlyVariables: null, updatedAt: now },
+            values: {
+              requires: cleanList([
+                ...toRun(target).requires,
+                ...toRun(run).requires,
+              ]),
+              teamOnlyVariables: null,
+              updatedAt: now,
+            },
           });
           const ended = await finishRun(unit, deps, run, {
             status: 'cancelled',

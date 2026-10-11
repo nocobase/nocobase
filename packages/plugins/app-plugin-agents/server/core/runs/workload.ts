@@ -34,7 +34,7 @@ import {
   type RunRecord,
 } from './run.store.js';
 
-import { subjectControlsRepo, toSubjectPause } from './subject-controls.js';
+import { pausesAmong, subjectControlId } from './subject-controls.js';
 import type { SubjectPause } from '../../../shared/runs.js';
 
 const DEFAULT_LIMIT = 200;
@@ -280,25 +280,21 @@ export async function readWorkload(
   const truncated = open.length > limit;
   const mine = open.slice(0, limit);
 
-  const pauses = new Map(
-    (
-      await subjectControlsRepo(conn).findMany({
-        filter: (f) => f.date('pausedAt').notEmpty(),
-      })
-    ).map((row) => [
-      JSON.stringify([row.subjectKind, row.subjectId]),
-      toSubjectPause(row),
-    ]),
-  );
-  const pauseFor = (run: RunRecord): SubjectPause | undefined =>
-    pauses.get(JSON.stringify([run.subjectKind, run.subjectId]));
-
   const queued = (
     await runsRepo(conn).findMany({
       filter: { status: 'queued' },
       limit: QUEUE_SCAN,
     })
   ).sort(claimOrder);
+  const pauses = await pausesAmong(
+    conn,
+    [...queued, ...mine].map((run) => ({
+      kind: run.subjectKind,
+      id: run.subjectId,
+    })),
+  );
+  const pauseFor = (run: RunRecord): SubjectPause | undefined =>
+    pauses.get(subjectControlId({ kind: run.subjectKind, id: run.subjectId }));
   const held = await runsRepo(conn).findMany({
     filter: (f) => f.or(ACTIVE.map((status) => f.string('status').eq(status))),
   });

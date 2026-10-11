@@ -93,6 +93,29 @@ describe('agents API document', () => {
     expect(operations()).toHaveLength(routes.length);
   });
 
+  it('documents the requested tool on runs, run details and tool changes', () => {
+    const run = document.components?.schemas?.AgentsRun as
+      | OpenAPIV3_1.SchemaObject
+      | undefined;
+    expect(run?.properties).toHaveProperty('requestedTool');
+    expect(run?.required ?? []).not.toContain('requestedTool');
+    const detail = (
+      operation('GET', '/api/agents/runs/{runId}').responses?.[
+        '200'
+      ] as OpenAPIV3_1.ResponseObject
+    ).content?.['application/json']?.schema as OpenAPIV3_1.SchemaObject;
+    const data = detail.properties?.data as OpenAPIV3_1.SchemaObject;
+    expect(data.properties).toHaveProperty('requestedTool');
+    expect(data.required ?? []).not.toContain('requestedTool');
+    expect(
+      JSON.stringify(
+        operation('POST', '/api/agents/runs/{runId}/changeTool').responses?.[
+          '200'
+        ],
+      ),
+    ).toContain('#/components/schemas/AgentsRun"');
+  });
+
   it('documents work controls and derives the availability CLI', () => {
     expect(
       operation('GET', '/api/agents/{agentId}/availability').operationId,

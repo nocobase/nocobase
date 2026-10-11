@@ -130,7 +130,11 @@ import {
   type RunRecord,
 } from './run.store.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
-import { lockSubject, subjectControlsRepo } from './subject-controls.js';
+import {
+  lockSubject,
+  pausesAmong,
+  subjectControlId,
+} from './subject-controls.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
 /** Queued runs looked at per claim, oldest first by priority. */
@@ -1040,37 +1044,45 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     });
   }
 
-  /** Queued runs of agents of `type` that may be claimed now, in claim order. */
+  /**
+   * Queued runs of agents of `type` that may be claimed now, in claim order, leaving out those of paused subjects.
+   * Pages through the queue and checks each page's subjects, so the query stays the same size however many subjects
+   * are paused; the claim transaction checks the pause again.
+   */
   async function candidatesOf(type: 'online' | 'runner'): Promise<RunRecord[]> {
     const now = clock.now();
-    const paused = await subjectControlsRepo(tx.read()).findMany({
-      filter: (f) => f.date('pausedAt').notEmpty(),
-    });
-    return runsRepo(tx.read()).findMany({
-      filter: (f) =>
-        f.and([
-          f.string('status').eq('queued'),
-          f.string('agentType').eq(type),
-          ...paused.map((row) =>
+    const picked: RunRecord[] = [];
+    for (let offset = 0; picked.length < CANDIDATES; offset += CANDIDATES) {
+      const page = await runsRepo(tx.read()).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('status').eq('queued'),
+            f.string('agentType').eq(type),
+            // A consultation is taken by the holder of the run that asked it, never from the queue.
+            f.string('parentRunId').empty(),
             f.or([
-              f.string('subjectKind').ne(row.subjectKind),
-              f.string('subjectId').ne(row.subjectId),
+              f.date('availableAt').empty(),
+              f.date('availableAt').notAfter(now),
             ]),
-          ),
-          // A consultation is taken by the holder of the run that asked it, never from the queue.
-          f.string('parentRunId').empty(),
-          f.or([
-            f.date('availableAt').empty(),
-            f.date('availableAt').notAfter(now),
           ]),
-        ]),
-      sort: (sort) => [
-        sort.field('priority').asc(),
-        sort.field('createdAt').asc(),
-        sort.field('id').asc(),
-      ],
-      limit: CANDIDATES,
-    });
+        sort: (sort) => [
+          sort.field('priority').asc(),
+          sort.field('createdAt').asc(),
+          sort.field('id').asc(),
+        ],
+        limit: CANDIDATES,
+        offset,
+      });
+      const subjectOf = (run: RunRecord) => ({
+        kind: run.subjectKind,
+        id: run.subjectId,
+      });
+      const paused = await pausesAmong(tx.read(), page.map(subjectOf));
+      for (const run of page)
+        if (!paused.has(subjectControlId(subjectOf(run)))) picked.push(run);
+      if (page.length < CANDIDATES) break;
+    }
+    return picked.slice(0, CANDIDATES);
   }
 
   /** Takes an online run for `holder` in one transaction, or skips it when another holder or run got there first. */
