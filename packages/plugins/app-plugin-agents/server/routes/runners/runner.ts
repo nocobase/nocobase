@@ -63,7 +63,7 @@ import { z } from 'zod';
 
 import type { Runner } from '../../../shared/runners.js';
 import type { Agents } from '../../composition.js';
-import { upgradeFor } from '../../distribution/index.js';
+import { upgradeFields, upgradeFor } from '../../distribution/index.js';
 import { domainRouter } from '../../kernel/http.js';
 import { upgradeRequiredOf, type RunnerEnv } from '../../runners/index.js';
 import { ClaimQuery, JobParams } from '../schemas.js';
@@ -243,7 +243,7 @@ export function createRunnerRoutes(
       // Runner protocol: only a runner calls it.
       ...cliRoute(false),
       description:
-        "Reports what the runner holds and its load, every `heartbeatIntervalMs`, and answers which runs and jobs to cancel or release, and whether an upgrade is available. A runner of a protocol this application does not serve is answered with `compatibility` and told to release everything it holds. The body is validated in the handler, against what the runner's protocol allows.",
+        "Reports what the runner holds and its load, every `heartbeatIntervalMs`, and answers which runs and jobs to cancel or release, and whether an upgrade is available: a tarball in `upgrade`, or, only to a runner with the `npm` feature when the application has no tarball of its product, a package to install from npm in `npmUpgrade`. A runner of a protocol this application does not serve is answered with `compatibility` and told to release everything it holds. The body is validated in the handler, against what the runner's protocol allows.",
       security: runnerKeySecurity,
       parameters: [protocolHeader],
       requestBody: jsonRequestBody(HeartbeatRequestSchema),
@@ -269,7 +269,7 @@ export function createRunnerRoutes(
         const response: HeartbeatResponse = {
           ok: true,
           serverTime: services.clock.now().toISOString(),
-          ...(upgrade ? { upgrade } : {}),
+          ...upgradeFields(upgrade),
           compatibility: upgradeRequiredOf(runner.protocolVersion),
           cancelRequested: [],
           release: request.active.map((run) => run.runId),
@@ -300,7 +300,7 @@ export function createRunnerRoutes(
       const response: HeartbeatResponse = {
         ok: true,
         serverTime: services.clock.now().toISOString(),
-        ...(upgrade ? { upgrade } : {}),
+        ...upgradeFields(upgrade),
         cancelRequested,
         release,
         ...(jobs ? { jobs } : {}),
