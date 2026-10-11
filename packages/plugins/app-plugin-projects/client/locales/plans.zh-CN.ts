@@ -194,6 +194,8 @@ const plansZhCN: typeof plansEnUS = {
     removeFile: '移除 {{name}}',
     uploading: '上传中…',
     uploadFailed: '{{name}} 上传失败。',
+    removeFailed: '无法删除 {{name}}，请重试以清理上传文件。',
+    retryRemove: '重试删除 {{name}}',
     tooManyFiles: '最多 {{count}} 个文件。',
     fileTooLarge: '{{name}} 超过 {{size}} MB。',
     project: '默认项目',

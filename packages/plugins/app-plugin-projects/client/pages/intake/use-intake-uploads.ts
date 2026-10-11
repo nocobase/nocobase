@@ -15,6 +15,8 @@ export interface Upload {
   readonly key: string;
   readonly name: string;
   readonly file: IntakeFile | null;
+  readonly removed?: boolean;
+  readonly removalFailed?: boolean;
 }
 
 export interface IntakeUploads {
@@ -39,9 +41,36 @@ export function useIntakeUploads(): IntakeUploads {
   const notify = useNotify();
   const [uploads, setUploads] = useState<readonly Upload[]>([]);
   const counterRef = useRef(0);
+  // Keep removal decisions available to upload callbacks, including before React's next render.
+  const currentRef = useRef<readonly Upload[]>([]);
+
+  function update(
+    change: (current: readonly Upload[]) => readonly Upload[],
+  ): void {
+    currentRef.current = change(currentRef.current);
+    setUploads(currentRef.current);
+  }
+
+  async function cleanup(key: string, file: IntakeFile): Promise<void> {
+    try {
+      await api.removeIntakeFile(file.id);
+      update((current) => current.filter((upload) => upload.key !== key));
+    } catch (error) {
+      update((current) =>
+        current.map((upload) =>
+          upload.key === key
+            ? { ...upload, file, removalFailed: true }
+            : upload,
+        ),
+      );
+      notify.error(error, t('intake.removeFailed', { name: file.filename }));
+    }
+  }
 
   function add(files: readonly File[]): void {
-    const room = INTAKE_FILES_MAX - uploads.length;
+    const room =
+      INTAKE_FILES_MAX -
+      currentRef.current.filter((upload) => !upload.removed).length;
     if (files.length > room)
       notify.error(null, t('intake.tooManyFiles', { count: INTAKE_FILES_MAX }));
     for (const file of files.slice(0, Math.max(room, 0))) {
@@ -54,23 +83,22 @@ export function useIntakeUploads(): IntakeUploads {
       }
       counterRef.current += 1;
       const key = `upload-${counterRef.current}`;
-      setUploads((current) => [
-        ...current,
-        { key, name: file.name, file: null },
-      ]);
+      update((current) => [...current, { key, name: file.name, file: null }]);
       api
         .uploadIntakeFile(file)
-        .then((stored) =>
-          setUploads((current) =>
+        .then((stored) => {
+          const upload = currentRef.current.find(
+            (candidate) => candidate.key === key,
+          );
+          if (upload?.removed) return cleanup(key, stored);
+          update((current) =>
             current.map((upload) =>
               upload.key === key ? { ...upload, file: stored } : upload,
             ),
-          ),
-        )
-        .catch((error: unknown) => {
-          setUploads((current) =>
-            current.filter((upload) => upload.key !== key),
           );
+        })
+        .catch((error: unknown) => {
+          update((current) => current.filter((upload) => upload.key !== key));
           notify.error(error, t('intake.uploadFailed', { name: file.name }));
         });
     }
@@ -78,18 +106,28 @@ export function useIntakeUploads(): IntakeUploads {
 
   return {
     uploads,
-    files: uploads.flatMap((upload) => (upload.file ? [upload.file] : [])),
-    uploading: uploads.some((upload) => upload.file === null),
+    files: uploads.flatMap((upload) =>
+      !upload.removed && upload.file ? [upload.file] : [],
+    ),
+    uploading: uploads.some(
+      (upload) => !upload.removed && upload.file === null,
+    ),
     add,
     remove: (key) => {
-      const upload = uploads.find((candidate) => candidate.key === key);
-      setUploads((current) =>
-        current.filter((candidate) => candidate.key !== key),
+      const upload = currentRef.current.find(
+        (candidate) => candidate.key === key,
       );
-      if (upload?.file)
-        void api.removeIntakeFile(upload.file.id).catch(() => undefined);
+      if (!upload || (upload.removed && !upload.removalFailed)) return;
+      update((current) =>
+        current.map((candidate) =>
+          candidate.key === key
+            ? { ...candidate, removed: true, removalFailed: false }
+            : candidate,
+        ),
+      );
+      if (upload.file) void cleanup(key, upload.file);
     },
-    clear: () => setUploads([]),
+    clear: () => update(() => []),
     onDragOver: (event) => {
       if (event.dataTransfer.types.includes('Files')) event.preventDefault();
     },

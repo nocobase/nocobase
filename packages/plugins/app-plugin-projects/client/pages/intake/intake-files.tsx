@@ -42,7 +42,12 @@ export function IntakeFiles({
   const inputRef = useRef<HTMLInputElement>(null);
   const images: AttachmentFile[] = uploads.uploads.flatMap((upload) => {
     const file = upload.file;
-    if (!file || !isInlinePreviewable(file.mimeType, file.ext)) return [];
+    if (
+      upload.removed ||
+      !file ||
+      !isInlinePreviewable(file.mimeType, file.ext)
+    )
+      return [];
     const url = resolveAppUrl(
       `api/projects/attachments/${encodeURIComponent(file.id)}/content`,
     );
@@ -85,7 +90,10 @@ export function IntakeFiles({
         <Button
           variant='outline'
           size='sm'
-          disabled={uploads.uploads.length >= INTAKE_FILES_MAX}
+          disabled={
+            uploads.uploads.filter((upload) => !upload.removed).length >=
+            INTAKE_FILES_MAX
+          }
           onClick={() => inputRef.current?.click()}
         >
           <PaperclipIcon data-icon='inline-start' />
@@ -109,43 +117,57 @@ export function IntakeFiles({
       <AttachmentList files={images} locale={i18n.language} labels={labels} />
       {uploads.uploads.length > 0 ? (
         <ul className='flex flex-wrap gap-2' aria-label={t('intake.files')}>
-          {uploads.uploads.map((upload) => {
-            const read = reads.find((item) => item.fileId === upload.file?.id);
-            return (
-              <li
-                key={upload.key}
-                className='flex max-w-xs items-center gap-1.5 rounded-md border bg-background py-1 pr-1 pl-2 text-sm'
-              >
-                {upload.file ? (
-                  <FileIcon
-                    className='size-3.5 shrink-0 text-muted-foreground'
-                    aria-hidden='true'
-                  />
-                ) : (
-                  <Spinner
-                    className='size-3.5'
-                    aria-label={t('intake.uploading')}
-                  />
-                )}
-                <span className='truncate' title={upload.name}>
-                  {upload.name}
-                </span>
-                {read ? (
-                  <PmTag tone={STATE_TONE[read.state]}>
-                    {t(`intake.fileStates.${read.state}`)}
-                  </PmTag>
-                ) : null}
-                <Button
-                  variant='ghost'
-                  size='icon-xs'
-                  aria-label={t('intake.removeFile', { name: upload.name })}
-                  onClick={() => uploads.remove(upload.key)}
+          {uploads.uploads
+            .filter((upload) => !upload.removed || upload.removalFailed)
+            .map((upload) => {
+              const read = reads.find(
+                (item) => item.fileId === upload.file?.id,
+              );
+              return (
+                <li
+                  key={upload.key}
+                  className='flex max-w-xs items-center gap-1.5 rounded-md border bg-background py-1 pr-1 pl-2 text-sm'
                 >
-                  <XIcon />
-                </Button>
-              </li>
-            );
-          })}
+                  {upload.file ? (
+                    <FileIcon
+                      className='size-3.5 shrink-0 text-muted-foreground'
+                      aria-hidden='true'
+                    />
+                  ) : (
+                    <Spinner
+                      className='size-3.5'
+                      aria-label={t('intake.uploading')}
+                    />
+                  )}
+                  <span className='truncate' title={upload.name}>
+                    {upload.name}
+                  </span>
+                  {upload.removalFailed ? (
+                    <span role='alert' className='text-xs text-destructive'>
+                      {t('intake.removeFailed', { name: upload.name })}
+                    </span>
+                  ) : null}
+                  {read ? (
+                    <PmTag tone={STATE_TONE[read.state]}>
+                      {t(`intake.fileStates.${read.state}`)}
+                    </PmTag>
+                  ) : null}
+                  <Button
+                    variant='ghost'
+                    size='icon-xs'
+                    aria-label={t(
+                      upload.removalFailed
+                        ? 'intake.retryRemove'
+                        : 'intake.removeFile',
+                      { name: upload.name },
+                    )}
+                    onClick={() => uploads.remove(upload.key)}
+                  >
+                    <XIcon />
+                  </Button>
+                </li>
+              );
+            })}
         </ul>
       ) : null}
     </div>
