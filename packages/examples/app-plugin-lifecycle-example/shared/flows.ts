@@ -6,6 +6,7 @@
 /** The five lifecycles that wait for the outside, each behind a page of its own. */
 export const DURABLE_FLOWS = [
   'orders',
+  'invoices',
   'exports',
   'purchases',
   'fulfilments',
@@ -63,7 +64,12 @@ export const CARRIER_STATUSES = [
 export type CarrierStatus = (typeof CARRIER_STATUSES)[number];
 
 /** Who sends webhooks, and which events each one sends. */
-export const WEBHOOK_SOURCES = ['payments', 'warehouse', 'carrier'] as const;
+export const WEBHOOK_SOURCES = [
+  'payments',
+  'warehouse',
+  'carrier',
+  'invoicing',
+] as const;
 export type WebhookSource = (typeof WEBHOOK_SOURCES)[number];
 
 /**
@@ -76,7 +82,9 @@ export type WebhookEventKey =
   | 'payments:checkout.declined'
   | 'payments:payment.captured'
   | 'warehouse:pick.completed'
-  | 'carrier:tracking.updated';
+  | 'carrier:tracking.updated'
+  | 'invoicing:invoice.issued'
+  | 'invoicing:invoice.failed';
 
 export const WEBHOOK_EVENTS: Readonly<Record<WebhookEventKey, DurableFlow>> = {
   'payments:checkout.paid': 'orders',
@@ -84,6 +92,8 @@ export const WEBHOOK_EVENTS: Readonly<Record<WebhookEventKey, DurableFlow>> = {
   'payments:payment.captured': 'fulfilments',
   'warehouse:pick.completed': 'fulfilments',
   'carrier:tracking.updated': 'fulfilments',
+  'invoicing:invoice.issued': 'invoices',
+  'invoicing:invoice.failed': 'invoices',
 };
 
 export function webhookEventKey(
@@ -96,3 +106,14 @@ export function webhookEventKey(
 
 /** How a delivery was answered: what the receiver tells the sender. */
 export type DeliveryOutcome = 'applied' | 'replayed' | 'ignored' | 'retry';
+
+/** Completed sandbox orders available for the invoicing demonstration. */
+export const INVOICE_ORDERS: readonly {
+  readonly orderRef: string;
+  readonly customerId: string;
+  readonly amountCents: number;
+}[] = [
+  { orderRef: '1024', customerId: 'customer-li', amountCents: 39900 },
+  { orderRef: '1025', customerId: 'customer-wang', amountCents: 59900 },
+  { orderRef: '1026', customerId: 'customer-li', amountCents: 12900 },
+];

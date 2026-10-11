@@ -1,5 +1,28 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- 40a5679: An application can name the runner and its CLI on npm when it has no tarball of them. `agents.dist.npm` maps a product to its npm package and an exact version, such as `{ nocobase-runner: { package: '@nocobase/agent-runner', version: '1.0.0' } }`; a product `agents.dist.dir` has a current version of is still served from there exactly as before. Only callers that say they understand the answer receive it: the resolve route (`/api/agents/dist/products/<product>/targets/<target>`) answers `{ kind: 'npm', product, version, package, channel }` (or `kind=npm` lines with `format=env`) to a request with `accept=npm`, and a heartbeat answer carries `npmUpgrade` instead of `upgrade` only to a runner that declares the new `npm` feature. Every other caller gets what it got before: the artifact when there is a tarball, otherwise a 404 and no update.
+
+  `@nocobase/agent-protocol` adds `DistNpmPackage`, `DistResolution`, `DIST_ACCEPT_NPM`, `NpmUpgradeNotice`, `HeartbeatResponse.npmUpgrade` and the `npm` runner feature (`NPM_UPGRADE_FEATURE`), and moves `PROTOCOL_VERSION` to 8 so that a runner announcing `npm` is refused cleanly by a server that does not know it. Nothing of protocol 7 changed: a server speaking 8 still serves runners speaking 3 to 7. A runner speaking 8 is shown as needing an upgrade by an application that serves only up to 7, so upgrade the application before its runners.
+
+  NocoBase Studio pins the runner it serves to the exact `@nocobase/agent-runner` version it was built with, recorded by `pnpm build` in `dist/server/agents/served-versions.json` (the runner stays out of the deployment's dependencies), and names it on npm when its image carries no runner tarballs. Redeploying Studio moves runners that understand npm updates to that version.
+
+- 459c33f: `nocobase cli build --universal` packs the application's CLI, or with `--runner` the runner, into one platform-independent tarball, `<product>-v<version>-universal.tar.gz`, that carries no Node.js and runs on the machine's own Node.js 24 or newer; without `--targets` it is the only tarball packed. Its launcher runs on `NOCOBASE_NODE`, the installation's `<prefix>/node`, `node` on PATH, or the Node a previous standalone version of the installation still carries, so a runner's user service, whose PATH usually has no `node`, keeps starting.
+
+  The agents plugin serves that tarball to every platform without a tarball of its own (one built for the platform still wins) and marks the answer with `universal: true` (`universal=true` with `format=env`); answers for platform tarballs are unchanged. For a universal tarball the install script checks that `node` is Node.js 24 or newer before downloading, stops with how to install it otherwise, and links `<prefix>/node` to it; with `--runner` it prints a `corepack enable` hint when `pnpm` is missing. The "Add runtime" dialog says the host needs Node.js 24 or newer.
+
+  An update of an installed CLI or runner to a version without a bundled Node (`applyUpdate` of `@nocobase/app-cli-client/install`) first leaves the Node it runs on in `<prefix>/node` (`pinNode`), copied when it is a Node an older version bundles, so a runner that updates itself from a standalone version keeps a Node after the old versions are removed.
+
+### Patch Changes
+
+- 91f5344: Allow applications to opt coding runs into verified empty-repository initialization. Prepare the default branch without a seed commit, report the first-delivery instructions, and guard its push against updating an existing remote branch. Keep missing branches in populated repositories as checkout failures.
+- 97bd30b: The runner now runs agents with full access and the real home of the user it runs as, and is no longer a sandbox. Codex runs with approval policy `never` and the `danger-full-access` sandbox, accepting any approval it still asks for; Claude Code runs in `bypassPermissions` mode with no hooks; OpenCode and Pi have every permission request allowed. The command policy (allowed commands, denied patterns, download rules, path checks) and the isolated per-workspace home are gone; each run still gets its own TMPDIR, and Codex a per-workspace `CODEX_HOME` linking `auth.json` and `config.toml` from `~/.codex`. The push guard (the `pre-push` hook that let a checkout push only its run's branch) is removed, and an earlier runner's is deleted on upgrade; the run's short-lived repository credential is still provided, so protect default branches on the code host.
+
+  Operators: an agent can now read and change anything the runner's user can, including SSH keys, cloud credentials and `~/.nocobase-runner`. Run the runner as a dedicated OS user that holds only what agents need, in a container or in a VM, and not as root (Claude Code refuses `bypassPermissions` as root). `start --agent-home` is gone. Agents' tool policies keep their idle timeout and turn limit; their permission mode and command patterns are accepted and no longer enforced, and the agent page no longer shows the command rules.
+
 ## 0.1.0-beta.2
 
 ### Minor Changes

@@ -353,6 +353,99 @@ describe("an issue's runs in the CLI", () => {
     expect(from.body.meta).toEqual({ lastSeq: from.body.data[1].seq });
   });
 
+  it('filters before paging, preserves the unfiltered default, and publishes a repeatable CLI flag', async () => {
+    const { runId } = await workedIssue();
+    const url = `/issueRuns/${runId}/events`;
+    const initial = await h.request('GET', `${url}?after=0`, { user: 'alice' });
+    const after = initial.body.meta.lastSeq as number;
+    const at = new Date().toISOString();
+    const appended = Array.from({ length: 198 }, (_, index) => ({
+      seq: after + index + 1,
+      at,
+      type: index % 17 === 0 ? 'text' : index % 23 === 0 ? 'input' : 'toolUse',
+      content: `Event ${index}`,
+    }));
+    expect(
+      (await h.runner(RUNNER_ROUTES.events, runId, { events: appended }))
+        .status,
+    ).toBe(200);
+    const all = await h.request('GET', `${url}?after=0&pageSize=200`, {
+      user: 'alice',
+    });
+    expect(all.status).toBe(200);
+    expect(all.body.data).toHaveLength(200);
+    const expected = (all.body.data as { seq: number; type: string }[]).filter(
+      (event) => ['text', 'input'].includes(event.type),
+    );
+    const seen: number[] = [];
+    let cursor = 0;
+    for (let page = 0; page < 20; page += 1) {
+      const read = await h.request(
+        'GET',
+        `${url}?after=${cursor}&pageSize=3&type=text&type=input&type=text`,
+        { user: 'alice' },
+      );
+      expect(read.status).toBe(200);
+      const rows = read.body.data as { seq: number; type: string }[];
+      expect(
+        rows.every((event) => ['text', 'input'].includes(event.type)),
+      ).toBe(true);
+      seen.push(...rows.map((event) => event.seq));
+      if (rows.length === 0) break;
+      expect(read.body.meta.lastSeq).toBeGreaterThan(cursor);
+      cursor = read.body.meta.lastSeq as number;
+    }
+    expect(seen).toEqual(expected.map((event) => event.seq));
+    const newest = await h.request(
+      'GET',
+      `${url}?pageSize=3&type=text&type=input`,
+      { user: 'alice' },
+    );
+    expect(newest.body.data.map((event: { seq: number }) => event.seq)).toEqual(
+      expected.slice(-3).map((event) => event.seq),
+    );
+    const empty = await h.request(
+      'GET',
+      `${url}?after=${cursor}&type=thinking`,
+      { user: 'alice' },
+    );
+    expect(empty.body.data).toEqual([]);
+    expect(empty.body.meta.lastSeq).toBe(cursor);
+    expect(
+      (await h.request('GET', `${url}?type=unknown`, { user: 'alice' })).status,
+    ).toBe(400);
+    expect(
+      (await h.request('GET', `${url}?type=`, { user: 'alice' })).status,
+    ).toBe(400);
+    const manifest = await h.manifest({ user: 'alice' });
+    expect(
+      manifest.commands.find((command) => command.id === 'run:events')
+        ?.parameters,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'type',
+          type: 'string[]',
+          required: false,
+        }),
+      ]),
+    );
+  });
+
+  it('keeps filtered transcripts behind the same authentication and run visibility checks', async () => {
+    const { runId } = await workedIssue();
+    const url = `/issueRuns/${runId}/events?type=text`;
+    expect((await h.request('GET', url)).status).toBe(401);
+    expect((await h.request('GET', url, { user: 'bob' })).status).toBe(404);
+    h.roles.set('bob', 'none');
+    expect((await h.request('GET', url, { user: 'bob' })).status).toBe(403);
+    expect((await h.request('GET', url, { user: 'alice' })).status).toBe(200);
+    const blind = await conversationRun({ actions: ['pm.projects/view'] });
+    expect(
+      (await h.request('GET', url, { runToken: blind.token })).status,
+    ).toBe(403);
+  });
+
   it('hides other people’s runs unless the person may read agents, and every run off issues they see', async () => {
     const { issue, runId } = await workedIssue();
     // Bob sees the issue but did not start the run.

@@ -116,6 +116,7 @@ export async function currentStage(
 ): Promise<{
   readonly agentId: string;
   readonly instruction: string | null;
+  readonly session: 'fresh' | 'resume';
 } | null> {
   const catalog = await projects.workflows.catalogs.forProject(
     conn,
@@ -139,6 +140,7 @@ export async function currentStage(
   const template = textOf(rule.config?.instruction);
   return {
     agentId: textOf(rule.config?.agentId) ?? agentId,
+    session: rule.config?.session === 'fresh' ? 'fresh' : 'resume',
     instruction: template
       ? renderInstruction(template, {
           'issue.identifier': issue.identifier,
@@ -347,11 +349,17 @@ export function createStageRules(deps: {
         'agentId',
         'instruction',
         'assign',
+        'session',
         'maxRuns',
         'windowHours',
       ]),
       ...agentIdIssues(config.agentId, false),
       ...instructionIssues(config.instruction),
+      ...(config.session === undefined ||
+      config.session === 'resume' ||
+      config.session === 'fresh'
+        ? []
+        : [{ path: 'session', message: 'session is resume or fresh.' }]),
       ...positiveIntegerIssues(config, 'maxRuns'),
       ...positiveIntegerIssues(config, 'windowHours'),
       ...(config.assign === undefined || typeof config.assign === 'boolean'
@@ -368,7 +376,7 @@ export function createStageRules(deps: {
             ? `Creates a run for agent ${agentId}, without making it the executor`
             : `Sets agent ${agentId} as the executor (without the owner's confirmation) and creates a run`;
       return {
-        summary: `${summary}${instruction ? ', with a stage instruction' : ''}. At most ${Number(config.maxRuns ?? STAGE_RUN_LIMIT)} runs per ${Number(config.windowHours ?? STAGE_RUN_WINDOW_HOURS)} hours from agent or system moves; a person's move always runs.`,
+        summary: `${summary}${instruction ? ', with a stage instruction' : ''}${config.session === 'fresh' ? ', with a fresh session every time' : ''}. At most ${Number(config.maxRuns ?? STAGE_RUN_LIMIT)} runs per ${Number(config.windowHours ?? STAGE_RUN_WINDOW_HOURS)} hours from agent or system moves; a person's move always runs.`,
         attention: true,
       };
     },
@@ -525,6 +533,7 @@ export function createStageRules(deps: {
           actorUserId: moverId,
           ownerUserId: issue.ownerUserId,
           priority: runPriorityOf(issue.priority),
+          freshSession: config.session === 'fresh',
           input: {
             type: 'signal',
             actor: mover,

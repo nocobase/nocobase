@@ -81,6 +81,9 @@ function Home(): ReactElement {
   const agents = useQuery({
     queryKey: homeKeys.agents,
     queryFn: () => home.agents(),
+    // A runner may connect or go offline while this page stays open.
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
   });
   const models = useQuery({
     queryKey: homeKeys.models,
@@ -132,6 +135,11 @@ function Composer({
   const [picked, setPicked] = useState<string | null>(null);
   const agent = chosenAgent(agents, picked);
   const blocker = agentBlocker(agent, modelsOffered);
+  // Availability checks eligibility, not free slots: busy runners still accept queued messages.
+  const runnerUnavailable =
+    agent?.type === 'runner' &&
+    !agent.availability.online &&
+    agent.availability.reason === 'noRunner';
 
   // Files go up as they are added, through the agents plugin, as in the chat panel's composer.
   const files = useChatAttachments();
@@ -163,7 +171,9 @@ function Composer({
     ? t('home.sendFailed')
     : blocker
       ? t(`home.blockers.${blocker}`)
-      : null;
+      : runnerUnavailable
+        ? t('home.runnerUnavailable')
+        : null;
 
   return (
     <div className='space-y-2'>
@@ -219,6 +229,17 @@ function Composer({
                 className='font-medium underline underline-offset-4'
               >
                 {t('home.setUpModels')}
+              </Link>
+            </>
+          ) : null}
+          {!start.isError && runnerUnavailable ? (
+            <>
+              {' '}
+              <Link
+                to='/runtimes'
+                className='font-medium underline underline-offset-4'
+              >
+                {t('home.setUpRunners')}
               </Link>
             </>
           ) : null}
