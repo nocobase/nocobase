@@ -64,11 +64,6 @@
     "label": "Scheduled tasks"
   },
   {
-    "type": "file",
-    "name": "template-print",
-    "label": "Template printing"
-  },
-  {
     "type": "dir",
     "name": "mail",
     "label": "Mail",

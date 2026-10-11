@@ -4,7 +4,7 @@ title: 'Customizing sign-in pages'
 
 # Customizing sign-in pages
 
-After setting up [Password authentication and accounts](./password.md), customize the sign-in page for your company.
+After setting up accounts and the required authentication methods, customize the sign-in page for your company.
 
 The sign-in page belongs to the application source. Its name, logo, copy, imagery, layout, and colors can follow a company brand while preserving authentication, error feedback, and password recovery.
 
@@ -31,23 +31,7 @@ The sign-in page uses a full-page mountain-road and truck background with compan
 
 **The sign-in page uses the company’s background, branding and layout while retaining authentication.**
 
-The corporate sign-in entry in the screenshot comes from an example with an identity provider already connected; see the section below. Page customization reuses existing forms and authentication actions. Hiding a registration link must be accompanied by disabling registration on the server.
-
-## Keep password and company-account entries
-
-When some users use a company identity provider and others retain application password accounts, offer both entries on the same page so they can choose.
-
-```text
-Keep the Northstar password form and add a company-account sign-in button.
-Use the same brand layout for both entries and open the business workspace after sign-in.
-Use the identity provider already connected to the application for company accounts.
-```
-
-![Customized sign-in page with both the password form and company-account button](../assets/northstar-company-entry-en.png)
-
-**The same page provides password and company-account sign-in entries.**
-
-This example shows the layout of the entries. The identity provider behind the button must be connected; see [Adding authentication methods](./sign-in-methods.md) for configuration, sign-in redirects, and authorization.
+Page customization reuses existing forms and authentication actions. Hiding a registration link must be accompanied by disabling registration on the server.
 
 ## Further customization
 
