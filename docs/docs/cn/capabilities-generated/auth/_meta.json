@@ -1,0 +1,32 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "认证概览"
+  },
+  {
+    "type": "file",
+    "name": "password",
+    "label": "密码认证与账号"
+  },
+  {
+    "type": "file",
+    "name": "api-keys",
+    "label": "API keys"
+  },
+  {
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "增加认证方式"
+  },
+  {
+    "type": "file",
+    "name": "protecting-access",
+    "label": "保护页面和接口"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "定制登录页面"
+  }
+]

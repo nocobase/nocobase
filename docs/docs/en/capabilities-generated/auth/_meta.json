@@ -1,0 +1,32 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
+    "name": "password",
+    "label": "Password authentication and accounts"
+  },
+  {
+    "type": "file",
+    "name": "api-keys",
+    "label": "API keys"
+  },
+  {
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "Adding sign-in methods"
+  },
+  {
+    "type": "file",
+    "name": "protecting-access",
+    "label": "Protecting pages and APIs"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "Customizing sign-in pages"
+  }
+]

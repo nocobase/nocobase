@@ -1,0 +1,17 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
+    "name": "page-context",
+    "label": "Page context"
+  },
+  {
+    "type": "file",
+    "name": "business-data",
+    "label": "Business queries"
+  }
+]
