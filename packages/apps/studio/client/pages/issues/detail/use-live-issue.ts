@@ -4,7 +4,7 @@
  * existing actions invalidate its detail. This also works when the realtime connection still has a stale identity.
  */
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
-import { usePmApi } from '@nocobase/app-plugin-projects/client/kit';
+import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import {
   hashKey,
@@ -12,7 +12,7 @@ import {
   useQueryClient,
   type QueryKey,
 } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useIssueRuns } from '../../../agents/use-issue-runs.js';
 
@@ -33,6 +33,14 @@ export function useLiveIssue(
   const [refreshSignal, setRefreshSignal] = useState(0);
   const wakeUntilRef = useRef(0);
   const runs = useIssueRuns(detail, `${refreshSignal}:${externalSignal}`);
+  const refreshThreads = useCallback(() => {
+    // Older pages use the entity id even when the URL and detail query use the issue identifier.
+    // Refresh only loaded pages, and keep slow requests alive just like the runs query.
+    void client.refetchQueries(
+      { queryKey: [...pmKeys.issue(detail.id), 'threads'], type: 'active' },
+      { cancelRefetch: false },
+    );
+  }, [client, detail.id]);
 
   // Comments and status changes can come from another person or a rule, even while no run is open.
   useQuery({
@@ -46,8 +54,10 @@ export function useLiveIssue(
     const schedule = (): void => {
       timer = setTimeout(
         () => {
-          if (document.visibilityState !== 'hidden')
+          if (document.visibilityState !== 'hidden') {
             setRefreshSignal((signal) => signal + 1);
+            refreshThreads();
+          }
           schedule();
         },
         Date.now() < wakeUntilRef.current ? WAKE_POLL_MS : IDLE_POLL_MS,
@@ -72,7 +82,7 @@ export function useLiveIssue(
       clearTimeout(timer);
       unsubscribe();
     };
-  }, [client, detailHash]);
+  }, [client, detailHash, refreshThreads]);
 
   const runIds = runs.map((run) => run.id).join(',');
   useEffect(() => {
@@ -89,8 +99,12 @@ export function useLiveIssue(
     if (seenOpenRunsRef.current === openRuns) return;
     seenOpenRunsRef.current = openRuns;
     // Refetch directly so discovering or finishing a run does not start another wake window.
-    void client.refetchQueries({ queryKey: detailKey, exact: true });
-  }, [openRuns, client, detailKey]);
+    void client.refetchQueries(
+      { queryKey: detailKey, exact: true },
+      { cancelRefetch: false },
+    );
+    refreshThreads();
+  }, [openRuns, client, detailKey, refreshThreads]);
 
   return runs;
 }

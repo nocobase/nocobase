@@ -15,7 +15,7 @@ export function useIssueRuns(
     [issue.revision, issue.lastActivityAt, refreshSignal],
   );
   // The page coordinator owns refreshes; presentation observers only read the shared cache.
-  // Invalidating from every run row restarts the same request once per observer.
+  // Run rows share the coordinator's snapshot without initiating their own refreshes.
   return useSubjectRuns(
     'issue',
     issue.id,

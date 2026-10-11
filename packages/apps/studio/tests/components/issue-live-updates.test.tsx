@@ -5,29 +5,66 @@ import {
   QueryClientProvider,
   useQuery,
 } from '@tanstack/react-query';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { api, pmApi } = vi.hoisted(() => ({
+const { api, pmApi, threadRequest } = vi.hoisted(() => ({
   api: { request: vi.fn() },
   pmApi: { issue: vi.fn() },
+  threadRequest: vi.fn(),
 }));
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useApiClient: () => api,
 }));
-vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
+vi.mock('@nocobase/app-plugin-projects/client/kit', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@nocobase/app-plugin-projects/client/kit')
+  >()),
   usePmApi: () => pmApi,
 }));
 
 const { useLiveIssue } =
   await import('../../client/pages/issues/detail/use-live-issue.js');
 const { useIssueRuns } = await import('../../client/agents/use-issue-runs.js');
+const { useIssueTimeline } =
+  await import('@nocobase/app-plugin-projects/client/issues');
 
 let sequence = 0;
 let detail: IssueDetail;
 let serverRuns: Run[];
 let client: QueryClient;
+let olderThreads: IssueDetail['threads'];
+
+function comment(id: string): IssueDetail['threads'][number]['root'] {
+  return {
+    id,
+    issueId: detail.id,
+    authorType: 'agent',
+    authorId: 'a1',
+    authorName: 'Agent',
+    kind: 'comment',
+    content: id,
+    note: false,
+    parentId: null,
+    rootId: id,
+    via: null,
+    createdAt: '2026-10-09T00:00:00Z',
+    editedAt: null,
+    deleted: false,
+    reactions: [],
+    resolvedAt: null,
+    resolvedById: null,
+    resolvedByName: null,
+    attachments: [],
+  };
+}
 
 function issue(id: string): IssueDetail {
   return {
@@ -123,6 +160,7 @@ function Harness({ initial }: { readonly initial: IssueDetail }) {
   const shown = query.data ?? initial;
   const runs = useLiveIssue(shown, initial.identifier, key);
   const siblingRuns = useIssueRuns(shown);
+  const timeline = useIssueTimeline(shown, runs);
   return (
     <>
       <output aria-label='Activity runs'>
@@ -132,9 +170,19 @@ function Harness({ initial }: { readonly initial: IssueDetail }) {
         {siblingRuns.map((item) => item.status).join(',')}
       </output>
       <output aria-label='Issue status'>{shown.statusKey}</output>
-      {shown.threads.map((thread) => (
-        <p key={thread.root.id}>{thread.root.content}</p>
-      ))}
+      {timeline.entries
+        .filter((entry) => entry.kind === 'thread')
+        .map(({ thread }) => (
+          <div key={thread.root.id}>
+            <p>{thread.root.content}</p>
+            {thread.replies.map((reply) => (
+              <p key={reply.id}>{reply.content}</p>
+            ))}
+          </div>
+        ))}
+      {timeline.hasOlder ? (
+        <button onClick={timeline.loadOlder}>Load older</button>
+      ) : null}
     </>
   );
 }
@@ -183,13 +231,20 @@ beforeEach(() => {
   vi.useFakeTimers();
   detail = issue(String(++sequence));
   serverRuns = [];
+  olderThreads = [];
   client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   client.setQueryData(['pm', 'issue', detail.identifier], detail);
+  threadRequest
+    .mockReset()
+    .mockImplementation(async () => ({ data: olderThreads, meta: {} }));
   api.request
     .mockReset()
-    .mockImplementation(async () => ({ data: serverRuns, meta: {} }));
+    .mockImplementation(async ({ path }: { path: string }) => {
+      if (path.endsWith('/comments')) return threadRequest();
+      return { data: serverRuns, meta: {} };
+    });
   pmApi.issue.mockReset().mockImplementation(async () => detail);
 });
 
@@ -286,12 +341,7 @@ describe('live issue updates with the real subject run cache', () => {
       statusKey: 'in_review',
       threads: [
         {
-          root: {
-            id: 'slow-result',
-            content: 'Slow run finished',
-            parentId: null,
-            rootId: 'slow-result',
-          } as IssueDetail['threads'][number]['root'],
+          root: { ...comment('slow-result'), content: 'Slow run finished' },
           replies: [],
         },
       ],
@@ -326,6 +376,113 @@ describe('live issue updates with the real subject run cache', () => {
     for (let tick = 0; tick < 5; tick++) await advance(2000);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     expect(screen.getByLabelText('Run panel')).toHaveTextContent('running');
+  });
+
+  it('refreshes loaded older threads without realtime, including after a run has ended', async () => {
+    detail = {
+      ...detail,
+      threads: Array.from({ length: 30 }, (_, index) => ({
+        root: comment(`recent-${index}`),
+        replies: [],
+      })),
+      threadsNextCursor: 'older-cursor',
+    };
+    client.setQueryData(['pm', 'issue', detail.identifier], detail);
+    olderThreads = [{ root: comment('old root'), replies: [] }];
+    const view = await show();
+    await advance(5000);
+    // Polling must not request pages the reader has not loaded.
+    expect(threadRequest).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Load older' }));
+    await flush();
+    expect(screen.getByText('old root')).toBeTruthy();
+    expect(api.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: `projects/issues/${detail.id}/comments`,
+        query: { pageSize: 30, pageToken: 'older-cursor' },
+      }),
+    );
+
+    serverRuns = [run()];
+    await invalidate();
+    const addReply = (content: string) => {
+      olderThreads = [
+        {
+          root: comment('old root'),
+          replies: [
+            ...olderThreads[0]!.replies,
+            { ...comment(content), parentId: 'old root', rootId: 'old root' },
+          ],
+        },
+      ];
+    };
+    addReply('Agent finished in the older thread');
+    serverRuns = [run('completed')];
+    await advance(2000);
+    expect(screen.getByText('Agent finished in the older thread')).toBeTruthy();
+    expect(screen.getByLabelText('Activity runs')).toHaveTextContent(
+      'completed',
+    );
+
+    // A later external reply cannot rely on another run transition or a changed root cursor.
+    addReply('A later reply');
+    await advance(5000);
+    expect(screen.getByText('A later reply')).toBeTruthy();
+    expect(detail.threadsNextCursor).toBe('older-cursor');
+    const calls = threadRequest.mock.calls.length;
+    view.unmount();
+    await advance(10_000);
+    expect(threadRequest).toHaveBeenCalledTimes(calls);
+  });
+
+  it('preserves slow older-thread requests and pauses them in a hidden tab', async () => {
+    detail = {
+      ...detail,
+      threads: Array.from({ length: 30 }, (_, index) => ({
+        root: comment(`recent-${index}`),
+        replies: [],
+      })),
+      threadsNextCursor: 'older-cursor',
+    };
+    client.setQueryData(['pm', 'issue', detail.identifier], detail);
+    olderThreads = [{ root: comment('old root'), replies: [] }];
+    await show();
+    fireEvent.click(screen.getByRole('button', { name: 'Load older' }));
+    await flush();
+    threadRequest.mockClear();
+    threadRequest.mockImplementation(() => {
+      const data = olderThreads;
+      return new Promise((resolve) =>
+        setTimeout(() => resolve({ data, meta: {} }), 6000),
+      );
+    });
+    olderThreads = [
+      {
+        root: comment('old root'),
+        replies: [
+          {
+            ...comment('Slow reply'),
+            parentId: 'old root',
+            rootId: 'old root',
+          },
+        ],
+      },
+    ];
+    await advance(5000);
+    await advance(5000);
+    expect(threadRequest).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Slow reply')).toBeNull();
+    await advance(1000);
+    expect(screen.getByText('Slow reply')).toBeTruthy();
+
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
+    visibility.mockReturnValue('hidden');
+    await advance(10_000);
+    expect(threadRequest).toHaveBeenCalledTimes(1);
+    visibility.mockReturnValue('visible');
+    await advance(5000);
+    expect(threadRequest).toHaveBeenCalledTimes(2);
+    visibility.mockRestore();
   });
 
   it('bounds idle requests to one detail and run refresh every five seconds', async () => {
@@ -375,12 +532,7 @@ describe('live issue updates with the real subject run cache', () => {
       statusKey: 'in_review',
       threads: [
         {
-          root: {
-            id: 'c1',
-            content: 'Agent finished',
-            parentId: null,
-            rootId: 'c1',
-          } as IssueDetail['threads'][number]['root'],
+          root: { ...comment('c1'), content: 'Agent finished' },
           replies: [],
         },
       ],
