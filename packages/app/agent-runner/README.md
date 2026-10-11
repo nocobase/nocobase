@@ -42,7 +42,7 @@ Model capabilities are refreshed in the background on the first heartbeat and at
 
 ### Conversation recovery
 
-When a tool explicitly reports a missing conversation during startup, the runner starts a fresh conversation once and adds an instruction to recover context from the task, comments, and workspace. Pi instead detects an empty resumed conversation from its successful `get_state` response and keeps the id of the empty session it created. Authentication, network, and other failures retain their normal error handling. Completion, failure, and cancellation report the confirmed session id so the next compatible run resumes the actual conversation.
+For Codex and OpenCode, an explicit missing-conversation response at startup starts a fresh conversation once. Claude checks the session file in its configured project directory before opening the query: a missing file starts fresh; a missing-conversation error after a successful check ends the run normally without reopening the stream. Fresh conversations receive an instruction to recover context from the task, comments, and workspace. Pi instead detects an empty resumed conversation from its successful `get_state` response and keeps the id of the empty session it created. Authentication, network, and other failures retain their normal error handling. Completion, failure, and cancellation report the confirmed session id so the next compatible run resumes the actual conversation.
 
 ### Environment variables
 

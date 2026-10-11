@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { chmod, mkdtemp, readdir, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -51,7 +51,7 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
     workDir: '/work',
     prompt: 'Create hello.txt',
     systemPrompt: 'BRIEF',
-    env: { PATH: '/usr/bin', HOME: '/home/runner' },
+    env: { PATH: '/usr/bin', HOME: dir },
     permission: async () => 'allow',
     abort: new AbortController().signal,
     ...overrides,
@@ -70,41 +70,48 @@ let dir: string;
 beforeEach(async () => {
   calls.length = 0;
   dir = await fakeClaudeDir();
+  const project = path.join(dir, '.claude/projects/-work');
+  await mkdir(project, { recursive: true });
+  for (const id of ['old', 'prev'])
+    await writeFile(path.join(project, `${id}.jsonl`), '{}\n');
 });
 
 describe('missing conversations', () => {
-  it('does not retry a failed fresh query or restart after cancellation during recovery', async () => {
-    const abort = new AbortController();
+  it('starts a fresh query for a missing file without consuming or duplicating queued input', async () => {
     setScript(async function* (ctx) {
-      yield* [];
-      await ctx.nextInput();
-      if (!ctx.options.resume) throw new Error('No conversation found');
-      abort.abort();
-      throw new Error('No conversation found');
+      expect(ctx.options.resume).toBeUndefined();
+      expect(ctx.options.systemPrompt).toMatchObject({ append: 'BRIEF' });
+      const prompt = await ctx.nextInput();
+      expect(prompt?.message.content).toContain('previous conversation');
+      expect(prompt?.message.content).toContain('Create hello.txt');
+      yield init();
+      const steer = await ctx.nextInput();
+      expect(steer?.message.content).toBe('early');
+      yield assistant([{ type: 'text', text: 'ok' }], {
+        user_message_uuids: [prompt?.uuid, steer?.uuid],
+      });
+      yield result({ user_message_uuids: [prompt?.uuid, steer?.uuid] });
+      expect(await ctx.nextInput()).toBeUndefined();
     });
     const handle = adapterWith('9.0.0', dir).start(
-      session({ resumeSessionId: 'old', abort: abort.signal }),
+      session({ resumeSessionId: 'missing' }),
     );
-    expect((await handle.result).exit).toBe('aborted');
+    expect(await handle.steer('early', 'early-input')).toBe(true);
+    const events = await collect(handle.events);
+    expect(await handle.result).toMatchObject({
+      exit: 'completed',
+      sessionId: SESSION_ID,
+    });
     expect(calls).toHaveLength(1);
+    expect(events.filter((event) => event.type === 'input')).toHaveLength(1);
+    expect(
+      events.filter((event) => event.content === 'sessionRecovery'),
+    ).toHaveLength(1);
+    expect(events.find((event) => event.content === 'started')).toMatchObject({
+      meta: { resumed: false, sessionRecovery: true },
+    });
   });
 
-  it('retries once and reports a fresh query failure without a stale session id', async () => {
-    setScript(async function* (ctx) {
-      yield* [];
-      await ctx.nextInput();
-      throw new Error(
-        ctx.options.resume ? 'No conversation found' : 'network timeout',
-      );
-    });
-    const handle = adapterWith('9.0.0', dir).start(
-      session({ resumeSessionId: 'old' }),
-    );
-    const outcome = await handle.result;
-    expect(outcome.exit).toBe('error');
-    expect(outcome.sessionId).toBeUndefined();
-    expect(calls).toHaveLength(2);
-  });
   it.each([
     'throw',
     'result',
@@ -113,147 +120,137 @@ describe('missing conversations', () => {
     'generic result after stderr',
     'generic result before notifications and stderr',
   ])(
-    'recovers once from a startup %s, preserving unconfirmed inputs',
+    'does not reopen a prechecked conversation after a missing-session %s',
     async (mode) => {
-      const prompts: string[] = [];
       setScript(async function* (ctx) {
-        const prompt = await ctx.nextInput();
-        prompts.push(String(prompt?.message.content));
-        if (ctx.options.resume) {
-          const steer = await ctx.nextInput();
-          if (mode === 'throw')
-            throw new Error('No conversation found with session ID old');
-          if (mode === 'stderr') {
-            ctx.options.stderr?.('No conver');
-            ctx.options.stderr?.('sation found with session ID old');
-            throw new Error('exit 1');
-          }
-          if (mode.startsWith('generic result')) {
-            // The startup failure result lists the steered input although no model turn ran.
-            const failure = result({
-              subtype: 'error_during_execution',
-              errors: ['Process exited with code 1'],
-              num_turns: 0,
-              usage: {},
-              user_message_uuids: [steer?.uuid],
-            });
-            if (mode.endsWith('after stderr')) {
-              ctx.options.stderr?.('No conversation found with session ID old');
-              yield failure;
-            } else {
-              yield failure;
-              if (mode.includes('notifications')) {
-                yield init();
-                yield {
-                  type: 'system',
-                  subtype: 'session_state_changed',
-                  state: 'idle',
-                  session_id: 'old',
-                  uuid: randomUUID(),
-                };
-                // Even a second error result must remain uncommitted.
-                yield failure;
-              }
-              ctx.options.stderr?.('No conversation found with session ID old');
-            }
-            return;
-          }
-          yield result({
-            subtype: 'error_during_execution',
-            errors: ['No conversation found'],
-            num_turns: 0,
-            usage: {},
-          });
-          return;
-        }
-        expect(ctx.options.systemPrompt).toMatchObject({ append: 'BRIEF' });
-        yield init();
+        expect(ctx.options.resume).toBe('old');
+        await ctx.nextInput();
         const steer = await ctx.nextInput();
-        expect(steer?.message.content).toBe('early');
-        yield assistant([{ type: 'text', text: 'ok' }], {
+        if (mode === 'throw') throw new Error('No conversation found');
+        if (mode === 'stderr') {
+          ctx.options.stderr?.('No conver');
+          ctx.options.stderr?.('sation found');
+          throw new Error('exit 1');
+        }
+        const failure = result({
+          subtype: 'error_during_execution',
+          errors: [
+            mode === 'result'
+              ? 'No conversation found'
+              : 'Process exited with code 1',
+          ],
+          num_turns: 0,
+          usage: {},
           user_message_uuids: [steer?.uuid],
         });
-        yield result();
+        if (mode.endsWith('after stderr'))
+          ctx.options.stderr?.('No conversation found');
+        yield failure;
+        if (mode.includes('notifications'))
+          yield {
+            type: 'system',
+            subtype: 'session_state_changed',
+            state: 'idle',
+            session_id: 'old',
+            uuid: randomUUID(),
+          };
+        ctx.options.stderr?.('No conversation found');
       });
       const handle = adapterWith('9.0.0', dir).start(
         session({ resumeSessionId: 'old' }),
       );
-      expect(await handle.steer('early', 'early-input')).toBe(true);
+      await handle.steer('early', 'early-input');
       const events = await collect(handle.events);
-      expect(await handle.result).toMatchObject({
-        exit: 'completed',
-        sessionId: SESSION_ID,
-      });
-      expect(calls).toHaveLength(2);
-      expect(calls[0].closed).toBe(true);
-      expect(calls[1].options.resume).toBeUndefined();
-      expect(prompts[1]).toContain('previous conversation');
-      expect(prompts[1]).toContain('Create hello.txt');
-      const inputs = events.filter((e) => e.type === 'input');
-      expect(inputs).toHaveLength(1);
-      expect(inputs[0].meta).toMatchObject({ inputId: 'early-input' });
-      const started = events.findIndex((e) => e.content === 'started');
-      expect(events[started]).toMatchObject({
-        meta: { resumed: false, sessionRecovery: true },
-      });
-      // Acknowledged by the fresh conversation, not by the failed resume.
-      expect(events.indexOf(inputs[0])).toBeGreaterThan(started);
-      expect(events.filter((e) => e.content === 'turnCompleted')).toHaveLength(
-        1,
+      expect((await handle.result).exit).toBe('error');
+      expect(calls).toHaveLength(1);
+      expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
+        false,
       );
     },
   );
 
-  it('reports a held startup error result when the conversation is not missing', async () => {
+  it('closes streaming input immediately on an unrelated startup error result', async () => {
     setScript(async function* (ctx) {
       await ctx.nextInput();
-      const steer = await ctx.nextInput();
       yield result({
         subtype: 'error_during_execution',
-        errors: ['Process exited with code 1'],
+        errors: ['startup failed'],
         num_turns: 0,
         usage: {},
-        user_message_uuids: [steer?.uuid],
       });
+      // A real streaming CLI waits for input to close before exiting.
+      expect(await ctx.nextInput()).toBeUndefined();
     });
     const handle = adapterWith('9.0.0', dir).start(
       session({ resumeSessionId: 'old' }),
     );
-    expect(await handle.steer('early', 'early-input')).toBe(true);
-    const events = await collect(handle.events);
     expect((await handle.result).exit).toBe('error');
     expect(calls).toHaveLength(1);
-    expect(events.filter((e) => e.type === 'input')).toHaveLength(1);
-    expect(events.some((e) => e.content === 'turnCompleted')).toBe(true);
+  }, 1000);
+
+  it('prechecks the encoded working directory under the query configuration directory', async () => {
+    const cwd = path.join(dir, 'work space');
+    const config = path.join(dir, 'custom-config');
+    await mkdir(cwd);
+    const project = path.join(
+      config,
+      'projects',
+      cwd.replace(/[^a-zA-Z0-9]/g, '-'),
+    );
+    await mkdir(project, { recursive: true });
+    await writeFile(path.join(project, 'custom.jsonl'), '{}\n');
+    setScript(replay([init(), result()]));
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        workDir: cwd,
+        env: { HOME: dir, CLAUDE_CONFIG_DIR: config },
+        resumeSessionId: 'custom',
+      }),
+    );
+    expect((await handle.result).exit).toBe('completed');
+    expect(calls[0].options.resume).toBe('custom');
   });
 
-  it('commits buffered input confirmations only when execution begins and never retries a late missing error', async () => {
+  it.skipIf(process.getuid?.() === 0)(
+    'does not treat inaccessible history as missing',
+    async () => {
+      const project = path.join(dir, '.claude/projects/-work');
+      await chmod(project, 0o000);
+      try {
+        const handle = adapterWith('9.0.0', dir).start(
+          session({ resumeSessionId: 'old' }),
+        );
+        expect((await handle.result).exit).toBe('error');
+        expect(calls).toHaveLength(0);
+      } finally {
+        await chmod(project, 0o700);
+      }
+    },
+  );
+
+  it('does not start after cancellation while prechecking', async () => {
+    const abort = new AbortController();
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        resumeSessionId: 'missing',
+        abort: abort.signal,
+      }),
+    );
+    abort.abort();
+    expect((await handle.result).exit).toBe('aborted');
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not retry a failed fresh conversation', async () => {
     setScript(async function* (ctx) {
       await ctx.nextInput();
-      const steer = await ctx.nextInput();
-      yield result({
-        subtype: 'error_during_execution',
-        errors: ['Process exited with code 1'],
-        num_turns: 0,
-        usage: {},
-        user_message_uuids: [steer?.uuid],
-      });
-      yield init();
-      yield assistant([{ type: 'text', text: 'working' }]);
-      ctx.options.stderr?.('No conversation found');
-      throw new Error('late failure');
+      throw new Error('No conversation found');
     });
     const handle = adapterWith('9.0.0', dir).start(
-      session({ resumeSessionId: 'old' }),
+      session({ resumeSessionId: 'missing' }),
     );
-    expect(await handle.steer('early', 'early-input')).toBe(true);
-    const events = await collect(handle.events);
     expect((await handle.result).exit).toBe('error');
     expect(calls).toHaveLength(1);
-    expect(events.filter((event) => event.type === 'input')).toHaveLength(1);
-    expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
-      false,
-    );
   });
 
   it.each([
@@ -455,7 +452,7 @@ describe('query options', () => {
     expect(options.settingSources).toEqual(['project']);
     expect(options.permissionMode).toBe('bypassPermissions');
     expect(options.allowDangerouslySkipPermissions).toBe(true);
-    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: '/home/runner' });
+    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: dir });
     expect(options.cwd).toBe('/work');
     expect(options.pathToClaudeCodeExecutable).toBe(path.join(dir, 'claude'));
     expect(options).toMatchObject({

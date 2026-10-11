@@ -20,7 +20,8 @@
  */
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, realpath, stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
@@ -363,7 +364,7 @@ class ClaudeRun {
   private readonly events = new Channel<AdapterEvent>();
   private input = new Channel<SDKUserMessage>();
   private recovered = false;
-  private executionBegun = false;
+  private readonly initialMessage: SDKUserMessage;
   private stderrTail = '';
   private readonly abortController = new AbortController();
   /** Steered inputs not yet seen by the agent, by message uuid. */
@@ -404,7 +405,8 @@ class ClaudeRun {
     session.abort.addEventListener('abort', () => void this.stop(), {
       once: true,
     });
-    this.input.push(this.userMessage(session.prompt));
+    this.initialMessage = this.userMessage(session.prompt);
+    this.input.push(this.initialMessage);
     this.done = this.run();
   }
 
@@ -524,106 +526,63 @@ class ClaudeRun {
     };
   }
 
+  /** Mirrors the project key encoding in the installed Claude SDK (including long paths). */
+  private async sessionExists(id: string): Promise<boolean> {
+    if (!/^[a-zA-Z0-9_-]+$/.test(id))
+      throw new Error('Invalid Claude session id');
+    const cwd = await realpath(this.session.workDir).catch(() =>
+      path.resolve(this.session.workDir),
+    );
+    let project = cwd.replace(/[^a-zA-Z0-9]/g, '-');
+    if (project.length > 200) {
+      let hash = 0;
+      for (let i = 0; i < cwd.length; i += 1)
+        hash = ((hash << 5) - hash + cwd.charCodeAt(i)) | 0;
+      project = `${project.slice(0, 200)}-${Math.abs(hash).toString(36)}`;
+    }
+    const config =
+      this.session.env.CLAUDE_CONFIG_DIR ||
+      path.join(this.session.env.HOME ?? homedir(), '.claude');
+    const file = path.join(
+      config.normalize('NFC'),
+      'projects',
+      project,
+      `${id}.jsonl`,
+    );
+    try {
+      return (await stat(file)).isFile();
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === 'ENOENT' || error.code === 'ENOTDIR')
+      )
+        return false;
+      throw error;
+    }
+  }
+
   private async run(): Promise<AdapterResult> {
     let thrown: unknown;
     try {
       if (this.stopping) throw new Error('aborted before start');
-      let options = await this.buildOptions();
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        if (this.stopping) break;
-        let attemptError: unknown;
-        let missing = false;
-        // Resuming has three phases: collect startup messages, decide whether
-        // recovery is needed, then commit their effects. Notifications cannot
-        // commit input acknowledgements from an attempt that may be discarded.
-        let collectingStartup = Boolean(options.resume && !this.recovered);
-        const startupMessages: SDKMessage[] = [];
-        const commitStartup = () => {
-          collectingStartup = false;
-          for (const message of startupMessages) this.onMessage(message);
-          startupMessages.length = 0;
-        };
-        try {
-          const q = query({ prompt: this.input, options });
-          this.closeQuery = () => q.close();
-          try {
-            for await (const message of q) {
-              if (
-                message.type === 'assistant' ||
-                (message.type === 'result' &&
-                  ((message.subtype === 'success' && !message.is_error) ||
-                    message.num_turns > 0 ||
-                    message.usage.input_tokens > 0 ||
-                    message.usage.output_tokens > 0))
-              )
-                this.executionBegun = true;
-              if (
-                message.type === 'result' &&
-                !this.executionBegun &&
-                (message.subtype !== 'success' || message.is_error)
-              ) {
-                const errors =
-                  message.subtype === 'success'
-                    ? message.result
-                    : message.errors.join('\n');
-                missing ||= /No conversation found/i.test(errors);
-              }
-              if (collectingStartup) {
-                if (!this.executionBegun) {
-                  startupMessages.push(message);
-                  if (missing) break;
-                  continue;
-                }
-                commitStartup();
-              }
-              this.onMessage(message);
-            }
-          } finally {
-            q.close();
-            this.closeQuery = undefined;
-          }
-        } catch (error) {
-          attemptError = error;
-        }
-        missing ||= /No conversation found/i.test(
-          [
-            attemptError instanceof Error
-              ? attemptError.message
-              : typeof attemptError === 'string'
-                ? attemptError
-                : '',
-            this.stderrTail,
-          ].join('\n'),
-        );
-        if (
-          !options.resume ||
-          this.recovered ||
-          this.executionBegun ||
-          !missing ||
-          this.stopping
-        ) {
-          commitStartup();
-          if (attemptError !== undefined)
-            throw attemptError instanceof Error
-              ? attemptError
-              : new Error('Claude query failed', { cause: attemptError });
-          break;
-        }
+      const options = await this.buildOptions();
+      if (options.resume && !(await this.sessionExists(options.resume))) {
         this.recovered = true;
-        this.emit(recoveryEvent('claude'));
-        options = { ...options };
         delete options.resume;
-        this.input.close();
-        this.input = new Channel<SDKUserMessage>();
-        this.input.push(this.userMessage(recoveryPrompt(this.session.prompt)));
-        for (const steer of this.pendingSteers.values())
-          this.input.push(steer.message);
-        this.sessionId = undefined;
-        this.lastResult = undefined;
-        this.lastAssistantError = undefined;
-        this.model = undefined;
-        this.stderrLines.length = 0;
-        this.stderrTail = '';
+        this.initialMessage.message.content = recoveryPrompt(
+          this.session.prompt,
+        );
+        this.emit(recoveryEvent('claude'));
+      }
+      if (this.stopping) throw new Error('aborted before start');
+      const q = query({ prompt: this.input, options });
+      this.closeQuery = () => q.close();
+      try {
+        for await (const message of q) this.onMessage(message);
+      } finally {
+        q.close();
+        this.closeQuery = undefined;
       }
     } catch (error) {
       thrown = error;
