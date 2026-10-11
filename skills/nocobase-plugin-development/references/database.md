@@ -36,6 +36,14 @@ The target App must explicitly register the plugin's Server definition and run i
 
 Before editing an existing Migration, run `git log -- <file>` and determine whether the feature branch that introduced it has merged into its target. It may be corrected only before that merge. Once merged, the file is immutable; every fix or later schema change requires a new Migration. Never hard-code an old checksum, overwrite history, or weaken checksum validation to make an edited file appear compatible.
 
+Plugins are published to npm, and a merged migration reaches installed applications with the next release, beta releases included. An installation records a migration as executed and never runs it again, so an in-place edit leaves existing installations on the old schema while fresh ones get the new one. Some plugins in this repository corrected merged migrations in place before they were published; do not follow them. Change the schema incrementally instead:
+
+- Leave the merged file untouched, including its `down`, name, filename, formatting and comments; even a reformat changes the checksum every installation recorded.
+- Add a new Migration whose name sorts after the one it corrects, taking an installation from what the earlier migrations left behind to the target, and holding as well on a fresh installation that runs every migration in order.
+- Cover that upgrade path with `describeMigration()`, which applies the earlier migrations before the new one.
+
+The only exception, described in the repository root `AGENTS.md`, is a released migration that has never succeeded on a supported database and that no later migration can get past.
+
 A Migration is a fixed historical operation. Spell out every Collection, field, relation, index, constraint, and metadata operation it performs. Do not import or iterate over live Collection schemas, model definitions, field registries, or runtime registration lists, because later edits to those definitions would silently change historical behavior and checksums.
 
 ```ts

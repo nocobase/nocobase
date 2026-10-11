@@ -69,6 +69,7 @@ export const RECENT_RUNS = 10;
 
 /** What a runner shows its viewer of its machine. */
 export interface RunnerMachineView {
+  readonly canSeeMachine: boolean;
   readonly hostname: string | null;
   readonly tools: Runner['tools'];
 }
@@ -83,9 +84,10 @@ export function runnerForViewer<T extends Runner>(
   runner: T,
   seesMachine: boolean,
 ): Omit<T, 'hostname' | 'tools'> & RunnerMachineView {
-  if (seesMachine) return runner;
+  if (seesMachine) return { ...runner, canSeeMachine: true };
   return {
     ...runner,
+    canSeeMachine: false,
     hostname: null,
     tools: runner.tools.map(({ path: _path, ...tool }) => tool),
     ...(runner.workspaceUsage

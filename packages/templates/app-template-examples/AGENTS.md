@@ -44,7 +44,7 @@ client/pages/             The page component; a folder when a page has children 
 client/components/        Your components
 client/components/ui/     shadcn/ui primitives; add with the CLI, never hand-write or edit
 client/hooks/             Hooks shared across features
-client/locales/           Every user-visible string
+client/locales/           Every user-visible string; system/ holds the template's copy
 client/service-provider.ts Client startup: services that boot with the application
 server/routes/            HTTP endpoints
 server/providers/         Services and their lifecycle
@@ -228,7 +228,7 @@ At runtime, resolve `databaseManagerToken` from the container and use `database.
 
 ### User-facing text
 
-Every string a user reads goes through a translation key. `client/locales/en-US.ts` states the wording and derives the shape that other locales are checked against, so a missing key in `zh-CN.ts` is a compile error. The sign-in pages' copy lives there too, under `auth.*`: the authentication components take their text as props, which the pages in `client/pages/auth/` translate.
+Every string a user reads goes through a translation key. `client/locales/en-US.ts` states the wording and derives the shape that other locales are checked against, so a missing key in `zh-CN.ts` is a compile error. Each application locale file first spreads the template's own copy from `client/locales/system/` — the shell, shared components, and the sign-in pages under `auth.*`, whose components take their text as props that the pages in `client/pages/auth/` translate — and then adds the application's groups. Write the application's copy in `client/locales/en-US.ts` and `zh-CN.ts`, never in `system/`, which a template upgrade replaces. A group written there replaces the system group of the same name, so extend a shared one by spreading it first: `navigation: { ...systemEnUS.navigation, orders: 'Orders' }`.
 
 ```tsx
 const { t } = useTranslation();
@@ -240,6 +240,14 @@ To reword a plugin's string, add an `overrides` block keyed by that plugin's pac
 The languages the application offers are its own locale files, not a configured list, and the two sides are read separately: `client/locales/` decides what the picker shows, while `server/locales/` decides which languages the server can answer in. Prefer adding a language to both when server-produced text needs translating, but a client-only language is valid: the interface switches normally and the server falls back to English with an informational notice. `pnpm nocobase locales check` reports one declared on a single side and exits nonzero until the lists align; that check does not block the runtime switch.
 
 The account menu language control in `client/layouts/components/language-switcher.tsx` uses a shadcn submenu with radio items. Render it inside `DropdownMenuContent` to preserve menu keyboard navigation and selection semantics.
+
+## Application access URLs
+
+When reporting or opening this application's address, use the `Local:` URL printed by `pnpm dev`, including the application base path. In normal full-stack development, the Hono server proxies Vite: the user-facing entry uses the server port (`APP_SERVER_PORT`, default 13000), while Vite's port (normally 5173) serves the frontend development process. A response from Vite alone does not verify the application entry.
+
+For an existing run without available startup output, identify its process and working directory, confirm the actual server listening port and configured base path, and check that URL before sharing it. Occupied ports advance automatically, so do not assume defaults. Report when the run belongs to another checkout. Use a host reachable by the user; `localhost` refers to the machine where the browser runs.
+
+With `PROXY_TARGET_URL`, the local Hono server is skipped and Vite becomes the local application entry. Use the printed `Local:` URL in this mode too; `APP_SERVER_PORT` selects its local port (default 5173). See the remote backend development guidance below.
 
 ## Development file watching
 

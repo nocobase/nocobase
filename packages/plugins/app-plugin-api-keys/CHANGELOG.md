@@ -1,5 +1,55 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.14
+
+### Minor Changes
+
+- c796cb9: Plugins no longer contribute Settings or Dev pages. Every page a plugin registered under `/settings/...` or `/dev/...` is removed, together with the components, locale keys and tests only those pages used; an application that wants such a page builds it on the plugin's HTTP API and client and declares it among its own routes.
+
+  - `@nocobase/app-plugin-api-keys`: the API keys page, `createApiKeysRoutes`, `normalizeApiKeysRoutePath`, `API_KEYS_PAGE_ACCESS`, `API_KEYS_ROUTE_ID` and the `./client/routes` entry are removed. The client factory takes no options, so call `apiKeys()`.
+  - `@nocobase/app-plugin-authorization`: the Permission Sets and Permission Inspector pages, the `./client/routes` entry and the `./client/management` entry the rule plugins built their pages from are removed. `useCan`, `AuthorizationClient`, the provider and the HTTP API are unchanged.
+  - `@nocobase/app-plugin-authz-default-access`, `@nocobase/app-plugin-authz-restriction-rules`, `@nocobase/app-plugin-authz-sharing-rules`: the rule pages and the `./client/routes` entry are removed. The client registers only the locale for the title its server registers.
+  - `@nocobase/app-plugin-database-explorer`: the explorer page and the `./client/routes` entry are removed. `DatabaseExplorerClient` and `DATABASE_EXPLORER_ACCESS` remain.
+  - `@nocobase/app-plugin-mail`: the account overview page and every Dev page are removed, along with the browser acceptance suite that drove them. `MailWorkspacePage` and `MailAccountsPage` remain; `MailWorkspacePage` takes an `accountsHref` that names the application's accounts page, and its empty state links there only when it is given. `mail.oauthReturnUrl` now defaults to the application root instead of `/dev/mail/accounts`; set it to the page that renders `MailAccountsPage`.
+  - `@nocobase/app-plugin-notification`: the notification logs page and the `./client/routes` entry are removed; the `logs-ui` registry item is unchanged.
+  - `@nocobase/app-plugin-notification-in-app`: the Dev inbox page, the `routes` export and the `./client/routes` entry are removed. Render `NotificationInAppInbox` inside `NotificationInAppProvider` in an application page.
+  - `@nocobase/app-plugin-scheduler`: the schedule list and detail pages are removed. The client registers only the locales for the titles its server registers.
+  - `@nocobase/app-plugin-users`: the user management page and the `mount`, `path`, `title` and `componentLoader` options are removed, together with `createUsersRoutes`, `USERS_PAGE_ACCESS` and `USERS_ROUTE_ID`. The plugin contributes only the invitation page at `/invite/:token`, which `inviteComponentLoader` still replaces; build a user management page on `UsersClient`.
+
+- c796cb9: Remove the Settings and Dev route surfaces. `@nocobase/app-client` no longer exports `defineSettingsRoutes()`, `defineDevRoutes()`, `isAppClientSettingsRouteGroup()`, `isAppClientDevRouteGroup()` or their definition, contribution and registered-route types, and the resolved runtime no longer carries `settingsRouteTree`, `devRouteTree`, `settings`, `settingGroups`, `devRoutes` or `devRouteGroups`. `AppClientSettingsRouteNavigation` is renamed `AppClientRouteNavigation` and `AppClientSettingIcon` is renamed `AppClientRouteIcon`. A contribution to any parent other than `app` now fails registration with a message that names `defineAppRoutes()`. Plugins contribute no settings or dev pages; an application that wants a configuration page declares it with `defineAppRoutes()` in its own navigation, for example under a Settings group.
+
+  The default and examples templates drop the settings layout, the `/settings/*` route, the dev route plumbing, and the Settings and Inbox buttons in the header; the `/inbox` page and the inbox block stay. The examples template no longer registers `@nocobase/app-plugin-departments-example`, which is removed. Upgrading an application means removing `defineSettingsRoutes([])` from `client/routes.ts`, the `settingsRouteTree` and `devRouteTree` props passed to `AppRouter`, and any settings layout it kept, and moving its own settings pages to `defineAppRoutes()`. Every package that depends on or peers with `@nocobase/app-client` is released again so that its published range accepts `3.0.0-beta.0`.
+
+### Patch Changes
+
+- c796cb9: Remove the AI employee packages from the repository
+
+  `@nocobase/app-plugin-ai-employee`, `@nocobase/ai-employee` and `@nocobase/app-plugin-ai-employee-example` were already deprecated and no template installed them; they are now deleted and will not be released again. The Default and Examples templates drop `@nocobase/ai-employee-avatars`, which only the plugin's avatars used.
+
+  Generated plugins' `AGENTS.md` and the copies shipped with existing plugins no longer list `@nocobase/ai-employee` among the identity-sensitive packages. The HTTP API references in the application development Skill use other plugins for their examples, and the upgrade Skill tells an application that still depends on the removed packages to review their usage before removing them, because the runtime will move past what their peer ranges accept.
+
+  `pnpm build` no longer copies `ai/skills` into `dist/ai/skills`. The AI employee plugin was the only reader of that directory; an application that keeps Skills there for another purpose has to copy them itself, for example from a build hook.
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [fb7b576]
+  - @nocobase/app-server@2.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.3
+  - @nocobase/app-plugin-authorization@1.0.0-beta.26
+  - @nocobase/app-client@3.0.0-beta.0
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.13
 
 ### Minor Changes

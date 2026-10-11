@@ -9,6 +9,7 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
+  deriveCliCommands,
   findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
   generateApiDocument,
@@ -28,6 +29,278 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it.each([
+    { canCreateUsers: false, canAssignRoles: true },
+    { canCreateUsers: true, canAssignRoles: false },
+    { canCreateUsers: false, canAssignRoles: false },
+  ])(
+    'returns shareable links without global user creation permissions: %j',
+    async (permissions) => {
+      for (const emailSent of [true, false]) {
+        const service = userService();
+        const result = {
+          email: 'victim@example.test',
+          outcome: 'invited' as const,
+          invitationId: 'invitation-1',
+          emailSent,
+          inviteUrl: 'https://example.test/invite/registration-secret',
+        };
+        vi.mocked(service.invite).mockResolvedValue([result]);
+        vi.mocked(service.resendInvitation).mockResolvedValue(result);
+        const router = await apiRoutes.createRouter(
+          createApplication('allowed', service, {
+            requireAction: async ({ action }) => {
+              if (
+                (action === 'create' && !permissions.canCreateUsers) ||
+                (action === 'assign-role' && !permissions.canAssignRoles)
+              )
+                throw denied();
+            },
+          }),
+        );
+        const created = await router.request('/users/invitations', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ emails: [result.email] }),
+        });
+        expect(created.status).toBe(201);
+        expect(await created.json()).toEqual({ data: [result] });
+        const resent = await router.request(
+          '/users/invitations/invitation-1/resend',
+          { method: 'POST' },
+        );
+        expect(resent.status).toBe(200);
+        expect(await resent.json()).toEqual({ data: result });
+        const copy = await router.request(
+          '/users/invitations/invitation-1/resend?sendEmail=false',
+          { method: 'POST' },
+        );
+        expect(copy.status).toBe(200);
+        expect(service.resendInvitation).toHaveBeenCalledTimes(2);
+      }
+    },
+  );
+
+  it.each(['anonymous', 'forbidden', 'allowed'] as const)(
+    'guards link rotation for %s callers',
+    async (mode) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication(mode, service),
+      );
+      const response = await router.request(
+        '/users/invitations/invitation-1/resend?sendEmail=false',
+        { method: 'POST' },
+      );
+      expect(response.status).toBe(
+        mode === 'anonymous' ? 401 : mode === 'forbidden' ? 403 : 200,
+      );
+      if (mode === 'allowed') {
+        expect(service.resendInvitation).toHaveBeenCalledWith('invitation-1', {
+          origin: 'http://localhost',
+          sendEmail: false,
+        });
+        expect(await response.json()).toMatchObject({
+          data: {
+            inviteUrl: 'https://example.test/invite/new-token',
+            emailSent: true,
+          },
+        });
+      } else expect(service.resendInvitation).not.toHaveBeenCalled();
+    },
+  );
+
+  it('defaults to sending mail and rejects invalid sendEmail options', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    expect(
+      (
+        await router.request('/users/invitations/invitation-1/resend', {
+          method: 'POST',
+        })
+      ).status,
+    ).toBe(200);
+    expect(service.resendInvitation).toHaveBeenCalledWith('invitation-1', {
+      origin: 'http://localhost',
+      sendEmail: true,
+    });
+    expect(
+      (
+        await router.request(
+          '/users/invitations/invitation-1/resend?sendEmail=no',
+          { method: 'POST' },
+        )
+      ).status,
+    ).toBe(400);
+    expect(service.resendInvitation).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([true, false])(
+    "never exposes another inviter's credential when emailSent=%s",
+    async (emailSent) => {
+      const service = userService();
+      const invitation = await service.getInvitation('invitation-1');
+      if (!invitation) throw new Error('Missing fixture');
+      vi.mocked(service.getInvitation).mockResolvedValue({
+        ...invitation,
+        invitedBy: { id: 'other-admin', name: 'Other admin' },
+        roleScopes: { app: ['editor'] },
+      });
+      vi.mocked(service.resendInvitation).mockResolvedValue({
+        email: invitation.email,
+        outcome: 'invited',
+        invitationId: invitation.id,
+        emailSent,
+        inviteUrl: 'https://example.test/invite/secret',
+      });
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service, {
+          requireAction: async ({ action }) => {
+            if (action !== 'invite') throw denied();
+          },
+        }),
+      );
+      const copy = await router.request(
+        '/users/invitations/invitation-1/resend?sendEmail=false',
+        { method: 'POST' },
+      );
+      expect(copy.status).toBe(403);
+      expect(service.resendInvitation).not.toHaveBeenCalled();
+      const resend = await router.request(
+        '/users/invitations/invitation-1/resend',
+        { method: 'POST' },
+      );
+      expect(resend.status).toBe(200);
+      expect(await resend.json()).toEqual({
+        data: {
+          email: invitation.email,
+          outcome: 'invited',
+          invitationId: invitation.id,
+          emailSent,
+        },
+      });
+    },
+  );
+
+  it.each(['true', 'false'])(
+    'rechecks assign-role before rotating an owned role-bearing invitation (sendEmail=%s)',
+    async (sendEmail) => {
+      const service = userService();
+      const invitation = await service.getInvitation('invitation-1');
+      if (!invitation) throw new Error('Missing fixture');
+      vi.mocked(service.getInvitation).mockResolvedValue({
+        ...invitation,
+        roleScopes: { app: ['editor'] },
+      });
+      const requireAction = vi.fn(async ({ action }: { action: string }) => {
+        if (action === 'assign-role') throw denied();
+      });
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service, { requireAction }),
+      );
+      const response = await router.request(
+        `/users/invitations/invitation-1/resend?sendEmail=${sendEmail}`,
+        { method: 'POST' },
+      );
+      expect(response.status).toBe(403);
+      expect(
+        requireAction.mock.calls.map(([request]) => request.action),
+      ).toEqual(['invite', 'assign-role']);
+      expect(service.resendInvitation).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([true, false])(
+    'keeps owned plugin invitation credentials behind their domain authorization when emailSent=%s',
+    async (emailSent) => {
+      const service = userService();
+      const invitation = await service.getInvitation('invitation-1');
+      if (!invitation) throw new Error('Missing fixture');
+      vi.mocked(service.getInvitation).mockResolvedValue({
+        ...invitation,
+        status: 'expired',
+        expiresAt: '2020-01-01T00:00:00.000Z',
+        roleScopes: {},
+        data: {
+          '@nocobase/app-plugin-projects': { projectIds: ['private-project'] },
+        },
+      });
+      vi.mocked(service.resendInvitation).mockResolvedValue({
+        email: invitation.email,
+        outcome: 'invited',
+        invitationId: invitation.id,
+        emailSent,
+        inviteUrl: 'https://example.test/invite/secret',
+      });
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service),
+      );
+      const copy = await router.request(
+        '/users/invitations/invitation-1/resend?sendEmail=false',
+        { method: 'POST' },
+      );
+      expect(copy.status).toBe(403);
+      expect(service.resendInvitation).not.toHaveBeenCalled();
+      const resend = await router.request(
+        '/users/invitations/invitation-1/resend',
+        { method: 'POST' },
+      );
+      expect(resend.status).toBe(200);
+      expect(await resend.json()).toEqual({
+        data: {
+          email: invitation.email,
+          outcome: 'invited',
+          invitationId: invitation.id,
+          emailSent,
+        },
+      });
+    },
+  );
+
+  it('takes the acceptance identity only from the session', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service, {
+        authenticatedUserId: 'invited-user',
+      }),
+    );
+    const input = { token: 'abc', name: 'Nia', password: '' };
+    const post = (body: unknown) =>
+      router.request('/users/invitations/accept', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    expect((await post(input)).status).toBe(200);
+    expect(service.acceptInvitation).toHaveBeenCalledWith(
+      input,
+      'invited-user',
+    );
+    expect(
+      (await post({ ...input, authenticatedUserId: 'another-user' })).status,
+    ).toBe(400);
+    expect(service.acceptInvitation).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects scoped credentials before consuming an invitation', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service, {
+        authenticatedUserId: 'invited-user',
+        scopedSession: true,
+      }),
+    );
+    const response = await router.request('/users/invitations/accept', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'abc', name: 'Nia', password: '' }),
+    });
+    expect(response.status).toBe(403);
+    expect(service.acceptInvitation).not.toHaveBeenCalled();
+  });
+
   it('serves the invitee without a session but guards invitation management', async () => {
     const service = userService();
     const router = await apiRoutes.createRouter(
@@ -56,11 +329,14 @@ describe('@nocobase/app-plugin-users API routes', () => {
     expect(await accept.json()).toEqual({
       data: { email: 'new@example.com', existingAccount: false },
     });
-    expect(service.acceptInvitation).toHaveBeenCalledWith({
-      token: 'abc',
-      name: 'Nia',
-      password: 'secret-password',
-    });
+    expect(service.acceptInvitation).toHaveBeenCalledWith(
+      {
+        token: 'abc',
+        name: 'Nia',
+        password: 'secret-password',
+      },
+      undefined,
+    );
     expect(invite.status).toBe(401);
     expect(service.invite).not.toHaveBeenCalled();
   });
@@ -520,6 +796,36 @@ describe('@nocobase/app-plugin-users API routes', () => {
     const document = await generateApiDocument(router, {
       info: { title: 'Test', version: '1.0.0' },
     });
+    const manifest = deriveCliCommands(document, {
+      kind: 'person',
+      userId: 'admin-1',
+      displayName: 'Admin',
+    });
+    expect(
+      manifest.commands.find(
+        (command) => command.id === 'user:invitation:create',
+      )?.output.columns,
+    ).toEqual(['email', 'outcome', 'invitationId', 'emailSent', 'inviteUrl']);
+    const acceptResponses =
+      document.paths?.['/api/users/invitations/accept']?.post?.responses;
+    expect(Object.keys(acceptResponses ?? {})).toEqual(
+      expect.arrayContaining(['200', '400', '401', '403', '409', '500']),
+    );
+    expect(JSON.stringify(acceptResponses?.['400'])).toContain(
+      'INVITATION_SIGN_IN_REQUIRED',
+    );
+    expect(
+      manifest.commands.find(
+        (command) => command.id === 'user:invitation:resend',
+      )?.parameters,
+    ).toContainEqual(
+      expect.objectContaining({
+        name: 'send-email',
+        in: 'query',
+        field: 'sendEmail',
+        required: false,
+      }),
+    );
     const operationIds = Object.values(document.paths ?? {}).flatMap((item) =>
       Object.values(item ?? {}).map(
         (operation) => (operation as { operationId?: string }).operationId,
@@ -567,11 +873,23 @@ function createApplication(
       readonly resource: { readonly type: string; readonly id: string };
       readonly action: string;
     }) => Promise<void>;
+    readonly authenticatedUserId?: string;
+    readonly scopedSession?: boolean;
     readonly logger?: { info: ReturnType<typeof vi.fn> };
   } = {},
 ): AppPluginApplication {
   const container = new ServiceContainer();
   container.instance(authenticationToken, {
+    isScopedSession: () => Promise.resolve(options.scopedSession ?? false),
+    optional: () => async (context, next) => {
+      context.set(
+        'auth',
+        options.authenticatedUserId
+          ? { user: { id: options.authenticatedUserId } }
+          : null,
+      );
+      await next();
+    },
     required: () => async (context, next) => {
       if (mode === 'anonymous') {
         return context.json({ code: 'UNAUTHORIZED' }, 401);
@@ -636,13 +954,27 @@ function userService(): UserManagementService {
     revokeSessions: vi.fn(() => Promise.resolve()),
     invite: vi.fn(() => Promise.resolve([])),
     listInvitations: vi.fn(() => Promise.resolve([])),
-    getInvitation: vi.fn(() => Promise.resolve(undefined)),
+    getInvitation: vi.fn(() =>
+      Promise.resolve({
+        id: 'invitation-1',
+        email: 'new@example.com',
+        status: 'pending' as const,
+        invitedBy: { id: 'admin-1', name: 'Admin' },
+        roleScopes: {},
+        data: {},
+        summary: [],
+        expiresAt: now.toISOString(),
+        sentAt: now.toISOString(),
+        createdAt: now.toISOString(),
+      }),
+    ),
     resendInvitation: vi.fn(() =>
       Promise.resolve({
         email: 'new@example.com',
         outcome: 'invited' as const,
         invitationId: 'invitation-1',
         emailSent: true,
+        inviteUrl: 'https://example.test/invite/new-token',
       }),
     ),
     revokeInvitation: vi.fn(() => Promise.resolve()),

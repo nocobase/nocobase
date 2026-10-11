@@ -340,15 +340,15 @@ The steps below add a preset with the id `forest`.
 
    `ThemePresetId` is derived from the array, so the new id is accepted wherever a preset id is typed. `defaultThemePreset` does not decide the fallback, and no template code reads it; keep it equal to the first entry.
 
-5. **Add the label** to `appearance.themes` in every locale file. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; a label missing from both fails `tests/logic/app-locale-coverage.test.ts`, which reads the registry's `labelKey` (without the label the popover would show the capitalized id). Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in [`i18n.md`](i18n.md).
+5. **Add the label** to `appearance.themes` in every application locale file, spreading the system group as [`i18n.md`](i18n.md) describes; removing or renaming a template preset rewords its key after the spread rather than editing `client/locales/system/`. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; a label missing from both fails `tests/logic/app-locale-coverage.test.ts`, which reads the registry's `labelKey` (without the label the popover would show the capitalized id). Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in [`i18n.md`](i18n.md).
 
    ```ts
    // client/locales/en-US.ts
-   const messages = {
-     // …
+   const enUS = {
+     ...systemEnUS,
      appearance: {
-       // …
-       themes: { default: 'Spacious', compact: 'Compact', forest: 'Forest' },
+       ...systemEnUS.appearance,
+       themes: { ...systemEnUS.appearance.themes, forest: 'Forest' },
      },
      // …
    };
@@ -357,10 +357,10 @@ The steps below add a preset with the id `forest`.
    ```ts
    // client/locales/zh-CN.ts
    const zhCN: AppResource = {
-     // …
+     ...systemZhCN,
      appearance: {
-       // …
-       themes: { default: '宽松', compact: '紧凑', forest: '森林' },
+       ...systemZhCN.appearance,
+       themes: { ...systemZhCN.appearance.themes, forest: '森林' },
      },
      // …
    };

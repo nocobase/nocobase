@@ -173,7 +173,7 @@ These cause real damage and appear in every reference:
 
 - **Every server route owns its own authentication and authorization.** Mounting under `/api` authenticates nothing.
 - **Every `/api` route follows [HTTP API design](references/http-api.md).** camelCase paths, `{ data }` on success, `ApiError` on failure, input validated through `apiValidator()`, and a `describeRoute()` declaration for the API document. Never hand-write an error body.
-- **A migration is immutable history and self-contained.** Never import an evolving definition into one. Never edit one whose branch is merged.
+- **A migration is immutable history and self-contained.** Never import an evolving definition into one. Never edit one whose branch is merged, not even to reformat it: change the schema incrementally with a new migration. See [migrations change incrementally](references/migrations.md#migrations-change-incrementally).
 - **Every user-visible string goes through a translation key**, the English built into shadcn/ui primitives included.
 - **Let the owning page supply `PageContainer`.** One per page; inline child pages and tabs use the parent's, covering child pages add their own, overlays use their own container. See [section 2 of pages and routes](references/frontend/references/page.md#2-the-page-component).
 - **Visual consistency is application-wide.** Restyling only your part is a defect. Change the design tokens if a change is needed.
@@ -182,6 +182,14 @@ These cause real damage and appear in every reference:
 - **Reach for the built-in mechanism first.** Changing framework structure is allowed when nothing else fits — comment it and update the docs.
 - **Tests live in `tests/`,** never beside the source; browser tests against a running application go in `tests/playwright/`.
 - **Remove direct NocoBase packages with `package remove` after reviewing their usage.** Do not hand-delete only the manifest entry or leave synchronized Skills and plugin registrations behind.
+
+## Application access URLs
+
+When reporting or opening this application's address, use the `Local:` URL printed by `pnpm dev`, including the application base path. In normal full-stack development, the Hono server proxies Vite: the user-facing entry uses the server port (`APP_SERVER_PORT`, default 13000), while Vite's port (normally 5173) serves the frontend development process. A response from Vite alone does not verify the application entry.
+
+For an existing run without available startup output, identify its process and working directory, confirm the actual server listening port and configured base path, and check that URL before sharing it. Occupied ports advance automatically, so do not assume defaults. Report when the run belongs to another checkout. Use a host reachable by the user; `localhost` refers to the machine where the browser runs.
+
+With `PROXY_TARGET_URL`, the local Hono server is skipped and Vite becomes the local application entry. Use the printed `Local:` URL in this mode too; `APP_SERVER_PORT` selects its local port (default 5173). See the remote backend development guidance below.
 
 ## Development file watching
 
