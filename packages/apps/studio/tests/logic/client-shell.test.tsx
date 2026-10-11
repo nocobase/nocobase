@@ -198,18 +198,25 @@ describe('application shell', () => {
     renderApplication('/', true);
 
     await screen.findByRole('navigation', { name: 'Application navigation' });
-    const sidebar = document.querySelector('[data-slot=sidebar]');
+    // Wait for the shell's asynchronous parts to render, so the sidebar read below is the one that stays mounted.
+    await screen.findByRole('button', { name: 'Open account menu' });
+    const sidebar = (): Element | null =>
+      document.querySelector('[data-slot=sidebar]');
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Collapse navigation' }),
+      await screen.findByRole('button', { name: 'Collapse navigation' }),
     );
-    expect(sidebar).toHaveAttribute('data-collapsible', 'icon');
+    await waitFor(() =>
+      expect(sidebar()).toHaveAttribute('data-collapsible', 'icon'),
+    );
     expect(
       screen.getByRole('button', { name: 'Expand navigation' }),
     ).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand navigation' }));
-    expect(sidebar).toHaveAttribute('data-state', 'expanded');
+    await waitFor(() =>
+      expect(sidebar()).toHaveAttribute('data-state', 'expanded'),
+    );
   });
 
   it('opens and closes the mobile navigation without changing the route', async () => {

@@ -109,6 +109,8 @@ export interface SubjectAssembly {
   readonly task: string;
   /** The brief's context layer: the subject as it is now. */
   readonly context: string;
+  /** Effective inputs selected by the subject for this turn; absent, deliver all claim inputs. */
+  readonly inputs?: readonly RunInput[];
   readonly turn: {
     readonly prompt: string;
     readonly previousSummary?: string;
@@ -129,6 +131,27 @@ export interface SubjectAssembly {
 }
 
 export interface ContextProvider {
+  /**
+   * Optional subject policy, checked when queued work is claimed, inside that transaction and before assembly.
+   * Return a rejection to cancel this run normally: no payload, token, failure count, or retry is produced. Throwing
+   * remains an assembly failure. Also asked before input is appended to or delivered to a working run, where a
+   * rejection keeps the input from that run. Not called for previews or reading an already working run's context.
+   */
+  admit?(
+    conn: DatabaseConnection,
+    claim: ClaimContext,
+  ): Promise<{ readonly reason: string; readonly detail?: string } | null>;
+
+  /**
+   * Optional input policy: of `claim.inputs`, the ones this turn should act on. Applied, with `admit`, when input is
+   * appended to a working run and when it is delivered to one; what it leaves out is marked handled, never delivered.
+   * The claim keeps using `SubjectAssembly.inputs`. Absent, every input is delivered.
+   */
+  selectInputs?(
+    conn: DatabaseConnection,
+    claim: ClaimContext,
+  ): Promise<readonly RunInput[]>;
+
   /**
    * Called inside the claim's transaction, again for `GET /api/agents/runs/current/context`, and for a brief preview (a run
    * that is not stored, and no runner). Database reads only: no network, no model. Throwing leaves the run queued; a

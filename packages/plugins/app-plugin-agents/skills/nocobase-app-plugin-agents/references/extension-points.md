@@ -36,4 +36,8 @@ Rules that are easy to miss:
 
 The README's example under "Extension points" shows a subject registered and work enqueued and withdrawn.
 
+A subject assembly may return `inputs` containing only the effective inputs for its current task. Render the task and turn from that same selection. Runner and online claims use it for delivery, brief sections and mounts; omitted inputs are resolved in the claim transaction and retained in the audit history, so polling and completion do not replay obsolete work. Omit the field to deliver all queued inputs.
+
+A working run is held to the same policy: before input joins a dispatched or running run, and before pending input is delivered to one, the plugin asks `admit` and then `selectInputs` with that input. New input either hook keeps from the working run waits in a queued run for the claim to admit or cancel; pending input rejected or left out by `selectInputs` is marked handled instead of being delivered. Implement `selectInputs` with the same selection the assembly returns as `inputs`.
+
 For issue/card work indicators, use `runs.workingOn(subjectKind, subjectIds)` after filtering visible subjects. It returns unique `{ subjectId, agentId, working: true }` pairs for dispatched/running runs in that exact scope, with no run details or global board cap. Match the current executor and apply the application's pending approval rules separately; queued/terminal runs do not appear. Pass a bounded batch from a view, rather than querying each card's full history.
