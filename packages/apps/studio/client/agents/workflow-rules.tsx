@@ -7,21 +7,22 @@ import {
   type StatusRuleTypeUI,
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { ReactElement, ReactNode } from 'react';
+import { useTranslation } from '@nocobase/i18n/client';
 
 import { RETROSPECTIVE_RULE_TYPE } from '../knowledge/retrospective-rule.js';
-import { STAGE_RULE_TYPES } from './stage-rules.js';
-
-// The knowledge base's retrospective, a rule for finished statuses, beside the agents' stage rules.
-const statusRuleTypes: readonly StatusRuleTypeUI[] = [
-  ...STAGE_RULE_TYPES,
-  RETROSPECTIVE_RULE_TYPE,
-];
+import { stageRuleTypes } from './stage-rules.js';
 
 export function AgentWorkflowRules({
   children,
 }: {
   readonly children?: ReactNode;
 }): ReactElement {
+  const { t } = useTranslation();
+  // The knowledge base's retrospective, a rule for finished statuses, beside the agents' stage rules.
+  const statusRuleTypes: readonly StatusRuleTypeUI[] = [
+    ...stageRuleTypes(t),
+    RETROSPECTIVE_RULE_TYPE,
+  ];
   return (
     <StatusRuleTypesContext.Provider value={statusRuleTypes}>
       {children}

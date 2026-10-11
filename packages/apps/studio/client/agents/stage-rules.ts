@@ -6,8 +6,13 @@
  */
 import type { StatusRuleTypeUI } from '@nocobase/app-plugin-projects/client/kit';
 import { BotIcon, UserPlusIcon } from 'lucide-react';
+import type { useTranslation } from '@nocobase/i18n/client';
 
 import { STUDIO_NAMESPACE } from '../../shared/access.js';
+import {
+  STAGE_RUN_LIMIT,
+  STAGE_RUN_WINDOW_HOURS,
+} from '../../shared/stage-run-limit.js';
 import {
   RunAgentEditor,
   RunAgentSummary,
@@ -18,27 +23,34 @@ import {
 const text = (key: string) => ({ key, ns: STUDIO_NAMESPACE });
 
 /** `runAgent` and `suggestExecutor`, never on a finished or closed status (the server refuses those). */
-export const STAGE_RULE_TYPES: readonly StatusRuleTypeUI[] = [
-  {
-    type: 'runAgent',
-    title: text('studioAgents.stageRules.runAgent'),
-    hint: text('studioAgents.stageRules.runAgentHint'),
-    categories: ['unstarted', 'started'],
-    group: 'action',
-    Icon: BotIcon,
-    initialConfig: {},
-    Editor: RunAgentEditor,
-    Summary: RunAgentSummary,
-  },
-  {
-    type: 'suggestExecutor',
-    title: text('studioAgents.stageRules.suggestExecutorTitle'),
-    hint: text('studioAgents.stageRules.suggestExecutorHint'),
-    categories: ['unstarted', 'started'],
-    group: 'action',
-    Icon: UserPlusIcon,
-    initialConfig: {},
-    Editor: SuggestExecutorEditor,
-    Summary: SuggestExecutorSummary,
-  },
-];
+export function stageRuleTypes(
+  t: ReturnType<typeof useTranslation>['t'],
+): readonly StatusRuleTypeUI[] {
+  return [
+    {
+      type: 'runAgent',
+      title: text('studioAgents.stageRules.runAgent'),
+      hint: t('studioAgents.stageRules.runAgentHint', {
+        maxRuns: STAGE_RUN_LIMIT,
+        windowHours: STAGE_RUN_WINDOW_HOURS,
+      }),
+      categories: ['unstarted', 'started'],
+      group: 'action',
+      Icon: BotIcon,
+      initialConfig: {},
+      Editor: RunAgentEditor,
+      Summary: RunAgentSummary,
+    },
+    {
+      type: 'suggestExecutor',
+      title: text('studioAgents.stageRules.suggestExecutorTitle'),
+      hint: text('studioAgents.stageRules.suggestExecutorHint'),
+      categories: ['unstarted', 'started'],
+      group: 'action',
+      Icon: UserPlusIcon,
+      initialConfig: {},
+      Editor: SuggestExecutorEditor,
+      Summary: SuggestExecutorSummary,
+    },
+  ];
+}

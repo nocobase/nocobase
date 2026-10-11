@@ -1188,10 +1188,10 @@ const enUS = {
         'Optional: what the agent should do in this stage',
       reason: 'Reason (optional)',
       runAgent: 'Run agent',
-      maxRuns: 'Maximum runs (optional)',
-      windowHours: 'Window in hours (optional)',
+      maxRuns: 'Maximum runs (default {{maxRuns}})',
+      windowHours: 'Window in hours (default {{windowHours}})',
       limitHint:
-        'Defaults to 3 runs in 24 hours and applies only to entries caused by agents or the system. Only started runs count; environment failures and cancelled runs are excluded. A person moving the issue always wakes the agent and restarts the count.',
+        'Leave blank to use the defaults: up to {{maxRuns}} runs in {{windowHours}} hours. Only positive integers are accepted. The limit applies only to entries caused by agents or the system. Only started runs count; environment failures and cancelled runs are excluded. A person moving the issue always wakes the agent and restarts the count. This limit cannot be disabled.',
       withLimit:
         '{{summary}} · Up to {{maxRuns}} agent-driven runs in {{windowHours}} hours',
       limitReached: 'Automatic stage runs paused',
@@ -1206,7 +1206,7 @@ const enUS = {
       runAgentAgent: 'Runs {{agent}} as the executor',
       runAgentCurrent: 'Runs the issue’s agent',
       runAgentHint:
-        'Entering this status wakes the agent without the owner’s confirmation. The loop guard applies only to entries caused by agents or the system and defaults to 3 runs per issue and status in 24 hours; a person moving the issue is never stopped.',
+        'Entering this status wakes the agent without the owner’s confirmation. The loop guard applies only to entries caused by agents or the system and defaults to {{maxRuns}} runs per issue and status in {{windowHours}} hours; a person moving the issue is never stopped.',
       runAgentWithoutAssign: 'Runs {{agent}} once, keeping the executor',
       suggestExecutor: 'Suggests {{agent}} as the executor to the owner',
       suggestExecutorHint:

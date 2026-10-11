@@ -11,7 +11,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { useState, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
@@ -21,6 +21,12 @@ import {
   RunAgentSummary,
 } from '../../client/agents/stage-rule-editors.js';
 import { IssueStageRunLimit } from '../../client/issues/detail/stage-run-limit.js';
+import { AgentWorkflowRules } from '../../client/agents/workflow-rules.js';
+import {
+  STAGE_RUN_LIMIT,
+  STAGE_RUN_WINDOW_HOURS,
+} from '../../shared/stage-run-limit.js';
+import { StatusRuleTypesContext } from '@nocobase/app-plugin-projects/client/kit';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -33,12 +39,16 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useApiClient: () => ({ request: mocks.request }),
   useToaster: () => ({ show: mocks.show }),
 }));
-vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
-  useViewer: () => mocks.viewer,
-  PmExpandableTextarea: (props: Record<string, unknown>) => (
-    <textarea {...props} />
-  ),
-}));
+vi.mock('@nocobase/app-plugin-projects/client/kit', async () => {
+  const React = await import('react');
+  return {
+    StatusRuleTypesContext: React.createContext([]),
+    useViewer: () => mocks.viewer,
+    PmExpandableTextarea: (props: Record<string, unknown>) => (
+      <textarea {...props} />
+    ),
+  };
+});
 vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   canEditIssues: () => mocks.editable,
 }));
@@ -110,15 +120,30 @@ describe('stage run configuration', () => {
       await mount(<Editor />, language);
       const words = (language === 'en-US' ? enUS : zhCN).studioAgents
         .stageRules;
-      const runs = screen.getByLabelText(words.maxRuns);
-      const hours = screen.getByLabelText(words.windowHours);
-      expect(runs).toHaveAttribute('placeholder', '3');
-      expect(hours).toHaveAttribute('placeholder', '24');
+      const runs = screen.getByLabelText(
+        words.maxRuns.replace('{{maxRuns}}', String(STAGE_RUN_LIMIT)),
+      );
+      const hours = screen.getByLabelText(
+        words.windowHours.replace(
+          '{{windowHours}}',
+          String(STAGE_RUN_WINDOW_HOURS),
+        ),
+      );
+      expect(runs).toHaveValue(null);
+      expect(hours).toHaveValue(null);
+      expect(runs).not.toHaveAttribute('placeholder');
+      expect(hours).not.toHaveAttribute('placeholder');
       fireEvent.change(runs, { target: { value: '5' } });
       fireEvent.change(hours, { target: { value: '12' } });
       expect(changed).toHaveBeenLastCalledWith({ maxRuns: 5, windowHours: 12 });
       fireEvent.change(runs, { target: { value: '' } });
       expect(changed).toHaveBeenLastCalledWith({ windowHours: 12 });
+      fireEvent.change(hours, { target: { value: '' } });
+      expect(changed).toHaveBeenLastCalledWith({});
+      const hint = words.limitHint
+        .replace('{{maxRuns}}', String(STAGE_RUN_LIMIT))
+        .replace('{{windowHours}}', String(STAGE_RUN_WINDOW_HOURS));
+      expect(screen.getByText(hint)).toBeInTheDocument();
     },
   );
   it('describes configured limits', async () => {
@@ -127,6 +152,51 @@ describe('stage run configuration', () => {
       screen.getByText(/Up to 5 agent-driven runs in 12 hours/u),
     ).toBeInTheDocument();
   });
+  it.each(['en-US', 'zh-CN'] as const)(
+    'shows shared defaults in the summary in %s',
+    async (language) => {
+      await mount(<RunAgentSummary config={{}} />, language);
+      const words = (
+        language === 'en-US' ? enUS : zhCN
+      ).studioAgents.stageRules.withLimit
+        .replace(
+          '{{summary}}',
+          language === 'en-US' ? 'Runs the issue’s agent' : '运行任务的 Agent',
+        )
+        .replace('{{maxRuns}}', String(STAGE_RUN_LIMIT))
+        .replace('{{windowHours}}', String(STAGE_RUN_WINDOW_HOURS));
+      expect(screen.getByText(words)).toBeInTheDocument();
+    },
+  );
+  it.each(['en-US', 'zh-CN'] as const)(
+    'interpolates the default limit in the add-rule hint in %s',
+    async (language) => {
+      function RuleHint() {
+        const rules = useContext(StatusRuleTypesContext);
+        return (
+          <span>
+            {
+              rules.find((rule: { type: string }) => rule.type === 'runAgent')
+                ?.hint
+            }
+          </span>
+        );
+      }
+      await mount(
+        <AgentWorkflowRules>
+          <RuleHint />
+        </AgentWorkflowRules>,
+        language,
+      );
+      const expected = (
+        language === 'en-US' ? enUS : zhCN
+      ).studioAgents.stageRules.runAgentHint
+        .replace('{{maxRuns}}', String(STAGE_RUN_LIMIT))
+        .replace('{{windowHours}}', String(STAGE_RUN_WINDOW_HOURS));
+      expect(screen.getByText(expected)).toBeInTheDocument();
+      expect(screen.queryByText(/\{\{(?:maxRuns|windowHours)\}\}/u)).toBeNull();
+    },
+  );
 });
 
 describe('continuing a stage run', () => {

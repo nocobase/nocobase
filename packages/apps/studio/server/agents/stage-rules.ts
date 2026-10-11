@@ -48,6 +48,10 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { StudioInboxPort } from '../inbox/port.js';
 import { PROJECTS_SOURCE } from '../inbox/projects.js';
 import { systemViewer } from '../previews/sources.js';
+import {
+  STAGE_RUN_LIMIT,
+  STAGE_RUN_WINDOW_HOURS,
+} from '../../shared/stage-run-limit.js';
 
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type { I18nText } from '@nocobase/app-plugin-agents/shared/i18n';
@@ -70,8 +74,7 @@ export const SUGGEST_EXECUTOR = 'suggestExecutor';
 export const STAGE_TRIGGER = 'stageEntered';
 
 /** The loop guard: stage runs per issue and status within the window. */
-export const STAGE_RUN_LIMIT = 3;
-export const STAGE_RUN_WINDOW_HOURS = 24;
+export { STAGE_RUN_LIMIT, STAGE_RUN_WINDOW_HOURS };
 
 export const INSTRUCTION_MAX = 4000;
 export const SUGGEST_REASON_MAX = 500;

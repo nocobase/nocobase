@@ -1084,10 +1084,10 @@ const zhCN: AppResource = {
       instructionPlaceholder: '可选：Agent 在这个阶段要做什么',
       reason: '理由（可选）',
       runAgent: '运行 Agent',
-      maxRuns: '最多运行次数（可选）',
-      windowHours: '计数窗口小时数（可选）',
+      maxRuns: '最多运行次数（默认 {{maxRuns}}）',
+      windowHours: '计数窗口小时数（默认 {{windowHours}}）',
       limitHint:
-        '默认 24 小时内 3 次，只限制 Agent 和系统触发的进入。只统计实际开始的运行，执行环境失败和取消的运行不计数；人手动移动任务总会唤醒 Agent，并重新开始计数。',
+        '留空使用默认值：{{windowHours}} 小时内最多 {{maxRuns}} 次，只能填正整数。只限制 Agent 和系统触发的进入；只统计实际开始的运行，执行环境失败和取消的运行不计数。人手动移动任务总会唤醒 Agent，并重新开始计数。这个限制不能关闭。',
       withLimit:
         '{{summary}} · Agent 和系统触发的运行 {{windowHours}} 小时内最多 {{maxRuns}} 次',
       limitReached: '状态自动运行已暂停',
@@ -1101,7 +1101,7 @@ const zhCN: AppResource = {
       runAgentAgent: '运行 {{agent}}，并设为执行者',
       runAgentCurrent: '运行任务的 Agent',
       runAgentHint:
-        '进入这个状态时自动唤醒 Agent，无需负责人确认。防循环上限只限制 Agent 和系统触发的进入，默认是同一任务同一状态 24 小时内 3 次；人手动移动任务不受限制。',
+        '进入这个状态时自动唤醒 Agent，无需负责人确认。防循环上限只限制 Agent 和系统触发的进入，默认是同一任务同一状态 {{windowHours}} 小时内 {{maxRuns}} 次；人手动移动任务不受限制。',
       runAgentWithoutAssign: '运行一次 {{agent}}，不改变执行者',
       suggestExecutor: '向负责人建议由 {{agent}} 执行',
       suggestExecutorHint:

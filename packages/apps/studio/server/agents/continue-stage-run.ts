@@ -54,8 +54,10 @@ export async function pendingStageRun(
   return {
     token: guard.pendingToken,
     statusKey: guard.statusKey,
-    maxRuns: Number(guard.ruleConfig?.maxRuns ?? 3),
-    windowHours: Number(guard.ruleConfig?.windowHours ?? 24),
+    maxRuns: Number(guard.ruleConfig?.maxRuns ?? STAGE_RUN_LIMIT),
+    windowHours: Number(
+      guard.ruleConfig?.windowHours ?? STAGE_RUN_WINDOW_HOURS,
+    ),
   };
 }
 
@@ -160,3 +162,7 @@ export async function continueStageRun(
     };
   });
 }
+import {
+  STAGE_RUN_LIMIT,
+  STAGE_RUN_WINDOW_HOURS,
+} from '../../shared/stage-run-limit.js';

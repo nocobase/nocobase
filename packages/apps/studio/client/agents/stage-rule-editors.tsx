@@ -18,6 +18,10 @@ import { Input } from '@/components/ui/input';
 
 import { useAgentFieldLabels } from './agent-field-labels.js';
 import { useAgentName } from './agent-name.js';
+import {
+  STAGE_RUN_LIMIT,
+  STAGE_RUN_WINDOW_HOURS,
+} from '../../shared/stage-run-limit.js';
 
 type StageRuleConfig = StatusRuleEditorProps['config'];
 
@@ -151,7 +155,10 @@ export function RunAgentEditor({
         {(['maxRuns', 'windowHours'] as const).map((field) => (
           <Field key={field}>
             <FieldLabel htmlFor={`${idPrefix}-${field}`}>
-              {t(`studioAgents.stageRules.${field}`)}
+              {t(`studioAgents.stageRules.${field}`, {
+                maxRuns: STAGE_RUN_LIMIT,
+                windowHours: STAGE_RUN_WINDOW_HOURS,
+              })}
             </FieldLabel>
             <Input
               id={`${idPrefix}-${field}`}
@@ -159,7 +166,6 @@ export function RunAgentEditor({
               min={1}
               step={1}
               value={typeof config[field] === 'number' ? config[field] : ''}
-              placeholder={field === 'maxRuns' ? '3' : '24'}
               onChange={(event) =>
                 set({
                   [field]:
@@ -173,7 +179,10 @@ export function RunAgentEditor({
         ))}
       </div>
       <FieldDescription>
-        {t('studioAgents.stageRules.limitHint')}
+        {t('studioAgents.stageRules.limitHint', {
+          maxRuns: STAGE_RUN_LIMIT,
+          windowHours: STAGE_RUN_WINDOW_HOURS,
+        })}
       </FieldDescription>
       <Field>
         <FieldLabel htmlFor={`${idPrefix}-instruction`}>
@@ -215,8 +224,8 @@ export function RunAgentSummary({
   const instruction = excerpt(textOf(config.instruction));
   text = t('studioAgents.stageRules.withLimit', {
     summary: text,
-    maxRuns: config.maxRuns ?? 3,
-    windowHours: config.windowHours ?? 24,
+    maxRuns: config.maxRuns ?? STAGE_RUN_LIMIT,
+    windowHours: config.windowHours ?? STAGE_RUN_WINDOW_HOURS,
   });
   return (
     <span>
