@@ -32,6 +32,7 @@ import type {
   RunUsageTotal,
   Workload,
   WorkloadQuery,
+  SubjectAgentWork,
 } from '../../../shared/runs.js';
 import type { Clock } from '../../kernel/clock.js';
 import type { People } from '../../kernel/people.js';
@@ -223,6 +224,11 @@ export interface RunService {
   list(filter: RunFilter): Promise<Run[]>;
   /** The newest ended run of each agent on each of the subjects (`subjectIds` of `subjectKind`), in no order. */
   lastEnded(subjectKind: string, subjectIds: readonly string[]): Promise<Run[]>;
+  /** Active subject/agent pairs within this scope, once each. Callers decide visibility and approval rules. */
+  workingOn(
+    subjectKind: string,
+    subjectIds: readonly string[],
+  ): Promise<SubjectAgentWork[]>;
   /**
    * The open runs on one kind of subject, held ones with their runner and newest activity, queued ones with their
    * place in the claim order and what holds them; with every agent's load and the runners' (`shared/runs.ts`).
@@ -991,6 +997,33 @@ export function createRunService(deps: RunServiceDeps): RunService {
         if (!newest.has(key)) newest.set(key, record);
       }
       return readRuns([...newest.values()]);
+    },
+
+    async workingOn(subjectKind, subjectIds) {
+      const ids = [...new Set(subjectIds)];
+      if (ids.length === 0) return [];
+      const records = await runsRepo(tx.read()).findMany({
+        select: (select) => select.fields('subjectId', 'agentId'),
+        filter: (f) =>
+          f.and([
+            f.string('subjectKind').eq(subjectKind),
+            f.or(ids.map((id) => f.string('subjectId').eq(id))),
+            f.or(
+              ['dispatched', 'running'].map((status) =>
+                f.string('status').eq(status),
+              ),
+            ),
+          ]),
+      });
+      const pairs = new Map<string, SubjectAgentWork>();
+      for (const record of records) {
+        pairs.set(JSON.stringify([record.subjectId, record.agentId]), {
+          subjectId: record.subjectId,
+          agentId: record.agentId,
+          working: true,
+        });
+      }
+      return [...pairs.values()];
     },
 
     workload(query) {

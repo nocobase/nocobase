@@ -413,3 +413,10 @@ export interface RunRequestItem extends RunRequest {
   readonly responsibleName: string | null;
   readonly requestedByName: string | null;
 }
+
+/** A subject and agent with at least one dispatched or running run; no run details. */
+export interface SubjectAgentWork {
+  readonly subjectId: string;
+  readonly agentId: string;
+  readonly working: boolean;
+}

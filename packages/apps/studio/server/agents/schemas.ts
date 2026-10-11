@@ -1,5 +1,18 @@
 /** The input and answers of Studio's agent routes (`routes.ts`). */
 import { z } from 'zod';
+import {
+  ISSUE_AGENT_WORK_BATCH,
+  type IssueAgentWork,
+} from '../../shared/issue-agent-work.js';
+
+export const IssueAgentWorkInput = z.object({
+  issueIds: z.array(z.string().min(1).max(100)).max(ISSUE_AGENT_WORK_BATCH),
+});
+export const IssueAgentWorkSchema: z.ZodType<IssueAgentWork> = z.object({
+  issueId: z.string(),
+  agentId: z.string(),
+  working: z.boolean(),
+});
 
 import {
   AGENT_BOARD_STATES,

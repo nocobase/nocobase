@@ -229,3 +229,7 @@ The plugin registers no routes of its own: an application mounts its pages and j
 - `@nocobase/app-plugin-agents/client/config` exports `AgentActionCatalogContext`: the agent editor's business actions come from the server (`GET /api/agents/actions`: what the application offers, none without it) unless an application gives another catalog.
 
 Each exported component brings the plugin's translations and its own query cache, so it works inside another plugin's tree.
+
+### Scoped work summaries
+
+`agents.runs.workingOn(subjectKind, subjectIds)` returns each subject/agent pair with a `dispatched` or `running` run once, as `{ subjectId, agentId, working: true }`. Empty scopes return nothing. Reads are restricted to the supplied kind and IDs, without the workload board's global limit; queued and terminal runs are excluded. This service exposes no run details and does not enforce viewer permissions or approval rules: the consuming application must filter visible subjects first and apply its own waiting rules.
