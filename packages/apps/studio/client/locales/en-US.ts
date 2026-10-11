@@ -12,6 +12,17 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  runTranscriptFilters: {
+    title: 'Event types',
+    agent: 'Agent',
+    input: 'Input',
+    tools: 'Tools',
+    thinking: 'Thinking',
+    system: 'System',
+    hiddenGroup: '{{count}} {{group}}',
+    expandHidden: 'Hidden events: {{summary}}',
+    errorsAlwaysVisible: 'Errors are always shown',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
@@ -65,6 +76,22 @@ const enUS = {
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
+  'auth.passwordResetUnavailable':
+    'Self-service password reset is not enabled. Contact an administrator to reset your password.',
+  'auth.capabilityLoadFailed': 'Could not check password reset availability.',
+  'auth.retry': 'Retry',
+  'auth.loading': 'Loading',
+  'auth.passwordRequired': 'Enter a new password.',
+  'members.accountLink': 'Personal profile',
+  'members.actions': 'Member actions',
+  'members.resetPassword': 'Reset password',
+  'members.resettingPassword': 'Resetting password…',
+  'members.passwordResetSuccess': 'Password reset for {{name}}.',
+  'members.resetPasswordSessionsNotice':
+    'Resetting the password will end this member’s existing sessions.',
+  'members.changeOwnPasswordInstead':
+    'Change your own password from your profile.',
+  'members.memberNotFound': 'This member could not be found.',
   'auth.resetTitle': 'Reset password',
   'auth.resetDescription': 'Choose a new password for your account.',
   'auth.identifier': 'Username or email',
@@ -149,7 +176,7 @@ const enUS = {
         'Send the setup instructions below to your preferred local Coding Agent, such as Claude Code or Codex. Once connected, it can help you find projects, create tasks, and update progress.',
       prompt:
         'Please install and configure the NocoBase Studio CLI to manage projects and issues in NocoBase Studio ({{server}}):\n' +
-        '1. Run `{{install}}` to install `nb-studio`.\n' +
+        '1. `nb-studio` needs Node.js 24 or newer with npm: check with `node --version`, and if it is missing or older, ask me before installing it. Then run `{{install}}` to install `nb-studio`.\n' +
         '2. Run `nb-studio login --server {{server}}`, share the sign-in URL and code it displays, and wait for me to confirm the sign-in in my browser.\n' +
         '3. Once signed in, run `nb-studio whoami` to check the identity and permissions, then run `nb-studio docs` to learn the available commands.\n' +
         '4. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',
@@ -1173,6 +1200,10 @@ const enUS = {
       },
     },
     stageRules: {
+      freshSession: 'Start a new session every time',
+      freshSessionHint:
+        'On: each stage run starts a new Agent session, useful for reviews to avoid carrying over earlier conclusions. The working directory is kept.',
+      withFreshSession: '{{summary}} · New session every time',
       agent: 'Agent',
       agentsUnavailable:
         'You cannot list agents here; the rule keeps the agent it names.',

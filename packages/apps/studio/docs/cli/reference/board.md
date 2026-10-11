@@ -16,10 +16,10 @@ nb-studio board failed-run decide <run> --action <string>
 | -------- | ----------- |
 | `run`    |             |
 
-| Flag       | Type     | Description |
-| ---------- | -------- | ----------- |
-| `--action` | retry \\ | reassign \\ | cancel | (required) |
-| `--user`   | string   |             |
+| Flag       | Type                        | Description |
+| ---------- | --------------------------- | ----------- |
+| `--action` | retry \| reassign \| cancel | (required)  |
+| `--user`   | string                      |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -63,6 +63,26 @@ nb-studio board get
 ```bash
 nb-studio board get --project 12
 ```
+
+## board issue-work
+
+Get current agent work on visible issues
+
+At most 100 issue IDs. Only visible issues with an agent executor are returned; matching pending approvals suppress working. No run details are exposed.
+
+```bash
+nb-studio board issue-work --issue-ids <string[]>
+```
+
+| Flag          | Type     | Description            |
+| ------------- | -------- | ---------------------- |
+| `--issue-ids` | string[] | (required; repeatable) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `POST /api/agentBoard/issueWork` (`agentBoardIssueWork`)
 
 ## board start
 

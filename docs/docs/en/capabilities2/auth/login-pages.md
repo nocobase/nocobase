@@ -33,17 +33,21 @@ The sign-in page uses a full-page mountain-road and truck background with compan
 
 The corporate sign-in entry in the screenshot comes from an example with an identity provider already connected; see the section below. Page customization reuses existing forms and authentication actions. Hiding a registration link must be accompanied by disabling registration on the server.
 
-## Multiple sign-in methods
+## Keep password and company-account entries
 
-Applications serving both company-account and password users can offer both entries on one page so users choose a supported sign-in method.
-
-Once the company identity provider is connected, add a corporate sign-in button beside the existing password method. A button alone does not configure the provider, callback address, or account linking.
+When some users use a company identity provider and others retain application password accounts, offer both entries on the same page so they can choose.
 
 ```text
-Offer corporate and password sign-in on the Northstar page.
-Use the identity provider already connected to the application and retain existing password accounts.
-Keep the same brand layout and send employees to their business workspace after sign-in.
+Keep the Northstar password form and add a company-account sign-in button.
+Use the same brand layout for both entries and open the business workspace after sign-in.
+Use the identity provider already connected to the application for company accounts.
 ```
+
+![Customized sign-in page with both the password form and company-account button](../assets/northstar-company-entry-en.png)
+
+**The same page provides password and company-account sign-in entries.**
+
+This example shows the layout of the entries. The identity provider behind the button must be connected; see [Adding authentication methods](./sign-in-methods.md) for configuration, sign-in redirects, and authorization.
 
 ## Further customization
 

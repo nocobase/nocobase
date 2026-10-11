@@ -36,9 +36,11 @@ function useRefresh(
 ): void {
   useEffect(() => {
     if (refreshSignal === undefined) return;
-    void client.invalidateQueries({
-      queryKey: agentsKeys.runs(subjectKind, subjectId),
-    });
+    // Reuse an in-flight request: repeated discovery signals must not discard slow responses forever.
+    void client.invalidateQueries(
+      { queryKey: agentsKeys.runs(subjectKind, subjectId) },
+      { cancelRefetch: false },
+    );
   }, [refreshSignal, client, subjectKind, subjectId]);
 }
 

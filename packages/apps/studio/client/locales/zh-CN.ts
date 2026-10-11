@@ -12,6 +12,17 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  runTranscriptFilters: {
+    title: '事件类型',
+    agent: 'Agent',
+    input: '输入',
+    tools: '工具',
+    thinking: '思考',
+    system: '系统',
+    hiddenGroup: '{{count}} 条{{group}}',
+    expandHidden: '隐藏事件：{{summary}}',
+    errorsAlwaysVisible: '错误始终显示',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
@@ -61,6 +72,20 @@ const zhCN: AppResource = {
   'auth.registerDescription': '创建账户以开始使用。',
   'auth.forgotTitle': '忘记密码',
   'auth.forgotDescription': '输入邮箱，如果账户存在，我们将发送重置链接。',
+  'auth.passwordResetUnavailable': '未开启自助找回，请联系管理员重置密码。',
+  'auth.capabilityLoadFailed': '无法检查自助找回是否已开启。',
+  'auth.retry': '重试',
+  'auth.loading': '加载中',
+  'auth.passwordRequired': '请输入新密码。',
+  'members.accountLink': '个人资料',
+  'members.actions': '成员操作',
+  'members.resetPassword': '重置密码',
+  'members.resettingPassword': '正在重置密码…',
+  'members.passwordResetSuccess': '已重置 {{name}} 的密码。',
+  'members.resetPasswordSessionsNotice':
+    '重置密码后，该成员现有登录会话将失效。',
+  'members.changeOwnPasswordInstead': '请在个人资料中修改自己的密码。',
+  'members.memberNotFound': '找不到该成员。',
   'auth.resetTitle': '重置密码',
   'auth.resetDescription': '为账户设置新密码。',
   'auth.identifier': '用户名或邮箱',
@@ -142,7 +167,7 @@ const zhCN: AppResource = {
         '将下面的配置指令发给你常用的本地 Coding Agent（如 Claude Code、Codex）。完成配置后，就能让它帮你查询项目、创建任务、更新进度。',
       prompt:
         '请帮我安装并配置 NocoBase Studio CLI，用来管理 NocoBase Studio（{{server}}）的项目和任务：\n' +
-        '1. 运行 `{{install}}` 安装 `nb-studio`；\n' +
+        '1. `nb-studio` 需要 Node.js 24 或更高版本及 npm：先用 `node --version` 检查，缺少或版本过低时先征得我同意再安装；然后运行 `{{install}}` 安装 `nb-studio`；\n' +
         '2. 运行 `nb-studio login --server {{server}}`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；\n' +
         '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；\n' +
         '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
@@ -1072,6 +1097,10 @@ const zhCN: AppResource = {
       },
     },
     stageRules: {
+      freshSession: '每次新开会话',
+      freshSessionHint:
+        '开启后，每次阶段运行时 Agent 不续接上一轮会话，适合评审，避免沿用上次的结论；工作目录保留。',
+      withFreshSession: '{{summary}} · 每次新开会话',
       agent: 'Agent',
       agentsUnavailable: '你无法在这里列出 Agent；规则会保留它指定的 Agent。',
       assign: '设为执行者',

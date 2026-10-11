@@ -133,6 +133,14 @@ describe('API documentation access and the Better Auth fragment', () => {
     }
   });
 
+  it('publishes password-reset availability without exposing authentication configuration', async () => {
+    const response = await request('/api/authentication/capabilities');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: { passwordResetAvailable: false },
+    });
+  });
+
   it('refuses a session cookie Better Auth does not recognize', async () => {
     const response = await request('/api/swagger', {
       cookie: 'main.session_token=forged.signature',
@@ -156,6 +164,11 @@ describe('API documentation access and the Better Auth fragment', () => {
     const response = await request('/api/swagger', { cookie: session.cookie });
     const document = (await response.json()) as ApiDocument;
     const paths = document.paths ?? {};
+
+    expect(paths['/api/authentication/capabilities']?.get).toMatchObject({
+      operationId: 'authenticationGetCapabilities',
+      security: [],
+    });
 
     const signInEmail = paths['/api/auth/sign-in/email']?.post;
     expect(signInEmail).toMatchObject({

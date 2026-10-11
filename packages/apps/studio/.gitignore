@@ -24,7 +24,5 @@ coverage/
 # Browser test output: screenshots (pnpm test:screenshots) and Playwright results.
 /output/
 
-# Tarballs built for the image (Dockerfile).
-/runners-dist/
 /test-results/
 /playwright-report/
