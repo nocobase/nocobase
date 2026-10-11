@@ -12,7 +12,7 @@ Authentication identifies people accessing an application. After sign-in, a sess
 | Capability                                            | What it provides                                                                                                    |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | [Password authentication and accounts](./password.md) | Username or email and password sign-in, registration controls, password requirements, recovery, and sign-in status. |
-| Accounts and sessions                                 | Create or disable employee accounts, sign out, and revoke existing sessions.                                        |
+| [Accounts and sessions](./password.md#company-managed-employee-accounts)                                 | Create or disable employee accounts, sign out, and revoke existing sessions.                                        |
 | [API keys](./api-keys.md)                             | Credentials for scripts and integrations, with expiry and revocation.                                               |
 | [Additional sign-in methods](./sign-in-methods.md)    | Corporate identity providers, third-party accounts, and other authentication methods.                               |
 | [Custom sign-in pages](./login-pages.md)              | Company names, logos, backgrounds, layouts, and sign-in entries.                                                    |
