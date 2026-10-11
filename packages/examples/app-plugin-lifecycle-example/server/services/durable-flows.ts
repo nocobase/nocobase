@@ -6,12 +6,14 @@ import {
 } from '@nocobase/lifecycle';
 
 import {
+  INVOICE_ORDERS,
   planOf,
   saleItem,
   type DurableFlow,
   type VendorOutcome,
 } from '../../shared/flows.js';
 import { text } from '../../shared/text.js';
+import { invoiceLifecycle } from '../lifecycles/invoice.js';
 import { exportLifecycle } from '../lifecycles/export.js';
 import { fulfilmentLifecycle } from '../lifecycles/fulfilment.js';
 import { orderLifecycle } from '../lifecycles/order.js';
@@ -33,11 +35,19 @@ import type { Paging, PlainPage } from './lifecycle-example.js';
 
 const COLLECTION: Readonly<Record<DurableFlow, string>> = {
   orders: orderLifecycle.collection,
+  invoices: invoiceLifecycle.collection,
   exports: exportLifecycle.collection,
   purchases: purchaseLifecycle.collection,
   fulfilments: fulfilmentLifecycle.collection,
   subscriptions: subscriptionLifecycle.collection,
 };
+
+export interface NewInvoice {
+  readonly orderRef: string;
+  readonly title: string;
+  readonly taxNumber: string;
+  readonly failSubmissions: number;
+}
 
 export interface NewOrder {
   readonly customerId: string;
@@ -115,6 +125,77 @@ export class DurableFlowService {
 
   public parameters(flow: DurableFlow): object {
     return this.runtime.parameters(flow);
+  }
+
+  public async createInvoice(
+    values: NewInvoice,
+    actor: string,
+  ): Promise<Plain> {
+    if (
+      await this.database
+        .repository(invoiceLifecycle.collection)
+        .findOne({ filter: { orderRef: values.orderRef } })
+    )
+      throw new LifecycleError(
+        'CONFLICT',
+        'This order already has an invoice. Open it and retry instead.',
+      );
+    const order = INVOICE_ORDERS.find(
+      (candidate) => candidate.orderRef === values.orderRef,
+    );
+    try {
+      return await this.create(
+        'invoices',
+        {
+          ...values,
+          customerId: order?.customerId ?? '',
+          amountCents: order?.amountCents ?? 0,
+          queryCount: 0,
+        },
+        actor,
+      );
+    } catch (error) {
+      if (
+        await this.database
+          .repository(invoiceLifecycle.collection)
+          .findOne({ filter: { orderRef: values.orderRef } })
+      )
+        throw new LifecycleError(
+          'CONFLICT',
+          'This order already has an invoice. Open it and retry instead.',
+        );
+      throw error;
+    }
+  }
+
+  public async completeInvoice(
+    invoiceId: string,
+    outcome: 'issued' | 'failed',
+    hold: boolean,
+  ): Promise<WebhookEventView> {
+    const view = await this.runtime.view('invoices', invoiceId, SYSTEM_ACTOR);
+    const providerRequestId = text(view.record.providerRequestId);
+    if (!providerRequestId)
+      throw new SandboxError(
+        'NOT_FOUND',
+        'The invoice has not been submitted.',
+      );
+    const result = await this.sandbox.completeInvoice(
+      providerRequestId,
+      outcome,
+    );
+    return this.outbox.emit({
+      source: 'invoicing',
+      type: result.status === 'issued' ? 'invoice.issued' : 'invoice.failed',
+      recordId: invoiceId,
+      data: {
+        providerRequestId,
+        invoiceNumber: result.invoiceNumber ?? '',
+        pdfUrl: result.pdfUrl ?? '',
+        error: result.error ?? '',
+      },
+      hold,
+    });
   }
 
   public createOrder(values: NewOrder, actor: string): Promise<Plain> {

@@ -47,6 +47,9 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', async (original) => ({
 vi.mock('../../client/issues/issue-marks.js', () => ({
   IssueMarks: () => null,
 }));
+vi.mock('../../client/issues/use-agent-work.js', () => ({
+  useIssueAgentWork: () => new Map(),
+}));
 
 const issue = (
   id: string,

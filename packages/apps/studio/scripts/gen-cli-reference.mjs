@@ -74,7 +74,7 @@ export function usageOf(command, bin) {
 function typeOf(parameter) {
   if (parameter.in === 'file' || parameter.binary)
     return parameter.changed ? 'boolean' : 'path';
-  if (parameter.enum?.length) return parameter.enum.join(' \\| ');
+  if (parameter.enum?.length) return parameter.enum.join(' | ');
   return parameter.type;
 }
 

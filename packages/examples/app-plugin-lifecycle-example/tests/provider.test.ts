@@ -487,6 +487,69 @@ describe('durable flows on the provider', () => {
   });
 });
 
+describe('invoice provider integration', () => {
+  test('creates through the authenticated API, rejects duplicates, and delivers a downloadable result', async ({
+    database,
+  }) => {
+    const { container, app, stop } = await start(database, (services) =>
+      services.instance(authenticationToken, {
+        required: () => async (context, next) => {
+          context.set('auth', { user: { id: 'user-1' } });
+          await next();
+        },
+      } as unknown as Auth),
+    );
+    try {
+      const router = await apiRoutes.createRouter(app);
+      const flows = container.resolve(durableFlowServiceToken);
+      const body = {
+        orderRef: '1024',
+        title: 'Example company',
+        taxNumber: '91310000MA1K000001',
+      };
+      const create = () =>
+        router.request('/lifecycleExample/invoices', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+      const response = await create();
+      expect(response.status).toBe(201);
+      const created = (await response.json()) as {
+        data: { id: string; amountCents: number };
+      };
+      expect(created.data.amountCents).toBe(39900);
+      expect((await create()).status).toBe(409);
+      const id = String(created.data.id);
+      expect(
+        (await router.request(`/lifecycleExample/invoices/${id}/pdf`)).status,
+      ).toBe(404);
+      await flows.runtime.fire('invoices', id, 'submit', {
+        actor: { id: 'user-1' },
+      });
+      const waiting = await eventually(
+        () => flows.runtime.view('invoices', id, { id: 'user-1' }),
+        (view) => view.record.status === 'awaitingIssue',
+      );
+      expect(waiting.record.providerRequestId).toMatch(/^inv_/);
+      const completed = await router.request(
+        `/lifecycleExample/sandbox/invoices/${id}/complete`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ outcome: 'issued', hold: false }),
+        },
+      );
+      expect(completed.status).toBe(201);
+      const pdf = await router.request(`/lifecycleExample/invoices/${id}/pdf`);
+      expect(pdf.status).toBe(200);
+      expect(await pdf.text()).toContain('SANDBOX INVOICE');
+    } finally {
+      await stop();
+    }
+  });
+});
+
 describe('sample data', () => {
   test('builds sample records through the lifecycles when an install asks for it', async ({
     database,
@@ -505,11 +568,12 @@ describe('sample data', () => {
         enabled: true,
       });
       expect(await samples.run()).toMatchObject({
-        executed: ['lifecycle-example/records'],
+        executed: ['lifecycle-example/records', 'lifecycle-example/invoices'],
         failed: [],
       });
       expect(recorded).toEqual([
         'sample-data:lifecycle-example/records:executed',
+        'sample-data:lifecycle-example/invoices:executed',
       ]);
 
       const examples = container.resolve(lifecycleExampleServiceToken);
@@ -554,6 +618,7 @@ describe('sample data', () => {
       const flows = container.resolve(durableFlowServiceToken);
       const statuses = async (flow: Parameters<typeof flows.list>[0]) =>
         (await flows.list(flow, page)).records.map((record) => record.status);
+      expect(await statuses('invoices')).toEqual(['draft', 'draft', 'draft']);
       expect(await statuses('orders')).toEqual(['draft', 'draft']);
       expect(await statuses('exports')).toEqual(['draft', 'draft']);
       expect(await statuses('purchases')).toEqual(['draft', 'draft']);

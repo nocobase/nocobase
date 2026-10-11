@@ -25,6 +25,11 @@ const systemEnUS = {
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
+  'auth.passwordResetUnavailable':
+    'Self-service password reset is not enabled. Contact an administrator to reset your password.',
+  'auth.capabilityLoadFailed': 'Could not check password reset availability.',
+  'auth.retry': 'Retry',
+  'auth.loading': 'Loading',
   'auth.resetDescription': 'Choose a new password for your account.',
   'auth.resetTitle': 'Reset password',
   'auth.identifier': 'Username or email',

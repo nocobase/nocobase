@@ -12,6 +12,17 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  runTranscriptFilters: {
+    title: 'Event types',
+    agent: 'Agent',
+    input: 'Input',
+    tools: 'Tools',
+    thinking: 'Thinking',
+    system: 'System',
+    hiddenGroup: '{{count}} {{group}}',
+    expandHidden: 'Hidden events: {{summary}}',
+    errorsAlwaysVisible: 'Errors are always shown',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
@@ -65,6 +76,22 @@ const enUS = {
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
+  'auth.passwordResetUnavailable':
+    'Self-service password reset is not enabled. Contact an administrator to reset your password.',
+  'auth.capabilityLoadFailed': 'Could not check password reset availability.',
+  'auth.retry': 'Retry',
+  'auth.loading': 'Loading',
+  'auth.passwordRequired': 'Enter a new password.',
+  'members.accountLink': 'Personal profile',
+  'members.actions': 'Member actions',
+  'members.resetPassword': 'Reset password',
+  'members.resettingPassword': 'Resetting password…',
+  'members.passwordResetSuccess': 'Password reset for {{name}}.',
+  'members.resetPasswordSessionsNotice':
+    'Resetting the password will end this member’s existing sessions.',
+  'members.changeOwnPasswordInstead':
+    'Change your own password from your profile.',
+  'members.memberNotFound': 'This member could not be found.',
   'auth.resetTitle': 'Reset password',
   'auth.resetDescription': 'Choose a new password for your account.',
   'auth.identifier': 'Username or email',
@@ -1173,6 +1200,10 @@ const enUS = {
       },
     },
     stageRules: {
+      freshSession: 'Start a new session every time',
+      freshSessionHint:
+        'On: each stage run starts a new Agent session, useful for reviews to avoid carrying over earlier conclusions. The working directory is kept.',
+      withFreshSession: '{{summary}} · New session every time',
       agent: 'Agent',
       agentsUnavailable:
         'You cannot list agents here; the rule keeps the agent it names.',

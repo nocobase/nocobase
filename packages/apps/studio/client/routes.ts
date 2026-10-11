@@ -488,6 +488,16 @@ const configRoutes: AppClientRouteContribution = defineAppRoutes([
         breadcrumb: { title: 'config.nav.members' },
         authz: setting('pm.members'),
         componentLoader: () => import('./pages/config/members.js'),
+        children: [
+          {
+            name: 'config-member-reset-password',
+            path: ':userId/reset-password',
+            authz: 'skip',
+            breadcrumb: { title: 'members.resetPassword' },
+            componentLoader: () =>
+              import('./pages/config/members/reset-password-dialog.js'),
+          },
+        ],
       },
       {
         name: 'config-roles',

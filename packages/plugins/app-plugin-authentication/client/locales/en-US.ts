@@ -22,6 +22,8 @@ const enUS = {
     USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
       'An account with this email already exists. Use another email.',
     PASSWORD_TOO_SHORT: 'This password is too short.',
+    RESET_PASSWORD_DISABLED:
+      'Self-service password reset is not enabled. Contact an administrator to reset your password.',
     PASSWORD_TOO_LONG: 'This password is too long.',
     EMAIL_NOT_VERIFIED: 'Verify your email address before signing in.',
     INVALID_TOKEN: 'This link is invalid or has expired.',
