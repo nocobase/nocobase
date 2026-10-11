@@ -289,7 +289,9 @@ async function claimedRun(
 
 describe('the CLI manifest', () => {
   it("offers a run what its agent may do within the waking person's permissions", async () => {
-    const { token, runId } = await claimedRun();
+    const { token, runId } = await claimedRun({
+      actions: ['pm.issues/view', 'pm.issues/comment', 'pm.issues/edit'],
+    });
     const manifest = await h.manifest({ runToken: token });
     expect(manifest.identity).toMatchObject({
       kind: 'run',
@@ -758,7 +760,9 @@ describe('claims and endings', () => {
     await h.agents.skills.attach({ scope: 'project', scopeId: project.id }, [
       skill.id,
     ]);
-    const agentId = await h.createAgent();
+    const agentId = await h.createAgent({
+      actions: ['pm.issues/view', 'pm.issues/comment', 'pm.issues/edit'],
+    });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Fix login',
       description: 'It fails on Safari.',

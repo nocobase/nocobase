@@ -192,4 +192,10 @@ Northstar Logistics 项目已在此前演示中创建。本轮保留该项目，
 
 点击 Preview 的访问入口，打开应用。本例 Preview 已就绪，应用 PR 尚未合入。
 
+首次登录时，返回上述 Preview 区域，展开 **First administrator（初始管理员）**，复制 **Username（用户名）** 和 **Password（密码）**，再到应用登录页填写。只有能编辑 PR 所关联任务的人可以查看这组凭据；文档与截图不展示实际密码。
+
+登录后，可以看到 **Northstar Logistics** 首页，以及左侧的 **Home、Orders、Customers、Drivers** 页面入口。这是初始化任务交付的基础应用；后续任务将在这些页面中逐步实现业务功能。
+
+![应用首页与已创建页面导航](./assets/application-home-clean-header-en.png)
+
 本轮公网上传遇到超时，采用本地补充上传后取得上述部署结果；具体问题和处理步骤见[本轮待确认问题](./review-notes#本地补充上传并查看-preview)。

@@ -5,6 +5,7 @@
  * issue to Done, failing checks waking the agent, merging from Studio, the `prMerged` entry condition), against a
  * GitHub stand-in.
  */
+import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -183,6 +184,7 @@ describe('design first', () => {
       statusKey: 'analysis',
       ownerUserId: 'alice',
       executor: { type: 'agent', id: developerId },
+      start: false,
     });
     // The designer's stage is asked of alice once the creation commits; she confirms it.
     const pending = () =>
@@ -284,6 +286,8 @@ describe('design first', () => {
     // Only the owner, the project lead or an administrator approves: bob, who woke the run, may not as a member.
     const design = createDesignService({
       projects: () => h.projects,
+      agents: h.agents,
+      kinds: h.projects.kinds,
       inbox: () => undefined,
     });
     h.roles.set('bob', 'member');
@@ -337,6 +341,8 @@ describe('design first', () => {
     await propose(token, issue);
     const design = createDesignService({
       projects: () => h.projects,
+      agents: h.agents,
+      kinds: h.projects.kinds,
       inbox: () => undefined,
     });
     await expect(
@@ -640,6 +646,81 @@ describe('pull requests', () => {
       ),
     ).toBe(true);
   });
+
+  for (const signal of ['checks', 'conflict'] as const) {
+    it(`counts one ${signal} head once across linked issues that resume development one by one`, async () => {
+      const repo = await repoWithToken();
+      h.github.addPull(REPO, {
+        number: 30,
+        head: { ref: 'shared-development', sha: 'shared-head' },
+      });
+      const issues = [];
+      for (let index = 0; index < 4; index++) {
+        const agentId = await h.createAgent({ name: `Developer ${index}` });
+        const issue = await h.projects.issues.create(alice(), {
+          title: `Linked work ${index}`,
+          statusKey: index === 0 ? 'in_progress' : 'in_review',
+          executor: { type: 'agent', id: agentId },
+          start: false,
+        });
+        await h.git.link(alice(), issue.id, PR_URL(30), {
+          type: 'user',
+          id: 'alice',
+        });
+        issues.push(issue);
+      }
+      if (signal === 'checks')
+        h.github.setStatus(REPO, 'shared-head', 'failure');
+      else h.github.pull(REPO, 30).mergeable_state = 'dirty';
+      await h.git.pollRepo(repo);
+      const pull = (await h.git.list(alice(), issues[0]!.id)).data[0]!;
+      expect(
+        (await findPullRequestById(h.projects.tx.read(), pull.id))?.signals[
+          signal
+        ],
+      ).toMatchObject({ count: 1 });
+      for (const issue of issues) {
+        const inputs = (
+          await Promise.all(
+            (await runsOf(issue.id)).map((run) => h.agents.runs.detail(run.id)),
+          )
+        ).flatMap((run) => run.inputs);
+        expect(
+          inputs.filter(
+            (input) =>
+              (input.payload as { trigger?: string }).trigger ===
+              (signal === 'checks' ? 'prChecksFailed' : 'prConflict'),
+          ),
+        ).toHaveLength(1);
+        if (issue.statusKey !== 'in_progress') await move(issue, 'in_progress');
+        const payload = await h.claimOne();
+        expect((await h.agents.runs.get(payload.run.id)).subject.id).toBe(
+          issue.id,
+        );
+        await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+          workDir: '/tmp/work',
+          adapter: { kind: 'claude' },
+          acceptsInput: false,
+        });
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+              summary: 'Done',
+              handledInputIds: payload.inputs.map(
+                (input: { id: string }) => input.id,
+              ),
+            })
+          ).status,
+        ).toBe(200);
+      }
+      await h.git.pollRepo(repo);
+      expect(
+        (await findPullRequestById(h.projects.tx.read(), pull.id))?.signals[
+          signal
+        ],
+      ).toMatchObject({ count: 1 });
+    });
+  }
 
   it('tells GitHub’s rate limit apart from a refusal, when merging and when polling', async () => {
     const { issue } = await reviewIssue();

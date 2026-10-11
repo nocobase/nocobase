@@ -267,3 +267,11 @@ nb-studio deploy --app northstar-logistics-pr-2 --repository <账号>/<仓库> -
 在任务的 **Code and deployments** 中展开 PR，打开 Preview 访问入口。本轮入口已返回 HTTP 200，应用预览地址为 `http://localhost:14100/northstar-logistics-pr-2/`。应用 PR 尚未合入。
 
 2026-10-11 结果补充：公网 IP HTTP 转发的 Actions run 38101994173 构建成功，但上传约 329 秒后返回 HTTP 408；具体超时环节未确认。改为保存 artifact 后，run 38102660812 成功；本机下载实际提交 4a0c6f7c352ed02cf63722cc636cb44587fd9903 对应的 82,076,714 字节部署包，通过本机 CLI 上传。Studio 构建记录 succeeded，Preview 已 Ready，本地访问返回 HTTP 200。此结果验证构建、包接收和部署，不代表云端自动上传问题已解决。
+
+## Preview 登录凭据入口不易发现
+
+**2026-10-11 用户反馈：**Preview 已就绪，但首次访问应用需要用户名和密码。凭据藏在任务的 Code and deployments → 展开 PR → First administrator 中，用户在没有指引时难以找到，造成预览已部署却无法继续登录的使用障碍。
+
+**当前补充：**正文已增加查找和复制用户名、密码的步骤，不记录实际密码。此处补充文档指引，不代表界面问题已修复。
+
+**建议，待开发确认：**在 Preview 访问入口旁提供明显的“查看登录信息”入口，或在首次打开 Preview 时提示凭据位置；保留现有权限控制。

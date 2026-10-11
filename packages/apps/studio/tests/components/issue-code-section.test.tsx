@@ -136,14 +136,17 @@ function answer({
   pullRequests,
   previews,
   marks,
+  labels = [],
 }: {
   readonly pullRequests: readonly IssuePullRequest[];
   readonly previews: readonly PreviewView[];
   readonly marks: readonly DeployMark[];
+  readonly labels?: IssuePreviews['labels'];
 }) {
   const state: IssuePreviews = {
     issueId: 'i1',
     identifier: 'PM-1',
+    labels,
     previews,
     blocker: null,
     canEdit: true,
@@ -223,6 +226,46 @@ beforeEach(() => {
 });
 
 describe('IssueCodeSection', () => {
+  it('shows the confirmed no-preview state instead of waiting for a preview', async () => {
+    answer({
+      pullRequests: [pullRequest(12)],
+      previews: [],
+      marks: [],
+      labels: [
+        { pullRequestId: 'pr12', present: true, managed: true, failed: false },
+      ],
+    });
+    show();
+    unfold(await rowOf(12));
+    expect(
+      await screen.findByText('previews.preference.skipped'),
+    ).toBeVisible();
+    expect(screen.queryByText('studioGit.section.noPreview')).toBeNull();
+  });
+  it('keeps an existing preview available and reports a failed label synchronization', async () => {
+    answer({
+      pullRequests: [pullRequest(12)],
+      previews: [preview(12)],
+      marks: [],
+      labels: [
+        { pullRequestId: 'pr12', present: true, managed: true, failed: true },
+      ],
+    });
+    show();
+    const row = await rowOf(12);
+    expect(
+      await within(row).findByRole('button', {
+        name: /studioGit.section.openPreview/u,
+      }),
+    ).toHaveAttribute('href', 'https://web-pr-12.example.com/');
+    unfold(row);
+    expect(
+      await screen.findByText('previews.preference.syncFailed'),
+    ).toBeVisible();
+    expect(
+      await screen.findByText('https://web-pr-12.example.com/'),
+    ).toBeVisible();
+  });
   it('puts each preview under its own pull request: a ready one with its address, a blocked one with its form', async () => {
     answer({
       pullRequests: [pullRequest(12), pullRequest(13)],

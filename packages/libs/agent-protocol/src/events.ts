@@ -123,6 +123,8 @@ export const FAILURE_REASONS = [
    * `checkoutFailed` otherwise.
    */
   'prepareNetwork',
+  /** A live process holds the workspace lock. Requeued with backoff when announced; older applications receive checkoutFailed. */
+  'workspaceBusy',
   /**
    * A repository's credential could not be had for the run's checkout because the application's code host is
    * unavailable or slow just now (protocol 9, `REPO_ACCESS_UNAVAILABLE`). Retried.
@@ -148,6 +150,7 @@ export const RETRYABLE_FAILURES: readonly FailureReason[] = [
   'toolNetwork',
   'toolRateLimit',
   'prepareNetwork',
+  'workspaceBusy',
   'repoAccessUnavailable',
 ];
 
@@ -163,6 +166,7 @@ export const ANNOUNCED_FAILURES: Readonly<
   Partial<Record<FailureReason, FailureReason>>
 > = {
   prepareNetwork: 'checkoutFailed',
+  workspaceBusy: 'checkoutFailed',
 };
 
 /** `reason` if the application accepts it (`accepted`, from `RunHeader.acceptedFailures`), else its fallback. */

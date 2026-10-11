@@ -43,6 +43,11 @@ export const USERS = {
 
 export type DemoUser = keyof typeof USERS;
 
+interface UserCredentials {
+  readonly email: string;
+  readonly password: string;
+}
+
 export const server = readState();
 
 /** The address of a page under Studio's mount, such as `url('/issues')`. */
@@ -121,16 +126,16 @@ export class Api {
 /** Signs a browser context in through the API; the context's pages and requests then share the session cookie. */
 export async function signIn(
   context: BrowserContext,
-  user: DemoUser,
+  user: DemoUser | UserCredentials,
 ): Promise<void> {
-  const { email, password } = USERS[user];
+  const { email, password } = typeof user === 'string' ? USERS[user] : user;
   const response = await context.request.post(url('/api/auth/sign-in/email'), {
     data: { email, password },
     headers: CONNECTION_HEADERS,
   });
   if (!response.ok())
     throw new Error(
-      `Signing in as ${user} failed: ${response.status()} ${await response.text()}`,
+      `Signing in as ${email} failed: ${response.status()} ${await response.text()}`,
     );
 }
 
@@ -195,10 +200,10 @@ export const test = base.extend<Fixtures>({
   ],
 });
 
-/** An API client signed in as another demo account, in a context of its own. */
+/** An API client signed in as another account, in a context of its own. */
 export async function apiAs(
   browser: import('@playwright/test').Browser,
-  user: DemoUser,
+  user: DemoUser | UserCredentials,
 ): Promise<{ api: Api; close: () => Promise<void> }> {
   const context = await browser.newContext();
   await signIn(context, user);

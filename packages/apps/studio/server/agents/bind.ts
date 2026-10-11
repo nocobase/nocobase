@@ -89,6 +89,8 @@ import { createAgentKind } from './kind.js';
 import { agentBlockedRule, settleBlockedCards } from './blocked.js';
 import {
   announceFailedRuns,
+  announceRejectedRuns,
+  recordRejectedClaim,
   runFailedRule,
   settleFailedRunCards,
 } from './notices.js';
@@ -171,6 +173,8 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
   const direct = createDirectWrites({ agents, projects: deps.projects });
   const design = createDesignService({
+    agents,
+    kinds: deps.kinds,
     projects: deps.projects,
     inbox: deps.inboxPort ?? (() => undefined),
   });
@@ -194,7 +198,12 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
         agents,
         deps.projects,
         // A run told its issue moved to another project is followed by a run there.
-        { onRunFinished: work.onRunFinished },
+        {
+          onRunFinished: async (tx, run) => {
+            await recordRejectedClaim(tx, run, agents, deps.projects);
+            await work.onRunFinished(tx, run);
+          },
+        },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
       ),
       reports: issueReports(deps.projects, viewerOf),
@@ -256,6 +265,9 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
           })
         ).map((member) => ({ id: member.userId, name: member.name })),
     }),
+    announceRejectedRuns(agents, deps.projects, (error) =>
+      onError('Agents could not announce a rejected claim.', error),
+    ),
     announceFailedRuns(agents, deps.projects, (error) =>
       onError('Agents could not announce a failed run.', error),
     ),

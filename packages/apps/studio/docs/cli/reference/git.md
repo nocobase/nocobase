@@ -124,22 +124,22 @@ For whoever manages the connections. `sameAppAs` adds another installation of an
 nb-studio git connection create
 ```
 
-| Flag                      | Type    | Description                    |
-| ------------------------- | ------- | ------------------------------ |
-| `--provider`              | github  |                                |
-| `--kind`                  | app \\  | token                          |     |
-| `--same-app-as`           | string  |                                |
-| `--name`                  | string  |                                |
-| `--web-url`               | string  |                                |
-| `--account`               | string  |                                |
-| `--app-id`                | string  |                                |
-| `--installation-id`       | string  |                                |
-| `--client-id`             | string  |                                |
-| `--private-key`           | string  | (or --private-key-file <path>) |
-| `--client-secret`         | string  |                                |
-| `--token`                 | string  |                                |
-| `--webhook-secret`        | string  |                                |
-| `--allow-personal-tokens` | boolean |                                |
+| Flag                      | Type         | Description                    |
+| ------------------------- | ------------ | ------------------------------ |
+| `--provider`              | github       |                                |
+| `--kind`                  | app \| token |                                |
+| `--same-app-as`           | string       |                                |
+| `--name`                  | string       |                                |
+| `--web-url`               | string       |                                |
+| `--account`               | string       |                                |
+| `--app-id`                | string       |                                |
+| `--installation-id`       | string       |                                |
+| `--client-id`             | string       |                                |
+| `--private-key`           | string       | (or --private-key-file <path>) |
+| `--client-secret`         | string       |                                |
+| `--token`                 | string       |                                |
+| `--webhook-secret`        | string       |                                |
+| `--allow-personal-tokens` | boolean      |                                |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -227,22 +227,22 @@ nb-studio git connection update <connection>
 | ------------ | ----------- |
 | `connection` |             |
 
-| Flag                      | Type    | Description                    |
-| ------------------------- | ------- | ------------------------------ |
-| `--provider`              | github  |                                |
-| `--kind`                  | app \\  | token                          |     |
-| `--same-app-as`           | string  |                                |
-| `--name`                  | string  |                                |
-| `--web-url`               | string  |                                |
-| `--account`               | string  |                                |
-| `--app-id`                | string  |                                |
-| `--installation-id`       | string  |                                |
-| `--client-id`             | string  |                                |
-| `--private-key`           | string  | (or --private-key-file <path>) |
-| `--client-secret`         | string  |                                |
-| `--token`                 | string  |                                |
-| `--webhook-secret`        | string  |                                |
-| `--allow-personal-tokens` | boolean |                                |
+| Flag                      | Type         | Description                    |
+| ------------------------- | ------------ | ------------------------------ |
+| `--provider`              | github       |                                |
+| `--kind`                  | app \| token |                                |
+| `--same-app-as`           | string       |                                |
+| `--name`                  | string       |                                |
+| `--web-url`               | string       |                                |
+| `--account`               | string       |                                |
+| `--app-id`                | string       |                                |
+| `--installation-id`       | string       |                                |
+| `--client-id`             | string       |                                |
+| `--private-key`           | string       | (or --private-key-file <path>) |
+| `--client-secret`         | string       |                                |
+| `--token`                 | string       |                                |
+| `--webhook-secret`        | string       |                                |
+| `--allow-personal-tokens` | boolean      |                                |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -304,9 +304,9 @@ nb-studio git project set <project> --attribution <string>
 | --------- | ----------- |
 | `project` |             |
 
-| Flag            | Type         | Description |
-| --------------- | ------------ | ----------- |
-| `--attribution` | withAgent \\ | meOnly      | (required) |
+| Flag            | Type                | Description |
+| --------------- | ------------------- | ----------- |
+| `--attribution` | withAgent \| meOnly | (required)  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

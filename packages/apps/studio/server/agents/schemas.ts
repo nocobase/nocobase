@@ -1,5 +1,18 @@
 /** The input and answers of Studio's agent routes (`routes.ts`). */
 import { z } from 'zod';
+import {
+  ISSUE_AGENT_WORK_BATCH,
+  type IssueAgentWork,
+} from '../../shared/issue-agent-work.js';
+
+export const IssueAgentWorkInput = z.object({
+  issueIds: z.array(z.string().min(1).max(100)).max(ISSUE_AGENT_WORK_BATCH),
+});
+export const IssueAgentWorkSchema: z.ZodType<IssueAgentWork> = z.object({
+  issueId: z.string(),
+  agentId: z.string(),
+  working: z.boolean(),
+});
 
 import {
   AGENT_BOARD_STATES,
@@ -29,6 +42,11 @@ export const DecideFailedRunInput = z
 
 export const DesignDecisionInput = z.strictObject({
   comment: z.string().optional(),
+});
+export const DesignApproveInput = DesignDecisionInput.extend({
+  executor: z
+    .strictObject({ type: z.enum(['agent', 'user']), id: z.string().min(1) })
+    .optional(),
 });
 
 const filter = z
@@ -102,6 +120,15 @@ export const DesignStateSchema: z.ZodType<DesignState> = z
     proposal: DesignProposalSchema.nullable().meta({
       description: 'The newest proposal; null before the first.',
     }),
+    executorOk: z.boolean(),
+    recommendedAgentId: z.string().nullable(),
+    executorCandidates: z.array(
+      z.object({
+        type: z.enum(['agent', 'user']),
+        id: z.string(),
+        name: z.string(),
+      }),
+    ),
     canApprove: z.boolean(),
     canRequestChanges: z.boolean(),
   })

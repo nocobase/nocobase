@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.ts';
 import LoginPage from '../../client/pages/auth/login.tsx';
+import ForgotPasswordPage from '../../client/pages/auth/forgot-password.tsx';
 import RegisterPage from '../../client/pages/auth/register.tsx';
 
 const passwordLoginAction = vi.hoisted(() => ({
@@ -18,6 +19,18 @@ const passwordLoginAction = vi.hoisted(() => ({
 }));
 
 const signUpAvailable = vi.hoisted(() => ({ value: true }));
+const resetCapability = vi.hoisted(() => ({
+  data: { passwordResetAvailable: true } as
+    { passwordResetAvailable: boolean } | undefined,
+  isPending: false,
+  isError: false,
+  refetch: vi.fn(),
+}));
+const passwordResetRequest = vi.hoisted(() => ({
+  isPending: false,
+  isSuccess: false,
+  submit: vi.fn(),
+}));
 
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
@@ -29,10 +42,12 @@ vi.mock('@nocobase/app-client', async (importOriginal) => ({
 vi.mock('@nocobase/app-plugin-authentication/client/actions', () => ({
   usePasswordLogin: () => passwordLoginAction,
   usePasswordRegistration: () => ({ isPending: false, submit: vi.fn() }),
+  usePasswordResetRequest: () => passwordResetRequest,
 }));
 
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useSignUpAvailable: () => signUpAvailable.value,
+  usePasswordResetCapability: () => resetCapability,
 }));
 
 const runtime = await createTestI18nRuntime({
@@ -122,6 +137,67 @@ describe('Studio authentication pages', () => {
       'href',
       '/register',
     );
+  });
+
+  it('hides password recovery when the server has not configured it', () => {
+    resetCapability.data = { passwordResetAvailable: false };
+    renderAt('/', <LoginPage />);
+    expect(
+      screen.queryByRole('link', { name: 'Forgot password?' }),
+    ).not.toBeInTheDocument();
+    resetCapability.data = { passwordResetAvailable: true };
+  });
+
+  it('shows the administrator contact message on direct access while recovery is disabled', () => {
+    resetCapability.data = { passwordResetAvailable: false };
+    renderAt('/forgot-password', <ForgotPasswordPage />);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Self-service password reset is not enabled',
+    );
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
+    resetCapability.data = { passwordResetAvailable: true };
+  });
+
+  it('shows a loading state and retries a failed capability request', () => {
+    resetCapability.data = undefined;
+    resetCapability.isPending = true;
+    resetCapability.isError = false;
+    const { rerender } = renderAt('/forgot-password', <ForgotPasswordPage />);
+    expect(screen.getByLabelText('Loading')).toBeVisible();
+
+    resetCapability.isPending = false;
+    resetCapability.isError = true;
+    rerender(
+      <TestI18nProvider runtime={runtime}>
+        <MemoryRouter initialEntries={['/forgot-password']}>
+          <Routes>
+            <Route element={<ForgotPasswordPage />} path='/forgot-password' />
+          </Routes>
+        </MemoryRouter>
+      </TestI18nProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(resetCapability.refetch).toHaveBeenCalled();
+    resetCapability.data = { passwordResetAvailable: true };
+    resetCapability.isPending = false;
+    resetCapability.isError = false;
+  });
+
+  it('keeps the reset request form usable when the capability is available', async () => {
+    resetCapability.data = { passwordResetAvailable: true };
+    resetCapability.isPending = false;
+    resetCapability.isError = false;
+    passwordResetRequest.submit.mockClear();
+    renderAt('/forgot-password', <ForgotPasswordPage />);
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'person@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
+    await waitFor(() => {
+      expect(passwordResetRequest.submit).toHaveBeenCalledWith({
+        email: 'person@example.com',
+      });
+    });
   });
 
   it('sends a visitor back to sign-in while sign-up is off', () => {
