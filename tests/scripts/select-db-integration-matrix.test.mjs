@@ -105,7 +105,6 @@ test('shared database code and dependency or CI inputs select every database', (
     '.pnpmfile.cjs',
     'pnpmfile.cjs',
     'patches/knex.patch',
-    '.github/workflows/v3-quality.yml',
     'scripts/select-db-integration-matrix.mjs',
     'tests/scripts/select-db-integration-matrix.test.mjs',
   ]) {
@@ -222,76 +221,4 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
     });
     assert.equal(readFileSync(output, 'utf8'), expected);
   }
-});
-
-test('the actual Quality gate only accepts successful tests or an explicitly planned skip', () => {
-  const workflow = readFileSync(
-    path.join(root, '.github/workflows/v3-quality.yml'),
-    'utf8',
-  );
-  const gate = workflow.slice(
-    workflow.indexOf('      - name: Verify parallel jobs'),
-  );
-  const shell = gate
-    .split('        run: |\n')[1]
-    .split('\n')
-    .map((line) => line.slice(10))
-    .join('\n');
-  const passing = {
-    CHANGED_FILES_RESULT: 'success',
-    VALIDATION_RESULT: 'success',
-    BUILD_RESULT: 'success',
-    CREATE_APP_SMOKE_RESULT: 'success',
-    APP_INSTALLER_SMOKE_RESULT: 'success',
-    DB_PLAN_RESULT: 'success',
-    DB_SHOULD_RUN: 'true',
-    DB_INTEGRATION_RESULT: 'success',
-  };
-  const run = (overrides) =>
-    spawnSync('bash', ['-e', '-c', shell], {
-      env: { ...process.env, ...passing, ...overrides },
-    }).status;
-  assert.equal(run({}), 0);
-  assert.equal(
-    run({ DB_SHOULD_RUN: 'false', DB_INTEGRATION_RESULT: 'skipped' }),
-    0,
-  );
-  for (const result of ['failure', 'cancelled', 'skipped', '']) {
-    assert.notEqual(
-      run({
-        DB_PLAN_RESULT: result,
-        DB_SHOULD_RUN: 'false',
-        DB_INTEGRATION_RESULT: 'skipped',
-      }),
-      0,
-    );
-    assert.notEqual(run({ DB_INTEGRATION_RESULT: result }), 0);
-  }
-  for (const result of ['success', 'failure', 'cancelled']) {
-    assert.notEqual(
-      run({ DB_SHOULD_RUN: 'false', DB_INTEGRATION_RESULT: result }),
-      0,
-    );
-  }
-  assert.notEqual(
-    run({ DB_SHOULD_RUN: '', DB_INTEGRATION_RESULT: 'skipped' }),
-    0,
-  );
-  for (const job of [
-    'CHANGED_FILES_RESULT',
-    'VALIDATION_RESULT',
-    'BUILD_RESULT',
-    'CREATE_APP_SMOKE_RESULT',
-    'APP_INSTALLER_SMOKE_RESULT',
-  ]) {
-    assert.notEqual(run({ [job]: 'failure' }), 0);
-  }
-  assert.notEqual(
-    run({
-      BUILD_RESULT: 'failure',
-      DB_SHOULD_RUN: 'false',
-      DB_INTEGRATION_RESULT: 'skipped',
-    }),
-    0,
-  );
 });

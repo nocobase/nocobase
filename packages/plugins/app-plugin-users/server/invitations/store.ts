@@ -60,15 +60,33 @@ export async function updateInvitation(
   });
 }
 
+/** A delayed send must never overwrite the outcome of a rotated or closed invitation. */
+export async function recordInvitationDelivery(
+  connection: DatabaseConnection,
+  row: InvitationRecord,
+  error: string | null,
+): Promise<void> {
+  const now = new Date().toISOString();
+  await invitations(connection).updateMany({
+    filter: { id: row.id, status: 'pending', tokenHash: row.tokenHash },
+    values: {
+      sentAt: error ? null : now,
+      sendError: error?.slice(0, 1000) ?? null,
+      updatedAt: now,
+    },
+  });
+}
+
 /** Marks a pending invitation accepted; false when it no longer is pending. */
 export async function claimInvitation(
   connection: DatabaseConnection,
   id: string,
   userId: string,
+  tokenHash: string,
 ): Promise<boolean> {
   const now = new Date().toISOString();
   const { updatedCount } = await invitations(connection).updateMany({
-    filter: { id, status: 'pending' },
+    filter: { id, status: 'pending', tokenHash },
     values: {
       status: 'accepted',
       acceptedUserId: userId,
