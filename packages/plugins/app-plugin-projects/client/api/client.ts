@@ -359,7 +359,7 @@ export class PmApi {
     return this.send('projects/issues', 'POST', input);
   }
 
-  /** The issue after the change; with `pendingApproval`, unchanged because the status change waits for approval. */
+  /** The issue after the change; with `pendingApproval`, the status waits while an explicitly supplied executor is saved without starting. */
   public updateIssue(
     issueId: string,
     input: UpdateIssueRequest,

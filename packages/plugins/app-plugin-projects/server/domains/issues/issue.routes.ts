@@ -323,7 +323,7 @@ export function createIssueRoutes(deps: {
         ),
         202: dataResponse(
           UpdateIssueResultSchema,
-          'The status change waits for approval: the issue is unchanged, nothing else in the request is applied, and `pendingApproval` is the request that holds it.',
+          'The status change waits for approval. An explicitly supplied executor is saved without starting work; other fields are held. `pendingApproval` is the request that holds the status change.',
         ),
         ...apiErrorResponses,
         400: apiErrorResponse(

@@ -101,7 +101,7 @@ to? })`, a dotted key such as `acme.merged`; `from`/`to` are the status categori
   event whose plugin is gone is kept while unchanged. In the browser, `WorkflowEventsContext` (`client/kit`) gives
   each event its title and hint for the workflow editor and the timeline.
 - A transition may carry `approval: { approvers: ['owner' | 'projectLead' | 'admin', …] }`. A status change through
-  it answers `PATCH /api/projects/issues/{issueId}` with 202 `{ data: { issue, pendingApproval } }` (the issue unchanged) unless the
+  it answers `PATCH /api/projects/issues/{issueId}` with 202 `{ data: { issue, pendingApproval } }` (the status unchanged; an explicitly supplied executor is saved with `start: false`, while other fields wait) unless the
   mover is an approver or none resolves. `GET /api/projects/approvals` lists the caller's; `POST /api/projects/approvals/{approvalId}/
 approve|reject` (403 `NOT_APPROVER`) and `/withdraw` (403 `NOT_REQUESTER`) decide; a decided request is 400
   `APPROVAL_DECIDED`, a second pending one 400 `APPROVAL_PENDING`. Approving moves the issue, or leaves the request
@@ -133,3 +133,5 @@ approve|reject` (403 `NOT_APPROVER`) and `/withdraw` (403 `NOT_REQUESTER`) decid
 
 `GET /api/projects/me` as a signed-in user returns 200 with `permissions`; `POST /api/projects/issues` with a `title` returns 201
 with an identifier such as `PM-1`.
+
+Delegated `comment.create` plans accept `handoff` and `persist` just like direct comment writes; persistent assignment requires the decider’s issue edit permission and rolls back with a failed comment.

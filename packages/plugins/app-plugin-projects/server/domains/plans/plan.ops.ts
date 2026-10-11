@@ -105,6 +105,7 @@ type Kind =
   | 'nullableTarget'
   | 'targets'
   | 'executor'
+  | 'handoff'
   | 'object';
 
 interface Field {
@@ -197,6 +198,15 @@ function fits(kind: Kind, value: unknown): boolean {
             ['type', 'id', 'tool', 'toolSource'].includes(key),
           ))
       );
+    case 'handoff':
+      return (
+        isRecord(value) &&
+        ((value.none === true && Object.keys(value).length === 1) ||
+          (fits('executor', value) &&
+            typeof value.tool === 'string' &&
+            value.tool.trim().length > 0 &&
+            value.tool.length <= 128))
+      );
     case 'object':
       return isRecord(value);
   }
@@ -213,6 +223,8 @@ const EXPECTED: Readonly<Record<Kind, string>> = {
   nullableTarget: 'an id, an identifier, {"ref": "..."} or null',
   targets: 'an array of ids, identifiers or {"ref": "..."}',
   executor: EXECUTOR_HINT.replace('use ', ''),
+  handoff:
+    '{"type": "<kind>", "id": "<id>", "tool": "<tool>"} or {"none": true}',
   object: 'an object',
 };
 
@@ -280,6 +292,8 @@ const SHAPES = {
     start: opt('boolean'),
   },
   'comment.create': {
+    handoff: opt('handoff'),
+    persist: opt('boolean'),
     issue: req('target'),
     content: req('string'),
     parentId: opt('nullableString'),
@@ -504,6 +518,8 @@ const commentCreate: OpDefinition = {
       issue.id,
       {
         content: params.content,
+        ...(params.handoff === undefined ? {} : { handoff: params.handoff }),
+        ...(params.persist === undefined ? {} : { persist: params.persist }),
         ...(params.parentId === undefined ? {} : { parentId: params.parentId }),
         ...(params.attachmentIds && params.attachmentIds.length > 0
           ? { attachmentIds: params.attachmentIds }

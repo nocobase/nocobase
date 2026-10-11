@@ -134,6 +134,53 @@ describe('approvals', () => {
     ).rejects.toMatchObject({ code: 'APPROVAL_DECIDED' });
   });
 
+  it('keeps a confirmed assignment after rejection and rolls it back when requesting approval fails', async () => {
+    await needApproval(['projectLead']);
+    h.services.kinds.add({
+      key: 'bot',
+      executor: {
+        require: async () => {},
+        canKeep: async () => true,
+      },
+    });
+    const issue = await issueInReview();
+    const executor = {
+      type: 'bot',
+      id: 'worker',
+      tool: 'codex',
+      toolSource: 'default' as const,
+    };
+    const held = await h.services.issues.update(alice(), issue.id, {
+      revision: issue.revision,
+      statusKey: 'done',
+      executor,
+      title: 'Held title',
+    });
+    expect(held).toMatchObject({
+      executor,
+      title: issue.title,
+      statusKey: 'in_review',
+    });
+    await expect(
+      h.services.issues.update(alice(), issue.id, {
+        revision: held.revision,
+        statusKey: 'done',
+        executor: { ...executor, tool: 'other' },
+      }),
+    ).rejects.toMatchObject({ code: 'APPROVAL_PENDING' });
+    expect(
+      await h.services.issueQueries.detail(alice(), issue.id),
+    ).toMatchObject({ executor, revision: held.revision });
+    await h.services.approvals.reject(
+      lead(),
+      held.pendingApproval?.id ?? '',
+      {},
+    );
+    expect(
+      await h.services.issueQueries.detail(alice(), issue.id),
+    ).toMatchObject({ executor, statusKey: 'in_review' });
+  });
+
   it('lets an approver move the issue at once, and anyone when nobody can approve', async () => {
     await needApproval(['projectLead']);
     const issue = await issueInReview();

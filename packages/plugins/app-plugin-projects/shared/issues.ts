@@ -139,8 +139,8 @@ export interface IssueDetail extends IssueListItem {
 
 /**
  * `PATCH /api/projects/issues/{issueId}` answers `{ data: UpdateIssueResult }`: with 200, the issue after the change
- * and no `pendingApproval`; with 202, the issue unchanged and the request that holds the status change for approval
- * (nothing else in the request is applied then).
+ * and no `pendingApproval`; with 202, the unchanged status and its approval request. An explicitly supplied
+ * executor is saved without starting work; other requested fields are held.
  */
 export interface UpdateIssueResult {
   readonly issue: Issue;

@@ -7,11 +7,19 @@ import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ReactElement } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, onTestFinished } from 'vitest';
 
 import projects from '../../client/plugin.js';
 import { PmExecutorSelect } from '../../client/components/pm-executor-select.js';
 import { StartDialog } from '../../client/pages/issues/detail/start-dialog.js';
+import { createHarness } from '../harness.js';
+import { useBoardMove } from '../../client/pages/issues/board/use-board-move.js';
+import type {
+  IssueListItem,
+  StatusDefinition,
+  UpdateIssueRequest,
+} from '../../shared/issues.js';
+import { UpdateIssueBody } from '../../server/routes/schemas.js';
 import type { Executor } from '../../shared/issues.js';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { me } from './fake-client.js';
@@ -477,3 +485,162 @@ describe.each([
     );
   },
 );
+
+describe('confirmed board moves awaiting approval', () => {
+  it.each(['explicit', 'default'] as const)(
+    'starts with the %s tool previewed in the dialog after approval',
+    async (source) => {
+      const h = await createHarness();
+      onTestFinished(() => h.close());
+      for (const id of ['alice', 'lead']) await h.addUser(id);
+      const workflow = await h.installStandardWorkflow();
+      await h.services.workflows.update(
+        h.viewer('lead', 'admin'),
+        workflow.id,
+        {
+          revision: workflow.revision,
+          definition: {
+            ...workflow.definition,
+            transitions: [
+              ...workflow.definition.transitions,
+              {
+                from: 'backlog',
+                to: 'todo',
+                actors: ['user'],
+                approval: { approvers: ['projectLead'] },
+              },
+            ],
+          },
+        },
+      );
+      const changed = vi.fn(async () => []);
+      h.services.kinds.add({
+        key: 'bot',
+        executor: {
+          require: async () => {},
+          canKeep: async () => true,
+        },
+        work: { onIssueChanged: changed },
+      });
+      const project = await h.services.projects.create(h.viewer('lead'), {
+        name: 'Confirmation',
+      });
+      const issue = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Approve the confirmed tool',
+        projectId: project.id,
+        statusKey: 'backlog',
+        executor: { type: 'bot', id: 'worker', tool: 'old-tool' },
+      });
+      const detail = await h.services.issueQueries.detail(
+        h.viewer('alice'),
+        issue.id,
+      );
+      const target = detail.statuses.find((status) => status.key === 'todo');
+      let pendingId: string | undefined;
+      const submitted = vi.fn<(input: UpdateIssueRequest) => void>();
+      function Board({
+        item,
+        to,
+      }: {
+        item: IssueListItem;
+        to: StatusDefinition | undefined;
+      }): ReactElement {
+        const move = useBoardMove();
+        return (
+          <>
+            <button onClick={() => move.drop(item, to, detail.statuses)}>
+              Move to todo
+            </button>
+            <StartDialog
+              request={move.startRequest}
+              onDecide={move.decide}
+              onCancel={move.cancel}
+            />
+          </>
+        );
+      }
+      await renderWithApp(<Board item={detail} to={target} />, {
+        ...options,
+        fetch: answerApi(async ({ path, method, json }) => {
+          if (path === 'projects/me') return { data: me('admin') };
+          if (path.endsWith('/tools'))
+            return {
+              data: [
+                { id: 'old-tool', name: 'Old tool', model: 'old-model' },
+                {
+                  id: 'chosen-tool',
+                  name: 'Chosen tool',
+                  model: 'chosen-model',
+                  isDefault: true,
+                },
+              ],
+            };
+          if (path.endsWith('/availability'))
+            return {
+              data: { status: 'available', runnerName: 'Lima', reason: null },
+            };
+          if (path === `projects/issues/${issue.id}` && method === 'PATCH') {
+            const input = UpdateIssueBody.parse(json);
+            submitted(input);
+            const { pendingApproval, ...saved } =
+              await h.services.issues.update(
+                h.viewer('alice'),
+                issue.id,
+                input,
+              );
+            pendingId = pendingApproval?.id;
+            return Response.json(
+              { data: { issue: saved, pendingApproval } },
+              { status: 202 },
+            );
+          }
+          return new Response(null, { status: 404 });
+        }),
+      });
+      changed.mockClear();
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Move to todo' }),
+      );
+      await screen.findByText('old-model · Available (Lima)');
+      await userEvent.click(screen.getByRole('combobox', { name: 'Tool' }));
+      await userEvent.click(
+        await screen.findByRole('option', {
+          name:
+            source === 'explicit'
+              ? 'Chosen tool'
+              : 'Default tool (Chosen tool)',
+        }),
+      );
+      await screen.findByText('chosen-model · Available (Lima)');
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Start execution' }),
+      );
+      await waitFor(() => expect(pendingId).toBeTruthy());
+      const executor = {
+        type: 'bot',
+        id: 'worker',
+        tool: 'chosen-tool',
+        toolSource: source,
+      };
+      expect(submitted).toHaveBeenCalledWith(
+        expect.objectContaining({ executor, start: true }),
+      );
+      expect(
+        await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
+      ).toMatchObject({ executor, statusKey: 'backlog' });
+      expect(changed).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.objectContaining({ start: false }),
+      );
+      changed.mockClear();
+      await h.services.approvals.approve(h.viewer('lead'), pendingId ?? '', {});
+      expect(changed).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          start: true,
+          after: expect.objectContaining({ executor, statusKey: 'todo' }),
+        }),
+      );
+    },
+  );
+});

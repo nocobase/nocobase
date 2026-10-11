@@ -31,8 +31,8 @@ export type IssueUpdate = UseMutationResult<
 /**
  * Every change to an issue on its page: a PATCH based on the newest `revision` the cache holds. A 409
  * `REVISION_CONFLICT` means someone changed the issue first: the change is dropped, the user told, and the detail
- * reloaded rather than overwriting their edit. A status change the workflow holds for approval changes nothing and
- * says so. `detailKey` is the key the page reads the issue under (its id or its identifier, as the URL has it).
+ * reloaded rather than overwriting their edit. A status change waiting for approval saves an explicitly supplied
+ * executor without starting work and reports the pending approval. `detailKey` is the key the page reads the issue under (its id or its identifier, as the URL has it).
  */
 export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
   const { t } = useTranslation(ACCESS_NAMESPACE);

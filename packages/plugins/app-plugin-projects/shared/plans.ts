@@ -85,6 +85,7 @@
  * the preview and applying it: preview again), and 400 `FAILED_PRECONDITION` `PLAN_NOT_OPEN` (the plan is not in a
  * state that allows it), `PLAN_EXPIRED`, `UNDO_EXPIRED` and `NOTHING_TO_UNDO` (every row was changed since).
  */
+import type { CommentHandoff } from './comments.js';
 import type { ApiErrorBody, Priority } from './common.js';
 import type { Executor } from './issues.js';
 import type { ProjectVisibility } from './projects.js';
@@ -188,6 +189,9 @@ export interface IssueUpdateParams {
 
 /** `comment.create`: a comment or a reply. Mentions wake agents as any person's comment does; `/note` wakes none. */
 export interface CommentCreateParams {
+  readonly handoff?: CommentHandoff;
+  /** Assigns future work too, subject to the decider's issue edit permission. */
+  readonly persist?: boolean;
   readonly issue: IssueTarget;
   /** Markdown, with mentions as `[@Name](mention://<kind>/<id>)`. */
   readonly content: string;

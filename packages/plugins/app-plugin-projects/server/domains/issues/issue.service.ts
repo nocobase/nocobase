@@ -61,8 +61,8 @@ interface StartOption {
 }
 
 /**
- * The issue after an update. When the status change waits for approval, the issue is unchanged (nothing in the
- * request was applied) and `pendingApproval` is the request that holds it.
+ * The issue after an update. A status change waiting for approval keeps its current status and holds other fields,
+ * except an explicitly supplied executor: that assignment is saved without starting work before requesting approval.
  */
 export type IssueUpdateOutcome = Issue & {
   readonly pendingApproval?: ApprovalRequest;
@@ -386,14 +386,28 @@ export function createIssueService(deps: IssueDeps): IssueService {
             write,
           });
           if (moved.outcome === 'pending') {
+            // Fix the confirmed tool before approval so the eventual start uses the previewed assignment.
+            const assigned =
+              patch.executor === undefined
+                ? before
+                : await service.update(
+                    viewer,
+                    before.id,
+                    {
+                      revision: patch.revision,
+                      executor: patch.executor,
+                      start: false,
+                    },
+                    tx,
+                  );
             const pendingApproval = await deps.approvals().request(tx, {
-              issue: before,
+              issue: assigned,
               toStatus: status.to,
               actor: viewer.actor,
               approvers: moved.approvers,
               approverIds: moved.approverIds,
             });
-            return { ...before, pendingApproval };
+            return { ...assigned, pendingApproval };
           }
           if (moved.outcome === 'moved' && moved.approval !== 'none')
             await record(

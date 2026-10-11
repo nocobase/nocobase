@@ -496,6 +496,136 @@ describe('issues over HTTP, by identifier and without a revision', () => {
 });
 
 describe('a caller acting for someone else', () => {
+  function delegateComments(): void {
+    container.instance(projectsRequestActorToken, () =>
+      Promise.resolve({ type: 'user', id: 'alice', via: 'agent' }),
+    );
+    container.instance(projectsDelegatedWritesToken, {
+      covers: () => true,
+      write: async (viewer, request) => ({
+        plan: await h.services.plans.create(
+          viewer,
+          {
+            title: request.title,
+            source: { kind: 'test' },
+            rows: request.rows,
+          },
+          { execute: true },
+        ),
+        meta: {},
+      }),
+    });
+  }
+
+  it('forwards delegated handoffs, notes and persistent assignments through plans', async () => {
+    delegateComments();
+    const commented = vi.fn(async () => []);
+    const changed = vi.fn(async () => []);
+    h.services.kinds.add({
+      key: 'bot',
+      executor: {
+        require: async () => {},
+        canKeep: async () => true,
+      },
+      work: { onCommentCreated: commented, onIssueChanged: changed },
+    });
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Delegated handoff',
+    });
+    const handoff = { type: 'bot', id: 'worker', tool: 'codex' };
+    for (const persist of [false, true]) {
+      const response = await call(`/issues/${issue.id}/comments`, {
+        role: 'member',
+        method: 'POST',
+        body: JSON.stringify({ content: 'Work', handoff, persist }),
+      });
+      expect(response.status).toBe(201);
+      expect(commented).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.objectContaining({ handoff, persist }),
+      );
+      expect(
+        (await h.services.issueQueries.detail(h.viewer('alice'), issue.id))
+          .executor,
+      ).toEqual(persist ? { ...handoff, toolSource: 'explicit' } : null);
+    }
+    expect(changed).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ start: false }),
+    );
+    commented.mockClear();
+    const note = await call(`/issues/${issue.id}/comments`, {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({ content: 'No work', handoff: { none: true } }),
+    });
+    expect(note.status).toBe(201);
+    expect(await note.json()).toMatchObject({
+      data: { comment: { note: true } },
+    });
+    expect(commented).not.toHaveBeenCalled();
+  });
+
+  it('checks edit permission for delegated persist and rolls assignment back if the comment fails', async () => {
+    delegateComments();
+    const commented = vi.fn(async () => []);
+    h.services.kinds.add({
+      key: 'bot',
+      executor: {
+        require: async () => {},
+        canKeep: async () => true,
+      },
+      work: { onCommentCreated: commented },
+    });
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Delegated permissions',
+    });
+    const handoff = { type: 'bot', id: 'worker', tool: 'codex' };
+    const access = vi.spyOn(
+      container.resolve(projectsAccessToken),
+      'permissionsOf',
+    );
+    const permissions = permissionsOf('member', 'alice');
+    access.mockResolvedValue({
+      ...permissions,
+      scopes: { ...permissions.scopes, 'pm.issues/edit': 'none' },
+    });
+    const post = (persist: boolean, attachmentIds?: string[]) =>
+      call(`/issues/${issue.id}/comments`, {
+        role: 'member',
+        method: 'POST',
+        body: JSON.stringify({
+          content: 'Work',
+          handoff,
+          persist,
+          attachmentIds,
+        }),
+      });
+    expect((await post(false)).status).toBe(201);
+    const denied = await post(true);
+    expect(denied.status).toBe(400);
+    expect(await denied.json()).toMatchObject({
+      error: { reason: 'PLAN_INVALID' },
+    });
+    access.mockRestore();
+    const failed = await post(true, ['missing-upload']);
+    expect(failed.status).toBe(400);
+    expect(await failed.json()).toMatchObject({
+      error: { reason: 'PLAN_INVALID' },
+    });
+    const detail = await h.services.issueQueries.detail(
+      h.viewer('alice'),
+      issue.id,
+    );
+    expect(detail.executor).toBeNull();
+    expect(detail.threads).toHaveLength(1);
+    expect(
+      detail.activities.filter(
+        (activity) => activity.action === 'executor_changed',
+      ),
+    ).toEqual([]);
+  });
+
   it('acts as the actor the application names, and hands its writes to the delegated writes', async () => {
     const handed: DelegatedWriteRequest[] = [];
     container.instance(projectsRequestActorToken, (context) =>
@@ -605,6 +735,107 @@ describe('dependencies over HTTP', () => {
 });
 
 describe('approvals over HTTP', () => {
+  it.each(['explicit', 'default'] as const)(
+    'saves the %s tool confirmed before an approval and starts with it after approval',
+    async (toolSource) => {
+      await h.addUser('lead', 'Lead');
+      const workflow = await h.installStandardWorkflow();
+      await h.services.workflows.update(
+        h.viewer('lead', 'admin'),
+        workflow.id,
+        {
+          revision: workflow.revision,
+          definition: {
+            ...workflow.definition,
+            transitions: [
+              ...workflow.definition.transitions,
+              {
+                from: 'backlog',
+                to: 'todo',
+                actors: ['user'],
+                approval: { approvers: ['projectLead'] },
+              },
+            ],
+          },
+        },
+      );
+      const changed = vi.fn(async () => []);
+      h.services.kinds.add({
+        key: 'bot',
+        executor: {
+          require: async () => {},
+          canKeep: async () => true,
+        },
+        work: { onIssueChanged: changed },
+      });
+      const project = await h.services.projects.create(h.viewer('lead'), {
+        name: 'Approval',
+      });
+      const before = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Confirm then approve',
+        projectId: project.id,
+        statusKey: 'backlog',
+        executor: { type: 'bot', id: 'worker', tool: 'old-tool' },
+      });
+      changed.mockClear();
+      const executor = {
+        type: 'bot',
+        id: 'worker',
+        tool: 'chosen-tool',
+        toolSource,
+      };
+      // Both the board and detail confirmation submit the selected executor with this move.
+      const held = await call(`/issues/${before.id}`, {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({
+          revision: before.revision,
+          statusKey: 'todo',
+          start: true,
+          executor,
+        }),
+      });
+      expect(held.status).toBe(202);
+      const body = (await held.json()) as {
+        data: { pendingApproval: { id: string } };
+      };
+      expect(body).toMatchObject({
+        data: { issue: { statusKey: 'backlog', executor } },
+      });
+      expect(changed).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          start: false,
+          after: expect.objectContaining({ statusKey: 'backlog', executor }),
+        }),
+      );
+      changed.mockClear();
+      const approved = await router.request(
+        `/api/projects/approvals/${body.data.pendingApproval.id}/approve`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-test-user': 'lead',
+            'x-test-role': 'member',
+          },
+          body: '{}',
+        },
+      );
+      expect(approved.status).toBe(200);
+      expect(changed).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          start: true,
+          after: expect.objectContaining({ statusKey: 'todo', executor }),
+        }),
+      );
+      expect(
+        await h.services.issueQueries.detail(h.viewer('alice'), before.id),
+      ).toMatchObject({ executor, statusKey: 'todo' });
+    },
+  );
+
   it('answers 202 with the request that holds a status change, and lets an approver decide it', async () => {
     await h.addUser('lead', 'Lead');
     const admin = h.viewer('lead', 'admin');
