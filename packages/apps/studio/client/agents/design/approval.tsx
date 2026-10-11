@@ -45,6 +45,8 @@ export function useDesignApproval(
 ): {
   approve(comment: string): void;
   pending: boolean;
+  /** The developer dialog is showing. */
+  open: boolean;
   latest: DesignState | undefined;
   dialog: ReactElement;
 } {
@@ -237,6 +239,7 @@ export function useDesignApproval(
   return {
     approve,
     pending,
+    open,
     latest,
     dialog: (
       <Dialog

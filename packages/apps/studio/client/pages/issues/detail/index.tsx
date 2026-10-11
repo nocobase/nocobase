@@ -184,7 +184,7 @@ function IssuePage({
           runs={runs}
           renderRun={(runId) => <IssueRunRow issue={detail} runId={runId} />}
           kindLabels={kindLabels}
-          composerActions={designActions}
+          composerActions={designActions.actions}
         >
           <IssueFileDrop
             {...(main.canUpload ? { onFiles: main.upload } : {})}
@@ -236,6 +236,7 @@ function IssuePage({
             <IssueCodeSection issue={detail} {...linking} />
             <IssueRunPanel issue={detail} />
           </IssueFileDrop>
+          {designActions.dialog}
         </IssueActivity>
       }
       aside={

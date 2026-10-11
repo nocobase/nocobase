@@ -310,8 +310,11 @@ test.describe('issue page', () => {
         `流式导出（评论框批准）${unique()}`,
         { ownerUserId: me.userId },
       );
+      const developer = await runner.developer();
       await open(page, `/issues/${proposal.identifier}`);
       await page.getByRole('button', { name: '批准方案', exact: true }).click();
+      // The same dialog as the card's: the proposal's designer cannot implement it.
+      await approveWithDeveloper(page, developer);
 
       await expect
         .poll(
@@ -319,6 +322,9 @@ test.describe('issue page', () => {
             (await api.get<Issue>(`projects/issues/${proposal.id}`)).statusKey,
         )
         .toBe('in_progress');
+      expect(
+        (await api.get<Issue>(`projects/issues/${proposal.id}`)).executor,
+      ).toEqual({ type: 'agent', id: developer.id });
       await expect(
         page.getByRole('button', { name: '批准方案', exact: true }),
       ).toBeHidden();
