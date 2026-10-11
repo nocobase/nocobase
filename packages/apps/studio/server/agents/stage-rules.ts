@@ -116,6 +116,7 @@ export async function currentStage(
 ): Promise<{
   readonly agentId: string;
   readonly instruction: string | null;
+  readonly session: 'fresh' | 'resume';
 } | null> {
   const catalog = await projects.workflows.catalogs.forProject(
     conn,
@@ -139,6 +140,7 @@ export async function currentStage(
   const template = textOf(rule.config?.instruction);
   return {
     agentId: textOf(rule.config?.agentId) ?? agentId,
+    session: rule.config?.session === 'fresh' ? 'fresh' : 'resume',
     instruction: template
       ? renderInstruction(template, {
           'issue.identifier': issue.identifier,
@@ -181,6 +183,8 @@ interface StageNotice {
 
 /** Why a skip happened, in words for the owner. */
 const REASONS: Readonly<Record<string, string>> = {
+  executorCannotImplement:
+    'the agent lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it',
   ownerCannotInvoke: 'the owner may not give work to the agent',
   noAgentExecutor: 'no executor is assigned: assign one and it starts at once',
   agentUnavailable: 'the agent is archived or deleted',
@@ -347,11 +351,17 @@ export function createStageRules(deps: {
         'agentId',
         'instruction',
         'assign',
+        'session',
         'maxRuns',
         'windowHours',
       ]),
       ...agentIdIssues(config.agentId, false),
       ...instructionIssues(config.instruction),
+      ...(config.session === undefined ||
+      config.session === 'resume' ||
+      config.session === 'fresh'
+        ? []
+        : [{ path: 'session', message: 'session is resume or fresh.' }]),
       ...positiveIntegerIssues(config, 'maxRuns'),
       ...positiveIntegerIssues(config, 'windowHours'),
       ...(config.assign === undefined || typeof config.assign === 'boolean'
@@ -368,7 +378,7 @@ export function createStageRules(deps: {
             ? `Creates a run for agent ${agentId}, without making it the executor`
             : `Sets agent ${agentId} as the executor (without the owner's confirmation) and creates a run`;
       return {
-        summary: `${summary}${instruction ? ', with a stage instruction' : ''}. At most ${Number(config.maxRuns ?? STAGE_RUN_LIMIT)} runs per ${Number(config.windowHours ?? STAGE_RUN_WINDOW_HOURS)} hours from agent or system moves; a person's move always runs.`,
+        summary: `${summary}${instruction ? ', with a stage instruction' : ''}${config.session === 'fresh' ? ', with a fresh session every time' : ''}. At most ${Number(config.maxRuns ?? STAGE_RUN_LIMIT)} runs per ${Number(config.windowHours ?? STAGE_RUN_WINDOW_HOURS)} hours from agent or system moves; a person's move always runs.`,
         attention: true,
       };
     },
@@ -525,6 +535,7 @@ export function createStageRules(deps: {
           actorUserId: moverId,
           ownerUserId: issue.ownerUserId,
           priority: runPriorityOf(issue.priority),
+          freshSession: config.session === 'fresh',
           input: {
             type: 'signal',
             actor: mover,
@@ -661,6 +672,10 @@ export function stageNoticeRule(): NoticeRule {
         reason === 'suppressed'
           ? `${notice.limit ?? STAGE_RUN_LIMIT} runs started for this status within ${notice.windowHours ?? STAGE_RUN_WINDOW_HOURS} hours. Continue on the issue to start another run and reset the count`
           : REASONS[reason];
+      const body =
+        reason === 'executorCannotImplement'
+          ? `${notice.agentName ?? notice.agentId ?? 'The agent'} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.`
+          : `The ${notice.rule} action of ${notice.statusName} was skipped (${reason})${why ? `: ${why}` : ''}.`;
       notices.push({
         ...base,
         key: `agents:stage:${issue.id}:${notice.statusKey}:${notice.rule}:${notice.at}`,
@@ -668,7 +683,7 @@ export function stageNoticeRule(): NoticeRule {
         type: STAGE_ACTION_PROBLEM,
         params: {
           title: `A stage action of ${issue.identifier} was skipped`,
-          body: `The ${notice.rule} action of ${notice.statusName} was skipped (${reason})${why ? `: ${why}` : ''}.`,
+          body,
           identifier: issue.identifier,
           status: notice.statusKey,
           statusName: notice.statusName,
@@ -685,6 +700,7 @@ export function stageNoticeRule(): NoticeRule {
             : {}),
           ...(notice.agentId ? { agentId: notice.agentId } : {}),
           ...(notice.agentName ? { agentName: notice.agentName } : {}),
+          ...agentNameParams(notice.agentNameText),
         },
       });
     }

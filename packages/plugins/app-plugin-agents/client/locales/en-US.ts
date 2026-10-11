@@ -636,6 +636,8 @@ const pages = {
     idleTimeout: 'The agent stopped making progress.',
     setupFailed: 'The run could not be prepared.',
     cliUnavailable: 'The runtime could not install the application CLI.',
+    workspaceBusy:
+      'The working directory is busy; waiting for another attempt.',
     checkoutFailed: 'The repository checkout failed.',
     toolAuth: 'The coding tool is not signed in on the runtime.',
     toolQuota: 'The coding tool ran out of quota.',
@@ -649,6 +651,10 @@ const pages = {
     policyRefused: 'No runtime’s policy lets it take this work.',
     prepareNetwork:
       'The runtime could not reach the repository host while preparing the run.',
+    repoAccessUnavailable:
+      'A repository’s credential could not be issued just now; the run will be tried again.',
+    repoAccessDenied:
+      'The application will not issue a credential for one of the run’s repositories.',
     unknown: 'The run failed.',
   },
 };

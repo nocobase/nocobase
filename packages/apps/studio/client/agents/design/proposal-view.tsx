@@ -7,7 +7,7 @@ import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
 import { PmTag } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
 import { BotIcon, ChevronDownIcon, CogIcon, CompassIcon } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { useNotify } from '../../access/notify.js';
 import { relativeTime } from '@/extensions/nocobase-inbox/model';
 import { KnowledgeMarkdown } from '@nocobase/app-plugin-knowledge/client/pages';
 import { DecisionActionsBar } from '@/extensions/nocobase-inbox/decision-actions-bar';
+import { useDesignApproval } from './approval.js';
 import { useDesignDecision } from './api.js';
 
 export function DesignProposalView({
@@ -40,11 +41,22 @@ export function DesignProposalView({
   const { t, i18n } = useTranslation();
   const notify = useNotify();
   const decide = useDesignDecision(issueId);
+  const headingRef = useRef<HTMLSpanElement>(null);
+  const approval = useDesignApproval(
+    issueId,
+    state,
+    () => {
+      notify.success(t('design.done.approve'));
+      onDecided?.();
+    },
+    () => headingRef.current,
+  );
   const [expanded, setExpanded] = useState(!collapsible);
   if (!state) return loading ? <Skeleton className='h-32 w-full' /> : null;
   const { proposal } = state;
   if (!proposal) return null;
-  const canAct = state.canApprove || state.canRequestChanges;
+  const shown = approval.latest ?? state;
+  const canAct = shown.canApprove || shown.canRequestChanges;
   return (
     <article
       className='space-y-3 rounded-lg border border-l-2 border-l-primary/60 bg-card p-4 text-card-foreground'
@@ -56,7 +68,9 @@ export function DesignProposalView({
           className='size-4 text-muted-foreground'
           aria-hidden='true'
         />
-        <span className='font-medium'>{t('design.title')}</span>
+        <span ref={headingRef} tabIndex={-1} className='font-medium'>
+          {t('design.title')}
+        </span>
         {state.inReview ? (
           <PmTag tone='amber' dot>
             {t('design.waiting')}
@@ -114,42 +128,47 @@ export function DesignProposalView({
           {expanded ? t('design.collapse') : t('design.expand')}
         </Button>
       ) : null}
+      {approval.dialog}
       {canAct ? (
         <DecisionActionsBar
+          allowed={{
+            approve: shown.canApprove,
+            reject: shown.canRequestChanges,
+          }}
           itemTitle={t('design.cardTitle', { identifier })}
           labels={{
             approve: t('design.approve'),
             reject: t('design.requestChanges'),
           }}
           pending={
-            decide.isPending
-              ? decide.variables.decision === 'approve'
-                ? 'approve'
-                : 'reject'
-              : null
+            approval.pending
+              ? 'approve'
+              : decide.isPending
+                ? decide.variables.decision === 'approve'
+                  ? 'approve'
+                  : 'reject'
+                : null
           }
-          disabled={decide.isPending}
-          onRun={(decision, comment) =>
+          disabled={decide.isPending || approval.pending}
+          onRun={(decision, comment) => {
+            if (decision === 'approve') {
+              approval.approve(comment);
+              return;
+            }
             decide.mutate(
               {
-                decision: decision === 'approve' ? 'approve' : 'requestChanges',
+                decision: 'requestChanges',
                 comment,
               },
               {
                 onSuccess: () => {
-                  notify.success(
-                    t(
-                      decision === 'approve'
-                        ? 'design.done.approve'
-                        : 'design.done.requestChanges',
-                    ),
-                  );
+                  notify.success(t('design.done.requestChanges'));
                   onDecided?.();
                 },
                 onError: (error) => notify.error(error),
               },
-            )
-          }
+            );
+          }}
         />
       ) : null}
     </article>

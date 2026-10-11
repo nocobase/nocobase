@@ -300,6 +300,101 @@ describe('run lifecycle', () => {
     ]);
   });
 
+  it('requeues live workspace contention with a delay and releases its runner slot', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    expect(first.run.acceptedFailures).toContain('workspaceBusy');
+    expect(
+      (
+        await post(runner, runId, 'fail', {
+          reason: 'workspaceBusy',
+          detail: 'Another live process holds this workspace.',
+        })
+      ).body.data,
+    ).toMatchObject({ status: 'queued' });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      runnerId: null,
+      attempt: 2,
+    });
+    expect(await claim(h, runner)).toEqual([]);
+    h.clock.advance(30_000);
+    const [again] = await claim(h, runner);
+    expect(again.run.id).toBe(runId);
+  });
+
+  it('waits for a held workspace without using up the attempts, then runs', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 1 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    for (let wait = 1; wait <= 4; wait += 1) {
+      const [claimedRun] = await claim(h, runner);
+      expect(claimedRun.run.id).toBe(runId);
+      expect(
+        (
+          await post(runner, runId, 'fail', {
+            reason: 'workspaceBusy',
+            detail: 'Another live process holds this workspace.',
+          })
+        ).body.data,
+      ).toMatchObject({ status: 'queued' });
+      h.clock.advance(2 * 60_000);
+    }
+    const [running] = await claim(h, runner);
+    expect(running.run.id).toBe(runId);
+    await post(runner, runId, 'start', start);
+    const done = await post(runner, runId, 'complete', {
+      summary: 'Done.',
+      handledInputIds: running.inputs.map((input: { id: string }) => input.id),
+    });
+    expect(done.status).toBe(200);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'completed',
+    });
+  });
+
+  it('still counts real failures after workspace waits', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 1 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    await post(runner, runId, 'fail', { reason: 'workspaceBusy' });
+    h.clock.advance(60_000);
+    await claim(h, runner);
+    const failed = await post(runner, runId, 'fail', { reason: 'toolNetwork' });
+    expect(failed.body.data).toEqual({ status: 'failed' });
+  });
+
+  it('fails a run whose workspace stays held past the wait limit', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    let status: unknown = 'queued';
+    let tries = 0;
+    while (status === 'queued') {
+      tries += 1;
+      const [claimedRun] = await claim(h, runner);
+      expect(claimedRun.run.id).toBe(runId);
+      status = (
+        (await post(runner, runId, 'fail', { reason: 'workspaceBusy' })).body
+          .data as { status: string }
+      ).status;
+      h.clock.advance(30 * 60_000);
+    }
+    expect(status).toBe('failed');
+    expect(tries).toBeGreaterThan(3);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'failed',
+      failureReason: 'workspaceBusy',
+    });
+  });
+
   it('fails a non-retryable failure at once', async () => {
     h = await createHarness();
     const { runner, runId } = await claimed();

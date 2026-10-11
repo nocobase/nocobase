@@ -16,9 +16,10 @@ nb-studio design approve <issue>
 | -------- | ----------- |
 | `issue`  |             |
 
-| Flag        | Type   | Description                |
-| ----------- | ------ | -------------------------- |
-| `--comment` | string | (or --comment-file <path>) |
+| Flag         | Type   | Description                |
+| ------------ | ------ | -------------------------- |
+| `--comment`  | string | (or --comment-file <path>) |
+| `--executor` | json   |                            |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

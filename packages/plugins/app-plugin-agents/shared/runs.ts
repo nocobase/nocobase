@@ -98,6 +98,8 @@ export interface Run {
   readonly parentRunId: string | null;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  /** The run was asked to start a new session; absent on older servers. */
+  readonly freshSession?: boolean;
   /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
   readonly actorUserId: string;
   /**
@@ -144,6 +146,16 @@ export interface RunRepo {
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha: string | null;
+  /**
+   * Why the runner could not push it at the end of the run (`RepoReport.failure`: `authFailed`,
+   * `credentialUnavailable`, `credentialDenied`, `leaseLost`, `rejected` or `error`), with a redacted message; null
+   * when it pushed or did not try. Optional so existing application schemas and older reports remain compatible;
+   * this server always includes it.
+   */
+  readonly failure?: {
+    readonly reason: string;
+    readonly message: string;
+  } | null;
   readonly updatedAt: string;
 }
 
@@ -371,6 +383,8 @@ export interface RunRequest {
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
+  /** The run was asked to start a new session; absent on older servers. */
+  readonly freshSession?: boolean;
   /** Who answers for the subject: the only person who may confirm or reject the request. */
   readonly responsibleUserId: string;
   /** Who the chain of work started with: the only person who may withdraw it or run it as themselves. */
@@ -402,4 +416,11 @@ export interface RunRequestItem extends RunRequest {
   readonly agentName: string | null;
   readonly responsibleName: string | null;
   readonly requestedByName: string | null;
+}
+
+/** A subject and agent with at least one dispatched or running run; no run details. */
+export interface SubjectAgentWork {
+  readonly subjectId: string;
+  readonly agentId: string;
+  readonly working: boolean;
 }
