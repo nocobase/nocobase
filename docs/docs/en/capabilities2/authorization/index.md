@@ -34,6 +34,8 @@ The application declares pages, actions, and scopes; authorization calculates ac
 
 ## Business-oriented administration
 
+Administrators need to adjust access as employees join, change jobs or collaborate without changing code each time. Present the application’s jobs and supported rules in a business management entry with clear effects.
+
 Northstar can provide a Team access entry using authorization capabilities without retaining a shared Settings page.
 
 ```text

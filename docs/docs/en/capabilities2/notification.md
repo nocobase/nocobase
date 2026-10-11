@@ -9,6 +9,8 @@ Northstar uses notifications for transport progress, approval results, and await
 
 ## Transport progress example
 
+Employees want a transport progress reminder in their message center with a direct return to the order. This example notifies the current operator to demonstrate the connection between a message and its business record.
+
 ```text
 Add Send progress update to Northstar transport orders. Send the current status to the current operator's message center. Include the order number, origin, destination, and status, with a link to the order detail. Notify the same recipient only once for each order version. Do not change the transport state. Add a personal Message center and an administrator-only Notification log.
 ```
@@ -20,6 +22,8 @@ Open NS-2026-003, select **Send progress update**, then open **Message center**.
 Select the message title to open its order. Messages persist across refreshes and support read, unread, and removal actions. A message does not grant additional access to the referenced order.
 
 ## Trigger from business processes
+
+Applicants need approval outcomes without repeatedly opening the application. Notify the actual applicant when a decision is made and link to the request.
 
 Once actual applicants and approval results exist, ask the Agent to notify only the applicant after approval or rejection, include the order and result, and link to the application. Pending applications should produce no result notification, and each result should notify once. A notification failure must not reverse the saved business result. User identities and decisions must come from the business process. See [Approvals](./approval/index.md).
 
@@ -34,6 +38,8 @@ Administrators open **Notification log** to review transport updates and dispatc
 Applications can add a **Send test notification** entry using the public test API. It performs a real send and requires an authorized recipient. The progress-update button in this example sends a business message.
 
 ## Email and group channels
+
+Employees may not stay in the transport application all day. Deliver important outcomes through their usual email or group channels while tracking each channel’s result independently.
 
 | Channel            | Preparation                                                                  | Configuration                           |
 | ------------------ | ---------------------------------------------------------------------------- | --------------------------------------- |

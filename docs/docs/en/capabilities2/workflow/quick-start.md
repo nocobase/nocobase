@@ -8,6 +8,8 @@ Add handling stages to the existing Northstar orders from [Quick start](../quick
 
 ## 1. Describe the business flow
 
+Several people handle a transport order in sequence. A status field alone does not explain the next action or required input. Northstar needs a defined acceptance, delivery and confirmation path with preserved handling records.
+
 ```text
 Add a handling flow to existing Northstar transport orders.
 Assign a driver while awaiting dispatch, then await acceptance. Accepting and departing starts transport.

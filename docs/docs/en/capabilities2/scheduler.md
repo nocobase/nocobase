@@ -46,6 +46,8 @@ Administrators can use the switch in the task list or details. Pausing prevents 
 
 ### Changing the time or business rules
 
+If the team’s morning meeting changes, the dispatcher needs the digest at the new time without changing its orders or recipients. Adjust the existing schedule.
+
 Ask the Agent to update the existing task. For example:
 
 ```text
@@ -59,6 +61,8 @@ After the change, check the updated schedule and next trigger in the details. Th
 
 ### Generating reports
 
+Managers want the previous week’s summary at the start of each week without remembering to generate it manually. Schedule the report and deliver its entry for the weekly meeting.
+
 Add a schedule and result notification to an existing reporting capability:
 
 ```text
@@ -67,6 +71,8 @@ Include sales revenue, order count, and regional totals. Administrators can view
 ```
 
 ### Synchronizing data
+
+Customer status is maintained in another system. Employees need timely updates in the transport application without maintaining the same information twice. Synchronize only the intended status fields.
 
 For an existing integration, specify the interval and data to process:
 

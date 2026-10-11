@@ -27,6 +27,8 @@ Decide whether first sign-in creates an account and whether existing accounts ma
 
 ## Corporate sign-in example
 
+Northstar already manages company accounts, and employees do not want another password for transport operations. Connect the identity platform so they can sign in with that account and receive the application’s assigned business permissions.
+
 ```text
 Connect Northstar's existing corporate identity provider using OIDC.
 Keep password sign-in and add a Corporate sign-in button to the branded page.

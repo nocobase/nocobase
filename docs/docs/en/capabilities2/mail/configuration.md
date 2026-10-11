@@ -9,6 +9,8 @@ Administrators configure how the application connects to a mail provider. Users 
 
 ## Administrator preparation
 
+Before employees connect mailboxes, the application needs the provider’s incoming and outgoing servers. Configure the provider centrally so employees can then connect their own accounts.
+
 | Integration   | Information required                                                                         |
 | ------------- | -------------------------------------------------------------------------------------------- |
 | IMAP/SMTP     | Incoming and outgoing server addresses, ports, and secure connection settings.               |

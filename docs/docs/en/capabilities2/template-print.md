@@ -44,6 +44,8 @@ After business data changes, generate the document again to obtain a file with t
 
 ### Batch generation
 
+A shipment handover may include multiple records. Employees need one document for the intended selection without including other batches.
+
 For documents generated from a list, specify whether to include selected records, the current page, or all filtered results. Also specify whether to produce one combined file or a separate file for each record. For example:
 
 ```text
@@ -63,6 +65,8 @@ Add PDF download for the transport order, preserving the Word template's fonts, 
 The application's developer or deployment administrator prepares a server-side document conversion environment and the fonts used by the template. The Agent then connects the conversion step. Images, logos, and QR codes can also be added as required by the template; their implementation depends on the chosen generation solution.
 
 ### Multiple templates
+
+Domestic and overseas transport use different document formats. Employees select the appropriate version while administrators maintain consistent templates.
 
 Application developers can maintain fixed templates. If business users need to upload, replace, or select templates, ask the Agent to add the relevant management interface:
 

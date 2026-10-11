@@ -61,6 +61,8 @@ For page integration and permissions, see [Developer Reference](./development.md
 
 ## Compose from a Northstar order
 
+Account managers need to explain an order’s progress to the customer. Populate contacts, routes and status from the order to reduce copying and incorrect references, then let the employee review before sending.
+
 Ask the Agent to add **Compose progress email** to the order detail, reading the customer contact and current order fields. The employee reviews recipients and edits the message before sending through their connected account, with existing templates and signatures.
 
 This example shows the actual editor populated from the current transport record before sending. Replace a sample contact with a valid authorized recipient before submission.

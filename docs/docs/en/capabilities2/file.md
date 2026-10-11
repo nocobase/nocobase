@@ -44,6 +44,8 @@ Removing an attachment only unlinks it from the current order; retain the file.
 
 ### Employee avatars and product images
 
+Employee lists help colleagues recognize people, and product records need a visual reference. Store the corresponding images and display them on business pages.
+
 An employee avatar or product cover usually needs one file. Uploading a replacement updates the association. Product galleries and order attachments can contain multiple files. For example:
 
 ```text

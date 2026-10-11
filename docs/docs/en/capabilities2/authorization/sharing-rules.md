@@ -8,6 +8,8 @@ Sharing adds record scope for selected people or registered organizational subje
 
 ## Temporary collaboration
 
+Alice needs Bob’s temporary help on one order without exposing all her customers and orders. Share only that order’s viewing scope and retain its owner.
+
 ```text
 Alice needs Bob to help follow up transport order NS-2026-001.
 Bob already has order viewing permission; share this order's viewing scope with him.

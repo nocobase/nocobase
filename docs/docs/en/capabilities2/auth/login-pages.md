@@ -33,6 +33,8 @@ The corporate sign-in entry in the screenshot comes from an example with an iden
 
 ## Multiple sign-in methods
 
+Employees want to use existing company accounts, while those not yet connected to the identity platform still need password sign-in. Offering both entries on one page supports both groups.
+
 Once the company identity provider is connected, add a corporate sign-in button beside the existing password method. A button alone does not configure the provider, callback address, or account linking.
 
 ```text

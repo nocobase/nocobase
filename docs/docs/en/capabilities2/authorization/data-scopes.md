@@ -8,6 +8,8 @@ A data scope determines which records an action can access. Account managers vie
 
 ## Different ownership fields
 
+Account managers handle their own orders, drivers need assigned tasks and dispatchers coordinate all orders. Each employee should see the records required for their responsibilities in the same application.
+
 ```text
 Allow account managers to view and edit orders using the owner field linked to the current user.
 Allow drivers to view and handle tasks using the assigned driver's employee account.

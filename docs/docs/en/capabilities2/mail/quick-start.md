@@ -14,6 +14,8 @@ This example adds a mail center where a sales representative reads and replies t
 
 ## Example: reply to customer email
 
+Transport quotation inquiries and replies need to stay together. Northstar wants employees to read the context and respond within the application, reducing switches between business records and email.
+
 Give the following prompt to your Agent:
 
 ```text

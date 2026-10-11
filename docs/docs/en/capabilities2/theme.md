@@ -51,6 +51,8 @@ The Coding Agent creates the theme, adds it to the available choices, and config
 
 ## Removing a theme
 
+When an old brand theme is retired, remove it from appearance options so employees do not keep choosing outdated styles. Existing selections should fall back to the application default.
+
 Tell the Coding Agent which theme to remove. Browsers that previously selected it will use the application's default theme.
 
 ```text

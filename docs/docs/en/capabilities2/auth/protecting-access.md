@@ -8,6 +8,8 @@ Northstar can publish its transport service information while keeping customer r
 
 ## Public information and internal work
 
+Northstar wants prospective customers to learn about its services while keeping orders and customer records for employees. Public service pages stay open; internal entries first require sign-in.
+
 ```text
 Add a public transport services page for Northstar without requiring registration or sign-in.
 Use Northstar’s blue brand style to introduce its Yangtze River Delta network, regional transport, business delivery, and shipment coordination.
@@ -49,6 +51,8 @@ Internal APIs still require authentication. An anonymous call to `GET /main/api/
 Pages and APIs declare their own access requirements. Hidden navigation and browser checks cannot replace server protection.
 
 ## Use the current employee identity
+
+The company needs to know who created and handled each order for handover and traceability. Use the actual signed-in employee rather than a manually selected identity.
 
 ```text
 When creating an order, obtain the acting employee from the server-side session and record them.

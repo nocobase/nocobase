@@ -8,6 +8,8 @@ After the basic transport flow, address unhandled tasks and results from other s
 
 ## Remind employees about acceptance delays
 
+Delayed acceptance affects transport planning, and dispatchers cannot watch every waiting order. Remind the driver first, then escalate orders that remain unhandled.
+
 ```text
 Remind the assigned driver after 30 minutes without acceptance. After 60 minutes, notify the dispatcher and supervisor.
 Do not treat a reminder as acceptance or send the same reminder repeatedly.
@@ -17,6 +19,8 @@ Flag overdue transport for dispatcher follow-up. Continue checking unfinished or
 Employees should see a reminder linked to the order while the order remains awaiting action. Background processing must continue after closing the page. This is an extension requirement; the current transport screenshots do not demonstrate automatic timeout reminders.
 
 ## Notify the account manager after delivery
+
+Account managers need to confirm delivery with customers without constantly watching order details. A delivery message supports timely follow-up while preserving the saved delivery result.
 
 ```text
 Notify the responsible account manager when the driver submits delivery evidence. Link the message to the order.
@@ -55,6 +59,8 @@ These are future requirements within the transport background, not implemented d
 | Transport exception ticket   | Close after 72 hours awaiting a customer; reopen within seven days; explain reassignment       | Conversation, handler, deadline and reopening entry  |
 
 ## Change an active flow
+
+When new handover requirements are introduced, existing shipments may still be underway. Update the flow while preserving a handling path for unfinished orders.
 
 ```text
 Add handover confirmation before departure. Analyze continuation for existing orders first.

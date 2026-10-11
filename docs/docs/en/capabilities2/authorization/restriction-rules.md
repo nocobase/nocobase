@@ -8,6 +8,8 @@ Restrictions narrow existing access from jobs, common access and sharing. They d
 
 ## Example: transport fee collaboration
 
+Bob’s temporary fee-review responsibility covers only lower-cost transport orders; other staff handle higher-cost orders. Apply the same fee boundary regardless of whether access comes from ownership or sharing.
+
 ```text
 Bob temporarily helps review transport fees and may view only orders with a transport fee of 2,000 CNY or less.
 Add a fee limit to his View transport orders action, preserving his job and order ownership.

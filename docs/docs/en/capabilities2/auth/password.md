@@ -21,6 +21,8 @@ See [Customize sign-in pages](./login-pages.md) for branding and layout changes.
 
 ## Company-managed employee accounts
 
+Northstar stores customer information and internal orders and wants access limited to approved employees. Administrators create accounts and assign jobs rather than letting employees join through public registration.
+
 ```text
 Northstar’s transport system is for company employees only.
 Disable self-registration on both the sign-in page and the server.
@@ -37,6 +39,8 @@ An account lets an employee sign in; permission sets determine which business re
 
 ## Custom password requirements
 
+The company wants passwords that are harder to guess and one consistent standard for account creation and password resets. This example requires at least 12 characters and explains the requirement before submission.
+
 ```text
 Require at least 12 characters when setting or resetting a password.
 Show the requirement in account creation and password reset forms, with matching server-side validation.
@@ -48,6 +52,8 @@ The account creation form displays the minimum length. Enter a shorter password 
 ![Minimum password length validation](../assets/northstar-password-policy-en.png)
 
 ## Recover a password
+
+Employees who forget a password still need timely access to orders. Northstar wants them to recover access through their registered email, reducing administrator intervention while confirming email ownership and letting employees choose a new password.
 
 ```text
 Add a forgot-password flow for Northstar employees using an email channel.
@@ -64,6 +70,8 @@ Click **Forgot password?** and enter the account email.
 A working email delivery channel is required to complete the request → email → reset link → new password flow. The email link must point to an application address the employee can reach.
 
 ## Sessions and disabled accounts
+
+When an employee leaves or pauses work, the company needs to stop access to customer and order information promptly. Disabling the account must block future sign-ins and existing signed-in access.
 
 ```text
 Add an employee offboarding action for administrators.

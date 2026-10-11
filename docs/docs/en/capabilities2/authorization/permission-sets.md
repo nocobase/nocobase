@@ -8,6 +8,8 @@ Permission sets combine pages, actions, and data scopes into reusable jobs. Mult
 
 ## Transport jobs
 
+Northstar has multiple account managers and dispatch staff. Reuse permissions by job when assigning responsibilities, while retaining each employee’s appropriate record scope.
+
 ```text
 Create Northstar permission sets for account managers, dispatchers, and drivers.
 Account managers enter customers and orders, create orders, and view or edit records they own.

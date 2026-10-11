@@ -8,6 +8,8 @@ Permission inspection explains actions, conditions, and sources. It is not a cou
 
 ## Why can Bob see this order?
 
+When Bob can see Alice’s order, administrators need to distinguish job access, common access and temporary sharing. Understanding the source helps them adjust the right rule without removing his regular responsibilities.
+
 ```text
 Provide permission inspection in Northstar Team access for authorized administrators only.
 Select an employee and inspect pages, actions, record conditions, and sources from sets, assignments, default access, sharing, and restrictions.

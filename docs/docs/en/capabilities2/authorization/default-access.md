@@ -8,6 +8,8 @@ Default data access adds a shared record scope for people who already hold the a
 
 ## Common reference orders
 
+Account managers need completed transport records as references for routes and delivery outcomes while retaining their own working scope. Provide a shared completed-order viewing baseline.
+
 ```text
 Keep account managers' owned-order viewing scope.
 Add completed orders as a default viewing scope for everyone who already has View orders permission.
