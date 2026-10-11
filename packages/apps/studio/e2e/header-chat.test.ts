@@ -8,6 +8,108 @@ import {
 } from './support/fixtures.ts';
 
 test.describe('global header Agent', () => {
+  test('keeps an upload and one send after switching full-page sessions and returning', async ({
+    page,
+    api,
+  }) => {
+    const a = await api.post<{ id: string }>('agents/conversations', {});
+    const b = await api.post<{ id: string }>('agents/conversations', {});
+    const aTitle = 'Upload session A ' + unique();
+    const bTitle = 'Upload session B ' + unique();
+    await api.patch(`agents/conversations/${a.id}`, { title: aTitle });
+    await api.patch(`agents/conversations/${b.id}`, { title: bTitle });
+    await open(page, `/chat/${a.id}`);
+    const view = page.getByTestId('chat-page');
+    const input = view.getByRole('textbox');
+    async function select(title: string): Promise<void> {
+      await view.getByTestId('chat-page-history').click();
+      await page
+        .getByRole('dialog')
+        .getByRole('button')
+        .filter({ has: page.getByText(title, { exact: true }) })
+        .click();
+      await expect(view.getByTestId('chat-title')).toHaveText(title);
+    }
+    for (const conversation of [a, b]) {
+      if (conversation === b) await select(bTitle);
+      const question = 'Initial question ' + unique();
+      await input.fill(question);
+      await input.press('Enter');
+      await expect(
+        view
+          .locator('[data-chat-message="user"]')
+          .getByText(question, { exact: true }),
+      ).toBeVisible();
+      await expect(view.getByTestId('chat-submissions')).toHaveCount(0);
+      await expect
+        .poll(
+          async () =>
+            (
+              await api.get<{ run: unknown }>(
+                `agents/conversations/${conversation.id}`,
+              )
+            ).run,
+        )
+        .toBeNull();
+    }
+    await select(aTitle);
+    await select(bTitle);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let uploads = 0;
+    let sends = 0;
+    await page.route('**/api/agents/chatAttachments', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      uploads += 1;
+      await gate;
+      await route.continue();
+    });
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        request.url().endsWith(`/conversations/${b.id}/messages`)
+      )
+        sends += 1;
+    });
+    const question = 'Question with delayed upload ' + unique();
+    try {
+      await input.fill(question);
+      await view.getByTestId('chat-attach-input').setInputFiles({
+        name: 'note.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('Session B upload'),
+      });
+      await expect.poll(() => uploads).toBe(1);
+      await page
+        .getByRole('navigation', { name: '应用导航' })
+        .getByRole('link', { name: '任务', exact: true })
+        .click();
+      await expect(view).toHaveCount(0);
+      await page.goBack();
+      await expect(input).toHaveValue(question);
+      await expect(view.getByText('note.txt', { exact: true })).toBeVisible();
+      await input.press('Enter');
+      await input.press('Enter');
+      expect(sends).toBe(0);
+      release();
+      await expect(
+        view
+          .locator('[data-chat-message="user"]')
+          .getByText(question, { exact: true }),
+      ).toBeVisible();
+      await expect(view.getByTestId('chat-submissions')).toHaveCount(0);
+      await expect(input).toHaveValue('');
+      expect(uploads).toBe(1);
+      expect(sends).toBe(1);
+    } finally {
+      release();
+    }
+  });
   test('explains unavailable header targets and preserves the question', async ({
     page,
     api,

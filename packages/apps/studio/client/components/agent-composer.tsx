@@ -508,12 +508,10 @@ export function AgentComposer({
       attachments?.discard ? (file) => attachments.discard?.(file) : undefined,
     );
   });
-  // Each upload's outcome by file key: the file, or null when it failed or was removed.
-  const uploadsRef = useRef(
-    session.read(
-      'uploads',
-      new Map<string, Promise<MessageAttachment | null>>(),
-    ),
+  // Each render captures its session's task table, including for cleanup after a later session switch.
+  const uploads = session.read(
+    'uploads',
+    new Map<string, Promise<MessageAttachment | null>>(),
   );
 
   const update = useCallback(
@@ -576,10 +574,10 @@ export function AgentComposer({
             return null;
           },
         );
-        uploadsRef.current.set(entry.key, outcome);
+        uploads.set(entry.key, outcome);
       }
     },
-    [maxCount, maxSize, update, session, setFiles, setTooMany],
+    [maxCount, maxSize, update, session, setFiles, setTooMany, uploads],
   );
 
   const removeFile = useCallback(
@@ -591,11 +589,11 @@ export function AgentComposer({
       file.controller?.abort();
       if (file.attachment) attachmentsRef.current?.discard?.(file.attachment);
       if (file.preview) URL.revokeObjectURL(file.preview);
-      uploadsRef.current.delete(key);
+      uploads.delete(key);
       setTooMany(false);
       setFiles((current) => current.filter((entry) => entry.key !== key));
     },
-    [session, setFiles, setTooMany],
+    [session, setFiles, setTooMany, uploads],
   );
 
   // The view around the box adds what is dropped on it.
@@ -649,7 +647,7 @@ export function AgentComposer({
       carried.map((file) =>
         file.attachment
           ? Promise.resolve(file.attachment)
-          : (uploadsRef.current.get(file.key) ?? Promise.resolve(null)),
+          : (uploads.get(file.key) ?? Promise.resolve(null)),
       ),
     ).then((uploaded) => {
       if (!session.active || session.intent !== intent) return;
@@ -668,7 +666,7 @@ export function AgentComposer({
     const clear = (): void => {
       for (const file of carried) {
         if (file.preview) URL.revokeObjectURL(file.preview);
-        uploadsRef.current.delete(file.key);
+        uploads.delete(file.key);
       }
       const sentKeys = new Set(carried.map((file) => file.key));
       setFiles((current) => current.filter((file) => !sentKeys.has(file.key)));
