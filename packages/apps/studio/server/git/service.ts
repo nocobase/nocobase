@@ -100,6 +100,7 @@ import {
   linkedOpenPullRequests,
   linksOfPullRequest,
   openPullRequestsOf,
+  previewManagedOpenPullRequests,
   pullRequestsOfIssue,
   pullRequestsOfIssues,
   pullRequestView,
@@ -720,7 +721,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     };
   }
 
-  /** Reads one linked pull request with its validators; writes only when something changed. */
+  /** Reads one watched pull request with its validators; writes only when something changed. */
   async function pollPullRequest(
     repo: RepoRow,
     pr: PullRequestRow,
@@ -1937,16 +1938,15 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         }
         const open = (await tracks(repo))
           ? await openPullRequestsOf(conn(), repo.id)
-          : await linkedOpenPullRequests(conn(), repo.id);
-        for (const pr of open) {
+          : [
+              ...(await linkedOpenPullRequests(conn(), repo.id)),
+              ...(await previewManagedOpenPullRequests(conn(), repo.id)),
+            ];
+        // Unlinked PRs still retry label removal, but must stop once the host closes or merges them.
+        for (const pr of new Map(open.map((pr) => [pr.id, pr])).values()) {
           await pollPullRequest(repo, pr);
           await previewLabels.sync(pr.id);
         }
-        // Also retry removal after the last issue was unlinked.
-        await previewLabels.syncManaged(
-          repo.id,
-          new Set(open.map((pr) => pr.id)),
-        );
         await updateRepo(conn(), repo.id, {
           polledAt: new Date(),
           pollError: null,

@@ -108,21 +108,5 @@ export function createPreviewLabelSync(deps: {
       for (const { pr } of await pullRequestsOfIssue(deps.conn(), issueId))
         await sync(pr.id);
     },
-    async syncManaged(
-      repoId: string,
-      seen: ReadonlySet<string>,
-    ): Promise<void> {
-      const rows = await deps
-        .conn()
-        .query.selectFrom('studioPreviewLabels as label')
-        .innerJoin('studioPullRequests as pr', 'pr.id', 'label.pullRequestId')
-        .select('pr.id')
-        .where('pr.repoId', '=', repoId)
-        .where('pr.state', '=', 'open')
-        .where('label.managed', '=', true)
-        .execute();
-      for (const row of rows)
-        if (!seen.has(String(row.id))) await sync(String(row.id));
-    },
   };
 }
