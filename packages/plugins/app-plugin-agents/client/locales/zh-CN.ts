@@ -615,6 +615,7 @@ const zhCN: AgentsResource = {
     idleTimeout: 'Agent 长时间没有进展。',
     setupFailed: '无法准备这次运行。',
     cliUnavailable: '运行环境无法安装应用的 CLI。',
+    workspaceBusy: '工作目录被另一个运行占用，等待重试。',
     checkoutFailed: '仓库检出失败。',
     toolAuth: '运行环境中的编码工具未登录。',
     toolQuota: '编码工具的额度已用完。',

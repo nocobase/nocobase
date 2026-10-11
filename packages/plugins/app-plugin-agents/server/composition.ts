@@ -505,7 +505,14 @@ export function createAgents(deps: AgentsDeps): Agents {
     defaultModel: async (conn) =>
       (await modelServices.defaults(conn)).effectiveChat,
   });
-  const reports = createRunnerReports({ ...transitions, tx, ids, secrets });
+  const reports = createRunnerReports({
+    ...transitions,
+    tx,
+    ids,
+    secrets,
+    cliName: cli.name,
+    appName: app.name,
+  });
   const gitCredentials = createGitCredentialService({
     tx,
     clock,

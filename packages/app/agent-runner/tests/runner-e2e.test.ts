@@ -392,6 +392,26 @@ describe('runner end to end', () => {
     expect(run.complete?.handledInputIds).toContain(input.id);
   });
 
+  it('completes again instead of starting an empty turn when pending input is withdrawn', async () => {
+    const run = server.enqueue({
+      prompt: { system: '', session: 'fresh', turn: 'say one' },
+    });
+    server.withdrawPendingOnNextComplete(run.payload.run.id);
+    daemon();
+    const id = run.payload.run.id;
+    await waitFor(() => run.status === 'completed', 15_000, 'completion');
+    expect(
+      run.reports
+        .filter((report) => report.kind === 'complete')
+        .map((report) => report.status),
+    ).toEqual([409, 200]);
+    expect(
+      server
+        .events(id)
+        .some((event) => event.content === 'echo: (empty prompt)'),
+    ).toBe(false);
+  });
+
   it('kills the process group within 15 s of a cancel, even when the tool ignores SIGTERM', async () => {
     const run = server.enqueue({
       prompt: { system: '', session: 'fresh', turn: 'say working\nhang-hard' },
