@@ -30,7 +30,3 @@ Simple confirmation or rejection can be workflow actions. Use [Approval](../appr
 ## Build and change a process
 
 Describe stages, conditions, waiting periods and failure handling to the Agent, which develops the process into the application. Process pages can be freely designed to suit business needs.
-
-## Development guides
-
-Complete the order payment exercise in [Quick start](./quick-start.md), then design your own process by topic in [Develop with an Agent](./develop.md). See [Extensions](./extension.md) for integration boundaries.

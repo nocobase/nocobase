@@ -5,7 +5,7 @@ description: 'Integrate and extend approval policies, operations, interfaces, de
 
 # Extensions
 
-This page is for developers and Agents who need integration and extension boundaries. For business design, start with [Develop with an Agent](./develop.md). Use the installed approval plugin's Skill and version for detailed API contracts.
+This page is for developers and Agents who need integration and extension boundaries. For business design, start with [Approval overview](./index.md). Use the installed approval plugin's Skill and version for detailed API contracts.
 
 ## Integrate existing records and processes
 

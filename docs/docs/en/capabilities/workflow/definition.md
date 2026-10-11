@@ -44,3 +44,13 @@ This example combines acceptance and departure. Ask the Agent for a separate dep
 Process conditions determine whether an action is valid now; permissions determine whether this user may perform it. Configure both. These screenshots use an administrator; employee actions should follow their responsibilities.
 
 :::
+
+## Confirm the business model first
+
+Describe records, roles, stages, triggers, required input, branches and endings. Ask the Agent for a stage table and diagram before confirming implementation. Every unfinished stage needs an exit; define what happens if an external system never responds. Action conditions and permissions must apply consistently across all entry points.
+
+```text
+First outline Northstar's transport stages and diagram, showing who or which system advances each step, required input and outcomes. Do not write code yet. Ensure refusal, cancellation and redispatch have exits. Only dispatchers can assign drivers; drivers handle only their own orders. Explain unavailable actions, and require delivery evidence before confirming arrival. List unresolved business decisions for me.
+```
+
+Verify delivery, refusal and redispatch, cancellation, missing permissions, missing input and simultaneous actions. Ordinary edits and imports cannot bypass the rules to change stages directly.

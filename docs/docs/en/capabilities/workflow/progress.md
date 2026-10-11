@@ -36,3 +36,23 @@ For a stalled process, inspect its current stage, required conditions and latest
 :::
 
 See the [Developer reference](./extension.md) when reviewing implementation APIs.
+
+## Pages and business acceptance
+
+Lists filter by stage; details show progress, available actions, refusal reasons, submitted information and history. Each role's work queue contains its own tasks and updates when others act. Design pages for the business without requiring a separate workflow management interface.
+
+```text
+Northstar's dispatch workbench shows orders awaiting assignment or acceptance. Drivers see only their own orders awaiting acceptance or in transit. Details show the current stage, actions and refusal reasons, plus actors, times, stage changes and information in history. Update progress when others act without overwriting their results.
+Before release, give me verification results for delivery, refusal and redispatch, cancellation, deadlines, external failures and duplicate notifications. Unrelated people cannot view or act. Explain remaining problems and the production deadlines, recipients and permissions I need to confirm.
+```
+
+## Production changes and troubleshooting
+
+Rules live in the application and require redeployment after changes. Identify unfinished orders and pending external work first, explaining the impact of new rules. Arrange a path for existing records before renaming or removing a stage. Authorized corrections preserve history.
+
+```text
+Add an "awaiting departure" stage between awaiting acceptance and in transit for Northstar, which has unfinished orders in production. Explain whether one deployment is enough, how existing orders continue and how pending work and history are preserved. Implement after confirmation and give me verification results.
+If an order remains in a stage for over a day, investigate its conditions, latest actions and external execution results. Give me the cause and recommendation without changing data yet. I will provide the order number, my identity, action, expected result and actual page error.
+```
+
+Confirm production deadlines, people, permissions, notifications and external accounts before release. Spot-check that unfinished records can continue after deployment.

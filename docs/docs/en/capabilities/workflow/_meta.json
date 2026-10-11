@@ -18,22 +18,5 @@
     "type": "file",
     "name": "progress",
     "label": "Progress and processing history"
-  },
-  {
-    "type": "group",
-    "label": "Development guides",
-    "collapsed": true,
-    "items": [
-      {
-        "type": "file",
-        "name": "quick-start",
-        "label": "Quick start"
-      },
-      {
-        "type": "file",
-        "name": "develop",
-        "label": "Develop with an Agent"
-      }
-    ]
   }
 ]
