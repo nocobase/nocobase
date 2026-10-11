@@ -6,7 +6,7 @@ Use this reference when a plugin needs browser services, application-wide React 
 
 | Requirement                                                        | Mechanism              |
 | ------------------------------------------------------------------ | ---------------------- |
-| Add an App, Settings, or development-only page                     | Client Route           |
+| Add an App page                                                     | Client Route           |
 | Share React Context across several Client surfaces                 | React Provider         |
 | Register an application-scoped browser service or configure Refine | Client ServiceProvider |
 | Export reusable UI or Hooks                                        | Component export       |

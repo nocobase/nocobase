@@ -72,7 +72,7 @@ This is the union of possible capabilities, not a directory tree every plugin mu
 | `client/plugin.ts`                        | Static Client declaration                                  |
 | `client/providers/index.ts`               | Default-exported `serviceProviders` constructor array      |
 | `client/react-providers/`                 | React Provider declarations/implementations                |
-| `client/routes.ts`                        | App, Settings, and Dev Route declarations                  |
+| `client/routes.ts`                        | App Route declarations                                     |
 | `client/pages/`                           | Lazy page modules                                          |
 | `client/components/`                      | Plugin-owned components, including local shadcn source     |
 | `client/locales/`                         | Lazy Client messages under the package namespace           |

@@ -78,6 +78,7 @@ export function agent(
     activeRuns: 0,
     onlineRunners: 1,
     canEdit: true,
+    owned: true,
     canCopy: true,
     ...overrides,
   };

@@ -62,7 +62,7 @@ Output status, folder-type and Provider error category/reason types have `Known.
 ### Composition and data access
 
 - The default export registers the Mail Client plugin.
-- `MailWorkspacePage` and `MailWorkspacePageProps` provide the full workspace. `templateVariables` supplies an allowlisted record context for saved template placeholders; it does not associate messages with application records.
+- `MailWorkspacePage` and `MailWorkspacePageProps` provide the full workspace. `accountsHref` names the application's accounts page, relative to its base path, so a user with no account is linked there; without it the empty state shows no link. `templateVariables` supplies an allowlisted record context for saved template placeholders; it does not associate messages with application records.
 - `MailClient` and `mailClientToken` expose the typed client data layer. Resolve the app-owned instance with `useMailClient()` in React or `app.services.resolve(mailClientToken)` elsewhere; do not construct a separate `MailClient` for normal UI integration.
 - `mailErrorMessage(cause, fallback)` returns the text to show for a failed call: the server's `localizedMessage`, or `fallback`. Code that must react to a specific failure branches on `ApiClientError.reason` from `@nocobase/app-client` instead.
 - `renderMailTemplate()`, `plainTextToMailHtml()`, and `htmlToPlainText()` are supported template/body helpers. `MailTemplateVariables` and `RenderedMailTemplate` describe their data.

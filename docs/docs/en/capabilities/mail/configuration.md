@@ -1,72 +1,57 @@
 ---
-title: 'Prepare mail access'
-description: 'Learn what administrators and mailbox users need to prepare, and ask an Agent to guide the setup.'
-keywords: 'NocoBase,mail,mailbox setup,OAuth,IMAP,SMTP,Agent'
+title: 'Mailbox Configuration'
+description: 'Configure a provider and connect user mailboxes.'
 ---
 
-# Prepare mail access
+# Mailbox Configuration
 
-Mail setup has two parts: an administrator enables the application to connect to a mail provider, and each user connects a mailbox they are authorized to use. If users can already connect their accounts in your app, go straight to [Quick start](./quick-start.md) without setting up the provider again.
+Administrators configure how the application connects to a mail provider. Users then connect their own mailboxes. If a provider is already available, users can connect from the mailbox accounts page.
 
-## Who prepares what
+## Administrator preparation
 
-| Mailbox method         | Application administrator prepares                                                            | Mailbox user does                                                                                  |
-| ---------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Gmail or Microsoft 365 | An available OAuth app, the application URL, and any approval required by the provider        | Selects an account in the app and authorizes access with the provider                              |
-| IMAP/SMTP              | The incoming and outgoing server details and connection settings provided by the mail service | Enters an email address, username, and the password or authorization code required by the provider |
+| Integration   | Information required                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| IMAP/SMTP     | Incoming and outgoing server addresses, ports, and secure connection settings.               |
+| Gmail         | A Google OAuth application, client information, and the application callback URL.            |
+| Microsoft 365 | A Microsoft OAuth application, client information, and any required organizational approval. |
 
-### Where to configure it
+The application developer or deployment administrator maintains these settings under `mail.providers` in the server configuration. Users connect personal mailboxes from the application's mailbox accounts page.
 
-Provider credentials and server details are application-level settings maintained by an administrator in the app server's `mail.providers` configuration. They are not personal settings for users to enter in a Settings page. Manage secrets securely for your deployment, and do not commit them to the repository. Users connect and authorize their own mailboxes from the application's Mail account page.
-
-<!-- Add genuine screenshots showing where an administrator maintains provider settings and where a user connects a personal mailbox. If provider settings are maintained only in deployment configuration, show a redacted example of that configuration instead of a Settings page. -->
-
-## Ask the Agent to guide setup
-
-Give this prompt to your application Agent and replace the provider and deployment details:
+For example, give these mailbox.org server settings to your Agent:
 
 ```text
-Prepare Mail access for this NocoBase 3 application. The mail provider is [Gmail / Microsoft 365 / IMAP/SMTP], and the application URL is [application URL].
-
-First check whether the Mail Pro plugin is installed and enabled, read the Mail Skill shipped with the installed version, and inspect the existing configuration. Tell me:
-1. Where an administrator maintains provider settings and where users connect their personal mailboxes, and whether a Settings page is involved.
-2. What information is still needed and whether it must come from the application administrator, mail administrator, or mailbox user.
-3. How to confirm the OAuth callback URL or IMAP/SMTP server details and verify that they are correct.
-
-Complete any application-side configuration that can be done safely, and list the steps I must perform on the provider's platform. Never ask me to paste a secret or mailbox password into chat. Tell me where it can be entered securely in the local or deployment environment. Do not guess callback URLs, permission scopes, or configuration fields.
-
-After setup, guide me through connecting a test mailbox. Confirm that authorization returns to the app, initial synchronization works, and messages can be read and sent. If the plugin or mailbox type does not support a capability, explain the limitation instead of replacing it with custom mail logic.
+Configure mailbox.org integration for the application:
+- IMAP server: imap.mailbox.org, port 993, using SSL/TLS.
+- SMTP server: smtp.mailbox.org, port 465, using SSL/TLS.
+Add a mailbox accounts page where users enter their email address, username, and password and choose a starting date for initial synchronization.
 ```
 
-The Agent should first explain what needs to be prepared and who needs to act. A person with the right access must still sign in to Google, Microsoft, or the mail provider and approve any organization-level permissions.
+For OAuth, administrators register the application's callback URL with the provider and complete any required permission approval.
 
-## Choose a connection method
+## Connect your mailbox
 
-- **Gmail or Microsoft 365**: Usually connects through OAuth. An administrator prepares the provider's OAuth app and registers the callback URL generated for the current application.
-- **IMAP/SMTP**: Works with mailboxes that provide standard IMAP receiving and SMTP sending. An administrator supplies the server addresses, ports, and connection security; users connect with the credentials required by their provider.
+Open the mailbox accounts page and click **Connect account**:
 
-Gmail and Microsoft 365 provide broader synchronization and mailbox-management capabilities. IMAP/SMTP primarily syncs new messages and sends mail. It does not fully sync read, deleted, or moved states from other clients, and it does not support provider drafts, sending aliases, push sync, or moving messages to provider folders. Check the installed version and mail provider for exact capabilities.
+- **IMAP/SMTP**: select the provider and enter the address, username, and password or app password required by the provider.
+- **Gmail or Microsoft 365**: select the provider, sign in, and authorize access on the provider's page.
+- Choose the starting date for importing existing messages.
+
+Enter mailbox passwords in the connection form. Administrators store OAuth secrets in deployment configuration.
+
+## Integration differences
+
+Gmail and Microsoft 365 offer more complete synchronization and organization. IMAP/SMTP primarily imports new messages and sends email. It does not fully synchronize read, delete, or move changes from other clients, and does not support provider drafts, sender aliases, push synchronization, or moves to provider folders. Local application drafts can still save unsent content.
 
 ## Common questions
 
-### Mail or the account connection entry is missing
+### The application has no mailbox entry
 
-Confirm that the deployment provides and enables the NocoBase Pro Mail plugin. Then ask the Agent to check whether a Mail page has been added to the application. Enabling the plugin does not necessarily add a Mail entry to the business navigation.
+Ask your Agent to integrate Mail and add the mail center and mailbox accounts page to application navigation.
 
 ### OAuth does not return to the application
 
-Ask an administrator to compare the callback URL registered with the provider against the application's public URL, including the scheme, hostname, port, and application path. Have the Agent confirm the callback URL for this deployment; do not copy an example from another environment.
+Ask an administrator to check the registered callback URL against the application configuration and ensure the return page is accessible.
 
-### The mailbox is connected, but no messages appear
+### No messages appear after connection
 
-Check the initial sync date range, synchronization status, and mailbox authorization. Importing a large mailbox can take time. Synchronization may also stall if application background jobs or the queue are not running; ask the Agent to check service status and sync records.
-
-### Changes made in another mail client do not appear
-
-IMAP/SMTP primarily discovers new messages. It does not guarantee that read, deleted, or moved states from other clients are synchronized, and it cannot move messages to provider folders. If you need these capabilities, check whether Gmail or Microsoft 365 is suitable.
-
-### A send result is uncertain
-
-Check the application's send record and the receiving mailbox before retrying. Do not immediately create and send a new message just because the page timed out; that may send a duplicate.
-
-To add mail to customer, project, or other business pages, continue to [Further use](./usage.md).
+Check that the synchronization starting date includes the messages and that synchronization has completed. Importing a large history takes time. If background jobs are not running, an administrator can inspect synchronization records and application services.

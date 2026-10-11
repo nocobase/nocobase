@@ -66,6 +66,7 @@ export type {
   ServerExecutor,
 } from './online/index.js';
 export { commandRef, dialectOf } from './core/runs/ports.js';
+export { RepoAccessError } from './core/runs/extensions.js';
 export {
   executionForViewer,
   runForViewer,
@@ -103,6 +104,9 @@ export type {
   RepoAccessContext,
   RepoAccessProvider,
   RepoAccessRegistry,
+  RepoCredentialGrant,
+  RepoCredentialRequest,
+  RepoPrepareOptions,
   RunMountProvider,
   RunMountRegistry,
   RunService,
@@ -113,6 +117,7 @@ export type {
   SubjectFacts,
   SubjectRegistry,
   SubjectReports,
+  SubjectWorkspaces,
   SubjectScope,
   WorkSink,
 } from './core/runs/index.js';
@@ -123,7 +128,11 @@ export type {
   AgentsEventBus,
   AgentsNotice,
 } from './kernel/events.js';
-export type { DistConfig, DistService } from './distribution/index.js';
+export type {
+  DistConfig,
+  DistNpmSource,
+  DistService,
+} from './distribution/index.js';
 export { JobSecretsNotAllowed } from './jobs/index.js';
 export type {
   BuildJobSpecInput,

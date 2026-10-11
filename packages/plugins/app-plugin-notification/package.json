@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification",
   "displayName": "Notification App Plugin",
   "description": "Provides the application notification runtime, storage, delivery, and logs.",
-  "version": "1.0.0-beta.24",
+  "version": "1.0.0-beta.25",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -27,10 +27,6 @@
     "./client/plugin": {
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
-    },
-    "./client/routes": {
-      "types": "./client/routes.ts",
-      "import": "./client/routes.ts"
     },
     "./package.json": "./package.json"
   },
@@ -65,10 +61,6 @@
       "./client/plugin": {
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
-      },
-      "./client/routes": {
-        "types": "./dist/client/routes.d.ts",
-        "import": "./dist/client/routes.js"
       },
       "./package.json": "./package.json"
     }
@@ -112,7 +104,6 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
-    "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

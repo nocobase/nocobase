@@ -69,24 +69,30 @@ export const RECENT_RUNS = 10;
 
 /** What a runner shows its viewer of its machine. */
 export interface RunnerMachineView {
+  readonly canSeeMachine: boolean;
   readonly hostname: string | null;
   readonly tools: Runner['tools'];
 }
 
 /**
- * The runner as `seesMachine` decides: its host name and where its tools are installed name the machine and, through
- * home directories, its user. Its owner, the managers of runners and those who may wake an agent see them (the routes
- * decide); everyone else sees neither.
+ * The runner as `seesMachine` decides: its host name, where its tools are installed and where its working directories
+ * are name the machine and, through home directories, its user. Its owner, the managers of runners and those who may
+ * wake an agent see them (the routes decide); everyone else sees none of them, and of the working directories only
+ * their totals.
  */
 export function runnerForViewer<T extends Runner>(
   runner: T,
   seesMachine: boolean,
 ): Omit<T, 'hostname' | 'tools'> & RunnerMachineView {
-  if (seesMachine) return runner;
+  if (seesMachine) return { ...runner, canSeeMachine: true };
   return {
     ...runner,
+    canSeeMachine: false,
     hostname: null,
     tools: runner.tools.map(({ path: _path, ...tool }) => tool),
+    ...(runner.workspaceUsage
+      ? { workspaceUsage: { ...runner.workspaceUsage, workspaces: [] } }
+      : {}),
   };
 }
 

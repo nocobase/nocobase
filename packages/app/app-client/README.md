@@ -283,6 +283,12 @@ function OrderForm({ onSaved }: { onSaved: () => void }) {
 
 Each form reports `useUnsavedChanges(dirty)`, where dirty means a field differs from what the form opened with, and calls the returned `markSaved()` before closing after a successful submit. A dialog that holds its form state itself passes `dirty` to `useUnsavedChangesGuard(dirty)` instead. A route dialog returns `guard.confirmDiscard()` from its `beforeClose`; a dialog held in component state closes through `useGuardedClose`. Outside a provider, `useUnsavedChanges` does nothing.
 
+## Page navigation guards
+
+`AppClientProviders` includes a stable `NavigationGuardProvider` below its router. A page calls `useNavigationGuard(() => !pending && (!dirty || window.confirm(message)))` to register its synchronous leave decision. The host scopes PUSH and REPLACE to its descendants and holds the accepted route during rejected history traversal, preserving the mounted editor even when the browser has already notified its router. The callback should read the latest committed state; unregistering happens on unmount. Keep `beforeunload` separate and subscribe only while dirty or pending, since document navigation is outside the client router. A custom host using `AppClientProviders` gets the boundary automatically; one composing its own router/providers must mount `NavigationGuardProvider` above its routes.
+
+Index-based restoration is limited to entries observed in the same continuous history segment. For native hash entries or entries outside that segment, including history predating the mounted boundary, rejecting navigation replaces the current history entry with the accepted location instead of guessing a traversal distance. The draft remains mounted and subsequent navigation remains available, but the rejected history entry is replaced.
+
 ## React Providers
 
 React Providers are synchronous React components that receive `children`:
@@ -340,9 +346,7 @@ export default {
 };
 ```
 
-Settings pages use `defineSettingsRoutes()`. Route component overrides replace
-only a page component loader and keep the plugin-owned route identity, path,
-authentication, navigation, and access metadata.
+Every page is an app route: there is no separate settings or dev surface. A page that configures something is an ordinary route in the application's navigation. Route component overrides replace only a page component loader and keep the plugin-owned route identity, path, authentication, navigation, and access metadata.
 
 ## Client plugin declaration
 
@@ -419,4 +423,4 @@ plugins that consume the changed fields.
 
 Application authorization is provided by `@nocobase/app-plugin-authorization/client`. Use `useCan` for reactive visibility checks and `useAuthorizationClient` or `authorizationClientToken` for the current application client. `AppClientRefineConfig` excludes `accessControlProvider`, and the Refine registry has no `setAccessControlProvider` setter.
 
-Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Authorization uses `authz: 'skip' | 'unrestricted' | { resource: { type, id }, action }`. Declare it on the first page of every path. A nested page that omits it inherits the effective value of its nearest ancestor page, through any number of groups and levels, and a child that declares its own value overrides it for its subtree. A first page that omits it never stops the application: protected `app` pages (`auth: 'required'`) and `settings` pages default to `'unrestricted'`, which admits only identities with unrestricted access such as root and hides the page from everyone else's menus, while `guest` and `optional` app pages and `dev` pages default to `'skip'`. Development builds log one warning per defaulted page naming its id, path and default; production logs nothing. `'unrestricted'` may also be declared explicitly for a root-only page, and it is never offered as a grant. `'skip'` applies only to the current page and does not bypass parent guards. Route groups cannot declare `authz`. Malformed values, the removed `access` field and string resource declarations are rejected.
+Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Authorization uses `authz: 'skip' | 'unrestricted' | { resource: { type, id }, action }`. Declare it on the first page of every path. A nested page that omits it inherits the effective value of its nearest ancestor page, through any number of groups and levels, and a child that declares its own value overrides it for its subtree. A first page that omits it never stops the application: protected pages (`auth: 'required'`) default to `'unrestricted'`, which admits only identities with unrestricted access such as root and hides the page from everyone else's menus, while `guest` and `optional` pages default to `'skip'`. Development builds log one warning per defaulted page naming its id, path and default; production logs nothing. `'unrestricted'` may also be declared explicitly for a root-only page, and it is never offered as a grant. `'skip'` applies only to the current page and does not bypass parent guards. Route groups cannot declare `authz`. Malformed values, the removed `access` field and string resource declarations are rejected.

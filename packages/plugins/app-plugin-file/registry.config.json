@@ -17,7 +17,7 @@
         "@nocobase/i18n@^1.0.0-beta.4",
         "@silurus/ooxml@0.85.1"
       ],
-      "registryDependencies": ["button", "dialog"],
+      "registryDependencies": ["button", "dialog", "spinner"],
       "docs": "Install editable file components, resolve clientFileRepositoryManagerToken from the App, and pass manager.repository(resourceName) to FileUploadField. Read components use FileRecord.contentUrl. The App owns routes, authorization and business relations. Upgrade installed source with a three-way merge.",
       "meta": {
         "ownership": "application",

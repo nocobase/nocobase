@@ -166,6 +166,7 @@ const zhCN: AgentsResource = {
       high: '高',
       xhigh: '超高',
       max: '最高',
+      ultra: '极致',
     },
     created: '已创建 Agent {{name}}',
   },
@@ -266,6 +267,15 @@ const zhCN: AgentsResource = {
     moveDown: '下移',
     remove: '移除',
     suggestions: '可以输入任意模型，或选择常用模型',
+    availableRunners_one: '{{count}} 台执行机可用',
+    availableRunners_other: '{{count}} 台执行机可用',
+    runnerReady: '已就绪',
+    runnerNotReady: '未就绪',
+    reportHint:
+      '执行机上报的模型仅供建议，保存后才生效。工具支持不代表有使用权限、账号额度或一定能调用成功。',
+    reportedEfforts: '可选的上报思考强度：{{efforts}}。',
+    noReportedEfforts: '无',
+    effortNotReported: '已保存的强度 {{effort}} 未被上报，将保留至你修改。',
     required: '至少添加一项。',
     runnerNeedsOne: 'Runner Agent 至少需要一项工具与模型，最后一项不能移除。',
     tooMany: '最多 20 项。',
@@ -288,13 +298,6 @@ const zhCN: AgentsResource = {
     none: '这里没有可以授予的能力。',
     notGrantable: '不可授予给 Agent',
     notGrantableBecause: '不可授予给 Agent：{{reason}}',
-    allowedCommands: '允许的命令',
-    allowedCommandsHint:
-      '正则表达式，每行一个；shell 命令必须匹配其中之一。显示的是默认值。',
-    deniedPatterns: '拒绝模式',
-    deniedPatternsHint:
-      '正则表达式，每行一个；匹配的命令即使被允许也会被拒绝。',
-    patternInvalid: '不是有效的正则表达式：{{pattern}}',
     confirmChanges: '对话中代你修改',
     confirmChangesHint:
       '在对话里，Agent 以你的名义修改项目和任务时，哪些改动要先给出计划、由你确认。这不是权限设置：Agent 能改什么，由上面的能力决定。',
@@ -304,10 +307,6 @@ const zhCN: AgentsResource = {
       largerHint:
         '小改动：每轮最多改两个对象，且不涉及完成或关闭任务、更换负责人、指派 Agent 执行、唤醒 Agent、新建项目。',
     },
-  },
-  commandPolicy: {
-    title: '命令策略',
-    hint: 'Agent 在运行环境所在机器上可以执行哪些 shell 命令。',
   },
   placement: {
     title: '运行位置',
@@ -386,6 +385,11 @@ const zhCN: AgentsResource = {
     teamRunnersOnlyHint:
       '不勾选时，运行会把这个值发给接活的运行环境，包括能使用这个 agent 的人自己的个人运行环境。勾选后，带有这个变量的运行只由团队运行环境接。',
     teamRunnersOnlyBadge: '仅限团队运行环境',
+    fromRunner: '从运行环境取',
+    fromRunnerHint:
+      '这里不保存值：由接活的运行环境从它所在的机器提供，在那台机器上用 `{{command}}` 设置，或用 `--pass-env` 放行。不提供这个变量的运行环境会在运行开始前失败。',
+    fromRunnerBadge: '从运行环境取',
+    valueRequired: '请填写值，或继续从运行环境取。',
     empty: '没有环境变量。',
     edit: '替换值',
     actions: '{{name}} 的操作',
@@ -623,6 +627,8 @@ const zhCN: AgentsResource = {
     stepLimit: 'Agent 调用工具次数过多，仍未作答。',
     policyRefused: '没有运行环境的策略允许接这项工作。',
     prepareNetwork: '准备运行时运行环境无法连接到仓库所在的服务器。',
+    repoAccessUnavailable: '暂时无法签发仓库凭据，运行会重试。',
+    repoAccessDenied: '应用拒绝为运行的某个仓库签发凭据。',
     unknown: '运行失败。',
   },
   ...runtimesZhCN,

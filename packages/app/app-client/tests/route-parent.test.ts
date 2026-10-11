@@ -1,20 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
   defineAppRoutes,
-  defineDevRoutes,
   resolveAppClientContributions,
   type AppClientRouteDefinition,
 } from '../src/plugins.js';
 
 const page = async () => ({ default: () => null });
 
-describe.each(['app', 'dev'] as const)('%s parent contributions', (surface) => {
-  const define = surface === 'app' ? defineAppRoutes : defineDevRoutes;
+describe('app parent contributions', () => {
+  const define = defineAppRoutes;
   const resolve = (definitions: readonly AppClientRouteDefinition[]) =>
     resolveAppClientContributions([
       { packageName: '@example/owner', routes: define(definitions) },
     ]);
-  const parent = surface === 'app' ? '@example/owner:tools' : 'tools';
+  const parent = '@example/owner:tools';
 
   it('supports forward references, nested groups, stable sorting and original ownership', () => {
     const owner = {
@@ -80,7 +79,7 @@ describe.each(['app', 'dev'] as const)('%s parent contributions', (surface) => {
       [owner, child],
     ]) {
       const result = resolveAppClientContributions(contributions);
-      const tree = surface === 'app' ? result.routes : result.devRouteTree;
+      const tree = result.routes;
       expect(tree.map((node) => node.name)).toEqual(['first', 'tools']);
       expect(tree[1]?.children?.map((node) => node.name)).toEqual([
         'nested',
@@ -88,22 +87,10 @@ describe.each(['app', 'dev'] as const)('%s parent contributions', (surface) => {
         'last',
       ]);
       expect(tree[1]?.children?.[0]?.children?.[0]).toMatchObject({
-        path: `${surface === 'app' ? '' : '/dev'}/tools/nested/leaf`,
+        path: '/tools/nested/leaf',
         packageName: '@example/extension',
         source: 'plugin',
       });
-      if (surface === 'dev') {
-        expect(result.devRoutes.map((node) => node.id)).toEqual([
-          'first',
-          'leaf',
-          'sibling',
-          'last',
-        ]);
-        expect(
-          result.devRouteGroups.find((group) => group.id === 'nested')
-            ?.settings[0]?.id,
-        ).toBe('leaf');
-      }
     }
     expect(owner.routes.routes[0]?.children).toHaveLength(1);
     expect(child.routes.routes[0]?.children).toHaveLength(0);
@@ -137,7 +124,7 @@ describe.each(['app', 'dev'] as const)('%s parent contributions', (surface) => {
         { name: 'a', parent: 'b', navigation: { title: 'A' }, children: [] },
         { name: 'b', parent: 'a', navigation: { title: 'B' }, children: [] },
       ]),
-    ).toThrow(`Circular ${surface} parent`);
+    ).toThrow('Circular app parent');
     expect(() =>
       resolve([
         {

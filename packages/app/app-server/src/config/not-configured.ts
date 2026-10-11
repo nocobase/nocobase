@@ -9,9 +9,9 @@ export interface ApplicationNotConfiguredDetails {
  * The application has nothing to start with: no configuration supplies what it cannot run without.
  *
  * It states what is missing and nothing more. The remedy depends on how the application is run — a standalone start
- * points at `pnpm nocobase config init`, while an application hosted by a Hub is configured through the Hub — so the entry point
- * that prints the error adds it, and a Hub showing the same error to an operator does not pass on advice that does not
- * apply. Recognised by `name` as well as by class, so a second copy of this package in the process is still
+ * points at `pnpm nocobase config init`, while an application run by a host is configured through that host — so the entry
+ * point that prints the error adds it, and a host showing the same error to an operator does not pass on advice that does
+ * not apply. Recognised by `name` as well as by class, so a second copy of this package in the process is still
  * recognised.
  */
 export class ApplicationNotConfiguredError extends Error {

@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-cli-example': patch
 '@nocobase/app-plugin-repository-example': patch

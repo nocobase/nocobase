@@ -441,13 +441,17 @@ describe('the workflow reacts to sub-issues', () => {
     // Middle is not finished: its parent stays.
     expect((await detail(top)).statusKey).toBe('in_review');
     const view = await detail(middle);
-    expect(
-      view.activities.find(
-        (activity) =>
-          activity.action === 'status_changed' &&
-          activity.actorType === 'system',
-      )?.details,
-    ).toMatchObject({ event: 'subtasks.done', causeIssueId: leaf.id });
+    expect(view.activities).toContainEqual(
+      expect.objectContaining({
+        action: 'status_changed',
+        actorType: 'user',
+        actorId: 'admin',
+        details: expect.objectContaining({
+          event: 'subtasks.done',
+          causeIssueId: leaf.id,
+        }),
+      }),
+    );
   });
 
   it('records a refused move and keeps the sub-issue moved', async () => {

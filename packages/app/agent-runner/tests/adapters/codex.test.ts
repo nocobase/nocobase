@@ -1,8 +1,15 @@
-import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdtemp,
+  readdir,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { CodexAdapter } from '../../src/agent/adapters/codex.ts';
 import { classifyCodexFailure } from '../../src/agent/adapters/codex/classify.ts';
@@ -19,11 +26,23 @@ import { fakeSpawn } from './fake-codex.ts';
 import type { FakeCodex } from './fake-codex.ts';
 
 let binDir: string;
+let defaultWorkDir: string;
 
 beforeAll(async () => {
   binDir = await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-bin-'));
+  defaultWorkDir = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-work-')),
+  );
   await writeFile(path.join(binDir, 'codex'), '#!/bin/sh\n');
   await chmod(path.join(binDir, 'codex'), 0o755);
+});
+
+afterAll(async () => {
+  await Promise.all(
+    [binDir, defaultWorkDir].map((dir) =>
+      rm(dir, { recursive: true, force: true }),
+    ),
+  );
 });
 
 function execFor(version: string, loggedIn = true) {
@@ -45,7 +64,7 @@ function adapterWith(script: (fake: FakeCodex) => void | Promise<void>) {
 
 function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
   return {
-    workDir: '/work',
+    workDir: defaultWorkDir,
     prompt: 'do it',
     systemPrompt: 'brief',
     env: {},
@@ -123,6 +142,20 @@ describe('reported execution settings', () => {
       meta: { execution: { effort: null, source: 'codex.turn/start' } },
     });
   });
+
+  it.each([
+    ['max', 'max'],
+    ['ultra', 'ultra'],
+    ['minimal', undefined],
+  ])('passes effort %s to turn/start as %s', async (effort, expected) => {
+    let params: Record<string, unknown> = {};
+    const { adapter } = adapterWith(async (fake) => {
+      params = await handshake(fake);
+      completeTurn(fake);
+    });
+    await drain(adapter.start(session({ effort })));
+    expect(params.effort).toBe(expected);
+  });
 });
 
 function completeTurn(
@@ -150,6 +183,107 @@ function item(
 }
 
 describe('detect', () => {
+  it('excludes daemon credentials and project configuration and removes its temporary directory', async () => {
+    vi.stubEnv('OPENAI_API_KEY', 'daemon-only-test-value');
+    vi.stubEnv('CODEX_API_KEY', 'daemon-only-test-value');
+    try {
+      const { adapter, spawn } = adapterWith(async (fake) => {
+        expect(fake.options.env.OPENAI_API_KEY).toBeUndefined();
+        expect(fake.options.env.CODEX_API_KEY).toBeUndefined();
+        expect(fake.options.env.PATH).toBe(process.env.PATH);
+        expect(fake.options.cwd).not.toBe(process.cwd());
+        expect(await readdir(fake.options.cwd)).toEqual([]);
+        fake.respond(await fake.nextRequest('initialize'), {});
+        fake.respond(await fake.nextRequest('model/list'), {
+          data: [],
+          nextCursor: null,
+        });
+      });
+      await adapter.detectModels(new AbortController().signal);
+      await expect(
+        readdir(spawn.processes[0]!.options.cwd),
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+  it('lists models and advertised efforts across pages, closing the discovery process', async () => {
+    const { adapter, spawn } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), { userAgent: 'test' });
+      await fake.next((message) => message.method === 'initialized');
+      fake.respond(await fake.nextRequest('model/list'), {
+        data: [
+          {
+            id: 'display-id',
+            model: 'gpt-6-sol',
+            supportedReasoningEfforts: [
+              { reasoningEffort: 'high', description: 'private metadata' },
+            ],
+          },
+        ],
+        nextCursor: 'page2',
+      });
+      const second = await fake.nextRequest('model/list');
+      expect(second.params).toMatchObject({ cursor: 'page2' });
+      fake.respond(second, {
+        data: [{ model: 'gpt-other' }],
+        nextCursor: null,
+      });
+    });
+    expect(await adapter.detectModels(new AbortController().signal)).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'gpt-6-sol', efforts: ['high'] }, { id: 'gpt-other' }],
+    });
+    expect(spawn.processes[0]?.exited).toBe(true);
+    expect(
+      spawn.processes[0]?.received.some(
+        (message) => message.method === 'thread/start',
+      ),
+    ).toBe(false);
+  });
+
+  it.each([-32601, -32603])(
+    'distinguishes an unsupported method from failure (%s)',
+    async (code) => {
+      const { adapter, spawn } = adapterWith(async (fake) => {
+        fake.respond(await fake.nextRequest('initialize'), {});
+        const request = await fake.nextRequest('model/list');
+        fake.emit({
+          id: request.id,
+          error: { code, message: '/private/config secret=never-upload' },
+        });
+      });
+      const result = await adapter.detectModels(new AbortController().signal);
+      expect(result.modelsDetectionStatus).toBe(
+        code === -32601 ? 'unsupported' : 'failed',
+      );
+      expect(JSON.stringify(result)).not.toContain('never-upload');
+      expect(spawn.processes[0]?.exited).toBe(true);
+      await expect(
+        readdir(spawn.processes[0]!.options.cwd),
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+    },
+  );
+
+  it('kills discovery when aborted', async () => {
+    const { adapter, spawn } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), {});
+    });
+    const controller = new AbortController();
+    const result = adapter.detectModels(controller.signal);
+    while (
+      !spawn.processes[0]?.received.some(
+        (message) => message.method === 'model/list',
+      )
+    )
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    controller.abort();
+    expect(await result).toMatchObject({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model detection timed out',
+    });
+    expect(spawn.processes[0]?.signals).toContain('SIGKILL');
+  });
   it('reports the installed version and login state', async () => {
     const adapter = new CodexAdapter({
       searchPath: binDir,
@@ -242,22 +376,30 @@ describe('skills', () => {
   });
 });
 
-describe('sandbox', () => {
-  it("lets the agent write the work directory and the session's writable roots, and nothing else", async () => {
-    let params: Record<string, unknown> = {};
+describe('access', () => {
+  it('starts the thread and every turn with full access and no approvals', async () => {
+    let start: Record<string, unknown> = {};
+    let turn: Record<string, unknown> = {};
     const { adapter } = adapterWith(async (fake) => {
-      params = await handshake(fake);
+      fake.respond(await fake.nextRequest('initialize'), { userAgent: 't' });
+      const thread = await fake.nextRequest('thread/start');
+      start = thread.params as Record<string, unknown>;
+      fake.respond(thread, { thread: { id: 'thread-1' }, model: 'gpt-test' });
+      const request = await fake.nextRequest('turn/start');
+      turn = request.params as Record<string, unknown>;
+      fake.respond(request, {
+        turn: { id: 'turn-1', status: 'inProgress', error: null },
+      });
       completeTurn(fake);
     });
-    const handle = adapter.start(
-      session({
-        writableRoots: ['/work-other', '/cache.git/worktrees/app'],
-      }),
-    );
-    await drain(handle);
-    expect(params.sandboxPolicy).toMatchObject({
-      type: 'workspaceWrite',
-      writableRoots: ['/work', '/work-other', '/cache.git/worktrees/app'],
+    await drain(adapter.start(session()));
+    expect(start).toMatchObject({
+      approvalPolicy: 'never',
+      sandbox: 'danger-full-access',
+    });
+    expect(turn).toMatchObject({
+      approvalPolicy: 'never',
+      sandboxPolicy: { type: 'dangerFullAccess' },
     });
   });
 });
@@ -278,122 +420,9 @@ describe('shell commands', () => {
   });
 });
 
-describe('permissions', () => {
-  it('answers file changes from the policy, per file', async () => {
-    const seen: [string, unknown][] = [];
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      const change = {
-        type: 'fileChange',
-        id: 'patch-1',
-        changes: [
-          { path: '/work/a.txt', kind: { type: 'add' }, diff: '' },
-          { path: '/etc/hosts', kind: { type: 'update' }, diff: '' },
-        ],
-        status: 'inProgress',
-      };
-      item(fake, 'started', change);
-      fake.emit({
-        id: 7,
-        method: 'item/fileChange/requestApproval',
-        params: { threadId: 'thread-1', turnId: 'turn-1', itemId: 'patch-1' },
-      });
-      expect((await fake.nextAnswer(7)).result).toEqual({
-        decision: 'decline',
-      });
-      item(fake, 'completed', { ...change, status: 'declined' });
-      completeTurn(fake);
-    });
-    const handle = adapter.start(
-      session({
-        permission: async (tool, input) => {
-          seen.push([tool, input]);
-          return String(input.path).startsWith('/work/')
-            ? 'allow'
-            : { deny: 'outside the work directory' };
-        },
-      }),
-    );
-    const events = await drain(handle);
-    expect(seen).toEqual([
-      ['edit', { path: '/work/a.txt', kind: 'add' }],
-      ['edit', { path: '/etc/hosts', kind: 'update' }],
-    ]);
-    expect(events.filter((e) => e.type === 'permission')).toMatchObject([
-      {
-        tool: 'edit',
-        meta: { decision: 'deny', reason: 'outside the work directory' },
-      },
-    ]);
-    expect(events.find((e) => e.type === 'toolResult')?.meta?.isError).toBe(
-      true,
-    );
-    expect((await handle.result).exit).toBe('completed');
-  });
-
-  it('checks commands Codex ran without asking, and refuses sandbox widening', async () => {
-    const { adapter } = adapterWith(async (fake) => {
-      await handshake(fake);
-      const command = {
-        type: 'commandExecution',
-        id: 'exec-1',
-        command: "/bin/zsh -lc 'cat .acme/run.json'",
-        cwd: '/work',
-        status: 'completed',
-        aggregatedOutput: '{}',
-        exitCode: 0,
-        durationMs: 1,
-      };
-      item(fake, 'started', { ...command, status: 'inProgress' });
-      item(fake, 'completed', command);
-      fake.emit({
-        id: 8,
-        method: 'item/permissions/requestApproval',
-        params: {
-          threadId: 'thread-1',
-          turnId: 'turn-1',
-          itemId: 'perm-1',
-          reason: 'need network',
-          permissions: { network: { enabled: true } },
-        },
-      });
-      expect((await fake.nextAnswer(8)).result).toEqual({
-        permissions: {},
-        scope: 'turn',
-      });
-      fake.emit({ id: 9, method: 'item/tool/call', params: {} });
-      expect((await fake.nextAnswer(9)).error?.message).toMatch(
-        /Unsupported request/,
-      );
-      completeTurn(fake);
-    });
-    const handle = adapter.start(
-      session({
-        permission: async (_tool, input) =>
-          String(input.command).includes('.acme')
-            ? { deny: 'credentials' }
-            : 'allow',
-      }),
-    );
-    const events = await drain(handle);
-    // The unprompted check runs after the fact, so its order is not fixed.
-    const permissions = events.filter((e) => e.type === 'permission');
-    expect(permissions).toHaveLength(2);
-    expect(permissions.find((e) => e.tool === 'shell')).toMatchObject({
-      input: { command: 'cat .acme/run.json', cwd: '/work' },
-      meta: { decision: 'deny', reason: 'credentials', unprompted: true },
-    });
-    expect(
-      permissions.find((e) => e.tool === 'requestPermissions')?.meta,
-    ).toMatchObject({ decision: 'deny' });
-    expect(
-      events.some(
-        (e) => e.type === 'error' && /without asking/.test(e.content ?? ''),
-      ),
-    ).toBe(true);
-  });
-
-  it('denies when the policy throws', async () => {
+describe('approvals', () => {
+  it('accepts every approval request without asking the runner', async () => {
+    const permission = vi.fn(async () => 'allow' as const);
     const { adapter } = adapterWith(async (fake) => {
       await handshake(fake);
       fake.emit({
@@ -403,26 +432,45 @@ describe('permissions', () => {
           threadId: 'thread-1',
           turnId: 'turn-1',
           itemId: 'exec-1',
-          command: 'ls',
+          command: 'cat ../outside.txt',
         },
       });
-      expect((await fake.nextAnswer(3)).result).toEqual({
-        decision: 'decline',
+      expect((await fake.nextAnswer(3)).result).toEqual({ decision: 'accept' });
+      fake.emit({
+        id: 4,
+        method: 'item/fileChange/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'patch-1',
+          grantRoot: '/',
+        },
       });
+      expect((await fake.nextAnswer(4)).result).toEqual({ decision: 'accept' });
+      fake.emit({
+        id: 5,
+        method: 'item/permissions/requestApproval',
+        params: {
+          threadId: 'thread-1',
+          turnId: 'turn-1',
+          itemId: 'perm-1',
+          reason: 'need network',
+          permissions: { network: { enabled: true } },
+        },
+      });
+      expect((await fake.nextAnswer(5)).result).toEqual({
+        permissions: { network: { enabled: true } },
+        scope: 'turn',
+      });
+      fake.emit({ id: 6, method: 'item/tool/call', params: {} });
+      expect((await fake.nextAnswer(6)).error?.message).toMatch(
+        /Unsupported request/,
+      );
       completeTurn(fake);
     });
-    const handle = adapter.start(
-      session({
-        permission: async () => {
-          throw new Error('broken');
-        },
-      }),
-    );
-    const events = await drain(handle);
-    expect(events.find((e) => e.type === 'permission')?.meta).toMatchObject({
-      decision: 'deny',
-      reason: 'Policy error: broken',
-    });
+    const events = await drain(adapter.start(session({ permission })));
+    expect(permission).not.toHaveBeenCalled();
+    expect(events.filter((e) => e.type === 'permission')).toEqual([]);
   });
 });
 
@@ -660,7 +708,8 @@ describe('stopping and resuming', () => {
     expect(resume).toMatchObject({
       threadId: 'thread-1',
       model: 'gpt-test',
-      approvalPolicy: 'untrusted',
+      approvalPolicy: 'never',
+      sandbox: 'danger-full-access',
     });
     // Baseline before this run: 800 input (400 cached), 40 output. Cached input and cache writes are part of
     // OpenAI's input tokens; Usage keeps them apart.

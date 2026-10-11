@@ -1,6 +1,4 @@
 ---
-'@nocobase/app-plugin-ai-employee': patch
-'@nocobase/app-plugin-ai-employee-example': minor
 '@nocobase/app-template-examples': patch
 ---
 

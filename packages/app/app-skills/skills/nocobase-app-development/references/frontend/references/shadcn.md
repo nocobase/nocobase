@@ -4,7 +4,7 @@
 
 ## 1. What the template ships and how to add the rest
 
-The Default and Hub templates ship these; Examples adds `badge`, `card`, `field`, `select`, `separator`, `skeleton`, `table`, `textarea`, `toggle` and `toggle-group`.
+The Default template ships these; Examples adds `badge`, `card`, `field`, `select`, `separator`, `skeleton`, `table`, `textarea`, `toggle` and `toggle-group`.
 
 | Primitive                                                                             | Used by                                                 |
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------- |

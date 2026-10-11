@@ -9,6 +9,7 @@ import {
   FailureReasonSchema,
   PERMISSION_MODES,
   RUN_INPUT_TYPES,
+  RUN_EVENT_TYPES,
   RUN_STATUSES,
   RunEventSchema,
   RunnerFeatureSchema,
@@ -17,7 +18,10 @@ import {
   ToolInfoSchema,
   ToolLoadSchema,
   ToolSlotsSchema,
+  WorkspaceDecisionSchema,
+  WorkspaceCleanupResultSchema,
   type RunEvent,
+  type RunEventType,
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { z } from 'zod';
@@ -82,6 +86,8 @@ import {
   type RunnerRecentRun,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerWorkspace,
+  type RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import {
   RUN_REQUEST_STATUSES,
@@ -222,9 +228,25 @@ export const RunListQuery: z.ZodType<
  * events, beyond the usual cap of 100.
  */
 export const RunEventsQuery: z.ZodType<
-  Paging & { readonly after?: number | undefined }
+  Paging & {
+    readonly after?: number | undefined;
+    readonly type?: RunEventType[] | undefined;
+  }
 > = z.object({
   after: z.coerce.number().int().min(0).optional(),
+  // Hono represents one query value as a string and repeated values as an array.
+  type: z
+    .preprocess(
+      (value) => (typeof value === 'string' ? [value] : value),
+      z.array(z.enum(RUN_EVENT_TYPES)).min(1).max(100),
+    )
+    .optional()
+    .meta({
+      type: 'array',
+      items: { type: 'string', enum: [...RUN_EVENT_TYPES] },
+      description:
+        'Only these raw event types (repeat for more). Omit to read every type.',
+    }),
   pageSize: pageSize(500, 1000),
   pageToken,
 });
@@ -293,11 +315,19 @@ export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
 
 export const DistTargetQuery: z.ZodType<{
   format?: 'json' | 'env' | undefined;
-}> = z.object({ format: z.enum(['json', 'env']).optional() });
+  accept?: string | undefined;
+}> = z.object({
+  format: z.enum(['json', 'env']).optional(),
+  accept: z.string().max(200).optional().meta({
+    description:
+      'The other answers the caller understands, comma-separated. `npm`: when the application has no tarball of the product but names its npm package, answer that package and exact version (`kind: npm`) instead of 404. Unknown values are ignored.',
+  }),
+});
 
 export const VariableValueInput: z.ZodType<{
   value?: string;
   teamRunnersOnly?: boolean;
+  fromRunner?: boolean;
 }> = z.strictObject({
   value: z.string().max(100_000).optional().meta({
     description:
@@ -306,6 +336,10 @@ export const VariableValueInput: z.ZodType<{
   teamRunnersOnly: z.boolean().optional().meta({
     description:
       'Only team runners receive it; left out, a new variable is not restricted and an existing one keeps its setting.',
+  }),
+  fromRunner: z.boolean().optional().meta({
+    description:
+      'Take it from the runner: no value is kept here, and the runner that takes the run provides it (`nocobase-runner env set NAME`, or `--pass-env NAME`). Leave `value` out.',
   }),
 });
 
@@ -485,6 +519,7 @@ export const AgentSummarySchema: z.ZodType<AgentSummary> = agentObject
     activeRuns: z.number().int(),
     onlineRunners: z.number().int(),
     canEdit: z.boolean(),
+    owned: z.boolean(),
     canCopy: z.boolean(),
   })
   .meta({ ref: 'AgentsAgentSummary' });
@@ -627,6 +662,10 @@ export const VariableSchema: z.ZodType<Variable> = z
     teamRunnersOnly: z.boolean().optional().meta({
       description:
         'Only team runners receive it: a run that gets it waits for one rather than going to a personal runner.',
+    }),
+    fromRunner: z.boolean().optional().meta({
+      description:
+        'Taken from the runner: it has no value here, and the runner that takes the run provides it from its own configuration.',
     }),
     updatedAt: dateTime,
     updatedById: z.string().nullable(),
@@ -908,6 +947,13 @@ export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
       branch: z.string(),
       pushed: z.boolean(),
       headSha: z.string().nullable(),
+      failure: z
+        .object({ reason: z.string(), message: z.string() })
+        .nullable()
+        .meta({
+          description:
+            'Why the runner could not push the repository at the end of the run; null when it pushed or did not try.',
+        }),
       updatedAt: dateTime,
     }),
   ),
@@ -1376,6 +1422,55 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
   }),
 });
 
+// A runner's working directories, as it last reported them.
+const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+  decision: WorkspaceDecisionSchema.optional(),
+  cleanup: WorkspaceCleanupResultSchema.optional(),
+  runId: z
+    .string()
+    .optional()
+    .meta({ description: 'The last run that worked in it.' }),
+  workDir: z.string().meta({ description: 'Where it is on the runner.' }),
+  unpushed: z.boolean().meta({
+    description:
+      "It holds changes not committed, or commits the remote task branch lacks; never removed on the application's word.",
+  }),
+  lastUsedAt: z.string(),
+  subjectKind: z.string().nullable(),
+  subjectId: z.string().nullable(),
+  settled: z.boolean().nullable().meta({
+    description:
+      "Its subject's work is over (true), goes on (false), or cannot be told (null).",
+  }),
+});
+
+const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
+  .object({
+    disk: z
+      .object({
+        freeBytes: z.number().int(),
+        totalBytes: z.number().int(),
+        minFreeBytes: z.number().int().nullable().meta({
+          description:
+            "What the runner's owner keeps free; below it, the runner removes directories that may go. Null for nothing.",
+        }),
+      })
+      .nullable()
+      .meta({
+        description:
+          "The disk holding the runner's working directories; null when it did not say.",
+      }),
+    intervalMs: z.number().int().positive().optional(),
+    count: z.number().int(),
+    unpushedCount: z.number().int(),
+    measuredAt: dateTime,
+    workspaces: z.array(RunnerWorkspaceSchema).meta({
+      description:
+        "This application's, most recently used first; empty for a caller who may not see the runner's machine.",
+    }),
+  })
+  .meta({ ref: 'AgentsRunnerWorkspaceUsage' });
+
 // Runners, as people manage them.
 const runnerObject = z.object({
   id: z.string(),
@@ -1407,6 +1502,14 @@ const runnerObject = z.object({
   }),
   acceptJobs: z.boolean(),
   policy: RunnerPolicySchema.nullable(),
+  variables: z.array(z.string()).nullable().optional().meta({
+    description:
+      'The names of the variables it provides to runs that take them from the runner, as it last reported them; null when it reported none. Names only.',
+  }),
+  workspaceUsage: RunnerWorkspaceUsageSchema.nullable().optional().meta({
+    description:
+      'The working directories it keeps for this application and the free space on the disk holding them, as it last reported them; null or absent before it reports.',
+  }),
   lastSeenAt: dateTime.nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
@@ -1433,6 +1536,7 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
         'The runs it holds now by the coding tool each runs with; a tool it runs nothing of is left out.',
     }),
     takes: z.array(z.object({ id: z.string(), name: z.string() })),
+    canSeeMachine: z.boolean().optional(),
     canManage: z.boolean(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),

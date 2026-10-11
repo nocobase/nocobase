@@ -25,6 +25,8 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
   clientMocks.authorization(),
 );
 
+const { NavigationGuardProvider } = await import('@nocobase/app-client');
+
 const { default: WorkflowDetailPage } =
   await import('../../client/pages/config/workflow-detail.js');
 const { WorkflowEventsContext } =
@@ -83,11 +85,13 @@ function renderDetail(events: readonly WorkflowEventUI[]): void {
     <QueryClientProvider client={client}>
       <WorkflowEventsContext.Provider value={events}>
         <MemoryRouter initialEntries={['/config/workflows/wf1']}>
-          <Routes>
-            <Route path='/config/workflows' element={<Outlet />}>
-              <Route path=':workflowId' element={<WorkflowDetailPage />} />
-            </Route>
-          </Routes>
+          <NavigationGuardProvider>
+            <Routes>
+              <Route path='/config/workflows' element={<Outlet />}>
+                <Route path=':workflowId' element={<WorkflowDetailPage />} />
+              </Route>
+            </Routes>
+          </NavigationGuardProvider>
         </MemoryRouter>
       </WorkflowEventsContext.Provider>
     </QueryClientProvider>,

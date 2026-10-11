@@ -94,6 +94,7 @@ jobs:
         with:
           node-version: 24
           registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
+          scope: '@nocobase'
 
       - name: Inspect prerelease state
         id: release_state
@@ -114,6 +115,7 @@ jobs:
         id: oss
         env:
           OSS_SHA: ${{ inputs.oss_sha }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
         run: |
           ARGS=(--branch develop)
           if [ -n "$OSS_SHA" ]; then ARGS+=(--sha "$OSS_SHA"); fi

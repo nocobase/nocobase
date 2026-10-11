@@ -4,16 +4,12 @@
     "link": "/get-started/"
   },
   {
-    "text": "教程",
-    "link": "/tutorials/"
+    "text": "Studio",
+    "link": "/studio/"
   },
   {
     "text": "能力",
     "link": "/capabilities/"
-  },
-  {
-    "text": "部署",
-    "link": "/deployment/"
   },
   {
     "text": "首页",

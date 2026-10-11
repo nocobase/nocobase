@@ -1,6 +1,6 @@
 ---
 name: nocobase-create-app
-description: Create a NocoBase 3 project to develop, locally, with `pnpm create @nocobase/app`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase to develop with, and the working directory holds no NocoBase application yet. Not for installing a NocoBase Hub, unless the user will develop the Hub's own code, and not for deploying to production — both belong to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
+description: Create a NocoBase 3 project to develop, locally, with `pnpm create @nocobase/app`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase to develop with, and the working directory holds no NocoBase application yet. Not for deploying to production, which belongs to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
 ---
 
 # Create a NocoBase 3 application
@@ -16,11 +16,9 @@ This Skill gets a new project created, configured and running locally: source co
   | The user asks to                                  | Skill                                                                   |
   | ------------------------------------------------- | ----------------------------------------------------------------------- |
   | Install, create, set up or try NocoBase, to develop with | This one                                                         |
-  | Install a NocoBase Hub                            | `nocobase-app-installer`, `--template hub`                              |
   | Deploy an application to production or a server   | `nocobase-app-installer`, `--archive`                                   |
-  | Develop the Hub's own code                        | This one, with `--template=hub`                                         |
 
-  A Hub is installed, not created: hand a request to install one over to `nocobase-app-installer`, on a laptop as much as on a server, unless the user says they will develop the Hub's own code. Hand over a request to deploy as well, and stop here in both cases.
+  Hand a request to deploy over to `nocobase-app-installer`, and stop here.
 - On Windows, work in WSL. The commands below assume a POSIX shell such as Bash; the subshell and the inline environment variable do not work in PowerShell or cmd.
 - Check `node --version` (24 or later) and `pnpm --version` (11). If either is missing or does not match, stop before creating anything and tell the user:
   - which tool is missing or which version was found, and which version is required;
@@ -42,7 +40,7 @@ This Skill gets a new project created, configured and running locally: source co
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
 - `--json` never prompts. It prints one JSON document on stdout and progress on stderr, so parse stdout only. It is the envelope every `pnpm nocobase … --json` command prints: `ok` says whether creation worked, `result` holds what it produced, and a failure's `error.code`, `error.message` and `error.details` say where it stopped. create-app 0.1.0-beta.23 and earlier print a flat result instead, with `status` `success` or `error` and `stage`, `message`, `directory` and `nextCommands` at the top level; read the same fields there.
-- The default template is the one to develop an application from, and needs no flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first, and `--template=hub` only for a user who will develop the Hub's own code.
+- The default template is the one to develop an application from, and needs no flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first.
 
 Read the result before doing anything else:
 

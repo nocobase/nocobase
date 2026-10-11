@@ -5,7 +5,7 @@
 export type Locale = string;
 
 /**
- * A namespace is a package name: `@nocobase/app-plugin-workflow`, or the application's own name. Package names are
+ * A namespace is a package name: `@nocobase/app-plugin-scheduler`, or the application's own name. Package names are
  * unique on npm, so nothing has to be registered or deduplicated for them not to collide.
  */
 export type Namespace = string;

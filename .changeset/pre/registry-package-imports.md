@@ -1,13 +1,10 @@
 ---
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/create-plugin': patch
 '@nocobase/app-plugin-file': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-plugin-registry-example': patch
-'@nocobase/app-plugin-ai-employee-example': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-skills': patch
 ---
 

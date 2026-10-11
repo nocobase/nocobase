@@ -10,11 +10,10 @@ Declare the route with a lazy `componentLoader`:
 // client/routes.ts
 import {
   defineAppRoutes,
-  defineSettingsRoutes,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
-const appRoutes: AppClientRouteContribution = defineAppRoutes([
+const routes: AppClientRouteContribution = defineAppRoutes([
   {
     name: 'orders',
     path: '/orders',
@@ -23,13 +22,6 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     componentLoader: () => import('./pages/orders.js'),
   },
 ]);
-
-const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([]);
-
-const routes: readonly AppClientRouteContribution[] = [
-  appRoutes,
-  settingsRoutes,
-];
 
 export default routes;
 ```
@@ -66,7 +58,7 @@ Descendants inherit their entry route’s auth mode and cannot switch it.
 
 ## Declaring `authz`
 
-Declare `authz` on the first page of every path: a `{ resource: { type, id }, action }` request, `'skip'`, or `'unrestricted'` for a page only root may open. Nothing is inferred from the route name. A nested page that omits it inherits its nearest ancestor page's value. An entry page that omits it still registers, with a development warning, and defaults to `'unrestricted'` on a protected App or settings page and to `'skip'` on a guest, optional or dev page; always declare it. A product page usually checks `{ resource: { type: 'page', id }, action: 'access' }` with a stable id; a settings page checks the `settings` item its server registered. Every parent check must pass before its children render, so a child that needs nothing more may declare `'skip'`. Menus, page loaders and permission discovery all read the declared value. A request is checked independently of `auth`. Route groups cannot declare `authz`.
+Declare `authz` on the first page of every path: a `{ resource: { type, id }, action }` request, `'skip'`, or `'unrestricted'` for a page only root may open. Nothing is inferred from the route name. A nested page that omits it inherits its nearest ancestor page's value. An entry page that omits it still registers, with a development warning, and defaults to `'unrestricted'` on a protected page and to `'skip'` on a guest or optional page; always declare it. A product page usually checks `{ resource: { type: 'page', id }, action: 'access' }` with a stable id. Every parent check must pass before its children render, so a child that needs nothing more may declare `'skip'`. Menus, page loaders and permission discovery all read the declared value. A request is checked independently of `auth`. Route groups cannot declare `authz`.
 
 ### Opting a page out of authorization
 
@@ -86,45 +78,17 @@ defineAppRoutes([
 
 Use `'skip'` for pages such as the signed-in landing page that need no additional authorization. Replacing it with a permission request restricts the page to users granted that permission.
 
-The Permission Sets page lists every route whose `authz` checks `page` `access`, keyed by `authz.resource.id` and listed under the Pages entry with its navigation groups as resource groups in menu order, and deduplicates the ids. The id is what stored grants reference, so changing it changes the permission identifier; renaming the route alone does not. For released features, assess how existing grants should be handled. For unreleased features, do not add migrations, backfills, or compatibility branches for temporary development data. If the release status is unclear, confirm it with the user before proceeding.
+The authorization plugin's permission workspace lists every route whose `authz` checks `page` `access`, keyed by `authz.resource.id` and listed under the Pages entry with its navigation groups as resource groups in menu order, and deduplicates the ids. The id is what stored grants reference, so changing it changes the permission identifier; renaming the route alone does not. For released features, assess how existing grants should be handled. For unreleased features, do not add migrations, backfills, or compatibility branches for temporary development data. If the release status is unclear, confirm it with the user before proceeding.
 
 `auth` governs browser navigation. It is not server security: an endpoint the page calls must authenticate independently. See [server routes](server.md).
 
-## The three route kinds
+## One route kind
 
-| Function                 | Mounts at          | For                                    |
-| ------------------------ | ------------------ | -------------------------------------- |
-| `defineAppRoutes()`      | `/orders`          | Ordinary product pages                 |
-| `defineSettingsRoutes()` | `/settings/orders` | Administrative and configuration pages |
-| `defineDevRoutes()`      | `/dev/orders`      | Development-only tools                 |
-
-Do not repeat `/settings` or `/dev` in the path — write `/orders` and it resolves under the surface's prefix. Settings and dev are separate path spaces, so the same relative path may exist in both.
-
-### Settings pages
-
-```ts
-defineSettingsRoutes([
-  {
-    name: 'orders',
-    path: '/orders',
-    navigation: { title: 'navigation.orders' },
-    authz: { resource: { type: 'settings', id: 'orders' }, action: 'read' },
-    componentLoader: () => import('./pages/orders-settings.js'),
-  },
-]);
-```
-
-`navigation` puts the page in the settings navigation. The header shows the Settings entry only when at least one such page is accessible. `authz` is checked before the page loads; when it is denied the page disappears from navigation and a direct URL will not load the component.
-
-Declare the settings item a settings page belongs to (one that omits it opens only for root), or `'skip'` for a page every signed-in user may open, and enforce the same rule on the server. Register the item on the server with `authz.settings.add`; see [system settings](system-settings.md).
-
-### Dev routes
-
-`defineDevRoutes()` pages are absent from a production build, along with any module only they import. This is a build boundary, not a permission boundary. A page that must be restricted in production is a settings route with `authz`, enforced by the server.
+`defineAppRoutes()` is the only Client route API. There is no `/settings` or `/dev` surface, and a plugin contributes no settings or development pages: expose administration as settings items and APIs ([system settings](system-settings.md)) and leave any page over them to the application.
 
 ## Putting the page in the sidebar
 
-Declare `navigation: { title: 'navigation.orders' }` on the route. The application sidebar, settings navigation, and dev navigation all read their route declarations. Titles resolve in the owning application's or plugin's translation namespace; `icon` is an optional component accepting `className`.
+Declare `navigation: { title: 'navigation.orders' }` on the route. The application sidebar reads route declarations. Titles resolve in the owning application's or plugin's translation namespace; `icon` is an optional component accepting `className`.
 
 Omit `navigation` for a reachable page that should not have a menu entry. Menu targets must resolve to concrete paths: dynamic parameter and wildcard pages do not declare `navigation`. Visiting such a page selects its nearest visible menu ancestor.
 
@@ -132,7 +96,7 @@ Do not add a Refine resource just to create a menu. Resources remain useful for 
 
 ### Groups and page children
 
-All three route functions support recursive `children`. A group has `name`, `navigation`, and `children`, without `componentLoader`. Its optional `path` prefixes descendants; omit it for a menu-only group. A page has `componentLoader` and may also have navigation and children. A clickable page with child menu items has separate link and expand controls.
+`defineAppRoutes()` supports recursive `children`. A group has `name`, `navigation`, and `children`, without `componentLoader`. Its optional `path` prefixes descendants; omit it for a menu-only group. A page has `componentLoader` and may also have navigation and children. A clickable page with child menu items has separate link and expand controls.
 
 Groups do not render business components. Pages must place `<Outlet />` explicitly where child content belongs. See [child routes](client-child-routes.md) for complete examples and verification.
 
@@ -147,30 +111,15 @@ A navigable page normally changes `client/routes.ts`, its page component, and `c
 - The page renders at its path, and at `/main` plus its path in the browser.
 - The sidebar shows the entry, with the right label in every language, and highlights it when open.
 - A signed-out visit to a `required` page redirects to sign-in.
-- A settings page with `authz` disappears from navigation when denied, and its direct URL does not load the component.
+- A page with `authz` disappears from navigation when denied, and its direct URL does not load the component.
 - The page's chunk loads on navigation rather than in the initial bundle.
 
-## Contributing to another plugin's settings group
+## Appending to another package's navigation group
 
-A root entry passed to `defineSettingsRoutes()` may declare `parent: 'authorization'` to append to an existing settings group by its unique name. The target can be nested and can be declared by a later plugin. The contributed route's path is relative to the target group's path; its package and locale namespace remain those of the contributing plugin. Both pages and groups can be contributed this way.
-
-```ts
-defineSettingsRoutes([
-  {
-    parent: 'authorization',
-    name: 'audit-logs',
-    path: '/audit-logs',
-    navigation: { title: 'navigation.auditLogs' },
-    authz: { resource: { type: 'settings', id: 'audit-logs' }, action: 'read' },
-    componentLoader: () => import('./pages/audit-logs.js'),
-  },
-]);
-```
-
-Without `parent`, the root entry keeps its existing placement under Settings. Entries inside `children` must not also declare `parent`. Groups can declare empty `children` for extension. Original children precede appended entries, which retain plugin and entry registration order. Missing targets, page targets, cycles, duplicate sibling names and conflicting paths are errors; groups are never silently merged. This extension applies to Settings only, not App or Dev routes.
+A root entry passed to `defineAppRoutes()` may declare `parent: 'package-name:group-name'` to append to a navigation group another package declares, or a bare group name for one in the same package. The target can be nested and can be declared by a later plugin. The contributed route's path is relative to the target group's path; its package and locale namespace remain those of the contributing plugin. Entries inside `children` must not also declare `parent`. Missing targets, page targets, cycles, duplicate names and conflicting paths are errors; groups are never silently merged.
 
 ## Checking feature visibility
 
 Use `useCan` from `@nocobase/app-plugin-authorization/client` for buttons and other permission-dependent UI: `useCan({ resource: { type: 'page', id: 'orders' }, action: 'access' })`. Its `{ can, isPending, error, retry }` result follows the current session and realtime permission updates; pending and failed checks do not allow access. Non-React consumers resolve `authorizationClientToken` and call `client.can({ resource, action })`. Page guards and navigation use this authorization client directly, without Refine permission hooks. Route `authz` declarations use the same `{ resource: { type, id }, action }` request; no string adapter is involved. Client visibility never replaces authorization on the endpoint.
 
-Resolve the current application authorization client with `useAuthorizationClient()` in React or `authorizationClientToken` from its service container elsewhere. Refine access-control configuration and global authorization client accessors are not supported. Setting routes declare domain actions such as `read` and `update`; there is no `list`/`show`/`edit` translation.
+Resolve the current application authorization client with `useAuthorizationClient()` in React or `authorizationClientToken` from its service container elsewhere. Refine access-control configuration and global authorization client accessors are not supported. Checks name domain actions such as `read` and `update`; there is no `list`/`show`/`edit` translation.

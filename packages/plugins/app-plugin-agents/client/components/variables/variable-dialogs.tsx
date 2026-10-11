@@ -2,7 +2,7 @@
  * Adding a variable (`target.name === null`), in the scope chosen in the dialog when the panel lists several, or
  * replacing one's value or whether only team runtimes receive it, and showing revealed values. The value field starts
  * empty: stored values never reach the browser except through the audited reveal, and an empty value when replacing
- * keeps the stored one.
+ * keeps the stored one. "Take from the runtime" keeps a name only: the runtime that takes a run provides the value.
  *
  * Mirrors NocoProject's `nocoproject/client/pages/np/agents/detail/env-dialogs.tsx`. Closing it with a name or value
  * typed asks first (NP-200).
@@ -68,14 +68,15 @@ export function VariableDialog({
 }: {
   readonly scopes: readonly VariableScopeOption[];
   /**
-   * `at`: the scope's position; `fixed`: it may not be changed (replacing a value); `teamRunnersOnly`: what the
-   * variable being replaced says.
+   * `at`: the scope's position; `fixed`: it may not be changed (replacing a value); `teamRunnersOnly` and
+   * `fromRunner`: what the variable being replaced says.
    */
   readonly target: {
     readonly name: string | null;
     readonly at: number;
     readonly fixed: boolean;
     readonly teamRunnersOnly?: boolean;
+    readonly fromRunner?: boolean;
   } | null;
   readonly existingNames: (at: number) => readonly string[];
   readonly onClose: () => void;
@@ -110,6 +111,7 @@ export function VariableDialog({
               fixedScope={target.fixed}
               fixedName={target.name}
               initialTeamRunnersOnly={target.teamRunnersOnly ?? false}
+              initialFromRunner={target.fromRunner ?? false}
               existingNames={existingNames}
               onCancel={requestClose}
               onClose={onClose}
@@ -128,6 +130,7 @@ function VariableForm({
   fixedScope,
   fixedName,
   initialTeamRunnersOnly,
+  initialFromRunner,
   existingNames,
   onCancel,
   onClose,
@@ -138,6 +141,7 @@ function VariableForm({
   readonly fixedScope: boolean;
   readonly fixedName: string | null;
   readonly initialTeamRunnersOnly: boolean;
+  readonly initialFromRunner: boolean;
   readonly existingNames: (at: number) => readonly string[];
   /** Cancel: asks first when something was typed. */
   readonly onCancel: () => void;
@@ -159,6 +163,7 @@ function VariableForm({
   const [teamRunnersOnly, setTeamRunnersOnly] = useState(
     initialTeamRunnersOnly,
   );
+  const [fromRunner, setFromRunner] = useState(initialFromRunner);
   const [nameError, setNameError] = useState<string>();
   const [valueError, setValueError] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -167,6 +172,7 @@ function VariableForm({
   const markSaved = useUnsavedChanges(
     value !== '' ||
       teamRunnersOnly !== initialTeamRunnersOnly ||
+      fromRunner !== initialFromRunner ||
       (fixedName === null && name.trim() !== ''),
   );
 
@@ -176,10 +182,19 @@ function VariableForm({
     const problem = fixedName
       ? null
       : variableNameProblem(trimmed, existingNames(at));
-    const tooLong = valueTooLong(value);
+    const tooLong = !fromRunner && valueTooLong(value);
+    // One taken from the runtime until now has no value to keep: switching it to a value needs one.
+    const valueMissing =
+      !fromRunner && value === '' && fixedName !== null && initialFromRunner;
     setNameError(problem ? t(`envVars.nameProblems.${problem}`) : undefined);
-    setValueError(tooLong ? t('envVars.valueTooLong') : undefined);
-    if (problem || tooLong) return;
+    setValueError(
+      tooLong
+        ? t('envVars.valueTooLong')
+        : valueMissing
+          ? t('envVars.valueRequired')
+          : undefined,
+    );
+    if (problem || tooLong || valueMissing) return;
     setSaving(true);
     try {
       // Replacing with an empty value keeps the stored one: only whether team runtimes alone receive it changes.
@@ -187,8 +202,8 @@ function VariableForm({
         scope.scope,
         scope.scopeId,
         trimmed,
-        fixedName !== null && value === '' ? undefined : value,
-        { teamRunnersOnly },
+        fromRunner || (fixedName !== null && value === '') ? undefined : value,
+        fromRunner ? { fromRunner: true } : { teamRunnersOnly },
       );
       notify.success(t('envVars.saved', { name: trimmed }));
       markSaved();
@@ -253,40 +268,63 @@ function VariableForm({
             <FieldDescription>{t('envVars.nameHint')}</FieldDescription>
           )}
         </Field>
-        <Field data-invalid={valueError ? true : undefined}>
-          <FieldLabel htmlFor='ag-env-value'>{t('envVars.value')}</FieldLabel>
-          <Textarea
-            id='ag-env-value'
-            value={value}
-            rows={3}
-            autoFocus={fixedName !== null}
-            autoComplete='off'
-            spellCheck={false}
-            className='font-mono text-xs'
-            aria-invalid={valueError ? true : undefined}
-            onChange={(event) => setValue(event.target.value)}
-          />
-          {valueError ? (
-            <FieldError>{valueError}</FieldError>
-          ) : fixedName !== null ? (
-            <FieldDescription>{t('envVars.keepValueHint')}</FieldDescription>
-          ) : null}
-        </Field>
         <Field orientation='horizontal'>
           <Checkbox
-            id='ag-env-team-only'
-            checked={teamRunnersOnly}
-            onCheckedChange={(checked) => setTeamRunnersOnly(checked === true)}
+            id='ag-env-from-runner'
+            checked={fromRunner}
+            onCheckedChange={(checked) => setFromRunner(checked === true)}
           />
           <FieldContent>
-            <FieldLabel htmlFor='ag-env-team-only'>
-              {t('envVars.teamRunnersOnly')}
+            <FieldLabel htmlFor='ag-env-from-runner'>
+              {t('envVars.fromRunner')}
             </FieldLabel>
             <FieldDescription>
-              {t('envVars.teamRunnersOnlyHint')}
+              {t('envVars.fromRunnerHint', {
+                command: `nocobase-runner env set ${name.trim() || 'NAME'}`,
+              })}
             </FieldDescription>
           </FieldContent>
         </Field>
+        {fromRunner ? null : (
+          <Field data-invalid={valueError ? true : undefined}>
+            <FieldLabel htmlFor='ag-env-value'>{t('envVars.value')}</FieldLabel>
+            <Textarea
+              id='ag-env-value'
+              value={value}
+              rows={3}
+              autoFocus={fixedName !== null}
+              autoComplete='off'
+              spellCheck={false}
+              className='font-mono text-xs'
+              aria-invalid={valueError ? true : undefined}
+              onChange={(event) => setValue(event.target.value)}
+            />
+            {valueError ? (
+              <FieldError>{valueError}</FieldError>
+            ) : fixedName !== null && !initialFromRunner ? (
+              <FieldDescription>{t('envVars.keepValueHint')}</FieldDescription>
+            ) : null}
+          </Field>
+        )}
+        {fromRunner ? null : (
+          <Field orientation='horizontal'>
+            <Checkbox
+              id='ag-env-team-only'
+              checked={teamRunnersOnly}
+              onCheckedChange={(checked) =>
+                setTeamRunnersOnly(checked === true)
+              }
+            />
+            <FieldContent>
+              <FieldLabel htmlFor='ag-env-team-only'>
+                {t('envVars.teamRunnersOnly')}
+              </FieldLabel>
+              <FieldDescription>
+                {t('envVars.teamRunnersOnlyHint')}
+              </FieldDescription>
+            </FieldContent>
+          </Field>
+        )}
         {saveError ? (
           <Field data-invalid>
             <FieldError>{saveError}</FieldError>

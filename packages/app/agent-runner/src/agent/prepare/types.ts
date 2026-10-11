@@ -8,7 +8,11 @@ import type { SkillsPlacement } from '../adapters/types.ts';
 import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import type { ApiClient } from '../../lib/http.ts';
-import type { PreparedDir, WorkspaceLock } from '../../core/checkout.ts';
+import type {
+  PreparedDir,
+  RepoAuthSource,
+  WorkspaceLock,
+} from '../../core/checkout.ts';
 import type { GitRetryOptions } from '../../core/git-retry.ts';
 import type { PlacedMount } from '../mounts.ts';
 import type { SpoolEvent } from '../../core/events.ts';
@@ -18,6 +22,8 @@ export interface PrepareContext {
   readonly payload: RunPayload;
   readonly paths: RunnerPaths;
   readonly registration: AppRegistration;
+  /** The names the runner's owner passes from its environment (`--pass-env`). */
+  readonly passEnv: readonly string[];
   readonly client: ApiClient;
   readonly tool: AgentTool;
   readonly log: (message: string) => void;
@@ -25,6 +31,8 @@ export interface PrepareContext {
   readonly event: (event: SpoolEvent) => void;
   /** Called, last first, when the run ends, prepared or not. */
   readonly onRelease: (release: () => Promise<void>) => void;
+  /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
+  readonly gitAuth?: RepoAuthSource;
   /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
   readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;
@@ -63,22 +71,6 @@ export class PrepareError extends Error {
     this.reason = reason;
     this.meta = meta;
   }
-}
-
-/**
- * What the agent writes besides `cwd`, for a tool's own sandbox (`AdapterSession.writableRoots`): the other working
- * directories, and each repository worktree's own Git directory (`<cache>/worktrees/<name>`), which holds its index,
- * HEAD and submodules. Never the cache itself, which every subject's worktrees share.
- */
-export function agentWritableRoots(
-  dirs: readonly PreparedDir[],
-  cwd: string,
-): string[] {
-  const roots = dirs.flatMap((dir) => [
-    dir.dir,
-    ...(dir.repo === undefined ? [] : [dir.repo.gitDir]),
-  ]);
-  return [...new Set(roots)].filter((root) => root !== cwd);
 }
 
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */

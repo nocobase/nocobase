@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-template-default': patch
-'@nocobase/app-template-hub': patch
 ---
 
 Fix `client:inspect`, which failed with `.glob is not a function`.

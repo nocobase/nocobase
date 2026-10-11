@@ -18,7 +18,8 @@
  * the first is full; a run none of whose tools has room is passed over for the runs behind it.
  *
  * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
- * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked.
+ * gets, whether any is for team runners only, and their values, so what the runner receives is what was checked. The
+ * names taken from the runner go in `workspace.passthrough`, without values.
  *
  * A claim is one transaction per run. It first writes the agent's row (`lockAgentForClaim`): on databases with row
  * locks, concurrent claims for the same agent wait there, so the concurrency count read next is current. The run is
@@ -480,6 +481,15 @@ interface Assembled {
   readonly requires: readonly RunnerFeature[];
   readonly directoryKey: string | null;
   readonly entry: RunnerModelEntry;
+  /** The repositories the runner asks credentials for on demand (`RunGit.onDemand`). */
+  readonly gitOnDemand: readonly string[];
+}
+
+/** Whether `runner` asks for repository credentials on demand rather than taking them with the claim. */
+export function asksCredentialsOnDemand(
+  runner: Pick<Runner, 'features'>,
+): boolean {
+  return runner.features.includes('gitCredentials');
 }
 
 const DIRECTORY_KEY_SEPARATOR = '\n';
@@ -596,6 +606,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             runnerId: runner.id,
           })
         : [];
+    // Variables taken from the runner: names only. A runner that does not provide one fails the run while preparing
+    // it, saying how to provide it; runners are not chosen by them.
+    const passthrough = await deps.variables.passthroughOf(conn, variables);
     const nowText = clock.now().toISOString();
     const clean = await consumeReset(
       conn,
@@ -623,6 +636,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           (dir): dir is Extract<WorkspaceDir, { kind: 'repo' }> =>
             dir.kind === 'repo',
         ),
+        onDemand: asksCredentialsOnDemand(runner),
       },
       prepared,
     );
@@ -706,6 +720,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       workspace: {
         dirs,
         env,
+        ...(passthrough.length > 0 ? { passthrough } : {}),
         ...(clean ? { clean: true } : {}),
         ...(git ? { git } : {}),
       },
@@ -737,6 +752,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       requires,
       directoryKey,
       entry,
+      gitOnDemand: git?.onDemand ?? [],
     };
   }
 
@@ -810,6 +826,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       deps.mounts,
       (error) => deps.onClaimFailure?.(candidate.id, error),
       deps.repoAccess,
+      { onDemand: asksCredentialsOnDemand(runner) },
     );
     let taken: RunPayload | null;
     try {
@@ -912,6 +929,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             model: assembled.entry.model,
             effort: assembled.entry.effort ?? null,
             teamOnlyVariables: null,
+            gitCredentialUrls:
+              assembled.gitOnDemand.length > 0
+                ? [...assembled.gitOnDemand]
+                : null,
           },
         });
         unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });

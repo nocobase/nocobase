@@ -23,7 +23,9 @@ export const MAX_MAIL_SYNC_BATCH_SIZE = 200;
 export const DEFAULT_GMAIL_QUOTA_UNITS_PER_USER_PER_MINUTE = 6_000;
 export const DEFAULT_GMAIL_QUOTA_UNITS_PER_PROJECT_PER_MINUTE = 1_200_000;
 export const DEFAULT_MAIL_OAUTH_CALLBACK_PATH = '/mail/oauth/callback';
-export const DEFAULT_MAIL_OAUTH_RETURN_PATH = '/dev/mail/accounts';
+// The plugin ships no page, so the default returns to the application's root. An application that renders
+// `MailAccountsPage` sets `mail.oauthReturnUrl` to that page, which reads the `mailAuthorization` result.
+export const DEFAULT_MAIL_OAUTH_RETURN_PATH = '/';
 export const DEFAULT_MAIL_AUTOMATIC_SYNC_INTERVAL_MS = 300_000;
 export const DEFAULT_MAIL_AUTOMATIC_SYNC_INTERVAL_MINUTES = 5;
 export const MIN_MAIL_AUTOMATIC_SYNC_INTERVAL_MINUTES = 1;

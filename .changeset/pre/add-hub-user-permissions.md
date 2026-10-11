@@ -4,9 +4,7 @@
 '@nocobase/app-plugin-authentication': minor
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-hub': minor
 '@nocobase/app-template-default': minor
-'@nocobase/app-template-hub': minor
 '@nocobase/create-app': minor
 ---
 

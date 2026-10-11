@@ -1,9 +1,9 @@
 ---
-title: '6. Deploy'
+title: '5. Deploy'
 description: 'Build the production application and verify it again in the target environment.'
 ---
 
-# 6. Deploy
+# 5. Deploy
 
 Build a production artifact after the development flow works. Do not run the production service with `pnpm dev`.
 
@@ -15,11 +15,11 @@ Complete the order, permission, approval, and notification checks first. This ch
 
 | Item                      | Contents                                                 | During an update                      |
 | ------------------------- | -------------------------------------------------------- | ------------------------------------- |
-| Build artifacts           | Compiled pages, server code, and workflow artifacts      | Update with the release               |
+| Build artifacts           | Compiled pages and server code                           | Update with the release               |
 | Environment configuration | Database location, public address, secrets, and channels | Maintain for the target environment   |
 | Business data             | Customers, orders, accounts, notifications, and uploads  | Persist and back up before deployment |
 
-A working local page only demonstrates the local environment. Check the database path, public address, and workflow enablement when deploying, so the new process does not connect to an empty database or generate incorrect links.
+A working local page only demonstrates the local environment. Check the database path and public address when deploying, so the new process does not connect to an empty database or generate incorrect links.
 
 ## Check before building
 
@@ -102,12 +102,7 @@ Configure an HTTPS reverse proxy for the domain, retaining API, static asset, an
 | Salesperson A and B          | Isolated data, including direct detail requests                                                      |
 | Submission and decisions     | Valid transitions; duplicate approval rejected                                                       |
 | Management API authorization | Ordinary users cannot read others’ run records or perform management operations; APIs enforce access |
-| Workflow revision            | Correct deployed revision enabled                                                                    |
 | My notifications             | One result for the applicant, with the correct link                                                  |
 | Service restart              | Orders and notifications persist                                                                     |
 
-Artifacts are deployed with the build, but workflow enablement in the target database still needs checking. Distinguish configuration, migration, native dependency, and business errors; do not reset a database to fix deployment.
-
-## Deploy through Hub
-
-When the team has a Hub, which requires a Professional license, the application can be published to it instead, and Hub takes over unpacking and process management. `pnpm nocobase hub deploy` builds the archive for the platform Hub reports, so the `--target` chosen above is not needed there. The steps are described in [Manual: Hub](/deployment/hub); for an AI Agent, use the prompts in [Deploy with an AI Agent](/deployment/with-agent).
+Distinguish configuration, migration, native dependency, and business errors; do not reset a database to fix deployment.

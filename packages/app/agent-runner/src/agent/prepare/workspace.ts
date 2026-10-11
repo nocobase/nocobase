@@ -1,5 +1,5 @@
 // Step `workspace`: locks the subject's work directory for the run and, when the run asks (`workspace.clean`), starts
-// it over: its checkouts, the agent's home and the record of prepared directories go; a directory used in place is
+// it over: its checkouts, its tmp and Codex home, and the record of prepared directories go; a directory used in place is
 // never touched.
 import { cleanWorkspace, lockWorkspace } from '../../core/checkout.ts';
 import type { PrepareStep } from './types.ts';
@@ -17,7 +17,7 @@ export const workspaceStep: PrepareStep = {
     context.workspace = lock;
     if (context.payload.workspace.clean === true) {
       context.log(`workspace: cleaning ${lock.workDir}`);
-      await cleanWorkspace(lock.workDir);
+      await cleanWorkspace(context.paths, lock.workDir);
       context.event({
         type: 'status',
         content: 'Started from a clean working directory.',

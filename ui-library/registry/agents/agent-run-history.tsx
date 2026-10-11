@@ -13,7 +13,9 @@ import {
   SquareIcon,
 } from 'lucide-react';
 import {
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -1066,6 +1068,170 @@ function plainText(text: string): ReactNode {
   return <p className='text-sm whitespace-pre-wrap wrap-anywhere'>{text}</p>;
 }
 
+const transcriptGroups = [
+  'agent',
+  'input',
+  'tools',
+  'thinking',
+  'system',
+] as const;
+export type RunTranscriptFilterGroup = (typeof transcriptGroups)[number];
+
+export interface RunTranscriptFilterLabels {
+  readonly title: string;
+  readonly groups: Readonly<Record<RunTranscriptFilterGroup, string>>;
+  /** `{count}` events in `{group}`. */
+  readonly hiddenGroup: string;
+  /** `{summary}` is the hidden event counts, by group. */
+  readonly expandHidden: string;
+  readonly errorsAlwaysVisible: string;
+}
+
+const defaultTranscriptFilterLabels: RunTranscriptFilterLabels = {
+  title: 'Event types',
+  groups: {
+    agent: 'Agent',
+    input: 'Input',
+    tools: 'Tools',
+    thinking: 'Thinking',
+    system: 'System',
+  },
+  hiddenGroup: '{count} {group}',
+  expandHidden: 'Hidden events: {summary}',
+  errorsAlwaysVisible: 'Errors are always shown',
+};
+
+/** Null denotes a failure, which never belongs to a switchable group. */
+function transcriptGroup(
+  event: RunTranscriptEvent,
+): RunTranscriptFilterGroup | null {
+  if (
+    event.type === 'error' ||
+    (event.type === 'toolResult' &&
+      (event.meta?.isError === true || event.meta?.ok === false))
+  )
+    return null;
+  switch (event.type) {
+    case 'text':
+      return 'agent';
+    case 'input':
+      return 'input';
+    case 'toolUse':
+    case 'toolResult':
+    case 'permission':
+    case 'allowed':
+    case 'denied':
+      return 'tools';
+    case 'thinking':
+      return 'thinking';
+    default:
+      return 'system';
+  }
+}
+
+function readTranscriptPreference(
+  key: string | undefined,
+): RunTranscriptFilterGroup[] {
+  try {
+    const value: unknown = key
+      ? JSON.parse(window.localStorage.getItem(key) ?? 'null')
+      : null;
+    if (
+      Array.isArray(value) &&
+      value.every(
+        (group: unknown) =>
+          typeof group === 'string' &&
+          transcriptGroups.some((known) => known === group),
+      )
+    ) {
+      return [...new Set(value as RunTranscriptFilterGroup[])];
+    }
+  } catch {
+    /* Storage can be unavailable or contain an older preference. */
+  }
+  return ['agent', 'input'];
+}
+
+interface TranscriptSegment {
+  readonly hidden: boolean;
+  readonly events: RunTranscriptEvent[];
+}
+
+function transcriptSegments(
+  events: readonly RunTranscriptEvent[],
+  groups: readonly RunTranscriptFilterGroup[],
+): TranscriptSegment[] {
+  const segments: TranscriptSegment[] = [];
+  for (const event of events) {
+    const group = transcriptGroup(event);
+    const hidden = group !== null && !groups.includes(group);
+    const previous = segments.at(-1);
+    if (hidden && previous?.hidden) previous.events.push(event);
+    else segments.push({ hidden, events: [event] });
+  }
+  return segments;
+}
+
+function HiddenTranscriptEvents({
+  events,
+  filterLabels,
+  onLayoutChange,
+  ...rowProps
+}: {
+  readonly events: readonly RunTranscriptEvent[];
+  readonly filterLabels: RunTranscriptFilterLabels;
+  readonly onLayoutChange: () => void;
+  readonly renderMarkdown: (text: string) => ReactNode;
+  readonly locale: string | undefined;
+  readonly labels: RunTranscriptLabels;
+}): ReactElement {
+  const [expanded, setExpanded] = useState(false);
+  const previousExpandedRef = useRef(expanded);
+  useLayoutEffect(() => {
+    if (previousExpandedRef.current === expanded) return;
+    previousExpandedRef.current = expanded;
+    // Expanding history keeps the reading position; collapse may bring the viewport back to the bottom.
+    onLayoutChange();
+  }, [expanded, onLayoutChange]);
+  const counts = new Map<RunTranscriptFilterGroup, number>();
+  for (const event of events) {
+    const group = transcriptGroup(event);
+    if (group !== null) counts.set(group, (counts.get(group) ?? 0) + 1);
+  }
+  const summary = [...counts]
+    .map(([group, count]) =>
+      fillLabel(filterLabels.hiddenGroup, {
+        group: filterLabels.groups[group],
+        count,
+      }),
+    )
+    .join(', ');
+  return (
+    <li className='border-b last:border-b-0'>
+      <Button
+        type='button'
+        variant='ghost'
+        size='sm'
+        className='m-2 max-w-[calc(100%-1rem)] justify-start whitespace-normal text-muted-foreground'
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <ChevronRightIcon
+          className={cn('size-4 shrink-0', expanded && 'rotate-90')}
+        />
+        {fillLabel(filterLabels.expandHidden, { summary })}
+      </Button>
+      {expanded ? (
+        <ol>
+          {events.map((event) => (
+            <RunTranscriptRow key={event.seq} event={event} {...rowProps} />
+          ))}
+        </ol>
+      ) : null}
+    </li>
+  );
+}
+
 export interface RunTranscriptProps {
   /** The heading: the run's state, agent, what started it, its actions. */
   readonly header?: ReactNode;
@@ -1081,6 +1247,9 @@ export interface RunTranscriptProps {
   readonly renderMarkdown?: (text: string) => ReactNode;
   readonly locale?: string;
   readonly labels?: RunTranscriptLabels;
+  /** Local preference key scoped by the consumer to its application and current user. No key means no persistence. */
+  readonly preferenceKey?: string;
+  readonly filterLabels?: RunTranscriptFilterLabels;
 }
 
 /**
@@ -1088,7 +1257,12 @@ export interface RunTranscriptProps {
  * content in the form that suits it, and its number and time. It follows the newest event while the reader is at the
  * bottom.
  */
-export function RunTranscript({
+export function RunTranscript(props: RunTranscriptProps): ReactElement {
+  // Remount preference state before rendering another user or application.
+  return <FilteredRunTranscript key={props.preferenceKey ?? ''} {...props} />;
+}
+
+function FilteredRunTranscript({
   header,
   summary,
   events,
@@ -1097,14 +1271,39 @@ export function RunTranscript({
   renderMarkdown,
   locale,
   labels = defaultRunTranscriptLabels,
+  preferenceKey,
+  filterLabels = defaultTranscriptFilterLabels,
 }: RunTranscriptProps): ReactElement {
+  const [groups, setGroups] = useState(() =>
+    readTranscriptPreference(preferenceKey),
+  );
+  const toggleGroup = (group: RunTranscriptFilterGroup): void => {
+    const next = groups.includes(group)
+      ? groups.filter((entry) => entry !== group)
+      : [...groups, group];
+    setGroups(next);
+    try {
+      if (preferenceKey)
+        window.localStorage.setItem(preferenceKey, JSON.stringify(next));
+    } catch {
+      /* Filtering still works when storage is disabled or full. */
+    }
+  };
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
+  const updatePinned = useCallback(() => {
+    const element = listRef.current;
+    if (element)
+      pinnedRef.current =
+        element.scrollHeight - element.scrollTop - element.clientHeight < 48;
+  }, []);
   const count = events?.length ?? 0;
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = listRef.current;
     if (element && pinnedRef.current) element.scrollTop = element.scrollHeight;
-  }, [count]);
+    // A filter can shrink the list to the viewport without dispatching a scroll event.
+    updatePinned();
+  }, [count, groups, updatePinned]);
   const markdown = renderMarkdown ?? plainText;
   return (
     <div className='flex min-h-0 flex-col gap-3' data-testid='run-transcript'>
@@ -1115,14 +1314,30 @@ export function RunTranscript({
         </div>
       ) : null}
       <div
+        role='group'
+        aria-label={filterLabels.title}
+        className='flex flex-wrap items-center gap-2'
+      >
+        {transcriptGroups.map((group) => (
+          <Button
+            key={group}
+            type='button'
+            size='sm'
+            variant={groups.includes(group) ? 'secondary' : 'outline'}
+            aria-pressed={groups.includes(group)}
+            onClick={() => toggleGroup(group)}
+          >
+            {filterLabels.groups[group]}
+          </Button>
+        ))}
+        <span className='text-xs text-muted-foreground'>
+          {filterLabels.errorsAlwaysVisible}
+        </span>
+      </div>
+      <div
         ref={listRef}
         className='max-h-[60svh] min-h-40 overflow-y-auto rounded-lg border'
-        onScroll={(event) => {
-          const element = event.currentTarget;
-          pinnedRef.current =
-            element.scrollHeight - element.scrollTop - element.clientHeight <
-            48;
-        }}
+        onScroll={updatePinned}
       >
         {!events ? (
           <div role='status' className='space-y-2 p-4'>
@@ -1136,15 +1351,29 @@ export function RunTranscript({
           </p>
         ) : (
           <ol aria-label={labels.events}>
-            {events.map((event) => (
-              <RunTranscriptRow
-                key={event.seq}
-                event={event}
-                renderMarkdown={markdown}
-                locale={locale}
-                labels={labels}
-              />
-            ))}
+            {transcriptSegments(events, groups).map((segment) => {
+              const first = segment.events[0];
+              const key = `${first.at}:${first.seq}:${first.type}`;
+              return segment.hidden ? (
+                <HiddenTranscriptEvents
+                  key={key}
+                  events={segment.events}
+                  filterLabels={filterLabels}
+                  onLayoutChange={updatePinned}
+                  renderMarkdown={markdown}
+                  locale={locale}
+                  labels={labels}
+                />
+              ) : (
+                <RunTranscriptRow
+                  key={key}
+                  event={first}
+                  renderMarkdown={markdown}
+                  locale={locale}
+                  labels={labels}
+                />
+              );
+            })}
           </ol>
         )}
       </div>

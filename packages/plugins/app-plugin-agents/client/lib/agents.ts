@@ -75,3 +75,34 @@ export function onlineFor(
       (runnerIds.length === 0 || runnerIds.includes(runner.id)),
   ).length;
 }
+
+/**
+ * The agents list's order: agents everyone can use, the application's own first in the order it added them; then the
+ * caller's own; then the ones others share with them. Within a group, by the name people see.
+ */
+export function orderAgents<Agent extends AgentSummary>(
+  agents: readonly Agent[],
+  nameOf: (agent: Agent) => string,
+  locale?: string,
+): Agent[] {
+  const collator = new Intl.Collator(locale, { sensitivity: 'base' });
+  const group = (agent: Agent): number =>
+    agent.access === 'everyone'
+      ? agent.nameText
+        ? 0
+        : 1
+      : agent.owned
+        ? 2
+        : 3;
+  return agents
+    .map((agent) => ({ agent, group: group(agent), name: nameOf(agent) }))
+    .sort(
+      (a, b) =>
+        a.group - b.group ||
+        (a.group === 0
+          ? a.agent.createdAt.localeCompare(b.agent.createdAt)
+          : collator.compare(a.name, b.name)) ||
+        a.agent.id.localeCompare(b.agent.id),
+    )
+    .map(({ agent }) => agent);
+}

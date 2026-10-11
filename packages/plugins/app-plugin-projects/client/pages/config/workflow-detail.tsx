@@ -46,6 +46,7 @@ import { Input } from '../../components/ui/input.js';
 import { errorMetadata, useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
 import { useViewer } from '../../hooks/use-viewer.js';
+import { useWorkflowLeaveGuard } from '../../hooks/use-workflow-leave-guard.js';
 import { canUseSetting } from '../../lib/permissions.js';
 import { WorkflowFlowEditor } from './workflows/flow-editor.js';
 import { TransitionsMatrix } from './workflows/transitions-matrix.js';
@@ -98,7 +99,7 @@ function WakeConfirm({
             {t('workflows.wakeConfirm.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ul className='divide-y rounded-lg border text-sm'>
+        <ul className='min-w-0 divide-y rounded-lg border text-sm'>
           {(attention ?? []).map((entry) => {
             const status = definition.states.find(
               (state) => state.key === entry.statusKey,
@@ -106,10 +107,10 @@ function WakeConfirm({
             return (
               <li
                 key={`${entry.statusKey}:${entry.rule.type}`}
-                className='flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2'
+                className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2'
                 data-wake={entry.statusKey}
               >
-                <span className='font-medium'>
+                <span className='min-w-0 wrap-anywhere font-medium'>
                   {t('workflows.wakeConfirm.entering', {
                     status: name(entry.statusKey),
                   })}
@@ -121,7 +122,7 @@ function WakeConfirm({
                     statusName={name(entry.statusKey)}
                   />
                 ) : (
-                  <span>{entry.summary}</span>
+                  <span className='min-w-0 wrap-anywhere'>{entry.summary}</span>
                 )}
               </li>
             );
@@ -220,6 +221,11 @@ function WorkflowBody({
       }),
     // The page remounts on the new revision, back in view mode.
     onSuccess: (next) => {
+      releaseLeaveGuard();
+      queryClient.setQueryData<WorkflowListItem[]>(pmKeys.workflows, (items) =>
+        items?.map((item) => (item.id === next.id ? next : item)),
+      );
+      setEditing(false);
       notify.success(t('workflows.saved', { name: workflowName(t, next) }));
       void queryClient.invalidateQueries({ queryKey: pmKeys.workflows });
       void queryClient.invalidateQueries({ queryKey: ['pm', 'statuses'] });
@@ -236,6 +242,12 @@ function WorkflowBody({
     },
     onError: (error) => failed(error),
   });
+  const pending = save.isPending || check.isPending;
+  const releaseLeaveGuard = useWorkflowLeaveGuard(
+    editing && dirty,
+    pending,
+    t('unsavedChanges.description'),
+  );
   const change = (
     update: (
       definition: WorkflowDraft['definition'],
@@ -252,7 +264,7 @@ function WorkflowBody({
       <>
         <Button
           variant='outline'
-          disabled={save.isPending}
+          disabled={pending}
           onClick={() => {
             setDraft(saved);
             setIssues([]);
@@ -286,35 +298,39 @@ function WorkflowBody({
 
   return (
     <>
-      <PageHeader
-        title={
-          <span className='inline-flex flex-wrap items-center gap-3'>
-            {editing ? (
-              <Input
-                aria-label={t('workflows.name')}
-                value={draft.name}
-                maxLength={WORKFLOW_NAME_MAX}
-                className='h-9 w-72 font-heading text-xl font-semibold md:text-xl'
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    name: event.target.value,
-                  }))
-                }
-              />
-            ) : (
-              workflowName(t, workflow)
-            )}
-            {workflow.isDefault ? (
-              <PmTag tone='blue'>{t('workflows.default')}</PmTag>
-            ) : null}
-          </span>
-        }
-        description={
-          canEdit ? usedBy : `${usedBy} · ${t('workflows.readOnly')}`
-        }
-        actions={actions}
-      />
+      <div
+        className={editing ? 'sticky top-0 z-20 bg-background py-4' : undefined}
+      >
+        <PageHeader
+          title={
+            <span className='inline-flex flex-wrap items-center gap-3'>
+              {editing ? (
+                <Input
+                  aria-label={t('workflows.name')}
+                  value={draft.name}
+                  maxLength={WORKFLOW_NAME_MAX}
+                  className='h-9 w-72 font-heading text-xl font-semibold md:text-xl'
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                />
+              ) : (
+                workflowName(t, workflow)
+              )}
+              {workflow.isDefault ? (
+                <PmTag tone='blue'>{t('workflows.default')}</PmTag>
+              ) : null}
+            </span>
+          }
+          description={
+            canEdit ? usedBy : `${usedBy} · ${t('workflows.readOnly')}`
+          }
+          actions={actions}
+        />
+      </div>
       {placed.general.length > 0 ? (
         <Alert variant='destructive'>
           <AlertTitle>{t('workflows.invalid')}</AlertTitle>

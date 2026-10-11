@@ -26,7 +26,7 @@ An agent's runs on one subject: a compact side-column log with a live timer, an 
 - Installs to: `client/components/agent-run-history.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/agent-run-history-demo` (`pnpm exec shadcn view @nocobase/agent-run-history-demo`)
-- After installing: Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default.
+- After installing: Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default. Pass complete events to RunTranscript; scope preferenceKey by application and user, and translate filterLabels.
 
 ### agent-composer
 
@@ -215,6 +215,31 @@ A Markdown-in, Markdown-out rich text editor on official Tiptap extensions, with
 - Plugin dependencies: none
 - Example: `@nocobase/rich-text-editor-demo` (`pnpm exec shadcn view @nocobase/rich-text-editor-demo`)
 - After installing: Give value and onChange (Markdown). onMentionSearch answers candidates for @query; mentions are stored as [@Name](mention://<kind>/<id>). onUpload stores a pasted or dropped file and answers its URL. extensions adds to or overrides richTextExtensions(); toolbar takes a render function, and RichTextToolbar, RichTextToolbarButton, RichTextInlineTools and RichTextBlockTools compose your own. Every word comes from labels, English by default.
+
+## Diagrams
+
+### flow-diagram
+
+Read-only React Flow canvas with ELK orthogonal routing for directed graphs, including branches, cycles, parallel edges and self-loops. Use for interactive process views; pass nodes, edges and detail callbacks.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/flow-diagram`
+- Installs to: `client/components/flow-diagram.tsx`, `client/components/flow-layout.ts`, `client/components/flow-diagram-css.d.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/flow-diagram-demo` (`pnpm exec shadcn view @nocobase/flow-diagram-demo`)
+- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 200×64 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.
+
+### lifecycle-diagram
+
+Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the current state, actual execution history, available transitions and optional end markers, with clickable state/transition details.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram`
+- Installs to: `client/components/lifecycle-diagram.tsx`, `client/components/lifecycle-diagram-model.ts`
+- Plugin dependencies: none
+- Also installs: `@nocobase/flow-diagram`
+- Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
+- After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. For detailed page diagrams use direction DOWN and autoHeight. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger fill and ring, visited nodes a light fill, with no extra visited label. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export.
 
 ## Inbox
 

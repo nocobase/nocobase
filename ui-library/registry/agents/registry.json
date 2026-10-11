@@ -62,7 +62,7 @@
         "select",
         "skeleton"
       ],
-      "docs": "Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default.",
+      "docs": "Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default. Pass complete events to RunTranscript; scope preferenceKey by application and user, and translate filterLabels.",
       "files": [
         {
           "path": "agent-run-history.tsx",

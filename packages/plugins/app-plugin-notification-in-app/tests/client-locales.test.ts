@@ -9,8 +9,7 @@ describe('in-app notification Client locales', () => {
       locales['zh-CN']?.(),
     ]);
 
-    expect(enUS?.default.nav.devInbox).toBe('In-app notification');
-    expect(zhCN?.default.nav.devInbox).toBe('站内信');
+    expect(enUS?.default.inbox.unavailable).toBe('Inbox unavailable');
     expect(Object.keys(zhCN?.default.inbox ?? {})).toEqual(
       Object.keys(enUS?.default.inbox ?? {}),
     );

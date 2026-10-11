@@ -61,7 +61,7 @@ test('upgrades a mixed-db lockfile to host-provided peers, including production 
         'export declare class DatabaseConnection { private schemaAdapter; }\n',
       );
     }
-    const libraries = ['authorization', 'ai-employee'];
+    const libraries = ['authorization', 'lifecycle'];
     const dependency = {};
     for (const name of libraries) {
       const manifest = JSON.parse(

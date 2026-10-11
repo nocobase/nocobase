@@ -8,22 +8,9 @@ Register the Mail Client plugin before rendering its UI. Use `MailWorkspacePage`
 
 Use the application's client services and permission context. `useMailClient()` resolves the application-owned client in React; `app.services.resolve(mailClientToken)` does so elsewhere. Use the Mail translation namespace for application-owned copy that reuses Mail translation keys. Follow the target application's routing and theme conventions for new pages.
 
-The plugin contributes these current routes, relative to the public base path:
+The plugin contributes no routes. An application places `MailWorkspacePage`, `MailAccountsPage` and the reusable components in pages it declares among its own routes, with the page permissions those routes need. Pass the accounts page's path to `MailWorkspacePage` as `accountsHref` so a user without an account can reach it. Administrators read every user's accounts and logs through `GET /api/mail/settings/accounts`, `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions`.
 
-| Route                     | Purpose                                                         |
-| ------------------------- | --------------------------------------------------------------- |
-| `/dev/mail/accounts`      | Personal accounts, connection, signatures, templates and labels |
-| `/dev/mail/center`        | Personal workspace                                              |
-| `/dev/mail/send`          | Shared composer with ordinary and separate sending              |
-| `/dev/mail/logs/send`     | Personal submissions                                            |
-| `/dev/mail/logs/bulk`     | Complete batches with per-recipient results                     |
-| `/dev/mail/logs/sync`     | Personal synchronization history                                |
-| `/dev/mail/management`    | All-user message management                                     |
-| `/settings/mail/accounts` | Read-only all-user account overview                             |
-
-`/dev/mail/logs` opens its default child. The old `/dev/mail/bulk-send`, `/dev/mail/send-logs`, `/dev/mail/sync-logs`, and former send child paths redirect to the current pages. Use current paths for new links. There is no `/settings/mail/operation-logs` page; administrators read every user's logs through `GET /api/mail/settings/syncRuns` and `GET /api/mail/settings/submissions`.
-
-Development routes are excluded from production. Adding a production workspace also requires application-owned account/settings/log links as needed. If account connection is included, configure `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL` to an application-owned production page and read [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page). The default return destination remains a development page for backward compatibility. The return page only consumes `mailAuthorization` and refreshes account state; it does not need `MailAccountConnector` unless it also starts a separate new-account flow. Do not claim that the plugin contributes a standalone production `/mail` route.
+If account connection is included, configure `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL` to the application page that renders the accounts and read [OAuth callback and return page](configuration-and-accounts.md#oauth-callback-and-return-page); the default returns to the application root. The return page only consumes `mailAuthorization` and refreshes account state; it does not need `MailAccountConnector` unless it also starts a separate new-account flow.
 
 ## Business records and templates
 

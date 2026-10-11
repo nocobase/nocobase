@@ -27,6 +27,7 @@ export interface IssueMove {
   readonly catalog: StatusCatalog;
   readonly to: string;
   readonly actor: Actor;
+  readonly sourceActor?: Actor;
   /** The move was approved already. */
   readonly approved?: boolean;
   /** The workflow event the move answers: only that event's transitions are taken. */
@@ -65,7 +66,8 @@ export async function moveIssue(
       {
         from: issue.statusKey,
         to,
-        actor: { type: actor.type, id: actor.id },
+        actor,
+        sourceActor: input.sourceActor ?? actor,
         subject: issue,
         context: tx,
         // The system's own moves (a merged pull request, say) never wait for a person.
@@ -95,7 +97,7 @@ export async function moveIssue(
       )
         await deps.activity.record(tx.conn, {
           issueId: issue.id,
-          actor,
+          actor: input.sourceActor ?? actor,
           action:
             report.status === 'applied'
               ? 'stage_action_applied'
@@ -110,7 +112,7 @@ export async function moveIssue(
       if (report.status === 'failed')
         await deps.activity.record(tx.conn, {
           issueId: issue.id,
-          actor,
+          actor: input.sourceActor ?? actor,
           action: 'stage_action_failed',
           details: {
             statusKey: to,

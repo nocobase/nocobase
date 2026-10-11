@@ -1,10 +1,4 @@
-import {
-  Calendar,
-  ClipboardList,
-  Database,
-  Inbox,
-  Workflow,
-} from 'lucide-react';
+import { Calendar, ClipboardList, Database, Inbox, Stamp } from 'lucide-react';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -14,7 +8,7 @@ const routes: readonly AppClientRouteContribution[] = [
   defineAppRoutes([
     {
       name: 'officeFlowsExample',
-      navigation: { title: 'navigation.group', icon: Workflow },
+      navigation: { title: 'navigation.group', icon: Stamp },
       breadcrumb: { title: 'navigation.group' },
       children: [
         {

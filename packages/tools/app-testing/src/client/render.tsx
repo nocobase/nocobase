@@ -40,7 +40,7 @@ export interface TestClientServer {
 }
 
 export interface RenderWithAppOptions {
-  /** The client plugins the application registers, as its `client/plugins.ts` lists them, such as `hub()`. */
+  /** The client plugins the application registers, as its `client/plugins.ts` lists them, such as `users()`. */
   readonly plugins?: readonly AppClientPluginRegistration[];
   /**
    * The namespace the page translates in: the owning package for a page rendered under its own routes. Leave it out

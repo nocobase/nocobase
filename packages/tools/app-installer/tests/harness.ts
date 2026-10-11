@@ -21,9 +21,9 @@ import type { FetchLike } from '../src/lib/registry.ts';
 import { CommandFailedError, type RunCommand } from '../src/lib/run-command.ts';
 
 /**
- * A stand-in for everything the installer starts: `pnpm create`, `pnpm add`, `pnpm build --tar`, the release's
- * own CLI, pm2 and the Hub's health route. It writes the files each real command would leave behind, so the commands
- * under test see a realistic root, and it records what was run.
+ * A stand-in for everything the installer starts: the release's own CLI, pm2 and the application's health route. It
+ * writes the files each real command would leave behind, so the commands under test see a realistic root, and it
+ * records what was run.
  */
 export interface FakeWorld {
   run: RunCommand;
@@ -40,15 +40,11 @@ export interface FakeWorld {
   pendingTasks: Record<string, number>;
   /** Whether the health route answers ok; by default it does while a pm2 process is online. */
   healthy?: () => boolean;
-  /** Versions the registry publishes; the last one is `latest`. */
-  published: string[];
   /** pm2 status a started process takes, `online` by default. */
   startStatus: string;
   /** Statuses for the next starts, in order, before `startStatus` applies again. */
   startQueue: string[];
-  /** Unpacked manifests omit `nocobase.builtAt` and `nocobase.basePath`, as builds before they were recorded did. */
-  legacyManifest?: boolean;
-  /** Build times handed to built manifests, one minute apart so every build is a release of its own. */
+  /** Build times handed to the archives `archiveFor` writes, one minute apart so every build is a release of its own. */
   builds: number;
   /** The release CLI writes its database inside the release, as one older than `APP_STORAGE_DIR` does. */
   ignoresStorageDir?: boolean;
@@ -65,7 +61,7 @@ database:
   connections:
     main:
       dialect: sqlite
-      database: hub/database/main.sqlite
+      database: shop/database/main.sqlite
 `;
 
 const buildTarget = () => ({
@@ -87,8 +83,6 @@ export interface ArchiveOptions {
   buildTarget?: Record<string, unknown>;
   /** Driver packages the archive carries in `dist/node_modules`. */
   drivers?: string[];
-  /** `nocobase.templateKind` in the manifest, `app` unless given. */
-  templateKind?: string;
 }
 
 /**
@@ -117,10 +111,9 @@ export function makeArchive(file: string, options: ArchiveOptions): string {
     writeFileSync(
       path.join(tree, 'dist/package.json'),
       JSON.stringify({
-        name: options.name ?? 'hub',
+        name: options.name ?? 'shop',
         version: options.version,
         nocobase: {
-          templateKind: options.templateKind ?? 'app',
           buildTarget: options.buildTarget ?? buildTarget(),
           ...(options.legacy
             ? {}
@@ -128,7 +121,7 @@ export function makeArchive(file: string, options: ArchiveOptions): string {
                 builtAt: options.builtAt ?? new Date().toISOString(),
                 ...(options.relocatable
                   ? { relocatable: true }
-                  : { basePath: options.basePath ?? '/hub' }),
+                  : { basePath: options.basePath ?? '/shop' }),
               }),
         },
       }),
@@ -144,14 +137,30 @@ export function makeArchive(file: string, options: ArchiveOptions): string {
   }
 }
 
-/** `.build/<version>/hub/...` names a version; `releases/<version>_<time>/app` names a release of one. */
+/** `releases/<version>_<time>/app` names a release of a version. */
 function versionFromPath(file: string): string {
   const parts = file.split(path.sep);
-  const index = Math.max(
-    parts.lastIndexOf('.build'),
-    parts.lastIndexOf('releases'),
+  return parts[parts.lastIndexOf('releases') + 1].split('_')[0];
+}
+
+/**
+ * Writes the next deployment archive of `version` beside the installation, the way a project builds one for each
+ * deploy: its build time follows the world's previous build by a minute, so the first archive of a fresh world is
+ * `<version>_20260101T000000Z`.
+ */
+export function archiveFor(
+  world: FakeWorld,
+  directory: string,
+  version: string,
+  options: Omit<ArchiveOptions, 'version' | 'builtAt'> = {},
+): string {
+  const builtAt = new Date(
+    Date.UTC(2026, 0, 1) + world.builds++ * 60_000,
+  ).toISOString();
+  return makeArchive(
+    path.join(directory, 'archives', `${version}-${world.builds}.tar.gz`),
+    { version, builtAt, ...options },
   );
-  return parts[index + 1].split('_')[0];
 }
 
 export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
@@ -161,7 +170,6 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
     calls,
     cli: {},
     pendingTasks: {},
-    published: ['1.0.0', '1.1.0'],
     startStatus: 'online',
     startQueue: [],
     builds: 0,
@@ -171,7 +179,6 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
   world.run = async (command, args, options = {}) => {
     const joined = [command, ...args].join(' ');
     calls.push([command, ...args]);
-    const cwd = options.cwd ?? process.cwd();
     const env = options.env ?? process.env;
     if (world.hangOn && joined.includes(world.hangOn)) {
       await new Promise<void>((resolve) => {
@@ -190,38 +197,6 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
         '',
         `simulated failure of ${world.failOn}`,
       );
-    }
-    if (command === 'pnpm' && args[0] === '--version')
-      return { stdout: '11.7.0\n', stderr: '' };
-    if (command === 'pnpm' && args[0] === 'create') {
-      const project = path.join(cwd, 'hub');
-      mkdirSync(path.join(project, 'node_modules/@nocobase/app-server'), {
-        recursive: true,
-      });
-      writeFileSync(
-        path.join(project, 'node_modules/@nocobase/app-server/package.json'),
-        JSON.stringify({
-          peerDependencies: { '@nocobase/db-postgres': '^0.1.0' },
-        }),
-      );
-      return {
-        stdout: `${JSON.stringify({ schemaVersion: 1, ok: true, command: 'create-app', status: 'success', result: {}, warnings: [] })}\n`,
-        stderr: '',
-      };
-    }
-    if (command === 'pnpm' && args[0] === 'add')
-      return { stdout: '', stderr: '' };
-    if (command === 'pnpm' && args[0] === 'build') {
-      makeArchive(path.join(cwd, 'storage/exports/dist.tar.gz'), {
-        version: versionFromPath(cwd),
-        builtAt: new Date(
-          Date.UTC(2026, 0, 1) + world.builds++ * 60_000,
-        ).toISOString(),
-        basePath: '/hub',
-        templateKind: 'hub',
-        legacy: world.legacyManifest,
-      });
-      return { stdout: '', stderr: '' };
     }
     if (
       command === process.execPath &&
@@ -250,7 +225,7 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
           world.ignoresStorageDir
             ? path.join(release, 'storage')
             : (env.APP_STORAGE_DIR ?? ''),
-          'hub/database/main.sqlite',
+          'shop/database/main.sqlite',
         );
         mkdirSync(path.dirname(database), { recursive: true });
         const before = (() => {
@@ -325,16 +300,7 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
       if (!ok) throw new Error('ECONNREFUSED');
       return { ok: true, status: 200, json: async () => ({ ok: true }) };
     }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({
-        'dist-tags': { latest: world.published.at(-1) },
-        versions: Object.fromEntries(
-          world.published.map((version) => [version, {}]),
-        ),
-      }),
-    };
+    throw new Error(`The fake world does not know how to fetch: ${url}`);
   };
   return world;
 }
@@ -368,7 +334,7 @@ export interface RunResult {
 }
 
 /** Runs the installer against the fake world, always with `--json`, and returns the parsed envelope. */
-export async function hub(
+export async function installer(
   world: FakeWorld,
   argv: string[],
   cwd?: string,

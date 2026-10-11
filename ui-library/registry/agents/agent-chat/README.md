@@ -95,5 +95,3 @@ Every key is under `chat.`. A key missing from the application's resources rende
 ## Customizing
 
 The views are the application's to restyle and rearrange. Keep the `data-testid` attributes the application's end-to-end tests rely on, and keep the message list's scroller `relative`: absolutely placed content inside it, such as screen-reader text and live regions, would otherwise size the page rather than the scroller.
-
-`@nocobase/app-plugin-ai-employee` ships a chat of its own for AI employees (the `nocobase-ai` item), over a different protocol; the two share no code.

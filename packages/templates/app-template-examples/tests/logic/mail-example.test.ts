@@ -16,7 +16,6 @@ const test = createAppTest({
       secret: 'test-auth-secret-at-least-32-characters',
       trustedOrigins: ['http://localhost'],
     },
-    hub: { host: { enabled: false } },
   },
 });
 

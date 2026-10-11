@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/authorization': minor
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-authz-default-access': patch

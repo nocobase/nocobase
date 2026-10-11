@@ -1,17 +1,14 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
-import { useMemo, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
+import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
-import { EMPTY_ARRAY } from '#lib/constants';
 
 import { RouteTreeProvider } from '../routing/route-context.js';
 
-import {
-  PageBreadcrumbProvider,
-  useClientApplication,
-} from '@nocobase/app-client';
+import { PageBreadcrumbProvider } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { LayoutHeader } from './components/layout-header.js';
 import {
@@ -26,19 +23,13 @@ import { AppSidebarFooter } from './components/sidebar-footer.js';
 import {
   useRouteNavigation,
   selectedNavigationId,
-  navigationPages,
 } from '../routing/route-navigation.js';
 
 export interface AppLayoutProps {
   readonly routes: readonly AppClientRegisteredRoute[];
-  /** Pages plugins declare with `defineDevRoutes()`: rendered in this shell at `/dev/...`, never in its navigation. */
-  readonly devRoutes?: readonly AppClientRegisteredRoute[];
 }
 
-export function AppLayout({
-  routes,
-  devRoutes = EMPTY_ARRAY,
-}: AppLayoutProps): ReactElement {
+export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   // The browser decides what it renders; this tells the server the same language so its messages match.
   useSyncServerLocale();
 
@@ -49,21 +40,13 @@ export function AppLayout({
     useLocation().pathname,
     denied,
   );
-  const settingsNavigation = useRouteNavigation(
-    useClientApplication().runtime.settingsRouteTree,
-  );
-  // Pages read their trail from this tree, so it keeps its identity between renders.
-  const routeTree = useMemo(
-    () => (devRoutes.length ? [...routes, ...devRoutes] : routes),
-    [routes, devRoutes],
-  );
   const navigationLabel = t('navigation.label', {
     defaultValue: 'Application navigation',
   });
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
-    <RouteTreeProvider routes={routeTree}>
+    <RouteTreeProvider routes={routes}>
       <PageBreadcrumbProvider>
         <AppSidebarProvider>
           <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
@@ -84,13 +67,10 @@ export function AppLayout({
                 {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
                 <Breadcrumbs denied={denied} />
               </div>
-              <HeaderActions
-                showSettings={
-                  navigationPages(settingsNavigation.items).length > 0
-                }
-              />
+              <HeaderActions />
             </LayoutHeader>
-            <main className='relative min-w-0 flex-1 overflow-hidden'>
+            <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
+              <BrandWatermark className='-z-10' />
               {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
               <div className='h-full overflow-y-auto'>

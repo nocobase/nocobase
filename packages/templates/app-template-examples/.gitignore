@@ -58,5 +58,3 @@ _.sln
 
 /config.toml
 
-# Application-local workflow test fixtures need application dependency resolution.
-/.workflow-examples-*/

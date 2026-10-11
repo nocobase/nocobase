@@ -51,6 +51,8 @@ export interface StatusRuleEntry {
   readonly status: EnteredStatus;
   /** Who moved it: a person, the system, or a principal of another kind. */
   readonly actor: Actor;
+  /** The real source of the move, including run trace; actor retains its permission identity. */
+  readonly sourceActor?: Actor;
   /**
    * Makes `executor` the issue's executor, recorded as `executor_changed` with `trigger: 'stageEntered'`; the change
    * reaches the executor's kind like any other once the move is announced. Returns the issue as it is then.
@@ -70,6 +72,8 @@ export interface StatusRuleCheck {
   readonly status: EnteredStatus;
   /** Who moves it: a person, the system, or a principal of another kind. */
   readonly actor: Actor;
+  /** The real source of the move, including run trace; actor retains its permission identity. */
+  readonly sourceActor?: Actor;
   /** The workflow event the move answers, or null for an ordinary move. */
   readonly event: string | null;
 }

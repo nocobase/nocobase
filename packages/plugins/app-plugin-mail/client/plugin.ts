@@ -4,7 +4,6 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
-import routes from './routes.js';
 import serviceProviders from './service-provider.js';
 
 export interface MailClientOptions {
@@ -14,7 +13,6 @@ export interface MailClientOptions {
 const mail: AppClientPluginFactory<MailClientOptions> = defineClientPlugin({
   packageName: '@nocobase/app-plugin-mail',
   locales,
-  routes,
   serviceProviders,
 });
 

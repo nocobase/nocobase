@@ -58,7 +58,7 @@ export function selectedNavigationId(
   return selected ? routeKey(selected) : undefined;
 }
 
-export function navigationPages(
+function navigationPages(
   items: readonly RouteNavigationItem[],
 ): AppClientRegisteredRoute[] {
   return items.flatMap(({ route, children }) => [

@@ -1,6 +1,7 @@
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Args, Flags } from '@oclif/core';
+import { buildApp, parseAppSpec, resolveApp } from '../lib/app-source.ts';
 import { runAppCli } from '../lib/app-cli.ts';
 import { switchCurrent } from '../lib/current-link.ts';
 import { buildEcosystemConfig, buildLauncher } from '../lib/ecosystem.ts';
@@ -15,7 +16,7 @@ import {
 import { EXIT_INVALID, InstallerError } from '../lib/errors.ts';
 import { pm2StartFailed, waitForHealthy } from '../lib/health.ts';
 import { readInitialAdmin, type InitialAdmin } from '../lib/initial-admin.ts';
-import { HUB_TEMPLATE, layoutOf, releaseLinkTarget } from '../lib/layout.ts';
+import { layoutOf, releaseLinkTarget } from '../lib/layout.ts';
 import { acquireLock } from '../lib/lock.ts';
 import { assertFixedMountPath, parseBasePathFlag } from '../lib/mount-path.ts';
 import type { Reporter } from '../lib/output.ts';
@@ -24,7 +25,6 @@ import {
   checkPlatform,
   checkPm2,
   checkPm2NameFree,
-  checkPnpm,
   checkPortFree,
   checkTargetEmpty,
 } from '../lib/prechecks.ts';
@@ -32,18 +32,14 @@ import type { Pm2 } from '../lib/pm2.ts';
 import {
   defaultRegistry,
   normalizeRegistry,
-  resolveTemplateVersion,
   type FetchLike,
 } from '../lib/registry.ts';
 import {
   DIALECTS,
   assertStorageOutsideRelease,
-  buildFromTemplate,
   checkArchiveDriver,
-  driversFor,
   unpackRelease,
   type Dialect,
-  type PreparedRelease,
 } from '../lib/release.ts';
 import { runCommand, type RunCommand } from '../lib/run-command.ts';
 import {
@@ -51,7 +47,7 @@ import {
   errorLogTail,
   startAdvice,
 } from '../lib/service.ts';
-import { parseTemplateSpec, resolveArchivePath } from '../lib/source.ts';
+import { resolveArchivePath } from '../lib/source.ts';
 import { writeState, type InstallerState } from '../lib/state.ts';
 
 export const INSTALL_ARGS = {
@@ -66,13 +62,13 @@ export const INSTALL_FLAGS = {
     description:
       'Directory to install into, as the other commands name it; the same as the DIRECTORY argument.',
   }),
+  app: Flags.string({
+    description:
+      'Published application to build and deploy, e.g. studio, @nocobase/studio or studio@beta. Requires pnpm 11+.',
+  }),
   archive: Flags.string({
     description:
       'Deployment archive to install, as `pnpm build --tar` writes it to storage/exports/dist.tar.gz. Build it for this machine with --target and --node-version.',
-  }),
-  template: Flags.string({
-    description:
-      'Published template to build on this machine instead: hub, or hub@<version or dist-tag> (latest by default).',
   }),
   origin: Flags.string({
     description:
@@ -80,7 +76,7 @@ export const INSTALL_FLAGS = {
   }),
   'base-path': Flags.string({
     description:
-      "Path the application is mounted at, e.g. /crm, or / for the origin root. Written to app.env as APP_BASE_PATH; without it the server's default applies, /hub for a Hub whether from the template or an archive. An archive from before relocatable builds runs only at the path it was built for.",
+      "Path the application is mounted at, e.g. /crm, or / for the origin root. Written to app.env as APP_BASE_PATH; without it the server's default applies. An archive from before relocatable builds runs only at the path it was built for.",
   }),
   host: Flags.string({
     default: '127.0.0.1',
@@ -112,7 +108,7 @@ export const INSTALL_FLAGS = {
   }),
   registry: Flags.string({
     description:
-      'npm registry for the template, NocoBase packages and the installer commands suggested later.',
+      'npm registry for application packages, build dependencies and suggested installer commands.',
   }),
   name: Flags.string({
     description:
@@ -129,11 +125,6 @@ export const INSTALL_FLAGS = {
     description:
       'Seconds to wait for the application to answer its health check.',
   }),
-  'keep-source': Flags.boolean({
-    default: false,
-    description:
-      'With --template, keep the build directory with the sources and development dependencies, also when the install fails.',
-  }),
   json: Flags.boolean({
     default: false,
     description: 'Print one JSON result on stdout; progress stays on stderr.',
@@ -145,7 +136,7 @@ export interface InstallInput {
   flags: {
     dir?: string;
     archive?: string;
-    template?: string;
+    app?: string;
     origin?: string;
     'base-path'?: string;
     host: string;
@@ -157,7 +148,6 @@ export interface InstallInput {
     name?: string;
     start: boolean;
     'health-timeout': number;
-    'keep-source': boolean;
     json: boolean;
   };
 }
@@ -203,27 +193,24 @@ function describeInitialAdmin(admin: InitialAdmin): string {
       .join(' ') || 'the account';
   const password =
     admin.defaultPassword === true
-      ? `the template's default password; change it after signing in`
+      ? `the default password from config.example.yml; change it after signing in`
       : 'the password set there';
   return `${who} under ${admin.key} in config.yml, with ${password}`;
 }
 
 /**
  * Removes what a failed install wrote. The target was new or empty when the install began, so everything in it now
- * came from this run. `created` is the topmost directory the install created, which may be a parent of the root;
- * `keep` names entries to leave, such as the build directory under `--keep-source`.
+ * came from this run. `created` is the topmost directory the install created, which may be a parent of the root.
  */
 async function cleanUp(
   root: string,
   created: string | undefined,
-  keep: readonly string[],
 ): Promise<void> {
-  if (created && keep.length === 0) {
+  if (created) {
     await rm(created, { recursive: true, force: true });
     return;
   }
   for (const entry of await readdir(root).catch(() => [] as string[])) {
-    if (keep.includes(entry)) continue;
     await rm(path.join(root, entry), { recursive: true, force: true });
   }
 }
@@ -255,28 +242,16 @@ export async function install(
       { exitCode: EXIT_INVALID },
     );
   }
-  if ((flags.archive === undefined) === (flags.template === undefined)) {
+  if ((flags.archive === undefined) === (flags.app === undefined)) {
     throw new InstallerError(
       'INVALID_USAGE',
-      flags.archive === undefined
-        ? 'Name what to install: --archive with a deployment archive built by `pnpm build --tar`, or --template hub to build the published Hub here.'
-        : '--archive and --template name two different things to install; give one of them.',
+      'Choose exactly one source: --app with a published application, or --archive with a deployment archive.',
       { exitCode: EXIT_INVALID },
     );
   }
   const requestedBasePath = parseBasePathFlag(flags['base-path']);
   const root = path.resolve(cwd, directory);
   const layout = layoutOf(root);
-  const spec =
-    flags.template === undefined
-      ? undefined
-      : parseTemplateSpec(flags.template);
-  const template = spec?.template;
-  const archive =
-    flags.archive === undefined
-      ? undefined
-      : resolveArchivePath(cwd, flags.archive);
-  const title = template?.title ?? 'application';
   const name = flags.name ?? `nocobase-${path.basename(root)}`;
   const dialect = flags.dialect as Dialect;
   const registry = normalizeRegistry(flags.registry ?? defaultRegistry());
@@ -299,24 +274,19 @@ export async function install(
   checkPlatform();
   await checkTargetEmpty(root);
   checkEnvVariables(setsFromEnv.map(([, variable]) => variable));
-  if (template) await checkPnpm(run);
+  const archive =
+    flags.archive === undefined
+      ? undefined
+      : resolveArchivePath(cwd, flags.archive);
+  const app = flags.app === undefined ? undefined : parseAppSpec(flags.app);
   if (flags.start) {
     await checkPm2(pm2);
     await checkPm2NameFree(pm2, name);
   }
   await checkPortFree(flags.host, flags.port, { suggestPort: true });
-  const version =
-    spec && template
-      ? await resolveTemplateVersion(
-          registry,
-          template.package,
-          spec.version,
-          deps.fetchImpl,
-        )
-      : undefined;
   if (!flags.origin) {
     reporter.warn(
-      `No --origin given; the ${title} will build links for ${origin}. Pass --origin with the public address before exposing it.`,
+      `No --origin given; the application will build links for ${origin}. Pass --origin with the public address before exposing it.`,
     );
   }
 
@@ -331,42 +301,25 @@ export async function install(
   }
   let switched = false;
   try {
-    const drivers = template ? driversFor(dialect) : [];
-    let prepared: PreparedRelease;
-    if (template && version) {
-      reporter.progress(`Installing the ${title} ${version} into ${root}`);
-      prepared = await buildFromTemplate({
-        layout,
-        template,
-        version,
-        registry,
-        drivers,
-        keepSource: flags['keep-source'],
-        reporter,
-        run,
-      });
-    } else {
-      reporter.progress(`Unpacking ${archive} into ${root}`);
-      prepared = await unpackRelease({ layout, archive: archive! });
-      checkArchiveDriver(prepared.dir, dialect);
-      reporter.progress(
-        `Installing ${prepared.appName} ${prepared.version} (${prepared.id})`,
-      );
-    }
+    const prepared = app
+      ? await buildApp({
+          app: await resolveApp(app, registry, run),
+          registry,
+          layout,
+          run,
+          reporter,
+        })
+      : await unpackRelease({ layout, archive: archive! });
+    checkArchiveDriver(prepared.dir, dialect);
+    reporter.progress(
+      `Installing ${prepared.appName} ${prepared.version} (${prepared.id})`,
+    );
 
-    // What the application is, by its own manifest: a Hub deployed from an archive is as much a Hub as one built from
-    // the template. Builds too old to record it are only ever the Hub template's, which the template names.
-    const templateKind =
-      prepared.templateKind ?? (template === HUB_TEMPLATE ? 'hub' : 'app');
-    const hub = templateKind === 'hub';
-    // A relocatable release is mounted where the installation says. A Hub keeps its own default whether it was built
-    // from the template or arrived as an archive: a build records no path and ships no `.env`, so nothing else carries
-    // the `/hub` its checkout served at, and the server's `/main` would move it. An earlier release runs only at the
-    // path its client was compiled for.
+    // A relocatable release is mounted where the installation says, or at the server's default. An earlier release
+    // runs only at the path its client was compiled for.
     let mountPath: string | undefined;
     if (prepared.relocatable) {
-      mountPath =
-        requestedBasePath ?? (hub ? HUB_TEMPLATE.basePath : template?.basePath);
+      mountPath = requestedBasePath;
     } else {
       mountPath = prepared.basePath!;
       if (requestedBasePath !== undefined) {
@@ -417,11 +370,7 @@ export async function install(
     await mkdir(layout.logsDir, { recursive: true });
     await writeFile(
       layout.ecosystemFile,
-      buildEcosystemConfig({
-        name,
-        nodePath: process.execPath,
-        keepChildren: hub,
-      }),
+      buildEcosystemConfig({ name, nodePath: process.execPath }),
     );
     await writeFile(layout.launcherFile, buildLauncher());
     const at = new Date().toISOString();
@@ -429,18 +378,10 @@ export async function install(
       schemaVersion: 1,
       appName: prepared.appName,
       basePath: mountPathOf(env) || '/',
-      templateKind,
-      source: template
-        ? {
-            kind: 'template',
-            template: template.name,
-            package: template.package,
-          }
-        : { kind: 'archive' },
+      source: app ? { kind: 'app', package: app.package } : { kind: 'archive' },
       name,
       registry,
       dialect,
-      drivers,
       current: prepared.id,
       releases: [
         {
@@ -462,7 +403,7 @@ export async function install(
 
     const url = healthUrl(env);
     if (flags.start) {
-      reporter.progress(`Starting the ${title} with pm2`);
+      reporter.progress('Starting the application with pm2');
       await pm2.start(layout.ecosystemFile, root);
       const healthy = await waitForHealthy(url, {
         timeoutMs: flags['health-timeout'] * 1000,
@@ -474,7 +415,7 @@ export async function install(
         await pm2.remove(name).catch(() => undefined);
         throw new InstallerError(
           'START_FAILED',
-          `The ${title} did not become healthy at ${url} (waited up to ${flags['health-timeout']}s). It is installed but not running.`,
+          `The application did not become healthy at ${url} (waited up to ${flags['health-timeout']}s). It is installed but not running.`,
           {
             details: { log: await errorLogTail(layout) },
             suggestions: [
@@ -523,7 +464,7 @@ export async function install(
         nextCommands,
       },
       summary: [
-        `${template ? title : prepared.appName} ${prepared.version} is installed at ${root}${flags.start ? ' and running' : ''}.`,
+        `${prepared.appName} ${prepared.version} is installed at ${root}${flags.start ? ' and running' : ''}.`,
         `  URL       ${endpoints.url}`,
         `  Release   ${prepared.id}`,
         `  Sign in   ${describeInitialAdmin(initialAdmin)}`,
@@ -531,7 +472,7 @@ export async function install(
         'Next steps',
         ...(flags.start ? [] : [`  Start it: ${startCommand}`]),
         '  Start pm2 at boot: run `pm2 startup` and execute the command it prints (needs sudo).',
-        `  Proxy ${origin} to http://${flags.host}:${flags.port} with location / and client_max_body_size 260m.`,
+        `  Proxy ${origin} to http://${flags.host}:${flags.port} with location /.`,
       ],
     };
   } catch (error) {
@@ -539,13 +480,7 @@ export async function install(
     // After it, the release, configuration and data are real and stay.
     if (!switched) {
       await releaseLock();
-      const keep = flags['keep-source'] ? ['.build'] : [];
-      await cleanUp(root, created, keep);
-      if (keep.length > 0) {
-        reporter.warn(
-          `The build directory was kept for inspection: ${path.join(layout.buildDir)}. Remove it before installing into ${root} again.`,
-        );
-      }
+      await cleanUp(root, created);
     }
     throw error;
   } finally {

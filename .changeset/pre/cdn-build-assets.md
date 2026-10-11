@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-skills': patch
 '@nocobase/app-client': minor
 '@nocobase/dev-config': patch

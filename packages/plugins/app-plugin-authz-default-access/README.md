@@ -19,7 +19,7 @@ Adds default access: records every identity that already holds an action reaches
  ─────────────────────────       ────────────────────────────────────────         ────────────────────────────
  default-access rules ─────────▶ `expand` constraint for every identity ─┐        context.authorize(...)
                                   Permission Set grants ─────────────────┴▶ type  authz.database.policyFor(...)
- display: the "Default access" settings page; its settings item is placed in the authorization subsection through authz.ui
+ display: its settings item is placed in the authorization subsection through authz.ui; the plugin contributes no page
 ```
 
 ## Entry points
@@ -29,7 +29,6 @@ Adds default access: records every identity that already holds an action reaches
 | `@nocobase/app-plugin-authz-default-access/server`        | Server plugin and the `defaultAccess` factory. |
 | `@nocobase/app-plugin-authz-default-access/client`        | Client plugin.                                 |
 | `@nocobase/app-plugin-authz-default-access/client/plugin` | The client plugin factory alone.               |
-| `@nocobase/app-plugin-authz-default-access/client/routes` | The settings route contribution.               |
 | `@nocobase/app-plugin-authz-default-access/package.json`  | The package manifest.                          |
 
 ## Install
@@ -114,7 +113,7 @@ Every route is described, with its parameters, request and response schemas and 
 | `POST /defaultAccess/subjects/:type/resolve` | `read`          | `{ ids: string[] }`            | `SubjectOption[]`                                                       |
 | `GET /defaultAccess/records/:collection`     | `read`          | query `page`, `pageSize`       | `[{ id, label, description? }]`, with `meta: { page, pageSize, total }` |
 
-The settings page is `/settings/authorization/default-access`; its route declares `authz: { resource: { type: 'settings', id: 'authorization.default-access' }, action: 'read' }`.
+The plugin contributes no page. An application that edits these rules builds its page on the routes above and declares it among its own routes with `authz: { resource: { type: 'settings', id: 'authorization.default-access' }, action: 'read' }`.
 
 ## `@nocobase/app-plugin-authz-default-access/server`
 
@@ -141,14 +140,6 @@ The settings page is `/settings/authorization/default-access`; its route declare
 | Export    | Kind   | Signature                | Purpose                    |
 | --------- | ------ | ------------------------ | -------------------------- |
 | `default` | plugin | `AppClientPluginFactory` | The client plugin factory. |
-
-## `@nocobase/app-plugin-authz-default-access/client/routes`
-
-### Exports
-
-| Export    | Kind  | Signature                    | Purpose                                        |
-| --------- | ----- | ---------------------------- | ---------------------------------------------- |
-| `default` | const | `AppClientRouteContribution` | The settings route of the default-access page. |
 
 ## `@nocobase/app-plugin-authz-default-access/package.json`
 

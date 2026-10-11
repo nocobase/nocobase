@@ -2,7 +2,7 @@ import type { OfficeFlowsExampleResource } from './en-US.js';
 
 const zhCN: OfficeFlowsExampleResource = {
   navigation: {
-    group: '办公流程示例',
+    group: '工作流：轻量审批',
     dataRequests: '数据使用申请',
     incoming: '收文',
     tasks: '我的待办',

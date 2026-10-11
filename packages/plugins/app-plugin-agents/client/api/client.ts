@@ -288,14 +288,18 @@ export class AgentsApi {
 
   /**
    * Creates or replaces a variable; the value is never read back except through `revealVariables`. Without `value`,
-   * an existing variable keeps its value and changes only what `options` says.
+   * an existing variable keeps its value and changes only what `options` says. `fromRunner` keeps no value: the
+   * runner that takes a run provides it.
    */
   public async setVariable(
     scope: VariableScope,
     scopeId: string,
     name: string,
     value: string | undefined,
-    options: { readonly teamRunnersOnly?: boolean } = {},
+    options: {
+      readonly teamRunnersOnly?: boolean;
+      readonly fromRunner?: boolean;
+    } = {},
   ): Promise<void> {
     await this.send<Variable>(
       `variables/${scope}/${id(scopeId)}/${id(name)}`,
@@ -305,6 +309,9 @@ export class AgentsApi {
         ...(options.teamRunnersOnly === undefined
           ? {}
           : { teamRunnersOnly: options.teamRunnersOnly }),
+        ...(options.fromRunner === undefined
+          ? {}
+          : { fromRunner: options.fromRunner }),
       },
     );
   }

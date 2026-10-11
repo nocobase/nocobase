@@ -43,7 +43,7 @@ Not a Git project: do not touch it. Offer `git init` plus a commit, or a full co
 node -p "JSON.stringify(require('./package.json').nocobase, null, 2)"
 ```
 
-`templatePackage` names the template; `defaultTemplateVersion` is BASE. Treat that package name as authoritative even when it names a template this Skill has never seen. If it is missing, the application predates the field: inspect `templateKind`, dependency history, plugin registrations, database directories, and published template versions, then confirm the source package before fetching. `templateKind: "app"` alone does not distinguish Default from Examples, while `templateKind: "hub"` identifies Hub ancestry. If `defaultTemplateVersion` itself is missing or was bumped without a merge, the baseline is unknown — work it out with the user from Git history rather than guessing, since too old a baseline replays changes already present and too new a one skips changes never applied.
+`templatePackage` names the template; `defaultTemplateVersion` is BASE. Treat that package name as authoritative even when it names a template this Skill has never seen. If it is missing, the application predates the field: inspect `templateKind`, dependency history, plugin registrations, database directories, and published template versions, then confirm the source package before fetching. `templateKind: "app"` alone does not distinguish Default from Examples, while `templateKind: "hub"` identifies the discontinued Hub template, which has no newer version to upgrade to: tell the user rather than picking another template as BASE. If `defaultTemplateVersion` itself is missing or was bumped without a merge, the baseline is unknown — work it out with the user from Git history rather than guessing, since too old a baseline replays changes already present and too new a one skips changes never applied.
 
 If `nocobase.templatePackage` is missing, use the confirmed package name for `TEMPLATE` instead of the manifest lookup below, then record it in the manifest during the agreed source merge.
 
@@ -117,6 +117,8 @@ For each file read three versions — `$WORK/$BASE/<file>`, `$WORK/$TARGET/<file
 
 The generator rewrites template identity into some files, so those files legitimately differ from both releases. Current candidates include `client/runtime.ts`, `client/service-provider.ts`, and the Examples template's `server/providers/app-example.ts`; inspect the project and generator behavior instead of treating this as an exhaustive list for future templates. Keep the application's name when taking a template change there — copying verbatim splits the i18n namespace. When a target removes one of these files, preserve any application-owned customization until step 5 establishes that it is unused or migrated.
 
+A template upgrade is not a theme reset. Preserve application-owned visual customizations by default; apply non-conflicting presentation changes and obtain a decision before replacing a customized visual result. For theme or shell deltas, inspect the [theme upgrade checks](references/theme-upgrade.md) during planning and merging, not only at final verification. An explicit request to adopt the new default theme authorizes replacement only within the agreed visual scope.
+
 When the right answer is unclear, stop and ask. The user is the only one who knows why their code is the way it is.
 
 ## 7. Reconcile what is not ordinary source
@@ -134,7 +136,7 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 
 `pnpm install` can retain older transitive dependencies in `pnpm-lock.yaml` even after the template raises a direct dependency. Run `pnpm dedupe` to refresh compatible resolutions before synchronizing Skills from the final `node_modules`. Review and include the resulting lockfile changes in the upgrade. If type checking still reports incompatible types from two versions of the same package, follow [dependency resolution conflicts](references/edge-cases.md#dependency-resolution-conflicts) before changing application code.
 
-`typecheck` is doing real work here — it catches the broken import a removal left behind. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves.
+`typecheck` is doing real work here — it catches the broken import a removal left behind. Then run the application and check what the delta touched: sign-in, the user's pages, navigation, locale switching, any new migration. Passing commands are not evidence the application still behaves. For a theme or shell change, also complete the [theme upgrade checks](references/theme-upgrade.md); token changes alone do not verify the application-owned consumers.
 
 Report the range merged, how each contested file was decided, any manual actions and their validation, and how to roll back.
 

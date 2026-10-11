@@ -68,11 +68,13 @@ export function RulePhrase({
   if (!type)
     return (
       <span
-        className='inline-flex items-center gap-1.5 text-muted-foreground'
+        className='inline-flex max-w-full min-w-0 items-center gap-1.5 text-muted-foreground'
         data-rule-unavailable={rule.type}
       >
-        <CircleAlertIcon className='size-3.5' aria-hidden='true' />
-        {t('workflows.rules.unavailableShort', { type: rule.type })}
+        <CircleAlertIcon className='size-3.5 shrink-0' aria-hidden='true' />
+        <span className='truncate'>
+          {t('workflows.rules.unavailableShort', { type: rule.type })}
+        </span>
       </span>
     );
   const Icon = type.Icon ?? PuzzleIcon;
@@ -120,7 +122,7 @@ export function WorkflowRules({
     (status) => onChange || (status.rules ?? []).length > 0,
   );
   return (
-    <div className='space-y-5'>
+    <div className='min-w-0 space-y-5'>
       <section aria-labelledby='pm-workflow-rules-transitions'>
         <div className='mb-2 flex flex-wrap items-baseline justify-between gap-2'>
           <h3
@@ -201,7 +203,7 @@ export function WorkflowRules({
             {t('workflows.rulesNone')}
           </p>
         ) : (
-          <ul className='divide-y rounded-lg border'>
+          <ul className='min-w-0 divide-y rounded-lg border'>
             {statuses.map((status) => {
               const rules = status.rules ?? [];
               return (
@@ -209,11 +211,11 @@ export function WorkflowRules({
                   key={status.key}
                   data-status={status.key}
                   className={cn(
-                    'flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm',
+                    'flex min-h-11 min-w-0 flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm',
                     rules.length === 0 && 'text-muted-foreground',
                   )}
                 >
-                  <span className='w-28 shrink-0 font-medium'>
+                  <span className='w-28 max-w-full shrink-0 wrap-anywhere font-medium'>
                     {name(status.key)}
                   </span>
                   {rules.length > 0 ? (

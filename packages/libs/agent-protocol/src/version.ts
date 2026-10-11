@@ -44,10 +44,31 @@ import { z } from 'zod';
  * version 7 as optional fields: a server that does not know them ignores them, and a runner that does not send them is
  * bounded by its total slots only.
  *
+ * The names of the variables a runner provides (`variables` on register and heartbeat) were added the same way, for
+ * the application to show which runners offer what a run asks for by name (`RunWorkspace.passthrough`). A runner fails
+ * a run whose passthrough names it does not provide before the agent starts; the server does not choose runners by them.
+ *
+ * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
+ * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
+ *
+ * `RepoDir.initializeIfEmpty` optionally permits a coding run to make the first commit of a verified empty remote.
+ * Older runners ignore it and retain their missing-branch refusal. Unlike `initial`, it never allows a default-branch
+ * update: the runner only grants branch creation after checking all remote refs.
+ *
  * The `prepareNetwork` failure was added within version 7 the other way round: the application announces it per run
  * (`RunHeader.acceptedFailures`), and a runner reports `checkoutFailed` to one that does not (`acceptedFailure`).
+ *
+ * Version 8 added the `npm` feature: a runner that has it may be told to update from the npm registry
+ * (`HeartbeatResponse.npmUpgrade`) when the application serves no tarball of it. Nothing of version 7 changed, so a
+ * server speaking 8 serves runners speaking 3 to 7 and offers them only what it offered before. The number moved so
+ * that a runner announcing `npm` is refused cleanly by a server that does not know it.
+ * Version 9 added repository credentials on demand (the `gitCredentials` feature, `RunGit.onDemand`,
+ * `RUNNER_ROUTES.gitCredential`), the `repoAccessUnavailable` and `repoAccessDenied` failures and why a repository was
+ * not pushed (`RepoReport.failure`). Nothing of version 8 changed, and a run never requires the feature: a runner
+ * without it still gets the credentials in its payload. The number moved so that a runner announcing
+ * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 9;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -75,6 +96,10 @@ export function isProtocolSupported(version: number): boolean {
  *   kind `archive`).
  * - `jobs.build`: executes build jobs (`jobs.ts`, `jobFeature`).
  * - `mounts`: places the run's mounts (`RunPayload.mounts`) in its work directory before the agent starts.
+ * - `npm` (`NPM_UPGRADE_FEATURE`, protocol 8): updates itself from the npm registry when the application names a
+ *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
+ * - `gitCredentials`: asks for a repository's credential whenever git needs one (`RunGit.onDemand`,
+ *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
  */
 export const RUNNER_FEATURES = [
   'input',
@@ -87,9 +112,14 @@ export const RUNNER_FEATURES = [
   'archives',
   'jobs.build',
   'mounts',
+  'npm',
+  'gitCredentials',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];
+
+/** The feature with which a runner says it reads `HeartbeatResponse.npmUpgrade`. */
+export const NPM_UPGRADE_FEATURE: RunnerFeature = 'npm';
 
 export const RunnerFeatureSchema: z.ZodType<RunnerFeature> =
   z.enum(RUNNER_FEATURES);
@@ -113,18 +143,46 @@ export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
 /**
  * Models each coding tool is commonly run with, as its `--model` (or equivalent) takes them, for editors to suggest. Not
  * a limit: a tool takes any model its account may use, and an empty model runs the tool's default.
+ *
+ * This list goes stale as providers release models, so keep it to the current generation and check it against the
+ * providers' own model lists whenever one ships: Anthropic's models overview
+ * (https://platform.claude.com/docs/en/about-claude/models/overview) and OpenAI's
+ * (https://developers.openai.com/api/docs/models). Claude Code keeps its `opus` / `sonnet` / `haiku` aliases, which
+ * follow the newest model of each family, followed by the full ids; OpenCode and Pi name a model `provider/model` so
+ * providers with the same model id stay distinct; Codex takes the bare id. Last checked on 2026-10-09. List only ids
+ * the provider publishes; this list does not establish availability on any runner.
  */
 export const TOOL_MODEL_SUGGESTIONS: Readonly<
   Record<AgentTool, readonly string[]>
 > = {
-  claude: ['opus', 'sonnet', 'haiku'],
-  codex: ['gpt-5-codex', 'gpt-5', 'gpt-5-mini'],
-  opencode: [
-    'anthropic/claude-sonnet-4-5',
-    'anthropic/claude-opus-4-1',
-    'openai/gpt-5',
+  claude: [
+    'opus',
+    'sonnet',
+    'haiku',
+    'claude-opus-5-5',
+    'claude-sonnet-5',
+    'claude-haiku-4-5',
+    'claude-fable-5-1',
   ],
-  pi: ['claude-sonnet-4-5', 'claude-opus-4-1', 'gpt-5'],
+  codex: ['gpt-6.1-sol', 'gpt-6-astra', 'gpt-6-luna'],
+  opencode: [
+    'anthropic/claude-opus-5-5',
+    'anthropic/claude-sonnet-5',
+    'anthropic/claude-haiku-4-5',
+    'anthropic/claude-fable-5-1',
+    'openai/gpt-6.1-sol',
+    'openai/gpt-6-astra',
+    'openai/gpt-6-luna',
+  ],
+  pi: [
+    'anthropic/claude-opus-5-5',
+    'anthropic/claude-sonnet-5',
+    'anthropic/claude-haiku-4-5',
+    'anthropic/claude-fable-5-1',
+    'openai/gpt-6.1-sol',
+    'openai/gpt-6-astra',
+    'openai/gpt-6-luna',
+  ],
 };
 
 /**
@@ -135,7 +193,7 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
  */
 export const TOOL_EFFORTS: Readonly<Record<AgentTool, readonly string[]>> = {
   claude: ['low', 'medium', 'high', 'xhigh', 'max'],
-  codex: ['minimal', 'low', 'medium', 'high', 'xhigh'],
+  codex: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
   opencode: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'],
   pi: ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'],
 };

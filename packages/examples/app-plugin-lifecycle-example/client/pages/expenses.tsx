@@ -14,6 +14,7 @@ import {
 import { MANAGERS, person, personName } from '../../shared/people.js';
 import { text } from '../../shared/text.js';
 import { Choice } from '../components/choice.js';
+import { ExampleGuide } from '../components/example-guide.js';
 import { IdentitySelect } from '../components/identity.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
@@ -38,6 +39,8 @@ import {
 } from '../lib/api.js';
 import { ago, countdown, dateTime, NAMESPACE } from '../lib/format.js';
 import { useExampleRecord, useTranslate } from '../lib/use-example-record.js';
+import { useFollowUp } from '../lib/use-follow-up.js';
+import { useLifecycleChanges } from '../lib/use-lifecycle-changes.js';
 import { useLoader } from '../lib/use-loader.js';
 import { useNow } from '../lib/use-now.js';
 import { cn } from '../lib/utils.js';
@@ -93,6 +96,17 @@ export default function ExpensesPage(): ReactElement {
     await Promise.all([list.reload(), current.lifecycle.reload()]);
   };
 
+  // Told by the server, never by a timer: a change to a expense reloads the
+  // list, and one to the expense on screen reloads it too.
+  useLifecycleChanges((change) => {
+    if (change && change.lifecycle !== 'expenses') return;
+    void list.reload();
+    if (!change || change.recordId === selected)
+      void current.lifecycle.reload();
+  });
+  // Except while an effect is still under way, which says nothing when done.
+  useFollowUp(current.lifecycle.view, current.lifecycle.reload);
+
   return (
     <PageContainer>
       <PageHeader
@@ -118,6 +132,7 @@ export default function ExpensesPage(): ReactElement {
           />
         }
       />
+      <ExampleGuide page='expenses' />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(18rem,24rem)_1fr]'>
         <Card>

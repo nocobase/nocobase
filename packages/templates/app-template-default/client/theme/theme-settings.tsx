@@ -3,6 +3,7 @@ import { useTheme } from 'next-themes';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useId, type ReactElement } from 'react';
 import { Button } from '#components/ui/button';
+import { RadioGroup, RadioGroupItem } from '#components/ui/radio-group';
 import {
   Popover,
   PopoverTrigger,
@@ -56,7 +57,13 @@ export function ThemeSettings(): ReactElement {
           <legend className='text-xs font-medium text-muted-foreground'>
             {t('appearance.mode', { defaultValue: 'Color mode' })}
           </legend>
-          <div className='grid grid-cols-3 gap-1 rounded-lg bg-muted/70 p-1'>
+          <RadioGroup
+            name={id + '-mode'}
+            value={theme}
+            onValueChange={(value) => setTheme(String(value))}
+            aria-label={t('appearance.mode', { defaultValue: 'Color mode' })}
+            className='grid-cols-3 gap-1 rounded-lg bg-muted/70 p-1'
+          >
             {COLOR_MODES.map(({ id: mode, icon: ModeIcon }) => {
               const isSelected = theme === mode;
               return (
@@ -69,14 +76,7 @@ export function ThemeSettings(): ReactElement {
                       : 'text-muted-foreground hover:bg-background/40 hover:text-foreground',
                   )}
                 >
-                  <input
-                    type='radio'
-                    name={id + '-mode'}
-                    value={mode}
-                    checked={isSelected}
-                    onChange={() => setTheme(mode)}
-                    className='sr-only'
-                  />
+                  <RadioGroupItem value={mode} className='sr-only' />
                   <ModeIcon aria-hidden='true' className='size-3.5 shrink-0' />
                   <span className='whitespace-nowrap'>
                     {t('appearance.' + mode, {
@@ -86,14 +86,23 @@ export function ThemeSettings(): ReactElement {
                 </label>
               );
             })}
-          </div>
+          </RadioGroup>
         </fieldset>
 
         <fieldset className='space-y-2'>
           <legend className='text-xs font-medium text-muted-foreground'>
             {t('appearance.preset', { defaultValue: 'Theme' })}
           </legend>
-          <div className='grid grid-cols-2 gap-2.5'>
+          <RadioGroup
+            name={id + '-preset'}
+            value={preset}
+            onValueChange={(value) => {
+              const selected = themePresets.find((item) => item.id === value);
+              if (selected) setPreset(selected.id);
+            }}
+            aria-label={t('appearance.preset', { defaultValue: 'Theme' })}
+            className='grid-cols-2 gap-2.5'
+          >
             {themePresets.map((item) => {
               const isSelected = preset === item.id;
               return (
@@ -106,14 +115,7 @@ export function ThemeSettings(): ReactElement {
                       : 'border-border/70 hover:border-border hover:bg-muted/30',
                   )}
                 >
-                  <input
-                    type='radio'
-                    name={id + '-preset'}
-                    value={item.id}
-                    checked={isSelected}
-                    onChange={() => setPreset(item.id)}
-                    className='sr-only'
-                  />
+                  <RadioGroupItem value={item.id} className='sr-only' />
                   <div className='mb-2 h-16 w-full'>
                     <div
                       aria-hidden='true'
@@ -168,7 +170,7 @@ export function ThemeSettings(): ReactElement {
                 </label>
               );
             })}
-          </div>
+          </RadioGroup>
         </fieldset>
       </PopoverContent>
     </Popover>

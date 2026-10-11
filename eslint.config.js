@@ -34,10 +34,7 @@ const nodeLibraryRoots = [
 ];
 const devConfigRoots = ['packages/tools/dev-config'];
 const clientLibraryRoots = ['packages/app/app-client'];
-const applicationRoots = [
-  'packages/templates/app-template-default',
-  'packages/templates/app-template-hub',
-];
+const applicationRoots = ['packages/templates/app-template-default'];
 const prefixPatterns = (roots, patterns) =>
   roots.flatMap((root) => patterns.map((pattern) => `${root}/${pattern}`));
 

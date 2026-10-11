@@ -144,7 +144,7 @@ Only in these two cases:
 **A component rendered outside its own package's routes.** Ask: will this render anywhere other than this plugin's own pages? If yes:
 
 ```tsx
-const { t } = useTranslation('@nocobase/app-plugin-workflow');
+const { t } = useTranslation('@nocobase/app-plugin-scheduler');
 ```
 
 Keep the namespace in one constant per package rather than repeating the literal.
@@ -295,8 +295,8 @@ From the application's locale file, keyed by the plugin's package name:
 const zhCN: AppResource = {
   actions: { save: '保存' },
   overrides: {
-    '@nocobase/app-plugin-workflow': {
-      trigger: { title: '触发条件' },
+    '@nocobase/app-plugin-scheduler': {
+      nav: { schedules: '计划任务' },
     },
   },
 };

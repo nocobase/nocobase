@@ -124,3 +124,4 @@ Administrators can view delivery records in notification logs.
 - [Send notifications](../tutorials/notifications) — Connect notifications to order pages and approval actions.
 - [Mail](./mail) — Connect personal mailboxes and handle correspondence.
 - [Scheduled tasks](./scheduler) — Trigger business reminders on a schedule.
+- [Workflow quick start](./workflow/quick-start) — Try the example processes, then ask an Agent to build a first approval process with notifications.

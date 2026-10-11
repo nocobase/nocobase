@@ -98,11 +98,11 @@ Provider secrets, endpoints and allowed OAuth `scopes` live in `mail.providers`.
 
 ## Connect and manage accounts
 
-Development account setup is at `/dev/mail/accounts`, relative to the application's public base path. It contains account connection, a history start date defaulting to one calendar month ago, account suspend/resume and removal, and signature, template and NocoBase label management. New OAuth and credential-based account requests must include `initialSyncReceivedAfter` as a valid ISO 8601 date-time; the server rejects a missing or invalid boundary instead of allowing an unbounded initial import. A registered provider without a configured instance is unavailable for connection.
+`MailAccountsPage` contains account connection, a history start date defaulting to one calendar month ago, account suspend/resume and removal, and signature, template and NocoBase label management. New OAuth and credential-based account requests must include `initialSyncReceivedAfter` as a valid ISO 8601 date-time; the server rejects a missing or invalid boundary instead of allowing an unbounded initial import. A registered provider without a configured instance is unavailable for connection.
 
 Use public account and authorization APIs or the existing client flow. OAuth starts with an authenticated request to `POST /api/mail/authorizations`; credential-based connection uses `POST /api/mail/accounts/connect`. Preserve the plugin's short-lived, single-use OAuth state. Account and log responses must remain free of credentials and tokens.
 
-Personal account operations use `/api/mail/accounts`. `/settings/mail/accounts` is a read-only overview backed by `/api/mail/settings/accounts`, with owner names and a user-ID fallback. Suspending prevents sending and synchronization. Removing an account clears its local data and authorization without deleting provider mailbox messages; remote subscription cleanup can fail without preventing local removal.
+Personal account operations use `/api/mail/accounts`. `/api/mail/settings/accounts` is a read-only all-user overview, with owner names and a user-ID fallback. Suspending prevents sending and synchronization. Removing an account clears its local data and authorization without deleting provider mailbox messages; remote subscription cleanup can fail without preventing local removal.
 
 ## OAuth callback and return page
 
@@ -114,7 +114,7 @@ https://mail.example.com/main/mail/oauth/callback
 
 Override through `mail.oauthCallbackUrl` or `MAIL_OAUTH_CALLBACK_URL`. A relative path receives the application prefix; an absolute HTTP(S) URL must already include it and reach the mounted callback. Register the exact resulting URL with the OAuth provider. Fragments are invalid. `oauthCallbackUrl` controls only the provider callback endpoint, not the page shown in the browser after authorization.
 
-Configure the browser destination through `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL`. It defaults to `/dev/mail/accounts` for backward compatibility. A relative return path receives the application public base path, so `/mail/accounts` under `/main` becomes `/main/mail/accounts`; an absolute HTTP(S) URL is also supported and is treated as trusted server configuration. Fragments are invalid.
+Configure the browser destination through `mail.oauthReturnUrl` or `MAIL_OAUTH_RETURN_URL`. It defaults to `/`, the application root, because the plugin ships no page; point it at the application page that renders `MailAccountsPage`. A relative return path receives the application public base path, so `/mail/accounts` under `/main` becomes `/main/mail/accounts`; an absolute HTTP(S) URL is also supported and is treated as trusted server configuration. Fragments are invalid.
 
 For a production application, configure the callback and return paths together so the provider callback and application page are not confused:
 
