@@ -43,3 +43,9 @@ Specify pages, actions, and record scopes, enforced on the server.
 Support assignments, default scope, temporary sharing, restrictions, and permission source inspection.
 Use business names; do not merely display role labels without enforcing access.
 ```
+
+## See the result
+
+Alice and Bob have an account manager job scoped to their own orders. Dispatcher Emma can view all orders. Administrators configure common access, sharing and fee limits in Access rules; employees see their results in the existing order page. Ordinary account managers do not see the administration entry.
+
+![Configure order sharing and its recipient](../assets/northstar-sharing-config-en.png)

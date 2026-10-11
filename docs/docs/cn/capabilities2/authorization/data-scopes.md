@@ -32,3 +32,13 @@ title: '数据范围与规则'
 ## 与其他规则配合
 
 [默认数据范围](./default-access.md)加入共同可查记录，[共享规则](./sharing-rules.md)增加指定协作记录，[限制规则](./restriction-rules.md)收窄最终范围。它们不替代页面和业务操作权限。
+
+## 查看不同岗位的订单
+
+先只应用岗位范围。Alice 的订单列表有 6 笔本人负责的订单；Emma 的调度岗位可查看全部 10 笔订单。两人使用同一个订单页面，返回的数据由服务端按各自授权决定。
+
+![Alice 查看本人负责的六笔订单](../assets/northstar-alice-orders-en.png)
+
+![Emma 查看全部十笔订单](../assets/northstar-dispatch-orders-en.png)
+
+以上是加入共同范围、共享与限制之前的结果。后续规则会进一步改变可见订单，原负责人字段仍保持不变。

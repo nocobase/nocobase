@@ -4,53 +4,53 @@ title: 'Quick start'
 
 # Quick start
 
-Start with basic order processing before adding notifications, integrations, and complex approvals. Use existing customers, drivers, and orders instead of building another application.
+Add handling stages to the existing Northstar orders from [Quick start](../quick-start.md). Complete one order first, then add time limits and external coordination.
 
-## Confirm stages first
-
-```text
-Add a business workflow to Northstar's existing transport orders. Do not write code yet.
-A dispatcher assigns a driver, moving an order from awaiting dispatch to awaiting acceptance.
-The assigned driver accepts and departs to enter in transit. Declining requires a reason and returns the order to dispatch without the previous assignment.
-The assigned driver submits delivery evidence to enter delivered; an operations lead verifies it to complete the order.
-Account managers or dispatchers may cancel before departure with a reason, but not after transport starts.
-Provide a stage table, diagram, and missing decisions, including viewing and processing permissions.
-```
-
-Check that every unfinished stage has an exit, driver operations belong to the assigned person, and delivery inputs are explicit. This example combines acceptance and departure; change the table first if they must be separate.
-
-## Implement processing and pages
+## 1. Describe the business flow
 
 ```text
-Implement the confirmed stages using workflow and authorization capabilities.
-Show the diagram, available operations, unavailable reasons, and history in order details.
-Collect inputs for assignment, cancellation, decline, and delivery.
-Prevent ordinary edits and APIs from directly changing stages.
-Provide dispatcher and personal driver tasks that update after processing.
-Explain where each role starts and how to complete an order.
+Add a handling flow to existing Northstar transport orders.
+Assign a driver while awaiting dispatch, then await acceptance. Accepting and departing starts transport.
+Rejecting an assignment requires a reason, returns to dispatch and clears the assignment.
+Submitting delivery evidence marks delivery; supervisor confirmation completes the order.
+Allow cancellation with a reason before departure. Define a separate exception process after departure.
+Show current stages, available actions, reasons an action is unavailable, and handling history in order details.
+Preserve actors, timestamps, previous and next stages and submitted information after refresh.
+Ordinary editing must not directly change the stage; enforce inputs, current stage and conditions on the server.
+Propose the stage table and unresolved business rules first, then implement after confirmation.
 ```
 
-## Complete an order
+Acceptance and departure are one action here. Add a separate departure stage before implementation if the business requires it.
 
-| Role            | Action            | Result                                   |
-| --------------- | ----------------- | ---------------------------------------- |
-| Dispatcher      | Assign driver     | Awaiting acceptance, assignment recorded |
-| Assigned driver | Accept and depart | In transit, actor and time recorded      |
-| Assigned driver | Submit evidence   | Delivered, evidence linked               |
-| Operations lead | Verify delivery   | Completed, history retained              |
+## 2. Confirm the order
 
-Use the same server processing rules across pages and APIs. Editing a status field is not processing.
+| Current stage                   | Action                   | Next stage          |
+| ------------------------------- | ------------------------ | ------------------- |
+| Awaiting dispatch               | Assign driver            | Awaiting acceptance |
+| Awaiting acceptance             | Accept and depart        | In transit          |
+| Awaiting acceptance             | Reject with a reason     | Awaiting dispatch   |
+| In transit                      | Submit delivery evidence | Delivered           |
+| Delivered                       | Confirm delivery         | Completed           |
+| Awaiting dispatch or acceptance | Cancel with a reason     | Cancelled           |
 
-## View processing results
+Confirm who can view orders and perform each action, and which inputs are required. Integrate jobs and record scopes with [Authorization](../authorization/index.md).
 
-Transport process shows the current stage. NS-2026-003 has an assigned driver and is awaiting acceptance, with departure, decline, and cancellation available.
+## 3. Open an order awaiting action
 
-![Available actions on an order awaiting acceptance](../assets/northstar-process-before-en.png)
+Open **NS-2026-003** in **Orders**. In this earlier screenshot it has an assigned driver and is **Awaiting acceptance**. **Transport process** shows its stage and acceptance, rejection and cancellation actions.
 
-After departure, submission of a receipt reference, and verification, the order is Completed. Processing history retains the actual actions, times, stages, and receipt reference after refreshing.
+![Order awaiting acceptance](../assets/northstar-process-before-en.png)
 
-![Completed transport order with persisted processing history](../assets/northstar-process-completed-en.png)
+## 4. Handle the order and see its result
 
-## Before delivery
+Use **Accept and depart**, submit delivery evidence, then confirm delivery. The order becomes **Completed**. **Processing history** preserves the three actual actions, timestamps, stages and evidence reference.
 
-Ask the Agent for evidence covering role conditions, inputs, branches, duplicate submission, concurrency, quality checks, and builds. Add deadline and integration checks as those rules are introduced. A page walkthrough demonstrates use; it does not replace release checks.
+![Completed order and handling history](../assets/northstar-process-completed-en.png)
+
+These screenshots show an administrator completing the business actions. Employee use also requires the corresponding page, action and record-scope permissions.
+
+Progress and history remain after refresh. Other application entry points should use the same handling rules rather than editing the stage directly.
+
+## Next steps
+
+Add [Reminders and external coordination](./automation.md) as needed. For multi-person decisions, see [Approval](../approval/index.md).

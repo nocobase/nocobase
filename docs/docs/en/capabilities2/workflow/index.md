@@ -1,39 +1,34 @@
 ---
-title: 'Workflow'
+title: 'Overview'
 ---
 
-# Workflow
+# Workflow overview
 
-Transport orders wait for dispatch, driver acceptance, transport, and delivery verification. Workflow defines who advances each step, required inputs, destinations, and deadlines.
+Workflows organize business steps, action conditions and processing history. A Northstar transport order moves from driver assignment through acceptance, transport, delivery and confirmation. Employees can see its progress, available actions and previous handling.
 
-## Northstar transport process
+## What it provides
 
-```mermaid
-flowchart LR
- A[Awaiting dispatch] -->|Assign driver| B[Awaiting acceptance]
- B -->|Accept and depart| C[In transit]
- B -->|Decline with reason| A
- C -->|Submit delivery evidence| D[Delivered]
- D -->|Verify| E[Completed]
- A -->|Cancel with reason| F[Cancelled]
- B -->|Cancel with reason| F
-```
+| Capability                              | Business outcome                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------------- |
+| Stages and actions                      | Move orders through dispatch, acceptance, transport, delivery and completion     |
+| Conditions and inputs                   | Check the assigned driver, require rejection reasons and delivery evidence       |
+| Branches and returns                    | Return rejected assignments to dispatch                                          |
+| Progress and history                    | Preserve actors, timestamps, previous and next stages, and submitted information |
+| Time limits                             | Remind responsible employees when orders remain unhandled                        |
+| Notifications and external coordination | Notify employees, wait for external results and handle retries                   |
 
-This example combines acceptance and departure. Add an awaiting-departure stage if the business needs separate actions. Once transport starts, use a separately defined exception process rather than pre-departure cancellation.
+The last two are added for specific requirements; see [Time limits and external coordination](./automation.md).
 
-## What pages should show
+## What this example builds
 
-A diagram identifies the current and visited stages. Actions explain why they are unavailable. History records actors, times, stages, and inputs; automatic work identifies the system. Lists filter by stage and personal tasks update after processing. Background processing handles deadlines and post-commit external work, including recovery after restart.
+The initial example adds a handling flow to existing transport orders. Order details show stages, actions and history together.
 
-## Boundaries
+![Completed order with actual handling history](../assets/northstar-process-completed-en.png)
 
-Orders, tickets, invoicing, exports, and renewals suit workflows. A single operation or a notification alone usually does not need a full process. Simple confirmation can use a guarded action; coordinated human decisions use [Approval](../approval/index.md).
+[Quick start](./quick-start.md) includes the prompt and before-and-after results for the same order.
 
-Definitions live in source code, without a drag-and-drop designer. Changes need checks, deployment, and a plan for in-flight records.
+## Workflows and approval
 
-## Read this section
+Driver acceptance and delivery evidence are business actions. Special transport requiring supervisor and finance decisions uses [Approval](../approval/index.md). Connect subsequent transport, resource reservation or payment according to business rules.
 
-- [Quick start](./quick-start.md)
-- [Developing with an Agent](./develop.md)
-- [Scenario examples](./scenarios.md)
-- [Extension reference](./extension.md)
+An Agent develops the flow from business requirements. There is currently no drag-and-drop designer. Changes require deployment and a continuation plan for existing unfinished orders.

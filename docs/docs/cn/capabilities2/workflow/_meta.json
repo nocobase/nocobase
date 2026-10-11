@@ -2,7 +2,7 @@
   {
     "type": "file",
     "name": "index",
-    "label": "工作流"
+    "label": "概览"
   },
   {
     "type": "file",
@@ -11,17 +11,7 @@
   },
   {
     "type": "file",
-    "name": "develop",
-    "label": "使用 Agent 开发"
-  },
-  {
-    "type": "file",
-    "name": "scenarios",
-    "label": "场景示例"
-  },
-  {
-    "type": "file",
-    "name": "extension",
-    "label": "扩展参考"
+    "name": "automation",
+    "label": "时限与外部协作"
   }
 ]

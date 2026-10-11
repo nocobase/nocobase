@@ -1,26 +1,16 @@
 ---
-title: 'Extension reference'
+title: 'Developer reference'
 ---
 
-# Extension reference
+# Developer reference
 
 For developers reviewing or extending generated code. Business users can begin with [Quick start](./quick-start.md).
 
-## Transaction and post-commit work
+## Why handling and notification results are separate
 
-`@nocobase/lifecycle` stores the current stage on the business record. Processing checks conditions, changes data, and writes history in a transaction; external calls happen afterward.
+When a driver submits delivery evidence, save the order stage, evidence and history together so a delivered order never loses its evidence. Notify the account manager or call external systems after saving these records. Retain and retry failed external work without reverting delivery.
 
-| Need                   | Extension                                   | Boundary                              |
-| ---------------------- | ------------------------------------------- | ------------------------------------- |
-| Conditions and reasons | `guard`, `runtime.addGuard()`               | Before writes, within transaction     |
-| Record updates         | `set`                                       | Same commit                           |
-| Other tables           | `onTransition`                              | Same transaction                      |
-| Stage exchanges        | `onEnterState`, `onLeaveState`              | Same transaction                      |
-| Multiple records       | `transaction()`, `tx.fire()`, `tx.create()` | Atomic                                |
-| Reliable external work | `effects`, `onEnter`                        | Post-commit retries and failure exits |
-| UI and index updates   | `completed`, `entered`, `announce`          | Best effort, not redelivered          |
-
-Do not call external systems inside transactional extensions. Retry support does not replace provider idempotency agreements.
+Developers choose extension points from these business requirements: check inputs and conditions before writing, save related business data with the action, and track subsequent notifications or external calls as retryable work. Events used only to refresh the page do not provide reliable delivery.
 
 ## Existing tables and exchanges
 

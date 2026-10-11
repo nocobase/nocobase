@@ -4,24 +4,33 @@ title: 'Restriction rules'
 
 # Restriction rules
 
-Restrictions narrow existing access so job scopes, default access, and sharing observe a common boundary. They do not grant actions or records by themselves.
+Restrictions narrow existing access from jobs, common access and sharing. They do not grant an action or records on their own.
 
-## Extra-fee collaboration
+## Example: transport fee collaboration
 
 ```text
-Northstar's fee collaboration responsibility covers requests with extra fees at most 2,000.
-Restrict View extra-fee requests for the applicable employees to amounts less than or equal to 2,000.
-Apply it to viewing scope obtained from jobs, default access, and sharing.
-Expose this condition in Team access.
-Do not treat the restriction as a grant or give access to employees without viewing permission.
+Bob temporarily helps review transport fees and may view only orders with a transport fee of 2,000 CNY or less.
+Add a fee limit to his View transport orders action, preserving his job and order ownership.
+Apply it to his own orders, the completed-order baseline and shared orders.
+Let administrators adjust or remove it in Access rules; explain that removing it may expand visible records.
 ```
 
-Employees see records they could already access that also meet the amount condition. Exactly 2,000 is allowed; sharing a higher-value request cannot bypass the restriction.
+This example uses the transport order’s fee, not the extra-fee approval application. Exactly 2,000 CNY is within the limit.
 
-## Per-action boundaries
+## Configure the limit
 
-This example restricts viewing. Define editing or approval restrictions separately if required.
+Open **Access rules → Fee limits**, select Bob, enter **2,000** and save.
 
-Restrictions intersect with existing authorization, and multiple restrictions must all hold. Conditions describe allowed access: non-sensitive means only non-sensitive records remain.
+![Set Bob’s transport fee limit](../assets/northstar-restriction-config-en.png)
 
-Complex related-record conditions and cross-action boundaries require further integration. [Inspection](./inspector.md) explains sources; the actual employee's pages demonstrate business effects.
+## See the narrower result
+
+Bob’s own orders and completed orders exceed the limit and disappear from his list. Shared **NS-2026-001**, with a **1,600 CNY** fee, remains visible and still belongs to Alice.
+
+![Bob sees only the shared order within the limit](../assets/northstar-restriction-after-en.png)
+
+Removing the restriction leaves other sources intact. Removing sharing removes only that collaboration source. [Inspect access](./inspector.md) to see the sources.
+
+## Define each operation
+
+This example limits viewing. Editing or approval need their own rules if the same boundary applies. Multiple restrictions must all be satisfied; configure the conditions of the records still allowed.

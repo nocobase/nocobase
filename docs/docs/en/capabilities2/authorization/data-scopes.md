@@ -28,3 +28,13 @@ Define what “mine” means. Owner, creator, and driver may be different people
 Viewing, editing, assigning, and approving each need their own actions and scopes. Server checks must also protect details and submitted actions, not just list filters.
 
 [Default access](./default-access.md) adds a common scope, [sharing](./sharing-rules.md) adds selected records, and [restrictions](./restriction-rules.md) narrow the result. None replaces page and action permissions.
+
+## Compare job scopes
+
+Before adding common access, sharing or restrictions, Alice sees her six orders. Dispatcher Emma sees all ten orders in the same page. The server returns each employee’s authorized records.
+
+![Alice sees her six orders](../assets/northstar-alice-orders-en.png)
+
+![Emma sees all ten orders](../assets/northstar-dispatch-orders-en.png)
+
+The following rules change visible records without changing their owner.
