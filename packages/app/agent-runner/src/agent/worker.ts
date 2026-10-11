@@ -325,6 +325,7 @@ export class RunWorker {
   private idleTimer: NodeJS.Timeout | undefined;
   private lastActivity = Date.now();
   private sessionId: string | undefined;
+  private confirmedSessionId: string | undefined;
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
@@ -474,6 +475,18 @@ export class RunWorker {
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
   private recordEvent(event: AdapterEvent): void {
+    if (event.type === 'status' && event.content === 'sessionRecovery') {
+      this.sessionId = undefined;
+      this.confirmedSessionId = undefined;
+    }
+    if (
+      event.type === 'status' &&
+      event.content === 'started' &&
+      typeof event.meta?.sessionId === 'string'
+    ) {
+      this.sessionId = event.meta.sessionId;
+      this.confirmedSessionId = event.meta.sessionId;
+    }
     if (event.type === 'input') {
       const inputId = event.meta?.inputId;
       if (typeof inputId === 'string' && this.inputs.has(inputId)) {
@@ -799,6 +812,7 @@ export class RunWorker {
       this.steered.clear();
       this.usage.push(...result.usage);
       this.sessionId = result.sessionId ?? this.sessionId;
+      this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       this.summaryText = result.summary ?? this.summaryText;
 
       if (this.ending !== undefined) return this.finishEnding();
@@ -869,6 +883,7 @@ export class RunWorker {
       if (result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
+        this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
     }
   }
@@ -1007,6 +1022,9 @@ export class RunWorker {
           await this.report(
             routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
             {
+              ...(this.confirmedSessionId === undefined
+                ? {}
+                : { sessionId: this.confirmedSessionId }),
               handledInputIds: [...this.delivered],
               usage: this.usage,
             },

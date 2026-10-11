@@ -29,6 +29,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
 import type { ToolCapabilities, ToolModel } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 
 import {
@@ -367,6 +368,7 @@ class PiRun {
   /** Steers re-sent as a prompt after the agent settled without them. */
   private resentSteers?: { text: string; steers: PendingSteer[] };
   private sessionId?: string;
+  private recovered = false;
   private lastAssistant?: PiMessage;
   private lastRetryError?: string;
   private turns = 0;
@@ -588,7 +590,19 @@ class PiRun {
     }
     const state = await this.request('get_state');
     if (!state) throw this.exitError('before it answered get_state');
+    if (!state.success) throw new Error(state.error ?? 'Pi rejected get_state');
     const data = state.data ?? {};
+    if (this.session.resumeSessionId) {
+      this.recovered = data.messageCount === 0;
+      if (this.recovered) this.emit(recoveryEvent('pi'));
+      else if (data.messageCount === undefined)
+        this.emit({
+          type: 'status',
+          tool: 'pi',
+          content: 'sessionRecoveryUnknown',
+          meta: { reason: 'messageCountUnavailable' },
+        });
+    }
     if (typeof data.sessionId === 'string') this.sessionId = data.sessionId;
     const model = data.model as { id?: string; provider?: string } | undefined;
     this.emit({
@@ -602,13 +616,17 @@ class PiRun {
           ? { thinkingLevel: data.thinkingLevel }
           : {}),
         piVersion: this.piVersion,
+        ...(this.session.resumeSessionId ? { resumed: !this.recovered } : {}),
+        ...(this.recovered ? { sessionRecovery: true } : {}),
       },
     });
   }
 
   private async sendPrompt(): Promise<void> {
     const response = await this.request('prompt', {
-      message: this.session.prompt,
+      message: this.recovered
+        ? recoveryPrompt(this.session.prompt)
+        : this.session.prompt,
     });
     if (!response) throw this.exitError('before it accepted the prompt');
     if (!response.success) {

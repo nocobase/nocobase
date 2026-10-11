@@ -1,25 +1,32 @@
 ---
 title: 'Overview'
-description: 'Explore reusable NocoBase capabilities that simplify application development.'
+description: 'Explore the reusable capabilities available for your business application.'
 ---
 
 # Overview
 
-NocoBase provides reusable capabilities such as authentication, permissions, files, and notifications. Reusing these capabilities and their components reduces the work needed to build account management, access control, and message delivery, so you can focus on business pages and rules.
+NocoBase provides reusable capabilities for business applications. Describe your business goals to an AI Agent, which integrates authentication, authorization, data, processes, and collaboration into application-owned pages.
 
-The table below lists the capabilities and example use cases. Follow each link for usage details.
+## Available capabilities
 
-| Capability                               | What it provides                                             | Example use case                                                |
-| ---------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
-| [Authentication](./auth)                 | Sign-in, registration, sessions, and authentication methods  | Employees sign in to a purchasing application                   |
-| [Permissions](./authorization)           | Access control for pages, actions, and records               | Buyers manage their suppliers; managers view team records       |
-| [Workflow](./workflow)                   | Multi-step processes that wait for people, systems, or time  | Cancel an order automatically when it stays unpaid too long     |
-| [Approval](./approval/index.md)          | Multi-level approval, countersigning, hand-over, and copies  | Route a purchase request through approvers by amount            |
-| [Scheduled tasks](./scheduler)           | Time-based processing with execution history                 | Check supplier certifications for upcoming expiration           |
-| [Notifications](./notification)          | In-app messages, email, and group messages                   | Notify a supplier owner when a certification is about to expire |
-| [Mail](./mail)                           | Connect mailboxes to read, reply to, and send email          | Handle customer correspondence from a customer page             |
-| [Files](./file)                          | Upload, associate, preview, and download files               | Store certification documents in supplier records               |
-| [Template printing](./template-print)    | Skills and implementation references for document generation | Fill a contract template with order data                        |
-| [Language switching](./i18n)             | Interface languages and default language settings            | Provide an English interface for overseas staff                 |
-| [Themes](./theme)                        | Colors, fonts, layout density, and color modes               | Apply brand colors or a compact layout                          |
-| [AI knowledge base](./ai-knowledge-base) | Import, process, and retrieve business documents             | Answer supplier onboarding questions using purchasing policies  |
+| Capability                                | Purpose                                                                                 |
+| ----------------------------------------- | --------------------------------------------------------------------------------------- |
+| [Authentication](./auth/index.md)         | Password and corporate sign-in, sessions, API keys, and branded sign-in pages.          |
+| [Data sources](./data-sources.md)         | Application databases and existing external database connections.                       |
+| [Authorization](./authorization/index.md) | Page, action, and record access, default access, sharing, restrictions, and inspection. |
+| [Lifecycles](./workflow/index.md)         | Business stages, human actions, external results, time limits, and transition history.  |
+| [Approval](./approval/index.md)           | Multi-stage and multi-person approval rules and collaboration.                          |
+| [Files](./file.md)                        | Upload, association, preview, download, storage, and access control.                    |
+| [Notifications](./notification.md)        | Business messages through inbox, email, or group channels, with delivery records.       |
+| [Email](./mail/index.md)                  | Personal mailboxes, correspondence, signatures, templates, and business integration.    |
+| [Scheduled tasks](./scheduler.md)         | Reminders, reports, synchronization, execution records, and enablement controls.        |
+| [Languages](./i18n.md)                    | Language switching, translations, and application defaults.                             |
+| [Themes](./theme.md)                      | Colors, typography, density, color modes, and custom presets.                           |
+| AI employees                              | AI collaboration with models, tools, and business context.                              |
+| AI knowledge bases                        | Knowledge content and retrieval for AI.                                                 |
+
+Requirements differ by capability: external mail needs provider configuration, and complex approval needs its plugin. Application pages follow business needs rather than requiring a shared settings area.
+
+## Reading this chapter
+
+Start with the [quick start](./quick-start.md), to create the application and build a transport workspace, then follow the Northstar Logistics journey or use the sidebar to find a capability.
