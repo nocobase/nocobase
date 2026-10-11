@@ -18,7 +18,7 @@ The package README is the full reference: read it at `node_modules/@nocobase/app
 - Variables and model service keys are sealed with the App's secrets service: configure `secrets.keys` before storing any, or the API answers `SECRETS_KEY_MISSING` (503).
 - The plugin registers no pages. The App routes the exported pages and mounts the chat; the App also binds `agentsAccessToken`, or every business action level is `none`.
 - `subjects.register`'s `context.assemble`, brief sections and mounts run inside the claim's transaction: database reads only, never a network or a model call. Read anything else in the optional `prepare(run)`.
-- Tarballs are built by `pnpm nocobase cli build` (the App's CLI) and `cli build --runner` (`nocobase-runner`) as separate CI artifacts and mounted into `storage/runners/dist` (or `agents.dist.dir`). Never bake them into the App's image or commit them.
+- Tarballs are built by `pnpm nocobase cli build` (the App's CLI) and `cli build --runner` (`nocobase-runner`), either as separate CI artifacts mounted into `storage/runners/dist` (or `agents.dist.dir`), or by the App's own `pnpm build` into its build output (universal packages, at the versions it was built with) and served from there. Never commit them.
 - In examples, name the App's CLI after the App (`acme`), never `nocobase` or `nocobase-runner`.
 
 ## References

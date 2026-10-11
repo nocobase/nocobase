@@ -9,6 +9,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   dirsOf,
+  mayInitializeEmptyRepository,
+  EMPTY_REPOSITORY_NOTE,
   issueGuidance,
   renderIssueContext,
   renderTask,
@@ -191,5 +193,45 @@ describe('issue brief', () => {
         name: 'data',
       },
     ]);
+  });
+  it('permits empty initialization only for the assigned coding executor in development', () => {
+    const coding = { id: 'a-1', actions: ['studio.git/open-pr'] };
+    const assigned = { ...context, executor: { type: 'agent', id: coding.id } };
+    expect(mayInitializeEmptyRepository(assigned, coding)).toBe(true);
+    expect(
+      mayInitializeEmptyRepository(
+        { ...assigned, status: context.statuses[1]! },
+        coding,
+      ),
+    ).toBe(true);
+    expect(
+      mayInitializeEmptyRepository({ ...context, executor: null }, coding),
+    ).toBe(false);
+    expect(
+      mayInitializeEmptyRepository(assigned, { ...coding, actions: [] }),
+    ).toBe(false);
+    expect(
+      mayInitializeEmptyRepository(assigned, { ...coding, id: 'reviewer' }),
+    ).toBe(false);
+    expect(
+      mayInitializeEmptyRepository(
+        { ...assigned, status: context.statuses[3]! },
+        coding,
+      ),
+    ).toBe(false);
+    expect(dirsOf(assigned, new Map(), null, true)[0]).toMatchObject({
+      branch: 'agent/PM-12',
+      initializeIfEmpty: true,
+    });
+    expect(dirsOf(assigned)[0]).not.toHaveProperty('initializeIfEmpty');
+    expect(dirsOf(assigned, new Map(), null, true)[1]).not.toHaveProperty(
+      'initializeIfEmpty',
+    );
+    expect(EMPTY_REPOSITORY_NOTE).toContain(
+      'NocoBase 3 via `pnpm create @nocobase/app`',
+    );
+    expect(EMPTY_REPOSITORY_NOTE).toContain(
+      'continue partially generated work on retry',
+    );
   });
 });
