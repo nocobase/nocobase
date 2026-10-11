@@ -122,7 +122,6 @@ import {
   findRunRecord,
   markDelivered,
   pendingInputs,
-  inputsRepo,
   type InputRecord,
   runsOfKey,
   runsRepo,
@@ -131,6 +130,7 @@ import {
   toRun,
   type RunRecord,
 } from './run.store.js';
+import { dropInputs } from './input-gate.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
@@ -538,16 +538,11 @@ async function settleClaimInputs(
   now: string,
 ): Promise<void> {
   const ids = new Set(effective.map((input) => input.id));
-  const omitted = pending.filter((input) => !ids.has(input.id));
-  if (omitted.length > 0)
-    await inputsRepo(conn).updateMany({
-      filter: (f) =>
-        f.and([
-          f.or(omitted.map((input) => f.string('id').eq(input.id))),
-          f.date('handledAt').empty(),
-        ]),
-      values: { handledAt: now },
-    });
+  await dropInputs(
+    conn,
+    pending.filter((input) => !ids.has(input.id)).map((input) => input.id),
+    now,
+  );
   await markDelivered(
     conn,
     pending.filter((input) => ids.has(input.id)),

@@ -129,7 +129,10 @@ agents.subjects.register({
   title: { key: 'subjects.ticket', ns: '@acme/app' },
   context: {
     // Optional: the subject's current policy, in the claim transaction. Rejecting cancels without consuming a retry.
+    // Also asked before input joins a working run or is delivered to it; rejected input is kept from that run.
     admit: (conn, claim) => /* null, or { reason, detail? }; database reads only */,
+    // Optional: the inputs a working run should act on; the rest are marked handled instead of delivered.
+    selectInputs: (conn, claim) => /* a subset of claim.inputs; database reads only */,
     assemble: (conn, claim) => /* task, context, working directories; database reads only */,
   },
   sink: { onRunFinished: (tx, run) => /* tell people how the run ended */ },

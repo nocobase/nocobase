@@ -38,7 +38,9 @@ import {
 } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { asJson, jsonObject, truncateBytes } from '../../kernel/values.js';
+import { findAgent } from '../agents/index.js';
 import { recordActualModels } from './execution.js';
+import { dropInputs, gateInputs, type InputGateDeps } from './input-gate.js';
 import { everHeld } from './run-tokens.js';
 import {
   eventsRepo,
@@ -120,7 +122,7 @@ export interface OnlineUsageRecord {
   readonly reasoningTokens?: number;
 }
 
-export interface RunnerReportsDeps extends TransitionDeps {
+export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -171,9 +173,30 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     return leaseExpiresAt;
   }
 
-  async function deliver(conn: DatabaseConnection, runId: string) {
-    const pending = await pendingInputs(conn, runId);
-    await markDelivered(conn, pending, clock.now().toISOString());
+  /**
+   * The run's unhandled input, marking what is new delivered. New input passes the subject's policy first, as it would
+   * at a claim: what the run's agent may not act on now is marked handled instead and never reaches the runner.
+   */
+  async function deliver(conn: DatabaseConnection, run: RunRecord) {
+    const now = clock.now().toISOString();
+    let pending = await pendingInputs(conn, run.id);
+    const fresh = pending.filter((input) => !input.deliveredAt);
+    const agent = fresh.length > 0 ? await findAgent(conn, run.agentId) : null;
+    if (agent) {
+      const kept = new Set(
+        (await gateInputs(conn, deps, run, agent, fresh.map(toInput))).map(
+          (input) => input.id,
+        ),
+      );
+      const dropped = fresh.filter((input) => !kept.has(input.id));
+      await dropInputs(
+        conn,
+        dropped.map((input) => input.id),
+        now,
+      );
+      pending = pending.filter((input) => !dropped.includes(input));
+    }
+    await markDelivered(conn, pending, now);
     return pending.map(toInput);
   }
 
@@ -312,7 +335,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return {
           leaseExpiresAt,
           cancelRequested: run.cancelRequestedAt !== null,
-          inputs: await deliver(conn, run.id),
+          inputs: await deliver(conn, run),
         };
       }),
 
@@ -347,7 +370,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           status: current.status,
           leaseExpiresAt,
           cancelRequested,
-          inputs: await deliver(conn, run.id),
+          inputs: await deliver(conn, run),
         };
       }),
 
@@ -461,7 +484,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return {
           status: current.status,
           cancelRequested: current.cancelRequestedAt !== null,
-          inputs: await deliver(conn, current.id),
+          inputs: await deliver(conn, current),
           leaseExpiresAt: current.leaseExpiresAt,
         };
       }),

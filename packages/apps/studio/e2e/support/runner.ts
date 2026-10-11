@@ -182,7 +182,8 @@ export class FakeRunner {
       title,
       statusKey: 'in_progress',
       ownerUserId,
-      executor: { type: 'agent', id: await this.agent() },
+      // Development runs only for an executor that may open pull requests.
+      executor: { type: 'agent', id: (await this.developer()).id },
     });
     const { run } = await this.claimRun(issue.identifier);
     const headers = { [HEADERS.runnerKey]: this.runnerKey! };

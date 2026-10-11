@@ -78,6 +78,7 @@ import {
 import { dialectOf, takesType, type SubjectRegistry } from './ports.js';
 import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
+import { gateInputs } from './input-gate.js';
 import { findBrief, requestReset } from './workspace.store.js';
 
 export const DEFAULT_THREAD = 'main';
@@ -577,12 +578,27 @@ export function createRunService(deps: RunServiceDeps): RunService {
       ['queued', ...ACTIVE],
       work.actorUserId,
     );
-    const working = open.find(
+    const candidate = open.find(
       (run) =>
         !work.freshSession &&
         (run.status === 'dispatched' ||
           (run.status === 'running' && Boolean(run.acceptsInput))),
     );
+    // Joins the working run only when the subject would let the agent act on it now; otherwise it waits in a queued run,
+    // which the claim admits or cancels.
+    const working =
+      candidate &&
+      (
+        await gateInputs(unit.conn, deps, candidate, agent, [
+          {
+            id: '',
+            at: clock.now().toISOString(),
+            ...work.input,
+          },
+        ])
+      ).length > 0
+        ? candidate
+        : undefined;
     const waiting = open.find((run) => run.status === 'queued');
     const target = working ?? waiting;
     if (!working && waiting)

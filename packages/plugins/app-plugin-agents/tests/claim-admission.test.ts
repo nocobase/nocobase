@@ -157,3 +157,75 @@ for (const type of ['runner', 'online'] as const) {
     }
   });
 }
+
+describe('subject admission for a working run', () => {
+  async function working() {
+    h = await createHarness();
+    const agent = await h.createAgent();
+    const runId = await h.enqueue(agent, 'issue');
+    const runner = await h.registerRunner();
+    expect((await claim(h, runner))[0].run.id).toBe(runId);
+    await h.request('POST', `/agents/runners/runs/${runId}/start`, {
+      runnerKey: runner.key,
+      body: { workDir: '/tmp/work', acceptsInput: true },
+    });
+    const send = (text: string) =>
+      h.services.runs.enqueue({
+        agentId: agent,
+        subject: { kind: 'sample', id: 'issue' },
+        actorUserId: 'owner',
+        input: {
+          type: 'signal',
+          actor: { kind: 'system', id: 'system', name: 'System' },
+          text,
+        },
+      });
+    const lease = async (): Promise<string[]> =>
+      (
+        await h.request('POST', `/agents/runners/runs/${runId}/lease`, {
+          runnerKey: runner.key,
+          body: {},
+        })
+      ).body.data.inputs.map((input: { text: string }) => input.text);
+    return { runId, send, lease };
+  }
+
+  it('queues rejected input in a separate run instead of appending it', async () => {
+    const { runId, send, lease } = await working();
+    h.services.subjects.get('sample')!.context.admit = async () => ({
+      reason: 'stageMismatch',
+    });
+    const queued = await send('Rejected');
+    expect(queued).toMatchObject({ outcome: 'created', status: 'queued' });
+    expect(queued.runId).not.toBe(runId);
+    expect(await lease()).not.toContain('Rejected');
+  });
+
+  it('marks pending input handled instead of delivering what the subject no longer admits or selects', async () => {
+    const { runId, send, lease } = await working();
+    const context = h.services.subjects.get('sample')!.context;
+    expect(await send('Rejected later')).toMatchObject({
+      runId,
+      outcome: 'appended',
+    });
+    expect(await send('Obsolete')).toMatchObject({ outcome: 'appended' });
+    expect(await send('Current')).toMatchObject({ outcome: 'appended' });
+    context.selectInputs = async (_conn, candidate) =>
+      candidate.inputs.filter((input) => input.text !== 'Obsolete');
+    context.admit = async (_conn, candidate) =>
+      candidate.inputs.some((input) => input.text === 'Rejected later')
+        ? { reason: 'stageMismatch' }
+        : null;
+    const delivered = await lease();
+    expect(delivered).not.toContain('Rejected later');
+    expect(delivered).not.toContain('Obsolete');
+    context.admit = async () => null;
+    await send('Current again');
+    expect(await lease()).toContain('Current again');
+    expect(
+      (await h.services.runs.pendingInputs(h.database.connection(), runId)).map(
+        (input) => input.text,
+      ),
+    ).not.toContain('Obsolete');
+  });
+});

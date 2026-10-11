@@ -29,7 +29,6 @@ import type { Agent } from '@nocobase/app-plugin-agents/shared/agents';
 
 import { ANALYSIS_STATUS } from '../../shared/design.js';
 import { runBranches } from '../git/run-git.js';
-import { pullRequestsOfIssue } from '../git/store.js';
 import { initialDirOf } from '../projects-init/store.js';
 import { ATTACH_ACTION } from './capabilities.js';
 import { PROJECT_SCOPE } from './catalog/scopes.js';
@@ -437,7 +436,17 @@ export function initialNote(defaultBranch: string): string {
   ].join('\n');
 }
 
-/** The subject's only admission policy; every trigger is judged from the state read at claim time. */
+/** The statuses an issue's executor works in. */
+const EXECUTOR_STATUSES: ReadonlySet<string> = new Set([
+  'todo',
+  'in_progress',
+  'blocked',
+]);
+
+/**
+ * The subject's only admission policy; every trigger is judged from the state read when the agent is about to act on
+ * it. Input for an earlier stage is left out by `currentIssueInputs` rather than deciding on its own.
+ */
 export function issueClaimRejection(
   context: IssueContext,
   agent: Pick<Agent, 'id' | 'actions'> & { readonly name?: string },
@@ -447,30 +456,26 @@ export function issueClaimRejection(
     readonly config?: Readonly<Record<string, unknown>>;
   }[],
 ): { reason: string; detail: string } | null {
+  const status = context.status.key;
   const executor =
     context.executor?.type === AGENT_KIND ? context.executor.id : null;
-  const stages = inputs.flatMap((input) => {
-    const payload = jsonObject(input.payload);
-    if (
-      payload.trigger !== 'stageEntered' &&
-      payload.trigger !== 'retrospective' &&
-      !payload.instruction
-    )
-      return [];
-    const status = payload.to ?? payload.status;
-    return typeof status === 'string' ? [status] : [];
-  });
-  if (stages.length > 0 && !stages.includes(context.status.key))
+  const current = currentIssueInputs(context, inputs);
+  if (inputs.length > 0 && current.length === 0)
     return {
       reason: 'stageMismatch',
-      detail: `Queued for ${stages.join(', ')}; the issue is now ${context.status.key}.`,
+      detail: `Only work for an earlier stage was queued; the issue is now ${status}.`,
+    };
+  if (agent.id === executor && status === 'in_progress' && !canImplement(agent))
+    return {
+      reason: 'executorCannotImplement',
+      detail: `${agent.name ?? agent.id} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.`,
     };
   const currentStageAgent = rules.some((rule) => {
     if (
       rule.type !== 'runAgent' &&
       !(
         rule.type === 'retrospective' &&
-        inputs.some(
+        current.some(
           (input) => jsonObject(input.payload).trigger === 'retrospective',
         )
       )
@@ -479,26 +484,17 @@ export function issueClaimRejection(
     const id = rule.config?.agentId;
     return (typeof id === 'string' && id ? id : executor) === agent.id;
   });
-  if (
-    agent.id === executor &&
-    context.status.key === 'in_progress' &&
-    !canImplement(agent)
-  )
-    return {
-      reason: 'executorCannotImplement',
-      detail: `${agent.name ?? agent.id} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.`,
-    };
   if (currentStageAgent) return null;
-  if (
-    agent.id === executor &&
-    (context.status.key === 'in_progress' ||
-      context.status.key === 'blocked' ||
-      context.status.key === 'todo')
+  if (agent.id === executor) {
+    if (EXECUTOR_STATUSES.has(status)) return null;
+  } else if (
+    // Someone asked this agent by name; only the executor stays bound to its statuses.
+    current.some((input) => jsonObject(input.payload).trigger === 'mention')
   )
     return null;
   return {
     reason: 'stageMismatch',
-    detail: `This agent does not work in ${context.status.key}.`,
+    detail: `This agent does not work in ${status}.`,
   };
 }
 
@@ -524,6 +520,14 @@ export function createIssueContextProvider(
           ?.rules ?? [];
       return issueClaimRejection(context, claim.agent, claim.inputs, rules);
     },
+    async selectInputs(conn, claim) {
+      const context = await projects().issueContext.contextFor(
+        conn,
+        claim.run.subject.id,
+        { kind: AGENT_KIND },
+      );
+      return context ? currentIssueInputs(context, claim.inputs) : [];
+    },
     async assemble(conn, claim) {
       const context = await projects().issueContext.contextFor(
         conn,
@@ -547,26 +551,6 @@ export function createIssueContextProvider(
         context.id,
         context.project?.id ?? null,
       );
-      const pulls = (await pullRequestsOfIssue(conn, context.id)).map(
-        ({ pr }) => ({
-          repo: pr.repo,
-          number: pr.number,
-          url: pr.url,
-          state: pr.state,
-          headSha: pr.headSha,
-          ciState: pr.ciState,
-          mergeableState: pr.mergeableState,
-        }),
-      );
-      const pullContext = pulls.length
-        ? '\n\n## Pull requests\n' +
-          pulls
-            .map(
-              (pr) =>
-                `- ${pr.repo}#${pr.number}: ${pr.url}; ${pr.state}; head ${pr.headSha}; checks ${pr.ciState ?? 'unknown'}; mergeability ${pr.mergeableState ?? 'unknown'}`,
-            )
-            .join('\n')
-        : '';
       const initializeIfEmpty = mayInitializeEmptyRepository(
         context,
         claim.agent,
@@ -586,18 +570,18 @@ export function createIssueContextProvider(
         task: renderTask(context, inputs),
         context: initial
           ? [
-              renderIssueContext(context) + pullContext,
+              renderIssueContext(context),
               initialNote(initial.defaultBranch),
             ].join('\n\n')
           : [
-              renderIssueContext(context) + pullContext,
+              renderIssueContext(context),
               ...(initializeIfEmpty ? [EMPTY_REPOSITORY_NOTE] : []),
             ].join('\n\n'),
         turn: {
           prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
         },
-        data: { kind: ISSUE_SUBJECT, issue: context, pullRequests: pulls },
+        data: { kind: ISSUE_SUBJECT, issue: context },
         dirs: dirsOf(
           context,
           await runBranches(

@@ -635,7 +635,7 @@ describe('pull requests', () => {
   });
 
   for (const signal of ['checks', 'conflict'] as const) {
-    it(`counts one ${signal} head once across linked issues and supplies its current state after review`, async () => {
+    it(`counts one ${signal} head once across linked issues that resume development one by one`, async () => {
       const repo = await repoWithToken();
       h.github.addPull(REPO, {
         number: 30,
@@ -683,10 +683,6 @@ describe('pull requests', () => {
         const payload = await h.claimOne();
         expect((await h.agents.runs.get(payload.run.id)).subject.id).toBe(
           issue.id,
-        );
-        expect(payload.prompt.system).toContain('shared-head');
-        expect(payload.prompt.system).toContain(
-          signal === 'checks' ? 'failure' : 'dirty',
         );
         await h.runner(RUNNER_ROUTES.start, payload.run.id, {
           workDir: '/tmp/work',

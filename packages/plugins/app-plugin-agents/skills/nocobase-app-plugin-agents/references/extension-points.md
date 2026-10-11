@@ -37,3 +37,5 @@ Rules that are easy to miss:
 The README's example under "Extension points" shows a subject registered and work enqueued and withdrawn.
 
 A subject assembly may return `inputs` containing only the effective inputs for its current task. Render the task and turn from that same selection. Runner and online claims use it for delivery, brief sections and mounts; omitted inputs are resolved in the claim transaction and retained in the audit history, so polling and completion do not replay obsolete work. Omit the field to deliver all queued inputs.
+
+A working run is held to the same policy: before input joins a dispatched or running run, and before pending input is delivered to one, the plugin asks `admit` and then `selectInputs` with that input. New input either hook keeps from the working run waits in a queued run for the claim to admit or cancel; pending input rejected or left out by `selectInputs` is marked handled instead of being delivered. Implement `selectInputs` with the same selection the assembly returns as `inputs`.

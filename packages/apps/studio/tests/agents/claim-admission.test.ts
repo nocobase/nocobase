@@ -73,8 +73,9 @@ describe('issue claim admission', () => {
           ];
           const permitted =
             role === 'current-stage' ||
-            (role === 'executor' &&
-              ['todo', 'blocked', 'in_progress'].includes(status));
+            (role === 'executor'
+              ? ['todo', 'blocked', 'in_progress'].includes(status)
+              : trigger === 'mention');
           expect(issueClaimRejection(context, agent, inputs, rules)).toEqual(
             permitted
               ? null
@@ -114,6 +115,58 @@ describe('issue claim admission', () => {
         [],
       ),
     ).toMatchObject({ reason: 'stageMismatch' });
+  });
+  it('leaves an earlier stage entry out of executor work in its own statuses rather than cancelling it', () => {
+    for (const status of ['todo', 'blocked', 'in_progress']) {
+      const context = {
+        ...sampleIssue('issue'),
+        executor: { type: 'agent', id: coder.id, name: 'Developer' },
+        status: { key: status, name: status, category: 'started' as const },
+      };
+      expect(
+        issueClaimRejection(
+          context,
+          coder,
+          [input('stageEntered', { to: 'in_progress' }), input('comment')],
+          [],
+        ),
+      ).toBeNull();
+    }
+  });
+  it('cancels work holding nothing but an earlier stage entry', () => {
+    const context = {
+      ...sampleIssue('issue'),
+      executor: { type: 'agent', id: coder.id, name: 'Developer' },
+      status: { key: 'todo', name: 'Todo', category: 'unstarted' as const },
+    };
+    expect(
+      issueClaimRejection(
+        context,
+        coder,
+        [input('stageEntered', { to: 'in_progress' })],
+        [],
+      ),
+    ).toMatchObject({ reason: 'stageMismatch' });
+  });
+  it('runs an agent mentioned by name in any stage, but keeps the executor to its statuses', () => {
+    for (const status of ['analysis', 'proposal_review', 'in_review']) {
+      const context = {
+        ...sampleIssue('issue'),
+        executor: { type: 'agent', id: coder.id, name: 'Developer' },
+        status: { key: status, name: status, category: 'started' as const },
+      };
+      expect(
+        issueClaimRejection(
+          context,
+          { id: 'consultant', actions: [] },
+          [input('mention')],
+          [],
+        ),
+      ).toBeNull();
+      expect(
+        issueClaimRejection(context, coder, [input('mention')], []),
+      ).toMatchObject({ reason: 'stageMismatch' });
+    }
   });
   it('uses current stage work even when an obsolete entry merges before or after it', () => {
     const context = {
@@ -215,6 +268,100 @@ describe('claiming queued issue work', () => {
       statusKey: 'in_review',
     });
     expect((await h.agents.runs.get(payload.run.id)).status).toBe('running');
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: 'REVIEW_STAGE_COMMENT',
+    });
+    const held = await h.agents.runs.detail(payload.run.id);
+    expect(JSON.stringify(held.inputs)).not.toContain('REVIEW_STAGE_COMMENT');
+    const lease = await h.runner(RUNNER_ROUTES.lease, payload.run.id, {});
+    expect(JSON.stringify(lease.body.inputs)).not.toContain(
+      'REVIEW_STAGE_COMMENT',
+    );
+    const waiting = (
+      await h.agents.runs.list({ subjectKind: 'issue', subjectId: issue.id })
+    ).filter((run) => run.status === 'queued');
+    expect(waiting).toHaveLength(1);
+    expect(
+      JSON.stringify((await h.agents.runs.detail(waiting[0]!.id)).inputs),
+    ).toContain('REVIEW_STAGE_COMMENT');
+  });
+
+  it('does not deliver input a working executor received before its issue left development', async () => {
+    h = await createBridgeHarness();
+    await h.addUser('alice');
+    const agent = await h.createAgent();
+    const issue = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Undelivered development input',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: agent },
+    });
+    const payload = await h.claimOne();
+    await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+      workDir: '/tmp/work',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: 'DEVELOPMENT_COMMENT',
+    });
+    const appended = await h.agents.runs.detail(payload.run.id);
+    const comment = appended.inputs.find((item) =>
+      item.text.includes('DEVELOPMENT_COMMENT'),
+    );
+    expect(comment).toMatchObject({ deliveredAt: null, handledAt: null });
+    const current = await h.projects.issueQueries.detail(
+      h.viewer('alice'),
+      issue.id,
+    );
+    await h.projects.issues.update(h.viewer('alice'), issue.id, {
+      revision: current.revision,
+      statusKey: 'in_review',
+    });
+    const lease = await h.runner(RUNNER_ROUTES.lease, payload.run.id, {});
+    expect(lease.body.inputs.map((item: RunInput) => item.id)).toEqual(
+      payload.inputs.map((item: RunInput) => item.id),
+    );
+    const after = await h.agents.runs.detail(payload.run.id);
+    expect(after.inputs.find((item) => item.id === comment!.id)).toMatchObject({
+      deliveredAt: null,
+      handledAt: expect.any(String),
+    });
+    const done = await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+      summary: 'Stopped at the stage change.',
+      handledInputIds: payload.inputs.map((item: RunInput) => item.id),
+    });
+    expect(done.status).toBe(200);
+  });
+
+  it('keeps a comment that joined queued development work after the issue went back to todo', async () => {
+    h = await createBridgeHarness();
+    await h.addUser('alice');
+    const agent = await h.createAgent();
+    const issue = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Back to todo',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: agent },
+    });
+    const current = await h.projects.issueQueries.detail(
+      h.viewer('alice'),
+      issue.id,
+    );
+    await h.projects.issues.update(h.viewer('alice'), issue.id, {
+      revision: current.revision,
+      statusKey: 'todo',
+    });
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: 'TODO_STAGE_COMMENT',
+    });
+    const payload = await h.claimOne();
+    expect(payload).toBeDefined();
+    expect(payload.prompt.turn).toContain('TODO_STAGE_COMMENT');
+    expect(
+      payload.inputs.some(
+        (item: RunInput) =>
+          (item.payload as { trigger?: string }).trigger === 'stageEntered',
+      ),
+    ).toBe(false);
   });
 });
 
