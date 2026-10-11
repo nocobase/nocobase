@@ -1,5 +1,42 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- ca0bfe2: Return invitation links after successful email delivery and let authorized original inviters generate a fresh link without sending email. Show copy controls for newly created and resent invitations, confirm rotation, and explain when a concurrent change makes the link unavailable. Keep scalar URLs complete in CLI text output; structured fields retain their compact display.
+
+  Preserve registration through invitation links without requiring an email channel or configured public origin. Links use app.publicOrigin when configured and otherwise the invitation request origin. Acceptance leaves the new account's email unverified. Existing accounts must sign in with the invited identity, and each token accepts only its own invitation. Only token hashes are stored; rotation invalidates the previous link.
+
+  When no authentication base URL is configured, derive the trusted origin for cookie writes from each request URL using Better Auth's proxy-header policy. This allows same-origin invitation acceptance with unrelated or session cookies while rejecting cross-origin writes and preserving configured origins.
+
+  Retrieve plugin invitations through their domain-authorized endpoint. Recheck the original inviter's current role and project permissions. Other managers may resend email but do not receive credentials; scoped credentials remain email-only. Renewal ignores deleted projects if at least one remains, checking access to each remaining project, and rejects renewal if all selected projects are gone.
+
+  Send invitation credentials through a transient notification attempt without durable message snapshots, automatic retries or raw provider diagnostics. Preserve safe failure categories and submission status. Batches use at most five concurrent sends and a shared 30-second mail-delivery budget. Recheck each link after sending or exhausting the budget so concurrent closure or rotation does not expose invalid links or discard other recipients and existing-account project updates.
+
+- be823bd: Add pasted image files to the new issue requirements file list while preserving native text paste behavior, and enable image previews for pasted and manually uploaded images with the shared attachment UI.
+- a76c859: Let issue details add "Related" links as well as prerequisites, and let editors change an existing relationship's type, so linking related work no longer holds the issue.
+
+  Group relationship conversion and removal in one row menu, and translate stale relationship conflicts in English and Chinese.
+
+  Convert relationship types atomically on the server, preserving the link ID and rejecting stale changes or an existing target relationship without deleting either link.
+
+  Protect dependency graph additions with a shared database revision so concurrent conversions, new dependencies, hierarchy changes and restores cannot commit a cycle, including transactions with an older MySQL snapshot.
+
+  Protect symmetric related links against concurrent additions and conversions, and acquire the graph guard before plan rows so mixed edits cannot reverse the issue-row lock order during rehearsal, execution or undo.
+
+  Keep relationship removal under the same graph protection as conversion, so both removal endpoints use consistent relationship types and endpoints for activity and release notifications.
+
+  Wake waiting work only when a relationship conversion or removal actually clears its blockers. Editing a completed prerequisite, or deleting an already completed issue, no longer starts an agent that was intentionally left idle.
+
+  Serialize blocker status changes and deletion with relationship edits before writing issue rows, including approvals, workflow events and automatic parent completion, so concurrent releases cannot leave unblocked work idle.
+
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.3
+  - @nocobase/app-plugin-notification@1.0.0-beta.26
+
 ## 0.1.0-beta.4
 
 ### Minor Changes

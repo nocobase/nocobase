@@ -1,5 +1,22 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.44
+
+### Patch Changes
+
+- 251d19e: Report password reset availability from the authentication server, hide unavailable self-service recovery, and let authorized Studio members reset another member's password.
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.3
+  - @nocobase/app-plugin-notification@1.0.0-beta.26
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.2
+
 ## 1.0.0-beta.43
 
 ### Patch Changes

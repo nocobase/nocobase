@@ -1,5 +1,18 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.62
+
+### Patch Changes
+
+- 251d19e: Report password reset availability from the authentication server, hide unavailable self-service recovery, and let authorized Studio members reset another member's password.
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- 6515f8d: Align the homepage's built-in capability cards with the documentation's Capabilities chapter: add Data sources and Workflows, order the cards like the documentation's sidebar, keep at most three prompts per card, remove the Template printing card, and update the Mail prompts to reuse the built-in Mail plugin and configure a mail provider.
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.3
+  - @nocobase/app-plugin-notification@1.0.0-beta.26
+
 ## 1.0.0-beta.61
 
 ### Patch Changes
