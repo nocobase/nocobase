@@ -59,7 +59,7 @@ It is not kept in step with the templates: it takes a newer template through its
 
 ## `tools/`
 
-Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project.
+Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project. `studio-cli` publishes `nb-studio`, NocoBase Studio's command line, on its own: `@nocobase/app-cli-client` with Studio's brand and Skill, so a machine can install it from npm instead of from a Studio server.
 
 ## Adding a package
 

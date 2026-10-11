@@ -20,6 +20,7 @@ import {
 import { useState, type ReactElement } from 'react';
 import { Link, Outlet } from 'react-router';
 
+import { WorkspaceDiskTag } from './workspace-diagnostics.js';
 import type { RunnerSummary } from '../../../shared/runners.js';
 import { agentsKeys } from '../../api/keys.js';
 import {
@@ -290,6 +291,7 @@ function RunnerTable({
                   <div className='truncate text-xs text-muted-foreground'>
                     {runner.os} · {runner.arch}
                   </div>
+                  <WorkspaceDiskTag runner={runner} />
                 </div>
               </TableCell>
               <TableCell>

@@ -29,6 +29,8 @@ const enUS = {
     ACCOUNT_DISABLED: 'This account is disabled. Contact your administrator.',
     SERVICE_ACCOUNT_NO_LOGIN:
       'A service account cannot sign in; it acts only through API keys.',
+    INVALID_ORIGIN:
+      'This site address is not allowed to sign in. Use the address provided by your administrator, or ask them to check the application address configuration.',
     INVALID_CSRF_ORIGIN:
       'This request came from another site and was refused. Reload the page and try again.',
   },

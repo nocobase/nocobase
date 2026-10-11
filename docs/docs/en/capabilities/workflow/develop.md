@@ -13,7 +13,7 @@ This page follows an order through development in order. The order waits for the
 
 Decide which record the process belongs to: an existing business table, or a new one. For an existing table, see [adopting an existing table](./extension.md#adopting-an-existing-table) in Extension.
 
-You do not need to install anything yourself. Mention "NocoBase's process capability (`@nocobase/lifecycle`)" in the prompt, and the Agent checks whether the application has it and adds it if not.
+Describe your business requirements. You do not need to know package names, APIs or implementation details, or install dependencies yourself. The Agent chooses an implementation based on the application’s existing features and adds any missing dependencies and configuration.
 
 The recommended rhythm is: **diagram first, code second; one kind of rule at a time.** Build the steps and actions first, then timeouts, then notifications and external systems, and accept each kind before adding the next. With every rule added at once, a problem is hard to trace to the rule that caused it.
 
@@ -43,7 +43,7 @@ Tell the Agent the following; leave out what you have not decided, and the Agent
 Describe only the business. Do not prescribe field names, API paths or implementation; leave those to the Agent, which knows the application. Finally ask it for a step table, a diagram and the business decisions still missing:
 
 ```text
-Use NocoBase's process capability (@nocobase/lifecycle) to build a process for orders. Do not write code yet.
+I want to manage orders in the current application from placement to completion. Do not write code yet.
 
 Record: an order, with customer, line items, amount and shipping address.
 Roles: customer, support, warehouse.
@@ -69,6 +69,10 @@ Answer the Agent's questions until the step table has no open points. Settle the
 ```text
 Additional decisions: a shipped order cannot be cancelled; the customer can only request a return, and returns are out of scope for now. Support can change the shipping address while awaiting shipment, and the change is recorded in the history. A customer can cancel only their own orders; support can cancel any order not yet shipped. Update the step table and the diagram.
 ```
+
+After implementation, you can also check the path against a record's actual diagram. This payment example marks `paid`, the current step, with a solid fill and outlines the preceding `draft`, `creatingCheckout` and `awaitingPayment` steps. It shows progress at runtime; the Agent should still provide the business diagram for this step before implementing it.
+
+![Order payment path showing the current paid state and the steps already passed](https://static-docs.nocobase.com/order-process-dc7ea77361d489b6.png)
 
 ## Step 3: Add the rules for each action
 
@@ -111,8 +115,8 @@ Sending notifications and calling external systems happen only after the action 
 Notification channels use the application's [notification](../notification.md) capability. Polling external progress and undoing work after a failure are covered in [Scenarios](./scenarios.md).
 
 ```text
-Payment: when the customer pays, open the payment platform's checkout; only the payment platform's notification can mark the order as paid; the notification has its signature verified, and the same notification delivered more than once counts once; money received after the order was cancelled is refunded automatically.
-Refund: when a paid order is cancelled, call the refund API; retry 3 times on failure, and if it still fails move to "refund failed", where support can retry by hand; one order is refunded only once however many retries it takes.
+Payment: when the customer pays, open the payment platform's checkout; only a notification confirmed to come from the payment platform can mark the order as paid; a forged notification must not change the order status, and the same notification delivered more than once counts once; money received after the order was cancelled is refunded automatically.
+Refund: when a paid order is cancelled, refund it automatically; retry 3 times on failure, and if it still fails move to "refund failed", where support can retry by hand; one order is refunded only once however many retries it takes.
 ```
 
 ## Step 6: Pages
@@ -128,6 +132,10 @@ When two people act on the same record at once, the later one sees "This record 
 ```text
 Build an order list page, a detail page and a warehouse "awaiting shipment" workbench. The list page filters by step. The detail page shows the diagram at the top, marking the current step; in the middle, the actions the current user can take, with unavailable ones greyed out and their reason; at the bottom, the history with who acted, when and what they entered. The "awaiting shipment" workbench lists every order awaiting shipment, and an order disappears once someone else ships it.
 ```
+
+Use the example application's order payment page to check that the pages are complete: the list filters by step, and the detail shows the amount, current step, payment information and available actions. The payment sandbox below lets you test notification delivery; the Agent chooses a business page layout for your requirements.
+
+![Order payment page showing list filters, order details and available actions](https://static-docs.nocobase.com/order-paid-b6b1944c9e482001.png)
 
 ## Step 7: Accept
 
@@ -145,7 +153,7 @@ The tests should cover:
 | Full paths       | At least one complete path from creation to each end step                          |
 
 ```text
-Add test cases for the order process and give me the list of cases and the run results: each action has at least one allowed and one refused case, with the reason checked; one case per branch; advance time to verify that an order unpaid for 30 minutes is cancelled and that an order completes 7 days after delivery; the same payment notification delivered twice counts once; money received after cancellation is refunded; after 3 failed refunds the order is at refund failed, and a manual retry succeeds; of two concurrent actions only one takes effect; one complete path each from placement to completed and to cancelled. Finally run lint, typecheck, test and build.
+Add test cases for the order process and give me the list of cases and the run results: each action has at least one allowed and one refused case, with the reason checked; one case per branch; advance time to verify that an order unpaid for 30 minutes is cancelled and that an order completes 7 days after delivery; the same payment notification delivered twice counts once; money received after cancellation is refunded; after 3 failed refunds the order is at refund failed, and a manual retry succeeds; of two concurrent actions only one takes effect; one complete path each from placement to completed and to cancelled. Finally complete the application’s quality checks and build, and give me the results.
 ```
 
 Check what the Agent gives you:
@@ -190,5 +198,5 @@ I want to add a "picked" step between awaiting shipment and shipped, and there a
 When a record sits in a step without moving, or external work has no result for a long time, have the Agent find the cause before doing anything. It compares the record's history with the execution records of the external work and tells you where it is stuck. Ask for the conclusion and a recommendation first, and act once you agree; correct data through an action only the system can take.
 
 ```text
-An order has been "cancelled" for more than a day and the customer has not been refunded. Check its history and the execution records of the refund, and tell me where it is stuck, why, and what you recommend. Do not change any data yet.
+An order has been "cancelled" for more than a day and the customer has not been refunded. Investigate how the refund has been handled since the order was cancelled, and tell me where it is stuck, why, and what you recommend. Do not change any data yet.
 ```

@@ -16,6 +16,7 @@ Single components that pages are built from. Each is its own item, installs into
 | `markdown-view`    | `markdown-view.tsx`, with `remark-cjk-autolink.ts`                      | `MarkdownView`; `remarkCjkAutolink`                                                                                                                                                                                                                              |
 | `comment-thread`   | `comment-thread.tsx`                                                    | `CommentTimeline`, `ThreadCard`, `TimelineActivity`, `ActorAvatar`, `CommentComposer`                                                                                                                                                                            |
 | `attachment-list`  | `attachment-list.tsx`                                                   | `AttachmentList`, `PendingAttachments`, `AttachmentPanel`                                                                                                                                                                                                        |
+| `flow-diagram`     | `flow-diagram.tsx`, with `flow-layout.ts` and `flow-diagram-css.d.ts`   | `FlowDiagram`; `layoutFlowDiagram`, graph and layout types                                                                                                                                                                                                       |
 
 `route-dialog` and `route-drawer` both install `route-overlay.tsx`, the implementation they share, and `use-route-overlay.ts`, the Context it provides. Installing the second of them finds both files already in place.
 
@@ -85,6 +86,14 @@ The overlays' close button names itself with `useTranslation()` from `@nocobase/
 
 `page-container`, `page-header` and `route-child-page` render no text of their own.
 
+| Key                    | English                                      | Chinese                     |
+| ---------------------- | -------------------------------------------- | --------------------------- |
+| `flowDiagram.empty`    | No states to display.                        | 暂无可展示的状态。          |
+| `flowDiagram.loading`  | Laying out diagram…                          | 正在布局流程图…             |
+| `flowDiagram.failed`   | Unable to lay out this diagram.              | 无法布局此流程图。          |
+| `flowDiagram.nodeHelp` | Press Enter or Space to select a state.      | 按 Enter 或空格键选择状态。 |
+| `flowDiagram.edgeHelp` | Press Enter or Space to select a transition. | 按 Enter 或空格键选择转移。 |
+
 ## In a plugin
 
 `page-header` has no `#` imports and compiles in a plugin as installed. The others import `cn` from the `cn` package, which stays as it is, and most of them also import primitives as `#components/ui/<name>` — `route-dialog` and `route-drawer` the `button` and `dialog` ones, and `rich-text-editor` the `toggle` one. Keep these imports unchanged. Align the plugin's `package.json#imports` and `components.json` prefixes so the imports resolve to local source files during development and compiled `dist/client` files in the published package, using `publishConfig.imports` as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes.
@@ -145,3 +154,11 @@ const EXTENSIONS = [Timestamp];
 ## Settings dialog
 
 `settings-dialog` is shadcn's [sidebar-13](https://ui.shadcn.com/blocks/sidebar#sidebar-13) settings dialog as a component: `SettingsDialog` lists `groups` of `{ id, label, icon }` items in a sidebar on the left, under each group's label, and renders `children`, the open entry, on the right; on a phone the groups become one scrolling row above the content. The consumer owns the state: `open` and `onOpenChange`, the `activeId` (marked active and `aria-current`), and `onSelect`. To keep the open entry in the URL, pass `renderItem` to draw each entry as a router link, such as a router `Link` to `?settings=<id>`. `title` heads the sidebar and names the dialog, `description` is read by screen readers, and `navigationLabel` names the navigation. `SettingsDialogSection` gives the content a heading and a description and is labelled by the heading. Every word comes from the props, and the component ships no locale keys.
+
+## Flow diagram
+
+Install `@nocobase/flow-diagram` for a read-only React Flow canvas with ELK layered layout and orthogonal edge routing. Import `FlowDiagram` from `#components/flow-diagram`; `flow-layout.ts` supplies the graph types and `layoutFlowDiagram()` for callers that need layout data separately. It handles cycles, self-loops and parallel edges. Nodes and edges each need unique ids, and every edge endpoint must name an existing node. Invalid graphs report a translated error and call `onLayoutError` when provided.
+
+Pass `nodes`, `edges`, `ariaLabel`, and optionally `direction` (`RIGHT` or `DOWN`), `renderNode`, `onNodeClick` and `onEdgeClick`. The component imports React Flow's stylesheet. Its default height is `h-96`; override with `className` or `style` for a bounded canvas, or use `autoHeight` to expand to the full graph at the available width. Prefer `direction="DOWN" autoHeight` for detailed lifecycle diagrams in a page, so a wide graph is not reduced to an unreadable strip. Automatic sizing includes routed edges and labels outside the node bounds. Nodes default to 200×64 canvas units, a deliberate fixed canvas size independent of zoom; customize `width`/`height` for richer content. Node labels wrap within their fixed dimensions. Edge labels reserve at most 320 canvas units; shorten long labels and show full details outside the canvas. Highlight changes preserve the viewport; topology, dimensions, direction or edge label changes rerun layout and fit the graph. Clicking opens consumer-owned details; it never changes graph data.
+
+Nodes and edges accept `visited` for execution history and `highlighted` for the current node or available edges. Highlights use the application `--primary` token; current nodes have a stronger fill and ring, visited nodes a light fill. Ordinary edges use a subdued neutral stroke with inline labels. Defaults follow the application theme in light and dark mode. ELK can reorder ports to reduce crossings. Mark visual annotations `decorative` to remove selection and keyboard focus. For lifecycle descriptions, use `@nocobase/lifecycle-diagram` to project states, transitions, actual history and optional end markers.
