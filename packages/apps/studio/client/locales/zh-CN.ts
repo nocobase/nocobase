@@ -12,6 +12,17 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  runTranscriptFilters: {
+    title: '事件类型',
+    agent: 'Agent',
+    input: '输入',
+    tools: '工具',
+    thinking: '思考',
+    system: '系统',
+    hiddenGroup: '{{count}} 条{{group}}',
+    expandHidden: '隐藏事件：{{summary}}',
+    errorsAlwaysVisible: '错误始终显示',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
