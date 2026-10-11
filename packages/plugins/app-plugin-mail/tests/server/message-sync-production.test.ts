@@ -73,13 +73,15 @@ async function fixture(
   database: DatabaseManager,
   backend: QueueAdapter,
   listener?: MailMessagesSyncedListener,
+  queueService: boolean = true,
 ) {
   const queue = await createMailTestQueue(backend);
   const container = new ServiceContainer();
-  container.instance(queueServiceToken, queue.hostQueue);
+  if (queueService) container.instance(queueServiceToken, queue.hostQueue);
   const queueSetup = vi.spyOn(queue.hostQueue, 'setup');
   const queueShutdown = vi.spyOn(queue.hostQueue, 'shutdown');
   const queueConsumer = vi.spyOn(queue.hostQueue, 'consumer');
+  const queueProducer = vi.spyOn(queue.hostQueue, 'producer');
   const config = new AppConfig();
   await config.loadAll();
   config.mergeDefaults({
@@ -122,7 +124,7 @@ async function fixture(
       return queue.setup();
     }
   }
-  lifecycle.add(new HostQueueProvider({}));
+  if (queueService) lifecycle.add(new HostQueueProvider({}));
   lifecycle.add(provider);
   let cancel: MailUnsubscribe = async () => {};
   class ConsumerProvider extends ServiceProvider<{
@@ -205,8 +207,94 @@ async function fixture(
     queueSetup,
     queueShutdown,
     queueConsumer,
+    queueProducer,
   };
 }
+
+describe('production Mail without an application queue service', () => {
+  it.each([false, true])(
+    'starts and synchronizes while ignoring events (consumer in boot=%s)',
+    async (consumerInBoot) => {
+      const database = await createMailTestDatabase();
+      const listener = vi.fn();
+      const result = await fixture(
+        database,
+        'inMemory',
+        consumerInBoot ? listener : undefined,
+        false,
+      );
+      try {
+        const store = result.container.resolve(mailStoreToken);
+        await store.saveAccount(account);
+        const restoredId = testId('no-queue-restored');
+        await store.createSyncRun({
+          id: restoredId,
+          accountId: account.id,
+          requestedBy: account.userId,
+          mode: 'initial',
+          policy: {
+            batchSize: 10,
+            receivedAfter: account.initialSyncReceivedAfter,
+          },
+        });
+        await result.lifecycle.bootAll();
+        await expect(result.lifecycle.startAll()).resolves.toBeUndefined();
+        const service = result.container.resolve(mailServiceToken);
+        const cancel = service.onMessagesSynced(listener);
+        const cancelOther = service.onMessagesSynced(listener);
+        await vi.waitFor(
+          async () =>
+            expect(await store.getSyncRun(restoredId)).toMatchObject({
+              status: 'completed',
+            }),
+          { timeout: 10000 },
+        );
+        const run = await service.startSync(
+          { actorId: account.userId },
+          { accountId: account.id },
+        );
+        await vi.waitFor(
+          async () =>
+            expect(await store.getSyncRun(run.id)).toMatchObject({
+              status: 'completed',
+            }),
+          { timeout: 10000 },
+        );
+        const page = await service.listMessages(
+          { actorId: account.userId },
+          { accountIds: [account.id] },
+        );
+        expect(page.items.map((item) => item.providerMessageId).sort()).toEqual(
+          ['change-1', 'change-2', 'history'],
+        );
+        expect(result.container.has(queueServiceToken)).toBe(false);
+        expect(result.queueSetup).not.toHaveBeenCalled();
+        expect(result.queueConsumer).not.toHaveBeenCalled();
+        expect(result.queueProducer).not.toHaveBeenCalled();
+        expect(listener).not.toHaveBeenCalled();
+        expect(result.logger.warn).toHaveBeenCalledExactlyOnceWith(
+          { event: 'mail.message_sync.queue_unavailable' },
+          expect.stringContaining('QueueServiceProvider'),
+        );
+        expect(result.logger.error).not.toHaveBeenCalled();
+        expect(result.topic.publishFor).toHaveBeenCalledWith(account.userId, {
+          kind: 'mail.changed',
+        });
+        await expect(cancel()).resolves.toBeUndefined();
+        await expect(cancel()).resolves.toBeUndefined();
+        await expect(cancelOther()).resolves.toBeUndefined();
+        await expect(result.lifecycle.shutdown()).resolves.toBeUndefined();
+        expect(result.topic.close).toHaveBeenCalledOnce();
+        expect(result.queueShutdown).not.toHaveBeenCalled();
+      } finally {
+        await result.lifecycle.shutdown().catch(() => {});
+        await result.queue.close();
+        await destroyMailTestDatabase(database);
+        vi.restoreAllMocks();
+      }
+    },
+  );
+});
 
 describe.each(mailQueueBackends)(
   'production Mail public token and queue lifecycle (%s)',

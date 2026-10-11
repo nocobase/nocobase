@@ -162,18 +162,22 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   ): MailMessageSyncNotifier {
     if (this.closing)
       throw new Error('The Mail message sync notifier is closed.');
-    if (!container.has(queueServiceToken))
-      throw new Error(
-        'Mail synchronization events require the application queue service. Add QueueServiceProvider from @nocobase/app-server/queue to server/app.ts.',
-      );
     this.messageSyncNotifier ??= new MailMessageSyncNotifier(
-      container.resolve(queueServiceToken),
+      container.has(queueServiceToken)
+        ? container.resolve(queueServiceToken)
+        : undefined,
       {
         error: (data, message): void => {
           this.app.container
             .resolveIfCreated(loggingToken)
             ?.getLogger()
             .error(data, message);
+        },
+        warn: (data, message): void => {
+          this.app.container
+            .resolveIfCreated(loggingToken)
+            ?.getLogger()
+            .warn(data, message);
         },
       },
     );

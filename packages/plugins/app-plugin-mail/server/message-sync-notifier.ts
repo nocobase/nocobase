@@ -49,13 +49,22 @@ export class MailMessageSyncNotifier {
   private closing: Promise<void> | undefined;
 
   public constructor(
-    private readonly queue: QueueService,
+    private readonly queue: QueueService | undefined,
     private readonly logger: MailLogger | undefined = undefined,
-  ) {}
+  ) {
+    if (!queue)
+      writeMailLog(
+        logger,
+        'warn',
+        { event: 'mail.message_sync.queue_unavailable' },
+        'Mail synchronization events are disabled because the application queue service is not registered. Subscriptions and publication will be ignored. Add QueueServiceProvider from @nocobase/app-server/queue to server/app.ts to enable events.',
+      );
+  }
 
   public subscribe(listener: MailMessagesSyncedListener): MailUnsubscribe {
     if (this.closed)
       throw new Error('The Mail message sync notifier is closed.');
+    if (!this.queue) return (): Promise<void> => Promise.resolve();
     const cancellation = new AbortController();
     const subscription: Subscription = {
       cancellation,
@@ -92,7 +101,8 @@ export class MailMessageSyncNotifier {
   public async publish(
     events: readonly MailMessagesSyncedEvent[],
   ): Promise<void> {
-    if (this.closed) return;
+    const queue = this.queue;
+    if (this.closed || !queue) return;
     const accepted: Promise<void>[] = [];
     for (const event of events) {
       let snapshot: MailMessagesSyncedEvent;
@@ -104,7 +114,7 @@ export class MailMessageSyncNotifier {
       }
       const publication = Promise.resolve().then(async (): Promise<void> => {
         try {
-          await this.queue
+          await queue
             .producer(MAIL_MESSAGE_SYNC_QUEUE)
             .publish(MAIL_MESSAGE_SYNC_CHANNEL, snapshot, {
               jobIdProducer: (): string => snapshot.eventId,

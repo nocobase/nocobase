@@ -210,6 +210,8 @@ describe('@nocobase/app-plugin-mail', () => {
       }).register();
       return {
         getJobExecutor,
+        logger,
+        container,
         resolveRuntime: () => container.resolve(mailRuntimeToken),
       };
     };
@@ -221,10 +223,18 @@ describe('@nocobase/app-plugin-mail', () => {
       );
     });
 
-    it('requires the application queue service instead of constructing a private backend', () => {
-      const { resolveRuntime } = createRuntime({}, true, false);
-      expect(resolveRuntime).toThrow(
-        'Add QueueServiceProvider from @nocobase/app-server/queue',
+    it('warns without requiring the application queue or constructing a private backend', () => {
+      const { resolveRuntime, logger, container } = createRuntime(
+        { mail: {} },
+        true,
+        false,
+      );
+      expect(resolveRuntime).not.toThrow();
+      expect(resolveRuntime()).toBe(container.resolve(mailRuntimeToken));
+      expect(container.has(queueServiceToken)).toBe(false);
+      expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+        { event: 'mail.message_sync.queue_unavailable' },
+        expect.stringContaining('QueueServiceProvider'),
       );
     });
 

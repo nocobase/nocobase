@@ -94,6 +94,46 @@ afterEach(async () => {
   );
 });
 
+describe('Mail event transport without an application queue', () => {
+  it('warns once and ignores publication and subscriptions without retaining listeners', async () => {
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const notifier = new MailMessageSyncNotifier(undefined, logger);
+    notifiers.push(notifier);
+    const listener = vi.fn();
+    const cancel = notifier.subscribe(listener);
+    const cancelOther = notifier.subscribe(listener);
+    await expect(notifier.publish([event])).resolves.toBeUndefined();
+    await expect(notifier.publish([event])).resolves.toBeUndefined();
+    await expect(cancel()).resolves.toBeUndefined();
+    await expect(cancel()).resolves.toBeUndefined();
+    await expect(cancelOther()).resolves.toBeUndefined();
+    await expect(notifier.close()).resolves.toBeUndefined();
+    await expect(notifier.close()).resolves.toBeUndefined();
+    await expect(notifier.publish([event])).resolves.toBeUndefined();
+    expect(listener).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+      { event: 'mail.message_sync.queue_unavailable' },
+      expect.stringContaining('Subscriptions and publication will be ignored'),
+    );
+  });
+
+  it('does not turn a failed warning logger into a subscription or publication failure', async () => {
+    const warn = vi.fn(() => {
+      throw new Error('Warning transport failed.');
+    });
+    const notifier = new MailMessageSyncNotifier(undefined, { warn });
+    notifiers.push(notifier);
+    const listener = vi.fn();
+    const cancel = notifier.subscribe(listener);
+    await expect(notifier.publish([event])).resolves.toBeUndefined();
+    await expect(cancel()).resolves.toBeUndefined();
+    await expect(notifier.close()).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
+
 describe.each(mailQueueBackends)('Mail event transport on %s', (backend) => {
   it('delivers to all local subscriptions registered before host setup', async () => {
     const host = await createMailTestQueue(backend);

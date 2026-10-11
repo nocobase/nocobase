@@ -55,7 +55,7 @@ import type {
  * `MailProviderDefinition` rather than implementing this service.
  */
 export interface MailService {
-  /** Queue-backed Server subscription; register in boot and await cancellation in shutdown. */
+  /** Register in boot and await cancellation in shutdown; a no-op without the host queue. */
   onMessagesSynced(listener: MailMessagesSyncedListener): MailUnsubscribe;
   listProviders(): Promise<readonly MailProviderView[]>;
   startAuthorization(

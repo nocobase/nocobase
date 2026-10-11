@@ -210,15 +210,36 @@ describe.each(mailQueueBackends)(
       expect(listener).not.toHaveBeenCalled();
     });
 
-    it('fails actionably when a standalone service has no host-backed event notifier', () => {
+    it('warns once and ignores subscriptions when a standalone service has no host-backed notifier', async () => {
+      const logger = { warn: vi.fn() };
+      const listener = vi.fn();
       const standalone = new DefaultMailService({
         store,
         adapters,
         outbox: { kick() {} },
+        logger,
       });
-      expect(() => standalone.onMessagesSynced(() => {})).toThrow(
-        expect.objectContaining({ reason: 'MAIL_EVENTS_UNAVAILABLE' }),
+      const cancel = standalone.onMessagesSynced(listener);
+      const cancelOther = standalone.onMessagesSynced(listener);
+      await expect(cancel()).resolves.toBeUndefined();
+      await expect(cancel()).resolves.toBeUndefined();
+      await expect(cancelOther()).resolves.toBeUndefined();
+      const events = await commit();
+      await notifier.publish(events);
+      await notifier.close();
+      expect(listener).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+        { event: 'mail.message_sync.queue_unavailable' },
+        expect.stringContaining('QueueServiceProvider'),
       );
+      await expect(
+        standalone.listMessages(
+          { actorId: 'owner' },
+          { accountIds: [accountId] },
+        ),
+      ).resolves.toMatchObject({
+        items: [expect.objectContaining({ providerMessageId: 'remote' })],
+      });
     });
   },
 );
