@@ -1,27 +1,55 @@
 ---
 title: 'Authorization'
-description: 'Assign capabilities by job and provide access to the data each user needs.'
 ---
 
 # Authorization
 
-Authorization determines which pages a user can enter, which actions they can perform, and which records they can access. For example, purchase requesters view their own orders, reviewers process approvals, and application administrators manage assignments. Applications can reuse these capabilities to define business responsibilities.
+Authorization determines which pages employees enter, which actions they perform, and which records they access. Northstar account managers maintain transport demand, dispatchers assign drivers, and drivers handle their own tasks in one application.
 
-## Available capabilities
+[Authentication](../auth/index.md) establishes identity. Requiring sign-in for orders is authentication; allowing a driver to handle only assigned tasks is authorization.
 
-| Capability                                           | Purpose                                                                          |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [Permission sets and assignments](./permission-sets) | Combine page access, actions, and data scopes into reusable job responsibilities |
-| [Data scopes and rules](./data-scopes)               | Select records for an action, such as orders requested by the current user       |
-| [Default data scope](./default-access)               | Provide a common record scope for users who already have an action               |
-| [Sharing rules](./sharing-rules)                     | Give selected collaborators access to additional records                         |
-| [Restriction rules](./restriction-rules)             | Narrow the accessible record scope                                               |
-| [Permission Inspector](./inspector)                  | View a user's permissions and their sources                                      |
+## Start from responsibilities
 
-[Authentication](../auth) identifies the user; authorization determines what that user can do. Requiring sign-in for orders is authentication. Restricting requesters to their own orders is authorization.
+| Job                       | Pages and actions                               | Record scope                               |
+| ------------------------- | ----------------------------------------------- | ------------------------------------------ |
+| Account manager           | Customers, order creation and editing           | Customers and orders owned by the employee |
+| Dispatcher                | Dispatch workspace and driver assignment        | Orders needed for coordination             |
+| Driver                    | Tasks, acceptance, departure, delivery evidence | Assigned tasks                             |
+| Operations lead           | Transport monitoring and special transport      | Orders and requests within responsibility  |
+| Finance lead              | Settlement details and extra-fee review         | Authorized financial records               |
+| Application administrator | Assignments and access rules                    | Administrative responsibility              |
 
-## Integration and administration
+The application declares pages, actions, and scopes; authorization calculates access. Record state remains a separate requirement: driver assignment permission does not make a completed order assignable.
 
-Your development Agent connects application pages, business actions, and record scopes to authorization. For example, orders can provide View orders, Process approvals, and Orders requested by me. Administrators then configure permission sets, assign people, and adjust rules in Settings → Authorization.
+## In this section
 
-The default application template includes permission sets, the inspector, and the three record-rule capabilities. The following pages use purchase orders to explain business requirements, administration, and visible results. Adapt the prompts to your application.
+| Capability                                              | Purpose                                           |
+| ------------------------------------------------------- | ------------------------------------------------- |
+| [Permission sets and assignments](./permission-sets.md) | Reusable job responsibilities                     |
+| [Data scopes and rules](./data-scopes.md)               | Owned, assigned, all, and conditional records     |
+| [Default data access](./default-access.md)              | Shared baseline scope for existing action holders |
+| [Sharing rules](./sharing-rules.md)                     | Additional records for selected collaborators     |
+| [Restriction rules](./restriction-rules.md)             | Narrow existing access                            |
+| [Inspecting permissions](./inspector.md)                | Results, conditions, and sources                  |
+
+## Business-oriented administration
+
+Administrators need to update jobs and access rules as people join, change responsibilities or collaborate. Provide a business-oriented entry for maintaining supported configurations.
+
+Northstar can provide a Team access entry using authorization capabilities without retaining a shared Settings page.
+
+```text
+Provide Team access for authorized Northstar administrators.
+Define jobs for account managers, dispatchers, drivers, operations leads, and finance leads.
+Specify pages, actions, and record scopes, enforced on the server.
+Support assignments, default scope, temporary sharing, restrictions, and permission source inspection.
+Use business names; do not merely display role labels without enforcing access.
+```
+
+## See the result
+
+Alice and Bob have an account manager job scoped to their own orders. Dispatcher Emma can view all orders. Administrators configure common access, sharing and fee limits in Access rules; employees see their results in the existing order page. Ordinary account managers do not see the administration entry.
+
+![Configure order sharing and its recipient](../assets/northstar-sharing-config-en.png)
+
+**The sharing rule gives Bob viewing access to the selected order.**

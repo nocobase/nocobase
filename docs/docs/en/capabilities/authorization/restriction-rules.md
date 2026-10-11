@@ -1,33 +1,42 @@
 ---
 title: 'Restriction rules'
-description: 'Narrow existing permissions with business conditions.'
 ---
 
 # Restriction rules
 
-Restriction rules apply more specific conditions to records accessible through jobs and sharing. For example, a collaborator responsible for purchases up to CNY 2,000 can have a corresponding limit on their viewing scope.
+Restrictions narrow existing access from jobs, common access and sharing. They do not grant an action or records on their own.
 
-## Example: view orders within a budget
+## Example: transport fee collaboration
+
+Restrictions narrow existing access to records meeting conditions such as an amount or region. Apply the boundary to access received through jobs, default access and sharing.
 
 ```text
-Alice's purchasing collaboration covers orders up to CNY 2,000.
-Configure a restriction for her View orders action that allows records with amounts less than or equal to CNY 2,000.
-Apply the restriction to viewing access obtained from permission sets, default scope, and sharing.
-Let administrators select the appropriate amount scope in Settings.
+Bob temporarily helps review transport fees and may view only orders with a transport fee of 2,000 CNY or less.
+Add a fee limit to his View transport orders action, preserving his job and order ownership.
+Apply it to his own orders, the completed-order baseline and shared orders.
+Let administrators adjust or remove it in Access rules; explain that removing it may expand visible records.
 ```
 
-In Settings → Authorization → Restriction Rules, select Alice, the order-viewing action, and the amount scope. The selected condition describes allowed records: orders up to CNY 2,000.
+This example uses the transport order’s fee, not the extra-fee approval application. Exactly 2,000 CNY is within the limit.
 
-![Configure Alice's order-viewing budget limit](../../../cn/capabilities/authorization/assets/restriction-rule.png)
+## Configure the limit
 
-### View the result
+Open **Access rules → Fee limits**, select Bob, enter **2,000** and save.
 
-Alice's list retains accessible orders whose amounts meet the condition, including the shared PO-2026-004 for CNY 1,550.
+![Set Bob’s transport fee limit](../assets/northstar-restriction-config-en.png)
 
-![Accessible orders whose amounts meet the restriction](../../../cn/capabilities/authorization/assets/restricted-orders.png)
+**Bob’s order-viewing scope has a 2,000 CNY fee limit.**
 
-## Set conditions for responsibilities
+## See the narrower result
 
-The application provides conditions such as amount and business status. Confidential workflows can similarly allow only non-confidential records. Restrictions narrow existing scopes and express business boundaries that must apply consistently.
+Bob’s own orders and completed orders exceed the limit and disappear from his list. Shared **NS-2026-001**, with a **1,600 CNY** fee, remains visible and still belongs to Alice.
 
-Viewing, editing, and approval are separate actions. Specify which actions the requirement covers. Collection-wide restrictions and complex relationship conditions are further development topics.
+![Bob sees only the shared order within the limit](../assets/northstar-restriction-after-en.png)
+
+**After restriction, only the shared order within the fee limit remains visible.**
+
+Removing the restriction leaves other sources intact. Removing sharing removes only that collaboration source. [Inspect access](./inspector.md) to see the sources.
+
+## Define each operation
+
+This example limits viewing. Editing or approval need their own rules if the same boundary applies. Multiple restrictions must all be satisfied; configure the conditions of the records still allowed.
