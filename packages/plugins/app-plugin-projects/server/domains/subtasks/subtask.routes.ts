@@ -11,6 +11,7 @@ import type { Hono } from 'hono';
 
 import {
   delegatedWrite,
+  refuseDelegated,
   viewerOf,
   type ViewerEnv,
 } from '../../access/request.js';
@@ -21,7 +22,9 @@ import {
   IssueDependencySchema,
   IssueParams,
   RemoveDependencyBody,
+  UpdateDependencyBody,
 } from '../../routes/schemas.js';
+import { requireEditor } from '../issues/index.js';
 import type { SubtaskService } from './subtask.service.js';
 
 const access =
@@ -29,6 +32,7 @@ const access =
 
 /**
  * Under `/api/projects/issues`: `POST /{issueId}/dependencies` (201, the link as the issue page shows it),
+ * `PATCH /{issueId}/dependencies/{dependencyId}` (200, changes its type in place),
  * `DELETE /{issueId}/dependencies/{dependencyId}` and `POST /{issueId}/removeDependency { dependsOnIssueId, type? }`
  * (204), which removes the link by the other issue.
  */
@@ -64,7 +68,7 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         404: apiErrorResponse(404),
         409: apiErrorResponse(
           409,
-          'When the issues are already linked (`DEPENDENCY_EXISTS`).',
+          'When the issues are already linked (`DEPENDENCY_EXISTS`), or concurrent graph changes require reloading and retrying (`DEPENDENCY_GRAPH_CHANGED`).',
         ),
       },
     }),
@@ -103,6 +107,48 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
       );
     },
   );
+  routes.patch(
+    '/:issueId/dependencies/:dependencyId',
+    async (context, next) => {
+      requireEditor(viewerOf(context));
+      refuseDelegated(context);
+      await next();
+    },
+    describeRoute({
+      tags,
+      summary: 'Change an issue relationship type',
+      operationId: 'projectsUpdateIssueDependency',
+      // The issue page names a relationship row; the CLI links and unlinks by the other issue.
+      ...cliRoute(false),
+      description: `${access} Changes the link in one transaction and keeps its id. A related link may be changed from either end; the current issue waits when the new type is blockedBy. An existing target type is refused without removing either link.`,
+      responses: {
+        200: dataResponse(IssueDependencySchema),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The target is no longer visible, the change would create a dependency cycle, or a delegated caller needs a confirmed plan (PLAN_REQUIRED).',
+        ),
+        404: apiErrorResponse(404),
+        409: apiErrorResponse(
+          409,
+          'The relationship changed (DEPENDENCY_CHANGED), the target type already exists (DEPENDENCY_EXISTS), or concurrent graph changes require reloading and retrying (DEPENDENCY_GRAPH_CHANGED).',
+        ),
+      },
+    }),
+    apiValidator('param', DependencyParams),
+    apiValidator('json', UpdateDependencyBody),
+    async (context) => {
+      const { issueId, dependencyId } = context.req.valid('param');
+      return context.json({
+        data: await subtasks.updateDependency(
+          viewerOf(context),
+          issueId,
+          dependencyId,
+          context.req.valid('json'),
+        ),
+      });
+    },
+  );
   routes.delete(
     '/:issueId/dependencies/:dependencyId',
     describeRoute({
@@ -116,6 +162,10 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         204: emptyResponse(),
         ...apiErrorResponses,
         404: apiErrorResponse(404),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (DEPENDENCY_GRAPH_CHANGED): reload and retry.',
+        ),
       },
     }),
     apiValidator('param', DependencyParams),
@@ -153,6 +203,10 @@ export function createSubtaskRoutes(subtasks: SubtaskService): Hono<ViewerEnv> {
         204: emptyResponse(),
         ...apiErrorResponses,
         404: apiErrorResponse(404),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (DEPENDENCY_GRAPH_CHANGED): reload and retry.',
+        ),
       },
     }),
     apiValidator('param', IssueParams),

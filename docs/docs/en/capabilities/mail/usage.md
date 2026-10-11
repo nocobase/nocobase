@@ -1,72 +1,115 @@
 ---
 title: 'More Mail Features'
-description: 'Reuse signatures and templates and handle mail on business pages.'
+description: 'Use signatures and templates, read customer correspondence, and compose from transport orders.'
 ---
 
 # More Mail Features
 
-Beyond the mail center, reuse signatures and templates or add mail actions to other application pages.
+Mail provides signatures, templates, message reading, and a composer. Applications can place these capabilities on account pages, customer details, or order details.
 
-## Use signatures and templates
-
-Signatures add your name, job title, and contact information to the end of a message. Templates reuse common subjects and content. Choose a signature and template while composing, then adjust the message for the conversation to reduce repeated entry.
-
-Open **Signatures** or **Templates** on the mailbox accounts page to maintain your content. For example, a sales representative can reuse a quotation reply template:
+Northstar provides **Mailbox accounts** and **Customer communication** navigation entries and embeds mail actions in customer and transport order details. Ask the Agent:
 
 ```text
-Add a signature to my mailbox with my name, job title, and phone number. Create a quotation reply template with product, quantity, unit price, and estimated delivery date. Let me choose a signature and template while composing and edit the details for each quotation.
+Add Mailbox accounts and Customer communication to the application navigation.
+Embed NocoBase's account management page for mailbox connections, signatures, and templates.
+Embed the mail workspace for employees to read and send through their own connected mailboxes.
 ```
 
-Click **Template** while composing and select the quotation reply template.
+See [Configure Mail](./configuration.md) for connections and [Developer Reference](./development.md) for integration.
 
-![Select the quotation reply template](../../../cn/capabilities/assets/mail-template-select.png)
+## Use mail signatures
 
-After the template fills the subject and quotation details, click **Signature** to choose your signature. After selecting a template, you can edit the message and send it when ready.
-
-![Template content and sales signature](../../../cn/capabilities/assets/mail-template-signature.png)
-
-## View correspondence on business pages
-
-Embed mail on customer, project, or supplier pages so users can handle related correspondence alongside business information. The application finds relevant messages using contact email addresses or other association rules.
-
-For example, show correspondence on a customer detail page using contact email addresses:
+Save recurring team names, job titles, and contact details as signatures to avoid entering them each time. Signatures belong to a mailbox account and can have a default.
 
 ```text
-Add a correspondence section to customer details. Show messages whose sender or recipient matches the current customer's contact email addresses. Sales representatives can read messages, view attachments, and reply using their own connected mailboxes.
+Prepare a Northstar Operations signature for the business mailbox,
+including Northstar Logistics, Operations team, and transport coordination details.
+Let employees manage signatures from Mailbox accounts and select them when composing.
 ```
 
-Click a customer name in the customer list to open its details.
+Open **Mailbox accounts → Signatures**, select an account, enter the signature name and content, and save. Set the frequently used signature as the default.
 
-![Open details from the customer list](../../../cn/capabilities/assets/mail-customer-list.png)
+![Manage mailbox signatures](../assets/northstar-mail-signatures-en.png)
 
-The details show customer information and correspondence linked to the contact. Select a message to read the conversation and click **Reply** to respond.
+**The business mailbox has a saved default signature, available when composing.**
 
-![Correspondence alongside customer information](../../../cn/capabilities/assets/mail-business-correspondence.png)
+## Use mail templates
 
-Project and supplier detail pages can also show correspondence matched by contact email.
+Save recurring subjects and message content as templates. Templates belong to the current user. An application can also supply the current business record to populate variables such as customer names and order numbers.
+
+```text
+Prepare a Transport progress update template with the order number in the subject
+and customer name, origin, destination, transport status, and expected delivery in the body.
+Provide the current order and customer when opening the composer from order details.
+Employees can apply the template, edit the content, and select an existing signature.
+```
+
+Open **Mailbox accounts → Templates** to manage subjects and content. This example uses variables such as `{{record.customer.name}}` and `{{record.order.number}}`.
+
+![Manage the transport progress template](../assets/northstar-mail-templates-en.png)
+
+Open the composer from transport order details, click **Template**, and select **Transport progress update**. Click **Signature** to select a signature.
+
+![Apply the template and signature to an order email](../assets/northstar-mail-template-applied-en.png)
+
+**The template populates the subject and body with customer and order information, followed by the signature. Everything remains editable before sending.**
+
+:::info Important
+
+The embedding business page must supply template variables. Saving a template does not automatically load customer or order data. Unmatched variables remain unchanged. Review recipients and content before sending.
+
+:::
+
+## Read correspondence on business pages
+
+Embed mail lists and message reading in customer details to see communication while reviewing the customer's information. Match messages by contact email.
+
+```text
+Add Correspondence to customer details.
+Match the customer's contact email against senders, recipients, and copied recipients.
+Only show messages accessible through the current employee's own connected mailboxes.
+Select a message to read its body. Reply opens the mail composer with its reply relationship retained.
+The employee reviews the content before sending. Provide Refresh mail and Load more.
+```
+
+Open customer details and select a message under **Correspondence**. This example reads already synchronized messages using the mail reading component.
+
+![Customer correspondence and message body](../assets/northstar-customer-mail-en.png)
+
+**Customer information and related correspondence appear on the same page, without searching separately for the contact email.**
+
+Click **Reply** to open the composer.
+
+![Reply from customer details](../assets/northstar-customer-mail-reply-en.png)
+
+**The reply composer populates recipients and the original subject. Employees can edit the message and select a signature or template.**
+
+:::info Important
+
+Enter the contact email accurately: it determines the correspondence match. Business record access and mailbox access are enforced separately. Access to a customer does not grant access to another employee's mailbox.
+
+:::
 
 ## Compose from business pages
 
-Add a compose action to a business page and populate recipients, subject, and content from the current record. Users can edit and confirm the message before sending from their own mailbox, reducing copying between pages.
-
-For example, send a progress update from project details:
+Populate contacts and record details when composing order progress updates to reduce copying and entry errors.
 
 ```text
-Add a Send progress email action to project details. Select recipients from project contacts. Include the project name in the subject and the current progress and estimated delivery date in the body. Employees can edit recipients and content and confirm before sending from their own mailbox.
+Add Compose progress email to transport order details.
+Read the recipient from the customer contact and include the order number in the subject.
+Populate the body with the customer, origin, destination, and transport status.
+Employees review and edit before sending through their connected mailbox.
+Allow existing templates and signatures; do not send automatically.
 ```
 
-Open project details and click **Send progress email**.
+Open transport order details and click **Compose progress email**.
 
-![Start a progress email from project details](../../../cn/capabilities/assets/mail-project-action.png)
+![Order information in the mail composer](../assets/northstar-order-mail-en.png)
 
-The recipient, subject, and body are populated from project information. Employees can edit the content and confirm before sending.
-
-![Project information in the mail composer](../../../cn/capabilities/assets/mail-project-compose.png)
+**Order information populates the subject and body, ready for editing before sending.**
 
 ## Usage tips
 
-- Synchronize to retrieve new messages. Refreshing the list displays messages already imported into the application.
-- Use search, stars, and labels to organize correspondence. Whether changes reach the provider depends on the integration.
-- Choose the history you need when starting the initial synchronization.
-
-For page integration and permissions, see [Developer Reference](./development.md).
+- Synchronize to retrieve new mail; refreshing displays messages already synchronized to the application.
+- Choose the required history range for the initial synchronization.
+- Organize mail with search, stars, and labels. Whether changes reach the provider depends on the integration.

@@ -20,7 +20,8 @@
  */
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, realpath, stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
@@ -37,6 +38,7 @@ import { classifyClaudeFailure } from './classify.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
@@ -360,12 +362,15 @@ export class ClaudeAdapter implements AgentAdapter {
 
 class ClaudeRun {
   private readonly events = new Channel<AdapterEvent>();
-  private readonly input = new Channel<SDKUserMessage>();
+  private input = new Channel<SDKUserMessage>();
+  private recovered = false;
+  private readonly initialMessage: SDKUserMessage;
+  private stderrTail = '';
   private readonly abortController = new AbortController();
   /** Steered inputs not yet seen by the agent, by message uuid. */
   private readonly pendingSteers = new Map<
     string,
-    { text: string; inputId?: string }
+    { text: string; inputId?: string; message: SDKUserMessage }
   >();
   private readonly toolNames = new Map<string, string>();
   private readonly reportedDecisions = new Set<string>();
@@ -400,7 +405,8 @@ class ClaudeRun {
     session.abort.addEventListener('abort', () => void this.stop(), {
       once: true,
     });
-    this.input.push(this.userMessage(session.prompt));
+    this.initialMessage = this.userMessage(session.prompt);
+    this.input.push(this.initialMessage);
     this.done = this.run();
   }
 
@@ -430,7 +436,7 @@ class ClaudeRun {
     if (this.finished || this.stopping || this.input.isClosed)
       return Promise.resolve(false);
     const message = this.userMessage(text);
-    this.pendingSteers.set(message.uuid!, { text, inputId });
+    this.pendingSteers.set(message.uuid!, { text, inputId, message });
     return Promise.resolve(this.input.push(message));
   }
 
@@ -498,6 +504,7 @@ class ClaudeRun {
       abortController: this.abortController,
       includePartialMessages: false,
       stderr: (data: string) => {
+        this.stderrTail = (this.stderrTail + data).slice(-8192);
         this.stderrLines.push(...data.split('\n').filter(Boolean));
         this.stderrLines.splice(
           0,
@@ -519,14 +526,64 @@ class ClaudeRun {
     };
   }
 
+  /** Mirrors the project key encoding in the installed Claude SDK (including long paths). */
+  private async sessionExists(id: string): Promise<boolean> {
+    if (!/^[a-zA-Z0-9_-]+$/.test(id))
+      throw new Error('Invalid Claude session id');
+    const cwd = await realpath(this.session.workDir).catch(() =>
+      path.resolve(this.session.workDir),
+    );
+    let project = cwd.replace(/[^a-zA-Z0-9]/g, '-');
+    if (project.length > 200) {
+      let hash = 0;
+      for (let i = 0; i < cwd.length; i += 1)
+        hash = ((hash << 5) - hash + cwd.charCodeAt(i)) | 0;
+      project = `${project.slice(0, 200)}-${Math.abs(hash).toString(36)}`;
+    }
+    const config =
+      this.session.env.CLAUDE_CONFIG_DIR ||
+      path.join(this.session.env.HOME ?? homedir(), '.claude');
+    const file = path.join(
+      config.normalize('NFC'),
+      'projects',
+      project,
+      `${id}.jsonl`,
+    );
+    try {
+      return (await stat(file)).isFile();
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === 'ENOENT' || error.code === 'ENOTDIR')
+      )
+        return false;
+      throw error;
+    }
+  }
+
   private async run(): Promise<AdapterResult> {
     let thrown: unknown;
     try {
       if (this.stopping) throw new Error('aborted before start');
       const options = await this.buildOptions();
+      if (options.resume && !(await this.sessionExists(options.resume))) {
+        this.recovered = true;
+        delete options.resume;
+        this.initialMessage.message.content = recoveryPrompt(
+          this.session.prompt,
+        );
+        this.emit(recoveryEvent('claude'));
+      }
+      if (this.stopping) throw new Error('aborted before start');
       const q = query({ prompt: this.input, options });
       this.closeQuery = () => q.close();
-      for await (const message of q) this.onMessage(message);
+      try {
+        for await (const message of q) this.onMessage(message);
+      } finally {
+        q.close();
+        this.closeQuery = undefined;
+      }
     } catch (error) {
       thrown = error;
     } finally {
@@ -593,7 +650,7 @@ class ClaudeRun {
    * of each turn is summed instead.
    */
   private usage(): Usage[] {
-    if (this.session.resumeSessionId) {
+    if (this.session.resumeSessionId && !this.recovered) {
       return this.turnUsage.inputTokens || this.turnUsage.outputTokens
         ? [{ ...this.turnUsage, ...(this.model ? { model: this.model } : {}) }]
         : [];
@@ -746,6 +803,10 @@ class ClaudeRun {
             model: message.model,
             claudeCodeVersion: message.claude_code_version,
             permissionMode: message.permissionMode,
+            ...(this.session.resumeSessionId
+              ? { resumed: !this.recovered }
+              : {}),
+            ...(this.recovered ? { sessionRecovery: true } : {}),
           },
         });
         return;

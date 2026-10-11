@@ -225,7 +225,9 @@ test.describe('issue page', () => {
       path: 'storage/ui-workflow/issue-runs/screenshots/history-bottom.png',
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.getByTestId('chat-header-button').click();
+    await page
+      .getByRole('button', { name: '在面板中继续编辑', exact: true })
+      .click();
     await expect(page.getByTestId('chat-panel')).toBeVisible();
     await check(1280, true);
     await page

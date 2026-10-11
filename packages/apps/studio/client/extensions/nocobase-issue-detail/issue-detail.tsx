@@ -21,6 +21,7 @@ import {
   ListChecksIcon,
   ListTreeIcon,
   Loader2Icon,
+  MoreHorizontalIcon,
   PaperclipIcon,
   PencilIcon,
   ShieldCheckIcon,
@@ -62,6 +63,20 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from 'cn';
 
@@ -1213,6 +1228,8 @@ export function IssueSubtasks({
   );
 }
 
+export type RelationshipType = 'blockedBy' | 'relatedTo';
+
 export interface DependencyItem {
   /** The link's id. */
   readonly id: string;
@@ -1225,8 +1242,8 @@ export interface DependencyItem {
 }
 
 /**
- * "Blocked by", "Blocks" and "Related". Blockers are added through an issue search and removed here; "Blocks" is
- * read-only; related links can be removed. Without any, nothing renders until `adding` (set by a "Dependency" button
+ * "Blocked by", "Blocks" and "Related". The picker adds either type; editable rows may change type or be removed.
+ * "Blocks" is read-only because its direction belongs to the other issue. Without any, nothing renders until `adding` (set by a "Dependency" button
  * in the page's `IssueAddBar`) opens the search, which Cancel or Escape in the empty search closes again through
  * `onAddingChange`.
  */
@@ -1237,6 +1254,7 @@ export function IssueDependencies({
   hidden,
   onAdd,
   onRemove,
+  onChangeType,
   onSearch,
   adding = false,
   onAddingChange,
@@ -1250,7 +1268,14 @@ export function IssueDependencies({
   /** Under "Blocked by", such as how many blockers the reader cannot see. */
   readonly hidden?: string | null;
   /** Without it, nothing can be added or removed. */
-  readonly onAdd?: (issue: IssuePickerItem) => Promise<void>;
+  readonly onAdd?: (
+    issue: IssuePickerItem,
+    type: RelationshipType,
+  ) => Promise<void>;
+  readonly onChangeType?: (
+    dependency: DependencyItem,
+    type: RelationshipType,
+  ) => Promise<void>;
   readonly onRemove?: (dependency: DependencyItem) => Promise<void>;
   readonly onSearch: (query: string) => Promise<readonly IssuePickerItem[]>;
   /** The search for the first dependency is open while there is none yet. */
@@ -1263,6 +1288,12 @@ export function IssueDependencies({
 }): ReactElement | null {
   const cardLink = useCardLink(Link);
   const [busy, setBusy] = useState(false);
+  const pendingRef = useRef(false);
+  const [type, setType] = useState<RelationshipType>('blockedBy');
+  const types = [
+    { value: 'blockedBy', label: labels.dependencies.prerequisite },
+    { value: 'relatedTo', label: labels.dependencies.related },
+  ];
   const any =
     blockedBy.length > 0 ||
     blocks.length > 0 ||
@@ -1273,14 +1304,22 @@ export function IssueDependencies({
     if (any && adding) onAddingChange?.(false);
   }, [any, adding, onAddingChange]);
   if (!any && !(adding && onAdd)) return null;
-  const run = (action: Promise<void>): void => {
+  const run = (action: () => Promise<void>): void => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
     setBusy(true);
-    void action.catch(() => undefined).finally(() => setBusy(false));
+    Promise.resolve()
+      .then(action)
+      .catch(() => undefined)
+      .finally(() => {
+        pendingRef.current = false;
+        setBusy(false);
+      });
   };
   const list = (
     title: string,
     items: readonly DependencyItem[],
-    removable: boolean,
+    kind: RelationshipType | null,
   ): ReactNode =>
     items.length === 0 ? null : (
       <ul className={ISSUE_SECTION_LIST} aria-label={title}>
@@ -1298,18 +1337,54 @@ export function IssueDependencies({
               link={cardLink}
               className='px-3 py-2'
               trailing={
-                removable && onRemove ? (
-                  <Button
-                    variant='ghost'
-                    size='icon-xs'
-                    disabled={busy}
-                    aria-label={fill(labels.dependencies.remove, {
-                      identifier: item.identifier,
-                    })}
-                    onClick={() => run(onRemove(item))}
-                  >
-                    <XIcon />
-                  </Button>
+                kind && onAdd && (onChangeType || onRemove) ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant='ghost'
+                          size='icon-xs'
+                          disabled={busy}
+                          aria-label={fill(labels.dependencies.actions, {
+                            identifier: item.identifier,
+                          })}
+                        />
+                      }
+                    >
+                      <MoreHorizontalIcon />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align='end' className='w-max max-w-xs'>
+                      {onChangeType ? (
+                        <DropdownMenuItem
+                          disabled={busy}
+                          onClick={() =>
+                            run(() =>
+                              onChangeType(
+                                item,
+                                kind === 'blockedBy'
+                                  ? 'relatedTo'
+                                  : 'blockedBy',
+                              ),
+                            )
+                          }
+                        >
+                          {kind === 'blockedBy'
+                            ? labels.dependencies.toRelated
+                            : labels.dependencies.toBlocker}
+                        </DropdownMenuItem>
+                      ) : null}
+                      {onRemove ? (
+                        <DropdownMenuItem
+                          disabled={busy}
+                          onClick={() => run(() => onRemove(item))}
+                        >
+                          {fill(labels.dependencies.remove, {
+                            identifier: item.identifier,
+                          })}
+                        </DropdownMenuItem>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : null
               }
             />
@@ -1319,7 +1394,7 @@ export function IssueDependencies({
     );
   const exclude = new Set([
     ...excludeIds,
-    ...blockedBy.map((item) => item.issueId),
+    ...(type === 'blockedBy' ? blockedBy : related).map((item) => item.issueId),
   ]);
   const cancel = !any ? () => onAddingChange?.(false) : undefined;
   const count = blockedBy.length + blocks.length + related.length;
@@ -1330,16 +1405,48 @@ export function IssueDependencies({
       count={count > 0 ? count : undefined}
     >
       <div className='space-y-2'>
-        <h3 className='text-sm font-medium text-muted-foreground'>
-          {labels.dependencies.blockedBy}
-        </h3>
-        {list(labels.dependencies.blockedBy, blockedBy, true)}
+        {blockedBy.length > 0 || hidden ? (
+          <h3 className='text-sm font-medium text-muted-foreground'>
+            {labels.dependencies.blockedBy}
+          </h3>
+        ) : null}
+        {list(labels.dependencies.blockedBy, blockedBy, 'blockedBy')}
         {hidden ? (
           <p className='text-xs text-muted-foreground'>{hidden}</p>
         ) : null}
-        {onAdd ? (
+      </div>
+      {onAdd ? (
+        <div className='space-y-2'>
+          <Select
+            items={types}
+            value={type}
+            disabled={busy}
+            onValueChange={(value) => {
+              if (value === 'blockedBy' || value === 'relatedTo')
+                setType(value);
+            }}
+          >
+            <SelectTrigger
+              aria-label={labels.dependencies.type}
+              className='w-full sm:w-auto'
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {types.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <p className='text-xs text-muted-foreground'>
+            {labels.dependencies.hint}
+          </p>
           <div
-            className='flex items-center gap-2'
+            className='flex flex-wrap items-center gap-2'
             onKeyDown={(event) => {
               if (
                 cancel &&
@@ -1359,7 +1466,7 @@ export function IssueDependencies({
                 placeholder={labels.dependencies.addPlaceholder}
                 emptyText={labels.dependencies.searchEmpty}
                 onSearch={onSearch}
-                onPick={(issue) => run(onAdd(issue))}
+                onPick={(issue) => run(() => onAdd(issue, type))}
               />
             </div>
             {cancel ? (
@@ -1368,14 +1475,14 @@ export function IssueDependencies({
               </Button>
             ) : null}
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       {blocks.length > 0 ? (
         <div className='space-y-2'>
           <h3 className='text-sm font-medium text-muted-foreground'>
             {labels.dependencies.blocks}
           </h3>
-          {list(labels.dependencies.blocks, blocks, false)}
+          {list(labels.dependencies.blocks, blocks, null)}
         </div>
       ) : null}
       {related.length > 0 ? (
@@ -1383,7 +1490,7 @@ export function IssueDependencies({
           <h3 className='text-sm font-medium text-muted-foreground'>
             {labels.dependencies.related}
           </h3>
-          {list(labels.dependencies.related, related, true)}
+          {list(labels.dependencies.related, related, 'relatedTo')}
         </div>
       ) : null}
     </IssueSection>

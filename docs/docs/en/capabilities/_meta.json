@@ -5,22 +5,32 @@
     "label": "Overview"
   },
   {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick start"
+  },
+  {
     "type": "dir",
-    "collapsed": true,
     "name": "auth",
-    "label": "Authentication"
+    "label": "Authentication",
+    "collapsed": true
+  },
+  {
+    "type": "file",
+    "name": "data-sources",
+    "label": "Data sources"
   },
   {
     "type": "dir",
     "name": "authorization",
-    "label": "Permissions",
+    "label": "Authorization",
     "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
     "name": "workflow",
-    "label": "Workflow"
+    "label": "Workflow",
+    "collapsed": true
   },
   {
     "type": "dir",
@@ -30,34 +40,13 @@
   },
   {
     "type": "file",
-    "name": "scheduler",
-    "label": "Scheduled tasks"
-  },
-  {
-    "type": "file",
-    "name": "notification",
-    "label": "Notifications"
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
-    "name": "mail",
-    "label": "Mail"
-  },
-  {
-    "type": "file",
     "name": "file",
     "label": "Files"
   },
   {
     "type": "file",
-    "name": "template-print",
-    "label": "Template printing"
-  },
-  {
-    "type": "file",
     "name": "i18n",
-    "label": "Language switching"
+    "label": "Internationalization"
   },
   {
     "type": "file",
@@ -65,9 +54,31 @@
     "label": "Themes"
   },
   {
+    "type": "file",
+    "name": "notification",
+    "label": "Notifications"
+  },
+  {
+    "type": "file",
+    "name": "scheduler",
+    "label": "Scheduled tasks"
+  },
+  {
     "type": "dir",
-    "collapsed": true,
+    "name": "mail",
+    "label": "Mail",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI employees",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "ai-knowledge-base",
-    "label": "AI knowledge base"
+    "label": "AI knowledge bases",
+    "collapsed": true
   }
 ]

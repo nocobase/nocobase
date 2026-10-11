@@ -1,15 +1,12 @@
 [
-  { "type": "file", "name": "index", "label": "概览" },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "quick-start",
-    "label": "入门指南"
+    "type": "file",
+    "name": "index",
+    "label": "Overview"
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "management",
-    "label": "管理与运维"
+    "type": "file",
+    "name": "answers",
+    "label": "Knowledge-based answers"
   }
 ]

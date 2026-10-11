@@ -325,6 +325,8 @@ const pages = {
     WORKFLOW_STATUS_CONFLICT:
       'Issues are still in a status this change removes; move them first.',
     DEPENDENCY_CYCLE: 'That dependency would create a cycle.',
+    DEPENDENCY_CHANGED: 'The relationship changed. Reload and retry.',
+    DEPENDENCY_GRAPH_CHANGED: 'Issue dependencies changed. Reload and retry.',
     DEPENDENCY_EXISTS: 'That dependency already exists.',
     DEPENDENCY_TOO_DEEP: 'The dependency chain is too long.',
     INVALID_DEPENDENCY: 'That issue cannot be a dependency here.',

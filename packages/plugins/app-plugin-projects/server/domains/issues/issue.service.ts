@@ -266,6 +266,13 @@ export function createIssueService(deps: IssueDeps): IssueService {
           { ...deps, conn: tx.conn, viewer },
           input,
         );
+        // Take the graph before the counter even without waits: a later plan row may add relationships.
+        await deps
+          .relations()
+          .lock(
+            tx,
+            Boolean(values.parentIssueId) || values.blockedBy.length > 0,
+          );
         const { number, identifier } =
           await deps.settings.allocateIssueNumber(tx);
         const id = deps.ids.next();
@@ -340,6 +347,18 @@ export function createIssueService(deps: IssueDeps): IssueService {
       return deps.tx.run(async (tx) => {
         const before = await requireVisible(tx.conn, viewer, idOrKey);
         requireEditor(viewer);
+        // Status/workflow changes can release waits, including a parent's automatic move. Take the graph guard
+        // before this issue's first write, in the same order as relationship edits and plan execution.
+        if (
+          patch.parentIssueId !== undefined ||
+          patch.stage !== undefined ||
+          (patch.statusKey !== undefined &&
+            patch.statusKey !== before.statusKey) ||
+          (patch.projectId !== undefined &&
+            patch.projectId !== before.projectId)
+        ) {
+          await deps.relations().lock(tx);
+        }
         const { values, activities, labelIds, status, placed } =
           await resolveUpdate(
             { ...deps, conn: tx.conn, viewer },
@@ -408,6 +427,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     },
 
     async applyApproved(tx, request, approver) {
+      await deps.relations().lock(tx);
       const issue = await findIssue(tx.conn, request.issueId);
       if (!issue || issue.deletedAt)
         return { code: 'ISSUE_GONE', message: 'The issue was deleted.' };
@@ -469,6 +489,8 @@ export function createIssueService(deps: IssueDeps): IssueService {
     },
 
     async fireEvent(tx, issueId, event, cause) {
+      // A contributed event batch enters here before its first issue write; subtask joins already hold the guard.
+      await deps.relations().lock(tx);
       const issue = await findIssue(tx.conn, issueId);
       if (!issue || issue.deletedAt)
         return { issueId, outcome: 'ignored', reason: 'notFound' };
@@ -578,6 +600,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     async restore(viewer, idOrKey) {
       requireDeleter(viewer);
       return deps.tx.run(async (tx) => {
+        await deps.relations().lock(tx);
         const issue = await findIssue(tx.conn, idOrKey);
         if (!issue?.deletedAt) throw notFound('Deleted issue');
         const now = new Date().toISOString();
@@ -586,6 +609,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           deletedById: null,
           updatedAt: now,
         });
+        await deps.relations().placed(tx, await reload(tx, issue.id));
         await record(tx, issue.id, viewer.actor, 'issue_restored');
         tx.emit({ type: 'issue.changed', issueId: issue.id });
         tx.emit({
@@ -606,6 +630,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     retracted: boolean,
   ): Promise<void> {
     await deps.tx.run(async (tx) => {
+      await deps.relations().lock(tx);
       const issue = await requireVisible(tx.conn, viewer, idOrKey);
       if (
         retracted &&
