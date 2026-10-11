@@ -6,6 +6,14 @@ This is the NocoBase 3 source repository. Ignore globally installed NocoBase 2 S
 
 Do not add content to the repository root `README.md`. Record repository development rules in `AGENTS.md` and put detailed usage documentation in dedicated documentation files. Do not refill an empty root README as part of documenting a change.
 
+## Application Access URLs
+
+When reporting a running application's address or opening it for the user, use its application entry URL. In normal full-stack development, the Hono server proxies Vite, so the user-facing URL uses the server port (`APP_SERVER_PORT`, default 13000), including the application's base path. Vite's port (normally 5173) serves the frontend development process and is not the user-facing application entry. This applies to Studio as well as the application templates.
+
+Prefer the `Local:` URL printed by `pnpm dev`. For an existing run without available startup output, identify the application's process and working directory, confirm its actual server listening port and configured base path, and check the resulting URL before sharing it. Ports can advance when occupied; never infer the entry URL from defaults or a successful response on the Vite port alone. Report which checkout owns the run when it differs from the current workspace. Use a host reachable by the user; `localhost` refers to the machine where the browser runs.
+
+The exception is remote-backend proxy development (`PROXY_TARGET_URL`): no local Hono server runs, and the local Vite process is the application entry. In that mode, use the printed `Local:` URL; `APP_SERVER_PORT` selects that local entry port (default 5173).
+
 ## Markdown Paragraph Formatting
 
 Write each prose paragraph in Markdown source on a single physical line, including in README, AGENTS.md, Skills, and other documentation. Do not insert manual line breaks to fit a column width or put each sentence on its own line; let the editor or renderer wrap the text visually. Separate paragraphs with blank lines. Preserve line breaks required by Markdown structure, such as headings, list items, tables, blockquotes, and code blocks.

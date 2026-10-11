@@ -428,7 +428,7 @@ export function createKnowledgeVectors(
           : null;
       return {
         available: status.available,
-        store: status.store,
+        store: status.store ? { type: status.store.type } : null,
         reason: status.reason?.code ?? null,
         active: brief(status.active),
         building: brief(status.building),

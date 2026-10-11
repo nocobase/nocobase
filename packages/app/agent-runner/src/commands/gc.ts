@@ -15,7 +15,7 @@ import {
 } from '../lib/size.ts';
 import { RUNNER_ROUTES, WorkspacesResponseSchema } from '../protocol/index.ts';
 import {
-  applyStatuses,
+  applyDecisions,
   lowDiskWarning,
   planRemovals,
   readDisk,
@@ -33,6 +33,8 @@ interface GcWorkspace {
   subject: string;
   lastRunId: string | null;
   status: WorkspaceStatus;
+  diagnostic: string | null;
+  discardsUntracked: boolean;
   unpushed: boolean;
   inUse: boolean;
   lastUsedAt: string;
@@ -115,13 +117,22 @@ export default class Gc extends RunnerCommand {
       const key = connection.registration.key;
       if (!entries.some((entry) => entry.appKey === key)) continue;
       try {
-        const response = await runnerClient(connection).post(
+        const client = runnerClient(connection);
+        let response = await client.post(
           RUNNER_ROUTES.workspaces,
-          workspacesRequest(entries, key, disk),
+          { ...workspacesRequest(entries, key, disk), diagnostics: true },
           WorkspacesResponseSchema,
           { timeoutMs: 60_000 },
         );
-        applyStatuses(entries, key, response);
+        if (response.reporting?.decisions === true) {
+          response = await client.post(
+            RUNNER_ROUTES.workspaces,
+            workspacesRequest(entries, key, disk, true),
+            WorkspacesResponseSchema,
+            { timeoutMs: 60_000 },
+          );
+        }
+        await applyDecisions(this.paths, entries, key, response);
       } catch (error) {
         unreachable.push({
           app: key,
@@ -164,6 +175,10 @@ export default class Gc extends RunnerCommand {
         subject: entry.subjectKey,
         lastRunId: entry.lastRunId ?? null,
         status: entry.status,
+        diagnostic: entry.cleanup?.reason ?? entry.decision?.reason ?? null,
+        discardsUntracked:
+          entry.cleanup?.reason === 'allowed' &&
+          entry.cleanup.discardsUntracked,
         unpushed: entry.unpushed,
         inUse: entry.inUse,
         lastUsedAt: entry.lastUsedAt,
@@ -178,6 +193,10 @@ export default class Gc extends RunnerCommand {
         [
           item.app,
           item.subject,
+          item.diagnostic,
+          item.discardsUntracked
+            ? 'cleanup will discard untracked files'
+            : null,
           item.status,
           item.unpushed ? 'unpushed' : 'pushed',
           item.inUse ? 'in use' : `used ${item.lastUsedAt}`,

@@ -149,7 +149,7 @@ const enUS = {
         'Send the setup instructions below to your preferred local Coding Agent, such as Claude Code or Codex. Once connected, it can help you find projects, create tasks, and update progress.',
       prompt:
         'Please install and configure the NocoBase Studio CLI to manage projects and issues in NocoBase Studio ({{server}}):\n' +
-        '1. Run `{{install}}` to install `nb-studio`.\n' +
+        '1. `nb-studio` needs Node.js 24 or newer with npm: check with `node --version`, and if it is missing or older, ask me before installing it. Then run `{{install}}` to install `nb-studio`.\n' +
         '2. Run `nb-studio login --server {{server}}`, share the sign-in URL and code it displays, and wait for me to confirm the sign-in in my browser.\n' +
         '3. Once signed in, run `nb-studio whoami` to check the identity and permissions, then run `nb-studio docs` to learn the available commands.\n' +
         '4. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',

@@ -126,7 +126,7 @@ describe('the agent setup prompt', () => {
     expect(zh).toBe(
       [
         '请帮我安装并配置 NocoBase Studio CLI，用来管理 NocoBase Studio（https://studio.example.com/app）的项目和任务：',
-        '1. 运行 `curl -fsSL https://studio.example.com/app/api/agents/dist/installScript | sh -s -- --token fgdl_abc` 安装 `nb-studio`；',
+        '1. `nb-studio` 需要 Node.js 24 或更高版本及 npm：先用 `node --version` 检查，缺少或版本过低时先征得我同意再安装；然后运行 `curl -fsSL https://studio.example.com/app/api/agents/dist/installScript | sh -s -- --token fgdl_abc` 安装 `nb-studio`；',
         '2. 运行 `nb-studio login --server https://studio.example.com/app`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；',
         '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；',
         '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
@@ -142,6 +142,7 @@ describe('the agent setup prompt', () => {
       'nb-studio login --server https://studio.example.com/app',
     );
     expect(en).toContain('nb-studio docs');
+    expect(en).toContain('Node.js 24 or newer with npm');
     expect(en).not.toMatch(/api key/iu);
   });
 });
