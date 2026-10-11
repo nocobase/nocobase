@@ -25,6 +25,7 @@ access settings get -> GET /api/access/settings (person)
 access settings set [--default-role!] -> PUT /api/access/settings (person)
 agent action list -> GET /api/agents/actions (person)
 agent archive <agent> -> POST /api/agents/{agentId}/archive (person) confirm
+agent availability <agentId> [--tool! --requires] -> GET /api/agents/{agentId}/availability (person,run) agents.agents/view
 agent brief <agent> [--scenario] -> GET /api/agents/{agentId}/previewBrief (person)
 agent copy <agent> [--name --make-default] -> POST /api/agents/{agentId}/copy (person)
 agent create [--name --description --avatar --models --instructions --runtimes --skills --actions --confirm-changes --access --users --owner --max-concurrent-runs --max-attempts --tool-policy --type --file] -> POST /api/agents (person)
@@ -306,6 +307,7 @@ report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) 
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run brief <run> -> GET /api/agents/runs/{runId}/brief (person)
 run cancel <run> -> POST /api/agents/runs/{runId}/cancel (person) confirm
+run change-tool <runId> [--tool!] -> POST /api/agents/runs/{runId}/changeTool (person)
 run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
 run list [--subject-kind --subject --agent --status --limit --page-token] -> GET /api/agents/runs (person)
@@ -345,6 +347,9 @@ skill upload [--file!] -> POST /api/agents/skills/uploads (person)
 skill version get <skill> <version> -> GET /api/agents/skills/{skillId}/versions/{version} (person)
 skill version list <skill> -> GET /api/agents/skills/{skillId}/versions (person)
 skill version restore <skill> <version> [--revision!] -> POST /api/agents/skills/{skillId}/versions/{version}/restore (person) confirm
+subject get <kind> <id> -> GET /api/agents/subjects/{kind}/{id} (person)
+subject pause <kind> <id> -> POST /api/agents/subjects/{kind}/{id}/pause (person)
+subject resume <kind> <id> -> POST /api/agents/subjects/{kind}/{id}/resume (person)
 user create [--name! --username --email! --password! --role-scopes] -> POST /api/users (person)
 user delete <user> [--confirm!] -> DELETE /api/users/{userId} (person)
 user disable <user> -> POST /api/users/{userId}/disable (person) confirm
@@ -378,7 +383,8 @@ workflow update <workflow> [--revision --name --description --definition --file]
 `;
 
 exports[`Studio’s command manifest > offers a run what its agent may do, on the routes that take a run token 1`] = `
-"agent list -> GET /api/agents/available (person,run) agents.agents/view
+"agent availability <agentId> [--tool! --requires] -> GET /api/agents/{agentId}/availability (person,run) agents.agents/view
+agent list -> GET /api/agents/available (person,run) agents.agents/view
 app deploy <app> [--wait --release! --config] -> POST /api/releases/apps/{appId}/deploy (person,run) rel.apps/deploy
 app env list <app> [--release] -> GET /api/releases/apps/{appId}/variables (person,run) rel.apps/view
 app get <app> -> GET /api/releases/apps/{appId} (person,run) rel.apps/view

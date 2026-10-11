@@ -299,6 +299,7 @@ describe('the CLI manifest', () => {
     );
     // Opening pull requests and deleting files are actions of their own, which this agent is not given.
     expect(manifest.commands.map((command) => command.id)).toEqual([
+      'agent:availability',
       'agent:list',
       'conversation:title:set',
       'inbox:list',
@@ -366,6 +367,7 @@ describe('the CLI manifest', () => {
     });
     const viewOnly = await h.manifest({ runToken: token });
     expect(viewOnly.commands.map((command) => command.id)).toEqual([
+      'agent:availability',
       'agent:list',
       'conversation:title:set',
       'inbox:list',
@@ -387,6 +389,7 @@ describe('the CLI manifest', () => {
     h.roles.set('alice', 'none');
     const manifest = await h.manifest({ runToken: token });
     expect(manifest.commands.map((command) => command.id)).toEqual([
+      'agent:availability',
       'agent:list',
       'conversation:title:set',
       'inbox:list',
