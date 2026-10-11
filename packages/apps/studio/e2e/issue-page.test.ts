@@ -175,7 +175,7 @@ test.describe('issue page', () => {
       page
         .getByRole('region', { name: '属性' })
         .getByRole('combobox', { name: '状态' }),
-    ).toContainText('进行中');
+    ).toContainText('开发中');
     expect(navigations).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath('run-completed.png') });
     await page.unrouteAll({ behavior: 'wait' });
