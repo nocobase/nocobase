@@ -63,6 +63,7 @@ import { cn } from 'cn';
 
 import { IssueMarkdown } from '../markdown.js';
 import { ActivityRow } from './activity-row.js';
+import type { StageRunControl } from './use-stage-run-limit.js';
 import { attachmentFile, useFilePreviewState } from './files.js';
 import { useIssuePageWording } from './labels.js';
 import { MentionMembersLoadError } from './mention-members-load-error.js';
@@ -74,6 +75,7 @@ export function IssueActivity({
   runs,
   renderRun,
   kindLabels,
+  stageRunControl,
   children,
 }: {
   readonly detail: IssueDetail;
@@ -82,6 +84,7 @@ export function IssueActivity({
   readonly renderRun: (runId: string) => ReactNode;
   /** The names of the comment kinds Studio writes, tagged on their comments. */
   readonly kindLabels: Readonly<Record<string, string>>;
+  readonly stageRunControl?: StageRunControl;
   readonly children?: ReactNode;
 }): ReactElement {
   const { i18n, t: appT } = useTranslation();
@@ -245,6 +248,8 @@ export function IssueActivity({
           activity={entry.activity}
           statuses={detail.statuses}
           t={t}
+          currentStatusKey={detail.statusKey}
+          stageRunControl={stageRunControl}
         />
       ),
     };

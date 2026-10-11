@@ -75,6 +75,7 @@ import {
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
 import { IssueStageRunLimit } from '../../../issues/detail/stage-run-limit.js';
+import { useIssueStageRunLimit } from '../../../issues/detail/use-stage-run-limit.js';
 import { IssuePlansSection } from '../../../issues/detail/issue-plans.js';
 import { IssueParentOutlet } from '../../../issues/detail/issue-parent-outlet.js';
 import { useIssueParent } from '../../../issues/detail/issue-parent.js';
@@ -150,6 +151,10 @@ function IssuePage({
   const pageActions = useIssuePageActions(detail);
   const [stageRunRefresh, setStageRunRefresh] = useState(0);
   const runs = useLiveIssue(detail, issueId, detailKey, stageRunRefresh);
+  const stageRunControl = useIssueStageRunLimit({
+    issue: detail,
+    onContinued: () => setStageRunRefresh((value) => value + 1),
+  });
   const approvalCovered = useWaitingCoversApproval(detail);
   const main = useIssueMainState(pageActions);
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
@@ -182,6 +187,7 @@ function IssuePage({
           runs={runs}
           renderRun={(runId) => <IssueRunRow issue={detail} runId={runId} />}
           kindLabels={kindLabels}
+          stageRunControl={stageRunControl}
         >
           <IssueFileDrop
             {...(main.canUpload ? { onFiles: main.upload } : {})}
@@ -201,10 +207,7 @@ function IssuePage({
                 </>
               }
             />
-            <IssueStageRunLimit
-              issue={detail}
-              onContinued={() => setStageRunRefresh((value) => value + 1)}
-            />
+            <IssueStageRunLimit issue={detail} control={stageRunControl} />
             <IssueWaitingSection issue={detail} />
             <IssueDescriptionSection detail={detail} update={update} />
             <IssueAddSection detail={detail} state={main}>

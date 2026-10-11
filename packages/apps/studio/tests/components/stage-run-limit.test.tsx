@@ -20,7 +20,11 @@ import {
   RunAgentEditor,
   RunAgentSummary,
 } from '../../client/agents/stage-rule-editors.js';
-import { IssueStageRunLimit } from '../../client/issues/detail/stage-run-limit.js';
+import {
+  IssueStageRunLimit,
+  StageRunActivityAction,
+} from '../../client/issues/detail/stage-run-limit.js';
+import { useIssueStageRunLimit } from '../../client/issues/detail/use-stage-run-limit.js';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -69,9 +73,34 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+function StageRunLimitHarness({
+  onContinued,
+  showActivity = false,
+}: {
+  readonly onContinued?: () => void;
+  readonly showActivity?: boolean;
+}) {
+  const control = useIssueStageRunLimit({ issue, onContinued });
+  return (
+    <>
+      <IssueStageRunLimit issue={issue} control={control} />
+      {showActivity ? (
+        <StageRunActivityAction
+          reason='suppressed'
+          token='token'
+          statusKey='in_progress'
+          currentStatusKey='in_progress'
+          control={control}
+        />
+      ) : null}
+    </>
+  );
+}
+
 async function mount(
   children: ReactNode,
   language: 'en-US' | 'zh-CN' = 'en-US',
+  seedPending = false,
 ) {
   const runtime = await createTestI18nRuntime({
     application: {
@@ -82,6 +111,12 @@ async function mount(
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  if (seedPending) {
+    client.setQueryData(
+      ['studio', 'stageRunLimit', issue.id, issue.statusKey, issue.revision],
+      pending,
+    );
+  }
   return render(
     <TestI18nProvider runtime={runtime} namespace='studio'>
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -153,6 +188,57 @@ describe('stage run configuration', () => {
 });
 
 describe('continuing a stage run', () => {
+  it.each(['en-US', 'zh-CN'] as const)(
+    'offers the matching activity action in %s and submits its token',
+    async (language) => {
+      const continueStageRun = vi.fn();
+      const control = {
+        pending,
+        ready: true,
+        submitting: false,
+        continueStageRun,
+      };
+      await mount(
+        <StageRunActivityAction
+          reason='suppressed'
+          token='token'
+          statusKey='in_progress'
+          currentStatusKey='in_progress'
+          control={control}
+        />,
+        language,
+      );
+      const label = language === 'en-US' ? 'Continue' : '继续';
+      fireEvent.click(screen.getByRole('button', { name: label }));
+      expect(continueStageRun).toHaveBeenCalledWith('token');
+    },
+  );
+  it.each([
+    { reason: 'blocked', token: 'token', statusKey: 'in_progress' },
+    { reason: 'suppressed', token: null, statusKey: 'in_progress' },
+    { reason: 'suppressed', token: 'old-token', statusKey: 'in_progress' },
+    { reason: 'suppressed', token: 'token', statusKey: 'todo' },
+  ])('hides an activity action that is not current: %o', async (activity) => {
+    await mount(
+      <StageRunActivityAction
+        {...activity}
+        currentStatusKey='in_progress'
+        control={{
+          pending,
+          ready: true,
+          submitting: false,
+          continueStageRun: vi.fn(),
+        }}
+      />,
+    );
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+  it('does not use cached pending data when its query failed', async () => {
+    mocks.request.mockRejectedValue(new Error('Connection failed'));
+    await mount(<StageRunLimitHarness showActivity />, 'en-US', true);
+    await waitFor(() => expect(mocks.request).toHaveBeenCalledOnce());
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
   it('submits once, disables while pending, and removes the action after success', async () => {
     let complete!: (value: unknown) => void;
     const posted = new Promise((resolve) => {
@@ -163,7 +249,7 @@ describe('continuing a stage run', () => {
       request.method === 'POST' ? posted : Promise.resolve({ data: current }),
     );
     const continued = vi.fn();
-    await mount(<IssueStageRunLimit issue={issue} onContinued={continued} />);
+    await mount(<StageRunLimitHarness onContinued={continued} />);
     const button = await screen.findByRole('button', { name: 'Continue' });
     fireEvent.click(button);
     fireEvent.click(button);
@@ -185,13 +271,40 @@ describe('continuing a stage run', () => {
     );
     expect(continued).toHaveBeenCalledOnce();
   });
+  it('shares the submission lock and pending state between both entry points', async () => {
+    let complete!: (value: unknown) => void;
+    const posted = new Promise((resolve) => {
+      complete = resolve;
+    });
+    let current: typeof pending | null = pending;
+    mocks.request.mockImplementation((request: { method?: string }) =>
+      request.method === 'POST' ? posted : Promise.resolve({ data: current }),
+    );
+    await mount(<StageRunLimitHarness showActivity />);
+    const buttons = await screen.findAllByRole('button', { name: 'Continue' });
+    fireEvent.click(buttons[0]);
+    fireEvent.click(buttons[1]);
+    await waitFor(() =>
+      buttons.forEach((button) => expect(button).toBeDisabled()),
+    );
+    expect(
+      mocks.request.mock.calls.filter(([request]) => request.method === 'POST'),
+    ).toHaveLength(1);
+    current = null;
+    complete({ data: { runId: 'r1' } });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Continue' }),
+      ).not.toBeInTheDocument(),
+    );
+  });
   it('keeps the action after a failed request and gives localized feedback', async () => {
     mocks.request.mockImplementation((request: { method?: string }) =>
       request.method === 'POST'
         ? Promise.reject(new Error('Connection failed'))
         : Promise.resolve({ data: pending }),
     );
-    await mount(<IssueStageRunLimit issue={issue} />, 'zh-CN');
+    await mount(<StageRunLimitHarness />, 'zh-CN');
     fireEvent.click(await screen.findByRole('button', { name: '继续' }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: '继续' })).not.toBeDisabled(),
@@ -205,7 +318,7 @@ describe('continuing a stage run', () => {
   });
   it('hides the action from a person who may not edit issues', async () => {
     mocks.editable = false;
-    await mount(<IssueStageRunLimit issue={issue} />);
+    await mount(<StageRunLimitHarness />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(mocks.request).not.toHaveBeenCalled();
   });

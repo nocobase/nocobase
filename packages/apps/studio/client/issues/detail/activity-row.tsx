@@ -29,6 +29,8 @@ import { PR_ACTIVITY_LABELS } from '../../git/lib.js';
 import type { Translate } from './labels.js';
 import { usePlanLinkTo } from './plan-links.js';
 import { StatusBadge } from './status-badge.js';
+import { StageRunActivityAction } from './stage-run-limit.js';
+import type { StageRunControl } from './use-stage-run-limit.js';
 
 /** The server's activity actions and the keys of their wording. */
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -198,10 +200,14 @@ export function ActivityRow({
   activity,
   statuses,
   t,
+  stageRunControl,
+  currentStatusKey,
 }: {
   readonly activity: Activity;
   readonly statuses: readonly StatusDefinition[];
   readonly t: Translate;
+  readonly stageRunControl?: StageRunControl;
+  readonly currentStatusKey?: string;
 }): ReactElement {
   // Studio's own namespace, for the actions Studio records itself; `t` is the projects plugin's.
   const { i18n, t: studioT } = useTranslation();
@@ -273,6 +279,15 @@ export function ActivityRow({
                 name: text(activity.details.name) ?? t('common.unknown'),
               })}
       </span>
+      {activity.action === 'stage_action_skipped' ? (
+        <StageRunActivityAction
+          reason={activity.details.reason}
+          token={text(activity.details.continueToken)}
+          statusKey={text(activity.details.status)}
+          currentStatusKey={currentStatusKey ?? ''}
+          control={stageRunControl}
+        />
+      ) : null}
       {prAction ? (
         <PullRequestActivity activity={activity} t={studioT} />
       ) : null}
