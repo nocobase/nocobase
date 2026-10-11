@@ -44,6 +44,7 @@ export interface RunRecord {
   readonly subjectKind: string;
   readonly subjectId: string;
   readonly threadScope: string;
+  readonly freshSession?: boolean;
   readonly actorUserId: string;
   /** Null only on a run older than the column that no backfill reached; read as the actor then. */
   readonly requestedByUserId?: string | null;
@@ -247,6 +248,7 @@ export function toRun(record: RunRecord): Run {
     attempt: Number(record.attempt),
     maxAttempts: Number(record.maxAttempts),
     retryOfRunId: record.retryOfRunId,
+    freshSession: Boolean(record.freshSession),
     parentRunId: record.parentRunId ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,

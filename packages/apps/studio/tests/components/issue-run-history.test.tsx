@@ -36,6 +36,16 @@ const mocks = vi.hoisted(() => ({
   retry: vi.fn(),
   detail: null as Record<string, unknown> | null,
 }));
+vi.mock('@nocobase/app-client', async (original) => ({
+  ...(await original<typeof import('@nocobase/app-client')>()),
+  useClientApplication: () => ({ config: { get: () => '/main' } }),
+}));
+vi.mock('@nocobase/app-plugin-authentication/client', async (original) => ({
+  ...(await original<
+    typeof import('@nocobase/app-plugin-authentication/client')
+  >()),
+  useAuthentication: () => ({ session: null }),
+}));
 vi.mock('@nocobase/app-plugin-agents/client/runs', () => ({
   useAgentsApi: () => ({ runs: mocks.runs }),
   useAgentNames: () => () => 'Long agent name that stays fully readable',
