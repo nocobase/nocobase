@@ -5,7 +5,7 @@ description: 'Choose an application database and connect existing business datab
 
 # Data sources
 
-Northstar stores customers, drivers, orders, and runtime data in its transport application. Its existing settlement system holds customer identifiers, settlement periods, and credit limits in another database. Data sources let the application choose its own database and use existing databases in the same business experience.
+An application can choose its own main database and connect existing databases as external data sources, using their data directly in its pages.
 
 ## Application database types
 
@@ -24,48 +24,36 @@ The application uses the corresponding database driver. The default template use
 
 Confirm supported server versions, deployment platforms, and connectivity when selecting a driver. This table describes configurable types, not drivers already installed. Changing a connection does not automatically migrate existing business data.
 
-## Main and external databases
+## External data sources
 
-| Purpose                   | Northstar data                                                  | Ownership                                                             |
-| ------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Main application database | Customers, drivers, transport orders, runtime data              | Transport application manages its schema and records                  |
-| External data source      | Settlement customer identifiers, periods, credit limits, status | Existing system retains ownership; transport accesses authorized data |
+When data already exists in another database, connect it as an external data source to read and display its records without entering them again. The main database continues to store the application’s own business data, while the existing system maintains its external data.
 
-An external connection does not copy the whole database into the main one, and an arbitrary HTTP API is not a database connection. Define tables, fields, connection permissions, and record matching.
+### Example: display settlement information from an external data source
 
-Do not run transport application schema or seed tasks on an external connection. Write access depends on database credentials and business rules; marking a connection external does not make it read-only.
+This example connects a separate settlement database and displays its billing cycle, credit limit, and settlement status on customer detail pages.
 
-## Example: settlement details on a customer page
-
-Account managers maintain transport customers while finance maintains settlement records. Match them by external customer identifier and add a Settlement details section to the customer page.
-
-Prepare the database address, dialect, account, authorized tables and fields, and identifier mapping. Store credentials in server runtime configuration, not prompts, client code, or screenshots.
+Prepare the database connection information and table structure, then ask the Agent:
 
 ```text
-Connect Northstar's existing customer settlement database as an external data source.
-Keep transport customers, drivers, and orders in the main database; do not copy the whole settlement database or alter its schema.
-Read customer identifier, settlement period, credit limit, and settlement status from the supplied schema, matching customers by external identifier.
-Add Settlement details to customer detail pages, showing the source and last read time. This integration is read-only.
-Allow only finance leads and authorized account managers to read credit limits, enforced on the server.
-Explain when settlement data is temporarily unavailable without preventing main-database customer or transport operations.
-List the required driver, connection settings, and field mapping. Read credentials from server runtime configuration.
+Connect Northstar’s existing settlement database as an external data source. Read its data without altering its tables.
+Match records by customer identifier and add Settlement details to customer pages, showing billing cycle, credit limit, settlement status, and data source.
+Keep reading customer contact information from the main database. Read settlement information directly from the external database without importing it into the main one.
+Read connection credentials from server runtime configuration.
 ```
 
-The customer page retains transport contact information and displays settlement records from the external system. Distinguish missing matching records from connection failures; a failed read does not mean a customer has no credit limit.
+### View the result
 
-## Define the integration boundaries
+Open Harbor Retail’s customer details. Contact information from the main database appears above Settlement details from the separate database, including a monthly billing cycle and a CNY 80,000 credit limit.
 
-- **Matching:** use stable external identifiers rather than names.
-- **Reads and writes:** this example is read-only; future write-back needs explicit fields, approval, and conflict rules.
-- **Permissions:** a successful database connection does not authorize every employee to access all records.
-- **Ownership:** define backup and recovery responsibilities separately for transport and settlement data.
+![Customer details displaying settlement information from an external data source](./assets/northstar-settlement-en.png)
 
-Connecting and synchronizing data are different requirements. Scheduled copying into the main database needs frequency, mapping, and failure handling; adding a connection alone does not create synchronization.
+**One page displays main-database customer information and external settlement data together, without duplicate entry.**
 
-### View settlement details
+:::tip Important notes
 
-This example uses a separate SQLite database to represent an existing settlement system, matching transport customers with stable identifiers. Harbor Retail keeps its main-database contact information while showing a monthly billing cycle and a CNY 80,000 credit limit from the settlement system. Data is read when the page opens, without importing it into the main database. This example provides a read endpoint only.
+- **Define record matching**: this example matches records by customer identifier. Specify the corresponding application and external fields instead of matching by name.
+- **Define read and write access**: this example is read-only. For write-back, specify the tables and fields that may be changed.
+- **Define who can access the data**: connecting a database does not authorize every user to view its records. Enforce access permissions on the server according to business requirements.
+- **A connection does not create synchronization**: this example reads external data when the page opens without copying it into the main database. Synchronization requires an explicit schedule and failure handling.
 
-![External settlement](./assets/northstar-settlement-en.png)
-
-**Customer details display main-database information and external settlement data together.**
+:::
