@@ -42,6 +42,36 @@ nb-studio agent archive <agent>
 
 **Request:** `POST /api/agents/{agentId}/archive` (`agentsArchiveAgent`)
 
+## agent availability
+
+Get tool availability for the caller
+
+```bash
+nb-studio agent availability <agentId> --tool <string>
+```
+
+| Argument  | Description |
+| --------- | ----------- |
+| `agentId` |             |
+
+| Flag         | Type      | Description |
+| ------------ | --------- | ----------- |
+| `--tool`     | claude \\ | codex \\    | opencode \\    | pi          | (required)     |
+| `--requires` | input \\  | steer \\    | attachments \\ | checkout \\ | directories \\ | secrets \\ | skills \\ | archives \\ | jobs.build \\ | mounts \\ | npm \\ | gitCredentials | (default []; repeatable) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People, and agents in a run; needs the action `agents.agents/view`.
+
+**Request:** `GET /api/agents/{agentId}/availability` (`agentsGetToolAvailability`)
+
+**Examples:**
+
+```bash
+nb-studio agent availability <agent> --tool codex
+nb-studio agent availability <agent> --tool codex --requires checkout
+```
+
 ## agent brief
 
 Preview an agent's full prompt

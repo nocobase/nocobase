@@ -95,8 +95,7 @@ describe('agents API document', () => {
 
   it('documents the requested tool on runs, run details and tool changes', () => {
     const run = document.components?.schemas?.AgentsRun as
-      | OpenAPIV3_1.SchemaObject
-      | undefined;
+      OpenAPIV3_1.SchemaObject | undefined;
     expect(run?.properties).toHaveProperty('requestedTool');
     expect(run?.required ?? []).not.toContain('requestedTool');
     const detail = (

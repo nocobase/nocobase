@@ -46,6 +46,34 @@ nb-studio run cancel <run>
 
 **Request:** `POST /api/agents/runs/{runId}/cancel` (`agentsCancelRun`)
 
+## run change-tool
+
+Change a queued run's tool
+
+```bash
+nb-studio run change-tool <runId> --tool <string>
+```
+
+| Argument | Description |
+| -------- | ----------- |
+| `runId`  |             |
+
+| Flag     | Type      | Description |
+| -------- | --------- | ----------- |
+| `--tool` | claude \\ | codex \\    | opencode \\ | pi  | (required) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `POST /api/agents/runs/{runId}/changeTool` (`agentsChangeRunTool`)
+
+**Examples:**
+
+```bash
+nb-studio run changeTool <run> --tool codex
+```
+
 ## run context
 
 Get the context of the token's run

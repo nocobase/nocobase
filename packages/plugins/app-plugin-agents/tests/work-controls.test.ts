@@ -796,9 +796,9 @@ describe('work controls', () => {
       features: ['checkout'],
       slots: 4,
     });
-    expect((await claim(h, able, 4)).map((payload) => payload.run.id).sort()).toEqual(
-      [target.runId!, unpinned.runId!].sort(),
-    );
+    expect(
+      (await claim(h, able, 4)).map((payload) => payload.run.id).sort(),
+    ).toEqual([target.runId!, unpinned.runId!].sort());
   });
 
   it('claims unrelated work however many subjects are paused', async () => {
