@@ -1462,6 +1462,81 @@ describe('development startup and waiting executor boundaries', () => {
     expect((await h.agents.runs.detail(runs[0]!.id)).inputs).toHaveLength(1);
   });
 
+  it('withdraws a non-developer executor’s queued stage work when a person moves the issue to In progress', async () => {
+    const designer = await h.createAgent({
+      name: 'Designer',
+      actions: ['pm.issues/view'],
+    });
+    await setRules({
+      analysis: [
+        {
+          type: 'runAgent',
+          config: { instruction: 'Design {{issue.identifier}}.' },
+        },
+      ],
+      in_progress: [
+        {
+          type: 'runAgent',
+          config: { instruction: 'Implement {{issue.identifier}}.' },
+        },
+      ],
+    });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Build it',
+      executor: { type: 'agent', id: designer },
+      start: false,
+    });
+    await moveTo(issue, 'analysis');
+    const [queued] = await runsOf(issue.id);
+    expect(queued).toMatchObject({ agentId: designer, status: 'queued' });
+    await moveTo(issue, 'in_progress');
+    await expect
+      .poll(async () => (await h.agents.runs.get(queued!.id)).status)
+      .toBe('cancelled');
+    expect(
+      (await h.agents.runs.detail(queued!.id)).inputs.map(
+        (input) => (input.payload as { trigger?: string } | null)?.trigger,
+      ),
+    ).toEqual(['stageEntered']);
+    expect(
+      (await runsOf(issue.id)).filter((run) => run.status !== 'cancelled'),
+    ).toEqual([]);
+    await expect
+      .poll(
+        () =>
+          planned.filter(
+            (notice) => notice.params?.reason === 'executorCannotImplement',
+          ).length,
+      )
+      .toBe(1);
+  });
+
+  it('tells a working run of a status change without queueing new work', async () => {
+    const coder = await h.createAgent();
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Build it',
+      executor: { type: 'agent', id: coder },
+    });
+    const payload = await h.claimOne();
+    expect((await runsOf(issue.id)).map((run) => run.id)).toEqual([
+      payload.run.id,
+    ]);
+    await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+      workDir: '/tmp/stage-work',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    await moveTo(issue, 'in_review');
+    const runs = await runsOf(issue.id);
+    expect(runs.map((run) => run.id)).toEqual([payload.run.id]);
+    expect(
+      (await h.agents.runs.detail(payload.run.id)).inputs.at(-1),
+    ).toMatchObject({
+      type: 'statusChange',
+      payload: { trigger: 'statusChange', to: 'in_review' },
+    });
+  });
+
   it('routes ordinary comments and old replies to the current stage, explicit mentions only to their target', async () => {
     const designer = await h.createAgent({ name: 'Designer' });
     const coder = await h.createAgent();

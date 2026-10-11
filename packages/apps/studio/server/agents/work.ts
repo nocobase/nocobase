@@ -82,6 +82,15 @@ interface Wake {
   };
 }
 
+/** The agents service's answer for a run that ended before it could be given input. */
+function isRunNotActive(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'RUN_NOT_ACTIVE'
+  );
+}
+
 /** A person's display name, or their id. */
 export async function userName(
   conn: DatabaseConnection,
@@ -407,6 +416,58 @@ export function createAgentWork(deps: {
   }
 
   /**
+   * A status change outside Backlog starts nothing: it is told to the executor's runs that are already working, so they
+   * can stop or adjust. A queued run is left as it is: the status rules give the new status its own input, and the
+   * stage-run reconciliation ends or flags what the old status queued. Adding a status input there would make a run
+   * holding only the old stage's work look mixed, keep it from being withdrawn, and start an executor the new status
+   * may not allow (one that cannot implement in In progress).
+   */
+  async function notifyWorking(
+    tx: ProjectsTx,
+    before: Issue,
+    after: Issue,
+    agentId: string,
+    who: { readonly userId: string; readonly ref: ActorRef },
+  ): Promise<RunAttempt[]> {
+    const working = (
+      await runs.openOn(tx.conn, subjectOf(after), agentId)
+    ).filter((run) => run.status !== 'queued');
+    if (working.length === 0 || tx.rehearsal) return [];
+    const attempts: RunAttempt[] = [];
+    for (const run of working) {
+      try {
+        await runs.addInput(
+          run.id,
+          {
+            type: 'statusChange',
+            actor: who.ref,
+            text: `${who.ref.name} moved ${after.identifier} from ${before.statusKey} to ${after.statusKey}.`,
+            payload: {
+              trigger: 'statusChange',
+              from: before.statusKey,
+              to: after.statusKey,
+            },
+          },
+          agentsTx(tx),
+        );
+      } catch (error) {
+        // The run ended since it was read: there is nobody left to tell.
+        if (!isRunNotActive(error)) throw error;
+        continue;
+      }
+      attempts.push({
+        kind: AGENT_KIND,
+        principalId: agentId,
+        subjectId: after.id,
+        triggerType: 'statusChange',
+        started: true,
+        runId: run.id,
+      });
+    }
+    return attempts;
+  }
+
+  /**
    * The work `agentId` was given on `issue` starts, as `who`'s, for `actor`: at once in a status of its own or one
    * that runs no agent (Todo), with the stage's instruction when it has one. In a status whose stage is another agent's
    * (Analysis, Proposal review, UI review, In review), the executor is only recorded: neither it nor that stage's agent
@@ -644,12 +705,11 @@ export function createAgentWork(deps: {
         !isDormant(after.statusKey, category);
       if (leftBacklog && !change.start)
         return [skipped(to, after, 'statusChange', 'deferred')];
-      const open = await runs.openOn(tx.conn, subjectOf(after), to);
-      if (open.length === 0 && !leftBacklog) return [];
+      if (!leftBacklog) return notifyWorking(tx, before, after, to, who);
       if (await alreadyEntered(tx, after, to)) return [];
-      if (leftBacklog && !(await mayStart(tx, after, to, change.actor)))
+      if (!(await mayStart(tx, after, to, change.actor)))
         return [skipped(to, after, 'statusChange', 'deferred')];
-      const stage = leftBacklog ? await stageOf(tx, after, to) : null;
+      const stage = await stageOf(tx, after, to);
       // A status the workflow hands to another agent: entering it started that agent's stage, and the executor waits.
       if (stage && stage.agentId !== to)
         return [skipped(to, after, 'statusChange', 'deferred')];

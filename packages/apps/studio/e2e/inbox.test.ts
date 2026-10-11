@@ -7,7 +7,11 @@ import {
   type Api,
 } from './support/fixtures.ts';
 import { projectWithDoneApproval } from './support/approval.ts';
-import { FakeRunner, type Issue } from './support/runner.ts';
+import {
+  approveWithDeveloper,
+  FakeRunner,
+  type Issue,
+} from './support/runner.ts';
 import type { Page } from '@playwright/test';
 
 /** Opens the waiting decisions view and the item whose title is given. */
@@ -162,6 +166,7 @@ test.describe('inbox decisions', () => {
         `流式导出（收件箱批准）${unique()}`,
         { ownerUserId: me.userId },
       );
+      const developer = await runner.developer();
       const card = await openDecision(page, issue.title);
       const proposal = card.getByRole('article', { name: '设计方案' }).or(card);
       await expect(
@@ -171,6 +176,7 @@ test.describe('inbox decisions', () => {
         .getByRole('button', { name: '批准进入开发' })
         .first()
         .click();
+      await approveWithDeveloper(page, developer);
 
       await expect
         .poll(

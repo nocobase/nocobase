@@ -1,5 +1,9 @@
 import { expect, open, test, unique } from './support/fixtures.ts';
-import { FakeRunner, type Issue } from './support/runner.ts';
+import {
+  approveWithDeveloper,
+  FakeRunner,
+  type Issue,
+} from './support/runner.ts';
 
 test.describe('issue page', () => {
   let me: { userId: string };
@@ -146,10 +150,13 @@ test.describe('issue page', () => {
         `流式导出（任务页批准）${unique()}`,
         { ownerUserId: me.userId },
       );
+      const developer = await runner.developer();
       await open(page, `/issues/${proposal.identifier}`);
       const card = page.getByRole('article', { name: '设计方案' });
       await expect(card.getByRole('heading', { name: '方案' })).toBeVisible();
       await card.getByRole('button', { name: '批准进入开发' }).click();
+      // The proposal's designer cannot implement it: approving asks who develops it.
+      await approveWithDeveloper(page, developer);
 
       await expect
         .poll(
@@ -157,6 +164,9 @@ test.describe('issue page', () => {
             (await api.get<Issue>(`projects/issues/${proposal.id}`)).statusKey,
         )
         .toBe('in_progress');
+      expect(
+        (await api.get<Issue>(`projects/issues/${proposal.id}`)).executor,
+      ).toEqual({ type: 'agent', id: developer.id });
       await expect(
         card.getByRole('button', { name: '批准进入开发' }),
       ).toBeHidden();

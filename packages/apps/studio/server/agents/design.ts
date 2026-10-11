@@ -139,10 +139,16 @@ export function createDesignService(deps: DesignDeps) {
       name: agent.name,
     }));
     if (issue.projectId) {
-      const project = await call(() =>
-        projects().projects.get(viewer, issue.projectId!),
-      );
-      for (const member of project.members) {
+      // Approving needs the issue, not the project: a viewer who may not see the project is offered the agents alone,
+      // and its members stay hidden from them.
+      const project = await projects()
+        .projects.get(viewer, issue.projectId)
+        .catch((error: unknown) => {
+          const kind = (error as { kind?: unknown } | null)?.kind;
+          if (kind === 'notFound' || kind === 'forbidden') return null;
+          throw translated(error);
+        });
+      for (const member of project?.members ?? []) {
         try {
           await deps.kinds.requireExecutor(
             conn,

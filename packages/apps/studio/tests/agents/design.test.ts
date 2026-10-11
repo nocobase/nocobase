@@ -130,4 +130,41 @@ describe('design approval executor eligibility', () => {
       await h.agents.runs.list({ subjectKind: 'issue', subjectId: issue.id }),
     ).toEqual([]);
   });
+
+  it('shows the proposal and offers agents to an owner who may not see the project', async () => {
+    const coder = await h.createAgent();
+    const project = await h.projects.projects.create(alice(), {
+      name: 'A project',
+      leadUserId: 'alice',
+    });
+    await h.projects.projects.addMember(alice(), project.id, { userId: 'bob' });
+    const issue = await proposal(undefined, project.id);
+    const viewer = alice();
+    const noProject = {
+      ...viewer,
+      permissions: {
+        ...viewer.permissions,
+        scopes: { ...viewer.permissions.scopes, 'pm.projects/view': 'none' },
+      },
+    } as typeof viewer;
+    await expect(
+      h.projects.projects.get(noProject, project.id),
+    ).rejects.toBeTruthy();
+    const state = await service().state(noProject, issue.id);
+    expect(state.canApprove).toBe(true);
+    expect(state.executorCandidates).toEqual([
+      { type: 'agent', id: coder, name: 'Coder' },
+    ]);
+    await expect(
+      service().approve(noProject, issue.id, {
+        executor: { type: 'user', id: 'bob' },
+      }),
+    ).rejects.toMatchObject({ details: { code: 'DESIGN_EXECUTOR_INVALID' } });
+    await service().approve(noProject, issue.id, {
+      executor: { type: 'agent', id: coder },
+    });
+    expect(
+      (await h.projects.issueQueries.detail(alice(), issue.id)).statusKey,
+    ).toBe('in_progress');
+  });
 });
