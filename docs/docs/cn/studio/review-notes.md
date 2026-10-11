@@ -120,4 +120,150 @@ Developer 的原 `toolPolicy` 为 null，使用产品的 `DEFAULT_TOOL_POLICY`�
 
 5. 使用仓库内 pnpm 缓存后，官方脚手架已实际执行，但模板下载两次返回 `TEMPLATE_DOWNLOAD_FAILED`。模板版本查询正常；生成器内部调用 `npm pack --silent`，底层错误未完整呈现。已补充仓库内 `npm_config_cache` 路径交 Runner 排查，这一处理的最终结果仍待确认。
 
-**当前结果：**代码位置、脚手架命令授权与 pnpm 缓存已通过实际运行验证；模板下载、应用生成及启动尚未完成。应用初始化成功后，再补实际结果和截图。
+**后续验证结果：**2026-10-10 的 Runner 运行 `391364430790660` 同时设置仓库内 `XDG_CACHE_HOME` 和 `npm_config_cache`，成功下载默认模板并安装依赖；随后执行 `pnpm nocobase config init --json`，默认 SQLite 配置成功。Developer 完成首页和 Orders、Customers、Drivers 导航，提交至本地 `agent-pm-1` 分支，提交 `035df70`。运行记录与任务报告显示应用启动成功，相关检查通过。初始化阻塞已在这次演示中解除；这些本地补充不代表默认流程已修复。
+
+**当前剩余阻塞：**Runner 无可用 GitHub 推送凭据，分支尚未推送；Studio 仅关联本地目录，未通过 Git 连接关联仓库，创建 PR 返回 `NO_REPOSITORY`。尚无应用 PR，后续处理推送凭据与 Studio 仓库连接。
+
+## GitHub App 注册被 localhost Hook URL 阻塞
+
+**状态：已复现，未解决。** 2026-10-10，在本地 Studio 的 Settings → Git 中选择 Add connection → GitHub → My account → Create on GitHub 后，GitHub 显示 `Invalid GitHub App configuration`，并报告 `Hook url is not supported because it isn't reachable over the public Internet (localhost)` 和 `Hook is invalid`。App 注册未完成，尚未进入安装及仓库授权。
+
+![GitHub App 注册失败](./assets/github-app-localhost-blocked-en.png)
+
+**源码事实：** 本轮隔离 Studio 的 `server/git/github.ts` 中，`buildAppManifest` 在 Webhook 关闭时仍生成 `hook_attributes: { url: input.webhookUrl, active: input.webhookActive }`，保留 localhost URL。界面提示关闭 Webhook 后使用轮询，但用户实际注册仍被 GitHub 的 URL 校验拒绝。不能将界面提示当作已验证的本地注册能力。
+
+**影响与区别：** 这是当前 GitHub App 注册阶段的阻塞，与前面后续 CI 无公网访问入口的限制分开记录。此前“隧道到 CI 阶段再开”的安排未覆盖这一实际注册问题。
+
+**后续处理：** 可评估修正注册配置，或提前配置公网地址后重新注册；本轮尚未修改 Studio 源码、开启隧道或完成授权，不宣称已解决。
+
+**2026-10-11 隧道处理进度：**用户选择临时隧道，已开启 Cloudflare Quick Tunnel，并将隔离 Studio 的 APP_PUBLIC_ORIGIN 更新为公网地址。入口返回200，真实 UI 生成清单的 Hook URL、redirect_url 和 callback_urls 均为公网 HTTPS，Webhook active=true。浏览器已跳转 GitHub 登录页，注册接受、安装授权与 Runner 推送仍未验证；本项不能标记已解决。
+
+**2026-10-11 注册回调认证失败：**用户最终填写 App 名称 `Demo Northstar Studio`，点击创建后收到401 `UNAUTHENTICATED / AUTHENTICATION_REQUIRED`。源码中的 `/oauth/git/manifest` 和 `/oauth/git/setup` 回调均要求 Studio 登录。当前从 localhost 发起、回调转向隧道域名，两个域名的登录 Cookie 不共享；这与报错一致，但尚未通过用户浏览器确认具体失败 URL。先在同一浏览器的新标签登录公网 Studio，再返回原回调页重试；不要立即重新注册同名 App。App 是否已注册、回调临时代码是否仍有效、安装授权是否完成均待核实。当前停在此处。
+
+### 本地创建项目时连接 GitHub：三种方案待讨论
+
+以下为当前可讨论的三种接入方案，不代表均已实测通过。GitHub App 的自动注册和手动注册使用同一种连接，区别在于注册配置过程。
+
+| 方案                              | 配置方式                                                                                  | Runner 的 Git 推送凭据                                                               | 当前问题与验证状态                                                                                                          |
+| --------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| GitHub App 自动注册＋临时隧道     | 先配置隧道及 Studio 公网地址，再通过 Create on GitHub 注册、安装 App，仅授权目标仓库      | 按当前源码，项目关联 App 连接下的仓库后，Studio 为运行提供短期仓库推送凭据           | localhost 自动注册已失败；通过隧道重新注册预计可避开该 URL 问题，但尚未实测，不保证后续全部走通                             |
+| GitHub App 手动注册，关闭 Webhook | 在 GitHub 手动注册 App、关闭 Webhook、安装并授权仓库，再在 Studio 的已有 App 入口填写配置 | 按当前源码，完成 App 连接及仓库关联后，与自动注册方式使用同一凭据下发机制            | 无需依赖 Webhook 公网投递，但需要手动配置权限及 App 凭据；本轮尚未实测完整流程                                              |
+| GitHub Token 连接                 | 在 GitHub 生成个人访问令牌，在 Studio 选择 Use a token instead 并填写                     | 当前源码不会通过这条连接自动下发 Runner 推送凭据，Runner 依赖其运行环境中的 Git 凭据 | Studio Token 连接尚未实测；本机已有 gh 登录，但此前 Runner 推送仍失败。宿主机凭据能否被隔离环境复用、如何配置，仍待开发确认 |
+
+**Token 判断的来源：** 本轮使用的隔离 Studio 提交为 `8ab0d2914e6187ceb649cf585f9b0b5944f131ef`，未为此更新代码。`server/git/connections.ts` 的 `pushCredential` 在连接类型不是 `app` 时直接返回 `null`；`server/git/run-git.ts` 只将非空凭据交给 Runner，文件注释也说明 Token 连接依赖运行机器已有凭据。这是当前本地版本中“Studio 不通过 Token 连接自动下发推送凭据”的源码结论，不等于 Runner 在所有环境都无法使用 Token，也不是已实测的 Token 连接失败。
+
+**已有运行结果的范围：** 此前失败发生在项目只关联本地目录、没有 GitHub 连接的情况下，不能作为 Token 连接已配置后仍失败的证据。本机 gh 已登录也不代表 Runner 隔离环境能够取得相同凭据；具体原因尚未查明。当前未确认 Runner 有独立 Git 凭据配置网页。
+
+**与开发讨论：** 本地 Studio 推荐采用哪一种方案？关闭 Webhook 的自动注册配置应如何修正？Token 连接不下发 Runner 凭据是否为预期设计，用户应在哪里配置？Runner 是否支持复用宿主机 gh 登录，隔离环境的正确配置方法是什么？讨论确认前保持当前阻塞，不切换方案或继续开发任务。
+
+<details>
+<summary>此前通过项目主管创建项目的演示（历史记录）</summary>
+
+# 创建第一个项目
+
+以一家运输公司的订单管理应用为例，先创建项目并安排应用初始化。后续再逐步添加订单管理、文件上传、通知等业务功能。
+
+:::danger 目前阻塞点
+
+1. **首次开发前缺少仓库准备提示。** 任务已派发，才发现没有关联代码位置，初始化停在 **Blocked**。
+2. **本地 Studio 缺少公网地址。** GitHub Webhook 和托管 Actions 无法访问本地 Studio，后续 CI 接入受阻。
+3. **Developer 缺少 NocoBase 3 初始化指引。** 未提供对应初始化 Skill 或明确步骤，Agent 自行使用了旧版命令。
+4. **Runner 默认拒绝下载执行脚手架。** 即使补充正确命令，初始化仍被权限策略阻止，需要额外配置。
+5. **本地 Studio 无法完成 GitHub App 注册。** 注册配置仍包含 localhost Hook URL，被 GitHub 拒绝，仓库授权无法继续。
+
+这些问题打断了从本地启动、应用初始化到 CI 接入的流程。详细配置与流程改进建议见[本轮待确认问题](./review-notes)。
+
+:::
+
+:::warning 本地补充后继续演示
+
+本轮在本地补建了演示 Git 仓库，并将仓库目录关联到项目的 Runner 代码位置，补充了原初始化任务所需的信息。接下来继续原任务 PM-1，由开发 Agent 初始化应用。GitHub CI 和 Webhook 尚未接入，公网隧道留到 CI 阶段配置。
+
+:::
+
+## 选择项目主管
+
+在首页的 Agent 选择器中，选择 **Project lead（项目主管）**。它通过 Runner 运行；接入本地 Codex 后，无需在线模型服务即可对话。
+
+![选择项目主管](./assets/select-project-lead-en.png)
+
+## 描述业务背景和第一步目标
+
+先说明业务由谁使用、处理什么，再提出当前要完成的任务。可以使用下面的提示词：
+
+```text
+我们是一家货物运输公司，需要搭建一个名为 Northstar Logistics 的运输订单管理应用。
+
+调度员登记客户、取货和送货地址、货物信息及要求的交付日期，为订单分配司机，并跟踪待处理、已分配、运输中、已送达的状态。司机更新配送进度，管理人员查看订单和运营情况。
+
+请在 Studio 中创建这个项目，并安排第一个任务：初始化一个 NocoBase 应用，提供首页以及订单、客户、司机的导航。将初始化任务分配给开发 Agent。应用准备好后，我们再逐步添加业务功能。
+```
+
+将提示词输入首页对话框，确认当前选择的是项目主管，再发送。
+
+![输入第一个项目的需求](./assets/first-project-prompt-input-en.png)
+
+## 查看项目主管的回复
+
+项目主管会检查现有项目、任务和可用 Agent，再生成操作计划。本例的计划包含两项操作：
+
+- 创建 **Northstar Logistics** 项目。
+- 创建应用初始化任务，分配给 **Developer**，提供首页以及 Orders、Customers、Drivers 导航。
+
+![项目主管的回复和创建计划](./assets/first-project-plan-reply-en.png)
+
+核对计划中的项目、任务和执行 Agent，点击 **Execute（执行）** 确认。计划中标记的 **Wakes Developer（唤起开发 Agent）** 表示执行后会触发开发 Agent 处理任务。
+
+确认弹窗会列出创建项目和启动 Agent 的影响。核对后，点击 **Execute** 执行。
+
+![确认执行创建计划](./assets/first-project-execute-confirm-en.png)
+
+执行后，在 **Projects（项目）** 列表中可以看到 Northstar Logistics。打开项目的 **Issues（任务）**，可以查看初始化任务 PM-1 及执行状态。
+
+![已创建的运输项目](./assets/first-project-created-en.png)
+
+</details>
+
+**2026-10-11 连接与仓库关联已完成：**CLI核实 Demo Northstar Studio 为App连接、安装完成、无缺失权限，真实页面显示Connected，授权仓库数量1；已通过连接读取目标私有仓库。随后在现有项目 Working directories 添加该授权仓库，保留本地目录为Primary及提交035df70，不新建初始化任务。此前401后用户已进入安装页并完成授权，完整恢复操作以用户浏览器为准。临时隧道已使本轮注册安装走通，默认localhost注册缺陷不标记产品已修复。Runner推送/PR和CI尚未验证。
+
+## 新初始化任务执行后，应用访问地址未持续可用
+
+**2026-10-11 实测：**新任务 PM-2（391445863202816）通过 New issue → Manual → Create → Start now? → Start 下发 Developer，Runner运行391445863202818于00:52:16 UTC开始、00:53:11 UTC完成。复用已有应用，无需脚手架，未推送或开PR。执行 pnpm dev 时限制端口14200和Node堆1536MiB，启动日志就绪。Agent 的独立curl检查被命令策略拒绝，但启动过程本身成功；Agent报告进程保留运行。
+
+**后续检查：**运行结束后，宿主机访问14200返回连接失败、没有监听端口。当前证据不足以断言停止的具体原因，不能把“进程保留运行”报告作为实际持续可用结论。任务仍in_progress。已记录任务表单、启动确认、运行中及执行报告四张截图；缺少应用结果截图。按用户“失败就停下讨论”要求，未自行启动宿主机服务、改变权限、继续业务任务或补推送PR。
+
+## 首次 CI：配置已生成，空仓库构建失败
+
+2026-10-11 实测：Studio 的 Write workflow 创建配置 PR #1，并保存托管凭据。Actions run 38100361767 成功安装 nb-studio、登录 Studio，并回传 building 和 failed 状态；随后 pnpm/action-setup@v4 报 No pnpm version is specified。远程仓库尚无应用 package.json，工作流也未显式指定 pnpm version。后续依赖安装、构建、部署均跳过。这里不能归因于隧道或 GitHub 登录失败，也不能宣称 Preview 已可用。按用户要求暂停，未合入配置 PR、未补版本重跑；需要讨论在提前配置 CI 的流程中，如何衔接初始化代码提交与首次构建。
+
+2026-10-11 后续确认：用户确认先配置 CI 时缺应用代码导致的首次失败属于此阶段预期，正文改为黄色说明。配置 PR #1 已合入；PM-3 由 Runner 成功推送初始化代码到 agent/PM-3，并通过 Studio 创建应用 PR #2。run 391447691919362 completed；新的 Actions run 38100771650 已通过 pnpm 配置和依赖安装，进入应用构建。尚未验证 Preview 部署成功。
+
+2026-10-11 Preview 部署阶段：Actions run 38100771650 的应用构建和 app ensure 成功；部署包上传请求 POST /main/api/builds/391447947771904/uploadArtifact 从 01:10:44 至 01:12:51 UTC 后返回 HTTP 524。当前 Preview waiting，无 URL、releaseId 或 deploymentId。仅确认上传请求失败，超时发生的具体环节尚未核实；未重试或调整隧道。
+
+## 本地补充上传并查看 Preview
+
+::: warning 本例的本地网络补充
+
+标准工作流由 GitHub Actions 自动构建并上传部署包。本轮公网上传遇到超时，因此改为让 CI 保存构建产物，再下载到本机，通过 localhost 调用 Studio 部署接口。此处上传由本机补充执行，不能把本次演示写成全程自动部署；Webhook 不负责传输应用包。
+
+:::
+
+在工作流中用 **actions/upload-artifact** 保存 `storage/exports/dist.tar.gz`。本例产物名为 `northstar-preview-package`。CI 成功后，用本机已登录的 GitHub CLI 下载：
+
+```bash
+gh run download <运行编号> --repo <账号>/<仓库> -n northstar-preview-package -D <本地下载目录>
+```
+
+通过已连接本地 Studio 的 CLI 上传并请求部署，无需另起 HTTP 服务：
+
+```bash
+nb-studio deploy --app northstar-logistics-pr-2 --repository <账号>/<仓库> --sha <构建对应的完整提交> --file <本地下载目录>/dist.tar.gz
+```
+
+`--sha` 必须与构建包对应的提交一致。本轮约 82 MB 的包已通过本地接口上传成功；Studio 先登记 release，再展开应用并初始化，Preview 从 **Deploying** 变为 **Ready**。
+
+![本地补充上传后的 Preview 就绪状态](./assets/preview-ready-local-upload-en.png)
+
+在任务的 **Code and deployments** 中展开 PR，打开 Preview 访问入口。本轮入口已返回 HTTP 200，应用预览地址为 `http://localhost:14100/northstar-logistics-pr-2/`。应用 PR 尚未合入。
+
+2026-10-11 结果补充：公网 IP HTTP 转发的 Actions run 38101994173 构建成功，但上传约 329 秒后返回 HTTP 408；具体超时环节未确认。改为保存 artifact 后，run 38102660812 成功；本机下载实际提交 4a0c6f7c352ed02cf63722cc636cb44587fd9903 对应的 82,076,714 字节部署包，通过本机 CLI 上传。Studio 构建记录 succeeded，Preview 已 Ready，本地访问返回 HTTP 200。此结果验证构建、包接收和部署，不代表云端自动上传问题已解决。
