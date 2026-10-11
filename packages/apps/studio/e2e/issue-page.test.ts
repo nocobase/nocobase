@@ -4,6 +4,8 @@ import {
   test,
   unique,
   horizontalOverflow,
+  apiAs,
+  signIn,
 } from './support/fixtures.ts';
 import {
   approveWithDeveloper,
@@ -65,8 +67,27 @@ test.describe('issue page', () => {
   test('execution history stays after details, wraps and preserves focus across container widths', async ({
     page,
     api,
+    browser,
+    context,
   }) => {
     test.setTimeout(120_000);
+    // Account preferences persist across browser contexts; keep locale/theme changes private to this test.
+    const suffix = unique();
+    const user = {
+      email: `issue-layout-${suffix}@example.com`,
+      password: 'issue-layout-e2e-password',
+    };
+    const admin = await apiAs(browser, 'admin');
+    try {
+      await admin.api.post('users', {
+        ...user,
+        name: `Issue layout ${suffix}`,
+        roleScopes: { studio: ['admin'] },
+      });
+    } finally {
+      await admin.close();
+    }
+    await signIn(context, user);
     const name = 'Layout Agent with a very long readable name '.repeat(3);
     const agent = await api.post<{ id: string }>('agents', {
       name,
