@@ -24,6 +24,12 @@ const zhCN: AppResource = {
     continue: '继续：{{title}} · {{name}}',
     newConversation: '新会话',
     noAgent: '请在面板选择 Agent',
+    noAgentHelp:
+      '没有可用 Agent。请在账号偏好中选择默认 Agent，或请管理员配置。',
+    unavailableHelp:
+      '当前会话不可用。请打开面板选择或新建会话；问题仍保留在这里。',
+    loadingHelp: '正在加载当前会话。请等待加载完成，或打开面板选择会话。',
+    pendingHelp: '上一条问题仍在发送或等待确认。请打开面板核对后再发送。',
     replying: 'Agent 正在回复',
     truncated: '页面上下文已按长度预算精简。',
     unknown: '发送结果待确认',

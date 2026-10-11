@@ -8,6 +8,7 @@ import type { ReactElement } from 'react';
 import { Button } from '../components/ui/button.js';
 import { LoadError } from '../extensions/nocobase-agent-chat/chat-ui.js';
 import { useStudioChat } from './chat-state.js';
+import type { ChatSubmission } from './chat-submissions.js';
 
 export function SubmissionStatus({
   conversationId,
@@ -19,7 +20,6 @@ export function SubmissionStatus({
   const { submissions, editors } = useStudioChat();
   const panel = useChatPanel();
   const { t } = useTranslation(STUDIO_NAMESPACE);
-  const history = useConversationList({});
   const records = submissions
     .snapshot()
     .filter(
@@ -121,66 +121,77 @@ export function SubmissionStatus({
             </>
           ) : null}
           {record.status === 'creationUnknown' ? (
-            <>
-              <p className='text-xs text-muted-foreground'>
-                {t('globalChat.creationHelp')}
-              </p>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => void history.refetch()}
-              >
-                {t('globalChat.refreshConversations')}
-              </Button>
-              {history.isError ? (
-                <LoadError
-                  title={t('globalChat.refreshConversations')}
-                  error={history.error}
-                  onRetry={() => void history.refetch()}
-                />
-              ) : null}
-              {history.data?.pages
-                .flatMap((page) => page.items)
-                .map((item) => (
-                  <Button
-                    key={item.id}
-                    variant='ghost'
-                    size='sm'
-                    className='max-w-full truncate'
-                    onClick={() => {
-                      if (!submissions.resumeCreation(record.clientId, item.id))
-                        return;
-                      const editor = editors.get(record.editorKey);
-                      const key = `${record.editorKey.split(':')[0]}:${item.id}`;
-                      if (editor && !editors.has(key)) editors.set(key, editor);
-                      panel.selectConversation(item.id);
-                    }}
-                  >
-                    {t('globalChat.chooseConversation', { title: item.title })}
-                  </Button>
-                ))}
-              {history.hasNextPage ? (
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => void history.fetchNextPage()}
-                >
-                  {t('globalChat.moreConversations')}
-                </Button>
-              ) : null}
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() =>
-                  submissions.resumeCreation(record.clientId, null)
-                }
-              >
-                {t('globalChat.createAnother')}
-              </Button>
-            </>
+            <CreationRecovery record={record} />
           ) : null}
         </div>
       ))}
     </div>
+  );
+}
+
+function CreationRecovery({
+  record,
+}: {
+  readonly record: ChatSubmission;
+}): ReactElement {
+  const { submissions, editors } = useStudioChat();
+  const panel = useChatPanel();
+  const { t } = useTranslation(STUDIO_NAMESPACE);
+  const history = useConversationList({});
+  return (
+    <>
+      <p className='text-xs text-muted-foreground'>
+        {t('globalChat.creationHelp')}
+      </p>
+      <Button
+        variant='outline'
+        size='sm'
+        onClick={() => void history.refetch()}
+      >
+        {t('globalChat.refreshConversations')}
+      </Button>
+      {history.isError ? (
+        <LoadError
+          title={t('globalChat.refreshConversations')}
+          error={history.error}
+          onRetry={() => void history.refetch()}
+        />
+      ) : null}
+      {history.data?.pages
+        .flatMap((page) => page.items)
+        .map((item) => (
+          <Button
+            key={item.id}
+            variant='ghost'
+            size='sm'
+            className='max-w-full truncate'
+            onClick={() => {
+              if (!submissions.resumeCreation(record.clientId, item.id)) return;
+              const editor = editors.get(record.editorKey);
+              const key = `${record.editorKey.split(':')[0]}:${item.id}`;
+              if (editor && !editors.has(key)) editors.set(key, editor);
+              panel.selectConversation(item.id);
+            }}
+          >
+            {t('globalChat.chooseConversation', { title: item.title })}
+          </Button>
+        ))}
+      {history.hasNextPage ? (
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={() => void history.fetchNextPage()}
+        >
+          {t('globalChat.moreConversations')}
+        </Button>
+      ) : null}
+      <Button
+        variant='outline'
+        size='sm'
+        onClick={() => submissions.resumeCreation(record.clientId, null)}
+      >
+        {t('globalChat.createAnother')}
+      </Button>
+    </>
   );
 }

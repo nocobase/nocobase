@@ -1,9 +1,10 @@
 /* eslint-disable react-refresh/only-export-components -- shared state and consumers */
 import {
   ChatPanelScope,
+  agentsQueryClient,
+  chatKeys,
   useChatApi,
   useChatPanel,
-  useConversation,
   type ChatPanelValue,
 } from '@nocobase/app-plugin-agents/client/chat';
 import {
@@ -48,9 +49,8 @@ export function StudioChatStateProvider({
 }): ReactElement {
   const panel = useChatPanel();
   const api = useChatApi();
-  const detail = useConversation(panel.conversationId);
+  const queryClient = agentsQueryClient();
   const panelRef = useRef(panel);
-  const detailRef = useRef(detail);
   const headerRef = useRef(false);
   const seedRef = useRef(0);
   const [temporaryKey, setTemporaryKey] = useState('new-0');
@@ -60,7 +60,6 @@ export function StudioChatStateProvider({
   const [transfer, setTransfer] = useState<StudioState['transfer']>(null);
   useLayoutEffect(() => {
     panelRef.current = panel;
-    detailRef.current = detail;
     temporaryRef.current = temporaryKey;
   });
   // The constructor stores this callback; it runs only on completed requests.
@@ -68,6 +67,8 @@ export function StudioChatStateProvider({
     // eslint-disable-next-line react-hooks/refs -- constructor stores callback without invoking it
     () =>
       new ChatSubmissions(api, (result, record, created) => {
+        queryClient.setQueryData(chatKeys.conversation(result.id), result);
+        void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
         if (created) {
           const editor = editors.get(record.editorKey);
           const destination = `${record.editorKey.split(':')[0]}:${result.id}`;
@@ -81,8 +82,6 @@ export function StudioChatStateProvider({
             panelRef.current.resetSource();
           }
         }
-        if (panelRef.current.conversationId === result.id)
-          void detailRef.current.refetch();
       }),
   );
   useSyncExternalStore(

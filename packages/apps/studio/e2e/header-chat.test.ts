@@ -8,6 +8,57 @@ import {
 } from './support/fixtures.ts';
 
 test.describe('global header Agent', () => {
+  test('explains unavailable header targets and preserves the question', async ({
+    page,
+    api,
+  }) => {
+    const original = await api.get<Record<string, unknown>>(
+      'users/me/preferences',
+    );
+    let preferences = { ...original };
+    await page.route('**/api/users/me/preferences{,/**}', (route) =>
+      route.fulfill({ json: { data: preferences } }),
+    );
+    await page.route('**/api/agents/chatAgents', (route) =>
+      route.fulfill({ json: { data: [] } }),
+    );
+    await page.setViewportSize({ width: 375, height: 812 });
+    mkdirSync('storage/ui-workflow/agent-header/screenshots', {
+      recursive: true,
+    });
+    for (const locale of ['zh-CN', 'en-US']) {
+      for (const mode of ['light', 'dark']) {
+        preferences = { ...original, locale, 'theme.mode': mode };
+        await open(page, '/issues');
+        const input = page
+          .getByTestId('header-chat-mobile')
+          .getByRole('textbox');
+        await input.fill('Keep this question');
+        await input.press('Enter');
+        const help =
+          locale === 'zh-CN' ? '没有可用 Agent' : 'No agent is available';
+        await expect(input).toHaveAccessibleDescription(new RegExp(help));
+        await expect(input).toHaveValue('Keep this question');
+        await expect(page.getByTestId('chat-panel')).toHaveCount(0);
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+        await page.screenshot({
+          path: `storage/ui-workflow/agent-header/screenshots/unavailable-${locale}-${mode}.png`,
+        });
+      }
+    }
+    await open(page, '/issues?chat=missing-conversation');
+    const panel = page.getByTestId('chat-panel');
+    await expect(panel).toBeVisible();
+    await panel.getByRole('button', { name: 'Close', exact: true }).click();
+    const input = page.getByTestId('header-chat-mobile').getByRole('textbox');
+    await input.fill('Question for inaccessible conversation');
+    await input.press('Enter');
+    await expect(input).toHaveAccessibleDescription(
+      /This conversation is unavailable/,
+    );
+    await expect(input).toHaveValue('Question for inaccessible conversation');
+    expect(await api.get('users/me/preferences')).toEqual(original);
+  });
   test('submits once on an issue page with its context and continues the panel session', async ({
     page,
   }) => {

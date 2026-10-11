@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import {
   useEffect,
+  useId,
   useRef,
   useSyncExternalStore,
   type ReactElement,
@@ -75,11 +76,25 @@ function HeaderEditor({
     : newConversationAgent(agents.data, null);
   const target = conversation.data?.agent ?? chosen;
   const name = target ? text.name(target) : t('globalChat.noAgent');
-  const description = conversation.data
+  const targetDescription = conversation.data
     ? t('globalChat.continue', { title: conversation.data.title, name })
     : t('globalChat.target', { name });
   const tooLong = [...content].length > MESSAGE_CONTENT_MAX;
   const blocked = state.submissions.blocked(panel.conversationId, editorKey);
+  const unavailable = panel.conversationId && !conversation.isSuccess;
+  const sendHelp = blocked
+    ? t('globalChat.pendingHelp')
+    : unavailable
+      ? t(
+          conversation.isError
+            ? 'globalChat.unavailableHelp'
+            : 'globalChat.loadingHelp',
+        )
+      : !target
+        ? t('globalChat.noAgentHelp')
+        : null;
+  const description = sendHelp ?? targetDescription;
+  const helpId = useId();
   const canSend = Boolean(
     content.trim() &&
     !tooLong &&
@@ -189,6 +204,7 @@ function HeaderEditor({
           rows={mobile ? 2 : 1}
           aria-label={t('globalChat.label')}
           aria-invalid={tooLong}
+          aria-describedby={sendHelp || tooLong ? helpId : undefined}
           placeholder={t('globalChat.placeholder')}
           title={description}
           className='h-full min-h-0 min-w-0 resize-none overflow-y-auto py-1 text-sm [field-sizing:fixed]'
@@ -245,12 +261,15 @@ function HeaderEditor({
           ) : null}
         </PopoverContent>
       </Popover>
-      {tooLong ? (
+      {tooLong || sendHelp ? (
         <p
+          id={helpId}
           role='alert'
-          className='absolute top-full z-10 rounded-md bg-popover p-2 text-xs text-destructive'
+          className='absolute top-full left-0 z-10 w-full rounded-md bg-popover p-2 text-xs text-popover-foreground shadow-md'
         >
-          {labels.tooLong.replace('{max}', String(MESSAGE_CONTENT_MAX))}
+          {tooLong
+            ? labels.tooLong.replace('{max}', String(MESSAGE_CONTENT_MAX))
+            : sendHelp}
         </p>
       ) : null}
       {conversation.data?.run ? (

@@ -24,6 +24,14 @@ const enUS = {
     continue: 'Continue: {{title}} · {{name}}',
     newConversation: 'New conversation',
     noAgent: 'Choose an agent in the panel',
+    noAgentHelp:
+      'No agent is available. Choose a default agent in account preferences, or ask an administrator to configure one.',
+    unavailableHelp:
+      'This conversation is unavailable. Open the panel to choose or start a conversation; your question is kept here.',
+    loadingHelp:
+      'Loading this conversation. Wait for it to load, or open the panel to choose a conversation.',
+    pendingHelp:
+      'The previous question is still sending or awaiting confirmation. Open the panel to check it before sending more.',
     replying: 'Agent is replying',
     truncated: 'Page context was shortened to stay within the budget.',
     unknown: 'Send result awaiting confirmation',

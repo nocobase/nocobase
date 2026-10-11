@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   act,
   cleanup,
@@ -12,6 +12,12 @@ import { I18nProvider } from '@nocobase/i18n/client';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import type { ChatPanelValue } from '@nocobase/app-plugin-agents/client/chat';
+import {
+  agentsQueryClient,
+  chatKeys,
+} from '@nocobase/app-plugin-agents/client/chat';
+import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
+import { SubmissionStatus } from '../../client/agents/submission-status.js';
 import { HeaderChat } from '../../client/agents/header-chat.js';
 import {
   StudioChatStateProvider,
@@ -26,6 +32,14 @@ const mock = vi.hoisted(() => ({
   create: vi.fn(),
   send: vi.fn(),
   open: vi.fn(),
+  history: vi.fn(() => ({ data: undefined })),
+  noAgent: false,
+  target: null as string | null,
+  conversation: {
+    data: undefined as ConversationDetail | undefined,
+    isSuccess: false,
+    isError: false,
+  },
 }));
 const PanelContext = createContext<ChatPanelValue | null>(null);
 vi.mock('@nocobase/app-plugin-agents/client/chat', async (importOriginal) => ({
@@ -45,13 +59,12 @@ vi.mock('@nocobase/app-plugin-agents/client/chat', async (importOriginal) => ({
     sendMessage: mock.send,
     messages: vi.fn(async () => ({ items: [], nextCursor: null })),
   }),
-  useConversation: () => ({
-    data: undefined,
-    isSuccess: false,
-    refetch: vi.fn(),
-  }),
+  useConversation: () => mock.conversation,
+  useConversationList: () => mock.history(),
   useChatAgents: () => ({
-    data: [{ id: 'a', name: 'Agent A', isSystemDefault: true }],
+    data: mock.noAgent
+      ? []
+      : [{ id: 'a', name: 'Agent A', isSystemDefault: true }],
     isSuccess: true,
   }),
   useAgentText: () => ({ name: (agent: { name: string }) => agent.name }),
@@ -81,6 +94,28 @@ function Controls({ dual = false }: { readonly dual?: boolean }): ReactNode {
         {panel.conversationId ?? state.temporaryKey}
       </output>
       <output data-testid='conflict'>{state.transfer?.text}</output>
+      <SubmissionStatus
+        conversationId={panel.conversationId}
+        editorKey={chatEditorKey(
+          'panel',
+          panel.conversationId,
+          state.temporaryKey,
+        )}
+      />
+      <button
+        onClick={() =>
+          state.submissions.submit({
+            content: 'Page question',
+            context: undefined,
+            attachments: [],
+            conversationId: 'page',
+            editorKey: 'page:page',
+            create: {},
+          })
+        }
+      >
+        Send from page
+      </button>
       <AgentComposer
         session={editor}
         onSend={() => true}
@@ -90,7 +125,7 @@ function Controls({ dual = false }: { readonly dual?: boolean }): ReactNode {
   );
 }
 function Fixture({ dual = false }: { readonly dual?: boolean }): ReactNode {
-  const [target, setTarget] = useState<string | null>(null);
+  const [target, setTarget] = useState<string | null>(mock.target);
   const [open, setOpen] = useState(false);
   const panel = {
     available: true,
@@ -133,12 +168,141 @@ async function setup(dual = false) {
     </I18nProvider>,
   );
 }
+beforeEach(() => {
+  mock.noAgent = false;
+  mock.target = null;
+  mock.conversation = { data: undefined, isSuccess: false, isError: false };
+});
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
+  agentsQueryClient().clear();
 });
 describe('header interaction', () => {
+  it('caches a newly created conversation before its send finishes', async () => {
+    const created = { id: 'created', title: 'New conversation' };
+    mock.create.mockResolvedValue(created);
+    mock.send.mockReturnValue(new Promise(() => undefined));
+    const cache = agentsQueryClient();
+    cache.setQueryData(chatKeys.list({}), { pages: [] });
+    await setup();
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Question for Agent' }),
+      { target: { value: 'Question' } },
+    );
+    fireEvent.keyDown(
+      screen.getByRole('textbox', { name: 'Question for Agent' }),
+      { key: 'Enter' },
+    );
+    await waitFor(() =>
+      expect(cache.getQueryData(chatKeys.conversation('created'))).toEqual(
+        created,
+      ),
+    );
+    expect(cache.getQueryState(chatKeys.list({}))?.isInvalidated).toBe(true);
+    expect(mock.send).toHaveBeenCalledOnce();
+    expect(mock.history).not.toHaveBeenCalled();
+  });
+  it('explains how to configure an unavailable agent and keeps the question', async () => {
+    mock.noAgent = true;
+    await setup();
+    const input = screen.getByRole('textbox', { name: 'Question for Agent' });
+    fireEvent.change(input, { target: { value: 'Keep this question' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Choose a default agent in account preferences',
+    );
+    expect(input).toHaveAccessibleDescription(/No agent is available/);
+    expect(input).toHaveValue('Keep this question');
+    expect(mock.create).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Send question' }),
+    ).toBeDisabled();
+  });
+  it.each([false, true])(
+    'explains a loading or inaccessible existing conversation (error: %s)',
+    async (isError) => {
+      mock.target = 'missing';
+      mock.conversation.isError = isError;
+      await setup();
+      const input = screen.getByRole('textbox', { name: 'Question for Agent' });
+      fireEvent.change(input, { target: { value: 'Keep question' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        isError
+          ? 'This conversation is unavailable'
+          : 'Loading this conversation',
+      );
+      expect(input.title).not.toContain('New conversation');
+      expect(input).toHaveValue('Keep question');
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Continue editing in panel' }),
+      );
+      expect(mock.open).toHaveBeenCalledOnce();
+      expect(mock.create).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByText('Close panel'));
+      expect(
+        screen.getByRole('textbox', { name: 'Question for Agent' }),
+      ).toHaveValue('Keep question');
+    },
+  );
+  it('explains pending sends and does not query recovery history for an unknown send', async () => {
+    mock.create.mockResolvedValue({ id: 'pending' });
+    mock.send.mockRejectedValue(new Error('Connection lost'));
+    await setup();
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Question for Agent' }),
+      { target: { value: 'First question' } },
+    );
+    fireEvent.keyDown(
+      screen.getByRole('textbox', { name: 'Question for Agent' }),
+      { key: 'Enter' },
+    );
+    await screen.findByText('Send result awaiting confirmation');
+    fireEvent.click(screen.getByText('Close panel'));
+    const input = screen.getByRole('textbox', { name: 'Question for Agent' });
+    fireEvent.change(input, { target: { value: 'Next question' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(input).toHaveAccessibleDescription(/Open the panel to check it/);
+    expect(input).toHaveValue('Next question');
+    expect(mock.send).toHaveBeenCalledOnce();
+    expect(mock.history).not.toHaveBeenCalled();
+  });
+  it('loads recovery history only after an unknown creation', async () => {
+    mock.create.mockRejectedValue(new Error('Connection lost'));
+    await setup();
+    expect(mock.history).not.toHaveBeenCalled();
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Question for Agent' }),
+      { target: { value: 'Question' } },
+    );
+    fireEvent.keyDown(
+      screen.getByRole('textbox', { name: 'Question for Agent' }),
+      { key: 'Enter' },
+    );
+    await screen.findByText('Conversation creation awaiting confirmation');
+    expect(mock.history).toHaveBeenCalled();
+    expect(mock.send).not.toHaveBeenCalled();
+  });
+  it('updates a page conversation and invalidates history while the panel targets another conversation', async () => {
+    mock.target = 'panel';
+    const detail = { id: 'page', title: 'Updated title', run: { id: 'run' } };
+    mock.send.mockResolvedValue({
+      conversation: detail,
+      message: { id: 'm', metadata: {} },
+    });
+    const cache = agentsQueryClient();
+    cache.setQueryData(chatKeys.list({}), { pages: [] });
+    await setup();
+    fireEvent.click(screen.getByText('Send from page'));
+    await waitFor(() =>
+      expect(cache.getQueryData(chatKeys.conversation('page'))).toEqual(detail),
+    );
+    expect(cache.getQueryState(chatKeys.list({}))?.isInvalidated).toBe(true);
+    expect(screen.getByTestId('target')).toHaveTextContent('panel');
+    expect(mock.create).not.toHaveBeenCalled();
+  });
   it('only the visible mobile editor consumes close focus restoration', async () => {
     vi.spyOn(HTMLElement.prototype, 'offsetParent', 'get').mockImplementation(
       function (this: HTMLElement) {
