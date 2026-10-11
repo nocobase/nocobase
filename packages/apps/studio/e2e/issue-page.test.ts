@@ -117,6 +117,70 @@ test.describe('issue page', () => {
     expect(listed.map((item) => item.filename)).toEqual(['需求说明.txt']);
   });
 
+  test('a comment wakeup and slow run results appear without reloading the issue', async ({
+    page,
+    api,
+  }, testInfo) => {
+    const runner = new FakeRunner(api, `live-issue-${unique()}`);
+    await api.patch(`projects/issues/${issue.id}`, {
+      executor: { type: 'agent', id: await runner.agent() },
+      start: false,
+    });
+    const runsPath = `agents/runs?subjectKind=issue&subjectId=${issue.id}`;
+    expect(await api.get<unknown[]>(runsPath)).toEqual([]);
+    await open(page, `/issues/${issue.identifier}`);
+    await expect(
+      page.getByRole('heading', { name: issue.title }),
+    ).toBeVisible();
+
+    // Real API responses take longer than either discovery interval, reproducing a slow connection.
+    await page.route('**/api/agents/runs?*', async (route) => {
+      const response = await route.fetch();
+      await new Promise((resolve) => setTimeout(resolve, 6000));
+      await route.fulfill({ response });
+    });
+    const navigations: string[] = [];
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) navigations.push(frame.url());
+    });
+    const editor = page.getByRole('textbox', { name: '评论' });
+    await editor.fill(`请开始处理 ${unique()}`);
+    await page.getByRole('button', { name: '评论', exact: true }).click();
+    const running = await runner.start(issue.identifier);
+    const timeline = page.getByRole('list', { name: '动态' });
+    await expect(timeline.getByText(/开始工作/u)).toBeVisible({
+      timeout: 20_000,
+    });
+    await page.screenshot({ path: testInfo.outputPath('run-started.png') });
+
+    const result = `已完成检查 ${unique()}`;
+    await api.post(
+      `projects/issues/${issue.id}/comments`,
+      { content: result },
+      { 'x-nocobase-run-token': running.token },
+    );
+    await api.patch(
+      `projects/issues/${issue.id}`,
+      { statusKey: 'in_progress' },
+      { 'x-nocobase-run-token': running.token },
+    );
+    await runner.complete(running.runId, result);
+    await expect(timeline.getByText(/已完成$/u)).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(
+      timeline.getByRole('article').filter({ hasText: result }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByRole('region', { name: '属性' })
+        .getByRole('combobox', { name: '状态' }),
+    ).toContainText('进行中');
+    expect(navigations).toEqual([]);
+    await page.screenshot({ path: testInfo.outputPath('run-completed.png') });
+    await page.unrouteAll({ behavior: 'wait' });
+  });
+
   test('changing the status from the properties panel is saved', async ({
     page,
     api,

@@ -1,6 +1,6 @@
 // The run's git (`workspace.git`) in the agent's environment, against a real git: commits name the person as author
-// and committer and carry the run's trailers through the `prepare-commit-msg` hook, and the repository's short-lived
-// credential answers git's credential requests for its URL only, without being written anywhere.
+// and committer and carry the run's trailers through the `prepare-commit-msg` hook. A repository's credential never
+// reaches the environment (git-credentials.test.ts has how the agent's git gets it).
 import { execFile } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -17,7 +17,7 @@ const root = tempDir('nocobase-runner-git-identity-');
 afterAll(() => removeDir(root));
 
 describe('the run’s git identity and credentials', () => {
-  it('commits as the person with the agent as co-author, and answers credentials for the repository only', async () => {
+  it('commits as the person with the agent as co-author, and keeps the run’s credentials out of the environment', async () => {
     const hooks = path.join(root, 'hooks');
     await installGitHooks(hooks);
     const repo = path.join(root, 'repo');
@@ -64,14 +64,7 @@ describe('the run’s git identity and credentials', () => {
     expect(
       (await git(['log', '-1', '--format=%B'])).match(/Co-authored-by/gu),
     ).toHaveLength(1);
-    const fill = (url: string) =>
-      git(['credential', 'fill'], repo, `url=${url}\n\n`).catch(() => '');
-    expect(await fill('https://github.com/acme/acme.git')).toContain(
-      'password=ghs_short_lived',
-    );
-    expect(await fill('https://github.com/acme/other.git')).not.toContain(
-      'ghs_short_lived',
-    );
+    expect(JSON.stringify(env)).not.toContain('ghs_short_lived');
     // Nothing the run started with was written into the repository's configuration.
     const config = await readFile(path.join(repo, '.git', 'config'), 'utf8');
     expect(config).not.toContain('ghs_short_lived');

@@ -15,7 +15,7 @@ import { useTranslate } from '../lib/use-example-record.js';
 import { dateTime, NAMESPACE } from '../lib/format.js';
 import { cn } from '../lib/utils.js';
 import { visitedStates } from '../lib/diagram.js';
-import { FlowDiagram } from './flow-diagram.js';
+import { ProcessDiagram } from './process-diagram.js';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
 
@@ -46,6 +46,11 @@ const STATE_TONES: Readonly<Record<string, Tone>> = {
   rejected: 'danger',
   paid: 'success',
   // The durable flows.
+  submitting: 'info',
+  awaitingIssue: 'warning',
+  querying: 'info',
+  issued: 'success',
+  issueFailed: 'danger',
   creatingCheckout: 'info',
   awaitingPayment: 'warning',
   paymentFailed: 'danger',
@@ -285,10 +290,14 @@ export function LifecyclePanel({
           {diagram ? (
             <div className='space-y-2'>
               <h3 className='font-medium'>{t('lifecycle.diagram')}</h3>
-              <FlowDiagram
-                diagram={detail.diagram}
+              <ProcessDiagram
+                description={detail.description}
                 current={state}
                 visited={visitedStates(detail)}
+                history={detail.history.transitions}
+                availableTransitions={detail.available
+                  .filter((item) => item.allowed)
+                  .map((item) => item.name)}
               />
               <DiagramSource diagram={detail.diagram} />
             </div>

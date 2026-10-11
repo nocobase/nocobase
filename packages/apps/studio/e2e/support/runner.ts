@@ -127,6 +127,11 @@ export class FakeRunner {
 
   /** Claims the run the issue's agent was woken for and returns its token; the run is then held, as if working. */
   async claim(identifier: string): Promise<string> {
+    const claimed = await this.claimRun(identifier);
+    return claimed.cli!.credential!.content!.token!;
+  }
+
+  private async claimRun(identifier: string): Promise<ClaimedRun> {
     const runnerKey = await this.register();
     for (let attempt = 0; attempt < 40; attempt += 1) {
       const claimed = await this.runner<{ runs?: ClaimedRun[] }>(
@@ -139,7 +144,7 @@ export class FakeRunner {
         (item) => item.subject?.key === identifier,
       );
       const token = run?.cli?.credential?.content?.token;
-      if (token) return token;
+      if (run && token) return run;
       await new Promise((resolve) => {
         setTimeout(resolve, 250);
       });
@@ -178,6 +183,38 @@ export class FakeRunner {
       workflowId: workflow.id,
     });
     return project.id;
+  }
+
+  /** Starts real server-side work without launching a coding tool. */
+  async start(identifier: string): Promise<{ runId: string; token: string }> {
+    const claimed = await this.claimRun(identifier);
+    await this.runner(
+      'POST',
+      `agents/runners/runs/${claimed.run.id}/start`,
+      { workDir: '.', adapter: { kind: 'claude' }, acceptsInput: true },
+      { [HEADERS.runnerKey]: await this.register() },
+    );
+    return {
+      runId: claimed.run.id,
+      token: claimed.cli!.credential!.content!.token!,
+    };
+  }
+
+  /** Handles all delivered input and ends the run through the runner protocol. */
+  async complete(runId: string, summary: string): Promise<void> {
+    const headers = { [HEADERS.runnerKey]: await this.register() };
+    const status = await this.runner<{ inputs: { id: string }[] }>(
+      'GET',
+      `agents/runners/runs/${runId}/status`,
+      undefined,
+      headers,
+    );
+    await this.runner(
+      'POST',
+      `agents/runners/runs/${runId}/complete`,
+      { summary, handledInputIds: status.inputs.map((input) => input.id) },
+      headers,
+    );
   }
 
   /** Creates an isolated Analysis issue and submits its design proposal through the claimed run. */

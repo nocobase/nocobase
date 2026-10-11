@@ -101,8 +101,12 @@ export class Api {
     return this.send<T>('POST', path, body, headers);
   }
 
-  patch<T = unknown>(path: string, body: unknown) {
-    return this.send<T>('PATCH', path, body);
+  patch<T = unknown>(
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>,
+  ) {
+    return this.send<T>('PATCH', path, body, headers);
   }
 
   put<T = unknown>(path: string, body: unknown) {
