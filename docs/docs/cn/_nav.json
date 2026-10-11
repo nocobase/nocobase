@@ -12,6 +12,10 @@
     "link": "/capabilities/"
   },
   {
+    "text": "能力2",
+    "link": "/capabilities2/"
+  },
+  {
     "text": "首页",
     "link": "https://www.nocobase.com/cn/"
   }

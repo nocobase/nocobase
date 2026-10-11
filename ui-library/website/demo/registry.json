@@ -631,6 +631,38 @@
           "target": "client/extensions/nocobase-approval-ui-demo/fixtures.ts"
         }
       ]
+    },
+    {
+      "name": "flow-diagram-demo",
+      "type": "registry:example",
+      "title": "Flow Diagram Demo",
+      "description": "Usage example of @nocobase/flow-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
+      "categories": ["diagrams"],
+      "registryDependencies": ["@nocobase/flow-diagram"],
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/flow-diagram.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-flow-diagram-demo/flow-diagram.tsx"
+        }
+      ]
+    },
+    {
+      "name": "lifecycle-diagram-demo",
+      "type": "registry:example",
+      "title": "Lifecycle Diagram Demo",
+      "description": "Usage example of @nocobase/lifecycle-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
+      "categories": ["diagrams"],
+      "registryDependencies": ["@nocobase/lifecycle-diagram"],
+      "dependencies": ["@nocobase/lifecycle@^0.1.0-beta.0"],
+      "files": [
+        {
+          "path": "lifecycle/lifecycle-diagram.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-lifecycle-diagram-demo/lifecycle-diagram.tsx"
+        }
+      ]
     }
   ]
 }

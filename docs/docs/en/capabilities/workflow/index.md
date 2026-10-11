@@ -30,6 +30,10 @@ Some easily overlooked cases also have a definite outcome: the same notification
 - **Reliable external work**: the right people are notified when a step is done; a failed call to an external system is retried, and the same thing is never done twice.
 - **No overwriting**: when two people handle the same record at once, only the first submission takes effect and the second is asked to refresh.
 
+This is the actual diagram under **Workflow → Subscriptions** in the example application. The subscription has completed its first charge and is currently active. The diagram also shows renewal, retries after a failed charge, updating the card and cancellation; click a state or transition to inspect its details. Applications choose their own page layout; this is one implementation.
+
+![Subscription diagram showing the active state, renewal, payment retries and cancellation](https://static-docs.nocobase.com/subscription-process-be5eae807a8463e7.png)
+
 ## Work that fits a process
 
 | Kind             | Examples                                                                            |
@@ -40,7 +44,7 @@ Some easily overlooked cases also have a definite outcome: the same notification
 | Service          | Support tickets, complaints, after-sales, equipment repair                          |
 | Approval         | Simple submit, approve and reject                                                   |
 
-Simple approvals can be built directly as a process. Multi-level approval, countersigning, any-one-of approval, adding approvers, delegation, carbon copies, and steps handled jointly by several people are easier to build with the [approval plugin](../approval.md).
+Simple approvals can be built directly as a process. Multi-level approval, countersigning, any-one-of approval, adding approvers, delegation, carbon copies, and steps handled jointly by several people are easier to build with the [approval plugin](../approval/index.md).
 
 You do not need a process when a data change only sends a notification, or when something finishes in a single action with no steps in between.
 

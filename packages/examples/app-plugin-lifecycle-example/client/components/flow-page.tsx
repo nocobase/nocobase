@@ -24,7 +24,7 @@ import { useLoader } from '../lib/use-loader.js';
 import { useNow } from '../lib/use-now.js';
 import { cn } from '../lib/utils.js';
 import { ExampleGuide } from './example-guide.js';
-import { FlowDiagram } from './flow-diagram.js';
+import { ProcessDiagram } from './process-diagram.js';
 import { PageContainer } from './page-container.js';
 import { PageHeader } from './page-header.js';
 import {
@@ -246,7 +246,7 @@ export function FlowPage(props: FlowPageProps): ReactElement {
               </Card>
               <ProcessOverview
                 flow={flow}
-                diagram={lifecycle.description?.diagram}
+                description={lifecycle.description?.description}
               />
             </>
           )}
@@ -383,10 +383,14 @@ function ProcessCard({
         <CardDescription>{t('flows.legend')}</CardDescription>
       </CardHeader>
       <CardContent className='space-y-2'>
-        <FlowDiagram
-          diagram={detail.diagram}
+        <ProcessDiagram
+          description={detail.description}
           current={text(detail.record.status)}
           visited={visitedStates(detail)}
+          history={detail.history.transitions}
+          availableTransitions={detail.available
+            .filter((item) => item.allowed)
+            .map((item) => item.name)}
         />
         <DiagramSource diagram={detail.diagram} />
       </CardContent>
@@ -397,10 +401,10 @@ function ProcessCard({
 /** Before a record is picked: the whole process, and what it shows. */
 function ProcessOverview({
   flow,
-  diagram,
+  description,
 }: {
   readonly flow: DurableFlow;
-  readonly diagram: string | undefined;
+  readonly description: RecordDetail['description'] | undefined;
 }): ReactElement {
   const { t } = useTranslation(NAMESPACE);
   return (
@@ -410,7 +414,7 @@ function ProcessOverview({
         <CardDescription>{t(`${flow}.shows`)}</CardDescription>
       </CardHeader>
       <CardContent>
-        {diagram ? <FlowDiagram diagram={diagram} /> : null}
+        {description ? <ProcessDiagram description={description} /> : null}
       </CardContent>
     </Card>
   );

@@ -200,13 +200,16 @@ describe('application shell', () => {
     renderApplication('/', true);
 
     await screen.findByRole('navigation', { name: 'Application navigation' });
-    const sidebar = document.querySelector('[data-slot=sidebar]');
+    // Wait for the shell's asynchronous parts to render, so the sidebar read below is the one that stays mounted.
+    await screen.findByRole('button', { name: 'Open account menu' });
+    const sidebar = (): Element | null =>
+      document.querySelector('[data-slot=sidebar]');
 
     await user.click(
-      screen.getByRole('button', { name: 'Collapse navigation' }),
+      await screen.findByRole('button', { name: 'Collapse navigation' }),
     );
     await waitFor(() =>
-      expect(sidebar).toHaveAttribute('data-collapsible', 'icon'),
+      expect(sidebar()).toHaveAttribute('data-collapsible', 'icon'),
     );
     expect(
       screen.getByRole('button', { name: 'Expand navigation' }),
@@ -214,7 +217,7 @@ describe('application shell', () => {
 
     await user.click(screen.getByRole('button', { name: 'Expand navigation' }));
     await waitFor(() =>
-      expect(sidebar).toHaveAttribute('data-state', 'expanded'),
+      expect(sidebar()).toHaveAttribute('data-state', 'expanded'),
     );
   });
 

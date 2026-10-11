@@ -123,14 +123,14 @@ The conversations the caller started, newest message first, a page at a time; a 
 nb-studio conversation list
 ```
 
-| Flag           | Type    | Description  |
-| -------------- | ------- | ------------ |
-| `--query`      | string  |              |
-| `--archived`   | true \\ | false \\     | all |     |
-| `--agent`      | string  |              |
-| `--source`     | string  |              |
-| `--limit`      | integer | (default 30) |
-| `--page-token` | string  |              |
+| Flag           | Type                 | Description  |
+| -------------- | -------------------- | ------------ |
+| `--query`      | string               |              |
+| `--archived`   | true \| false \| all |              |
+| `--agent`      | string               |              |
+| `--source`     | string               |              |
+| `--limit`      | integer              | (default 30) |
+| `--page-token` | string               |              |
 
 **Output:** A list (table columns: `id`, `title`, `agent.name`, `lastMessageAt`, `read`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

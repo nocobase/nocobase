@@ -11,6 +11,8 @@ import {
   type ToolInfo,
   type ToolLoad,
   type ToolSlots,
+  type WorkspaceDecision,
+  type WorkspaceCleanupResult,
 } from '@nocobase/agent-protocol';
 
 import { entryTools, type AgentModelEntry } from './agents.js';
@@ -106,6 +108,7 @@ export interface Runner {
 
 /** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
 export interface RunnerWorkspaceUsage {
+  readonly intervalMs?: number;
   /** The disk holding the runner's working directories; null when it did not say. */
   readonly disk: RunnerWorkspaceDisk | null;
   /** How many it keeps for this application. */
@@ -128,8 +131,10 @@ export interface RunnerWorkspaceDisk {
 
 /** One working directory a runner keeps for this application. */
 export interface RunnerWorkspace {
+  readonly decision?: WorkspaceDecision;
+  readonly cleanup?: WorkspaceCleanupResult;
   /** The last run that worked in it. */
-  readonly runId: string;
+  readonly runId?: string;
   /** Where it is on the runner. */
   readonly workDir: string;
   /** It holds changes not committed, or commits the remote task branch lacks. */
@@ -179,6 +184,7 @@ export interface RunnerRecentRun {
  * is null and the tools carry no `path` for everyone else.
  */
 export interface RunnerSummary extends Omit<Runner, 'hostname'> {
+  readonly canSeeMachine?: boolean;
   /** Null when the viewer may not manage it. */
   readonly hostname: string | null;
   /** Runs it holds now. */

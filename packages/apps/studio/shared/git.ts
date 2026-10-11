@@ -184,6 +184,8 @@ export interface MergePullRequestRequest {
 
 /** A pull request as an issue shows it: with who linked it and what the viewer may do. */
 export interface IssuePullRequest extends PullRequest {
+  /** Opening succeeds even if its preview label needs a later retry. */
+  readonly previewLabelSyncFailed?: boolean;
   readonly linkedBy: {
     readonly type: PullRequestLinkedBy;
     readonly id: string | null;

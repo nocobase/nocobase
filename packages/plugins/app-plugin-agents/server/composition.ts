@@ -122,6 +122,7 @@ import {
   createBriefSectionRegistry,
   createClaimEligibility,
   createClaimService,
+  createGitCredentialService,
   createRepoAccessRegistry,
   createRunMountRegistry,
   createRunnerReports,
@@ -139,6 +140,7 @@ import {
   type BriefPreviewer,
   type ClaimEligibility,
   type ClaimService,
+  type GitCredentialService,
   type RunnerReports,
   type RepoAccessRegistry,
   type RunMountRegistry,
@@ -241,6 +243,8 @@ export interface Agents {
   readonly runs: RunService;
   readonly claims: ClaimService;
   readonly reports: RunnerReports;
+  /** Repository credentials a runner asks for while it holds a run (`RepoAccessProvider.issue`). */
+  readonly gitCredentials: GitCredentialService;
   /** Marks silent runners offline, then takes back and ends the runs and jobs nobody will finish. */
   readonly sweeper: RunnerSweeper;
   /** Variables of agents, working directories and the scopes the application registers. */
@@ -501,7 +505,22 @@ export function createAgents(deps: AgentsDeps): Agents {
     defaultModel: async (conn) =>
       (await modelServices.defaults(conn)).effectiveChat,
   });
-  const reports = createRunnerReports({ ...transitions, tx, ids, secrets });
+  const reports = createRunnerReports({
+    ...transitions,
+    tx,
+    ids,
+    secrets,
+    cliName: cli.name,
+    appName: app.name,
+  });
+  const gitCredentials = createGitCredentialService({
+    tx,
+    clock,
+    reports,
+    repoAccess,
+    secrets,
+    onError,
+  });
   const sweeper = createRunnerSweeper({
     clock,
     runners,
@@ -633,6 +652,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     claims,
     reports,
+    gitCredentials,
     sweeper,
     variables,
     skills,

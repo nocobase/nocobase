@@ -76,14 +76,14 @@ Grouped by agent, person, project, issue, day, model, tool or type. Needs the re
 nb-studio report usage
 ```
 
-| Flag         | Type     | Description                                                      |
-| ------------ | -------- | ---------------------------------------------------------------- |
-| `--from`     | string   | The first day, YYYY-MM-DD (UTC); 30 days before `to` by default. |
-| `--to`       | string   | The last day, YYYY-MM-DD (UTC); today by default.                |
-| `--project`  | string   | Only this project's issues and runs (its id).                    |
-| `--group-by` | agent \\ | person \\                                                        | project \\ | issue \\ | day \\ | model \\ | tool \\ | type | (default "agent") |
-| `--agent`    | string   | Only this agent's runs (its id).                                 |
-| `--user`     | string   | Only the runs this person started (their user id).               |
+| Flag         | Type                                                                | Description                                                      |
+| ------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `--from`     | string                                                              | The first day, YYYY-MM-DD (UTC); 30 days before `to` by default. |
+| `--to`       | string                                                              | The last day, YYYY-MM-DD (UTC); today by default.                |
+| `--project`  | string                                                              | Only this project's issues and runs (its id).                    |
+| `--group-by` | agent \| person \| project \| issue \| day \| model \| tool \| type | (default "agent")                                                |
+| `--agent`    | string                                                              | Only this agent's runs (its id).                                 |
+| `--user`     | string                                                              | Only the runs this person started (their user id).               |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
