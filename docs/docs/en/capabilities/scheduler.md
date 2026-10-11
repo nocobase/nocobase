@@ -12,35 +12,29 @@ Tell your Agent when to run, which data to process, and what result to produce. 
 
 ## Before you start
 
-This example adds approval reminders to an existing order application. Prepare pending orders and reviewer accounts, and specify who reviews each order.
+This example adds approval reminders to an existing order application. Prepare pending orders and coordinator accounts, and specify who reviews each order.
 
 Tell the Agent the execution time and timezone, which orders to include, who receives the notification, and where it opens when clicked.
 
-## Example: remind reviewers about pending orders
+## Example: remind coordinators about pending orders
 
-Reviewers need to process pending orders promptly. On weekdays, the application checks pending orders, groups them by reviewer, and sends an in-app reminder.
+Reviewers need to process pending orders promptly. On weekdays, the application checks pending orders, groups them by coordinator, and sends an in-app reminder.
 
 ```text
-Add a Pending order reminder to the existing order application.
+Add a Awaiting dispatch reminder to the existing order application.
 
-At 09:00 Beijing time every weekday, find orders awaiting approval, group them by reviewer, and send each reviewer one in-app notification.
+At 09:00 Beijing time every weekday, find orders awaiting approval, group them by coordinator, and send each coordinator one in-app notification.
 Include the pending order count and link to the pending order list. Send nothing when there are no pending orders.
 Administrators can view the schedule and execution records in Settings, and pause or resume reminders.
 ```
 
 ### Viewing the result
 
-1. As an administrator, open **Settings → Automation → Scheduled tasks**. **Pending order reminder** shows the schedule, timezone, next trigger, and current status.
-
-![View the pending order reminder in Settings](../../cn/capabilities/assets/scheduler-task-list.png)
+1. As an administrator, open **Automation**. **Awaiting dispatch reminder** shows the schedule, timezone, next trigger, and current status.
 
 2. Click the task name to open its details. **Execution records** shows each execution's time, duration, and status. **Succeeded** in this example means the reminder task ran successfully.
 
-![View a successful execution in the task details](../../cn/capabilities/assets/scheduler-execution.png)
-
-3. As a reviewer, open the notification center to see the pending order count. Click the notification to open the pending order list and process approvals.
-
-![A reviewer receives the pending order reminder](../../cn/capabilities/assets/scheduler-reminder.png)
+3. As a coordinator, open the notification center to see the pending order count. Click the notification to open the pending order list and process approvals.
 
 The schedule determines when to run. Finding orders, counting them, and sending the notification are business operations integrated by the Agent. See [Notifications](./notification.md) for notification capabilities.
 
@@ -52,10 +46,12 @@ Administrators can use the switch in the task list or details. Pausing prevents 
 
 ### Changing the time or business rules
 
+Adjust an existing scheduled task to a new work schedule while retaining its records, recipients and business content.
+
 Ask the Agent to update the existing task. For example:
 
 ```text
-Change Pending order reminder to run at 10:00 Beijing time every weekday.
+Change Awaiting dispatch reminder to run at 10:00 Beijing time every weekday.
 Keep the existing order selection, recipients, and notification content.
 ```
 
@@ -65,6 +61,8 @@ After the change, check the updated schedule and next trigger in the details. Th
 
 ### Generating reports
 
+Generate reports on a fixed schedule and notify responsible users instead of relying on manual reminders.
+
 Add a schedule and result notification to an existing reporting capability:
 
 ```text
@@ -73,6 +71,8 @@ Include sales revenue, order count, and regional totals. Administrators can view
 ```
 
 ### Synchronizing data
+
+Periodically synchronize selected fields maintained in an external system to keep the application current without duplicate maintenance.
 
 For an existing integration, specify the interval and data to process:
 
@@ -89,7 +89,7 @@ Check its timezone in the details. Specify Beijing time or your business timezon
 
 ### Where can I see the business result?
 
-View execution records in the task details and results in the relevant business page. This example uses the reviewer's inbox and pending order list; reporting tasks produce reports, and synchronization tasks update business data.
+View execution records in the task details and results in the relevant business page. This example uses the coordinator's inbox and pending order list; reporting tasks produce reports, and synchronization tasks update business data.
 
 ### Does the task run while the application is stopped?
 
@@ -121,3 +121,17 @@ node dist/cli/index.js scheduler sync --finalize --json
 ```
 
 This deactivates tasks removed from code and preserves their history. A single process can use the built-in memory backend. Multi-instance deployments use a shared Redis backend, selected through `jobs.default`. Use `scheduler.jobs` for a separate scheduling configuration and keep its `attempts` at `1`.
+
+## Northstar result
+
+The demo administrator receives a digest of orders awaiting dispatch. The list shows the weekday 09:00 Asia/Shanghai schedule and a real succeeded execution; the message links back to the order list. Notification delivery remains independently observable.
+
+![Real schedule and execution](./assets/northstar-scheduler-en.png)
+
+**The task page retains its schedule and this successful run.**
+
+![Real dispatch reminder](./assets/northstar-scheduler-notice-en.png)
+
+**The awaiting-dispatch digest reached the demonstration account’s message center.**
+
+This example first ran once with a short interval, then restored the weekday 09:00 schedule. The execution shown belongs to that demonstration; the next run follows the restored configuration.

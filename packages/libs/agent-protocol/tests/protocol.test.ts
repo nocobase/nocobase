@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ClaimRequestSchema,
+  CancelAckRequestSchema,
   ClaimResponseSchema,
   UploadTicketSchema,
   CompleteRequestSchema,
@@ -36,6 +37,16 @@ import {
   RunGitSchema,
   RunnerFeatureSchema,
 } from '../src/index.js';
+
+it('accepts an optional confirmed session on cancellation and remains compatible with old runners', () => {
+  expect(CancelAckRequestSchema.parse({})).toEqual({});
+  expect(CancelAckRequestSchema.parse({ sessionId: 'replacement' })).toEqual({
+    sessionId: 'replacement',
+  });
+  expect(
+    CancelAckRequestSchema.safeParse({ sessionId: 'x'.repeat(201) }).success,
+  ).toBe(false);
+});
 
 const payload: RunPayload = {
   run: {
@@ -414,6 +425,11 @@ describe('agent protocol', () => {
     expect(isRetryable('runnerOffline')).toBe(true);
     expect(isRetryable('toolAuth')).toBe(false);
     expect(isRetryable('prepareNetwork')).toBe(true);
+    expect(isRetryable('workspaceBusy')).toBe(true);
+    expect(acceptedFailure('workspaceBusy', ['workspaceBusy'])).toBe(
+      'workspaceBusy',
+    );
+    expect(acceptedFailure('workspaceBusy', undefined)).toBe('checkoutFailed');
     expect(isRetryable('checkoutFailed')).toBe(false);
     expect(ERROR_STATUS.RUN_INPUT_PENDING).toBe(400);
     expect(ERROR_API_STATUS.RUN_INPUT_PENDING).toBe('FAILED_PRECONDITION');

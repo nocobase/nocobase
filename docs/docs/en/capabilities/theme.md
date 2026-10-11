@@ -21,8 +21,6 @@ Two themes are included:
 
 In the **Appearance** panel, choose a theme and a color mode: **Light**, **Dark**, or **System**. Theme and color mode are independent choices. Both built-in themes support light and dark modes.
 
-![Choose a theme and color mode in Appearance](https://static-docs.nocobase.com/20260910083736.png)
-
 Your theme choice is saved in the current browser and restored after a refresh. It does not sync to other devices with your account. Choosing a theme changes the appearance in your browser; editing its code changes the appearance for everyone using that theme.
 
 ## Editing a theme
@@ -51,11 +49,9 @@ Create a Forest theme with green as the primary color, soft backgrounds, moderat
 
 The Coding Agent creates the theme, adds it to the available choices, and configures its name. Select it in **Appearance**.
 
-![Forest theme in light mode](https://static-docs.nocobase.com/20260910110253.png)
-
-![Forest theme in dark mode](https://static-docs.nocobase.com/20260910110728.png)
-
 ## Removing a theme
+
+Remove retired themes from appearance options and let existing selections fall back to the application default.
 
 Tell the Coding Agent which theme to remove. Browsers that previously selected it will use the application's default theme.
 
@@ -77,7 +73,7 @@ To edit theme code directly, refer to these files. Paths are relative to the app
 
 | File                                 | Purpose                     | Used for                                   |
 | ------------------------------------ | --------------------------- | ------------------------------------------ |
-| `client/theme/themes/default.css`    | Default theme appearance    | Editing Default                            |
+| `client/theme/themes/default.css`    | Spacious theme appearance   | Editing Default                            |
 | `client/theme/themes/compact.css`    | Compact theme appearance    | Editing or removing Compact                |
 | `client/theme/themes/<theme-id>.css` | Custom theme appearance     | Adding, editing, or removing custom themes |
 | `client/theme/theme-presets.ts`      | Theme choices in Appearance | Adding or removing themes                  |
@@ -86,3 +82,21 @@ To edit theme code directly, refer to these files. Paths are relative to the app
 | `client/locales/en-US.ts`            | English theme names         | Adding, removing, or renaming themes       |
 
 Editing a theme's appearance usually requires changes only to its theme file. Adding or removing a theme also involves the theme list, style imports, and locale files. Additional languages or new fonts may require corresponding translations or font assets.
+
+## Northstar brand theme
+
+```text
+Add a Northstar theme based on Compact. Use a deep blue primary color, retain its fonts and density, and slightly increase the corner radius. Support light and dark modes. Keep the existing presets and translate the new name into Chinese and English.
+```
+
+![Northstar appearance options](./assets/northstar-appearance-en.png)
+
+**Users can choose a theme and light, dark or system color mode.**
+
+![Northstar brand in light mode](./assets/northstar-brand-light-en.png)
+
+**The brand theme displays the same business in light mode.**
+
+![Northstar brand in dark mode](./assets/northstar-brand-dark-en.png)
+
+**Switching to dark mode retains business data and actions.**

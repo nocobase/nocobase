@@ -12,6 +12,46 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  globalChat: {
+    notSubmitted: 'Question was not sent',
+    editRejected: 'Return question and files to editor',
+    placeholder: 'Ask Agent…',
+    label: 'Question for Agent',
+    edit: 'Continue editing in panel',
+    preview: 'Preview page context',
+    send: 'Send question',
+    target: 'New conversation with {{name}}',
+    continue: 'Continue: {{title}} · {{name}}',
+    newConversation: 'New conversation',
+    noAgent: 'Choose an agent in the panel',
+    noAgentHelp:
+      'No agent is available. Choose a default agent in account preferences, or ask an administrator to configure one.',
+    unavailableHelp:
+      'This conversation is unavailable. Open the panel to choose or start a conversation; your question is kept here.',
+    loadingHelp:
+      'Loading this conversation. Wait for it to load, or open the panel to choose a conversation.',
+    pendingHelp:
+      'The previous question is still sending or awaiting confirmation. Open the panel to check it before sending more.',
+    replying: 'Agent is replying',
+    truncated: 'Page context was shortened to stay within the budget.',
+    unknown: 'Send result awaiting confirmation',
+    creationUnknown: 'Conversation creation awaiting confirmation',
+    sending: 'Sending…',
+    unknownHelp:
+      'This question may already be saved. Check the conversation before sending more.',
+    check: 'Refresh confirmation',
+    viewConversation: 'View conversation',
+    creationHelp:
+      'The question has not been sent. Choose a conversation to continue, or create another; an empty conversation may already exist.',
+    refreshConversations: 'Refresh conversations',
+    chooseConversation: 'Continue in {{title}}',
+    moreConversations: 'More conversations',
+    createAnother: 'Create another conversation (an empty one may exist)',
+    draftConflict:
+      'The panel has a draft. How should the header question be handled?',
+    keepDraft: 'Keep panel draft',
+    appendDraft: 'Append header question',
+  },
   runTranscriptFilters: {
     title: 'Event types',
     agent: 'Agent',
@@ -862,6 +902,34 @@ const enUS = {
   'design.by': '{{name}}, {{time}}',
   'design.expand': 'Show the whole proposal',
   'design.collapse': 'Show less',
+  'design.executor.clear': 'Clear executor',
+  'design.executor.search': 'Search executors',
+  'design.executor.signIn': 'Sign in again',
+  'design.executor.notFound':
+    'This issue no longer exists. Close this dialog to return.',
+  'design.executor.clearSearch': 'Clear search',
+  'design.executor.sessionExpired':
+    'Your session ended. Sign in again to continue.',
+  'design.executor.forbidden':
+    'Approval access was revoked. Close this dialog and ask the owner to restore access.',
+  'design.executor.title': 'Approve proposal',
+  'design.executor.description': 'Choose the executor for development.',
+  'design.executor.label': 'Executor',
+  'design.executor.placeholder': 'Choose an executor',
+  'design.executor.noMatches': 'No matching executors',
+  'design.executor.agent': 'Developer agent',
+  'design.executor.user': 'Project member',
+  'design.executor.empty':
+    'No developer agents or project members are available. Ask the owner to adjust access.',
+  'design.executor.reload': 'Reload choices',
+  'design.executor.confirm': 'Approve and enter development',
+  'design.executor.invalid':
+    'The selected executor is no longer available. Choose again.',
+  'design.executor.unavailable':
+    'The stage or your approval permission changed. Approval is no longer available.',
+  'design.executor.changed':
+    'The executor changed. Choose an executor before approving.',
+  'design.executor.loadFailed': 'Could not load executor choices. Try again.',
   'design.approve': 'Approve for development',
   'design.requestChanges': 'Send back',
   'design.done.approve': 'Approved. The issue moves to development.',
@@ -961,6 +1029,13 @@ const enUS = {
     '"{{rule}}" in {{status}} was skipped: {{why}}.',
   'inbox.stageRules.runAgent': 'Run agent',
   'inbox.stageRules.suggestExecutor': 'Suggest executor',
+  'inbox.stageSkips.executorCannotImplement':
+    '{{agentName}} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.',
+  'errors.INTERNAL': 'The request failed. Try again.',
+  'errors.DESIGN_EXECUTOR_REQUIRED':
+    'The executor changed. Choose an executor before approving.',
+  'errors.DESIGN_EXECUTOR_INVALID':
+    'The selected executor is no longer available. Choose again.',
   'inbox.stageSkips.ownerCannotInvoke':
     'the owner may not give work to the agent',
   'inbox.stageSkips.noAgentExecutor':
@@ -980,6 +1055,8 @@ const enUS = {
     cancelled: 'Cancelled',
     idleTimeout: 'Idle too long',
     setupFailed: 'Setup failed',
+    workspaceBusy:
+      'The working directory is busy; waiting for another attempt.',
     checkoutFailed: 'Checkout failed',
     cliUnavailable: 'CLI unavailable',
     toolAuth: 'Tool not signed in',
@@ -1130,6 +1207,8 @@ const enUS = {
       knowledge: 'Knowledge',
     },
     activity: {
+      executorCannotImplement:
+        '{{name}} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.',
       executorWaits:
         'made {{name}} the executor; it starts when the issue enters In progress',
     },

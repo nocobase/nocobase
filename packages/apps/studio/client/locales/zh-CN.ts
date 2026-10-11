@@ -12,6 +12,42 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  globalChat: {
+    notSubmitted: '问题未发送',
+    editRejected: '将问题和附件放回编辑区',
+    placeholder: '向 Agent 提问…',
+    label: '向 Agent 提问',
+    edit: '在面板中继续编辑',
+    preview: '预览页面上下文',
+    send: '发送问题',
+    target: '与 {{name}} 新建会话',
+    continue: '继续：{{title}} · {{name}}',
+    newConversation: '新会话',
+    noAgent: '请在面板选择 Agent',
+    noAgentHelp:
+      '没有可用 Agent。请在账号偏好中选择默认 Agent，或请管理员配置。',
+    unavailableHelp:
+      '当前会话不可用。请打开面板选择或新建会话；问题仍保留在这里。',
+    loadingHelp: '正在加载当前会话。请等待加载完成，或打开面板选择会话。',
+    pendingHelp: '上一条问题仍在发送或等待确认。请打开面板核对后再发送。',
+    replying: 'Agent 正在回复',
+    truncated: '页面上下文已按长度预算精简。',
+    unknown: '发送结果待确认',
+    creationUnknown: '会话创建结果待确认',
+    sending: '正在发送…',
+    unknownHelp: '此问题可能已保存。请核对会话后再继续提问。',
+    check: '刷新核对',
+    viewConversation: '查看会话',
+    creationHelp:
+      '问题尚未发送。请选择会话继续，或另建会话；可能已有一个空会话。',
+    refreshConversations: '刷新会话列表',
+    chooseConversation: '在“{{title}}”中继续',
+    moreConversations: '更多会话',
+    createAnother: '另建会话（可能已有空会话）',
+    draftConflict: '面板已有草稿，如何处理顶部问题？',
+    keepDraft: '保留面板草稿',
+    appendDraft: '追加顶部问题',
+  },
   runTranscriptFilters: {
     title: '事件类型',
     agent: 'Agent',
@@ -804,6 +840,29 @@ const zhCN: AppResource = {
   'design.by': '{{name}}，{{time}}',
   'design.expand': '展开全文',
   'design.collapse': '收起',
+  'design.executor.clear': '清空执行者',
+  'design.executor.search': '搜索执行者',
+  'design.executor.signIn': '重新登录',
+  'design.executor.notFound': '议题已不存在，请关闭对话框返回。',
+  'design.executor.clearSearch': '清空搜索',
+  'design.executor.sessionExpired': '登录已失效，请重新登录后继续。',
+  'design.executor.forbidden':
+    '批准权限已撤销，请关闭对话框并联系负责人恢复权限。',
+  'design.executor.title': '批准方案',
+  'design.executor.description': '请选择进入开发中的执行者。',
+  'design.executor.label': '执行者',
+  'design.executor.placeholder': '请选择执行者',
+  'design.executor.noMatches': '没有匹配的执行者',
+  'design.executor.agent': '开发 agent',
+  'design.executor.user': '项目成员',
+  'design.executor.empty':
+    '没有可选的开发 agent 或项目成员，请联系负责人调整。',
+  'design.executor.reload': '重新加载候选',
+  'design.executor.confirm': '批准并进入开发中',
+  'design.executor.invalid': '所选执行者已失效，请重新选择。',
+  'design.executor.unavailable': '阶段或批准权限已变化，无法继续批准。',
+  'design.executor.changed': '当前执行者已变化，请选择执行者后批准。',
+  'design.executor.loadFailed': '加载执行者候选失败，请重试。',
   'design.approve': '批准进入开发',
   'design.requestChanges': '打回修改',
   'design.done.approve': '方案已批准，任务进入开发。',
@@ -890,6 +949,11 @@ const zhCN: AppResource = {
     '状态「{{status}}」的「{{rule}}」被跳过：{{why}}。',
   'inbox.stageRules.runAgent': '运行 Agent',
   'inbox.stageRules.suggestExecutor': '建议执行者',
+  'inbox.stageSkips.executorCannotImplement':
+    '{{agentName}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
+  'errors.INTERNAL': '请求失败，请重试。',
+  'errors.DESIGN_EXECUTOR_REQUIRED': '当前执行者已变化，请选择执行者后批准。',
+  'errors.DESIGN_EXECUTOR_INVALID': '所选执行者已失效，请重新选择。',
   'inbox.stageSkips.ownerCannotInvoke': '负责人无权把工作交给这个 Agent',
   'inbox.stageSkips.noAgentExecutor':
     '还没有执行者，请指派执行者，指派后立即开始',
@@ -906,6 +970,7 @@ const zhCN: AppResource = {
     cancelled: '已取消',
     idleTimeout: '长时间无响应',
     setupFailed: '准备失败',
+    workspaceBusy: '工作目录被另一个运行占用，等待重试。',
     checkoutFailed: '检出失败',
     cliUnavailable: 'CLI 不可用',
     toolAuth: '编码工具未登录',
@@ -1031,6 +1096,8 @@ const zhCN: AppResource = {
       knowledge: '知识',
     },
     activity: {
+      executorCannotImplement:
+        '{{name}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
       executorWaits: '执行者设为 {{name}}，进入开发中时开始',
     },
     presets: {

@@ -1,8 +1,13 @@
 // Step `workspace`: locks the subject's work directory for the run and, when the run asks (`workspace.clean`), starts
 // it over: its checkouts, its tmp and Codex home, and the record of prepared directories go; a directory used in place is
 // never touched.
-import { cleanWorkspace, lockWorkspace } from '../../core/checkout.ts';
-import type { PrepareStep } from './types.ts';
+import {
+  cleanWorkspace,
+  lockWorkspace,
+  WorkspaceBusyError,
+} from '../../core/checkout.ts';
+import { acceptedFailure } from '../../protocol/index.ts';
+import { PrepareError, type PrepareStep } from './types.ts';
 
 export const workspaceStep: PrepareStep = {
   name: 'workspace',
@@ -12,6 +17,16 @@ export const workspaceStep: PrepareStep = {
       paths: context.paths,
       appKey: context.registration.key,
       subjectKey: context.payload.subject.key,
+    }).catch((error: unknown) => {
+      if (error instanceof WorkspaceBusyError)
+        throw new PrepareError(
+          acceptedFailure(
+            'workspaceBusy',
+            context.payload.run.acceptedFailures,
+          ),
+          error.message,
+        );
+      throw error;
     });
     context.onRelease(() => lock.release());
     context.workspace = lock;

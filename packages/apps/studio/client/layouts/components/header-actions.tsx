@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { ChatHeaderButton } from '@/extensions/nocobase-agent-chat/launchers';
+import { HeaderChat } from '../../agents/header-chat.js';
 
 import { UserMenu } from './user-menu.js';
 
@@ -9,10 +9,8 @@ export function HeaderActions(): ReactElement {
   return (
     <TooltipProvider>
       <div className='flex shrink-0 items-center gap-2'>
-        {/* The agents' chat panel (⌘J / Ctrl+J); hidden below md, where the floating button opens it. */}
-        <div className='hidden md:contents'>
-          <ChatHeaderButton />
-        </div>
+        {/* Desktop editor; the layout places the mobile editor on a second row. */}
+        <HeaderChat />
         {/* Theme and language are quick choices in the account menu; Preferences holds them all. */}
         <UserMenu />
       </div>
