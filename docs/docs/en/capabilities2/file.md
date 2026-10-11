@@ -44,7 +44,7 @@ Removing an attachment only unlinks it from the current order; retain the file.
 
 ### Employee avatars and product images
 
-Employee lists help colleagues recognize people, and product records need a visual reference. Store the corresponding images and display them on business pages.
+Associate avatars or images with records when people or products need visual identification in lists and details.
 
 An employee avatar or product cover usually needs one file. Uploading a replacement updates the association. Product galleries and order attachments can contain multiple files. For example:
 
@@ -111,4 +111,8 @@ Open NS-2026-001, choose a file in Transport attachments, and select Save attach
 
 ![Saved cargo document on a Northstar transport order](./assets/northstar-attachments-en.png)
 
+**The attachment is associated with the order and remains available after reopening.**
+
 ![Actual in-application DOCX preview using a sample document](./assets/northstar-file-preview-en.png)
+
+**Users can preview the associated document within the application.**

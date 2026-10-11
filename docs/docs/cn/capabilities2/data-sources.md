@@ -67,3 +67,5 @@ Northstar 已有一个独立的客户结算数据库，请作为外部数据源�
 本例用独立 SQLite 数据库模拟已有结算系统，通过稳定编号匹配运输客户。Harbor Retail 的详情保留主库联系信息，并展示来自结算系统的月结账期和 80,000 元信用额度。资料在访问页面时读取，没有导入主库；本例只提供查询入口。
 
 ![External settlement](./assets/northstar-settlement-en.png)
+
+**客户详情同时展示主库资料与外部结算资料。**

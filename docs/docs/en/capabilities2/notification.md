@@ -9,7 +9,7 @@ Northstar uses notifications for transport progress, approval results, and await
 
 ## Transport progress example
 
-Employees want a transport progress reminder in their message center with a direct return to the order. This example notifies the current operator to demonstrate the connection between a message and its business record.
+Business reminders should return users to the relevant record. In-app notifications preserve progress information and links so users can continue handling the work.
 
 ```text
 Add Send progress update to Northstar transport orders. Send the current status to the current operator's message center. Include the order number, origin, destination, and status, with a link to the order detail. Notify the same recipient only once for each order version. Do not change the transport state. Add a personal Message center and an administrator-only Notification log.
@@ -19,11 +19,13 @@ Open NS-2026-003, select **Send progress update**, then open **Message center**.
 
 ![Real transport progress notification](./assets/northstar-notification-en.png)
 
+**The message center shows the progress reminder and a link to its order.**
+
 Select the message title to open its order. Messages persist across refreshes and support read, unread, and removal actions. A message does not grant additional access to the referenced order.
 
 ## Trigger from business processes
 
-Applicants need approval outcomes without repeatedly opening the application. Notify the actual applicant when a decision is made and link to the request.
+Notify the actual applicant when approval or other business work produces a result, with a link to its details.
 
 Once actual applicants and approval results exist, ask the Agent to notify only the applicant after approval or rejection, include the order and result, and link to the application. Pending applications should produce no result notification, and each result should notify once. A notification failure must not reverse the saved business result. User identities and decisions must come from the business process. See [Approvals](./approval/index.md).
 
@@ -33,13 +35,15 @@ Administrators open **Notification log** to review transport updates and dispatc
 
 ![Real notification delivery records](./assets/northstar-notification-logs-en.png)
 
+**Administrators can inspect notification channels, processing status and attempts.**
+
 `completed` describes processing of the notification's deliveries; provider acceptance and a recipient reading a message are different facts. Channels are independent. If no message arrives, first check whether the business generated a record, then inspect its delivery, recipient, and configuration.
 
 Applications can add a **Send test notification** entry using the public test API. It performs a real send and requires an authorized recipient. The progress-update button in this example sends a business message.
 
 ## Email and group channels
 
-Employees may not stay in the transport application all day. Deliver important outcomes through their usual email or group channels while tracking each channel’s result independently.
+Reach users outside the application through email or group channels. Track each channel independently to follow delivery and handle failures.
 
 | Channel            | Preparation                                                                  | Configuration                           |
 | ------------------ | ---------------------------------------------------------------------------- | --------------------------------------- |

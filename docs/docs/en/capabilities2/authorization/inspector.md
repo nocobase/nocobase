@@ -8,7 +8,7 @@ Permission inspection explains actions, conditions, and sources. It is not a cou
 
 ## Why can Bob see this order?
 
-When Bob can see Alice’s order, administrators need to distinguish job access, common access and temporary sharing. Understanding the source helps them adjust the right rule without removing his regular responsibilities.
+When users gain additional access or cannot see a record, inspect the sources and conditions. Identify the job, sharing or restriction rule that needs adjustment.
 
 ```text
 Provide permission inspection in Northstar Team access for authorized administrators only.
@@ -36,5 +36,7 @@ Super administrators have unrestricted access. Use business employee accounts to
 Open **Access rules → Inspect access**, select Bob, then click **Inspect access**. The result shows his account manager job and applicable common access, order sharing and fee limits. Expand **View decision conditions** for the server’s conditions.
 
 ![Inspect Bob’s job and rule sources](../assets/northstar-inspector-en.png)
+
+**The inspection lists the job and applicable common-access, sharing and restriction sources.**
 
 His own scope, completed-order baseline and shared NS-2026-001 combine first. The 2,000 CNY transport fee limit then narrows the result. See the actual order list in [Restriction rules](./restriction-rules.md); this inspector does not count eligible records.

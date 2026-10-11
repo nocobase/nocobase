@@ -8,7 +8,7 @@ Add handling stages to the existing Northstar orders from [Quick start](../quick
 
 ## 1. Describe the business flow
 
-Several people handle a transport order in sequence. A status field alone does not explain the next action or required input. Northstar needs a defined acceptance, delivery and confirmation path with preserved handling records.
+Define stages, actions and inputs for work handled by several people in sequence. Preserve history and make progress, next actions and responsibility clear.
 
 ```text
 Add a handling flow to existing Northstar transport orders.
@@ -43,11 +43,15 @@ Open **NS-2026-003** in **Orders**. In this earlier screenshot it has an assigne
 
 ![Order awaiting acceptance](../assets/northstar-process-before-en.png)
 
+**The order is awaiting acceptance, with the applicable handling actions visible.**
+
 ## 4. Handle the order and see its result
 
 Use **Accept and depart**, submit delivery evidence, then confirm delivery. The order becomes **Completed**. **Processing history** preserves the three actual actions, timestamps, stages and evidence reference.
 
 ![Completed order and handling history](../assets/northstar-process-completed-en.png)
+
+**The order is completed and its history retains actions, stage changes and submitted information.**
 
 These screenshots show an administrator completing the business actions. Employee use also requires the corresponding page, action and record-scope permissions.
 

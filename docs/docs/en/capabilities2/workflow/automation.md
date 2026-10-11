@@ -8,7 +8,7 @@ After the basic transport flow, address unhandled tasks and results from other s
 
 ## Remind employees about acceptance delays
 
-Delayed acceptance affects transport planning, and dispatchers cannot watch every waiting order. Remind the driver first, then escalate orders that remain unhandled.
+Remind users about unhandled work and escalate after agreed deadlines. Keep reminders separate from actual handling so a message does not count as completion.
 
 ```text
 Remind the assigned driver after 30 minutes without acceptance. After 60 minutes, notify the dispatcher and supervisor.
@@ -20,7 +20,7 @@ Employees should see a reminder linked to the order while the order remains awai
 
 ## Notify the account manager after delivery
 
-Account managers need to confirm delivery with customers without constantly watching order details. A delivery message supports timely follow-up while preserving the saved delivery result.
+Notify relevant users after handling is saved. Retry failed delivery independently rather than losing the saved business result.
 
 ```text
 Notify the responsible account manager when the driver submits delivery evidence. Link the message to the order.
@@ -60,7 +60,7 @@ These are future requirements within the transport background, not implemented d
 
 ## Change an active flow
 
-When new handover requirements are introduced, existing shipments may still be underway. Update the flow while preserving a handling path for unfinished orders.
+When changing a flow with unfinished records, plan how those records continue. Preserve compatible handling paths during deployment.
 
 ```text
 Add handover confirmation before departure. Analyze continuation for existing orders first.

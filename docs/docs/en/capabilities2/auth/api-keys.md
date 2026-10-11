@@ -10,7 +10,7 @@ A Northstar account manager can use a Key to send accessible transport orders to
 
 ## Provide an integration keys entry
 
-Employees need scripts to read authorized orders without storing their account password. A personal integration-key entry lets them create credentials, set expiration and revoke them when the integration ends.
+Scripts and external systems can use separate API credentials instead of storing user passwords. Set key expiration and revoke credentials when the integration ends.
 
 Management pages can follow business needs without a shared Settings entry:
 
@@ -33,7 +33,7 @@ Revoke a Key when it is no longer needed. Revoked or expired Keys cannot continu
 
 ## Read transport orders with a script
 
-Account managers want to process their authorized orders with a script instead of copying records individually. This example reads order numbers, customers and routes while retaining the employee’s access scope.
+Use API requests to process application data with scripts instead of manually exporting or copying it. Access retains the key owner’s permission scope.
 
 Save the Key in the program’s `NOCOBASE_API_KEY` environment variable:
 
@@ -139,6 +139,10 @@ The integration keys page lists the purpose, recognizable fragment, status, expi
 
 ![Transport reporting integration key](../assets/northstar-keys-en.png)
 
+**Users can manage their integration keys and view expiration and usage.**
+
 The creation view displays the full key once. Its value is masked in this screenshot.
 
 ![One-time key display](../assets/northstar-key-created-en.png)
+
+**The complete key is shown once after creation; the list keeps a recognizable fragment.**

@@ -51,11 +51,15 @@ This example contains ten orders and four customers. Statistics and lists use th
 
 ![Northstar transport workspace with statistics, stage distribution, dispatch priorities, and recent orders](./assets/northstar-workspace-en.png)
 
+**The workspace brings statistics, stages and pending orders together.**
+
 ### Order details
 
 Open **NS-2026-001** to view its customer, route, cargo, owner, fee, and expected delivery. This order is awaiting dispatch, with editing and driver assignment available.
 
 ![Northstar order details and driver assignment](./assets/northstar-order-detail-en.png)
+
+**Order details show business information with editing and driver-assignment entries.**
 
 The application now has baseline customer, driver, and order management pages. Continue describing business needs to add branded sign-in, role permissions, transport workflows, approvals, attachments, and messages in the same application.
 

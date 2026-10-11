@@ -8,7 +8,7 @@ Restrictions narrow existing access from jobs, common access and sharing. They d
 
 ## Example: transport fee collaboration
 
-Bob’s temporary fee-review responsibility covers only lower-cost transport orders; other staff handle higher-cost orders. Apply the same fee boundary regardless of whether access comes from ownership or sharing.
+Restrictions narrow existing access to records meeting conditions such as an amount or region. Apply the boundary to access received through jobs, default access and sharing.
 
 ```text
 Bob temporarily helps review transport fees and may view only orders with a transport fee of 2,000 CNY or less.
@@ -25,11 +25,15 @@ Open **Access rules → Fee limits**, select Bob, enter **2,000** and save.
 
 ![Set Bob’s transport fee limit](../assets/northstar-restriction-config-en.png)
 
+**Bob’s order-viewing scope has a 2,000 CNY fee limit.**
+
 ## See the narrower result
 
 Bob’s own orders and completed orders exceed the limit and disappear from his list. Shared **NS-2026-001**, with a **1,600 CNY** fee, remains visible and still belongs to Alice.
 
 ![Bob sees only the shared order within the limit](../assets/northstar-restriction-after-en.png)
+
+**After restriction, only the shared order within the fee limit remains visible.**
 
 Removing the restriction leaves other sources intact. Removing sharing removes only that collaboration source. [Inspect access](./inspector.md) to see the sources.
 

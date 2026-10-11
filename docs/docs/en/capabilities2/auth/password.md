@@ -13,15 +13,19 @@ Enter a username or email and password, then click **Sign in**. This example use
 
 ![Sign in to Northstar](../assets/northstar-password-login-en.png)
 
+**Users can sign in with their account and password.**
+
 After signing in, open the avatar menu in the upper-right corner and choose **Sign out**. You return to the sign-in page. Sign in again when your session expires.
 
 ![Sign out from the employee menu](../assets/northstar-password-signout-en.png)
+
+**Signing out returns to the sign-in page and ends the session.**
 
 See [Customize sign-in pages](./login-pages.md) for branding and layout changes.
 
 ## Company-managed employee accounts
 
-Northstar stores customer information and internal orders and wants access limited to approved employees. Administrators create accounts and assign jobs rather than letting employees join through public registration.
+Internal applications can disable public self-registration and let administrators create and manage accounts. Restrict account creation on both the page and the server.
 
 ```text
 Northstar’s transport system is for company employees only.
@@ -35,11 +39,13 @@ Open **Employee accounts** to see each employee’s name, email, username, permi
 
 ![Employee account list](../assets/northstar-employee-accounts-en.png)
 
+**Administrators manage accounts; employees cannot self-register.**
+
 An account lets an employee sign in; permission sets determine which business records they can access. Creating an account does not grant access to all orders. See [Roles and permissions](../authorization/index.md).
 
 ## Custom password requirements
 
-The company wants passwords that are harder to guess and one consistent standard for account creation and password resets. This example requires at least 12 characters and explains the requirement before submission.
+Applications can customize password requirements and validate them consistently during account creation and resets. Explain the requirements in the form; this example uses a minimum of 12 characters.
 
 ```text
 Require at least 12 characters when setting or resetting a password.
@@ -51,9 +57,11 @@ The account creation form displays the minimum length. Enter a shorter password 
 
 ![Minimum password length validation](../assets/northstar-password-policy-en.png)
 
+**The form blocks creation and explains when the password is too short.**
+
 ## Recover a password
 
-Employees who forget a password still need timely access to orders. Northstar wants them to recover access through their registered email, reducing administrator intervention while confirming email ownership and letting employees choose a new password.
+Users who forget passwords can reset them through their registered email without administrator intervention. Confirm email ownership and provide an expiring reset link.
 
 ```text
 Add a forgot-password flow for Northstar employees using an email channel.
@@ -67,11 +75,13 @@ Click **Forgot password?** and enter the account email.
 
 ![Forgot-password form](../assets/northstar-forgot-password-en.png)
 
+**Users can enter their account email in the password recovery form.**
+
 A working email delivery channel is required to complete the request → email → reset link → new password flow. The email link must point to an application address the employee can reach.
 
 ## Sessions and disabled accounts
 
-When an employee leaves or pauses work, the company needs to stop access to customer and order information promptly. Disabling the account must block future sign-ins and existing signed-in access.
+Offboarding, suspended accounts or revoked access require blocking future sign-ins and invalidating existing sessions. Disable accounts while preserving associated business records, with the option to enable them again.
 
 ```text
 Add an employee offboarding action for administrators.
@@ -84,8 +94,12 @@ Open Taylor’s row menu and choose **Disable**. The confirmation explains that 
 
 ![Confirm employee offboarding](../assets/northstar-disable-confirm-en.png)
 
+**Before disabling an account, review the user and consequences.**
+
 After confirmation, Taylor’s status becomes **Disabled**. Existing sessions cannot access internal business resources, and the employee returns to sign-in. Choose **Enable** to restore account availability; revoked sessions are not restored.
 
 ![Disabled employee account](../assets/northstar-disabled-account-en.png)
+
+**The account is disabled and existing sessions cannot access internal work.**
 
 Use **Revoke sessions** to require a new sign-in without disabling the account. See [Protect pages and APIs](./protecting-access.md) for public and internal access.

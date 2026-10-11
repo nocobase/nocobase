@@ -67,3 +67,5 @@ Connecting and synchronizing data are different requirements. Scheduled copying 
 This example uses a separate SQLite database to represent an existing settlement system, matching transport customers with stable identifiers. Harbor Retail keeps its main-database contact information while showing a monthly billing cycle and a CNY 80,000 credit limit from the settlement system. Data is read when the page opens, without importing it into the main database. This example provides a read endpoint only.
 
 ![External settlement](./assets/northstar-settlement-en.png)
+
+**Customer details display main-database information and external settlement data together.**

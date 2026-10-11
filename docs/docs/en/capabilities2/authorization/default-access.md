@@ -8,7 +8,7 @@ Default data access adds a shared record scope for people who already hold the a
 
 ## Common reference orders
 
-Account managers need completed transport records as references for routes and delivery outcomes while retaining their own working scope. Provide a shared completed-order viewing baseline.
+Users with an existing view permission may need a shared reference baseline. Default access adds common records to their existing scopes, such as completed or reference records.
 
 ```text
 Keep account managers' owned-order viewing scope.
@@ -31,6 +31,10 @@ Open **Access rules → Common access** and save the completed-order viewing rul
 
 ![Configure common access to completed orders](../assets/northstar-default-config-en.png)
 
+**The saved common viewing rule covers completed transport orders.**
+
 Alice now sees seven orders instead of six. **NS-2026-003** still belongs to Bob and is included because it is completed. Her existing orders remain visible.
 
 ![Alice can view Bob’s completed order](../assets/northstar-default-after-en.png)
+
+**Alice sees seven orders, including Bob’s completed order.**

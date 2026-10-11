@@ -44,7 +44,7 @@ After business data changes, generate the document again to obtain a file with t
 
 ### Batch generation
 
-A shipment handover may include multiple records. Employees need one document for the intended selection without including other batches.
+Generate documents for multiple records in one operation, using an explicit selection to avoid including unrelated batches.
 
 For documents generated from a list, specify whether to include selected records, the current page, or all filtered results. Also specify whether to produce one combined file or a separate file for each record. For example:
 
@@ -66,7 +66,7 @@ The application's developer or deployment administrator prepares a server-side d
 
 ### Multiple templates
 
-Domestic and overseas transport use different document formats. Employees select the appropriate version while administrators maintain consistent templates.
+Maintain multiple templates when regions or business types require different document formats, and let users select the appropriate version.
 
 Application developers can maintain fixed templates. If business users need to upload, replace, or select templates, ask the Agent to add the relevant management interface:
 
@@ -95,3 +95,5 @@ In this example, business administrators can generate transport documents for an
 The generated demo document for NS-2026-003 contains Greenfield Foods, Suzhou → Nanjing, driver Sarah, and CNY 2,300. These are application-generated demo data. This endpoint is initially restricted to the business administrator; other roles require record and field checks.
 
 ![Rendered Northstar transport order](./assets/northstar-transport-print-en.png)
+
+**The transport document contains the current order, customer, route, driver and fee.**

@@ -27,7 +27,7 @@ Decide whether first sign-in creates an account and whether existing accounts ma
 
 ## Corporate sign-in example
 
-Northstar already manages company accounts, and employees do not want another password for transport operations. Connect the identity platform so they can sign in with that account and receive the application’s assigned business permissions.
+Organizations with a central identity platform can reuse company accounts to reduce duplicate accounts and passwords. Configure business permissions separately after connecting identity.
 
 ```text
 Connect Northstar's existing corporate identity provider using OIDC.
@@ -46,11 +46,15 @@ Choose **Continue with Company account** on the transport application’s sign-i
 
 ![Company sign-in entry in the transport application](../assets/northstar-company-entry-en.png)
 
+**The same page offers password and company-account sign-in.**
+
 ### 2. Authenticate with the company identity provider
 
 The browser redirects to the independent **Northstar Identity** service. Enter the company username and password, then click **Sign in**. The transport application does not collect the company password on its own page.
 
 ![Sign in at the company identity provider](../assets/northstar-company-login-en.png)
+
+**Company credentials are verified by the separate identity provider.**
 
 ### 3. Authorize the transport application
 
@@ -60,11 +64,15 @@ Choose **Allow access** to continue, or **Cancel** to stop authorization.
 
 ![Company identity and requested access on the consent page](../assets/northstar-company-consent-en.png)
 
+**Users can review the requested access and allow or cancel it.**
+
 ### 4. Return to the workspace
 
 Authorization redirects back to the transport application. Open the avatar menu to see **Dana Reed** and the company email. The application has established its own signed-in session.
 
 ![Return to the workspace with Dana Reed’s identity](../assets/northstar-company-signed-in-en.png)
+
+**After authorization, the application recognizes the signed-in company user.**
 
 Creating an account on first sign-in does not grant order access or administrator permissions. This new account has no business data permissions yet, so its workspace shows no orders. Administrators can assign appropriate [Permission sets](../authorization/permission-sets.md).
 

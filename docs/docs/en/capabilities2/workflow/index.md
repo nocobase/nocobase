@@ -25,6 +25,8 @@ The initial example adds a handling flow to existing transport orders. Order det
 
 ![Completed order with actual handling history](../assets/northstar-process-completed-en.png)
 
+**The order is completed and its history retains actions, stage changes and submitted information.**
+
 [Quick start](./quick-start.md) includes the prompt and before-and-after results for the same order.
 
 ## Workflows and approval

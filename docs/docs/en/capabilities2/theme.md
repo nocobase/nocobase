@@ -51,7 +51,7 @@ The Coding Agent creates the theme, adds it to the available choices, and config
 
 ## Removing a theme
 
-When an old brand theme is retired, remove it from appearance options so employees do not keep choosing outdated styles. Existing selections should fall back to the application default.
+Remove retired themes from appearance options and let existing selections fall back to the application default.
 
 Tell the Coding Agent which theme to remove. Browsers that previously selected it will use the application's default theme.
 
@@ -91,6 +91,12 @@ Add a Northstar theme based on Compact. Use a deep blue primary color, retain it
 
 ![Northstar appearance options](./assets/northstar-appearance-en.png)
 
+**Users can choose a theme and light, dark or system color mode.**
+
 ![Northstar brand in light mode](./assets/northstar-brand-light-en.png)
 
+**The brand theme displays the same business in light mode.**
+
 ![Northstar brand in dark mode](./assets/northstar-brand-dark-en.png)
+
+**Switching to dark mode retains business data and actions.**

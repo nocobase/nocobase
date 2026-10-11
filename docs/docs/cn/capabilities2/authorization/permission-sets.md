@@ -8,7 +8,7 @@ title: '权限集与分配'
 
 ## 示例：为运输岗位分配职责
 
-同一公司有多位客户经理，也有负责统筹调度的员工。Northstar 希望按岗位复用权限，入职或调岗时分配相应职责，同时保留各员工不同的数据范围。
+多人承担相同职责时，可以把页面、操作和数据范围组合为权限集，再按岗位分配。人员入职或调岗时复用同一套规则，减少逐人重复配置。
 
 ```text
 为 Northstar 接入客户经理、调度员和司机三个权限集。
@@ -37,8 +37,14 @@ title: '权限集与分配'
 
 ![Team access](../assets/northstar-team-access-en.png)
 
+**管理员可以查看实际岗位权限与人员分配。**
+
 Alice 的订单列表只有本人负责的 6 单；调度员 Emma 可以查看全部 10 单。两张图使用普通业务账号，未使用超级管理员代替岗位效果。创建、编辑和调度办理属于前面的完整需求，需继续接入各自业务操作的权限。
 
 ![Alice orders](../assets/northstar-alice-orders-en.png)
 
+**只应用岗位范围时，Alice 可见本人负责的 6 笔订单。**
+
 ![Dispatcher orders](../assets/northstar-dispatch-orders-en.png)
+
+**调度岗位的 Emma 可见全部 10 笔订单。**

@@ -14,7 +14,7 @@ This example adds a mail center where a sales representative reads and replies t
 
 ## Example: reply to customer email
 
-Transport quotation inquiries and replies need to stay together. Northstar wants employees to read the context and respond within the application, reducing switches between business records and email.
+Connect mailboxes when employees need to read and reply to customer messages within the application. Preserve subjects, content and context while reducing system switches.
 
 Give the following prompt to your Agent:
 
@@ -48,8 +48,16 @@ The new application synchronizes the dedicated demo mailboxes and displays their
 
 ![Connected demo mailboxes](../assets/northstar-mail-accounts-en.png)
 
+**Personal mailboxes are connected and their connection status is visible.**
+
 ![Fleet-business correspondence](../assets/northstar-mail-reading-en.png)
+
+**Users can read synchronized messages and their content in the application.**
 
 ![Reply editor](../assets/northstar-mail-reply-en.png)
 
+**The reply editor retains context and lets users compose their response.**
+
 ![Previously received demo reply](../assets/northstar-mail-received-en.png)
+
+**The customer mailbox displays the quotation reply in the existing demonstration conversation.**

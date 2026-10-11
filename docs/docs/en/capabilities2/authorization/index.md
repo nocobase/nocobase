@@ -34,7 +34,7 @@ The application declares pages, actions, and scopes; authorization calculates ac
 
 ## Business-oriented administration
 
-Administrators need to adjust access as employees join, change jobs or collaborate without changing code each time. Present the application’s jobs and supported rules in a business management entry with clear effects.
+Administrators need to update jobs and access rules as people join, change responsibilities or collaborate. Provide a business-oriented entry for maintaining supported configurations.
 
 Northstar can provide a Team access entry using authorization capabilities without retaining a shared Settings page.
 
@@ -51,3 +51,5 @@ Use business names; do not merely display role labels without enforcing access.
 Alice and Bob have an account manager job scoped to their own orders. Dispatcher Emma can view all orders. Administrators configure common access, sharing and fee limits in Access rules; employees see their results in the existing order page. Ordinary account managers do not see the administration entry.
 
 ![Configure order sharing and its recipient](../assets/northstar-sharing-config-en.png)
+
+**The sharing rule gives Bob viewing access to the selected order.**

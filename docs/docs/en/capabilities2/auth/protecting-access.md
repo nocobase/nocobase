@@ -8,7 +8,7 @@ Northstar can publish its transport service information while keeping customer r
 
 ## Public information and internal work
 
-Northstar wants prospective customers to learn about its services while keeping orders and customer records for employees. Public service pages stay open; internal entries first require sign-in.
+An application can include public pages and internal work. Visitors can browse public content without sign-in; protected records require authentication and authorization.
 
 ```text
 Add a public transport services page for Northstar without requiring registration or sign-in.
@@ -25,6 +25,8 @@ Open `/main/services` to browse Northstar’s public service page directly. Visi
 
 ![Public Northstar service information without sign-in](../assets/northstar-public-services-en.png)
 
+**Visitors can browse public service information without signing in.**
+
 The business prompt above produces this page. Branding, layout, and service information can follow the company’s needs.
 
 ### Require sign-in for employee orders
@@ -34,6 +36,8 @@ Choose **Open employee orders** to visit the internal `/main/orders` address. An
 Entering the internal order URL directly also leads to sign-in. Knowing the address does not grant business access.
 
 ![Opening employee orders anonymously redirects to sign-in](../assets/northstar-internal-orders-login-en.png)
+
+**Opening internal orders without a session redirects to sign-in.**
 
 Compare these example addresses:
 
@@ -52,7 +56,7 @@ Pages and APIs declare their own access requirements. Hidden navigation and brow
 
 ## Use the current employee identity
 
-The company needs to know who created and handled each order for handover and traceability. Use the actual signed-in employee rather than a manually selected identity.
+Use the current authenticated identity when records need actor traceability. Record it on the server rather than relying on manually supplied identities.
 
 ```text
 When creating an order, obtain the acting employee from the server-side session and record them.

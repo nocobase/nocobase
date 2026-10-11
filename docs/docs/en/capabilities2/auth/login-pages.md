@@ -29,11 +29,13 @@ The sign-in page uses a full-page mountain-road and truck background with compan
 
 ![Transport company sign-in with a full-page truck background and branded form](../assets/northstar-branded-login-en.png)
 
+**The sign-in page uses the company’s background, branding and layout while retaining authentication.**
+
 The corporate sign-in entry in the screenshot comes from an example with an identity provider already connected; see the section below. Page customization reuses existing forms and authentication actions. Hiding a registration link must be accompanied by disabling registration on the server.
 
 ## Multiple sign-in methods
 
-Employees want to use existing company accounts, while those not yet connected to the identity platform still need password sign-in. Offering both entries on one page supports both groups.
+Applications serving both company-account and password users can offer both entries on one page so users choose a supported sign-in method.
 
 Once the company identity provider is connected, add a corporate sign-in button beside the existing password method. A button alone does not configure the provider, callback address, or account linking.
 

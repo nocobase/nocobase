@@ -8,7 +8,7 @@ A data scope determines which records an action can access. Account managers vie
 
 ## Different ownership fields
 
-Account managers handle their own orders, drivers need assigned tasks and dispatchers coordinate all orders. Each employee should see the records required for their responsibilities in the same application.
+Scope records by ownership, assignment or other business conditions. Users with the same action permission can still access different records according to their responsibilities.
 
 ```text
 Allow account managers to view and edit orders using the owner field linked to the current user.
@@ -37,6 +37,10 @@ Before adding common access, sharing or restrictions, Alice sees her six orders.
 
 ![Alice sees her six orders](../assets/northstar-alice-orders-en.png)
 
+**With only job scope, Alice sees her six orders.**
+
 ![Emma sees all ten orders](../assets/northstar-dispatch-orders-en.png)
+
+**Dispatcher Emma sees all ten orders.**
 
 The following rules change visible records without changing their owner.

@@ -71,6 +71,12 @@ Alice requests CNY 2,500 for urgent transport. Olivia approves the operations st
 
 ![Operations review](../assets/northstar-approval-review-en.png)
 
+**The application has reached the supervisor’s approval task.**
+
 ![Finance review](../assets/northstar-approval-finance-en.png)
 
+**The amount condition requires finance approval while preserving the earlier decision.**
+
 ![Approved request with both opinions](../assets/northstar-approval-completed-en.png)
+
+**The application is approved with both stages’ reviewers and comments retained.**
