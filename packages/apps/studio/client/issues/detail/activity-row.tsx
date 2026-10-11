@@ -283,7 +283,7 @@ export function ActivityRow({
         <StageRunActivityAction
           reason={activity.details.reason}
           token={text(activity.details.continueToken)}
-          statusKey={text(activity.details.status)}
+          statusKey={text(activity.details.statusKey)}
           currentStatusKey={currentStatusKey ?? ''}
           control={stageRunControl}
         />
