@@ -104,7 +104,13 @@ describe('missing conversations', () => {
     expect(outcome.sessionId).toBeUndefined();
     expect(calls).toHaveLength(2);
   });
-  it.each(['throw', 'result', 'stderr'])(
+  it.each([
+    'throw',
+    'result',
+    'stderr',
+    'generic result before stderr',
+    'generic result after stderr',
+  ])(
     'recovers once from a startup %s, preserving unconfirmed inputs',
     async (mode) => {
       const prompts: string[] = [];
@@ -112,13 +118,31 @@ describe('missing conversations', () => {
         const prompt = await ctx.nextInput();
         prompts.push(String(prompt?.message.content));
         if (ctx.options.resume) {
-          await ctx.nextInput();
+          const steer = await ctx.nextInput();
           if (mode === 'throw')
             throw new Error('No conversation found with session ID old');
           if (mode === 'stderr') {
             ctx.options.stderr?.('No conver');
             ctx.options.stderr?.('sation found with session ID old');
             throw new Error('exit 1');
+          }
+          if (mode.startsWith('generic result')) {
+            // The startup failure result lists the steered input although no model turn ran.
+            const failure = result({
+              subtype: 'error_during_execution',
+              errors: ['Process exited with code 1'],
+              num_turns: 0,
+              usage: {},
+              user_message_uuids: [steer?.uuid],
+            });
+            if (mode.endsWith('after stderr')) {
+              ctx.options.stderr?.('No conversation found with session ID old');
+              yield failure;
+            } else {
+              yield failure;
+              ctx.options.stderr?.('No conversation found with session ID old');
+            }
+            return;
           }
           yield result({
             subtype: 'error_during_execution',
@@ -151,12 +175,43 @@ describe('missing conversations', () => {
       expect(calls[1].options.resume).toBeUndefined();
       expect(prompts[1]).toContain('previous conversation');
       expect(prompts[1]).toContain('Create hello.txt');
-      expect(events.filter((e) => e.type === 'input')).toHaveLength(1);
-      expect(events.find((e) => e.content === 'started')).toMatchObject({
+      const inputs = events.filter((e) => e.type === 'input');
+      expect(inputs).toHaveLength(1);
+      expect(inputs[0].meta).toMatchObject({ inputId: 'early-input' });
+      const started = events.findIndex((e) => e.content === 'started');
+      expect(events[started]).toMatchObject({
         meta: { resumed: false, sessionRecovery: true },
       });
+      // Acknowledged by the fresh conversation, not by the failed resume.
+      expect(events.indexOf(inputs[0])).toBeGreaterThan(started);
+      expect(events.filter((e) => e.content === 'turnCompleted')).toHaveLength(
+        1,
+      );
     },
   );
+
+  it('reports a held startup error result when the conversation is not missing', async () => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      const steer = await ctx.nextInput();
+      yield result({
+        subtype: 'error_during_execution',
+        errors: ['Process exited with code 1'],
+        num_turns: 0,
+        usage: {},
+        user_message_uuids: [steer?.uuid],
+      });
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect(await handle.steer('early', 'early-input')).toBe(true);
+    const events = await collect(handle.events);
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+    expect(events.filter((e) => e.type === 'input')).toHaveLength(1);
+    expect(events.some((e) => e.content === 'turnCompleted')).toBe(true);
+  });
 
   it.each([
     'authentication failed',

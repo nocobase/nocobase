@@ -494,6 +494,8 @@ class OpencodeRun {
         if (
           !(error instanceof OpencodeHttpError) ||
           error.status !== 404 ||
+          // A 404 without the session error, such as an unknown route, is not a missing conversation.
+          !/SessionNotFound|session not found/i.test(error.body) ||
           this.stopping
         )
           throw error;

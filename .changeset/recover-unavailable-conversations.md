@@ -4,4 +4,4 @@
 "@nocobase/app-plugin-agents": patch
 ---
 
-Recover unavailable tool conversations at startup, copy legacy Codex and Claude session histories once during upgrades, and persist confirmed sessions when runs are cancelled.
+Start a fresh conversation, with an instruction to recover context from the task, when a coding tool reports that the conversation it was asked to resume no longer exists, and report the new session so later runs resume it. Cancelled runs now also report their confirmed session.

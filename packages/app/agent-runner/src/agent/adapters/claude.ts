@@ -533,11 +533,19 @@ class ClaudeRun {
         if (this.stopping) break;
         let attemptError: unknown;
         let missing = false;
+        // A startup error result is held back until stderr and a thrown
+        // error have been seen too: handling it acknowledges the inputs it
+        // lists, which a recovered conversation still has to receive.
+        let heldResult: SDKMessage | undefined;
         try {
           const q = query({ prompt: this.input, options });
           this.closeQuery = () => q.close();
           try {
             for await (const message of q) {
+              if (heldResult) {
+                this.onMessage(heldResult);
+                heldResult = undefined;
+              }
               if (
                 message.type === 'assistant' ||
                 (message.type === 'result' &&
@@ -557,6 +565,10 @@ class ClaudeRun {
                     : message.errors.join('\n');
                 missing = /No conversation found/i.test(errors);
                 if (missing && options.resume && !this.recovered) break;
+                if (options.resume && !this.recovered) {
+                  heldResult = message;
+                  continue;
+                }
               }
               this.onMessage(message);
             }
@@ -584,6 +596,7 @@ class ClaudeRun {
           !missing ||
           this.stopping
         ) {
+          if (heldResult) this.onMessage(heldResult);
           if (attemptError !== undefined)
             throw attemptError instanceof Error
               ? attemptError

@@ -370,19 +370,20 @@ describe('session setup', () => {
   });
 
   it.each([
-    ['GET', 401],
-    ['GET', 503],
-    ['PATCH', 404],
+    ['GET', 401, '{}'],
+    ['GET', 503, '{}'],
+    ['GET', 404, '{"_tag":"NotFound","message":"route"}'],
+    ['PATCH', 404, '{"_tag":"SessionNotFoundError"}'],
   ])(
-    'does not recover from a %s session request returning %s',
-    async (method, status) => {
+    'does not recover from a %s session request returning %s %s',
+    async (method, status, body) => {
       const fake = new FakeOpencode({ script: [], knownSessions: [SID] });
       const fetchFn: typeof fetch = (input, options) => {
         if (
           String(input).endsWith(`/api/session/${SID}`) &&
           options?.method === method
         )
-          return Promise.resolve(new Response('{}', { status }));
+          return Promise.resolve(new Response(body, { status }));
         return fetch(input, options);
       };
       const handle = adapterFor(fake, '2.0.12', fetchFn).start(

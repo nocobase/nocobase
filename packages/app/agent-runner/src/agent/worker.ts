@@ -65,7 +65,6 @@ import {
 } from '../core/checkout.ts';
 import { deleteRunCredentials } from './credentials.ts';
 import { prepareCodexHome } from './codex-home.ts';
-import { migrateLegacySessions } from './session-migration.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
@@ -620,18 +619,6 @@ export class RunWorker {
       localVariables: registration.variables,
       workspace: payload.workspace,
     });
-    const migration = await migrateLegacySessions(
-      runnerDir,
-      payload.tool.kind,
-      env.HOME ?? '',
-    );
-    if (migration && !migration.alreadyAttempted)
-      this.spool.push({
-        type: 'status',
-        tool: payload.tool.kind,
-        content: 'sessionMigration',
-        meta: { ...migration },
-      });
     // The runner is not a security boundary: every call a tool asks about is allowed.
     const permission: PermissionCheck = () => {
       this.lastActivity = Date.now();

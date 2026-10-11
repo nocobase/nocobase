@@ -69,40 +69,6 @@ describe('runner end to end', () => {
     return started;
   };
 
-  it.skipIf(process.getuid?.() === 0)(
-    'starts the adapter even when legacy session copying fails',
-    async () => {
-      env.HOME = home;
-      const run = server.enqueue({
-        prompt: { system: '', session: 'fresh', turn: 'say continued' },
-      });
-      const source = path.join(
-        workDirOf(run.payload.subject.key),
-        '.nocobase-runner/home/.claude/projects',
-      );
-      const target = path.join(home, '.claude/projects');
-      mkdirSync(source, { recursive: true });
-      mkdirSync(target, { recursive: true });
-      writeFileSync(path.join(source, 'history.jsonl'), 'legacy history');
-      chmodSync(target, 0o500);
-      try {
-        daemon();
-        await waitFor(
-          () => run.status === 'completed',
-          15_000,
-          'completed despite failed migration',
-        );
-        expect(
-          server
-            .events(run.payload.run.id)
-            .find((event) => event.content === 'sessionMigration'),
-        ).toMatchObject({ meta: { failures: 1, reason: 'EACCES' } });
-      } finally {
-        chmodSync(target, 0o700);
-      }
-    },
-  );
-
   it('registers with features and tools, and heartbeats', async () => {
     const runner = [...server.runners.values()][0];
     expect(runner?.register).toMatchObject({
@@ -564,9 +530,7 @@ describe('runner end to end', () => {
     );
     expect(run.status).toBe('completed');
     const events = server.events(id);
-    expect(
-      events.filter((event) => event.content !== 'sessionMigration'),
-    ).toHaveLength(451);
+    expect(events).toHaveLength(451);
     expect(events.map((event) => event.seq)).toEqual(
       events.map((_, index) => index + 1),
     );
