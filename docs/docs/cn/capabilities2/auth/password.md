@@ -9,7 +9,7 @@ Northstar 的客户经理、调度员和司机使用公司分配的账号登录�
 
 ## 登录与退出
 
-打开应用登录页，输入用户名或邮箱和密码，点击 **Sign in**。示例沿用 Northstar 的定制登录页，认证动作和会话由 NocoBase 提供；默认登录页见[认证概览](./index.md)。
+打开应用登录页，输入用户名或邮箱和密码，点击 **Sign in**。示例沿用 Northstar 的定制登录页，认证动作和会话由 NocoBase 提供。
 
 ![员工输入账号和密码登录 Northstar](../assets/northstar-password-login-en.png)
 

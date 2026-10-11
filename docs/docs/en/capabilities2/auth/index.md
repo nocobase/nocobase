@@ -18,13 +18,13 @@ Authentication identifies people accessing an application. After sign-in, a sess
 | [Custom sign-in pages](./login-pages.md)              | Company names, logos, backgrounds, layouts, and sign-in entries.                                                    |
 | [Protected pages and APIs](./protecting-access.md)    | Public and authenticated pages, and current-user identity in APIs.                                                  |
 
-## Default sign-in page
+## Sign-in page
 
-A new application provides a default sign-in page for username or email and password authentication. It includes account and password fields, a **Sign in** button, and a password recovery entry. When registration is enabled, it also shows **Sign up**.
+Applications support username or email and password authentication. This example uses the blue Northstar sign-in page, with account and password fields, a **Sign in** button, and password recovery. A **Sign up** entry can also be shown when registration is enabled.
 
-![NocoBase default sign-in page](../assets/default-login-en.png)
+![Blue Northstar sign-in page](../assets/northstar-password-login-en.png)
 
-This image shows the default page. Registration availability, password recovery emails, and additional sign-in methods depend on the application's authentication configuration and connected services.
+Registration availability, password recovery emails, and additional sign-in methods depend on the application's authentication configuration and connected services.
 
 ## Customize your sign-in page
 
