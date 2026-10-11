@@ -33,9 +33,10 @@ Northstar Logistics provides regional transportation and delivery services to bu
 Start an AI Agent session with the new application directory as its working directory and send this request:
 
 ```text
-Build a transport management application for Northstar Logistics with customers, drivers, and transport orders. Support order search, filtering, creation, editing, details, and driver assignment.
-Create a blue transport workspace with business statistics cards, order stage distribution, orders awaiting dispatch, and recent orders. Show related orders in customer and driver details.
-Add English demo data so I can open the application and see complete business pages.
+Build a transport management application for Northstar Logistics with four pages: Workspace, Transport orders, Customers, and Drivers. Use a blue theme and left sidebar navigation.
+The workspace shows four statistics: total orders, awaiting dispatch, customers, and completed orders, plus stage distribution, orders awaiting dispatch, and recent orders.
+Support order search, stage filtering, creation, editing, and driver assignment. Order details show the customer, route, cargo, owner, fee, and expected delivery. Customer and driver pages include lists, details, and related orders.
+Add English demo data with 10 orders, 4 customers, and 4 drivers across different transport stages. Connect the statistics, lists, and details to the same data.
 ```
 
 The Agent builds the data model, business pages, and navigation. Once it finishes, open the application to see the result.
