@@ -60,17 +60,26 @@ describe('development workflows', () => {
       revision: issue.revision,
       executor: { type: 'agent', id: agentId },
     });
-    expect((await runsOf()).map((run) => run.agentId)).toEqual([
-      'studio-proposal-reviewer',
-    ]);
+    // Assignment queues normally; admission keeps development work out of the review stage.
+    expect((await runsOf()).map((run) => run.agentId).sort()).toEqual(
+      [agentId, 'studio-proposal-reviewer'].sort(),
+    );
+    expect((await h.claimOne()).agent.id).toBe('studio-proposal-reviewer');
+    expect(await h.claimOne()).toBeUndefined();
     const assigned = await h.projects.issueQueries.detail(viewer, issue.id);
     await h.projects.issues.update(viewer, issue.id, {
       revision: assigned.revision,
       statusKey: 'in_progress',
     });
     await expect
-      .poll(async () => (await runsOf()).map((run) => run.agentId).sort())
+      .poll(async () =>
+        (await runsOf())
+          .filter((run) => run.status !== 'cancelled')
+          .map((run) => run.agentId)
+          .sort(),
+      )
       .toEqual([agentId, 'studio-proposal-reviewer'].sort());
+    expect((await h.claimOne()).agent.id).toBe(agentId);
   });
 
   it('assigns and wakes the senior developer only when development has no executor', async () => {
@@ -177,6 +186,8 @@ describe('development workflows', () => {
 
   it('starts agent proposal review without sending a human approval card', async () => {
     const design = createDesignService({
+      agents: h.agents,
+      kinds: h.projects.kinds,
       projects: () => h.projects,
       inbox: () => h.port,
     });

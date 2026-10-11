@@ -4,8 +4,9 @@
  * issue's agent was woken for, and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
  */
 import type { RunEvent } from '@nocobase/agent-protocol';
+import type { Page } from '@playwright/test';
 
-import { Api, unique } from './fixtures.ts';
+import { Api, expect, unique } from './fixtures.ts';
 
 /** `PROTOCOL_VERSION` and `HEADERS` of `@nocobase/agent-protocol` (`packages/libs/agent-protocol/src/version.ts`). */
 const PROTOCOL_VERSION = 5;
@@ -29,6 +30,7 @@ export interface Issue {
   revision: number;
   /** The status change waiting for approval, if any. */
   pendingApproval?: { id: string } | null;
+  executor?: { type: string; id: string } | null;
 }
 
 export const DESIGN_PROPOSAL = [
@@ -122,6 +124,27 @@ export class FakeRunner {
     return agent.id;
   }
 
+  /**
+   * A developer agent: it may open pull requests, so approving a proposal may hand the issue to it. The proposal's own
+   * agent (`agent()`) only designs, and approving with it as the executor asks for another.
+   */
+  async developer(): Promise<{ id: string; name: string }> {
+    const name = `开发助手 ${this.name}`;
+    const agent = await this.api.post<{ id: string }>('agents', {
+      name,
+      modelEntries: [{ tool: 'claude' }],
+      access: 'everyone',
+      actions: [
+        'pm.projects/view',
+        'pm.issues/view',
+        'pm.issues/edit',
+        'pm.issues/comment',
+        'studio.git/open-pr',
+      ],
+    });
+    return { id: agent.id, name };
+  }
+
   /** Claims the run the issue's agent was woken for and returns its token; the run is then held, as if working. */
   async claim(identifier: string): Promise<string> {
     const claimed = await this.claimRun(identifier);
@@ -159,7 +182,8 @@ export class FakeRunner {
       title,
       statusKey: 'in_progress',
       ownerUserId,
-      executor: { type: 'agent', id: await this.agent() },
+      // Development runs only for an executor that may open pull requests.
+      executor: { type: 'agent', id: (await this.developer()).id },
     });
     const { run } = await this.claimRun(issue.identifier);
     const headers = { [HEADERS.runnerKey]: this.runnerKey! };
@@ -297,4 +321,26 @@ export class FakeRunner {
       );
     return after;
   }
+}
+
+/**
+ * Approves a proposal whose executor cannot implement: the approval asks for an executor, `developer` is chosen in
+ * the dialog, and the approval goes through with it.
+ */
+export async function approveWithDeveloper(
+  page: Page,
+  developer: { readonly name: string },
+): Promise<void> {
+  const dialog = page.getByRole('dialog', { name: '批准方案' });
+  await expect(dialog).toBeVisible();
+  const input = dialog.getByRole('combobox', { name: /执行者/ });
+  await expect(input).toBeEnabled();
+  await input.click();
+  await input.fill(developer.name);
+  await expect(input).toHaveValue(developer.name);
+  // Open the search results explicitly before choosing an option.
+  await input.press('ArrowDown');
+  await page.getByRole('option', { name: new RegExp(developer.name) }).click();
+  await dialog.getByRole('button', { name: '批准并进入开发中' }).click();
+  await expect(dialog).toBeHidden();
 }

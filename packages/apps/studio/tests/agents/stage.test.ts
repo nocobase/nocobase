@@ -760,7 +760,7 @@ describe('runAgent', () => {
   const activitiesOf = async (issueId: string, action: string) =>
     (await activities(issueId)).filter((entry) => entry.action === action);
 
-  it('only records an executor set in a status whose stage is another agent’s, and wakes it on entering In progress', async () => {
+  it('queues assignment normally and merges the current development stage when approved', async () => {
     const reviewer = await h.createAgent({ name: 'Reviewer' });
     const coder = await h.createAgent({ name: 'Coder' });
     await setRules({
@@ -780,20 +780,16 @@ describe('runAgent', () => {
     expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
       reviewer,
     ]);
-    // Setting the executor in review records it and wakes nobody, the reviewer included.
+    // Assignment queues normally; claim admission decides whether it can run.
     const current = await h.projects.issueQueries.detail(alice(), issue.id);
     await h.projects.issues.update(alice(), issue.id, {
       revision: current.revision,
       executor: { type: 'agent', id: coder },
     });
-    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
-      reviewer,
-    ]);
-    expect(
-      (await activitiesOf(issue.id, 'executor_waits')).map(
-        (entry) => entry.details,
-      ),
-    ).toEqual([{ agentId: coder, name: 'Coder', status: 'proposal_review' }]);
+    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
+      [reviewer, coder].sort(),
+    );
+    expect(await activitiesOf(issue.id, 'executor_waits')).toEqual([]);
     // Approved, it enters In progress: the executor is woken once, with the stage's instruction.
     await moveTo(issue, 'in_progress');
     const coderRuns = (await runsOf(issue.id)).filter(
@@ -801,8 +797,8 @@ describe('runAgent', () => {
     );
     expect(coderRuns).toHaveLength(1);
     const inputs = (await h.agents.runs.detail(coderRuns[0]!.id)).inputs;
-    expect(inputs).toHaveLength(1);
-    expect(inputs[0]).toMatchObject({
+    expect(inputs).toHaveLength(2);
+    expect(inputs[1]).toMatchObject({
       payload: {
         trigger: 'stageEntered',
         instruction: `Build ${issue.identifier}.`,
@@ -836,14 +832,16 @@ describe('runAgent', () => {
       revision: current.revision,
       executor: { type: 'agent', id: second },
     });
-    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual(before);
+    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
+      [...before, second].sort(),
+    );
     // Changes requested: back in In progress, the new executor takes it over with the stage's instruction.
     await moveTo(issue, 'in_progress');
     const taken = (await runsOf(issue.id)).filter(
       (run) => run.agentId === second,
     );
     expect(taken).toHaveLength(1);
-    expect((await h.agents.runs.detail(taken[0]!.id)).inputs[0]).toMatchObject({
+    expect((await h.agents.runs.detail(taken[0]!.id)).inputs[1]).toMatchObject({
       payload: {
         trigger: 'stageEntered',
         instruction: `Fix ${issue.identifier}.`,
@@ -930,7 +928,7 @@ describe('runAgent', () => {
     expect(
       (await h.projects.issueQueries.detail(alice(), bare.id)).executor,
     ).toBeNull();
-    // With an executor: the designer runs once, and the executor waits.
+    // Both are queued normally; only the current phase agent passes admission.
     const given = await h.projects.issues.create(alice(), {
       title: 'B',
       statusKey: 'analysis',
@@ -938,14 +936,11 @@ describe('runAgent', () => {
     });
     await expect
       .poll(async () => (await runsOf(given.id)).map((run) => run.agentId))
-      .toEqual([designer]);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect((await runsOf(given.id)).map((run) => run.agentId)).toEqual([
-      designer,
-    ]);
-    expect(
-      (await h.agents.runs.detail((await runsOf(given.id))[0]!.id)).inputs,
-    ).toHaveLength(1);
+      .toEqual(expect.arrayContaining([coder, designer]));
+    const designerRun = (await runsOf(given.id)).find(
+      (run) => run.agentId === designer,
+    )!;
+    expect((await h.agents.runs.detail(designerRun.id)).inputs).toHaveLength(1);
     // Where no agent is handed the status, nothing starts.
     const plain = await h.projects.issues.create(alice(), { title: 'C' });
     await new Promise((resolve) => setTimeout(resolve, 50));

@@ -11,12 +11,12 @@
  * | Method and path                 | Body                     | Answer                                         |
  * | ------------------------------- | ------------------------ | ---------------------------------------------- |
  * | `GET /`                         |                          | 200 `{ data: DesignState }`                    |
- * | `POST /approve`                 | `{ comment? }`           | 200 `{ data: DesignState }`                    |
+ * | `POST /approve`                 | `{ comment?, executor? }`           | 200 `{ data: DesignState }`                    |
  * | `POST /requestChanges`          | `{ comment }` (required) | 200 `{ data: DesignState }`                    |
  *
  * Errors are the standard error body, domain `nb-studio`: 400 `DESIGN_COMMENT_REQUIRED` (no comment to send back), 403
  * `DESIGN_APPROVE_FORBIDDEN` (not one who may approve), 400 `DESIGN_NOT_IN_REVIEW` or `DESIGN_PROPOSAL_MISSING`; the
- * projects plugin's own (a missing issue) keep its domain.
+ * 409 `DESIGN_EXECUTOR_REQUIRED` (choose an eligible executor); the projects plugin's own (a missing issue) keep its domain.
  */
 
 /**
@@ -52,7 +52,17 @@ export interface DesignProposal {
   readonly createdAt: string;
 }
 
+export interface DesignExecutor {
+  readonly type: 'agent' | 'user';
+  readonly id: string;
+}
+export interface DesignExecutorCandidate extends DesignExecutor {
+  readonly name: string;
+}
 export interface DesignState {
+  readonly executorOk: boolean;
+  readonly recommendedAgentId: string | null;
+  readonly executorCandidates: readonly DesignExecutorCandidate[];
   readonly issueId: string;
   readonly statusKey: string;
   /** The issue waits in Proposal review. */
@@ -66,5 +76,6 @@ export interface DesignState {
 }
 
 export interface DesignDecisionRequest {
+  readonly executor?: DesignExecutor;
   readonly comment?: string;
 }

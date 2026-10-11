@@ -23,6 +23,10 @@ import type {
 } from '@nocobase/app-plugin-agents/server/tokens';
 import { sampleValue } from '@nocobase/app-plugin-agents/shared/briefs';
 
+import { canImplement } from './executor.js';
+import { jsonObject } from './values.js';
+import type { Agent } from '@nocobase/app-plugin-agents/shared/agents';
+
 import { ANALYSIS_STATUS } from '../../shared/design.js';
 import { runBranches } from '../git/run-git.js';
 import { initialDirOf } from '../projects-init/store.js';
@@ -144,6 +148,24 @@ function stagesOf(inputs: readonly RunInput[]): Stage[] {
   });
 }
 
+/** Drop obsolete stage signals before rendering or delivering a turn. Other input stays intact. */
+export function currentIssueInputs(
+  context: IssueContext,
+  inputs: readonly RunInput[],
+): readonly RunInput[] {
+  return inputs.filter((input) => {
+    const payload = jsonObject(input.payload);
+    if (
+      payload.trigger !== 'stageEntered' &&
+      payload.trigger !== 'retrospective' &&
+      !payload.instruction
+    )
+      return true;
+    const status = payload.to ?? payload.status;
+    return typeof status !== 'string' || status === context.status.key;
+  });
+}
+
 /**
  * The task layer: why the agent runs now, and how to finish. Where to work is the system layer's. A run a workflow
  * stage started carries the stage and its instruction ("Workflow stage instruction").
@@ -155,20 +177,24 @@ export function renderTask(
   const reasons = triggersOf(inputs)
     .map((trigger) => TRIGGER_TASKS[trigger])
     .filter((text): text is string => Boolean(text));
-  const stages = stagesOf(inputs).flatMap((stage) => [
-    '',
-    stage.from === null
-      ? `The issue is in \`${stage.to}\`.`
-      : `The issue entered \`${stage.to}\` (from \`${stage.from}\`).`,
-    ...(stage.instruction
-      ? [
-          '',
-          '## Workflow stage instruction',
-          '',
-          ...stage.instruction.split('\n').map((line) => `> ${line}`.trimEnd()),
-        ]
-      : []),
-  ]);
+  const stages = stagesOf(inputs)
+    .filter((stage) => stage.to === context.status.key)
+    .flatMap((stage) => [
+      '',
+      stage.from === null
+        ? `The issue is in \`${stage.to}\`.`
+        : `The issue entered \`${stage.to}\` (from \`${stage.from}\`).`,
+      ...(stage.instruction
+        ? [
+            '',
+            '## Workflow stage instruction',
+            '',
+            ...stage.instruction
+              .split('\n')
+              .map((line) => `> ${line}`.trimEnd()),
+          ]
+        : []),
+    ]);
   const moves = context.allowedTransitions.filter(
     (key) => key !== context.status.key,
   );
@@ -176,6 +202,7 @@ export function renderTask(
   // a move as well only had the agent restate its proposal below the proposal card.
   const finish = isDesignStage(context)
     ? [
+        '- Include whether you recommend a preview and why. Read the current preference with `nb-studio preview status`; a recommendation or design approval does not change it. Only change the preview preference when the person explicitly asks.',
         `- If you wrote or revised the proposal, submit it with \`nb-studio issue design-proposal ${context.identifier} --content-file proposal.md\`: it is your report, and submitting moves the issue to proposal_review. End your turn without a comment restating or summarising it.`,
         '- If you only answered comments, end your turn.',
       ]
@@ -410,11 +437,103 @@ export function initialNote(defaultBranch: string): string {
   ].join('\n');
 }
 
+/** Triggers that address one agent directly: a mention of it, or a reply to its comment. */
+const ADDRESSED_TRIGGERS: ReadonlySet<string> = new Set(['mention', 'reply']);
+
+/** The statuses an issue's executor works in. */
+const EXECUTOR_STATUSES: ReadonlySet<string> = new Set([
+  'todo',
+  'in_progress',
+  'blocked',
+]);
+
+/**
+ * The subject's only admission policy; every trigger is judged from the state read when the agent is about to act on
+ * it. Input for an earlier stage is left out by `currentIssueInputs` rather than deciding on its own.
+ */
+export function issueClaimRejection(
+  context: IssueContext,
+  agent: Pick<Agent, 'id' | 'actions'> & { readonly name?: string },
+  inputs: readonly RunInput[],
+  rules: readonly {
+    readonly type: string;
+    readonly config?: Readonly<Record<string, unknown>>;
+  }[],
+): { reason: string; detail: string } | null {
+  const status = context.status.key;
+  const executor =
+    context.executor?.type === AGENT_KIND ? context.executor.id : null;
+  const current = currentIssueInputs(context, inputs);
+  if (inputs.length > 0 && current.length === 0)
+    return {
+      reason: 'stageMismatch',
+      detail: `Only work for an earlier stage was queued; the issue is now ${status}.`,
+    };
+  if (agent.id === executor && status === 'in_progress' && !canImplement(agent))
+    return {
+      reason: 'executorCannotImplement',
+      detail: `${agent.name ?? agent.id} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.`,
+    };
+  const currentStageAgent = rules.some((rule) => {
+    if (
+      rule.type !== 'runAgent' &&
+      !(
+        rule.type === 'retrospective' &&
+        current.some(
+          (input) => jsonObject(input.payload).trigger === 'retrospective',
+        )
+      )
+    )
+      return false;
+    const id = rule.config?.agentId;
+    return (typeof id === 'string' && id ? id : executor) === agent.id;
+  });
+  if (currentStageAgent) return null;
+  if (agent.id === executor) {
+    if (EXECUTOR_STATUSES.has(status)) return null;
+  } else if (
+    // Someone asked this agent by name or answered its comment; only the executor stays bound to its statuses.
+    current.some((input) =>
+      ADDRESSED_TRIGGERS.has(String(jsonObject(input.payload).trigger)),
+    )
+  )
+    return null;
+  return {
+    reason: 'stageMismatch',
+    detail: `This agent does not work in ${status}.`,
+  };
+}
+
 export function createIssueContextProvider(
   agents: Pick<Agents, 'runs' | 'briefs'>,
-  projects: () => Pick<Projects, 'issueContext'>,
+  projects: () => Pick<Projects, 'issueContext' | 'workflows'>,
 ): ContextProvider {
   return {
+    async admit(conn, claim) {
+      const context = await projects().issueContext.contextFor(
+        conn,
+        claim.run.subject.id,
+        { kind: AGENT_KIND },
+      );
+      if (!context)
+        return { reason: 'subjectMissing', detail: 'The issue is gone.' };
+      const catalog = await projects().workflows.catalogs.forProject(
+        conn,
+        context.project?.id ?? null,
+      );
+      const rules =
+        catalog.machine.states.find((state) => state.key === context.status.key)
+          ?.rules ?? [];
+      return issueClaimRejection(context, claim.agent, claim.inputs, rules);
+    },
+    async selectInputs(conn, claim) {
+      const context = await projects().issueContext.contextFor(
+        conn,
+        claim.run.subject.id,
+        { kind: AGENT_KIND },
+      );
+      return context ? currentIssueInputs(context, claim.inputs) : [];
+    },
     async assemble(conn, claim) {
       const context = await projects().issueContext.contextFor(
         conn,
@@ -422,6 +541,7 @@ export function createIssueContextProvider(
         { kind: AGENT_KIND },
       );
       if (!context) throw new Error('The issue is gone.');
+      const inputs = currentIssueInputs(context, claim.inputs);
       const subject = { noun: SUBJECT_NOUN, key: context.identifier };
       const previousSummary = await agents.runs.lastSummary(
         conn,
@@ -452,7 +572,8 @@ export function createIssueContextProvider(
           attach: claim.agent.actions.includes(ATTACH_ACTION),
           design: isDesignStage(context),
         }),
-        task: renderTask(context, claim.inputs),
+        inputs,
+        task: renderTask(context, inputs),
         context: initial
           ? [
               renderIssueContext(context),
@@ -463,7 +584,7 @@ export function createIssueContextProvider(
               ...(initializeIfEmpty ? [EMPTY_REPOSITORY_NOTE] : []),
             ].join('\n\n'),
         turn: {
-          prompt: agents.briefs.turnPrompt(claim.inputs, { subject }),
+          prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
         },
         data: { kind: ISSUE_SUBJECT, issue: context },
@@ -596,7 +717,7 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
 
 export function issueBinding(
   agents: Pick<Agents, 'runs' | 'briefs'>,
-  projects: () => Pick<Projects, 'issueContext'>,
+  projects: () => Pick<Projects, 'issueContext' | 'workflows'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
 ): SubjectBinding {

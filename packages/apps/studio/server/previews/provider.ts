@@ -164,6 +164,8 @@ export default class StudioPreviewsProvider extends ServiceProvider<Application>
     );
     container.singleton(studioPreviewApiToken, (resolver) =>
       createPreviewApi({
+        syncPreviewLabels: (issueId) =>
+          resolver.resolve(studioGitToken).git().syncPreviewLabels(issueId),
         database: resolver.resolve(databaseManagerToken),
         previews: () => resolver.resolve(studioPreviewsToken),
         issues: createIssueAccess({
