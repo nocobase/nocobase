@@ -117,6 +117,8 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'jobs.build',
   // Mounts (runner/mounts.ts): directories of files the application places beside the agent.
   'mounts',
+  // Repository credentials asked for whenever git needs one (agent/git-credentials.ts).
+  'gitCredentials',
   // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
   NPM_UPGRADE_FEATURE,
 ];
