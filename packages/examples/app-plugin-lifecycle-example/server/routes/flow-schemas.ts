@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   DURABLE_FLOWS,
+  INVOICE_ORDERS,
   PLANS,
   SALE_ITEMS,
   VENDOR_OUTCOMES,
@@ -15,6 +16,7 @@ import {
 import { PEOPLE } from '../../shared/people.js';
 import type {
   NewExport,
+  NewInvoice,
   NewFulfilment,
   NewOrder,
   NewPurchase,
@@ -44,6 +46,25 @@ const failures = z
   .max(20)
   .default(0)
   .meta({ description: 'How many attempts of a step fail on purpose.' });
+
+export const CreateInvoiceInput: z.ZodType<NewInvoice> = z.strictObject({
+  orderRef: z.enum(
+    INVOICE_ORDERS.map((order) => order.orderRef) as [string, ...string[]],
+  ),
+  title: z.string().trim().min(1),
+  taxNumber: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9]{15,20}$/),
+  failSubmissions: failures,
+});
+export const CompleteInvoiceInput: z.ZodType<{
+  readonly outcome: 'issued' | 'failed';
+  readonly hold: boolean;
+}> = z.strictObject({
+  outcome: z.enum(['issued', 'failed']),
+  hold: z.boolean().default(false),
+});
 
 export const CreateOrderInput: z.ZodType<NewOrder> = z.strictObject({
   customerId,

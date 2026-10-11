@@ -13,8 +13,6 @@ export interface InvitationEmail {
   readonly subject: string;
   readonly text: string;
   readonly html: string;
-  /** Stable per token, so a retried request never sends the same link twice. */
-  readonly idempotencyKey: string;
 }
 
 export interface InvitationMailer {
@@ -22,7 +20,7 @@ export interface InvitationMailer {
   send(email: InvitationEmail): Promise<void>;
 }
 
-/** Used when no channel is configured: every send fails, so the inviter gets the link to forward. */
+/** Used when no channel is configured: delivery fails; authorized inviters can deliver the link themselves. */
 export const unconfiguredMailer: InvitationMailer = {
   send: () =>
     Promise.reject(new Error('No invitation email channel is configured.')),
@@ -61,9 +59,8 @@ export function buildInvitationEmail(input: {
   readonly summary: readonly string[];
   readonly url: string;
   readonly expiresAt: Date;
-  readonly idempotencyKey: string;
 }): InvitationEmail {
-  const date = input.expiresAt.toISOString().slice(0, 10);
+  const date = input.expiresAt.toISOString();
   const blocks = LANGUAGES.map((texts) => {
     const values = {
       inviter: input.inviterName,
@@ -99,6 +96,5 @@ export function buildInvitationEmail(input: {
           `\n<p>${escapeHtml(block.fallback)}<br>${url}</p>`,
       )
       .join('\n<hr>\n'),
-    idempotencyKey: input.idempotencyKey,
   };
 }

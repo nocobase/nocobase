@@ -82,9 +82,9 @@ The enabled model services and their models of one kind (`chat` by default), for
 nb-studio model list
 ```
 
-| Flag     | Type    | Description  |
-| -------- | ------- | ------------ |
-| `--kind` | chat \\ | embedding \\ | rerank | (default "chat") |
+| Flag     | Type                        | Description      |
+| -------- | --------------------------- | ---------------- |
+| `--kind` | chat \| embedding \| rerank | (default "chat") |
 
 **Output:** A list (table columns: `name`, `title`, `provider`, `models`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -118,12 +118,12 @@ Replaces the whole price table and the subscriptions; a model may appear once pe
 nb-studio model price set
 ```
 
-| Flag              | Type      | Description                                                                    |
-| ----------------- | --------- | ------------------------------------------------------------------------------ |
-| `--prices`        | json      |                                                                                |
-| `--subscriptions` | claude \\ | codex \\                                                                       | opencode \\ | pi  | (repeatable) |
-| `--file`          | path      | The request body as a JSON object; the flags override its fields.              |
-| `--yes`           | boolean   | Go ahead without asking “Replace the whole price table and the subscriptions?” |
+| Flag              | Type                              | Description                                                                    |
+| ----------------- | --------------------------------- | ------------------------------------------------------------------------------ |
+| `--prices`        | json                              |                                                                                |
+| `--subscriptions` | claude \| codex \| opencode \| pi | (repeatable)                                                                   |
+| `--file`          | path                              | The request body as a JSON object; the flags override its fields.              |
+| `--yes`           | boolean                           | Go ahead without asking “Replace the whole price table and the subscriptions?” |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

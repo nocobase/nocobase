@@ -468,12 +468,10 @@ export interface WorkspaceGitCheck {
   readonly discardsUntracked: boolean;
 }
 
-/** Rechecks local objects only; application evidence never triggers a network fetch. */
+/** Reads local objects only, never the network: what the runner last saw the remote hold. */
 export async function checkWorkspaceGit(
   workDir: string,
   meta: WorkspaceMeta,
-  evidence: readonly import('../protocol/index.ts').WorkspaceCommitEvidence[] = [],
-  allowUntracked: boolean = false,
   log?: (message: string) => void,
 ): Promise<WorkspaceGitCheck> {
   let discardsUntracked = false;
@@ -496,7 +494,7 @@ export async function checkWorkspaceGit(
       discardsUntracked ||= lines.some((line) => line.startsWith('??'));
       if (lines.some((line) => !line.startsWith('??')))
         return result('trackedChanges');
-      if (discardsUntracked && !allowUntracked) return result('unpushed');
+      if (discardsUntracked) return result('unpushed');
       // Parent status checks gitlink changes, but a committed gitlink does not prove the submodule commit was pushed.
       // taskGit validates every initialized submodule's config and metadata pointer before entering it with -C.
       const submodules = await taskGit(context, [
@@ -521,19 +519,12 @@ export async function checkWorkspaceGit(
         discardsUntracked ||= childLines.some((line) => line.startsWith('??'));
         if (childLines.some((line) => !line.startsWith('??')))
           return result('trackedChanges');
-        if (discardsUntracked && !allowUntracked) return result('unpushed');
+        if (discardsUntracked) return result('unpushed');
         const childHead = await taskGit(context, [
           ...childArgs,
           'rev-parse',
           '--verify',
           'HEAD',
-        ]);
-        const childUrl = await taskGit(context, [
-          ...childArgs,
-          'config',
-          '--local',
-          '--get',
-          'remote.origin.url',
         ]);
         const refs = await taskGit(context, [
           ...childArgs,
@@ -541,12 +532,9 @@ export async function checkWorkspaceGit(
           '--format=%(objectname)',
           'refs/remotes/origin/',
         ]);
-        const childCandidates = [
-          ...refs.split('\n'),
-          ...evidence
-            .filter((item) => item.repository === childUrl)
-            .map((item) => item.headSha),
-        ].filter((sha) => /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(sha));
+        const childCandidates = refs
+          .split('\n')
+          .filter((sha) => /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(sha));
         let childProven = false;
         for (const candidate of childCandidates) {
           if (
@@ -576,13 +564,7 @@ export async function checkWorkspaceGit(
         (head === repo.startSha || head === repo.pushedSha)
       )
         continue;
-      const candidates = evidence
-        .filter(
-          (item) =>
-            item.repository === repo.url &&
-            /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(item.headSha),
-        )
-        .map((item) => item.headSha);
+      const candidates: string[] = [];
       const pushed =
         meta.legacy === true
           ? `refs/remotes/origin/${repo.branch}`
@@ -630,10 +612,7 @@ export async function hasUnpushedWork(
   meta: WorkspaceMeta,
   log?: (message: string) => void,
 ): Promise<boolean> {
-  return (
-    (await checkWorkspaceGit(workDir, meta, [], false, log)).reason !==
-    'allowed'
-  );
+  return (await checkWorkspaceGit(workDir, meta, log)).reason !== 'allowed';
 }
 
 async function addClone(
