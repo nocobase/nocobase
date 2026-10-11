@@ -20,6 +20,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ComponentType, ReactElement } from 'react';
 import { Outlet, MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -195,21 +196,26 @@ describe('application shell', () => {
   });
 
   it('collapses and expands the desktop navigation', async () => {
+    const user = userEvent.setup();
     renderApplication('/', true);
 
     await screen.findByRole('navigation', { name: 'Application navigation' });
     const sidebar = document.querySelector('[data-slot=sidebar]');
 
-    fireEvent.click(
+    await user.click(
       screen.getByRole('button', { name: 'Collapse navigation' }),
     );
-    expect(sidebar).toHaveAttribute('data-collapsible', 'icon');
+    await waitFor(() =>
+      expect(sidebar).toHaveAttribute('data-collapsible', 'icon'),
+    );
     expect(
       screen.getByRole('button', { name: 'Expand navigation' }),
     ).toHaveAttribute('aria-pressed', 'true');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Expand navigation' }));
-    expect(sidebar).toHaveAttribute('data-state', 'expanded');
+    await user.click(screen.getByRole('button', { name: 'Expand navigation' }));
+    await waitFor(() =>
+      expect(sidebar).toHaveAttribute('data-state', 'expanded'),
+    );
   });
 
   it('opens and closes the mobile navigation without changing the route', async () => {
