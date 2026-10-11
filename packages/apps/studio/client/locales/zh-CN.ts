@@ -142,7 +142,7 @@ const zhCN: AppResource = {
         '将下面的配置指令发给你常用的本地 Coding Agent（如 Claude Code、Codex）。完成配置后，就能让它帮你查询项目、创建任务、更新进度。',
       prompt:
         '请帮我安装并配置 NocoBase Studio CLI，用来管理 NocoBase Studio（{{server}}）的项目和任务：\n' +
-        '1. 运行 `{{install}}` 安装 `nb-studio`；\n' +
+        '1. `nb-studio` 需要 Node.js 24 或更高版本及 npm：先用 `node --version` 检查，缺少或版本过低时先征得我同意再安装；然后运行 `{{install}}` 安装 `nb-studio`；\n' +
         '2. 运行 `nb-studio login --server {{server}}`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；\n' +
         '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；\n' +
         '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',

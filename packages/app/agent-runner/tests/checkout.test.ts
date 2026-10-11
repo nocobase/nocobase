@@ -13,17 +13,9 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  agentWorkingTrees,
-  agentWritableRoots,
-} from '../src/agent/prepare/index.ts';
-import { createPolicy, isInside } from '../src/core/command-policy.ts';
+import { isInside } from '../src/lib/paths.ts';
 import { buildAgentEnv } from '../src/agent/env.ts';
-import {
-  ALLOW_FILE,
-  installGitHooks,
-  pushAllowPath,
-} from '../src/core/push-guard.ts';
+import { installGitHooks } from '../src/core/git-hooks.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
   acquireLock,
@@ -310,18 +302,12 @@ describe('checkout', () => {
     writeFileSync(path.join(dir, 'another.txt'), 'another change');
     git([...COMMIT, 'add', '.'], dir);
     git([...COMMIT, 'commit', '-q', '-m', 'Another change'], dir);
-    expect(() => git(['push', 'origin', 'HEAD:main'], dir)).toThrow(
-      /initial push may only create/u,
-    );
     expect(git(['rev-parse', 'refs/heads/main'], empty)).toBe(sha);
     await retry.release();
     const later = await checkout(enabled);
     expect(later.repos[0]).toMatchObject({ branch: 'agent/automatic' });
     expect(later.repos[0]!.initializing).toBeUndefined();
     expect(git(['rev-parse', 'HEAD'], dir)).not.toBe(sha);
-    expect(() => git(['push', 'origin', 'HEAD:main'], dir)).toThrow(
-      /may push only the branch/u,
-    );
     await later.release();
   });
 
@@ -363,49 +349,7 @@ describe('checkout', () => {
     });
     expect(work.repos[0]).toMatchObject({ branch: 'agent/normal' });
     expect(work.repos[0]!.initializing).toBeUndefined();
-    expect(() =>
-      git(['push', 'origin', 'HEAD:other'], work.repos[0]!.dir),
-    ).toThrow(/may push only the branch/u);
     await work.release();
-  });
-
-  it('refuses a concurrent initializer even with a force push', async () => {
-    const empty = path.join(root, 'race.git');
-    git(['init', '--quiet', '--bare', '--initial-branch=main', empty]);
-    const entry = {
-      ...repo('race'),
-      url: `file://${empty}`,
-      initializeIfEmpty: true as const,
-    };
-    const first = await checkout({
-      paths,
-      appKey: 'app',
-      subjectKey: 'race-a',
-      dirs: [entry],
-    });
-    const second = await checkout({
-      paths,
-      appKey: 'app',
-      subjectKey: 'race-b',
-      dirs: [entry],
-    });
-    for (const [index, work] of [first, second].entries()) {
-      const dir = work.repos[0]!.dir;
-      writeFileSync(path.join(dir, 'app.txt'), String(index));
-      git([...COMMIT, 'add', '.'], dir);
-      git([...COMMIT, 'commit', '-q', '-m', 'Initialize'], dir);
-    }
-    git(['push', 'origin', 'HEAD:main'], first.repos[0]!.dir);
-    const head = git(['rev-parse', 'refs/heads/main'], empty);
-    expect(() =>
-      git(['push', '--force', 'origin', 'HEAD:main'], second.repos[0]!.dir),
-    ).toThrow(/initial push may only create/u);
-    expect(git(['rev-parse', 'refs/heads/main'], empty)).toBe(head);
-    expect(
-      readFileSync(path.join(second.repos[0]!.dir, 'app.txt'), 'utf8'),
-    ).toBe('1');
-    await first.release();
-    await second.release();
   });
 
   it('does not turn an inaccessible remote into an empty repository', async () => {
@@ -452,152 +396,38 @@ describe('checkout', () => {
     await mine.release();
   });
 
-  it("lets a worktree push only its run's branch, to its own repository", async () => {
+  it('installs only the commit hook, removing the push guard of earlier runners, and lets the agent push anywhere', async () => {
+    mkdirSync(paths.hooksDir, { recursive: true });
+    writeFileSync(path.join(paths.hooksDir, 'pre-push'), '#!/bin/sh\nexit 1\n');
+    await installGitHooks(paths.hooksDir);
+    expect(existsSync(path.join(paths.hooksDir, 'pre-push'))).toBe(false);
+    expect(existsSync(path.join(paths.hooksDir, 'prepare-commit-msg'))).toBe(
+      true,
+    );
     const work = await checkout({
       paths,
       appKey: 'app',
-      subjectKey: 'push-guard',
-      dirs: [repo('push-guard')],
-    });
-    const dir = path.join(work.workDir, 'app');
-    writeFileSync(path.join(dir, 'c.txt'), 'c');
-    git([...COMMIT, 'add', '.'], dir);
-    git([...COMMIT, 'commit', '-q', '-m', 'c'], dir);
-    const guardEnv = buildAgentEnv({
-      source: process.env,
-      hooksDir: path.join(work.repos[0]!.cache, 'hooks'),
-    });
-    const push = (args: string[], cwd = dir, env: NodeJS.ProcessEnv = {}) => {
-      try {
-        execFileSync('git', ['push', '--quiet', ...args], {
-          cwd,
-          env: { ...process.env, ...guardEnv, ...env },
-          stdio: 'pipe',
-        });
-        return 'pushed';
-      } catch (error) {
-        return String((error as { stderr?: Buffer }).stderr ?? error);
-      }
-    };
-    expect(push(['origin', 'HEAD:main'])).toContain(
-      'may push only the branch agent/push-guard',
-    );
-    expect(push(['origin', 'HEAD:refs/tags/v1'])).toContain(
-      'may push only the branch agent/push-guard',
-    );
-    const elsewhere = path.join(root, 'elsewhere.git');
-    git(['init', '--quiet', '--bare', elsewhere]);
-    expect(push([elsewhere, 'HEAD:agent/push-guard'])).toContain(
-      'may push only to',
-    );
-    expect(push(['origin', 'HEAD:agent/push-guard'])).toBe('pushed');
-    expect(push(['--force', 'origin', 'HEAD~1:agent/push-guard'])).toBe(
-      'pushed',
-    );
-    expect(push(['origin', ':agent/push-guard'])).toContain('not allowed');
-
-    // A clone the agent makes itself has no permission at all, once its git uses the runner's hooks.
-    const clone = path.join(work.workDir, 'own');
-    git(['clone', '--quiet', remote.replace('file://', ''), clone]);
-    expect(
-      push(['origin', 'HEAD:main'], clone, {
-        GIT_CONFIG_COUNT: '1',
-        GIT_CONFIG_KEY_0: 'core.hooksPath',
-        GIT_CONFIG_VALUE_0: path.join(work.repos[0]!.cache, 'hooks'),
-      }),
-    ).toContain("only from the run's own checkouts");
-    await work.release();
-  });
-
-  it('keeps push permissions protected from file edits, shell redirection and sandbox writable roots', async () => {
-    const work = await checkout({
-      paths,
-      appKey: 'app',
-      subjectKey: 'protected-push',
-      dirs: [repo('protected-push')],
+      subjectKey: 'no-guard',
+      dirs: [repo('no-guard')],
     });
     const entry = work.repos[0]!;
-    const allow = await pushAllowPath(paths.pushAllowDir, entry.gitDir);
-    expect(existsSync(allow)).toBe(true);
-    expect(isInside(paths.home, allow)).toBe(true);
-    expect(existsSync(path.join(entry.gitDir, ALLOW_FILE))).toBe(false);
-    const roots = [entry.dir, ...agentWritableRoots(work.dirs, entry.dir)];
-    for (const root of roots) expect(isInside(root, allow)).toBe(false);
-    for (const permissionMode of ['acceptEdits', 'bypass'] as const) {
-      const permission = createPolicy({
-        workDir: work.workDir,
-        cwd: entry.dir,
-        protectedPaths: [paths.home],
-        policy: {
-          permissionMode,
-          allowedCommands: ['^printf\\b'],
-          deniedPatterns: [],
-          idleTimeoutMs: 1_000,
-        },
-      });
-      expect(
-        permission('Write', { file_path: allow, content: 'branch=main' }),
-      ).toMatchObject({ decision: 'deny' });
-      expect(permission('Edit', { file_path: allow })).toMatchObject({
-        decision: 'deny',
-      });
-      expect(
-        permission('Bash', { command: `printf branch=main > '${allow}'` }),
-      ).toMatchObject({ decision: 'deny' });
-    }
-    // A forged checkout-local file is ignored even when an agent can create it.
+    expect(existsSync(path.join(entry.cache, 'hooks', 'pre-push'))).toBe(false);
     writeFileSync(path.join(entry.dir, 'pending.txt'), 'new commit');
     git(['add', '.'], entry.dir);
     git([...COMMIT, 'commit', '-q', '-m', 'new work'], entry.dir);
-    writeFileSync(
-      path.join(entry.gitDir, ALLOW_FILE),
-      `url=${remote}\nbranch=main\n`,
-    );
-    await installGitHooks(paths.hooksDir, paths.pushAllowDir);
     const env = buildAgentEnv({
       source: process.env,
       hooksDir: paths.hooksDir,
     });
-    expect(() =>
-      execFileSync('git', ['push', '--quiet', 'origin', 'HEAD:main'], {
-        cwd: entry.dir,
-        env,
-        stdio: 'pipe',
-      }),
-    ).toThrow(/may push only the branch agent\/protected-push/u);
+    // Nothing on the runner stops it: protect default branches on the code host.
+    execFileSync('git', ['push', '--quiet', 'origin', 'HEAD:main'], {
+      cwd: entry.dir,
+      env,
+      stdio: 'pipe',
+    });
     expect(
       git(['rev-parse', 'refs/heads/main'], remote.replace('file://', '')),
-    ).toBe(git(['rev-parse', 'origin/main'], entry.dir));
-    // The runner's automatic push also enforces protected hooks if local hooks or the remote are tampered with.
-    const elsewhere = path.join(root, 'forged-remote.git');
-    git(['init', '--quiet', '--bare', elsewhere]);
-    writeFileSync(
-      path.join(entry.gitDir, 'hooks', 'pre-push'),
-      '#!/bin/sh\nexit 0\n',
-    );
-    git(['remote', 'set-url', 'origin', elsewhere], entry.dir);
-    expect(
-      (
-        await reportRepos(work.repos, {
-          push: true,
-        })
-      )[0]?.pushed,
-    ).toBe(true);
-    expect(git(['for-each-ref', 'refs/heads/'], elsewhere)).toBe('');
-    git(['remote', 'set-url', 'origin', remote], entry.dir);
-    expect((await reportRepos(work.repos, { push: true }))[0]?.pushed).toBe(
-      true,
-    );
-    const errors: string[] = [];
-    expect(
-      (
-        await reportRepos([{ ...entry, branch: 'main' }], {
-          push: true,
-          log: (message) => errors.push(message),
-        })
-      )[0]?.pushed,
-    ).toBe(false);
-    expect(errors.join('\n')).toContain('may push only the branch');
+    ).toBe(git(['rev-parse', 'HEAD'], entry.dir));
     await work.release();
   });
 
@@ -753,58 +583,6 @@ describe('checkout', () => {
     expect((await reportRepos(resumed.repos, { push: true }))[0]?.pushed).toBe(
       true,
     );
-    await resumed.release();
-  });
-
-  it('refreshes legacy and clone permissions without trusting their old local files', async () => {
-    const first = await checkout({
-      paths,
-      appKey: 'app',
-      subjectKey: 'guard-refresh',
-      dirs: [repo('guard-refresh')],
-    });
-    const entry = first.repos[0]!;
-    const legacy = path.join(first.workDir, 'legacy');
-    git(
-      [
-        'worktree',
-        'add',
-        '-q',
-        '-b',
-        'agent/legacy-guard',
-        legacy,
-        'origin/main',
-      ],
-      entry.cache,
-    );
-    const legacyGitDir = git(['rev-parse', '--absolute-git-dir'], legacy);
-    writeFileSync(
-      path.join(entry.gitDir, ALLOW_FILE),
-      `url=${remote}\nbranch=main\n`,
-    );
-    writeFileSync(
-      path.join(legacyGitDir, ALLOW_FILE),
-      `url=${remote}\nbranch=main\n`,
-    );
-    await first.release();
-    const resumed = await checkout({
-      paths,
-      appKey: 'app',
-      subjectKey: 'guard-refresh',
-      dirs: [
-        repo('guard-refresh'),
-        { ...repo('legacy-guard'), path: 'legacy' },
-      ],
-    });
-    for (const repository of resumed.repos) {
-      expect(existsSync(path.join(repository.gitDir, ALLOW_FILE))).toBe(false);
-      expect(
-        readFileSync(
-          await pushAllowPath(paths.pushAllowDir, repository.gitDir),
-          'utf8',
-        ),
-      ).toContain(`branch=${repository.branch}\n`);
-    }
     await resumed.release();
   });
 
@@ -1108,10 +886,6 @@ describe('checkout', () => {
         git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
       ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
       expect(work.repos[0]!.submodules).toEqual([path.join(dir, 'vendor/sub')]);
-      expect(agentWorkingTrees(work.dirs)).toEqual([
-        dir,
-        path.join(dir, 'vendor/sub'),
-      ]);
       await work.release();
     });
 
@@ -1149,9 +923,6 @@ describe('checkout', () => {
         ];
         expect([...work.repos[0]!.submodules].sort()).toEqual(
           [...expected].sort(),
-        );
-        expect([...agentWorkingTrees(work.dirs)].sort()).toEqual(
-          [dir, ...expected].sort(),
         );
         expect(
           existsSync(
@@ -1249,16 +1020,11 @@ describe('checkout', () => {
         subjectKey: 'isolated-second',
         dirs: [repo('isolated-second')],
       });
-      const rootsA = agentWritableRoots(a.dirs, a.workDir);
-      const rootsB = agentWritableRoots(b.dirs, b.workDir);
-      expect(rootsA).toEqual([a.repos[0]!.dir, a.repos[0]!.gitDir]);
-      for (const root of rootsA) {
-        expect(isInside(root, b.repos[0]!.gitDir)).toBe(false);
-        expect(isInside(root, b.repos[0]!.dir)).toBe(false);
-        expect(isInside(root, a.repos[0]!.cache)).toBe(false);
-      }
-      for (const root of rootsB)
-        expect(isInside(root, a.repos[0]!.gitDir)).toBe(false);
+      const [first, second] = [a.repos[0]!, b.repos[0]!];
+      expect(isInside(first.dir, first.gitDir)).toBe(true);
+      expect(isInside(second.dir, second.gitDir)).toBe(true);
+      expect(isInside(first.dir, second.gitDir)).toBe(false);
+      expect(isInside(first.gitDir, first.cache)).toBe(false);
       await a.release();
       await b.release();
     });

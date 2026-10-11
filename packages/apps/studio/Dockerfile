@@ -20,14 +20,10 @@
 # The image holds code and production dependencies only. Mount the runtime configuration at /app/config.yml and
 # persistent data at /app/storage; neither belongs in the image.
 #
-# Studio also serves the `nb-studio` and `nocobase-runner` tarballs to its install script, to runners and to
-# `nb-studio update`. Built into `runners-dist/` before `docker build`, they are baked into /app/runners/dist, which the
-# image serves unless config.yml names its own `agents.dist.dir`:
-#
-#   pnpm nocobase cli build --out runners-dist
-#   pnpm nocobase cli build --runner --out runners-dist
-#
-# Without `runners-dist/` the image is built as before and serves `storage/runners/dist`.
+# Studio also serves the `nb-studio` and `nocobase-runner` packages to its install script, to runners and to
+# `nb-studio update`. `pnpm build` packs them into `dist/runners/`, so they ride inside `dist/` either way, and the
+# image serves them unless config.yml names its own `agents.dist.dir` or NB_STUDIO_RUNNERS_DIST names another
+# directory.
 
 ARG NODE_VERSION=24.15.0
 # `source` builds `dist/` inside the image; `prebuilt` takes the one in the build context.
@@ -45,7 +41,7 @@ RUN npm install --global pnpm@${PNPM_VERSION} \
 ARG APP_DIR=.
 WORKDIR /src
 # A local `dist/` is in the context for DIST=prebuilt; a source build replaces it, so it is not copied here.
-COPY --exclude=dist --exclude=packages/templates/*/dist --exclude=packages/apps/*/dist --exclude=runners-dist . .
+COPY --exclude=dist --exclude=packages/templates/*/dist --exclude=packages/apps/*/dist . .
 RUN test -f pnpm-lock.yaml || { \
       echo 'No pnpm-lock.yaml in the build context. Inside the nocobase3 repository, build from the repository root' \
         'with -f <template>/Dockerfile --build-arg APP_DIR=<template>, or build dist/ first and pass' \
@@ -60,6 +56,7 @@ RUN --mount=type=cache,target=/pnpm/store \
 # clean checkout their `dist` has to exist first. In a generated application nothing matches and this does nothing.
 RUN pnpm --filter "$(node -p "require('./${APP_DIR}/package.json').name")^..." build
 
+# `pnpm build` also packs the runner and nb-studio into dist/runners, installing their dependencies with npm.
 WORKDIR /src/${APP_DIR}
 ARG TARGETARCH
 RUN --mount=type=cache,target=/pnpm/store \
@@ -111,23 +108,16 @@ if (target.platform !== 'linux' || target.arch !== arch || target.libc !== 'glib
 if (JSON.parse(fs.readFileSync('dist/package.json', 'utf8')).nocobase?.relocatable !== true) {
   fail('dist/ was built by an @nocobase/app-cli that ties the client to one mount path. Upgrade it and rebuild dist/.');
 }
+// Studio serves the runner and nb-studio packages its build packed. Without them runners installed from a package
+// could not update, so a dist/ from a build that predates them is rebuilt rather than shipped.
+for (const product of ['nocobase-runner', 'nb-studio']) {
+  if (!fs.existsSync(`dist/runners/stable/${product}/manifest.json`)) {
+    fail(`dist/runners/stable/${product}/manifest.json is missing. Rebuild dist/ with this Studio's pnpm build.`);
+  }
+}
 EOF
 
 FROM dist-${DIST} AS dist
-
-# The tarballs in the context's `runners-dist/`, laid out as `cli build --out` writes them (`stable/<product>/...`), or
-# nothing. `Dockerfile` is named beside it only so the copy has a source when `runners-dist/` is absent.
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bookworm-slim AS runners
-WORKDIR /context
-COPY Dockerfile runners-dis[t] ./
-RUN mkdir -p /runners/dist \
-    && if [ -d stable ]; then \
-      for product in stable/*; do \
-        test -f "${product}/manifest.json" \
-          || { echo "runners-dist/${product} has no manifest.json: build it with pnpm nocobase cli build." >&2; exit 1; }; \
-      done; \
-      mv stable /runners/dist/stable; \
-    fi
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ARG APP_DIR=.
@@ -144,9 +134,6 @@ WORKDIR /app
 COPY --from=dist --chown=node:node /src/${APP_DIR}/dist/ ./dist/
 # Kept as a starting point for config.yml; the real file, with its secrets, is supplied at runtime.
 COPY --from=dist /src/${APP_DIR}/config.example.yml ./config.example.yml
-# Outside the storage volume, so a mounted storage/ cannot hide them; read only.
-COPY --from=runners /runners/dist/ ./runners/dist/
-ENV NB_STUDIO_RUNNERS_DIST=/app/runners/dist
 RUN mkdir -p storage && chown node:node storage
 USER node
 EXPOSE 13000

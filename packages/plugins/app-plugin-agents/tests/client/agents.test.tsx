@@ -636,9 +636,6 @@ describe('agent pages', () => {
     expect(
       screen.getByRole('region', { name: 'placement.title' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('region', { name: 'commandPolicy.title' }),
-    ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('tab', { name: 'agentDetail.tabs.capabilities' }),
     );
@@ -790,41 +787,27 @@ describe('agent pages', () => {
       '/agents/:agentId',
       '/agents/a1?tab=runtime',
     );
-    const commands = await screen.findByRole('region', {
-      name: 'commandPolicy.title',
-    });
-    fireEvent.change(
-      within(commands).getByLabelText('capabilities.deniedPatterns'),
-      {
-        target: { value: '(' },
-      },
-    );
-    fireEvent.change(screen.getByLabelText('placement.attempts'), {
-      target: { value: '4' },
-    });
+    const attempts = await screen.findByLabelText('placement.attempts');
+    fireEvent.change(attempts, { target: { value: '99' } });
     const bar = screen.getByRole('region', { name: 'agentDetail.unsaved' });
     fireEvent.click(within(bar).getByRole('button', { name: 'actions.save' }));
     expect(
-      await within(commands).findByText(
-        'capabilities.patternInvalid(pattern=()',
-      ),
+      await screen.findByText('placement.attemptsInvalid'),
     ).toBeInTheDocument();
     expect(callsTo('PATCH', 'agents/a1')).toHaveLength(0);
-    fireEvent.change(
-      within(commands).getByLabelText('capabilities.deniedPatterns'),
-      {
-        target: { value: 'rm -rf' },
-      },
-    );
+    fireEvent.change(attempts, { target: { value: '4' } });
     fireEvent.click(within(bar).getByRole('button', { name: 'actions.save' }));
     await waitFor(() => expect(callsTo('PATCH', 'agents/a1')).toHaveLength(1));
     expect(callsTo('PATCH', 'agents/a1')[0]?.json).toEqual({
       runnerIds: [],
       maxConcurrentRuns: 2,
       maxAttempts: 4,
-      toolPolicy: { deniedPatterns: ['rm -rf'] },
       expectedRevision: 1,
     });
+    // Command rules are no longer shown: runners do not enforce them.
+    expect(
+      screen.queryByRole('region', { name: 'commandPolicy.title' }),
+    ).not.toBeInTheDocument();
   });
 
   it('asks before switching tabs or leaving with unsaved changes, and discards them', async () => {

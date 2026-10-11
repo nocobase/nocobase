@@ -121,7 +121,11 @@ export const PERMISSION_MODES = ['acceptEdits', 'plan', 'bypass'] as const;
 
 export type PermissionMode = (typeof PERMISSION_MODES)[number];
 
-/** How the runner decides what the agent's tools may do. */
+/**
+ * An agent's tool settings. Runners use `maxTurns` and `idleTimeoutMs`. `permissionMode`, `allowedCommands`,
+ * `deniedPatterns` and `allowedDownloads` are still sent and accepted, so stored agents and older runners keep working,
+ * but runners no longer enforce them: agents run with full access.
+ */
 export interface ToolPolicy {
   readonly permissionMode: PermissionMode;
   /** Regular expressions; a shell command must match one. */

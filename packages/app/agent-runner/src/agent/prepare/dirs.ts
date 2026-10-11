@@ -1,5 +1,5 @@
 // Step `dirs`: the run's working directories, in its order. A repository is checked out (a bare cache and the
-// subject's long-lived worktree on the run's branch, behind the push guard); a directory used in place must exist and
+// subject's long-lived worktree on the run's branch); a directory used in place must exist and
 // is held for this run alone. Each gets a `checkout` event saying whether it was prepared fresh for the subject.
 //
 // Cloning, fetching and the submodules' update are retried on this runner when they fail for a passing cause, each
