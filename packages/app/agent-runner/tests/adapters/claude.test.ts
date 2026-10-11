@@ -8,12 +8,10 @@ import {
   ClaudeAdapter,
   DEFAULT_MIN_CLAUDE_VERSION,
   compareVersions,
-  denialMessage,
 } from '../../src/agent/adapters/claude.ts';
 import type {
   AdapterEvent,
   AdapterSession,
-  PermissionCheck,
 } from '../../src/agent/adapters/types.ts';
 import { calls, replay, setScript, setSupportedModels } from './fake-sdk.ts';
 import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
@@ -252,7 +250,8 @@ describe('query options', () => {
       append: 'BRIEF',
     });
     expect(options.settingSources).toEqual(['project']);
-    expect(options.permissionMode).toBe('acceptEdits');
+    expect(options.permissionMode).toBe('bypassPermissions');
+    expect(options.allowDangerouslySkipPermissions).toBe(true);
     expect(options.env).toEqual({ PATH: '/usr/bin', HOME: '/home/runner' });
     expect(options.cwd).toBe('/work');
     expect(options.pathToClaudeCodeExecutable).toBe(path.join(dir, 'claude'));
@@ -263,8 +262,9 @@ describe('query options', () => {
       resume: 'prev',
     });
     expect(options.abortController).toBeInstanceOf(AbortController);
-    expect(options.canUseTool).toBeTypeOf('function');
-    expect(options.hooks?.PreToolUse).toHaveLength(1);
+    // The runner asks nothing: no permission callback and no hooks.
+    expect(options.canUseTool).toBeUndefined();
+    expect(options.hooks).toBeUndefined();
   });
 
   it('fails a run without a usable claude, without calling the SDK', async () => {
@@ -473,133 +473,6 @@ describe('failures', () => {
 });
 
 describe('permissions', () => {
-  async function runWithTool(
-    permission: PermissionCheck,
-    tool = 'Bash',
-    input: Record<string, unknown> = { command: 'rm -rf /' },
-  ) {
-    const verdicts: string[] = [];
-    setScript(async function* (ctx) {
-      await ctx.nextInput();
-      yield init();
-      yield assistant([{ type: 'tool_use', id: 'toolu_9', name: tool, input }]);
-      verdicts.push(await ctx.callTool(tool, input, 'toolu_9'));
-      yield result();
-    });
-    const handle = adapterWith('9.0.0', dir).start(session({ permission }));
-    const events = await collect(handle.events);
-    return {
-      verdicts,
-      permissionEvents: events.filter((e) => e.type === 'permission'),
-    };
-  }
-
-  it('the hook hands a policy denial to canUseTool, even when rules would allow it', async () => {
-    setScript(replay([init(), result()]));
-    adapterWith('9.0.0', dir).start(
-      session({ permission: async () => ({ deny: 'nope' }) }),
-    );
-    await vi.waitFor(() => expect(calls).toHaveLength(1));
-    const hook = calls[0]!.options.hooks!.PreToolUse![0]!.hooks[0]!;
-    const out = await hook(
-      {
-        hook_event_name: 'PreToolUse',
-        tool_name: 'Bash',
-        tool_input: { command: 'rm x' },
-        tool_use_id: 'h1',
-        session_id: 's',
-        transcript_path: '',
-        cwd: '/work',
-      },
-      'h1',
-      { signal: new AbortController().signal },
-    );
-    expect(out).toEqual({
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        permissionDecision: 'ask',
-        permissionDecisionReason: 'nope',
-      },
-    });
-  });
-
-  it('denies through the hook and records the reason', async () => {
-    const permission = vi.fn<PermissionCheck>(async () => ({
-      deny: 'rm is not on the allow list',
-    }));
-    const { verdicts, permissionEvents } = await runWithTool(permission);
-    expect(verdicts).toEqual(['deny']);
-    expect(permission).toHaveBeenCalledTimes(1);
-    expect(permissionEvents).toHaveLength(1);
-    expect(permissionEvents[0]).toMatchObject({
-      tool: 'Bash',
-      input: { command: 'rm -rf /' },
-      meta: {
-        decision: 'deny',
-        reason: 'rm is not on the allow list',
-        toolUseId: 'toolu_9',
-      },
-    });
-  });
-
-  it('allows once through hook and canUseTool, consulting the policy once', async () => {
-    const permission = vi.fn<PermissionCheck>(async () => 'allow');
-    const { verdicts, permissionEvents } = await runWithTool(
-      permission,
-      'Bash',
-      { command: 'git status' },
-    );
-    expect(verdicts).toEqual(['allow']);
-    expect(permission).toHaveBeenCalledTimes(1);
-    expect(permission).toHaveBeenCalledWith('Bash', { command: 'git status' });
-    expect(permissionEvents).toHaveLength(1);
-    expect(permissionEvents[0]!.meta).toMatchObject({ decision: 'allow' });
-  });
-
-  it('turns a bare deny and a policy error into denials', async () => {
-    expect(
-      (await runWithTool(async () => 'deny')).permissionEvents[0]!.meta,
-    ).toMatchObject({
-      decision: 'deny',
-      reason: 'Denied by the runner policy',
-    });
-    const failing = await runWithTool(async () => {
-      throw new Error('boom');
-    });
-    expect(failing.verdicts).toEqual(['deny']);
-    expect(failing.permissionEvents[0]!.meta).toMatchObject({
-      reason: 'Policy error: boom',
-    });
-  });
-
-  it('answers canUseTool with the SDK permission result shape', async () => {
-    setScript(replay([init(), result()]));
-    adapterWith('9.0.0', dir).start(
-      session({
-        permission: async (tool) =>
-          tool === 'Bash' ? { deny: 'no' } : 'allow',
-      }),
-    );
-    await vi.waitFor(() => expect(calls).toHaveLength(1));
-    const canUseTool = calls[0]!.options.canUseTool!;
-    const opts = {
-      signal: new AbortController().signal,
-      toolUseID: 'a',
-      requestId: 'r',
-    };
-    expect(await canUseTool('Bash', { command: 'x' }, opts)).toEqual({
-      behavior: 'deny',
-      message: denialMessage('no'),
-    });
-    expect(denialMessage('no')).toContain('do not ask for permission');
-    expect(
-      await canUseTool('Edit', { file_path: 'y' }, { ...opts, toolUseID: 'b' }),
-    ).toEqual({
-      behavior: 'allow',
-      updatedInput: { file_path: 'y' },
-    });
-  });
-
   it('records denials Claude Code made itself', async () => {
     setScript(
       replay([

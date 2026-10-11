@@ -27,7 +27,7 @@ import {
 } from '../protocol/index.ts';
 import type { SkillsPlacement } from './adapters/types.ts';
 import { RUNNER_DIR } from '../core/checkout.ts';
-import { isInside } from '../core/command-policy.ts';
+import { isInside } from '../lib/paths.ts';
 
 export class SkillsError extends Error {
   override name = 'SkillsError';

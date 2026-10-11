@@ -167,6 +167,8 @@ Database tasks support `--connection <name>` and `--all`; no argument targets `d
 
 ### Plugins
 
+Mail (`@nocobase/app-plugin-mail`) is included and registered on the client and server. Configure mailbox providers under `mail.providers` in `config.yml` before connecting accounts; no provider credentials or demo mailboxes are included. See the [Mail configuration guide](.agents/skills/nocobase-app-plugin-mail/references/configuration-and-accounts.md). The plugin provides services and UI components; applications compose their own mailbox pages.
+
 Plugins add features to your application. Let these commands edit `package.json`, `client/plugins.ts`, and `server/plugins.ts` for you rather than editing those files by hand.
 
 | Command                                  | What it does                                                |
