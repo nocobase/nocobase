@@ -15,9 +15,9 @@ Northstar wants its employees to recognize the company and the purpose of the tr
 ```text
 Customize the existing transport application's sign-in page for Northstar Logistics.
 
-Use a full-page photograph of a truck on a mountain road with a dark blue overlay for readable text.
+Use a pale-blue truck and mountain-road illustration, a white page panel, and a pale blue-gray grid backdrop for readable text.
 Show the company name and icon at the top. Place a welcome message and transport dispatch, delivery tracking, and team collaboration copy on the left.
-Place the sign-in form on the right, with white text, white inputs, and an orange sign-in button.
+Place a white sign-in form on the right, with dark text, white inputs, and a blue sign-in button.
 Preserve username or email and password sign-in, password visibility, error feedback, and password recovery.
 Disable public registration on both the page and the server while retaining the registration page and components for future use.
 Use consistent branding on sign-in and password recovery pages, with Chinese and English copy.
@@ -25,9 +25,9 @@ Use consistent branding on sign-in and password recovery pages, with Chinese and
 
 ## View the result
 
-The sign-in page uses a full-page mountain-road and truck background with company branding and transport business copy. Welcome copy appears on the left, and the form sits directly on the background on the right. White text and an orange button make the form easy to distinguish. Backgrounds, colors, and layouts can follow the company’s needs.
+The sign-in page uses a pale-blue mountain-road and truck illustration with company branding and transport business copy. Welcome copy appears on the left, and a white sign-in form sits on the right. Dark text and a blue button make the form easy to distinguish. Backgrounds, colors, and layouts can follow the company’s needs.
 
-![Transport company sign-in with a full-page truck background and branded form](../assets/northstar-branded-login-en.png)
+![Transport company sign-in with a pale-blue truck illustration and branded form](../assets/northstar-branded-login-en.png)
 
 **The sign-in page uses the company’s background, branding and layout while retaining authentication.**
 

@@ -29,7 +29,7 @@ Show individual opinions and whom the request is still waiting for.
 
 ## View the rule diagram
 
-![All approval requires every reviewer; any approval requires one](../assets/approval-joint-rules.svg)
+![All approval requires every reviewer; any approval requires one](../assets/approval-joint-rules.png)
 
 **All approval waits for everyone; any approval passes after one person agrees.**
 
