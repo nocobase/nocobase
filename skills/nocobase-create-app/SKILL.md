@@ -1,6 +1,6 @@
 ---
 name: nocobase-create-app
-description: Create a NocoBase 3 project to develop, locally, with `pnpm create @nocobase/app`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase to develop with, and the working directory holds no NocoBase application yet. Not for deploying to production, which belongs to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
+description: Create a NocoBase 3 project to develop, locally, with `pnpm create @nocobase/app@beta`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase to develop with, and the working directory holds no NocoBase application yet. Not for deploying to production, which belongs to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
 ---
 
 # Create a NocoBase 3 application
@@ -10,7 +10,7 @@ This Skill gets a new project created, configured and running locally: source co
 ## Before you start
 
 - If the working directory already holds a NocoBase application — a `package.json` with a `nocobase` field, next to an `AGENTS.md` — do not use this Skill. Read that `AGENTS.md` and continue from it.
-- NocoBase 3 is created with `pnpm create @nocobase/app`. Never fall back to NocoBase 2 instructions or the `nb` CLI, including when a package cannot be found; see Troubleshooting instead.
+- NocoBase 3 is created with `pnpm create @nocobase/app@beta`. Never fall back to NocoBase 2 instructions or the `nb` CLI, including when a package cannot be found; see Troubleshooting instead.
 - Check the request is this Skill's. A project is source code someone changes, developed locally; an installation is a built NocoBase that only runs, usually in production, and belongs to `nocobase-app-installer`:
 
   | The user asks to                                  | Skill                                                                   |
@@ -30,17 +30,18 @@ This Skill gets a new project created, configured and running locally: source co
 
 ## Create
 
-`pnpm create @nocobase/app` does not accept `.` as the name. Run it from the parent directory with the target directory's name, which generates the files directly into it:
+`pnpm create @nocobase/app@beta` does not accept `.` as the name. Run it from the parent directory with the target directory's name, which generates the files directly into it:
 
 ```bash
-(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app <name> --json)
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app@beta <name> --template-tag=beta --json)
 ```
 
 - NocoBase 3 packages, `@nocobase/create-app` included, are published to the public npm registry. The command sets that registry only for this process while allowing `NOCOBASE_REGISTRY` to select a private registry or an unreleased local snapshot; `create-app` uses the same registry for the template and dependency installation, and records only a non-public override in the project's `.npmrc`. Leave the user's pnpm configuration unchanged.
+- Use the `beta` channel for both the creation tool (`@nocobase/app@beta`) and the template (`--template-tag=beta`); selecting only the tool does not select the template channel. Do not fall back to `latest` if `beta` cannot be resolved. An explicit version or local snapshot requested by the user takes precedence.
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
 - `--json` never prompts. It prints one JSON document on stdout and progress on stderr, so parse stdout only. It is the envelope every `pnpm nocobase … --json` command prints: `ok` says whether creation worked, `result` holds what it produced, and a failure's `error.code`, `error.message` and `error.details` say where it stopped. create-app 0.1.0-beta.23 and earlier print a flat result instead, with `status` `success` or `error` and `stage`, `message`, `directory` and `nextCommands` at the top level; read the same fields there.
-- The default template is the one to develop an application from, and needs no flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first.
+- The default template is the one to develop an application from and needs no `--template` flag; keep `--template-tag=beta`. Add `--template=examples` when the user wants to explore NocoBase through its example features first.
 
 Read the result before doing anything else:
 
@@ -64,7 +65,7 @@ Work from the application directory from here on. Read its `AGENTS.md` now: it a
 
 `result.nextCommands` configure the application for SQLite and then start it. When a retried install left you without them, they are `pnpm nocobase config init`, `pnpm nocobase config check`, then `pnpm dev`. Unless the user has already named a database, ask which one they want before running them, and adapt them as the steps below describe: a database other than SQLite needs its driver, a `--dialect`, and a `config set` between `config init` and `config check`. Pass `--json` to every `pnpm nocobase config` command and act on the document it prints, not on the exit code alone: `ok` says whether it worked, `result` holds what it produced, and a failure's `error.code`, `error.suggestions` and `error.details` say what to do next.
 
-1. **Choose the database.** Use the one the user named, or ask. SQLite needs nothing installed: the template depends on its driver. For any other database, install its driver first, for example `pnpm add @nocobase/db-postgres`.
+1. **Choose the database.** Use the one the user named, or ask. SQLite needs nothing installed: the template depends on its driver. For any other database, install its driver first, for example `pnpm add @nocobase/db-postgres@beta`.
 2. **`pnpm nocobase config init --dialect <dialect> --json`** writes `config.yml` from the application's `config.example.yml`, with generated secrets.
    - It installs nothing. When the driver is missing it writes nothing and fails with `error.code` `DRIVER_MISSING`; `error.suggestions[0].run` is the `pnpm add` that supplies it. Run that, then run `config init` again.
    - An application that is already configured is reported with `status: "success-noop"`, so re-running the sequence is safe.

@@ -12,8 +12,10 @@ This Skill installs NocoBase that is already built — nothing on the machine is
 Every command goes through `npx` with the registry named, and with `--json`:
 
 ```bash
-npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer <command> … --json
+npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer@beta <command> … --json
 ```
+
+Use `@beta` for the published installer; do not fall back to an untagged invocation or `@latest`. Preserve an explicit version required for an existing installation or requested by the user, and use the snapshot tag when testing an unreleased local registry.
 
 NocoBase 3 publishes to the public npm registry. `NOCOBASE_REGISTRY` is set only when someone points the shell at another registry, such as an unreleased snapshot; the installer records the registry in `installer.json` and suggests commands from it. The `--yes` before the package is npx's own: it downloads the installer without asking. The installer's `--yes`, after the command, is a separate answer that only the user gives.
 
@@ -55,7 +57,7 @@ APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
 
 - `--target` and `--node-version` describe the machine that will run it, not the one building it: `node -p "process.platform + '-' + process.arch"` and `node --version` there; Alpine takes a `-musl` target. The installer refuses an archive built for another machine and names the command that fits.
 - `APP_BASE_PATH` is compiled into the client, `/main` when unset. The application is served there, and every later archive must be built for the same one.
-- A database other than SQLite needs its driver in the project before the build, such as `pnpm add @nocobase/db-postgres`: an archive carries only the drivers it was built with.
+- A database other than SQLite needs its driver in the project before the build, such as `pnpm add @nocobase/db-postgres@beta`: an archive carries only the drivers it was built with.
 
 The archive is `storage/exports/dist.tar.gz`; the user copies it to the machine that runs NocoBase, for example `scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz`. `ARCHIVE_TOO_OLD` or `STORAGE_IN_RELEASE` means the project's NocoBase packages are older than the installer needs: upgrade them, build again, then retry.
 

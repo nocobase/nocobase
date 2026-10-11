@@ -18,6 +18,8 @@ Each is used against the published packages, which is what users do, or against 
 
 NocoBase 3 publishes its packages to the public npm registry. Both Skills keep the registry local to the command and write it as `${NOCOBASE_REGISTRY:-https://registry.npmjs.org}`. `NOCOBASE_REGISTRY` is normally unset; `pnpm unreleased:env` sets it to the local snapshot registry, and a private installation can set it to its own source. `create-app` records a non-public registry for the `@nocobase` scope in the generated project's `.npmrc`, while public npm needs no override. The user's own pnpm and npm configuration is not changed.
 
+Published installation commands select `beta` explicitly for the creation tool, application template and deployment installer. The Skills themselves still come from GitHub `v3-develop`; `npx skills` is a separate tool and does not need a beta tag.
+
 ## nocobase-create-app
 
 ### Requirements
@@ -49,7 +51,7 @@ Open the agent in an empty directory and ask for an application, for example:
 
 The Skill then:
 
-1. Runs `npm_config_registry=… pnpm create @nocobase/app <name> --json` from the parent directory, so the files land in the directory you opened.
+1. Runs `npm_config_registry=… pnpm create @nocobase/app@beta <name> --template-tag=beta --json` from the parent directory, so the files land in the directory you opened.
 2. Follows the `nextCommands` that creation returns: `pnpm nocobase config init`, then `pnpm nocobase config set` for any `requiredSettings` of a database other than SQLite, then `pnpm nocobase config check`, and finally `pnpm dev` in the background.
 3. Reports the URL and the first sign-in account, and recommends starting a new session in the application directory, where the application's own Skills are loaded reliably. If you keep working in the same session, it reads the application's `AGENTS.md` and Skills directly instead.
 
@@ -60,7 +62,7 @@ It never asks for a database password in the conversation. For a database other 
 The Skill runs nothing you cannot run yourself:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
 cd my-app
 pnpm nocobase config init
 pnpm nocobase config check
@@ -70,7 +72,7 @@ pnpm dev
 `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago. For another database, install its driver, name it, and fill in the connection before `pnpm nocobase config check`:
 
 ```bash
-pnpm add @nocobase/db-postgres
+pnpm add @nocobase/db-postgres@beta
 pnpm nocobase config init --dialect postgres
 pnpm nocobase config set database.connections.main.host=db.internal database.connections.main.username=crm
 pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PASSWORD
@@ -105,14 +107,14 @@ Later, in the installation directory, ask it to check, upgrade or roll back. It 
 ### Without an agent
 
 ```bash
-npx --yes @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
+npx --yes @nocobase/app-installer@beta install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
 ```
 
 `upgrade`, `rollback` and `status` take `--dir` with the installation directory; `upgrade` takes the new archive with `--archive`. The package README, `packages/tools/app-installer/README.md`, documents every flag, the directory layout and the exit codes.
 
 ## Test against the unreleased checkout
 
-Use this to test a change before it is released: a change to a Skill, or to a package it drives, such as `create-app`, `app-installer`, a template or `app-cli`. The checkout is published to a local npm registry on your machine, and a shell is pointed at it, so the Skills' unchanged commands install the unreleased code.
+Use this to test a change before it is released: a change to a Skill, or to a package it drives, such as `create-app`, `app-installer`, a template or `app-cli`. The checkout is published to a local npm registry on your machine, and a shell is pointed at it, so the Skills can install the unreleased code. This snapshot registry uses `latest`: for this local test only, replace the creation tool and installer’s `@beta` with `@latest`, and set `--template-tag=latest`. Keep the published installation commands on `beta`.
 
 A global Skill is released by merging it into `v3-develop`, while packages are released by the `v3-release-beta.yml` workflow. A change to a Skill that describes new package behavior therefore has to be tried here first, because the published packages cannot show whether it works.
 
