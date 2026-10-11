@@ -119,6 +119,18 @@ describe('stage run configuration', () => {
       expect(changed).toHaveBeenLastCalledWith({ maxRuns: 5, windowHours: 12 });
       fireEvent.change(runs, { target: { value: '' } });
       expect(changed).toHaveBeenLastCalledWith({ windowHours: 12 });
+      const session = screen.getByRole('switch', {
+        name: new RegExp(words.freshSession, 'u'),
+      });
+      expect(session).toHaveAttribute('aria-checked', 'false');
+      fireEvent.click(session);
+      expect(changed).toHaveBeenLastCalledWith({
+        windowHours: 12,
+        session: 'fresh',
+      });
+      expect(session).toHaveAttribute('aria-checked', 'true');
+      fireEvent.click(session);
+      expect(changed).toHaveBeenLastCalledWith({ windowHours: 12 });
     },
   );
   it('describes configured limits', async () => {
@@ -127,6 +139,17 @@ describe('stage run configuration', () => {
       screen.getByText(/Up to 5 agent-driven runs in 12 hours/u),
     ).toBeInTheDocument();
   });
+  it.each(['en-US', 'zh-CN'] as const)(
+    'describes a fresh session in %s',
+    async (language) => {
+      await mount(<RunAgentSummary config={{ session: 'fresh' }} />, language);
+      expect(
+        screen.getByText(
+          language === 'en-US' ? /New session every time/u : /每次新开会话/u,
+        ),
+      ).toBeInTheDocument();
+    },
+  );
 });
 
 describe('continuing a stage run', () => {

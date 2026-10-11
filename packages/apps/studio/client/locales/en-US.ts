@@ -52,6 +52,17 @@ const enUS = {
     keepDraft: 'Keep panel draft',
     appendDraft: 'Append header question',
   },
+  runTranscriptFilters: {
+    title: 'Event types',
+    agent: 'Agent',
+    input: 'Input',
+    tools: 'Tools',
+    thinking: 'Thinking',
+    system: 'System',
+    hiddenGroup: '{{count}} {{group}}',
+    expandHidden: 'Hidden events: {{summary}}',
+    errorsAlwaysVisible: 'Errors are always shown',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
@@ -1213,6 +1224,10 @@ const enUS = {
       },
     },
     stageRules: {
+      freshSession: 'Start a new session every time',
+      freshSessionHint:
+        'On: each stage run starts a new Agent session, useful for reviews to avoid carrying over earlier conclusions. The working directory is kept.',
+      withFreshSession: '{{summary}} · New session every time',
       agent: 'Agent',
       agentsUnavailable:
         'You cannot list agents here; the rule keeps the agent it names.',

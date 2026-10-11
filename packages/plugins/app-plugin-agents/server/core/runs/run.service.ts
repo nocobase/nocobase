@@ -94,6 +94,8 @@ export interface EnqueueRequest {
   readonly subject: { readonly kind: string; readonly id: string };
   /** Separates conversations about one subject; `main` by default. */
   readonly threadScope?: string;
+  /** Starts a new session without resetting the subject's working directory. */
+  readonly freshSession?: boolean;
   /**
    * Who woke the agent, for work on a subject nobody answers for (no `responsibleUserId`): their permissions bound the
    * run. With a `responsibleUserId` the run acts as the responsible, or as the source under `execution` `mine`, and
@@ -305,6 +307,7 @@ export interface RunServiceDeps extends TransitionDeps {
 interface Work {
   readonly subject: EnqueueRequest['subject'];
   readonly threadScope: string;
+  readonly freshSession?: boolean;
   readonly actorUserId: string;
   readonly requestedByUserId: string;
   readonly confirmedByUserId: string | null;
@@ -389,6 +392,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     values: {
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
+      readonly freshSession?: boolean;
       readonly actorUserId: string;
       readonly requestedByUserId: string;
       readonly confirmedByUserId: string | null;
@@ -419,6 +423,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         attempt: 1,
         maxAttempts: values.maxAttempts ?? agent.maxAttempts,
         retryOfRunId: values.retryOfRunId,
+        freshSession: values.freshSession === true,
         parentRunId: values.parentRunId ?? null,
         subjectKind: values.subject.kind,
         subjectId: values.subject.id,
@@ -574,14 +579,20 @@ export function createRunService(deps: RunServiceDeps): RunService {
     );
     const working = open.find(
       (run) =>
-        run.status === 'dispatched' ||
-        (run.status === 'running' && Boolean(run.acceptsInput)),
+        !work.freshSession &&
+        (run.status === 'dispatched' ||
+          (run.status === 'running' && Boolean(run.acceptsInput))),
     );
     const waiting = open.find((run) => run.status === 'queued');
     const target = working ?? waiting;
     if (!working && waiting)
       await hurry(unit, waiting, work.priority, work.fireAt);
     if (target) {
+      if (!working && work.freshSession && !target.freshSession)
+        await runsRepo(unit.conn).updateMany({
+          filter: { id: target.id, status: 'queued' },
+          values: { freshSession: true, updatedAt: clock.now().toISOString() },
+        });
       const inputId = await insertInput(unit, target.id, work.input);
       return {
         runId: target.id,
@@ -591,6 +602,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       };
     }
     const runId = await createRun(unit, agent, {
+      freshSession: work.freshSession,
       subject: work.subject,
       threadScope: work.threadScope,
       actorUserId: work.actorUserId,
@@ -662,6 +674,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     requireRunnerFor,
     direct: (unit, run) =>
       queue(unit, run.agent, {
+        freshSession: run.freshSession,
         subject: run.subject,
         threadScope: run.threadScope,
         actorUserId: run.actorUserId,
@@ -706,6 +719,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             { ids, clock },
             {
               agentId: agent.id,
+              freshSession: request.freshSession,
               subject: request.subject,
               threadScope,
               responsibleUserId: responsible,
@@ -744,6 +758,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             request.requires ?? [],
           );
         return queue(unit, agent, {
+          freshSession: request.freshSession,
           subject: request.subject,
           threadScope,
           actorUserId,
@@ -879,6 +894,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
+          freshSession: run.freshSession,
         });
         for (const input of await pendingInputs(unit.conn, run.id))
           await insertInput(unit, newId, {

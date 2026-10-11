@@ -4,6 +4,8 @@
  * issue's agent was woken for, and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
  */
 import type { WorkflowDefinition } from '@nocobase/app-plugin-projects/shared/workflows';
+import type { RunEvent } from '@nocobase/agent-protocol';
+
 import { Api } from './fixtures.ts';
 
 /** `PROTOCOL_VERSION` and `HEADERS` of `@nocobase/agent-protocol` (`packages/libs/agent-protocol/src/version.ts`). */
@@ -15,7 +17,7 @@ const HEADERS = {
 } as const;
 
 interface ClaimedRun {
-  run: { id: string };
+  run: { id: string; firstSeq: number };
   subject?: { key?: string };
   cli?: { credential?: { content?: { token?: string } } };
 }
@@ -183,6 +185,47 @@ export class FakeRunner {
       workflowId: workflow.id,
     });
     return project.id;
+  }
+
+  /** A real running transcript, written through the same protocol as a connected runtime. */
+  async issueWithTranscript(
+    title: string,
+    ownerUserId: string,
+    author = this.api,
+  ) {
+    const issue = await author.post<Issue>('projects/issues', {
+      title,
+      statusKey: 'in_progress',
+      ownerUserId,
+      executor: { type: 'agent', id: await this.agent() },
+    });
+    const { run } = await this.claimRun(issue.identifier);
+    const headers = { [HEADERS.runnerKey]: this.runnerKey! };
+    const route = `agents/runners/runs/${run.id}`;
+    await this.runner(
+      'POST',
+      `${route}/start`,
+      {
+        workDir: '/tmp/studio-transcript-test',
+        adapter: { kind: 'claude' },
+        acceptsInput: true,
+      },
+      headers,
+    );
+    return {
+      issue,
+      runId: run.id,
+      firstSeq: run.firstSeq,
+      append: (events: readonly RunEvent[]) =>
+        this.runner('POST', `${route}/events`, { events }, headers),
+      fail: () =>
+        this.runner(
+          'POST',
+          `${route}/fail`,
+          { reason: 'toolProcess', detail: 'The test command failed' },
+          headers,
+        ),
+    };
   }
 
   /** Starts real server-side work without launching a coding tool. */
