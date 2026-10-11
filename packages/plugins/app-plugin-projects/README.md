@@ -151,6 +151,10 @@ issueIds)` those of them a person follows. An application's board of work joins 
 
 Everything is under `/api/projects` and needs a session (401 otherwise). Responses are `{ data }`, lists `{ data, meta }`; inputs are validated (400 `INVALID_INPUT`, domain `app`, with `fieldViolations`; JSON bodies are strict). Fixed segments come before `/{projectId}`.
 
+Invitation create/resend results include a shareable `inviteUrl` for an authorized original inviter using an unscoped person credential, regardless of email delivery. An invitation closed or rotated before its queued send returns `emailSent=false` without a link; other recipients, including existing accounts joining projects, still complete. Global user creation or role assignment permissions are not needed to copy a project invitation. `POST /api/projects/invitations/{invitationId}/resend?sendEmail=false` generates a new link without email, invalidating the old invitation. Member settings confirm this before generating a link, then offer a separate Copy action. Current project access is checked again; other managers can resend email but do not receive links, and scoped credentials remain email-only. Lists never expose tokens.
+
+New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.
+
 | Method and path                                                                    | What it does                                                |
 | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `GET /me`                                                                          | The caller with their permissions                           |
@@ -308,3 +312,7 @@ Open pages refresh when the server announces a change on the `pm:changes` realti
 ```bash
 pnpm --filter @nocobase/app-plugin-projects check
 ```
+
+When renewing an invitation, deleted projects are ignored if at least one selected project remains. The inviter must still be authorized to invite into every remaining project. If all originally selected projects were deleted, renewal is rejected.
+
+Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.

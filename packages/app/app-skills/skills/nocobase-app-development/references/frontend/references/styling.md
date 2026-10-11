@@ -92,6 +92,8 @@ For the "More" menu in table rows, see [`table.md`](table.md).
 
 ## 3. Use shadcn
 
+For flowcharts and process diagrams, reuse UI Library `@nocobase/flow-diagram` (React Flow + ELK); for `@nocobase/lifecycle` descriptions use `@nocobase/lifecycle-diagram`. Both inherit the application theme, including its primary color. See [diagram setup and execution highlights](../../lifecycle.md#draw-an-interactive-lifecycle-diagram) and the [offline catalog](ui-library.md#diagrams) before writing a custom canvas.
+
 The template ships only the primitives its shell and compositions use ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)). First check whether `client/components/ui/` has the component you need. If it does not, add it from the shadcn registry:
 
 ```bash

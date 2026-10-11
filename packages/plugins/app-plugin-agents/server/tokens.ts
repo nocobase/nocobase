@@ -66,6 +66,7 @@ export type {
   ServerExecutor,
 } from './online/index.js';
 export { commandRef, dialectOf } from './core/runs/ports.js';
+export { RepoAccessError } from './core/runs/extensions.js';
 export {
   executionForViewer,
   runForViewer,
@@ -103,6 +104,9 @@ export type {
   RepoAccessContext,
   RepoAccessProvider,
   RepoAccessRegistry,
+  RepoCredentialGrant,
+  RepoCredentialRequest,
+  RepoPrepareOptions,
   RunMountProvider,
   RunMountRegistry,
   RunService,

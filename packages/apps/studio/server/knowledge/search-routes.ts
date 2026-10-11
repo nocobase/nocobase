@@ -140,9 +140,13 @@ export const knowledgeSearchRoutes: AppApiRouteContribution<Application> =
     }
 
     async function config(canManage: boolean): Promise<KnowledgeSearchConfig> {
+      const index = await search.index();
       return {
         settings: await search.settings.get(),
-        index: await search.index(),
+        index: {
+          ...index,
+          store: index.store ? { type: index.store.type } : null,
+        },
         spaces: container.has(knowledgeToken) ? await spaces() : [],
         models: {
           embedding: await modelsOf('embedding'),

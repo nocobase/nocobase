@@ -565,11 +565,40 @@ export const StatusResponseSchema: z.ZodType<StatusResponse> = z.object({
   leaseExpiresAt: z.string().nullable(),
 });
 
+/**
+ * Why the runner could not push a repository at the end of a run:
+ *
+ * - `authFailed`: the remote refused the credential, also after one fresh one;
+ * - `credentialUnavailable`: the application could not issue a credential just now (its code host unavailable or slow);
+ * - `credentialDenied`: the application will not issue one (no access to the repository, an installation gone);
+ * - `leaseLost`: the run was no longer this runner's, so nothing was pushed;
+ * - `rejected`: the remote or the push guard refused the push itself (not a fast-forward, a protected branch);
+ * - `error`: anything else, such as the network.
+ */
+export const REPO_PUSH_FAILURES = [
+  'authFailed',
+  'credentialUnavailable',
+  'credentialDenied',
+  'leaseLost',
+  'rejected',
+  'error',
+] as const;
+
+export type RepoPushFailure = (typeof REPO_PUSH_FAILURES)[number];
+
+export const RepoPushFailureSchema: z.ZodType<RepoPushFailure> =
+  z.enum(REPO_PUSH_FAILURES);
+
 export interface RepoReport {
   readonly url: string;
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha?: string;
+  /** Why it was not pushed, when the runner tried and failed (protocol 9); `message` is redacted and safe to show. */
+  readonly failure?: {
+    readonly reason: RepoPushFailure;
+    readonly message: string;
+  };
 }
 
 export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
@@ -577,6 +606,12 @@ export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
   branch: z.string().min(1),
   pushed: z.boolean(),
   headSha: z.string().max(64).optional(),
+  failure: z
+    .object({
+      reason: RepoPushFailureSchema,
+      message: z.string().max(2000),
+    })
+    .optional(),
 });
 
 export interface CompleteRequest {

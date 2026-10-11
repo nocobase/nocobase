@@ -241,6 +241,14 @@ The languages the application offers are its own locale files, not a configured 
 
 The account menu language control in `client/layouts/components/language-switcher.tsx` uses a shadcn submenu with radio items. Render it inside `DropdownMenuContent` to preserve menu keyboard navigation and selection semantics.
 
+## Application access URLs
+
+When reporting or opening this application's address, use the `Local:` URL printed by `pnpm dev`, including the application base path. In normal full-stack development, the Hono server proxies Vite: the user-facing entry uses the server port (`APP_SERVER_PORT`, default 13000), while Vite's port (normally 5173) serves the frontend development process. A response from Vite alone does not verify the application entry.
+
+For an existing run without available startup output, identify its process and working directory, confirm the actual server listening port and configured base path, and check that URL before sharing it. Occupied ports advance automatically, so do not assume defaults. Report when the run belongs to another checkout. Use a host reachable by the user; `localhost` refers to the machine where the browser runs.
+
+With `PROXY_TARGET_URL`, the local Hono server is skipped and Vite becomes the local application entry. Use the printed `Local:` URL in this mode too; `APP_SERVER_PORT` selects its local port (default 5173). See the remote backend development guidance below.
+
 ## Development file watching
 
 Changes to `.env` and `.env.local` (including creation, atomic replacement, and deletion) restart the full development run after its previous processes exit. The new run reloads environment files, ports, proxy settings, and startup hooks; explicit shell variables still take precedence. Use the newly printed URL if the port or base path changes. This also applies in proxy mode. `config.yml` changes restart only the local server. `NOCOBASE_STRICT_STARTUP=true` disables both automatic restarts.

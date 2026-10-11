@@ -259,3 +259,36 @@ export async function buildSampleRecords(
     by,
   );
 }
+
+/** A separate ledger entry lets an existing examples installation add the new page's samples. */
+export const INVOICE_SAMPLE_DATA_NAME: string = 'lifecycle-example/invoices';
+
+export async function buildInvoiceSampleRecords(
+  flows: DurableFlowService,
+): Promise<void> {
+  const existing = await flows.list('invoices', { page: 1, pageSize: 100 });
+  for (const values of [
+    {
+      orderRef: '1024',
+      title: '星河科技有限公司',
+      taxNumber: '91310000MA1K000001',
+      failSubmissions: 0,
+    },
+    {
+      orderRef: '1025',
+      title: '晨光书店有限公司',
+      taxNumber: '91310000MA1K000000',
+      failSubmissions: 3,
+    },
+    {
+      orderRef: '1026',
+      title: '星河科技有限公司',
+      taxNumber: '91310000MA1K000001',
+      failSubmissions: 0,
+    },
+  ]) {
+    if (existing.records.some((record) => record.orderRef === values.orderRef))
+      continue;
+    await flows.createInvoice(values, SYSTEM_ACTOR.id);
+  }
+}
