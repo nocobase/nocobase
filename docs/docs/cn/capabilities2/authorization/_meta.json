@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "权限"
+  },
+  {
+    "type": "file",
+    "name": "permission-sets",
+    "label": "权限集与分配"
+  },
+  {
+    "type": "file",
+    "name": "data-scopes",
+    "label": "数据范围与规则"
+  },
+  {
+    "type": "file",
+    "name": "default-access",
+    "label": "默认数据范围"
+  },
+  {
+    "type": "file",
+    "name": "sharing-rules",
+    "label": "共享规则"
+  },
+  {
+    "type": "file",
+    "name": "restriction-rules",
+    "label": "限制规则"
+  },
+  {
+    "type": "file",
+    "name": "inspector",
+    "label": "检查权限结果"
+  }
+]

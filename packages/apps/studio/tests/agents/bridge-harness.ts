@@ -887,6 +887,7 @@ export async function createBridgeHarness(
       access: () => access,
     });
     const api = createPreviewApi({
+      syncPreviewLabels: (issueId) => git.syncPreviewLabels(issueId),
       database,
       previews: () => service,
       issues,
@@ -1371,7 +1372,12 @@ export async function createBridgeHarness(
         name: 'Coder',
         modelEntries: [{ tool: 'claude', model: null }],
         access: 'everyone',
-        actions: ['pm.issues/view', 'pm.issues/comment', 'pm.issues/edit'],
+        actions: [
+          'pm.issues/view',
+          'pm.issues/comment',
+          'pm.issues/edit',
+          'studio.git/open-pr',
+        ],
         instructions: 'Prefer small commits.',
         ...input,
       });

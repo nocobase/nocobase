@@ -35,6 +35,7 @@ const ENVIRONMENT_FAILURES: ReadonlySet<FailureReason> = new Set([
   'toolRateLimit',
   'toolNetwork',
   'prepareNetwork',
+  'workspaceBusy',
   'queuedExpired',
   'modelUnavailable',
   'policyRefused',

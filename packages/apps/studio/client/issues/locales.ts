@@ -9,6 +9,8 @@ import type { KanbanLabels } from '../components/kanban.js';
 import type { AgentQueueLabels } from '../extensions/nocobase-agent-queue/labels.js';
 
 export const issuesEnUS = {
+  agentWorking: 'Agent working',
+  agentWorkingBy: '{{name}} is working on this issue',
   title: 'Issues',
   description:
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
@@ -184,6 +186,8 @@ export const issuesEnUS = {
 export type IssuesWording = typeof issuesEnUS;
 
 export const issuesZhCN: IssuesWording = {
+  agentWorking: 'Agent 工作中',
+  agentWorkingBy: '{{name}} 正在处理这条议题',
   title: '任务',
   description:
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',

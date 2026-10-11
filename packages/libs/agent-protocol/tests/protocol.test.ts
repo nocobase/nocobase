@@ -414,6 +414,11 @@ describe('agent protocol', () => {
     expect(isRetryable('runnerOffline')).toBe(true);
     expect(isRetryable('toolAuth')).toBe(false);
     expect(isRetryable('prepareNetwork')).toBe(true);
+    expect(isRetryable('workspaceBusy')).toBe(true);
+    expect(acceptedFailure('workspaceBusy', ['workspaceBusy'])).toBe(
+      'workspaceBusy',
+    );
+    expect(acceptedFailure('workspaceBusy', undefined)).toBe('checkoutFailed');
     expect(isRetryable('checkoutFailed')).toBe(false);
     expect(ERROR_STATUS.RUN_INPUT_PENDING).toBe(400);
     expect(ERROR_API_STATUS.RUN_INPUT_PENDING).toBe('FAILED_PRECONDITION');

@@ -273,7 +273,11 @@ export function useEntryText(): (
             : t('inbox.body.approval_stale', { to });
         break;
       case 'stage_action_problem':
-        if (params.rule && params.reason && to)
+        if (params.reason === 'executorCannotImplement')
+          sentence = t('inbox.stageSkips.executorCannotImplement', {
+            agentName: params.agentName ?? params.agentId ?? '',
+          });
+        else if (params.rule && params.reason && to)
           sentence = t('inbox.body.stage_action_problem', {
             rule: t(`inbox.stageRules.${params.rule}`, {
               defaultValue: params.rule,
@@ -281,6 +285,7 @@ export function useEntryText(): (
             status: to,
             why: t(`inbox.stageSkips.${params.reason}`, {
               defaultValue: params.reason,
+              agentName: params.agentName ?? params.agentId ?? '',
             }),
           });
         if (params.reason === 'suppressed')

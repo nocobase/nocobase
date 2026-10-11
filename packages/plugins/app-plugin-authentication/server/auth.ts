@@ -322,6 +322,13 @@ export class Auth {
     return this.auth.handler(request);
   }
 
+  passwordResetAvailable(): boolean {
+    return (
+      this.options.emailAndPassword?.enabled !== false &&
+      typeof this.options.emailAndPassword?.sendResetPassword === 'function'
+    );
+  }
+
   async getSession(
     headers: Headers,
     options: GetSessionOptions = {},
