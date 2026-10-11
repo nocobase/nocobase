@@ -27,6 +27,7 @@ import {
   type ToolCapabilities,
 } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
@@ -1016,16 +1017,32 @@ class CodexRun {
       developerInstructions: session.systemPrompt,
       ...(session.model ? { model: session.model } : {}),
     };
-    const thread = session.resumeSessionId
-      ? await rpc.request<ThreadResponse>('thread/resume', {
+    let recovered = false;
+    let thread: ThreadResponse | undefined;
+    if (this.stopping) return;
+    if (session.resumeSessionId) {
+      try {
+        thread = await rpc.request<ThreadResponse>('thread/resume', {
           threadId: session.resumeSessionId,
           ...threadParams,
           excludeTurns: true,
-        })
-      : await rpc.request<ThreadResponse>('thread/start', {
-          ...threadParams,
-          serviceName: 'nocobase-runner',
         });
+      } catch (error) {
+        if (
+          !(error instanceof RpcError) ||
+          !/no rollout found for thread id/i.test(error.message) ||
+          this.stopping
+        )
+          throw error;
+        recovered = true;
+        this.emit(recoveryEvent('codex'));
+      }
+    }
+    if (this.stopping) return;
+    thread ??= await rpc.request<ThreadResponse>('thread/start', {
+      ...threadParams,
+      serviceName: 'nocobase-runner',
+    });
     this.threadId = thread.thread.id;
     this.model = thread.model;
     this.emit({
@@ -1037,18 +1054,20 @@ class CodexRun {
         ...(thread.reasoningEffort ? { effort: thread.reasoningEffort } : {}),
         execution: {
           effort: thread.reasoningEffort ?? null,
-          source: session.resumeSessionId
-            ? 'codex.thread/resume'
-            : 'codex.thread/start',
+          source:
+            session.resumeSessionId && !recovered
+              ? 'codex.thread/resume'
+              : 'codex.thread/start',
         },
-        ...(session.resumeSessionId ? { resumed: true } : {}),
+        ...(session.resumeSessionId ? { resumed: !recovered } : {}),
+        ...(recovered ? { sessionRecovery: true } : {}),
       },
       tool: 'codex',
     });
     if (this.stopping) return;
     const prompt: Steer = {
       clientId: randomUUID(),
-      text: session.prompt,
+      text: recovered ? recoveryPrompt(session.prompt) : session.prompt,
       prompt: true,
     };
     const early = this.carry;

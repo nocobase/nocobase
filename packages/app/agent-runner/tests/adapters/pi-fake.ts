@@ -102,6 +102,8 @@ export interface FakeOptions {
   /** Answer the handshake (get_commands with the bridge, get_state). */
   bridge?: boolean;
   sessionId?: string;
+  messageCount?: number;
+  stateSuccess?: boolean;
   /** Exit when stdin closes, as Pi does. */
   exitOnStdinEnd?: boolean;
 }
@@ -131,13 +133,20 @@ export function fakeSpawn(
                 ],
         });
       } else if (command.type === 'get_state') {
-        pi.respond(command, {
-          model: { id: 'claude-sonnet-4-5', provider: 'anthropic' },
-          thinkingLevel: 'medium',
-          isStreaming: false,
-          sessionId: options.sessionId ?? 'pi-session-1',
-          sessionFile: '/sessions/pi-session-1.jsonl',
-        });
+        pi.respond(
+          command,
+          {
+            model: { id: 'claude-sonnet-4-5', provider: 'anthropic' },
+            thinkingLevel: 'medium',
+            isStreaming: false,
+            sessionId: options.sessionId ?? 'pi-session-1',
+            sessionFile: '/sessions/pi-session-1.jsonl',
+            ...(options.messageCount === undefined
+              ? {}
+              : { messageCount: options.messageCount }),
+          },
+          options.stateSuccess ?? true,
+        );
       }
     });
     onSpawn(pi);
