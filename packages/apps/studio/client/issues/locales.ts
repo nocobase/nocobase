@@ -18,6 +18,8 @@ export const issuesEnUS = {
     toRelated: 'Change to related',
     toBlocker: 'Make a prerequisite (this issue waits)',
   },
+  agentWorking: 'Agent working',
+  agentWorkingBy: '{{name}} is working on this issue',
   title: 'Issues',
   description:
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
@@ -202,6 +204,8 @@ export const issuesZhCN: IssuesWording = {
     toRelated: '改为相关',
     toBlocker: '改为前置依赖（本任务等它完成）',
   },
+  agentWorking: 'Agent 工作中',
+  agentWorkingBy: '{{name}} 正在处理这条议题',
   title: '任务',
   description:
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',

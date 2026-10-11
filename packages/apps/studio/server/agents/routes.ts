@@ -68,6 +68,7 @@ import { createPermissionSource } from './commands/permissions.js';
 import { createAskerLookup } from './conversation/acting.js';
 import { createDesignService } from './design.js';
 import { readAgentBoard, startAgentBoardIssue } from './board.js';
+import { readIssueAgentWork } from './issue-agent-work.js';
 import { callerOfRequest, runSubjectOf } from './run-principal.js';
 import { INTAKE_SUBJECT } from './intake/subject.js';
 import { AGENT_KIND } from './tx.js';
@@ -78,6 +79,8 @@ import {
   AgentBoardQuery,
   AgentBoardSchema,
   AgentBoardStartResultSchema,
+  IssueAgentWorkInput,
+  IssueAgentWorkSchema,
   DecideFailedRunInput,
   DelegationListQuery,
   DelegationParams,
@@ -636,6 +639,31 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             ),
           });
         },
+      );
+      board.post(
+        '/issueWork',
+        describeRoute({
+          tags,
+          summary: 'Get current agent work on visible issues',
+          operationId: 'agentBoardIssueWork',
+          description:
+            'At most 100 issue IDs. Only visible issues with an agent executor are returned; matching pending approvals suppress working. No run details are exposed.',
+          ...cliRoute({ command: 'board issueWork' }),
+          responses: {
+            200: dataResponse(z.array(IssueAgentWorkSchema)),
+            400: apiErrorResponse(400),
+            ...signedInErrors,
+          },
+        }),
+        apiValidator('json', IssueAgentWorkInput),
+        async (context) =>
+          context.json({
+            data: await readIssueAgentWork(
+              { projects: container.resolve(projectsToken), runs: agents.runs },
+              await viewerFrom(context),
+              context.req.valid('json').issueIds,
+            ),
+          }),
       );
       const work = createAgentWork({
         agents,
