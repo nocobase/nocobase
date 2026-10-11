@@ -658,6 +658,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     );
     const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
     const resume =
+      !run.freshSession &&
       !clean &&
       session &&
       !session.poisoned &&
