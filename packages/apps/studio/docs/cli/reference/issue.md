@@ -172,11 +172,13 @@ nb-studio issue comment add <issue> --content <string>
 | -------- | ----------- |
 | `issue`  |             |
 
-| Flag         | Type   | Description                                                                                                                                 |
-| ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--content`  | string | The comment, in Markdown. Write anything longer than a line to a file and pass it with --content-file. (required; or --content-file <path>) |
-| `--reply-to` | string | The id of the comment this answers.                                                                                                         |
-| `--attach`   | path   | A file to attach (repeatable); attaching needs `upload` on `pm.attachments`. (uploaded first, repeatable)                                   |
+| Flag         | Type    | Description                                                                                                                                 |
+| ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--content`  | string  | The comment, in Markdown. Write anything longer than a line to a file and pass it with --content-file. (required; or --content-file <path>) |
+| `--reply-to` | string  | The id of the comment this answers.                                                                                                         |
+| `--handoff`  | json    |                                                                                                                                             |
+| `--persist`  | boolean |                                                                                                                                             |
+| `--attach`   | path    | A file to attach (repeatable); attaching needs `upload` on `pm.attachments`. (uploaded first, repeatable)                                   |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
