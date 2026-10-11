@@ -170,6 +170,15 @@ async function invalidate(issueId = detail.identifier): Promise<void> {
   await flush();
 }
 
+function delayRunResponses(ms: number): void {
+  api.request.mockImplementation(() => {
+    const data = [...serverRuns];
+    return new Promise((resolve) => {
+      setTimeout(() => resolve({ data, meta: {} }), ms);
+    });
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
   detail = issue(String(++sequence));
@@ -235,6 +244,88 @@ describe('live issue updates with the real subject run cache', () => {
     await advance(5000);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     expect(detail.revision).toBe(1);
+  });
+
+  it('shares a slow idle refresh until externally triggered work becomes visible', async () => {
+    await show();
+    api.request.mockClear();
+    delayRunResponses(6000);
+    serverRuns = [run()];
+    await advance(5000);
+    await advance(5000);
+    await advance(1000);
+    expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
+    expect(screen.getByLabelText('Run panel')).toHaveTextContent('running');
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets a slow wakeup response finish during accelerated polling', async () => {
+    await show();
+    api.request.mockClear();
+    delayRunResponses(6500);
+    serverRuns = [run()];
+    await invalidate();
+    await advance(2000);
+    await advance(2000);
+    await advance(2000);
+    expect(screen.getByLabelText('Activity runs')).toBeEmptyDOMElement();
+    expect(api.request).toHaveBeenCalledTimes(1);
+    await advance(500);
+    expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
+    expect(screen.getByLabelText('Run panel')).toHaveTextContent('running');
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a completed run and its result when run responses exceed the polling interval', async () => {
+    serverRuns = [run()];
+    await show();
+    delayRunResponses(6000);
+    serverRuns = [run('completed')];
+    detail = {
+      ...detail,
+      statusKey: 'in_review',
+      threads: [
+        {
+          root: {
+            id: 'slow-result',
+            content: 'Slow run finished',
+            parentId: null,
+            rootId: 'slow-result',
+          } as IssueDetail['threads'][number]['root'],
+          replies: [],
+        },
+      ],
+    };
+    await advance(5000);
+    await advance(5000);
+    await advance(1000);
+    expect(screen.getByLabelText('Activity runs')).toHaveTextContent(
+      'completed',
+    );
+    expect(screen.getByLabelText('Run panel')).toHaveTextContent('completed');
+    expect(screen.getByText('Slow run finished')).toBeTruthy();
+    expect(screen.getByLabelText('Issue status')).toHaveTextContent(
+      'in_review',
+    );
+  });
+
+  it('keeps discovering work when an invalidation reuses an older empty response', async () => {
+    await show();
+    api.request.mockClear();
+    delayRunResponses(6500);
+    await advance(5000);
+    serverRuns = [run()];
+    await invalidate();
+    // The request already in flight captured the empty list before the comment woke work.
+    await advance(2000);
+    await advance(2000);
+    await advance(2000);
+    await advance(500);
+    expect(screen.getByLabelText('Activity runs')).toBeEmptyDOMElement();
+    expect(api.request).toHaveBeenCalledTimes(1);
+    for (let tick = 0; tick < 5; tick++) await advance(2000);
+    expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
+    expect(screen.getByLabelText('Run panel')).toHaveTextContent('running');
   });
 
   it('bounds idle requests to one detail and run refresh every five seconds', async () => {
