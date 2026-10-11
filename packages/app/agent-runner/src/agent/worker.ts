@@ -155,7 +155,7 @@ export function workspaceNotes(options: {
   ];
   if (dirs.length > 0) {
     lines.push(
-      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Ended tasks may discard untracked repository files during cleanup.`,
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Once the task is done or cancelled, its working directory is removed, with anything never pushed.`,
     );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {

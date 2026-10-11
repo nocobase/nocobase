@@ -195,7 +195,7 @@ export default class Gc extends RunnerCommand {
           item.subject,
           item.diagnostic,
           item.discardsUntracked
-            ? 'cleanup will discard untracked files'
+            ? 'cleanup will discard work never pushed'
             : null,
           item.status,
           item.unpushed ? 'unpushed' : 'pushed',

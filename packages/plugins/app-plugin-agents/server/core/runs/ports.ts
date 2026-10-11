@@ -183,20 +183,25 @@ export interface SubjectFacts {
 
 /** Whether the work on subjects of a kind is over (`SubjectBinding.workspaces`). */
 export interface SubjectWorkspaces {
-  /** Resolve legacy directory keys; the framework still verifies runner ownership from saved runs. */
+  /**
+   * The subjects a directory's key names (`TASK-42`), for a directory without a run the application knows: each key
+   * with every subject it may name, so an ambiguous key is left alone. A subject that is gone names none.
+   */
   resolveKeys?(
     conn: DatabaseConnection,
     keys: readonly string[],
   ): Promise<ReadonlyMap<string, readonly string[]>>;
-  /** Trusted merged PR head commits, grouped by subject and repository URL. Never squash merge commits. */
+  /**
+   * @deprecated No longer read: a directory of a subject whose work is over is removed without commits proving its
+   * pushes, and runners are always told none.
+   */
   commits?(
     conn: DatabaseConnection,
     subjectIds: readonly string[],
   ): Promise<ReadonlyMap<string, readonly WorkspaceCommitEvidence[]>>;
   /**
    * Of `subjectIds` (of the binding's kind, each at most once), the ones whose work is over, such as a ticket that is
-   * done or cancelled with every pull request merged or closed: runners may remove the working directories they keep
-   * for them. Ids it does not know, or cannot decide, are left out; they are kept. Read inside `conn`, without writing.
+   * done or cancelled: runners remove the working directories they keep for them, whatever those still hold. Ids it does not know, or cannot decide, are left out; they are kept. Read inside `conn`, without writing.
    */
   settled(
     conn: DatabaseConnection,
