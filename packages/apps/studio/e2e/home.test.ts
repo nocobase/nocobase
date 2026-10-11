@@ -17,6 +17,24 @@ interface Conversation {
 test.use({ user: 'leo' });
 
 test.describe('chat composer', () => {
+  test('starts a new conversation from the conversation page at /chat', async ({
+    page,
+    api,
+  }) => {
+    const conversation = await api.post<{ id: string }>(
+      'agents/conversations',
+      {},
+    );
+    await open(page, `/chat/${conversation.id}`);
+    await page
+      .getByTestId('chat-page')
+      .getByRole('button', { name: '新对话', exact: true })
+      .click();
+    await expect(page).toHaveURL(url('/chat'));
+    await expect(page.getByTestId('chat-composer')).toBeVisible();
+    await expect(page.getByTestId('chat-floating-button')).toHaveCount(0);
+  });
+
   test('picks a coding agent in the composer, hands the message to it and opens it full screen', async ({
     page,
     api,
@@ -151,15 +169,13 @@ test.describe('chat composer', () => {
     await expect(panel).toBeVisible();
     await expect(panel.getByTestId('chat-title')).toHaveText(title);
 
-    // And back: the panel's full screen is the page again, and the panel closes.
-    await panel.getByRole('button', { name: '全屏打开' }).click();
-    await expect(page).toHaveURL(new RegExp(`/chat/${conversation.id}$`, 'u'));
-    await expect(panel).toBeHidden();
-    await page
-      .getByTestId('chat-page')
-      .getByRole('button', { name: '新对话', exact: true })
-      .click();
-    await expect(page).toHaveURL(url('/chat'));
-    await expect(page.getByTestId('chat-floating-button')).toHaveCount(0);
+    // Full width keeps the conversation beside its history on the current page.
+    const currentURL = page.url();
+    await panel.getByRole('button', { name: '全屏', exact: true }).click();
+    await expect(page).toHaveURL(currentURL);
+    await expect(panel.getByRole('list', { name: '对话历史' })).toBeVisible();
+    await expect(
+      panel.getByRole('button', { name: '恢复为侧栏' }),
+    ).toBeVisible();
   });
 });
