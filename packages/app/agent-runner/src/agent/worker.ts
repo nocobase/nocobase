@@ -608,7 +608,9 @@ export class RunWorker {
       // A lost run's events can no longer be delivered; everything else was drained before reporting.
       if (this.spool.size === 0 || this.ending?.kind === 'lost')
         await this.spool.remove();
-      await removeRecord(this.deps.paths, this.runId);
+      await removeRecord(this.deps.paths, this.runId, {
+        preserveWriters: unsafeReason !== undefined,
+      });
     }
   }
 

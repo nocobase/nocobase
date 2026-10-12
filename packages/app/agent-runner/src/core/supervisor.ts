@@ -136,9 +136,11 @@ export async function readRecords(paths: RunnerPaths): Promise<RunRecord[]> {
 export async function removeRecord(
   paths: RunnerPaths,
   runId: string,
+  options: { preserveWriters?: boolean } = {},
 ): Promise<void> {
   await rm(recordPath(paths, runId), { force: true });
-  await removeWriterOwnership(paths, runId);
+  if (options.preserveWriters !== true)
+    await removeWriterOwnership(paths, runId);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -585,7 +587,7 @@ export async function recoverRun(
         `${result.path}: ${result.saved ? 'Local continuation saved; not pushed' : result.reason}`,
     )
     .join('\n');
-  const detail =
+  let detail =
     recoveryDetail === ''
       ? options.detail
       : `${options.detail}\n\n${recoveryDetail}`;
@@ -617,36 +619,45 @@ export async function recoverRun(
     const files = spoolPaths(paths.runsDir, runId);
     await rm(files.spool, { force: true });
     await rm(files.ack, { force: true });
-    await removeRecord(paths, runId);
+    await removeRecord(paths, runId, {
+      preserveWriters: recovery.some((result) => !result.saved),
+    });
     return;
   }
-  const spool = EventSpool.open<{
+  type OrphanEvent = {
     seq: number;
     at: string;
     type: string;
     content?: string;
     stream?: string;
     meta?: Record<string, unknown>;
-  }>({
-    runsDir: paths.runsDir,
-    runId,
-    route: routes.events,
-    client,
-    firstSeq: record.firstSeq,
-    log,
-  });
-  spool.push(
-    job
-      ? { type: 'log', stream: 'runner', content: options.detail }
-      : {
-          type: 'status',
-          content: detail,
-          meta: { orphaned: true, localSave: recovery },
-        },
-  );
-  const delivered = await spool.drain(
-    options.timings.reportTimeoutMs ?? 30_000,
-  );
+  };
+  let spool: EventSpool<OrphanEvent> | undefined;
+  let delivered = false;
+  try {
+    spool = EventSpool.open<OrphanEvent>({
+      runsDir: paths.runsDir,
+      runId,
+      route: routes.events,
+      client,
+      firstSeq: record.firstSeq,
+      log,
+    });
+    spool.push(
+      job
+        ? { type: 'log', stream: 'runner', content: options.detail }
+        : {
+            type: 'status',
+            content: detail,
+            meta: { orphaned: true, localSave: recovery },
+          },
+    );
+    delivered = await spool.drain(options.timings.reportTimeoutMs ?? 30_000);
+  } catch (error) {
+    // Storage failure must not prevent a server-visible failure report when the server remains reachable.
+    detail += `\n\nRecovery status could not be spooled: ${error instanceof Error ? error.message : String(error)}`;
+    log(detail);
+  }
   try {
     if (options.reason === 'cancelled')
       await client.request('POST', routes.cancelAck, {});
@@ -670,10 +681,13 @@ export async function recoverRun(
       return;
     }
   }
-  if (delivered || spool.failure !== undefined) await spool.remove();
-  await removeRecord(paths, runId);
+  if (spool !== undefined && (delivered || spool.failure !== undefined))
+    await spool.remove();
+  await removeRecord(paths, runId, {
+    preserveWriters: recovery.some((result) => !result.saved),
+  });
   const files = spoolPaths(paths.runsDir, runId);
-  if (!delivered && spool.failure === undefined)
+  if (spool !== undefined && !delivered && spool.failure === undefined)
     log(`run ${runId}: undelivered events kept in ${files.spool}`);
 }
 

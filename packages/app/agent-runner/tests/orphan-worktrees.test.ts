@@ -1,7 +1,8 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { EventSpool } from '../src/core/events.ts';
 import {
   prepareDirs,
   readWorkspaceMeta,
@@ -38,6 +39,7 @@ describe('orphan writer recovery', () => {
     root = tempDir('orphan-worktrees-');
   });
   afterEach(async () => {
+    vi.restoreAllMocks();
     for (const child of children.splice(0)) {
       if (child.exitCode === null && child.signalCode === null)
         child.kill('SIGKILL');
@@ -86,7 +88,8 @@ describe('orphan writer recovery', () => {
     await new Promise<void>((resolve) =>
       child.stdout!.once('data', () => resolve()),
     );
-    expect(await workspaceWriters(workDir)).toContain(child.pid);
+    if (process.platform === 'linux')
+      expect(await workspaceWriters(workDir)).toContain(child.pid);
     const record: RunRecord = {
       runId: 'orphan',
       appKey: 'app',
@@ -155,7 +158,11 @@ describe('orphan writer recovery', () => {
     expect(failures).toHaveLength(2);
   });
 
-  it('recovers durable identities after loss of process group and environment ownership', async () => {
+  it('recovers durable identities after loss of process group and environment ownership', async (context) => {
+    if (process.platform !== 'linux') {
+      // eslint-disable-next-line vitest/no-disabled-tests -- Boot/start identities are Linux-specific; other platforms preserve orphan directories.
+      context.skip();
+    }
     const paths = runnerPaths(path.join(root, 'home'));
     const child = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], {
       detached: true,
@@ -265,6 +272,62 @@ describe('orphan writer recovery', () => {
       },
     );
     expect(details[0]).toContain('ownership recovery failed');
+    expect(details[0]).toContain(workDir);
+    expect(existsSync(workDir)).toBe(true);
+    expect(existsSync(path.join(paths.runsDir, 'corrupt.worker-writers'))).toBe(
+      true,
+    );
+  });
+
+  it('still reports recovery details when event spool storage fails', async () => {
+    const paths = runnerPaths(path.join(root, 'home'), path.join(root, 'work'));
+    const workDir = runWorkDir(paths, 'app', 'PM-300', 'no-spool', 1);
+    mkdirSync(workDir, { recursive: true });
+    await writeWorkspaceMeta(paths, workDir, {
+      appKey: 'app',
+      subjectKey: 'PM-300',
+      repos: [],
+      lastUsedAt: new Date().toISOString(),
+      runWorktrees: true,
+    });
+    vi.spyOn(EventSpool, 'open').mockImplementation(() => {
+      throw new Error('fixture storage unavailable');
+    });
+    const details: string[] = [];
+    const client = new ApiClient({
+      server: 'http://fixture.test',
+      headers: {},
+      fetch: async (url, init) => {
+        if (String(url).endsWith('/fail'))
+          details.push(
+            (JSON.parse(String(init?.body)) as { detail: string }).detail,
+          );
+        return new Response('{}', { status: 200 });
+      },
+    });
+    await recoverRun(
+      {
+        runId: 'no-spool',
+        appKey: 'app',
+        attempt: 1,
+        pid: 2147483647,
+        startedAt: new Date().toISOString(),
+        phase: 'workspace',
+        firstSeq: 0,
+        log: '',
+        workDir,
+      },
+      {
+        paths,
+        clientFor: () => client,
+        timings: {},
+        log: () => {},
+        reason: 'leaseExpired',
+        detail: 'Restart',
+      },
+    );
+    expect(details[0]).toContain('writer quiescence cannot be verified');
+    expect(details[0]).toContain('Recovery status could not be spooled');
     expect(details[0]).toContain(workDir);
     expect(existsSync(workDir)).toBe(true);
   });
