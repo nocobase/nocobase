@@ -70,7 +70,7 @@ const CREATE_FIELDS = [
 ] as const;
 
 /**
- * The statuses an `issue.update` row's target can take: its workflow's, read from the cached issue detail (an issue
+ * The statuses an `issue.update` row's target can take: the statuses, read from the cached issue detail (an issue
  * the plan itself creates has none yet, so built-in keys fall back to their translated names).
  */
 function useTargetStatuses(
@@ -85,7 +85,7 @@ function useTargetStatuses(
   return usePlanIssue(wantsStatus ? id : null).data?.statuses;
 }
 
-/** An update row: each field it sets, as "was → becomes"; statuses by their names in the target's workflow. */
+/** An update row: each field it sets, as "was → becomes"; statuses by their names. */
 function UpdateDetails({
   view,
   lookup,

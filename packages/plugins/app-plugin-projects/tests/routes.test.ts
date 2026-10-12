@@ -428,19 +428,6 @@ describe('errors', () => {
       },
     });
   });
-
-  it('answers a project the query names but that does not exist as a bad request', async () => {
-    const response = await call('/issues/statuses?projectId=nope', {
-      role: 'member',
-    });
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: {
-        reason: 'PROJECT_NOT_FOUND',
-        fieldViolations: [{ field: 'projectId' }],
-      },
-    });
-  });
 });
 
 describe('issues over HTTP', () => {
@@ -484,7 +471,8 @@ describe('issues over HTTP', () => {
       data: { columns: { status: { key: string }; issues: unknown[] }[] };
     };
     expect(
-      board.data.columns.find((column) => column.status.key === 'todo')?.issues,
+      board.data.columns.find((column) => column.status.key === 'backlog')
+        ?.issues,
     ).toHaveLength(3);
   });
 });
@@ -1371,76 +1359,6 @@ describe('dependencies over HTTP', () => {
   });
 });
 
-describe('approvals over HTTP', () => {
-  it('answers 202 with the request that holds a status change, and lets an approver decide it', async () => {
-    await h.addUser('lead', 'Lead');
-    const admin = h.viewer('lead', 'admin');
-    const workflow = await h.installStandardWorkflow();
-    await h.services.workflows.update(admin, workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        transitions: [
-          ...workflow.definition.transitions,
-          {
-            from: 'todo',
-            to: 'done',
-            actors: ['user'],
-            approval: { approvers: ['projectLead'] },
-          },
-        ],
-      },
-    });
-    const project = await h.services.projects.create(admin, { name: 'P' });
-    await call('/issues', {
-      role: 'member',
-      method: 'POST',
-      body: JSON.stringify({ title: 'A', projectId: project.id }),
-    });
-
-    const held = await call('/issues/PM-1', {
-      role: 'member',
-      method: 'PATCH',
-      body: JSON.stringify({ revision: 1, statusKey: 'done' }),
-    });
-    expect(held.status).toBe(202);
-    const {
-      data: { issue, pendingApproval },
-    } = (await held.json()) as {
-      data: {
-        issue: { statusKey: string };
-        pendingApproval: { id: string; approverUserIds: string[] };
-      };
-    };
-    expect(issue.statusKey).toBe('todo');
-    expect(pendingApproval.approverUserIds).toEqual(['lead']);
-
-    const lead = (path: string, init: RequestInit = {}) =>
-      router.request(`/api/projects${path}`, {
-        ...init,
-        headers: {
-          'content-type': 'application/json',
-          'x-test-user': 'lead',
-          'x-test-role': 'member',
-        },
-      });
-    const mine = (await (await lead('/approvals')).json()) as {
-      data: { id: string }[];
-    };
-    expect(mine.data.map((request) => request.id)).toEqual([
-      pendingApproval.id,
-    ]);
-    const approved = await lead(`/approvals/${pendingApproval.id}/approve`, {
-      method: 'POST',
-      body: '{}',
-    });
-    expect(approved.status).toBe(200);
-    expect(await approved.json()).toMatchObject({
-      data: { status: 'approved' },
-    });
-  });
-});
-
 describe('comments over HTTP', () => {
   it('posts, reacts with an encoded emoji, follows and lists mentions', async () => {
     await call('/issues', {
@@ -1663,7 +1581,7 @@ describe('the API document', () => {
         'projectsListIssues',
         'projectsCreateIssue',
         'projectsUpdateIssue',
-        'projectsApproveApproval',
+        'projectsListIssueStatuses',
         'projectsExecutePlan',
         'projectsUploadAttachment',
         'projectsDownloadAttachment',

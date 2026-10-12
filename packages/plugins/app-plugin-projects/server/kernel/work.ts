@@ -15,7 +15,7 @@
  * event bus like any other event, and only the plugin that owns `kind` reads its `payload`.
  *
  * What a handler did not start because the issue is held (`blocked`), waits where nothing starts (`dormant`), or had
- * as many runs from principals' comments as its workflow allows (`limited`, `commentRunLimit`), and the queued work it
+ * as many runs from principals' comments as the kind allows (`limited`), and the queued work it
  * withdrew when the issue became held (`onBlocked`), is recorded on the issue's activity, as the principal's:
  * `work_skipped { reason, trigger, blockers | status }` and `work_withdrawn { reason, runId, blockers }`.
  * Whether an issue is held is the plugin's to say (`SubtaskService.blockersOf`); the handler asks it and answers
@@ -53,7 +53,7 @@ declare module './events.js' {
 /**
  * Why a handler started nothing for a principal: `deferred`, the person asked not to start now; `blocked`, the issue
  * waits for unfinished issues; `dormant`, the issue is where work does not start (`BACKLOG_STATUS`); `limited`,
- * principals' comments started as many runs on the issue as its workflow allows (`commentRunLimit`).
+ * principals' comments started as many runs on the issue as the kind allows.
  */
 export type RunAttemptSkip =
   | 'deferred'
@@ -96,7 +96,7 @@ export interface WorkWithdrawal {
  * that transaction is a rehearsal (`tx.rehearsal`), it only answers what it would start.
  */
 export interface IssueWorkHandler {
-  /** A new issue, or an update (including a status moved by a workflow event or an approval). */
+  /** A new issue, or an update (including a status moved by a status event). */
   onIssueChanged(tx: Tx, change: IssueChange): Promise<readonly RunAttempt[]>;
   /**
    * A comment that is not a note, of a person or another principal (never the system's), on an issue the kind executes
