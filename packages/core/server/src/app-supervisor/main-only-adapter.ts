@@ -34,7 +34,12 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   async bootstrapApp(appName: string) {
-    if (appName !== 'main' || !this.apps[appName]) {
+    if (appName !== 'main') {
+      // Requests carry the app name, so anything but `main` is unauthenticated input here. It must not allocate any
+      // state and, above all, must not touch the status this adapter keeps for the main application.
+      return;
+    }
+    if (!this.apps[appName]) {
       this.setAppStatus(appName, 'not_found');
       return;
     }
@@ -132,7 +137,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   setAppStatus(appName: string, status: AppStatus, options = {}) {
-    if (this.status === status) {
+    if (appName !== 'main' || this.status === status) {
       return;
     }
     this.status = status;
@@ -140,6 +145,9 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   getAppStatus(appName: string, defaultStatus?: AppStatus) {
+    if (appName !== 'main') {
+      return 'not_found';
+    }
     return this.status ?? defaultStatus ?? null;
   }
 
