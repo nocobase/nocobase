@@ -321,21 +321,4 @@ export function announceRejectedRuns(
       });
     })().catch(onError);
   });
-  const stopRunChanges = agents.events.on('run.changed', (event) => {
-    if (event.status !== 'queued') return;
-    void (async () => {
-      const run = await agents.runs.get(event.runId);
-      if (!run.retryOfRunId || run.subject.kind !== ISSUE_SUBJECT) return;
-      const inbox = port();
-      if (!inbox) return;
-      await inbox.resolve({
-        ...runFailedDecision(run.retryOfRunId),
-        outcome: 'retried',
-      });
-    })().catch(onError);
-  });
-  return () => {
-    stopIssueUpdates();
-    stopRunChanges();
-  };
 }
