@@ -511,7 +511,11 @@ test.describe('issue page', () => {
       password: 'identity-trigger-e2e-password',
     };
     const triggerName = `Identity trigger ${suffix}`;
-    const runner = new FakeRunner(admin.api, `owner-identity-${unique()}`);
+    const runner = new FakeRunner(
+      admin.api,
+      `owner-identity-${unique()}`,
+      true,
+    );
     const settings = await admin.api.get<{
       firstChoiceAgentId: string | null;
       fallbackAgentId: string | null;
