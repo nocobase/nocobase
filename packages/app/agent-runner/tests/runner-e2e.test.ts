@@ -332,6 +332,7 @@ describe('runner end to end', () => {
     );
     server.cancel(run.payload.run.id);
     await waitFor(() => run.status === 'cancelled', 15_000, 'cancel');
+    expect(run.cancelAck?.sessionId).toMatch(/^echo-/);
     // The worker removes it as it exits, right after acknowledging the cancel.
     await waitFor(() => !existsSync(file), 5_000, 'credentials removal');
   });
@@ -414,7 +415,12 @@ describe('runner end to end', () => {
 
   it('kills the process group within 15 s of a cancel, even when the tool ignores SIGTERM', async () => {
     const run = server.enqueue({
-      prompt: { system: '', session: 'fresh', turn: 'say working\nhang-hard' },
+      prompt: {
+        system: '',
+        session: 'resume',
+        resumeSessionId: 'unconfirmed-old-session',
+        turn: 'say working\nhang-hard',
+      },
     });
     daemon();
     const id = run.payload.run.id;
@@ -439,6 +445,7 @@ describe('runner end to end', () => {
     expect(Date.now() - cancelledAt).toBeLessThan(15_000);
     await waitFor(() => run.status === 'cancelled', 10_000, 'cancelAck');
     expect(run.cancelAck).toBeDefined();
+    expect(run.cancelAck?.sessionId).toBeUndefined();
     expect(server.events(id).at(-1)).toMatchObject({
       type: 'status',
       meta: { status: 'cancelled' },

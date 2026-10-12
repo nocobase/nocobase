@@ -97,6 +97,20 @@ function renderEditor(
 }
 
 describe('RichTextEditor', () => {
+  it('can measure a focused text selection on the next animation frame', async () => {
+    const { editor } = renderEditor();
+    act(() => {
+      editor.commands.insertContent('hello');
+      editor.commands.focus();
+    });
+
+    await act(async () => {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    });
+  });
+
   it.each([
     {
       kind: 'agent',

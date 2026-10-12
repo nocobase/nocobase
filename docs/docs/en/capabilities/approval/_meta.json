@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Overview"
+    "label": "Approval overview"
   },
   {
     "type": "file",
-    "name": "quick-start",
-    "label": "Quick start"
+    "name": "stages",
+    "label": "Multiple stages and conditional routing"
   },
   {
     "type": "file",
-    "name": "develop",
-    "label": "Develop with an Agent"
+    "name": "joint-review",
+    "label": "Joint review and decision rules"
   },
   {
     "type": "file",
-    "name": "scenarios",
-    "label": "Scenarios"
+    "name": "handover",
+    "label": "Added reviewers and transfers"
   },
   {
     "type": "file",
-    "name": "extension",
-    "label": "Extension"
+    "name": "requests",
+    "label": "Request handling and progress"
   }
 ]

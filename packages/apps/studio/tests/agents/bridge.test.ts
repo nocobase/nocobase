@@ -10,6 +10,11 @@ import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import type { WorkflowDefinition } from '@nocobase/app-plugin-projects/shared/workflows';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import {
+  COMMENT_RUNS_LIMITED,
+  continueCommentRun,
+  pendingCommentRun,
+} from '../../server/agents/comment-run-limit.js';
 import { decideFailedRun } from '../../server/agents/failed-runs.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
@@ -260,6 +265,299 @@ describe('comments reach agents', () => {
         content: `[@Private](mention://agent/${privateAgent})`,
       }),
     ).rejects.toMatchObject({ code: 'MENTION_FORBIDDEN' });
+  });
+});
+
+describe("an agent's comment", () => {
+  /** A comment an agent writes in a run that acts for `userId`. */
+  const asAgent = (agentId: string, userId = 'alice') => ({
+    ...h.viewer(userId),
+    actor: { type: 'agent', id: agentId },
+  });
+  const mention = (agentId: string, name = 'Worker') =>
+    `[@${name}](mention://agent/${agentId})`;
+
+  async function activities(issueId: string) {
+    h.roles.set('alice', 'admin');
+    try {
+      return (await h.projects.issueQueries.activities(alice(), issueId, {}))
+        .data;
+    } finally {
+      h.roles.delete('alice');
+    }
+  }
+
+  /** Sets the default workflow's limit on the runs agents' comments start. */
+  async function limitCommentRuns(commentRunLimit: number): Promise<void> {
+    h.roles.set('alice', 'admin');
+    try {
+      const workflow =
+        (await h.projects.workflows.list(alice())).find(
+          (item) => item.isDefault,
+        ) ??
+        (await h.projects.workflows.setDefault(
+          alice(),
+          (
+            await h.projects.workflows.create(alice(), {
+              name: 'Standard',
+              copyFrom: null,
+            })
+          ).id,
+        ));
+      await h.projects.workflows.update(alice(), workflow.id, {
+        revision: workflow.revision,
+        definition: { ...workflow.definition, commentRunLimit },
+      });
+    } finally {
+      h.roles.delete('alice');
+    }
+  }
+
+  /** Claims the one queued run and starts it, so it counts. */
+  async function startRun(): Promise<string> {
+    const payload = await h.claimOne();
+    const started = await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+      workDir: '/tmp/w',
+      adapter: { kind: 'claude' },
+      acceptsInput: true,
+    });
+    expect(started.status).toBe(200);
+    return payload.run.id as string;
+  }
+
+  it('wakes the agent it mentions, as the person its run acts for', async () => {
+    const coordinator = await h.createAgent({ name: 'Coordinator' });
+    const worker = await h.createAgent({ name: 'Worker' });
+    const issue = await h.projects.issues.create(alice(), { title: 'Split' });
+    const { triggered } = await h.projects.comments.create(
+      asAgent(coordinator, 'bob'),
+      issue.id,
+      { content: `${mention(worker)} take the API part` },
+    );
+    expect(triggered).toEqual([{ kind: 'agent', id: worker }]);
+    const [run] = await runsOf(issue.id);
+    expect(run).toMatchObject({ agentId: worker, actorUserId: 'bob' });
+    expect((await h.agents.runs.detail(run!.id)).inputs.at(-1)).toMatchObject({
+      type: 'comment',
+      actor: { kind: 'agent', id: coordinator, name: 'Coordinator' },
+      payload: { trigger: 'mention', byAgent: true },
+    });
+  });
+
+  it('wakes nobody by answering an agent, unless it mentions one', async () => {
+    const reviewer = await h.createAgent({ name: 'Reviewer' });
+    const developer = await h.createAgent({ name: 'Developer' });
+    const issue = await h.projects.issues.create(alice(), { title: 'Review' });
+    const { comment: review } = await h.projects.comments.create(
+      asAgent(reviewer),
+      issue.id,
+      { content: `${mention(developer, 'Developer')} rename the helper` },
+    );
+    const before = (await runsOf(issue.id)).length;
+    const reply = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(developer), issue.id, {
+        content: 'Renamed.',
+        parentId: review.id,
+      }),
+    );
+    expect(reply.attempts).toEqual([]);
+    expect(await runsOf(issue.id)).toHaveLength(before);
+    const { triggered } = await h.projects.comments.create(
+      asAgent(developer),
+      issue.id,
+      {
+        content: `${mention(reviewer, 'Reviewer')} renamed, look again`,
+        parentId: review.id,
+      },
+    );
+    expect(triggered).toEqual([{ kind: 'agent', id: reviewer }]);
+  });
+
+  it('wakes the executing agent when it mentions nobody, but not the executor itself, nor past a person', async () => {
+    const coordinator = await h.createAgent({ name: 'Coordinator' });
+    const worker = await h.createAgent({ name: 'Worker' });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Split',
+      executor: { type: 'agent', id: coordinator },
+      start: false,
+    });
+    const { triggered } = await h.projects.comments.create(
+      asAgent(worker),
+      issue.id,
+      { content: 'Done: see branch agent/api.' },
+    );
+    expect(triggered).toEqual([{ kind: 'agent', id: coordinator }]);
+    const woken = (await runsOf(issue.id)).filter(
+      (run) => run.agentId === coordinator,
+    );
+    expect(woken).toHaveLength(1);
+    expect(
+      (await h.agents.runs.detail(woken[0]!.id)).inputs.at(-1)?.payload,
+    ).toMatchObject({ trigger: 'comment', byAgent: true });
+    const before = (await runsOf(issue.id)).length;
+    const own = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(coordinator), issue.id, {
+        content: 'Merging the parts.',
+      }),
+    );
+    expect(own.attempts).toEqual([]);
+    const toPerson = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(worker), issue.id, {
+        content: '[@bob](mention://user/bob) which API version?',
+      }),
+    );
+    expect(toPerson.attempts).toEqual([]);
+    expect(await runsOf(issue.id)).toHaveLength(before);
+  });
+
+  it('never wakes its own agent', async () => {
+    const coordinator = await h.createAgent({ name: 'Coordinator' });
+    const issue = await h.projects.issues.create(alice(), { title: 'Self' });
+    const { comment } = await h.projects.comments.create(
+      asAgent(coordinator),
+      issue.id,
+      { content: `Note to ${mention(coordinator, 'Coordinator')}` },
+    );
+    const { attempts } = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(coordinator), issue.id, {
+        content: 'And a follow-up.',
+        parentId: comment.id,
+      }),
+    );
+    expect(attempts).toEqual([]);
+    expect(await runsOf(issue.id)).toEqual([]);
+  });
+
+  it('acts for the person its run acts for, and for the owner when no run wrote it', async () => {
+    const { issue, token } = await claimedRun();
+    const helper = await h.createAgent({ name: 'Helper' });
+    const posted = await h.request(
+      'POST',
+      `/projects/issues/${issue.identifier}/comments`,
+      {
+        runToken: token,
+        body: { content: `${mention(helper, 'Helper')} check the tests` },
+      },
+    );
+    expect(posted.status).toBe(201);
+    expect(
+      (await runsOf(issue.id)).find((run) => run.agentId === helper),
+    ).toMatchObject({ actorUserId: 'alice' });
+    // Written through the comment writer, which names no person: the owner may not wake a private agent.
+    const owned = await h.projects.issues.create(bob(), { title: 'Bob’s' });
+    const privateAgent = await h.createAgent({
+      name: 'Private',
+      access: 'ownerOnly',
+    });
+    const { attempts } = await collectRunAttempts(() =>
+      h.projects.comments.post({ type: 'agent', id: helper }, owned.id, {
+        content: mention(privateAgent, 'Private'),
+      }),
+    );
+    expect(attempts).toEqual([
+      expect.objectContaining({ principalId: privateAgent, skipped: 'denied' }),
+    ]);
+  });
+
+  it("starts nothing past the workflow's limit, tells the owner, and a person's comment restarts the count", async () => {
+    const planned: any[] = [];
+    h.projects.events.on('notice.planned', (event) => {
+      planned.push(event.notice);
+    });
+    await limitCommentRuns(1);
+    const coordinator = await h.createAgent({ name: 'Coordinator' });
+    const worker = await h.createAgent({ name: 'Worker' });
+    const issue = await h.projects.issues.create(alice(), { title: 'Loop' });
+    await h.projects.comments.create(asAgent(coordinator), issue.id, {
+      content: `${mention(worker)} first`,
+    });
+    await startRun();
+    const { value, attempts } = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(coordinator), issue.id, {
+        content: `${mention(worker)} again`,
+      }),
+    );
+    expect(value.triggered).toEqual([]);
+    expect(attempts).toEqual([
+      expect.objectContaining({ principalId: worker, skipped: 'limited' }),
+    ]);
+    expect(await runsOf(issue.id)).toHaveLength(1);
+    expect(
+      (await activities(issue.id)).find(
+        (entry) => entry.action === 'work_skipped',
+      ),
+    ).toMatchObject({
+      actorId: worker,
+      details: { reason: 'limited', trigger: 'mention' },
+    });
+    const pending = await pendingCommentRun(h.projects, alice(), issue.id);
+    expect(pending).toMatchObject({ maxRuns: 1, windowHours: 24 });
+    expect(planned.at(-1)).toMatchObject({
+      type: COMMENT_RUNS_LIMITED,
+      userIds: ['alice'],
+      params: { limit: '1', continueToken: pending!.token },
+    });
+    await h.projects.comments.create(bob(), issue.id, {
+      content: `${mention(coordinator, 'Coordinator')} keep going`,
+    });
+    expect(await pendingCommentRun(h.projects, alice(), issue.id)).toBeNull();
+    const after = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(coordinator), issue.id, {
+        content: `${mention(worker)} once more`,
+      }),
+    );
+    expect(after.value.triggered).toEqual([{ kind: 'agent', id: worker }]);
+  });
+
+  it('lets a person who may edit the issue continue the held comment once', async () => {
+    await limitCommentRuns(1);
+    const coordinator = await h.createAgent({ name: 'Coordinator' });
+    const worker = await h.createAgent({ name: 'Worker' });
+    const issue = await h.projects.issues.create(alice(), { title: 'Loop' });
+    await h.projects.comments.create(asAgent(coordinator), issue.id, {
+      content: `${mention(worker)} first`,
+    });
+    const first = await startRun();
+    await h.runner(RUNNER_ROUTES.complete, first, {
+      summary: 'Done.',
+      handledInputIds: (await h.agents.runs.detail(first)).inputs.map(
+        (input) => input.id,
+      ),
+    });
+    await h.projects.comments.create(asAgent(coordinator), issue.id, {
+      content: `${mention(worker)} again`,
+    });
+    const pending = (await pendingCommentRun(h.projects, alice(), issue.id))!;
+    const attempts = await Promise.all(
+      [0, 1].map(() =>
+        h.request('POST', `/issueCommentRuns/${issue.id}/continue`, {
+          user: 'alice',
+          body: { token: pending.token },
+        }),
+      ),
+    );
+    expect(attempts.map((attempt) => attempt.status).sort()).toEqual([
+      200, 400,
+    ]);
+    const [runId] = attempts.find((attempt) => attempt.status === 200)!.body
+      .data.runIds;
+    expect(await h.agents.runs.get(runId)).toMatchObject({
+      agentId: worker,
+      actorUserId: 'alice',
+    });
+    expect(
+      (await h.agents.runs.detail(runId)).inputs.at(-1)?.payload,
+    ).toMatchObject({ trigger: 'mention', continuedFrom: pending.token });
+    expect(await pendingCommentRun(h.projects, alice(), issue.id)).toBeNull();
+    await expect(
+      continueCommentRun(
+        h.projects,
+        h.agents,
+        alice(),
+        issue.id,
+        pending.token,
+      ),
+    ).rejects.toMatchObject({ reason: 'COMMENT_CONTINUE_STALE' });
   });
 });
 

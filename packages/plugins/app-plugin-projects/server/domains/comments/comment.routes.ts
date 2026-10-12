@@ -28,10 +28,10 @@ import {
   CommentParams,
   CommentReactionsSchema,
   CommentThreadSchema,
+  CommentThreadsQuery,
   CreateCommentBody,
   CreateCommentResultSchema,
   CursorListMeta,
-  CursorPageQuery,
   EmptyListMeta,
   IssueCommentSchema,
   IssueParams,
@@ -47,7 +47,7 @@ import type { CommentService } from './comment.service.js';
 const notFound = apiErrorResponse(404);
 
 /**
- * Under `/api/projects/issues`: `GET /{issueId}/comments?pageToken&pageSize` (a page of threads) and
+ * Under `/api/projects/issues`: `GET /{issueId}/comments?pageToken&pageSize&since` (a page of threads) and
  * `POST /{issueId}/comments`, answering `{ comment, triggered }`.
  */
 export function createIssueCommentRoutes(deps: {
@@ -77,7 +77,7 @@ export function createIssueCommentRoutes(deps: {
         action: 'pm.issues/view',
       }),
       description:
-        'A page of threads, the newest page first and each page oldest first; a thread is a root and all its replies. `issueId` is an id or an identifier.',
+        'A page of threads, the newest page first and each page oldest first; a thread is a root and all its replies. With `since`, only what was written after it. `issueId` is an id or an identifier.',
       responses: {
         200: listResponse(CommentThreadSchema, CursorListMeta),
         ...apiErrorResponses,
@@ -85,7 +85,7 @@ export function createIssueCommentRoutes(deps: {
       },
     }),
     apiValidator('param', IssueParams),
-    apiValidator('query', CursorPageQuery),
+    apiValidator('query', CommentThreadsQuery),
     async (context) =>
       context.json(
         cursorList(

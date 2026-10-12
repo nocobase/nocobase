@@ -12,6 +12,65 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'issueRuns.model': 'Model: {{model}}',
+  'issueRuns.configuredModel': 'Configured model: {{model}}',
+  'issueRuns.modelUnknown': 'Model not reported',
+  'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.emptyHint':
+    'Check the executor and status in Properties to start agent work.',
+  'issueRuns.loading': 'Loading execution log…',
+  'issueRuns.failed': 'Could not load the execution log. Try again.',
+  'issueRuns.refreshFailed':
+    'Could not refresh the execution log. Showing the last loaded records.',
+  'issueRuns.forbidden':
+    'You do not have permission to view these runs. Contact the project owner to request access.',
+  'issueRuns.unavailable':
+    'These records are unavailable. Return to the issue list and check whether the issue still exists.',
+  'issueRuns.unauthenticated':
+    'Your session has expired. Sign in again to view the execution log.',
+  'issueRuns.signIn': 'Sign in',
+  'issueRuns.retry': 'Retry',
+
+  globalChat: {
+    notSubmitted: 'Question was not sent',
+    editRejected: 'Return question and files to editor',
+    placeholder: 'Ask Agent…',
+    label: 'Question for Agent',
+    edit: 'Continue editing in panel',
+    preview: 'Preview page context',
+    send: 'Send question',
+    target: 'New conversation with {{name}}',
+    continue: 'Continue: {{title}} · {{name}}',
+    newConversation: 'New conversation',
+    noAgent: 'Choose an agent in the panel',
+    noAgentHelp:
+      'No agent is available. Choose a default agent in account preferences, or ask an administrator to configure one.',
+    unavailableHelp:
+      'This conversation is unavailable. Open the panel to choose or start a conversation; your question is kept here.',
+    loadingHelp:
+      'Loading this conversation. Wait for it to load, or open the panel to choose a conversation.',
+    pendingHelp:
+      'The previous question is still sending or awaiting confirmation. Open the panel to check it before sending more.',
+    replying: 'Agent is replying',
+    truncated: 'Page context was shortened to stay within the budget.',
+    unknown: 'Send result awaiting confirmation',
+    creationUnknown: 'Conversation creation awaiting confirmation',
+    sending: 'Sending…',
+    unknownHelp:
+      'This question may already be saved. Check the conversation before sending more.',
+    check: 'Refresh confirmation',
+    viewConversation: 'View conversation',
+    creationHelp:
+      'The question has not been sent. Choose a conversation to continue, or create another; an empty conversation may already exist.',
+    refreshConversations: 'Refresh conversations',
+    chooseConversation: 'Continue in {{title}}',
+    moreConversations: 'More conversations',
+    createAnother: 'Create another conversation (an empty one may exist)',
+    draftConflict:
+      'The panel has a draft. How should the header question be handled?',
+    keepDraft: 'Keep panel draft',
+    appendDraft: 'Append header question',
+  },
   runTranscriptFilters: {
     title: 'Event types',
     agent: 'Agent',
@@ -993,6 +1052,11 @@ const enUS = {
     'The run failed after {{attempts}} attempts ({{reason}}). Retry it, give the issue to a person, or leave it.',
   'inbox.body.stage_action_problem':
     '"{{rule}}" in {{status}} was skipped: {{why}}.',
+  'inbox.types.comment_runs_limited': 'Agent comments paused',
+  'inbox.text.comment_runs_limited':
+    'Agent comments on {{identifier}} reached their limit',
+  'inbox.body.comment_runs_limited':
+    'Agents’ comments started {{limit}} runs within {{windowHours}} hours, so a comment of {{agentName}} woke nobody.',
   'inbox.stageRules.runAgent': 'Run agent',
   'inbox.stageRules.suggestExecutor': 'Suggest executor',
   'inbox.stageSkips.executorCannotImplement':
@@ -1291,6 +1355,15 @@ const enUS = {
       suggestNoAgent: 'Suggests an executor to the owner (no agent chosen)',
       unknownAgent: 'an agent you cannot see',
       withInstruction: '{{summary}}: {{instruction}}',
+    },
+    commentRuns: {
+      limitReached: 'Agent comments paused',
+      continueHint:
+        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+      continued: 'Agent comment continued',
+      continueStale: 'This comment no longer waits. Refresh the issue.',
+      continueFailed:
+        'Could not continue. Check the agents and issue blockers, then retry.',
     },
   },
   pmChat: {

@@ -25,7 +25,9 @@ Projects, issues, workflows, labels and members for a NocoBase application.
   executor before and after, the kinds a comment mentions or answers), which answers what it started (`RunAttempt[]`;
   `collectRunAttempts` gathers them around a call). A handler asks `projects.subtasks.blockersOf` whether the issue
   waits for unfinished issues and then starts nothing (`skipped: 'blocked'`); it starts nothing either for an issue in
-  backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`). When a new `blockedBy` holds the issue, every kind's
+  backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`), or for a principal's comment past the workflow's
+  `commentRunLimit` (`skipped: 'limited'`). A comment of anyone but the system reaches the handlers, with the person it
+  was written for (`CommentChange.userId`). When a new `blockedBy` holds the issue, every kind's
   `onBlocked` withdraws the work it had not taken up yet. These skips and withdrawals are recorded on the issue's
   activity as the principal's (`work_skipped`, `work_withdrawn`, with the issues it waits for). It may name the business actions a principal of the kind may be
   given at most (`actions`) and describe executors for a picker (`executor.describe`). `projects.issueContext`
@@ -186,6 +188,7 @@ New accounts register directly from the invitation link with a name and password
 | `GET /issues/{issueId}/checklists`                                                 | Every checklist the issue has had                           |
 | `PATCH /issues/{issueId}/checklists/{statusKey}/items/{itemKey}`                   | Checks or unchecks an item (`{ checked }`)                  |
 | `POST /issues/{issueId}/dependencies`                                              | Adds a link (`{ dependsOnIssueId, type }`)                  |
+| `PATCH /issues/{issueId}/dependencies/{dependencyId}`                              | Changes a link type (`{ type, expectedType }`) atomically   |
 | `DELETE /issues/{issueId}/dependencies/{dependencyId}`                             | Removes a link                                              |
 | `POST /issues/{issueId}/removeDependency`                                          | Removes the link to an issue (`{ dependsOnIssueId, type }`) |
 | `GET /approvals`                                                                   | Status changes waiting for the caller's approval            |
@@ -199,6 +202,10 @@ New accounts register directly from the invitation link with a name and password
 | `POST /intake/split`, `POST /intake/extractTexts`                                  | The rule split; the uploads' text                           |
 | `GET /intake/aiAvailability`                                                       | Whether AI can be asked                                     |
 | `POST /intake/aiJobs`, `GET …/{jobId}`, `POST …/{jobId}/cancel`                    | A request to AI; cancelling it                              |
+
+Relationship conversion preserves the link ID and checks the type the caller read (`expectedType`). A stale change returns 409 `DEPENDENCY_CHANGED`; if the target relationship already exists, it returns 409 `DEPENDENCY_EXISTS` and keeps both links. A related link may be converted from either end: the current issue becomes the waiting issue when changed to `blockedBy`.
+
+Operations that add explicit or implicit waits (dependencies, conversions, issue creation, parent/stage changes and restores) share a dedicated database graph revision row. Its conditional increment protects cycle detection and writes until the outer transaction commits, across processes and projects. An outdated transaction snapshot returns 409 `DEPENDENCY_GRAPH_CHANGED`; reload and retry the whole operation. Every issue creation takes this protection before allocating its number, so plans that create issues and add dependencies use the same lock order. Standalone creates without dependencies lock the row without advancing the graph revision, so independent parallel creates still succeed without retrying each other. The revision is separate from settings/counters so MySQL reads of those rows after writing them cannot disguise an old graph snapshot. Restoring an issue is rejected if its waits would now create a cycle. Every relationship write, including both removal endpoints, acquires this protection before reading its type and endpoints, keeping duplicate checks, activity and release notifications consistent with conversions. Issue status and project changes, approvals, workflow events and deletion take the same guard before writing an issue, so concurrent changes cannot each see an old blocker and miss the last release. Automatic parent/stage completion keeps the originating guard; ordinary edits that cannot change waits do not acquire it. Plans acquire the guard without advancing its revision before their first row, including rehearsal and undo, so earlier issue edits cannot reverse the lock order of a later graph write.
 
 Cursor lists (issues, activities, comment threads, plans) take `pageSize` (20 by default, at most 100; plans 50) and `pageToken`, and answer `meta.nextPageToken` until the last page. `orderBy` on issues is `updatedAt`, `createdAt`, `number` or `priority`, optionally followed by `asc` or `desc` (`updatedAt desc` by default). The other lists are answered whole with `meta.total`. A scoped API key may not use `/intake` or `/plans` (403 `SCOPED_KEY_FORBIDDEN`).
 

@@ -32,6 +32,8 @@ const pages = {
       stageActionBlocked: 'skipped a stage action: the issue is waiting for',
       workBlocked: 'did not start work: the issue is waiting for',
       workDormant: 'did not start work while the issue is in',
+      workLimited:
+        'did not start work: agents’ comments reached the issue’s run limit',
       workWithdrawn: 'withdrew its queued work: the issue is now waiting for',
       stageActionFailed: 'could not run a rule of the status',
       created: 'created the issue',
@@ -325,6 +327,8 @@ const pages = {
     WORKFLOW_STATUS_CONFLICT:
       'Issues are still in a status this change removes; move them first.',
     DEPENDENCY_CYCLE: 'That dependency would create a cycle.',
+    DEPENDENCY_CHANGED: 'The relationship changed. Reload and retry.',
+    DEPENDENCY_GRAPH_CHANGED: 'Issue dependencies changed. Reload and retry.',
     DEPENDENCY_EXISTS: 'That dependency already exists.',
     DEPENDENCY_TOO_DEEP: 'The dependency chain is too long.',
     INVALID_DEPENDENCY: 'That issue cannot be a dependency here.',
@@ -1003,6 +1007,13 @@ const pages = {
     matrix: 'Transition matrix',
     matrixDescription:
       'Rows are the current status, columns the next one. Each cell shows who may make the move.',
+    limitsTitle: 'Limits',
+    limitsDescription:
+      'How much work comments of agents and other non-person principals may start on one issue. A person’s comment is never limited and restarts the count.',
+    commentRunLimit:
+      'Runs from agent comments per issue in {{windowHours}} hours',
+    commentRunLimitValue:
+      'At most {{limit}} runs per issue in {{windowHours}} hours. Past that, the owner is told and may continue.',
     rulesTitle: 'Rules',
     rulesDescription:
       'Who may make each move, which moves need an approval, and what entering each status does.',

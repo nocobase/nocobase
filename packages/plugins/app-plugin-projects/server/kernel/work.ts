@@ -14,9 +14,10 @@
  * A handler may announce something to run after the change commits (`work.announced`): it is delivered on the plugin's
  * event bus like any other event, and only the plugin that owns `kind` reads its `payload`.
  *
- * What a handler did not start because the issue is held (`blocked`) or waits where nothing starts (`dormant`), and the
- * queued work it withdrew when the issue became held (`onBlocked`), is recorded on the issue's activity, as the
- * principal's: `work_skipped { reason, trigger, blockers | status }` and `work_withdrawn { reason, runId, blockers }`.
+ * What a handler did not start because the issue is held (`blocked`), waits where nothing starts (`dormant`), or had
+ * as many runs from principals' comments as its workflow allows (`limited`, `commentRunLimit`), and the queued work it
+ * withdrew when the issue became held (`onBlocked`), is recorded on the issue's activity, as the principal's:
+ * `work_skipped { reason, trigger, blockers | status }` and `work_withdrawn { reason, runId, blockers }`.
  * Whether an issue is held is the plugin's to say (`SubtaskService.blockersOf`); the handler asks it and answers
  * `skipped: 'blocked'`.
  *
@@ -51,10 +52,12 @@ declare module './events.js' {
 
 /**
  * Why a handler started nothing for a principal: `deferred`, the person asked not to start now; `blocked`, the issue
- * waits for unfinished issues; `dormant`, the issue is where work does not start (`BACKLOG_STATUS`).
+ * waits for unfinished issues; `dormant`, the issue is where work does not start (`BACKLOG_STATUS`); `limited`,
+ * principals' comments started as many runs on the issue as its workflow allows (`commentRunLimit`).
  */
 export type RunAttemptSkip =
   | 'deferred'
+  | 'limited'
   | 'denied'
   | 'blocked'
   | 'dormant'
@@ -96,8 +99,9 @@ export interface IssueWorkHandler {
   /** A new issue, or an update (including a status moved by a workflow event or an approval). */
   onIssueChanged(tx: Tx, change: IssueChange): Promise<readonly RunAttempt[]>;
   /**
-   * A person's comment that is not a note, on an issue the kind executes or in which it is mentioned or answered. The
-   * attempts that started become the comment's `triggered` mentions. Throwing refuses the comment.
+   * A comment that is not a note, of a person or another principal (never the system's), on an issue the kind executes
+   * or in which it is mentioned or answered. The attempts that started become the comment's `triggered` mentions.
+   * Throwing refuses the comment.
    */
   onCommentCreated?(
     tx: Tx,
@@ -193,6 +197,13 @@ const blockerRefs = (blockers: readonly Blocker[]) =>
     identifier: blocker.identifier,
   }));
 
+/** The skips recorded on the issue's activity. */
+const RECORDED_SKIPS: ReadonlySet<string> = new Set([
+  'blocked',
+  'dormant',
+  'limited',
+]);
+
 /** The default triggers: each change to the work handlers of the kinds it concerns. */
 export function kindTriggers(
   kinds: KindRegistry,
@@ -209,13 +220,13 @@ export function kindTriggers(
     if (tx.rehearsal || !deps.activity) return result;
     let blockers: readonly Blocker[] | undefined;
     for (const attempt of result) {
-      if (attempt.skipped !== 'blocked' && attempt.skipped !== 'dormant')
-        continue;
-      let details: Record<string, unknown>;
+      if (!RECORDED_SKIPS.has(attempt.skipped ?? '')) continue;
+      let details: Record<string, unknown> = {};
       if (attempt.skipped === 'blocked') {
         blockers ??= (await deps.blockers?.(tx.conn, issue)) ?? [];
         details = { blockers: blockerRefs(blockers) };
-      } else details = { status: issue.statusKey };
+      } else if (attempt.skipped === 'dormant')
+        details = { status: issue.statusKey };
       await deps.activity.record(tx.conn, {
         issueId: issue.id,
         actor: { type: attempt.kind, id: attempt.principalId },

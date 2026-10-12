@@ -15,7 +15,6 @@ import {
   useConversation,
   useConversationActions,
   useConversationMessages,
-  useSendMessage,
   type ChatTimelineItem,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { OnlineModelEntry } from '@nocobase/app-plugin-agents/shared/agents';
@@ -55,8 +54,15 @@ import { errorStatus, useChatTranslation } from './chat-i18n.js';
 import { LoadError } from './chat-ui.js';
 import { Composer } from './composer.js';
 import { LiveSteps, TurnAnnouncer } from './live-steps.js';
-import { MessageItem, PendingItem } from './message-item.js';
+import { MessageItem } from './message-item.js';
 import { ModelPicker } from './model-picker.js';
+
+import {
+  useStudioChat,
+  useChatEditor,
+  chatEditorKey,
+} from '../../agents/chat-state.js';
+import { SubmissionStatus } from '../../agents/submission-status.js';
 
 const NO_ITEMS: readonly ChatTimelineItem[] = [];
 
@@ -69,7 +75,28 @@ export type ConversationVariant = 'panel' | 'page';
 /** The full-page view's column: the messages and the composer at a readable width, centred. */
 export const PAGE_COLUMN = 'mx-auto w-full max-w-3xl px-4 sm:px-6';
 
-export function ConversationView({
+interface ConversationViewProps {
+  readonly conversationId: string | null;
+  readonly className?: string;
+  readonly variant?: ConversationVariant;
+}
+
+export function ConversationView(props: ConversationViewProps): ReactElement {
+  const { temporaryKey } = useStudioChat();
+  return props.variant === 'page' ? (
+    <div className='flex min-h-0 flex-1 flex-col'>
+      <SubmissionStatus
+        conversationId={props.conversationId}
+        editorKey={chatEditorKey('page', props.conversationId, temporaryKey)}
+      />
+      <ConversationContent {...props} />
+    </div>
+  ) : (
+    <ConversationContent {...props} />
+  );
+}
+
+function ConversationContent({
   conversationId,
   className,
   variant = 'panel',
@@ -84,8 +111,12 @@ export function ConversationView({
   const detail = useConversation(conversationId);
   // A conversation its first message just created keeps the same body (no skeleton, no remount), so the composer
   // keeps its focus and the message stays where it is.
-  const [created, setCreated] = useState<string | null>(null);
-  const continuing = conversationId !== null && created === conversationId;
+  const { submissions } = useStudioChat();
+  const continuing =
+    conversationId !== null &&
+    submissions
+      .snapshot()
+      .some((record) => record.conversationId === conversationId);
   // Each "new conversation" is a fresh body.
   const [freshKey, setFreshKey] = useState(0);
   const [seenId, setSeenId] = useState(conversationId);
@@ -154,7 +185,6 @@ export function ConversationView({
       }
       conversationId={conversationId}
       conversation={detail.data ?? null}
-      onCreated={(id) => setCreated(id)}
       className={className}
       variant={variant}
     />
@@ -172,13 +202,11 @@ interface Entry {
 function ConversationBody({
   conversationId,
   conversation,
-  onCreated,
   className,
   variant,
 }: {
   readonly conversationId: string | null;
   readonly conversation: ConversationDetail | null;
-  readonly onCreated: (conversationId: string) => void;
   readonly className?: string;
   readonly variant: ConversationVariant;
 }): ReactElement {
@@ -208,23 +236,32 @@ function ConversationBody({
   const chosenModel =
     target && newModel?.agentId === target.id ? newModel.model : null;
 
-  const { selectConversation, resetSource, source, focusComposer } = panel;
-  const created = useCallback(
-    (detail: ConversationDetail) => {
-      onCreated(detail.id);
-      selectConversation(detail.id);
-      resetSource();
-    },
-    [onCreated, selectConversation, resetSource],
+  const { selectConversation, source, focusComposer } = panel;
+  const { submissions, temporaryKey } = useStudioChat();
+  const editorKey = chatEditorKey(variant, conversationId, temporaryKey);
+  const editor = useChatEditor(editorKey);
+  const storedModel = editor.read<typeof newModel>('model', null);
+  const stableModel =
+    target && storedModel?.agentId === target.id
+      ? storedModel.model
+      : chosenModel;
+  const records = submissions
+    .snapshot()
+    .filter(
+      (record) =>
+        record.conversationId === conversationId && conversationId !== null,
+    );
+  const blocked = submissions.blocked(conversationId, editorKey);
+  useEffect(() => {
+    if (conversationId) submissions.observe(conversationId, messages.items);
+  }, [conversationId, messages.items, submissions]);
+  const confirmed = records.flatMap((record) =>
+    record.message ? [record.message] : [],
   );
-  const send = useSendMessage({
-    conversationId,
-    agentId: conversation ? conversation.agent.id : (target?.id ?? null),
-    source,
-    model: chosenModel,
-    dispatch: messages.dispatch,
-    onCreated: created,
-  });
+  const byId = new Map(
+    [...confirmed, ...messages.items].map((message) => [message.id, message]),
+  );
+  const displayed = [...byId.values()].sort((a, b) => a.seq - b.seq);
 
   // Viewed: tell the server the agent's latest replies were read.
   const { markRead } = actions;
@@ -255,7 +292,7 @@ function ConversationBody({
     (conversation ? t('chat.agentGone') : t('chat.anyAgent'));
 
   const entries: Entry[] = timelineOrder([
-    ...messages.items.map((message: ConversationMessage): Entry => ({
+    ...displayed.map((message: ConversationMessage): Entry => ({
       key: `m-${message.id}`,
       at: message.createdAt,
       rank: 0,
@@ -283,14 +320,13 @@ function ConversationBody({
   // Follow the end of the log as messages arrive; keep the place when older ones are loaded above.
   const listRef = useRef<HTMLDivElement>(null);
   const lastKey = messages.items.at(-1)?.seq ?? 0;
-  const pendingCount = messages.pending.length;
+  const pendingCount = records.length;
   useLayoutEffect(() => {
     const element = listRef.current;
     if (element) element.scrollTop = element.scrollHeight;
   }, [lastKey, pendingCount, run?.id, timeline.length]);
 
-  const empty =
-    entries.length === 0 && messages.pending.length === 0 && !running;
+  const empty = entries.length === 0 && !blocked && !running;
   const page = variant === 'page';
 
   // Files dropped anywhere on the conversation go to the composer, which uploads them.
@@ -393,28 +429,6 @@ function ConversationBody({
                 className='flex flex-col gap-4 py-1'
               >
                 {entries.map((entry) => entry.node)}
-                {messages.pending.map((message) => (
-                  <PendingItem
-                    key={message.clientId}
-                    message={message}
-                    onDiscard={() =>
-                      messages.dispatch({
-                        type: 'discard',
-                        clientId: message.clientId,
-                      })
-                    }
-                    onRetry={() =>
-                      void send({
-                        content: message.content,
-                        context: message.context,
-                        ...(message.attachments
-                          ? { attachments: message.attachments }
-                          : {}),
-                        clientId: message.clientId,
-                      })
-                    }
-                  />
-                ))}
                 {run ? (
                   <li>
                     <LiveSteps
@@ -434,16 +448,28 @@ function ConversationBody({
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
         <Composer
           variant={variant}
+          conversationId={conversationId}
+          disabled={blocked || (!conversation && !target)}
           running={running}
           stopping={actions.stop.isPending}
           onStop={() => {
             if (conversationId) actions.stop.mutate(conversationId);
           }}
           onSend={(content, context, attachments) => {
-            void send({ content, context, attachments }).then(() =>
-              focusComposer(),
-            );
-            return true;
+            const taken = submissions.submit({
+              content,
+              context,
+              attachments,
+              conversationId,
+              editorKey,
+              create: {
+                ...(target ? { agentId: target.id } : {}),
+                source,
+                ...(stableModel ? { model: stableModel } : {}),
+              },
+            });
+            if (taken) focusComposer();
+            return taken;
           }}
           registerAddFiles={registerAddFiles}
           toolbar={
@@ -464,9 +490,13 @@ function ConversationBody({
                   selectConversation(null, agentId);
                   focusComposer();
                 }}
-                model={chosenModel}
+                model={stableModel}
                 onModelChange={(model) => {
-                  if (target) setNewModel({ agentId: target.id, model });
+                  if (target) {
+                    const value = { agentId: target.id, model };
+                    setNewModel(value);
+                    editor.setter<typeof newModel>('model', null)(value);
+                  }
                 }}
               />
             )

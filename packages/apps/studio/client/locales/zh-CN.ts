@@ -12,6 +12,56 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'issueRuns.model': '模型：{{model}}',
+  'issueRuns.configuredModel': '配置模型：{{model}}',
+  'issueRuns.modelUnknown': '模型尚未报告',
+  'issueRuns.clearFilters': '清除筛选',
+  'issueRuns.emptyHint': '请在属性中确认执行者和任务状态，以启动 Agent 工作。',
+  'issueRuns.loading': '正在加载执行记录…',
+  'issueRuns.failed': '执行记录加载失败，请重试。',
+  'issueRuns.refreshFailed': '执行记录刷新失败，当前显示上次加载的记录。',
+  'issueRuns.forbidden': '无权查看执行记录，请联系项目负责人申请权限。',
+  'issueRuns.unavailable': '执行记录不可用，请返回任务列表确认任务是否仍存在。',
+  'issueRuns.unauthenticated': '登录已失效，请重新登录后查看执行记录。',
+  'issueRuns.signIn': '重新登录',
+  'issueRuns.retry': '重试',
+
+  globalChat: {
+    notSubmitted: '问题未发送',
+    editRejected: '将问题和附件放回编辑区',
+    placeholder: '向 Agent 提问…',
+    label: '向 Agent 提问',
+    edit: '在面板中继续编辑',
+    preview: '预览页面上下文',
+    send: '发送问题',
+    target: '与 {{name}} 新建会话',
+    continue: '继续：{{title}} · {{name}}',
+    newConversation: '新会话',
+    noAgent: '请在面板选择 Agent',
+    noAgentHelp:
+      '没有可用 Agent。请在账号偏好中选择默认 Agent，或请管理员配置。',
+    unavailableHelp:
+      '当前会话不可用。请打开面板选择或新建会话；问题仍保留在这里。',
+    loadingHelp: '正在加载当前会话。请等待加载完成，或打开面板选择会话。',
+    pendingHelp: '上一条问题仍在发送或等待确认。请打开面板核对后再发送。',
+    replying: 'Agent 正在回复',
+    truncated: '页面上下文已按长度预算精简。',
+    unknown: '发送结果待确认',
+    creationUnknown: '会话创建结果待确认',
+    sending: '正在发送…',
+    unknownHelp: '此问题可能已保存。请核对会话后再继续提问。',
+    check: '刷新核对',
+    viewConversation: '查看会话',
+    creationHelp:
+      '问题尚未发送。请选择会话继续，或另建会话；可能已有一个空会话。',
+    refreshConversations: '刷新会话列表',
+    chooseConversation: '在“{{title}}”中继续',
+    moreConversations: '更多会话',
+    createAnother: '另建会话（可能已有空会话）',
+    draftConflict: '面板已有草稿，如何处理顶部问题？',
+    keepDraft: '保留面板草稿',
+    appendDraft: '追加顶部问题',
+  },
   runTranscriptFilters: {
     title: '事件类型',
     agent: 'Agent',
@@ -917,6 +967,10 @@ const zhCN: AppResource = {
     '运行在 {{attempts}} 次尝试后失败（{{reason}}）。可以重试、改派给人，或不再重试。',
   'inbox.body.stage_action_problem':
     '状态「{{status}}」的「{{rule}}」被跳过：{{why}}。',
+  'inbox.types.comment_runs_limited': 'Agent 评论已暂停唤醒',
+  'inbox.text.comment_runs_limited': '{{identifier}} 上的 Agent 评论达到上限',
+  'inbox.body.comment_runs_limited':
+    'Agent 的评论在 {{windowHours}} 小时内已启动 {{limit}} 次运行，{{agentName}} 的一条评论没有唤醒任何 Agent。',
   'inbox.stageRules.runAgent': '运行 Agent',
   'inbox.stageRules.suggestExecutor': '建议执行者',
   'inbox.stageSkips.executorCannotImplement':
@@ -1176,6 +1230,14 @@ const zhCN: AppResource = {
       suggestNoAgent: '向负责人建议执行者（未选择 Agent）',
       unknownAgent: '你看不到的 Agent',
       withInstruction: '{{summary}}：{{instruction}}',
+    },
+    commentRuns: {
+      limitReached: 'Agent 评论已暂停唤醒',
+      continueHint:
+        'Agent 的评论在 {{windowHours}} 小时内已在这个任务上启动 {{maxRuns}} 次运行，最近一条没有唤醒任何 Agent。继续可唤醒它提到的 Agent 一次，并重新开始计数。',
+      continued: '已继续 Agent 评论',
+      continueStale: '这条评论已不再等待，请刷新任务。',
+      continueFailed: '暂时无法继续，请检查 Agent 和任务阻塞后重试。',
     },
   },
   pmChat: {

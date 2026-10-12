@@ -1,5 +1,20 @@
 # @nocobase/studio-cli
 
+## 1.0.0-beta.54
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli-client@0.1.0-beta.4
+
+## 1.0.0-beta.53
+
+### Patch Changes
+
+- Updated dependencies [ca0bfe2]
+  - @nocobase/app-cli-client@0.1.0-beta.3
+
 ## 1.0.0-beta.52
 
 ### Patch Changes
