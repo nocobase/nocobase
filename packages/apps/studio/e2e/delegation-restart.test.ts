@@ -109,6 +109,7 @@ test('recovers an expired delegation after SIGKILL and does not report it twice 
     expect(
       afterRestart.filter((run) => run.agentId === 'studio-project-manager'),
     ).toHaveLength(2);
+    await api.patch('users/me/preferences', { locale: 'en-US' });
     await page.goto(`${state.baseURL}/issues/${issue.identifier}`);
     await page.waitForLoadState('networkidle');
     const timeoutReply = page
@@ -117,7 +118,7 @@ test('recovers an expired delegation after SIGKILL and does not report it twice 
     await expect(timeoutReply).toBeVisible();
     await timeoutReply.scrollIntoViewIfNeeded();
     await page.screenshot({
-      path: path.resolve(screenshots, 'pm292-restart-timeout-reply.png'),
+      path: path.resolve(screenshots, 'pm292-restart-timeout-reply-en-US.png'),
     });
   } finally {
     await context.close();

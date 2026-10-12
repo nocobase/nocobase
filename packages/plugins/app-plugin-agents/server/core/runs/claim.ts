@@ -120,6 +120,7 @@ import {
 } from './run.store.js';
 import { dropInputs } from './input-gate.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
+import { refreshQueuedIdentity } from './identity.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
 /** Queued runs looked at per claim, oldest first by priority. */
@@ -1083,6 +1084,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     candidate: RunRecord,
     reported: ToolRoom,
   ): Promise<Attempt> {
+    // Repair pre-upgrade queued work before even checking personal runner ownership.
+    if (deps.subjects.get(candidate.subjectKind)?.actsAs) {
+      const current = await tx.run(async (unit) => {
+        await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
+        const run = await findRunRecord(unit.conn, candidate.id);
+        return run?.status === 'queued'
+          ? refreshQueuedIdentity(unit, deps, run)
+          : null;
+      });
+      if (!current) return { kind: 'skipped' };
+      candidate = current;
+    }
     // Avoid assembling or asking authorization when a cheap claim rule already rules this work out.
     const conn = tx.read();
     if (
@@ -1109,6 +1122,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const now = clock.now();
         const nowText = now.toISOString();
         await lockAgentForClaim(conn, agent.id, nowText);
+        const queuedRun = await findRunRecord(conn, candidate.id);
+        if (!queuedRun || queuedRun.status !== 'queued') return null;
+        const identity = await refreshQueuedIdentity(unit, deps, queuedRun);
+        // Providers were prepared for the candidate's identity outside this transaction.
+        if (!identity || identity.actorUserId !== candidate.actorUserId)
+          return null;
         if (
           (await countActive(conn, 'agentId', agent.id)) >=
           agent.maxConcurrentRuns
@@ -1143,6 +1162,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             f.and([
               f.string('id').eq(candidate.id),
               f.string('status').eq('queued'),
+              f.string('actorUserId').eq(candidate.actorUserId),
             ]),
           values: {
             status: 'dispatched',
@@ -1358,7 +1378,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (!agents.has(candidate.agentId))
         agents.set(candidate.agentId, await findAgent(conn, candidate.agentId));
       const agent = agents.get(candidate.agentId);
-      if (!agent || !fits(runner, agent, candidate)) continue;
+      if (
+        !agent ||
+        (!deps.subjects.get(candidate.subjectKind)?.actsAs &&
+          !fits(runner, agent, candidate))
+      )
+        continue;
       // None of its tools has room on the runner's side: the runs behind it may still fit.
       if (!pickOpenEntry(runner, agent, (tool) => reported.has(tool))) continue;
       try {

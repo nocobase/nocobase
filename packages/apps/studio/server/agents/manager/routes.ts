@@ -4,7 +4,7 @@
  * - `GET /projectManager`: its settings and the agents it may run with, for anyone signed in; `PATCH /projectManager`
  *   changes them, for a manager of agents (`agents.agents` manage).
  * - `POST /projectManager/issues/{issueId}/start`: hands an open issue the project manager executes to it to go on,
- *   as the caller, who may edit the issue: "Hand over to the project manager" on an issue it never worked on.
+ *   as the owner, who must also be the caller and may edit the issue: "Hand over to the project manager" on an issue it never worked on.
  * - `GET /issueProgress/{issueId}`: what the issue waits for now, for whoever sees it.
  * - `GET /issueCommentRuns/{issueId}`, `POST …/continue`: an agent's comment the comment run limit held back, and
  *   continuing it (`../comment-run-limit.ts`).
@@ -214,7 +214,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
         }),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
         description:
-          'Wakes the project manager on an open issue it executes, as the caller, to go on with it: for an issue it never worked on. Needs `pm.issues` edit on the issue.',
+          'Wakes the project manager on an open issue it executes, as the current issue owner. Only that owner may invoke it, and needs `pm.issues` edit on the issue. Other callers receive `ISSUE_OWNER_START_REQUIRED`.',
         responses: {
           200: dataResponse(z.object({ runId: z.string() })),
           400: apiErrorResponse(
@@ -237,7 +237,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
             'ACTION_FORBIDDEN',
             'Only a person who may edit the issue may hand it over.',
           );
-        const runId = await projects.tx.unit(async (tx) => {
+        const attempt = await projects.tx.unit(async (tx) => {
           const issue = await projects.issueQueries.detail(
             viewer,
             context.req.valid('param').issueId,
@@ -256,17 +256,17 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
             agents,
             projects: () => projects,
           }).startNow(tx, issue, { type: 'user', id: viewer.userId });
-          if (!attempt.started || !attempt.runId)
-            throw studioError(
-              'FAILED_PRECONDITION',
-              'PROJECT_MANAGER_NOT_STARTED',
-              'The project manager cannot take this issue now.',
-              { metadata: { reason: attempt.skipped ?? 'unknown' } },
-            );
           tx.emit({ type: 'issue.changed', issueId: issue.id });
-          return attempt.runId;
+          return attempt;
         });
-        return context.json({ data: { runId } });
+        if (!attempt.started || !attempt.runId)
+          throw studioError(
+            'FAILED_PRECONDITION',
+            'PROJECT_MANAGER_NOT_STARTED',
+            'The project manager cannot take this issue now.',
+            { metadata: { reason: attempt.skipped ?? 'unknown' } },
+          );
+        return context.json({ data: { runId: attempt.runId } });
       },
     );
     progress.get(
@@ -348,7 +348,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
         ...cliRoute(false),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
         description:
-          'Needs pm.issues/edit on the issue. Wakes the agents the comment names as the caller and restarts the count; the token is consumed once, and failed preconditions leave it pending.',
+          'Needs pm.issues/edit and the current issue owner. Wakes the agents the comment names and restarts the count; project manager work uses the owner identity. The token is consumed once, and failed preconditions leave it pending.',
         responses: {
           200: dataResponse(z.object({ runIds: z.array(z.string()) })),
           ...apiErrorResponses,

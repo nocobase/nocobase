@@ -111,6 +111,15 @@ export interface IssueProgress {
       }[];
     }[];
   };
+  readonly waiting?: {
+    readonly reason:
+      | 'noOwner'
+      | 'notConfigured'
+      | 'noRunner'
+      | 'ownerHasNoRunner'
+      | 'notAllowed';
+    readonly owner: { readonly id: string; readonly name: string } | null;
+  } | null;
   readonly state: IssueProgressState;
   readonly agent: { readonly id: string; readonly name: string } | null;
   readonly step: string | null;

@@ -198,6 +198,14 @@ export interface RunService {
    * events).
    */
   enqueue(request: EnqueueRequest, outer?: Tx): Promise<EnqueueResult>;
+  /** Reads causal work inside the caller's transaction, without opening a second database connection. */
+  identityInputs(
+    conn: DatabaseConnection,
+    runId: string,
+  ): Promise<{
+    readonly run: Run;
+    readonly inputs: readonly RunInput[];
+  } | null>;
   /** Work waiting for the subject's responsible to confirm it: confirming, rejecting, withdrawing, handing it on. */
   readonly requests: RunRequestService;
   /** Adds input to a run that has not ended. */
@@ -668,6 +676,24 @@ export function createRunService(deps: RunServiceDeps): RunService {
     return source;
   }
 
+  async function selectedIdentity(unit: Tx, request: EnqueueRequest) {
+    const identity = await deps.subjects
+      .get(request.subject.kind)
+      ?.actsAs?.(unit.conn, {
+        subjectId: request.subject.id,
+        agentId: request.agentId,
+        causedByRunId: request.causedByRunId,
+        inputs: [request.input],
+      });
+    if (identity && !identity.actorUserId)
+      throw new ProtocolError(
+        'FORBIDDEN',
+        'The subject has no valid execution identity.',
+        { identityReason: identity.reason ?? 'noOwner' },
+      );
+    return identity;
+  }
+
   /** Refuses work run as `userId` when no runner they may use can run the agent now: it would only wait. */
   async function requireRunnerFor(
     unit: Tx,
@@ -701,29 +727,40 @@ export function createRunService(deps: RunServiceDeps): RunService {
     mayInvoke: (agent, userId) => deps.agents.mayInvoke(agent, userId),
     requireInvocable,
     requireRunnerFor,
-    direct: (unit, run) =>
-      queue(unit, run.agent, {
+    direct: async (unit, run) => {
+      const identity = await selectedIdentity(unit, {
+        agentId: run.agent.id,
+        subject: run.subject,
+        input: run.input,
+      });
+      const actorUserId = identity?.actorUserId ?? run.actorUserId;
+      const agent = await requireInvocable(unit, run.agent.id, actorUserId);
+      return queue(unit, agent, {
         freshSession: run.freshSession,
         subject: run.subject,
         threadScope: run.threadScope,
-        actorUserId: run.actorUserId,
+        actorUserId,
         requestedByUserId: run.requestedByUserId,
         confirmedByUserId: run.confirmedByUserId,
-        ownerUserId: run.ownerUserId,
+        ownerUserId: identity ? actorUserId : run.ownerUserId,
         priority: run.priority,
         // As it was asked: a moment already past when it is confirmed means now.
         fireAt: fireAtOf(run.fireAt ?? undefined, clock.now()),
         requires: run.requires,
         ...(run.maxAttempts === null ? {} : { maxAttempts: run.maxAttempts }),
         input: run.input,
-      }),
+      });
+    },
   });
 
   return {
     enqueue: (request, outer) =>
       tx.run(async (unit): Promise<EnqueueResult> => {
         const source = await sourceOf(unit, request);
-        const responsible = request.responsibleUserId ?? null;
+        const identity = await selectedIdentity(unit, request);
+        const responsible = identity
+          ? null
+          : (request.responsibleUserId ?? null);
         const threadScope = request.threadScope ?? DEFAULT_THREAD;
         const foreign = responsible !== null && source !== responsible;
         if (foreign && (request.execution ?? 'auto') === 'auto') {
@@ -766,9 +803,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
         }
         // As the responsible when they caused it; as the source when they run it as themselves (`mine`); as whoever
         // woke the agent when nobody answers for the subject.
-        const actorUserId = foreign
-          ? source
-          : (responsible ?? request.actorUserId ?? source);
+        const actorUserId =
+          identity?.actorUserId ??
+          (foreign ? source : (responsible ?? request.actorUserId ?? source));
         const agent = await requireInvocable(
           unit,
           request.agentId,
@@ -788,7 +825,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
           actorUserId,
           requestedByUserId: source,
           confirmedByUserId: null,
-          ownerUserId: request.ownerUserId ?? null,
+          ownerUserId: identity ? actorUserId : (request.ownerUserId ?? null),
           priority: request.priority ?? 0,
           fireAt: fireAtOf(request.fireAt, clock.now()),
           requires: request.requires ?? [],
@@ -799,6 +836,13 @@ export function createRunService(deps: RunServiceDeps): RunService {
       }, outer),
 
     requests,
+
+    identityInputs: async (conn, runId) => {
+      const run = await findRunRecord(conn, runId);
+      if (!run) return null;
+      const inputs = await inputsRepo(conn).findMany({ filter: { runId } });
+      return { run: toRun(run), inputs: inputs.map(toInput) };
+    },
 
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
@@ -919,12 +963,26 @@ export function createRunService(deps: RunServiceDeps): RunService {
               runId: retried.id,
             },
           );
-        const agent = await requireInvocable(unit, run.agentId, byUserId);
+        const previousInputs = await inputsRepo(unit.conn).findMany({
+          filter: { runId: run.id },
+        });
+        const identity = await deps.subjects
+          .get(run.subjectKind)
+          ?.actsAs?.(unit.conn, {
+            subjectId: run.subjectId,
+            agentId: run.agentId,
+            inputs: previousInputs.map(toInput),
+            causedByRunId: run.retryOfRunId ?? undefined,
+          });
+        if (identity && !identity.actorUserId)
+          throw forbidden(identity.reason ?? 'noOwner');
+        const actorUserId = identity?.actorUserId ?? byUserId;
+        const agent = await requireInvocable(unit, run.agentId, actorUserId);
         const open = await runsOfKey(
           unit.conn,
           run,
           ['queued', ...ACTIVE],
-          byUserId,
+          actorUserId,
         );
         if (open.length > 0)
           throw precondition(
@@ -937,10 +995,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
         const newId = await createRun(unit, agent, {
           subject: { kind: run.subjectKind, id: run.subjectId },
           threadScope: run.threadScope,
-          actorUserId: byUserId,
+          actorUserId,
           requestedByUserId: byUserId,
           confirmedByUserId: null,
-          ownerUserId: run.ownerUserId,
+          ownerUserId: identity ? actorUserId : run.ownerUserId,
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
@@ -1030,6 +1088,18 @@ export function createRunService(deps: RunServiceDeps): RunService {
           );
       return {
         ...(await readRuns([run]))[0],
+        actorName:
+          (await deps.people.names(conn, [run.actorUserId])).get(
+            run.actorUserId,
+          ) ?? run.actorUserId,
+        requestedByName:
+          (
+            await deps.people.names(conn, [
+              run.requestedByUserId ?? run.actorUserId,
+            ])
+          ).get(run.requestedByUserId ?? run.actorUserId) ??
+          run.requestedByUserId ??
+          run.actorUserId,
         retriedRunId: retried?.id ?? null,
         inputs: inputs.map(toInputView),
         repos: repos.map(toRepo),

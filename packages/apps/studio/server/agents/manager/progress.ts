@@ -21,6 +21,11 @@ import { ISSUE_SUBJECT } from '../catalog/triggers.js';
 import { AGENT_KIND } from '../tx.js';
 import { commentGuards, commentGuardId } from '../comment-guard.js';
 import { nextLineOf } from './texts.js';
+import {
+  issueExecutionIdentity,
+  validIssueOwner,
+} from '../execution-identity.js';
+import { userName } from '../work.js';
 
 /** How much of a step or a question the line carries. */
 const LINE_LENGTH = 160;
@@ -52,13 +57,42 @@ const HELD = new Set(['dispatched', 'running']);
 
 export async function issueProgress(
   deps: {
-    readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners' | 'claims'>;
-    readonly projects: Pick<Projects, 'commentQueries'>;
+    readonly agents: Pick<
+      Agents,
+      'runs' | 'agents' | 'runners' | 'claims' | 'availability'
+    >;
+    readonly projects: Pick<Projects, 'commentQueries' | 'issueContext'>;
   },
   conn: DatabaseConnection,
   issue: Issue,
   viewer?: { readonly userId: string; readonly seesMachines: boolean },
 ): Promise<IssueProgress> {
+  async function waitingFor(
+    agentId: string,
+    userId: string,
+  ): Promise<IssueProgress['waiting']> {
+    const owner = userId
+      ? { id: userId, name: await userName(conn, userId) }
+      : null;
+    if (!userId || !(await validIssueOwner(conn, userId)))
+      return { reason: 'noOwner', owner };
+    const agent = await deps.agents.agents.findWorkable(conn, agentId);
+    if (!agent || !agent.modelEntries.length)
+      return { reason: 'notConfigured', owner };
+    if (!deps.agents.agents.mayInvoke(agent, userId))
+      return { reason: 'notAllowed', owner };
+    const availability = (
+      await deps.agents.availability(conn, [agent], userId)
+    ).get(agentId);
+    if (!availability || availability.online) return null;
+    const reason =
+      availability.runners.team + availability.runners.personal === 0
+        ? 'noRunner'
+        : availability.personalOnly && availability.runners.mine === 0
+          ? 'ownerHasNoRunner'
+          : 'notAllowed';
+    return { reason, owner };
+  }
   const subject = { kind: ISSUE_SUBJECT, id: issue.id };
   const comments = await deps.projects.commentQueries.list(conn, issue.id);
   const managerComments = comments.filter(
@@ -105,16 +139,35 @@ export async function issueProgress(
     list.find((run) => run.agentId !== PROJECT_MANAGER_ID) ?? list[0] ?? null;
   const run = pick(held) ?? pick(queued);
   if (run) {
-    const selection =
-      run.status === 'queued'
-        ? await deps.agents.claims.selectionWait(run.id).catch(() => null)
-        : null;
     const names = await deps.agents.agents.names(conn, [run.agentId]);
     const detail = await deps.agents.runs.detail(run.id).catch(() => null);
     const input = detail?.inputs.find((item) => item.text.trim() !== '');
     const runner =
       run.runnerId && HELD.has(run.status)
         ? ((await deps.agents.runners.find(conn, run.runnerId))?.name ?? null)
+        : null;
+    const identity =
+      run.status === 'queued'
+        ? await issueExecutionIdentity(deps.agents, () => deps.projects)(conn, {
+            subjectId: issue.id,
+            agentId: run.agentId,
+            causedByRunId: run.retryOfRunId ?? undefined,
+            inputs: detail?.inputs ?? [],
+          })
+        : undefined;
+    const actorUserId =
+      run.dispatchedAt || run.attempt > 1 || run.executions?.length
+        ? run.actorUserId
+        : (identity?.actorUserId ?? run.actorUserId);
+    const agent = await deps.agents.agents.findWorkable(conn, run.agentId);
+    const selection =
+      run.status === 'queued' &&
+      agent &&
+      (!identity || identity.actorUserId) &&
+      deps.agents.agents.mayInvoke(agent, actorUserId)
+        ? await deps.agents.claims
+            .diagnose(conn, { ...run, actorUserId }, agent)
+            .catch(() => null)
         : null;
     return {
       ...base,
@@ -152,6 +205,15 @@ export async function issueProgress(
             : null,
       since: run.startedAt ?? run.dispatchedAt ?? run.createdAt,
       runner,
+      waiting:
+        run.status === 'queued' && identity
+          ? await waitingFor(
+              run.agentId,
+              run.dispatchedAt || run.attempt > 1 || run.executions?.length
+                ? run.actorUserId
+                : (identity.actorUserId ?? issue.ownerUserId),
+            )
+          : null,
     };
   }
   const continuation = await commentGuards(conn).findOne({
@@ -162,6 +224,11 @@ export async function issueProgress(
   if (category === 'done' || category === 'closed')
     return { ...base, state: 'finished' };
   if (issue.statusKey === 'backlog') return { ...base, state: 'notStarted' };
+  if (managed && open) {
+    const waiting = await waitingFor(PROJECT_MANAGER_ID, issue.ownerUserId);
+    if (waiting?.reason === 'noOwner' || waiting?.reason === 'notAllowed')
+      return { ...base, state: 'queued', waiting };
+  }
   const pending = (await pullRequestsOfIssue(conn, issue.id))
     .map(({ pr }) => pr)
     .find((pr) => pr.state === 'open' && pr.ciState === 'pending');

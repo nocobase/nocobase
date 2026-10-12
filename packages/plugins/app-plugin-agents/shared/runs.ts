@@ -231,6 +231,8 @@ export interface RunChild {
 }
 
 export interface RunDetail extends Run {
+  readonly actorName?: string;
+  readonly requestedByName?: string;
   /** The first run that retried this one; absent on older servers. */
   readonly retriedRunId?: string | null;
   readonly inputs: readonly RunInputRecord[];

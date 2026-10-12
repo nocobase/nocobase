@@ -36,8 +36,14 @@ export interface FollowUpPreferences {
 }
 
 export interface FollowUpsDeps {
-  readonly projects: Pick<Projects, 'issueQueries' | 'commentQueries' | 'tx'>;
-  readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners' | 'claims'>;
+  readonly projects: Pick<
+    Projects,
+    'issueQueries' | 'commentQueries' | 'issueContext' | 'tx'
+  >;
+  readonly agents: Pick<
+    Agents,
+    'runs' | 'agents' | 'runners' | 'claims' | 'availability'
+  >;
   readonly preferences: FollowUpPreferences;
   readonly now?: () => Date;
 }

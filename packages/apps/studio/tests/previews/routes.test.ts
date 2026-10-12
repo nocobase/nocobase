@@ -24,6 +24,8 @@ async function runOn(actions: readonly string[]) {
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Fix login',
     executor: null,
+    statusKey: 'in_progress',
+    start: false,
   });
   await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {
     content: `[@Coder](mention://agent/${agentId}) look at it`,

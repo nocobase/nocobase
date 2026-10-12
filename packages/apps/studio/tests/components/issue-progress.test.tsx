@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   show: vi.fn(),
   editable: true,
+  userId: 'alice',
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -34,7 +35,7 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useToaster: () => ({ show: mocks.show }),
 }));
 vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
-  useViewer: () => ({ userId: 'alice' }),
+  useViewer: () => ({ userId: mocks.userId }),
 }));
 vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   canEditIssues: () => mocks.editable,
@@ -54,10 +55,11 @@ const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
   ...overrides,
 });
 const issue = (statusKey: string) =>
-  ({ id: 'i1', statusKey, revision: 1 }) as IssueDetail;
+  ({ id: 'i1', ownerUserId: 'alice', statusKey, revision: 1 }) as IssueDetail;
 
 beforeEach(() => {
   mocks.editable = true;
+  mocks.userId = 'alice';
   mocks.request.mockReset();
   mocks.show.mockReset();
 });
@@ -70,6 +72,10 @@ it.each(['en-US', 'zh-CN'] as const)(
       'in_progress',
       progress({
         state: 'queued',
+        waiting: {
+          reason: 'ownerHasNoRunner',
+          owner: { id: 'alice', name: 'Alice' },
+        },
         managerWait: {
           queueEnteredAt: new Date().toISOString(),
           fallbackAfterSeconds: 120,
@@ -267,4 +273,15 @@ describe('what an issue waits for', () => {
     expect(await screen.findByText(/Not started/u)).toBeInTheDocument();
     expect(screen.queryByRole('button')).toBeNull();
   });
+});
+
+it('hides start and hand-over from an editor who is not the owner', async () => {
+  mocks.userId = 'bob';
+  await mount('backlog', progress());
+  expect(screen.queryByRole('button', { name: 'Start' })).toBeNull();
+  cleanup();
+  await mount('in_progress', progress({ handOver: true }));
+  expect(
+    screen.queryByRole('button', { name: 'Hand over to the project manager' }),
+  ).toBeNull();
 });

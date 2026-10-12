@@ -936,6 +936,14 @@ const runObject = z.object({
 export const RunSchema: z.ZodType<Run> = runObject.meta({ ref: 'AgentsRun' });
 
 export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
+  actorName: z
+    .string()
+    .optional()
+    .meta({ description: 'The name of the execution identity.' }),
+  requestedByName: z.string().optional().meta({
+    description:
+      'The name of the user associated with the chain origin; input actors identify individual triggers.',
+  }),
   retriedRunId: z.string().nullable().optional(),
   inputs: z.array(
     z.object({

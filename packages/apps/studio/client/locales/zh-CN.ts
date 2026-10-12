@@ -74,6 +74,24 @@ const zhCN: AppResource = {
     keepDraft: '保留面板草稿',
     appendDraft: '追加顶部问题',
   },
+  runTranscript: {
+    usedModel: '使用模型：{{model}}',
+    defaultModel: '默认模型',
+    actingAs: '运行身份：{{actor}}',
+    triggeredBy: '触发人：{{person}}',
+    systemTrigger: '由系统触发',
+    afterSubtasks: '所有子任务完成后',
+    efforts: {
+      off: '关闭',
+      minimal: '最低',
+      low: '低',
+      medium: '中',
+      high: '高',
+      xhigh: '特高',
+      max: '最高',
+      ultra: '极高',
+    },
+  },
   runTranscriptFilters: {
     title: '事件类型',
     agent: 'Agent',
@@ -1266,6 +1284,7 @@ const zhCN: AppResource = {
   issuePage: {
     arrange: '安排',
   },
+  issueStart: { title: '现在开始？', later: '暂不开始', start: '开始' },
   issueProgress: {
     firstChoice: '首选',
     fallback: '备选',
@@ -1293,6 +1312,15 @@ const zhCN: AppResource = {
       concurrencyFull: '已达 agent 并发上限',
       sameWorkActive: '同线程有运行正在执行',
       delayed: '等待延迟执行或重试退避',
+    },
+    waiting: {
+      noOwner: '正在等待有效的任务负责人',
+      notConfigured: '{{agent}} 正在等待：尚未配置首选或备选模型',
+      noRunner: '{{agent}} 正在等待：没有能运行首选或备选模型的在线执行机',
+      ownerHasNoRunner:
+        '{{agent}} 正在等待：负责人 {{owner}} 没有能运行首选或备选模型的在线执行机',
+      notAllowed:
+        '{{agent}} 正在等待：负责人 {{owner}} 无权运行此 Agent，或可用执行机不满足运行要求',
     },
     title: '现在',
     anAgent: '某个 Agent',
