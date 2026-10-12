@@ -97,6 +97,42 @@ const inputs: RunInput[] = [
 ];
 
 describe('brief', () => {
+  it('explains selected and excluded PRs and forbids rewriting published history', () => {
+    const { system } = renderBrief({
+      cli: 'acme',
+      appName: 'Acme',
+      agentName: 'Coder',
+      subject: { noun: 'document', key: 'DOC-12' },
+      task: TASK,
+      context: CONTEXT,
+      dirs: [
+        {
+          kind: 'repo',
+          url: 'https://example.test/repo.git',
+          defaultBranch: 'main',
+          branch: 'fix/human',
+          path: 'repo',
+          pullRequest: { number: 42, url: 'https://example.test/pull/42' },
+          excludedPullRequests: [
+            { number: 43, url: 'https://example.test/pull/43', reason: 'fork' },
+            {
+              number: 44,
+              url: 'https://example.test/pull/44',
+              reason: 'unknown',
+            },
+          ],
+        },
+      ],
+    });
+    expect(system).toContain('pull request #42');
+    expect(system).toContain(
+      'earliest association time, then ascending PR number',
+    );
+    expect(system).toContain('push only this branch');
+    expect(system).toContain('never rewrite history already pushed');
+    expect(system).toContain('comes from a fork');
+    expect(system).toContain('unknown head repository');
+  });
   it('renders the four layers', () => {
     const brief = renderBrief({
       cli: 'acme',

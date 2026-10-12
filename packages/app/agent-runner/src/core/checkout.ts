@@ -657,6 +657,10 @@ async function addClone(
     '--quiet',
     `refs/remotes/origin/${repo.branch}`,
   ]);
+  if (repo.pullRequest && !remote)
+    throw new CheckoutError(
+      `PR #${repo.pullRequest.number} branch ${repo.branch}: remote branch is missing in ${repo.url}`,
+    );
   const base = remote
     ? `origin/${repo.branch}`
     : `origin/${repo.defaultBranch}`;
@@ -738,6 +742,50 @@ async function ensureCheckout(
       '--short',
       'HEAD',
     ]).catch(() => '');
+    if (repo.pullRequest) {
+      const remote = `refs/remotes/origin/${repo.branch}`;
+      if (
+        !(await taskGitOk(context, ['show-ref', '--verify', '--quiet', remote]))
+      )
+        throw new CheckoutError('remote branch is missing');
+      const local = `refs/heads/${repo.branch}`;
+      const exists = await taskGitOk(context, [
+        'show-ref',
+        '--verify',
+        '--quiet',
+        local,
+      ]);
+      if (!exists) {
+        await taskGit(context, [
+          'checkout',
+          '--quiet',
+          '--no-track',
+          '-b',
+          repo.branch,
+          remote,
+        ]);
+      } else {
+        const behind = await taskGitOk(context, [
+          'merge-base',
+          '--is-ancestor',
+          local,
+          remote,
+        ]);
+        const ahead = await taskGitOk(context, [
+          'merge-base',
+          '--is-ancestor',
+          remote,
+          local,
+        ]);
+        if (!behind && !ahead)
+          throw new CheckoutError('local and remote branches have diverged');
+        if (current !== repo.branch)
+          await taskGit(context, ['checkout', '--quiet', repo.branch]);
+        if (behind && !ahead)
+          await taskGit(context, ['merge', '--ff-only', remote]);
+      }
+      return false;
+    }
     if (current !== repo.branch) {
       const exists = await taskGitOk(context, [
         'show-ref',
@@ -1097,17 +1145,25 @@ export async function prepareDirs(
       );
       const retry = options.retry === undefined ? {} : { retry: options.retry };
       const repoUrl = entry.url;
+      const prError = (error: unknown): never => {
+        if (entry.kind === 'repo' && entry.pullRequest)
+          throw new CheckoutError(
+            `PR #${entry.pullRequest.number} branch ${entry.branch}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        throw error;
+      };
       const cache = await withRepoAuth(options.auth, repoUrl, (auth) =>
         updateCache(paths, repoUrl, {
           ...(auth === undefined ? {} : { auth }),
           ...retry,
         }),
-      );
+      ).catch(prError);
       // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
       // above; read all advertised refs before granting the narrowly scoped first-push exception.
       let initializing = false;
       if (
         entry.initializeIfEmpty === true &&
+        !entry.pullRequest &&
         entry.initial !== true &&
         !(await gitOk(
           [
@@ -1145,7 +1201,7 @@ export async function prepareDirs(
           entry = { ...entry, branch: entry.defaultBranch, initial: true };
         }
       }
-      const created = await ensureCheckout(cache, dir, entry);
+      const created = await ensureCheckout(cache, dir, entry).catch(prError);
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
       const known = meta?.repos.find(
@@ -1177,7 +1233,7 @@ export async function prepareDirs(
           ...(auth === undefined ? {} : { auth }),
           ...retry,
         }),
-      );
+      ).catch(prError);
       if (submodules.length > 0)
         options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {

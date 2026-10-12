@@ -118,8 +118,19 @@ export const AGENT_LAYER_PREFIX =
 
 function describeDir(dir: WorkspaceDir): string {
   const name = dir.name ? ` (${dir.name})` : '';
-  if (dir.kind === 'repo')
-    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} on branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); commit there and push only that branch`;
+  if (dir.kind === 'repo') {
+    const selected = dir.pullRequest
+      ? `, the branch of pull request #${dir.pullRequest.number} (${dir.pullRequest.url}), selected by earliest association time, then ascending PR number`
+      : '';
+    const excluded = (dir.excludedPullRequests ?? [])
+      .map((pr) =>
+        pr.reason === 'fork'
+          ? ` Pull request #${pr.number} (${pr.url}) comes from a fork: it is not checked out and nothing is pushed to it.`
+          : ` Pull request #${pr.number} (${pr.url}) has an unknown head repository: it is excluded until a host refresh identifies its origin, and nothing is pushed to it.`,
+      )
+      .join('');
+    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} on branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`)${selected}; work and commit there and push only this branch, never another branch, and never rewrite history already pushed (no force push, no rebase or amend of pushed commits)${excluded}`;
+  }
   return `\`${dir.path}\`${name}, a directory on this machine you work in as it is: no branch of its own, so leave its version control alone unless the task asks, and do not delete or reset what is there`;
 }
 
