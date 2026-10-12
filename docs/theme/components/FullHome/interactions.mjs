@@ -138,7 +138,9 @@ export function initializeHomepage(root, lang = 'cn') {
     card.addEventListener('click', (e) => {
       if (!e.target.closest('a,button')) card.querySelector('button').click();
     });
-    root.querySelector('#cards').append(card);
+    root
+      .querySelector('#cards')
+      .insertBefore(card, root.querySelector('#ui-library'));
   });
   let timer;
   function notify(message) {
