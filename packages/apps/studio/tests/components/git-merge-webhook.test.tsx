@@ -83,6 +83,9 @@ const preflight = (
   baseRef: 'main',
   commitTitle: 'Fix login (#12)',
   statusAfter: { statusKey: 'done', statusName: 'Done', keepReason: null },
+  failedChecks: [],
+  referenceFailures: [],
+  canForce: false,
   ...overrides,
 });
 
@@ -151,6 +154,87 @@ describe('the merge action', () => {
       within(dialog).getByRole('button', { name: 'studioGit.merge.confirm' }),
     ).toBeDisabled();
   });
+
+  it('lists failed reference checks without blocking the merge', async () => {
+    api.preflight.mockResolvedValue(
+      preflight({
+        referenceFailures: [
+          { name: 'Studio preview', url: 'https://ci.example/7' },
+        ],
+      }),
+    );
+    render(wrap(<MergeButtons issue={issue} pullRequest={pull(null)} />));
+    fireEvent.click(
+      screen.getByRole('button', { name: /studioGit.section.merge$/u }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      await within(dialog).findByRole('link', { name: 'Studio preview' }),
+    ).toHaveAttribute('href', 'https://ci.example/7');
+    expect(
+      within(dialog).getByText('studioGit.merge.referenceFailures'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'studioGit.merge.confirm' }),
+    ).toBeEnabled();
+  });
+
+  it('merges past failed required checks only with a reason, for whoever may force it', async () => {
+    api.preflight.mockResolvedValue(
+      preflight({
+        blocker: 'ciFailed',
+        failedChecks: [{ name: 'test', url: null }],
+        canForce: true,
+      }),
+    );
+    api.merge.mockResolvedValue({});
+    render(wrap(<MergeButtons issue={issue} pullRequest={pull(null)} />));
+    fireEvent.click(
+      screen.getByRole('button', { name: /studioGit.section.merge$/u }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('test')).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'studioGit.merge.confirm' }),
+    ).toBeDisabled();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'studioGit.merge.force' }),
+    );
+    const confirm = within(dialog).getByRole('button', {
+      name: 'studioGit.merge.force',
+    });
+    expect(confirm).toBeDisabled();
+    fireEvent.change(
+      within(dialog).getByLabelText('studioGit.merge.forceReason'),
+      { target: { value: 'Flaky upstream test' } },
+    );
+    fireEvent.click(confirm);
+    await waitFor(() =>
+      expect(api.merge).toHaveBeenCalledWith('i1', 'p1', 'abc1234567890', {
+        reason: 'Flaky upstream test',
+      }),
+    );
+  });
+
+  it('says only a manager may merge past failed checks', async () => {
+    api.preflight.mockResolvedValue(
+      preflight({
+        blocker: 'ciFailed',
+        failedChecks: [{ name: 'test', url: null }],
+      }),
+    );
+    render(wrap(<MergeButtons issue={issue} pullRequest={pull(null)} />));
+    fireEvent.click(
+      screen.getByRole('button', { name: /studioGit.section.merge$/u }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      await within(dialog).findByText('studioGit.merge.forceOnly'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'studioGit.merge.force' }),
+    ).toBeNull();
+  });
 });
 
 const settings = (
@@ -162,6 +246,7 @@ const settings = (
   hasToken: true,
   wakeOnChecks: true,
   wakeOnConflict: true,
+  referenceChecks: [],
   polledAt: null,
   pollError: null,
   webhookUrl: '/main/api/webhooks/github/repositories/r1',

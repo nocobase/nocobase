@@ -32,15 +32,16 @@
  * | `DELETE /pullRequests/:pullRequestId?issueId=`               | unlinks it                                      |
  * | `DELETE /pullRequests/:pullRequestId/suggestion?issueId=`    | dismisses a suggested pull request              |
  * | `POST   /pullRequests/:pullRequestId/refresh?issueId=`       | reads it from the host now                      |
+ * | `GET    /pullRequests/:pullRequestId/checks?issueId=`        | why its head's checks failed, read from the host now (`PullRequestFailedChecks`) |
  * | `POST   /pullRequests/:pullRequestId/checkMerge?issueId=`    | reads it from the host and answers the merge preflight (`PullRequestMergePreflight`) |
- * | `POST   /pullRequests/:pullRequestId/merge?issueId=` `{ expectedHeadSha }` | merges that head (squash) |
+ * | `POST   /pullRequests/:pullRequestId/merge?issueId=` `{ expectedHeadSha, force, reason }` | merges that head (squash); `force` past failed required checks |
  * | `POST   /pullRequests/:pullRequestId/markMerged?issueId=`    | records it merged without the host              |
  * | `GET    /marks?issueIds=a,b`                                 | the pull request marks of those issues          |
  * | `GET`/`PATCH /resources/:resourceId` `UpdateGitRepoRequest`  | a working directory's repository settings       |
  *
  * A pull request may be linked to several issues, so each route about one names the issue it acts through (`issueId`),
- * whose permissions decide. The three collection routes (`nb-studio pr list|link|open`) and changing a pull request on
- * the host (`pr edit|close|reopen`) also take scoped keys and agents' runs, as the caller's narrowed `Viewer`; a run on
+ * whose permissions decide. The three collection routes (`nb-studio pr list|link|open`), reading why checks failed
+ * (`pr checks`) and changing a pull request on the host (`pr edit|close|reopen`) also take scoped keys and agents' runs, as the caller's narrowed `Viewer`; a run on
  * an issue may leave `issueId` out of the collection routes for its own. The rest is for a person's session or key.
  *
  * Listing and creating repositories is for whoever manages a project (or the connections); template repositories and
@@ -106,6 +107,7 @@ import {
   IssuePullRequestSchema,
   IssuePullRequestsMeta,
   PullRequestMarksSchema,
+  PullRequestFailedChecksSchema,
   PullRequestMergePreflightSchema,
   RepositoryPageMeta,
   WebhookResultSchema,
@@ -1478,6 +1480,44 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
         return context.body(null, 204);
       },
     );
+    routes.get(
+      '/pullRequests/:pullRequestId/checks',
+      ...personOrRun,
+      describeRoute({
+        tags,
+        summary: 'Read why a pull request’s checks failed',
+        operationId: 'gitListFailedPullRequestChecks',
+        description: `For whoever sees the issue. Reads the failed checks of the pull request’s head from the code host now: each check’s report, its annotations and the failing part of its log (each error line with the 20 lines around it, and the end; the host masks secrets). A check another CI reported has no log here (\`logUnavailable: notActions\`): its log is behind \`url\`. \`reference\` marks the repository’s reference checks, which neither block merging nor wake the agent.`,
+        security: personOrRunSecurity,
+        responses: {
+          200: dataResponse(PullRequestFailedChecksSchema),
+          400: hostRefused,
+          ...apiErrorResponses,
+          404: pullRequestNotFound,
+          503: hostUnavailable,
+        },
+        ...cliRoute({
+          command: 'pr checks',
+          args: PR_POSITIONAL,
+          flags: PR_ARGS,
+          action: 'pm.issues/view',
+          examples: ['pr checks PM-12 <pr>'],
+        }),
+      }),
+      apiValidator('param', PullRequestParams),
+      apiValidator('query', PullRequestIssueQuery),
+      async (context) => {
+        const { pullRequestId } = context.req.valid('param');
+        const { issueId } = context.req.valid('query');
+        return context.json({
+          data: await git().failedChecks(
+            await callerViewer(context),
+            issueId,
+            pullRequestId,
+          ),
+        });
+      },
+    );
     // Reads the pull request from the host and stores what it read, so a `POST`.
     routes.post(
       '/pullRequests/:pullRequestId/checkMerge',
@@ -1526,19 +1566,31 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
         ...cliRoute({
           command: 'pr merge',
           args: PR_POSITIONAL,
-          flags: { ...PR_ARGS, expectedHeadSha: { name: 'expected-head' } },
+          flags: {
+            ...PR_ARGS,
+            expectedHeadSha: { name: 'expected-head' },
+            force: {
+              description:
+                'Merge although required checks failed (a manager of the project only); needs --reason.',
+            },
+            reason: {
+              description:
+                'Why a forced merge is safe; commented on the pull request with the failed checks and kept in the issue’s activity.',
+            },
+          },
           confirm: 'Squash-merge this pull request?',
           examples: [
             'pr merge PM-12 <pr> --expected-head <sha from pr check-merge>',
+            'pr merge PM-12 <pr> --expected-head <sha> --force --reason "Flaky upstream test, see #15"',
           ],
         }),
         description:
-          'For whoever may merge (the issue’s owner, or a manager of its project). Squash-merges the head `expectedHeadSha` names, as the caller when they authorized the app, else as the repository’s connection.',
+          'For whoever may merge (the issue’s owner, or a manager of its project). Squash-merges the head `expectedHeadSha` names, as the caller when they authorized the app, else as the repository’s connection. Failed reference checks do not block it. With `force` and a `reason`, a manager of the issue’s project (or whoever closes any issue) merges past failed required checks: the reason and the failed checks are commented on the pull request first and kept in the issue’s activity, and the code host’s branch protection still applies (`PR_NOT_MERGEABLE` with `protected` when it refuses).',
         responses: {
           200: dataResponse(IssuePullRequestSchema),
           400: apiErrorResponse(
             400,
-            'It cannot be merged (`PR_NOT_MERGEABLE`, `metadata.blocker`), `expectedHeadSha` is not its head (`INVALID_EXPECTED_HEAD`), or the credential may not merge (`GITHUB_MERGE_FORBIDDEN`).',
+            'It cannot be merged (`PR_NOT_MERGEABLE`, `metadata.blocker`), `expectedHeadSha` is not its head (`INVALID_EXPECTED_HEAD`), a forced merge has no reason (`INVALID_FORCE_REASON`), or the credential may not merge (`GITHUB_MERGE_FORBIDDEN`).',
           ),
           ...apiErrorResponses,
           404: pullRequestNotFound,
@@ -1561,6 +1613,10 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
             issueId,
             pullRequestId,
             context.req.valid('json').expectedHeadSha,
+            {
+              force: context.req.valid('json').force,
+              reason: context.req.valid('json').reason,
+            },
           ),
         });
       },

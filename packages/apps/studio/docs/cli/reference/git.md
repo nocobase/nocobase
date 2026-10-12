@@ -407,12 +407,13 @@ nb-studio git resource update <resource>
 | ---------- | ----------- |
 | `resource` |             |
 
-| Flag                 | Type     | Description  |
-| -------------------- | -------- | ------------ |
-| `--webhook-secret`   | string   |              |
-| `--wake-on-checks`   | boolean  |              |
-| `--wake-on-conflict` | boolean  |              |
-| `--branch-rules`     | string[] | (repeatable) |
+| Flag                 | Type     | Description                                                                                             |
+| -------------------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| `--webhook-secret`   | string   |                                                                                                         |
+| `--wake-on-checks`   | boolean  |                                                                                                         |
+| `--wake-on-conflict` | boolean  |                                                                                                         |
+| `--branch-rules`     | string[] | (repeatable)                                                                                            |
+| `--reference-checks` | string[] | Check names only for information: their failures neither wake the agent nor block merging. (repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

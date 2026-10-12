@@ -95,6 +95,9 @@ export const gitEnUS = {
     saved: 'Saved.',
     wakeOnChecks: 'Wake the agent when checks fail',
     wakeOnConflict: 'Wake the agent when a pull request conflicts',
+    referenceChecks: 'Reference checks',
+    referenceChecksHint:
+      'One check name per line. Their failures are only shown: they do not wake the agent or block merging from Studio. Every other check is required. A check that GitHub’s branch protection requires still blocks the merge on GitHub.',
     polled: 'Last read {{time}}',
     pollError: 'Last read failed: {{error}}',
   },
@@ -370,6 +373,14 @@ export const gitEnUS = {
         'The issue stays where it is: its workflow does not move it on a merge from its status.',
     },
     confirm: 'Squash and merge',
+    failedChecks: 'Failed required checks',
+    referenceFailures: 'Reference checks failed. They do not block the merge:',
+    force: 'Merge anyway',
+    forceReason: 'Why it is safe to merge',
+    forceReasonHint:
+      'Required. Studio comments it on the pull request with the failed checks and keeps it in the issue’s activity. GitHub’s branch protection still applies.',
+    forceOnly:
+      'Only a manager of the project can merge past failed required checks.',
     failed: 'The pull request could not be merged.',
     checkFailed:
       'GitHub could not be read. Check the repository’s connection, then try again.',
@@ -491,6 +502,9 @@ export const gitEnUS = {
     pr_edited: 'edited pull request',
     pr_closed: 'closed pull request',
     pr_reopened: 'reopened pull request',
+    pr_force_merged: 'merged pull request despite failed checks',
+    pr_force_merge_refused:
+      'tried to merge pull request despite failed checks; GitHub refused',
     unlinked: 'and unlinked it',
     fields: {
       title: 'title',
@@ -594,6 +608,9 @@ export const gitZhCN: typeof gitEnUS = {
     saved: '已保存。',
     wakeOnChecks: '检查失败时唤醒 Agent',
     wakeOnConflict: 'Pull request 有冲突时唤醒 Agent',
+    referenceChecks: '参考检查',
+    referenceChecksHint:
+      '每行一个检查名称。参考检查失败只做提示，不唤醒 Agent，也不阻塞 Studio 的合并。其余检查都是必需检查。GitHub 分支保护要求的检查仍会阻止在 GitHub 上合并。',
     polled: '上次读取：{{time}}',
     pollError: '上次读取失败：{{error}}',
   },
@@ -854,6 +871,13 @@ export const gitZhCN: typeof gitEnUS = {
       noTransition: '任务状态不变：它的流程在当前状态下不会因合并而流转。',
     },
     confirm: '压缩合并',
+    failedChecks: '失败的必需检查',
+    referenceFailures: '参考检查失败，不阻塞合并：',
+    force: '仍然合并',
+    forceReason: '可以合并的原因',
+    forceReasonHint:
+      '必填。Studio 会把原因和失败的检查评论到 Pull request 上，并记录在任务动态里。GitHub 的分支保护仍然生效。',
+    forceOnly: '只有项目负责人可以在必需检查失败时合并。',
     failed: '无法合并这个 Pull request。',
     checkFailed: '无法读取 GitHub。请检查仓库的连接后重试。',
     errors: {
@@ -968,6 +992,8 @@ export const gitZhCN: typeof gitEnUS = {
     pr_edited: '编辑了 Pull request',
     pr_closed: '关闭了 Pull request',
     pr_reopened: '重新打开了 Pull request',
+    pr_force_merged: '在检查失败时仍然合并了 Pull request',
+    pr_force_merge_refused: '尝试在检查失败时合并 Pull request，被 GitHub 拒绝',
     unlinked: '并取消了关联',
     fields: {
       title: '标题',
