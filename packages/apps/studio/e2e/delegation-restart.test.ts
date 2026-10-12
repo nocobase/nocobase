@@ -1,6 +1,6 @@
 /** Destructive recovery checks use their own server, database and port. */
 import path from 'node:path';
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { Api, signIn } from './support/fixtures.ts';
 import {
@@ -16,6 +16,10 @@ test.setTimeout(300_000);
 test('recovers an expired delegation after SIGKILL and does not report it twice after another restart', async ({
   browser,
 }) => {
+  const screenshots =
+    process.env.TMPDIR ??
+    path.resolve(import.meta.dirname, '../output/project-manager-fallback');
+  mkdirSync(screenshots, { recursive: true });
   let state = await startStudio({ isolated: true });
   const context = await browser.newContext();
   try {
@@ -113,10 +117,7 @@ test('recovers an expired delegation after SIGKILL and does not report it twice 
     await expect(timeoutReply).toBeVisible();
     await timeoutReply.scrollIntoViewIfNeeded();
     await page.screenshot({
-      path: path.resolve(
-        process.env.TMPDIR!,
-        'pm292-restart-timeout-reply.png',
-      ),
+      path: path.resolve(screenshots, 'pm292-restart-timeout-reply.png'),
     });
   } finally {
     await context.close();

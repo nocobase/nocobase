@@ -240,7 +240,10 @@ test('shows the shared diagnostics in the Agent queue', async ({
   page,
   api,
 }) => {
-  const screenshots = process.env.TMPDIR!;
+  const screenshots =
+    process.env.TMPDIR ??
+    path.resolve(import.meta.dirname, '../output/project-manager-fallback');
+  mkdirSync(screenshots, { recursive: true });
   const runner = new FakeRunner(api, `pm292-queue-${Date.now()}`);
   const agentId = await runner.agent();
   const issue = await api.post<{
