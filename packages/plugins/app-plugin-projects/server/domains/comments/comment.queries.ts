@@ -17,6 +17,7 @@ import {
   type ThreadPage,
 } from '../../../shared/comments.js';
 import type { Viewer } from '../../access/viewer.js';
+import { mentionContext } from './mention-context.js';
 import { splitVia } from '../../kernel/activity.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
 import { isNote } from '../../kernel/mentions.js';
@@ -240,6 +241,9 @@ export function createCommentQueries(deps: {
       return deps.kinds.mentionCandidates(conn, {
         userId: viewer.userId,
         issueId: issue?.id ?? null,
+        ...(issue
+          ? { context: await mentionContext(conn, viewer, issue) }
+          : {}),
         q: input.q ?? '',
         limit: pageLimit(
           input.limit,

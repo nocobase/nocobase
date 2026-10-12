@@ -212,7 +212,7 @@ describe('comments reach agents', () => {
     expect(started.status).toBe(200);
     const { value, attempts } = await collectRunAttempts(() =>
       h.projects.comments.create(alice(), issue.id, {
-        content: 'Use the v2 API.',
+        content: `${mention(PM)} ${mention(PM)} Use the v2 API.`,
       }),
     );
     expect(value.triggered).toEqual([{ kind: 'agent', id: agentId }]);
@@ -221,7 +221,7 @@ describe('comments reach agents', () => {
     expect(detail.status).toBe('running');
     expect(detail.inputs.at(-1)).toMatchObject({
       type: 'comment',
-      text: 'Use the v2 API.',
+      text: `${mention(PM)} ${mention(PM)} Use the v2 API.`,
       actor: { kind: 'user', id: 'alice', name: 'alice' },
     });
   });
@@ -232,7 +232,7 @@ describe('comments reach agents', () => {
     await assign(issue);
     const payload = await h.claimOne();
     await h.projects.comments.create(bob(), issue.id, {
-      content: 'Use the v2 API.',
+      content: `${mention(PM)} Use the v2 API.`,
     });
     const work = await runsOf(issue.id);
     expect(work).toHaveLength(2);
@@ -240,12 +240,12 @@ describe('comments reach agents', () => {
     expect(next).toMatchObject({ status: 'queued', actorUserId: 'bob' });
     expect(
       (await h.agents.runs.detail(payload.run.id)).inputs.some(
-        (input) => input.text === 'Use the v2 API.',
+        (input) => input.text === `${mention(PM)} Use the v2 API.`,
       ),
     ).toBe(false);
     expect((await h.agents.runs.detail(next.id)).inputs.at(-1)).toMatchObject({
       type: 'comment',
-      text: 'Use the v2 API.',
+      text: `${mention(PM)} Use the v2 API.`,
       actor: { id: 'bob' },
     });
     const workload = await h.agents.runs.workload({ subjectKind: 'issue' });
@@ -273,6 +273,303 @@ describe('comments reach agents', () => {
         content: mention(disabled, 'Disabled'),
       }),
     ).rejects.toMatchObject({ code: 'MENTION_FORBIDDEN' });
+  });
+});
+
+describe('project manager mentions', () => {
+  it('accepts a human mention through the API and returns the manager in candidates', async () => {
+    await h.createAgent();
+    const issue = await openIssue(alice());
+    await assign(issue);
+    const url = `/projects/issues/${issue.id}/comments`;
+    expect(
+      (await h.request('POST', url, { body: { content: mention(PM) } })).status,
+    ).toBe(401);
+    const posted = await h.request('POST', url, {
+      user: 'alice',
+      body: { content: mention(PM) },
+    });
+    expect(posted.status).toBe(201);
+    expect(posted.body.data.triggered).toEqual([{ kind: 'agent', id: PM }]);
+    const candidates = await h.request(
+      'GET',
+      `/projects/mentionCandidates?issueId=${issue.id}&q=Project%20manager`,
+      { user: 'alice' },
+    );
+    expect(candidates.status).toBe(200);
+    expect(candidates.body.data).toEqual([
+      expect.objectContaining({
+        kind: 'agent',
+        id: PM,
+        name: 'Project manager',
+      }),
+    ]);
+  });
+
+  const withoutEdit = (): Viewer => {
+    const viewer = alice();
+    return {
+      ...viewer,
+      permissions: {
+        ...viewer.permissions,
+        scopes: { ...viewer.permissions.scopes, 'pm.issues/edit': 'none' },
+      },
+    };
+  };
+
+  it('prioritizes the database name, searches it and reflects renames without nameText', async () => {
+    await h.createAgent();
+    const issue = await openIssue(alice());
+    await assign(issue);
+    for (const name of ['Project manager', '项目经理', 'Delivery lead']) {
+      await h.database
+        .connection()
+        .query.updateTable('agAgents')
+        .set({ name })
+        .where('id', '=', PM)
+        .execute();
+      const candidates = await h.projects.commentQueries.mentionCandidates(
+        alice(),
+        { issueId: issue.id, q: name, limit: 1 },
+      );
+      expect(candidates).toHaveLength(1);
+      expect(candidates[0]).toMatchObject({ kind: 'agent', id: PM, name });
+      expect(candidates[0]).not.toHaveProperty('nameText');
+    }
+    const first = await h.projects.commentQueries.mentionCandidates(alice(), {
+      issueId: issue.id,
+      limit: 1,
+    });
+    expect(first[0]?.id).toBe(PM);
+    expect(
+      await h.projects.commentQueries.mentionCandidates(alice(), {
+        issueId: issue.id,
+        q: 'Project manager',
+      }),
+    ).toEqual([]);
+  });
+
+  it('requires comment and edit permission and an issue executed by the manager', async () => {
+    await h.createAgent();
+    const issue = await openIssue(alice());
+    await expect(
+      h.projects.comments.create(alice(), issue.id, { content: mention(PM) }),
+    ).rejects.toMatchObject({ code: 'MANAGER_MENTION_EXECUTOR' });
+    await assign(issue);
+    await expect(
+      h.projects.comments.create(withoutEdit(), issue.id, {
+        content: mention(PM),
+      }),
+    ).rejects.toMatchObject({ code: 'MANAGER_MENTION_PERMISSION' });
+    expect(
+      (
+        await h.projects.commentQueries.mentionCandidates(withoutEdit(), {
+          issueId: issue.id,
+        })
+      ).some((candidate) => candidate.id === PM),
+    ).toBe(false);
+    const noComment = withoutEdit();
+    const viewer = {
+      ...noComment,
+      permissions: {
+        ...noComment.permissions,
+        scopes: {
+          ...noComment.permissions.scopes,
+          'pm.issues/comment': 'none' as const,
+        },
+      },
+    };
+    expect(
+      (
+        await h.projects.commentQueries.mentionCandidates(viewer, {
+          issueId: issue.id,
+        })
+      ).some((candidate) => candidate.id === PM),
+    ).toBe(false);
+    for (const viewer of [
+      { ...alice(), projectIds: [] },
+      {
+        ...alice(),
+        permissions: {
+          ...alice().permissions,
+          scopes: {
+            ...alice().permissions.scopes,
+            'pm.issues/view': 'none' as const,
+          },
+        },
+      },
+    ]) {
+      await expect(
+        h.projects.comments.create(viewer, issue.id, { content: mention(PM) }),
+      ).rejects.toMatchObject({ kind: 'notFound' });
+      await expect(
+        h.projects.commentQueries.mentionCandidates(viewer, {
+          issueId: issue.id,
+        }),
+      ).rejects.toMatchObject({ kind: 'notFound' });
+    }
+  });
+
+  it('checks edit scope within a visible project and preserves dormant and blocked wakeups', async () => {
+    await h.createAgent();
+    h.roles.set('bob', 'admin');
+    const project = await h.projects.projects.create(bob(), {
+      name: 'Private',
+      visibility: 'members',
+    });
+    const privateIssue = await openIssue(bob(), { projectId: project.id });
+    await assign(privateIssue, bob());
+    const viewer = alice();
+    const reader: Viewer = {
+      ...viewer,
+      permissions: {
+        ...viewer.permissions,
+        scopes: {
+          ...viewer.permissions.scopes,
+          'pm.issues/view': 'all',
+          'pm.issues/comment': 'all',
+        },
+      },
+    };
+    await expect(
+      h.projects.comments.create(reader, privateIssue.id, {
+        content: mention(PM),
+      }),
+    ).rejects.toMatchObject({ code: 'MANAGER_MENTION_PERMISSION' });
+    const dormant = await openIssue(alice(), { statusKey: 'backlog' });
+    const blocked = await openIssue(alice());
+    await h.projects.subtasks.addDependency(alice(), blocked.id, {
+      dependsOnIssueId: dormant.id,
+    });
+    for (const [issue, skipped] of [
+      [dormant, 'dormant'],
+      [blocked, 'blocked'],
+    ] as const) {
+      await assign(issue);
+      const { value, attempts } = await collectRunAttempts(() =>
+        h.projects.comments.create(alice(), issue.id, { content: mention(PM) }),
+      );
+      expect(value.triggered).toEqual([]);
+      expect(attempts).toEqual([
+        expect.objectContaining({
+          principalId: PM,
+          triggerType: 'comment',
+          skipped,
+        }),
+      ]);
+      expect(await runsOf(issue.id)).toEqual([]);
+    }
+  });
+
+  it('merges repeated mentions and a reply into one queued comment input; edits do not wake it', async () => {
+    await h.createAgent();
+    const issue = await openIssue(alice());
+    await assign(issue);
+    const [run] = await runsOf(issue.id);
+    const parent = await h.projects.comments.post(
+      { type: 'agent', id: PM },
+      issue.id,
+      { content: 'Please clarify.' },
+    );
+    const { value, attempts } = await collectRunAttempts(() =>
+      h.projects.comments.create(alice(), issue.id, {
+        content: `${mention(PM)} ${mention(PM)} proceed`,
+        parentId: parent.comment.id,
+      }),
+    );
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]).toMatchObject({
+      runId: run!.id,
+      triggerType: 'reply',
+    });
+    expect(value.triggered).toEqual([{ kind: 'agent', id: PM }]);
+    const inputs = (await h.agents.runs.detail(run!.id)).inputs;
+    expect(
+      inputs.filter((input) => input.text === value.comment.content),
+    ).toHaveLength(1);
+    const plain = await h.projects.comments.create(alice(), issue.id, {
+      content: 'Plain reply',
+    });
+    const before = (await h.agents.runs.detail(run!.id)).inputs.length;
+    await expect(
+      h.projects.comments.update(withoutEdit(), plain.comment.id, {
+        content: mention(PM),
+      }),
+    ).rejects.toMatchObject({ code: 'MANAGER_MENTION_PERMISSION' });
+    await h.projects.comments.update(alice(), plain.comment.id, {
+      content: mention(PM),
+    });
+    expect((await h.agents.runs.detail(run!.id)).inputs).toHaveLength(before);
+  });
+
+  it('rejects agents and agents acting for a person, but permits note references without waking', async () => {
+    const worker = await h.createAgent();
+    const issue = await openIssue(alice());
+    await assign(issue);
+    for (const actor of [
+      { type: 'agent', id: worker },
+      {
+        type: 'user',
+        id: 'alice',
+        via: 'agent' as const,
+        trace: { agentId: worker },
+      },
+    ]) {
+      const viewer = { ...alice(), actor };
+      await expect(
+        h.projects.comments.create(viewer, issue.id, { content: mention(PM) }),
+      ).rejects.toMatchObject({
+        code: 'MANAGER_MENTION_AGENT',
+        message: expect.stringContaining('Use a normal reply'),
+      });
+      expect(
+        (
+          await h.projects.commentQueries.mentionCandidates(viewer, {
+            issueId: issue.id,
+          })
+        ).some((candidate) => candidate.id === PM),
+      ).toBe(false);
+      const { attempts } = await collectRunAttempts(() =>
+        h.projects.comments.create(viewer, issue.id, {
+          content: `/note ${mention(PM)}`,
+        }),
+      );
+      expect(attempts).toEqual([]);
+    }
+  });
+
+  it('ignores internal manager mentions and preserves ordinary coordination and self/person/agent guards', async () => {
+    const worker = await h.createAgent();
+    const other = await h.createAgent({ name: 'Other' });
+    const issue = await openIssue(alice());
+    await assign(issue);
+    for (const [actor, content, expected] of [
+      [{ type: 'agent', id: worker }, mention(PM), [PM]],
+      [{ type: 'agent', id: PM }, mention(PM), []],
+      [
+        { type: 'agent', id: worker },
+        `${mention(PM)} [@alice](mention://user/alice)`,
+        [],
+      ],
+      [
+        { type: 'agent', id: worker },
+        `${mention(PM)} ${mention(other)}`,
+        [other],
+      ],
+      [{ type: 'agent', id: worker }, `${mention(PM)} ${mention(worker)}`, []],
+      [
+        { type: 'user', id: 'alice', via: 'agent', trace: { agentId: PM } },
+        mention(PM),
+        [],
+      ],
+    ] as const) {
+      const { attempts } = await collectRunAttempts(() =>
+        h.projects.comments.post(actor, issue.id, { content }),
+      );
+      expect(attempts.map((attempt) => attempt.principalId)).toEqual(expected);
+      if (expected.includes(PM))
+        expect(attempts[0]).toMatchObject({ triggerType: 'comment' });
+    }
   });
 });
 
@@ -490,6 +787,51 @@ describe("an agent's comment", () => {
       }),
     );
     expect(after.value.triggered).toEqual([{ kind: 'agent', id: worker }]);
+  });
+
+  it('keeps the run limit for internal manager mentions and proxy comments until a person replies', async () => {
+    await limitCommentRuns(1);
+    const worker = await h.createAgent();
+    const issue = await openIssue(alice());
+    await h.projects.comments.create(asAgent(PM), issue.id, {
+      content: mention(worker),
+    });
+    await startRun();
+    await assign(issue);
+    for (const actor of [
+      { type: 'agent', id: worker },
+      {
+        type: 'user',
+        id: 'alice',
+        via: 'agent' as const,
+        trace: { agentId: worker },
+      },
+    ]) {
+      const { attempts } = await collectRunAttempts(() =>
+        h.projects.comments.post(actor, issue.id, { content: mention(PM) }),
+      );
+      expect(attempts).toEqual([
+        expect.objectContaining({
+          principalId: PM,
+          triggerType: 'comment',
+          skipped: 'limited',
+        }),
+      ]);
+      expect(
+        await pendingCommentRun(h.projects, alice(), issue.id),
+      ).not.toBeNull();
+    }
+    const { attempts } = await collectRunAttempts(() =>
+      h.projects.comments.create(alice(), issue.id, { content: mention(PM) }),
+    );
+    expect(attempts).toEqual([
+      expect.objectContaining({
+        principalId: PM,
+        triggerType: 'comment',
+        started: true,
+      }),
+    ]);
+    expect(await pendingCommentRun(h.projects, alice(), issue.id)).toBeNull();
   });
 
   it('lets a person who may edit the issue continue the held comment once', async () => {
@@ -749,6 +1091,24 @@ describe('the CLI manifest', () => {
 });
 
 describe('the API as a run', () => {
+  it('explains why a run cannot explicitly mention the project manager', async () => {
+    const { issue, token } = await claimedRun();
+    const posted = await h.request(
+      'POST',
+      `/projects/issues/${issue.identifier}/comments`,
+      { runToken: token, body: { content: mention(PM) } },
+    );
+    expect(posted.status).toBe(403);
+    expect(posted.body.error.reason).toBe('MANAGER_MENTION_AGENT');
+    const note = await h.request(
+      'POST',
+      `/projects/issues/${issue.identifier}/comments`,
+      { runToken: token, body: { content: `/note ${mention(PM)}` } },
+    );
+    expect(note.status).toBe(201);
+    expect(note.body.data.triggered).toEqual([]);
+  });
+
   it('comments as the agent, without waking it again', async () => {
     const { issue, agentId, token, runId } = await claimedRun();
     const posted = await h.request(

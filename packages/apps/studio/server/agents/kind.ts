@@ -3,12 +3,14 @@
  * (`mention://agent/<id>`), and as an issue's executor only the project manager, which every new issue gets unless its
  * creator names another executor (`defaultExecutor`). Only the project manager moves an issue, and only between the
  * open statuses: it never finishes or closes one, and agents doing a step move nothing (`moves`, `mayMove`).
- * Mentioned are the enabled agents discovered from runners, which the project manager hands steps to.
+ * People who may edit and comment on a managed issue can mention its project manager; agents use ordinary replies.
+ * Other mentions name the enabled agents discovered from runners, which the project manager hands steps to.
  */
 import {
   DomainError,
   type IssueWorkHandler,
   type PrincipalKind,
+  type MentionContext,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -53,6 +55,34 @@ export function createAgentKind(deps: {
     const agent = await agents.findWorkable(conn, id);
     return agent?.source === 'runner' ? agent : null;
   };
+  const managerMentionError = (context?: MentionContext) => {
+    const reject = (code: string, message: string) =>
+      new DomainError('forbidden', code, message);
+    if (
+      context &&
+      (context.viewer.actor.type !== 'user' ||
+        context.viewer.actor.via === 'agent')
+    )
+      return reject(
+        'MANAGER_MENTION_AGENT',
+        'Use a normal reply; the system coordinates waking the project manager.',
+      );
+    if (
+      !context ||
+      context.issue.executor?.type !== AGENT_KIND ||
+      context.issue.executor.id !== PROJECT_MANAGER_ID
+    )
+      return reject(
+        'MANAGER_MENTION_EXECUTOR',
+        'You may only mention the project manager on an issue it executes.',
+      );
+    if (!context.canCommentIssue || !context.canEditIssue)
+      return reject(
+        'MANAGER_MENTION_PERMISSION',
+        'Mentioning the project manager requires permission to comment on and edit this issue.',
+      );
+    return null;
+  };
   return {
     key: AGENT_KIND,
     title: { key: 'studioAgents.principalKinds.agent', ns: STUDIO_NAMESPACE },
@@ -92,25 +122,40 @@ export function createAgentKind(deps: {
       },
     },
     mention: {
-      async candidates(conn, { q, limit }) {
+      async candidates(conn, { q, limit, context }) {
         const needle = q.trim().toLowerCase();
-        return (await agents.listActive(conn))
-          .filter(
+        const coordinator = managerMentionError(context)
+          ? null
+          : await manager(conn);
+        const matches = (name: string) =>
+          !needle || name.toLowerCase().includes(needle);
+        const found =
+          coordinator && matches(coordinator.name) ? [coordinator] : [];
+        found.push(
+          ...(await agents.listActive(conn)).filter(
             (agent) =>
               agent.source === 'runner' &&
-              (!needle || agent.name.toLowerCase().includes(needle)),
-          )
-          .slice(0, limit)
-          .map((agent) => ({
-            kind: AGENT_KIND,
-            id: agent.id,
-            name: agent.name,
-            ...(agent.nameText ? { nameText: agent.nameText } : {}),
-            ...(agent.description ? { hint: agent.description } : {}),
-          }));
+              agent.id !== PROJECT_MANAGER_ID &&
+              matches(agent.name),
+          ),
+        );
+        return found.slice(0, limit).map((agent) => ({
+          kind: AGENT_KIND,
+          id: agent.id,
+          name: agent.name,
+          ...(agent.id !== PROJECT_MANAGER_ID && agent.nameText
+            ? { nameText: agent.nameText }
+            : {}),
+          ...(agent.description ? { hint: agent.description } : {}),
+        }));
       },
-      async mayMention(conn, id, { note }) {
+      async mayMention(conn, id, { note, context }) {
         if (note) return true;
+        if (id === PROJECT_MANAGER_ID) {
+          const error = managerMentionError(context);
+          if (error) throw error;
+          return (await manager(conn)) !== null;
+        }
         return (await workableAgent(conn, id)) !== null;
       },
     },

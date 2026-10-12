@@ -6,6 +6,26 @@ describe('issue mention candidates', () => {
   const label = (kind: string): string =>
     kind === 'user' ? 'Person' : 'Agent';
 
+  it('keeps the project manager candidate and its database display name', () => {
+    for (const name of ['Project manager', '项目经理', 'Delivery lead']) {
+      expect(
+        issueMentionCandidates(
+          name,
+          [{ kind: 'agent', id: 'studio-project-manager', name }],
+          [],
+          label,
+        ),
+      ).toEqual([
+        {
+          kind: 'agent',
+          id: 'studio-project-manager',
+          name,
+          kindLabel: 'Agent',
+        },
+      ]);
+    }
+  });
+
   it('offers matching project members after other matching kinds, excluding workspace-only people', () => {
     const results = issueMentionCandidates(
       'ada',

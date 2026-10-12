@@ -631,16 +631,24 @@ export function createAgentWork(deps: {
 
     async onCommentCreated(tx, change) {
       const { comment, issue, parent } = change;
-      const authorId = change.actor.id;
+      const authorId =
+        change.actor.type === 'user' && change.actor.via === 'agent'
+          ? change.actor.trace?.agentId
+          : change.actor.id;
       if (!authorId) return [];
-      const byAgent = change.actor.type === AGENT_KIND;
-      if (!byAgent && change.actor.type !== 'user') return [];
+      const byAgent =
+        change.actor.type === AGENT_KIND || change.actor.via === 'agent';
+      if (change.actor.type !== AGENT_KIND && change.actor.type !== 'user')
+        return [];
       // A person by hand, not through an agent, as the stage loop guard counts them.
-      if (!byAgent && change.actor.via !== 'agent')
-        await resetCommentCount(tx, issue);
+      if (!byAgent) await resetCommentCount(tx, issue);
       const targets = new Map<string, string>();
       for (const ref of change.mentions)
-        if (ref.kind === AGENT_KIND && !targets.has(ref.id))
+        if (
+          ref.kind === AGENT_KIND &&
+          ref.id !== PROJECT_MANAGER_ID &&
+          !targets.has(ref.id)
+        )
           targets.set(ref.id, 'mention');
       const executing = agentOf(issue);
       if (byAgent) {
@@ -670,7 +678,11 @@ export function createAgentWork(deps: {
           kind: byAgent ? 'agent' : 'user',
           id: authorId,
           name:
-            comment.authorName ??
+            (change.actor.type === 'user' && byAgent
+              ? (await deps.agents.agents.names(tx.conn, [authorId])).get(
+                  authorId,
+                )
+              : comment.authorName) ??
             (byAgent ? 'Agent' : await userName(tx.conn, authorId)),
         } satisfies ActorRef,
         targets: [...targets].map(([agentId, triggerType]) => ({
