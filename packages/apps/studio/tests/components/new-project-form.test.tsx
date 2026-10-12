@@ -249,15 +249,6 @@ globalThis.ResizeObserver ??= class {
   public disconnect(): void {}
 };
 Element.prototype.scrollIntoView ??= () => undefined;
-// CodeMirror measures text ranges, which jsdom does not lay out.
-Range.prototype.getClientRects ??= () =>
-  ({
-    length: 0,
-    item: () => null,
-    [Symbol.iterator]: [][Symbol.iterator],
-  }) as unknown as DOMRectList;
-Range.prototype.getBoundingClientRect ??= () => new DOMRect();
-
 /** Picks an option of a shadcn Select by its trigger's label. */
 /** Picks an agent in an agent picker, whose menu lists it with its availability. */
 async function chooseAgent(label: string, name: string) {
