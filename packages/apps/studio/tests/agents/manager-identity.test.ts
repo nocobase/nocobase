@@ -27,12 +27,20 @@ const issue = () =>
 const mention = (id: string) => `[@Agent](mention://agent/${id}) do the step`;
 
 describe('manager and delegated identities', () => {
-  it('uses the owner for another user starting, commenting and retrying, with separate audit', async () => {
+  it('requires the owner to start, then uses the owner for others commenting and retrying', async () => {
     const task = await issue();
     expect(
       (
         await h.request('POST', `/projectManager/issues/${task.id}/start`, {
           user: 'bob',
+        })
+      ).status,
+    ).toBe(403);
+    expect(await runs(task.id)).toHaveLength(0);
+    expect(
+      (
+        await h.request('POST', `/projectManager/issues/${task.id}/start`, {
+          user: 'alice',
         })
       ).status,
     ).toBe(200);
@@ -43,14 +51,14 @@ describe('manager and delegated identities', () => {
     expect(run).toMatchObject({
       agentId: PM,
       actorUserId: 'alice',
-      requestedByUserId: 'bob',
+      requestedByUserId: 'alice',
       ownerUserId: 'alice',
     });
     expect(
       (await h.agents.runs.detail(run.id)).inputs.map(
         (input) => input.actor.id,
       ),
-    ).toEqual(['bob', 'bob']);
+    ).toEqual(['alice', 'bob']);
     await h.agents.runs.cancel(run.id, 'bob');
     const retried = await h.agents.runs.retry(run.id, 'bob');
     expect(retried).toMatchObject({
@@ -70,6 +78,40 @@ describe('manager and delegated identities', () => {
         })
       ).status,
     ).not.toBe(200);
+  });
+
+  it('never queues backlog comments, including owner and worker mentions', async () => {
+    const task = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Not started',
+      statusKey: 'backlog',
+      start: false,
+    });
+    const worker = await h.createAgent({ name: 'Worker' });
+    for (const user of ['alice', 'bob'])
+      await h.projects.comments.create(h.viewer(user), task.id, {
+        content: mention(worker),
+      });
+    expect(await runs(task.id)).toEqual([]);
+  });
+
+  it('rejects a non-owner status start and rolls back the issue change', async () => {
+    const task = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Owner starts',
+      statusKey: 'backlog',
+      start: false,
+    });
+    await expect(
+      h.projects.issues.update(h.viewer('bob'), task.id, {
+        revision: task.revision,
+        statusKey: 'in_progress',
+        start: true,
+      }),
+    ).rejects.toMatchObject({ reason: 'ISSUE_OWNER_START_REQUIRED' });
+    expect(
+      (await h.projects.issueQueries.detail(h.viewer('alice'), task.id))
+        .statusKey,
+    ).toBe('backlog');
+    expect(await runs(task.id)).toEqual([]);
   });
 
   it('covers the delegated chain but preserves direct human worker mentions', async () => {
@@ -355,7 +397,7 @@ describe('manager and delegated identities', () => {
     expect((await h.agents.runs.get(retry.id)).actorUserId).toBe('bob');
   });
 
-  it('checks the owner permission, records denial and does not use the administrator who triggers it', async () => {
+  it('checks owner invocation permission and records denial without fallback', async () => {
     const task = await issue();
     const invoke = vi
       .spyOn(h.agents.agents, 'mayInvoke')
@@ -363,7 +405,7 @@ describe('manager and delegated identities', () => {
     const started = await h.request(
       'POST',
       `/projectManager/issues/${task.id}/start`,
-      { user: 'bob' },
+      { user: 'alice' },
     );
     expect(started.status).toBe(400);
     expect(await runs(task.id)).toEqual([]);
@@ -381,7 +423,7 @@ describe('manager and delegated identities', () => {
     ).toContainEqual(
       expect.objectContaining({
         action: 'studio_execution_wait',
-        actorId: 'bob',
+        actorId: 'alice',
         details: expect.objectContaining({ reason: 'notAllowed' }),
       }),
     );

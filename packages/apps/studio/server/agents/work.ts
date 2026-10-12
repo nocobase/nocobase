@@ -41,6 +41,7 @@
  */
 
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { studioError } from '../http/errors.js';
 import { randomUUID } from 'node:crypto';
 
 import type { ActorRef, RunInputType } from '@nocobase/agent-protocol';
@@ -337,6 +338,16 @@ export function createAgentWork(deps: {
     ...(reason ? { skipped: reason } : {}),
   });
 
+  function requireOwnerStart(issue: Issue, actor: Actor): void {
+    if (actor.type !== 'user' || actor.id !== issue.ownerUserId)
+      throw studioError(
+        'PERMISSION_DENIED',
+        'ISSUE_OWNER_START_REQUIRED',
+        'The current issue owner must start the project manager.',
+        { metadata: { reason: 'ownerStartRequired' } },
+      );
+  }
+
   /** Wakes each agent `held` names with the comment, for `userId`. */
   async function wakeComment(
     tx: ProjectsTx,
@@ -345,6 +356,7 @@ export function createAgentWork(deps: {
     userId: string,
     extra: Readonly<Record<string, unknown>>,
   ): Promise<RunAttempt[]> {
+    if (statusCategory(issue.statusKey) === 'unstarted') return [];
     const attempts: RunAttempt[] = [];
     for (const { agentId, triggerType } of held.targets)
       attempts.push(
@@ -642,6 +654,7 @@ export function createAgentWork(deps: {
     },
 
     async startNow(tx, issue, actor) {
+      requireOwnerStart(issue, actor);
       const agentId = agentOf(issue);
       if (!agentId) throw new Error('No agent executes the issue.');
       return assigned(
@@ -657,6 +670,13 @@ export function createAgentWork(deps: {
       const { before, after } = change;
       const from = agentOf(before);
       const to = agentOf(after);
+      if (
+        to === PROJECT_MANAGER_ID &&
+        change.start &&
+        !dormant(after) &&
+        (!before || dormant(before) || to !== from)
+      )
+        requireOwnerStart(after, change.actor);
       const who = await actorOf(tx, change.actor, after);
       if (from && from !== to)
         await stop(
@@ -728,6 +748,7 @@ export function createAgentWork(deps: {
 
     async onCommentCreated(tx, change) {
       const { comment, issue, parent } = change;
+      if (statusCategory(issue.statusKey) === 'unstarted') return [];
       const authorId = change.actor.id;
       if (!authorId) return [];
       const byAgent = change.actor.type === AGENT_KIND;

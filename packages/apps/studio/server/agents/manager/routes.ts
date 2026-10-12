@@ -4,7 +4,7 @@
  * - `GET /projectManager`: its settings and the agents it may run with, for anyone signed in; `PATCH /projectManager`
  *   changes them, for a manager of agents (`agents.agents` manage).
  * - `POST /projectManager/issues/{issueId}/start`: hands an open issue the project manager executes to it to go on,
- *   as the caller, who may edit the issue: "Hand over to the project manager" on an issue it never worked on.
+ *   as the owner, who must also be the caller and may edit the issue: "Hand over to the project manager" on an issue it never worked on.
  * - `GET /issueProgress/{issueId}`: what the issue waits for now, for whoever sees it.
  * - `GET /issueCommentRuns/{issueId}`, `POST …/continue`: an agent's comment the comment run limit held back, and
  *   continuing it (`../comment-run-limit.ts`).
@@ -214,7 +214,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
         }),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
         description:
-          'Wakes the project manager on an open issue it executes, as the caller, to go on with it: for an issue it never worked on. Needs `pm.issues` edit on the issue.',
+          'Wakes the project manager on an open issue it executes, as the current issue owner. Only that owner may invoke it, and needs `pm.issues` edit on the issue. Other callers receive `ISSUE_OWNER_START_REQUIRED`.',
         responses: {
           200: dataResponse(z.object({ runId: z.string() })),
           400: apiErrorResponse(
