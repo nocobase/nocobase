@@ -258,7 +258,11 @@ test('shows the shared diagnostics in the Agent queue', async ({
   await runner.wake(issue);
   const board = await api.get<AgentBoard>('agentBoard');
   const original = board.rows.find((row) => row.issue.id === issue.id)!;
-  expect(original.queue).toBeTruthy();
+  const workerEntry =
+    original.agentId === agentId
+      ? original
+      : original.others.find((entry) => entry.agentId === agentId)!;
+  expect(workerEntry.queue).toBeTruthy();
   for (const locale of ['en-US', 'zh-CN']) {
     await api.patch('users/me/preferences', { locale });
     await page.setViewportSize({
@@ -278,8 +282,10 @@ test('shows the shared diagnostics in the Agent queue', async ({
         rows: [
           {
             ...original,
+            ...workerEntry,
+            others: [],
             queue: {
-              ...original.queue!,
+              ...workerEntry.queue!,
               reason,
               params: {
                 tool: 'claude',
