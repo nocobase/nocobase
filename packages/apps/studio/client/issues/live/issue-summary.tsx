@@ -50,6 +50,7 @@ export function IssueSummary({
   actions,
   collapsible = false,
   defaultCollapsed = false,
+  heading = true,
   className,
 }: {
   readonly issue: IssueDetail;
@@ -62,9 +63,12 @@ export function IssueSummary({
   readonly actions?: ReactNode;
   readonly collapsible?: boolean;
   readonly defaultCollapsed?: boolean;
+  /** The title is a heading; off where the page already has one for it. */
+  readonly heading?: boolean;
   readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
+  const Title = heading ? 'h2' : 'p';
   const viewer = useViewer();
   const [collapsed, setCollapsed] = useState(collapsible && defaultCollapsed);
   const mark = usePullRequestMark(issue.id, issue.revision).data;
@@ -91,14 +95,14 @@ export function IssueSummary({
           {issue.identifier}
         </span>
         <StatusPill statusKey={issue.statusKey} />
-        <h2
+        <Title
           className={cn(
             'min-w-0 flex-1 basis-40 text-base leading-snug font-semibold',
             collapsed ? 'truncate' : 'text-balance',
           )}
         >
           {issue.title}
-        </h2>
+        </Title>
         <span className='flex flex-wrap items-center gap-2'>
           {actions}
           {collapsible ? (

@@ -426,6 +426,11 @@ test.describe('issue page', () => {
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame()) navigations.push(frame.url());
     });
+    // Runs are system records, folded under "Conversation only".
+    await page
+      .getByTestId('issue-feed')
+      .getByRole('button', { name: '全部', exact: true })
+      .click();
     // A person's mention wakes the runner's agent.
     await runner.wake(issue);
     const running = await runner.start(issue.identifier);

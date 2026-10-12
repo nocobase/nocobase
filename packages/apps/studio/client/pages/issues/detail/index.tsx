@@ -188,6 +188,7 @@ function IssuePage({
               actions={<FollowToggle issueId={detail.id} />}
               collapsible
               defaultCollapsed={narrow}
+              heading={false}
             />
           </div>
           <IssueFileDrop

@@ -78,6 +78,16 @@ vi.mock('../../client/issues/markdown.js', () => ({
 vi.mock('../../client/issues/detail/labels.js', () => ({
   useIssuePageWording: () => ({ t: (key: string) => key }),
 }));
+// Studio's file preview has tests of its own (`file-preview.test.tsx`).
+vi.mock('../../client/files/attachment-preview.js', () => ({
+  StudioFilePreview: ({
+    files,
+    index,
+  }: {
+    files: { filename: string }[];
+    index: number;
+  }) => <div role='dialog'>{files[index]?.filename}</div>,
+}));
 vi.mock('../../client/issues/detail/activity-row.js', () => ({
   ActivityRow: ({ activity }: { activity: { action: string } }) => (
     <span data-testid='activity-row'>{activity.action}</span>
@@ -87,11 +97,30 @@ vi.mock('../../client/issues/detail/activity-row.js', () => ({
 const at = (minute: number) =>
   new Date(Date.UTC(2026, 9, 12, 13, minute)).toISOString();
 
+function file(id: string, filename: string, image: boolean) {
+  return {
+    id,
+    filename,
+    ext: filename.split('.').pop() ?? '',
+    mimeType: image ? 'image/png' : 'text/plain',
+    size: 2048,
+    issueId: 'i1',
+    commentId: 'c2',
+    uploader: { type: 'user', id: 'bob', name: 'Bob' },
+    createdAt: at(4),
+    contentUrl: `/api/files/${id}/content`,
+    downloadUrl: `/api/files/${id}/content?download=1`,
+    previewable: image,
+    canDelete: false,
+  };
+}
+
 function comment(
   id: string,
   minute: number,
   author: { type: string; id: string; name: string },
   content: string,
+  attachments: ReturnType<typeof file>[] = [],
 ) {
   return {
     id,
@@ -112,7 +141,7 @@ function comment(
     resolvedAt: null,
     resolvedById: null,
     resolvedByName: null,
-    attachments: [],
+    attachments,
   };
 }
 
@@ -223,6 +252,42 @@ describe('the issue feed', () => {
     expect(
       within(feed).queryByRole('button', { name: '2 system records' }),
     ).toBeNull();
+  });
+
+  it('shows a comment’s screenshots as thumbnails that open the preview, and its other files as chips', async () => {
+    mocks.entries = [
+      thread(
+        comment(
+          'c2',
+          4,
+          { type: 'user', id: 'bob', name: 'Bob' },
+          'See the screenshot',
+          [file('f1', 'shot.png', true), file('f2', 'notes.txt', false)],
+        ),
+      ),
+    ];
+    await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const images = within(feed).getByRole('list', { name: 'Images' });
+    const thumbnail = within(images).getByRole('img', { name: 'shot.png' });
+    expect(thumbnail.getAttribute('src')).toBe('/api/files/f1/content');
+    // Outside the cut of a long comment, so a screenshot is never hidden.
+    expect(thumbnail.closest('[data-slot="clamped"]')).toBeNull();
+    const files = within(feed).getByRole('list', { name: 'Files' });
+    expect(files.textContent).toContain('notes.txt');
+    expect(
+      within(files)
+        .getByRole('button', { name: 'Download notes.txt' })
+        .getAttribute('href'),
+    ).toBe('/api/files/f2/content?download=1');
+    fireEvent.click(
+      within(images).getByRole('button', { name: 'Preview shot.png' }),
+    );
+    expect((await screen.findByRole('dialog')).textContent).toBe('shot.png');
   });
 
   it('cuts a long comment to a few lines with Show more and Show less', async () => {
