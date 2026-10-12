@@ -1,7 +1,8 @@
 name: V3 Release Beta
 
 # Release prereleases from v3-develop: consume changesets, assign X.Y.0-beta.N versions, and publish them under the beta
-# dist-tag. Versioning happens on an isolated release branch so v3-develop remains available while the release is checked.
+# and latest dist-tags. Versioning happens on an isolated release branch so v3-develop remains available while the release
+# is checked.
 
 on:
   workflow_dispatch:
@@ -581,9 +582,10 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Studio version in this release: ${VERSION:-none}"
 
-      # changesets may assign latest when a package has only prerelease versions. Reassert beta for every package in
-      # this release so beta always points to the version that was just published.
-      - name: Point the beta dist-tag at this release
+      # changesets moves latest only when it judges a package to be publishing for the first time, so latest fell behind
+      # beta and users installing without a tag got old versions. Point both beta and latest at every package in this
+      # release so either one installs the version that was just published.
+      - name: Point the beta and latest dist-tags at this release
         if: '!inputs.dry_run'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -596,16 +598,18 @@ jobs:
           FAILED=0
           while IFS= read -r SPEC; do
             [ -n "$SPEC" ] || continue
-            if npm dist-tag add "$SPEC" beta; then
-              echo "beta -> $SPEC"
-            else
-              echo "::warning::Could not point beta at $SPEC"
-              FAILED=1
-            fi
+            for TAG in beta latest; do
+              if npm dist-tag add "$SPEC" "$TAG"; then
+                echo "$TAG -> $SPEC"
+              else
+                echo "::warning::Could not point $TAG at $SPEC"
+                FAILED=1
+              fi
+            done
           done < "$RUNNER_TEMP/released-specs.txt"
 
           if [ "$FAILED" = "1" ]; then
-            echo "::error::One or more packages kept a stale beta dist-tag. Fix them with npm dist-tag add <pkg>@<version> beta."
+            echo "::error::One or more packages kept a stale beta or latest dist-tag. Fix them with npm dist-tag add <pkg>@<version> <tag>."
             exit 1
           fi
 
