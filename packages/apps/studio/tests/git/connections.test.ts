@@ -1052,7 +1052,7 @@ describe('push credentials on demand', () => {
   async function claimed(features: readonly string[] = ON_DEMAND) {
     const app = await appConnection();
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
-    const linked = await projectWithRepo(app);
+    const linked = await projectWithRepo(app, 'in_progress');
     await mentionAgent(h, 'alice', linked.issue.id, agentId);
     const payload = await h.claimOne(features);
     return { app, payload, ...linked };
@@ -1092,7 +1092,7 @@ describe('push credentials on demand', () => {
 
   it('lists nothing on demand for a token connection', async () => {
     const connection = await tokenConnection(h);
-    const { issue } = await projectWithRepo(connection);
+    const { issue } = await projectWithRepo(connection, 'in_progress');
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne(ON_DEMAND);
