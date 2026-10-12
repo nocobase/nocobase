@@ -100,7 +100,7 @@ export interface KnowledgeTx {
    */
   readonly defaultChunking: KnowledgeChunking;
   emit(event: KnowledgeEvent): void;
-  /** Runs `fn` once the transaction commits; a failure is reported, never thrown. */
+  /** Runs and awaits `fn` once the transaction commits; a failure is reported, never thrown. */
   afterCommit(fn: () => void | Promise<void>): void;
 }
 
@@ -192,9 +192,7 @@ export function createKnowledgeContext(
       for (const event of pending) publish(event);
       for (const task of after)
         try {
-          void Promise.resolve(task()).catch((error: unknown) =>
-            onError('Knowledge work after a commit failed.', error),
-          );
+          await task();
         } catch (error) {
           onError('Knowledge work after a commit failed.', error);
         }
