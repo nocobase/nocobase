@@ -254,7 +254,7 @@ const definition = z
   .custom<WorkflowDefinition>(isObject, 'definition must be an object.')
   .meta({
     description:
-      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions }`.',
+      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions, commentRunLimit? }`.',
   });
 
 export const CreateWorkflowBody: z.ZodType<CreateWorkflowRequest> =
@@ -844,6 +844,10 @@ const WorkflowDefinitionSchema: z.ZodType<WorkflowDefinition> = z
         }),
       }),
     ),
+    commentRunLimit: z.number().int().positive().optional().meta({
+      description:
+        'At most this many runs that comments of agents (principals other than people) start on one issue within 24 hours; 20 when left out.',
+    }),
   })
   .meta({ ref: 'ProjectsWorkflowDefinition' });
 

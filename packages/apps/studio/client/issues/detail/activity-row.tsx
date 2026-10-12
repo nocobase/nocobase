@@ -137,7 +137,12 @@ function actionLabel(action: string, details: Activity['details']): string {
   else if (action === 'stage_action_skipped' && reason === 'blocked')
     key = 'stageActionBlocked';
   else if (action === 'work_skipped')
-    key = reason === 'dormant' ? 'workDormant' : 'workBlocked';
+    key =
+      reason === 'dormant'
+        ? 'workDormant'
+        : reason === 'limited'
+          ? 'workLimited'
+          : 'workBlocked';
   return `activity.actions.${key}`;
 }
 

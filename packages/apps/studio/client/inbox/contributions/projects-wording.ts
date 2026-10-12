@@ -291,6 +291,13 @@ export function useEntryText(): (
         if (params.reason === 'suppressed')
           sentence += ` ${t('studioAgents.stageRules.continueInIssue')}`;
         break;
+      case 'comment_runs_limited':
+        sentence = `${t('inbox.body.comment_runs_limited', {
+          limit: params.limit ?? '',
+          windowHours: params.windowHours ?? '',
+          agentName: params.agentName ?? '',
+        })} ${t('studioAgents.stageRules.continueInIssue')}`;
+        break;
       case 'commented':
       case 'mentioned':
       case 'owner_assigned':

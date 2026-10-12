@@ -32,6 +32,8 @@ const pages = {
       stageActionBlocked: 'skipped a stage action: the issue is waiting for',
       workBlocked: 'did not start work: the issue is waiting for',
       workDormant: 'did not start work while the issue is in',
+      workLimited:
+        'did not start work: agents’ comments reached the issue’s run limit',
       workWithdrawn: 'withdrew its queued work: the issue is now waiting for',
       stageActionFailed: 'could not run a rule of the status',
       created: 'created the issue',
@@ -1005,6 +1007,13 @@ const pages = {
     matrix: 'Transition matrix',
     matrixDescription:
       'Rows are the current status, columns the next one. Each cell shows who may make the move.',
+    limitsTitle: 'Limits',
+    limitsDescription:
+      'How much work comments of agents and other non-person principals may start on one issue. A person’s comment is never limited and restarts the count.',
+    commentRunLimit:
+      'Runs from agent comments per issue in {{windowHours}} hours',
+    commentRunLimitValue:
+      'At most {{limit}} runs per issue in {{windowHours}} hours. Past that, the owner is told and may continue.',
     rulesTitle: 'Rules',
     rulesDescription:
       'Who may make each move, which moves need an approval, and what entering each status does.',

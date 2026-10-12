@@ -1,4 +1,7 @@
-/** A person who may edit the issue can continue the current suppressed stage action once; the server checks and consumes its token. */
+/**
+ * A person who may edit the issue can continue what a loop guard held back once: the current suppressed stage action,
+ * or the agent comment the comment run limit held back. The server checks and consumes its token.
+ */
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { canEditIssues } from '@nocobase/app-plugin-projects/client/issues';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
@@ -13,17 +16,42 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useNotify } from '../../access/notify.js';
 
-interface PendingStageRun {
+interface PendingRun {
   readonly token: string;
-  readonly statusKey: string;
+  /** Set for a stage action: it waits only while the issue is in that status. */
+  readonly statusKey?: string;
   readonly maxRuns: number;
   readonly windowHours: number;
 }
 
-export function IssueStageRunLimit({
+/** What tells the two guards apart: their route, cache key and words. */
+interface RunLimitKind {
+  readonly path: string;
+  readonly key: string;
+  readonly words: 'studioAgents.stageRules' | 'studioAgents.commentRuns';
+  readonly staleReason: string;
+}
+
+const STAGE: RunLimitKind = {
+  path: 'issueStageRuns',
+  key: 'stageRunLimit',
+  words: 'studioAgents.stageRules',
+  staleReason: 'STAGE_CONTINUE_STALE',
+};
+
+const COMMENTS: RunLimitKind = {
+  path: 'issueCommentRuns',
+  key: 'commentRunLimit',
+  words: 'studioAgents.commentRuns',
+  staleReason: 'COMMENT_CONTINUE_STALE',
+};
+
+function RunLimitAlert({
+  kind,
   issue,
   onContinued,
 }: {
+  readonly kind: RunLimitKind;
   readonly issue: IssueDetail;
   readonly onContinued?: () => void;
 }): ReactElement | null {
@@ -34,20 +62,14 @@ export function IssueStageRunLimit({
   const queryClient = useQueryClient();
   const continuingRef = useRef(false);
   const allowed = canEditIssues(viewer);
-  const key = [
-    'studio',
-    'stageRunLimit',
-    issue.id,
-    issue.statusKey,
-    issue.revision,
-  ];
+  const key = ['studio', kind.key, issue.id, issue.statusKey, issue.revision];
   const pending = useQuery({
     queryKey: key,
     enabled: allowed,
     queryFn: async () =>
       (
-        await api.request<{ data: PendingStageRun | null }>({
-          path: `issueStageRuns/${encodeURIComponent(issue.id)}`,
+        await api.request<{ data: PendingRun | null }>({
+          path: `${kind.path}/${encodeURIComponent(issue.id)}`,
         })
       ).data,
     retry: false,
@@ -56,44 +78,47 @@ export function IssueStageRunLimit({
     mutationFn: (token: string) =>
       api.request({
         method: 'POST',
-        path: `issueStageRuns/${encodeURIComponent(issue.id)}/continue`,
+        path: `${kind.path}/${encodeURIComponent(issue.id)}/continue`,
         json: { token },
       }),
     onSuccess: () => {
       queryClient.setQueryData(key, null);
-      notify.success(t('studioAgents.stageRules.continued'));
+      notify.success(t(`${kind.words}.continued`));
       onContinued?.();
     },
     onError: (error) =>
       notify.error(
         null,
         t(
-          error instanceof ApiClientError &&
-            error.reason === 'STAGE_CONTINUE_STALE'
-            ? 'studioAgents.stageRules.continueStale'
-            : 'studioAgents.stageRules.continueFailed',
+          error instanceof ApiClientError && error.reason === kind.staleReason
+            ? `${kind.words}.continueStale`
+            : `${kind.words}.continueFailed`,
         ),
       ),
     onSettled: async () => {
       continuingRef.current = false;
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ['studio', 'stageRunLimit', issue.id],
+          queryKey: ['studio', kind.key, issue.id],
         }),
         queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] }),
       ]);
     },
   });
   const blocked = pending.data;
-  if (!allowed || !blocked || blocked.statusKey !== issue.statusKey)
+  if (
+    !allowed ||
+    !blocked ||
+    (blocked.statusKey !== undefined && blocked.statusKey !== issue.statusKey)
+  )
     return null;
   return (
     <Alert>
       <TriangleAlertIcon />
-      <AlertTitle>{t('studioAgents.stageRules.limitReached')}</AlertTitle>
+      <AlertTitle>{t(`${kind.words}.limitReached`)}</AlertTitle>
       <AlertDescription>
         <p>
-          {t('studioAgents.stageRules.continueHint', {
+          {t(`${kind.words}.continueHint`, {
             maxRuns: blocked.maxRuns,
             windowHours: blocked.windowHours,
           })}
@@ -113,4 +138,18 @@ export function IssueStageRunLimit({
       </AlertDescription>
     </Alert>
   );
+}
+
+export function IssueStageRunLimit(props: {
+  readonly issue: IssueDetail;
+  readonly onContinued?: () => void;
+}): ReactElement | null {
+  return <RunLimitAlert kind={STAGE} {...props} />;
+}
+
+export function IssueCommentRunLimit(props: {
+  readonly issue: IssueDetail;
+  readonly onContinued?: () => void;
+}): ReactElement | null {
+  return <RunLimitAlert kind={COMMENTS} {...props} />;
 }

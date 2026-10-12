@@ -31,6 +31,7 @@ const pages = {
       stageActionBlocked: '跳过了一个阶段动作：任务在等待',
       workBlocked: '没有开始工作：任务在等待',
       workDormant: '没有开始工作，因为任务处于',
+      workLimited: '没有开始工作：Agent 评论已达到任务的运行上限',
       workWithdrawn: '撤回了排队中的工作：任务现在在等待',
       stageActionFailed: '未能执行状态的规则',
       created: '创建了任务',
@@ -941,6 +942,13 @@ const pages = {
     matrix: '转换矩阵',
     matrixDescription:
       '行是当前状态，列是下一状态，格子里是可以执行这次转换的角色。',
+    limitsTitle: '限制',
+    limitsDescription:
+      'Agent 等非人类主体的评论在一个任务上最多能启动多少工作。人的评论不受限制，并会重新开始计数。',
+    commentRunLimit:
+      '每个任务 {{windowHours}} 小时内由 Agent 评论启动的运行次数',
+    commentRunLimitValue:
+      '每个任务 {{windowHours}} 小时内最多 {{limit}} 次运行。超过后会通知负责人，由其决定是否继续。',
     rulesTitle: '规则',
     rulesDescription:
       '谁可以做哪些转换、哪些转换需要审批，以及进入各状态时会发生什么。',

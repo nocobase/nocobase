@@ -397,6 +397,40 @@ describe('the workflow editor', () => {
     ]);
   });
 
+  it('shows the comment run limit, and saves a changed or cleared one with the definition', async () => {
+    resetApi({
+      ...noWakes,
+      'projects/me': () => ({ data: me('admin') }),
+      'projects/workflows': () => ({ data: [software] }),
+      'PATCH projects/workflows/wf1': () => ({ data: software }),
+    });
+    renderDetail();
+    expect(
+      await screen.findByText(
+        'workflows.commentRunLimitValue(limit=20,windowHours=24)',
+      ),
+    ).toBeTruthy();
+    await startEditing();
+    const limit = screen.getByRole('spinbutton', {
+      name: 'workflows.commentRunLimit(windowHours=24)',
+    });
+    expect(limit).toHaveAttribute('placeholder', '20');
+    const save = screen.getByRole('button', { name: 'workflows.save' });
+    // Cleared again, the definition is the saved one: the default holds and there is nothing to save.
+    fireEvent.change(limit, { target: { value: '5' } });
+    fireEvent.change(limit, { target: { value: '' } });
+    expect(save).toBeDisabled();
+    fireEvent.change(limit, { target: { value: '5' } });
+    fireEvent.click(save);
+    await waitFor(() =>
+      expect(api.calls.some((call) => call.method === 'PATCH')).toBe(true),
+    );
+    const body = api.calls.find((call) => call.method === 'PATCH')?.json as {
+      definition: WorkflowDefinition;
+    };
+    expect(body.definition.commentRunLimit).toBe(5);
+  });
+
   it('edits a status on the flow strip: rename, recolor, move, and no removal of a built-in', async () => {
     resetApi({
       ...noWakes,

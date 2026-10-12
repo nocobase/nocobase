@@ -947,6 +947,10 @@ const zhCN: AppResource = {
     '运行在 {{attempts}} 次尝试后失败（{{reason}}）。可以重试、改派给人，或不再重试。',
   'inbox.body.stage_action_problem':
     '状态「{{status}}」的「{{rule}}」被跳过：{{why}}。',
+  'inbox.types.comment_runs_limited': 'Agent 评论已暂停唤醒',
+  'inbox.text.comment_runs_limited': '{{identifier}} 上的 Agent 评论达到上限',
+  'inbox.body.comment_runs_limited':
+    'Agent 的评论在 {{windowHours}} 小时内已启动 {{limit}} 次运行，{{agentName}} 的一条评论没有唤醒任何 Agent。',
   'inbox.stageRules.runAgent': '运行 Agent',
   'inbox.stageRules.suggestExecutor': '建议执行者',
   'inbox.stageSkips.executorCannotImplement':
@@ -1206,6 +1210,14 @@ const zhCN: AppResource = {
       suggestNoAgent: '向负责人建议执行者（未选择 Agent）',
       unknownAgent: '你看不到的 Agent',
       withInstruction: '{{summary}}：{{instruction}}',
+    },
+    commentRuns: {
+      limitReached: 'Agent 评论已暂停唤醒',
+      continueHint:
+        'Agent 的评论在 {{windowHours}} 小时内已在这个任务上启动 {{maxRuns}} 次运行，最近一条没有唤醒任何 Agent。继续可唤醒它提到的 Agent 一次，并重新开始计数。',
+      continued: '已继续 Agent 评论',
+      continueStale: '这条评论已不再等待，请刷新任务。',
+      continueFailed: '暂时无法继续，请检查 Agent 和任务阻塞后重试。',
     },
   },
   pmChat: {

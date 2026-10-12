@@ -1027,6 +1027,11 @@ const enUS = {
     'The run failed after {{attempts}} attempts ({{reason}}). Retry it, give the issue to a person, or leave it.',
   'inbox.body.stage_action_problem':
     '"{{rule}}" in {{status}} was skipped: {{why}}.',
+  'inbox.types.comment_runs_limited': 'Agent comments paused',
+  'inbox.text.comment_runs_limited':
+    'Agent comments on {{identifier}} reached their limit',
+  'inbox.body.comment_runs_limited':
+    'Agents’ comments started {{limit}} runs within {{windowHours}} hours, so a comment of {{agentName}} woke nobody.',
   'inbox.stageRules.runAgent': 'Run agent',
   'inbox.stageRules.suggestExecutor': 'Suggest executor',
   'inbox.stageSkips.executorCannotImplement':
@@ -1325,6 +1330,15 @@ const enUS = {
       suggestNoAgent: 'Suggests an executor to the owner (no agent chosen)',
       unknownAgent: 'an agent you cannot see',
       withInstruction: '{{summary}}: {{instruction}}',
+    },
+    commentRuns: {
+      limitReached: 'Agent comments paused',
+      continueHint:
+        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+      continued: 'Agent comment continued',
+      continueStale: 'This comment no longer waits. Refresh the issue.',
+      continueFailed:
+        'Could not continue. Check the agents and issue blockers, then retry.',
     },
   },
   pmChat: {

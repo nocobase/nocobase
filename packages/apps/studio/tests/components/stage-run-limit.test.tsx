@@ -20,7 +20,10 @@ import {
   RunAgentEditor,
   RunAgentSummary,
 } from '../../client/agents/stage-rule-editors.js';
-import { IssueStageRunLimit } from '../../client/issues/detail/stage-run-limit.js';
+import {
+  IssueCommentRunLimit,
+  IssueStageRunLimit,
+} from '../../client/issues/detail/stage-run-limit.js';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -208,5 +211,34 @@ describe('continuing a stage run', () => {
     await mount(<IssueStageRunLimit issue={issue} />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(mocks.request).not.toHaveBeenCalled();
+  });
+});
+
+describe('continuing an agent comment', () => {
+  it('shows the held comment in any status and continues it through its own route', async () => {
+    mocks.request.mockImplementation((request: { method?: string }) =>
+      request.method === 'POST'
+        ? Promise.resolve({ data: { runIds: ['r1'] } })
+        : Promise.resolve({
+            data: { token: 'held', maxRuns: 20, windowHours: 24 },
+          }),
+    );
+    await mount(
+      <IssueCommentRunLimit issue={{ ...issue, statusKey: 'todo' }} />,
+    );
+    expect(
+      await screen.findByText(enUS.studioAgents.commentRuns.limitReached),
+    ).toBeInTheDocument();
+    expect(mocks.request).toHaveBeenCalledWith({
+      path: 'issueCommentRuns/i1',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: 'issueCommentRuns/i1/continue',
+        json: { token: 'held' },
+      }),
+    );
   });
 });

@@ -1,7 +1,7 @@
 /**
  * What other plugins use to write and read comments (an agent runtime posting a reply, a summary, a proposal). They
  * check their own rights; the project plugin keeps the rules of the thread: same issue, roots and replies, mentions
- * of registered kinds only, and only a person's comment starts work.
+ * of registered kinds only, and the system's comments start no work.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -13,7 +13,7 @@ import type { Tx } from '../../kernel/tx.js';
 export interface CommentWriteOptions {
   /** Joins this transaction instead of opening one. */
   readonly outer?: Tx;
-  /** False: the triggers are not told (they are told only of a person's comments anyway). */
+  /** False: the triggers are not told (they are never told of the system's comments). */
   readonly trigger?: boolean;
   /** The comment's kind; `comment` by default. */
   readonly kind?: string;
