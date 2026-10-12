@@ -430,6 +430,24 @@ export const CursorPageQuery: z.ZodType<CursorQuery> = z
     ...(cursor ? { cursor } : {}),
   }));
 
+/** An issue's comment threads, optionally only what was written after a time. */
+export const CommentThreadsQuery: z.ZodType<
+  CursorQuery & { readonly since?: string }
+> = z
+  .object({
+    pageSize: pageSize(),
+    pageToken,
+    since: z.iso.datetime({ offset: true }).optional().meta({
+      description:
+        'RFC 3339. Only threads with a comment written after it, each with its root and only the replies written after it.',
+    }),
+  })
+  .transform(({ pageSize: limit, pageToken: cursor, since }) => ({
+    limit,
+    ...(cursor ? { cursor } : {}),
+    ...(since ? { since } : {}),
+  }));
+
 const issueFields = {
   description: z.string().optional(),
   statusKey: z.string().optional(),

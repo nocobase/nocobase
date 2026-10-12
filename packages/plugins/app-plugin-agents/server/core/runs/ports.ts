@@ -114,6 +114,12 @@ export interface SubjectAssembly {
   readonly turn: {
     readonly prompt: string;
     readonly previousSummary?: string;
+    /**
+     * Added to a runner's turn once the claim knows whether the tool's session resumes (`resumed`) or starts fresh
+     * (`fresh`): what is new since the agent's last run, say, which only a resumed session can rely on.
+     */
+    readonly resumed?: string;
+    readonly fresh?: string;
   };
   /** Passed to the agent unchanged (`acme run context`). */
   readonly data: Readonly<Record<string, unknown>>;

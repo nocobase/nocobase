@@ -229,6 +229,38 @@ describe('writing comments', () => {
     expect(second.nextCursor).toBeNull();
   });
 
+  it('lists only what was written after `since`, each thread with its root', async () => {
+    const issue = await anIssue();
+    const old = await h.services.comments.create(bob(), issue.id, {
+      content: 'Old root',
+    });
+    await h.services.comments.create(bob(), issue.id, { content: 'Quiet' });
+    await h.services.comments.create(bob(), issue.id, {
+      content: 'Old reply',
+      parentId: old.comment.id,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const since = new Date().toISOString();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    await h.services.comments.create(bob(), issue.id, {
+      content: 'New reply',
+      parentId: old.comment.id,
+    });
+    await h.services.comments.create(bob(), issue.id, { content: 'New root' });
+    const page = await h.services.commentQueries.threads(alice(), issue.id, {
+      since,
+    });
+    expect(
+      page.data.map((thread) => [
+        thread.root.content,
+        thread.replies.map((reply) => reply.content),
+      ]),
+    ).toEqual([
+      ['Old root', ['New reply']],
+      ['New root', []],
+    ]);
+  });
+
   it('needs pm.issues comment, and seeing the issue', async () => {
     const issue = await anIssue();
     await expect(
