@@ -25,6 +25,8 @@ afterEach(async () => {
   vi.useRealTimers();
   await h.close();
 });
+const eventually = <T>(check: () => T | Promise<T>) =>
+  vi.waitFor(check, { timeout: 10_000 });
 const alice = () => h.viewer('alice');
 const manager = () => ({
   ...alice(),
@@ -197,8 +199,11 @@ describe('manager delegated queue timeout', () => {
     );
     await age(run.id);
     await h.agents.sweeper.sweep();
-    await vi.waitFor(async () =>
-      expect((await pending(run.id))?.status).toBe('done'),
+    await eventually(async () =>
+      expect(await pending(run.id)).toMatchObject({
+        status: 'done',
+        lastError: null,
+      }),
     );
     const reply = (await rows(issue.id)).find(
       (row) => row.authorId === worker,
@@ -218,8 +223,11 @@ describe('manager delegated queue timeout', () => {
       .execute();
     await age(run.id);
     await Promise.all([h.agents.sweeper.sweep(), h.agents.sweeper.sweep()]);
-    await vi.waitFor(async () =>
-      expect((await pending(run.id))?.status).toBe('done'),
+    await eventually(async () =>
+      expect(await pending(run.id)).toMatchObject({
+        status: 'done',
+        lastError: null,
+      }),
     );
     await Promise.all([
       drainRunReports(h.agents, h.projects),
@@ -254,7 +262,7 @@ describe('manager delegated queue timeout', () => {
       .mockRejectedValue(new Error('Temporary delivery interruption'));
     await age(run.id);
     await h.agents.sweeper.sweep();
-    await vi.waitFor(async () =>
+    await eventually(async () =>
       expect((await pending(run.id))?.attempts).toBe(1),
     );
     expect(
@@ -365,8 +373,11 @@ describe('manager delegated queue timeout', () => {
       } else {
         expect(payload?.run.id).not.toBe(run.id);
         expect(current.status).toBe('cancelled');
-        await vi.waitFor(async () =>
-          expect((await pending(run.id))?.status).toBe('done'),
+        await eventually(async () =>
+          expect(await pending(run.id)).toMatchObject({
+            status: 'done',
+            lastError: null,
+          }),
         );
         expect(
           (await rows(issue.id)).filter((c) => c.authorId === worker),
@@ -476,7 +487,10 @@ describe('manager delegated queue timeout', () => {
         h.projects,
         new Date(Date.now() + 120_000),
       );
-      expect((await pending(run.id))?.status).toBe('done');
+      expect(await pending(run.id)).toMatchObject({
+        status: 'done',
+        lastError: null,
+      });
       expect(
         (await rows(issue.id)).filter((c) => c.authorId === worker),
       ).toHaveLength(1);
@@ -527,7 +541,10 @@ describe('manager delegated queue timeout', () => {
     };
     await h.projects.tx.run(async (tx) => stageRunReport(tx.conn, ended));
     await drainRunReports(h.agents, h.projects);
-    expect((await pending(run.id))?.status).toBe('done');
+    expect(await pending(run.id)).toMatchObject({
+      status: 'done',
+      lastError: null,
+    });
     expect(
       await h.agents.runs.openOn(
         h.database.connection(),
@@ -590,8 +607,11 @@ describe('manager delegated queue timeout', () => {
       .execute();
     await age(run.id);
     await h.agents.sweeper.sweep();
-    await vi.waitFor(async () =>
-      expect((await pending(run.id))?.status).toBe('done'),
+    await eventually(async () =>
+      expect(await pending(run.id)).toMatchObject({
+        status: 'done',
+        lastError: null,
+      }),
     );
     const reply = (await rows(issue.id)).find((c) => c.authorId === worker)!;
     expect(reply.parentId).toBeNull();
@@ -602,7 +622,7 @@ describe('manager delegated queue timeout', () => {
     h.roles.set('alice', 'guest');
     await age(run.id);
     await h.agents.sweeper.sweep();
-    await vi.waitFor(async () =>
+    await eventually(async () =>
       expect((await pending(run.id))?.attempts).toBeGreaterThanOrEqual(1),
     );
     expect((await pending(run.id))?.lastError).toBeTruthy();
@@ -615,7 +635,10 @@ describe('manager delegated queue timeout', () => {
       h.projects,
       new Date(Date.now() + 3_600_000),
     );
-    expect((await pending(run.id))?.status).toBe('done');
+    expect(await pending(run.id)).toMatchObject({
+      status: 'done',
+      lastError: null,
+    });
   });
   it('keeps provenance-unknown historical records queued', async () => {
     const { run } = await dispatch();
