@@ -11,7 +11,7 @@ import { removeDir, tempDir } from './helpers.ts';
 const sha = (text: string) => createHash('sha256').update(text).digest('hex');
 
 const spec: ChangedFilesSpec = {
-  dir: '.nocobase-runner/knowledge',
+  dir: '.cli-changed-files-fixture/knowledge',
   manifest: '.manifest.json',
   maxBytes: 1000,
   maxFiles: 2,
@@ -29,7 +29,7 @@ describe('changed files', () => {
     listed: Record<string, string>,
   ) {
     work = tempDir('acme-changed-');
-    const root = path.join(work, '.nocobase-runner', 'knowledge');
+    const root = path.join(work, spec.dir);
     for (const [name, content] of Object.entries(files)) {
       mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
       writeFileSync(path.join(root, name), content);
@@ -79,8 +79,6 @@ describe('changed files', () => {
     await expect(changed(many)).rejects.toThrow(/3 files changed/u);
     removeDir(work);
     work = tempDir('acme-changed-none-');
-    await expect(changed(work)).rejects.toThrow(
-      /no \.nocobase-runner\/knowledge directory/u,
-    );
+    await expect(changed(work)).rejects.toThrow(`no ${spec.dir} directory`);
   });
 });

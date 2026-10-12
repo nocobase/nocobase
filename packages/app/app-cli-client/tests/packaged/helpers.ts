@@ -31,6 +31,8 @@ export function cliEnv(
   // The keychain stays off: a test never writes to the real one (tests/secrets.test.ts covers it with fakes).
   return {
     ...process.env,
+    // A caller may explicitly supply a synthetic run file in extra; never inherit the runner's pointer.
+    AGENT_RUN_CREDENTIALS: '',
     ACME_HOME: home,
     ACME_KEYCHAIN: 'off',
     ...extra,

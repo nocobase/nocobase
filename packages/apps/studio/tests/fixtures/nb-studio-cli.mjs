@@ -23,8 +23,16 @@ registerHooks({
   },
 });
 
-const { runAppCliPackage } = await import('@nocobase/app-cli-client');
-await runAppCliPackage(
+const { appCliConfigOf, readAppCliPackage, runAppCli } =
+  await import('@nocobase/app-cli-client');
+const { brand, info } = readAppCliPackage(
   path.resolve(import.meta.dirname, '../..'),
+);
+// Test-owned run tokens use their own namespace; never discover a surrounding runner's credentials.
+await runAppCli(
+  {
+    ...appCliConfigOf(brand, info),
+    runCredentialsFile: '.nb-studio-cli-fixture/run.json',
+  },
   process.argv.slice(2),
 );
