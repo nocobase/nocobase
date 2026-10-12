@@ -6,6 +6,7 @@ import {
   insertLink,
   upsertPullRequest,
   updateRepo,
+  findRepoById,
   LINKS,
   PULL_REQUESTS,
 } from '../../server/git/store.js';
@@ -158,6 +159,16 @@ describe('issue PR branch selection', () => {
       (await runBranches(conn, dirs, issue.identifier, issue.id)).get('work'),
     ).not.toHaveProperty('pullRequest');
     await h.git.refresh(h.viewer('alice'), issue.id, String(pr.id));
+    expect(
+      (await runBranches(conn, dirs, issue.identifier, issue.id)).get('work'),
+    ).toMatchObject({ branch: 'fix/human', pullRequest: { number: 11 } });
+    // A legacy row with an unchanged PR validator must also be enriched by ordinary watched-PR polling.
+    await conn.query
+      .updateTable(PULL_REQUESTS)
+      .set({ headRepo: null })
+      .where('id', '=', pr.id)
+      .execute();
+    await h.git.pollRepo((await findRepoById(conn, repoId))!);
     expect(
       (await runBranches(conn, dirs, issue.identifier, issue.id)).get('work'),
     ).toMatchObject({ branch: 'fix/human', pullRequest: { number: 11 } });
