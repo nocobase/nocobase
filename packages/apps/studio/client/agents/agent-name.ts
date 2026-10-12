@@ -5,5 +5,5 @@ import { useTranslation } from '@nocobase/i18n/client';
 export function useAgentName(): (id: string) => string {
   const { t } = useTranslation();
   const agents = useAgentOptions();
-  return (id) => agents.nameOf(id) ?? t('studioAgents.stageRules.unknownAgent');
+  return (id) => agents.nameOf(id) ?? t('studioAgents.unknownAgent');
 }

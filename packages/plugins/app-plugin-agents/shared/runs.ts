@@ -184,6 +184,8 @@ export interface RunChild {
 }
 
 export interface RunDetail extends Run {
+  /** The first run that retried this one; absent on older servers. */
+  readonly retriedRunId?: string | null;
   readonly inputs: readonly RunInputRecord[];
   readonly repos: readonly RunRepo[];
   readonly usage: readonly RunUsageTotal[];

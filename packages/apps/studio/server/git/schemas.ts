@@ -203,6 +203,7 @@ export const MarksQuery = z.object({ issueIds: idList(MARKS_MAX) });
 export const UpdateRepositoryInput = z.strictObject({
   webhookSecret: z.string().nullable().optional(),
   wakeOnChecks: z.boolean().optional(),
+  wakeOnChecksPassed: z.boolean().optional(),
   wakeOnConflict: z.boolean().optional(),
   branchRules: z.array(z.string()).optional(),
   referenceChecks: z.array(z.string()).optional().meta({
@@ -651,6 +652,7 @@ export const GitRepoSettingsSchema: z.ZodType<GitRepoSettings> = z.object({
   connection: GitConnectionChoiceSchema.nullable(),
   branchRules: z.array(z.string()),
   wakeOnChecks: z.boolean(),
+  wakeOnChecksPassed: z.boolean(),
   wakeOnConflict: z.boolean(),
   referenceChecks: z.array(z.string()),
   polledAt: dateTime().nullable(),

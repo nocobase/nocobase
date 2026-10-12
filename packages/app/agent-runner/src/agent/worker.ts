@@ -87,6 +87,7 @@ import {
   agentCwd,
   PREPARE_STEPS,
   PrepareError,
+  stepFailure,
   type PrepareContext,
 } from './prepare/index.ts';
 import {
@@ -146,6 +147,8 @@ export function workspaceNotes(options: {
   mounts?: readonly { readonly dir: string; readonly note?: string }[];
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
+  /** The run only reads (`workspace.readOnly`): nothing it commits is pushed. */
+  readOnly?: boolean;
 }): string {
   const { workDir, cwd, dirs } = options;
   const lines = [
@@ -163,9 +166,15 @@ export function workspaceNotes(options: {
       lines.push(
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
-          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
+          : options.readOnly === true
+            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
+            : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
       );
     }
+    if (options.readOnly === true)
+      lines.push(
+        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Read and run checks here, but change, commit and push nothing; the runner pushes nothing from this checkout.',
+      );
     for (const dir of dirs) {
       if (dir.repo?.initializing)
         lines.push(
@@ -621,7 +630,7 @@ export class RunWorker {
         });
         if (this.ending !== undefined) return this.finishEnding();
         return this.finishFailed(
-          error instanceof PrepareError ? error.reason : step.failure,
+          stepFailure(step, error, payload.run.acceptedFailures),
           detail,
         );
       } finally {
@@ -755,6 +764,7 @@ export class RunWorker {
           : { skillsDir: context.skills.dir }),
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
         pnpmStoreDir,
+        ...(payload.workspace.readOnly === true ? { readOnly: true } : {}),
       }),
       init,
     );
@@ -925,7 +935,10 @@ export class RunWorker {
 
   private async finishCompleted(): Promise<WorkerOutcome | 'inputPending'> {
     await this.updateRecord({ phase: 'reporting' });
-    const repos = await this.repoReports(this.deps.push ?? true);
+    // A read-only run pushes nothing: another run may be writing the same branch.
+    const repos = await this.repoReports(
+      (this.deps.push ?? true) && this.payload.workspace.readOnly !== true,
+    );
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir !== undefined)

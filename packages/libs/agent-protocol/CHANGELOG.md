@@ -1,5 +1,11 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- 65ec64a: Preserve failures after issue status transitions, isolate background card reconciliation failures, and return a specific failed precondition for repeated retries.
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

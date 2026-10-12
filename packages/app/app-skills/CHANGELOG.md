@@ -1,5 +1,18 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- e6dd56e: Add application development references for application structure, plugins, dependencies and the development server, carrying guidance that previously lived only in the application templates' `AGENTS.md`. Agents now record application-specific guidance in the committed `.agents/rules/` directory indexed from a small `AGENTS.md`, and the upgrade Skill explains how to merge `.agents/rules/` and un-ignore it in older applications.
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- 9f02fe3: Route requests to upgrade NocoBase or its core version to the application upgrade Skill, since users rarely refer to the template they generated the application from.
+- 2a54505: Expose the application's resolved `NODE_ENV` to server providers without inheriting an embedded application's host process environment. Mail now warns once during production startup when its effective OAuth return URL still points to the legacy `/dev/mail/accounts` destination. The current root (`/`) default does not trigger the warning or register an account route: applications must register their own authenticated personal account page and configure `mail.oauthReturnUrl` to that page. This warning does not block startup, change configuration, or verify arbitrary client routes.
+
 ## 0.1.0-beta.32
 
 ### Patch Changes

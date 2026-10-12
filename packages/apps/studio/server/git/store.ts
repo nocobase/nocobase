@@ -96,6 +96,7 @@ export interface RepoRow {
   /** In order; the first names the branches agents work on. */
   readonly branchRules: readonly string[];
   readonly wakeOnChecks: boolean;
+  readonly wakeOnChecksPassed: boolean;
   readonly wakeOnConflict: boolean;
   /** Check names only for information (`CheckSummary`). */
   readonly referenceChecks: readonly string[];
@@ -162,6 +163,7 @@ function repoOf(row: Row): RepoRow {
     externalId: str(row.externalId),
     branchRules: rulesOf(row.branchRules),
     wakeOnChecks: bool(row.wakeOnChecks),
+    wakeOnChecksPassed: bool(row.wakeOnChecksPassed),
     wakeOnConflict: bool(row.wakeOnConflict),
     referenceChecks: namesOf(row.referenceChecks),
     listEtag: str(row.listEtag),
@@ -221,6 +223,7 @@ export async function ensureRepo(
           externalId: null,
           branchRules: null,
           wakeOnChecks: true,
+          wakeOnChecksPassed: true,
           wakeOnConflict: true,
           referenceChecks: null,
           listEtag: null,
@@ -324,7 +327,7 @@ export interface SignalState {
 }
 
 export type Signals = Readonly<
-  Partial<Record<'checks' | 'conflict', SignalState>>
+  Partial<Record<'checks' | 'conflict' | 'passed', SignalState>>
 >;
 
 export interface PullRequestRow {

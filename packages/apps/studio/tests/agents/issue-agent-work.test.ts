@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
-import type { ApprovalRequest } from '@nocobase/app-plugin-projects/shared/approvals';
 import { readIssueAgentWork } from '../../server/agents/issue-agent-work.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -23,52 +23,29 @@ const read = (ids: string[], user = 'alice') =>
     h.viewer(user),
     ids,
   );
-const approval = (
-  issueId: string,
-  agentId: string,
-  type = 'agent',
-): ApprovalRequest => ({
-  id: 'approval',
-  issueId,
-  issueIdentifier: null,
-  issueTitle: null,
-  fromStatus: 'in_progress',
-  toStatus: 'in_review',
-  requestedByType: type,
-  requestedById: agentId,
-  requestedByName: null,
-  approvers: [],
-  approverUserIds: [],
-  approverNames: [],
-  status: 'pending',
-  decidedById: null,
-  decidedByName: null,
-  decidedAt: null,
-  comment: null,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-});
+const PM = PROJECT_MANAGER_ID;
 
 describe('issue agent work summary', () => {
-  it('matches only the current executor and visible requested issues, with no run details', async () => {
-    const agentId = await h.createAgent();
-    const other = await h.createAgent();
+  it('matches only visible requested issues the project manager executes, with no run details', async () => {
+    await h.createAgent();
     const issue = await h.projects.issues.create(h.viewer('alice'), {
       title: 'Working',
-      executor: { type: 'agent', id: agentId },
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PM },
     });
     const unrelated = await h.projects.issues.create(h.viewer('alice'), {
       title: 'Other',
-      executor: { type: 'agent', id: agentId },
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PM },
       start: false,
     });
     await h.claimOne();
     expect(await read([issue.id, 'missing', issue.id])).toEqual([
-      { issueId: issue.id, agentId, working: true },
+      { issueId: issue.id, agentId: PM, working: true },
     ]);
     expect(await read([issue.id], 'bob')).toEqual([]);
     expect(await read([unrelated.id])).toEqual([
-      { issueId: unrelated.id, agentId, working: false },
+      { issueId: unrelated.id, agentId: PM, working: false },
     ]);
     const current = await h.projects.issueQueries.detail(
       h.viewer('alice'),
@@ -76,73 +53,48 @@ describe('issue agent work summary', () => {
     );
     await h.projects.issues.update(h.viewer('alice'), issue.id, {
       revision: current.revision,
-      executor: { type: 'agent', id: other },
-      start: false,
-    });
-    expect(await read([issue.id])).toEqual([
-      { issueId: issue.id, agentId: other, working: false },
-    ]);
-    const updated = await h.projects.issueQueries.detail(
-      h.viewer('alice'),
-      issue.id,
-    );
-    await h.projects.issues.update(h.viewer('alice'), issue.id, {
-      revision: updated.revision,
       executor: { type: 'user', id: 'alice' },
     });
     expect(await read([issue.id])).toEqual([]);
   });
 
-  it.each(['blocked', 'proposal_review', 'in_review'])(
-    'uses runs and matching approvals, independently of stage %s',
-    async (statusKey) => {
-      const agentId = await h.createAgent();
-      const issue = await h.projects.issues.create(h.viewer('alice'), {
-        title: 'Active',
-        executor: { type: 'agent', id: agentId },
-      });
-      const payload = await h.claimOne();
-      expect(
-        (
-          await h.runner(RUNNER_ROUTES.start, payload.run.id, {
-            workDir: '/tmp/w',
-            adapter: { kind: 'claude' },
-            acceptsInput: true,
-          })
-        ).status,
-      ).toBe(200);
-      const current = await h.projects.issueQueries.detail(
-        h.viewer('alice'),
-        issue.id,
-      );
-      await h.projects.issues.update(h.viewer('alice'), issue.id, {
-        revision: current.revision,
-        statusKey,
-      });
-      const pending = vi.spyOn(h.projects.approvals, 'pendingOn');
-      pending.mockResolvedValue([]);
-      expect((await read([issue.id]))[0]?.working).toBe(true);
-      pending.mockResolvedValue([approval(issue.id, agentId)]);
-      expect((await read([issue.id]))[0]?.working).toBe(false);
-      pending.mockResolvedValue([
-        approval(issue.id, 'another-agent'),
-        approval(issue.id, agentId, 'user'),
-        approval('other-issue', agentId),
-      ]);
-      expect((await read([issue.id]))[0]?.working).toBe(true);
-      pending.mockResolvedValue([]);
-      expect((await read([issue.id]))[0]?.working).toBe(true);
-      vi.spyOn(h.agents.runs, 'workingOn').mockResolvedValue([]);
-      expect((await read([issue.id]))[0]?.working).toBe(false);
-      pending.mockRejectedValue(new Error('Approvals unavailable'));
-      await expect(read([issue.id])).rejects.toThrow('Approvals unavailable');
-    },
-  );
+  it('counts a step an agent works on for the project manager as work on the issue', async () => {
+    await h.createAgent();
+    const worker = await h.createAgent({ name: 'Worker' });
+    const issue = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Active',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PM },
+      start: false,
+    });
+    expect((await read([issue.id]))[0]?.working).toBe(false);
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: `[@Worker](mention://agent/${worker}) take it`,
+    });
+    const payload = await h.claimOne();
+    expect((await h.agents.runs.get(payload.run.id)).agentId).toBe(worker);
+    expect(
+      (
+        await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+          workDir: '/tmp/w',
+          adapter: { kind: 'claude' },
+          acceptsInput: true,
+        })
+      ).status,
+    ).toBe(200);
+    expect(await read([issue.id])).toEqual([
+      { issueId: issue.id, agentId: PM, working: true },
+    ]);
+    vi.spyOn(h.agents.runs, 'workingOn').mockResolvedValue([]);
+    expect((await read([issue.id]))[0]?.working).toBe(false);
+  });
 
   it('enforces the HTTP authentication, visibility and batch boundary', async () => {
-    const agentId = await h.createAgent();
+    await h.createAgent();
+    const agentId = PM;
     const issue = await h.projects.issues.create(h.viewer('alice'), {
       title: 'Private',
+      statusKey: 'in_progress',
       executor: { type: 'agent', id: agentId },
     });
     await h.claimOne();

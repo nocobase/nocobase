@@ -1,7 +1,7 @@
 /**
- * The home page's composer: the agent it starts with, the one agent picker listing both types, what it says when online
- * agents have no model or runner agents have no eligible runtime,
- * sending (a new conversation, opened full screen at `/chat/:id`), and the recent conversations with their modes, which
+ * The home page's composer: the agent it starts with, the one agent picker listing the enabled agents (the team
+ * default first, each that cannot answer now with why), what it says when the chosen agent has no runner or cannot be
+ * used, sending (a new conversation, opened full screen at `/chat/:id`), and the recent conversations with their modes, which
  * open there too.
  */
 import type {
@@ -24,7 +24,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = {
   agents: [] as ChatAgent[],
-  services: 1,
   recent: [] as ConversationSummary[],
 };
 const start = vi.fn();
@@ -52,23 +51,14 @@ function attachmentOf(
   };
 }
 
-/** What `start` is called with for a message with no files on the agent's default model. */
-const plain = (content: string) => ({ content, attachments: [], model: null });
+/** What `start` is called with for a message with no files. */
+const plain = (content: string) => ({ content, attachments: [] });
 const minted = vi.fn();
 
 vi.mock('../../client/pages/home/api.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../client/pages/home/api.js')>()),
   useHomeApi: () => ({
     agents: () => Promise.resolve(state.agents),
-    models: () =>
-      Promise.resolve({
-        services: Array.from({ length: state.services }, (_, index) => ({
-          name: `s${index}`,
-          title: 'S',
-          provider: 'openai',
-          models: [{ value: 'm', label: 'm' }],
-        })),
-      }),
     recent: () => Promise.resolve({ items: state.recent, nextCursor: null }),
     downloadToken: () => {
       minted();
@@ -120,19 +110,15 @@ function ChatPageStub() {
 const { default: HomePage } = await import('../../client/pages/home/index');
 const { homeKeys } = await import('../../client/pages/home/api');
 
-function agent(
-  id: string,
-  type: 'online' | 'runner',
-  extra: Partial<ChatAgent> = {},
-): ChatAgent {
+function agent(id: string, extra: Partial<ChatAgent> = {}): ChatAgent {
   return {
     id,
     name: id,
     description: null,
+    nameText: null,
+    descriptionText: null,
     avatar: null,
-    type,
-    models: [],
-    personal: false,
+    personalOnly: false,
     isSystemDefault: false,
     isMyDefault: false,
     availability: { online: true, reason: null, onlineRunners: 1 },
@@ -159,11 +145,7 @@ function renderHome(): QueryClient {
 
 describe('the home page', () => {
   beforeEach(() => {
-    state.agents = [
-      agent('Project manager', 'online', { isSystemDefault: true }),
-      agent('Coder', 'runner'),
-    ];
-    state.services = 1;
+    state.agents = [agent('Opus', { isSystemDefault: true }), agent('Coder')];
     state.recent = [];
     start.mockReset();
     minted.mockReset();
@@ -209,28 +191,23 @@ describe('the home page', () => {
     // About three lines to start with, growing with the text.
     expect(input).toHaveClass('min-h-20');
     expect(input).not.toHaveClass('min-h-28');
-    // One agent picker in the composer's toolbar, fitted to its width; no Online / Runner switch.
+    // One agent picker in the composer's toolbar, fitted to its width; no model choice.
     const picker = within(screen.getByTestId('chat-composer')).getByTestId(
       'chat-agent-picker',
     );
-    expect(picker).toHaveTextContent('Project manager');
+    expect(picker).toHaveTextContent('Opus');
     expect(picker).toHaveClass('max-w-44', '@md:max-w-64');
-    expect(
-      screen.queryByRole('button', { name: 'home.modes.online' }),
-    ).toBeNull();
+    expect(screen.queryByTestId('chat-model')).toBeNull();
     await userEvent.type(input, 'What is blocked?{Enter}');
     await waitFor(() =>
-      expect(start).toHaveBeenCalledWith(
-        'Project manager',
-        plain('What is blocked?'),
-      ),
+      expect(start).toHaveBeenCalledWith('Opus', plain('What is blocked?')),
     );
     expect(await screen.findByText('conversation c-new')).toBeInTheDocument();
   });
 
   it("shows a built-in agent's name in the viewer's language", async () => {
     state.agents = [
-      agent('Project manager', 'online', {
+      agent('Opus', {
         isSystemDefault: true,
         nameText: { key: 'presets.lead.name', ns: 'studio' },
       }),
@@ -241,22 +218,29 @@ describe('the home page', () => {
     );
   });
 
-  it('lists every agent, grouped by type, and sends to the one picked', async () => {
+  it('lists the enabled agents, the team default first, with what each is good at and why one cannot be picked', async () => {
     state.agents = [
-      agent('Project manager', 'online', { isSystemDefault: true }),
-      agent('Writer', 'online'),
-      agent('Coder', 'runner'),
+      agent('Writer', { description: 'Docs and copy' }),
+      agent('Opus', { isSystemDefault: true }),
+      agent('Kimi', {
+        availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+      }),
+      agent('Mine', { personalOnly: true }),
     ];
     renderHome();
     await userEvent.click(await screen.findByTestId('chat-agent-picker'));
-    expect(
-      await screen.findByRole('menuitem', { name: /Coder/u }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('chat.agents.onlineGroup')).toBeInTheDocument();
-    expect(screen.getByText('chat.agents.runnerGroup')).toBeInTheDocument();
-    await userEvent.click(
-      await screen.findByRole('menuitem', { name: /Writer/u }),
-    );
+    const items = await screen.findAllByRole('menuitem');
+    expect(items.map((item) => item.getAttribute('data-agent'))).toEqual([
+      'Opus',
+      'Writer',
+      'Kimi',
+      'Mine',
+    ]);
+    expect(items[1]).toHaveTextContent('Docs and copy');
+    expect(items[2]).toHaveAttribute('aria-disabled', 'true');
+    expect(items[2]).toHaveTextContent('chat.availability.noRunner');
+    expect(items[3]).toHaveTextContent('chat.agents.personal');
+    await userEvent.click(items[1]!);
     await userEvent.type(
       screen.getByRole('textbox', { name: 'home.inputLabel' }),
       'Draft the notes{Enter}',
@@ -266,10 +250,10 @@ describe('the home page', () => {
     );
   });
 
-  it('starts with the person’s own default, a runner agent', async () => {
+  it('starts with the person’s own default', async () => {
     state.agents = [
-      agent('Project manager', 'online', { isSystemDefault: true }),
-      agent('Coder', 'runner', { isMyDefault: true }),
+      agent('Opus', { isSystemDefault: true }),
+      agent('Coder', { isMyDefault: true }),
     ];
     renderHome();
     expect(await screen.findByTestId('chat-agent-picker')).toHaveTextContent(
@@ -277,7 +261,7 @@ describe('the home page', () => {
     );
     expect(
       screen.getByRole('textbox', { name: 'home.inputLabel' }),
-    ).toHaveAttribute('placeholder', 'home.placeholders.runner');
+    ).toHaveAttribute('placeholder', 'home.placeholder');
     await userEvent.type(
       screen.getByRole('textbox', { name: 'home.inputLabel' }),
       'Fix the build{Enter}',
@@ -317,14 +301,13 @@ describe('the home page', () => {
     await waitFor(() => expect(uploads.upload).toHaveBeenCalledTimes(3));
     await userEvent.type(input, 'Why did it fail?{Enter}');
     await waitFor(() =>
-      expect(start).toHaveBeenCalledWith('Project manager', {
+      expect(start).toHaveBeenCalledWith('Opus', {
         content: 'Why did it fail?',
         attachments: [
           expect.objectContaining({ id: 'a-build.log' }),
           expect.objectContaining({ id: 'a-shot.png' }),
           expect.objectContaining({ id: 'a-notes.md' }),
         ],
-        model: null,
       }),
     );
     expect(await screen.findByText('conversation c-new')).toBeInTheDocument();
@@ -341,114 +324,55 @@ describe('the home page', () => {
     await waitFor(() => expect(uploads.upload).toHaveBeenCalledTimes(1));
     await userEvent.click(screen.getByRole('button', { name: 'home.send' }));
     await waitFor(() =>
-      expect(start).toHaveBeenCalledWith('Project manager', {
+      expect(start).toHaveBeenCalledWith('Opus', {
         content: '',
         attachments: [expect.objectContaining({ id: 'a-build.log' })],
-        model: null,
       }),
     );
   });
 
-  it('offers an online agent’s models before the first message and starts on the chosen one', async () => {
-    const models = [
-      {
-        modelService: 's0',
-        model: 'gpt-5-mini',
-        serviceTitle: 'S0',
-        modelLabel: 'gpt-5-mini',
-      },
-      {
-        modelService: 's0',
-        model: 'claude-sonnet',
-        serviceTitle: 'S0',
-        modelLabel: 'claude-sonnet',
-      },
-    ];
+  it('says when the chosen agent cannot be used, and sends nothing', async () => {
     state.agents = [
-      agent('Project manager', 'online', { isSystemDefault: true, models }),
-      agent('Coder', 'runner'),
-    ];
-    renderHome();
-    const picker = await screen.findByTestId('chat-model');
-    expect(picker).toHaveTextContent('gpt-5-mini');
-    fireEvent.click(picker);
-    const option = await screen.findByRole('option', {
-      name: /claude-sonnet/u,
-    });
-    fireEvent.pointerDown(option, { pointerType: 'mouse' });
-    fireEvent.pointerUp(option, { pointerType: 'mouse' });
-    fireEvent.mouseUp(option);
-    fireEvent.click(option);
-    await waitFor(() =>
-      expect(screen.getByTestId('chat-model')).toHaveTextContent(
-        'claude-sonnet',
-      ),
-    );
-    await userEvent.type(
-      screen.getByRole('textbox', { name: 'home.inputLabel' }),
-      'Which model?{Enter}',
-    );
-    await waitFor(() =>
-      expect(start).toHaveBeenCalledWith('Project manager', {
-        content: 'Which model?',
-        attachments: [],
-        model: models[1],
+      agent('Opus', {
+        isMyDefault: true,
+        availability: {
+          online: false,
+          reason: 'agentArchived',
+          onlineRunners: 0,
+        },
       }),
-    );
-  });
-
-  it('offers no model choice for an agent with one model or a runner', async () => {
-    renderHome();
-    await screen.findByRole('textbox', { name: 'home.inputLabel' });
-    expect(screen.queryByTestId('chat-model')).toBeNull();
-    await userEvent.click(screen.getByTestId('chat-agent-picker'));
-    await userEvent.click(
-      await screen.findByRole('menuitem', { name: /Coder/u }),
-    );
-    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent('Coder');
-    expect(screen.queryByTestId('chat-model')).toBeNull();
-  });
-
-  it('says online agents need a model service when none offers a model, and sends nothing', async () => {
-    state.services = 0;
+    ];
     renderHome();
     expect(
-      await screen.findByText('home.blockers.noModel'),
+      await screen.findByText('home.blockers.unavailable'),
     ).toBeInTheDocument();
     await userEvent.type(
       screen.getByRole('textbox', { name: 'home.inputLabel' }),
       'Hello{Enter}',
     );
     expect(start).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'home.send' })).toBeDisabled();
   });
 
-  it('links to where models are set up when online agents have none', async () => {
-    state.services = 0;
+  it('says there is no agent to talk to when none is listed', async () => {
+    state.agents = [];
     renderHome();
     expect(
-      await screen.findByRole('link', { name: 'home.setUpModels' }),
-    ).toHaveAttribute('href', '/models');
+      await screen.findByText('home.blockers.noAgent'),
+    ).toBeInTheDocument();
   });
 
-  it('warns when the selected runner agent has no eligible runtime, but still queues messages', async () => {
-    state.services = 0;
-    state.agents[1] = agent('Coder', 'runner', {
+  it('warns when the chosen agent has no runner online, but still queues messages', async () => {
+    state.agents[1] = agent('Coder', {
+      isMyDefault: true,
       availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     });
     renderHome();
-    expect(screen.queryByText('home.runnerUnavailable')).toBeNull();
-    await userEvent.click(await screen.findByTestId('chat-agent-picker'));
-    await userEvent.click(
-      await screen.findByRole('menuitem', { name: /Coder/u }),
-    );
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'home.runnerUnavailable',
     );
     expect(
       screen.getByRole('link', { name: 'home.setUpRunners' }),
     ).toHaveAttribute('href', '/runtimes');
-    expect(screen.queryByRole('link', { name: 'home.setUpModels' })).toBeNull();
     await userEvent.type(
       screen.getByRole('textbox', { name: 'home.inputLabel' }),
       'Fix the build',
@@ -461,7 +385,7 @@ describe('the home page', () => {
   });
 
   it('refreshes runner availability without losing the selected agent or message draft', async () => {
-    state.agents[1] = agent('Coder', 'runner', {
+    state.agents[1] = agent('Coder', {
       isMyDefault: true,
       availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     });
@@ -471,10 +395,7 @@ describe('the home page', () => {
     );
     const input = screen.getByRole('textbox', { name: 'home.inputLabel' });
     await userEvent.type(input, 'Keep this draft');
-    state.agents = [
-      state.agents[0]!,
-      agent('Coder', 'runner', { isMyDefault: true }),
-    ];
+    state.agents = [state.agents[0]!, agent('Coder', { isMyDefault: true })];
     await act(async () => {
       await queryClient.invalidateQueries({ queryKey: homeKeys.agents });
     });
@@ -483,7 +404,7 @@ describe('the home page', () => {
     );
     expect(input).toHaveValue('Keep this draft');
     expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent('Coder');
-    state.agents[1] = agent('Coder', 'runner', {
+    state.agents[1] = agent('Coder', {
       isMyDefault: true,
       availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
     });
@@ -495,7 +416,7 @@ describe('the home page', () => {
     );
     await userEvent.click(screen.getByTestId('chat-agent-picker'));
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: /Project manager/u }),
+      await screen.findByRole('menuitem', { name: /Opus/u }),
     );
     expect(screen.queryByText('home.runnerUnavailable')).toBeNull();
   });

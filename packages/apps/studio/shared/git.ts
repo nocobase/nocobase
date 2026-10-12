@@ -51,7 +51,11 @@ export const PR_EDIT_FIELDS = [
 export type PullRequestEditField = (typeof PR_EDIT_FIELDS)[number];
 
 /** The issue triggers a pull request starts runs for. */
-export const PR_TRIGGERS = ['prChecksFailed', 'prConflict'] as const;
+export const PR_TRIGGERS = [
+  'prChecksFailed',
+  'prChecksPassed',
+  'prConflict',
+] as const;
 export type PullRequestTrigger = (typeof PR_TRIGGERS)[number];
 
 /** How many times in a row the same signal wakes the agent before the owner is told instead. */
@@ -168,7 +172,7 @@ export interface CheckRef {
  * is only for information, so it neither wakes the agent nor blocks merging; every other check is required.
  */
 export interface CheckSummary {
-  /** The required checks folded: `failure` when one failed, else `pending` while one runs, else `success`. */
+  /** The required checks folded: `pending` while one runs, else `failure` when one failed, else `success`. */
   readonly ciState: PullRequestCiState | null;
   /** No required check is still queued or running: a failure is final for this head. */
   readonly settled: boolean;
@@ -216,7 +220,7 @@ export function checkSummaryOf(
   const failed = required.filter(failedCheck).map(ref);
   const running = required.some((check) => check.status !== 'completed');
   return {
-    ciState: failed.length > 0 ? 'failure' : running ? 'pending' : 'success',
+    ciState: running ? 'pending' : failed.length > 0 ? 'failure' : 'success',
     settled: !running,
     failed,
     referenceFailed: pr.checks
@@ -444,6 +448,8 @@ export interface GitRepoSettings {
   /** The branch rules, in order: the first names the branches agents work on (`branchOf`). */
   readonly branchRules: readonly string[];
   readonly wakeOnChecks: boolean;
+  /** Wake the project manager once per head commit when all its checks passed. */
+  readonly wakeOnChecksPassed: boolean;
   readonly wakeOnConflict: boolean;
   /** Check names that are only for information: their failures neither wake the agent nor block merging. */
   readonly referenceChecks: readonly string[];
@@ -465,6 +471,7 @@ export interface UpdateGitRepoRequest {
   /** A new webhook secret; null removes it; left out keeps it. */
   readonly webhookSecret?: string | null;
   readonly wakeOnChecks?: boolean;
+  readonly wakeOnChecksPassed?: boolean;
   readonly wakeOnConflict?: boolean;
   /** The reference checks, by name; at most `REFERENCE_CHECKS_MAX`. */
   readonly referenceChecks?: readonly string[];

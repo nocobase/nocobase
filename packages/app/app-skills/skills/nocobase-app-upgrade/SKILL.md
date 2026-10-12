@@ -2,10 +2,17 @@
 name: nocobase-app-upgrade
 description: >-
   Upgrade this application to a newer release of the template it was generated
-  from. Use when the user asks to upgrade the template, pull in template
-  changes, move to a newer template version, or reconcile the application with
-  upstream. Do not use for ordinary feature development or for upgrading a
-  single dependency.
+  from, which is how this application moves to a newer NocoBase version. Users
+  rarely think in terms of templates, so use it whenever the user asks to
+  upgrade or update NocoBase, the NocoBase core, kernel or framework version,
+  or the @nocobase packages as a whole — for example "upgrade NocoBase",
+  "update the NocoBase core version", "move to the latest NocoBase release",
+  "升级 NocoBase", "升级 NocoBase 内核版本", "更新 NocoBase 到最新版" — as well as
+  when they ask to upgrade the template, pull in template changes, move to a
+  newer template version, or reconcile the application with upstream. Do not
+  use for ordinary feature development, for upgrading a single dependency, or
+  for upgrading an already deployed build on a server, which the app installer
+  handles.
 metadata:
   short-description: Merge a newer template release into this application
 ---

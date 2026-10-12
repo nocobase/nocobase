@@ -457,12 +457,16 @@ describe('[UI][SEC] mail client components and capability states', () => {
     });
     const connect = screen.getByRole('button', { name: 'Connect account' });
     expect(connect).toBeDisabled();
+    // A helper under the optional username must not stretch the adjacent email label's grid tracks.
+    expect(
+      screen.getByLabelText('Email address').closest('label')?.parentElement,
+    ).toHaveClass('items-start');
     fireEvent.change(screen.getByLabelText('Email address'), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByLabelText('Username'), {
-      target: { value: 'user@example.com' },
-    });
+    expect(screen.getByLabelText('Username')).toHaveAccessibleDescription(
+      'Usually your email address. Leave blank to use the email address you entered.',
+    );
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'secret' },
     });
@@ -474,10 +478,32 @@ describe('[UI][SEC] mail client components and capability states', () => {
 
     expect(onConnectCredentials).toHaveBeenCalledWith(provider, {
       address: 'user@example.com',
-      username: 'user@example.com',
+      username: '',
       password: 'secret',
       displayName: 'Mailbox user',
     });
+
+    fireEvent.change(screen.getByLabelText('Username'), {
+      target: { value: '  CorporateLogin  ' },
+    });
+    fireEvent.click(connect);
+    expect(onConnectCredentials).toHaveBeenLastCalledWith(provider, {
+      address: 'user@example.com',
+      username: 'CorporateLogin',
+      password: 'secret',
+      displayName: 'Mailbox user',
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: '' },
+    });
+    expect(connect).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.change(screen.getByLabelText('Email address'), {
+      target: { value: '' },
+    });
+    expect(connect).toBeDisabled();
   });
 
   it('shows an unconfigured IMAP and SMTP Provider in the account type list', () => {

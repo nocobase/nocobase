@@ -10,10 +10,13 @@ import {
 import { studioError } from '../http/errors.js';
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
 
-/** Only the requested, visible issues. Approvals override runs, while workflow stages do not. */
+/**
+ * Only the requested, visible issues an agent executes (their project manager): whether any agent works on each now,
+ * the project manager or an agent it handed a step to.
+ */
 export async function readIssueAgentWork(
   deps: {
-    readonly projects: Pick<Projects, 'issueQueries' | 'approvals'>;
+    readonly projects: Pick<Projects, 'issueQueries'>;
     readonly runs: Pick<Agents['runs'], 'workingOn'>;
   },
   viewer: Viewer,
@@ -39,30 +42,14 @@ export async function readIssueAgentWork(
   const executors = issues.filter((issue) => issue.executor?.type === 'agent');
   const visibleIds = executors.map((issue) => issue.id);
   if (visibleIds.length === 0) return [];
-  // Fail the entire summary if approvals cannot be read, so an old animation is not retained.
-  const [work, approvals] = await Promise.all([
-    deps.runs.workingOn(ISSUE_SUBJECT, visibleIds),
-    deps.projects.approvals.pendingOn(visibleIds),
-  ]);
-  const key = (issueId: string, agentId: string) =>
-    JSON.stringify([issueId, agentId]);
-  const active = new Set(
-    work
+  const working = new Set(
+    (await deps.runs.workingOn(ISSUE_SUBJECT, visibleIds))
       .filter((pair) => pair.working)
-      .map((pair) => key(pair.subjectId, pair.agentId)),
+      .map((pair) => pair.subjectId),
   );
-  const waiting = new Set(
-    approvals
-      .filter((approval) => approval.requestedByType === 'agent')
-      .map((approval) => key(approval.issueId, approval.requestedById)),
-  );
-  return executors.map((issue) => {
-    const agentId = issue.executor!.id;
-    const pair = key(issue.id, agentId);
-    return {
-      issueId: issue.id,
-      agentId,
-      working: active.has(pair) && !waiting.has(pair),
-    };
-  });
+  return executors.map((issue) => ({
+    issueId: issue.id,
+    agentId: issue.executor!.id,
+    working: working.has(issue.id),
+  }));
 }

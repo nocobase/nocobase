@@ -16,6 +16,7 @@ import {
   type MailMessageSummary,
   type MailPage,
 } from '../../shared/mail.js';
+import { parseMailParticipant } from '../../shared/participant.js';
 import { type MailStore } from '../contracts/persistence.js';
 import { type NormalizedMailMessage } from '../contracts/provider.js';
 import { mailInvalidArgument } from '../services/errors.js';
@@ -27,6 +28,7 @@ import {
   loadMailMessageSummaries,
 } from './message-queries.js';
 import { upsertMessages } from './message-writes.js';
+import { deleteMessageParticipants } from './message-participants.js';
 import {
   type MessageFolderRow,
   type MessageLabelRow,
@@ -205,6 +207,15 @@ export class MailMessagesStore {
     if (input.offset !== undefined && input.cursor !== undefined)
       throw mailInvalidArgument(
         'Mail message offset and cursor cannot be combined.',
+      );
+    const participant =
+      input.participant === undefined
+        ? undefined
+        : parseMailParticipant(input.participant);
+    if (input.participant !== undefined && participant === undefined)
+      throw mailInvalidArgument(
+        'Mail participant must be a full email address or @domain.',
+        'participant',
       );
     if (requested.length === 0)
       return { items: [], ...(input.withTotal ? { total: 0 } : {}) };
@@ -461,6 +472,29 @@ export class MailMessagesStore {
             `%${input.query}%`,
           ),
         ]),
+      );
+    if (participant)
+      query = query.where((builder) =>
+        builder.exists(
+          builder
+            .selectFrom('mailMessageParticipants')
+            .select('messageId')
+            .whereRef(
+              'mailMessageParticipants.messageId',
+              '=',
+              'mailMessages.id',
+            )
+            .whereRef(
+              'mailMessageParticipants.accountId',
+              '=',
+              'mailMessages.accountId',
+            )
+            .where(
+              `mailMessageParticipants.${participant.field}`,
+              '=',
+              participant.value,
+            ),
+        ),
       );
     const count = input.withTotal
       ? await query
@@ -804,6 +838,7 @@ export class MailMessagesStore {
         .deleteFrom<MessageLabelRow>('mailMessageLabels')
         .where('messageId', '=', messageId)
         .execute();
+      await deleteMessageParticipants(connection.query, [messageId], accountId);
       const deleted = await connection.query
         .deleteFrom<MessageRow>('mailMessages')
         .where('accountId', '=', accountId)

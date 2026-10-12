@@ -1,5 +1,16 @@
 # @nocobase/studio
 
+## 1.0.0-beta.56
+
+### Patch Changes
+
+- 65ec64a: Preserve failures after issue status transitions, isolate background card reconciliation failures, and return a specific failed precondition for repeated retries.
+- 65ec64a: Prevent concurrent and repeated retries of the same run, retain retry attribution, and link retried runs to their replacements. Automatically settle obsolete failed-run decisions after retries, new work, reassignment, or issue completion, including outstanding cards from earlier releases.
+- Updated dependencies [65ec64a]
+- Updated dependencies [65ec64a]
+  - @nocobase/agent-protocol@0.1.0-beta.6
+  - @nocobase/app-plugin-agents@0.1.0-beta.9
+
 ## 1.0.0-beta.55
 
 ### Minor Changes

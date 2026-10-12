@@ -19,6 +19,7 @@ import type {
   PullRequestMergePreflight,
 } from '../../shared/git';
 import { MergeButtons } from '../../client/git/pull-requests';
+import { GitRepoSection } from '../../client/git/repo-section';
 import { WebhookSection } from '../../client/git/webhook-section';
 
 const api = {
@@ -34,6 +35,7 @@ vi.mock('../../client/git/api', async (importOriginal) => {
   return {
     ...(await importOriginal<typeof import('../../client/git/api')>()),
     useGitApi: () => api,
+    useGitStatus: () => ({ data: { enabled: true } }),
     useRepoSettings: (resourceId: string) =>
       useQuery({
         queryKey: ['repo', resourceId],
@@ -179,6 +181,32 @@ describe('the merge action', () => {
     ).toBeEnabled();
   });
 
+  it.each(['ciPending', 'ciMissing'] as const)(
+    'does not offer force for %s even with failed checks',
+    async (blocker) => {
+      api.preflight.mockResolvedValue(
+        preflight({
+          blocker,
+          failedChecks: [{ name: 'test', url: null }],
+          canForce: true,
+        }),
+      );
+      render(wrap(<MergeButtons issue={issue} pullRequest={pull(null)} />));
+      fireEvent.click(
+        screen.getByRole('button', { name: /studioGit.section.merge$/u }),
+      );
+      const dialog = await screen.findByRole('dialog');
+      await within(dialog).findByText(`studioGit.merge.blocker.${blocker}`);
+      expect(
+        within(dialog).queryByRole('button', { name: 'studioGit.merge.force' }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(dialog).getByRole('button', { name: 'studioGit.merge.confirm' }),
+      ).toBeDisabled();
+      expect(api.merge).not.toHaveBeenCalled();
+    },
+  );
+
   it('merges past failed required checks only with a reason, for whoever may force it', async () => {
     api.preflight.mockResolvedValue(
       preflight({
@@ -245,6 +273,7 @@ const settings = (
   webUrl: 'https://github.com/acme/studio',
   hasToken: true,
   wakeOnChecks: true,
+  wakeOnChecksPassed: false,
   wakeOnConflict: true,
   referenceChecks: [],
   polledAt: null,
@@ -336,5 +365,41 @@ describe('the webhook settings', () => {
     expect(
       document.querySelector('[data-last-delivery="invalidSignature"]'),
     ).not.toBeNull();
+  });
+});
+
+describe('a repository’s settings', () => {
+  it('switches what wakes the project manager: failing checks, passing checks and conflicts', async () => {
+    const stored = {
+      ...settings(),
+      branchRules: ['agent/{key}'],
+      connection: { id: 'c1', name: 'GitHub' },
+    } as unknown as GitRepoSettings;
+    api.repo.mockResolvedValue(stored);
+    api.updateRepo.mockResolvedValue({
+      ...stored,
+      wakeOnChecksPassed: true,
+    });
+    render(
+      wrap(
+        <GitRepoSection resource={{ id: 'r1', type: 'gitRepo' } as never} />,
+      ),
+    );
+    const passed = await screen.findByRole('switch', {
+      name: 'studioGit.repo.wakeOnChecksPassed',
+    });
+    expect(
+      screen.getByRole('switch', { name: 'studioGit.repo.wakeOnChecks' }),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('switch', { name: 'studioGit.repo.wakeOnConflict' }),
+    ).toBeInTheDocument();
+    expect(passed).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(passed);
+    await waitFor(() =>
+      expect(api.updateRepo).toHaveBeenCalledWith('r1', {
+        wakeOnChecksPassed: true,
+      }),
+    );
   });
 });

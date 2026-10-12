@@ -15,7 +15,7 @@ import {
   type InputRecord,
   type RunRecord,
 } from './run.store.js';
-import { dialectOf, type SubjectRegistry } from './ports.js';
+import type { SubjectRegistry } from './ports.js';
 
 export interface InputGateDeps {
   readonly subjects: SubjectRegistry;
@@ -43,7 +43,6 @@ export async function gateInputs(
     inputs,
     cli: deps.cliName,
     appName: deps.appName,
-    dialect: dialectOf(agent),
   };
   if (await context.admit?.(conn, claim)) return [];
   return context.selectInputs

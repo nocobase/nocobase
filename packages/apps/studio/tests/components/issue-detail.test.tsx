@@ -7,9 +7,7 @@ import { RunHeader } from '../../client/components/agent-run-history';
 import {
   IssueAddBar,
   IssueAddButton,
-  IssueApprovalCard,
   IssueAttachments,
-  IssueChecklist,
   IssueDependencies,
   IssueFileDrop,
   IssueSection,
@@ -19,7 +17,6 @@ import { PropertyColorPicker } from '../../client/extensions/nocobase-issue-deta
 import { MentionMembersLoadError } from '../../client/issues/detail/mention-members-load-error';
 
 const TODO = { name: 'Todo', color: 'gray' } as const;
-const DONE = { name: 'Done', color: 'green' } as const;
 
 /** The page's way of opening the first dependency's search: a button in the add bar sets `adding`. */
 function DependenciesWithAddBar() {
@@ -233,61 +230,6 @@ describe('IssueFileDrop', () => {
     expect(onFiles).toHaveBeenLastCalledWith([file]);
     fireEvent.paste(body, { clipboardData: { files: [file] } });
     expect(onFiles).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('IssueChecklist', () => {
-  it('checks an item, and cannot be changed without onToggle', async () => {
-    const onToggle = vi.fn(() => Promise.resolve());
-    const items = [
-      { key: 'tests', label: 'Tests pass', required: true, checked: false },
-    ];
-    const { rerender } = render(
-      <IssueChecklist
-        status={TODO}
-        items={items}
-        complete={false}
-        onToggle={onToggle}
-      />,
-    );
-    fireEvent.click(screen.getByRole('checkbox', { name: /Tests pass/u }));
-    await waitFor(() => expect(onToggle).toHaveBeenCalledWith('tests', true));
-    rerender(<IssueChecklist status={TODO} items={items} complete={false} />);
-    expect(
-      screen.getByRole('checkbox', { name: /Tests pass/u }),
-    ).toHaveAttribute('aria-disabled', 'true');
-  });
-});
-
-describe('IssueApprovalCard', () => {
-  it('lets an approver approve with a comment, and whoever asked withdraw', async () => {
-    const onDecide = vi.fn(() => Promise.resolve());
-    const card = (canDecide: boolean, canWithdraw: boolean) => (
-      <IssueApprovalCard
-        from={TODO}
-        to={DONE}
-        requester='Ada'
-        requestedAt='2026-10-01T10:00:00.000Z'
-        approvers={['Grace']}
-        canDecide={canDecide}
-        canWithdraw={canWithdraw}
-        onDecide={onDecide}
-      />
-    );
-    const { rerender } = render(card(true, false));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Comment' }), {
-      target: { value: 'Looks right' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
-    await waitFor(() =>
-      expect(onDecide).toHaveBeenCalledWith('approve', 'Looks right'),
-    );
-    rerender(card(false, true));
-    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Withdraw' }));
-    await waitFor(() =>
-      expect(onDecide).toHaveBeenCalledWith('withdraw', undefined),
-    );
   });
 });
 

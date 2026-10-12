@@ -36,11 +36,10 @@ import {
   DateField,
   PropertySelect,
 } from '../../components/pm-property-fields.js';
-import { WorkflowSelect } from './workflow-select.js';
 
 const FORM_ID = 'pm-project-new-form';
 
-/** Route `/projects/new`: name, description, visibility, lead, priority, workflow and dates; opens the project after. */
+/** Route `/projects/new`: name, description, visibility, lead, priority and dates; opens the project after. */
 export default function NewProjectPage(): ReactElement {
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +90,6 @@ function Body({
   const [priority, setPriority] = useState<Priority>('none');
   const [startDate, setStartDate] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string>();
   const [formError, setFormError] = useState<string>();
   const lead = leadUserId === undefined ? (viewer?.userId ?? null) : leadUserId;
@@ -101,8 +99,7 @@ function Body({
       leadUserId !== undefined ||
       priority !== 'none' ||
       startDate !== null ||
-      dueDate !== null ||
-      workflowId !== null,
+      dueDate !== null,
   );
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -124,7 +121,6 @@ function Body({
         priority,
         startDate,
         dueDate,
-        workflowId,
       });
       onSubmittingChange(false);
       markSaved();
@@ -227,17 +223,6 @@ function Body({
                 const next = PRIORITIES.find((item) => item === value);
                 if (next) setPriority(next);
               }}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor='pm-project-workflow'>
-              {t('projects.workflow')}
-            </FieldLabel>
-            <WorkflowSelect
-              size='default'
-              id='pm-project-workflow'
-              value={workflowId}
-              onChange={setWorkflowId}
             />
           </Field>
           <Field>

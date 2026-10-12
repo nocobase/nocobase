@@ -22,7 +22,7 @@ import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import { useAgentPickerLabels, useChatTranslation } from './chat-i18n.js';
-import { ChatTag, ModeTag } from './chat-ui.js';
+import { ChatTag } from './chat-ui.js';
 
 /** A green or grey dot with its meaning for screen readers (`agent-picker`'s, in the chat's wording). */
 export function AvailabilityDot({
@@ -70,7 +70,6 @@ export function AgentLine({
       <AgentAvatar name={own} size='xs' />
       <span className='truncate font-medium text-foreground'>{name}</span>
       <AvailabilityDot availability={conversation.availability} />
-      <ModeTag mode={conversation.mode} />
       {conversation.fallbackFrom ? (
         <ChatTag tone='amber'>{t('chat.agents.temporary')}</ChatTag>
       ) : null}

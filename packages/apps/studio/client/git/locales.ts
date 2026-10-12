@@ -25,9 +25,12 @@ export const gitEnUS = {
     refreshed: 'Refreshed from GitHub.',
     merged: 'Merged.',
     marked: 'Marked as merged.',
-    countsTitle: 'Counts toward Done',
-    countsHint:
-      'When every counted pull request is merged, the issue moves on by its workflow.',
+    completeOnMerge: 'Complete the issue when merged',
+    completeOnMergeHint:
+      'Once every pull request linked to this issue is merged, the issue moves to Done.',
+    mergeKeeps: 'Merging does not change the issue',
+    mergeKeepsHint:
+      'For a pull request that does only part of the work, or that still needs checking after the merge.',
     linkedBy: 'Linked by {{name}}',
     linkedByBranch: 'Linked by its branch',
     mergedBy: 'Merged by {{name}}',
@@ -93,8 +96,9 @@ export const gitEnUS = {
       'One per line, each with {key} once. Agents work on the branch the first rule names; a pull request on a branch any rule names is linked to that issue.',
     saveRules: 'Save',
     saved: 'Saved.',
-    wakeOnChecks: 'Wake the agent when checks fail',
-    wakeOnConflict: 'Wake the agent when a pull request conflicts',
+    wakeOnChecks: 'Wake the project manager when checks fail',
+    wakeOnChecksPassed: 'Wake the project manager when all checks pass',
+    wakeOnConflict: 'Wake the project manager when a pull request conflicts',
     referenceChecks: 'Reference checks',
     referenceChecksHint:
       'One check name per line. Their failures are only shown: they do not wake the agent or block merging from Studio. Every other check is required. A check that GitHub’s branch protection requires still blocks the merge on GitHub.',
@@ -370,7 +374,7 @@ export const gitEnUS = {
       otherPrs:
         'The issue stays where it is: other counted pull requests are not merged yet.',
       noTransition:
-        'The issue stays where it is: its workflow does not move it on a merge from its status.',
+        'The issue stays where it is: a merge does not move it on from its status.',
     },
     confirm: 'Squash and merge',
     failedChecks: 'Failed required checks',
@@ -472,15 +476,8 @@ export const gitEnUS = {
     copied: 'Copied',
     copyFailed: 'Could not copy. Select the text and copy it by hand.',
   },
-  rule: {
-    title: 'Pull requests merged',
-    hint: 'An issue enters this status only with merged pull requests.',
-    min: 'At least',
-    summary: 'Needs {{count}} merged pull request(s)',
-  },
   event: {
     title: 'Pull requests merged',
-    hint: 'Every counted pull request of the issue is merged.',
   },
   inbox: {
     type: 'Pull request',
@@ -539,8 +536,10 @@ export const gitZhCN: typeof gitEnUS = {
     refreshed: '已从 GitHub 刷新。',
     merged: '已合并。',
     marked: '已标记为已合并。',
-    countsTitle: '计入完成条件',
-    countsHint: '计入的 Pull request 全部合并后，任务按流程自动流转。',
+    completeOnMerge: '合并后完成任务',
+    completeOnMergeHint: '这个任务关联的 PR 都合并后，任务自动移到已完成。',
+    mergeKeeps: '合并不影响任务状态',
+    mergeKeepsHint: 'PR 只做了一部分，或合并后还要验证。',
     linkedBy: '由 {{name}} 关联',
     linkedByBranch: '按分支自动关联',
     mergedBy: '由 {{name}} 合并',
@@ -606,8 +605,9 @@ export const gitZhCN: typeof gitEnUS = {
       '每行一条，每条包含一次 {key}。Agent 在第一条规则命名的分支上工作；任何规则命名的分支上的 Pull request 都会关联到对应任务。',
     saveRules: '保存',
     saved: '已保存。',
-    wakeOnChecks: '检查失败时唤醒 Agent',
-    wakeOnConflict: 'Pull request 有冲突时唤醒 Agent',
+    wakeOnChecks: '检查失败时唤醒项目经理',
+    wakeOnChecksPassed: '检查全部通过时唤醒项目经理',
+    wakeOnConflict: 'Pull request 有冲突时唤醒项目经理',
     referenceChecks: '参考检查',
     referenceChecksHint:
       '每行一个检查名称。参考检查失败只做提示，不唤醒 Agent，也不阻塞 Studio 的合并。其余检查都是必需检查。GitHub 分支保护要求的检查仍会阻止在 GitHub 上合并。',
@@ -868,7 +868,7 @@ export const gitZhCN: typeof gitEnUS = {
       terminal: '任务已结束，状态不变。',
       optedOut: '任务状态不变：这个 Pull request 不计入完成条件。',
       otherPrs: '任务状态不变：其他计入的 Pull request 还没有合并。',
-      noTransition: '任务状态不变：它的流程在当前状态下不会因合并而流转。',
+      noTransition: '任务状态不变：合并不会让它从当前状态流转。',
     },
     confirm: '压缩合并',
     failedChecks: '失败的必需检查',
@@ -964,15 +964,8 @@ export const gitZhCN: typeof gitEnUS = {
     copied: '已复制',
     copyFailed: '无法复制，请手动选中文本复制。',
   },
-  rule: {
-    title: 'Pull request 已合并',
-    hint: '只有 Pull request 已合并的任务才能进入这个状态。',
-    min: '至少',
-    summary: '需要 {{count}} 个已合并的 Pull request',
-  },
   event: {
     title: 'Pull request 已合并',
-    hint: '任务计入的 Pull request 全部合并。',
   },
   inbox: {
     type: 'Pull request',

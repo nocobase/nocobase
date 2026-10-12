@@ -53,6 +53,12 @@ packages/app/app-skills/skills/nocobase-app-development/references/frontend/shad
 # anchored to the directory of the file it is written in, so reaching them from here needs the `**/`.
 **/database/*/collections/
 
+# An application's migrations and seeds under `database/<connection>/`, which each template names in its own
+# `.prettierignore` as well: a run records the checksum of their source and never runs one twice, so reformatting a
+# merged one changes no schema but warns every installation that already ran it on its next `nocobase db apply`.
+**/database/*/migrations/
+**/database/*/seeds/
+
 # Changeset files are written by `changeset add` or by hand and consumed by the changesets tool, which owns their
 # format: the repository's `singleQuote` would rewrite `"@nocobase/core": minor` into a form changesets never writes.
 # While the branch is in prerelease mode, `changeset version` moves each consumed changeset into `.changeset/pre/`

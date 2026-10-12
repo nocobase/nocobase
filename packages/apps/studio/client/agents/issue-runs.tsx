@@ -29,7 +29,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import {
   RunActions,
@@ -574,27 +574,37 @@ export function IssueRunTranscript({
       actions={
         <>
           {detail?.dispatchedAt ? <BriefButton runId={runId} /> : null}
-          <RunActions
-            run={shown}
-            labels={wording.history}
-            busy={retry.isPending}
-            onStop={(target) => {
-              stopTargetRef.current = target ?? null;
-              setStopping(shown);
-            }}
-            onRetry={() =>
-              retry.mutate(runId, {
-                onSuccess: (next) => {
-                  void refresh();
-                  notify.success(t('runs.retried'));
-                  void navigate(`../${encodeURIComponent(next.id)}`, {
-                    relative: 'path',
-                  });
-                },
-                onError: (error) => notify.error(error),
-              })
-            }
-          />
+          {detail?.retriedRunId ? (
+            <Link
+              className='text-sm text-primary hover:underline'
+              to={`../${encodeURIComponent(detail.retriedRunId)}`}
+              relative='path'
+            >
+              {appT('issueRuns.alreadyRetried')}
+            </Link>
+          ) : (
+            <RunActions
+              run={shown}
+              labels={wording.history}
+              busy={retry.isPending}
+              onStop={(target) => {
+                stopTargetRef.current = target ?? null;
+                setStopping(shown);
+              }}
+              onRetry={() =>
+                retry.mutate(runId, {
+                  onSuccess: (next) => {
+                    void refresh();
+                    notify.success(t('runs.retried'));
+                    void navigate(`../${encodeURIComponent(next.id)}`, {
+                      relative: 'path',
+                    });
+                  },
+                  onError: (error) => notify.error(error),
+                })
+              }
+            />
+          )}
         </>
       }
     />

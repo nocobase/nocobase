@@ -3,7 +3,7 @@
  * shown only while the workspace has a Git connection: the connection Studio follows the repository through, its branch
  * rules (the first names the agents' branches) and its reference checks (failures only shown), saved with the card's
  * Save; its webhook (`webhook-section.tsx`); and
- * whether failing checks and conflicts wake the agent, which take effect as they are switched. Only the project's
+ * whether failing checks, passing checks and conflicts wake the project manager, which take effect as they are switched. Only the project's
  * managers open the page; the server checks it again.
  */
 import { useUnsavedChanges } from '@nocobase/app-client';
@@ -164,7 +164,9 @@ export function GitRepoSection({
       <Separator />
       <WebhookSection resourceId={resource.id} settings={settings} />
       <div className='flex flex-col gap-3'>
-        {(['wakeOnChecks', 'wakeOnConflict'] as const).map((key) => (
+        {(
+          ['wakeOnChecks', 'wakeOnChecksPassed', 'wakeOnConflict'] as const
+        ).map((key) => (
           <Field key={key} orientation='horizontal'>
             <Switch
               id={`git-${key}-${resource.id}`}

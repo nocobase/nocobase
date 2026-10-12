@@ -19,6 +19,20 @@ describe('ApiClient below a base path', () => {
   const server = 'https://acme.example.com/main';
   const schema = z.object({ ok: z.boolean() });
 
+  it('identifies business requests as CLI actions for audit attribution', async () => {
+    let headers: Headers | undefined;
+    const client = new ApiClient({
+      server,
+      headers: {},
+      fetch: (async (_input, init) => {
+        headers = new Headers(init?.headers);
+        return new Response(JSON.stringify({ data: { ok: true } }));
+      }) as typeof fetch,
+    });
+    await client.post('/api/agents/runs/failed/retry', {}, schema);
+    expect(headers?.get('x-nocobase-client')).toBe('cli');
+  });
+
   it('does not repeat the base path of a route that already names it', async () => {
     const { urls, fetch } = recorder();
     const client = new ApiClient({ server, headers: {}, fetch });

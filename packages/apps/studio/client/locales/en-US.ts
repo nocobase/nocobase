@@ -209,18 +209,13 @@ const enUS = {
     heading: 'What should we work on?',
     modes: { online: 'Online', runner: 'Runner' },
     inputLabel: 'Message',
-    placeholders: {
-      online: 'Ask about your projects and issues, or have them organized…',
-      runner: 'Describe the work for a coding agent…',
-    },
+    placeholder: 'Ask about your projects and issues, or describe the work…',
     blockers: {
-      noModel:
-        'Online agents need a model service: add one and turn on a chat model, and agents can answer.',
       noAgent:
-        'There is no agent you may talk to. Ask an administrator to create one.',
+        'There is no agent you may talk to. Ask an administrator to enable one, or connect a runner.',
+      unavailable: 'You cannot use this agent now. Choose another one.',
     },
     send: 'Send',
-    setUpModels: 'Add a model service',
     runnerUnavailable:
       'No runtime is available for this agent. Add or start a runtime with its coding tool installed and signed in. Messages will wait until a runner is ready.',
     setUpRunners: 'Set up a runtime',
@@ -514,12 +509,10 @@ const enUS = {
   'config.nav.labels': 'Labels',
   'config.nav.members': 'Members',
   'config.nav.roles': 'Roles',
-  'config.nav.workflows': 'Workflow templates',
   'config.nav.label': 'Settings navigation',
   'config.nav.back': 'Back',
   'config.nav.groups.workspace': 'Workspace',
   'config.nav.groups.access': 'Members & access',
-  'config.nav.groups.projects': 'Projects',
   'config.nav.groups.integrations': 'Integrations',
   'errors.API_KEY_SESSION_FORBIDDEN':
     'API keys are managed only from a signed-in session.',
@@ -891,6 +884,16 @@ const enUS = {
   'inbox.someone': 'Someone',
   'inbox.titles.approval_requested': 'Status change waiting for approval',
   'inbox.outcomes.retried': 'Retried',
+  'inbox.outcomes.newRun': 'A new run has started',
+  'inbox.outcomes.issueReassigned': 'Issue reassigned',
+  'issueRuns.alreadyRetried': 'Retried → New run',
+  'inbox.runFailed.retryRecord': 'Retried by {{name}} through {{source}}.',
+  'inbox.runFailed.alreadyRetried': 'This run has already been retried.',
+  'inbox.runFailed.sources.card': 'the decision card',
+  'inbox.runFailed.sources.cli': 'CLI',
+  'inbox.runFailed.sources.runRecord': 'the run record',
+  'inbox.runFailed.sources.api': 'the API',
+  'inbox.runFailed.sources.unknown': 'an unrecorded entry point',
   'inbox.outcomes.reassigned': 'Given to a person',
   'inbox.outcomes.cancelled': 'Not retried',
   'inbox.runFailed.retry': 'Retry',
@@ -915,45 +918,6 @@ const enUS = {
   'inbox.text.design_review':
     'The design proposal for {{identifier}} is waiting for your review',
   'design.tag': 'Proposal',
-  'design.title': 'Design proposal',
-  'design.cardTitle': 'The design proposal for {{identifier}}',
-  'design.waiting': 'Waiting for review',
-  'design.by': '{{name}}, {{time}}',
-  'design.expand': 'Show the whole proposal',
-  'design.collapse': 'Show less',
-  'design.executor.clear': 'Clear executor',
-  'design.executor.search': 'Search executors',
-  'design.executor.signIn': 'Sign in again',
-  'design.executor.notFound':
-    'This issue no longer exists. Close this dialog to return.',
-  'design.executor.clearSearch': 'Clear search',
-  'design.executor.sessionExpired':
-    'Your session ended. Sign in again to continue.',
-  'design.executor.forbidden':
-    'Approval access was revoked. Close this dialog and ask the owner to restore access.',
-  'design.executor.title': 'Approve proposal',
-  'design.executor.description': 'Choose the executor for development.',
-  'design.executor.label': 'Executor',
-  'design.executor.placeholder': 'Choose an executor',
-  'design.executor.noMatches': 'No matching executors',
-  'design.executor.agent': 'Developer agent',
-  'design.executor.user': 'Project member',
-  'design.executor.empty':
-    'No developer agents or project members are available. Ask the owner to adjust access.',
-  'design.executor.reload': 'Reload choices',
-  'design.executor.confirm': 'Approve and enter development',
-  'design.executor.invalid':
-    'The selected executor is no longer available. Choose again.',
-  'design.executor.unavailable':
-    'The stage or your approval permission changed. Approval is no longer available.',
-  'design.executor.changed':
-    'The executor changed. Choose an executor before approving.',
-  'design.executor.loadFailed': 'Could not load executor choices. Try again.',
-  'design.approve': 'Approve for development',
-  'design.requestChanges': 'Send back',
-  'design.done.approve': 'Approved. The issue moves to development.',
-  'design.done.requestChanges':
-    'Sent back. The agent revises the proposal from your comment.',
   'inbox.suggestion.accept': 'Accept',
   'inbox.suggestion.dismiss': 'Dismiss',
   'inbox.suggestion.done.accept': 'Accepted. The agent works on the issue now.',
@@ -964,20 +928,7 @@ const enUS = {
   'inbox.suggestion.forbidden': "Only the issue's owner decides here.",
   'inbox.openIssue': 'Open issue',
   'inbox.owner': 'Owner',
-  'inbox.request.move':
-    '{{actor}} asks to move the status from {{from}} to {{to}}.',
-  'inbox.request.done.approved': 'Approved.',
-  'inbox.request.done.rejected': 'Rejected.',
-  'inbox.request.done.stale':
-    'The request no longer applies: the issue changed meanwhile.',
-  'inbox.request.gone': 'This request has been handled.',
-  'inbox.request.forbidden':
-    'You are not an approver of this request, so you cannot decide it here.',
   'inbox.request.conflict': 'This decision was already made.',
-  'inbox.request.change': 'Change',
-  'inbox.request.requester': 'Requested by',
-  'inbox.request.approvers': 'Approvers',
-  'inbox.request.since': 'Requested',
   'inbox.recent': 'Latest activity',
   'inbox.body.status_changed':
     '{{actor}} changed the status from {{from}} to {{to}}.',
@@ -995,7 +946,6 @@ const enUS = {
   'inbox.body.approval_rejected': '{{actor}} rejected moving it to {{to}}.',
   'inbox.here.title': 'Waiting for you',
   'inbox.here.viewInInbox': 'View in inbox',
-  'inbox.here.design': 'Review the proposal below',
   'inbox.types.agent_blocked': 'Agent blocked',
   'inbox.titles.agent_blocked': 'Agent blocked: needs your input',
   'inbox.text.agent_blocked': '{{actor}} is blocked on {{identifier}}',
@@ -1097,31 +1047,11 @@ const enUS = {
   /** What Studio contributes to the agents plugin's pages and the projects plugin's workflow editor. */
   studioAgents: {
     principalKinds: { agent: 'Agent' },
-    workflowTemplates: {
-      software: 'Software development',
-      softwareDescription:
-        'The Solution designer analyses and proposes in Analysis; the Proposal reviewer reviews the proposal and passes it on or sends it back, to UI review (前端评审) when it changes the interface, where the Frontend designer passes it on or sends it back; the issue’s executor works in In progress and the Code reviewer comments on the pull request in In review. An issue moves to Done once its pull requests are merged. To capture lessons into the knowledge base, add a Retrospective rule to Done.',
-    },
-    /**
-     * The 软件开发 (software) template's owner notices, for its notifyOwner rules to name as
-     * `{ key: 'studioAgents.templateMessages.<name>', ns: 'studio', defaultValue }`.
-     */
     templateMessages: {
       inReview:
         'Review the change and merge its pull request: the issue moves to Done once it is merged (check any required checklist items first). Or move it back to In progress with a comment.',
     },
     /** The template's ways to start an issue (its startOption rules), named the same way. */
-    templateStarts: {
-      backlogLabel: 'Plan later',
-      backlogHint:
-        'The issue waits in Backlog. Nothing starts until it leaves Backlog.',
-      developLabel: 'Straight to development',
-      developHint:
-        'For a small change with clear bounds: the agent implements it right away.',
-      designLabel: 'Design first',
-      designHint:
-        'The agent analyses and submits a design proposal; development starts once you approve it.',
-    },
     subjects: { issue: 'Issue', project: 'Project', intake: 'Intake with AI' },
     triggers: {
       assigned: 'Assigned',
@@ -1136,6 +1066,8 @@ const enUS = {
       stageEntered: 'Workflow stage',
       planDecided: 'Plan decided',
       prChecksFailed: 'Checks failed',
+      prChecksPassed: 'Checks passed',
+      started: 'Started',
       prConflict: 'Pull request conflict',
       retrospective: 'Retrospective',
       intake: 'Intake with AI',
@@ -1192,7 +1124,6 @@ const enUS = {
           'removing other people’s comments is a person’s call.',
         general: 'project settings decide how everyone works.',
         labels: 'labels are shared by everyone’s work.',
-        workflows: 'workflows decide how every issue moves.',
         members: 'membership and roles decide who may do what.',
       },
       agents: {
@@ -1302,54 +1233,6 @@ const enUS = {
         undone: 'The operation plan “{{title}}” was undone.',
       },
     },
-    stageRules: {
-      freshSession: 'Start a new session every time',
-      freshSessionHint:
-        'On: each stage run starts a new Agent session, useful for reviews to avoid carrying over earlier conclusions. The working directory is kept.',
-      withFreshSession: '{{summary}} · New session every time',
-      agent: 'Agent',
-      agentsUnavailable:
-        'You cannot list agents here; the rule keeps the agent it names.',
-      assign: 'Make it the executor',
-      assignHint:
-        'Off: the agent runs once (a reviewer, say) and the issue keeps its executor.',
-      chooseAgent: 'Choose an agent',
-      currentExecutor: 'The issue’s agent executor',
-      instruction: 'Stage instruction',
-      instructionHint:
-        'Becomes the workflow stage instruction of the run. Placeholders: {{placeholders}}',
-      instructionPlaceholder:
-        'Optional: what the agent should do in this stage',
-      reason: 'Reason (optional)',
-      runAgent: 'Run agent',
-      maxRuns: 'Maximum runs (optional)',
-      windowHours: 'Window in hours (optional)',
-      limitHint:
-        'Defaults to 3 runs in 24 hours and applies only to entries caused by agents or the system. Only started runs count; environment failures and cancelled runs are excluded. A person moving the issue always wakes the agent and restarts the count.',
-      withLimit:
-        '{{summary}} · Up to {{maxRuns}} agent-driven runs in {{windowHours}} hours',
-      limitReached: 'Automatic stage runs paused',
-      continue: 'Continue',
-      continueHint:
-        'This status reached {{maxRuns}} runs in {{windowHours}} hours. Continue to start the agent once and restart the count.',
-      continued: 'Stage run continued',
-      continueStale: 'This action has changed. Refresh the issue.',
-      continueFailed:
-        'Could not continue. Check the agent and issue blockers, then retry.',
-      continueInIssue: 'Continue on the issue',
-      runAgentAgent: 'Runs {{agent}} as the executor',
-      runAgentCurrent: 'Runs the issue’s agent',
-      runAgentHint:
-        'Entering this status wakes the agent without the owner’s confirmation. The loop guard applies only to entries caused by agents or the system and defaults to 3 runs per issue and status in 24 hours; a person moving the issue is never stopped.',
-      runAgentWithoutAssign: 'Runs {{agent}} once, keeping the executor',
-      suggestExecutor: 'Suggests {{agent}} as the executor to the owner',
-      suggestExecutorHint:
-        'Proposes an operation plan in the owner’s inbox, and notifies them: once they execute it, the agent becomes the executor and starts working.',
-      suggestExecutorTitle: 'Suggest executor',
-      suggestNoAgent: 'Suggests an executor to the owner (no agent chosen)',
-      unknownAgent: 'an agent you cannot see',
-      withInstruction: '{{summary}}: {{instruction}}',
-    },
     commentRuns: {
       limitReached: 'Agent comments paused',
       continueHint:
@@ -1358,7 +1241,10 @@ const enUS = {
       continueStale: 'This comment no longer waits. Refresh the issue.',
       continueFailed:
         'Could not continue. Check the agents and issue blockers, then retry.',
+      continue: 'Continue',
+      continueInIssue: 'Continue on the issue',
     },
+    unknownAgent: 'an agent you cannot see',
   },
   pmChat: {
     askAgent: {
@@ -1385,6 +1271,7 @@ const enUS = {
     },
     intake: {
       organize: 'Let an agent organize',
+      agent: 'Organized by',
       waiting: 'The agent is organizing…',
       startFailed: 'Could not hand these requirements to an agent',
       retry: 'Try organizing again',
@@ -1394,10 +1281,6 @@ const enUS = {
         'The request failed. Your requirements are still here; check your connection and try again.',
       noAgent:
         'No usable default agent is configured. Choose a default agent in your account preferences, or ask an administrator to configure the team default, then try again.',
-      modelMissing:
-        'The selected online agent has no model configured. Ask an administrator to configure its model in Agent team, then try again.',
-      modelUnavailable:
-        'The selected online agent’s model is unavailable. Ask an administrator to check its model service and enabled models, then try again.',
       noRunner:
         'No suitable online runtime can run this agent for you. Check runtime status, tool sign-in and sharing policy in Agent team, then try again.',
       agentUnavailable:
@@ -1428,12 +1311,83 @@ const enUS = {
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupEnUS,
-  knowledgeRules: {
-    retrospective: 'Retrospective',
-    retrospectiveHint:
-      'Entering this status wakes the agent to look back on the issue: it checks the user manual first, then proposes what else is worth keeping. It does not become the executor.',
-    retrospectiveAgent: 'Wakes {{agent}} for a retrospective',
-    retrospectiveCurrent: 'Wakes the issue’s agent for a retrospective',
+  agentsPage: {
+    title: 'Agents',
+    description:
+      'Each coding tool and model a runner reports is an agent. The project manager hands each step of an issue to them by what they are good at.',
+  },
+  projectManager: {
+    title: 'Project manager',
+    description:
+      'Arranges every issue once it starts: hands each step to an agent, reads the replies and decides what comes next; it moves the issue to Blocked when it needs you and to In review when the work is done.',
+    runsWith: 'Runs with',
+    fallbackLabel: 'fallback',
+    noAgent: 'No agent chosen yet',
+    online: 'Online',
+    offline: 'No runner online',
+    principles: 'Allocation principles',
+    builtIn: 'Built-in',
+    customized: 'Customized',
+    limit: 'Comment run limit',
+    limitValue: '{{count}} per issue every {{hours}} hours',
+    settings: 'Settings',
+    loadFailed: 'Could not load the project manager.',
+    settingsPage: {
+      title: 'Project manager',
+      description:
+        'There is one for all projects: it arranges the work of every issue.',
+      readOnly: 'Only a manager of agents may change these settings.',
+      agents: 'The agent it runs with',
+      firstChoice: 'First choice',
+      fallback: 'Fallback',
+      noFallback: 'No fallback',
+      choose: 'Choose an agent',
+      agentsHint:
+        'The fallback is used when no runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
+      noChoices: 'No agent is enabled yet. Enable one on the Agent page first.',
+      principles: 'Allocation principles',
+      restore: 'Restore built-in',
+      principlesHint:
+        'Studio tells the project manager on every turn which agents it may use and what each is good at; write here only how to allocate the work and move issues.',
+      limit: 'Comment run limit',
+      limitBefore: 'At most, per issue every {{hours}} hours,',
+      limitAfter:
+        'runs started by agents’ comments; past that, the owner is told.',
+      limitInvalid: 'Enter a whole number from 1 to {{max}}.',
+      cancel: 'Cancel',
+      close: 'Close',
+      save: 'Save',
+      saved: 'Project manager saved',
+      saveFailed: 'Could not save the project manager',
+    },
+  },
+  issuePage: {
+    arrange: 'Arrange',
+  },
+  issueProgress: {
+    title: 'Now',
+    anAgent: 'An agent',
+    working: '{{agent}} is working on {{step}}',
+    workingNoStep: '{{agent}} is working',
+    for: 'for {{minutes}} min',
+    on: 'on {{runner}}',
+    queued: '{{agent}} waits for a runner to take it: {{step}}',
+    queuedNoStep: '{{agent}} waits for a runner to take it',
+    checksPending: 'Waiting for the checks of PR #{{number}}',
+    checksPendingNoPr: 'Waiting for the checks',
+    needsDecision: 'The project manager asks: {{question}}',
+    needsDecisionNoQuestion: 'Waiting for your decision',
+    inReview: 'Waiting for acceptance',
+    notStarted:
+      'Not started. Start it and the project manager arranges the work.',
+    finished: 'Finished',
+    idle: 'Nothing is going on now',
+    next: 'Next: {{next}}',
+    start: 'Start',
+    handOver: 'Hand over to the project manager',
+    handedOver: 'Handed over to the project manager',
+    handOverFailed: 'Could not hand the issue over to the project manager',
+    loadFailed: 'Could not load what the issue waits for.',
   },
 };
 
