@@ -1223,10 +1223,16 @@ describe('push credentials on demand', () => {
   async function claimed(features: readonly string[] = ON_DEMAND) {
     const app = await appConnection();
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
-    const linked = await projectWithRepo(app);
-    await mentionAgent(h, 'alice', linked.issue.id, agentId);
+    const linked = await projectWithRepo(app, 'in_progress');
+    const issue = await h.projects.issues.update(alice(), linked.issue.id, {
+      revision: linked.issue.revision,
+      executor: null,
+      start: false,
+    });
+    await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne(features);
-    return { app, payload, ...linked };
+    expect(payload).toMatchObject({ agent: { id: agentId } });
+    return { app, payload, ...linked, issue };
   }
 
   const ask = (payload: any, body: { url?: string; refresh?: boolean } = {}) =>
@@ -1263,10 +1269,16 @@ describe('push credentials on demand', () => {
 
   it('lists nothing on demand for a token connection', async () => {
     const connection = await tokenConnection(h);
-    const { issue } = await projectWithRepo(connection);
+    const { issue: created } = await projectWithRepo(connection, 'in_progress');
+    const issue = await h.projects.issues.update(alice(), created.id, {
+      revision: created.revision,
+      executor: null,
+      start: false,
+    });
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne(ON_DEMAND);
+    expect(payload).toMatchObject({ agent: { id: agentId } });
     expect(payload.workspace.git).toEqual({
       author: expect.any(Object),
       trailers: expect.any(Array),
