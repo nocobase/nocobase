@@ -1582,7 +1582,9 @@ export function createGitHubPlatform(
       const valid = (expiry: string | undefined) =>
         expiry !== undefined &&
         new Date(expiry).getTime() >= now() + minimumValidity;
-      let minted = await authenticate(options);
+      let minted = await authenticate(
+        tokenOptions.refresh ? { ...options, refresh: true } : options,
+      );
       if (!valid(minted.expiresAt))
         minted = await authenticate({ ...options, refresh: true });
       if (!minted.token)
