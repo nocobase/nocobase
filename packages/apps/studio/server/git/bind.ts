@@ -85,6 +85,7 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
     onError,
     ...(deps.onChanged ? { onChanged: deps.onChanged } : {}),
     onStored: (pr) => events.emit({ type: 'stored', pullRequestId: pr.id }),
+    explain: (repo, sha) => git.explainFailures(repo, sha),
   });
   const connections = createGitConnections({
     conn: () => deps.projects().tx.read(),

@@ -43,7 +43,7 @@ export function IssueProgressLine({
   const viewer = useViewer();
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const canEdit = canEditIssues(viewer);
+  const canEdit = canEditIssues(viewer) && viewer?.userId === issue.ownerUserId;
   const progress = useQuery({
     queryKey: [...issueProgressKey(issue.id), refresh],
     queryFn: async () =>

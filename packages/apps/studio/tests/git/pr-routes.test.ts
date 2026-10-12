@@ -27,6 +27,8 @@ async function runOn(actions: readonly string[]) {
   const agentId = await h.createAgent({ actions: [...actions] });
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Fix login',
+    executor: null,
+    statusKey: 'in_progress',
     start: false,
   });
   await h.projects.comments.create(h.viewer('alice'), issue.id, {

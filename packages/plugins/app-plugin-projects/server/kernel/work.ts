@@ -107,7 +107,7 @@ export interface IssueWorkHandler {
     tx: Tx,
     change: CommentChange,
   ): Promise<readonly RunAttempt[]>;
-  /** The issue's owner changed while the kind executes it: queued work woken by the previous owner is withdrawn. */
+  /** The issue's owner changed. Every work kind hears this before ordinary triggers, including unassigned issues. */
   onOwnerChanged?(
     tx: Tx,
     input: {
@@ -245,24 +245,27 @@ export function kindTriggers(
   return {
     async onIssueChanged(tx, change) {
       const { before, after } = change;
+      // Transfers reach every work kind before ordinary triggers, even when the executor is cleared.
+      if (before && before.ownerUserId !== after.ownerUserId)
+        for (const [, work] of handlersOf(
+          kinds,
+          kinds.list().map((kind) => kind.key),
+        ))
+          await report(
+            tx,
+            after,
+            work.onOwnerChanged?.(tx, {
+              issue: after,
+              from: before.ownerUserId,
+              to: after.ownerUserId,
+              actor: change.actor,
+            }),
+          );
       for (const [, work] of handlersOf(kinds, [
         before?.executor?.type,
         after.executor?.type,
       ]))
         await report(tx, after, work.onIssueChanged(tx, change));
-      if (before && before.ownerUserId !== after.ownerUserId) {
-        const work = handlerOf(kinds, after.executor?.type);
-        await report(
-          tx,
-          after,
-          work?.onOwnerChanged?.(tx, {
-            issue: after,
-            from: before.ownerUserId,
-            to: after.ownerUserId,
-            actor: change.actor,
-          }),
-        );
-      }
     },
 
     async onCommentCreated(tx, change) {

@@ -5,6 +5,7 @@
  * is the agents plugin's own (its namespace), filled into the item's labels here.
  */
 import { useClientApplication } from '@nocobase/app-client';
+import { runTriggerActor } from './run-trigger.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import {
@@ -621,13 +622,14 @@ export function IssueRunTranscript({
       : null;
   // The entry of the agent's list the run worked with: a coding tool and model, or a model service and model, and its effort.
   const effort = detail?.effort
-    ? ` · ${t(`agentForm.efforts.${detail.effort}`, { defaultValue: detail.effort })}`
+    ? ` · ${appT(`runTranscript.efforts.${detail.effort}`, { defaultValue: detail.effort })}`
     : '';
   const used = detail?.tool
-    ? `${t(`tools.${detail.tool}`)} · ${detail.model ?? t('agents.defaultModel')}${effort}`
+    ? `${t(`tools.${detail.tool}`)} · ${detail.model ?? appT('runTranscript.defaultModel')}${effort}`
     : detail?.modelService
       ? `${detail.modelService} · ${detail.model ?? ''}${effort}`
       : null;
+  const triggerActor = detail ? runTriggerActor(detail) : undefined;
   const summary = detail ? (
     <>
       <p className='text-xs text-muted-foreground'>
@@ -637,9 +639,15 @@ export function IssueRunTranscript({
         })}
         {used ? (
           <span data-testid='run-model'>
-            {` · ${t('modelEntries.used', { model: used })}`}
+            {` · ${appT('runTranscript.usedModel', { model: used })}`}
           </span>
         ) : null}
+        {` · ${appT('runTranscript.actingAs', { actor: detail.actorName ?? detail.actorUserId })}`}
+        {triggerActor?.kind === 'system'
+          ? ` · ${appT('runTranscript.systemTrigger')}`
+          : triggerActor
+            ? ` · ${appT('runTranscript.triggeredBy', { person: triggerActor.name })}`
+            : ''}
         {duration !== null
           ? ` · ${t('transcript.took', { duration: `${duration}s` })}`
           : ''}

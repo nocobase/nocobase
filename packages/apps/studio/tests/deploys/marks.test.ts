@@ -89,6 +89,8 @@ async function pushedIssue(title: string, sha: string): Promise<Issue> {
     title,
     projectId,
     executor: null,
+    statusKey: 'in_progress',
+    start: false,
   });
   // Alice hands it the step.
   await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {

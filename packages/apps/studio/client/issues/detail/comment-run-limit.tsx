@@ -1,6 +1,6 @@
 /**
- * An agent's comment the comment run limit held back (`GET /api/issueCommentRuns/:issueId`): a person who may edit the
- * issue continues it once, which wakes the agents it names and restarts the count. The server checks and consumes its
+ * An agent's comment the comment run limit held back (`GET /api/issueCommentRuns/:issueId`): the owner with issue edit
+ * permission continues it once, which wakes the agents it names and restarts the count. The server checks and consumes its
  * token.
  */
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
@@ -36,7 +36,7 @@ export function IssueCommentRunLimit({
   const notify = useNotify();
   const queryClient = useQueryClient();
   const continuingRef = useRef(false);
-  const allowed = canEditIssues(viewer);
+  const allowed = canEditIssues(viewer) && viewer?.userId === issue.ownerUserId;
   const key = ['studio', 'commentRunLimit', issue.id, issue.revision];
   const path = `issueCommentRuns/${encodeURIComponent(issue.id)}`;
   const pending = useQuery({

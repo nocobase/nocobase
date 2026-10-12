@@ -163,10 +163,13 @@ export class FakeRunner {
     ownerUserId: string,
     author = this.api,
   ) {
-    // In backlog nothing else starts: only the mention wakes this runner's agent.
+    // An active issue with no executor lets the mention wake only this runner's agent.
     const issue = await author.post<Issue>('projects/issues', {
       title,
       ownerUserId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
     await this.wake(issue, author);
     const { run } = await this.claimRun(issue.identifier);
