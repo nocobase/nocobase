@@ -250,7 +250,11 @@ test('shows the shared diagnostics in the Agent queue', async ({
     id: string;
     identifier: string;
     title: string;
-  }>('projects/issues', { title: 'PM-292 queue diagnostics' });
+  }>('projects/issues', {
+    title: 'PM-292 queue diagnostics',
+    statusKey: 'in_progress',
+    start: false,
+  });
   await runner.wake(issue);
   const board = await api.get<AgentBoard>('agentBoard');
   const original = board.rows.find((row) => row.issue.id === issue.id)!;
