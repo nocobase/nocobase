@@ -1,5 +1,13 @@
 # @nocobase/authorization
 
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/db@1.0.0-beta.19
+
 ## 1.0.0-beta.12
 
 ### Minor Changes

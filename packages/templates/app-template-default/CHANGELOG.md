@@ -1,5 +1,41 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.63
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.15
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.11
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.13
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-i18n@1.0.0-beta.15
+  - @nocobase/app-plugin-mail@1.0.0-beta.11
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.24
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.11
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.17
+  - @nocobase/app-plugin-users@2.0.0-beta.4
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/authorization@1.0.0-beta.13
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/lifecycle@0.1.0-beta.1
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/snowflake@1.0.0-beta.4
+
 ## 1.0.0-beta.62
 
 ### Patch Changes

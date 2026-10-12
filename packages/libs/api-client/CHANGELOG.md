@@ -1,5 +1,13 @@
 # @nocobase/api-client
 
+## 1.0.0-beta.4
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/repository-input@0.1.0-beta.3
+
 ## 1.0.0-beta.3
 
 ### Major Changes
