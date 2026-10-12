@@ -68,8 +68,6 @@ import { MAIL_PLUGIN_NS } from '../namespace.js';
 export interface MailWorkspacePageProps {
   readonly title?: string;
   readonly description?: string;
-  /** Application-owned personal account path, without the deployment base path. */
-  readonly accountsHref?: string;
   /** Additional actions appended after the built-in workspace actions. */
   readonly headerActions?: ReactNode;
   /** Values available to `{{path.to.value}}` placeholders in mail templates. */
@@ -90,7 +88,6 @@ export default function MailWorkspacePage({
   accountsHref,
   headerActions,
   templateVariables = {},
-  accountsHref,
 }: MailWorkspacePageProps = {}): ReactElement {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
   const mail = useMailClient();

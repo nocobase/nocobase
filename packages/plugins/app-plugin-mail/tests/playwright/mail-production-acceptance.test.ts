@@ -82,7 +82,11 @@ test('real production page guards, local OAuth persistence, success/failure retu
     await page.evaluate(() =>
       Reflect.get(window, '__mailProductionAcceptance'),
     ),
-  ).toEqual({ production: true, realMailClient: true, devRoutes: 0 });
+  ).toEqual({
+    production: true,
+    realMailClient: true,
+    routes: ['/mail/accounts', '/mail'],
+  });
   expect(['default', 'compact']).toContain(
     await page.evaluate(() => document.documentElement.dataset.theme),
   );

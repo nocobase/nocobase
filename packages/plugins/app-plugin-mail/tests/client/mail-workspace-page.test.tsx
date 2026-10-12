@@ -67,7 +67,6 @@ import type {
   MailMessage,
   MailOutboundAttachmentView,
 } from '../../client/mail-client.js';
-import { MailCenterDevPage } from '../../client/pages/mail-dev-page.js';
 import MailWorkspacePage from '../../client/pages/mail-workspace-page.js';
 import { MAIL_UNREAD_COUNT_CHANGED_EVENT } from '../../client/components/mail-navigation-icon.js';
 
