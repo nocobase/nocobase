@@ -1,5 +1,11 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.65
+
+### Patch Changes
+
+- 9e84d15: Exclude `database/*/migrations/` and `database/*/seeds/` from Prettier in generated applications, so formatting never changes the checksum an installation recorded for an applied migration or seed.
+
 ## 1.0.0-beta.64
 
 ### Patch Changes

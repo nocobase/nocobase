@@ -1,5 +1,13 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- 65ec64a: Prevent concurrent and repeated retries of the same run, retain retry attribution, and link retried runs to their replacements. Automatically settle obsolete failed-run decisions after retries, new work, reassignment, or issue completion, including outstanding cards from earlier releases.
+- Updated dependencies [65ec64a]
+  - @nocobase/agent-protocol@0.1.0-beta.6
+
 ## 0.1.0-beta.4
 
 ### Patch Changes
