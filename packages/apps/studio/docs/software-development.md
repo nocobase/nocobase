@@ -139,6 +139,10 @@ A thin strip on top counts running and queued issues, those waiting for the view
 
 The data is `GET /api/agentBoard` (`server/agents/board.ts`, `shared/agent-board.ts`), which composes the agents plugin's runs and queue (`runs.workload`), the projects plugin's issues, blockers and follows, and Studio's failed-run cards, and keeps to what the viewer may see. It refreshes on the issue and runner announcements and polls every ten seconds while visible (`client/agents/board/api.ts`).
 
+## My follow-ups
+
+`/follow-ups` ("My follow-ups", `client/pages/follow-ups`, composed in `client/follow-ups/`) sits above My issues behind the same page grant. Its left column holds up to five issues the person follows, each with what it waits for or needs from them and how many comments and changes others made since they last looked there; the middle column shows one issue live, its "Now" and "Next" lines from `/issueProgress`, what it needs from the person, and its comments and changes told as hand-overs, replies, reviews and pull request and status events (`client/follow-ups/feed.ts`, which recognises a review by the project manager's hand-over asking for one and a verdict said plainly); the right column lists the issues the person owns by status and text. `GET /api/followUps` (`server/follow-ups/`) answers all of it in one read, and what a person follows and when they last looked at an issue are their own preferences in the users plugin (`studio.follow-ups.following`, `studio.follow-ups.seen`), written only through `PUT /api/followUps/following` and `POST /api/followUps/issues/{issueId}/markSeen` so the limits hold. Until a person chooses, they follow their blocked and in-review issues.
+
 ## Pull requests
 
 `server/git/` (server) and `client/git/` (browser) hold Studio's pull request features.
