@@ -1,5 +1,7 @@
 # @nocobase/studio-cli
 
+## 1.0.0-beta.55
+
 ## 1.0.0-beta.54
 
 ### Patch Changes

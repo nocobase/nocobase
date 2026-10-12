@@ -7,12 +7,24 @@ description: '创建并启动 NocoBase 应用，用一条提示词搭建运输�
 
 先启动一个 NocoBase 应用，再向 AI Agent 描述业务需求，就可以开始搭建自己的系统。本节以 Northstar Logistics 为例，用一条提示词建立客户、司机、运输订单和工作台，后续章节将在同一应用中逐步加入更多能力。
 
-## 1. 创建并启动应用
+## 准备 AI Agent
 
-准备 Node.js 24 或更高版本及 pnpm。在用于存放项目的目录中运行下面这条命令，从 npm 获取默认应用模板并安装依赖：
+准备可用的 Coding Agent、Node.js 24 或更高版本以及 pnpm 11。使用 Bash 终端安装 NocoBase 3 的全局 Skills，Windows 用户可在 WSL 中操作：
 
 ```bash
-pnpm create @nocobase/app northstar-logistics
+npx skills@latest add nocobase/skills-v3 --skill '*' -g
+```
+
+按提示选择你使用的 Coding Agent。安装完成后重新开启 Agent 会话，让它加载新安装的 Skills。这些 Skills 通过[轻量分发仓库](https://github.com/nocobase/skills-v3)提供，包含创建应用等指引。
+
+应用创建后，开发用的项目 Skills 会自动同步到应用目录的 `.agents/skills/`。在应用目录开启新的会话后，Agent 使用该应用的 `AGENTS.md` 和项目 Skills 继续开发。
+
+## 1. 创建并启动应用
+
+在用于存放项目的目录中运行下面这条命令，从 npm 的 beta 渠道获取创建工具和默认应用模板，并安装依赖：
+
+```bash
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta northstar-logistics --template-tag=beta
 ```
 
 进入新建的应用目录，初始化配置并启动。本例使用 SQLite，无需另外准备数据库服务：
