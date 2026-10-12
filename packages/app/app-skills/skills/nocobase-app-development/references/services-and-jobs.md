@@ -234,7 +234,7 @@ See the `@nocobase/queue` README for the full contract.
 
 ### Application code configuration
 
-Each file under `server/config/` defines one section with `defineAppConfig` from `@nocobase/app-server/config`. `server/config/index.ts` imports those sections and exports `defaultAppConfigs({ auth })`. The client uses the same helpers from `@nocobase/app-client`, in their function form only.
+Each file under `server/config/` defines one section with `defineAppConfig` from `@nocobase/app-server/config`. `server/config/index.ts` imports those sections and exports `defaultAppConfigs({ auth })`. The client uses the same helpers from `@nocobase/app-client`, in their function form only. Providers and routes read this typed configuration rather than `process.env`.
 
 On the server, `defineAppConfig((runtime) => options)` declares defaults alone. The object form adds rules:
 

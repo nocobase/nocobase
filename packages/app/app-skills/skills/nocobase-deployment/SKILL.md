@@ -5,7 +5,7 @@ description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 a
 
 # NocoBase production deployment
 
-Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md` and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables. The Deployment section of the NocoBase 3 documentation is the reference for command details and platform-specific examples; in the nocobase3 source repository it is `docs/docs/<lang>/deployment/`.
+Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md`, the `.agents/rules/` files it indexes for building and deployment, and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables. The Deployment section of the NocoBase 3 documentation is the reference for command details and platform-specific examples; in the nocobase3 source repository it is `docs/docs/<lang>/deployment/`.
 
 Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 
@@ -38,7 +38,7 @@ Run the checks that the project actually defines; do not invent a test or lint c
 pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-`pnpm build` creates the production `dist` tree and installs or retargets production dependencies for the selected platform. The build is not tied to a mount path: the client uses relative asset URLs by default, or an absolute CDN prefix when configured below, and the server serves it at the `APP_BASE_PATH` it runs with, so one archive can be mounted at `/crm` or at the origin root. `--tar` additionally creates `storage/exports/dist.tar.gz`, containing `dist/` and `config.example.yml`; it does not contain the runtime configuration, database, uploads, or other business data. Inspect the archive before transfer:
+`pnpm build` creates the production `dist` tree and installs or retargets production dependencies for the selected platform. The build is not tied to a mount path: the client uses relative asset URLs by default, or an absolute CDN prefix when configured below, and the server serves it at the `APP_BASE_PATH` it runs with, so one archive can be mounted at `/crm` or at the origin root. `--tar` additionally creates `storage/exports/dist.tar.gz`, containing `dist/` and `config.example.yml`; it does not contain the runtime configuration, database, uploads, or other business data. Extracting it produces exactly those two paths rather than scattering `server/` and `node_modules/` into the directory you unpacked in. `config.example.yml` travels with it because a deployment has to write a `config.yml` before it can start, and the example is the only statement of what may go in it. Directories of executable shims are left out: a `.bin` entry points at a path on the machine that installed it, and a dangling one makes `pnpm install` in the extracted tree report a corrupt store rather than repair it. Without `--tar` no archive is produced, which is what you want when the build is only going to be run locally. Inspect the archive before transfer:
 
 ```bash
 tar -tzf storage/exports/dist.tar.gz | head -30

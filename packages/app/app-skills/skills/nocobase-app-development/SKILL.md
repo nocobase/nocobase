@@ -19,7 +19,7 @@ Do not use it to upgrade the template this application was generated from, which
 
 ## Before you start
 
-Read the application's `AGENTS.md` first for the rules that apply everywhere. This Skill's references are the detail behind it. Before running any `pnpm nocobase` command, read [the command line](references/cli.md): it maps tasks to commands and states the flags an agent must not add on its own.
+Read the application's `AGENTS.md` first for the rules that apply everywhere, and the `.agents/rules/` files its index points to for your task. This Skill's references are the detail behind it. Before running any `pnpm nocobase` command, read [the command line](references/cli.md): it maps tasks to commands and states the flags an agent must not add on its own.
 
 Confirm you are in an application and not a plugin package. An application has:
 
@@ -57,11 +57,7 @@ When the stages of a business record are fixed by developers rather than drawn b
 
 For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat Provider configuration, and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
 
-Skills synchronization reads direct `@nocobase/*` dependencies from the application manifest and retains compatibility with explicitly registered plugins. It does not make an unregistered runtime plugin active; the composition roots remain the authority for registration and contribution order.
-
-Install plugins with `pnpm nocobase plugin register <name>`. All application plugins belong in `dependencies`, including client-only and disabled plugins, because deployment dependencies come from that field. Plugin frontend libraries remain peers and are not automatically installed in the deployment. Re-registering migrates legacy `devDependencies` entries while preserving the declared range; verify the manifest and lockfile afterward. With an older CLI, use `pnpm add --save-prod <package>@<declared-range>` to correct the declaration; `--no-install` leaves lockfile synchronization to the caller.
-
-To update a registered plugin, use `pnpm nocobase plugin update @nocobase/app-plugin-authentication` (or the short name `authentication`). Omit the name to update all registered plugins; add `--dry-run` to preview. `plugin update` takes a positional name, not `--plugin`, and re-synchronizes Skills after a successful package update. See the Plugins section of the application's `README.MD` for version-range behavior and examples.
+Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
 
 ## Learn the endpoints from the API document
 
@@ -72,14 +68,6 @@ curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
 ```
 
 Replace `/main` with the application's `APP_BASE_PATH`. Swagger UI for people is at `<APP_BASE_PATH>/api/swagger/docs`. Reading either needs a signed-in session or an API key, which a signed-in user creates with `POST <APP_BASE_PATH>/api/apiKeys`; without one the routes answer `401`, and an application with no access check registered, such as one without the authentication plugin, answers `404`. Ask the user for a key rather than creating one yourself. [HTTP API design](references/http-api.md#api-documentation) explains how to read the document and how a new route declares itself in it.
-
-## Removing a direct NocoBase package
-
-Before removing an `@nocobase/*` dependency, search the application's imports, Client/Server/CLI plugin registrations, routes, services, configuration, tests, and build scripts for the package name and the contracts it provides. Migrate or remove those references first. `package remove` updates dependency metadata and generated Skills; it does not rewrite application code or configuration and cannot decide whether the capability is still needed.
-
-Run `pnpm nocobase package remove @nocobase/example`. The command uses the application's package manager to update `package.json` and the lockfile, then removes only synchronized Skills recorded as owned by that package. An `@nocobase/app-plugin-*` target delegates to the plugin unregister workflow so its Client, Server, and CLI registrations are removed together; `pnpm nocobase plugin unregister <name>` remains available. Use `--dry-run` before a consequential removal and `--json` when structured output is needed.
-
-After an interrupted or manual removal, verify that the manifest no longer declares the package and run a full `pnpm nocobase skills sync` to reconcile stale package-owned output. Passing an already-absent package to `package remove` cleans recorded historical Skill ownership without uninstalling or cleaning another package.
 
 ## Frontend work
 
@@ -108,6 +96,10 @@ Read the page for the task in front of you. Do not read all of them.
 | Write server and migration tests, choose a test layer, verify before finishing                                         | [testing and verification](references/testing.md)                                                                                                                                                                                                                                                                                    |
 | Run a CLI command: configure, migrate, manage plugins, read the data model                                             | [the command line](references/cli.md)                                                                                                                                                                                                                                                                                                |
 | Add or change an application command under `cli/commands/`                                                             | [adding an application command](references/commands.md)                                                                                                                                                                                                                                                                              |
+| Where a file goes, how the client and server are composed, configuration, changing the framework structure             | [application structure](references/app-structure.md)                                                                                                                                                                                                                                                                                 |
+| Register, update, customize or remove a plugin; check what an installed plugin already provides                        | [plugins](references/plugins.md)                                                                                                                                                                                                                                                                                                     |
+| Add an npm package, decide `dependencies` versus `devDependencies`, diagnose a missing module or native binary         | [adding a dependency](references/dependencies.md)                                                                                                                                                                                                                                                                                    |
+| Report the application's URL, dev server restarts and file watching, develop against another backend                   | [the development server](references/dev-server.md)                                                                                                                                                                                                                                                                                   |
 | Understand behavior inherited from an official application template                                                    | [template variants](references/template-variants.md)                                                                                                                                                                                                                                                                                 |
 
 A feature with a page and an API usually needs migrations, server routes, and a frontend change that follows the frontend workflow.
@@ -136,9 +128,9 @@ client/locales/, client/service-provider.ts, server/routes/,
 server/providers/, database/main/migrations/, database/main/seeds/, tests/
 ```
 
-Everything else — `client/routing/`, `client/layouts/`, `client/theme/`, the server entry points, the build scripts, the tsconfigs — is the framework structure the template provides and evolves. Prefer the mechanism the system already offers: most work that looks like it needs a change there does not.
+Everything else — `client/routing/`, `client/layouts/`, `client/theme/`, the server entry points, the build scripts, the tsconfigs — is the framework structure the template provides and evolves. Prefer the mechanism the system already offers: most work that looks like it needs a change there does not. [Application structure](references/app-structure.md) maps every directory and the composition files.
 
-When the built-in mechanism genuinely cannot express the requirement, changing that structure is a legitimate answer. Comment what you changed and why the built-in path did not fit, and update the application's `AGENTS.md` in the same change so it still describes the real application. The synchronized NocoBase Skills are package-owned; propose a change to their source package when the shared framework guidance itself is wrong.
+When the built-in mechanism genuinely cannot express the requirement, changing that structure is a legitimate answer. Comment what you changed and why the built-in path did not fit, and in the same change record the application-specific guidance in the matching `.agents/rules/<topic>.md`, adding its entry to the `AGENTS.md` index, so the guidance still describes the real application. Do not write the detail into `AGENTS.md` itself: it is a small always-on index of at most 32 KB that every agent loads on every start. The synchronized NocoBase Skills are package-owned; propose a change to their source package when the shared framework guidance itself is wrong.
 
 When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): a single App shell with no settings area, the language submenu, navigation group state, permission refresh and sign-out handling.
 
@@ -155,6 +147,9 @@ Generated     .agents/skills/ — synchronized copies, gitignored, replaced
               wholesale on the next sync; never edit
               .claude/skills/ — symbolic links to the above so Claude Code
               discovers them; gitignored, rewritten by the same sync
+
+Rules         .agents/rules/ — application-specific guidance, committed and
+              application-owned; AGENTS.md indexes it
 
 Config        config.yml — written by pnpm nocobase config init, gitignored, holds
               secrets; document options in config.example.yml instead
@@ -180,33 +175,13 @@ These cause real damage and appear in every reference:
 - **Visual consistency is application-wide.** Restyling only your part is a defect. Change the design tokens if a change is needed.
 - **Route paths never include the deployment base path.** The runtime restores it.
 - **Route navigation creates sidebar entries.** Declare `navigation` in `client/routes.ts`. Refine resources create no menu entries and, with no data provider registered, load nothing; pages load data with `useApiClient` (see [calling the API](references/frontend/references/api.md)).
-- **Reach for the built-in mechanism first.** Changing framework structure is allowed when nothing else fits — comment it and update the docs.
+- **Reach for the built-in mechanism first.** Changing framework structure is allowed when nothing else fits — comment it and record it in `.agents/rules/`.
 - **Tests live in `tests/`,** never beside the source; browser tests against a running application go in `tests/playwright/`.
 - **Remove direct NocoBase packages with `package remove` after reviewing their usage.** Do not hand-delete only the manifest entry or leave synchronized Skills and plugin registrations behind.
 
-## Application access URLs
+## The development server
 
-When reporting or opening this application's address, use the `Local:` URL printed by `pnpm dev`, including the application base path. In normal full-stack development, the Hono server proxies Vite: the user-facing entry uses the server port (`APP_SERVER_PORT`, default 13000), while Vite's port (normally 5173) serves the frontend development process. A response from Vite alone does not verify the application entry.
-
-For an existing run without available startup output, identify its process and working directory, confirm the actual server listening port and configured base path, and check that URL before sharing it. Occupied ports advance automatically, so do not assume defaults. Report when the run belongs to another checkout. Use a host reachable by the user; `localhost` refers to the machine where the browser runs.
-
-With `PROXY_TARGET_URL`, the local Hono server is skipped and Vite becomes the local application entry. Use the printed `Local:` URL in this mode too; `APP_SERVER_PORT` selects its local port (default 5173). See the remote backend development guidance below.
-
-## Development file watching
-
-`pnpm dev` checks native file watching before starting its children. If watcher resources are exhausted or native events are unavailable, it uses polling for client and server hot updates and disables agent annotations for that run, with a warning. An explicit `CHOKIDAR_USEPOLLING=true` selects the same mode. Configuration files use stat polling so atomic saves and newly created files restart the server without native directory watchers.
-
-Vite must exclude the application's entire `dist/` tree from development file watching. Its default exclusion covers only `dist/client`; watching the compiled server and vendored packages can cause `EMFILE` after a build. Keep the exclusion scoped to this application so linked workspace dependencies, including their `dist/` files, still receive hot updates.
-
-## Remote backend development
-
-Treat `/main` in examples as a default, never as a fixed route. Local `APP_BASE_PATH` resolves from the command-line environment, then `.env.local`, then `.env`, with `/main` as the fallback. Determine the remote application's actual public mount path separately and include it in `PROXY_TARGET_URL`; local and remote paths may differ. For example, local `APP_BASE_PATH=/local` and a target ending in `/crm` map `/local/api` to `/crm/api` and `/local/ws` to `/crm/ws`.
-
-For local client debugging against another running application, use `PROXY_TARGET_URL=<remote-application-base-url> pnpm dev` (for example, `http://127.0.0.1:13000/main`, without `/api`). This starts Vite, proxies API and WebSocket paths, and skips the local server and its watchers. Existing `beforeDev` hooks still run. Open the printed Local URL. Client edits reload locally; backend edits require running or deploying the target separately. Requests use the target's data and permissions. See README.MD for authentication and path mapping requirements. Unset the variable to develop both sides locally.
-
-The proxy maps same-origin browser HTTP and WebSocket Origin headers to the target origin, with matching Referer paths mapped to the target app base. It preserves foreign origins and does not add missing Origin headers. Test browser handshakes with an explicit Origin; an Origin-less Node WebSocket test does not verify browser compatibility. Production does not use this Vite adaptation: configure `APP_PUBLIC_ORIGIN` and preserve public Host/protocol information through the reverse proxy.
-
-Use `APP_SERVER_PORT` for the local entry port in both development modes. With `PROXY_TARGET_URL` it selects Vite's preferred port, defaulting to 5173; without it, it selects the local backend port, defaulting to 13000, and Vite still starts from 5173. If occupied, the port advances automatically. Open the printed Local URL and keep the remote service address in `PROXY_TARGET_URL`.
+When reporting or opening this application's address, use the `Local:` URL printed by `pnpm dev`, including the application base path; never infer it from default ports or from a response on Vite's port. [The development server](references/dev-server.md) covers verifying an existing run's URL, what restarts the development run, file watching, and developing the client against another backend with `PROXY_TARGET_URL`.
 
 ## Finishing
 

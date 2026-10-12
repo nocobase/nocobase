@@ -22,5 +22,7 @@ database/*/seeds/
 # `.claude/skills/` holds symbolic links into it. They are upstream prose, replaced wholesale on the next sync, so
 # formatting them rewrites files this application does not own and the change disappears anyway. `.gitignore` lists
 # both, but a `--ignore-path` run replaces `.gitignore` rather than adding to it, so they are named here as well.
-.agents/
+# `.agents/rules/` is the application's own guidance and is formatted like any other document.
+.agents/*
+!.agents/rules/
 .claude/skills/
