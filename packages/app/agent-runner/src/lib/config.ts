@@ -70,6 +70,46 @@ export interface RunnerSettings {
    * on top of the detected or built-in list; absent for none.
    */
   models?: ModelListOverrides;
+  /**
+   * How long a working directory stays unused before its regenerable build artifacts go (`config set artifact-ttl
+   * 12h`), in milliseconds; absent for `DEFAULT_ARTIFACT_TTL_MS`, 0 when the owner turned it off.
+   */
+  artifactTtlMs?: number;
+  /** The directory names removed as regenerable build artifacts (`config set artifact-patterns`); absent for the defaults. */
+  artifactPatterns?: string[];
+}
+
+/** Twelve hours unused before a working directory's regenerable build artifacts go. */
+export const DEFAULT_ARTIFACT_TTL_MS: number = 12 * 60 * 60 * 1000;
+/** The directories removed as regenerable build artifacts, by name. */
+export const DEFAULT_ARTIFACT_PATTERNS: readonly string[] = [
+  'node_modules',
+  '.next',
+  '.turbo',
+];
+/** A directory name an artifact pattern may be: one path segment, not `.` or `..`. */
+export const ARTIFACT_PATTERN: RegExp = /^(?!\.{1,2}$)[^/\\\0]{1,100}$/u;
+
+/** How long a working directory stays unused before its artifacts go; 0 for never. */
+export function artifactTtlMs(settings: RunnerSettings): number {
+  return settings.artifactTtlMs ?? DEFAULT_ARTIFACT_TTL_MS;
+}
+
+/** The directory names removed as regenerable build artifacts. */
+export function artifactPatterns(settings: RunnerSettings): readonly string[] {
+  return settings.artifactPatterns ?? DEFAULT_ARTIFACT_PATTERNS;
+}
+
+function storedPatterns(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return [
+    ...new Set(
+      value.filter(
+        (item): item is string =>
+          typeof item === 'string' && ARTIFACT_PATTERN.test(item),
+      ),
+    ),
+  ];
 }
 
 /** A model id as a runner reports it. */
@@ -173,6 +213,14 @@ export async function readSettings(
     ...(Object.keys(modelListOverrides(stored?.models)).length > 0
       ? { models: modelListOverrides(stored?.models) }
       : {}),
+    ...(typeof stored?.artifactTtlMs === 'number' &&
+    Number.isSafeInteger(stored.artifactTtlMs) &&
+    stored.artifactTtlMs >= 0
+      ? { artifactTtlMs: stored.artifactTtlMs }
+      : {}),
+    ...(storedPatterns(stored?.artifactPatterns) === undefined
+      ? {}
+      : { artifactPatterns: storedPatterns(stored?.artifactPatterns)! }),
   };
 }
 

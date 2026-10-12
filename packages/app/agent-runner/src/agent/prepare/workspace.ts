@@ -1,7 +1,14 @@
 // Step `workspace`: locks the subject's work directory for the run and, when the run asks (`workspace.clean`), starts
 // it over: its checkouts, its tmp and Codex home, and the record of prepared directories go; a directory used in place is
-// never touched.
-import { cleanWorkspace, lockWorkspace } from '../../core/checkout.ts';
+// never touched. A read-only run's directory (`workspace.readOnly`) is removed once the run ends, while it still holds
+// the lock: such a run pushes nothing, so nothing is lost, and the next read-only run of the subject checks it out again
+// at the same path.
+import {
+  cleanWorkspace,
+  lockWorkspace,
+  readWorkspaceMeta,
+  removeWorkspace,
+} from '../../core/checkout.ts';
 import { workspaceKey, type PrepareStep } from './types.ts';
 
 export const workspaceStep: PrepareStep = {
@@ -15,6 +22,17 @@ export const workspaceStep: PrepareStep = {
       subjectKey: workspaceKey(context.payload),
     });
     context.onRelease(() => lock.release());
+    // Releases run last first: the directory goes before its lock is released.
+    if (context.payload.workspace.readOnly === true)
+      context.onRelease(async () => {
+        const meta = await readWorkspaceMeta(context.paths, lock.workDir);
+        await removeWorkspace(
+          context.paths,
+          lock.workDir,
+          meta ?? { repos: [] },
+        );
+        context.log(`workspace: removed the read-only ${lock.workDir}`);
+      });
     context.workspace = lock;
     if (context.payload.workspace.clean === true) {
       context.log(`workspace: cleaning ${lock.workDir}`);

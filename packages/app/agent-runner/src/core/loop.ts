@@ -40,6 +40,8 @@ import {
   readConnection,
   passEnvNames,
   dropWorkspaceLimit,
+  artifactPatterns,
+  artifactTtlMs,
   minFreeDisk,
   modelListOverrides,
   readSettings,
@@ -556,6 +558,10 @@ export class RunnerDaemon {
           ),
           log,
           threshold: minFreeDisk(settings),
+          artifacts: {
+            ttlMs: artifactTtlMs(settings),
+            patterns: artifactPatterns(settings),
+          },
         });
         if (collected.removed.length > 0) this.pruneDue = true;
       } catch (error) {
