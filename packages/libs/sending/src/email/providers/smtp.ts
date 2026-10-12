@@ -1,3 +1,6 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { connect as connectNet, isIP, type Socket } from 'node:net';
+import { connect as connectTls } from 'node:tls';
 import {
   type SendingProviderDefinition,
   type ProviderSendResult,
@@ -26,6 +29,11 @@ export function createSmtpProviderDefinition(): SendingProviderDefinition<
     async createProvider(_context, config) {
       validateSmtpProviderConfig(config);
       const { default: nodemailer } = await import('nodemailer');
+      const requests = new AsyncLocalStorage<{
+        signal: AbortSignal;
+        sockets: Set<Socket>;
+      }>();
+      const sockets = new Set<Socket>();
       const transporter = nodemailer.createTransport({
         host: config.host,
         port: config.port,
@@ -34,19 +42,80 @@ export function createSmtpProviderDefinition(): SendingProviderDefinition<
         connectionTimeout: 20_000,
         greetingTimeout: 20_000,
         socketTimeout: 20_000,
+        getSocket(
+          _options: unknown,
+          callback: (
+            error: Error | null,
+            options?: { connection: Socket; secured: boolean },
+          ) => void,
+        ) {
+          const request = requests.getStore();
+          if (!request || request.signal.aborted) {
+            callback(
+              Object.assign(new Error('SMTP submission aborted.'), {
+                code: 'ETIMEDOUT',
+              }),
+            );
+            return;
+          }
+          // Own the socket so an overall deadline terminates every SMTP phase,
+          // including DATA, rather than merely ignoring a late response.
+          const socket = config.secure
+            ? connectTls({
+                host: config.host,
+                port: config.port,
+                servername: isIP(config.host) ? undefined : config.host,
+              })
+            : connectNet({ host: config.host, port: config.port });
+          sockets.add(socket);
+          request.sockets.add(socket);
+          let supplied = false;
+          const abort = (): void => {
+            socket.destroy(
+              Object.assign(new Error('SMTP submission aborted.'), {
+                code: 'ETIMEDOUT',
+              }),
+            );
+          };
+          request.signal.addEventListener('abort', abort, { once: true });
+          socket.once('close', () => {
+            sockets.delete(socket);
+            request.sockets.delete(socket);
+            request.signal.removeEventListener('abort', abort);
+          });
+          socket.once('error', (error: Error) => {
+            if (!supplied) {
+              supplied = true;
+              callback(error);
+            }
+          });
+          socket.once(config.secure ? 'secureConnect' : 'connect', () => {
+            if (!supplied) {
+              supplied = true;
+              callback(null, {
+                connection: socket,
+                secured: config.secure ?? false,
+              });
+            }
+          });
+          if (request.signal.aborted) abort();
+        },
       });
       return {
         type: 'smtp',
-        async send({ message }): Promise<ProviderSendResult> {
+        async send({ message, signal }): Promise<ProviderSendResult> {
+          const request = { signal, sockets: new Set<Socket>() };
           try {
-            const info = await transporter.sendMail({
-              from: message.content.from ?? config.from,
-              to: message.to,
-              subject: message.content.subject,
-              text: message.content.text,
-              html: message.content.html,
-              replyTo: message.content.replyTo ?? config.replyTo,
-            });
+            const info = await requests.run(request, () =>
+              transporter.sendMail({
+                from: message.content.from ?? config.from,
+                to: message.to,
+                subject: message.content.subject,
+                text: message.content.text,
+                html: message.content.html,
+                replyTo: message.content.replyTo ?? config.replyTo,
+              }),
+            );
             return {
               status: 'accepted',
               providerMessageId: info.messageId,
@@ -81,9 +150,12 @@ export function createSmtpProviderDefinition(): SendingProviderDefinition<
               },
               disposition: smtpDisposition(error, transportFailure),
             };
+          } finally {
+            for (const socket of request.sockets) socket.destroy();
           }
         },
         async close(): Promise<void> {
+          for (const socket of sockets) socket.destroy();
           transporter.close();
         },
       };

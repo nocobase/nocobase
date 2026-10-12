@@ -72,7 +72,9 @@ export function createEmailChannelDefinition(): NotificationChannelDefinition<
         };
       },
     },
-    createChannel: createSendingDefinition().createChannel,
+    createChannel(context, config) {
+      return createSendingDefinition().createChannel(context, config);
+    },
   };
 }
 

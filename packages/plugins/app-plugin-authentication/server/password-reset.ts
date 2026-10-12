@@ -47,10 +47,13 @@ export class PasswordResetTasks {
             20_000,
           );
         });
-        void Promise.race([
-          Promise.resolve().then(() => (this.closing ? undefined : work())),
-          timeout,
-        ])
+        const running = Promise.resolve().then(() =>
+          this.closing ? undefined : work(),
+        );
+        // The deadline bounds waiting, not an uncancellable callback's lifetime.
+        // Keep its slot and pending record until the actual work settles.
+        void Promise.race([running, timeout]).catch(() => this.failed());
+        void running
           .catch(() => this.failed())
           .finally(() => {
             if (timer) clearTimeout(timer);

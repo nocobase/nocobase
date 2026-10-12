@@ -30,7 +30,9 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
       );
     this.channelDefinitions.set(definition.type, definition);
     if (
-      ['email', 'im'].includes(definition.type) &&
+      (definition.deliveryLayer === 'sending' ||
+        (definition.deliveryLayer !== 'notification' &&
+          ['email', 'im'].includes(definition.type))) &&
       !this.sending?.channel(definition.type)
     )
       this.sending?.registerChannel(definition);
@@ -50,9 +52,18 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
       throw new Error(
         `Notification Provider "${definition.type}" is already registered.`,
       );
+    if (
+      definition.deliveryLayer === 'notification' &&
+      this.sending?.provider(definition.type)
+    )
+      throw new Error(
+        `Notification Provider "${definition.type}" is already owned by sending.`,
+      );
     this.providerDefinitions.set(definition.type, definition);
     if (
-      ['email', 'im'].includes(definition.messageType) &&
+      (definition.deliveryLayer === 'sending' ||
+        (definition.deliveryLayer !== 'notification' &&
+          ['email', 'im'].includes(definition.messageType))) &&
       !this.sending?.provider(definition.type)
     )
       this.sending?.registerProvider(definition);
@@ -60,11 +71,11 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
   }
 
   channel(type: string): NotificationChannelDefinition | undefined {
-    return this.channelDefinitions.get(type);
+    return this.channelDefinitions.get(type) ?? this.sending?.channel(type);
   }
 
   provider(type: string): NotificationProviderDefinition | undefined {
-    return this.providerDefinitions.get(type);
+    return this.providerDefinitions.get(type) ?? this.sending?.provider(type);
   }
 
   testTargets(

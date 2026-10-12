@@ -163,6 +163,23 @@ export class Auth {
       : [username({ displayUsername: false }), ...(config.plugins ?? [])];
     const configuredSessionCreate = config.databaseHooks?.session?.create;
     const resetUserIds = new WeakMap<object, string>();
+    const assertResetAccount = async (userId: string): Promise<void> => {
+      const user = await connection.query
+        .selectFrom('user')
+        .select(['id', 'kind', 'disabledAt', 'deletedAt'])
+        .where('id', '=', userId)
+        .executeTakeFirst();
+      if (
+        !user ||
+        isServiceAccount(user) ||
+        user.disabledAt != null ||
+        user.deletedAt != null
+      )
+        throw APIError.from('BAD_REQUEST', {
+          code: 'INVALID_TOKEN',
+          message: 'Invalid token.',
+        });
+    };
     const throttledResetRequests = new WeakSet<Request>();
     const configuredAccountUpdate = config.databaseHooks?.account?.update;
     const configuredAccountCreate = config.databaseHooks?.account?.create;
@@ -242,7 +259,7 @@ export class Auth {
               throttledResetRequests.add(context.request);
           }
           if (context.path === '/reset-password') {
-            const token: unknown = body?.token ?? context.query?.token;
+            const token: unknown = body?.token || context.query?.token;
             const verification =
               typeof token === 'string'
                 ? await context.context.internalAdapter.findVerificationValue(
@@ -251,19 +268,7 @@ export class Auth {
                 : undefined;
             if (verification) {
               resetUserIds.set(context.context, verification.value);
-              const user = await context.context.internalAdapter.findUserById(
-                verification.value,
-              );
-              if (
-                !user ||
-                isServiceAccount(user) ||
-                Reflect.get(user, 'disabledAt') != null ||
-                Reflect.get(user, 'deletedAt') != null
-              )
-                throw APIError.from('BAD_REQUEST', {
-                  code: 'INVALID_TOKEN',
-                  message: 'Invalid token.',
-                });
+              await assertResetAccount(verification.value);
             }
           }
           return config.hooks?.before?.(context);
@@ -300,19 +305,9 @@ export class Auth {
                 account.password !== undefined &&
                 context?.path === '/reset-password'
               ) {
-                const user = await context.context.internalAdapter.findUserById(
+                await assertResetAccount(
                   account.userId ?? resetUserIds.get(context.context) ?? '',
                 );
-                if (
-                  !user ||
-                  isServiceAccount(user) ||
-                  Reflect.get(user, 'disabledAt') != null ||
-                  Reflect.get(user, 'deletedAt') != null
-                )
-                  throw APIError.from('BAD_REQUEST', {
-                    code: 'INVALID_TOKEN',
-                    message: 'Invalid token.',
-                  });
               }
               return configuredAccountUpdate?.before?.(account, context);
             },
@@ -322,6 +317,11 @@ export class Auth {
             // No password and no linked provider for a service account: a reset link or a social sign-in that got
             // this far still has nothing to sign in with.
             before: async (account, context) => {
+              if (
+                account.providerId === 'credential' &&
+                context?.path === '/reset-password'
+              )
+                await assertResetAccount(account.userId);
               if ((await userKindOf(account.userId, context)) === 'service')
                 throw serviceAccountRefusal();
               return configuredAccountCreate?.before?.(account, context);

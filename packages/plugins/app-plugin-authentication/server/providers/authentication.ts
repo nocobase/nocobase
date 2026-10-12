@@ -1,4 +1,7 @@
-import { sendingServiceToken } from '@nocobase/app-server/sending';
+import {
+  sendingServiceToken,
+  type SendingService,
+} from '@nocobase/app-server/sending';
 import { i18nToken } from '@nocobase/app-server/i18n';
 import { automaticResetSender, PasswordResetTasks } from '../password-reset.js';
 import { joinBasePath, normalizeBasePath } from '@nocobase/app-server/support';
@@ -75,30 +78,10 @@ export class AuthenticationProvider<
   public override register(): void {
     this.removePublicValue = this.app.config.contributePublicValue?.(
       'auth.passwordReset.available',
-      () => {
-        const config = this.app.config.get<AuthConfig>('auth');
-        if (
-          !this.app.container
-            .resolve(authenticationToken)
-            .passwordResetAvailable()
-        )
-          return false;
-        if (
-          config?.passwordReset?.enabled === false ||
-          config?.emailAndPassword?.enabled === false
-        )
-          return false;
-        if (config?.emailAndPassword?.sendResetPassword) return true;
-        return (
-          this.app.container.has(sendingServiceToken) &&
-          this.app.container
-            .resolve(sendingServiceToken)
-            .available(
-              config?.passwordReset?.emailChannel ?? 'system-email',
-              'email',
-            )
-        );
-      },
+      () =>
+        this.app.container
+          .resolve(authenticationToken)
+          .passwordResetAvailable(),
     );
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
@@ -210,25 +193,27 @@ export class AuthenticationProvider<
     const sending = container.has(sendingServiceToken)
       ? container.resolve(sendingServiceToken)
       : undefined;
-    const sender =
-      passwordReset?.enabled === false
-        ? undefined
-        : (authConfig.emailAndPassword?.sendResetPassword ??
-          (sending?.available(channel, 'email')
-            ? automaticResetSender({
-                sending,
-                channel,
-                config: passwordReset ?? {},
-                appName: app.name,
-                ...(container.has(i18nToken)
-                  ? { i18n: container.resolve(i18nToken) }
-                  : {}),
-                current: () =>
-                  this.app.config.get<AuthConfig>('auth')?.passwordReset ?? {},
-                defaultLocale:
-                  this.app.config.get<string>('i18n.defaultLocale'),
-              })
-            : undefined));
+    const sender = !resetDeliveryAvailable(
+      configuredAuth,
+      sending,
+      !!authConfig.emailAndPassword?.sendResetPassword,
+    )
+      ? undefined
+      : (authConfig.emailAndPassword?.sendResetPassword ??
+        (sending
+          ? automaticResetSender({
+              sending,
+              channel,
+              config: passwordReset ?? {},
+              appName: app.name,
+              ...(container.has(i18nToken)
+                ? { i18n: container.resolve(i18nToken) }
+                : {}),
+              current: () =>
+                this.app.config.get<AuthConfig>('auth')?.passwordReset ?? {},
+              defaultLocale: this.app.config.get<string>('i18n.defaultLocale'),
+            })
+          : undefined));
     const publicPaths = this.app.config.publicPaths?.();
     if (
       publicPaths &&
@@ -253,15 +238,11 @@ export class AuthenticationProvider<
           ? (data, request) =>
               tasks.submit(async () => {
                 if (
-                  this.app.config.get<AuthConfig>('auth')?.passwordReset
-                    ?.enabled === false ||
-                  (sending &&
-                    !authConfig.emailAndPassword?.sendResetPassword &&
-                    !sending.available(
-                      this.app.config.get<AuthConfig>('auth')?.passwordReset
-                        ?.emailChannel ?? 'system-email',
-                      'email',
-                    ))
+                  !resetDeliveryAvailable(
+                    this.app.config.get<AuthConfig>('auth'),
+                    sending,
+                    !!authConfig.emailAndPassword?.sendResetPassword,
+                  )
                 )
                   return;
                 const user = await database
@@ -353,19 +334,13 @@ export class AuthenticationProvider<
       },
     });
     const installedResetAvailable = auth.passwordResetAvailable();
-    auth.passwordResetAvailable = (): boolean => {
-      const current = this.app.config.get<AuthConfig>('auth');
-      return (
-        installedResetAvailable &&
-        current?.emailAndPassword?.enabled !== false &&
-        current?.passwordReset?.enabled !== false &&
-        (!!authConfig.emailAndPassword?.sendResetPassword ||
-          !!sending?.available(
-            current?.passwordReset?.emailChannel ?? 'system-email',
-            'email',
-          ))
+    auth.passwordResetAvailable = (): boolean =>
+      installedResetAvailable &&
+      resetDeliveryAvailable(
+        this.app.config.get<AuthConfig>('auth'),
+        sending,
+        !!authConfig.emailAndPassword?.sendResetPassword,
       );
-    };
     const originalAuthHandler = auth.handler.bind(auth);
     auth.handler = (request: Request): Promise<Response> =>
       originalAuthHandler(toPublicRequest(request, app.publicBasePath));
@@ -501,4 +476,21 @@ export function toPublicRequest(
   }
 
   return new Request(url, init);
+}
+
+/** The installed callback, background work and public capability use the same live gate. */
+function resetDeliveryAvailable(
+  config: AuthConfig | undefined,
+  sending: SendingService | undefined,
+  customSender: boolean,
+): boolean {
+  return (
+    config?.emailAndPassword?.enabled !== false &&
+    config?.passwordReset?.enabled !== false &&
+    (customSender ||
+      !!sending?.available(
+        config?.passwordReset?.emailChannel ?? 'system-email',
+        'email',
+      ))
+  );
 }

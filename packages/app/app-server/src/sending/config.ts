@@ -13,12 +13,13 @@ export function defineSendingConfig(
 export function resolveSendingConfig(
   current: SendingConfig | undefined,
   legacy: SendingConfig | undefined,
+  ownsProvider: (type: string) => boolean,
 ): SendingConfig {
   return {
     channels: {
       ...Object.fromEntries(
-        Object.entries(legacy?.channels ?? {}).filter(
-          ([, config]) => config.provider !== 'in-app',
+        Object.entries(legacy?.channels ?? {}).filter(([, config]) =>
+          ownsProvider(config.provider),
         ),
       ),
       ...current?.channels,

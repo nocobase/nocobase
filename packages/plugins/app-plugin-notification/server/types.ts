@@ -369,6 +369,8 @@ export interface NotificationProviderDefinition<
 > {
   readonly type: TConfig['provider'];
   readonly messageType: string;
+  /** Defaults to sending for email/im, notification for other legacy extensions. */
+  readonly deliveryLayer?: 'sending' | 'notification';
   readonly label?: string | NotificationI18nText;
   readonly capabilities?: NotificationProviderCapabilities;
   validateConfig?(config: TConfig): void;
@@ -385,6 +387,8 @@ export interface NotificationChannelDefinition<
   TPrepared = object,
 > {
   readonly type: string;
+  /** Explicitly forwards pure custom message types to the sending registry. */
+  readonly deliveryLayer?: 'sending' | 'notification';
   readonly test?: NotificationTestAdapter<TConfig>;
   validateConfig?(config: TConfig): void;
   createChannel(

@@ -1,3 +1,11 @@
+import {
+  SendingProvider,
+  sendingServiceToken,
+  sendingExtensionRegistryToken,
+} from '@nocobase/app-server/sending';
+import { createEmailChannelDefinition } from '@nocobase/sending/email';
+import { createNotificationManager } from '../server/manager.js';
+import { FakeNotificationStore } from './helpers/fake-notification-store.js';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import {
   authorizationToken,
@@ -163,6 +171,115 @@ describe('@nocobase/app-plugin-notification provider', () => {
       expect(() => provider.register()).toThrow(
         `notification.jobs names "${name}", which is not a jobs configuration.`,
       );
+    },
+  );
+
+  it.each(['notification', 'sending'] as const)(
+    'starts mixed legacy %s and sending-only extensions and exposes both management targets',
+    async (layer) => {
+      const container = createContainer(true);
+      const sections = {
+        notification: {
+          channels: {
+            text: { provider: 'local-sms' },
+            oldMail: { provider: 'custom-mail' },
+          },
+        },
+        sending: { channels: { newMail: { provider: 'custom-mail' } } },
+      };
+      const app = { config: configSections(sections), container };
+      const sendingProvider = new SendingProvider(app);
+      sendingProvider.register();
+      const provider = new NotificationProvider(app);
+      provider.register();
+      const sendingRegistry = container.resolve(sendingExtensionRegistryToken);
+      const sent = vi.fn(async () => ({ status: 'accepted' as const }));
+      sendingRegistry.registerProvider({
+        type: 'custom-mail',
+        messageType: 'email',
+        async createProvider() {
+          return { type: 'custom-mail', send: sent };
+        },
+      });
+      const registry = container.resolve(notificationExtensionRegistryToken);
+      registry
+        .registerChannel({
+          type: 'sms',
+          ...(layer === 'sending' ? { deliveryLayer: 'sending' as const } : {}),
+          test: { label: 'SMS', fields: [], toSendInput: () => ({}) },
+          async createChannel() {
+            return {
+              type: 'sms',
+              validateMessage: (message) => ({
+                message: message as object,
+                recipients: [{}],
+              }),
+              async prepare() {
+                return {};
+              },
+            };
+          },
+        })
+        .registerProvider({
+          type: 'local-sms',
+          messageType: 'sms',
+          ...(layer === 'sending' ? { deliveryLayer: 'sending' as const } : {}),
+          async createProvider() {
+            return { type: 'local-sms', send: sent };
+          },
+        });
+      // Notification contributes the email test form; delivery definitions are only registered through sending.
+      registry.registerChannel({
+        ...createEmailChannelDefinition(),
+        test: { label: 'Email', fields: [], toSendInput: () => ({}) },
+      });
+      await sendingProvider.boot();
+      await provider.boot();
+      await sendingProvider.start();
+      await provider.start();
+      const sending = container.resolve(sendingServiceToken);
+      expect(Object.keys(sending.config().channels).sort()).toEqual(
+        layer === 'sending'
+          ? ['newMail', 'oldMail', 'text']
+          : ['newMail', 'oldMail'],
+      );
+      const manager = container.resolve(notificationRuntimeToken);
+      expect(
+        manager
+          .listTestTargets()
+          .map((target) => target.channel.name)
+          .sort(),
+      ).toEqual(['newMail', 'oldMail', 'text']);
+      const runtime = createNotificationManager({
+        database: container.resolve(databaseManagerToken),
+        executor: new InlineJobExecutor(),
+        logger: createLogger({ level: 'silent' }),
+        registry,
+        sending,
+        store: new FakeNotificationStore(),
+        config: {
+          channels: {
+            ...sections.notification.channels,
+            ...sending.config().channels,
+          },
+        },
+      });
+      try {
+        await runtime.sendTransient({ channel: 'text', message: {} });
+        await runtime.sendTransient({
+          channel: 'newMail',
+          message: {
+            to: 'recipient@example.test',
+            subject: 'Test',
+            text: 'Test',
+          },
+        });
+        expect(sent).toHaveBeenCalledTimes(2);
+      } finally {
+        await runtime.close();
+        await provider.shutdown();
+        await sendingProvider.shutdown();
+      }
     },
   );
 

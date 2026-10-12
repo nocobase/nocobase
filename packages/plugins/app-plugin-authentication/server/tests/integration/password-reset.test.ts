@@ -80,6 +80,7 @@ async function setup(
       import('better-auth').BetterAuthOptions['emailAndPassword']
     >['sendResetPassword']
   >,
+  authOverrides: Partial<import('../../config.js').AuthConfig> = {},
 ) {
   const database = await createAuthTestDatabase();
   cleanup.push(() => database.destroy());
@@ -109,6 +110,7 @@ async function setup(
           session: { storeSessionInDatabase: true },
           advanced: { disableOriginCheck: false },
           rateLimit: { enabled: false },
+          ...authOverrides,
         },
         notification: {
           channels: port
@@ -161,7 +163,7 @@ async function setup(
         }),
       ),
     );
-  return { app, request, connection: database.database.connection() };
+  return { app, request, config, connection: database.database.connection() };
 }
 
 it('resets through real SMTP without notification or authorization, revokes sessions and consumes the token once', async () => {
@@ -429,4 +431,117 @@ it('preserves callback origin checks even for a throttled address', async () => 
     redirectTo: 'https://untrusted.example/reset',
   });
   expect(rejected.status).toBe(403);
+});
+
+it.each(['disabledAt', 'deletedAt'] as const)(
+  'protects a passwordless %s account for body and query token forms',
+  async (field) => {
+    const { app, request, connection } = await setup(undefined, vi.fn());
+    await request('sign-up/email', {
+      email: 'oauth@example.test',
+      username: 'oauth',
+      name: 'OAuth',
+      password: 'original-password',
+    });
+    const user = await connection.query
+      .selectFrom('user')
+      .select('id')
+      .where('email', '=', 'oauth@example.test')
+      .executeTakeFirstOrThrow();
+    await connection.query
+      .deleteFrom('account')
+      .where('userId', '=', user.id)
+      .where('providerId', '=', 'credential')
+      .execute();
+    await connection.query
+      .updateTable('user')
+      .set({ [field]: new Date() })
+      .where('id', '=', user.id)
+      .execute();
+    const context = await app.container
+      .resolve(authenticationToken)
+      .administrationContext();
+    for (const form of ['body', 'query', 'empty-body'] as const) {
+      const token = crypto.randomUUID();
+      await context.internalAdapter.createVerificationValue({
+        identifier: `reset-password:${token}`,
+        value: user.id,
+        expiresAt: new Date(Date.now() + 60000),
+      });
+      const response = await request(
+        form === 'body' ? 'reset-password' : `reset-password?token=${token}`,
+        {
+          ...(form === 'body'
+            ? { token }
+            : form === 'empty-body'
+              ? { token: '' }
+              : {}),
+          newPassword: 'replacement-password',
+        },
+      );
+      expect(response.status).toBe(400);
+      expect(
+        await connection.query
+          .selectFrom('account')
+          .select('id')
+          .where('userId', '=', user.id)
+          .where('providerId', '=', 'credential')
+          .execute(),
+      ).toEqual([]);
+    }
+  },
+);
+
+it('does not install reset delivery when password login starts disabled', async () => {
+  const receiver = await smtp();
+  const { app, request } = await setup(receiver.port, undefined, {
+    emailAndPassword: { enabled: false },
+  });
+  const context = await app.container
+    .resolve(authenticationToken)
+    .administrationContext();
+  await context.internalAdapter.createUser({
+    email: 'closed@example.test',
+    name: 'Closed',
+    emailVerified: false,
+  });
+  expect(
+    app.container.resolve(authenticationToken).passwordResetAvailable(),
+  ).toBe(false);
+  expect(
+    (await request('request-password-reset', { email: 'closed@example.test' }))
+      .status,
+  ).toBe(400);
+  await app.shutdown();
+  expect(receiver.messages).toEqual([]);
+});
+
+it('suppresses delivery after password login is disabled in current configuration', async () => {
+  const receiver = await smtp();
+  const overrides: Partial<import('../../config.js').AuthConfig> = {};
+  const { app, request, config } = await setup(
+    receiver.port,
+    undefined,
+    overrides,
+  );
+  await request('sign-up/email', {
+    email: 'closed@example.test',
+    username: 'closed',
+    name: 'Closed',
+    password: 'original-password',
+  });
+  overrides.emailAndPassword = { enabled: false };
+  await config.loadAll();
+  expect(
+    app.container.resolve(authenticationToken).passwordResetAvailable(),
+  ).toBe(false);
+  expect(app.config.publicValues?.()).toMatchObject({
+    auth: { passwordReset: { available: false } },
+  });
+  expect(
+    (await request('request-password-reset', { email: 'closed@example.test' }))
+      .status,
+  ).toBe(200);
+  await app.shutdown();
+  expect(receiver.messages).toEqual([]);
 });

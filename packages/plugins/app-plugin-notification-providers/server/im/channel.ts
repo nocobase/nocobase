@@ -77,7 +77,9 @@ export function createImChannelDefinition(): NotificationChannelDefinition<
         };
       },
     },
-    createChannel: createSendingDefinition().createChannel,
+    createChannel(context, config) {
+      return createSendingDefinition().createChannel(context, config);
+    },
   };
 }
 

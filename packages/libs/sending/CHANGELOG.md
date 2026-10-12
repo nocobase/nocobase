@@ -1,4 +1,4 @@
-# Changelog
+# @nocobase/sending
 
 ## 0.0.1
 

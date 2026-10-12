@@ -25,6 +25,7 @@ export class SendingProvider extends ServiceProvider<AppPluginApplication> {
             resolveSendingConfig(
               this.app.config.get<SendingConfig>('sending'),
               this.app.config.get<SendingConfig>('notification'),
+              (type) => registry.provider(type) !== undefined,
             ),
         }),
     );
@@ -33,7 +34,10 @@ export class SendingProvider extends ServiceProvider<AppPluginApplication> {
     const legacy = this.app.config.get<SendingConfig>('notification');
     if (
       Object.values(legacy?.channels ?? {}).some(
-        (config) => config.provider !== 'in-app',
+        (config) =>
+          this.app.container
+            .resolve(sendingExtensionRegistryToken)
+            .provider(config.provider) !== undefined,
       )
     )
       this.app.container
