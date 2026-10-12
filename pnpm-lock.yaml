@@ -874,6 +874,9 @@ importers:
       '@nocobase/logging':
         specifier: workspace:^
         version: link:../../libs/logging
+      '@nocobase/mailer':
+        specifier: workspace:^
+        version: link:../../libs/mailer
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
@@ -3306,6 +3309,37 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/libs/mailer:
+    dependencies:
+      nodemailer:
+        specifier: ^9.0.5
+        version: 9.0.5
+      resend:
+        specifier: ^6.22.1
+        version: 6.24.0
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@types/nodemailer':
+        specifier: ^8.0.1
+        version: 8.0.1
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/libs/markdown-mermaid:
     dependencies:
       mermaid:
@@ -3766,6 +3800,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/mailer':
+        specifier: workspace:^
+        version: link:../../libs/mailer
       '@nocobase/snowflake':
         specifier: workspace:^
         version: link:../../libs/snowflake
@@ -4783,15 +4820,12 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/mailer':
+        specifier: workspace:^
+        version: link:../../libs/mailer
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
-      nodemailer:
-        specifier: ^9.0.5
-        version: 9.0.5
-      resend:
-        specifier: ^6.22.1
-        version: 6.24.0
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*
@@ -4805,9 +4839,15 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
+      nodemailer:
+        specifier: ^9.0.5
+        version: 9.0.5
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      resend:
+        specifier: ^6.22.1
+        version: 6.24.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

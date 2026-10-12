@@ -12,6 +12,10 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'auth.passwordResetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestNewResetLink': 'Request a new reset link',
+
   'issueRuns.model': 'Model: {{model}}',
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',

@@ -1,0 +1,7 @@
+# Host email service
+
+Register `MailerProvider` from `@nocobase/app-server/mailer` before plugin contributions. `mailerToken` resolves the host's lazy email service; only enabled, valid `smtp` and `resend` entries in the application's merged `notification.channels` configuration are recognized. Unknown providers continue through their owning notification extensions. No notification plugin or authorization plugin is required to use this service.
+
+Declare the existing `notification` section with `defineMailChannelsConfig({ defaults: { channels: {} } })`. This adds pure built-in email validation and optional secret environment mappings: `SMTP_PASSWORD` maps to `channels.system-email.auth.pass`, and `RESEND_API_KEY` maps to `channels.system-email.apiKey`. Mappings neither choose a provider nor enable a channel. An application can override these mappings or declare other channels in the same definition's `env`; no parallel configuration or copy of credentials is needed. Enabled invalid built-in configurations report a path and fixed explanation without their values. Nothing is public by default.
+
+The host creates and closes its own transport instances. Notification Providers independently create and close instances using the same library and configuration. Connections are not shared across layers. Shutdown resolves only already-created host services and calls each transport's bound `close()` once.
