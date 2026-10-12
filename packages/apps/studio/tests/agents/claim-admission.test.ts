@@ -123,7 +123,7 @@ describe('claiming queued issue work', () => {
     });
   });
 
-  it('admits a mentioned agent on a backlog issue, and does not wake the project manager there', async () => {
+  it('does not wake any mentioned agent on a backlog issue', async () => {
     const harness = await setUp();
     const coder = await harness.createAgent({ name: 'Coder' });
     const issue = await harness.projects.issues.create(
@@ -136,15 +136,9 @@ describe('claiming queued issue work', () => {
     const claimed = [await harness.claimOne(), await harness.claimOne()].filter(
       Boolean,
     );
-    expect(claimed).toHaveLength(1);
+    expect(claimed).toHaveLength(0);
     const runs = await runsOf(harness, issue.id);
-    expect(runs.find((run) => run.agentId === coder)).toMatchObject({
-      id: claimed[0].run.id,
-      status: 'dispatched',
-    });
-    expect(
-      runs.find((run) => run.agentId === PROJECT_MANAGER_ID),
-    ).toBeUndefined();
+    expect(runs).toEqual([]);
   });
 
   it('cancels a run whose issue is gone', async () => {

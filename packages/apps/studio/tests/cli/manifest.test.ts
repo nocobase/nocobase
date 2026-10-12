@@ -207,6 +207,8 @@ describe('Studio’s command manifest', () => {
     const issue = await projects.issues.create(viewer, {
       title: 'Fix login',
       executor: null,
+      statusKey: 'in_progress',
+      start: false,
     });
     await projects.comments.post({ type: 'user', id: me.user.id }, issue.id, {
       content: `[@Coder](mention://agent/${agentId}) fix it`,

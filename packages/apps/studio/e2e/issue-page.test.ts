@@ -402,6 +402,11 @@ test.describe('issue page', () => {
     page,
     api,
   }, testInfo) => {
+    await api.patch(`projects/issues/${issue.id}`, {
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
+    });
     const runner = new FakeRunner(api, `live-issue-${unique()}`);
     await runner.agent();
     const runsPath = `agents/runs?subjectKind=issue&subjectId=${issue.id}`;

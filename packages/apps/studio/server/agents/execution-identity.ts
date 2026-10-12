@@ -28,7 +28,11 @@ export function issueExecutionIdentity(
         if (
           previous?.run.subject.id === work.subjectId &&
           previous.run.subject.kind === 'issue' &&
-          (await inChain(previous.run.agentId, previous.inputs))
+          (await inChain(
+            previous.run.agentId,
+            previous.inputs,
+            previous.run.retryOfRunId ?? undefined,
+          ))
         )
           return true;
       }
@@ -38,6 +42,11 @@ export function issueExecutionIdentity(
             ? (input.payload as Record<string, unknown>)
             : {};
         if (payload.ownerIdentity === true) return true;
+        if (
+          typeof payload.retryOfRunId === 'string' &&
+          (await inChain(agentId, [], payload.retryOfRunId))
+        )
+          return true;
         if (
           typeof payload.causedByRunId === 'string' &&
           (await inChain(agentId, [], payload.causedByRunId))
@@ -81,6 +90,8 @@ export function issueExecutionIdentity(
       work.subjectId,
       { kind: AGENT_KIND },
     );
+    // Missing subjects are rejected by claim admission with its precise reason.
+    if (!issue) return undefined;
     const ownerId = issue?.owner.id;
     if (!ownerId) return { actorUserId: null, reason: 'noOwner' };
     if (!(await validIssueOwner(conn, ownerId)))

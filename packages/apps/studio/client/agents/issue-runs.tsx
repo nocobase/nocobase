@@ -5,6 +5,7 @@
  * is the agents plugin's own (its namespace), filled into the item's labels here.
  */
 import { useClientApplication } from '@nocobase/app-client';
+import { runTriggerActor } from './run-trigger.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import {
@@ -628,10 +629,7 @@ export function IssueRunTranscript({
     : detail?.modelService
       ? `${detail.modelService} · ${detail.model ?? ''}${effort}`
       : null;
-  const triggerActor = detail?.retryOfRunId
-    ? (detail.inputs.find((input) => input.type === 'retry')?.actor ??
-      detail.inputs[0]?.actor)
-    : detail?.inputs[0]?.actor;
+  const triggerActor = detail ? runTriggerActor(detail) : undefined;
   const summary = detail ? (
     <>
       <p className='text-xs text-muted-foreground'>

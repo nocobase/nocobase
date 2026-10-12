@@ -7,6 +7,7 @@ import {
 } from '@nocobase/agent-protocol';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 import { PROJECT_MANAGER_ID as PM } from '../../shared/project-manager.js';
+import { runTriggerActor } from '../../client/agents/run-trigger.js';
 
 let h: BridgeHarness;
 beforeEach(async () => {
@@ -31,6 +32,148 @@ const issue = () =>
 const mention = (id: string) => `[@Agent](mention://agent/${id}) do the step`;
 
 describe('manager and delegated identities', () => {
+  it('keeps three handled retries and their subsequent delegation in the manager chain at enqueue and claim', async () => {
+    const task = await issue();
+    const worker = await h.createAgent({ name: 'Worker' });
+    const next = await h.createAgent({ name: 'Next' });
+    await h.projects.comments.create(
+      { ...h.viewer('bob'), actor: { type: 'agent', id: PM } },
+      task.id,
+      { content: mention(worker) },
+    );
+    let [run] = await runs(task.id);
+    await h.agents.runs.cancel(run.id, 'bob');
+    for (let n = 0; n < 3; n++) {
+      await h.database
+        .connection()
+        .repository('agRunInputs')
+        .updateMany({
+          filter: { runId: run.id },
+          values: { handledAt: new Date().toISOString() },
+        });
+      run = await h.agents.runs.retry(run.id, 'bob');
+      expect(run.actorUserId).toBe('alice');
+      // Legacy incorrect actors must also be corrected by claim admission.
+      await h.database
+        .connection()
+        .repository('agRuns')
+        .updateMany({
+          filter: { id: run.id },
+          values: { actorUserId: 'bob' },
+        });
+      expect((await h.claimOne()).run.id).toBe(run.id);
+      expect((await h.agents.runs.get(run.id)).actorUserId).toBe('alice');
+      if (n < 2) {
+        await h.agents.runs.cancel(run.id, 'bob');
+        await h.runner(RUNNER_ROUTES.cancelAck, run.id, {});
+      }
+    }
+    await h.projects.comments.create(
+      {
+        ...h.viewer('bob'),
+        actor: { type: 'agent', id: worker, trace: { runId: run.id } },
+      },
+      task.id,
+      { content: mention(next) },
+    );
+    const step = (await runs(task.id)).find((item) => item.agentId === next)!;
+    expect(step.actorUserId).toBe('alice');
+    expect((await h.claimOne()).run.id).toBe(step.id);
+    expect((await h.agents.runs.get(step.id)).actorUserId).toBe('alice');
+  });
+
+  it('selects this retry actor while retaining the earlier unhandled retry input', async () => {
+    const task = await issue();
+    await h.projects.comments.create(h.viewer('alice'), task.id, {
+      content: 'Please work',
+    });
+    const [original] = await runs(task.id);
+    await h.agents.runs.cancel(original.id, 'alice');
+    const first = await h.agents.runs.retry(original.id, 'bob');
+    await h.agents.runs.cancel(first.id, 'bob');
+    const second = await h.agents.runs.retry(first.id, 'alice');
+    const detail = await h.agents.runs.detail(second.id);
+    expect(
+      detail.inputs
+        .filter((input) => input.type === 'retry')
+        .map((input) => input.actor.id),
+    ).toEqual(['bob', 'alice']);
+    expect(runTriggerActor(detail)?.id).toBe('alice');
+  });
+
+  it('preserves the retrying person for a direct worker through repeated handled retries', async () => {
+    const task = await issue();
+    const worker = await h.createAgent({ name: 'Direct worker' });
+    await h.projects.comments.create(h.viewer('bob'), task.id, {
+      content: mention(worker),
+    });
+    let run = (await runs(task.id)).find((item) => item.agentId === worker)!;
+    for (let n = 0; n < 3; n++) {
+      await h.agents.runs.cancel(run.id, 'bob');
+      await h.database
+        .connection()
+        .repository('agRunInputs')
+        .updateMany({
+          filter: { runId: run.id },
+          values: { handledAt: new Date().toISOString() },
+        });
+      run = await h.agents.runs.retry(run.id, 'bob');
+      expect(run.actorUserId).toBe('bob');
+    }
+  });
+
+  it('stops cyclic retry provenance and ignores a manager run on another subject', async () => {
+    const task = await issue();
+    const worker = await h.createAgent({ name: 'Direct worker' });
+    await h.projects.comments.create(h.viewer('bob'), task.id, {
+      content: mention(worker),
+    });
+    const original = (await runs(task.id)).find(
+      (item) => item.agentId === worker,
+    )!;
+    const lookup = vi
+      .spyOn(h.agents.runs, 'identityInputs')
+      .mockImplementation(async (_conn, id) => ({
+        run: {
+          ...original,
+          id,
+          retryOfRunId: id === 'first' ? 'second' : 'first',
+        },
+        inputs: [],
+      }));
+    const resolve = h.agents.subjects.get('issue')!.actsAs!;
+    const work = {
+      subjectId: task.id,
+      agentId: worker,
+      inputs: [
+        {
+          actor: { kind: 'user' as const, id: 'bob', name: 'Bob' },
+          payload: { retryOfRunId: 'first' },
+        },
+      ],
+    };
+    expect(await resolve(h.database.connection(), work)).toBeUndefined();
+    expect(lookup).toHaveBeenCalledTimes(2);
+    lookup.mockResolvedValue({
+      run: {
+        ...original,
+        agentId: PM,
+        subject: { ...original.subject, id: 'another-issue' },
+      },
+      inputs: [],
+    });
+    expect(await resolve(h.database.connection(), work)).toBeUndefined();
+    lookup.mockResolvedValue({
+      run: {
+        ...original,
+        agentId: PM,
+        subject: { ...original.subject, kind: 'conversation' },
+      },
+      inputs: [],
+    });
+    expect(await resolve(h.database.connection(), work)).toBeUndefined();
+  });
+
   it('requires the owner to start, then uses the owner for others commenting and retrying', async () => {
     const task = await issue();
     expect(
