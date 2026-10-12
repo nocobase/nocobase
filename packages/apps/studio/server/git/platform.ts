@@ -607,12 +607,16 @@ export interface GitPlatform {
   ): Promise<string | null>;
   /**
    * An installation token: for the API with the installation's permissions, or, with `repositories`, limited to them
-   * and to writing their contents (a push credential).
+   * and to writing their contents (a push credential). A kept token is reused while it has enough validity left; with
+   * `refresh`, a new one is minted whatever is kept.
    */
   installationToken(
     app: AppCredentials,
     installationId: string,
-    options?: { readonly repositories?: readonly string[] },
+    options?: {
+      readonly repositories?: readonly string[];
+      readonly refresh?: boolean;
+    },
   ): Promise<ExpiringToken>;
   /** An installation of the app by its id, with the account it is on; null when it is not the app's. */
   getInstallation(

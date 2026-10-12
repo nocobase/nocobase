@@ -9,6 +9,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
+
 import { setPreviewNotRequired } from '../../server/previews/preferences.js';
 import { createGitConnections } from '../../server/git/connections.js';
 import { INSTALLATION_TOKENS } from '../../server/git/installation-tokens.js';
@@ -1016,6 +1018,209 @@ describe('nb-studio pr open', () => {
     await mentionAgent(h, 'alice', third.id, agentId);
     const next = await h.claimOne();
     expect(next.workspace.git.trailers).toHaveLength(1);
+  });
+});
+
+describe('push credentials on demand', () => {
+  const URL_OF_REPO = `https://github.com/${REPO}.git`;
+  const ON_DEMAND = [
+    'input',
+    'checkout',
+    'directories',
+    'skills',
+    'secrets',
+    'gitCredentials',
+  ];
+
+  afterEach(() => vi.useRealTimers());
+
+  /** A run on an issue whose project links `REPO` through an app connection, claimed by a runner announcing `features`. */
+  async function claimed(features: readonly string[] = ON_DEMAND) {
+    const app = await appConnection();
+    const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
+    const linked = await projectWithRepo(app);
+    await mentionAgent(h, 'alice', linked.issue.id, agentId);
+    const payload = await h.claimOne(features);
+    return { app, payload, ...linked };
+  }
+
+  const ask = (payload: any, body: { url?: string; refresh?: boolean } = {}) =>
+    h.runner(RUNNER_ROUTES.gitCredential, payload.run.id as string, {
+      attempt: payload.run.attempt as number,
+      url: URL_OF_REPO,
+      ...body,
+    });
+
+  it('lists the app connection’s repositories for a runner that asks on demand, and mints nothing at the claim', async () => {
+    const { payload } = await claimed();
+    expect(payload.workspace.git.onDemand).toEqual([URL_OF_REPO]);
+    expect(payload.workspace.git.credentials).toBeUndefined();
+    expect(h.github.app.minted).toHaveLength(0);
+  });
+
+  it('keeps a selected PR branch when the runner obtains its push credential on demand', async () => {
+    const app = await appConnection();
+    const { issue } = await projectWithRepo(app);
+    h.github.addPull(REPO, {
+      number: 42,
+      head: { ref: 'fix/human', sha: 'pr-head', repo: { full_name: REPO } },
+    });
+    await h.git.link(alice(), issue.id, `https://github.com/${REPO}/pull/42`, {
+      type: 'user',
+      id: 'alice',
+    });
+    // Linking the PR may mint an API token; the claim must not mint a push credential as well.
+    const mintedBeforeClaim = h.github.app.minted.length;
+    const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
+    await mentionAgent(h, 'alice', issue.id, agentId);
+    const payload = await h.claimOne([...ON_DEMAND, 'prBranches']);
+    expect(payload.workspace.dirs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'repo',
+          branch: 'fix/human',
+          pullRequest: expect.objectContaining({ number: 42 }),
+        }),
+      ]),
+    );
+    expect(payload.workspace.git.onDemand).toEqual([URL_OF_REPO]);
+    expect(payload.workspace.git.credentials).toBeUndefined();
+    expect(h.github.app.minted).toHaveLength(mintedBeforeClaim);
+    const response = await ask(payload);
+    expect(response.status).toBe(200);
+    expect(h.github.app.minted).toHaveLength(mintedBeforeClaim + 1);
+  });
+
+  it('still hands an older runner its credential at the claim', async () => {
+    const { payload } = await claimed([
+      'input',
+      'checkout',
+      'directories',
+      'skills',
+      'secrets',
+    ]);
+    expect(payload.workspace.git.onDemand).toBeUndefined();
+    expect(payload.workspace.git.credentials).toEqual([
+      expect.objectContaining({
+        url: URL_OF_REPO,
+        username: 'x-access-token',
+        password: expect.stringMatching(/^ghs_/u),
+      }),
+    ]);
+  });
+
+  it('lists nothing on demand for a token connection', async () => {
+    const connection = await tokenConnection(h);
+    const { issue } = await projectWithRepo(connection);
+    const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
+    await mentionAgent(h, 'alice', issue.id, agentId);
+    const payload = await h.claimOne(ON_DEMAND);
+    expect(payload.workspace.git).toEqual({
+      author: expect.any(Object),
+      trailers: expect.any(Array),
+    });
+  });
+
+  it('issues a token limited to the run’s repositories and to writing their contents, reused while it has enough left', async () => {
+    const { payload } = await claimed();
+    const first = await ask(payload);
+    expect(first.status).toBe(200);
+    expect(first.body).toEqual({
+      username: 'x-access-token',
+      password: expect.stringMatching(/^ghs_/u),
+      expiresAt: expect.any(String),
+    });
+    expect(h.github.app.minted).toEqual([
+      expect.objectContaining({
+        token: first.body.password,
+        repositories: ['studio'],
+        permissions: { contents: 'write' },
+      }),
+    ]);
+    const again = await ask(payload);
+    expect(again.body.password).toBe(first.body.password);
+    expect(h.github.app.minted).toHaveLength(1);
+  });
+
+  it('mints a new token when the runner says the last one was refused', async () => {
+    const { payload } = await claimed();
+    const first = await ask(payload);
+    const refreshed = await ask(payload, { refresh: true });
+    expect(refreshed.status).toBe(200);
+    expect(refreshed.body.password).not.toBe(first.body.password);
+    expect(h.github.app.minted).toHaveLength(2);
+    expect(h.github.app.minted.at(-1)).toMatchObject({
+      repositories: ['studio'],
+      permissions: { contents: 'write' },
+    });
+  });
+
+  it('keeps a long run pushing: a token near its expiry is replaced by a fresh one', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const { payload } = await claimed();
+    const first = await ask(payload);
+    // 45 minutes in: the kept token has less than 30 minutes left, so it is not handed out again.
+    vi.setSystemTime(Date.now() + 45 * 60 * 1000);
+    await h.runner(RUNNER_ROUTES.lease, payload.run.id as string, {});
+    const later = await ask(payload);
+    expect(later.status).toBe(200);
+    expect(later.body.password).not.toBe(first.body.password);
+    expect(Date.parse(later.body.expiresAt)).toBeGreaterThan(
+      Date.parse(first.body.expiresAt),
+    );
+    // Past the first token's expiry, 70 minutes in: the second still covers the run.
+    vi.setSystemTime(Date.now() + 25 * 60 * 1000);
+    expect(Date.parse(first.body.expiresAt)).toBeLessThan(Date.now());
+    await h.runner(RUNNER_ROUTES.lease, payload.run.id as string, {});
+    const still = await ask(payload);
+    expect(still.status).toBe(200);
+    expect(Date.parse(still.body.expiresAt)).toBeGreaterThan(
+      Date.now() + 30 * 60 * 1000,
+    );
+  });
+
+  it('answers unavailable while GitHub is down, and denied when the connection cannot issue', async () => {
+    const { app, payload } = await claimed();
+    h.github.outage = { status: 503, times: 10 };
+    const down = await ask(payload);
+    expect(down.status).toBeGreaterThanOrEqual(400);
+    expect(down.body.error.reason).toBe('REPO_ACCESS_UNAVAILABLE');
+    expect(down.body.error.message).toContain('GitHub refused signing');
+    h.github.outage = null;
+    h.github.rateLimit = { status: 429, headers: { 'retry-after': '60' } };
+    const limited = await ask(payload);
+    expect(limited.body.error.reason).toBe('REPO_ACCESS_UNAVAILABLE');
+    h.github.rateLimit = null;
+    await h.projects.tx
+      .read()
+      .query.updateTable('studioGitConnections')
+      .set({ installationId: null })
+      .where('id', '=', app.id)
+      .execute();
+    const denied = await ask(payload);
+    expect(denied.body.error.reason).toBe('REPO_ACCESS_DENIED');
+    expect(denied.body.error.message).toContain('Settings > Git');
+  });
+
+  it('issues nothing for a repository unlinked since the claim, or once the run is over', async () => {
+    const { payload, project, resource } = await claimed();
+    await h.projects.projects.removeResource(alice(), project.id, resource.id);
+    const unlinked = await ask(payload);
+    expect(unlinked.body.error.reason).toBe('REPO_ACCESS_DENIED');
+    expect(h.github.app.minted).toHaveLength(0);
+    const failed = await h.runner(
+      RUNNER_ROUTES.fail,
+      payload.run.id as string,
+      {
+        reason: 'toolAuth',
+        detail: 'Not signed in.',
+      },
+    );
+    expect(failed.status).toBe(200);
+    const over = await ask(payload);
+    expect(over.status).toBeGreaterThanOrEqual(400);
+    expect(over.body.error.reason).not.toMatch(/^REPO_ACCESS/u);
+    expect(h.github.app.minted).toHaveLength(0);
   });
 });
 

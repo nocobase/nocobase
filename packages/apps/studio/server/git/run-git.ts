@@ -8,16 +8,26 @@
  *   with `meOnly`, the person alone. The person's own preference (`git.attribution`, Account settings › Preferences)
  *   wins, else their project's default (`studioGitProjectSettings`, the project's Settings tab), else `withAgent`.
  * - **Push credential**: for each repository reached through an app connection, an installation token limited to the
- *   run's repositories of that connection and `contents: write`, prepared before the claim's transaction (`prepare`),
- *   reused from the sealed connection cache only with sufficient validity and handed to the runner's credential helper.
- *   Signing failure prevents the claim; a token connection gives none: the runner
- *   pushes with the host's own credentials. Branch restrictions are instructions to the agent; the runner installs no push guard.
+ *   run's repositories of that connection and `contents: write`, reused from the sealed connection cache only while it
+ *   has at least 30 minutes left. A runner that asks for credentials on demand (the `gitCredentials` feature) is given
+ *   none at the claim: those repositories are listed in `onDemand`, and `issue` mints (or reuses) the token whenever
+ *   git needs one, so a run outlasting one token still pushes; a forced refresh always mints a new one. An older
+ *   runner gets one token at the claim, prepared before the claim's transaction (`prepare`), where a signing failure
+ *   prevents the claim. A token connection gives none: the runner pushes with the host's own credentials.
+ * - The token reaches every branch of the run's repositories that the host's branch protection leaves writable;
+ *   nothing on the runner limits which branch a run pushes. Branch restrictions are instructions to the agent;
+ *   the runner installs no push guard.
  */
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { RepoCredential, RepoDir, RunGit } from '@nocobase/agent-protocol';
-import type { RepoAccessProvider } from '@nocobase/app-plugin-agents/server/tokens';
+import {
+  RepoAccessError,
+  type RepoAccessProvider,
+  type RepoCredentialGrant,
+  type RepoCredentialRequest,
+} from '@nocobase/app-plugin-agents/server/tokens';
 import type { Run } from '@nocobase/app-plugin-agents/shared/runs';
 
 import type { ProjectResourceBinding } from '@nocobase/app-plugin-projects/shared/projects';
@@ -208,15 +218,51 @@ export async function runBranches(
   return branches;
 }
 
+/** The repositories of a run's project reached through one app connection. */
+interface ConnectionRepos {
+  readonly connectionId: string;
+  /** By working directory URL, with the repository's `owner/name`. */
+  readonly repos: readonly { readonly url: string; readonly repo: string }[];
+}
+
+/** The repositories of an issue run's project, by connection, and the hosts they are on. */
+interface RunRepos {
+  readonly projectId: string | null;
+  /** App connections only: those that issue push credentials. */
+  readonly apps: readonly ConnectionRepos[];
+  readonly apiBaseUrls: readonly string[];
+}
+
 /** What `prepare` hands to `forRun`. */
 interface PreparedAccess {
   readonly author: { readonly name: string; readonly email: string };
   readonly attribution: CommitAttribution;
-  /** By repository URL. */
+  /** Minted at the claim, by repository URL: only for a runner that does not ask on demand. */
   readonly credentials: readonly RepoCredential[];
+  /** The URLs `issue` gives credentials for, when the runner asks on demand. */
+  readonly onDemand: readonly string[];
 }
 
 type Prepared = PreparedAccess | { readonly failure: string };
+
+/** A failure of signing, in words safe to show the run's people and its agent. */
+function signingReason(error: unknown): string {
+  if (!(error instanceof GitApiError))
+    return 'The Git connection could not issue a credential.';
+  if (error.rateLimited)
+    return `GitHub rate limited signing${error.retryAt ? ` until ${error.retryAt}` : ''}.`;
+  if (error.status === 0)
+    return 'GitHub could not be reached or the request timed out.';
+  return `GitHub refused signing (HTTP ${error.status}).`;
+}
+
+/** Whether asking again later may work: GitHub down, slow or rate limiting, not a refusal. */
+function isTransient(error: unknown): boolean {
+  return (
+    error instanceof GitApiError &&
+    (error.rateLimited || error.status === 0 || error.status >= 500)
+  );
+}
 
 export function runGitProvider(deps: {
   readonly projects: () => Pick<Projects, 'tx'>;
@@ -227,9 +273,12 @@ export function runGitProvider(deps: {
 }): RepoAccessProvider {
   const conn = () => deps.projects().tx.read();
 
-  async function prepare(run: Run): Promise<Prepared | null> {
+  /** Null when the run is not on an issue. */
+  async function runRepos(
+    connection: DatabaseConnection,
+    run: Run,
+  ): Promise<RunRepos | null> {
     if (run.subject.kind !== ISSUE_SUBJECT) return null;
-    const connection = conn();
     const issue = await connection.query
       .selectFrom('pmIssues')
       .select('projectId')
@@ -251,7 +300,6 @@ export function runGitProvider(deps: {
           .where('type', '=', 'gitRepo')
           .execute()
       : [];
-    // The repositories each app connection reaches for this run, by URL.
     const byConnection = new Map<string, { url: string; repo: string }[]>();
     const apiBaseUrls: string[] = [];
     for (const resource of resources) {
@@ -264,50 +312,114 @@ export function runGitProvider(deps: {
       list.push({ url: resource.url, repo: repo.repo });
       byConnection.set(repo.connectionId, list);
     }
-    const credentials: RepoCredential[] = [];
+    const apps: ConnectionRepos[] = [];
     for (const [connectionId, repos] of byConnection) {
-      try {
-        const credential = await deps.connections.pushCredential(
-          connectionId,
-          repos.map((item) => item.repo),
-        );
-        if (credential)
-          for (const item of repos)
-            credentials.push({ url: item.url, ...credential });
-      } catch (error) {
-        deps.onError(
-          'Studio could not mint a push credential for a run.',
-          error,
-        );
-        const reason =
-          error instanceof GitApiError
-            ? error.rateLimited
-              ? `GitHub rate limited signing${error.retryAt ? ` until ${error.retryAt}` : ''}.`
-              : error.status === 0
-                ? 'GitHub could not be reached or the request timed out.'
-                : `GitHub refused signing (HTTP ${error.status}).`
-            : 'The Git connection could not issue a credential.';
-        // prepareExtensions tolerates thrown prepare errors. Carry the safe failure into forRun instead.
-        return {
-          failure: `Studio could not prepare push access for connection ${connectionId}. ${reason} Check Settings > Git and retry the run after the connection or GitHub recovers.`,
-        };
-      }
+      const row = await findConnection(connection, connectionId);
+      if (row?.kind === 'app') apps.push({ connectionId, repos });
     }
+    return { projectId, apps, apiBaseUrls };
+  }
+
+  async function prepare(
+    run: Run,
+    options: { readonly onDemand: boolean },
+  ): Promise<Prepared | null> {
+    const connection = conn();
+    const found = await runRepos(connection, run);
+    if (!found) return null;
+    const credentials: RepoCredential[] = [];
+    // A runner that asks on demand is given nothing now: `issue` mints when git needs a credential.
+    if (!options.onDemand)
+      for (const { connectionId, repos } of found.apps) {
+        try {
+          const credential = await deps.connections.pushCredential(
+            connectionId,
+            repos.map((item) => item.repo),
+          );
+          if (credential)
+            for (const item of repos)
+              credentials.push({ url: item.url, ...credential });
+        } catch (error) {
+          deps.onError(
+            'Studio could not mint a push credential for a run.',
+            error,
+          );
+          // prepareExtensions tolerates thrown prepare errors. Carry the safe failure into forRun instead.
+          return {
+            failure: `Studio could not prepare push access for connection ${connectionId}. ${signingReason(error)} Check Settings > Git and retry the run after the connection or GitHub recovers.`,
+          };
+        }
+      }
     const attribution =
       (await personalAttribution(deps.preferenceOf, run.actorUserId)) ??
-      (projectId
-        ? await projectAttribution(connection, projectId)
+      (found.projectId
+        ? await projectAttribution(connection, found.projectId)
         : DEFAULT_ATTRIBUTION);
     return {
-      author: await commitIdentity(connection, run.actorUserId, apiBaseUrls),
+      author: await commitIdentity(
+        connection,
+        run.actorUserId,
+        found.apiBaseUrls,
+      ),
       attribution,
       credentials,
+      onDemand: options.onDemand
+        ? found.apps.flatMap(({ repos }) => repos.map((item) => item.url))
+        : [],
     };
+  }
+
+  /**
+   * The run's repositories of the connection that reaches `request.url`, read again now: a repository unlinked or a
+   * connection changed since the claim gets nothing. The framework has checked that the asking runner still holds this
+   * attempt of the run under a live lease, and that the claim listed the URL.
+   */
+  async function issue(
+    request: RepoCredentialRequest,
+  ): Promise<RepoCredentialGrant | null> {
+    let target: ConnectionRepos | undefined;
+    try {
+      const found = await runRepos(conn(), request.run);
+      target = found?.apps.find(({ repos }) =>
+        repos.some((item) => item.url === request.url),
+      );
+    } catch (error) {
+      deps.onError(
+        'Studio could not read the repositories of a run for a push credential.',
+        error,
+      );
+      throw new RepoAccessError(
+        'unavailable',
+        'Studio could not read the run’s repositories. Try again later.',
+      );
+    }
+    if (!target) return null;
+    try {
+      const credential = await deps.connections.pushCredential(
+        target.connectionId,
+        target.repos.map((item) => item.repo),
+        { refresh: request.refresh },
+      );
+      return credential;
+    } catch (error) {
+      deps.onError('Studio could not mint a push credential for a run.', error);
+      const reason = signingReason(error);
+      throw isTransient(error)
+        ? new RepoAccessError(
+            'unavailable',
+            `${reason} Try again once GitHub recovers.`,
+          )
+        : new RepoAccessError(
+            'denied',
+            `${reason} Check the connection in Settings > Git.`,
+          );
+    }
   }
 
   return {
     key: 'studio.git',
     prepare,
+    issue,
     forRun(_conn, context, prepared): Promise<RunGit | null> {
       const given = prepared as Prepared | null | undefined;
       if (
@@ -323,12 +435,16 @@ export function runGitProvider(deps: {
       const credentials = given.credentials.filter((item) =>
         urls.has(item.url),
       );
+      const onDemand = context.onDemand
+        ? given.onDemand.filter((url) => urls.has(url))
+        : [];
       return Promise.resolve({
         author: given.author,
         ...(given.attribution === 'withAgent'
           ? { trailers: [agentCoAuthor(context.claim.agent)] }
           : {}),
         ...(credentials.length > 0 ? { credentials } : {}),
+        ...(onDemand.length > 0 ? { onDemand } : {}),
       });
     },
   };
