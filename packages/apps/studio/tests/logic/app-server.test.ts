@@ -581,6 +581,7 @@ describe('app server', () => {
     ) as { config: Record<string, unknown>; public: Record<string, unknown> };
     expect(payload.public.auth).toEqual({
       emailAndPassword: { enabled: true, disableSignUp: true },
+      passwordReset: { available: false },
     });
     expect(payload.config.auth).toBeUndefined();
     expect(html).not.toContain('test-auth-secret-at-least-32-characters');
