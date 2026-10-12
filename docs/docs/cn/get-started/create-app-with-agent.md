@@ -7,6 +7,10 @@ description: '供 AI Agent 读取的 NocoBase 3 单应用创建、配置与启�
 
 这份指引供 AI Agent 创建或启动 **NocoBase 3 单应用项目**。默认在用户当前空目录中初始化，并在同一个会话继续配置和启动。已有应用直接继续，不重复创建。
 
+## 创建 Skill 与项目指引
+
+创建应用的全局 Skill `nocobase-create-app` 通过[轻量分发仓库](https://github.com/nocobase/skills-v3)安装。已加载时按该 Skill 完成创建；用户直接提供本文链接时，也可以按下面的步骤操作。获取创建指引使用轻量仓库即可。应用生成后，以该应用的 `AGENTS.md` 和 `.agents/skills/` 为开发依据。
+
 ## 一、确认当前目录
 
 确认当前工作目录就是用户希望存放应用的空目录。默认使用该目录，不额外创建一层 `my-app` 子目录。目录名将作为应用名称，需要以小写字母或数字开头，并仅包含小写字母、数字、点、连字符或下划线。
@@ -24,10 +28,12 @@ description: '供 AI Agent 读取的 NocoBase 3 单应用创建、配置与启�
 ```bash
 node --version
 pnpm --version
-(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app my-app --json)
+(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app@beta my-app --template-tag=beta --json)
 ```
 
 NocoBase 3 的包（包括 `@nocobase/create-app`）发布在公共 npm 包源。命令只为本次进程设置包源，同时允许通过 `NOCOBASE_REGISTRY` 指向私有包源或未发布的本地快照；`create-app` 会使用同一个包源下载模板、安装依赖，并且只在使用非公共包源时把覆盖配置写进项目的 `.npmrc`。不要修改用户的 pnpm 配置。`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` 对此次命令及其子进程生效，允许下载刚发布的版本。`--json` 不会交互提问，只在 stdout 输出一个 JSON 文档，格式与 `pnpm nocobase … --json` 相同，其中的 `result.nextCommands` 就是接下来要执行的配置与启动命令。
+
+创建工具和应用模板均使用 beta 渠道；`@beta` 选择创建工具，`--template-tag=beta` 选择模板。用户明确指定版本或本地快照时，以其要求为准。
 
 不要因为找不到某个包而改用 NocoBase 2 的安装方式。
 
