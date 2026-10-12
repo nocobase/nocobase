@@ -36,12 +36,14 @@ const COLLECTIONS = [
   'mailSignatures',
   'mailLabels',
   'mailMessageLabels',
+  'mailMessageParticipants',
 ] as const;
 const MIGRATIONS = [
   '202609030001_create_mail_tables',
   '202609200001_backfill_mail_conversations',
   '202609210001_normalize_mail_folders',
   '202609260001_add_mail_sync_retry_attempts',
+  '202610090001_mail_create_message_participants',
 ] as const;
 const sources = [
   {
@@ -172,7 +174,6 @@ describe('mail database migration', () => {
       ['mailSyncTombstones', 'runId', 'mailSyncRuns'],
       ['mailMessageLabels', 'messageId', 'mailMessages'],
       ['mailMessageLabels', 'labelId', 'mailLabels'],
-      ['mailSignatures', 'accountId', 'mailAccounts'],
       ['mailSignatures', 'identityId', 'mailIdentities'],
     ];
     for (const [name, field, target] of foreignKeys) {
@@ -186,6 +187,15 @@ describe('mail database migration', () => {
         }),
       );
     }
+    expect(
+      (await inspectCollection(connection, 'mailSignatures'))?.foreignKeys,
+    ).toContainEqual(
+      expect.objectContaining({
+        fields: ['accountId'],
+        collection: 'mailAccounts',
+        onDelete: 'no action',
+      }),
+    );
     expect(
       (await inspectCollection(connection, 'mailAccountRemovals'))?.foreignKeys,
     ).toEqual([]);
