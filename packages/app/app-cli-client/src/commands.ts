@@ -10,6 +10,7 @@ import { docsCommand } from './docs.ts';
 import { loginCommand } from './login.ts';
 import { logoutCommand } from './logout.ts';
 import { profileCommands } from './profile.ts';
+import { hasStudioSkill, skillsCommands } from './skills.ts';
 import { updateCommand } from './update.ts';
 import { whoamiCommand } from './whoami.ts';
 
@@ -37,6 +38,7 @@ export function defineCommands(
       docs: docsCommand(config),
       ...profileCommands(config),
       ...completionCommands(config),
+      ...(hasStudioSkill(config) ? skillsCommands(config) : {}),
       ...(config.selfUpdate === undefined
         ? {}
         : { update: updateCommand(config) }),

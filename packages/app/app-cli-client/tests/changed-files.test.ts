@@ -79,8 +79,15 @@ describe('changed files', () => {
     await expect(changed(many)).rejects.toThrow(/3 files changed/u);
     removeDir(work);
     work = tempDir('acme-changed-none-');
-    await expect(changed(work)).rejects.toThrow(
-      /no \.nocobase-runner\/knowledge directory/u,
+    // A runner's TMPDIR can have a real knowledge mount in an ancestor. Use an isolated missing mount.
+    await expect(
+      changedFiles(
+        { ...spec, dir: '.nocobase-runner/unmounted-test-knowledge' },
+        'changed',
+        work,
+      ),
+    ).rejects.toThrow(
+      /no \.nocobase-runner\/unmounted-test-knowledge directory/u,
     );
   });
 });

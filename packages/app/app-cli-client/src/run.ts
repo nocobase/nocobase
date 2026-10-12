@@ -15,6 +15,7 @@ import {
   setGlobalFlags,
 } from './lib/globals.ts';
 import { UsageError } from './lib/command.ts';
+import { hasStudioSkill } from './skills.ts';
 
 /** A line whose global flags cannot be read: answered as any invalid usage is. */
 async function refuseLine(
@@ -68,7 +69,18 @@ function pjson(
       dirname: config.bin,
       topicSeparator: ' ',
       additionalHelpFlags: ['-h'],
-      topics: { ...STATIC_TOPICS, ...topics },
+      topics: {
+        ...STATIC_TOPICS,
+        ...(hasStudioSkill(config)
+          ? {
+              skills: {
+                description:
+                  'Install and inspect the packaged nb-studio-cli Skill.',
+              },
+            }
+          : {}),
+        ...topics,
+      },
       commands: {
         strategy: 'explicit',
         target: `${root}/commands.${extension}`,
