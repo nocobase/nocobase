@@ -41,6 +41,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
       apiKey,
       ...this.modelOptions,
       ...(reasoningOptions.modelRequestParams || {}),
+      ...(this.requestContext.sessionId ? { promptCacheKey: this.requestContext.sessionId } : {}),
       modelKwargs: {
         text: {
           format: responseFormatOptions,
