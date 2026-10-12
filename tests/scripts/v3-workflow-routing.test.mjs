@@ -216,8 +216,15 @@ test('Pro workflows retain the branch arguments supported by their source-owned 
 const runBlock = (source, name) => {
   const start = source.indexOf(`      - name: ${name}\n`);
   assert.notEqual(start, -1, name);
-  const end = source.indexOf('\n      - name: ', start + 1);
-  const lines = source.slice(start, end === -1 ? undefined : end).split('\n');
+  // A step ends at the next step, or at the next job when it is the last step of its job.
+  const ends = [
+    source.indexOf('\n      - name: ', start + 1),
+    source.slice(start).search(/\n {2}[\w-]+:\n/u),
+  ].map((index, i) => (i === 1 && index !== -1 ? start + index : index));
+  const end = Math.min(...ends.filter((index) => index !== -1));
+  const lines = source
+    .slice(start, Number.isFinite(end) ? end : undefined)
+    .split('\n');
   const begin = lines.indexOf('        run: |');
   assert.notEqual(begin, -1, name);
   return lines
@@ -321,11 +328,27 @@ test('a beta release that publishes Studio builds its public release image from 
   );
   // Studio's own `pnpm build` packs the runner and nb-studio into dist/runners, which the prebuilt image carries.
   assert.doesNotMatch(image, /cli build|upload-artifact|studio-dist/u);
+  // Each architecture builds its own dist/ with its own --target, on a runner of that architecture, because the
+  // Dockerfile refuses a prebuilt dist/ built for another platform; publish joins the two digests under every tag.
   assert.match(
     image,
-    /- name: Build dist for linux-x64\n\s+working-directory: packages\/apps\/studio\n[\s\S]*?run: pnpm build --target linux-x64\n/u,
+    /- platform: linux\/amd64\n\s+runner: ubuntu-latest\n\s+target: linux-x64\n/u,
   );
+  assert.match(
+    image,
+    /- platform: linux\/arm64\n\s+runner: ubuntu-24\.04-arm\n\s+target: linux-arm64\n/u,
+  );
+  assert.match(
+    image,
+    /- name: Build dist for \$\{\{ matrix\.target \}\}\n\s+working-directory: packages\/apps\/studio\n[\s\S]*?TARGET: \$\{\{ matrix\.target \}\}\n\s+run: pnpm build --target "\$TARGET"\n/u,
+  );
+  assert.match(image, /platforms: \$\{\{ matrix\.platform \}\}\n/u);
   assert.match(image, /build-args: DIST=prebuilt\n/u);
+  assert.match(image, /push-by-digest=true/u);
+  assert.match(
+    image,
+    /docker buildx imagetools create "\$\{args\[@\]\}" "nocobase\/studio@\$\{AMD64\}" "nocobase\/studio@\$\{ARM64\}"/u,
+  );
   const name = (version) => {
     const tagWorkspace = path.join(directory, `tags-${version || 'none'}`);
     mkdirSync(path.join(tagWorkspace, 'packages/apps/studio'), {
