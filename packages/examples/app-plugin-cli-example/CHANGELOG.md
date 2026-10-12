@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-cli-example
 
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

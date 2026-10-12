@@ -1,5 +1,13 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/cli-envelope@0.1.0-beta.1
+
 ## 0.1.0-beta.5
 
 ### Minor Changes
