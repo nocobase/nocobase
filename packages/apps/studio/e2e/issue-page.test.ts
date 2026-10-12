@@ -149,6 +149,11 @@ test.describe('issue page', () => {
       },
     );
     await open(page, `/issues/${issue.identifier}`);
+    // The runs on the activity line are system records, folded under "Conversation only".
+    await page
+      .getByTestId('issue-feed')
+      .getByRole('button', { name: '全部', exact: true })
+      .click();
     const history = page.locator('[data-slot="agent-run-history"]');
     const aside = page.locator('[data-slot="issue-detail-layout"] aside');
     await expect(history).toHaveCount(1);

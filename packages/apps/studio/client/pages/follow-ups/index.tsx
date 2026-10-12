@@ -25,8 +25,8 @@ import {
 import { useNotify } from '../../access/notify.js';
 import {
   useFollowUps,
+  useFollowIssue,
   useMarkSeen,
-  useSetFollowing,
 } from '../../follow-ups/api.js';
 import { FollowingRail } from '../../follow-ups/following-rail.js';
 import { IssuePanel } from '../../follow-ups/issue-panel.js';
@@ -34,7 +34,6 @@ import {
   DEFAULT_FILTER,
   followedIssues,
   ownedRows,
-  toggledFollowing,
 } from '../../follow-ups/model.js';
 import { OwnedList } from '../../follow-ups/owned-list.js';
 import { StatusPill } from '../../issues/live/status.js';
@@ -60,7 +59,7 @@ export default function FollowUpsPage(): ReactElement {
   const [filter, setFilter] =
     useState<readonly FollowUpStatus[]>(DEFAULT_FILTER);
   const [query, setQuery] = useState('');
-  const setFollowing = useSetFollowing((error) =>
+  const followIssue = useFollowIssue((error) =>
     notify.error(error, t('followUps.saveFailed')),
   );
   const markSeen = useMarkSeen();
@@ -114,10 +113,11 @@ export default function FollowUpsPage(): ReactElement {
   );
   const toggleFollow = useCallback(
     (issueId: string) => {
-      const next = toggledFollowing(following, issueId, FOLLOW_UPS_MAX);
-      if (next.length !== following.length) setFollowing.mutate(next);
+      const followed = following.includes(issueId);
+      if (!followed && following.length >= FOLLOW_UPS_MAX) return;
+      followIssue.mutate({ issueId, follow: !followed });
     },
-    [following, setFollowing],
+    [following, followIssue],
   );
 
   return (

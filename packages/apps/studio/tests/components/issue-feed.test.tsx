@@ -320,25 +320,30 @@ describe('the issue feed', () => {
 describe('the follow star', () => {
   const answer = (initial: string[]) => {
     let following = initial;
-    mocks.request.mockImplementation(
-      (request: { path: string; json?: { issueIds: string[] } }) => {
-        if (request.path === 'followUps')
-          return Promise.resolve({
-            data: {
-              following,
-              followingStored: true,
-              counts: { in_review: 0, blocked: 0, in_progress: 0, backlog: 0 },
-              truncated: false,
-              issues: [],
-            },
-          });
-        if (request.path === 'followUps/following') {
-          following = request.json?.issueIds ?? [];
-          return Promise.resolve({ data: request.json });
-        }
-        return Promise.resolve(undefined);
-      },
-    );
+    mocks.request.mockImplementation((request: { path: string }) => {
+      if (request.path === 'followUps')
+        return Promise.resolve({
+          data: {
+            following,
+            followingStored: true,
+            counts: { in_review: 0, blocked: 0, in_progress: 0, backlog: 0 },
+            truncated: false,
+            issues: [],
+          },
+        });
+      const star = /^followUps\/issues\/([^/]+)\/(follow|unfollow)$/u.exec(
+        request.path,
+      );
+      if (star) {
+        const [, issueId = '', verb] = star;
+        following =
+          verb === 'follow'
+            ? [...following, issueId]
+            : following.filter((id) => id !== issueId);
+        return Promise.resolve({ data: { issueIds: following } });
+      }
+      return Promise.resolve(undefined);
+    });
   };
 
   it('follows and says how many of the allowed are followed', async () => {
@@ -349,12 +354,21 @@ describe('the follow star', () => {
     fireEvent.click(star);
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        method: 'PUT',
-        path: 'followUps/following',
-        json: { issueIds: ['x1', 'i1'] },
+        method: 'POST',
+        path: 'followUps/issues/i1/follow',
       }),
     );
-    await screen.findByRole('button', { name: 'Following · 2/5' });
+    const following = await screen.findByRole('button', {
+      name: 'Following · 2/5',
+    });
+    fireEvent.click(following);
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: 'followUps/issues/i1/unfollow',
+      }),
+    );
+    await screen.findByRole('button', { name: 'Follow' });
   });
 
   it('is held, with the reason, once five others are followed', async () => {
@@ -368,7 +382,7 @@ describe('the follow star', () => {
     fireEvent.click(star);
     expect(
       mocks.request.mock.calls.some(
-        ([request]) => (request as { method?: string }).method === 'PUT',
+        ([request]) => (request as { method?: string }).method === 'POST',
       ),
     ).toBe(false);
   });

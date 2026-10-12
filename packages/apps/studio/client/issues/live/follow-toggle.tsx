@@ -1,5 +1,6 @@
 /**
- * The star that adds an issue to "My follow-ups" or takes it off (`PUT /api/followUps/following`). It says how many of
+ * The star that adds an issue to "My follow-ups" or takes it off (`POST /api/followUps/issues/:issueId/follow` or
+ * `/unfollow`). It says how many of
  * the allowed issues are followed; once that many are, an unfollowed issue's star is held, with the reason as its hint.
  */
 import { useTranslation } from '@nocobase/i18n/client';
@@ -11,8 +12,7 @@ import { cn } from 'cn';
 
 import { FOLLOW_UPS_MAX } from '../../../shared/follow-ups.js';
 import { useNotify } from '../../access/notify.js';
-import { useFollowUps, useSetFollowing } from '../../follow-ups/api.js';
-import { toggledFollowing } from '../../follow-ups/model.js';
+import { useFollowIssue, useFollowUps } from '../../follow-ups/api.js';
 
 /** What the star shows: followed, or held because the list is full. */
 function followState(
@@ -34,7 +34,7 @@ export function FollowToggle({
   const { t } = useTranslation();
   const notify = useNotify();
   const overview = useFollowUps();
-  const setFollowing = useSetFollowing((error) =>
+  const followIssue = useFollowIssue((error) =>
     notify.error(error, t('issueLive.follow.saveFailed')),
   );
   const following = overview.data?.following ?? [];
@@ -62,10 +62,7 @@ export function FollowToggle({
       onClick={
         held
           ? undefined
-          : () =>
-              setFollowing.mutate(
-                toggledFollowing(following, issueId, FOLLOW_UPS_MAX),
-              )
+          : () => followIssue.mutate({ issueId, follow: !followed })
       }
     >
       <StarIcon

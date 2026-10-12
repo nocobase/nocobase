@@ -167,8 +167,8 @@ beforeEach(() => {
   mocks.request.mockImplementation(
     (request: { path: string; method?: string; json?: unknown }) => {
       if (request.path === 'followUps') return Promise.resolve({ data: view });
-      if (request.path === 'followUps/following')
-        return Promise.resolve({ data: request.json });
+      if (/^followUps\/issues\/[^/]+\/(?:un)?follow$/u.test(request.path))
+        return Promise.resolve({ data: { issueIds: view.following } });
       if (request.path === 'git/marks')
         return Promise.resolve({
           data: {
@@ -367,9 +367,8 @@ describe('My follow-ups', () => {
     fireEvent.click(within(row).getByRole('button', { name: 'Follow WEB-4' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        method: 'PUT',
-        path: 'followUps/following',
-        json: { issueIds: ['r1', 'f1', 'b1'] },
+        method: 'POST',
+        path: 'followUps/issues/b1/follow',
       }),
     );
   });
@@ -396,7 +395,9 @@ describe('My follow-ups', () => {
     fireEvent.click(star);
     expect(
       mocks.request.mock.calls.some(
-        ([request]) => (request as { method?: string }).method === 'PUT',
+        ([request]) =>
+          (request as { method?: string }).method === 'POST' &&
+          (request as { path: string }).path.endsWith('/follow'),
       ),
     ).toBe(false);
   });

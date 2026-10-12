@@ -13,11 +13,7 @@ import {
   mentionedAgents,
   reviewVerdict,
 } from '../../client/issues/live/feed.js';
-import {
-  followedIssues,
-  ownedRows,
-  toggledFollowing,
-} from '../../client/follow-ups/model.js';
+import { followedIssues, ownedRows } from '../../client/follow-ups/model.js';
 import {
   askOf,
   nowLine,
@@ -321,11 +317,5 @@ describe('what the page lists', () => {
       needsViewer: false,
     });
     expect(nowLine(t, issue({ statusKey: 'backlog' }), null)).toBeNull();
-  });
-
-  it('follows at most the limit and unfollows', () => {
-    expect(toggledFollowing(['a'], 'b', 2)).toEqual(['a', 'b']);
-    expect(toggledFollowing(['a', 'b'], 'c', 2)).toEqual(['a', 'b']);
-    expect(toggledFollowing(['a', 'b'], 'a', 2)).toEqual(['b']);
   });
 });

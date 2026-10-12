@@ -61,15 +61,3 @@ export function ownedRows(
         Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
     );
 }
-
-/** The followed ids after starring or unstarring `issueId`; unchanged when following one more would pass `max`. */
-export function toggledFollowing(
-  following: readonly string[],
-  issueId: string,
-  max: number,
-): string[] {
-  if (following.includes(issueId))
-    return following.filter((id) => id !== issueId);
-  if (following.length >= max) return [...following];
-  return [...following, issueId];
-}
