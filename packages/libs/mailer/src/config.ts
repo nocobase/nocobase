@@ -13,8 +13,10 @@ export function validateSmtpProviderConfig(config: SmtpProviderConfig): void {
   if (config.secure !== undefined && typeof config.secure !== 'boolean')
     throw new Error('SMTP secure must be a boolean.');
   if (
-    config.auth &&
-    (typeof config.auth.user !== 'string' ||
+    config.auth !== undefined &&
+    (typeof config.auth !== 'object' ||
+      config.auth === null ||
+      typeof config.auth.user !== 'string' ||
       typeof config.auth.pass !== 'string')
   )
     throw new Error('SMTP authentication is invalid.');

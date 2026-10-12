@@ -62,10 +62,25 @@ describe('host mailer ownership', () => {
           port: 25,
         },
         invalid: { provider: 'resend', apiKey: '' },
+        ...Object.fromEntries(
+          [false, null, 0, ''].map((auth, index) => [
+            `invalidAuth${index}`,
+            { provider: 'smtp', host: 'localhost', port: 25, auth },
+          ]),
+        ),
         custom: { provider: 'custom-email' },
       },
     });
-    for (const channel of ['missing', 'disabled', 'invalid', 'custom'])
+    for (const channel of [
+      'missing',
+      'disabled',
+      'invalid',
+      'custom',
+      'invalidAuth0',
+      'invalidAuth1',
+      'invalidAuth2',
+      'invalidAuth3',
+    ])
       expect(mailer.available(channel)).toBe(false);
   });
 
