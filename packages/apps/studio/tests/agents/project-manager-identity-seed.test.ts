@@ -99,6 +99,36 @@ describe('project manager identity initialization', () => {
     expect(await read()).toEqual(before);
   });
 
+  it('preserves custom legacy descriptions verbatim when only the description setting is invalid', async () => {
+    const description =
+      '  Custom legacy description with deliberate spacing.  ';
+    await h.database
+      .connection()
+      .repository('agAgents')
+      .updateOne({
+        filter: { id: PROJECT_MANAGER_ID },
+        values: { description },
+      });
+    await store({
+      name: 'Explicit settings name',
+      description: 42,
+      future: { keep: true },
+    });
+    await run();
+    expect(valueOf(await read())).toEqual({
+      name: 'Explicit settings name',
+      description,
+      future: { keep: true },
+    });
+    await h.manager.sync();
+    expect((await h.agents.agents.get(PROJECT_MANAGER_ID)).description).toBe(
+      description,
+    );
+    const before = await read();
+    await run('en-US');
+    expect(await read()).toEqual(before);
+  });
+
   it.each([undefined, null, '', '   ', 7])(
     'recovers invalid names (%j) and missing descriptions from a custom legacy agent',
     async (name) => {
