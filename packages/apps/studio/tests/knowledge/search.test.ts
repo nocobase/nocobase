@@ -29,7 +29,6 @@ import {
   DEFAULT_KNOWLEDGE_SEARCH,
   type KnowledgeSearchSettings,
 } from '../../shared/knowledge.js';
-import { estimateTokens, wholeSection } from '../../server/knowledge/brief.js';
 import {
   bindKnowledgeTuning,
   recallOf,
@@ -74,85 +73,16 @@ describe('the knowledge search settings', () => {
       embedding: { modelService: 'openai', model: 'text-embedding-3-small' },
       contextual: ['system:'],
     });
-    expect(settingsOf({ wholeTokens: -1 })).toEqual(DEFAULT_KNOWLEDGE_SEARCH);
+    expect(settingsOf({ contextual: 'none' })).toEqual(
+      DEFAULT_KNOWLEDGE_SEARCH,
+    );
     // A chunking or recall that is no longer valid falls back alone.
     expect(
       settingsOf({
-        wholeTokens: 5,
+        contextual: ['system:'],
         chunking: { headingDepth: 9, target: 1, max: 1 },
       }),
-    ).toEqual({ ...DEFAULT_KNOWLEDGE_SEARCH, wholeTokens: 5 });
-  });
-});
-
-describe('whole knowledge for an online agent', () => {
-  const knowledgeWith = (content: string, complete = true) =>
-    ({
-      texts: vi.fn(() =>
-        Promise.resolve({
-          spaces: [
-            {
-              space: SYSTEM,
-              docs: [
-                {
-                  id: 'd1',
-                  slug: 'conventions',
-                  title: 'Conventions',
-                  kind: 'article',
-                  version: 2,
-                  content,
-                },
-              ],
-            },
-          ],
-          chars: content.length,
-          complete,
-        }),
-      ),
-    }) as unknown as Knowledge;
-
-  it('estimates a token per CJK character and per four others', () => {
-    expect(estimateTokens('abcdefgh')).toBe(2);
-    expect(estimateTokens('知识库')).toBe(3);
-  });
-
-  it('puts the documents whole into the prompt below the threshold, and nothing above it', async () => {
-    const small = knowledgeWith('# Conventions\n\nSmall commits.');
-    const section = await wholeSection(
-      small,
-      {} as never,
-      { spaces: [] } as never,
-      1000,
-    );
-    expect(section).toContain('## Knowledge, whole');
-    expect(section).toContain('slug="conventions"');
-    expect(section).toContain('Small commits.');
-    expect(section).toContain('url="/knowledge?doc=d1"');
-    expect(small.texts).toHaveBeenCalledWith(
-      {},
-      { spaces: [] },
-      { maxChars: 4000 },
-    );
-
-    expect(
-      await wholeSection(
-        knowledgeWith('x'.repeat(5000)),
-        {} as never,
-        {} as never,
-        1000,
-      ),
-    ).toBeNull();
-    expect(
-      await wholeSection(
-        knowledgeWith('short', false),
-        {} as never,
-        {} as never,
-        1000,
-      ),
-    ).toBeNull();
-    expect(
-      await wholeSection(knowledgeWith('short'), {} as never, {} as never, 0),
-    ).toBeNull();
+    ).toEqual({ ...DEFAULT_KNOWLEDGE_SEARCH, contextual: ['system:'] });
   });
 });
 
@@ -748,7 +678,7 @@ describe('the knowledge tuning Studio binds', () => {
       }),
     ).toBe(false);
 
-    await store.save({ ...settings, wholeTokens: 10 });
+    await store.save({ ...settings, contextual: ['system:'] });
     expect(defaultChanged).not.toHaveBeenCalled();
     await store.save({
       ...settings,

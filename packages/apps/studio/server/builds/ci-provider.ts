@@ -12,7 +12,11 @@
  */
 import { scopedApiKeysToken } from '@nocobase/app-plugin-api-keys/server';
 import { projectsToken } from '@nocobase/app-plugin-projects/server/tokens';
-import type { AgentsConfig } from '@nocobase/app-plugin-agents/server/tokens';
+import { IN_PROGRESS_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
+import {
+  agentsToken,
+  type AgentsConfig,
+} from '@nocobase/app-plugin-agents/server/tokens';
 import {
   SYSTEM_CALLER,
   type Releases,
@@ -33,6 +37,8 @@ import {
 
 import { maySetUpApps } from '../../shared/releases.js';
 import { studioAccessToken, studioApiKeysToken } from '../access/token.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { handOverNote } from '../agents/manager/texts.js';
 import { AGENT_KIND } from '../agents/tx.js';
 import { studioGitToken } from '../git/token.js';
 import { systemViewer } from '../previews/sources.js';
@@ -166,13 +172,29 @@ export function projectCiTasks(resolver: ServiceResolver): CiTasks {
       const viewer = resolver.has(studioGitToken)
         ? await resolver.resolve(studioGitToken).viewerOf(userId)
         : systemViewer();
+      const agentName = resolver.has(agentsToken)
+        ? ((
+            await resolver
+              .resolve(agentsToken)
+              .agents.names(
+                resolver.resolve(databaseManagerToken).connection(),
+                [input.agentId],
+              )
+          ).get(input.agentId) ?? input.agentId)
+        : input.agentId;
       const issue = await resolver
         .resolve(projectsToken)
         .issues.create(viewer, {
           title: input.title,
-          description: input.description,
+          description: [
+            input.description,
+            '',
+            handOverNote({ id: input.agentId, name: agentName }),
+          ].join('\n'),
           projectId: input.projectId,
-          executor: { type: AGENT_KIND, id: input.agentId },
+          // The project manager executes it and hands it to the agent chosen.
+          executor: { type: AGENT_KIND, id: PROJECT_MANAGER_ID },
+          statusKey: IN_PROGRESS_STATUS,
         });
       return { id: issue.id, identifier: issue.identifier };
     },

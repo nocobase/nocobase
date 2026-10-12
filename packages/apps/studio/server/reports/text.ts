@@ -1,7 +1,7 @@
 /**
  * Studio's reports as the CLI words them (`routes.ts`): `report usage` (what runs used and cost, grouped by agent,
  * person, project, issue, day, model or tool) and `report metrics` (adoption, the share of deliveries agents made,
- * review and approval rates, run reliability and duration, cost, and the decisions people take), in `meta.message`.
+ * review rates, run reliability and duration, cost, and the decisions people take), in `meta.message`.
  *
  * Both perform `studio.reports/read` (`REPORTS_READ`): a person holds it with the reports grant, and a run when its
  * agent is configured with it and the person who woke it holds the grant. As on the pages, every run counts for someone
@@ -50,7 +50,7 @@ export function metricsText(report: MetricsReport): string {
     `Metrics ${report.from} to ${report.to}${report.projectId ? ` (project ${report.projectId})` : ''}`,
     `Adoption: ${adoption.activeDays} active days in ${adoption.activeWeeks} weeks, ${adoption.activeMembers} people, ${adoption.issuesCreated} issues and ${adoption.commentsCreated} comments created.`,
     `Delivered: ${aiShare.deliveredTotal} issues, ${aiShare.deliveredByAgent} by agents (AI share ${percent(aiShare.share)}).`,
-    `Review: ${percent(trust.reviewPassRate)} passed, ${percent(trust.reworkRate)} sent back; approvals ${percent(trust.approvalApproveRate)} approved.`,
+    `Review: ${percent(trust.reviewPassRate)} passed, ${percent(trust.reworkRate)} sent back.`,
     `Runs: ${reliability.runs} started, ${reliability.completedRuns} completed, ${reliability.failedRuns} failed, ${reliability.lostRuns} lost; median wait ${duration(reliability.claimLatencyP50Ms)}, median run ${duration(reliability.runDurationP50Ms)}.`,
     `Cost: ${money(cost.estimatedCost)} (${cost.inputTokens} input and ${cost.outputTokens} output tokens), ${money(cost.costPerDeliveredIssue)} per delivered issue.`,
     `Decisions: ${humanLoad.decisionsCreated} asked, ${humanLoad.decisionsResolved} decided (median ${duration(humanLoad.decisionResolveP50Ms)}), ${humanLoad.openDecisions} open.`,

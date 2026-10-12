@@ -60,17 +60,18 @@ const notifications = {
   },
 } as unknown as NotificationService;
 
+const KEY = 'agents:blocked:i1:3';
+
 const decision = (userIds: string[]): ProjectNotice => ({
-  key: 'pm:approval-requested:r1',
+  key: KEY,
   kind: 'decision',
-  type: 'approval_requested',
+  type: 'agent_blocked',
   userIds,
-  title: 'PM-1 waits for your approval to move to Done',
-  body: 'Retry callbacks',
+  title: 'Coder is blocked on PM-1',
+  body: 'Coder is blocked and needs your input.',
   path: '/issues/PM-1',
   issue: { id: 'i1', identifier: 'PM-1' },
-  approvalRequestId: 'r1',
-  params: { identifier: 'PM-1', status: 'done', statusName: 'Done' },
+  params: { identifier: 'PM-1', actorName: 'Coder' },
 });
 
 beforeAll(async () => {
@@ -107,13 +108,13 @@ describe('inbox', () => {
     await projects.send(decision(['lead', 'admin', 'lead']));
     expect(sent).toEqual([
       {
-        idempotencyKey: 'pm:approval-requested:r1',
-        source: { type: 'studio.inbox', referenceId: 'approval_requested' },
+        idempotencyKey: KEY,
+        source: { type: 'studio.inbox', referenceId: 'agent_blocked' },
         messages: {
           inbox: {
             to: ['lead', 'admin', 'lead'],
-            title: 'PM-1 waits for your approval to move to Done',
-            body: 'Retry callbacks',
+            title: 'Coder is blocked on PM-1',
+            body: 'Coder is blocked and needs your input.',
             target: { type: 'route', path: '/issues/PM-1' },
           },
         },
@@ -124,10 +125,10 @@ describe('inbox', () => {
         notificationId: 'n1',
         source: 'projects',
         kind: 'decision',
-        type: 'approval_requested',
+        type: 'agent_blocked',
         subject: { type: 'issue', id: 'i1', label: 'PM-1' },
-        decisionKey: 'r1',
-        data: { identifier: 'PM-1', status: 'done', statusName: 'Done' },
+        decisionKey: KEY,
+        data: { identifier: 'PM-1', actorName: 'Coder' },
         count: 1,
         resolvedAt: null,
         outcome: null,
@@ -146,25 +147,25 @@ describe('inbox', () => {
 
   it('stops counting a decision once it is resolved, and keeps how it ended', async () => {
     await projects.send(decision(['lead', 'admin']));
-    const ref = { source: 'projects', decisionKey: 'r1' };
+    const ref = { source: 'projects', decisionKey: KEY };
     expect(await inbox.waiting(ref)).toBe(true);
     announced = [];
-    await projects.resolve({ approvalRequestId: 'r1', outcome: 'approved' });
+    await inbox.resolve({ ...ref, outcome: 'answered' });
     expect(await inbox.waiting(ref)).toBe(false);
     expect(await inbox.waiting({ ...ref, decisionKey: 'never-sent' })).toBe(
       false,
     );
     expect(await inbox.pending('lead')).toBe(0);
     expect(await inbox.notices('admin', ['n1'])).toMatchObject([
-      { resolvedAt: '2026-10-01T08:00:00.000Z', outcome: 'approved' },
+      { resolvedAt: '2026-10-01T08:00:00.000Z', outcome: 'answered' },
     ]);
     expect(announced.sort()).toEqual(['admin', 'lead']);
     // Resolving again changes nothing and tells no one.
     announced = [];
-    await projects.resolve({ approvalRequestId: 'r1', outcome: 'stale' });
+    await inbox.resolve({ ...ref, outcome: 'stale' });
     expect(announced).toEqual([]);
     expect(await inbox.notices('lead', ['n1'])).toMatchObject([
-      { outcome: 'approved' },
+      { outcome: 'answered' },
     ]);
   });
 
@@ -172,31 +173,29 @@ describe('inbox', () => {
     await projects.send(decision(['lead', 'admin']));
     await projects.send({
       ...decision(['lead']),
-      key: 'pm:approval-requested:r2',
-      approvalRequestId: 'r2',
+      key: 'agents:blocked:i2:5',
       issue: { id: 'i2', identifier: 'PM-2' },
     });
     await projects.send({
       ...decision(['lead']),
       key: 'other',
       type: 'run_failed_final',
-      approvalRequestId: null,
     });
-    await projects.resolve({ approvalRequestId: 'r2', outcome: 'approved' });
-    expect(await inbox.openDecisions('projects', 'approval_requested')).toEqual(
-      [
-        {
-          decisionKey: 'r1',
-          subject: { type: 'issue', id: 'i1', label: 'PM-1' },
-          data: expect.objectContaining({ identifier: 'PM-1' }),
-          userIds: ['lead', 'admin'],
-          createdAt: expect.any(String),
-        },
-      ],
-    );
-    expect(await inbox.openDecisions('releases', 'approval_requested')).toEqual(
-      [],
-    );
+    await inbox.resolve({
+      source: 'projects',
+      decisionKey: 'agents:blocked:i2:5',
+      outcome: 'answered',
+    });
+    expect(await inbox.openDecisions('projects', 'agent_blocked')).toEqual([
+      {
+        decisionKey: KEY,
+        subject: { type: 'issue', id: 'i1', label: 'PM-1' },
+        data: expect.objectContaining({ identifier: 'PM-1' }),
+        userIds: ['lead', 'admin'],
+        createdAt: expect.any(String),
+      },
+    ]);
+    expect(await inbox.openDecisions('releases', 'agent_blocked')).toEqual([]);
   });
 
   it('pages waiting decisions by key without skipping cards beyond the first window', async () => {
@@ -205,30 +204,25 @@ describe('inbox', () => {
       await projects.send({
         ...decision(['lead']),
         key,
-        approvalRequestId: key,
       });
     }
-    const first = await inbox.openDecisions(
-      'projects',
-      'approval_requested',
-      '',
-    );
+    const first = await inbox.openDecisions('projects', 'agent_blocked', '');
     expect(first).toHaveLength(500);
     const second = await inbox.openDecisions(
       'projects',
-      'approval_requested',
+      'agent_blocked',
       first.at(-1)!.decisionKey,
     );
     expect(second.map((card) => card.decisionKey)).toEqual(['decision-0500']);
     expect(
       await inbox.openDecisions(
         'projects',
-        'approval_requested',
+        'agent_blocked',
         second[0]!.decisionKey,
       ),
     ).toEqual([]);
     expect(
-      await inbox.openDecisions('projects', 'approval_requested', '', {
+      await inbox.openDecisions('projects', 'agent_blocked', '', {
         type: 'issue',
         id: 'other',
       }),

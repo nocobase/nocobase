@@ -72,7 +72,7 @@ function plain(value: unknown): string {
 
 /**
  * Formats a field's value as the pages show it, in this plugin's words wherever it is rendered: names for ids,
- * translated priorities, and a status by its name in `statuses` (the target's workflow) when given.
+ * translated priorities, and a status by its name in `statuses` (the fixed statuses) when given.
  */
 export function usePlanValueText(
   lookup: PlanLookup,
@@ -91,7 +91,7 @@ export function usePlanValueText(
       case 'statusKey':
         if (statuses && typeof value === 'string')
           return statusName(t, statuses, value);
-        // Without the workflow at hand, a built-in status by its translated name, any other by its key.
+        // Without the statuses at hand, a fixed status by its translated name, any other by its key.
         return t(`status.${plain(value)}`, { defaultValue: plain(value) });
       case 'priority':
         return t(`priority.${plain(value)}`, { defaultValue: plain(value) });
@@ -139,7 +139,7 @@ export function usePlanValueText(
 
 /**
  * An existing issue a plan names, from the cached issue detail the issue pages read: for its identifier and title, and
- * the statuses of its workflow. Disabled while `issueId` is null.
+ * the fixed statuses. Disabled while `issueId` is null.
  */
 export function usePlanIssue(
   issueId: string | null,

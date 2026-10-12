@@ -1,10 +1,19 @@
 /**
- * The home page's composer: pick an agent (online or runner) in its toolbar, send, and land on the conversation full screen
- * (`/chat/:id`). Online is answered on the server by the mock model global setup starts; Runner hands the message to a
- * coding agent on a runner, and none runs here, so the test checks what was sent rather than an answer. The recent
- * conversations under the composer open full screen too, and a conversation moves from there to the side panel.
+ * The home page's composer: pick an agent in its toolbar, send, and land on the conversation full screen (`/chat/:id`).
+ * The picker lists the enabled agents, the team's default (the project manager's first choice) to start with, and an
+ * agent no runner can take now is disabled with the reason. A coding agent on a runner answers, and none runs here, so
+ * the tests check what was sent rather than an answer. The recent conversations under the composer open full screen
+ * too, and a conversation moves from there to the side panel.
  */
-import { expect, open, server, test, unique } from './support/fixtures.ts';
+import {
+  apiAs,
+  expect,
+  open,
+  server,
+  test,
+  unique,
+} from './support/fixtures.ts';
+import { FakeRunner } from './support/runner.ts';
 
 interface Conversation {
   readonly id: string;
@@ -17,9 +26,8 @@ interface Conversation {
 test.use({ user: 'leo' });
 
 test.describe('home composer', () => {
-  test('picks a coding agent in the composer, hands the message to it and opens it full screen', async ({
+  test('starts with the team default and disables agents no runner can take', async ({
     page,
-    api,
   }) => {
     await open(page, '/');
     const main = page.getByRole('main');
@@ -28,22 +36,49 @@ test.describe('home composer', () => {
     ).toBeVisible();
     // Nothing but the composer and the recent conversations: no hints for developers, no suggestion chips.
     await expect(main.getByText(/秒级回复：服务端/)).toHaveCount(0);
-    // One agent picker in the composer, listing every agent grouped by type; no Online / Runner switch.
+    // One agent picker in the composer; no Online / Runner switch, no model picker.
     await expect(main.getByRole('group', { name: '模式' })).toHaveCount(0);
+    const picker = main.getByTestId('chat-agent-picker');
+    // The demo's project manager runs with Opus, which is also the team's default chat agent.
+    await expect(picker).toContainText('Claude · Opus 5.5');
+    await picker.click();
+    const menu = page.getByRole('menu');
+    // The demo's runtimes went offline long ago: its agents are listed, but cannot be picked now.
+    const sonnet = menu
+      .getByRole('menuitem')
+      .filter({ hasText: 'Claude · Sonnet 5' });
+    await expect(sonnet).toHaveCount(1);
+    await expect(sonnet).toHaveAttribute('aria-disabled', 'true');
+    await expect(sonnet).toContainText('暂无执行机');
+    await page.keyboard.press('Escape');
+  });
+
+  test('picks a coding agent in the composer, hands the message to it and opens it full screen', async ({
+    page,
+    api,
+    browser,
+  }) => {
+    // An agent a team runner has, enabled by an administrator.
+    const admin = await apiAs(browser, 'admin');
+    let agentName: string;
+    try {
+      agentName = (
+        await new FakeRunner(admin.api, `home-${unique()}`).discovered()
+      ).name;
+    } finally {
+      await admin.close();
+    }
+    await open(page, '/');
+    const main = page.getByRole('main');
     const composer = main.getByTestId('chat-composer');
     await composer.getByTestId('chat-agent-picker').click();
-    const menu = page.getByRole('menu');
-    await expect(menu.getByText('在线 Agent')).toBeVisible();
-    await expect(menu.getByText('Runner Agent')).toBeVisible();
-    await expect(
-      menu.getByRole('menuitem').filter({ hasText: '项目助理' }),
-    ).toHaveCount(1);
-    await menu
+    await page
+      .getByRole('menu')
       .getByRole('menuitem')
-      .filter({ hasText: 'Frontend Developer' })
+      .filter({ hasText: agentName })
       .click();
     await expect(composer.getByTestId('chat-agent-picker')).toContainText(
-      'Frontend Developer',
+      agentName,
     );
 
     const message = `把导出改成流式 ${unique()}`;
@@ -52,14 +87,11 @@ test.describe('home composer', () => {
     await main.getByRole('textbox', { name: '消息' }).fill(message);
     await send.click();
 
-    // The conversation opens full screen, in Runner mode, with the message sent; the side panel stays closed.
+    // The conversation opens full screen with the message sent; the side panel stays closed.
     await expect(page).toHaveURL(/\/chat\/[^/]+$/u);
     const view = page.getByTestId('chat-page');
     await expect(view.getByText(message).first()).toBeVisible();
-    await expect(view.getByTestId('chat-mode')).toHaveText('Runner');
-    await expect(view.getByTestId('chat-page-agent')).toContainText(
-      'Frontend Developer',
-    );
+    await expect(view.getByTestId('chat-page-agent')).toContainText(agentName);
     await expect(page.getByTestId('chat-panel')).toBeHidden();
     await expect(
       page.getByRole('textbox', { name: '消息', exact: true }),
@@ -72,51 +104,7 @@ test.describe('home composer', () => {
         const sent = items.find((item) => item.title === message);
         return sent ? [sent.mode, sent.agent?.name] : null;
       })
-      .toEqual(['runner', 'Frontend Developer']);
-  });
-
-  test('Online sends to the project assistant, who answers on the full-screen page', async ({
-    page,
-    api,
-  }) => {
-    await open(page, '/');
-    const main = page.getByRole('main');
-    // The team's default, an online agent, is chosen to start with.
-    await expect(main.getByTestId('chat-agent-picker')).toContainText(
-      '项目助理',
-    );
-
-    const message = `这周有哪些事在等我处理？ ${unique()}`;
-    await main.getByRole('textbox', { name: '消息' }).fill(message);
-    await main.getByRole('textbox', { name: '消息' }).press('Enter');
-
-    await expect(page).toHaveURL(/\/chat\/[^/]+$/u);
-    const view = page.getByTestId('chat-page');
-    await expect(view.getByText(message).first()).toBeVisible();
-    await expect(view.getByTestId('chat-mode')).toHaveText('在线');
-    const id = new URL(page.url()).pathname.split('/').at(-1);
-    const sent = (
-      await api.get<Conversation[]>('agents/conversations?pageSize=10')
-    ).find((item) => item.id === id);
-    expect(sent?.mode).toBe('online');
-    const answers = async () =>
-      (
-        await api.get<{ role: string; content: { content: string } }[]>(
-          `agents/conversations/${sent?.id}/messages`,
-        )
-      ).filter((item) => item.role === 'assistant');
-    await expect
-      .poll(async () => (await answers()).length, { timeout: 30_000 })
-      .toBeGreaterThan(0);
-    // The reply shows on the page, without a reload.
-    const [answer] = await answers();
-    const opening = (answer?.content.content ?? '')
-      .replace(/[[\]*_`#>]/gu, '')
-      .trim()
-      .slice(0, 6);
-    await expect(view.getByText(opening, { exact: false }).first()).toBeVisible(
-      { timeout: 15_000 },
-    );
+      .toEqual(['runner', agentName]);
   });
 
   test('a recent conversation opens full screen and moves to the side panel', async ({

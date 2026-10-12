@@ -1,14 +1,12 @@
 /**
  * The landing page, with the restraint of the AI products people already know (ChatGPT, Claude.ai, the Codex app): a
  * greeting, one composer (the UI Library's `agent-composer`), and the person's recent conversations under it, nothing
- * else. Inside the composer's toolbar, beside the attach button, the person picks the agent among all they may chat
- * with, grouped by type (Online: a model on the server answers in seconds; Runner: a coding agent on a runtime) with
- * their availability, their default first (`model.ts`), and, for an online agent listing several models, the model it
- * answers with: the chat's `NewChatChoice`, the same pickers a new conversation in the chat panel shows. Files are
- * attached with the button, a paste or a drop on the box and upload as they are added (`useChatAttachments`), as in the
- * chat panel. Sending starts a new conversation with that agent and model, and the first message with its files, whose
- * mode (the agent's type) is then fixed, and opens it full screen (`/chat/:conversationId`, `pages/chat`): one
- * conversation, one composer. A recent conversation opens there too; "All" opens the history in a dialog. Under the
+ * else. Inside the composer's toolbar, beside the attach button, the person picks the agent among the enabled ones
+ * they may chat with, their default first (`model.ts`): the chat's `NewChatChoice`, the same picker a new conversation
+ * in the chat panel shows. Files are attached with the button, a paste or a drop on the box and upload as they are
+ * added (`useChatAttachments`), as in the chat panel. Sending starts a new conversation with that agent, and the first
+ * message with its files, and opens it full screen (`/chat/:conversationId`, `pages/chat`): one conversation, one
+ * composer. A recent conversation opens there too; "All" opens the history in a dialog. Under the
  * composer, "Use Studio in your agent" gives a prompt that sets up the nb-studio CLI in a coding agent (`agent-setup.tsx`).
  * At phone width the composer sticks to the bottom, as in mobile chat apps, under the greeting and the recent
  * conversations.
@@ -16,7 +14,6 @@
  * Someone who holds no Studio role yet is told that an administrator has to give them one instead.
  */
 import { useChatAttachments } from '@nocobase/app-plugin-agents/client/chat';
-import type { OnlineModelEntry } from '@nocobase/app-plugin-agents/shared/agents';
 import type {
   ChatAgent,
   ConversationSummary,
@@ -85,10 +82,6 @@ function Home(): ReactElement {
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
   });
-  const models = useQuery({
-    queryKey: homeKeys.models,
-    queryFn: () => home.models(),
-  });
 
   // Phone: the greeting and the recent conversations scroll above the composer, which sticks to the bottom. From `md`:
   // the greeting, the composer and the recent conversations in one column, a little above the middle.
@@ -103,10 +96,7 @@ function Home(): ReactElement {
             <Spinner />
           </div>
         ) : (
-          <Composer
-            agents={agents.data ?? []}
-            modelsOffered={(models.data?.services.length ?? 0) > 0}
-          />
+          <Composer agents={agents.data ?? []} />
         )}
         <div className='mt-2 flex justify-center'>
           <AgentSetup />
@@ -121,10 +111,8 @@ function Home(): ReactElement {
 
 function Composer({
   agents,
-  modelsOffered,
 }: {
   readonly agents: readonly ChatAgent[];
-  readonly modelsOffered: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const home = useHomeApi();
@@ -134,10 +122,10 @@ function Composer({
   // The agent picked; until one is, the person's default.
   const [picked, setPicked] = useState<string | null>(null);
   const agent = chosenAgent(agents, picked);
-  const blocker = agentBlocker(agent, modelsOffered);
+  const blocker = agentBlocker(agent);
   // Availability checks eligibility, not free slots: busy runners still accept queued messages.
   const runnerUnavailable =
-    agent?.type === 'runner' &&
+    agent !== null &&
     !agent.availability.online &&
     agent.availability.reason === 'noRunner';
 
@@ -150,14 +138,6 @@ function Composer({
     }),
     [files],
   );
-  // The model an online agent with several answers with, chosen before the first message; another agent starts from
-  // its default again.
-  const [chosen, setChosen] = useState<{
-    readonly agentId: string;
-    readonly model: OnlineModelEntry | null;
-  } | null>(null);
-  const model = agent && chosen?.agentId === agent.id ? chosen.model : null;
-
   const start = useMutation({
     mutationFn: ({ to, input }: { to: string; input: HomeStartInput }) =>
       home.start(to, input),
@@ -183,7 +163,7 @@ function Composer({
         inputClassName='min-h-20'
         sending={start.isPending}
         disabled={agent === null || blocker !== null}
-        placeholder={t(`home.placeholders.${agent?.type ?? 'online'}`)}
+        placeholder={t('home.placeholder')}
         labels={{
           ...composerLabels,
           label: t('home.inputLabel'),
@@ -197,7 +177,7 @@ function Composer({
           return start
             .mutateAsync({
               to: agent.id,
-              input: { content: message ?? '', attachments: sent, model },
+              input: { content: message ?? '', attachments: sent },
             })
             .then(
               () => true,
@@ -205,33 +185,17 @@ function Composer({
             );
         }}
         toolbar={
-          // The same pickers, in the same order, as a new conversation in the chat panel.
+          // The same picker as a new conversation in the chat panel.
           <NewChatChoice
             agents={agents}
             agent={agent}
             onAgentChange={setPicked}
-            model={model}
-            onModelChange={(next) => {
-              if (agent) setChosen({ agentId: agent.id, model: next });
-            }}
           />
         }
       />
       {problem ? (
         <p role='alert' className='px-2 text-center text-sm text-destructive'>
           {problem}
-          {!start.isError && blocker === 'noModel' ? (
-            <>
-              {' '}
-              {/* Where models are set up: Agent team › Models. */}
-              <Link
-                to='/models'
-                className='font-medium underline underline-offset-4'
-              >
-                {t('home.setUpModels')}
-              </Link>
-            </>
-          ) : null}
           {!start.isError && runnerUnavailable ? (
             <>
               {' '}

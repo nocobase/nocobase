@@ -105,59 +105,6 @@ nb-studio issue attachment list <issue>
 
 **Request:** `GET /api/projects/issues/{issueId}/attachments` (`projectsListIssueAttachments`)
 
-## issue checklist list
-
-List an issue’s checklists
-
-Every checklist the issue has had, one per status, the current status’s first. `issueId` is an id or an identifier.
-
-```bash
-nb-studio issue checklist list <issue>
-```
-
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
-
-**Output:** A list (table columns: `statusKey`, `current`, `complete`, `items.length`); with `--json`, `result.data` is the array and `result.meta` the paging.
-
-**Who:** People (a sign-in or an API key); needs the action `pm.issues/view`.
-
-**Request:** `GET /api/projects/issues/{issueId}/checklists` (`projectsListIssueChecklists`)
-
-## issue checklist mark
-
-Check or uncheck a checklist item
-
-Needs `edit` on the issue. Answers the checklist after the change.
-
-```bash
-nb-studio issue checklist mark <issue> <status> <item> --checked
-```
-
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
-| `status` |             |
-| `item`   |             |
-
-| Flag        | Type    | Description                                                      |
-| ----------- | ------- | ---------------------------------------------------------------- |
-| `--checked` | boolean | `--checked` ticks the item, `--no-checked` clears it. (required) |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key); needs the action `pm.issues/edit`.
-
-**Request:** `PATCH /api/projects/issues/{issueId}/checklists/{statusKey}/items/{itemKey}` (`projectsUpdateChecklistItem`)
-
-**Examples:**
-
-```bash
-nb-studio issue checklist mark PM-12 in_review tests-pass --checked
-nb-studio issue checklist mark PM-12 in_review tests-pass --no-checked
-```
-
 ## issue comment add
 
 Comment on an issue
@@ -220,30 +167,30 @@ nb-studio issue comment list <issue>
 
 Create an issue
 
-Needs `create` on `pm.issues` for the issue’s project. The issue starts in `todo` unless `statusKey` names another status it may start in; the caller owns it unless `ownerUserId` says otherwise.
+Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one.
 
 ```bash
 nb-studio issue create
 ```
 
-| Flag              | Type                                    | Description                                                                                                                |
-| ----------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `--title`         | string                                  |                                                                                                                            |
-| `--description`   | string                                  | (or --description-file <path>)                                                                                             |
-| `--status`        | string                                  | The status it starts in: analysis (design first), todo (straight to development, the default) or backlog (nothing starts). |
-| `--priority`      | urgent \| high \| medium \| low \| none |                                                                                                                            |
-| `--owner`         | string                                  |                                                                                                                            |
-| `--executor`      | json                                    |                                                                                                                            |
-| `--parent`        | string                                  |                                                                                                                            |
-| `--stage`         | integer                                 |                                                                                                                            |
-| `--project`       | string                                  |                                                                                                                            |
-| `--start-date`    | string                                  |                                                                                                                            |
-| `--due-date`      | string                                  |                                                                                                                            |
-| `--label`         | string[]                                | (repeatable)                                                                                                               |
-| `--start`         | boolean                                 |                                                                                                                            |
-| `--blocked-by`    | string[]                                | (repeatable)                                                                                                               |
-| `--project-setup` | boolean                                 |                                                                                                                            |
-| `--file`          | path                                    | The request body as a JSON object; the flags override its fields.                                                          |
+| Flag              | Type                                    | Description                                                                                |
+| ----------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `--title`         | string                                  |                                                                                            |
+| `--description`   | string                                  | (or --description-file <path>)                                                             |
+| `--status`        | string                                  | The status it starts in: in_progress (start now) or backlog (nothing starts, the default). |
+| `--priority`      | urgent \| high \| medium \| low \| none |                                                                                            |
+| `--owner`         | string                                  |                                                                                            |
+| `--executor`      | json                                    |                                                                                            |
+| `--parent`        | string                                  |                                                                                            |
+| `--stage`         | integer                                 |                                                                                            |
+| `--project`       | string                                  |                                                                                            |
+| `--start-date`    | string                                  |                                                                                            |
+| `--due-date`      | string                                  |                                                                                            |
+| `--label`         | string[]                                | (repeatable)                                                                               |
+| `--start`         | boolean                                 |                                                                                            |
+| `--blocked-by`    | string[]                                | (repeatable)                                                                               |
+| `--project-setup` | boolean                                 |                                                                                            |
+| `--file`          | path                                    | The request body as a JSON object; the flags override its fields.                          |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -254,7 +201,7 @@ nb-studio issue create
 **Examples:**
 
 ```bash
-nb-studio issue create --file issue.json --status todo
+nb-studio issue create --file issue.json --status in_progress
 ```
 
 ## issue delete
@@ -331,36 +278,6 @@ nb-studio issue dependency remove <issue> <dependsOn>
 
 **Request:** `POST /api/projects/issues/{issueId}/removeDependency` (`projectsRemoveIssueDependency`)
 
-## issue design-proposal
-
-Submit a design proposal for an issue
-
-Only the agent of a run on the issue, in the design-first flow: the issue defaults to the run’s. Submitting moves an issue in Analysis to Proposal review, which asks its owner; a new proposal replaces the earlier one. `meta.message` words the outcome.
-
-```bash
-nb-studio issue design-proposal [<issue>] --content <string>
-```
-
-| Argument | Description                                                                                 |
-| -------- | ------------------------------------------------------------------------------------------- |
-| `issue`  | The issue, by identifier (PM-12) or id; the issue of the calling run by default. (optional) |
-
-| Flag        | Type   | Description                                                                                                         |
-| ----------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
-| `--content` | string | The proposal, in Markdown; write it to a file and pass it with --content-file. (required; or --content-file <path>) |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** Only agents in a run; needs the action `pm.issues/comment`.
-
-**Request:** `POST /api/designProposals` (`designProposalsSubmit`)
-
-**Examples:**
-
-```bash
-nb-studio issue design-proposal --content-file proposal.md
-```
-
 ## issue executor list
 
 List executors of other kinds
@@ -387,7 +304,7 @@ nb-studio issue update PM-12 --executor type=agent --executor id=<id>
 
 Get an issue
 
-The issue with its newest activities and comment threads, files, checklist, approvals, sub-issues and dependencies. `issueId` is an id or an identifier such as `PM-12`.
+The issue with its newest activities and comment threads, files, sub-issues and dependencies. `issueId` is an id or an identifier such as `PM-12`.
 
 ```bash
 nb-studio issue get <issue>
@@ -402,6 +319,26 @@ nb-studio issue get <issue>
 **Who:** People, and agents in a run; needs the action `pm.issues/view`.
 
 **Request:** `GET /api/projects/issues/{issueId}` (`projectsGetIssue`)
+
+## issue progress
+
+Get what an issue waits for
+
+What the issue waits for now, worked out by the system: an agent working on it or queued, a pull request’s checks, a decision the project manager asked for, acceptance; with the project manager’s latest "Next" line. Needs `pm.issues` view.
+
+```bash
+nb-studio issue progress <issue>
+```
+
+| Argument | Description |
+| -------- | ----------- |
+| `issue`  |             |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `GET /api/issueProgress/{issueId}` (`issueProgressGet`)
 
 ## issue restore
 
@@ -503,15 +440,11 @@ nb-studio issue search --parent PM-12
 
 List the statuses issues may have
 
-The statuses of `projectId`’s workflow, or of the default workflow without it. A `projectId` that names no project the caller sees is a 400 naming the field.
+The six fixed statuses, in order.
 
 ```bash
 nb-studio issue status list
 ```
-
-| Flag        | Type   | Description |
-| ----------- | ------ | ----------- |
-| `--project` | string |             |
 
 **Output:** A list (table columns: `key`, `name`, `category`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -522,7 +455,7 @@ nb-studio issue status list
 **Examples:**
 
 ```bash
-nb-studio issue status list --project <project>
+nb-studio issue status list
 ```
 
 ## issue subscribe
@@ -579,22 +512,22 @@ nb-studio issue update <issue>
 | -------- | ----------- |
 | `issue`  |             |
 
-| Flag            | Type                                    | Description                                                         |
-| --------------- | --------------------------------------- | ------------------------------------------------------------------- |
-| `--title`       | string                                  |                                                                     |
-| `--description` | string                                  | (or --description-file <path>)                                      |
-| `--status`      | string                                  | Move it to this status, through its workflow's rules and approvals. |
-| `--priority`    | urgent \| high \| medium \| low \| none |                                                                     |
-| `--owner`       | string                                  |                                                                     |
-| `--executor`    | json                                    |                                                                     |
-| `--parent`      | string                                  |                                                                     |
-| `--stage`       | integer                                 |                                                                     |
-| `--project`     | string                                  |                                                                     |
-| `--start-date`  | string                                  |                                                                     |
-| `--due-date`    | string                                  |                                                                     |
-| `--label`       | string[]                                | (repeatable)                                                        |
-| `--start`       | boolean                                 |                                                                     |
-| `--file`        | path                                    | The request body as a JSON object; the flags override its fields.   |
+| Flag            | Type                                    | Description                                                                          |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
+| `--title`       | string                                  |                                                                                      |
+| `--description` | string                                  | (or --description-file <path>)                                                       |
+| `--status`      | string                                  | Move it to this status: backlog, in_progress, blocked, in_review, done or cancelled. |
+| `--priority`    | urgent \| high \| medium \| low \| none |                                                                                      |
+| `--owner`       | string                                  |                                                                                      |
+| `--executor`    | json                                    |                                                                                      |
+| `--parent`      | string                                  |                                                                                      |
+| `--stage`       | integer                                 |                                                                                      |
+| `--project`     | string                                  |                                                                                      |
+| `--start-date`  | string                                  |                                                                                      |
+| `--due-date`    | string                                  |                                                                                      |
+| `--label`       | string[]                                | (repeatable)                                                                         |
+| `--start`       | boolean                                 |                                                                                      |
+| `--file`        | path                                    | The request body as a JSON object; the flags override its fields.                    |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

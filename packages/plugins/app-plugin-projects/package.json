@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-projects",
   "displayName": "Projects",
-  "description": "Projects, issues, workflows and collaboration for a NocoBase application.",
+  "description": "Projects, issues and collaboration for a NocoBase application.",
   "version": "0.1.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -26,17 +26,9 @@
       "types": "./shared/access.ts",
       "import": "./shared/access.ts"
     },
-    "./shared/approvals": {
-      "types": "./shared/approvals.ts",
-      "import": "./shared/approvals.ts"
-    },
     "./shared/attachments": {
       "types": "./shared/attachments.ts",
       "import": "./shared/attachments.ts"
-    },
-    "./shared/checklists": {
-      "types": "./shared/checklists.ts",
-      "import": "./shared/checklists.ts"
     },
     "./shared/common": {
       "types": "./shared/common.ts",
@@ -78,9 +70,9 @@
       "types": "./shared/settings.ts",
       "import": "./shared/settings.ts"
     },
-    "./shared/workflows": {
-      "types": "./shared/workflows.ts",
-      "import": "./shared/workflows.ts"
+    "./shared/statuses": {
+      "types": "./shared/statuses.ts",
+      "import": "./shared/statuses.ts"
     },
     "./client": {
       "types": "./client/index.ts",
@@ -145,17 +137,9 @@
         "types": "./dist/shared/access.d.ts",
         "import": "./dist/shared/access.js"
       },
-      "./shared/approvals": {
-        "types": "./dist/shared/approvals.d.ts",
-        "import": "./dist/shared/approvals.js"
-      },
       "./shared/attachments": {
         "types": "./dist/shared/attachments.d.ts",
         "import": "./dist/shared/attachments.js"
-      },
-      "./shared/checklists": {
-        "types": "./dist/shared/checklists.d.ts",
-        "import": "./dist/shared/checklists.js"
       },
       "./shared/common": {
         "types": "./dist/shared/common.d.ts",
@@ -197,9 +181,9 @@
         "types": "./dist/shared/settings.d.ts",
         "import": "./dist/shared/settings.js"
       },
-      "./shared/workflows": {
-        "types": "./dist/shared/workflows.d.ts",
-        "import": "./dist/shared/workflows.js"
+      "./shared/statuses": {
+        "types": "./dist/shared/statuses.d.ts",
+        "import": "./dist/shared/statuses.js"
       },
       "./client": {
         "types": "./dist/client/index.d.ts",

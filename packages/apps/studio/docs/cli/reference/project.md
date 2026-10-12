@@ -25,7 +25,6 @@ nb-studio project create <name>
 | `--lead`        | string                                                     |                                |
 | `--start-date`  | string                                                     |                                |
 | `--due-date`    | string                                                     |                                |
-| `--workflow`    | string                                                     |                                |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -516,7 +515,7 @@ nb-studio project setup retry <project>
 
 Update a project
 
-Needs `manage` on the project: its lead, or a wider scope. Switching `workflowId` is refused while an issue is in a status the new workflow lacks (400 `WORKFLOW_STATUS_CONFLICT`).
+Needs `manage` on the project: its lead, or a wider scope.
 
 ```bash
 nb-studio project update <project>
@@ -536,7 +535,6 @@ nb-studio project update <project>
 | `--lead`        | string                                                     |                                |
 | `--start-date`  | string                                                     |                                |
 | `--due-date`    | string                                                     |                                |
-| `--workflow`    | string                                                     |                                |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

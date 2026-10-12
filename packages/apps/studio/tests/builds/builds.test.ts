@@ -21,7 +21,6 @@ import path from 'node:path';
 import { Hono } from 'hono';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import {
   ciWorkflow,
   cliResolvePath,
@@ -304,12 +303,7 @@ beforeEach(async () => {
       name: id.toUpperCase(),
       environmentId,
     });
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
   h.roles.set('alice', 'admin');
-  const software = (await h.projects.workflows.list(alice())).find(
-    (workflow) => workflow.builtInKey === 'software',
-  )!;
-  await h.projects.workflows.setDefault(alice(), software.id);
   const project = await h.projects.projects.create(alice(), {
     name: 'Shop',
     visibility: 'members',

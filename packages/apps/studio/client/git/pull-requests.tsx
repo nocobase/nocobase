@@ -625,17 +625,30 @@ export function PullRequestRow({
               </div>
             ) : null}
             {canLink ? (
-              <label className='flex items-center gap-2 text-xs text-muted-foreground'>
+              <label
+                className='flex items-start gap-2 text-xs'
+                data-testid='pr-complete-on-merge'
+              >
                 <Switch
                   size='sm'
+                  className='mt-0.5'
                   checked={!pr.autoCompleteDisabled}
                   disabled={mutate.isPending}
                   onCheckedChange={(counted) =>
                     mutate.mutate({ kind: 'count', counted })
                   }
                 />
-                <span title={t('studioGit.section.countsHint')}>
-                  {t('studioGit.section.countsTitle')}
+                <span className='min-w-0 space-y-0.5'>
+                  <span className='block text-foreground'>
+                    {pr.autoCompleteDisabled
+                      ? t('studioGit.section.mergeKeeps')
+                      : t('studioGit.section.completeOnMerge')}
+                  </span>
+                  <span className='block text-muted-foreground'>
+                    {pr.autoCompleteDisabled
+                      ? t('studioGit.section.mergeKeepsHint')
+                      : t('studioGit.section.completeOnMergeHint')}
+                  </span>
                 </span>
               </label>
             ) : null}

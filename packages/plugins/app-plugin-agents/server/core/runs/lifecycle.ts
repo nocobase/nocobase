@@ -10,6 +10,7 @@ import {
   TIMINGS,
   UsageSchema,
   type ActiveRun,
+  type AgentTool,
   type CancelAckRequest,
   type CompleteRequest,
   type EventsRequest,
@@ -27,7 +28,6 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
 import type { RunEffortReport } from '../../../shared/runs.js';
 
-import { ONLINE_TOOL } from '../../../shared/reports.js';
 import type { Runner } from '../../../shared/runners.js';
 import { later, type Clock } from '../../kernel/clock.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -71,15 +71,6 @@ export interface RunnerReports {
     runId: string,
     request: Pick<StartRequest, 'workDir' | 'acceptsInput' | 'sessionId'>,
   ): Promise<StartResponse>;
-  /**
-   * Records one model call of an online run as it happens (`tool` `online`), so what it used reaches the reports however the
-   * run ends. The run must still be held.
-   */
-  onlineUsage(
-    holder: Pick<Runner, 'id'>,
-    runId: string,
-    usage: OnlineUsageRecord,
-  ): Promise<void>;
   events(
     runner: Pick<Runner, 'id'>,
     runId: string,
@@ -108,18 +99,6 @@ export interface RunnerReports {
   ): Promise<{ cancelRequested: string[]; release: string[] }>;
 }
 
-/** What one model call of an online run used. */
-export interface OnlineUsageRecord {
-  /** The model service the call went through, which prices it. */
-  readonly modelService: string | null;
-  readonly model: string | null;
-  readonly inputTokens: number;
-  readonly outputTokens: number;
-  readonly cacheReadTokens?: number;
-  readonly cacheWriteTokens?: number;
-  readonly reasoningTokens?: number;
-}
-
 export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
   readonly tx: TxRunner;
   readonly ids: IdSource;
@@ -129,6 +108,16 @@ export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
    * patterns before they are stored, whatever the runner did (`kernel/redaction.ts`).
    */
   readonly secrets?: SecretMemory;
+  /**
+   * A run failed `modelUnavailable` on `runnerId` with its tool and model: the runner's mark that the model is not
+   * offered there (`RunnerService.markModelUnavailable`), in the failure's transaction.
+   */
+  readonly onModelUnavailable?: (
+    unit: Tx,
+    runnerId: string,
+    tool: AgentTool,
+    model: string,
+  ) => Promise<void>;
 }
 
 export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
@@ -300,31 +289,6 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     async holds(runner, runId) {
       await held(tx.read(), runner, runId);
     },
-    onlineUsage: (holder, runId, usage) =>
-      tx.run(async ({ conn }) => {
-        const run = await held(conn, holder, runId);
-        await usageRepo(conn).createOne({
-          values: {
-            id: ids.next(),
-            runId: run.id,
-            tool: ONLINE_TOOL,
-            modelService: usage.modelService?.slice(0, 64) ?? null,
-            model: usage.model?.slice(0, 200) ?? null,
-            inputTokens: usage.inputTokens,
-            outputTokens: usage.outputTokens,
-            cacheReadTokens: usage.cacheReadTokens ?? 0,
-            cacheWriteTokens: usage.cacheWriteTokens ?? 0,
-            reasoningTokens: usage.reasoningTokens ?? 0,
-            createdAt: clock.now().toISOString(),
-          },
-        });
-        await recordActualModels(
-          conn,
-          run,
-          [{ tool: ONLINE_TOOL, model: usage.model }],
-          clock.now().toISOString(),
-        );
-      }),
     lease: (runner, runId) =>
       tx.run(async ({ conn }) => {
         const run = await held(conn, runner, runId);
@@ -527,6 +491,13 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
                 detail: redactorOf(run.id).text(reported.detail),
               };
         await recordOutcome(unit, run, request);
+        if (request.reason === 'modelUnavailable' && run.tool && run.model)
+          await deps.onModelUnavailable?.(
+            unit,
+            runner.id,
+            run.tool as AgentTool,
+            run.model,
+          );
         await rememberSession(
           unit,
           run,

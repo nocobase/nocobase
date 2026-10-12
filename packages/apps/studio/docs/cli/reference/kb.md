@@ -799,7 +799,6 @@ nb-studio kb settings set
 | `--rerank`        | json     |                                                                               |
 | `--context-model` | json     |                                                                               |
 | `--contextual`    | string[] | (repeatable)                                                                  |
-| `--whole-tokens`  | integer  |                                                                               |
 | `--chunking`      | json     | (default {"headingDepth":3,"target":1200,"max":2000})                         |
 | `--recall`        | json     | (default {"limit":20,"minScore":0,"keywordWeight":0.5,"rerankCandidates":50}) |
 | `--file`          | path     | The request body as a JSON object; the flags override its fields.             |

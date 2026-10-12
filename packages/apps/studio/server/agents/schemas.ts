@@ -21,7 +21,6 @@ import {
   type AgentBoardStartResult,
 } from '../../shared/agent-board.js';
 import type { Delegation } from '../../shared/delegations.js';
-import type { DesignProposal, DesignState } from '../../shared/design.js';
 import type { FailedRunResult } from './failed-runs.js';
 import { RUN_FAILED_ACTIONS } from './notices.js';
 
@@ -39,15 +38,6 @@ export const DecideFailedRunInput = z
     path: ['userId'],
     message: 'The person who takes the issue over is required.',
   });
-
-export const DesignDecisionInput = z.strictObject({
-  comment: z.string().optional(),
-});
-export const DesignApproveInput = DesignDecisionInput.extend({
-  executor: z
-    .strictObject({ type: z.enum(['agent', 'user']), id: z.string().min(1) })
-    .optional(),
-});
 
 const filter = z
   .string()
@@ -100,39 +90,6 @@ export const FailedRunResultSchema: z.ZodType<FailedRunResult> = z.object({
     .optional()
     .meta({ description: 'For `retry`: the new run.' }),
 });
-
-const DesignProposalSchema: z.ZodType<DesignProposal> = z.object({
-  commentId: z.string(),
-  content: z.string().meta({ description: 'Markdown.' }),
-  authorType: z.string(),
-  authorId: z.string().nullable(),
-  authorName: z.string().nullable(),
-  createdAt: dateTime(),
-});
-
-export const DesignStateSchema: z.ZodType<DesignState> = z
-  .object({
-    issueId: z.string(),
-    statusKey: z.string(),
-    inReview: z.boolean().meta({
-      description: 'The issue waits in Proposal review.',
-    }),
-    proposal: DesignProposalSchema.nullable().meta({
-      description: 'The newest proposal; null before the first.',
-    }),
-    executorOk: z.boolean(),
-    recommendedAgentId: z.string().nullable(),
-    executorCandidates: z.array(
-      z.object({
-        type: z.enum(['agent', 'user']),
-        id: z.string(),
-        name: z.string(),
-      }),
-    ),
-    canApprove: z.boolean(),
-    canRequestChanges: z.boolean(),
-  })
-  .meta({ ref: 'StudioDesignState' });
 
 export const AgentBoardStartResultSchema: z.ZodType<AgentBoardStartResult> =
   z.object({
@@ -285,25 +242,6 @@ export const AgentBoardSchema = z.object({
   ),
   truncated: z.boolean(),
   generatedAt: dateTime(),
-});
-
-/** `issue design-proposal`: the issue defaults to the run's. */
-export const SubmitDesignProposalInput = z.strictObject({
-  issueId: z.string().min(1).optional().meta({
-    description:
-      'The issue, by identifier (PM-12) or id; the issue of the calling run by default.',
-  }),
-  content: z.string().min(1).meta({
-    description: 'The whole proposal, in Markdown.',
-  }),
-});
-
-export const DesignProposalSubmittedSchema = z.object({
-  proposal: DesignProposalSchema,
-  statusKey: z.string().meta({
-    description:
-      'The issue’s status after submitting: `proposal_review` once it left Analysis.',
-  }),
 });
 
 /** `intake drafts`: the drafts of the run's intake request (`IntakeAiDrafts`), checked when they are delivered. */

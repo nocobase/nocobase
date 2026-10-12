@@ -76,7 +76,7 @@ import {
   usageRepo,
   type RunRecord,
 } from './run.store.js';
-import { dialectOf, takesType, type SubjectRegistry } from './ports.js';
+import type { SubjectRegistry } from './ports.js';
 import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { gateInputs, gatePending } from './input-gate.js';
@@ -397,8 +397,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
   ): Promise<Agent> {
     const agent = await findAgent(unit.conn, agentId);
     if (!agent) throw notFound('Agent');
-    if (agent.archivedAt)
-      throw precondition('AGENT_ARCHIVED', 'The agent is archived.');
+    if (agent.status !== 'enabled')
+      throw precondition('AGENT_NOT_ENABLED', 'The agent is not enabled.');
     if (!deps.agents.mayInvoke(agent, userId))
       throw forbidden('You may not wake this agent.');
     return agent;
@@ -423,18 +423,13 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly maxAttempts?: number;
     },
   ): Promise<string> {
-    if (!takesType(deps.subjects.get(values.subject.kind), agent.type))
-      throw invalid(
-        `A ${agent.type} agent cannot work on a ${values.subject.kind}.`,
-        { reason: 'AGENT_TYPE_NOT_ALLOWED', agentType: agent.type },
-      );
     const now = clock.now().toISOString();
     const id = ids.next();
     await runsRepo(unit.conn).createOne({
       values: {
         id,
         agentId: agent.id,
-        agentType: agent.type,
+        agentType: 'runner',
         runnerId: null,
         status: 'queued',
         priority: values.priority,
@@ -678,7 +673,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
     userId: string,
     requires: readonly string[],
   ): Promise<void> {
-    if (agent.type !== 'runner') return;
     // By the claim's own rules, the agent's variables included; the subject's are the claim's to check.
     if (
       !(await deps.eligibility.canClaim(unit.conn, agent, {
@@ -741,11 +735,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
           if (!deps.agents.mayInvoke(agent, responsible))
             throw forbidden(
               'The person who answers for this may not wake this agent.',
-            );
-          if (!takesType(deps.subjects.get(request.subject.kind), agent.type))
-            throw invalid(
-              `A ${agent.type} agent cannot work on a ${request.subject.kind}.`,
-              { reason: 'AGENT_TYPE_NOT_ALLOWED', agentType: agent.type },
             );
           const created = await insertRunRequest(
             unit,
@@ -1219,17 +1208,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
       const conn = tx.read();
       const binding = deps.subjects.get(run.subjectKind);
       const agent = await findAgent(conn, run.agentId);
-      // An online run is held by the application itself, not by a registered runner.
-      const runner =
-        run.runnerId && agent?.type === 'runner'
-          ? await deps.runners.find(conn, run.runnerId)
-          : null;
-      if (
-        !binding ||
-        !agent ||
-        (agent.type === 'runner' && !runner) ||
-        !isActive(run.status)
-      )
+      const runner = run.runnerId
+        ? await deps.runners.find(conn, run.runnerId)
+        : null;
+      if (!binding || !agent || !runner || !isActive(run.status))
         throw notFound('Run context');
       const assembly = await binding.context.assemble(conn, {
         run: toRun(run),
@@ -1238,7 +1220,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
         inputs: (await pendingInputs(conn, run.id)).map(toInput),
         cli: deps.cliName,
         appName: deps.appName,
-        dialect: dialectOf(agent),
       });
       return assembly.data;
     },

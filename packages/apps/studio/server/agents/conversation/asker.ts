@@ -20,6 +20,7 @@ import type {
   IssueListItem,
   StatusCategory,
 } from '@nocobase/app-plugin-projects/shared/issues';
+import { statusCategory } from '@nocobase/app-plugin-projects/shared/statuses';
 
 import type { PermissionSource } from '../commands/permissions.js';
 
@@ -95,30 +96,18 @@ async function openIssues(
       limit: ISSUES_READ,
     }),
   ]);
-  const categories = new Map<string, Map<string, StatusCategory>>();
-  async function categoryOf(issue: IssueListItem): Promise<StatusCategory> {
-    const key = issue.projectId ?? '';
-    let byStatus = categories.get(key);
-    if (!byStatus) {
-      byStatus = new Map(
-        (await queries.statuses(viewer, issue.projectId).catch(() => [])).map(
-          (status) => [status.key, status.category],
-        ),
-      );
-      categories.set(key, byStatus);
-    }
-    return byStatus.get(issue.statusKey) ?? 'unstarted';
-  }
-  const open = async (list: readonly IssueListItem[]) => {
+  const categoryOf = (issue: IssueListItem): StatusCategory =>
+    statusCategory(issue.statusKey) ?? 'unstarted';
+  const open = (list: readonly IssueListItem[]) => {
     const kept: { issue: IssueListItem; category: StatusCategory }[] = [];
     for (const issue of list) {
-      const category = await categoryOf(issue);
+      const category = categoryOf(issue);
       if (!FINISHED.has(category)) kept.push({ issue, category });
     }
     return kept;
   };
-  const mine = await open(owned.data);
-  const doing = await open(
+  const mine = open(owned.data);
+  const doing = open(
     executing.data.filter((issue) => issue.executor?.type === 'user'),
   );
   const byId = new Map<

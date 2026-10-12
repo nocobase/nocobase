@@ -229,7 +229,10 @@ describe('work held back, and withdrawn', () => {
   it('records, as the principal’s, that work did not start while the issue waits for another', async () => {
     addCautiousBots();
     const blocker = await h.services.issues.create(alice(), { title: 'First' });
-    const issue = await h.services.issues.create(alice(), { title: 'Then' });
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Then',
+      statusKey: 'in_progress',
+    });
     await h.services.subtasks.addDependency(alice(), issue.id, {
       dependsOnIssueId: blocker.id,
     });

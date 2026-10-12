@@ -384,9 +384,19 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     navigation: { title: 'navigation.agentTeam', icon: Bot, order: 5 },
     children: [
       {
+        // The agents plugin's route with Studio's own page: the project manager over the discovered agents.
         ...agentsRoute,
+        componentLoader: () => import('./pages/agents/index.js'),
         navigation: { title: 'navigation.agents', icon: Bot },
         breadcrumb: { title: 'navigation.agents' },
+        children: [
+          {
+            name: 'agents-project-manager',
+            path: 'project-manager',
+            componentLoader: () =>
+              import('./agents/project-manager/settings-dialog.js'),
+          },
+        ],
       },
       {
         ...runtimesRoute,
@@ -537,24 +547,6 @@ const configRoutes: AppClientRouteContribution = defineAppRoutes([
         breadcrumb: { title: 'config.nav.git' },
         authz: setting('studio.git'),
         componentLoader: () => import('./pages/config/git.js'),
-      },
-      {
-        name: 'config-workflows',
-        path: 'workflows',
-        breadcrumb: { title: 'config.nav.workflows' },
-        authz: setting('pm.workflows'),
-        componentLoader: async () => ({
-          default: (await projectsConfig()).WorkflowsSettings,
-        }),
-        children: [
-          {
-            name: 'config-workflow',
-            path: ':workflowId',
-            componentLoader: async () => ({
-              default: (await projectsConfig()).WorkflowSettings,
-            }),
-          },
-        ],
       },
       {
         name: 'config-labels',

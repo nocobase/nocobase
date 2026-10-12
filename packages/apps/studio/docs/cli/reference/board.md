@@ -68,7 +68,7 @@ nb-studio board get --project 12
 
 Get current agent work on visible issues
 
-At most 100 issue IDs. Only visible issues with an agent executor are returned; matching pending approvals suppress working. No run details are exposed.
+At most 100 issue IDs. Only visible issues with an agent executor are returned. No run details are exposed.
 
 ```bash
 nb-studio board issue-work --issue-ids <string[]>

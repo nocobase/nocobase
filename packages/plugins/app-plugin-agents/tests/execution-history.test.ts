@@ -118,7 +118,13 @@ describe('execution history', () => {
       modelEntries: [{ tool: 'codex', model: 'requested' }],
     });
     const runner = await h.registerRunner({
-      tools: [{ kind: 'codex', authenticated: true }],
+      tools: [
+        {
+          kind: 'codex',
+          authenticated: true,
+          models: [{ id: 'requested' }],
+        },
+      ],
     });
     const runId = await h.enqueue(agent);
     await claim(h, runner);
@@ -156,7 +162,13 @@ describe('execution history', () => {
       modelEntries: [{ tool: 'codex', model: null }],
     });
     const runner = await h.registerRunner({
-      tools: [{ kind: 'codex', authenticated: true }],
+      tools: [
+        {
+          kind: 'codex',
+          authenticated: true,
+          models: [{ id: 'requested' }],
+        },
+      ],
     });
     const runId = await h.enqueue(agent);
     await claim(h, runner);
@@ -196,7 +208,13 @@ describe('execution history', () => {
       modelEntries: [{ tool: 'codex', model: 'requested', effort: 'high' }],
     });
     const runner = await h.registerRunner({
-      tools: [{ kind: 'codex', authenticated: true }],
+      tools: [
+        {
+          kind: 'codex',
+          authenticated: true,
+          models: [{ id: 'requested' }],
+        },
+      ],
     });
     const runId = await h.enqueue(agent);
     await claim(h, runner);
@@ -286,7 +304,13 @@ describe('execution history', () => {
         modelEntries: [{ tool: 'codex', model: 'requested' }],
       });
       const runner = await h.registerRunner({
-        tools: [{ kind: 'codex', authenticated: true }],
+        tools: [
+          {
+            kind: 'codex',
+            authenticated: true,
+            models: [{ id: 'requested' }],
+          },
+        ],
       });
       const runId = await h.enqueue(agent);
       await claim(h, runner);
@@ -344,7 +368,13 @@ describe('execution history', () => {
       modelEntries: [{ tool: 'codex', model: 'requested' }],
     });
     const runner = await h.registerRunner({
-      tools: [{ kind: 'codex', authenticated: true }],
+      tools: [
+        {
+          kind: 'codex',
+          authenticated: true,
+          models: [{ id: 'requested' }],
+        },
+      ],
     });
     const runId = await h.enqueue(agent);
     await claim(h, runner);
@@ -399,7 +429,13 @@ describe('execution history', () => {
     const runner = await h.registerRunner({
       name: 'private-hostname',
       ownerUserId: 'alice',
-      tools: [{ kind: 'codex', authenticated: true }],
+      tools: [
+        {
+          kind: 'codex',
+          authenticated: true,
+          models: [{ id: 'requested' }],
+        },
+      ],
     });
     const runId = await h.enqueue(agent);
     await claim(h, runner);
@@ -440,45 +476,5 @@ describe('execution history', () => {
     expect((await h.services.runs.get(runId)).runnerName).toBe(
       'private-hostname',
     );
-  });
-
-  it('records online holders and their reported model without a fictitious machine owner', async () => {
-    h = await createHarness();
-    const service = await h.services.online.services.create({
-      title: 'Mock',
-      provider: 'openai-compatible',
-      baseUrl: 'http://127.0.0.1:9/v1',
-      models: [{ value: 'requested', label: 'Requested' }],
-    });
-    const agent = await h.createAgent({
-      type: 'online',
-      modelEntries: [{ modelService: service.name, model: 'requested' }],
-    });
-    const conversation = await h.services.conversations.create('owner', {
-      agentId: agent,
-    });
-    const sent = await h.services.conversations.send('owner', conversation.id, {
-      content: 'Hello',
-    });
-    const runId = sent.run!.id;
-    const holder = { id: 'server:test' };
-    await h.services.claims.claimServer(holder, 1);
-    await h.services.reports.onlineUsage(holder, runId, {
-      modelService: service.name,
-      model: 'resolved',
-      inputTokens: 2,
-      outputTokens: 1,
-    });
-    expect(await h.services.runs.get(runId)).toMatchObject({
-      actualModels: ['resolved'],
-      executions: [
-        {
-          runnerId: 'server:test',
-          runnerOwnerUserId: null,
-          toolVersion: null,
-          modelService: service.name,
-        },
-      ],
-    });
   });
 });
