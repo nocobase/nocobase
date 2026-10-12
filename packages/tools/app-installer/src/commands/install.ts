@@ -1,6 +1,7 @@
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Args, Flags } from '@oclif/core';
+import { buildApp, parseAppSpec, resolveApp } from '../lib/app-source.ts';
 import { runAppCli } from '../lib/app-cli.ts';
 import { switchCurrent } from '../lib/current-link.ts';
 import { buildEcosystemConfig, buildLauncher } from '../lib/ecosystem.ts';
@@ -61,6 +62,10 @@ export const INSTALL_FLAGS = {
     description:
       'Directory to install into, as the other commands name it; the same as the DIRECTORY argument.',
   }),
+  app: Flags.string({
+    description:
+      'Published application to build and deploy, e.g. studio, @nocobase/studio or studio@beta. Requires pnpm 11+.',
+  }),
   archive: Flags.string({
     description:
       'Deployment archive to install, as `pnpm build --tar` writes it to storage/exports/dist.tar.gz. Build it for this machine with --target and --node-version.',
@@ -102,7 +107,8 @@ export const INSTALL_FLAGS = {
       'A setting read from an environment variable, as key=VARIABLE, e.g. database.connections.main.password=DB_PASSWORD.',
   }),
   registry: Flags.string({
-    description: 'npm registry for the installer commands suggested later.',
+    description:
+      'npm registry for application packages, build dependencies and suggested installer commands.',
   }),
   name: Flags.string({
     description:
@@ -130,6 +136,7 @@ export interface InstallInput {
   flags: {
     dir?: string;
     archive?: string;
+    app?: string;
     origin?: string;
     'base-path'?: string;
     host: string;
@@ -235,10 +242,10 @@ export async function install(
       { exitCode: EXIT_INVALID },
     );
   }
-  if (flags.archive === undefined) {
+  if ((flags.archive === undefined) === (flags.app === undefined)) {
     throw new InstallerError(
       'INVALID_USAGE',
-      'Name what to install: --archive with a deployment archive built by `pnpm build --tar`.',
+      'Choose exactly one source: --app with a published application, or --archive with a deployment archive.',
       { exitCode: EXIT_INVALID },
     );
   }
@@ -267,7 +274,11 @@ export async function install(
   checkPlatform();
   await checkTargetEmpty(root);
   checkEnvVariables(setsFromEnv.map(([, variable]) => variable));
-  const archive = resolveArchivePath(cwd, flags.archive);
+  const archive =
+    flags.archive === undefined
+      ? undefined
+      : resolveArchivePath(cwd, flags.archive);
+  const app = flags.app === undefined ? undefined : parseAppSpec(flags.app);
   if (flags.start) {
     await checkPm2(pm2);
     await checkPm2NameFree(pm2, name);
@@ -290,8 +301,15 @@ export async function install(
   }
   let switched = false;
   try {
-    reporter.progress(`Unpacking ${archive} into ${root}`);
-    const prepared = await unpackRelease({ layout, archive });
+    const prepared = app
+      ? await buildApp({
+          app: await resolveApp(app, registry, run),
+          registry,
+          layout,
+          run,
+          reporter,
+        })
+      : await unpackRelease({ layout, archive: archive! });
     checkArchiveDriver(prepared.dir, dialect);
     reporter.progress(
       `Installing ${prepared.appName} ${prepared.version} (${prepared.id})`,
@@ -360,7 +378,7 @@ export async function install(
       schemaVersion: 1,
       appName: prepared.appName,
       basePath: mountPathOf(env) || '/',
-      source: { kind: 'archive' },
+      source: app ? { kind: 'app', package: app.package } : { kind: 'archive' },
       name,
       registry,
       dialect,

@@ -1,56 +1,50 @@
 ---
 title: 'Permission sets and assignments'
-description: 'Configure pages, business actions, and data scopes for a job, then assign people.'
 ---
 
 # Permission sets and assignments
 
-A permission set combines permissions into reusable job responsibilities. A purchase requester can view their own orders, while a reviewer can view orders and process approvals. Assign the same set to employees with the same responsibilities.
+Permission sets combine pages, actions, and data scopes into reusable jobs. Multiple account managers can share a set, and employees can hold several sets.
 
-## Example: purchase requesters and reviewers
+## Transport jobs
 
-The procurement application needs two jobs. Ask your development Agent:
+Group pages, actions and record scopes into permission sets for people with the same responsibilities. Reuse job configurations when staff join or change jobs.
 
 ```text
-Create Purchase requester and Order reviewer jobs for the procurement application.
-Purchase requesters can enter the orders page and view orders they requested.
-Order reviewers can enter the orders page, view orders, and approve or reject pending orders.
-Only application administrators can change permissions and assignments.
-Use the application's existing authorization capability so administrators can adjust permissions and assign people in Settings later.
+Create Northstar permission sets for account managers, dispatchers, and drivers.
+Account managers enter customers and orders, create orders, and view or edit records they own.
+Dispatchers enter the dispatch workspace, view transport orders, and assign drivers, but cannot maintain permissions.
+Drivers view assigned tasks and accept, depart, and submit delivery evidence; they cannot change prices or reassign drivers.
+Only authorized administrators maintain permission sets and assignments.
+Provide job editing and assignments in Team access. Initially assign Alice and Bob as account managers, Emma as dispatcher, and Daniel as driver.
 ```
 
-After integration, administrators open a job in Settings → Authorization → Permission Sets. Permissions have three parts:
+Organize editing around pages, actions, and scopes. Viewing and editing orders are separate actions; entering a page does not grant all actions within it.
 
-| Part                 | Configuration in this example                                                                                |
-| -------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Page permissions     | Access to the orders page                                                                                    |
-| Business permissions | Requesters view orders; reviewers view orders and process approvals                                          |
-| Administration       | Administrators manage configuration; business jobs receive permissions appropriate to their responsibilities |
+## Assignment and reuse
 
-In Business permissions, click the scope icon beside View orders, choose Orders requested by me, and save. Reviewers can view orders required for their work; approval controls appear only on pending orders.
+Administrators review a job and assign employees. Alice and Bob share responsibilities but access their own records. Emma coordinates dispatch; Daniel handles assigned tasks.
 
-![Configure the requester's order action and record scope](../../../cn/capabilities/authorization/assets/permission-set.png)
+An employee may hold multiple responsibilities. Removing one assignment may leave another direct or organizational source intact.
 
-### Assign people
+The default member set applies to signed-in users and suits common basic capabilities. Super administrators have unrestricted access and should not stand in for business employees in demonstrations.
 
-Add people on the permission set's Assignees page. This example assigns Alice Miller and Bob Carter as requesters, and Emma Wilson as an order reviewer.
+Team and department assignments require real organizational membership. A department-name field alone does not establish permission inheritance.
 
-![Assign the purchase requester permission set to people](../../../cn/capabilities/authorization/assets/assignments.png)
+## Job access in this example
 
-### View the results
+Team access displays saved job permissions and employee assignments. The account manager job is assigned to Alice and Bob; the server applies each user’s actual ownership ID to record reads.
 
-Alice signs in to view her orders. Emma signs in to view orders and process pending approvals. Permissions define responsibilities; business state determines whether an order is currently eligible for approval.
+![Team access](../assets/northstar-team-access-en.png)
 
-![A requester views her own orders](../../../cn/capabilities/authorization/assets/requester-orders.png)
+**Administrators can view saved job permissions and employee assignments.**
 
-![A reviewer views pending orders and approval controls](../../../cn/capabilities/authorization/assets/reviewer-orders.png)
+Alice sees her six orders, while dispatcher Emma can view all ten. These screenshots use ordinary business accounts. Creating, editing and dispatching require the separate action grants described in the full requirement above.
 
-Open pending order PO-2026-004 to view its details. Emma can use Approve or Reject to process it.
+![Alice orders](../assets/northstar-alice-orders-en.png)
 
-![A reviewer processes approvals in the order details](../../../cn/capabilities/authorization/assets/reviewer-order-details.png)
+**With only job scope, Alice sees her six orders.**
 
-## Adjust and reuse
+![Dispatcher orders](../assets/northstar-dispatch-orders-en.png)
 
-Administrators can adjust the set and assign it to new employees. Users can hold multiple permission sets. Team and department assignments require integration with the application's organization and membership model.
-
-The default Member set applies to all signed-in users and suits common basic capabilities. Use dedicated sets for everyday jobs and the system administrator for application management.
+**Dispatcher Emma sees all ten orders.**

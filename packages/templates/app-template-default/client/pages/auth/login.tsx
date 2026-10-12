@@ -1,4 +1,7 @@
-import { useSignUpAvailable } from '@nocobase/app-plugin-authentication/client';
+import {
+  usePasswordResetCapability,
+  useSignUpAvailable,
+} from '@nocobase/app-plugin-authentication/client';
 import { usePasswordLogin } from '@nocobase/app-plugin-authentication/client/actions';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
@@ -14,6 +17,7 @@ export default function LoginPage(): ReactElement {
   const login = usePasswordLogin();
   // The sign-up link follows the server: it is hidden while `auth.emailAndPassword` turns sign-up off.
   const signUpAvailable = useSignUpAvailable();
+  const resetCapability = usePasswordResetCapability();
 
   return (
     <AuthPage
@@ -43,7 +47,9 @@ export default function LoginPage(): ReactElement {
                   ) : undefined
                 }
                 forgotPasswordLink={
-                  <Link to='/forgot-password'>{t('auth.forgotLink')}</Link>
+                  resetCapability.data?.passwordResetAvailable === true ? (
+                    <Link to='/forgot-password'>{t('auth.forgotLink')}</Link>
+                  ) : undefined
                 }
                 labels={{
                   hidePassword: t('auth.hidePassword'),

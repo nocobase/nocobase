@@ -262,6 +262,7 @@ describe('the Software development template', () => {
         type: 'runAgent',
         config: {
           agentId: 'studio-proposal-reviewer',
+          session: 'fresh',
           assign: false,
           instruction: PROPOSAL_REVIEW_INSTRUCTION,
         },
@@ -273,6 +274,7 @@ describe('the Software development template', () => {
         type: 'runAgent',
         config: {
           agentId: 'studio-code-reviewer',
+          session: 'fresh',
           assign: false,
           instruction: CODE_REVIEW_INSTRUCTION,
         },
@@ -547,6 +549,132 @@ describe('the Software development template', () => {
 });
 
 describe('runAgent', () => {
+  it.each(['invalid', true, null, 1])(
+    'rejects invalid session choice %j',
+    async (session) => {
+      await expect(
+        setRules({ in_review: [{ type: 'runAgent', config: { session } }] }),
+      ).rejects.toMatchObject({ code: 'INVALID_WORKFLOW' });
+    },
+  );
+
+  it('round trips the session choice through workflow definitions and describes it in preview', async () => {
+    const workflow = await defaultWorkflow();
+    await asAdmin(async () => {
+      const definition = JSON.parse(
+        JSON.stringify({
+          ...workflow.definition,
+          states: workflow.definition.states.map((state) =>
+            state.key === 'in_review'
+              ? {
+                  ...state,
+                  rules: [{ type: 'runAgent', config: { session: 'fresh' } }],
+                }
+              : state,
+          ),
+        }),
+      );
+      const preview = await h.projects.workflows.preview(alice(), workflow.id, {
+        definition,
+      });
+      expect(preview.rules).toContainEqual(
+        expect.objectContaining({
+          statusKey: 'in_review',
+          change: 'added',
+          summary: expect.stringContaining('fresh session every time'),
+        }),
+      );
+      const saved = await h.projects.workflows.update(alice(), workflow.id, {
+        revision: workflow.revision,
+        definition,
+      });
+      const exported = JSON.parse(
+        JSON.stringify(
+          (await h.projects.workflows.get(alice(), saved.id)).definition,
+        ),
+      );
+      const imported = await h.projects.workflows.create(alice(), {
+        name: 'Imported workflow',
+        copyFrom: null,
+      });
+      const restored = await h.projects.workflows.update(alice(), imported.id, {
+        revision: imported.revision,
+        definition: exported,
+      });
+      expect(
+        restored.definition.states.find((state) => state.key === 'in_review')
+          ?.rules,
+      ).toEqual([{ type: 'runAgent', config: { session: 'fresh' } }]);
+    });
+    await setRules({
+      in_review: [{ type: 'runAgent', config: { session: 'resume' } }],
+    });
+  });
+
+  it('starts repeated reviews fresh and resumes the developer when work returns', async () => {
+    const coder = await h.createAgent({ name: 'Coder' });
+    const reviewer = await h.createAgent({ name: 'Reviewer' });
+    await setRules({
+      in_progress: [{ type: 'runAgent', config: {} }],
+      in_review: [
+        {
+          type: 'runAgent',
+          config: { agentId: reviewer, assign: false, session: 'fresh' },
+        },
+      ],
+    });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Review cycle',
+      executor: { type: 'agent', id: coder },
+      start: false,
+    });
+    const complete = async (sessionId: string) => {
+      const payload = await h.claimOne();
+      expect(payload).toBeDefined();
+      expect(payload.workspace).not.toHaveProperty('clean');
+      expect(
+        (
+          await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+            workDir: '/tmp/stage-work',
+            adapter: { kind: 'claude' },
+            acceptsInput: true,
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+            summary: 'Done',
+            sessionId,
+            handledInputIds: payload.inputs.map(
+              (input: { id: string }) => input.id,
+            ),
+          })
+        ).status,
+      ).toBe(200);
+      return payload;
+    };
+    await moveTo(issue, 'in_progress');
+    await complete('developer-session');
+    for (const session of ['first-review', 'second-review']) {
+      await moveTo(issue, 'in_review');
+      const review = await complete(session);
+      expect(review.prompt.session).toBe('fresh');
+      expect((await h.agents.runs.get(review.run.id)).freshSession).toBe(true);
+      const view = await h.request('GET', `/issueRuns/${review.run.id}`, {
+        user: 'alice',
+      });
+      expect(view.status).toBe(200);
+      expect(view.body.data.freshSession).toBe(true);
+      await moveTo(issue, 'in_progress');
+      const development = await complete('developer-session');
+      expect(development.prompt).toMatchObject({
+        session: 'resume',
+        resumeSessionId: 'developer-session',
+      });
+    }
+  });
+
   it('makes a named agent the executor and runs it', async () => {
     const agentId = await h.createAgent({ name: 'Builder' });
     await setRules({
@@ -605,6 +733,7 @@ describe('runAgent', () => {
           agentId,
           assign: false,
           instruction: `${words} {{issue.identifier}}.`,
+          session: 'fresh',
         },
       },
     ],
@@ -614,7 +743,7 @@ describe('runAgent', () => {
   const activitiesOf = async (issueId: string, action: string) =>
     (await activities(issueId)).filter((entry) => entry.action === action);
 
-  it('only records an executor set in a status whose stage is another agent’s, and wakes it on entering In progress', async () => {
+  it('queues assignment normally and merges the current development stage when approved', async () => {
     const reviewer = await h.createAgent({ name: 'Reviewer' });
     const coder = await h.createAgent({ name: 'Coder' });
     await setRules({
@@ -634,20 +763,16 @@ describe('runAgent', () => {
     expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
       reviewer,
     ]);
-    // Setting the executor in review records it and wakes nobody, the reviewer included.
+    // Assignment queues normally; claim admission decides whether it can run.
     const current = await h.projects.issueQueries.detail(alice(), issue.id);
     await h.projects.issues.update(alice(), issue.id, {
       revision: current.revision,
       executor: { type: 'agent', id: coder },
     });
-    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual([
-      reviewer,
-    ]);
-    expect(
-      (await activitiesOf(issue.id, 'executor_waits')).map(
-        (entry) => entry.details,
-      ),
-    ).toEqual([{ agentId: coder, name: 'Coder', status: 'proposal_review' }]);
+    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
+      [reviewer, coder].sort(),
+    );
+    expect(await activitiesOf(issue.id, 'executor_waits')).toEqual([]);
     // Approved, it enters In progress: the executor is woken once, with the stage's instruction.
     await moveTo(issue, 'in_progress');
     const coderRuns = (await runsOf(issue.id)).filter(
@@ -655,8 +780,8 @@ describe('runAgent', () => {
     );
     expect(coderRuns).toHaveLength(1);
     const inputs = (await h.agents.runs.detail(coderRuns[0]!.id)).inputs;
-    expect(inputs).toHaveLength(1);
-    expect(inputs[0]).toMatchObject({
+    expect(inputs).toHaveLength(2);
+    expect(inputs[1]).toMatchObject({
       payload: {
         trigger: 'stageEntered',
         instruction: `Build ${issue.identifier}.`,
@@ -690,14 +815,16 @@ describe('runAgent', () => {
       revision: current.revision,
       executor: { type: 'agent', id: second },
     });
-    expect((await runsOf(issue.id)).map((run) => run.agentId)).toEqual(before);
+    expect((await runsOf(issue.id)).map((run) => run.agentId).sort()).toEqual(
+      [...before, second].sort(),
+    );
     // Changes requested: back in In progress, the new executor takes it over with the stage's instruction.
     await moveTo(issue, 'in_progress');
     const taken = (await runsOf(issue.id)).filter(
       (run) => run.agentId === second,
     );
     expect(taken).toHaveLength(1);
-    expect((await h.agents.runs.detail(taken[0]!.id)).inputs[0]).toMatchObject({
+    expect((await h.agents.runs.detail(taken[0]!.id)).inputs[1]).toMatchObject({
       payload: {
         trigger: 'stageEntered',
         instruction: `Fix ${issue.identifier}.`,
@@ -728,7 +855,10 @@ describe('runAgent', () => {
       in_progress: [
         {
           type: 'runAgent',
-          config: { instruction: 'Build {{issue.identifier}}.' },
+          config: {
+            instruction: 'Build {{issue.identifier}}.',
+            session: 'fresh',
+          },
         },
       ],
     });
@@ -748,6 +878,7 @@ describe('runAgent', () => {
     });
     const [run] = await runsOf(issue.id);
     expect(run?.agentId).toBe(coder);
+    expect(run?.freshSession).toBe(true);
     expect((await h.agents.runs.detail(run!.id)).inputs[0]).toMatchObject({
       payload: {
         trigger: 'assigned',
@@ -780,7 +911,7 @@ describe('runAgent', () => {
     expect(
       (await h.projects.issueQueries.detail(alice(), bare.id)).executor,
     ).toBeNull();
-    // With an executor: the designer runs once, and the executor waits.
+    // Both are queued normally; only the current phase agent passes admission.
     const given = await h.projects.issues.create(alice(), {
       title: 'B',
       statusKey: 'analysis',
@@ -788,14 +919,11 @@ describe('runAgent', () => {
     });
     await expect
       .poll(async () => (await runsOf(given.id)).map((run) => run.agentId))
-      .toEqual([designer]);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect((await runsOf(given.id)).map((run) => run.agentId)).toEqual([
-      designer,
-    ]);
-    expect(
-      (await h.agents.runs.detail((await runsOf(given.id))[0]!.id)).inputs,
-    ).toHaveLength(1);
+      .toEqual(expect.arrayContaining([coder, designer]));
+    const designerRun = (await runsOf(given.id)).find(
+      (run) => run.agentId === designer,
+    )!;
+    expect((await h.agents.runs.detail(designerRun.id)).inputs).toHaveLength(1);
     // Where no agent is handed the status, nothing starts.
     const plain = await h.projects.issues.create(alice(), { title: 'C' });
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -841,6 +969,7 @@ describe('runAgent', () => {
       .poll(async () => (await runsOf(waiting.id)).map((run) => run.agentId))
       .toEqual([designer]);
     const [run] = await runsOf(waiting.id);
+    expect(run!.freshSession).toBe(true);
     expect((await h.agents.runs.detail(run!.id)).inputs[0]).toMatchObject({
       payload: { trigger: 'unblocked', status: 'analysis' },
     });
@@ -893,11 +1022,15 @@ describe('runAgent', () => {
         issue,
         'coder',
       ),
-    ).toEqual({ agentId: 'coder', instruction: null });
+    ).toEqual({ agentId: 'coder', instruction: null, session: 'resume' });
     // Without one, the status is the reviewer's.
     expect(
       await currentStage(projects([reviewerRule]), conn, issue, 'coder'),
-    ).toEqual({ agentId: 'reviewer', instruction: 'Review.' });
+    ).toEqual({
+      agentId: 'reviewer',
+      instruction: 'Review.',
+      session: 'resume',
+    });
   });
 
   it('proposes the agent to the owner instead when the mover may not wake it', async () => {
@@ -1092,7 +1225,10 @@ describe('runAgent', () => {
     await setRules(
       {
         in_progress: [
-          { type: 'runAgent', config: { maxRuns: 1, windowHours: 2 } },
+          {
+            type: 'runAgent',
+            config: { maxRuns: 1, windowHours: 2, session: 'fresh' },
+          },
         ],
       },
       { agentMoves: true },
@@ -1130,6 +1266,9 @@ describe('runAgent', () => {
       200, 400,
     ]);
     const continued = attempts.find((attempt) => attempt.status === 200)!;
+    expect(
+      (await h.agents.runs.get(continued.body.data.runId)).freshSession,
+    ).toBe(true);
     expect(
       (await h.agents.runs.detail(continued.body.data.runId)).inputs[0]
         ?.payload,

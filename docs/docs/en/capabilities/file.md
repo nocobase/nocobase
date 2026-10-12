@@ -1,10 +1,12 @@
 ---
 title: 'Files'
-description: 'Add purchase documents to orders and see how to upload, save, preview, and download attachments with a complete business prompt.'
+description: 'Add cargo documents to orders and see how to upload, save, preview, and download attachments with a complete business prompt.'
 keywords: 'NocoBase 3,files,attachments,upload,preview,download,storage'
 ---
 
 # Files
+
+Northstar links cargo documents and delivery evidence to transport orders.
 
 NocoBase 3 provides file upload, preview, download, and storage management. Use these capabilities to add attachments and image storage to your application. Attachments can be associated with business records so users can access relevant documents. Image storage supports uses such as employee avatars and product images.
 
@@ -12,41 +14,37 @@ Tell your Agent which business feature needs files, how many files each record c
 
 ## Before you start
 
-This example adds attachments to an existing order management application. Prepare an order and purchase documents to upload, such as a supplier quotation and product specifications.
+This example adds attachments to an existing order management application. Prepare an order and cargo documents to upload, such as a transport document and product specifications.
 
 Tell your Agent where attachments should appear, which formats to support, who can upload and view them, and whether to retain files when removing an attachment.
 
-## Example: add purchase documents to orders
+## Example: add cargo documents to orders
 
-Purchasing staff need to keep quotations and product specifications with an order. Reviewers should be able to read these documents while reviewing the order.
+Account managers need to keep quotations and product specifications with an order. Reviewers should be able to read these documents while reviewing the order.
 
 ```text
-Add purchase attachments to my existing order management application.
+Add transport attachments to my existing order management application.
 
 Add an attachment area to order details. Each order can have multiple files, including PDF, images, and DOCX.
 Show filenames and sizes, with actions to preview, download, and remove attachments.
 After uploading, let users save the attachments to the current order. Keep them available when the order is reopened.
-Anyone with access to an order can view and download its attachments. Applicants and reviewers can add or remove attachments.
+Anyone with access to an order can view and download its attachments. Account managers and dispatchers can add or remove attachments.
 Removing an attachment only unlinks it from the current order; retain the file.
 ```
 
 ### See the result
 
-1. Open order details, click **Choose files** in the attachment area, and select the purchase documents. Click **Save attachments** to associate them with the order. The files remain available when you reopen the order.
-
-![Upload and save purchase documents in order details](../../cn/capabilities/assets/file-order-attachments.png)
+1. Open order details, click **Choose files** in the attachment area, and select the cargo documents. Click **Save attachments** to associate them with the order. The files remain available when you reopen the order.
 
 2. Click **Preview** beside an attachment to read its contents in the application.
 
-![Preview product specifications in the application](../../cn/capabilities/assets/file-preview-attachment.png)
-
 3. Click **Download** to download the original file. Click **Remove** and save to unlink an attachment from the current order.
-
-![Download a supplier quotation from an order](../../cn/capabilities/assets/file-download-attachment.png)
 
 ## Further use
 
 ### Employee avatars and product images
+
+Associate avatars or images with records when people or products need visual identification in lists and details.
 
 An employee avatar or product cover usually needs one file. Uploading a replacement updates the association. Product galleries and order attachments can contain multiple files. For example:
 
@@ -66,7 +64,7 @@ After switching storage, newly uploaded files use the new configuration. Specify
 
 ### Attachment access
 
-Business attachments should follow the access rules of their parent records. For example, employees can view attachments for orders they can access, and reviewers can read purchase documents for orders they handle.
+Business attachments should follow the access rules of their parent records. For example, employees can view attachments for orders they can access, and reviewers can read cargo documents for orders they handle.
 
 Ask the Agent to apply authentication and business permission checks to upload, file listing, preview, and download endpoints. See [Authorization](./authorization/index.md) for the related rules.
 
@@ -106,3 +104,15 @@ This example only unlinks the attachment from the current order, retaining the f
 ### How can I change upload limits?
 
 Tell the Agent which formats are allowed, the maximum size of each file, and the number of attachments per record. It can configure both page guidance and server limits. Built-in endpoints default to 5 MiB per single-file upload request and 20 MiB per batch request, including the entire request body.
+
+## Northstar result
+
+Open NS-2026-001, choose a file in Transport attachments, and select Save attachments. The uploaded DOCX remains linked after reopening the order. Preview opens it in the application; Download returns the original, while Remove followed by saving unlinks it without deleting the stored file.
+
+![Saved cargo document on a Northstar transport order](./assets/northstar-attachments-en.png)
+
+**The attachment is associated with the order and remains available after reopening.**
+
+![Actual in-application DOCX preview using a sample document](./assets/northstar-file-preview-en.png)
+
+**Users can preview the associated document within the application.**

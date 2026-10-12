@@ -1,5 +1,44 @@
 # @nocobase/app-plugin-lifecycle-example
 
+## 0.1.0-beta.3
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-client@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/lifecycle@0.1.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 0.1.0-beta.2
+
+### Minor Changes
+
+- 8de421a: Add an electronic invoicing example with signed callbacks, timeout queries, idempotent submission retries, sample PDF downloads, and bilingual pages with independently installable sample records.
+
+### Patch Changes
+
+- 8de421a: Improve lifecycle diagram readability with neutral styling and focused current-state highlights and optimized port ordering that reduces edge crossings while preserving every transition. Place transition labels directly on their routed edges with opaque backgrounds to keep their associations clear. Use solid lines for every transition and retain the gear icon to identify automatic transitions.
+
+  Show the current state, visited states, and exact traversed edges with restrained execution highlighting derived from the record transition log.
+
+  Display a separate end marker for each explicitly final state, inheriting execution highlighting without merging terminal branches.
+
+  Use the application primary theme color for execution highlights and the diagram legend.
+
+  Align fractional self-loop bends with their ports to preserve orthogonal routing.
+
+- 8de421a: Translate durable workflow diagram transitions in the example application so English pages no longer fall back to Chinese labels.
+- 8de421a: Replace Mermaid rendering in the lifecycle example with interactive React Flow and ELK diagrams that use vertical layout and content-based height, retaining Mermaid source export and record-history highlights. Preserve fixed node geometry during parent refreshes so edges do not disappear during countdown updates.
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+
 ## 0.1.0-beta.1
 
 ### Minor Changes

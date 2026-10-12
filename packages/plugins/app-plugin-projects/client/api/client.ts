@@ -67,6 +67,7 @@ import type {
 import type {
   AddDependencyRequest,
   IssueDependency,
+  UpdateDependencyRequest,
 } from '../../shared/subtasks.js';
 import type { UserRef } from '../../shared/common.js';
 import type { SubscriptionState } from '../../shared/subscriptions.js';
@@ -152,8 +153,14 @@ export class PmApi {
     return results;
   }
 
-  public resendInvitation(invitationId: string): Promise<InvitationResult> {
-    return this.send(`projects/invitations/${id(invitationId)}/resend`, 'POST');
+  public resendInvitation(
+    invitationId: string,
+    sendEmail: boolean = true,
+  ): Promise<InvitationResult> {
+    return this.send(
+      `projects/invitations/${id(invitationId)}/resend?sendEmail=${sendEmail}`,
+      'POST',
+    );
   }
 
   public revokeInvitation(invitationId: string): Promise<void> {
@@ -387,6 +394,19 @@ export class PmApi {
     return this.send(
       `projects/issues/${id(issueId)}/dependencies`,
       'POST',
+      input,
+    );
+  }
+
+  /** Converts a relationship atomically, keeping its id and checking the type the caller read. */
+  public updateDependency(
+    issueId: string,
+    dependencyId: string,
+    input: UpdateDependencyRequest,
+  ): Promise<IssueDependency> {
+    return this.send(
+      `projects/issues/${id(issueId)}/dependencies/${id(dependencyId)}`,
+      'PATCH',
       input,
     );
   }

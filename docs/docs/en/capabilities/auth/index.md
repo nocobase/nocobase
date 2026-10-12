@@ -1,24 +1,23 @@
 ---
-title: 'Overview'
-description: 'Sign-in, sessions, API keys, and authentication extensions in NocoBase.'
+title: 'Authentication'
+description: 'Explore default sign-in, accounts, sessions, API keys, and sign-in page customization.'
 ---
 
 # Authentication
 
-Authentication identifies the user or program accessing an application. NocoBase provides account sign-in, sessions, and API keys that applications can reuse. You can also connect company accounts or third-party sign-in to avoid building another account system.
+Authentication identifies people accessing an application. After sign-in, a session identifies the current user. [Authorization](../authorization/index.md) determines which data and business actions that user can access.
 
 ## Available capabilities
 
-| Capability                                             | What it provides                                                         | How to use it                                                                                            |
-| ------------------------------------------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| [Password authentication](./methods/password)          | Username or email sign-in, registration, and password recovery           | The default template includes the pages; password recovery and email verification require email delivery |
-| [API keys](./methods/api-keys)                         | Let scripts and external systems call application APIs as a user         | Create and manage keys in Settings                                                                       |
-| [Add authentication methods](./custom/sign-in-methods) | Sign in with GitHub or a company identity platform                       | Connect the platform's sign-in flow                                                                      |
-| [Customize sign-in pages](./custom/login-pages)        | Change branding, copy, and the layout of sign-in options                 | Ask your development Agent to update the application's sign-in page                                      |
-| [Protect APIs and pages](./advanced/protecting-apis)   | Require sign-in for custom business features and access the current user | Connect authentication to business pages and server APIs                                                 |
+| Capability                                                               | What it provides                                                                                                    |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| [Password authentication and accounts](./password.md)                    | Username or email and password sign-in, registration controls, password requirements, recovery, and sign-in status. |
+| [Accounts and sessions](./password.md#company-managed-employee-accounts) | Create or disable employee accounts, sign out, and revoke existing sessions.                                        |
+| [API keys](./api-keys.md)                                                | Credentials for scripts and integrations, with expiry and revocation.                                               |
+| [Additional sign-in methods](./sign-in-methods.md)                       | Corporate identity providers, third-party accounts, and other authentication methods.                               |
+| [Protected pages and APIs](./protecting-access.md)                       | Public and authenticated pages, and current-user identity in APIs.                                                  |
+| [Custom sign-in pages](./login-pages.md)                                 | Company names, logos, backgrounds, layouts, and colors.                                                             |
 
-After sign-in, a session identifies the current user. Signing out ends the current session. Authentication also handles account disabling and session revocation.
+## Where to start
 
-Authentication establishes who you are; [authorization](../authorization) determines what you can do. Signing in to a procurement application uses authentication. Restricting buyers to their own orders uses authorization rules.
-
-Third-party, company, and passwordless sign-in use the underlying Better Auth extension mechanism. They are not enabled sign-in options in the default template. Choose the methods your application needs.
+Begin with [Password authentication and accounts](./password.md) to learn how employees sign in and out and how accounts and sessions are managed. Explore API keys, additional sign-in methods, and protected access as needed, then [Customize the sign-in page](./login-pages.md) to adapt its background, branding and layout.

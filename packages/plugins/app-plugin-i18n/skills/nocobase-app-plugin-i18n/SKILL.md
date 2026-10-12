@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-i18n
-description: "Use when adding or changing user-facing text in a NocoBase application or plugin: writing locale files, wiring a package's locales for the first time, translating a component or a menu title, naming a namespace, translating server responses, errors and outbound mail, or adding a language. Not for building page UI around the text (nocobase-app-development) or scaffolding a new plugin (nocobase-plugin-development); those Skills hand translation work here."
+description: "Use when adding or changing user-facing text in a NocoBase application or plugin: writing locale files, wiring a package's locales for the first time, translating a component or a menu title, naming a namespace, translating server responses, errors and outbound mail, or adding a language. Not for building page UI around the text (nocobase-app-development) or scaffolding a new plugin (nocobase-app-plugin-development); those Skills hand translation work here."
 argument-hint: '[action: add-text|add-locale|translate-component|override-plugin-text] [target-file-or-package]'
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 owner: i18n
@@ -268,7 +268,7 @@ await sendMail(recipient.email, {
 });
 ```
 
-How an error boundary serializes `AppI18nError`, and where a job without a container should translate, are in the `nocobase-plugin-development` Skill's `references/i18n.md` and the `@nocobase/i18n` README.
+How an error boundary serializes `AppI18nError`, and where a job without a container should translate, are in the `nocobase-app-plugin-development` Skill's `references/i18n.md` and the `@nocobase/i18n` README.
 
 ## Adding a language
 

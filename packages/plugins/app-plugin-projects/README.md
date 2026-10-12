@@ -151,6 +151,10 @@ issueIds)` those of them a person follows. An application's board of work joins 
 
 Everything is under `/api/projects` and needs a session (401 otherwise). Responses are `{ data }`, lists `{ data, meta }`; inputs are validated (400 `INVALID_INPUT`, domain `app`, with `fieldViolations`; JSON bodies are strict). Fixed segments come before `/{projectId}`.
 
+Invitation create/resend results include a shareable `inviteUrl` for an authorized original inviter using an unscoped person credential, regardless of email delivery. An invitation closed or rotated before its queued send returns `emailSent=false` without a link; other recipients, including existing accounts joining projects, still complete. Global user creation or role assignment permissions are not needed to copy a project invitation. `POST /api/projects/invitations/{invitationId}/resend?sendEmail=false` generates a new link without email, invalidating the old invitation. Member settings confirm this before generating a link, then offer a separate Copy action. Current project access is checked again; other managers can resend email but do not receive links, and scoped credentials remain email-only. Lists never expose tokens.
+
+New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.
+
 | Method and path                                                                    | What it does                                                |
 | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `GET /me`                                                                          | The caller with their permissions                           |
@@ -182,6 +186,7 @@ Everything is under `/api/projects` and needs a session (401 otherwise). Respons
 | `GET /issues/{issueId}/checklists`                                                 | Every checklist the issue has had                           |
 | `PATCH /issues/{issueId}/checklists/{statusKey}/items/{itemKey}`                   | Checks or unchecks an item (`{ checked }`)                  |
 | `POST /issues/{issueId}/dependencies`                                              | Adds a link (`{ dependsOnIssueId, type }`)                  |
+| `PATCH /issues/{issueId}/dependencies/{dependencyId}`                              | Changes a link type (`{ type, expectedType }`) atomically   |
 | `DELETE /issues/{issueId}/dependencies/{dependencyId}`                             | Removes a link                                              |
 | `POST /issues/{issueId}/removeDependency`                                          | Removes the link to an issue (`{ dependsOnIssueId, type }`) |
 | `GET /approvals`                                                                   | Status changes waiting for the caller's approval            |
@@ -195,6 +200,10 @@ Everything is under `/api/projects` and needs a session (401 otherwise). Respons
 | `POST /intake/split`, `POST /intake/extractTexts`                                  | The rule split; the uploads' text                           |
 | `GET /intake/aiAvailability`                                                       | Whether AI can be asked                                     |
 | `POST /intake/aiJobs`, `GET …/{jobId}`, `POST …/{jobId}/cancel`                    | A request to AI; cancelling it                              |
+
+Relationship conversion preserves the link ID and checks the type the caller read (`expectedType`). A stale change returns 409 `DEPENDENCY_CHANGED`; if the target relationship already exists, it returns 409 `DEPENDENCY_EXISTS` and keeps both links. A related link may be converted from either end: the current issue becomes the waiting issue when changed to `blockedBy`.
+
+Operations that add explicit or implicit waits (dependencies, conversions, issue creation, parent/stage changes and restores) share a dedicated database graph revision row. Its conditional increment protects cycle detection and writes until the outer transaction commits, across processes and projects. An outdated transaction snapshot returns 409 `DEPENDENCY_GRAPH_CHANGED`; reload and retry the whole operation. Every issue creation takes this protection before allocating its number, so plans that create issues and add dependencies use the same lock order. Standalone creates without dependencies lock the row without advancing the graph revision, so independent parallel creates still succeed without retrying each other. The revision is separate from settings/counters so MySQL reads of those rows after writing them cannot disguise an old graph snapshot. Restoring an issue is rejected if its waits would now create a cycle. Every relationship write, including both removal endpoints, acquires this protection before reading its type and endpoints, keeping duplicate checks, activity and release notifications consistent with conversions. Issue status and project changes, approvals, workflow events and deletion take the same guard before writing an issue, so concurrent changes cannot each see an old blocker and miss the last release. Automatic parent/stage completion keeps the originating guard; ordinary edits that cannot change waits do not acquire it. Plans acquire the guard without advancing its revision before their first row, including rehearsal and undo, so earlier issue edits cannot reverse the lock order of a later graph write.
 
 Cursor lists (issues, activities, comment threads, plans) take `pageSize` (20 by default, at most 100; plans 50) and `pageToken`, and answer `meta.nextPageToken` until the last page. `orderBy` on issues is `updatedAt`, `createdAt`, `number` or `priority`, optionally followed by `asc` or `desc` (`updatedAt desc` by default). The other lists are answered whole with `meta.total`. A scoped API key may not use `/intake` or `/plans` (403 `SCOPED_KEY_FORBIDDEN`).
 
@@ -308,3 +317,7 @@ Open pages refresh when the server announces a change on the `pm:changes` realti
 ```bash
 pnpm --filter @nocobase/app-plugin-projects check
 ```
+
+When renewing an invitation, deleted projects are ignored if at least one selected project remains. The inviter must still be authorized to invite into every remaining project. If all originally selected projects were deleted, renewal is rejected.
+
+Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.

@@ -539,26 +539,25 @@ export function IssueDetailLayout({
   const fits = useFitsScrollViewport(contentRef, LAYOUT_INSET);
   return (
     <div
-      className={cn(
-        '@container/issue-detail flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @4xl/issue-detail:flex-row',
-        className,
-      )}
+      className={cn('@container/issue-detail min-h-full', className)}
       data-slot='issue-detail-layout'
     >
-      <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>{main}</div>
-      <aside
-        aria-label={asideLabel}
-        className='@4xl/issue-detail:w-[20rem] @4xl/issue-detail:shrink-0'
-      >
-        <div
-          className={cn(
-            fits && '@4xl/issue-detail:sticky @4xl/issue-detail:top-6',
-          )}
-          ref={contentRef}
+      <div className='flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @4xl/issue-detail:flex-row'>
+        <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>{main}</div>
+        <aside
+          aria-label={asideLabel}
+          className='min-w-0 @4xl/issue-detail:w-[20rem] @4xl/issue-detail:shrink-0'
         >
-          {aside}
-        </div>
-      </aside>
+          <div
+            className={cn(
+              fits && '@4xl/issue-detail:sticky @4xl/issue-detail:top-6',
+            )}
+            ref={contentRef}
+          >
+            {aside}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

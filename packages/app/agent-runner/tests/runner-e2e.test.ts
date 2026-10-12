@@ -332,6 +332,7 @@ describe('runner end to end', () => {
     );
     server.cancel(run.payload.run.id);
     await waitFor(() => run.status === 'cancelled', 15_000, 'cancel');
+    expect(run.cancelAck?.sessionId).toMatch(/^echo-/);
     // The worker removes it as it exits, right after acknowledging the cancel.
     await waitFor(() => !existsSync(file), 5_000, 'credentials removal');
   });
@@ -392,9 +393,34 @@ describe('runner end to end', () => {
     expect(run.complete?.handledInputIds).toContain(input.id);
   });
 
+  it('completes again instead of starting an empty turn when pending input is withdrawn', async () => {
+    const run = server.enqueue({
+      prompt: { system: '', session: 'fresh', turn: 'say one' },
+    });
+    server.withdrawPendingOnNextComplete(run.payload.run.id);
+    daemon();
+    const id = run.payload.run.id;
+    await waitFor(() => run.status === 'completed', 15_000, 'completion');
+    expect(
+      run.reports
+        .filter((report) => report.kind === 'complete')
+        .map((report) => report.status),
+    ).toEqual([409, 200]);
+    expect(
+      server
+        .events(id)
+        .some((event) => event.content === 'echo: (empty prompt)'),
+    ).toBe(false);
+  });
+
   it('kills the process group within 15 s of a cancel, even when the tool ignores SIGTERM', async () => {
     const run = server.enqueue({
-      prompt: { system: '', session: 'fresh', turn: 'say working\nhang-hard' },
+      prompt: {
+        system: '',
+        session: 'resume',
+        resumeSessionId: 'unconfirmed-old-session',
+        turn: 'say working\nhang-hard',
+      },
     });
     daemon();
     const id = run.payload.run.id;
@@ -419,6 +445,7 @@ describe('runner end to end', () => {
     expect(Date.now() - cancelledAt).toBeLessThan(15_000);
     await waitFor(() => run.status === 'cancelled', 10_000, 'cancelAck');
     expect(run.cancelAck).toBeDefined();
+    expect(run.cancelAck?.sessionId).toBeUndefined();
     expect(server.events(id).at(-1)).toMatchObject({
       type: 'status',
       meta: { status: 'cancelled' },
@@ -602,6 +629,9 @@ describe('runner end to end', () => {
       const beats = runner.heartbeatsSent;
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       expect(runner.protocolHeader).toBe(String(PROTOCOL_VERSION));
+      expect(runner.register.features).toEqual(
+        expect.arrayContaining(['npm', 'gitCredentials']),
+      );
       expect(runner.heartbeatsSent).toBeGreaterThan(beats);
       expect(runner.claims).toBe(claims);
       expect(run.status).toBe('queued');

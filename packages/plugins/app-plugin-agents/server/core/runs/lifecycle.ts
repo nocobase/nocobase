@@ -39,6 +39,7 @@ import {
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { asJson, jsonObject, truncateBytes } from '../../kernel/values.js';
 import { recordActualModels } from './execution.js';
+import { dropInputs, gatePending, type InputGateDeps } from './input-gate.js';
 import { everHeld } from './run-tokens.js';
 import {
   eventsRepo,
@@ -47,7 +48,6 @@ import {
   isActive,
   isTerminal,
   markDelivered,
-  pendingInputs,
   reposRepo,
   runsRepo,
   sessionsRepo,
@@ -120,7 +120,7 @@ export interface OnlineUsageRecord {
   readonly reasoningTokens?: number;
 }
 
-export interface RunnerReportsDeps extends TransitionDeps {
+export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -171,10 +171,30 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     return leaseExpiresAt;
   }
 
-  async function deliver(conn: DatabaseConnection, runId: string) {
-    const pending = await pendingInputs(conn, runId);
-    await markDelivered(conn, pending, clock.now().toISOString());
+  /**
+   * The run's unhandled input, marking what is new delivered. New input passes the subject's policy first, as it would
+   * at a claim: what the run's agent may not act on now is marked handled instead and never reaches the runner.
+   */
+  async function deliver(conn: DatabaseConnection, run: RunRecord) {
+    const now = clock.now().toISOString();
+    const pending = await settlePending(conn, run, now);
+    await markDelivered(conn, pending, now);
     return pending.map(toInput);
+  }
+
+  /** The run's unhandled input it may act on, marking what it may no longer act on handled. */
+  async function settlePending(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    now: string,
+  ) {
+    const { kept, withheld } = await gatePending(conn, deps, run);
+    await dropInputs(
+      conn,
+      withheld.map((input) => input.id),
+      now,
+    );
+    return kept;
   }
 
   /** Records what every ending reports: handled inputs, usage, branches. */
@@ -224,6 +244,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         branch: repo.branch,
         pushed: repo.pushed,
         headSha: repo.headSha ?? null,
+        failureReason: repo.failure?.reason ?? null,
+        failureDetail:
+          repo.failure === undefined
+            ? null
+            : redactorOf(run.id).text(repo.failure.message).slice(0, 2000),
         updatedAt: now,
       };
       if (existing)
@@ -307,7 +332,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return {
           leaseExpiresAt,
           cancelRequested: run.cancelRequestedAt !== null,
-          inputs: await deliver(conn, run.id),
+          inputs: await deliver(conn, run),
         };
       }),
 
@@ -342,7 +367,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           status: current.status,
           leaseExpiresAt,
           cancelRequested,
-          inputs: await deliver(conn, run.id),
+          inputs: await deliver(conn, run),
         };
       }),
 
@@ -456,7 +481,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return {
           status: current.status,
           cancelRequested: current.cancelRequestedAt !== null,
-          inputs: await deliver(conn, current.id),
+          inputs: await deliver(conn, current),
           leaseExpiresAt: current.leaseExpiresAt,
         };
       }),
@@ -465,9 +490,10 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
         const handled = new Set(request.handledInputIds);
-        const missing = (await pendingInputs(unit.conn, run.id)).filter(
-          (input) => !handled.has(input.id),
-        );
+        // Input the run may no longer act on does not hold it open: the runner would get none of it.
+        const missing = (
+          await settlePending(unit.conn, run, clock.now().toISOString())
+        ).filter((input) => !handled.has(input.id));
         if (missing.length > 0)
           throw new ProtocolError(
             'RUN_INPUT_PENDING',
@@ -540,9 +566,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
         await recordOutcome(unit, run, request);
+        await rememberSession(unit, run, request.sessionId, false);
         const ended = await finishRun(unit, deps, run, {
           status: 'cancelled',
           reason: 'cancelled',
+          ...(request.sessionId ? { sessionId: request.sessionId } : {}),
         });
         if (!ended)
           throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');

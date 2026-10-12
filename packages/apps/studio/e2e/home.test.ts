@@ -151,9 +151,13 @@ test.describe('home composer', () => {
     await expect(panel).toBeVisible();
     await expect(panel.getByTestId('chat-title')).toHaveText(title);
 
-    // And back: the panel's full screen is the page again, and the panel closes.
-    await panel.getByRole('button', { name: '全屏打开' }).click();
-    await expect(page).toHaveURL(new RegExp(`/chat/${conversation.id}$`, 'u'));
-    await expect(panel).toBeHidden();
+    // Full width keeps the conversation beside its history on the current page.
+    const currentURL = page.url();
+    await panel.getByRole('button', { name: '全屏', exact: true }).click();
+    await expect(page).toHaveURL(currentURL);
+    await expect(panel.getByRole('list', { name: '对话历史' })).toBeVisible();
+    await expect(
+      panel.getByRole('button', { name: '恢复为侧栏' }),
+    ).toBeVisible();
   });
 });

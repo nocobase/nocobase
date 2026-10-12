@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-websocket",
-  "version": "0.0.1",
+  "version": "0.0.2-beta.0",
   "description": "WebSocket contract and Node adapter for NocoBase applications.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

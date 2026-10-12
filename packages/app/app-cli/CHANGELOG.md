@@ -1,5 +1,18 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/cli-envelope@0.1.0-beta.1
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/dev-config@0.1.0-beta.22
+  - @nocobase/logging@0.1.0-beta.7
+  - @nocobase/secrets@0.1.0-beta.1
+
 ## 1.0.0-beta.18
 
 ### Minor Changes

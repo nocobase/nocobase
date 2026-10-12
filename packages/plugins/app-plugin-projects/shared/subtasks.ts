@@ -62,3 +62,9 @@ export interface AddDependencyRequest {
   /** `blockedBy` when left out. */
   readonly type?: DependencyType;
 }
+
+/** Changes a link in place; a stale type or an existing target relationship is a conflict. */
+export interface UpdateDependencyRequest {
+  readonly type: DependencyType;
+  readonly expectedType: DependencyType;
+}

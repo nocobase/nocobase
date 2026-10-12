@@ -1,5 +1,20 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4dee742: Use the beta app-installer in the application deployment Skill so deployment does not resolve an unintended latest release.
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+
+## 0.1.0-beta.30
+
+### Patch Changes
+
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- 8de421a: Guide agents to the theme-aware React Flow and ELK diagram components from the application and lifecycle Skills. Document execution history, inline labels and end markers, and synchronize the offline UI Library catalog.
+- 87b8394: Install published applications with `--app @nocobase/studio` or the official shorthand `--app studio`, preserving package identity while building and deploying on the server. Support npm application upgrades, explicit version selection and rebuilding with the existing backup and rollback workflow. Include Studio's shared sources and CLI skills in its published package so it builds outside the repository, and document the deployment route.
+
 ## 0.1.0-beta.29
 
 ### Patch Changes

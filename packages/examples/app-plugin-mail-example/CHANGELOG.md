@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-mail-example
 
+## 1.0.0-beta.5
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-client@3.0.0-beta.1
+  - @nocobase/app-plugin-mail@1.0.0-beta.11
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.4
 
 ### Minor Changes

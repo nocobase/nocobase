@@ -19,6 +19,7 @@ import { installGitHooks } from '../src/core/git-hooks.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
   acquireLock,
+  WorkspaceBusyError,
   checkout,
   gcWorkspaces,
   markWorkspaceEnded,
@@ -1152,6 +1153,9 @@ describe('checkout', () => {
   it('serializes a subject with a lock and takes over a dead owner', async () => {
     const lockDir = path.join(root, 'x.lock');
     const held = await acquireLock(lockDir);
+    await expect(acquireLock(lockDir, { timeoutMs: 0 })).rejects.toBeInstanceOf(
+      WorkspaceBusyError,
+    );
     await expect(
       acquireLock(lockDir, { timeoutMs: 300, pollMs: 50 }),
     ).rejects.toThrow(/held by process/);

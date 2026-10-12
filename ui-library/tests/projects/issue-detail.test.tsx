@@ -21,7 +21,7 @@ describe('IssueDetailLayout', () => {
     const layout = container.querySelector('[data-slot="issue-detail-layout"]');
     expect(layout).not.toBeNull();
     expect(layout).toHaveClass('@container/issue-detail');
-    expect(layout).toHaveClass('@4xl/issue-detail:flex-row');
+    expect(layout?.firstElementChild).toHaveClass('@4xl/issue-detail:flex-row');
     const aside = screen.getByRole('complementary', { name: 'Properties' });
     expect(aside).toHaveClass('@4xl/issue-detail:w-[20rem]');
     expect(aside).toHaveClass('@4xl/issue-detail:shrink-0');

@@ -91,8 +91,10 @@ export const STANDARD_TEMPLATE: WorkflowTemplate = {
   },
 };
 
-export async function createHarness(): Promise<Harness> {
-  const testDatabase = await createTestDatabase();
+export async function createHarness(
+  options: Parameters<typeof createTestDatabase>[0] = {},
+): Promise<Harness> {
+  const testDatabase = await createTestDatabase(options);
   const database = testDatabase.database;
   for (const [directory, packageName] of [
     [
@@ -313,6 +315,7 @@ function createFakeInvitations(database: DatabaseManager): FakeInvitations & {
           outcome: 'invited',
           invitationId: id,
           emailSent: true,
+          inviteUrl: `https://example.test/invite/${id}`,
         });
       }
       return results;

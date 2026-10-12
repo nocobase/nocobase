@@ -55,6 +55,7 @@ import {
 import { toneColor } from '../rows.js';
 import { IssueMarkdown } from '../markdown.js';
 import { attachmentFile, useFilePreviewState } from './files.js';
+import { useDependencyActions } from './dependency-actions.js';
 import { issueHrefUnder, useIssueParent } from './issue-parent.js';
 import { useIssueTrail } from './issue-trail.js';
 import { useIssuePageWording } from './labels.js';
@@ -486,6 +487,7 @@ export function IssueDependenciesSection({
   const { t, detail: labels } = useIssuePageWording();
   const viewer = useViewer();
   const parent = useIssueParent();
+  const dependencies = useDependencyActions(detail.id);
   const item = (
     dependency: IssueDetail['blockedBy'][number],
   ): DependencyItem => ({
@@ -512,7 +514,8 @@ export function IssueDependenciesSection({
       }
       {...(canEdit
         ? {
-            onAdd: (issue: { id: string }) => pageActions.addBlocker(issue.id),
+            onAdd: (issue, type) => dependencies.add(issue.id, type),
+            onChangeType: dependencies.change,
             onRemove: (dependency: DependencyItem) =>
               pageActions.removeDependency(dependency.id),
           }

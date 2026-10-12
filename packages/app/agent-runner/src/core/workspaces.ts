@@ -4,17 +4,22 @@
 // reach by checkout.ts) holds the last run that worked there (`lastRunId`) and whether it holds unpushed work
 // (`hasUnpushedWork`): changes not committed, or a HEAD past both where the runner started the checkout and what it
 // last saw the remote task branch hold. It is never judged from the default branch's history, so a branch merged with
-// a squash is not unpushed once it was pushed. A directory is checked again only after a run used it.
+// a squash is not unpushed once it was pushed.
 //
 // The runner cannot tell on its own when the work on a subject is over. An application that accepts reports
 // (`HeartbeatResponse.workspaces`) is told about each of its directories and answers which runs belong to subjects
-// whose work is over (`WorkspacesResponse.remove`); those directories go, least recently used first. Nothing else goes
+// whose work is over (`WorkspacesResponse.remove`, or a directory's `WorkspaceDecision`); those directories go, least
+// recently used first, whatever they still hold: once the work on a subject is over its checkout is not kept for
+// commits or changes never pushed, which are logged as they go. Nothing else goes
 // on its own: a pushed directory whose work goes on is still that subject's checkout. The runner watches the disk
 // holding them (`RunnerSettings.minFreeDisk`, 5 GB free by default), reading the free space from the file system
 // (`statfs`) rather than measuring directories, which meant reading every file under every `node_modules`; when it is
 // still low once the directories whose work is over are gone, it says once per pass what is left and that
-// `nocobase-runner gc` can remove it. A directory a run holds (its lock is taken) is never touched, and one with unpushed
-// work is only ever removed when a person forces it (`nocobase-runner gc --force`).
+// `nocobase-runner gc` can remove it. A directory a run holds (its lock is taken), or one a run used since it was
+// reported, is never touched, and a removal the application's second answer no longer confirms is taken back. A
+// directory whose work goes on, or whose status is unknown, with unpushed work is only ever removed when a person
+// forces it (`nocobase-runner gc --force`).
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readdir, readFile, stat, statfs } from 'node:fs/promises';
 import path from 'node:path';
@@ -24,11 +29,14 @@ import { formatSize, minFreeBytes, type FreeSpace } from '../lib/size.ts';
 import {
   MAX_WORKSPACES_PER_REPORT,
   type WorkspaceDisk,
+  type WorkspaceDecision,
+  type WorkspaceCleanupResult,
   type WorkspacesRequest,
   type WorkspacesResponse,
 } from '../protocol/index.ts';
 import {
   acquireLock,
+  checkWorkspaceGit,
   hasUnpushedWork,
   readWorkspaceMeta,
   removeWorkspace,
@@ -49,7 +57,10 @@ export interface WorkspaceEntry {
   readonly subjectKey: string;
   readonly lastRunId?: string;
   readonly lastUsedAt: string;
-  readonly unpushed: boolean;
+  unpushed: boolean;
+  reportId?: string;
+  decision?: WorkspaceDecision;
+  cleanup?: WorkspaceCleanupResult;
   /** A run holds it now. */
   readonly inUse: boolean;
   status: WorkspaceStatus;
@@ -231,6 +242,7 @@ export function workspacesRequest(
   entries: readonly WorkspaceEntry[],
   appKey: string,
   disk: WorkspaceDisk | undefined,
+  decisions: boolean = false,
 ): WorkspacesRequest {
   const workspaces = entries
     .filter((entry) => entry.appKey === appKey && entry.lastRunId !== undefined)
@@ -242,7 +254,27 @@ export function workspacesRequest(
       unpushed: entry.unpushed,
       lastUsedAt: entry.lastUsedAt,
     }));
-  return { workspaces, ...(disk === undefined ? {} : { disk }) };
+  const reportId = decisions ? randomUUID() : undefined;
+  const directories = (decisions ? entries : [])
+    .filter((entry) => entry.appKey === appKey)
+    .sort((a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt))
+    .slice(0, MAX_WORKSPACES_PER_REPORT)
+    .map((entry) => {
+      entry.reportId = reportId;
+      return {
+        workDir: entry.workDir,
+        subjectKey: entry.subjectKey,
+        lastUsedAt: entry.lastUsedAt,
+        unpushed: entry.unpushed,
+        ...(entry.lastRunId === undefined ? {} : { runId: entry.lastRunId }),
+        ...(entry.cleanup === undefined ? {} : { cleanup: entry.cleanup }),
+      };
+    });
+  return {
+    workspaces,
+    ...(decisions ? { directories, reportId } : {}),
+    ...(disk === undefined ? {} : { disk }),
+  };
 }
 
 /** Records on each of `appKey`'s directories what the application answered about its last run. */
@@ -257,6 +289,107 @@ export function applyStatuses(
     if (entry.appKey !== appKey || entry.lastRunId === undefined) continue;
     if (remove.has(entry.lastRunId)) entry.status = 'ended';
     else if (keep.has(entry.lastRunId)) entry.status = 'active';
+  }
+}
+
+/**
+ * New decisions are tied to this request, directory, last run and last use. A directory used since it was reported is
+ * not taken as ended; one whose work is over is not checked for unpushed work again, as that no longer keeps it.
+ */
+export async function applyDecisions(
+  paths: RunnerPaths,
+  entries: readonly WorkspaceEntry[],
+  appKey: string,
+  response: WorkspacesResponse,
+  log?: (message: string) => void,
+): Promise<void> {
+  applyStatuses(entries, appKey, response);
+  for (const entry of entries) {
+    if (entry.appKey !== appKey) continue;
+    const matches =
+      response.decisions?.filter(
+        (item) =>
+          item.reportId === entry.reportId &&
+          item.workDir === entry.workDir &&
+          item.runId === entry.lastRunId &&
+          item.lastUsedAt === entry.lastUsedAt,
+      ) ?? [];
+    if (matches.length !== 1) continue;
+    const decision = matches[0];
+    entry.decision = decision;
+    entry.status =
+      decision.settled === true
+        ? 'ended'
+        : decision.settled === false
+          ? 'active'
+          : 'unknown';
+    if (decision.settled !== true) continue;
+    const meta = await readWorkspaceMeta(paths, entry.workDir);
+    if (
+      meta === undefined ||
+      meta.lastRunId !== entry.lastRunId ||
+      meta.lastUsedAt !== entry.lastUsedAt
+    ) {
+      entry.unpushed = true;
+      entry.cleanup = {
+        reportId: decision.reportId,
+        reason: 'changed',
+        discardsUntracked: false,
+      };
+      continue;
+    }
+    // The work is over: the directory goes whatever it holds, so its Git state is not checked again.
+    entry.cleanup = {
+      reportId: decision.reportId,
+      reason: entry.inUse ? 'inUse' : 'allowed',
+      discardsUntracked: !entry.inUse && entry.unpushed,
+    };
+    if (!entry.inUse && entry.unpushed)
+      log?.(
+        `workspaces: ${entry.workDir}: its work is over; cleanup will discard work that was never pushed`,
+      );
+  }
+}
+
+/**
+ * Takes back the removal of each of `appKey`'s ended directories that `response`, a later answer, does not confirm:
+ * one whose matching decision now says the work goes on or cannot tell, one it leaves out, or every one when the answer
+ * never came. Such a directory is no longer ended, and its unpushed work keeps it again.
+ */
+export function revokeUnconfirmed(
+  entries: readonly WorkspaceEntry[],
+  appKey: string,
+  response: WorkspacesResponse | undefined,
+): void {
+  const remove = new Set(response?.remove ?? []);
+  const keep = new Set(response?.keep ?? []);
+  for (const entry of entries) {
+    if (entry.appKey !== appKey || entry.status !== 'ended') continue;
+    const matches =
+      response?.decisions?.filter(
+        (item) =>
+          item.reportId === entry.reportId &&
+          item.workDir === entry.workDir &&
+          item.runId === entry.lastRunId &&
+          item.lastUsedAt === entry.lastUsedAt,
+      ) ?? [];
+    const latest = matches.length === 1 ? matches[0] : undefined;
+    const confirmed =
+      latest !== undefined
+        ? latest.settled === true
+        : entry.decision?.settled !== true &&
+          entry.lastRunId !== undefined &&
+          remove.has(entry.lastRunId);
+    if (confirmed) continue;
+    entry.status =
+      latest?.settled === false ||
+      (latest === undefined &&
+        entry.lastRunId !== undefined &&
+        keep.has(entry.lastRunId))
+        ? 'active'
+        : 'unknown';
+    if (latest === undefined) delete entry.decision;
+    else entry.decision = latest;
   }
 }
 
@@ -298,8 +431,9 @@ const filtered = (filters: WorkspaceFilters | undefined): boolean =>
     filters.subject !== undefined);
 
 /**
- * Which directories go. By default: those whose work is over, least recently used first. With filters: the directories every filter matches. A directory a run
- * holds is never removed, nor one with unpushed work unless forced.
+ * Which directories go. By default: those whose work is over, least recently used first. With filters: the directories
+ * every filter matches. A directory a run holds is never removed, nor one with unpushed work unless a directory
+ * decision confirms its work is over or the removal is forced. Legacy remove replies retain the unpushed-work protection.
  */
 export function planRemovals(
   entries: readonly WorkspaceEntry[],
@@ -313,7 +447,11 @@ export function planRemovals(
     if (taken.has(entry.workDir)) return;
     taken.add(entry.workDir);
     if (entry.inUse) kept.push({ entry, reason: 'inUse' });
-    else if (entry.unpushed && options.force !== true)
+    else if (
+      entry.unpushed &&
+      entry.decision?.settled !== true &&
+      options.force !== true
+    )
       kept.push({ entry, reason: 'unpushed' });
     else remove.push({ entry, reason });
   };
@@ -343,8 +481,8 @@ export function planRemovals(
 }
 
 /**
- * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or (not forced)
- * it has unpushed work now. Returns why it was kept, or undefined when it was removed.
+ * Removes a planned directory, under its lock: unless a run took it, or used it since it was checked, or (not forced,
+ * and no settled directory decision) it has unpushed work now. Returns why it was kept, or undefined when it was removed.
  */
 export async function removePlanned(
   paths: RunnerPaths,
@@ -367,7 +505,9 @@ export async function removePlanned(
       return 'changed';
     if (
       options.force !== true &&
-      (await hasUnpushedWork(entry.workDir, meta, options.log))
+      entry.decision?.settled !== true &&
+      (await checkWorkspaceGit(entry.workDir, meta, options.log)).reason !==
+        'allowed'
     ) {
       await writeWorkspaceMeta(paths, entry.workDir, {
         ...meta,
@@ -415,6 +555,7 @@ export interface CollectOptions {
     string,
     (request: WorkspacesRequest) => Promise<WorkspacesResponse>
   >;
+  readonly decisionApps?: ReadonlySet<string>;
   readonly readDisk?: ReadDisk;
   readonly log?: (message: string) => void;
 }
@@ -449,8 +590,28 @@ export async function collectWorkspaces(
     before === undefined ? undefined : workspaceDisk(before, threshold);
   for (const [appKey, report] of options.reporters ?? []) {
     try {
-      const response = await report(workspacesRequest(entries, appKey, disk));
-      applyStatuses(entries, appKey, response);
+      const response = await report(
+        workspacesRequest(
+          entries,
+          appKey,
+          disk,
+          options.decisionApps?.has(appKey) === true,
+        ),
+      );
+      await applyDecisions(paths, entries, appKey, response, log);
+      // Publish the local check against the prior decision, before attempting deletion. The answer can only take a
+      // removal back: the plan and its locked check keep the original evidence, so a later answer that no longer says
+      // the work is over cancels it rather than granting anything new.
+      if (options.decisionApps?.has(appKey) === true) {
+        let confirmation: WorkspacesResponse | undefined;
+        try {
+          confirmation = await report(
+            workspacesRequest(entries, appKey, disk, true),
+          );
+        } finally {
+          revokeUnconfirmed(entries, appKey, confirmation);
+        }
+      }
     } catch (error) {
       log?.(
         `${appKey}: workspace report failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -473,14 +634,11 @@ export async function collectWorkspaces(
     );
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
-      log?.(`workspaces: removed ${entry.workDir} (its work is over)`);
+      log?.(
+        `workspaces: removed ${entry.workDir} (its work is over${entry.unpushed ? '; it held work that was never pushed' : ''})`,
+      );
     } else kept.push({ workDir: entry.workDir, reason: why });
   }
-  for (const item of plan.kept)
-    if (item.reason === 'unpushed' && item.entry.status === 'ended')
-      log?.(
-        `workspaces: kept ${item.entry.workDir}: its work is over, but it holds work that was never pushed`,
-      );
   const after = await read(paths.workRoot);
   const gone = new Set(removed.map((item) => item.workDir));
   const warning = lowDiskWarning(

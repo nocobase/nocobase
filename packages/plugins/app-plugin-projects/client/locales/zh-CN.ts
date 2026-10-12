@@ -310,6 +310,8 @@ const pages = {
     WORKFLOW_STATUS_CONFLICT:
       '还有任务处在这次修改要删除的状态里，请先把它们移走。',
     DEPENDENCY_CYCLE: '这个依赖会形成循环。',
+    DEPENDENCY_CHANGED: '任务关联已发生变化，请刷新后重试。',
+    DEPENDENCY_GRAPH_CHANGED: '任务依赖已发生变化，请刷新后重试。',
     DEPENDENCY_EXISTS: '这个依赖已经存在。',
     DEPENDENCY_TOO_DEEP: '依赖链过长。',
     INVALID_DEPENDENCY: '这个任务不能作为这里的依赖。',
@@ -384,7 +386,7 @@ const pages = {
     outcome: {
       added: '已有账号，已加入项目',
       alreadyMember: '已是成员',
-      notSent: '邮件未发出，请复制链接转发',
+      notSent: '邮件未发送',
       sent: '邮件已发送',
     },
     pending: '等待接受',
@@ -393,6 +395,13 @@ const pages = {
     projectsHint: '被邀请人以成员身份加入这些项目。',
     projectsPlaceholder: '选择项目',
     resend: '重新发送',
+    generateLink: '生成新链接',
+    generateDescription:
+      '生成后，旧邀请链接将立即失效。此次不会发送邮件，请在生成后复制新链接。',
+    linkReady: '新链接已生成',
+    newLinkDescription: '旧链接已失效，请复制并分享下方的新链接。',
+    linkUnavailable: '邀请已发生变化，请刷新列表后重试。',
+    copyLink: '复制邀请链接',
     resent: '已重新发送邀请给 {{email}}',
     resultsLabel: '邀请结果',
     revoke: '撤销',
