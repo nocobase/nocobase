@@ -88,6 +88,42 @@ describe('reasons use actual authorization', () => {
       expect((await caller.allowed(run)).has('pm.issues/edit')).toBe(false);
     }
   });
+  it.each([
+    [false, true, true, 'ACTOR_LACKS_ACTION', false],
+    [true, true, true, 'UNKNOWN', true],
+    [true, false, true, 'AGENT_NOT_GIVEN', false],
+    [false, true, false, 'UNKNOWN', false],
+  ] as const)(
+    'explains intake reads from the same grants (%s, %s, %s)',
+    async (holds, configured, available, reason, allowed) => {
+      const source = createPermissionSource(() =>
+        available
+          ? {
+              permissionsOfUser: async () => ({
+                scopes: {
+                  ...noAbilities(),
+                  'pm.issues/view': holds ? 'all' : 'none',
+                },
+                settings: noSettings(),
+              }),
+            }
+          : undefined,
+      );
+      const gate = createActionGate(source);
+      const { identity } = setup(configured ? ['pm.issues/view'] : []);
+      const intake = {
+        ...identity,
+        run: { run: { subjectKind: 'intake' } },
+      } as CallerIdentity;
+      const before = await gate.allowed(intake);
+      expect(before.has('pm.issues/view')).toBe(allowed);
+      expect(await gate.explain!(intake, 'pm.issues/view')).toEqual({
+        permissionReason: reason,
+        requiredAction: 'pm.issues/view',
+      });
+      expect(await gate.allowed(intake)).toEqual(before);
+    },
+  );
   it('does not claim an allowed environment read is forbidden to agents', async () => {
     const { identity, gate } = setup([]);
     expect((await gate.allowed(identity)).has('rel.environments/read')).toBe(

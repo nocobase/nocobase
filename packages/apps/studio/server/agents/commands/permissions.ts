@@ -187,7 +187,12 @@ export function createActionGate(
         requiredAction: action,
       };
       if ((await this.allowed(identity)).has(action)) return unknown;
-      if (isIntakeRun(identity))
+      if (
+        isIntakeRun(identity) &&
+        !BUSINESS_KEYS.some(
+          ({ key }) => key === action && key.endsWith('/view'),
+        )
+      )
         return { permissionReason: 'READ_ONLY_RUN', requiredAction: action };
       if (identity.kind !== 'run') return unknown;
       // Release management permits reading environments without an agent-configured action.

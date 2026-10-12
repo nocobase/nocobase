@@ -3,6 +3,11 @@
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import {
+  createActionGate,
+  createPermissionSource,
+} from '../../server/agents/commands/permissions.js';
+
 import { AGENT_BLOCKED } from '../../server/agents/blocked.js';
 import {
   MANAGER_ROLE,
@@ -111,8 +116,9 @@ describe('permission refusal to blocked notification', () => {
       PROJECT_MANAGER_ID,
     );
     const managerToken = manager.cli.credential.content.token;
-    const requirement =
+    const summary =
       'Next: wait for authorization, then resume. Someone with role management permission must grant pm.issues/delete (or a role containing it) to run identity limited-owner. Evidence: ACTOR_LACKS_ACTION. No specific grantor is known.';
+    const requirement = `${summary}\n\nOriginal error details: ${'Long diagnostic context. '.repeat(100)}`;
     const comment = await h.request(
       'POST',
       `/projects/issues/${issue.identifier}/comments`,
@@ -141,9 +147,12 @@ describe('permission refusal to blocked notification', () => {
       actor: { type: 'agent', id: PROJECT_MANAGER_ID },
       params: {
         commentId: comment.body.data.comment.id,
-        question: requirement,
+        question: requirement.slice(0, 500),
       },
     });
+    expect(
+      notices.find((notice) => notice.type === AGENT_BLOCKED).params.question,
+    ).toContain(summary);
     expect(
       (
         await h.projects.issueQueries.detail(
@@ -154,6 +163,87 @@ describe('permission refusal to blocked notification', () => {
     ).toBe('blocked');
   });
 
+  it.each([
+    ['none', ['pm.issues/view'], 'pm.issues/view', 'GET', 'ACTOR_LACKS_ACTION'],
+    ['admin', ['pm.issues/view'], 'pm.issues/view', 'GET', null],
+    ['admin', [], 'pm.issues/view', 'GET', 'AGENT_NOT_GIVEN'],
+    [
+      'admin',
+      ['pm.issues/create'],
+      'pm.issues/create',
+      'POST',
+      'READ_ONLY_RUN',
+    ],
+  ] as const)(
+    'keeps intake API and manifest explanations aligned (%s, %s)',
+    async (role, actions, action, method, reason) => {
+      const agent = await h.createAgent({ actions: [...actions] });
+      await h.agents.chat.updateSettings('admin', { defaultAgentId: agent });
+      await h.projects.intakeAi.start(h.viewer('limited-owner'), {
+        mode: 'split',
+        text: 'Draft a task',
+      });
+      h.roles.set('limited-owner', role);
+      const run = await h.claimOne();
+      const token = run.cli.credential.content.token;
+      const response = await h.request(method, '/projects/issues', {
+        runToken: token,
+        ...(method === 'POST' ? { body: { title: 'Must not create' } } : {}),
+      });
+      const manifest = await h.manifest({ runToken: token });
+      const withheld = manifest.withheld.find(
+        (command) => command.action === action && command.reason === 'action',
+      );
+      if (reason === null) {
+        expect(response.status).toBe(200);
+        expect(withheld).toBeUndefined();
+        expect(manifest.commands.map((command) => command.id)).toContain(
+          'issue:search',
+        );
+      } else {
+        expect(response.status).toBe(403);
+        expect(response.body.error.metadata).toMatchObject({
+          permissionReason: reason,
+          requiredAction: action,
+        });
+        expect(withheld).toMatchObject({
+          permissionReason: reason,
+          requiredAction: action,
+        });
+      }
+    },
+  );
+  it('keeps unknown intake read evidence aligned when the permission source is unavailable', async () => {
+    const agent = await h.createAgent({ actions: ['pm.issues/view'] });
+    await h.agents.chat.updateSettings('admin', { defaultAgentId: agent });
+    await h.projects.intakeAi.start(h.viewer('limited-owner'), {
+      mode: 'split',
+      text: 'Draft a task',
+    });
+    h.agents.gate.set(
+      createActionGate(createPermissionSource(() => undefined)),
+    );
+    const run = await h.claimOne();
+    const token = run.cli.credential.content.token;
+    const response = await h.request('GET', '/projects/issues', {
+      runToken: token,
+    });
+    const manifest = await h.manifest({ runToken: token });
+    expect(response.status).toBe(403);
+    expect(response.body.error.metadata).toMatchObject({
+      permissionReason: 'UNKNOWN',
+      requiredAction: 'pm.issues/view',
+    });
+    expect(
+      manifest.withheld.find(
+        (command) =>
+          command.action === 'pm.issues/view' && command.reason === 'action',
+      ),
+    ).toMatchObject({
+      permissionReason: 'UNKNOWN',
+      requiredAction: 'pm.issues/view',
+    });
+  });
   it('keeps the real actor distinct from the issue owner', async () => {
     const worker = await h.createAgent({ actions: ['pm.issues/delete'] });
     const issue = await h.projects.issues.create(h.viewer('limited-owner'), {
