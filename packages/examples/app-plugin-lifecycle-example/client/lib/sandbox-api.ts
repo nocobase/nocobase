@@ -33,7 +33,7 @@ export interface StockLevel {
 }
 
 export interface SendEvent {
-  readonly source: 'payments' | 'warehouse' | 'carrier';
+  readonly source: 'payments' | 'warehouse' | 'carrier' | 'invoicing';
   readonly type: string;
   readonly recordId: string;
   readonly data?: Readonly<Record<string, unknown>>;
@@ -55,6 +55,11 @@ export function sandboxApi(client: ApiClient): {
   ): Promise<WebhookEvent>;
   checkout(sessionId: string): Promise<CheckoutSession>;
   stock(): Promise<StockLevel[]>;
+  completeInvoice(
+    invoiceId: string,
+    outcome: 'issued' | 'failed',
+    hold: boolean,
+  ): Promise<WebhookEvent>;
 } {
   const data = async <T>(request: Parameters<ApiClient['request']>[0]) =>
     (await client.request<{ readonly data: T }>(request)).data;
@@ -84,6 +89,12 @@ export function sandboxApi(client: ApiClient): {
     checkout: (sessionId) =>
       data<CheckoutSession>({
         path: `${base}/checkouts/${encodeURIComponent(sessionId)}`,
+      }),
+    completeInvoice: (invoiceId, outcome, hold) =>
+      data<WebhookEvent>({
+        method: 'POST',
+        path: `${base}/invoices/${encodeURIComponent(invoiceId)}/complete`,
+        json: { outcome, hold },
       }),
     stock: () => data<StockLevel[]>({ path: `${base}/stock` }),
   };

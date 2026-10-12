@@ -1,9 +1,9 @@
 /**
  * Requirement intake with AI as runs (`@nocobase/app-plugin-projects/shared/intake-ai`): each request to AI (a job of
- * the projects plugin) is one run of the person's online agent on the private subject `intake`, whose id is the job's.
+ * the projects plugin) is one run of the agent the person chose on the private subject `intake`, whose id is the job's.
  * The claim hands the agent the job's task, worded by the projects plugin for any organiser
- * (`intakeAiInstructions`, `intakeAiMaterial`), and the one way to answer: `intake drafts --file` (`POST /api/intakeDrafts`, `../routes.ts`),
- * in an online agent's sandboxed shell too, which drafts on the server without a runner.
+ * (`intakeAiInstructions`, `intakeAiMaterial`), and the one way to answer: `intake drafts --file`
+ * (`POST /api/intakeDrafts`, `../routes.ts`).
  * The run only proposes drafts; what it may run is limited to reading (`commands/permissions.ts`).
  */
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
@@ -15,7 +15,6 @@ import {
 
 import {
   commandRef,
-  type CommandDialect,
   type SubjectBinding,
   type SubjectFacts,
 } from '@nocobase/app-plugin-agents/server/tokens';
@@ -48,12 +47,8 @@ export function intakeLabel(task: IntakeAiTask): string {
   return task.mode === 'revise' ? 'Revise drafts' : 'Draft issues';
 }
 
-/** The task layer: what to do, and how to hand the drafts back, in the agent's dialect. */
-export function intakeTask(
-  task: IntakeAiTask,
-  cli: string,
-  dialect: CommandDialect = 'cli',
-): string {
+/** The task layer: what to do, and how to hand the drafts back. */
+export function intakeTask(task: IntakeAiTask, cli: string): string {
   return [
     `${task.requester.name ?? 'A person'} asked you to ${
       task.mode === 'revise'
@@ -66,7 +61,7 @@ export function intakeTask(
     ...intakeAiInstructions(task).map((line) => `- ${line}`),
     '',
     'How to hand the drafts back:',
-    `- ${dialect === 'tools' ? 'Write them as JSON to a file under /tmp' : 'Write them as JSON to a file in your working directory'}: {"drafts": [{"position", "parentPosition", ${
+    `- Write them as JSON to a file in your working directory: {"drafts": [{"position", "parentPosition", ${
       task.mode === 'revise' ? '"from", ' : ''
     }"title", "description", "priority", "labels", "stage"}]}.`,
     `- Run \`${cli} intake drafts --file <path>\`. A refusal names the drafts to fix: fix them and run it again.`,
@@ -82,19 +77,12 @@ export function intakeBinding(
     private: true,
     title: text('studioAgents.subjects.intake'),
     triggers: { [INTAKE_TRIGGER]: text('studioAgents.triggers.intake') },
-    // Drafting needs no working directory: an online agent drafts in seconds, without a runner.
-    agentTypes: ['online', 'runner'],
     queuedExpiryMs: INTAKE_QUEUED_EXPIRY_MS,
     context: {
       async assemble(conn, claim) {
         const jobId = claim.run.subject.id;
         const task = await projects().intakeAi.task(jobId, conn);
-        const drafts = commandRef(
-          claim.dialect,
-          claim.cli,
-          INTAKE_DRAFTS_COMMAND,
-          'file',
-        );
+        const drafts = commandRef(claim.cli, INTAKE_DRAFTS_COMMAND, 'file');
         if (!task) throw new Error(`The intake request ${jobId} is gone.`);
         return {
           subject: {
@@ -107,14 +95,12 @@ export function intakeBinding(
             rules: [
               'You only propose issue drafts: never create, change or comment on issues or projects. The person reviews the drafts and creates the issues.',
               `Hand the drafts back only with ${drafts}; what you write as text is not read as drafts.`,
-              claim.dialect === 'tools'
-                ? 'Work from the material in the context.'
-                : 'Work from the material in the context. Do not clone repositories or install anything.',
+              'Work from the material in the context. Do not clone repositories or install anything.',
             ],
             whenBlocked:
               'If something keeps you from drafting, say exactly what in your last message and end your turn instead of guessing.',
           },
-          task: intakeTask(task, claim.cli, claim.dialect),
+          task: intakeTask(task, claim.cli),
           context: intakeAiMaterial(task),
           turn: {
             prompt: `Draft now and hand the drafts back with ${drafts}.`,

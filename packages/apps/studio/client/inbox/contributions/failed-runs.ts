@@ -10,6 +10,8 @@
 import { ApiClientError } from '@nocobase/app-client';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
+import { createElement, type ReactElement } from 'react';
+import { Link } from 'react-router';
 
 import {
   isSettled,
@@ -19,12 +21,48 @@ import {
 import {
   defineInboxRenderer,
   type InboxCanAct,
+  type InboxPartProps,
 } from '@/extensions/nocobase-inbox/registry';
 import { FailedRunActions } from './failed-runs-parts.js';
 import { projectsParts, type ProjectsModel } from './projects.js';
 import { paramsOf } from './projects-wording.js';
+import { ProjectsBody } from './projects-parts.js';
 
 export const RUN_FAILED_TYPE = 'run_failed_final';
+
+function FailedRunBody(props: InboxPartProps<ProjectsModel>): ReactElement {
+  const { t } = useTranslation();
+  const params = paramsOf(props.entry);
+  const source = ['card', 'cli', 'runRecord', 'api', 'unknown'].includes(
+    params.retrySource ?? '',
+  )
+    ? params.retrySource
+    : 'unknown';
+  return createElement(
+    'div',
+    { className: 'grid gap-3' },
+    props.entry.notice?.outcome === 'retried' && params.retriedRunId
+      ? createElement(
+          'p',
+          { className: 'text-sm' },
+          t('inbox.runFailed.retryRecord', {
+            name: params.retriedByName ?? params.retriedByUserId,
+            source: t(`inbox.runFailed.sources.${source}`),
+          }),
+          ' ',
+          createElement(
+            Link,
+            {
+              className: 'text-primary hover:underline',
+              to: `/issues/${encodeURIComponent(params.identifier ?? '')}/runs/${encodeURIComponent(params.retriedRunId)}`,
+            },
+            t('issueRuns.alreadyRetried'),
+          ),
+        )
+      : null,
+    createElement(ProjectsBody, props),
+  );
+}
 
 /** Whether the viewer may answer: the issue's owner, or someone who may edit issues and sees this one. */
 function useFailedRunCanAct(
@@ -55,4 +93,5 @@ export const failedRunRenderer = defineInboxRenderer<ProjectsModel>({
   types: [RUN_FAILED_TYPE],
   useCanAct: useFailedRunCanAct,
   Actions: FailedRunActions,
+  Body: FailedRunBody,
 });

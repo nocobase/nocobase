@@ -1,9 +1,15 @@
 /**
- * Hands the New issue dialog's requirements to a conversation and closes the dialog only after a runnable handoff.
+ * Hands the New issue dialog's requirements to a conversation with the agent chosen under "Organized by" (the
+ * enabled agents the person may chat with, their default first, each that cannot answer now with why) and closes the
+ * dialog only after a runnable handoff.
  * Failures stay beside the action with the input intact. Closing the dialog aborts the browser request and prevents
  * a late response from opening the panel or navigating away from the page the person has moved to.
  */
-import { useChatPanel } from '@nocobase/app-plugin-agents/client/chat';
+import {
+  useAgentText,
+  useChatAgents,
+  useChatPanel,
+} from '@nocobase/app-plugin-agents/client/chat';
 import type { SendMessageResult } from '@nocobase/app-plugin-agents/shared/conversations';
 import {
   usePlanApi,
@@ -15,15 +21,19 @@ import { AlertCircleIcon, BotMessageSquareIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
+import { AgentPicker } from '@/components/agent-picker';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
+import { useAgentPickerLabels } from '@/extensions/nocobase-agent-chat/chat-i18n';
 
 import {
   INTAKE_ROUTE,
   intakeUnavailableReason,
   type OrganizeRequest,
 } from '../../shared/intake.js';
+import { chosenAgent } from '../pages/home/model.js';
 import { fitIntake, intakeTitleText } from './intake-text.js';
 
 const TITLE_CHARS = 30;
@@ -42,6 +52,12 @@ export function Organize({
   const panel = useChatPanel();
   const navigate = useNavigate();
   const location = useLocation();
+  const agentText = useAgentText();
+  const pickerLabels = useAgentPickerLabels();
+  const agents = useChatAgents(panel.available);
+  const [picked, setPicked] = useState<string | null>(null);
+  const agentList = agents.data ?? [];
+  const agent = chosenAgent(agentList, picked);
   const startingRef = useRef(false);
   const requestRef = useRef<AbortController | null>(null);
   const [starting, setStarting] = useState(false);
@@ -53,10 +69,6 @@ export function Organize({
       case 'INTAKE_NO_AGENT':
       case 'noChatAgent':
         return t('pmChat.intake.noAgent');
-      case 'INTAKE_MODEL_MISSING':
-        return t('pmChat.intake.modelMissing');
-      case 'INTAKE_MODEL_UNAVAILABLE':
-        return t('pmChat.intake.modelUnavailable');
       case 'INTAKE_NO_RUNNER':
         return t('pmChat.intake.noRunner');
       case 'INTAKE_AGENT_UNAVAILABLE':
@@ -98,6 +110,7 @@ export function Organize({
             intakeTitleText(text, TITLE_CHARS) ||
             (read?.documents[0]?.filename ?? ''),
         }),
+        ...(agent ? { agentId: agent.id } : {}),
         ...(projectId ? { projectId } : {}),
         ...(fitted.files.length > 0 ? { files: fitted.files } : {}),
       };
@@ -109,7 +122,6 @@ export function Organize({
       });
       if (controller.signal.aborted) return;
       const unavailable = intakeUnavailableReason({
-        models: result.conversation.models,
         availability: result.conversation.availability,
       });
       if (unavailable) {
@@ -160,6 +172,24 @@ export function Organize({
               : t('pmChat.intake.chatUnavailable')}
           </AlertDescription>
         </Alert>
+      ) : null}
+      {agentList.length > 0 ? (
+        <Field>
+          <FieldLabel htmlFor='intake-agent-picker'>
+            {t('pmChat.intake.agent')}
+          </FieldLabel>
+          <AgentPicker
+            id='intake-agent-picker'
+            agents={agentList}
+            value={agent?.id ?? null}
+            onSelect={setPicked}
+            agentName={(item) => agentText.name(item)}
+            labels={pickerLabels}
+            showHint
+            disabled={starting}
+            data-testid='intake-agent-picker'
+          />
+        </Field>
       ) : null}
       <Button
         type='button'

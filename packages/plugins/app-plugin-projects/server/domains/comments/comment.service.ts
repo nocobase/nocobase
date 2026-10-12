@@ -1,8 +1,8 @@
 /**
  * Comment writes: post, edit, delete, react and resolve. Each write records its activity, keeps the issue's
  * `lastActivityAt` (without raising its revision), and emits `issue.changed` plus an event saying what happened, from
- * which follows and notices are planned (`domains/notices`). A person's comment that is not a note is handed to the
- * triggers in the same transaction.
+ * which follows and notices are planned (`domains/notices`). A comment that is not a note, of anyone but the system,
+ * is handed to the triggers in the same transaction, with the person it was written for.
  */
 import {
   COMMENT_CONTENT_MAX,
@@ -15,6 +15,7 @@ import {
   type ThreadResolution,
   type UpdateCommentRequest,
 } from '../../../shared/comments.js';
+import { SYSTEM_KIND } from '../../../shared/kinds.js';
 import type { Issue } from '../../../shared/issues.js';
 import { requireAction, type Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
@@ -171,6 +172,8 @@ export function createCommentService(deps: CommentDeps): CommentService {
       readonly trigger?: boolean;
       /** The person writing, whose right to mention each principal is checked. */
       readonly userId: string | null;
+      /** Without `userId`: the person the triggers hear it was written for. */
+      readonly forUserId?: string;
       readonly viewer?: Viewer;
     },
   ) {
@@ -229,7 +232,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
     let triggered: readonly MentionRef[] = [];
     const triggers = deps.triggers();
     if (
-      actor.type === 'user' &&
+      actor.type !== SYSTEM_KIND &&
       !note &&
       options.trigger !== false &&
       triggers.onCommentCreated
@@ -239,6 +242,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
         issue,
         parent: parentComment,
         actor,
+        userId: options.userId ?? options.forUserId ?? null,
         mentions: refs,
       });
     tx.emit({ type: 'issue.changed', issueId: issue.id });
@@ -311,6 +315,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
           ...(options.trigger === undefined
             ? {}
             : { trigger: options.trigger }),
+          ...(options.forUserId ? { forUserId: options.forUserId } : {}),
           userId: null,
         });
       }, options.outer);

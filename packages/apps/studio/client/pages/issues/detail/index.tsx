@@ -11,14 +11,15 @@
  * card is the activity, its composer pinned at the bottom; the side column is the properties' cards.
  *
  * - the header's "Ask agent", and in its meta line Studio's marks (pull requests, deployments) and who is working now;
- * - "Waiting for you" above the description, which leaves out the approval card while it decides it;
+ * - "Now" under the header: what the issue waits for and the project manager's next step, with "Start" on a backlog
+ *   issue (`issues/detail/issue-progress.tsx`), then an agent comment the comment run limit held back;
+ * - "Waiting for you" above the description;
  * - the add bar (files, sub-issues, dependencies, and Studio's "Pull request");
- * - after the checklist, sub-issues, dependencies and files: the design proposal, the related plans, then Code and
- *   deployments (one row per pull request, unfolding into its previews and the environments it was deployed to) and
- *   the agents' execution log;
- * - the agents' runs on the activity line. The side column keeps the properties, the people and the dates.
+ * - after the sub-issues, dependencies and files: the related plans, then Code and
+ *   deployments (one row per pull request, unfolding into its previews and the environments it was deployed to);
+ * - the agents' runs on the activity line. The side column keeps properties, followers, dates and execution history.
  *
- * While a run is open the issue may change under it, so the page polls it, and reloads it when a run opens or ends.
+ * The page polls the issue and its runs even while idle, speeds up after an action, and reloads on run transitions.
  * Its child routes (`new-subtask`, the plugin's; a run's transcript at `runs/:runId`) render beside the covering page.
  */
 import { ApiClientError } from '@nocobase/app-client';
@@ -32,12 +33,11 @@ import {
   PmLoadError,
   pmKeys,
   usePageContextSource,
-  usePmApi,
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
+import { IN_PROGRESS_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { RouteChildPage } from '@/components/route-child-page';
@@ -49,18 +49,10 @@ import {
 } from '@/extensions/nocobase-issue-detail/issue-detail';
 import { cn } from 'cn';
 
-import { DESIGN_PROPOSAL_KIND } from '../../../../shared/design.js';
 import { AskAgent } from '../../../agents/ask-agent.js';
-import { DesignSection } from '../../../agents/design/section.js';
-import {
-  IssueLiveRun,
-  IssueRunPanel,
-  IssueRunRow,
-} from '../../../agents/issue-runs.js';
-import { useIssueRuns } from '../../../agents/use-issue-runs.js';
+import { IssueLiveRun, IssueRunRow } from '../../../agents/issue-runs.js';
 import { IssueInitSection } from '../../../projects/init-card.js';
 import { IssueWaitingSection } from '../../../inbox/issue-waiting.js';
-import { useWaitingCoversApproval } from '../../../inbox/use-waiting.js';
 import { IssueActivity } from '../../../issues/detail/issue-activity.js';
 import {
   IssueCodeAddButton,
@@ -68,8 +60,6 @@ import {
 } from '../../../issues/detail/code-section.js';
 import {
   IssueAddSection,
-  IssueApprovalsSection,
-  IssueChecklistSection,
   IssueDependenciesSection,
   IssueDescriptionSection,
   IssueFilesSection,
@@ -77,16 +67,15 @@ import {
   IssueSubtasksSection,
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
-import { IssueStageRunLimit } from '../../../issues/detail/stage-run-limit.js';
+import { IssueCommentRunLimit } from '../../../issues/detail/comment-run-limit.js';
+import { IssueProgressLine } from '../../../issues/detail/issue-progress.js';
 import { IssuePlansSection } from '../../../issues/detail/issue-plans.js';
 import { IssueParentOutlet } from '../../../issues/detail/issue-parent-outlet.js';
 import { useIssueParent } from '../../../issues/detail/issue-parent.js';
 import { useIssuePageWording } from '../../../issues/detail/labels.js';
 import { IssueMarks } from '../../../issues/issue-marks.js';
 import { IssuePageAside } from './aside.js';
-
-/** How often the issue is reloaded while a run on it is open, in case an announcement is missed. */
-const RUN_POLL_MS = 5000;
+import { useLiveIssue } from './use-live-issue.js';
 
 export default function IssueDetailPage(): ReactElement {
   const { issueId = '' } = useParams();
@@ -150,24 +139,25 @@ function IssuePage({
 }): ReactElement {
   const { t } = useTranslation();
   const wording = useIssuePageWording();
-  const api = usePmApi();
-  const queryClient = useQueryClient();
   const detailKey = useMemo(() => pmKeys.issue(issueId), [issueId]);
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
-  const [stageRunRefresh, setStageRunRefresh] = useState(0);
-  const runs = useIssueRuns(detail, stageRunRefresh);
-  const approvalCovered = useWaitingCoversApproval(detail);
+  const [runRefresh, setRunRefresh] = useState(0);
+  const runs = useLiveIssue(detail, issueId, detailKey, runRefresh);
+  // The "Now" line reads again whenever the issue or one of its runs changes.
+  const progressRefresh = [
+    detail.revision,
+    detail.statusKey,
+    ...runs.map((run) => `${run.id}:${run.status}`),
+  ].join('|');
   const main = useIssueMainState(pageActions);
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
   const linking = {
     linking: linkingPullRequest,
     setLinking: setLinkingPullRequest,
   };
-  const kindLabels = useMemo(
-    () => ({ [DESIGN_PROPOSAL_KIND]: t('design.tag') }),
-    [t],
-  );
+  // Design proposals earlier versions posted stay tagged.
+  const kindLabels = useMemo(() => ({ proposal: t('design.tag') }), [t]);
   const entry = useMemo(
     () =>
       ({
@@ -178,24 +168,6 @@ function IssuePage({
     [detail.id, detail.identifier, detail.title],
   );
   usePageContextSource(entry);
-
-  // While a run is open the issue may change under it: poll it, and reload it when a run opens or ends.
-  const working = runs.some((run) => run.open);
-  useQuery({
-    queryKey: detailKey,
-    queryFn: () => api.issue(issueId),
-    refetchInterval: working ? RUN_POLL_MS : false,
-  });
-  const openRuns = runs
-    .filter((run) => run.open)
-    .map((run) => run.id)
-    .join(',');
-  const seenRef = useRef(openRuns);
-  useEffect(() => {
-    if (seenRef.current === openRuns) return;
-    seenRef.current = openRuns;
-    void queryClient.invalidateQueries({ queryKey: detailKey });
-  }, [openRuns, queryClient, detailKey]);
 
   return (
     <IssueDetailLayout
@@ -226,21 +198,21 @@ function IssuePage({
                 </>
               }
             />
-            <IssueStageRunLimit
+            <IssueProgressLine
               issue={detail}
-              onContinued={() => setStageRunRefresh((value) => value + 1)}
+              refresh={progressRefresh}
+              starting={update.isPending}
+              onStart={() => update.mutate({ statusKey: IN_PROGRESS_STATUS })}
+            />
+            <IssueCommentRunLimit
+              issue={detail}
+              onContinued={() => setRunRefresh((value) => value + 1)}
             />
             <IssueWaitingSection issue={detail} />
             <IssueDescriptionSection detail={detail} update={update} />
             <IssueAddSection detail={detail} state={main}>
               <IssueCodeAddButton issue={detail} {...linking} />
             </IssueAddSection>
-            <IssueApprovalsSection
-              detail={detail}
-              pageActions={pageActions}
-              hidePending={approvalCovered}
-            />
-            <IssueChecklistSection detail={detail} pageActions={pageActions} />
             <IssueSubtasksSection detail={detail} />
             <IssueDependenciesSection
               detail={detail}
@@ -252,11 +224,9 @@ function IssuePage({
               pageActions={pageActions}
               state={main}
             />
-            <DesignSection issue={detail} />
             <IssuePlansSection issue={detail} />
             <IssueInitSection issue={detail} />
             <IssueCodeSection issue={detail} {...linking} />
-            <IssueRunPanel issue={detail} />
           </IssueFileDrop>
         </IssueActivity>
       }

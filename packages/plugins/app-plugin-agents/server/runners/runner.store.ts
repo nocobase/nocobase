@@ -4,6 +4,8 @@
  */
 import {
   AGENT_TOOLS,
+  WorkspaceDecisionSchema,
+  WorkspaceCleanupResultSchema,
   RunnerPolicySchema,
   RunnerVariableNamesSchema,
   ToolLoadSchema,
@@ -25,6 +27,7 @@ import type {
   RunnerWorkspace,
   RunnerWorkspaceDisk,
   RunnerWorkspaceUsage,
+  UnavailableModel,
 } from '../../shared/runners.js';
 import { jsonObject, stringArray } from '../kernel/values.js';
 
@@ -50,6 +53,7 @@ export interface RunnerRecord {
   readonly policy: unknown;
   readonly variables?: unknown;
   readonly workspaceUsage?: unknown;
+  readonly unavailableModels?: unknown;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -183,12 +187,21 @@ const isFiniteNumber = (value: unknown): value is number =>
 
 function storedWorkspace(value: unknown): RunnerWorkspace | null {
   const item = jsonObject(value);
-  if (typeof item.runId !== 'string' || typeof item.workDir !== 'string')
+  if (
+    (item.runId !== undefined && typeof item.runId !== 'string') ||
+    typeof item.workDir !== 'string'
+  )
     return null;
   const text = (field: unknown): string | null =>
     typeof field === 'string' ? field : null;
   return {
-    runId: item.runId,
+    ...(typeof item.runId === 'string' ? { runId: item.runId } : {}),
+    ...(WorkspaceDecisionSchema.safeParse(item.decision).success
+      ? { decision: WorkspaceDecisionSchema.parse(item.decision) }
+      : {}),
+    ...(WorkspaceCleanupResultSchema.safeParse(item.cleanup).success
+      ? { cleanup: WorkspaceCleanupResultSchema.parse(item.cleanup) }
+      : {}),
     workDir: item.workDir,
     unpushed: item.unpushed === true,
     lastUsedAt: text(item.lastUsedAt) ?? '',
@@ -208,6 +221,30 @@ function storedDisk(value: unknown): RunnerWorkspaceDisk | null {
     totalBytes: disk.totalBytes,
     minFreeBytes: isFiniteNumber(disk.minFreeBytes) ? disk.minFreeBytes : null,
   };
+}
+
+/** The tools and models marked unavailable on a runner, as stored; empty when there are none. */
+export function storedUnavailableModels(value: unknown): UnavailableModel[] {
+  const parsed = typeof value === 'string' ? safeJson(value) : value;
+  if (!Array.isArray(parsed)) return [];
+  return (parsed as unknown[]).flatMap((value): UnavailableModel[] => {
+    const item = jsonObject(value);
+    if (
+      typeof item.tool !== 'string' ||
+      !AGENT_TOOLS.includes(item.tool as AgentTool) ||
+      typeof item.model !== 'string' ||
+      typeof item.at !== 'string'
+    )
+      return [];
+    return [
+      {
+        tool: item.tool as AgentTool,
+        model: item.model,
+        at: item.at,
+        reported: stringArray(item.reported),
+      },
+    ];
+  });
 }
 
 /** A runner's last workspace report as stored: null when it never reported one. */
@@ -230,6 +267,9 @@ export function storedWorkspaceUsage(
       workspaces.filter((item) => item.unpushed).length,
     ),
     measuredAt: usage.measuredAt,
+    ...(isFiniteNumber(usage.intervalMs)
+      ? { intervalMs: usage.intervalMs }
+      : {}),
     workspaces,
   };
 }
@@ -261,6 +301,7 @@ export function toRunner(
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),
     workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
+    unavailableModels: storedUnavailableModels(record.unavailableModels),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

@@ -38,6 +38,8 @@ export const PR_ACTIVITIES = {
   edited: 'pr_edited',
   closed: 'pr_closed',
   reopened: 'pr_reopened',
+  forceMerged: 'pr_force_merged',
+  forceMergeRefused: 'pr_force_merge_refused',
 } as const;
 export const PR_EDIT_FIELDS = [
   'title',
@@ -49,7 +51,11 @@ export const PR_EDIT_FIELDS = [
 export type PullRequestEditField = (typeof PR_EDIT_FIELDS)[number];
 
 /** The issue triggers a pull request starts runs for. */
-export const PR_TRIGGERS = ['prChecksFailed', 'prConflict'] as const;
+export const PR_TRIGGERS = [
+  'prChecksFailed',
+  'prChecksPassed',
+  'prConflict',
+] as const;
 export type PullRequestTrigger = (typeof PR_TRIGGERS)[number];
 
 /** How many times in a row the same signal wakes the agent before the owner is told instead. */
@@ -58,6 +64,17 @@ export const SIGNAL_WAKE_LIMIT = 3;
 export type PullRequestState = 'open' | 'closed' | 'merged';
 export type PullRequestCiState = 'pending' | 'success' | 'failure';
 export type PullRequestLinkedBy = 'user' | 'agent' | 'system';
+
+/** The conclusions of a finished check that pass; any other conclusion fails. */
+export const PASSING_CONCLUSIONS: ReadonlySet<string> = new Set([
+  'success',
+  'neutral',
+  'skipped',
+]);
+
+/** At most this many reference checks per repository, each name at most `REFERENCE_CHECK_MAX` characters. */
+export const REFERENCE_CHECKS_MAX = 50;
+export const REFERENCE_CHECK_MAX = 200;
 
 /**
  * One check of a pull request's head commit: a check run (`check`) or a commit status (`status`). `conclusion` is the
@@ -144,6 +161,77 @@ export function mergeBlockerOf(
   return null;
 }
 
+/** A check as a summary names it. */
+export interface CheckRef {
+  readonly name: string;
+  readonly url: string | null;
+}
+
+/**
+ * The head's checks split by the repository's reference checks (`GitRepoSettings.referenceChecks`): a reference check
+ * is only for information, so it neither wakes the agent nor blocks merging; every other check is required.
+ */
+export interface CheckSummary {
+  /** The required checks folded: `pending` while one runs, else `failure` when one failed, else `success`. */
+  readonly ciState: PullRequestCiState | null;
+  /** No required check is still queued or running: a failure is final for this head. */
+  readonly settled: boolean;
+  /** The required checks that failed. */
+  readonly failed: readonly CheckRef[];
+  /** The reference checks that failed: a warning, nothing more. */
+  readonly referenceFailed: readonly CheckRef[];
+}
+
+/** Whether the check is one of the repository's reference checks, by its exact name. */
+export function isReferenceCheck(
+  name: string,
+  referenceChecks: readonly string[],
+): boolean {
+  return referenceChecks.includes(name.trim());
+}
+
+function failedCheck(check: GitCheck): boolean {
+  return (
+    check.status === 'completed' &&
+    check.conclusion !== null &&
+    !PASSING_CONCLUSIONS.has(check.conclusion)
+  );
+}
+
+/**
+ * The summary of a pull request's head checks. Without the checks one by one (only a webhook's word for the head was
+ * read), the stored `ciState` stands for every check, all of them required.
+ */
+export function checkSummaryOf(
+  pr: Pick<PullRequest, 'ciState' | 'checks'>,
+  referenceChecks: readonly string[],
+): CheckSummary {
+  if (pr.checks.length === 0)
+    return {
+      ciState: pr.ciState,
+      settled: pr.ciState !== 'pending',
+      failed: [],
+      referenceFailed: [],
+    };
+  const ref = ({ name, url }: GitCheck): CheckRef => ({ name, url });
+  const required = pr.checks.filter(
+    (check) => !isReferenceCheck(check.name, referenceChecks),
+  );
+  const failed = required.filter(failedCheck).map(ref);
+  const running = required.some((check) => check.status !== 'completed');
+  return {
+    ciState: running ? 'pending' : failed.length > 0 ? 'failure' : 'success',
+    settled: !running,
+    failed,
+    referenceFailed: pr.checks
+      .filter(
+        (check) =>
+          isReferenceCheck(check.name, referenceChecks) && failedCheck(check),
+      )
+      .map(ref),
+  };
+}
+
 /** The squash commit's title: `<title> (#<number>)`, "Merge pull request" for an empty title. */
 export function mergeCommitTitle(
   pr: Pick<PullRequest, 'title' | 'number'>,
@@ -174,16 +262,74 @@ export interface PullRequestMergePreflight {
   readonly baseRef: string;
   readonly commitTitle: string;
   readonly statusAfter: PullRequestMergeOutcome;
+  /** The required checks that failed: with `ciFailed`, what a forced merge goes past. */
+  readonly failedChecks: readonly CheckRef[];
+  /** The reference checks that failed: they do not block, the confirmation only shows them. */
+  readonly referenceFailures: readonly CheckRef[];
+  /**
+   * Whether the caller may merge despite failed required checks (`force`): a manager of the issue's project, or whoever
+   * closes any issue. Only `ciFailed` can be forced.
+   */
+  readonly canForce: boolean;
 }
+
+/** A forced merge's reason is 1 to this many characters. */
+export const FORCE_REASON_MAX = 2_000;
 
 /** `POST /api/git/pullRequests/:pullRequestId/merge?issueId=`. */
 export interface MergePullRequestRequest {
   /** The head the person confirmed; 409 `PR_CHANGED` when GitHub's head moved since. */
   readonly expectedHeadSha: string;
+  /**
+   * Merge although required checks failed (`ciFailed` and nothing else blocks it), for whoever `canForce`. The reason
+   * and the failed checks are commented on the pull request before the merge and kept on the issue's activity; the code
+   * host's own branch protection still applies and may refuse it.
+   */
+  readonly force?: boolean;
+  /** Why, required with `force`. */
+  readonly reason?: string;
+}
+
+/**
+ * Why a check failed, as `GET /api/git/pullRequests/:pullRequestId/checks` (`nb-studio pr checks`) answers it: its
+ * report, annotations and the failing part of its log.
+ */
+export interface FailedCheckReport {
+  readonly name: string;
+  /** `failure`, `timed_out` or `cancelled`. */
+  readonly conclusion: string;
+  readonly url: string | null;
+  /** One of the repository's reference checks: it does not block merging and does not wake the agent. */
+  readonly reference: boolean;
+  readonly summary: string | null;
+  readonly annotations: readonly {
+    readonly path: string;
+    readonly startLine: number | null;
+    readonly endLine: number | null;
+    readonly level: string;
+    readonly title: string | null;
+    readonly message: string;
+  }[];
+  /** The failing part of the log: each error line with the 20 lines around it and the log's end. */
+  readonly log: string | null;
+  /**
+   * Why there is no log: `notActions` (another CI reported the check: its log is behind `url`), `unavailable`,
+   * `rateLimited` or `budget` (the head's logs reached their size limit). Null with a log.
+   */
+  readonly logUnavailable:
+    'notActions' | 'unavailable' | 'rateLimited' | 'budget' | null;
+}
+
+/** The failed checks of a pull request's head. */
+export interface PullRequestFailedChecks {
+  readonly headSha: string;
+  readonly checks: readonly FailedCheckReport[];
 }
 
 /** A pull request as an issue shows it: with who linked it and what the viewer may do. */
 export interface IssuePullRequest extends PullRequest {
+  /** Opening succeeds even if its preview label needs a later retry. */
+  readonly previewLabelSyncFailed?: boolean;
   readonly linkedBy: {
     readonly type: PullRequestLinkedBy;
     readonly id: string | null;
@@ -302,7 +448,11 @@ export interface GitRepoSettings {
   /** The branch rules, in order: the first names the branches agents work on (`branchOf`). */
   readonly branchRules: readonly string[];
   readonly wakeOnChecks: boolean;
+  /** Wake the project manager once per head commit when all its checks passed. */
+  readonly wakeOnChecksPassed: boolean;
   readonly wakeOnConflict: boolean;
+  /** Check names that are only for information: their failures neither wake the agent nor block merging. */
+  readonly referenceChecks: readonly string[];
   readonly polledAt: string | null;
   readonly pollError: string | null;
   /** Where GitHub posts this repository's events: absolute with `app.publicOrigin`, else a path on Studio's origin. */
@@ -321,7 +471,10 @@ export interface UpdateGitRepoRequest {
   /** A new webhook secret; null removes it; left out keeps it. */
   readonly webhookSecret?: string | null;
   readonly wakeOnChecks?: boolean;
+  readonly wakeOnChecksPassed?: boolean;
   readonly wakeOnConflict?: boolean;
+  /** The reference checks, by name; at most `REFERENCE_CHECKS_MAX`. */
+  readonly referenceChecks?: readonly string[];
   /** The branch rules, each with `{key}` once; at least one. */
   readonly branchRules?: readonly string[];
 }

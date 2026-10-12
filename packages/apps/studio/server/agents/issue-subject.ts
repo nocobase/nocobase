@@ -1,10 +1,20 @@
 /**
  * Issues as the subject of runs: what a claim hands the agent about its issue (`ContextProvider`), and how the end of a
  * run reaches the issue (`WorkSink`). The context is the projects plugin's `IssueContext`, read in the claim's
- * transaction; the brief's task and context layers, and the issue's own lines of its rules (`guidance`: report in
- * comments, move the status only as the workflow allows), are written from it here. The binding also names issues and
- * the triggers of their runs for the agents plugin's pages, and offers a made-up issue for "Preview full prompt"
- * (`sampleIssue`), rendered by the same code as a real one.
+ * transaction; the brief's task and context layers, and the issue's own lines of its rules (`guidance`), are written
+ * from it here, for one of two roles:
+ *
+ * - The project manager (`PROJECT_MANAGER_ID`), the issue's executor, arranges the work: it comments, hands steps over
+ *   and moves the status, and runs in a work directory of its own that checks nothing out (`workspaceKey`
+ *   `<issue>.manager`), so it never waits for the lock of the directory an agent writes code in. It works only while
+ *   the issue is open: a run of it queued before the issue went to backlog or finished is not claimed (`dormant`).
+ * - Any other agent does the one step it was handed (or asked for, mentioned by a person) in the project's working
+ *   directories, on the issue's branch, and answers in that comment's thread. A step whose hand-over says
+ *   `Mode: read-only` (`isReadOnlyStep`), such as a review, gets a read-only checkout of its own, which pushes nothing
+ *   and runs alongside the step that changes code.
+ *
+ * The binding also names issues and the triggers of their runs for the agents plugin's pages, and offers a made-up
+ * issue for "Preview full prompt" (`sampleIssue`), rendered by the same code as a real one.
  */
 import type { RunInput } from '@nocobase/agent-protocol';
 import type {
@@ -23,7 +33,11 @@ import type {
 } from '@nocobase/app-plugin-agents/server/tokens';
 import { sampleValue } from '@nocobase/app-plugin-agents/shared/briefs';
 
-import { ANALYSIS_STATUS } from '../../shared/design.js';
+import { commentDelta, deltaNotes } from './comment-delta.js';
+import type { Agent } from '@nocobase/app-plugin-agents/shared/agents';
+import { statusCategory } from '@nocobase/app-plugin-projects/shared/statuses';
+
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { runBranches } from '../git/run-git.js';
 import { initialDirOf } from '../projects-init/store.js';
 import { ATTACH_ACTION } from './capabilities.js';
@@ -35,45 +49,68 @@ import {
   PROJECT_TITLE,
 } from './catalog/triggers.js';
 import { AGENT_KIND } from './tx.js';
+import { issueExecutionIdentity } from './execution-identity.js';
 
 const SUBJECT_NOUN = 'issue';
 
+/** Whether `agentId` is the project manager, which arranges the work rather than doing a step of it. */
+export function isManager(agentId: string): boolean {
+  return agentId === PROJECT_MANAGER_ID;
+}
+
+/** The project manager's work directory on a runner: its own, with nothing checked out. */
+/** The line a hand-over carries for a step that changes no code. */
+export const READ_ONLY_LINE: RegExp = /^\s*Mode:\s*read-only\s*$/imu;
+
+/** Whether the run's inputs are hand-overs of a step that changes no code: each says `Mode: read-only`. */
+export function isReadOnlyStep(inputs: readonly RunInput[]): boolean {
+  return (
+    inputs.length > 0 &&
+    inputs.every((input) => READ_ONLY_LINE.test(input.text))
+  );
+}
+
+export function managerWorkspaceKey(identifier: string): string {
+  return `${identifier}.manager`;
+}
+
 /**
- * An issue's own lines of the brief's rules: report in comments, move the status as the workflow allows, and use the
- * files people attached; with `attach` (the agent holds `pm.attachments/upload`), attach files to comments too.
- *
- * With `design` (the issue is in Analysis, see `isDesignStage`), the design proposal is the report: an agent told to
- * report in comments as well restated its proposal in a comment right below the proposal card, so these lines keep
- * comments for answering questions and saying what blocks it.
+ * An issue's own lines of the brief's rules, for the project manager (`manager`: it reports and hands work over in
+ * comments) or an agent doing a step (it answers once, in the thread of the comment that handed it the step), and the
+ * files people attached; with `attach` (the agent holds `pm.attachments/upload`), attaching files to comments too.
  */
 export function issueGuidance(
   key: string,
   cli: string,
-  options: { readonly attach?: boolean; readonly design?: boolean } = {},
+  options: { readonly attach?: boolean; readonly manager?: boolean } = {},
 ): NonNullable<SubjectAssembly['guidance']> {
   const comment = `\`${cli} issue comment add ${key} --content-file <path>\``;
+  const reply = `\`${cli} issue comment add ${key} --parent <comment-id> --content-file <path>\``;
   return {
     rules: [
-      options.design
-        ? `Your design proposal (\`${cli} issue design-proposal ${key}\`) is your report on ${SUBJECT_NOUN} ${key}: never restate or summarise it in a comment. Comment (${comment}) only to answer questions in their thread or to say what you need when blocked. People read the issue page, not your terminal.`
-        : `Report progress and results as comments on ${SUBJECT_NOUN} ${key} (${comment}). People read the comments, not your terminal.`,
+      options.manager
+        ? `Arrange ${SUBJECT_NOUN} ${key} in comments (${comment}): hand steps over, answer, and say what happens next. People and agents read the comments, not your terminal.`
+        : `Answer the step you were handed once, when you finish, in the thread of the comment that handed it to you (${reply}). People and the project manager read the comments, not your terminal.`,
       options.attach
         ? `Files on ${SUBJECT_NOUN} ${key} and its comments are listed in the context with their ids: save one with \`${cli} issue attachment download <file-id>\`. To show a screenshot, a log or another file, add \`--attach <path>\` (repeatable) to the comment and name the file in its text; never attach secrets or personal data.`
         : `Files on ${SUBJECT_NOUN} ${key} and its comments are listed in the context with their ids: save one with \`${cli} issue attachment download <file-id>\`.`,
-      'Move the status only to the statuses the task says you may move it to; a move may wait for a person to approve it.',
-      options.design
-        ? 'When you have submitted the proposal, end your turn. If you are blocked and need a person, say so in a comment and end your turn. Do not wait for an answer: new comments reach you as new input.'
-        : 'When you are done, or blocked and need a person, say so in a comment and end your turn. Do not wait for an answer: new comments reach you as new input.',
+      options.manager
+        ? 'Move the status only to the statuses the task says you may move it to.'
+        : "Do not change the issue's status.",
+      'When you are done, or need a person, say so in a comment and end your turn. Do not wait for an answer: new comments reach you as new input.',
     ],
-    whenBlocked: `If you cannot get the environment working, say exactly what is missing in a comment on ${SUBJECT_NOUN} ${key} (${comment}) and end your turn instead of guessing.`,
+    whenBlocked: options.manager
+      ? `If something essential is missing, say exactly what in a comment on ${SUBJECT_NOUN} ${key} (${comment}) and end your turn instead of guessing.`
+      : `If you cannot get the environment working, say exactly what is missing in a reply on ${SUBJECT_NOUN} ${key} (${reply}) and end your turn instead of guessing.`,
   };
 }
 
 /** What starts the run, in the words of the task layer. */
 const TRIGGER_TASKS: Readonly<Record<string, string>> = {
   assigned:
-    'You have been given this issue to work on. Do the work it asks for.',
-  mention: 'Someone mentioned you in a comment. Answer what they ask.',
+    'You have been given this issue to arrange. Decide its first step and hand it over.',
+  started: 'Someone started this issue. Decide its next step and hand it over.',
+  mention: 'You were mentioned in a comment. Do what it asks.',
   reply: 'Someone answered one of your comments. Continue from their answer.',
   comment:
     'Someone commented on the issue you are working on. Take it into account.',
@@ -83,16 +120,14 @@ const TRIGGER_TASKS: Readonly<Record<string, string>> = {
     'The issue moved to another project, whose working directories you work in now. Continue the work there.',
   unblocked: 'The issue is no longer blocked. Continue the work.',
   subtasksFinished: 'Sub-issues of this issue are finished. Continue the work.',
-  stageEntered:
-    'The issue entered a new stage and its workflow asked you to work on this stage.',
   retry:
     'An earlier attempt did not finish. Start again from where the issue is now.',
   prChecksFailed:
-    'The checks of a pull request of this issue failed. Fix them on its branch.',
+    'The checks of a pull request of this issue failed. Decide who reads the failure or fixes it.',
+  prChecksPassed:
+    'The checks of a pull request of this issue passed. Decide whether the change is ready for acceptance.',
   prConflict:
-    'A pull request of this issue conflicts with its base branch. Resolve the conflicts on its branch.',
-  retrospective:
-    'This issue is finished. Look back on it: check the user manual first, then propose what else is worth keeping (see Retrospective below).',
+    'A pull request of this issue conflicts with its base branch. Decide who resolves it.',
 };
 
 function triggersOf(inputs: readonly RunInput[]): string[] {
@@ -110,95 +145,43 @@ function triggersOf(inputs: readonly RunInput[]): string[] {
   return seen;
 }
 
-/** The stages the run was started for, newest last: where the issue went, and the workflow's instruction there. */
-interface Stage {
-  readonly from: string | null;
-  readonly to: string;
-  readonly instruction: string | null;
-}
-
-function stagesOf(inputs: readonly RunInput[]): Stage[] {
-  return inputs.flatMap((input): Stage[] => {
-    const payload = input.payload as Record<string, unknown> | undefined;
-    const text = (value: unknown) =>
-      typeof value === 'string' && value.trim() ? value.trim() : null;
-    if (payload?.trigger !== 'stageEntered') {
-      // Woken in a stage without its rule firing (given the issue there, released, out of backlog): that stage's
-      // instruction (`work.ts`).
-      if (!text(payload?.instruction)) return [];
-      return [
-        {
-          from: text(payload?.from),
-          to: text(payload?.to) ?? text(payload?.status) ?? '?',
-          instruction: text(payload?.instruction),
-        },
-      ];
-    }
-    return [
-      {
-        from: text(payload.from) ?? '?',
-        to: text(payload.to) ?? '?',
-        instruction: text(payload.instruction),
-      },
-    ];
-  });
-}
-
 /**
- * The task layer: why the agent runs now, and how to finish. Where to work is the system layer's. A run a workflow
- * stage started carries the stage and its instruction ("Workflow stage instruction").
+ * The task layer: why the agent runs now, and how to finish, for the project manager (`manager`) or an agent doing a
+ * step. Where to work is the system layer's.
  */
 export function renderTask(
   context: IssueContext,
   inputs: readonly RunInput[],
+  options: { readonly manager?: boolean } = {},
 ): string {
   const reasons = triggersOf(inputs)
-    .map((trigger) => TRIGGER_TASKS[trigger])
+    .map((trigger) =>
+      options.manager || !MANAGER_ONLY_TRIGGERS.has(trigger)
+        ? TRIGGER_TASKS[trigger]
+        : undefined,
+    )
     .filter((text): text is string => Boolean(text));
-  const stages = stagesOf(inputs).flatMap((stage) => [
-    '',
-    stage.from === null
-      ? `The issue is in \`${stage.to}\`.`
-      : `The issue entered \`${stage.to}\` (from \`${stage.from}\`).`,
-    ...(stage.instruction
-      ? [
-          '',
-          '## Workflow stage instruction',
-          '',
-          ...stage.instruction.split('\n').map((line) => `> ${line}`.trimEnd()),
-        ]
-      : []),
-  ]);
   const moves = context.allowedTransitions.filter(
     (key) => key !== context.status.key,
   );
-  // In Analysis the proposal is the report and submitting it moves the issue on, so asking for a closing comment and
-  // a move as well only had the agent restate its proposal below the proposal card.
-  const finish = isDesignStage(context)
+  const finish = options.manager
     ? [
-        `- If you wrote or revised the proposal, submit it with \`nb-studio issue design-proposal ${context.identifier} --content-file proposal.md\`: it is your report, and submitting moves the issue to proposal_review. End your turn without a comment restating or summarising it.`,
-        '- If you only answered comments, end your turn.',
+        `- Act: hand the next step over, answer, or move the status, in a comment on ${context.identifier} that starts with its "Next" line. Then end your turn.`,
+        moves.length > 0
+          ? `- You may move the issue to: ${moves.join(', ')} (\`nb-studio issue update ${context.identifier} --status <status>\`).`
+          : '- Leave the status as it is.',
       ]
     : [
-        `- Post a comment on ${context.identifier} that says what you did and what is left, with links to branches or pull requests.`,
-        moves.length > 0
-          ? `- Move the issue to the status that fits (\`nb-studio issue update ${context.identifier} --status <status>\`); you may move it to: ${moves.join(', ')}.`
-          : '- Leave the status as it is: the workflow does not let you move it from here.',
+        `- Reply once on ${context.identifier}, in the thread of the comment that handed you the step: what you did, the result, links to branches or pull requests, and what is left.`,
       ];
   return [
     `Issue ${context.identifier}: ${context.title}`,
     '',
     ...(reasons.length > 0 ? reasons : ['Continue the work on this issue.']),
-    ...stages,
     '',
     'When you finish:',
     ...finish,
   ].join('\n');
-}
-
-/** Whether the issue is in Analysis, where its agent submits a design proposal (`design.ts`) as its report. */
-export function isDesignStage(context: Pick<IssueContext, 'status'>): boolean {
-  return context.status.key === ANALYSIS_STATUS;
 }
 
 /** The context layer: the issue as it is now, in Markdown. */
@@ -218,11 +201,6 @@ export function renderIssueContext(context: IssueContext): string {
       ? [`- Parent: ${context.parent.identifier} ${context.parent.title}`]
       : []),
     `- Statuses: ${context.statuses.map((status) => status.key).join(', ')}`,
-    ...(context.pendingApproval
-      ? [
-          `- Waiting for approval to move to ${context.pendingApproval.toStatus}`,
-        ]
-      : []),
     '',
     '## Description',
     '',
@@ -256,16 +234,6 @@ export function renderIssueContext(context: IssueContext): string {
       '',
       ...context.children.map(
         (child) => `- ${child.identifier} ${child.title} (${child.status})`,
-      ),
-    );
-  if (context.checklist)
-    lines.push(
-      '',
-      `## Checklist (${context.checklist.complete ? 'complete' : 'incomplete'})`,
-      '',
-      ...context.checklist.items.map(
-        (item) =>
-          `- [${item.checked ? 'x' : ' '}] ${item.label}${item.required ? ' (required)' : ''}`,
       ),
     );
   if (context.comments.length > 0)
@@ -302,6 +270,7 @@ export function dirsOf(
     readonly resourceId: string;
     readonly defaultBranch: string;
   } | null = null,
+  initializeIfEmpty = false,
 ): SubjectDir[] {
   const used = new Set<string>();
   const nameOf = (base: string, index: number): string => {
@@ -364,6 +333,7 @@ export function dirsOf(
         // A project's repository may name no base: assume the common default.
         defaultBranch: repo.defaultRef ?? 'main',
         branch: branches.get(repo.id) ?? `agent/${context.identifier}`,
+        ...(initializeIfEmpty ? { initializeIfEmpty: true as const } : {}),
         path: nameOf(
           repo.url
             .replace(/\.git$/u, '')
@@ -379,6 +349,28 @@ export function dirsOf(
   });
 }
 
+/**
+ * An agent doing a step on an open issue may make an empty repository's first commit when it may open pull requests;
+ * the project manager checks nothing out.
+ */
+export function mayInitializeEmptyRepository(
+  context: IssueContext,
+  agent: { readonly id: string; readonly actions: readonly string[] },
+): boolean {
+  return (
+    !isManager(agent.id) &&
+    ['in_progress', 'blocked'].includes(context.status.key) &&
+    agent.actions.includes('studio.git/open-pr')
+  );
+}
+
+export const EMPTY_REPOSITORY_NOTE = [
+  '## Empty repository initialization',
+  '',
+  'The runner may initialize a repository only after verifying that its remote has no refs. Follow its workspace notes for the actual branch and whether this is the first delivery. A missing base branch in a nonempty repository is a configuration error, not permission to replace its history.',
+  'When the task requests a new NocoBase application, use NocoBase 3 via `pnpm create @nocobase/app`, honoring the project’s specified template, registry and directory. Do not substitute the legacy `create-nocobase-app` initializer. Check existing files before scaffolding; continue partially generated work on retry instead of overwriting it. Verify the generated `nocobase.templatePackage`, AGENTS.md and application-local skills, then follow those instructions to install, start and check the application. Report the application directory, startup instructions, accessible URL and actual verification results. A successful first push alone does not prove the application works.',
+].join('\n');
+
 /** What the init issue's agent is told: its run makes the empty repository's first commit, on the default branch. */
 export function initialNote(defaultBranch: string): string {
   return [
@@ -388,11 +380,53 @@ export function initialNote(defaultBranch: string): string {
   ].join('\n');
 }
 
+/** What wakes the project manager only, which an agent doing a step is not told as its reason. */
+const MANAGER_ONLY_TRIGGERS: ReadonlySet<string> = new Set([
+  'assigned',
+  'started',
+  'unblocked',
+  'subtasksFinished',
+  'prChecksFailed',
+  'prChecksPassed',
+  'prConflict',
+]);
+
+/**
+ * The subject's only admission policy: the project manager works only while the issue is open, so a run of it queued
+ * before the issue went to backlog or finished is cancelled when a runner would take it (`dormant`). An agent doing a
+ * step is always admitted.
+ */
+export function issueClaimRejection(
+  context: IssueContext,
+  agent: Pick<Agent, 'id'>,
+): { reason: string; detail: string } | null {
+  if (!isManager(agent.id)) return null;
+  const category = statusCategory(context.status.key);
+  return context.status.key === 'backlog' ||
+    category === 'done' ||
+    category === 'closed'
+    ? {
+        reason: 'dormant',
+        detail: `${context.identifier} is ${context.status.key}: the project manager works only on open issues.`,
+      }
+    : null;
+}
+
 export function createIssueContextProvider(
   agents: Pick<Agents, 'runs' | 'briefs'>,
-  projects: () => Pick<Projects, 'issueContext'>,
+  projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
 ): ContextProvider {
   return {
+    async admit(conn, claim) {
+      const context = await projects().issueContext.contextFor(
+        conn,
+        claim.run.subject.id,
+        { kind: AGENT_KIND },
+      );
+      if (!context)
+        return { reason: 'subjectMissing', detail: 'The issue is gone.' };
+      return issueClaimRejection(context, claim.agent);
+    },
     async assemble(conn, claim) {
       const context = await projects().issueContext.contextFor(
         conn,
@@ -400,6 +434,8 @@ export function createIssueContextProvider(
         { kind: AGENT_KIND },
       );
       if (!context) throw new Error('The issue is gone.');
+      const inputs = claim.inputs;
+      const manager = isManager(claim.agent.id);
       const subject = { noun: SUBJECT_NOUN, key: context.identifier };
       const previousSummary = await agents.runs.lastSummary(
         conn,
@@ -410,11 +446,19 @@ export function createIssueContextProvider(
         },
         claim.run.id,
       );
+      const delta = await commentDelta(conn, projects(), {
+        agentId: claim.agent.id,
+        issueId: context.id,
+        runId: claim.run.id,
+        inputs,
+      });
       const initial = await initialDirOf(
         conn,
         context.id,
         context.project?.id ?? null,
       );
+      const initializeIfEmpty =
+        !manager && mayInitializeEmptyRepository(context, claim.agent);
       return {
         subject: {
           key: context.identifier,
@@ -424,29 +468,44 @@ export function createIssueContextProvider(
         },
         guidance: issueGuidance(context.identifier, claim.cli, {
           attach: claim.agent.actions.includes(ATTACH_ACTION),
-          design: isDesignStage(context),
+          manager,
         }),
-        task: renderTask(context, claim.inputs),
-        context: initial
-          ? [
-              renderIssueContext(context),
-              initialNote(initial.defaultBranch),
-            ].join('\n\n')
-          : renderIssueContext(context),
+        inputs,
+        task: renderTask(context, inputs, { manager }),
+        context:
+          initial && !manager
+            ? [
+                renderIssueContext(context),
+                initialNote(initial.defaultBranch),
+              ].join('\n\n')
+            : [
+                renderIssueContext(context),
+                ...(initializeIfEmpty ? [EMPTY_REPOSITORY_NOTE] : []),
+              ].join('\n\n'),
         turn: {
-          prompt: agents.briefs.turnPrompt(claim.inputs, { subject }),
+          prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
+          ...deltaNotes(delta, context.identifier, claim.cli),
         },
         data: { kind: ISSUE_SUBJECT, issue: context },
-        dirs: dirsOf(
-          context,
-          await runBranches(
-            conn,
-            context.project?.repos ?? [],
-            context.identifier,
-          ),
-          initial,
-        ),
+        // The project manager checks nothing out, in a work directory of its own.
+        ...(manager
+          ? { workspaceKey: managerWorkspaceKey(context.identifier) }
+          : isReadOnlyStep(inputs)
+            ? { readOnly: true }
+            : {}),
+        dirs: manager
+          ? []
+          : dirsOf(
+              context,
+              await runBranches(
+                conn,
+                context.project?.repos ?? [],
+                context.identifier,
+              ),
+              initial,
+              initializeIfEmpty,
+            ),
         scopes: context.project
           ? [{ scope: PROJECT_SCOPE, scopeId: context.project.id }]
           : [],
@@ -461,7 +520,7 @@ export function createIssueContextProvider(
  */
 export function sampleIssue(id: string): IssueContext {
   const statuses = [
-    { key: 'todo', name: sampleValue('To do'), category: 'unstarted' },
+    { key: 'backlog', name: sampleValue('Backlog'), category: 'unstarted' },
     {
       key: 'in_progress',
       name: sampleValue('In progress'),
@@ -509,8 +568,6 @@ export function sampleIssue(id: string): IssueContext {
       status: 'in_progress',
     },
     children: [],
-    checklist: null,
-    pendingApproval: null,
     attachments: [],
     comments: [
       {
@@ -547,9 +604,11 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
         },
         guidance: issueGuidance(context.identifier, claim.cli, {
           attach: claim.agent.actions.includes(ATTACH_ACTION),
-          design: isDesignStage(context),
+          manager: isManager(claim.agent.id),
         }),
-        task: renderTask(context, claim.inputs),
+        task: renderTask(context, claim.inputs, {
+          manager: isManager(claim.agent.id),
+        }),
         context: renderIssueContext(context),
         turn: {
           prompt: agents.briefs.turnPrompt(claim.inputs, {
@@ -565,13 +624,14 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
 }
 
 export function issueBinding(
-  agents: Pick<Agents, 'runs' | 'briefs'>,
-  projects: () => Pick<Projects, 'issueContext'>,
+  agents: Pick<Agents, 'runs' | 'briefs' | 'agents'>,
+  projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
+    actsAs: issueExecutionIdentity(agents, projects),
     ...(queuedExpiryMs > 0 ? { queuedExpiryMs } : {}),
     title: ISSUE_TITLE,
     groupTitle: PROJECT_TITLE,

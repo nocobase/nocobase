@@ -32,27 +32,13 @@ function withPlugin(
   };
 }
 
-/** `/agents`: the agents people assign work to; `new` (dialog) and `:agentId` (covering page). */
+/** `/agents`: the agents discovered from runners, which people enable and describe. */
 export const agentsRoute: AppClientRoutePageDefinition = {
   name: 'agents',
   path: '/agents',
   auth: 'required',
   authz: page('agents'),
   componentLoader: withPlugin(() => import('./pages/agents/index.js')),
-  children: [
-    {
-      name: 'agents-new',
-      path: 'new',
-      componentLoader: withPlugin(() => import('./pages/agents/new.js')),
-    },
-    {
-      name: 'agents-detail',
-      path: ':agentId',
-      componentLoader: withPlugin(
-        () => import('./pages/agents/detail/index.js'),
-      ),
-    },
-  ],
 };
 
 /** `/runtimes`: the runtimes that run agents and the coding tools each reported; `connect` adds one. */

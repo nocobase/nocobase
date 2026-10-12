@@ -1,6 +1,7 @@
 import {
   authenticationToken,
   UserAdministrationError,
+  type AuthEnv,
 } from '@nocobase/app-plugin-authentication';
 import {
   authorizationToken,
@@ -48,6 +49,7 @@ import {
   UserRoleScopeParams,
   AcceptInvitationInput,
   InvitationParams,
+  ResendInvitationQuery,
   InvitationTokenInput,
   InviteUsersInput,
   PreferenceInput,
@@ -132,6 +134,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         operationId: 'usersInviteUsers',
         ...cliRoute({
           command: 'user invitation create',
+          columns: [
+            'email',
+            'outcome',
+            'invitationId',
+            'emailSent',
+            'inviteUrl',
+          ],
           examples: ['user invitation create --emails ann@example.com'],
         }),
         description:
@@ -188,12 +197,39 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         },
       }),
       apiValidator('param', InvitationParams),
+      apiValidator('query', ResendInvitationQuery),
       async (context) => {
         const { invitationId } = context.req.valid('param');
+        const invitation = await users.getInvitation(invitationId);
+        if (!invitation)
+          throw new UserManagementError(
+            'INVITATION_NOT_FOUND',
+            'This invitation does not exist.',
+            404,
+          );
+        const sendEmail = context.req.valid('query').sendEmail !== 'false';
+        const own =
+          invitation.invitedBy.id ===
+          context.get('authz').identity.principal.id;
+        // Plugin-owned credentials must be retrieved through their domain's authorization checks.
+        const canReturnLink = own && Object.keys(invitation.data).length === 0;
+        if (!canReturnLink && !sendEmail)
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            domain: 'users',
+            reason: 'INVITATION_LINK_FORBIDDEN',
+            message:
+              'Only the original inviter can retrieve a link through the originating application.',
+          });
+        if (own && Object.keys(invitation.roleScopes).length > 0)
+          await requireUserAction(context, '*', 'assign-role');
+        const result = await users.resendInvitation(invitationId, {
+          sendEmail,
+          origin: new URL(context.req.url).origin,
+        });
         return context.json({
-          data: await users.resendInvitation(invitationId, {
-            origin: new URL(context.req.url).origin,
-          }),
+          // Failed delivery must not bypass the credential authorization boundary either.
+          data: canReturnLink ? result : { ...result, inviteUrl: undefined },
         });
       },
     );
@@ -547,7 +583,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // bytes, stored only as a hash) is the credential and opens one pending,
     // unexpired invitation; it travels in the body so request logs never
     // record it. Mounted before `/users`, so the guard above never runs here.
-    const invitations = new Hono();
+    const invitations = new Hono<AuthEnv>();
     invitations.onError((error, context) =>
       apiErrorHandler(
         toInvitationTokenError(error) ?? toUsersApiError(error) ?? error,
@@ -555,7 +591,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       ),
     );
     const closedInvitation = apiErrorResponse(
-      409,
+      400,
       'The invitation has expired, been accepted or been revoked (`INVITATION_EXPIRED`, `INVITATION_ACCEPTED`, `INVITATION_REVOKED`).',
     );
     invitations.post(
@@ -571,7 +607,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         security: [],
         responses: {
           200: dataResponse(PublicUserInvitationSchema),
-          409: closedInvitation,
+          400: closedInvitation,
           500: apiErrorResponse(500),
         },
       }),
@@ -583,6 +619,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     invitations.post(
       '/accept',
+      authentication.optional(),
       describeRoute({
         tags,
         summary: 'Accept an invitation',
@@ -590,18 +627,38 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         // The sign-up page's: accepting creates the account from the invitation link.
         ...cliRoute(false),
         description:
-          'Public: the token from the invitation link is the credential. Creates the account with `name` and `password` unless the address already has one, which then signs in with its own password.',
+          'The token authorizes only this invitation. Creating an account requires `name` and `password`; an existing account must be signed in as the invited user.',
         security: [],
         responses: {
           200: dataResponse(AcceptedInvitationSchema),
-          409: closedInvitation,
-          500: apiErrorResponse(500),
+          400: apiErrorResponse(
+            400,
+            'The invitation is unknown or closed, the account input is invalid, the invited account must sign in (`INVITATION_SIGN_IN_REQUIRED`).',
+          ),
+          ...apiErrorResponses,
+          409: apiErrorResponse(
+            409,
+            'The new account conflicts with an existing account.',
+          ),
         },
       }),
       apiValidator('json', AcceptInvitationInput),
       async (context) => {
+        const auth = context.get('auth');
+        if (
+          auth &&
+          (await authentication.isScopedSession(auth, context.req.raw))
+        )
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            domain: 'authentication',
+            reason: 'SCOPED_KEY_FORBIDDEN',
+            message:
+              'This endpoint does not accept scoped API keys or service-account keys.',
+          });
         const accepted = await users.acceptInvitation(
           context.req.valid('json'),
+          auth?.user.id,
         );
         securityLogger?.info(
           { event: 'user.invitation.accept', targetUserId: accepted.userId },

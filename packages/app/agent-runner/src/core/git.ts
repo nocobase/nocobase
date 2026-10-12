@@ -14,7 +14,7 @@ export interface GitAuth {
   readonly token: string;
 }
 
-/** Pass an Authorization header through the environment, never the command line or a configuration file. */
+/** Pass an Authorization header through the environment and clear host helpers, preventing credential fallback. */
 export function gitAuthEnv(
   auth: GitAuth | undefined,
   scope?: string,
@@ -24,10 +24,12 @@ export function gitAuthEnv(
     `${auth.username ?? 'x-access-token'}:${auth.token}`,
   ).toString('base64');
   return {
-    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_COUNT: '2',
     GIT_CONFIG_KEY_0:
       scope === undefined ? 'http.extraHeader' : `http.${scope}.extraHeader`,
     GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
+    GIT_CONFIG_KEY_1: 'credential.helper',
+    GIT_CONFIG_VALUE_1: '',
   };
 }
 

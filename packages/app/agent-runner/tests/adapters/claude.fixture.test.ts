@@ -1,8 +1,9 @@
 /**
  * Replays a recorded real run (Claude Code 2.1.280, SDK 0.3.285, haiku;
- * paths, ids and signatures sanitized): the agent writes hello.txt, the
- * policy denies `rm`, a steer sent at the first tool call is folded into the
- * running turn and the agent writes world.txt before finishing.
+ * paths, ids and signatures sanitized; recorded while a runner policy still
+ * refused `rm`): the agent writes hello.txt, a steer sent at the first tool
+ * call is folded into the running turn and the agent writes world.txt before
+ * finishing.
  */
 import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -26,7 +27,7 @@ beforeEach(() => {
   calls.length = 0;
 });
 
-it('replays a recorded run with a denial and a steer', async () => {
+it('replays a recorded run with a steer, asking the runner nothing', async () => {
   const fixture = JSON.parse(
     await readFile(
       path.join(import.meta.dirname, 'fixtures/claude-steer-deny.json'),
@@ -90,10 +91,7 @@ it('replays a recorded run with a denial and a steer', async () => {
     systemPrompt: 'brief',
     env: {},
     abort: new AbortController().signal,
-    permission: async (tool, input) =>
-      tool === 'Bash' && String(input.command).startsWith('rm')
-        ? { deny: 'rm is not allowed in this run' }
-        : 'allow',
+    permission: vi.fn(async () => 'allow' as const),
   });
   const events: AdapterEvent[] = [];
   for await (const event of handle.events) {
@@ -110,18 +108,8 @@ it('replays a recorded run with a denial and a steer', async () => {
   expect(events.filter((e) => e.type === 'toolUse').map((e) => e.tool)).toEqual(
     ['Write', 'Bash', 'Bash', 'Write'],
   );
-  expect(
-    events
-      .filter((e) => e.type === 'permission')
-      .map((e) => [e.tool, e.meta?.decision]),
-  ).toEqual([
-    ['Write', 'allow'],
-    ['Bash', 'deny'],
-    ['Bash', 'allow'],
-    ['Write', 'allow'],
-  ]);
-  const denied = events.find((e) => e.type === 'toolResult' && e.meta?.isError);
-  expect(denied?.output).toContain('runner policy denied');
+  // The runner asks nothing: Claude Code runs with bypassPermissions.
+  expect(events.filter((e) => e.type === 'permission')).toEqual([]);
   expect(events.filter((e) => e.type === 'input')).toMatchObject([
     { meta: { inputId: 'in-1' } },
   ]);

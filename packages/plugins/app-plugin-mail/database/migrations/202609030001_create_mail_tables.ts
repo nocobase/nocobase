@@ -27,7 +27,8 @@ const migration: MigrationDefinition = defineMigration({
       collection.uuid('id').primary();
       collection.string('userId', { length: 255, nullable: false });
       collection.string('disk', { length: 100, nullable: false });
-      collection.string('key', { length: 1000, nullable: false });
+      // Generated keys are 50 ASCII characters; keep the full (disk, key) index below MySQL's 3072-byte utf8mb4 limit.
+      collection.string('key', { length: 667, nullable: false });
       collection.string('fileName', { length: 500, nullable: false });
       collection.string('contentType', { length: 255, nullable: false });
       collection.integer('size', { nullable: false });
@@ -124,8 +125,9 @@ const migration: MigrationDefinition = defineMigration({
       collection.uuid('accountId').primary();
       collection.string('providerType', { length: 100, nullable: false });
       collection.string('providerName', { length: 255, nullable: false });
+      // Keep this full three-column unique index within MySQL's utf8mb4 key limit.
       collection.string('providerSubscriptionId', {
-        length: 1000,
+        length: 412,
       });
       collection.string('configurationFingerprint', { length: 64 });
       collection.datetimeTz('renewAfter');
@@ -210,7 +212,8 @@ const migration: MigrationDefinition = defineMigration({
           collection: 'mailAccounts',
           fields: ['id'],
         },
-        onDelete: 'cascade',
+        // Account deletion reaches signatures through identities; a second cascade path prevents SQL Server installation.
+        onDelete: 'no action',
       });
       collection
         .belongsTo('identity', 'mailIdentities')
@@ -340,12 +343,13 @@ const migration: MigrationDefinition = defineMigration({
       collection.index(['accountId', 'providerFolderId', 'messageId'], {
         name: 'mail_message_folders_account_folder_idx',
       });
+      // The owning message supplies the account cascade; avoid a second SQL Server cascade path.
       collection
         .belongsTo('account', 'mailAccounts')
         .targetKey('id')
         .foreignKey('accountId')
         .constraints(true)
-        .onDelete('cascade');
+        .onDelete('no action');
       collection
         .belongsTo('message', 'mailMessages')
         .targetKey('id')

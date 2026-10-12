@@ -14,6 +14,12 @@ Use `@nocobase/lifecycle` when a business record moves through stages that devel
 
 A parent and its children can each have a lifecycle and point at each other by foreign key, such as a document and the tasks it distributes; a child's last transition can move the parent on in the same transaction.
 
+## Ask about the process UI
+
+When developing a lifecycle, ask whether the user wants to display a flowchart or a related process interface, unless they have already stated their preference. For example, ask in the user's language: “Would you like this process to include a flowchart or a process interface showing its current state, available actions and history? If yes, we can render it with the flow diagram components from our UI Library.”
+
+If the user chooses yes, use the UI Library's `@nocobase/lifecycle-diagram` to render the lifecycle definition and record progress; `@nocobase/flow-diagram` is available for generic process graphs. Follow [the diagram integration guidance](#draw-an-interactive-lifecycle-diagram) and [the frontend workflow](frontend/ui-workflow.md) for the surrounding process interface. Respect separate preferences: a user may want state, action buttons and history without a diagram. If they decline both a diagram and a process interface, continue implementing the lifecycle without adding either.
+
 ## Rules that are never broken
 
 1. **The state lives only in the record's own field.** Query, filter and count on it like any other column; keep no copy elsewhere.
@@ -426,3 +432,22 @@ States, transition, lifecycle and effect names are stored in the database. Addin
 | `INVALID_SET` on create                        | `values` set the state, timestamp or version; pass `{ state }` to `create()` to start in another initial state                                                                                        |
 
 The installed package's README lists its entries; the full guide, design notes and 28 worked recipes are in `packages/libs/lifecycle/docs/` of the NocoBase repository, and `packages/examples/app-plugin-lifecycle-example` and `packages/examples/app-plugin-office-flows-example` are complete working code.
+
+## Draw an interactive lifecycle diagram
+
+When a page needs a lifecycle diagram, use the UI Library's `@nocobase/lifecycle-diagram` component (React Flow + ELK) instead of building a canvas or turning Mermaid source into an interactive view. Read `pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram` and format the created files. It includes `@nocobase/flow-diagram`, which is also available alone for a generic directed graph. Follow [the UI Library guidance](frontend/references/styling.md#3-use-shadcn) and its [offline catalog](frontend/references/ui-library.md) for discovery and installation.
+
+Import `LifecycleDiagram` from `#components/lifecycle-diagram`. Pass the hook's `description.description`, an `ariaLabel`, `currentState: view.record.status` (use the lifecycle's own state field), and `availableTransitions: view.available.filter((item) => item.allowed).map((item) => item.name)`. Translate labels by stable state/transition names with `stateLabel` and `transitionLabel`; add the shared `flowDiagram` keys to your locale resources. Use `onStateClick` and `onTransitionClick` to open details, including effects, triggers and continuations from the description. Definitions remain in source and clicking the diagram never fires a transition; action buttons still follow `view.available`. Pass `history={view.history.transitions}` for visited paths; the component matches the exact transition, source and destination, including retries. `visitedStates` supplements node highlights only; never infer a traversed edge from the current state or visited endpoints. Pass a translated `endLabel` to display a separate decorative end marker after each explicit final state, without treating every state lacking outgoing transitions as final. Keep `toMermaid()` for documentation and export.
+
+For detailed page diagrams, prefer `direction="DOWN" autoHeight`: the canvas grows with the full layout, including outer routes and labels. A wide graph fitted into a short fixed-height panel makes its labels unreadable. Check the actual lifecycle definition in the target page, rather than judging a simple preview alone.
+
+The label callbacks receive description objects, not name strings. Read `state.name` in `stateLabel` and `transition.name` in `transitionLabel` when building translation keys:
+
+```tsx
+stateLabel={(state) => t(`leaves.states.${state.name}`)}
+transitionLabel={(transition) => t(`leaves.transitions.${transition.name}`)}
+```
+
+Adapt the translation key prefix to the feature.
+
+Preserve the component’s application theme tokens: `--primary` for current, visited and available highlights, subdued neutral strokes for other edges, and card/foreground/border tokens for the canvas and labels. Current nodes have a stronger fill and ring, visited nodes a light fill, with no extra “visited” label. Labels stay on the routes; automatic transitions remain solid and may show `⚙` through `transitionLabel`. Do not introduce a separate palette or hard-coded accent color. Check light/dark themes and a changed application primary color when customizing the rendering.

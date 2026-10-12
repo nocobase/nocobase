@@ -121,7 +121,11 @@ export const PERMISSION_MODES = ['acceptEdits', 'plan', 'bypass'] as const;
 
 export type PermissionMode = (typeof PERMISSION_MODES)[number];
 
-/** How the runner decides what the agent's tools may do. */
+/**
+ * An agent's tool settings. Runners use `maxTurns` and `idleTimeoutMs`. `permissionMode`, `allowedCommands`,
+ * `deniedPatterns` and `allowedDownloads` are still sent and accepted, so stored agents and older runners keep working,
+ * but runners no longer enforce them: agents run with full access.
+ */
 export interface ToolPolicy {
   readonly permissionMode: PermissionMode;
   /** Regular expressions; a shell command must match one. */
@@ -228,6 +232,13 @@ export interface RepoDir {
    * agent). The application gives it only to that one run; a runner refuses a run on the default branch without it.
    */
   readonly initial?: true;
+  /**
+   * Allow this coding run to initialize a remote with no refs. The runner verifies the remote before selecting
+   * defaultBranch instead of branch, reports that choice in workspace notes, and permits only creation of that
+   * branch. A nonempty repository still uses branch and must have its configured base. Older runners ignore this
+   * option and fail the empty checkout without granting additional push access.
+   */
+  readonly initializeIfEmpty?: true;
 }
 
 const repoDirObject = z.object({
@@ -247,6 +258,7 @@ const repoDirObject = z.object({
   name: z.string().max(255).optional(),
   initPrompt,
   initial: z.literal(true).optional(),
+  initializeIfEmpty: z.literal(true).optional(),
 });
 
 export const RepoDirSchema: z.ZodType<RepoDir> = repoDirObject;
@@ -323,11 +335,15 @@ export const RepoCredentialSchema: z.ZodType<RepoCredential> = z.object({
  * - `credentials`: short-lived credentials by repository URL, which the runner fetches and pushes that repository with
  *   (a git credential helper for the agent). They live in memory only: never written to disk, gone with the run. The
  *   push guard still allows only the run's branch.
+ * - `onDemand` (runners with the `gitCredentials` feature): repository URLs, each exactly as a `RepoDir` names it, whose
+ *   credential the runner asks for whenever git needs one (`RUNNER_ROUTES.gitCredential`) rather than receiving it
+ *   here. For these URLs the runner uses nothing else: no credential of the claim and none of the host's.
  */
 export interface RunGit {
   readonly author?: { readonly name: string; readonly email: string };
   readonly trailers?: readonly string[];
   readonly credentials?: readonly RepoCredential[];
+  readonly onDemand?: readonly string[];
 }
 
 export const RunGitSchema: z.ZodType<RunGit> = z.object({
@@ -339,6 +355,39 @@ export const RunGitSchema: z.ZodType<RunGit> = z.object({
     .optional(),
   trailers: z.array(z.string().min(1).max(500)).max(20).optional(),
   credentials: z.array(RepoCredentialSchema).optional(),
+  onDemand: z.array(z.string().min(1)).optional(),
+});
+
+/**
+ * A runner asks for the credential of one of its run's `RunGit.onDemand` repositories (`RUNNER_ROUTES.gitCredential`).
+ * The server answers only while this runner holds `attempt` of the run under a live lease, and only for a URL the claim
+ * listed, compared exactly. `refresh` says the credential it had was just refused by the remote, so the application
+ * issues a new one instead of answering from its cache.
+ */
+export interface GitCredentialRequest {
+  readonly attempt: number;
+  readonly url: string;
+  readonly refresh?: boolean;
+}
+
+export const GitCredentialRequestSchema: z.ZodType<GitCredentialRequest> =
+  z.strictObject({
+    attempt: z.number().int().positive(),
+    url: z.string().min(1).max(500),
+    refresh: z.boolean().optional(),
+  });
+
+/** The answer: a credential and when it stops working (RFC 3339). */
+export interface GitCredential {
+  readonly username: string;
+  readonly password: string;
+  readonly expiresAt: string;
+}
+
+export const GitCredentialSchema: z.ZodType<GitCredential> = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+  expiresAt: z.string().min(1),
 });
 
 /**
@@ -365,6 +414,17 @@ export interface RunWorkspace {
   readonly clean?: boolean;
   /** Commit identity and repository credentials; absent when the application gives none (the host's own are used). */
   readonly git?: RunGit;
+  /**
+   * The run only reads (a review, reading a failed check): the runner prepares it a work directory of its own for this
+   * subject and agent, checking the same branches out there, so it runs alongside the run that writes the subject's code,
+   * and pushes nothing at its end. A runner from before this field ignores it and shares the subject's work directory.
+   */
+  readonly readOnly?: boolean;
+  /**
+   * The work directory to use in place of the subject's (`subject.key`), such as a coordinating agent's own one that
+   * checks nothing out, so its runs never wait for the subject's lock. A runner from before this field ignores it.
+   */
+  readonly key?: string;
 }
 
 export const RunWorkspaceSchema: z.ZodType<RunWorkspace> = z.object({
@@ -373,6 +433,13 @@ export const RunWorkspaceSchema: z.ZodType<RunWorkspace> = z.object({
   passthrough: z.array(z.string()).optional(),
   clean: z.boolean().optional(),
   git: RunGitSchema.optional(),
+  readOnly: z.boolean().optional(),
+  key: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/u)
+    .optional(),
 });
 
 /**

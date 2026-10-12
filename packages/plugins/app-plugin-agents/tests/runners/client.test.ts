@@ -8,10 +8,14 @@ import {
   registerCommand,
   upgradeCommand,
 } from '../../client/lib/install.js';
+import runtimesEnUS from '../../client/locales/runtimes.en-US.js';
+import runtimesZhCN from '../../client/locales/runtimes.zh-CN.js';
 import {
   listedTools,
+  reportedModels,
   runnerActivity,
   runnerTakesAgent,
+  runsEntry,
   toolState,
   type RunnerSummary,
 } from '../../shared/runners.js';
@@ -70,6 +74,13 @@ describe('install commands', () => {
     expect(registerCommand('https://x', 't')).toBe(
       'nocobase-runner register --server https://x --token t && nocobase-runner service install',
     );
+  });
+
+  it('come with the note that the host needs Node.js 24 or newer', () => {
+    expect(runtimesEnUS.connect.nodeRequired).toContain('Node.js 24 or newer');
+    expect(runtimesZhCN.connect.nodeRequired).toContain('Node.js 24');
+    expect(runtimesEnUS.connect.run).not.toContain('no Node.js needed');
+    expect(runtimesZhCN.connect.run).not.toContain('无需 Node.js');
   });
 
   it('update nocobase-runner, and reinstall anything else', () => {
@@ -140,24 +151,20 @@ describe('a runner at a glance', () => {
     ).toBe('offline');
   });
 
-  it('takes an agent its tool, its runner list and its owner’s policy allow', () => {
+  it('takes an agent its tool and model, and its owner’s policy, allow', () => {
     const coder = {
       id: 'a1',
       name: 'Coder',
       modelEntries: [{ tool: 'claude' as const, model: null }],
-      runnerIds: [],
     };
     expect(runnerTakesAgent(runner('r1'), coder)).toBe(true);
-    expect(
-      runnerTakesAgent(runner('r1'), { ...coder, runnerIds: ['r2'] }),
-    ).toBe(false);
     expect(
       runnerTakesAgent(runner('r1'), {
         ...coder,
         modelEntries: [{ tool: 'codex', model: null }],
       }),
     ).toBe(false);
-    // Any of its tools will do.
+    // Any of its tools will do; an entry naming a model needs the runner to report it.
     expect(
       runnerTakesAgent(runner('r1'), {
         ...coder,
@@ -166,13 +173,42 @@ describe('a runner at a glance', () => {
           { tool: 'claude', model: 'opus' },
         ],
       }),
-    ).toBe(true);
+    ).toBe(false);
+    const reporting = runner('r1', {
+      tools: [
+        {
+          kind: 'claude',
+          authenticated: true,
+          models: [{ id: 'claude-opus-5-5-20261001' }],
+        },
+      ],
+    });
     expect(
-      runnerTakesAgent(runner('r1'), {
+      runnerTakesAgent(reporting, {
         ...coder,
-        modelEntries: [{ modelService: 'svc', model: 'm' }],
+        modelEntries: [{ tool: 'claude', model: 'opus' }],
+      }),
+    ).toBe(true);
+    // A run that failed `modelUnavailable` there keeps it off that runner until it reports the tool's models anew.
+    const marked = {
+      ...reporting,
+      unavailableModels: [
+        {
+          tool: 'claude' as const,
+          model: 'claude-opus-5-5',
+          at: '2026-10-01T00:00:00.000Z',
+          reported: ['claude-opus-5-5'],
+        },
+      ],
+    };
+    expect(
+      runnerTakesAgent(marked, {
+        ...coder,
+        modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
       }),
     ).toBe(false);
+    expect(runsEntry(marked, { tool: 'claude', model: null })).toBe(true);
+    expect(reportedModels(reporting, 'claude')).toEqual(['claude-opus-5-5']);
     expect(
       runnerTakesAgent(runner('r1', { policy: { agents: ['Rev*'] } }), coder),
     ).toBe(false);

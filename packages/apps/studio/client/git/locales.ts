@@ -25,9 +25,12 @@ export const gitEnUS = {
     refreshed: 'Refreshed from GitHub.',
     merged: 'Merged.',
     marked: 'Marked as merged.',
-    countsTitle: 'Counts toward Done',
-    countsHint:
-      'When every counted pull request is merged, the issue moves on by its workflow.',
+    completeOnMerge: 'Complete the issue when merged',
+    completeOnMergeHint:
+      'Once every pull request linked to this issue is merged, the issue moves to Done.',
+    mergeKeeps: 'Merging does not change the issue',
+    mergeKeepsHint:
+      'For a pull request that does only part of the work, or that still needs checking after the merge.',
     linkedBy: 'Linked by {{name}}',
     linkedByBranch: 'Linked by its branch',
     mergedBy: 'Merged by {{name}}',
@@ -93,8 +96,12 @@ export const gitEnUS = {
       'One per line, each with {key} once. Agents work on the branch the first rule names; a pull request on a branch any rule names is linked to that issue.',
     saveRules: 'Save',
     saved: 'Saved.',
-    wakeOnChecks: 'Wake the agent when checks fail',
-    wakeOnConflict: 'Wake the agent when a pull request conflicts',
+    wakeOnChecks: 'Wake the project manager when checks fail',
+    wakeOnChecksPassed: 'Wake the project manager when all checks pass',
+    wakeOnConflict: 'Wake the project manager when a pull request conflicts',
+    referenceChecks: 'Reference checks',
+    referenceChecksHint:
+      'One check name per line. Their failures are only shown: they do not wake the agent or block merging from Studio. Every other check is required. A check that GitHub’s branch protection requires still blocks the merge on GitHub.',
     polled: 'Last read {{time}}',
     pollError: 'Last read failed: {{error}}',
   },
@@ -322,6 +329,34 @@ export const gitEnUS = {
       'In Settings › Git, add the app’s client ID to a connection, or turn on “Allow personal tokens”.',
     openSettings: 'Open Settings › Git',
     failed: 'Your account could not be connected ({{code}}).',
+    /** Why the host's sign-in did not connect the account, by the reason the server sent the page back with. */
+    failedReason: {
+      GIT_AUTHORIZATION_DENIED:
+        'Your account was not connected: the authorization was declined on the host.',
+      GIT_AUTHORIZATION_REFUSED:
+        'Your account could not be connected: the host refused the authorization ({{hostError}}).',
+      GIT_AUTHORIZATION_EXPIRED:
+        'Your account could not be connected: the authorization took too long. Connect again.',
+      GIT_AUTHORIZATION_STATE_INVALID:
+        'Your account could not be connected: the authorization was not started from this page, or was started by another account. Connect again from here.',
+      GIT_AUTHORIZATION_FAILED:
+        'Your account could not be connected. Try again; if it keeps failing, ask an administrator to look for “Personal git authorization failed” in the server log.',
+      GIT_SESSION_EXPIRED:
+        'Your account could not be connected: you were signed out of Studio while authorizing on the host. Sign in, then connect again.',
+      GITHUB_UNAVAILABLE:
+        'Your account could not be connected: Studio could not reach the host to finish the authorization. Try again; if it keeps failing, ask an administrator to check that the server can reach the host.',
+      GITHUB_RATE_LIMITED:
+        'Your account could not be connected: the host’s rate limit was reached. Try again later.',
+    },
+    /** The host's own refusals worth explaining (`GIT_AUTHORIZATION_REFUSED`). */
+    hostError: {
+      redirect_uri_mismatch:
+        'Your account could not be connected: the app’s callback URL on the host is not Studio’s. An administrator sets it to the callback URL shown in Settings › Git.',
+      incorrect_client_credentials:
+        'Your account could not be connected: the app’s client ID or client secret in Settings › Git does not match the app on the host.',
+      bad_verification_code:
+        'Your account could not be connected: the host’s code expired or was used already. Connect again.',
+    },
     device: {
       title: 'Connect {{name}} with a code',
       description:
@@ -331,6 +366,11 @@ export const gitEnUS = {
       expired: 'The code expired.',
       denied: 'The authorization was refused.',
       retry: 'Get a new code',
+      disabled:
+        'This {{provider}} App does not have Device Flow enabled. An administrator turns on “Enable Device Flow” in the app’s settings on {{provider}}, then you can connect with a code.',
+      refused:
+        '{{provider}} refused to start connecting with a code ({{reason}}). Most often the app does not have “Enable Device Flow” turned on, or the client ID in Settings › Git is not the app’s.',
+      appSettings: 'Open the app’s settings',
     },
     token: {
       title: 'Use a personal token for {{name}}',
@@ -367,9 +407,17 @@ export const gitEnUS = {
       otherPrs:
         'The issue stays where it is: other counted pull requests are not merged yet.',
       noTransition:
-        'The issue stays where it is: its workflow does not move it on a merge from its status.',
+        'The issue stays where it is: a merge does not move it on from its status.',
     },
     confirm: 'Squash and merge',
+    failedChecks: 'Failed required checks',
+    referenceFailures: 'Reference checks failed. They do not block the merge:',
+    force: 'Merge anyway',
+    forceReason: 'Why it is safe to merge',
+    forceReasonHint:
+      'Required. Studio comments it on the pull request with the failed checks and keeps it in the issue’s activity. GitHub’s branch protection still applies.',
+    forceOnly:
+      'Only a manager of the project can merge past failed required checks.',
     failed: 'The pull request could not be merged.',
     checkFailed:
       'GitHub could not be read. Check the repository’s connection, then try again.',
@@ -461,15 +509,8 @@ export const gitEnUS = {
     copied: 'Copied',
     copyFailed: 'Could not copy. Select the text and copy it by hand.',
   },
-  rule: {
-    title: 'Pull requests merged',
-    hint: 'An issue enters this status only with merged pull requests.',
-    min: 'At least',
-    summary: 'Needs {{count}} merged pull request(s)',
-  },
   event: {
     title: 'Pull requests merged',
-    hint: 'Every counted pull request of the issue is merged.',
   },
   inbox: {
     type: 'Pull request',
@@ -491,6 +532,9 @@ export const gitEnUS = {
     pr_edited: 'edited pull request',
     pr_closed: 'closed pull request',
     pr_reopened: 'reopened pull request',
+    pr_force_merged: 'merged pull request despite failed checks',
+    pr_force_merge_refused:
+      'tried to merge pull request despite failed checks; GitHub refused',
     unlinked: 'and unlinked it',
     fields: {
       title: 'title',
@@ -525,8 +569,10 @@ export const gitZhCN: typeof gitEnUS = {
     refreshed: '已从 GitHub 刷新。',
     merged: '已合并。',
     marked: '已标记为已合并。',
-    countsTitle: '计入完成条件',
-    countsHint: '计入的 Pull request 全部合并后，任务按流程自动流转。',
+    completeOnMerge: '合并后完成任务',
+    completeOnMergeHint: '这个任务关联的 PR 都合并后，任务自动移到已完成。',
+    mergeKeeps: '合并不影响任务状态',
+    mergeKeepsHint: 'PR 只做了一部分，或合并后还要验证。',
     linkedBy: '由 {{name}} 关联',
     linkedByBranch: '按分支自动关联',
     mergedBy: '由 {{name}} 合并',
@@ -592,8 +638,12 @@ export const gitZhCN: typeof gitEnUS = {
       '每行一条，每条包含一次 {key}。Agent 在第一条规则命名的分支上工作；任何规则命名的分支上的 Pull request 都会关联到对应任务。',
     saveRules: '保存',
     saved: '已保存。',
-    wakeOnChecks: '检查失败时唤醒 Agent',
-    wakeOnConflict: 'Pull request 有冲突时唤醒 Agent',
+    wakeOnChecks: '检查失败时唤醒项目经理',
+    wakeOnChecksPassed: '检查全部通过时唤醒项目经理',
+    wakeOnConflict: 'Pull request 有冲突时唤醒项目经理',
+    referenceChecks: '参考检查',
+    referenceChecksHint:
+      '每行一个检查名称。参考检查失败只做提示，不唤醒 Agent，也不阻塞 Studio 的合并。其余检查都是必需检查。GitHub 分支保护要求的检查仍会阻止在 GitHub 上合并。',
     polled: '上次读取：{{time}}',
     pollError: '上次读取失败：{{error}}',
   },
@@ -809,6 +859,30 @@ export const gitZhCN: typeof gitEnUS = {
       '在 设置 › Git 中为连接添加 App 的 Client ID，或开启「允许个人令牌」。',
     openSettings: '打开 设置 › Git',
     failed: '无法连接你的账号（{{code}}）。',
+    failedReason: {
+      GIT_AUTHORIZATION_DENIED: '没有连接你的账号：你在托管平台上拒绝了授权。',
+      GIT_AUTHORIZATION_REFUSED:
+        '无法连接你的账号：托管平台拒绝了授权（{{hostError}}）。',
+      GIT_AUTHORIZATION_EXPIRED: '无法连接你的账号：授权耗时过长，请重新连接。',
+      GIT_AUTHORIZATION_STATE_INVALID:
+        '无法连接你的账号：这次授权不是从本页面发起的，或由其他账号发起。请在这里重新连接。',
+      GIT_AUTHORIZATION_FAILED:
+        '无法连接你的账号。请重试；如果一直失败，请让管理员在服务器日志中查找“Personal git authorization failed”。',
+      GIT_SESSION_EXPIRED:
+        '无法连接你的账号：在托管平台上授权期间，你已退出 Studio 登录。请先登录，再重新连接。',
+      GITHUB_UNAVAILABLE:
+        '无法连接你的账号：Studio 无法访问托管平台来完成授权。请重试；如果一直失败，请让管理员检查服务器能否访问托管平台。',
+      GITHUB_RATE_LIMITED:
+        '无法连接你的账号：已达到托管平台的请求频率限制，请稍后再试。',
+    },
+    hostError: {
+      redirect_uri_mismatch:
+        '无法连接你的账号：托管平台上 App 的回调地址（Callback URL）与 Studio 的不一致。请管理员将其设置为 设置 › Git 中显示的回调地址。',
+      incorrect_client_credentials:
+        '无法连接你的账号：设置 › Git 中 App 的 Client ID 或 Client secret 与托管平台上的 App 不一致。',
+      bad_verification_code:
+        '无法连接你的账号：托管平台返回的授权码已过期或已被使用，请重新连接。',
+    },
     device: {
       title: '用验证码连接 {{name}}',
       description:
@@ -818,6 +892,11 @@ export const gitZhCN: typeof gitEnUS = {
       expired: '验证码已过期。',
       denied: '授权被拒绝。',
       retry: '获取新验证码',
+      disabled:
+        '这个 {{provider}} App 没有开启 Device Flow。需要管理员在 {{provider}} 上该 App 的设置中开启“Enable Device Flow”，之后才能用验证码连接。',
+      refused:
+        '{{provider}} 拒绝了验证码连接（{{reason}}）。最常见的原因是该 App 没有开启“Enable Device Flow”，或 设置 › Git 中的 Client ID 不是该 App 的。',
+      appSettings: '打开 App 设置',
     },
     token: {
       title: '为 {{name}} 使用个人令牌',
@@ -851,9 +930,16 @@ export const gitZhCN: typeof gitEnUS = {
       terminal: '任务已结束，状态不变。',
       optedOut: '任务状态不变：这个 Pull request 不计入完成条件。',
       otherPrs: '任务状态不变：其他计入的 Pull request 还没有合并。',
-      noTransition: '任务状态不变：它的流程在当前状态下不会因合并而流转。',
+      noTransition: '任务状态不变：合并不会让它从当前状态流转。',
     },
     confirm: '压缩合并',
+    failedChecks: '失败的必需检查',
+    referenceFailures: '参考检查失败，不阻塞合并：',
+    force: '仍然合并',
+    forceReason: '可以合并的原因',
+    forceReasonHint:
+      '必填。Studio 会把原因和失败的检查评论到 Pull request 上，并记录在任务动态里。GitHub 的分支保护仍然生效。',
+    forceOnly: '只有项目负责人可以在必需检查失败时合并。',
     failed: '无法合并这个 Pull request。',
     checkFailed: '无法读取 GitHub。请检查仓库的连接后重试。',
     errors: {
@@ -940,15 +1026,8 @@ export const gitZhCN: typeof gitEnUS = {
     copied: '已复制',
     copyFailed: '无法复制，请手动选中文本复制。',
   },
-  rule: {
-    title: 'Pull request 已合并',
-    hint: '只有 Pull request 已合并的任务才能进入这个状态。',
-    min: '至少',
-    summary: '需要 {{count}} 个已合并的 Pull request',
-  },
   event: {
     title: 'Pull request 已合并',
-    hint: '任务计入的 Pull request 全部合并。',
   },
   inbox: {
     type: 'Pull request',
@@ -968,6 +1047,8 @@ export const gitZhCN: typeof gitEnUS = {
     pr_edited: '编辑了 Pull request',
     pr_closed: '关闭了 Pull request',
     pr_reopened: '重新打开了 Pull request',
+    pr_force_merged: '在检查失败时仍然合并了 Pull request',
+    pr_force_merge_refused: '尝试在检查失败时合并 Pull request，被 GitHub 拒绝',
     unlinked: '并取消了关联',
     fields: {
       title: '标题',

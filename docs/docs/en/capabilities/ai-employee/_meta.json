@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "AI employees overview"
+  },
+  {
+    "type": "file",
+    "name": "page-context",
+    "label": "Page context"
+  },
+  {
+    "type": "file",
+    "name": "business-data",
+    "label": "Business queries"
+  },
+  {
+    "type": "file",
+    "name": "business-actions",
+    "label": "Business actions"
+  },
+  {
+    "type": "file",
+    "name": "work-rules",
+    "label": "Responsibilities and working rules"
+  }
+]

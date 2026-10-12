@@ -18,17 +18,93 @@ beforeEach(async () => {
 });
 afterEach(() => h.close());
 
+/** A run of an agent with `actions` on a step a person handed it, mentioning it on an issue. */
 async function runOn(actions: readonly string[]) {
   const agentId = await h.createAgent({ actions: [...actions] });
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Fix login',
-    executor: { type: 'agent', id: agentId },
+    executor: null,
+    statusKey: 'in_progress',
+    start: false,
+  });
+  await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {
+    content: `[@Coder](mention://agent/${agentId}) look at it`,
   });
   const payload = await h.claimOne();
   return { issue, token: payload.cli.credential.content.token as string };
 }
 
 describe('the preview routes', () => {
+  it('validates and protects the preview preference for people and scoped keys', async () => {
+    const issue = await h.projects.issues.create(h.viewer('alice'), {
+      title: 'Preference',
+      start: false,
+    });
+    const body = { issueId: issue.id, notRequired: true };
+    expect(
+      (await h.request('POST', '/previews/preference', { body })).status,
+    ).toBe(401);
+    expect(
+      (
+        await h.request('POST', '/previews/preference', {
+          user: 'alice',
+          headers: {
+            'x-test-key-scope': JSON.stringify({
+              'projects.issues': { level: 'read' },
+            }),
+          },
+          body,
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await h.request('POST', '/previews/preference', {
+          user: 'alice',
+          body: { ...body, notRequired: 'true' },
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await h.request('POST', '/previews/preference', { user: 'alice', body }))
+        .body.data,
+    ).toMatchObject({ notRequired: true, labels: [] });
+    expect(
+      (
+        await h.request('GET', `/previews/status?issueId=${issue.id}`, {
+          user: 'alice',
+        })
+      ).body.data.notRequired,
+    ).toBe(true);
+    expect(
+      (
+        await h.request('POST', '/previews/preference', {
+          user: 'alice',
+          body: { ...body, issueId: 'missing' },
+        })
+      ).status,
+    ).toBe(404);
+  });
+  it('allows an editing run to set its own preference and refuses a viewing run', async () => {
+    const viewer = await runOn(['pm.issues/view']);
+    expect(
+      (
+        await h.request('POST', '/previews/preference', {
+          runToken: viewer.token,
+          body: { notRequired: true },
+        })
+      ).status,
+    ).toBe(403);
+    const editor = await runOn(['pm.issues/view', 'pm.issues/edit']);
+    expect(
+      (
+        await h.request('POST', '/previews/preference', {
+          runToken: editor.token,
+          body: { notRequired: true },
+        })
+      ).body.data,
+    ).toMatchObject({ issueId: editor.issue.id, notRequired: true });
+  });
   it('read the run’s own issue when it names none', async () => {
     const { issue, token } = await runOn(['pm.issues/view']);
     const status = await h.request('GET', '/previews/status', {

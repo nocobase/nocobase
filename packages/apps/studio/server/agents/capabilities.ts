@@ -107,7 +107,6 @@ export function agentActionOptions(catalog: Catalog): AgentActionOption[] {
             ? { description: i18n(action.description, action.key) }
             : {}),
           ...(policy.defaultOn ? { defaultOn: true } : {}),
-          ...(policy.types ? { types: policy.types } : {}),
         });
       else
         never.push({

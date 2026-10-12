@@ -4,9 +4,9 @@ An agent working on a runtime uses the same `nb-studio` as a person. The runner 
 
 ## What a run may call
 
-A run is offered only the commands whose route accepts a run token, and of those only the ones naming an action its agent is given (Agent team › Agents › the agent › Capabilities, or `nb-studio agent update <agent> --actions …`). `nb-studio whoami` in a run shows the run, the person it acts for and the actions it holds; `nb-studio whoami --missing` lists what needs an action the agent lacks. Calling such a command anyway answers `ACTION_REQUIRED` (or, from the server, 403 `RUN_ACTION_FORBIDDEN`); the fix is to give the agent the action, not to work around it. A person's command, such as merging a pull request or deciding an approval, answers `IDENTITY_MISMATCH`: it stays a person's.
+A run is offered only the commands whose route accepts a run token, and of those only the ones naming an action its agent is given. Every agent discovered from runners is given the same actions, every one an agent may be given except reading reports (`studio.reports/read`); the project manager also lacks opening pull requests and managing previews, since it writes no code. `nb-studio whoami` in a run shows the run, the person it acts for and the actions it holds; `nb-studio whoami --missing` lists what needs an action the agent lacks. Calling such a command anyway answers `ACTION_REQUIRED` (or, from the server, 403 `RUN_ACTION_FORBIDDEN`); the fix is to ask a person, not to work around it. A person's command, such as merging a pull request, answers `IDENTITY_MISMATCH`: it stays a person's.
 
-New agents are given opening pull requests (`studio.git/open-pr`) and managing previews (`studio.previews/manage`); deleting issues (`pm.issues/delete`) and editing projects (`pm.projects/manage`) are off by default. [Coverage](coverage.md) lists the commands runs may call.
+Whatever the agent is given, a run does only what the person it acts for may do. [Coverage](coverage.md) lists the commands runs may call.
 
 ## What the agent reads
 

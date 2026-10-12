@@ -17,11 +17,7 @@ import type { NoticeRules } from './domains/notices/index.js';
 import type { PlanHooks, PlanSourceOf } from './domains/plans/ports.js';
 import type { IntakeOrganizer } from './domains/plans/intake/index.js';
 import type { KindRegistry } from './kernel/kinds.js';
-import type {
-  StatusRuleTypes,
-  WorkflowEventTypes,
-  WorkflowTemplates,
-} from './domains/workflows/index.js';
+import type { StatusEventTypes } from './domains/statuses/index.js';
 
 export type { Projects } from './composition.js';
 export type {
@@ -40,25 +36,14 @@ export {
 } from './kernel/work.js';
 export { DomainError, type DomainErrorKind } from './kernel/errors.js';
 export type {
-  EnteredStatus,
-  StatusRuleCheck,
-  StatusRuleDescription,
-  StatusRuleEntry,
-  StatusRuleOutcome,
-  StatusRuleRefusal,
-  StatusRuleType,
-  StatusRuleTypes,
-  WorkflowEventFiring,
-  WorkflowEventMove,
-  WorkflowEventService,
-  WorkflowEventTarget,
-  WorkflowEventType,
-  WorkflowEventTypes,
-  WorkflowTemplate,
-  WorkflowTemplateInstaller,
-  WorkflowTemplateText,
-  WorkflowTemplates,
-} from './domains/workflows/index.js';
+  StatusEventFiring,
+  StatusEventMove,
+  StatusEventService,
+  StatusEventTarget,
+  StatusEventType,
+  StatusEventTypes,
+} from './domains/statuses/index.js';
+export type { StatusCatalog, StatusService } from './domains/issues/index.js';
 export type { Actor, ActorTrace, ActorVia } from './kernel/actor.js';
 export type { Tx as ProjectsTx } from './kernel/tx.js';
 export type { Viewer } from './access/viewer.js';
@@ -106,7 +91,6 @@ export type {
   PlanHooks,
   PlanService,
 } from './domains/plans/ports.js';
-export type { ApprovalService } from './domains/approvals/index.js';
 export type {
   IntakeAiService,
   IntakeDeliverer,
@@ -143,33 +127,13 @@ export const projectsTriggersToken: ServiceToken<IssueTriggers> =
   createServiceToken<IssueTriggers>('@nocobase/app-plugin-projects/triggers');
 
 /**
- * Status rule types other plugins contribute (`domains/workflows/rule-types.ts`): what entering a status does, and the
- * conditions for entering it (`canEnter`, asked by every move), beyond the built-in rules. Looked up on each use, so a
- * plugin may add its types in `boot()`.
+ * Status events other plugins contribute (`domains/statuses/event-types.ts`): a key such as `acme.merged`, the statuses
+ * an issue may be in when it happens, and the status it moves to. Its plugin fires it for a batch of issues with
+ * `projectsToken`'s `statusEvents.fire`. Looked up on each use, so a plugin may add its events in `boot()`.
  */
-export const projectsStatusRulesToken: ServiceToken<StatusRuleTypes> =
-  createServiceToken<StatusRuleTypes>(
-    '@nocobase/app-plugin-projects/status-rules',
-  );
-
-/**
- * Workflow events other plugins contribute (`domains/workflows/event-types.ts`): a key such as `acme.merged` and the
- * categories of status a transition on it may leave and enter. A workflow names it on a transition's `on`; its plugin
- * fires it for a batch of issues with `projectsToken`'s `workflowEvents.fire`. Looked up on each use; add an event
- * before a template that uses it, since a template is validated when it is installed.
- */
-export const projectsWorkflowEventsToken: ServiceToken<WorkflowEventTypes> =
-  createServiceToken<WorkflowEventTypes>(
-    '@nocobase/app-plugin-projects/workflow-events',
-  );
-
-/**
- * Workflow templates other plugins contribute (`domains/workflows/templates.ts`): each is installed once as a
- * workflow, at boot or when added later. `installed()` waits for the templates added so far.
- */
-export const projectsWorkflowTemplatesToken: ServiceToken<WorkflowTemplates> =
-  createServiceToken<WorkflowTemplates>(
-    '@nocobase/app-plugin-projects/workflow-templates',
+export const projectsStatusEventsToken: ServiceToken<StatusEventTypes> =
+  createServiceToken<StatusEventTypes>(
+    '@nocobase/app-plugin-projects/status-events',
   );
 
 /**
@@ -203,7 +167,7 @@ export interface ProjectsAccess {
   admit(conn: DatabaseConnection, userId: string): Promise<void>;
   /** After commit: tells sessions and caches that the user's roles changed. */
   changed(userId: string): Promise<void>;
-  /** Active users holding an administrator role, who approve where a workflow asks an administrator. */
+  /** Active users holding an administrator role. */
   administrators(conn: DatabaseConnection): Promise<readonly string[]>;
   /**
    * What another user may do, for telling only those who may see an issue about it. Run after commit. Without it,
@@ -220,9 +184,6 @@ export type ProjectNoticeKind = 'decision' | 'info';
 
 export type ProjectNoticeType =
   | 'owner_notified'
-  | 'approval_requested'
-  | 'approval_decided'
-  | 'approval_stale'
   | 'commented'
   | 'mentioned'
   | 'status_changed'
@@ -245,8 +206,6 @@ export interface ProjectNotice {
   /** An app route, such as `/issues/PM-12`. */
   readonly path: string;
   readonly issue: { readonly id: string; readonly identifier: string };
-  /** The approval request a decision (or its outcome) is about. */
-  readonly approvalRequestId?: string;
   /** Notices of the same group and recipient merge into one inbox item, counted. */
   readonly group?: string;
   /** Who did what the notice tells. */
@@ -257,17 +216,12 @@ export interface ProjectNotice {
   };
   /**
    * What the title says, as values, so an inbox can word it in each reader's language: `identifier`, `status` (a
-   * status key), `statusName` (its name in the workflow), for a decided request `outcome`, for a release
-   * `releasedByIdentifier`, for a finished stage `stage`, and for the collaboration notices `actorName`, `excerpt`,
-   * `source` (`comment` or `description`), `commentId`, `from` and `fromName`; for an owner told with a keyed
-   * message (`LocalizedMessage`) `messageKey`, `messageNs` and `messageDefault`, the body being its default-language
-   * wording.
+   * status key), `statusName` (its English name), for a release `releasedByIdentifier`, for a finished stage
+   * `stage`, and for the collaboration notices `actorName`, `excerpt`, `source` (`comment` or `description`),
+   * `commentId`, `from` and `fromName`.
    */
   readonly params?: Readonly<Record<string, string>>;
 }
-
-export type ProjectDecisionOutcome =
-  'approved' | 'rejected' | 'withdrawn' | 'stale';
 
 /**
  * Where notices go. The application that assembles the plugin may bind this token to keep its own inbox (the assembling application:
@@ -275,11 +229,6 @@ export type ProjectDecisionOutcome =
  */
 export interface ProjectsNotices {
   send(notice: ProjectNotice): Promise<void>;
-  /** The decision `approvalRequestId` asked for is no longer pending. */
-  resolve(ref: {
-    readonly approvalRequestId: string;
-    readonly outcome: ProjectDecisionOutcome;
-  }): Promise<void>;
 }
 
 export const projectsNoticesToken: ServiceToken<ProjectsNotices> =

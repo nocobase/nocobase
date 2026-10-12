@@ -55,4 +55,7 @@ export const PR_ACTIVITY_LABELS: Readonly<Record<string, string>> = {
   [PR_ACTIVITIES.edited]: 'studioGit.activity.pr_edited',
   [PR_ACTIVITIES.closed]: 'studioGit.activity.pr_closed',
   [PR_ACTIVITIES.reopened]: 'studioGit.activity.pr_reopened',
+  [PR_ACTIVITIES.forceMerged]: 'studioGit.activity.pr_force_merged',
+  [PR_ACTIVITIES.forceMergeRefused]:
+    'studioGit.activity.pr_force_merge_refused',
 };

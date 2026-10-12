@@ -2,11 +2,13 @@
 /**
  * The knowledge base joined to the agents and projects plugins as Studio joins it: what a run on an issue is told and
  * given, the `nb-studio kb` routes (`/api/kb`) within the agent's actions and the person who woke it, proposals from changed files,
- * the inbox cards, and the retrospective rule.
+ * and the inbox cards.
  */
 import { MountBundleSchema } from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { OPEN_PR_ACTION } from '../../server/agents/capabilities.js';
 
 import { RUN_LAYOUT } from '../../server/knowledge/mount.js';
 
@@ -76,6 +78,7 @@ beforeEach(async () => {
   );
   agentId = await h.createAgent({
     actions: [
+      OPEN_PR_ACTION,
       'pm.issues/view',
       'pm.issues/comment',
       'pm.issues/edit',
@@ -88,19 +91,16 @@ afterEach(() => h.close());
 
 const kb = (path: string) => `/kb${path}`;
 
+/** Bob hands the agent a step of an issue in progress. */
 async function startWork(title = 'Faster lists'): Promise<Issue> {
   const issue = await h.projects.issues.create(h.viewer('bob'), {
     title,
     projectId,
-  });
-  const current = await h.projects.issueQueries.detail(
-    h.viewer('bob'),
-    issue.id,
-  );
-  await h.projects.issues.update(h.viewer('bob'), issue.id, {
-    revision: current.revision,
-    executor: { type: 'agent', id: agentId },
     statusKey: 'in_progress',
+    executor: null,
+  });
+  await h.projects.comments.create(h.viewer('bob'), issue.id, {
+    content: `[@Agent](mention://agent/${agentId}) make it faster`,
   });
   return issue;
 }
@@ -160,26 +160,6 @@ describe('a run on an issue', () => {
     ]);
   });
 
-  it('does not ask an analysis run to capture learnings', async () => {
-    const issue = await h.projects.issues.create(h.viewer('bob'), {
-      title: 'Why are lists slow?',
-      projectId,
-    });
-    const current = await h.projects.issueQueries.detail(
-      h.viewer('bob'),
-      issue.id,
-    );
-    await h.projects.issues.update(h.viewer('bob'), issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: agentId },
-      statusKey: 'analysis',
-    });
-    const system = (await h.claimOne(withMounts)).prompt.system as string;
-    expect(system).toContain('## Knowledge');
-    expect(system).not.toContain('## Capture learnings');
-    expect(system).not.toContain('## Retrospective');
-  });
-
   it('gives an older runner no files, and the brief points at the commands instead', async () => {
     await startWork();
     const payload = await h.claimOne();
@@ -192,7 +172,7 @@ describe('a run on an issue', () => {
   it('says nothing of knowledge to an agent not configured to read it', async () => {
     agentId = await h.createAgent({
       name: 'Plain',
-      actions: ['pm.issues/view', 'pm.issues/comment'],
+      actions: [OPEN_PR_ACTION, 'pm.issues/view', 'pm.issues/comment'],
     });
     await startWork();
     const payload = await h.claimOne(withMounts);
@@ -593,7 +573,7 @@ describe('nb-studio kb for a person and a run without the actions', () => {
   it('refuses a run whose agent may not read or propose knowledge', async () => {
     agentId = await h.createAgent({
       name: 'Plain',
-      actions: ['pm.issues/view', 'pm.issues/comment'],
+      actions: [OPEN_PR_ACTION, 'pm.issues/view', 'pm.issues/comment'],
     });
     await startWork();
     const payload = await h.claimOne(withMounts);
@@ -615,7 +595,7 @@ describe('nb-studio kb for a person and a run without the actions', () => {
   it('lets a run that only reads read, and refuses its proposals', async () => {
     agentId = await h.createAgent({
       name: 'Reader',
-      actions: ['pm.issues/view', 'kb.knowledge/read'],
+      actions: [OPEN_PR_ACTION, 'pm.issues/view', 'kb.knowledge/read'],
     });
     await startWork();
     const payload = await h.claimOne(withMounts);
@@ -635,76 +615,5 @@ describe('nb-studio kb for a person and a run without the actions', () => {
       body: { title: 'x', reason: 'y' },
     });
     expect(ticket.status).toBe(403);
-  });
-});
-
-describe('the retrospective rule', () => {
-  it('wakes the agent on a finished issue in a thread of its own, with the manual first', async () => {
-    h.roles.set('root', 'admin');
-    const workflow =
-      (await h.projects.workflows.list(h.viewer('root'))).find(
-        (item) => item.isDefault,
-      ) ??
-      (await h.projects.workflows.setDefault(
-        h.viewer('root'),
-        (
-          await h.projects.workflows.create(h.viewer('root'), {
-            name: 'Standard',
-            copyFrom: null,
-          })
-        ).id,
-      ));
-    await h.projects.workflows.update(h.viewer('root'), workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        states: workflow.definition.states.map((state) =>
-          state.key === 'done'
-            ? {
-                ...state,
-                rules: [{ type: 'retrospective', config: { agentId } }],
-              }
-            : state,
-        ),
-      },
-    });
-    const issue = await h.projects.issues.create(h.viewer('bob'), {
-      title: 'Ship it',
-      projectId,
-    });
-    const current = await h.projects.issueQueries.detail(
-      h.viewer('bob'),
-      issue.id,
-    );
-    await h.projects.issues.update(h.viewer('bob'), issue.id, {
-      revision: current.revision,
-      statusKey: 'done',
-    });
-    const runs = await h.agents.runs.list({
-      subjectKind: 'issue',
-      subjectId: issue.id,
-    });
-    expect(runs).toHaveLength(1);
-    expect(runs[0]).toMatchObject({
-      agentId,
-      threadScope: 'retro',
-      actorUserId: 'bob',
-    });
-    const payload = await h.claimOne(withMounts);
-    expect(payload.prompt.system).toContain('## Retrospective');
-    expect(payload.prompt.system).toContain('## User manual');
-    // Only the retrospective is told how to propose, by the narrow standard.
-    expect(payload.prompt.system).toContain('## Capture learnings');
-    expect(payload.prompt.system).toContain(
-      'Do not record the analysis of a particular bug',
-    );
-    expect(payload.prompt.system).toContain(
-      'Prefer updating the document that covers the area over adding a new one',
-    );
-    // It does not make the agent the executor.
-    expect(
-      (await h.projects.issueQueries.detail(h.viewer('bob'), issue.id))
-        .executor,
-    ).toBeNull();
   });
 });

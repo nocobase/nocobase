@@ -24,6 +24,7 @@ import {
   intakeTitle,
 } from '../../server/agents/conversation/intake.js';
 import { projectRules } from '../../server/agents/conversation/rules.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -154,8 +155,19 @@ function command(
   }
 }
 
+/** An issue nobody executes, so writing to it wakes no agent. */
 async function issue(title: string, viewer = alice()): Promise<Issue> {
-  return h.projects.issues.create(viewer, { title });
+  return h.projects.issues.create(viewer, { title, executor: null });
+}
+
+/** Disables an agent, as an administrator would. */
+async function disable(agentId: string): Promise<void> {
+  await h.database
+    .connection()
+    .query.updateTable('agAgents')
+    .set({ status: 'disabled' })
+    .where('id', '=', agentId)
+    .execute();
 }
 
 async function activitiesOf(issueId: string) {
@@ -261,11 +273,11 @@ describe('a conversation run acts as the person who asked', () => {
   });
 
   it('acts as the agent itself when it works on an issue', async () => {
-    const agentId = await h.createAgent({ name: 'Coder' });
-    const target = await issue('Fix login');
-    const current = await h.projects.issueQueries.detail(alice(), target.id);
-    await h.projects.issues.update(alice(), target.id, {
-      revision: current.revision,
+    await h.createAgent({ name: 'Coder' });
+    const agentId = PROJECT_MANAGER_ID;
+    const target = await h.projects.issues.create(alice(), {
+      title: 'Fix login',
+      statusKey: 'in_progress',
       executor: { type: 'agent', id: agentId },
     });
     const payload = await h.claimOne();
@@ -341,7 +353,10 @@ describe('the direct-write quota', () => {
     ).not.toBe('urgent');
     // The same objects again are fine; a new issue is a third object.
     expect((await update(a, 'medium')).status).toBe(200);
-    const created = await command(run, 'issue:create', [], { title: 'D' });
+    const created = await command(run, 'issue:create', [], {
+      title: 'D',
+      executor: null,
+    });
     expect(created.body.error.metadata.reasons).toEqual(['quota']);
     // Refused writes leave no plan behind.
     expect(
@@ -352,12 +367,18 @@ describe('the direct-write quota', () => {
   it('counts a new turn afresh', async () => {
     const first = await conversationRun();
     for (const title of ['A', 'B'])
-      expect((await command(first, 'issue:create', [], { title })).status).toBe(
-        201,
-      );
+      expect(
+        (await command(first, 'issue:create', [], { title, executor: null }))
+          .status,
+      ).toBe(201);
     const second = await conversationRun();
     expect(
-      (await command(second, 'issue:create', [], { title: 'C' })).status,
+      (
+        await command(second, 'issue:create', [], {
+          title: 'C',
+          executor: null,
+        })
+      ).status,
     ).toBe(201);
   });
 
@@ -374,12 +395,14 @@ describe('the direct-write quota', () => {
     const owned = await command(run, 'issue:create', [], {
       title: 'For bob',
       ownerUserId: 'bob',
+      executor: null,
     });
     expect(owned.body.error.metadata.reasons).toEqual(['ownerChange']);
 
-    const agentId = await h.createAgent({ name: 'Coder' });
+    const agentId = PROJECT_MANAGER_ID;
     const toAgent = await command(run, 'issue:create', [], {
-      title: 'For the coder',
+      title: 'For the project manager',
+      statusKey: 'in_progress',
       executor: { type: 'agent', id: agentId },
     });
     expect(toAgent.status).toBe(400);
@@ -398,9 +421,29 @@ describe('the direct-write quota', () => {
     });
     expect(toBob.status).toBe(201);
 
+    // Naming no executor leaves the new issue to the project manager to arrange, in backlog: no plan needed.
+    const unassigned = await command(
+      await conversationRun(),
+      'issue:create',
+      [],
+      {
+        title: 'For the project manager to arrange',
+      },
+    );
+    expect(unassigned.status).toBe(201);
+    expect(
+      (
+        await h.projects.issueQueries.detail(
+          alice(),
+          unassigned.body.data.issue?.id ?? unassigned.body.data.id,
+        )
+      ).executor,
+    ).toMatchObject({ type: 'agent', id: PROJECT_MANAGER_ID });
+
     // A comment on an issue an agent executes would wake it.
     const busy = await h.projects.issues.create(alice(), {
       title: 'Busy',
+      statusKey: 'in_progress',
       executor: { type: 'agent', id: agentId },
       start: false,
     });
@@ -416,11 +459,13 @@ describe('the direct-write quota', () => {
 
   it('asks for a plan for everything when the agent is set to confirm every change', async () => {
     const run = await conversationRun();
-    const agent = await h.agents.agents.get(run.agentId);
-    await h.agents.agents.update(run.agentId, 'alice', {
-      confirmChanges: 'always',
-      expectedRevision: agent.revision,
-    });
+    // Set where the agent is kept; no page changes it now.
+    await h.database
+      .connection()
+      .query.updateTable('agAgents')
+      .set({ confirmChanges: 'always' })
+      .where('id', '=', run.agentId)
+      .execute();
     const target = await issue('A');
     const refused = await command(run, 'issue:update', [target.identifier], {
       priority: 'high',
@@ -735,12 +780,11 @@ describe('plans proposed in a conversation', () => {
   });
 
   it('refuses a plan from an agent working on an issue, and asks a person for its source', async () => {
-    const agentId = await h.createAgent({ actions: PM_ACTIONS });
-    const target = await issue('Fix login');
-    const current = await h.projects.issueQueries.detail(alice(), target.id);
-    await h.projects.issues.update(alice(), target.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: agentId },
+    await h.createAgent({ actions: PM_ACTIONS });
+    const target = await h.projects.issues.create(alice(), {
+      title: 'Fix login',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
     });
     const payload = await h.claimOne();
     const rows = [
@@ -838,7 +882,7 @@ describe('plans proposed in a conversation', () => {
     expect(intakeTitle('# Checkout\n- Retry callbacks\n- Show receipts')).toBe(
       'Organize: Checkout Retry callbacks Show',
     );
-    const agentId = await h.createAgent({ name: 'PM', access: 'everyone' });
+    const agentId = await h.createAgent({ name: 'PM' });
     const started = await h.agents.conversations.start('alice', {
       source: 'intake',
       agentId,
@@ -903,7 +947,10 @@ describe('reading for the person', () => {
     await issue('Show receipts');
     const found = await command(run, 'issue:search', [], { q: 'Retry' });
     expect(found.body.data).toEqual([
-      expect.objectContaining({ title: 'Retry callbacks', statusKey: 'todo' }),
+      expect.objectContaining({
+        title: 'Retry callbacks',
+        statusKey: 'backlog',
+      }),
     ]);
     await h.projects.projects.create(alice(), { name: 'Checkout' });
     const projects = await command(run, 'project:list');
@@ -914,11 +961,7 @@ describe('reading for the person', () => {
       }),
     ]);
     await h.createAgent({ name: 'Designer', description: 'Good at CSS.' });
-    await h.createAgent({
-      name: 'Bobs',
-      access: 'ownerOnly',
-      ownerUserId: 'bob',
-    });
+    await disable(await h.createAgent({ name: 'Disabled' }));
     const roster = await h.request('GET', '/agents/available', {
       runToken: run.token,
     });

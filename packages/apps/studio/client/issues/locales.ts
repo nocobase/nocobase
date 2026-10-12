@@ -9,6 +9,17 @@ import type { KanbanLabels } from '../components/kanban.js';
 import type { AgentQueueLabels } from '../extensions/nocobase-agent-queue/labels.js';
 
 export const issuesEnUS = {
+  relationships: {
+    add: 'Add a relationship',
+    type: 'Relationship type',
+    prerequisite: 'Prerequisite (wait for it)',
+    hint: 'A prerequisite holds this issue until it finishes. Related issues do not block each other.',
+    actions: 'Relationship actions for {identifier}',
+    toRelated: 'Change to related',
+    toBlocker: 'Make a prerequisite (this issue waits)',
+  },
+  agentWorking: 'Agent working',
+  agentWorkingBy: '{{name}} is working on this issue',
   title: 'Issues',
   description:
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
@@ -144,8 +155,6 @@ export const issuesEnUS = {
     wait: {
       kinds: {
         failedRun: 'Failed run',
-        approval: 'Approval',
-        proposal: 'Proposal',
         question: 'Question',
         review: 'Review',
       },
@@ -156,7 +165,6 @@ export const issuesEnUS = {
     },
     idle: {
       backlog: 'In backlog; it does not start on its own',
-      noAutoRun: 'This status does not wake the agent',
       neverRan: 'Not run yet',
       lastRun: {
         completed: 'Last run completed · {time}',
@@ -184,6 +192,17 @@ export const issuesEnUS = {
 export type IssuesWording = typeof issuesEnUS;
 
 export const issuesZhCN: IssuesWording = {
+  relationships: {
+    add: '添加关联',
+    type: '关联类型',
+    prerequisite: '前置依赖（等它完成）',
+    hint: '前置依赖完成前，本任务不会开始；相关任务仅作关联，不会互相阻塞。',
+    actions: '与 {identifier} 的关联操作',
+    toRelated: '改为相关',
+    toBlocker: '改为前置依赖（本任务等它完成）',
+  },
+  agentWorking: 'Agent 工作中',
+  agentWorkingBy: '{{name}} 正在处理这条议题',
   title: '任务',
   description:
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',
@@ -317,8 +336,6 @@ export const issuesZhCN: IssuesWording = {
     wait: {
       kinds: {
         failedRun: '运行失败',
-        approval: '审批',
-        proposal: '方案',
         question: '提问',
         review: '评审',
       },
@@ -329,7 +346,6 @@ export const issuesZhCN: IssuesWording = {
     },
     idle: {
       backlog: '在待规划中，不会自动开始',
-      noAutoRun: '此状态不会自动唤醒 Agent',
       neverRan: '尚未运行',
       lastRun: {
         completed: '上次运行已完成 · {time}',
