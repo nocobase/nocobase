@@ -263,6 +263,7 @@ test('shows the shared diagnostics in the Agent queue', async ({
     });
     for (const reason of [
       'runnersBusy',
+      'concurrencyFull',
       'noSharedRunner',
       'toolNotInstalled',
       'toolUnavailable',
@@ -279,7 +280,8 @@ test('shows the shared diagnostics in the Agent queue', async ({
               params: {
                 tool: 'claude',
                 used: 8,
-                limit: 8,
+                limit: reason === 'concurrencyFull' ? 1 : 8,
+                active: 1,
                 detail: 'claude 2/2',
               },
             },
@@ -296,25 +298,27 @@ test('shows the shared diagnostics in the Agent queue', async ({
         lane.getByRole('link').filter({ hasText: issue.title }),
       ).toBeVisible();
       const text =
-        reason === 'runnersBusy'
-          ? locale === 'en-US'
-            ? 'Compatible runners are full'
-            : '可承接的执行机满载'
-          : reason === 'noSharedRunner'
+        reason === 'concurrencyFull'
+          ? '1/1'
+          : reason === 'runnersBusy'
             ? locale === 'en-US'
-              ? 'personal'
-              : '个人'
-            : reason === 'toolNotInstalled'
+              ? 'Compatible runners are full'
+              : '可承接的执行机满载'
+            : reason === 'noSharedRunner'
               ? locale === 'en-US'
-                ? 'installed'
-                : '未安装'
-              : reason === 'toolUnavailable'
+                ? 'personal'
+                : '个人'
+              : reason === 'toolNotInstalled'
                 ? locale === 'en-US'
-                  ? 'signed in'
-                  : '登录'
-                : locale === 'en-US'
-                  ? 'upgrade'
-                  : '升级';
+                  ? 'installed'
+                  : '未安装'
+                : reason === 'toolUnavailable'
+                  ? locale === 'en-US'
+                    ? 'signed in'
+                    : '登录'
+                  : locale === 'en-US'
+                    ? 'upgrade'
+                    : '升级';
       await expect(lane).toContainText(text);
       await page.screenshot({
         path: path.resolve(screenshots, `pm292-queue-${reason}-${locale}.png`),
