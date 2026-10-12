@@ -5,10 +5,20 @@
     "label": "总览"
   },
   {
+    "type": "file",
+    "name": "quick-start",
+    "label": "快速启动"
+  },
+  {
     "type": "dir",
-    "collapsed": true,
     "name": "auth",
-    "label": "认证"
+    "label": "认证",
+    "collapsed": true
+  },
+  {
+    "type": "file",
+    "name": "data-sources",
+    "label": "数据源"
   },
   {
     "type": "dir",
@@ -18,9 +28,9 @@
   },
   {
     "type": "dir",
-    "collapsed": true,
     "name": "workflow",
-    "label": "工作流"
+    "label": "工作流",
+    "collapsed": true
   },
   {
     "type": "dir",
@@ -30,29 +40,8 @@
   },
   {
     "type": "file",
-    "name": "scheduler",
-    "label": "定时任务"
-  },
-  {
-    "type": "file",
-    "name": "notification",
-    "label": "通知"
-  },
-  {
-    "type": "dir",
-    "collapsed": true,
-    "name": "mail",
-    "label": "邮件"
-  },
-  {
-    "type": "file",
     "name": "file",
     "label": "文件"
-  },
-  {
-    "type": "file",
-    "name": "template-print",
-    "label": "模板打印"
   },
   {
     "type": "file",
@@ -65,9 +54,31 @@
     "label": "主题"
   },
   {
+    "type": "file",
+    "name": "notification",
+    "label": "通知"
+  },
+  {
+    "type": "file",
+    "name": "scheduler",
+    "label": "定时任务"
+  },
+  {
     "type": "dir",
-    "collapsed": true,
+    "name": "mail",
+    "label": "邮件",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI 员工",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "ai-knowledge-base",
-    "label": "AI 知识库"
+    "label": "AI 知识库",
+    "collapsed": true
   }
 ]

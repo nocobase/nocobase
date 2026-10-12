@@ -103,8 +103,9 @@ export function ProjectsBody({
           {params.excerpt}
         </blockquote>
       ) : null}
-      {entry.notice?.type === 'stage_action_problem' &&
-      params.reason === 'suppressed' &&
+      {((entry.notice?.type === 'stage_action_problem' &&
+        params.reason === 'suppressed') ||
+        entry.notice?.type === 'comment_runs_limited') &&
       issueId ? (
         <Link
           to={`/issues/${encodeURIComponent(detail.data?.identifier ?? issueId)}`}

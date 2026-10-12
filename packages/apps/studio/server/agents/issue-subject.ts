@@ -23,6 +23,7 @@ import type {
 } from '@nocobase/app-plugin-agents/server/tokens';
 import { sampleValue } from '@nocobase/app-plugin-agents/shared/briefs';
 
+import { commentDelta, deltaNotes } from './comment-delta.js';
 import { canImplement } from './executor.js';
 import { jsonObject } from './values.js';
 import type { Agent } from '@nocobase/app-plugin-agents/shared/agents';
@@ -507,7 +508,10 @@ export function issueClaimRejection(
 
 export function createIssueContextProvider(
   agents: Pick<Agents, 'runs' | 'briefs'>,
-  projects: () => Pick<Projects, 'issueContext' | 'workflows'>,
+  projects: () => Pick<
+    Projects,
+    'issueContext' | 'workflows' | 'commentQueries'
+  >,
 ): ContextProvider {
   return {
     async admit(conn, claim) {
@@ -553,6 +557,12 @@ export function createIssueContextProvider(
         },
         claim.run.id,
       );
+      const delta = await commentDelta(conn, projects(), {
+        agentId: claim.agent.id,
+        issueId: context.id,
+        runId: claim.run.id,
+        inputs,
+      });
       const initial = await initialDirOf(
         conn,
         context.id,
@@ -587,6 +597,7 @@ export function createIssueContextProvider(
         turn: {
           prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
+          ...deltaNotes(delta, context.identifier, claim.cli),
         },
         data: { kind: ISSUE_SUBJECT, issue: context },
         dirs: dirsOf(
@@ -718,7 +729,10 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
 
 export function issueBinding(
   agents: Pick<Agents, 'runs' | 'briefs'>,
-  projects: () => Pick<Projects, 'issueContext' | 'workflows'>,
+  projects: () => Pick<
+    Projects,
+    'issueContext' | 'workflows' | 'commentQueries'
+  >,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
 ): SubjectBinding {

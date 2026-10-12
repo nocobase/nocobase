@@ -131,12 +131,15 @@ export async function mapComments(
   });
 }
 
-/** A page of an issue's threads: the newest roots first page by page, each page oldest first. */
+/**
+ * A page of an issue's threads: the newest roots first page by page, each page oldest first. With `since`, only the
+ * threads with a comment created after it, each with its root and only the replies created after it.
+ */
 export async function threadPage(
   conn: DatabaseConnection,
   kinds: KindRegistry,
   issueId: string,
-  options: { readonly cursor?: string; readonly limit?: number } = {},
+  options: ThreadPageOptions = {},
   attachments?: CommentAttachments,
   viewer?: Pick<Viewer, 'userId' | 'seesExecutionMachine'>,
 ): Promise<ThreadPage> {
@@ -146,6 +149,9 @@ export async function threadPage(
     THREAD_PAGE_LIMIT.max,
   );
   const cursor = options.cursor ? decodeCursor(options.cursor) : undefined;
+  const since = options.since
+    ? await commentsOf(conn, issueId, { since: options.since })
+    : null;
   const rows = await rootsPage(
     conn,
     issueId,
@@ -153,16 +159,20 @@ export async function threadPage(
     cursor
       ? { createdAt: String(cursor.createdAt), id: String(cursor.id) }
       : undefined,
+    since ? [...new Set(since.map((row) => row.rootId))] : undefined,
   );
   const page = pageOf(rows, limit, (row) => ({
     createdAt: iso(row.createdAt),
     id: row.id,
   }));
   const roots = page.rows.reverse();
-  const replies = await repliesOf(
-    conn,
-    roots.map((root) => root.id),
-  );
+  const newer = since ? new Set(since.map((row) => row.id)) : null;
+  const replies = (
+    await repliesOf(
+      conn,
+      roots.map((root) => root.id),
+    )
+  ).filter((reply) => !newer || newer.has(reply.id));
   const mapped = await mapComments(
     conn,
     kinds,
@@ -180,6 +190,13 @@ export async function threadPage(
   return { data, nextCursor: page.nextCursor };
 }
 
+export interface ThreadPageOptions {
+  readonly cursor?: string;
+  readonly limit?: number;
+  /** RFC 3339: only what was written after it (`threadPage`). */
+  readonly since?: string;
+}
+
 export interface CommentQueries extends CommentReader {
   /** The `@` list for text about `issueId` (404 unless the viewer sees it), or about no issue yet. */
   mentionCandidates(
@@ -193,7 +210,7 @@ export interface CommentQueries extends CommentReader {
   threads(
     viewer: Viewer,
     idOrKey: string,
-    options: { readonly cursor?: string; readonly limit?: number },
+    options: ThreadPageOptions,
   ): Promise<ThreadPage>;
 }
 

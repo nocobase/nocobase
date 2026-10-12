@@ -9,6 +9,15 @@ import type { KanbanLabels } from '../components/kanban.js';
 import type { AgentQueueLabels } from '../extensions/nocobase-agent-queue/labels.js';
 
 export const issuesEnUS = {
+  relationships: {
+    add: 'Add a relationship',
+    type: 'Relationship type',
+    prerequisite: 'Prerequisite (wait for it)',
+    hint: 'A prerequisite holds this issue until it finishes. Related issues do not block each other.',
+    actions: 'Relationship actions for {identifier}',
+    toRelated: 'Change to related',
+    toBlocker: 'Make a prerequisite (this issue waits)',
+  },
   agentWorking: 'Agent working',
   agentWorkingBy: '{{name}} is working on this issue',
   title: 'Issues',
@@ -186,6 +195,15 @@ export const issuesEnUS = {
 export type IssuesWording = typeof issuesEnUS;
 
 export const issuesZhCN: IssuesWording = {
+  relationships: {
+    add: '添加关联',
+    type: '关联类型',
+    prerequisite: '前置依赖（等它完成）',
+    hint: '前置依赖完成前，本任务不会开始；相关任务仅作关联，不会互相阻塞。',
+    actions: '与 {identifier} 的关联操作',
+    toRelated: '改为相关',
+    toBlocker: '改为前置依赖（本任务等它完成）',
+  },
   agentWorking: 'Agent 工作中',
   agentWorkingBy: '{{name}} 正在处理这条议题',
   title: '任务',

@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-client@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/authorization@1.0.0-beta.13
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.14
 
 ### Minor Changes

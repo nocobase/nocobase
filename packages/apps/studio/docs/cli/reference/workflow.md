@@ -102,10 +102,10 @@ nb-studio workflow preview <workflow>
 | ---------- | ----------- |
 | `workflow` |             |
 
-| Flag           | Type | Description                                                                               |
-| -------------- | ---- | ----------------------------------------------------------------------------------------- |
-| `--definition` | json | A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions }`. |
-| `--file`       | path | The request body as a JSON object; the flags override its fields.                         |
+| Flag           | Type | Description                                                                                                 |
+| -------------- | ---- | ----------------------------------------------------------------------------------------------------------- |
+| `--definition` | json | A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions, commentRunLimit? }`. |
+| `--file`       | path | The request body as a JSON object; the flags override its fields.                                           |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -153,13 +153,13 @@ nb-studio workflow update <workflow>
 | ---------- | ----------- |
 | `workflow` |             |
 
-| Flag            | Type    | Description                                                                               |
-| --------------- | ------- | ----------------------------------------------------------------------------------------- |
-| `--revision`    | integer |                                                                                           |
-| `--name`        | string  |                                                                                           |
-| `--description` | string  |                                                                                           |
-| `--definition`  | json    | A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions }`. |
-| `--file`        | path    | The request body as a JSON object; the flags override its fields.                         |
+| Flag            | Type    | Description                                                                                                 |
+| --------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
+| `--revision`    | integer |                                                                                                             |
+| `--name`        | string  |                                                                                                             |
+| `--description` | string  |                                                                                                             |
+| `--definition`  | json    | A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions, commentRunLimit? }`. |
+| `--file`        | path    | The request body as a JSON object; the flags override its fields.                                           |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

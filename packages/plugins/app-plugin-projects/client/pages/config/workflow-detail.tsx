@@ -6,7 +6,10 @@ import { type ReactElement, type ReactNode, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import {
+  COMMENT_RUN_WINDOW_HOURS,
+  DEFAULT_COMMENT_RUN_LIMIT,
   WORKFLOW_NAME_MAX,
+  type WorkflowDefinition,
   type WorkflowListItem,
   type WorkflowPreview,
   type WorkflowStatusConflict,
@@ -149,7 +152,52 @@ function conflictsOf(
     : [];
 }
 
-/** One of the page's three cards; `id` names its title for the card's label. */
+/**
+ * The workflow's limit on runs agents' comments start (`commentRunLimit`): a number to type in edit mode, left empty for
+ * the default; what it is otherwise.
+ */
+function CommentRunLimit({
+  definition,
+  onChange,
+}: {
+  readonly definition: WorkflowDefinition;
+  readonly onChange?: (definition: WorkflowDefinition) => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  const windowHours = COMMENT_RUN_WINDOW_HOURS;
+  if (!onChange)
+    return (
+      <p className='text-sm'>
+        {t('workflows.commentRunLimitValue', {
+          limit: definition.commentRunLimit ?? DEFAULT_COMMENT_RUN_LIMIT,
+          windowHours,
+        })}
+      </p>
+    );
+  return (
+    <label className='flex flex-col gap-2 text-sm sm:max-w-xs'>
+      <span>{t('workflows.commentRunLimit', { windowHours })}</span>
+      <Input
+        type='number'
+        min={1}
+        step={1}
+        inputMode='numeric'
+        placeholder={String(DEFAULT_COMMENT_RUN_LIMIT)}
+        value={definition.commentRunLimit ?? ''}
+        onChange={(event) => {
+          const { commentRunLimit: _previous, ...rest } = definition;
+          const value = event.target.value.trim();
+          // The server checks the number; an empty field keeps the default.
+          onChange(
+            value === '' ? rest : { ...rest, commentRunLimit: Number(value) },
+          );
+        }}
+      />
+    </label>
+  );
+}
+
+/** One of the page's cards; `id` names its title for the card's label. */
 function WorkflowCard({
   id,
   title,
@@ -409,6 +457,20 @@ function WorkflowBody({
           <WorkflowRules definition={workflow.definition} />
         )}
       </WorkflowCard>
+      <WorkflowCard
+        id='pm-workflow-limits'
+        title={t('workflows.limitsTitle')}
+        description={t('workflows.limitsDescription')}
+      >
+        {editing ? (
+          <CommentRunLimit
+            definition={draft.definition}
+            onChange={(definition) => change(() => definition)}
+          />
+        ) : (
+          <CommentRunLimit definition={workflow.definition} />
+        )}
+      </WorkflowCard>
       <WakeConfirm
         attention={confirming}
         definition={draft.definition}
@@ -425,10 +487,10 @@ function WorkflowBody({
 
 /**
  * `/config/workflows/:workflowId`: one workflow as a covering page, laid out as the old workflow page — the status
- * flow, the transition matrix and the rules, and how many projects use it. Whoever holds `pm.workflows/update` gets
- * an Edit button; edit mode keeps the same layout and makes it operable in place (the name in the header, the status
- * statuses on the flow strip, the matrix's cells, each status's rules). The whole change is saved at once; the server
- * validates it and refuses to drop a status issues are in.
+ * flow, the transition matrix, the rules and the limits, and how many projects use it. Whoever holds
+ * `pm.workflows/update` gets an Edit button; edit mode keeps the same layout and makes it operable in place (the name
+ * in the header, the status statuses on the flow strip, the matrix's cells, each status's rules, the limits). The
+ * whole change is saved at once; the server validates it and refuses to drop a status issues are in.
  */
 export default function WorkflowDetailPage(): ReactElement {
   const { workflowId = '' } = useParams();

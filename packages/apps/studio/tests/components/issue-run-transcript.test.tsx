@@ -12,6 +12,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -81,11 +82,16 @@ async function setup(locale = 'en-US') {
     locale,
     strict: true,
   });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
   const view = () => (
     <TestI18nProvider runtime={runtime} namespace='studio'>
-      <MemoryRouter>
-        <IssueRunTranscript runId='run-1' />
-      </MemoryRouter>
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <IssueRunTranscript runId='run-1' />
+        </MemoryRouter>
+      </QueryClientProvider>
     </TestI18nProvider>
   );
   const result = render(view());

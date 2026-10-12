@@ -60,6 +60,8 @@ import { studioNewsText } from './news.js';
 import { PageContextToChat } from './page-context.js';
 import { StudioPlanWording } from './plan-wording.js';
 import { ReferenceCards } from './reference-cards.js';
+import { StudioChatStateProvider } from './chat-state.js';
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 
 /** How many of a conversation's plans the panel shows. */
 const PLAN_LIMIT = 20;
@@ -207,6 +209,7 @@ export function StudioChat({
   readonly children?: ReactNode;
 }): ReactElement {
   const pmClient = useQueryClient();
+  const { session } = useAuthentication();
   return (
     <ChatProvider conversationPath={conversationPath}>
       <ChatExtensionsContext.Provider value={extensions}>
@@ -216,7 +219,9 @@ export function StudioChat({
             <RouteChatContext />
             <StudioPlanWording>
               <IntakeAgentSlotContext.Provider value={intakeAgentSlot}>
-                {children}
+                <StudioChatStateProvider key={session?.user.id ?? 'signed-out'}>
+                  {children}
+                </StudioChatStateProvider>
               </IntakeAgentSlotContext.Provider>
             </StudioPlanWording>
           </PageContextProvider>

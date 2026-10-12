@@ -12,7 +12,14 @@
  *   asked not to start now, or the issue is dormant: in backlog, finished or closed (`skipped: 'dormant'`). Taken off
  *   an issue: its queued work is withdrawn and work in progress is asked to stop.
  * - A person's comment (not a note) wakes the agents it mentions, the agent whose comment it answers, and the agent
- *   executing the issue. A comment in the middle of a run reaches the run as input.
+ *   executing the issue. An agent's comment wakes the agents it mentions, never itself and never the agent whose
+ *   comment it answers; mentioning no agent, it wakes the executing agent (the coordinator) unless it mentions a person
+ *   or is the executor's own. It acts for the person its run acts for (the owner when no run wrote it); at most the
+ *   workflow's `commentRunLimit` runs within `COMMENT_RUN_WINDOW_HOURS` hours, after which it starts nothing
+ *   (`skipped: 'limited'`) and the owner is told and may continue it (`comment-run-limit.ts`). A person's comment that
+ *   reaches agents restarts that count. A run an agent's comment started always answers in that comment's thread when it
+ *   completes without commenting or fails for good (`run-report.ts`), which wakes the executing agent in turn. A comment
+ *   in the middle of a run reaches the run as input.
  * - A person moving the issue's status tells a run that has not ended, unless the status's workflow stage already
  *   started work there (`stage-rules.ts`); finishing or closing the issue withdraws queued work instead. Moving it out
  *   of backlog to a status that is not finished starts the executing agent's work (`statusChange`).
@@ -38,6 +45,8 @@
  * network.
  */
 
+import { randomUUID } from 'node:crypto';
+
 import type { ActorRef, RunInputType } from '@nocobase/agent-protocol';
 import type {
   Actor,
@@ -48,7 +57,10 @@ import type {
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Priority } from '@nocobase/app-plugin-projects/shared/common';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
-import { BACKLOG_STATUS } from '@nocobase/app-plugin-projects/shared/workflows';
+import {
+  BACKLOG_STATUS,
+  COMMENT_RUN_WINDOW_HOURS,
+} from '@nocobase/app-plugin-projects/shared/workflows';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type {
@@ -67,6 +79,14 @@ import {
   type ProjectMove,
 } from './project-move.js';
 import { currentStage } from './stage-rules.js';
+import {
+  COMMENT_GUARD,
+  COMMENT_RUNS_NOTICE_KIND,
+  commentGuardId,
+  recentCommentRunCount,
+  stageGuards,
+  type HeldCommentWake,
+} from './stage-run-guard.js';
 import { jsonObject } from './values.js';
 import { AGENT_KIND, agentsTx } from './tx.js';
 import {
@@ -138,6 +158,18 @@ export interface AgentWork extends IssueWorkHandler {
     actor: Actor,
     triggerType: string,
   ): Promise<RunAttempt | null>;
+  /**
+   * Wakes the agents a comment the limit held back would have woken, as the work of `userId`, the person who continued
+   * it (`continuedFrom`, the guard's token): a run request for the owner unless they are the owner. The limit is not
+   * checked, and the run is not counted.
+   */
+  resumeComment(
+    tx: ProjectsTx,
+    issue: Issue,
+    held: HeldCommentWake,
+    userId: string,
+    continuedFrom: string,
+  ): Promise<RunAttempt[]>;
   /** The end of a run on an issue: one told its issue moved to another project is followed by a run there. */
   readonly onRunFinished: NonNullable<
     NonNullable<SubjectBinding['sink']>['onRunFinished']
@@ -330,6 +362,114 @@ export function createAgentWork(deps: {
     started: false,
     ...(reason ? { skipped: reason } : {}),
   });
+
+  /** Wakes each agent `held` names with the comment, as `source`'s work. */
+  async function wakeComment(
+    tx: ProjectsTx,
+    issue: Issue,
+    held: Omit<HeldCommentWake, 'limit'>,
+    source: WorkSource,
+    extra: Readonly<Record<string, unknown>>,
+  ): Promise<RunAttempt[]> {
+    const attempts: RunAttempt[] = [];
+    for (const { agentId, triggerType } of held.targets)
+      attempts.push(
+        await wake(tx, {
+          agentId,
+          issue,
+          source,
+          triggerType,
+          input: {
+            type: 'comment',
+            actor: held.actor,
+            text: held.content,
+            payload: {
+              commentId: held.commentId,
+              parentId: held.parentId,
+              ...extra,
+            },
+          },
+        }),
+      );
+    return attempts;
+  }
+
+  /**
+   * Whether agents' comments started as many runs on `issue` as its workflow allows; then `held` waits for a person to
+   * continue it, and the owner is told.
+   */
+  async function commentLimited(
+    tx: ProjectsTx,
+    issue: Issue,
+    held: Omit<HeldCommentWake, 'limit'>,
+  ): Promise<boolean> {
+    const { commentRunLimit: limit } = await deps
+      .projects()
+      .workflows.catalogs.forProject(tx.conn, issue.projectId);
+    const count = await recentCommentRunCount(
+      tx.conn,
+      issue.id,
+      COMMENT_RUN_WINDOW_HOURS,
+    );
+    if (count < limit) return false;
+    if (tx.rehearsal) return true;
+    const id = commentGuardId(issue.id);
+    const token = randomUUID();
+    const ruleConfig = { ...held, limit };
+    await stageGuards(tx.conn).upsertOne({
+      filter: { id },
+      create: {
+        id,
+        issueId: issue.id,
+        statusKey: COMMENT_GUARD,
+        resetAt: null,
+        pendingToken: token,
+        agentId: null,
+        fromStatus: null,
+        ruleConfig,
+      },
+      update: { pendingToken: token, ruleConfig },
+    });
+    tx.emit({
+      type: 'work.announced',
+      kind: COMMENT_RUNS_NOTICE_KIND,
+      payload: {
+        issue: {
+          id: issue.id,
+          identifier: issue.identifier,
+          title: issue.title,
+          ownerUserId: issue.ownerUserId,
+        },
+        agentName: held.actor.name,
+        limit,
+        windowHours: COMMENT_RUN_WINDOW_HOURS,
+        continueToken: token,
+        at: new Date().toISOString(),
+      },
+    });
+    return true;
+  }
+
+  /** A person's own comment: agents' comments get a fresh count, and a held one no longer waits. */
+  async function resetCommentCount(tx: ProjectsTx, issue: Issue) {
+    if (tx.rehearsal) return;
+    const id = commentGuardId(issue.id);
+    const resetAt = new Date().toISOString();
+    await stageGuards(tx.conn).upsertOne({
+      filter: { id },
+      create: {
+        id,
+        issueId: issue.id,
+        statusKey: COMMENT_GUARD,
+        resetAt,
+        pendingToken: null,
+        agentId: null,
+        fromStatus: null,
+        ruleConfig: null,
+      },
+      update: { resetAt, pendingToken: null },
+    });
+  }
 
   /** Queue an assignment; the subject's admission policy decides whether it may be claimed now. */
   async function assigned(
@@ -617,44 +757,80 @@ export function createAgentWork(deps: {
 
     async onCommentCreated(tx, change) {
       const { comment, issue, parent } = change;
-      if (!change.actor.id) return [];
+      const authorId = change.actor.id;
+      if (!authorId) return [];
+      const byAgent = change.actor.type === AGENT_KIND;
+      if (!byAgent && change.actor.type !== 'user') return [];
+      // A person by hand, not through an agent, as the stage loop guard counts them.
+      if (!byAgent && change.actor.via !== 'agent')
+        await resetCommentCount(tx, issue);
       const targets = new Map<string, string>();
       for (const ref of change.mentions)
         if (ref.kind === AGENT_KIND && !targets.has(ref.id))
           targets.set(ref.id, 'mention');
-      if (parent?.authorType === AGENT_KIND && parent.authorId)
-        if (!targets.has(parent.authorId))
-          targets.set(parent.authorId, 'reply');
       const executing = agentOf(issue);
-      if (executing && !targets.has(executing))
-        targets.set(executing, 'comment');
-      // Only a person comments here (the projects plugin wakes nobody for anything else's comments).
-      const source: WorkSource = {
-        userId: change.actor.id,
-        ref: {
-          kind: 'user',
-          id: change.actor.id,
+      if (byAgent) {
+        // An agent's comment wakes whom it names; naming nobody, the executor coordinates, unless a person is addressed.
+        const named = targets.size > 0;
+        targets.delete(authorId);
+        if (
+          !named &&
+          executing &&
+          executing !== authorId &&
+          !change.mentions.some((ref) => ref.kind === 'user')
+        )
+          targets.set(executing, 'comment');
+      } else {
+        if (parent?.authorType === AGENT_KIND && parent.authorId)
+          if (!targets.has(parent.authorId))
+            targets.set(parent.authorId, 'reply');
+        if (executing && !targets.has(executing))
+          targets.set(executing, 'comment');
+      }
+      if (targets.size === 0) return [];
+      const held = {
+        commentId: comment.id,
+        parentId: comment.parentId,
+        content: comment.content,
+        actor: {
+          kind: byAgent ? 'agent' : 'user',
+          id: authorId,
           name:
-            comment.authorName ?? (await userName(tx.conn, change.actor.id)),
-        },
+            comment.authorName ??
+            (byAgent ? 'Agent' : await userName(tx.conn, authorId)),
+        } satisfies ActorRef,
+        targets: [...targets].map(([agentId, triggerType]) => ({
+          agentId,
+          triggerType,
+        })),
       };
-      const attempts: RunAttempt[] = [];
-      for (const [agentId, triggerType] of targets)
-        attempts.push(
-          await wake(tx, {
-            agentId,
-            issue,
-            source,
-            triggerType,
-            input: {
-              type: 'comment',
-              actor: source.ref,
-              text: comment.content,
-              payload: { commentId: comment.id, parentId: comment.parentId },
-            },
-          }),
+      // A person's comment comes from them; an agent's from the chain of the run it was written in, else from the
+      // person its run acted for (`work-source.ts`), so it asks the owner unless the owner's chain wrote it.
+      if (!byAgent)
+        return wakeComment(
+          tx,
+          issue,
+          held,
+          { userId: authorId, ref: held.actor },
+          {},
         );
-      return attempts;
+      if (await commentLimited(tx, issue, held))
+        return held.targets.map((target) =>
+          skipped(target.agentId, issue, target.triggerType, 'limited'),
+        );
+      const chain = await workSourceOf(tx.conn, change.actor, issue);
+      const source: WorkSource =
+        !chain.causedByRunId && change.userId
+          ? { userId: change.userId, ref: held.actor }
+          : { ...chain, ref: held.actor };
+      return wakeComment(tx, issue, held, source, { byAgent: true });
+    },
+
+    // A person's continuation is not counted, as a person's stage move is not.
+    async resumeComment(tx, issue, held, userId, continuedFrom) {
+      return wakeComment(tx, issue, held, await personSource(tx.conn, userId), {
+        continuedFrom,
+      });
     },
 
     /**

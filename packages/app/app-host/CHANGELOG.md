@@ -1,5 +1,17 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/app-websocket@0.0.2-beta.0
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/drive@0.1.0-beta.5
+  - @nocobase/logging@0.1.0-beta.7
+
 ## 0.1.0-beta.14
 
 ### Minor Changes

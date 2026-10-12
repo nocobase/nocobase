@@ -194,7 +194,7 @@ nb-studio issue comment add PM-12 --content-file note.md --attach screenshot.png
 
 List an issue’s comment threads
 
-A page of threads, the newest page first and each page oldest first; a thread is a root and all its replies. `issueId` is an id or an identifier.
+A page of threads, the newest page first and each page oldest first; a thread is a root and all its replies. With `since`, only what was written after it. `issueId` is an id or an identifier.
 
 ```bash
 nb-studio issue comment list <issue>
@@ -204,10 +204,11 @@ nb-studio issue comment list <issue>
 | -------- | ----------- |
 | `issue`  |             |
 
-| Flag           | Type    | Description  |
-| -------------- | ------- | ------------ |
-| `--limit`      | integer | (default 20) |
-| `--page-token` | string  |              |
+| Flag           | Type    | Description                                                                                                       |
+| -------------- | ------- | ----------------------------------------------------------------------------------------------------------------- |
+| `--limit`      | integer | (default 20)                                                                                                      |
+| `--page-token` | string  |                                                                                                                   |
+| `--since`      | string  | RFC 3339. Only threads with a comment written after it, each with its root and only the replies written after it. |
 
 **Output:** A list (table columns: `root.id`, `root.authorName`, `root.createdAt`, `root.content`, `replies.length`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

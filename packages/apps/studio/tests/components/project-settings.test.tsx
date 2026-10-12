@@ -344,15 +344,6 @@ globalThis.ResizeObserver ??= class {
   public disconnect(): void {}
 };
 Element.prototype.scrollIntoView ??= () => undefined;
-// CodeMirror measures text ranges, which jsdom does not lay out.
-Range.prototype.getClientRects ??= () =>
-  ({
-    length: 0,
-    item: () => null,
-    [Symbol.iterator]: [][Symbol.iterator],
-  }) as unknown as DOMRectList;
-Range.prototype.getBoundingClientRect ??= () => new DOMRect();
-
 beforeEach(() => {
   vi.clearAllMocks();
   status.enabled = true;

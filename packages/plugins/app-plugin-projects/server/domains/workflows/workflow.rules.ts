@@ -9,7 +9,8 @@
  * - an event transition (`on`) is the system's alone, on a built-in event or one another plugin contributed
  *   (`event-types.ts`), leaving and entering only the categories of status the event allows; a transition on an event
  *   whose plugin is gone is kept while it is unchanged;
- * - a rule sits only on the categories of status its type allows.
+ * - a rule sits only on the categories of status its type allows;
+ * - `commentRunLimit`, when there, is a positive integer.
  *
  * The rules a status or transition names must be registered (`workflow.registry.ts`), with valid settings.
  */
@@ -224,22 +225,49 @@ export function checkDefinition(
   ruleTypes?: StatusRuleTypes,
   events?: WorkflowEventTypes,
 ): WorkflowDefinition {
-  const result = validateDefinition(input, workflowSchema(kinds, events), {
-    base,
-    registry,
-    rules: [
-      builtInStatuses,
-      kindLimits(kinds),
-      peopleCanLeave,
-      oneRulePerType,
-      eventTransitionsAreSystem,
-      rulePlacement(ruleTypes),
-      eventPlacement(events),
-    ],
-  });
-  if (!result.ok)
+  // The lifecycle knows states and transitions only: the workflow's own setting is checked here.
+  const record =
+    input !== null && typeof input === 'object' && !Array.isArray(input)
+      ? (input as Record<string, unknown>)
+      : null;
+  const { commentRunLimit, ...lifecycle } = record ?? {};
+  const limitIssues =
+    commentRunLimit === undefined ||
+    (typeof commentRunLimit === 'number' &&
+      Number.isSafeInteger(commentRunLimit) &&
+      commentRunLimit > 0)
+      ? []
+      : [
+          {
+            path: 'commentRunLimit',
+            message: 'commentRunLimit is a positive integer.',
+          },
+        ];
+  const result = validateDefinition(
+    record ? lifecycle : input,
+    workflowSchema(kinds, events),
+    {
+      base,
+      registry,
+      rules: [
+        builtInStatuses,
+        kindLimits(kinds),
+        peopleCanLeave,
+        oneRulePerType,
+        eventTransitionsAreSystem,
+        rulePlacement(ruleTypes),
+        eventPlacement(events),
+      ],
+    },
+  );
+  if (!result.ok || limitIssues.length > 0)
     throw invalid('INVALID_WORKFLOW', 'The workflow is not valid.', {
-      issues: result.issues,
+      issues: [...(result.ok ? [] : result.issues), ...limitIssues],
     });
-  return result.definition as WorkflowDefinition;
+  return {
+    ...(result.definition as WorkflowDefinition),
+    ...(commentRunLimit === undefined
+      ? {}
+      : { commentRunLimit: commentRunLimit as number }),
+  };
 }
