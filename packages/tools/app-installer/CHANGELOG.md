@@ -1,5 +1,13 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- 5f851bb: Add SSH archive deployment and remote install, upgrade, rollback and status commands with an offline installer bundle. Transfer checksums, stdin-only secret transport and structured remote outcomes allow servers without npm access to reuse the existing installation lifecycle.
+
+  Preserve remote confirmation and recovery guidance, route recovery commands to the correct host, and report locally interrupted SSH executions as an unknown remote state requiring a status check.
+
 ## 0.1.0-beta.6
 
 ### Patch Changes
