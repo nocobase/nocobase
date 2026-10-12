@@ -79,3 +79,66 @@ it('does not connect during capability checks and keeps explicit disables closed
   expect(manager.available('on', 'email')).toBe(true);
   expect(manager.available('im', 'email')).toBe(false);
 });
+
+it('preserves prototype getters and private-field methods and closes a shared class instance once', async () => {
+  const closed = vi.fn();
+  class ClassProvider {
+    #identifier = 'class-email';
+    #closed = false;
+    get type(): string {
+      return this.#identifier;
+    }
+    get capabilities(): {
+      readonly idempotency: { readonly supported: false };
+    } {
+      return { idempotency: { supported: false } };
+    }
+    async send(): Promise<{ readonly status: 'accepted' }> {
+      expect(this.#closed).toBe(false);
+      return { status: 'accepted' };
+    }
+    async close(): Promise<void> {
+      this.#closed = true;
+      closed();
+    }
+  }
+  const registry = new SendingRegistry();
+  registerBuiltInSendingProviders(registry);
+  const instance = new ClassProvider();
+  const create = vi.fn(async () => instance);
+  registry.registerProvider({
+    type: 'class-email',
+    messageType: 'email',
+    createProvider: create,
+  });
+  const manager = new SendingManager({
+    registry,
+    logger: createLogger({ level: 'silent' }),
+    config: {
+      channels: {
+        mail: { provider: 'class-email' },
+        alias: { provider: 'class-email' },
+      },
+    },
+  });
+  const [first, second] = await Promise.all([
+    manager.runtime('mail'),
+    manager.runtime('mail'),
+  ]);
+  expect(first).toBe(second);
+  await manager.runtime('alias');
+  expect(first.provider.type).toBe('class-email');
+  expect(first.provider.capabilities).toEqual({
+    idempotency: { supported: false },
+  });
+  expect(
+    await manager.send({
+      channel: 'mail',
+      message: { to: 'recipient@example.test', subject: 'Test', text: 'Test' },
+    }),
+  ).toEqual([{ status: 'accepted' }]);
+  await Promise.all([manager.close(), manager.close()]);
+  await manager.close();
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(closed).toHaveBeenCalledTimes(1);
+});

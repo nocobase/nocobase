@@ -15,10 +15,14 @@ export function registerBuiltInSendingProviders(
   registry: SendingRegistry,
 ): void {
   registry
-    .registerChannel(createEmailChannelDefinition())
-    .registerProvider(createSmtpProviderDefinition())
-    .registerProvider(createResendProviderDefinition())
-    .registerChannel(createImChannelDefinition())
-    .registerProvider(createFeishuWebhookProviderDefinition())
-    .registerProvider(createDingTalkWebhookProviderDefinition());
+    .registerChannel(createEmailChannelDefinition(), { fallback: true })
+    .registerProvider(createSmtpProviderDefinition(), { fallback: true })
+    .registerProvider(createResendProviderDefinition(), { fallback: true })
+    .registerChannel(createImChannelDefinition(), { fallback: true })
+    .registerProvider(createFeishuWebhookProviderDefinition(), {
+      fallback: true,
+    })
+    .registerProvider(createDingTalkWebhookProviderDefinition(), {
+      fallback: true,
+    });
 }

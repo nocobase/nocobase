@@ -52,6 +52,7 @@ export class SendingProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container
       .resolve(sendingExtensionRegistryToken)
       .validate(this.app.container.resolve(sendingServiceToken).config());
+    this.app.container.resolve(sendingExtensionRegistryToken).seal();
   }
   public override async shutdown(): Promise<void> {
     await this.app.container.resolveIfCreated(sendingServiceToken)?.close();

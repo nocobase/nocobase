@@ -52,11 +52,23 @@ export interface NotificationService {
 }
 
 export interface NotificationExtensionRegistry {
+  /** Management metadata can be attached without re-registering an executable definition. */
+  registerChannelTest?(
+    type: string,
+    test: NotificationTestAdapter,
+  ): NotificationExtensionRegistry;
+  registerProviderLabel?(
+    type: string,
+    label: string | NotificationI18nText,
+  ): NotificationExtensionRegistry;
+
   registerChannel(
     definition: NotificationChannelDefinition,
+    options?: { readonly fallback?: boolean },
   ): NotificationExtensionRegistry;
   registerProvider(
     definition: NotificationProviderDefinition,
+    options?: { readonly fallback?: boolean },
   ): NotificationExtensionRegistry;
 }
 

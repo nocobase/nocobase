@@ -210,11 +210,58 @@ export class Auth {
               .where('id', '=', userId)
               .executeTakeFirst()
           )?.kind;
+    // A separate plugin hook preserves Better Auth's dispatch of application before/after hooks.
+    // Returning a nested middleware envelope from a user before hook would short-circuit the endpoint.
+    const resetGuard = createAuthMiddleware(async (context) => {
+      const body = context.body as Record<string, unknown> | undefined;
+      if (
+        context.path === '/request-password-reset' &&
+        typeof body?.email === 'string' &&
+        config.secondaryStorage?.increment
+      ) {
+        const key =
+          'reset-email:' +
+          createHash('sha256')
+            .update(body.email.trim().toLowerCase())
+            .digest('hex');
+        const count = await config.secondaryStorage.increment(key, 60);
+        if (count > 1 && context.request)
+          throttledResetRequests.add(context.request);
+      }
+      if (context.path === '/reset-password') {
+        const token: unknown = body?.token || context.query?.token;
+        const verification =
+          typeof token === 'string'
+            ? await context.context.internalAdapter.findVerificationValue(
+                `reset-password:${token}`,
+              )
+            : undefined;
+        if (verification) {
+          resetUserIds.set(context.context, verification.value);
+          await assertResetAccount(verification.value);
+        }
+      }
+    });
     this.auth = betterAuth({
       ...config,
       appName: config.appName ?? 'NocoBase3',
       database: databaseAdapter(connection),
-      plugins,
+      plugins: [
+        ...(plugins ?? []),
+        {
+          id: 'nocobase-password-reset-protection',
+          hooks: {
+            before: [
+              {
+                matcher: (context) =>
+                  context.path === '/request-password-reset' ||
+                  context.path === '/reset-password',
+                handler: resetGuard,
+              },
+            ],
+          },
+        },
+      ],
       emailAndPassword: {
         ...config.emailAndPassword,
         enabled: config.emailAndPassword?.enabled ?? true,
@@ -240,40 +287,7 @@ export class Auth {
             }
           : {}),
       },
-      hooks: {
-        ...config.hooks,
-        before: createAuthMiddleware(async (context) => {
-          const body = context.body as Record<string, unknown> | undefined;
-          if (
-            context.path === '/request-password-reset' &&
-            typeof body?.email === 'string' &&
-            config.secondaryStorage?.increment
-          ) {
-            const key =
-              'reset-email:' +
-              createHash('sha256')
-                .update(body.email.trim().toLowerCase())
-                .digest('hex');
-            const count = await config.secondaryStorage.increment(key, 60);
-            if (count > 1 && context.request)
-              throttledResetRequests.add(context.request);
-          }
-          if (context.path === '/reset-password') {
-            const token: unknown = body?.token || context.query?.token;
-            const verification =
-              typeof token === 'string'
-                ? await context.context.internalAdapter.findVerificationValue(
-                    `reset-password:${token}`,
-                  )
-                : undefined;
-            if (verification) {
-              resetUserIds.set(context.context, verification.value);
-              await assertResetAccount(verification.value);
-            }
-          }
-          return config.hooks?.before?.(context);
-        }),
-      },
+
       user: {
         ...config.user,
         additionalFields: {

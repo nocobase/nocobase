@@ -58,3 +58,10 @@ The running application documents the log and test routes under the `Notificatio
 Targets are the intersection of registered definitions and enabled configured instances. Their public descriptors contain only Channel names, Provider identifiers, labels, and safe form-field metadata. Configuration, Webhook URLs, API keys, and secrets stay on the server. Channel definitions convert test fields into the same normal `send()` inputs; each test creates persistent logs, and status is visible only to its creating user.
 
 A production test is a real external send and requires explicit scope, the recipient or recipientless mode, Channel, permission, and follow-up verification.
+
+
+## Executable ownership and management metadata
+
+With the host sending service, external executable definitions have one owner in `sendingExtensionRegistryToken`. Legacy email/IM definitions and extensions explicitly marked `deliveryLayer: 'sending'` forward there; notification stores their management forms and labels independently. Built-in definitions register as fallbacks, so an explicit application definition through either token replaces a fallback once. Two explicit registrations conflict regardless of order, as do separate-layer owners with the same identifier. Runtime activation freezes executable registration; an already-owned fallback can be ignored without changing execution.
+
+Attach a test form or display label to a sending-only definition with the notification registry's `registerChannelTest` / `registerProviderLabel` methods instead of registering another executor. Custom notification-only definitions stay in notification. Legacy custom email/IM `validateMessage` and `prepare` run unchanged through the shared runtime; management reads the same effective definitions with separate metadata.

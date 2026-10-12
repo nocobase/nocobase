@@ -1,3 +1,4 @@
+import { createAuthMiddleware } from 'better-auth/api';
 // @vitest-environment node
 import { createServer, type Socket } from 'node:net';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -544,4 +545,36 @@ it('suppresses delivery after password login is disabled in current configuratio
   ).toBe(200);
   await app.shutdown();
   expect(receiver.messages).toEqual([]);
+});
+
+it('composes reset protection with application before/after hooks', async () => {
+  const before = vi.fn();
+  const after = vi.fn();
+  const sender = vi.fn();
+  const { app, request } = await setup(undefined, sender, {
+    hooks: {
+      before: createAuthMiddleware((context) => {
+        before(context.path);
+      }),
+      after: createAuthMiddleware((context) => {
+        after(context.path);
+        context.setHeader('x-application-after', 'preserved');
+      }),
+    },
+  });
+  await request('sign-up/email', {
+    email: 'hooks@example.test',
+    username: 'hooks',
+    name: 'Hooks',
+    password: 'original-password',
+  });
+  const response = await request('request-password-reset', {
+    email: 'hooks@example.test',
+  });
+  expect(response.status).toBe(200);
+  expect(response.headers.get('x-application-after')).toBe('preserved');
+  expect(before).toHaveBeenCalledWith('/request-password-reset');
+  expect(after).toHaveBeenCalledWith('/request-password-reset');
+  await app.shutdown();
+  expect(sender).toHaveBeenCalledTimes(1);
 });

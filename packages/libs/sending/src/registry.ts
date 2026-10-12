@@ -4,8 +4,42 @@ import type {
   SendingProviderDefinition,
 } from './types.js';
 
+export interface SendingRegistrationOptions {
+  /** Framework defaults yield to one explicit application definition, regardless of order. */
+  readonly fallback?: boolean;
+}
+
 /** Collects definitions without creating runtime resources. */
 export class SendingRegistry {
+  private sealed = false;
+  private readonly fallbackChannels = new Set<string>();
+  private readonly fallbackProviders = new Set<string>();
+  seal(): void {
+    this.sealed = true;
+  }
+
+  private register<T>(
+    map: Map<string, T>,
+    defaults: Set<string>,
+    type: string,
+    definition: T,
+    options: SendingRegistrationOptions,
+  ): void {
+    // An existing fallback contributes no executable mutation, even after activation.
+    if (options.fallback && map.has(type)) return;
+    if (this.sealed)
+      throw new Error(
+        'Sending definitions cannot change after runtime activation.',
+      );
+    if (map.has(type)) {
+      if (!defaults.has(type))
+        throw new Error(`Sending definition "${type}" is already registered.`);
+    }
+    map.set(type, definition);
+    if (options.fallback) defaults.add(type);
+    else defaults.delete(type);
+  }
+
   private readonly channelDefinitions = new Map<
     string,
     SendingChannelDefinition
@@ -15,16 +49,24 @@ export class SendingRegistry {
     SendingProviderDefinition
   >();
 
-  registerChannel(definition: SendingChannelDefinition): this {
-    if (this.channelDefinitions.has(definition.type))
-      throw new Error(
-        `Sending message type "${definition.type}" is already registered.`,
-      );
-    this.channelDefinitions.set(definition.type, definition);
+  registerChannel(
+    definition: SendingChannelDefinition,
+    options: SendingRegistrationOptions = {},
+  ): this {
+    this.register(
+      this.channelDefinitions,
+      this.fallbackChannels,
+      definition.type,
+      definition,
+      options,
+    );
     return this;
   }
 
-  registerProvider(definition: SendingProviderDefinition): this {
+  registerProvider(
+    definition: SendingProviderDefinition,
+    options: SendingRegistrationOptions = {},
+  ): this {
     if (
       !definition.type?.trim() ||
       definition.type !== definition.type.trim() ||
@@ -33,11 +75,13 @@ export class SendingRegistry {
       throw new Error(
         'Sending Provider requires a non-empty identifier and message type.',
       );
-    if (this.providerDefinitions.has(definition.type))
-      throw new Error(
-        `Sending Provider "${definition.type}" is already registered.`,
-      );
-    this.providerDefinitions.set(definition.type, definition);
+    this.register(
+      this.providerDefinitions,
+      this.fallbackProviders,
+      definition.type,
+      definition,
+      options,
+    );
     return this;
   }
 

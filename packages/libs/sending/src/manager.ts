@@ -92,6 +92,11 @@ export class SendingManager implements SendingService {
     }
   >();
   private closed = false;
+  private closing: Promise<void> | undefined;
+  private readonly providerShutdowns = new WeakMap<
+    SendingProvider,
+    Promise<void>
+  >();
   public constructor(private readonly options: SendingManagerOptions) {
     this.registry = options.registry ?? new SendingRegistry();
     if (!options.registry) registerBuiltInSendingProviders(this.registry);
@@ -113,6 +118,7 @@ export class SendingManager implements SendingService {
   public async runtime(name: string): Promise<SendingRuntime> {
     if (!this.available(name))
       throw new Error('Sending channel is unavailable.');
+    this.registry.seal();
     const config = this.config().channels[name];
     const configuration = JSON.stringify(config);
     const existing = this.runtimes.get(name);
@@ -135,13 +141,16 @@ export class SendingManager implements SendingService {
       const channel = await channelDefinition.createChannel(context, config);
       const provider = await definition.createProvider(context, config);
       if (provider.type !== config.provider) {
-        await provider.close?.();
+        await this.closeProvider(provider);
         throw new Error('Sending provider type mismatch.');
       }
       const runtime: SendingRuntime = {
         channel,
         provider: {
-          ...provider,
+          type: provider.type,
+          close: async (): Promise<void> => {
+            await this.closeProvider(provider);
+          },
           capabilities: provider.capabilities ?? definition.capabilities,
           send: (input) =>
             boundedSubmission(
@@ -155,7 +164,7 @@ export class SendingManager implements SendingService {
         },
       };
       if (this.closed) {
-        await provider.close?.();
+        await this.closeProvider(provider);
         throw new Error('Sending service closed.');
       }
       return runtime;
@@ -209,7 +218,19 @@ export class SendingManager implements SendingService {
     }, deadline);
     return outcome.status === 'accepted' ? results : [outcome];
   }
-  public async close(): Promise<void> {
+  private closeProvider(provider: SendingProvider): Promise<void> {
+    let pending = this.providerShutdowns.get(provider);
+    if (!pending) {
+      pending = Promise.resolve().then(() => provider.close?.());
+      this.providerShutdowns.set(provider, pending);
+    }
+    return pending;
+  }
+  public close(): Promise<void> {
+    this.closing ??= this.closeRuntimes();
+    return this.closing;
+  }
+  private async closeRuntimes(): Promise<void> {
     this.closed = true;
     const pending = [...this.runtimes.values()].map(async ({ promise }) =>
       (await promise).provider.close?.(),

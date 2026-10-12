@@ -151,6 +151,7 @@ export class NotificationManager<
 
   async activate(): Promise<void> {
     this.registry.validate(this.options.config);
+    this.registry.seal();
     if (
       !Object.values(this.options.config.channels).some(
         (config) => config.enabled !== false,
