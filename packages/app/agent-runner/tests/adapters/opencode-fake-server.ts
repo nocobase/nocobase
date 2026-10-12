@@ -41,6 +41,7 @@ export interface FakeOptions {
   models?: unknown[];
   /** Sessions GET /api/session/:id knows (resume). */
   knownSessions?: string[];
+  location?: string;
 }
 
 const PASSWORD = 'test-password';
@@ -63,6 +64,7 @@ export class FakeOpencode {
   private readonly replied = new Set<string>();
   private promptWaiters: (() => void)[] = [];
   private started = false;
+  private location?: string;
   private exitResolve?: (v: {
     code: number | null;
     signal: string | null;
@@ -74,6 +76,7 @@ export class FakeOpencode {
 
   constructor(options: FakeOptions) {
     this.options = options;
+    this.location = options.location;
     this.inboxIds = options.script
       .filter(
         (item): item is BusEvent =>
@@ -216,7 +219,14 @@ export class FakeOpencode {
       if (method === 'GET') {
         const known = this.options.knownSessions ?? [this.sessionId];
         return known.includes(m[1])
-          ? json(200, { data: { id: m[1] } })
+          ? json(200, {
+              data: {
+                id: m[1],
+                ...(this.location === undefined
+                  ? {}
+                  : { location: { directory: this.location } }),
+              },
+            })
           : json(404, { _tag: 'SessionNotFoundError', message: 'not found' });
       }
       return json(200, { data: { id: m[1] } });
@@ -224,6 +234,10 @@ export class FakeOpencode {
     if (/^\/api\/experimental\/session\/[^/]+\/instructions\/entries\//.test(p))
       return json(this.options.instructionStatus ?? 204);
     if (/^\/api\/session\/[^/]+\/model$/.test(p)) return json(204);
+    if (/^\/api\/session\/[^/]+\/move$/.test(p)) {
+      this.location = (body as { directory: string }).directory;
+      return json(204);
+    }
     if (/^\/api\/session\/[^/]+\/prompt$/.test(p)) {
       const id = this.inboxIds[this.prompts] ?? `msg_extra_${this.prompts}`;
       this.prompts += 1;

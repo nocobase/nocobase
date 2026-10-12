@@ -20,7 +20,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access, realpath, stat } from 'node:fs/promises';
+import { access, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
@@ -38,6 +38,10 @@ import { classifyClaudeFailure } from './classify.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
+import {
+  claudeProjectKey,
+  migrateClaudeConversation,
+} from '../session-migration.ts';
 import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
@@ -533,16 +537,7 @@ class ClaudeRun {
   private async sessionExists(id: string): Promise<boolean> {
     if (!/^[a-zA-Z0-9_-]+$/.test(id))
       throw new Error('Invalid Claude session id');
-    const cwd = await realpath(this.session.workDir).catch(() =>
-      path.resolve(this.session.workDir),
-    );
-    let project = cwd.replace(/[^a-zA-Z0-9]/g, '-');
-    if (project.length > 200) {
-      let hash = 0;
-      for (let i = 0; i < cwd.length; i += 1)
-        hash = ((hash << 5) - hash + cwd.charCodeAt(i)) | 0;
-      project = `${project.slice(0, 200)}-${Math.abs(hash).toString(36)}`;
-    }
+    const project = await claudeProjectKey(this.session.workDir);
     const config =
       this.session.env.CLAUDE_CONFIG_DIR ||
       path.join(this.session.env.HOME ?? homedir(), '.claude');
@@ -569,6 +564,7 @@ class ClaudeRun {
     let thrown: unknown;
     try {
       if (this.stopping) throw new Error('aborted before start');
+      await migrateClaudeConversation(this.session);
       const options = await this.buildOptions();
       if (options.resume && !(await this.sessionExists(options.resume))) {
         this.recovered = true;

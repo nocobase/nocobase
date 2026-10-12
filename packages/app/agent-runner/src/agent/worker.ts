@@ -3,6 +3,7 @@ import {
   sessionWorkDir,
   updateContinuationState,
 } from '../core/run-worktrees.ts';
+import { repositoryContext } from './repository-context.ts';
 // One run, start to end, in its own process (see supervisor.ts):
 //
 //   prepare (prepare/index.ts: workspace, application CLI, working directories, skills) -> start
@@ -576,13 +577,14 @@ export class RunWorker {
     } finally {
       await this.stopTool();
       // Descendants and tagged detached processes must stop before files are snapshotted.
-      await this.deps.stopWriters?.();
+      const unsafeReason = await this.quiesceWriters();
       const workDir = this.prepared?.workspace?.workDir;
       if (workDir !== undefined) {
         const saved = await finalizeRunWorktrees(
           this.deps.paths,
           workDir,
           this.deps.log,
+          { ...(unsafeReason === undefined ? {} : { unsafeReason }) },
         );
         for (const result of saved)
           this.deps.log(
@@ -763,6 +765,20 @@ export class RunWorker {
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
     const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
+    const legacyBase = payload.workspace.key ?? payload.subject.key;
+    const legacyKey =
+      payload.workspace.readOnly === true
+        ? `${legacyBase}.readonly-${payload.agent?.id ?? payload.run.id}`
+        : legacyBase;
+    const legacyRoot = subjectWorkDir(deps.paths, registration.key, legacyKey);
+    const legacyWorkDirs =
+      context.dirs.length === 0
+        ? [legacyRoot]
+        : context.dirs.map((dir) =>
+            dir.kind === 'repo'
+              ? path.join(legacyRoot, path.relative(workDir, dir.dir))
+              : dir.dir,
+          );
     if (this.broker !== undefined && this.broker.urls.length > 0) {
       this.credentialServer = await serveGitCredentials(
         this.broker,
@@ -842,7 +858,13 @@ export class RunWorker {
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
         pnpmStoreDir,
         ...(payload.workspace.readOnly === true ? { readOnly: true } : {}),
-      }),
+      }) +
+        '\n\n' +
+        (await repositoryContext(
+          context.dirs
+            .filter((dir) => dir.kind === 'repo')
+            .map((dir) => dir.dir),
+        )),
       init,
     );
     const claimed = this.undelivered();
@@ -854,6 +876,10 @@ export class RunWorker {
       this.lastActivity = Date.now();
       const handle = adapter.start({
         workDir: payload.tool.kind === 'codex' ? cwd : sessionDir,
+        legacyWorkDirs,
+        ...(payload.tool.kind === 'pi'
+          ? { sessionStoreDir: path.join(sessionDir, 'pi-sessions') }
+          : {}),
         additionalDirectories:
           context.dirs.length > 0 ? context.dirs.map((dir) => dir.dir) : [cwd],
         prompt,
@@ -1018,17 +1044,33 @@ export class RunWorker {
   }
 
   private savedDuringRun = false;
+  private writerRecoveryReason?: string;
+
+  private async quiesceWriters(): Promise<string | undefined> {
+    if (this.writerRecoveryReason !== undefined)
+      return this.writerRecoveryReason;
+    try {
+      await this.deps.stopWriters?.();
+      return undefined;
+    } catch (error) {
+      this.writerRecoveryReason = `Writer stop verification failed: ${error instanceof Error ? error.message : String(error)}`;
+      return this.writerRecoveryReason;
+    }
+  }
 
   private async saveLocal(): Promise<string> {
     await this.stopTool();
-    await this.deps.stopWriters?.();
+    const unsafeReason = await this.quiesceWriters();
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir === undefined) return '';
     const results = await finalizeRunWorktrees(
       this.deps.paths,
       workDir,
       this.deps.log,
-      { remove: false },
+      {
+        remove: false,
+        ...(unsafeReason === undefined ? {} : { unsafeReason }),
+      },
     );
     if (results.length > 0) this.savedDuringRun = true;
     const message = results

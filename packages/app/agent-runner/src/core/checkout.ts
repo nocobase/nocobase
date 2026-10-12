@@ -362,6 +362,7 @@ export interface WorkspaceMeta {
   runWorktrees?: boolean;
   readOnly?: boolean;
   recoveryRequired?: boolean;
+  recoveryReason?: string;
   subjectKey: string;
   repos: WorkspaceRepo[];
   /**
@@ -488,6 +489,7 @@ function believable(
     ...(!fromWorkDir && raw.recoveryRequired === true
       ? { recoveryRequired: true }
       : {}),
+    ...text('recoveryReason'),
     subjectKey: raw.subjectKey,
     repos,
     ...(Array.isArray(raw.prepared)

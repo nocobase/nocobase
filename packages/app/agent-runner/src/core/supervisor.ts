@@ -1,4 +1,10 @@
 import { finalizeRunWorktrees } from './run-worktrees.ts';
+import {
+  observeWriters,
+  stopRecordedWriters,
+  workspaceWriters,
+  removeWriterOwnership,
+} from './writer-ownership.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
 // A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
@@ -132,6 +138,7 @@ export async function removeRecord(
   runId: string,
 ): Promise<void> {
   await rm(recordPath(paths, runId), { force: true });
+  await removeWriterOwnership(paths, runId);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -243,18 +250,37 @@ export class Supervisor {
   /** The process tags of the runs it started, the latest `MAX_TAGS`: swept once more when it stops. */
   private readonly tags = new Set<string>();
   private scanTimer: NodeJS.Timeout | undefined;
+  private groupObservation = Promise.resolve();
 
   constructor(options: SupervisorOptions) {
     this.options = options;
   }
 
   /** Notes the process groups below every worker now. */
-  async scanGroups(): Promise<void> {
+  scanGroups(): Promise<void> {
+    const next = this.groupObservation.then(() => this.observeGroups());
+    this.groupObservation = next.catch((error) =>
+      this.options.log(
+        `Writer ownership observation failed: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    );
+    return this.groupObservation;
+  }
+
+  private async observeGroups(): Promise<void> {
     if (this.runs.size === 0) return;
     const processes = await listProcesses();
-    for (const run of this.runs.values())
+    for (const run of this.runs.values()) {
       for (const group of groupsBelow(run.pid, processes))
         run.groups.add(group);
+      await observeWriters(
+        this.options.paths,
+        run.runId,
+        run.pid,
+        'supervisor',
+        processes,
+      );
+    }
   }
 
   private watchGroups(): void {
@@ -532,8 +558,37 @@ export async function recoverRun(
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
   }
-  if (record.kind !== 'job' && record.workDir !== undefined)
-    await finalizeRunWorktrees(paths, record.workDir, log);
+  let ownershipError = '';
+  const survivors = await stopRecordedWriters(paths, runId).catch((error) => {
+    ownershipError = `; ownership recovery failed: ${error instanceof Error ? error.message : String(error)}`;
+    return [] as number[];
+  });
+  const holders =
+    record.workDir === undefined ? [] : await workspaceWriters(record.workDir);
+  // Restarted supervision has no process containment boundary. Even no observed survivors cannot rule out a
+  // descendant that escaped between scans. Retain every unfinished attempt rather than deleting on that assumption.
+  const recovery =
+    record.kind !== 'job' && record.workDir !== undefined
+      ? await finalizeRunWorktrees(paths, record.workDir, log, {
+          unsafeReason: `Recovery required: orphan writer quiescence cannot be verified${survivors.length + holders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...holders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`,
+        }).catch((error) => [
+          {
+            path: record.workDir!,
+            saved: false,
+            reason: `Recovery required: could not persist preservation metadata; directory retained: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ])
+      : [];
+  const recoveryDetail = recovery
+    .map(
+      (result) =>
+        `${result.path}: ${result.saved ? 'Local continuation saved; not pushed' : result.reason}`,
+    )
+    .join('\n');
+  const detail =
+    recoveryDetail === ''
+      ? options.detail
+      : `${options.detail}\n\n${recoveryDetail}`;
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
   // A job's directory is its own and goes with it.
@@ -583,7 +638,11 @@ export async function recoverRun(
   spool.push(
     job
       ? { type: 'log', stream: 'runner', content: options.detail }
-      : { type: 'status', content: options.detail, meta: { orphaned: true } },
+      : {
+          type: 'status',
+          content: detail,
+          meta: { orphaned: true, localSave: recovery },
+        },
   );
   const delivered = await spool.drain(
     options.timings.reportTimeoutMs ?? 30_000,
@@ -594,7 +653,7 @@ export async function recoverRun(
     else
       await client.request('POST', routes.fail, {
         reason: options.reason,
-        detail: options.detail,
+        detail,
       });
     log(`run ${runId}: reported as failed (${options.reason})`);
   } catch (error) {

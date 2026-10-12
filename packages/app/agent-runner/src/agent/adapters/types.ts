@@ -100,6 +100,10 @@ export interface AdapterSession {
   workDir: string;
   /** Current code directories when starting from a persistent session container. */
   additionalDirectories?: readonly string[];
+  /** Assigned legacy cwd locations, for migrating this session only. */
+  legacyWorkDirs?: readonly string[];
+  /** Persistent, per-thread conversation directory for tools supporting explicit storage. */
+  sessionStoreDir?: string;
   /** The first user message of the run. */
   prompt: string;
   /** The rendered brief (system, task, context, agent layers joined). */

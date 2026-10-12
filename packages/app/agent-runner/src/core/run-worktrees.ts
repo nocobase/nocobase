@@ -2,7 +2,7 @@
 // another run's work, even when the resume compare-and-swap loses. Only Git's normal merge combines their contents.
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, rm } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { safeName, type RunnerPaths } from '../lib/home.ts';
@@ -332,7 +332,7 @@ export async function addRunWorktree(options: {
     const record = await readWorkspaceMeta(paths, previous);
     if (record?.recoveryRequired === true)
       warnings.push(
-        `Recovery work remains in ${previous}. Resolve or recover it before continuing; this run's checkout cannot represent its unresolved index or uncommitted files.`,
+        `Recovery work remains in ${previous}${record.recoveryReason ? `: ${record.recoveryReason}` : ''}. Resolve or recover it before continuing; this run's checkout cannot represent its unresolved index or uncommitted files.`,
       );
   }
   await mkdir(path.dirname(dir), { recursive: true });
@@ -411,8 +411,27 @@ export async function addRunWorktree(options: {
         throw new CheckoutError(
           `${repo.url}: no base commit for ${repo.branch}`,
         );
-      // Git supports unborn worktrees through --orphan only in recent versions. Fail safely if unavailable.
-      await git(['worktree', 'add', '--orphan', '-b', branch, dir], cache);
+      // Older Git cannot add an unborn worktree. Attach through an unreferenced empty commit, then make only
+      // this worktree's HEAD unborn. The first user commit has no bootstrap parent and no shared ref is changed.
+      const empty = path.join(workDir, `.empty-tree-${randomUUID()}`);
+      await writeFile(empty, '', { flag: 'wx', mode: 0o600 });
+      try {
+        const tree = await git(
+          ['hash-object', '-t', 'tree', '-w', empty],
+          cache,
+        );
+        const bootstrap = await git(
+          [...COMMIT, 'commit-tree', tree, '-m', 'Worktree bootstrap'],
+          cache,
+        );
+        await git(
+          ['worktree', 'add', '--quiet', '--detach', dir, bootstrap],
+          cache,
+        );
+        await git(['symbolic-ref', 'HEAD', `refs/heads/${branch}`], dir);
+      } finally {
+        await rm(empty, { force: true });
+      }
     } else {
       await git(['worktree', 'add', '--quiet', '-b', branch, dir, base], cache);
     }
@@ -490,9 +509,32 @@ export async function finalizeRunWorktrees(
   paths: RunnerPaths,
   workDir: string,
   log: (message: string) => void,
-  options: { remove?: boolean } = {},
+  options: { remove?: boolean; unsafeReason?: string } = {},
 ): Promise<SaveResult[]> {
   const meta = await readWorkspaceMeta(paths, workDir);
+  if (options.unsafeReason !== undefined) {
+    const results: SaveResult[] = (meta?.repos ?? []).map((repo) => ({
+      path: path.join(workDir, repo.path),
+      saved: false,
+      reason: options.unsafeReason,
+    }));
+    if (results.length === 0)
+      results.push({
+        path: workDir,
+        saved: false,
+        reason: options.unsafeReason,
+      });
+    if (meta !== undefined)
+      await writeWorkspaceMeta(paths, workDir, {
+        ...meta,
+        recoveryRequired: true,
+        recoveryReason: options.unsafeReason,
+        endedAt: new Date().toISOString(),
+      });
+    for (const result of results)
+      log(`worktree recovery required: ${result.path}: ${result.reason}`);
+    return results;
+  }
   if (meta?.runWorktrees !== true) {
     if (options.remove !== false && meta?.appKey !== undefined)
       await updateContinuationState(
@@ -663,6 +705,10 @@ export async function finalizeRunWorktrees(
     await writeWorkspaceMeta(paths, workDir, {
       ...meta,
       recoveryRequired: true,
+      recoveryReason: results
+        .filter((result) => !result.saved)
+        .map((result) => result.reason)
+        .join('; '),
       endedAt: new Date().toISOString(),
     });
   }

@@ -37,6 +37,55 @@ describe('per-attempt worktrees', () => {
     remote = makeRemote(root);
   });
   afterEach(() => removeDir(root));
+  it('creates isolated unborn worktrees on older Git and resumes the first real root commit', async () => {
+    const empty = path.join(root, 'empty.git');
+    git(['init', '--bare', '--initial-branch=main', empty], root);
+    const open = async (id: string) => {
+      const workDir = runWorkDir(paths, 'app', 'EMPTY', id, 1);
+      const prepared = await prepareDirs({
+        paths,
+        workDir,
+        appKey: 'app',
+        subjectKey: 'EMPTY',
+        runId: id,
+        perRun: true,
+        dirs: [
+          {
+            kind: 'repo',
+            url: `file://${empty}`,
+            path: 'repo',
+            branch: 'main',
+            defaultBranch: 'main',
+            initial: true,
+          },
+        ],
+      });
+      return { workDir, repo: prepared.dirs[0].repo! };
+    };
+    const a = await open('a');
+    const b = await open('b');
+    expect(a.repo.localBranch).not.toBe(b.repo.localBranch);
+    expect(git(['for-each-ref', '--format=%(refname)'], a.repo.cache)).toBe('');
+    writeFileSync(path.join(a.repo.dir, 'first.txt'), 'first real commit');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0].saved).toBe(true);
+    expect(
+      git(
+        ['rev-list', '--parents', '-n', '1', saved[0].head!],
+        a.repo.cache,
+      ).split(' '),
+    ).toHaveLength(1);
+    expect(git(['symbolic-ref', '--short', 'HEAD'], b.repo.dir)).toBe(
+      b.repo.localBranch,
+    );
+    const c = await open('c');
+    expect(readFileSync(path.join(c.repo.dir, 'first.txt'), 'utf8')).toBe(
+      'first real commit',
+    );
+    expect(git(['rev-parse', 'HEAD'], c.repo.dir)).toBe(saved[0].head);
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    await finalizeRunWorktrees(paths, c.workDir, () => {});
+  });
   async function start(id: string, readOnly = false, clean = false) {
     const workDir = runWorkDir(paths, 'app', 'PM-300', id, 1);
     const prepared = await prepareDirs({

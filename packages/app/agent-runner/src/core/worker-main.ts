@@ -8,6 +8,7 @@ import { readConnection, readSettings } from '../lib/config.ts';
 import { runnerPaths, readJson } from '../lib/home.ts';
 import { JobPayloadSchema, RunPayloadSchema } from '../protocol/index.ts';
 import { JobWorker } from './job-worker.ts';
+import { observeWriters, workspaceWriters } from './writer-ownership.ts';
 import {
   killLeftovers,
   killTagged,
@@ -99,8 +100,16 @@ async function main(): Promise<number> {
   const settings = await readSettings(paths);
   const seenGroups = new Set<number>();
   const observeGroups = async () => {
-    for (const group of groupsBelow(process.pid, await listProcesses()))
+    const processes = await listProcesses();
+    for (const group of groupsBelow(process.pid, processes))
       seenGroups.add(group);
+    await observeWriters(
+      paths,
+      payload.run.id,
+      process.pid,
+      'worker',
+      processes,
+    );
   };
   let quiescing = false;
   let observation = Promise.resolve();
@@ -138,7 +147,9 @@ async function main(): Promise<number> {
             descendantsOf(process.pid, await listProcesses()).some((entry) =>
               isAlive(entry.pid),
             ) ||
-            (tag !== undefined && (await taggedProcesses([tag])).length > 0)
+            (tag !== undefined && (await taggedProcesses([tag])).length > 0) ||
+            (record.workDir !== undefined &&
+              (await workspaceWriters(record.workDir)).length > 0)
           )
             throw new Error(
               'Writers remain after stopping the tool; preserve the worktree for recovery.',
