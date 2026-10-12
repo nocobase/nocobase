@@ -1,9 +1,12 @@
 // Copy only the assigned conversation into a private container. Never read/copy authentication or other sessions.
+import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import {
   copyFile,
   cp,
   lstat,
+  link,
+  unlink,
   mkdir,
   readFile,
   readdir,
@@ -125,13 +128,31 @@ export async function migratePiConversation(
       if (header.type !== 'session' || header.id !== id)
         throw new Error('Pi migration session identity mismatch');
       await mkdir(session.sessionStoreDir, { recursive: true, mode: 0o700 });
-      await writeFile(
-        path.join(session.sessionStoreDir, file),
-        `${JSON.stringify({ ...header, cwd: session.workDir })}${text.slice(newline)}`,
-        { flag: 'wx', mode: 0o600 },
-      ).catch((error) => {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-      });
+      const destination = path.join(session.sessionStoreDir, file);
+      const migrated = `${JSON.stringify({ ...header, cwd: session.workDir })}${text.slice(newline)}`;
+      const validate = (actual: string) => {
+        // A complete source prefix proves migration; subsequent tool messages must remain untouched.
+        if (!actual.startsWith(migrated) || !actual.endsWith('\n'))
+          throw new Error(
+            'Pi migration target is incomplete or divergent; source and target retained',
+          );
+        for (const line of actual.trimEnd().split('\n')) JSON.parse(line);
+      };
+      validate(migrated);
+      const temporary = `${destination}.${randomUUID()}.migration`;
+      try {
+        await writeFile(temporary, migrated, { flag: 'wx', mode: 0o600 });
+        validate(await readFile(temporary, 'utf8'));
+        // Exclusive atomic publication also handles concurrent migrations without replacing continued history.
+        await link(temporary, destination).catch((error) => {
+          if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        });
+        validate(await readFile(destination, 'utf8'));
+      } finally {
+        await unlink(temporary).catch((error) => {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        });
+      }
       return;
     }
   }

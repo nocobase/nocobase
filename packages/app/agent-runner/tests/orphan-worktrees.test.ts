@@ -10,6 +10,7 @@ import {
 } from '../src/core/checkout.ts';
 import {
   recoverRun,
+  recoverOrphans,
   readRecords,
   writeRecord,
   type RunRecord,
@@ -20,6 +21,7 @@ import {
 } from '../src/core/writer-ownership.ts';
 import { runWorkDir, finalizeRunWorktrees } from '../src/core/run-worktrees.ts';
 import { runnerPaths } from '../src/lib/home.ts';
+import * as home from '../src/lib/home.ts';
 import { ApiClient } from '../src/lib/http.ts';
 import { git, makeRemote, tempDir, removeDir } from './helpers.ts';
 import {
@@ -277,6 +279,215 @@ describe('orphan writer recovery', () => {
     expect(existsSync(path.join(paths.runsDir, 'corrupt.worker-writers'))).toBe(
       true,
     );
+  });
+
+  it.each(['open', 'write'] as const)(
+    'retains cancelled recovery across %s spool failure and failed direct delivery',
+    async (failure) => {
+      const paths = runnerPaths(
+        path.join(root, 'home'),
+        path.join(root, 'work'),
+      );
+      const workDir = runWorkDir(paths, 'app', 'PM-300', 'cancel-report', 1);
+      mkdirSync(workDir, { recursive: true });
+      await writeWorkspaceMeta(paths, workDir, {
+        appKey: 'app',
+        subjectKey: 'PM-300',
+        repos: [],
+        lastUsedAt: new Date().toISOString(),
+        runWorktrees: true,
+      });
+      if (failure === 'open')
+        vi.spyOn(EventSpool, 'open').mockImplementation(() => {
+          throw new Error('storage failure');
+        });
+      else
+        vi.spyOn(EventSpool.prototype, 'push').mockImplementation(() => {
+          throw new Error('write failure');
+        });
+      const record: RunRecord = {
+        runId: 'cancel-report',
+        appKey: 'app',
+        attempt: 1,
+        pid: 2147483647,
+        workDir,
+        startedAt: new Date().toISOString(),
+        phase: 'running',
+        firstSeq: 0,
+        log: '',
+      };
+      await writeRecord(paths, record);
+      let unavailable = true;
+      const bodies: { recovery: { detail: string; localSave: unknown[] } }[] =
+        [];
+      const client = new ApiClient({
+        server: 'http://fixture.test',
+        headers: {},
+        fetch: async (url, init) => {
+          expect(String(url)).toContain('/cancelAck');
+          bodies.push(JSON.parse(String(init?.body)));
+          return new Response(
+            unavailable
+              ? '{}'
+              : '{"data":{"status":"cancelled","recoveryAccepted":true}}',
+            { status: unavailable ? 503 : 200 },
+          );
+        },
+      });
+      const options = {
+        paths,
+        clientFor: () => client,
+        timings: { reportTimeoutMs: 5 },
+        log: () => {},
+      };
+      await recoverRun(record, {
+        ...options,
+        reason: 'cancelled',
+        detail: 'Cancellation',
+      });
+      expect(await readRecords(paths)).toHaveLength(1);
+      unavailable = false;
+      await recoverOrphans(options);
+      expect(bodies.at(-1)?.recovery.detail).toContain(workDir);
+      expect(bodies.at(-1)?.recovery.localSave).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: workDir, saved: false }),
+        ]),
+      );
+      expect(await readRecords(paths)).toEqual([]);
+      expect(existsSync(workDir)).toBe(true);
+    },
+  );
+
+  it('keeps the sole report record when a legacy or terminal server does not acknowledge preservation', async () => {
+    const paths = runnerPaths(path.join(root, 'home'), path.join(root, 'work'));
+    const workDir = runWorkDir(paths, 'app', 'PM-300', 'legacy-cancel', 1);
+    mkdirSync(workDir, { recursive: true });
+    await writeWorkspaceMeta(paths, workDir, {
+      appKey: 'app',
+      subjectKey: 'PM-300',
+      repos: [],
+      lastUsedAt: new Date().toISOString(),
+      runWorktrees: true,
+    });
+    vi.spyOn(EventSpool, 'open').mockImplementation(() => {
+      throw new Error('storage failure');
+    });
+    const record: RunRecord = {
+      runId: 'legacy-cancel',
+      appKey: 'app',
+      attempt: 1,
+      pid: 2147483647,
+      workDir,
+      startedAt: new Date().toISOString(),
+      phase: 'running',
+      firstSeq: 0,
+      log: '',
+    };
+    await writeRecord(paths, record);
+    let terminal = false;
+    const client = new ApiClient({
+      server: 'http://fixture.test',
+      headers: {},
+      fetch: async () =>
+        new Response(
+          terminal
+            ? '{"error":{"reason":"RUN_NOT_ACTIVE","message":"Cancelled"}}'
+            : '{}',
+          { status: terminal ? 409 : 200 },
+        ),
+    });
+    const options = {
+      paths,
+      clientFor: () => client,
+      timings: {},
+      log: () => {},
+    };
+    await recoverRun(record, {
+      ...options,
+      reason: 'cancelled',
+      detail: 'Cancellation',
+    });
+    expect(await readRecords(paths)).toHaveLength(1);
+    terminal = true;
+    await recoverOrphans(options);
+    expect(await readRecords(paths)).toHaveLength(1);
+    expect(existsSync(workDir)).toBe(true);
+  });
+
+  it('reports cancellation even when retry metadata cannot be rewritten, then recovers its reason from owned server status', async () => {
+    const paths = runnerPaths(path.join(root, 'home'), path.join(root, 'work'));
+    const workDir = runWorkDir(paths, 'app', 'PM-300', 'record-storage', 1);
+    mkdirSync(workDir, { recursive: true });
+    await writeWorkspaceMeta(paths, workDir, {
+      appKey: 'app',
+      subjectKey: 'PM-300',
+      repos: [],
+      lastUsedAt: new Date().toISOString(),
+      runWorktrees: true,
+    });
+    const record: RunRecord = {
+      runId: 'record-storage',
+      appKey: 'app',
+      attempt: 1,
+      pid: 2147483647,
+      workDir,
+      startedAt: new Date().toISOString(),
+      phase: 'running',
+      firstSeq: 0,
+      log: '',
+    };
+    await writeRecord(paths, record);
+    const original = home.writeJsonAtomic;
+    vi.spyOn(home, 'writeJsonAtomic').mockImplementation(
+      async (file, value, mode) => {
+        if (file === path.join(paths.runsDir, 'record-storage.json'))
+          throw new Error('retry metadata storage unavailable');
+        await original(file, value, mode);
+      },
+    );
+    vi.spyOn(EventSpool, 'open').mockImplementation(() => {
+      throw new Error('spool unavailable');
+    });
+    let offline = true;
+    const bodies: { recovery: { detail: string } }[] = [];
+    const client = new ApiClient({
+      server: 'http://fixture.test',
+      headers: {},
+      fetch: async (url, init) => {
+        if (String(url).endsWith('/status'))
+          return new Response(
+            '{"data":{"status":"cancelled","cancelRequested":true,"inputs":[],"leaseExpiresAt":null}}',
+          );
+        expect(String(url)).toContain('/cancelAck');
+        bodies.push(JSON.parse(String(init?.body)));
+        return new Response(
+          offline
+            ? '{}'
+            : '{"data":{"status":"cancelled","recoveryAccepted":true}}',
+          { status: offline ? 503 : 200 },
+        );
+      },
+    });
+    const options = {
+      paths,
+      clientFor: () => client,
+      timings: {},
+      log: () => {},
+    };
+    await recoverRun(record, {
+      ...options,
+      reason: 'cancelled',
+      detail: 'Cancel',
+    });
+    expect(bodies[0].recovery.detail).toContain(
+      'retry metadata could not be stored',
+    );
+    expect(await readRecords(paths)).toHaveLength(1);
+    offline = false;
+    await recoverOrphans(options);
+    expect(await readRecords(paths)).toEqual([]);
+    expect(existsSync(workDir)).toBe(true);
   });
 
   it('still reports recovery details when event spool storage fails', async () => {

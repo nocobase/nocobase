@@ -30,13 +30,14 @@ import {
   writeJsonAtomic,
   type RunnerPaths,
 } from '../lib/home.ts';
-import { delay, ApiError, type ApiClient } from '../lib/http.ts';
+import { delay, ApiError, dataOf, type ApiClient } from '../lib/http.ts';
 import {
   RUNNER_ROUTES,
   routePath,
   type AgentTool,
   type JobPayload,
   type RunPayload,
+  StatusResponseSchema,
 } from '../protocol/index.ts';
 import { deleteRunCredentials } from '../agent/credentials.ts';
 import { EventSpool, spoolPaths } from './events.ts';
@@ -73,6 +74,8 @@ export interface RunRecord {
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
   phase: 'spawned' | 'running' | 'reporting' | (string & {});
   log: string;
+  /** Retain cancellation semantics across failed report delivery and daemon restarts. */
+  recoveryReason?: 'cancelled';
 }
 
 export interface Timings {
@@ -591,6 +594,14 @@ export async function recoverRun(
     recoveryDetail === ''
       ? options.detail
       : `${options.detail}\n\n${recoveryDetail}`;
+  if (options.reason === 'cancelled' && record.recoveryReason !== 'cancelled') {
+    record.recoveryReason = 'cancelled';
+    await writeRecord(paths, record).catch((error) => {
+      // The old record still protects the directory. A restart can also recover cancellation from the owned status.
+      detail += `\n\nCancellation retry metadata could not be stored: ${error instanceof Error ? error.message : String(error)}`;
+      log(detail);
+    });
+  }
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
   // A job's directory is its own and goes with it.
@@ -659,19 +670,57 @@ export async function recoverRun(
     log(detail);
   }
   try {
-    if (options.reason === 'cancelled')
-      await client.request('POST', routes.cancelAck, {});
-    else
+    if (options.reason === 'cancelled') {
+      const response = dataOf(
+        await client.request(
+          'POST',
+          routes.cancelAck,
+          job
+            ? {}
+            : {
+                recovery: {
+                  attempt: record.attempt,
+                  detail: detail.slice(0, 10_000),
+                  localSave: recovery,
+                },
+              },
+        ),
+      );
+      if (
+        !job &&
+        recovery.length > 0 &&
+        !delivered &&
+        !(
+          response !== null &&
+          typeof response === 'object' &&
+          'recoveryAccepted' in response &&
+          response.recoveryAccepted === true
+        )
+      ) {
+        log(
+          `run ${runId}: server did not acknowledge preservation details; record retained`,
+        );
+        return;
+      }
+    } else
       await client.request('POST', routes.fail, {
         reason: options.reason,
         detail,
       });
-    log(`run ${runId}: reported as failed (${options.reason})`);
+    log(
+      `run ${runId}: reported as ${options.reason === 'cancelled' ? 'cancelled' : 'failed'} (${options.reason})`,
+    );
   } catch (error) {
     if (
       error instanceof ApiError &&
       (LOST_CODES.has(error.reason) || error.status === 404)
     ) {
+      if (options.reason === 'cancelled' && recovery.length > 0) {
+        log(
+          `run ${runId}: cancellation preservation report not acknowledged (${error.reason}); record retained`,
+        );
+        return;
+      }
       log(`run ${runId}: already ended on the server (${error.reason})`);
     } else {
       // Leave the record for the next start to try again.
@@ -697,9 +746,22 @@ export async function recoverOrphans(
   const records = await readRecords(options.paths);
   const recovered: string[] = [];
   for (const record of records) {
+    let reason: 'cancelled' | 'leaseExpired' =
+      record.recoveryReason ?? 'leaseExpired';
+    if (record.kind !== 'job' && record.recoveryReason === undefined) {
+      const client = options.clientFor(record.appKey);
+      const status = await client
+        ?.get(
+          routePath(RUNNER_ROUTES.status, { runId: record.runId }),
+          StatusResponseSchema,
+        )
+        .catch(() => undefined);
+      if (status?.cancelRequested === true || status?.status === 'cancelled')
+        reason = 'cancelled';
+    }
     await recoverRun(record, {
       ...options,
-      reason: 'leaseExpired',
+      reason,
       detail:
         record.kind === 'job'
           ? 'The runner restarted; the job it left behind was stopped.'
