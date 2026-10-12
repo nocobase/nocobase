@@ -144,6 +144,70 @@ describe('manager delegated queue timeout', () => {
     expect((await h.agents.runs.get(run.id)).status).toBe('queued');
     expect(await pending(run.id)).toBeUndefined();
   });
+  it('uses the incompatible owned runner cause in the queue, progress and timeout reply without exposing private machines', async () => {
+    await h.claimOne();
+    const { run, worker, issue } = await dispatch();
+    const [owned] = await h.agents.runners.all(h.database.connection());
+    await h.addUser('bob');
+    const token = await h.agents.runners.createRegistrationToken('bob', {
+      trust: 'ownerOnly',
+    });
+    const registration = await h.request('POST', '/agents/runners/register', {
+      body: {
+        registrationToken: token.token,
+        name: 'private-machine-do-not-disclose',
+        hostname: 'host',
+        os: 'linux',
+        arch: 'x64',
+        version: owned!.version,
+        protocolVersion: owned!.protocolVersion,
+        features: owned!.features,
+        tools: owned!.tools,
+        slots: 2,
+      },
+    });
+    expect(registration.status).toBe(200);
+    await h.database
+      .connection()
+      .query.updateTable('agRunners')
+      .set({
+        trust: 'ownerOnly',
+        ownerUserId: 'alice',
+        status: 'upgrade_required',
+        protocolVersion: 0,
+      })
+      .where('id', '=', owned!.id)
+      .execute();
+    const wait = (
+      await h.agents.runs.workload({
+        subjectKind: 'issue',
+        subjectId: issue.id,
+      })
+    ).runs.find((row) => row.id === run.id)!.wait;
+    expect(wait?.reason).toBe('incompatible');
+    const progress = await issueProgress(
+      { agents: h.agents, projects: h.projects },
+      h.database.connection(),
+      issue,
+      { userId: 'alice', seesMachines: false },
+    );
+    expect(progress.managerWait?.entries[0]?.reason).toBe('incompatible');
+    expect(JSON.stringify(progress)).not.toContain(
+      'private-machine-do-not-disclose',
+    );
+    await age(run.id);
+    await h.agents.sweeper.sweep();
+    await vi.waitFor(async () =>
+      expect((await pending(run.id))?.status).toBe('done'),
+    );
+    const reply = (await rows(issue.id)).find(
+      (row) => row.authorId === worker,
+    )!;
+    expect(reply.content).toContain('upgrade required');
+    expect(reply.content).not.toContain('only other');
+    expect(reply.content).not.toContain('private-machine-do-not-disclose');
+  });
+
   it('withdraws offline work without polling and reports once in the original thread as its agent', async () => {
     const { run, worker, issue, comment } = await dispatch();
     await h.database
@@ -225,38 +289,207 @@ describe('manager delegated queue timeout', () => {
       (await rows(issue.id)).filter((c) => c.authorId === worker),
     ).toHaveLength(0);
   });
-  it('serializes withdrawal with claim so only one succeeds', async () => {
-    const { run, worker, issue } = await dispatch();
+  it.each(['claim', 'withdraw'] as const)(
+    'forces %s to commit before its competitor',
+    async (winner) => {
+      await h.claimOne();
+      const { run, worker, issue } = await dispatch();
+      const [runner] = await h.agents.runners.all(h.database.connection());
+      const claim = async () => (await h.agents.claims.claim(runner!, 1))[0];
+      await age(run.id);
+      let unlock!: () => void;
+      let reached!: () => void;
+      const locked = new Promise<void>((resolve) => {
+        reached = resolve;
+      });
+      const barrier = new Promise<void>((resolve) => {
+        unlock = resolve;
+      });
+      const binding = h.agents.subjects.get('issue')!;
+      const context = binding.context;
+      const assemble = context.assemble;
+      const timeout = binding.queuedTimeout!;
+      if (winner === 'claim') {
+        context.assemble = async (conn, claim) => {
+          if (
+            claim.run.id === run.id &&
+            claim.runner &&
+            claim.run.status === 'dispatched'
+          ) {
+            reached();
+            await barrier;
+          }
+          return assemble(conn, claim);
+        };
+      } else {
+        Object.assign(binding, {
+          queuedTimeout: async (...args: Parameters<typeof timeout>) => {
+            reached();
+            await barrier;
+            return timeout(...args);
+          },
+        });
+      }
+      const first = winner === 'claim' ? claim() : h.agents.sweeper.sweep();
+      await locked;
+      let attempt!: () => void;
+      const attempted = new Promise<void>((resolve) => {
+        attempt = resolve;
+      });
+      const txRun = h.agents.tx.run.bind(h.agents.tx);
+      const observer = vi
+        .spyOn(h.agents.tx, 'run')
+        .mockImplementation((fn, outer) =>
+          txRun(async (unit) => {
+            attempt();
+            return fn(unit);
+          }, outer),
+        );
+      const second = winner === 'claim' ? h.agents.sweeper.sweep() : claim();
+      // Server dialects can open the competing transaction while the winner holds
+      // the agent lock. SQLite has one pooled connection and queues before opening it.
+      if (
+        process.env.NOCOBASE_TEST_DB_DIALECT &&
+        process.env.NOCOBASE_TEST_DB_DIALECT !== 'sqlite'
+      )
+        await attempted;
+      unlock();
+      const [a, b] = await Promise.all([first, second]);
+      observer.mockRestore();
+      const payload = winner === 'claim' ? a : b;
+      const current = await h.agents.runs.get(run.id);
+      if (winner === 'claim') {
+        expect(payload.run.id).toBe(run.id);
+        expect(current.status).toBe('dispatched');
+        expect(await pending(run.id)).toBeUndefined();
+      } else {
+        expect(payload?.run.id).not.toBe(run.id);
+        expect(current.status).toBe('cancelled');
+        await vi.waitFor(async () =>
+          expect((await pending(run.id))?.status).toBe('done'),
+        );
+        expect(
+          (await rows(issue.id)).filter((c) => c.authorId === worker),
+        ).toHaveLength(1);
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.complete, run.id, {
+              summary: 'Late output',
+              handledInputIds: [],
+            })
+          ).status,
+        ).toBeGreaterThanOrEqual(400);
+      }
+    },
+  );
+
+  it('rejects a scanned queue generation after claim and requeue', async () => {
+    const { run } = await dispatch();
     await age(run.id);
-    const [claimed] = await Promise.all([
-      h.claimOne(),
-      h.agents.sweeper.sweep(),
-    ]);
-    const current = await h.agents.runs.get(run.id);
-    const payloads = claimed ? [claimed] : [];
-    if (current.status === 'cancelled') {
+    let resume!: () => void;
+    let scanned!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      resume = resolve;
+    });
+    const reached = new Promise<void>((resolve) => {
+      scanned = resolve;
+    });
+    const original = h.agents.tx.run.bind(h.agents.tx);
+    const gate = vi
+      .spyOn(h.agents.tx, 'run')
+      .mockImplementationOnce(async (fn, outer) => {
+        scanned();
+        await barrier;
+        return original(fn, outer);
+      });
+    const sweep = h.agents.sweeper.sweep();
+    await reached;
+    gate.mockRestore();
+    const payload = await h.claimOne();
+    expect(payload.run.id).toBe(run.id);
+    await h.database
+      .connection()
+      .query.updateTable('agRuns')
+      .set({
+        maxAttempts: 3,
+        leaseExpiresAt: new Date(Date.now() - 1000).toISOString(),
+      })
+      .where('id', '=', run.id)
+      .execute();
+    await h.agents.sweeper.sweep();
+    const fresh = await h.agents.runs.get(run.id);
+    expect(fresh.status).toBe('queued');
+    expect(fresh.queueEnteredAt).not.toBe(run.queueEnteredAt);
+    resume();
+    await sweep;
+    expect((await h.agents.runs.get(run.id)).status).toBe('queued');
+    expect(await pending(run.id)).toBeUndefined();
+  });
+
+  it.each(['before', 'after'] as const)(
+    'recovers an interruption %s the report commit with one reply and wakeup',
+    async (window) => {
+      const { run, worker, issue } = await dispatch();
+      const emit = h.agents.events.emit.bind(h.agents.events);
+      vi.spyOn(h.agents.events, 'emit').mockImplementation((event) => {
+        if (event.type === 'run.changed' && event.status === 'cancelled')
+          return;
+        emit(event);
+      });
+      await age(run.id);
+      await h.agents.sweeper.sweep();
+      expect((await h.agents.runs.get(run.id)).status).toBe('cancelled');
+      expect((await pending(run.id))?.status).toBe('pending');
       expect(
-        (
-          await h.runner(RUNNER_ROUTES.complete, run.id, {
-            summary: 'Late output',
-            handledInputIds: [],
-          })
-        ).status,
-      ).toBeGreaterThanOrEqual(400);
-      expect(
-        payloads.some((p: { run: { id: string } }) => p.run.id === run.id),
-      ).toBe(false);
-      await vi.waitFor(async () =>
-        expect((await pending(run.id))?.status).toBe('done'),
+        (await rows(issue.id)).filter((c) => c.authorId === worker),
+      ).toHaveLength(0);
+      if (window === 'before') {
+        const post = h.projects.comments.post.bind(h.projects.comments);
+        vi.spyOn(h.projects.comments, 'post').mockImplementationOnce(
+          async (...args) => {
+            await post(...args);
+            throw new Error(
+              'Interrupted after posting, before transaction commit',
+            );
+          },
+        );
+      } else {
+        const txRun = h.projects.tx.run.bind(h.projects.tx);
+        vi.spyOn(h.projects.tx, 'run').mockImplementationOnce(
+          async (fn, outer) => {
+            const result = await txRun(fn, outer);
+            throw new Error(
+              `Interrupted after committed delivery: ${String(result)}`,
+            );
+          },
+        );
+      }
+      await drainRunReports(h.agents, h.projects);
+      vi.restoreAllMocks();
+      await drainRunReports(
+        h.agents,
+        h.projects,
+        new Date(Date.now() + 60_000),
       );
+      await drainRunReports(
+        h.agents,
+        h.projects,
+        new Date(Date.now() + 120_000),
+      );
+      expect((await pending(run.id))?.status).toBe('done');
       expect(
         (await rows(issue.id)).filter((c) => c.authorId === worker),
       ).toHaveLength(1);
-    } else {
-      expect(current.status).toBe('dispatched');
-      expect(await pending(run.id)).toBeUndefined();
-    }
-  });
+      expect(
+        await h.agents.runs.openOn(
+          h.database.connection(),
+          { kind: 'issue', id: issue.id },
+          PROJECT_MANAGER_ID,
+        ),
+      ).toHaveLength(1);
+    },
+  );
+
   it('retains the manager input and shows manual continuation when commentRunLimit is reached', async () => {
     const { run, issue } = await dispatch();
     await h.manager.update('alice', { commentRunLimit: 1 });

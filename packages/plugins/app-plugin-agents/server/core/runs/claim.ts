@@ -717,8 +717,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         !loads.some((runner) => runner.reason === 'busy')
       )
         reason = 'unknown';
-      if (sameWork) reason = 'sameWorkActive';
-      else if (active >= agent.maxConcurrentRuns) reason = 'concurrencyFull';
+      if (compatible.length && sameWork) reason = 'sameWorkActive';
+      else if (compatible.length && active >= agent.maxConcurrentRuns)
+        reason = 'concurrencyFull';
       else if (start > now.getTime()) reason = 'delayed';
       entries.push({
         tool: entry.tool,
@@ -1146,6 +1147,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           values: {
             status: 'dispatched',
             runnerId: runner.id,
+            // Brief providers observe this reservation inside the claim transaction.
+            // Replace a previous attempt's tool before computing the roster.
+            tool: entry.tool,
             leaseExpiresAt,
             dispatchedAt: nowText,
             lastActivityAt: nowText,

@@ -382,7 +382,6 @@ export async function readWorkload(
       );
       // Keep the established identity and protected-variable explanation, including its precise parameters.
       const detailed = [
-        'noSharedRunner',
         'secretsNotAllowed',
         'delayed',
         'agentArchived',
@@ -444,33 +443,41 @@ export async function readWorkload(
                         .filter((reason) => reason !== entry.reason)
                         .map((reason) => codes[reason]),
                       tool: entry.tool,
-                      used: loads.reduce(
-                        (n, runner) =>
-                          n +
-                          (toolFull
-                            ? (runner.toolUsed ?? 0)
-                            : (runner.used ?? 0)),
-                        0,
-                      ),
-                      limit: loads.reduce(
-                        (n, runner) =>
-                          n +
-                          (toolFull
-                            ? (runner.toolLimit ?? 0)
-                            : (runner.limit ?? 0)),
-                        0,
-                      ),
-                      runners: loads.length,
-                      reportedFree: loads.map((runner) =>
-                        String(runner.reportedTotalFree ?? '—'),
-                      ),
-                      active: agentActive.get(run.agentId) ?? 0,
-                      detail: loads
-                        .map(
-                          (runner) =>
-                            `${entry.tool} ${runner.toolUsed}/${runner.toolLimit}${runner.reportedTotalFree === 0 ? '; global free 0' : ''}`,
-                        )
-                        .join('; '),
+                      ...(entry.reason === 'concurrencyFull'
+                        ? {
+                            active: agentActive.get(run.agentId) ?? 0,
+                            limit: candidateAgent!.maxConcurrentRuns,
+                          }
+                        : entry.reason === 'busy'
+                          ? {
+                              used: loads.reduce(
+                                (n, runner) =>
+                                  n +
+                                  (toolFull
+                                    ? (runner.toolUsed ?? 0)
+                                    : (runner.used ?? 0)),
+                                0,
+                              ),
+                              limit: loads.reduce(
+                                (n, runner) =>
+                                  n +
+                                  (toolFull
+                                    ? (runner.toolLimit ?? 0)
+                                    : (runner.limit ?? 0)),
+                                0,
+                              ),
+                              runners: loads.length,
+                              reportedFree: loads.map((runner) =>
+                                String(runner.reportedTotalFree ?? '—'),
+                              ),
+                              detail: loads
+                                .map(
+                                  (runner) =>
+                                    `${entry.tool} ${runner.toolUsed}/${runner.toolLimit}${runner.reportedTotalFree === 0 ? '; global free 0' : ''}`,
+                                )
+                                .join('; '),
+                            }
+                          : {}),
                     },
                   }
                 : {}),

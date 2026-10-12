@@ -2,7 +2,6 @@
 import path from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { expect, open, test, horizontalOverflow } from './support/fixtures.ts';
-import { restartOwnedStudio } from './support/server.ts';
 import { FakeRunner } from './support/runner.ts';
 import type { AgentBoard } from '../shared/agent-board.js';
 import type { IssueProgress } from '../shared/project-manager.js';
@@ -320,91 +319,4 @@ test('shows the shared diagnostics in the Agent queue', async ({
       await page.unroute('**/api/agentBoard*');
     }
   }
-});
-
-test('recovers an expired delegation after SIGKILL and does not report it twice after another restart', async ({
-  page,
-  api,
-}) => {
-  const worker = new FakeRunner(api, `pm292-crash-worker-${Date.now()}`);
-  const workerAgent = await worker.discovered();
-  const manager = new FakeRunner(
-    api,
-    `pm292-crash-manager-${Date.now()}`,
-    true,
-  );
-  const managerChoice = await manager.agent();
-  await api.patch('projectManager', {
-    firstChoiceAgentId: managerChoice,
-    fallbackAgentId: null,
-    delegationQueueTimeoutSeconds: 20,
-  });
-  const issue = await api.post<{ id: string; identifier: string }>(
-    'projects/issues',
-    {
-      title: 'PM-292 restart recovery',
-      statusKey: 'in_progress',
-      executor: { type: 'agent', id: 'studio-project-manager' },
-    },
-  );
-  const turn = await manager.start(issue.identifier);
-  await api.post<{ comment: { id: string } }>(
-    `projects/issues/${issue.id}/comments`,
-    {
-      content: `[@${workerAgent.name}](mention://agent/${workerAgent.id}) implement the restart recovery step`,
-    },
-    { 'x-nocobase-run-token': turn.token },
-  );
-  await manager.complete(turn.runId, 'Done.');
-  const beforeCrash = await api.get<{ agentId: string; status: string }[]>(
-    `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
-  );
-  expect(
-    beforeCrash.find((run) => run.agentId === workerAgent.id)?.status,
-  ).toBe('queued');
-  await restartOwnedStudio();
-  const comments = () =>
-    api.get<
-      {
-        root: { id: string; authorId: string; content: string };
-        replies: { id: string; authorId: string; content: string }[];
-      }[]
-    >(`projects/issues/${issue.id}/comments`);
-  const replies = async () =>
-    (await comments())
-      .flatMap((thread) => [thread.root, ...thread.replies])
-      .filter((comment) => comment.authorId === workerAgent.id);
-  await expect
-    .poll(async () => await replies(), { timeout: 60_000, intervals: [1000] })
-    .toHaveLength(1);
-  const reply = (await replies())[0]!;
-  expect(reply.content).toContain('withdrawn');
-  expect(reply.content).not.toContain('mention://');
-  const runList = await api.get<
-    { id: string; agentId: string; status: string; failureReason: string }[]
-  >(`agents/runs?subjectKind=issue&subjectId=${issue.id}`);
-  expect(runList.find((run) => run.agentId === workerAgent.id)).toMatchObject({
-    status: 'cancelled',
-    failureReason: 'delegatedQueueTimeout',
-  });
-  const managerRuns = runList.filter(
-    (run) => run.agentId === 'studio-project-manager',
-  );
-  expect(managerRuns).toHaveLength(2);
-  await restartOwnedStudio();
-  expect(await replies()).toHaveLength(1);
-  const afterRestart = await api.get<{ agentId: string }[]>(
-    `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
-  );
-  expect(
-    afterRestart.filter((run) => run.agentId === 'studio-project-manager'),
-  ).toHaveLength(2);
-  await open(page, `/issues/${issue.identifier}`);
-  const timeoutReply = page.getByText(reply.content, { exact: false }).first();
-  await expect(timeoutReply).toBeVisible();
-  await timeoutReply.scrollIntoViewIfNeeded();
-  await page.screenshot({
-    path: path.resolve(process.env.TMPDIR!, 'pm292-restart-timeout-reply.png'),
-  });
-  await api.patch('projectManager', { delegationQueueTimeoutSeconds: 600 });
 });

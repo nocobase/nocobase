@@ -89,6 +89,62 @@ describe("the project manager's run", () => {
     expect(payload.workspace.readOnly).toBeUndefined();
   });
 
+  it.each([false, true])(
+    'counts the manager tool reservation in its real brief (retry=%s)',
+    async (retry) => {
+      const worker = await h.createAgent({
+        name: 'Worker',
+        tool: retry ? 'codex' : 'claude',
+      });
+      await h.claimOne();
+      await h.database
+        .connection()
+        .query.updateTable('agRunners')
+        .set({ toolSlots: { claude: 1, codex: 1 } })
+        .allowAllRows()
+        .execute();
+      if (retry) {
+        const preferred = await h.createAgent({
+          name: 'Initial choice',
+          tool: 'claude',
+          model: 'initial',
+        });
+        await h.manager.update('alice', { firstChoiceAgentId: preferred });
+      }
+      await openIssue(true);
+      let payload = await h.claimOne();
+      if (retry) {
+        const oldTool = (await h.agents.runs.get(payload.run.id)).tool;
+        expect(oldTool).toBe('claude');
+        await h.database
+          .connection()
+          .query.updateTable('agRuns')
+          .set({
+            maxAttempts: 3,
+            leaseExpiresAt: new Date(Date.now() - 1_000).toISOString(),
+          })
+          .where('id', '=', payload.run.id)
+          .execute();
+        await h.agents.sweeper.sweep();
+        await h.manager.update('alice', { firstChoiceAgentId: worker });
+        await h.database
+          .connection()
+          .query.updateTable('agRuns')
+          .set({ availableAt: null })
+          .where('id', '=', payload.run.id)
+          .execute();
+        payload = await h.claimOne();
+      }
+      expect(payload.prompt.system).toContain(
+        `- [@Worker](mention://agent/${worker}) (online, canStartNow=false,`,
+      );
+      expect(payload.prompt.system).toContain(`${retry ? 'codex' : 'claude'}/`);
+      expect((await h.agents.runs.get(payload.run.id)).tool).toBe(
+        retry ? 'codex' : 'claude',
+      );
+    },
+  );
+
   it('leaves out of the roster an agent no runner reported for 14 days', async () => {
     await h.createAgent({ name: 'Coder' });
     // The runner registers first: its report would refresh every agent it has.
