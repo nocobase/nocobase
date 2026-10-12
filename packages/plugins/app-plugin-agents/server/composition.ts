@@ -422,6 +422,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     openRuns: openCounts,
   });
   const runs = createRunService({
+    diagnose: (conn, run, agent) => claims.diagnose(conn, run, agent),
     ...transitions,
     tx,
     ids,

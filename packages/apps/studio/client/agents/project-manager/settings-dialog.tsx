@@ -43,6 +43,7 @@ import {
   draftOf,
   limitOf,
   fallbackSecondsOf,
+  delegationSecondsOf,
   patchOf,
   type Draft,
 } from './draft.js';
@@ -102,7 +103,8 @@ function Settings({
           readOnly={readOnly}
           invalid={
             limit === null ||
-            fallbackSecondsOf(draft.fallbackAfterSeconds) === null
+            fallbackSecondsOf(draft.fallbackAfterSeconds) === null ||
+            delegationSecondsOf(draft.delegationQueueTimeoutSeconds) === null
           }
         />
       }
@@ -214,6 +216,40 @@ function Settings({
           {fallbackSecondsOf(draft.fallbackAfterSeconds) === null ? (
             <FieldError>
               {t('projectManager.settingsPage.fallbackAfterInvalid')}
+            </FieldError>
+          ) : null}
+        </Field>
+        <Field
+          data-invalid={
+            delegationSecondsOf(draft.delegationQueueTimeoutSeconds) === null ||
+            undefined
+          }
+        >
+          <FieldLabel htmlFor='pm-delegation-timeout'>
+            {t('projectManager.settingsPage.delegationTimeout')}
+          </FieldLabel>
+          <Input
+            id='pm-delegation-timeout'
+            type='number'
+            min={1}
+            max={86400}
+            className='w-24'
+            value={draft.delegationQueueTimeoutSeconds}
+            readOnly={readOnly}
+            aria-invalid={
+              delegationSecondsOf(draft.delegationQueueTimeoutSeconds) ===
+                null || undefined
+            }
+            onChange={(event) =>
+              set({ delegationQueueTimeoutSeconds: event.target.value })
+            }
+          />
+          <FieldDescription>
+            {t('projectManager.settingsPage.delegationTimeoutHint')}
+          </FieldDescription>
+          {delegationSecondsOf(draft.delegationQueueTimeoutSeconds) === null ? (
+            <FieldError>
+              {t('projectManager.settingsPage.delegationTimeoutInvalid')}
             </FieldError>
           ) : null}
         </Field>

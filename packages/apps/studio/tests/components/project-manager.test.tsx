@@ -49,6 +49,7 @@ const view = (overrides: Partial<ProjectManagerView> = {}) =>
     principles: null,
     commentRunLimit: 20,
     fallbackAfterSeconds: 120,
+    delegationQueueTimeoutSeconds: 600,
     builtInPrinciples: BUILT_IN,
     choices: [
       {
@@ -194,6 +195,7 @@ describe('the project manager settings', () => {
           principles: null,
           commentRunLimit: 30,
           fallbackAfterSeconds: 120,
+          delegationQueueTimeoutSeconds: 600,
         },
       }),
     );

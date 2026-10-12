@@ -80,7 +80,13 @@ function entryOf(agent: Agent | null): RunnerModelEntry | null {
 export function createProjectManager(deps: {
   readonly agents: Pick<
     Agents,
-    'agents' | 'actions' | 'chat' | 'tx' | 'availability' | 'selectionPolicies'
+    | 'agents'
+    | 'actions'
+    | 'chat'
+    | 'tx'
+    | 'eligibility'
+    | 'runners'
+    | 'selectionPolicies'
   >;
 }): ProjectManager {
   const { agents } = deps;
@@ -132,7 +138,25 @@ export function createProjectManager(deps: {
     const offered = (await agents.agents.listActive(conn)).filter(
       (agent) => agent.source === 'runner',
     );
-    const availability = await agents.availability(conn, offered, userId);
+    const manager = await agents.agents.find(conn, PROJECT_MANAGER_ID);
+    const runners = await agents.runners.online(conn);
+    const online = new Map(
+      await Promise.all(
+        offered.map(
+          async (agent) =>
+            [
+              agent.id,
+              manager
+                ? await agents.eligibility.canClaim(
+                    conn,
+                    { ...manager, modelEntries: agent.modelEntries },
+                    { actorUserId: userId, workspaceKey: true, runners },
+                  )
+                : false,
+            ] as const,
+        ),
+      ),
+    );
     return {
       ...settings,
       builtInPrinciples: BUILT_IN_PRINCIPLES,
@@ -140,7 +164,7 @@ export function createProjectManager(deps: {
         id: agent.id,
         name: agent.name,
         description: agent.description,
-        online: availability.get(agent.id)?.online ?? false,
+        online: online.get(agent.id) ?? false,
       })),
       canEdit,
     };

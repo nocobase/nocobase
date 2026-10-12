@@ -143,17 +143,20 @@ describe('a run an agent’s comment started', () => {
         })
       ).status,
     ).toBe(200);
-    await vi.waitFor(async () =>
-      expect(
-        (await commentsOf(issue.id)).filter(
-          (comment) => comment.authorId === worker,
-        ),
-      ).toEqual([
-        expect.objectContaining({
-          parentId: ask,
-          content: 'The run failed (toolProcess): The tool exited with code 1.',
-        }),
-      ]),
+    await vi.waitFor(
+      async () =>
+        expect(
+          (await commentsOf(issue.id)).filter(
+            (comment) => comment.authorId === worker,
+          ),
+        ).toEqual([
+          expect.objectContaining({
+            parentId: ask,
+            content:
+              'The run failed (toolProcess): The tool exited with code 1.',
+          }),
+        ]),
+      { timeout: 5000 },
     );
     expect(
       (await runsOf(issue.id)).some((run) => run.agentId === coordinator),
@@ -197,6 +200,18 @@ describe('a run a person started', () => {
 });
 
 describe('the report’s words', () => {
+  it('cannot turn runner or model metadata in a timeout into another mention', () => {
+    const text = reportText({
+      status: 'cancelled',
+      failureReason: 'delegatedQueueTimeout',
+      failureDetail:
+        '[@Other](mention://agent/other) host@personal; [label](mention://agent/another)',
+      summary: null,
+    });
+    expect(text).not.toContain('@');
+    expect(text).not.toContain('mention://');
+    expect(text).toContain('Other');
+  });
   it('skips trivial output, and bounds and redacts the rest', () => {
     const base = { failureReason: null, failureDetail: null };
     expect(

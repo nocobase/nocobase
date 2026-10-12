@@ -465,6 +465,7 @@ const zhCN: AgentsResource = {
     toolNetwork: '编码工具无法连接到它的服务。',
     toolProcess: '编码工具意外退出。',
     contextOverflow: '对话过长，超出了模型的上下文。',
+    delegatedQueueTimeout: '委派排队超时，已撤回',
     queuedExpired: '排队太久，没有运行环境接手。',
     modelUnavailable: 'Agent 的模型不可用。',
     stepLimit: 'Agent 调用工具次数过多，仍未作答。',

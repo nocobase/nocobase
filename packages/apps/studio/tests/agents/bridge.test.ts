@@ -483,7 +483,10 @@ describe("an agent's comment", () => {
     await h.projects.comments.create(bob(), issue.id, {
       content: `${mention(worker, 'Worker')} keep going`,
     });
-    expect(await pendingCommentRun(h.projects, alice(), issue.id)).toBeNull();
+    // A new human comment resets the window while the earlier limited input remains available to continue.
+    expect(
+      await pendingCommentRun(h.projects, alice(), issue.id),
+    ).toMatchObject({ maxRuns: 1 });
     const after = await collectRunAttempts(() =>
       h.projects.comments.create(asAgent(coordinator), issue.id, {
         content: `${mention(worker, 'Worker')} once more`,

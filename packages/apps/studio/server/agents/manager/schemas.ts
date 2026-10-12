@@ -25,6 +25,7 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
         'How many runs agents’ comments may start on one issue within 24 hours.',
     }),
     fallbackAfterSeconds: z.number().int(),
+    delegationQueueTimeoutSeconds: z.number().int(),
     builtInPrinciples: z.string(),
     choices: z.array(
       z.object({
@@ -45,6 +46,7 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
       'queued',
       'checksPending',
       'needsDecision',
+      'waitingForContinuation',
       'inReview',
       'notStarted',
       'finished',
@@ -65,12 +67,64 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
               'incompatible',
               'offline',
               'restricted',
+              'toolNotInstalled',
+              'toolUnavailable',
+              'noSharedRunner',
+              'unknown',
               'concurrencyFull',
               'sameWorkActive',
               'delayed',
             ]),
             compatibleCount: z.number(),
+            blockers: z
+              .array(
+                z.enum([
+                  'ready',
+                  'busy',
+                  'incompatible',
+                  'offline',
+                  'restricted',
+                  'toolNotInstalled',
+                  'toolUnavailable',
+                  'noSharedRunner',
+                  'unknown',
+                  'concurrencyFull',
+                  'sameWorkActive',
+                  'delayed',
+                ]),
+              )
+              .optional(),
             runners: z.array(z.string()),
+            runnerLoads: z
+              .array(
+                z.object({
+                  name: z.string(),
+                  reason: z
+                    .enum([
+                      'ready',
+                      'busy',
+                      'incompatible',
+                      'offline',
+                      'restricted',
+                      'toolNotInstalled',
+                      'toolUnavailable',
+                      'noSharedRunner',
+                      'unknown',
+                      'concurrencyFull',
+                      'sameWorkActive',
+                      'delayed',
+                    ])
+                    .optional(),
+                  lastSeenAt: z.string().nullable().optional(),
+                  used: z.number().optional(),
+                  limit: z.number().optional(),
+                  toolUsed: z.number().optional(),
+                  toolLimit: z.number().optional(),
+                  reportedFree: z.number().optional(),
+                  reportedTotalFree: z.number().optional(),
+                }),
+              )
+              .optional(),
           }),
         ),
       })

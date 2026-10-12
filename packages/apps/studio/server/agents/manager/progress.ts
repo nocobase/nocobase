@@ -19,6 +19,7 @@ import {
 import { pullRequestsOfIssue } from '../../git/store.js';
 import { ISSUE_SUBJECT } from '../catalog/triggers.js';
 import { AGENT_KIND } from '../tx.js';
+import { commentGuards, commentGuardId } from '../comment-guard.js';
 import { nextLineOf } from './texts.js';
 
 /** How much of a step or a question the line carries. */
@@ -105,7 +106,7 @@ export async function issueProgress(
   const run = pick(held) ?? pick(queued);
   if (run) {
     const selection =
-      run.agentId === PROJECT_MANAGER_ID && run.status === 'queued'
+      run.status === 'queued'
         ? await deps.agents.claims.selectionWait(run.id).catch(() => null)
         : null;
     const names = await deps.agents.agents.names(conn, [run.agentId]);
@@ -130,6 +131,13 @@ export async function issueProgress(
                       runner.ownerUserId === viewer?.userId,
                   )
                   .map((runner) => runner.name),
+                runnerLoads: entry.runners
+                  .filter(
+                    (runner) =>
+                      viewer?.seesMachines ||
+                      runner.ownerUserId === viewer?.userId,
+                  )
+                  .map(({ ownerUserId: _owner, ...runner }) => runner),
               })),
             },
           }
@@ -146,6 +154,11 @@ export async function issueProgress(
       runner,
     };
   }
+  const continuation = await commentGuards(conn).findOne({
+    filter: { id: commentGuardId(issue.id) },
+  });
+  if (continuation?.pendingToken && open)
+    return { ...base, state: 'waitingForContinuation' };
   if (category === 'done' || category === 'closed')
     return { ...base, state: 'finished' };
   if (issue.statusKey === 'backlog') return { ...base, state: 'notStarted' };

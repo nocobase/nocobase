@@ -11,6 +11,30 @@ function minutesSince(since: string, now: number): number {
   return Math.max(1, Math.floor((now - Date.parse(since)) / 60_000));
 }
 
+function runnerNames(
+  t: Translate,
+  entry: NonNullable<IssueProgress['managerWait']>['entries'][number],
+): string {
+  if (!entry.runnerLoads?.length) return entry.runners.join(', ');
+  return entry.runnerLoads
+    .map((runner) => {
+      const reason = t(`issueProgress.modelWait.${runner.reason ?? 'unknown'}`);
+      if (runner.used === undefined) return `${runner.name}: ${reason}`;
+      return t('issueProgress.runnerLoad', {
+        name: runner.name,
+        reason,
+        used: runner.used,
+        limit: runner.limit,
+        tool: entry.tool,
+        toolUsed: runner.toolUsed,
+        toolLimit: runner.toolLimit,
+        free: runner.reportedFree ?? '—',
+        totalFree: runner.reportedTotalFree ?? '—',
+      });
+    })
+    .join(', ');
+}
+
 /** What the issue waits for, in one sentence. */
 export function progressSentence(
   t: Translate,
@@ -42,14 +66,18 @@ export function progressSentence(
           .map((entry, index) =>
             t('issueProgress.managerModelWait', {
               choice: t(
-                index === 0
-                  ? 'issueProgress.firstChoice'
-                  : 'issueProgress.fallback',
+                wait.fallbackAfterSeconds === 0
+                  ? 'issueProgress.workerChoice'
+                  : index === 0
+                    ? 'issueProgress.firstChoice'
+                    : 'issueProgress.fallback',
               ),
               model: `${entry.tool}${entry.model ? ` · ${entry.model}` : ''}`,
-              reason: t(`issueProgress.modelWait.${entry.reason}`),
+              reason: [...new Set([entry.reason, ...(entry.blockers ?? [])])]
+                .map((reason) => t(`issueProgress.modelWait.${reason}`))
+                .join(', '),
               runners: entry.runners.length
-                ? ` (${entry.runners.join(', ')})`
+                ? ` (${runnerNames(t, entry)})`
                 : '',
             }),
           )
@@ -64,8 +92,13 @@ export function progressSentence(
           ),
         );
         return (
-          t('issueProgress.managerWaiting', { entries }) +
-          (wait.entries.length > 1
+          t(
+            wait.fallbackAfterSeconds === 0
+              ? 'issueProgress.workerWaiting'
+              : 'issueProgress.managerWaiting',
+            { entries, agent },
+          ) +
+          (wait.fallbackAfterSeconds > 0 && wait.entries.length > 1
             ? ` · ${t(seconds > 0 ? 'issueProgress.fallbackIn' : 'issueProgress.fallbackReady', { seconds })}`
             : '')
         );

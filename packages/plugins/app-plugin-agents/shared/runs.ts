@@ -70,6 +70,10 @@ export type ModelWaitReason =
   | 'incompatible'
   | 'offline'
   | 'restricted'
+  | 'noSharedRunner'
+  | 'toolNotInstalled'
+  | 'toolUnavailable'
+  | 'unknown'
   | 'concurrencyFull'
   | 'sameWorkActive'
   | 'delayed';
@@ -82,9 +86,18 @@ export interface ModelSelectionWait {
     readonly model: string | null;
     readonly reason: ModelWaitReason;
     readonly compatibleCount: number;
+    readonly blockers?: readonly ModelWaitReason[];
     readonly runners: readonly {
       readonly name: string;
+      readonly reason?: ModelWaitReason;
+      readonly lastSeenAt?: string | null;
       readonly ownerUserId: string | null;
+      readonly used?: number;
+      readonly limit?: number;
+      readonly toolUsed?: number;
+      readonly toolLimit?: number;
+      readonly reportedFree?: number;
+      readonly reportedTotalFree?: number;
     }[];
   }[];
 }
@@ -258,6 +271,10 @@ export interface RunEventPage {
  */
 export const RUN_WAIT_REASONS = [
   'agentArchived',
+  'incompatible',
+  'toolNotInstalled',
+  'restricted',
+  'unknown',
   'delayed',
   'noRunnerOnline',
   'runnersOffline',

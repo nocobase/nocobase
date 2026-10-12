@@ -49,6 +49,7 @@ export class FakeRunner {
   constructor(
     private readonly api: Api,
     private readonly name: string,
+    private readonly workspaceKey = false,
   ) {}
 
   /** The model this runner reports: its own, so only it has the agent discovered from it. */
@@ -85,7 +86,14 @@ export class FakeRunner {
         arch: 'x64',
         version: '0.0.0',
         protocolVersion: PROTOCOL_VERSION,
-        features: ['input', 'checkout', 'directories', 'skills', 'secrets'],
+        features: [
+          'input',
+          'checkout',
+          'directories',
+          'skills',
+          'secrets',
+          ...(this.workspaceKey ? ['workspaceKey'] : []),
+        ],
         tools: [
           { kind: 'claude', authenticated: true, models: [{ id: this.model }] },
         ],

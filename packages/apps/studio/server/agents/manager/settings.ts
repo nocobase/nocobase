@@ -9,6 +9,8 @@ import { z } from 'zod';
 import {
   COMMENT_RUN_LIMIT_MAX,
   DEFAULT_FALLBACK_AFTER_SECONDS,
+  DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS,
+  DELEGATION_QUEUE_TIMEOUT_SECONDS_MAX,
   FALLBACK_AFTER_SECONDS_MAX,
   DEFAULT_COMMENT_RUN_LIMIT,
   PRINCIPLES_MAX,
@@ -25,11 +27,21 @@ export const DEFAULT_MANAGER_SETTINGS: ProjectManagerSettings = {
   principles: null,
   commentRunLimit: DEFAULT_COMMENT_RUN_LIMIT,
   fallbackAfterSeconds: DEFAULT_FALLBACK_AFTER_SECONDS,
+  delegationQueueTimeoutSeconds: DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS,
 };
 
 /** The body of `PATCH /api/projectManager`. */
 export const ProjectManagerPatchSchema: z.ZodType<ProjectManagerPatch> = z
   .strictObject({
+    delegationQueueTimeoutSeconds: z
+      .number()
+      .int()
+      .min(1)
+      .max(DELEGATION_QUEUE_TIMEOUT_SECONDS_MAX)
+      .meta({
+        description:
+          'Seconds a manager-delegated step may remain queued before withdrawal and an automatic reply (default 600); changes apply on the next sweep.',
+      }),
     fallbackAfterSeconds: z
       .number()
       .int()
@@ -79,6 +91,13 @@ export function settingsOf(value: unknown): ProjectManagerSettings {
   const raw = parse(value);
   const limit = raw.commentRunLimit;
   return {
+    delegationQueueTimeoutSeconds:
+      typeof raw.delegationQueueTimeoutSeconds === 'number' &&
+      Number.isInteger(raw.delegationQueueTimeoutSeconds) &&
+      raw.delegationQueueTimeoutSeconds >= 1 &&
+      raw.delegationQueueTimeoutSeconds <= DELEGATION_QUEUE_TIMEOUT_SECONDS_MAX
+        ? raw.delegationQueueTimeoutSeconds
+        : DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS,
     firstChoiceAgentId: text(raw.firstChoiceAgentId),
     fallbackAgentId: text(raw.fallbackAgentId),
     principles: text(raw.principles),

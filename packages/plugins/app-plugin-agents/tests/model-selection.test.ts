@@ -32,14 +32,89 @@ async function setup() {
   return { preferred, fallback, manager, run };
 }
 
+describe('heartbeat capacity diagnostics', () => {
+  it('uses reported cross-application room and keeps it separate from server occupancy', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner({ slots: 2 });
+    const agent = await h.createAgent();
+    const run = await h.enqueue(agent);
+    const registered = (await h.services.runners.find(
+      h.services.tx.read(),
+      runner.runnerId,
+    ))!;
+    const answer = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: {
+        version: registered.version,
+        features: registered.features,
+        tools: registered.tools,
+        active: [],
+        load: { slots: 2, free: 0 },
+      },
+    });
+    expect(answer.status).toBe(200);
+    expect(
+      (await h.services.runners.find(h.services.tx.read(), runner.runnerId))
+        ?.globalFree,
+    ).toBe(0);
+    expect(
+      (await h.services.claims.selectionWait(run))?.entries[0],
+    ).toMatchObject({
+      reason: 'busy',
+      compatibleCount: 1,
+      runners: [
+        expect.objectContaining({ used: 0, limit: 2, reportedTotalFree: 0 }),
+      ],
+    });
+    expect(
+      (await h.services.runs.workload({ subjectKind: 'sample' })).runs[0]?.wait,
+    ).toMatchObject({
+      reason: 'runnersBusy',
+      params: { used: 0, limit: 2, reportedFree: ['0'] },
+    });
+    // Actual claim admission uses this request's free capacity, rather than reserving a heartbeat snapshot.
+    expect(await claim(h, runner, 1)).toHaveLength(1);
+  });
+  it('does not promise immediate capacity before the first heartbeat', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const agent = await h.createAgent();
+    const run = await h.enqueue(agent);
+    await h.services.tx.run(async ({ conn }) => {
+      await conn.query
+        .updateTable('agRunners')
+        .set({ load: null })
+        .where('id', '=', runner.runnerId)
+        .execute();
+    });
+    expect(
+      (await h.services.claims.selectionWait(run))?.entries[0]?.reason,
+    ).toBe('unknown');
+  });
+});
+
 describe('ordered models opt-in policy', () => {
+  it('cancels obsolete work before selection preflight assembly', async () => {
+    const { fallback, run } = await setup();
+    h.services.subjects.get('sample')!.context.admit = async () => ({
+      reason: 'subjectMissing',
+    });
+    h.failAssembly = true;
+    expect(await claim(h, fallback)).toEqual([]);
+    expect(await h.services.runs.get(run)).toMatchObject({
+      status: 'cancelled',
+      executions: [],
+    });
+  });
   it.each([
-    ['0.1.0-beta.6', true],
-    ['0.1.0-beta.7', false],
+    ['0.1.0-beta.6', false, true],
+    ['0.1.0-beta.7', false, true],
+    ['0.1.0-beta.6', true, false],
+    ['0.1.0-beta.8', true, false],
   ])(
-    'checks actual workspace payload support for %s',
-    async (version, immediate) => {
-      const { preferred, fallback, run } = await setup();
+    'checks actual workspace payload support for %s (capability=%s)',
+    async (version, capable, immediate) => {
+      const { preferred, fallback, manager, run } = await setup();
       const context = h.services.subjects.get('sample')!.context;
       const original = context.assemble;
       context.assemble = async (conn, candidate) => ({
@@ -49,7 +124,13 @@ describe('ordered models opt-in policy', () => {
       await h.services.tx.run(async ({ conn }) => {
         await conn.query
           .updateTable('agRunners')
-          .set({ version })
+          .set({
+            version,
+            protocolVersion: 9,
+            features: capable
+              ? ['workspaceKey', 'input', 'skills', 'secrets']
+              : ['input', 'skills', 'secrets'],
+          })
           .where('id', '=', preferred.runnerId)
           .execute();
         await conn.query
@@ -58,6 +139,18 @@ describe('ordered models opt-in policy', () => {
           .where('id', '=', fallback.runnerId)
           .execute();
       });
+      const agent = await h.services.agents.get(manager);
+      const first = await h.services.runners.find(
+        h.services.tx.read(),
+        preferred.runnerId,
+      );
+      expect(
+        await h.services.eligibility.canClaim(
+          h.services.tx.read(),
+          { ...agent, modelEntries: agent.modelEntries.slice(0, 1) },
+          { actorUserId: 'owner', workspaceKey: true, runners: [first!] },
+        ),
+      ).toBe(!immediate);
       expect((await claim(h, fallback)).length).toBe(immediate ? 1 : 0);
       const waiting = await h.services.claims.selectionWait(run);
       if (immediate) expect(waiting).toBeNull();
@@ -218,13 +311,7 @@ describe('ordered models opt-in policy', () => {
   });
 });
 
-it.each([
-  ['0.1.0-beta.6', false],
-  ['0.1.0-beta.7', true],
-  ['0.1.0-beta.7.dev.20261012', true],
-  ['0.1.0', true],
-  ['0.2.0', true],
-  ['unknown', false],
-])('workspace.key implementation boundary %s', (version, supported) => {
-  expect(supportsWorkspaceKey({ version })).toBe(supported);
+it('requires an explicit workspace capability', () => {
+  expect(supportsWorkspaceKey({ features: ['workspaceKey'] })).toBe(true);
+  expect(supportsWorkspaceKey({ features: ['input'] })).toBe(false);
 });

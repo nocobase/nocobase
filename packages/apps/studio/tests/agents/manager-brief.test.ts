@@ -76,10 +76,10 @@ describe("the project manager's run", () => {
 
     expect(system).toContain('## Agents you can hand work to');
     expect(system).toContain(
-      `- [@Coder](mention://agent/${coder}) (online, 0 open runs): Writes and fixes code.`,
+      `- [@Coder](mention://agent/${coder}) (online, canStartNow=true,`,
     );
     expect(system).toContain(
-      `- [@Reviewer](mention://agent/${reviewer}) (online, 0 open runs): Reviews code thoroughly.`,
+      `- [@Reviewer](mention://agent/${reviewer}) (online, canStartNow=true,`,
     );
     expect(system).not.toContain(`mention://agent/${disabled}`);
     expect(system).not.toContain(`mention://agent/${PROJECT_MANAGER_ID}`);

@@ -42,6 +42,7 @@ import type {
 import {
   noAbilities,
   noSettings,
+  businessKey,
 } from '@nocobase/app-plugin-projects/shared/access';
 
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -94,7 +95,8 @@ import { relayAnnouncements } from './tx.js';
 import { inactiveUsers } from './users.js';
 import { createAgentWork } from './work.js';
 import { commentRunNoticeRule } from './comment-run-limit.js';
-import { reportCommentRuns } from './run-report.js';
+import { delegationTimeout } from './delegated-queue.js';
+import { stageRunReport, reportCommentRuns } from './run-report.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 export interface StudioAgentsDeps {
@@ -182,10 +184,14 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
         deps.projects,
         // A run told its issue moved to another project is followed by a run there.
         {
-          onRunFinished: (tx, run) => work.onRunFinished(tx, run),
+          onRunFinished: async (tx, run) => {
+            await stageRunReport(tx.conn, run);
+            await work.onRunFinished(tx, run);
+          },
         },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
       ),
+      queuedTimeout: delegationTimeout(agents),
       reports: issueReports(deps.projects, viewerOf),
       // Runners remove the working directories of finished issues (`issue-workspaces.ts`).
       workspaces: issueWorkspaces(),
@@ -249,8 +255,25 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       onError('Agents could not announce a failed run.', error),
     ),
     // A run an agent's comment started always answers in that comment's thread.
-    reportCommentRuns(agents, deps.projects, (error) =>
-      onError('Agents could not report a run an agent comment started.', error),
+    reportCommentRuns(
+      agents,
+      deps.projects,
+      (error) =>
+        onError(
+          'Agents could not report a run an agent comment started.',
+          error,
+        ),
+      async (_conn, run) => {
+        const viewer = await viewerOf(run.actorUserId);
+        if (
+          viewer.permissions.scopes[businessKey('pm.issues', 'comment')] ===
+          'none'
+        )
+          throw new Error(
+            'The acting user may no longer comment on this issue.',
+          );
+        await deps.projects().issueQueries.detail(viewer, run.subject.id);
+      },
     ),
     releaseRemovedAgents(agents, deps.projects, (error) =>
       onError('Agents could not clear a removed agent as executor.', error),

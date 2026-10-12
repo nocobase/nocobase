@@ -766,7 +766,7 @@ export async function createBridgeHarness(
     onError: () => undefined,
   });
   const manager = createProjectManager({ agents });
-  bindStudioAgents({
+  const unbindAgents = bindStudioAgents({
     agents,
     delegations,
     kinds: projects.kinds,
@@ -1463,6 +1463,7 @@ export async function createBridgeHarness(
           ).version,
           protocolVersion: PROTOCOL_VERSION,
           features: (features ?? [
+            'workspaceKey',
             'input',
             'checkout',
             'directories',
@@ -1481,6 +1482,12 @@ export async function createBridgeHarness(
           );
         runnerKey = registered.body.data.runnerKey as string;
         runnerId = registered.body.data.runnerId as string;
+        await database
+          .connection()
+          .query.updateTable('agRunners')
+          .set({ load: { free: 2, slots: 2 } })
+          .where('id', '=', runnerId)
+          .execute();
       }
       const claimed = await request('POST', '/agents/runners/claim', {
         headers: { [HEADERS.runnerKey]: runnerKey },
@@ -1503,6 +1510,7 @@ export async function createBridgeHarness(
         : answer;
     },
     async close() {
+      unbindAgents();
       await delegations.settled();
       await releases?.releases.shutdown();
       await testDatabase.destroy();

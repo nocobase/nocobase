@@ -363,3 +363,49 @@ export async function stopStudio(state: ServerState): Promise<void> {
     }
   }
 }
+
+/** Crashes and restarts only this test's owned server against its existing database and configuration. */
+export async function restartOwnedStudio(): Promise<ServerState> {
+  const state = readState();
+  if (!state.owned)
+    throw new Error(
+      'Crash verification requires a throwaway server owned by this test.',
+    );
+  process.kill(-state.pid, 'SIGKILL');
+  await sleep(500);
+  const log = openSync(path.join(state.directory, 'server.log'), 'a');
+  const port = new URL(state.origin).port;
+  const child = spawn(
+    process.execPath,
+    [path.join(STUDIO_ROOT, 'dist/server/standalone.js')],
+    {
+      cwd: path.join(STUDIO_ROOT, 'dist'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        APP_CONFIG_FILE: path.join(state.directory, 'config.yml'),
+        APP_STORAGE_DIR: path.join(state.directory, 'storage'),
+        APP_BASE_PATH: '/main',
+        APP_SERVER_PORT: port,
+        APP_SERVER_HOST: '127.0.0.1',
+        APP_PUBLIC_ORIGIN: state.origin,
+      },
+      detached: true,
+      stdio: ['ignore', log, log],
+    },
+  );
+  child.unref();
+  if (!child.pid) throw new Error('The test server could not restart.');
+  const restarted = { ...state, pid: child.pid };
+  writeState(restarted);
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    const response = await fetch(`${state.baseURL}/login`).catch(() => null);
+    if (response?.ok) {
+      await waitForDemo(state.baseURL, state.origin, deadline);
+      return restarted;
+    }
+    await sleep(500);
+  }
+  throw new Error('The test server did not recover after a crash.');
+}

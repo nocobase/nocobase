@@ -3,7 +3,7 @@
  * runner and the newest thing each reported, and the runs queued, with their place in the claim order and what holds
  * each, worked out by the claim's own rules (`claim.ts`) without claiming anything.
  *
- * Bounded reads, none per subject: the open runs of the kind, every queued run (for the claim order), every held run
+ * Common reads are batched: the open runs of the kind, every queued run (for the claim order), every held run
  * (for the agents' and runners' counts and the busy subjects), the runners, the active jobs, the agents, the open
  * runs' inputs, and the newest event of each held run of the kind (at most one per runner slot).
  */
@@ -255,6 +255,7 @@ export async function readWorkload(
   clock: Clock,
   runnerSource: WorkloadRunners,
   query: WorkloadQuery,
+  diagnose?: import('./claim.js').ClaimService['diagnose'],
 ): Promise<Workload> {
   const now = clock.now();
   const limit = Math.min(Math.max(query.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
@@ -358,34 +359,128 @@ export async function readWorkload(
   }
 
   const runnerName = new Map(runners.map((runner) => [runner.id, runner.name]));
-  const runs: WorkloadRun[] = mine.map((record) => {
-    const run = toRun(record);
-    const isQueued = record.status === 'queued';
-    return {
-      ...run,
-      trigger: triggers.get(run.id) ?? null,
-      runnerName: run.runnerId ? (runnerName.get(run.runnerId) ?? null) : null,
-      lastActivity: activity.get(run.id) ?? null,
-      wait: isQueued
-        ? {
-            ...explainWait(
-              { ...record, requires: run.requires },
-              {
-                now,
-                agent: agentById.get(run.agentId) ?? null,
-                runners: online,
-                runnerUsed,
-                runnerToolUsed,
-                agentActive: agentActive.get(run.agentId) ?? 0,
-                sameWorkActive: busyKeys.has(keyOf(record)),
-              },
-            ),
-            position: position.get(run.id) ?? null,
-            agentPosition: agentPosition.get(run.id) ?? 1,
-          }
-        : null,
-    };
-  });
+  const runs: WorkloadRun[] = await Promise.all(
+    mine.map(async (record) => {
+      const run = toRun(record);
+      const isQueued = record.status === 'queued';
+      const candidateAgent = agentById.get(run.agentId);
+      const diagnostic =
+        isQueued && candidateAgent?.status === 'enabled' && diagnose
+          ? await diagnose(conn, run, candidateAgent)
+          : null;
+      const previous = explainWait(
+        { ...record, requires: run.requires },
+        {
+          now,
+          agent: candidateAgent ?? null,
+          runners: online,
+          runnerUsed,
+          runnerToolUsed,
+          agentActive: agentActive.get(run.agentId) ?? 0,
+          sameWorkActive: busyKeys.has(keyOf(record)),
+        },
+      );
+      // Keep the established identity and protected-variable explanation, including its precise parameters.
+      const detailed = [
+        'noSharedRunner',
+        'secretsNotAllowed',
+        'delayed',
+        'agentArchived',
+        'setupRetrying',
+      ].includes(previous.reason);
+      const entry =
+        diagnostic?.entries.find((entry) => entry.reason === 'ready') ??
+        diagnostic?.entries[0];
+      const codes: Readonly<Record<string, RunWait['reason']>> = {
+        ready: 'next',
+        busy: 'runnersBusy',
+        offline: 'noRunnerOnline',
+        incompatible: 'incompatible',
+        restricted: 'restricted',
+        concurrencyFull: 'concurrencyFull',
+        sameWorkActive: 'sameWorkActive',
+        delayed: 'delayed',
+        toolUnavailable: 'toolUnavailable',
+        toolNotInstalled: 'toolNotInstalled',
+        noSharedRunner: 'noSharedRunner',
+        unknown: 'unknown',
+      };
+      const loads =
+        entry?.runners.filter(
+          (runner) =>
+            runner.reason === undefined ||
+            runner.reason === 'ready' ||
+            runner.reason === 'busy',
+        ) ?? [];
+      const toolFull =
+        entry?.reason === 'busy' &&
+        loads.some((runner) => (runner.used ?? 0) < (runner.limit ?? 0)) &&
+        loads.every(
+          (runner) =>
+            (runner.toolUsed ?? 0) >= (runner.toolLimit ?? 0) ||
+            runner.reportedFree === 0,
+        );
+      return {
+        ...run,
+        trigger: triggers.get(run.id) ?? null,
+        runnerName: run.runnerId
+          ? (runnerName.get(run.runnerId) ?? null)
+          : null,
+        lastActivity: activity.get(run.id) ?? null,
+        wait: isQueued
+          ? {
+              ...previous,
+              ...(entry && !detailed
+                ? {
+                    reason:
+                      entry.reason === 'ready' &&
+                      Number(record.claimFailures) > 0
+                        ? 'setupRetrying'
+                        : toolFull
+                          ? 'toolSlotsFull'
+                          : codes[entry.reason],
+                    params: {
+                      blockers: (entry.blockers ?? [])
+                        .filter((reason) => reason !== entry.reason)
+                        .map((reason) => codes[reason]),
+                      tool: entry.tool,
+                      used: loads.reduce(
+                        (n, runner) =>
+                          n +
+                          (toolFull
+                            ? (runner.toolUsed ?? 0)
+                            : (runner.used ?? 0)),
+                        0,
+                      ),
+                      limit: loads.reduce(
+                        (n, runner) =>
+                          n +
+                          (toolFull
+                            ? (runner.toolLimit ?? 0)
+                            : (runner.limit ?? 0)),
+                        0,
+                      ),
+                      runners: loads.length,
+                      reportedFree: loads.map((runner) =>
+                        String(runner.reportedTotalFree ?? '—'),
+                      ),
+                      active: agentActive.get(run.agentId) ?? 0,
+                      detail: loads
+                        .map(
+                          (runner) =>
+                            `${entry.tool} ${runner.toolUsed}/${runner.toolLimit}${runner.reportedTotalFree === 0 ? '; global free 0' : ''}`,
+                        )
+                        .join('; '),
+                    },
+                  }
+                : {}),
+              position: position.get(run.id) ?? null,
+              agentPosition: agentPosition.get(run.id) ?? 1,
+            }
+          : null,
+      };
+    }),
+  );
   // Held runs first, the longest-running first; then queued ones in claim order.
   const order = new Map(queued.map((run, index) => [run.id, index]));
   runs.sort((a, b) => {

@@ -2,10 +2,13 @@
 import path from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { expect, open, test, horizontalOverflow } from './support/fixtures.ts';
+import { restartOwnedStudio } from './support/server.ts';
+import { FakeRunner } from './support/runner.ts';
+import type { AgentBoard } from '../shared/agent-board.js';
 import type { IssueProgress } from '../shared/project-manager.js';
 
 test.use({ user: 'admin' });
-test.setTimeout(120_000);
+test.setTimeout(240_000);
 
 test('edits the fallback delay and renders waiting reasons in both languages', async ({
   page,
@@ -35,6 +38,9 @@ test('edits the fallback delay and renders waiting reasons in both languages', a
       locale === 'en-US' ? 'Fallback delay (seconds)' : '备选等待时间（秒）';
     const field = page.getByLabel(label);
     await expect(field).toHaveValue('120');
+    await page.screenshot({
+      path: path.resolve(screenshots, `pm292-settings-default-${locale}.png`),
+    });
     await field.fill('0');
     await expect(
       page.getByRole('button', {
@@ -43,6 +49,20 @@ test('edits the fallback delay and renders waiting reasons in both languages', a
       }),
     ).toBeDisabled();
     await field.fill('60');
+    const delegation = page.getByLabel(
+      locale === 'en-US'
+        ? 'Delegated step queue timeout (seconds)'
+        : '委派排队超时（秒）',
+    );
+    await expect(delegation).toHaveValue('600');
+    await delegation.fill('0');
+    await expect(
+      page.getByRole('button', {
+        name: locale === 'en-US' ? 'Save' : '保存',
+        exact: true,
+      }),
+    ).toBeDisabled();
+    await delegation.fill('90');
     await page.screenshot({
       path: path.resolve(screenshots, `pm292-settings-${locale}.png`),
     });
@@ -60,7 +80,17 @@ test('edits the fallback delay and renders waiting reasons in both languages', a
             .fallbackAfterSeconds,
       )
       .toBe(60);
-    await api.patch('projectManager', { fallbackAfterSeconds: 120 });
+    expect(
+      (
+        await api.get<{ delegationQueueTimeoutSeconds: number }>(
+          'projectManager',
+        )
+      ).delegationQueueTimeoutSeconds,
+    ).toBe(90);
+    await api.patch('projectManager', {
+      fallbackAfterSeconds: 120,
+      delegationQueueTimeoutSeconds: 600,
+    });
     for (const reason of ['busy', 'incompatible', 'offline'] as const) {
       const progress: IssueProgress = {
         state: 'queued',
@@ -112,6 +142,269 @@ test('edits the fallback delay and renders waiting reasons in both languages', a
       });
       await page.unroute(`**/api/issueProgress/${issue.id}`);
     }
+    for (const reason of [
+      'busy',
+      'noSharedRunner',
+      'toolNotInstalled',
+      'toolUnavailable',
+      'incompatible',
+    ] as const) {
+      const progress: IssueProgress = {
+        state: 'queued',
+        agent: { id: 'worker', name: 'Worker' },
+        step: 'Implement the step',
+        since: null,
+        runner: null,
+        pullRequest: null,
+        question: null,
+        next: null,
+        handOver: false,
+        managerWait: {
+          queueEnteredAt: new Date().toISOString(),
+          fallbackAfterSeconds: 0,
+          sampledAt: new Date().toISOString(),
+          entries: [
+            {
+              tool: 'claude',
+              model: 'Opus 5.5',
+              reason,
+              compatibleCount: reason === 'busy' ? 1 : 0,
+              runners: reason === 'busy' ? ['test-lima'] : [],
+              runnerLoads:
+                reason === 'busy'
+                  ? [
+                      {
+                        name: 'test-lima',
+                        used: 8,
+                        limit: 8,
+                        toolUsed: 2,
+                        toolLimit: 2,
+                        reportedFree: 0,
+                      },
+                    ]
+                  : [],
+            },
+          ],
+        },
+      };
+      await page.route(`**/api/issueProgress/${issue.id}`, (route) =>
+        route.fulfill({ json: { data: progress } }),
+      );
+      await open(page, `/issues/${issue.identifier}`);
+      await expect(
+        page.getByText(
+          locale === 'en-US'
+            ? /Worker waiting for a runner:/u
+            : /Worker 在等执行机：/u,
+        ),
+      ).toBeVisible();
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+      await page.screenshot({
+        path: path.resolve(screenshots, `pm292-worker-${reason}-${locale}.png`),
+      });
+      await page.unroute(`**/api/issueProgress/${issue.id}`);
+    }
+    await page.route(`**/api/issueProgress/${issue.id}`, (route) =>
+      route.fulfill({
+        json: {
+          data: {
+            state: 'waitingForContinuation',
+            agent: null,
+            step: null,
+            since: null,
+            runner: null,
+            pullRequest: null,
+            question: null,
+            next: null,
+            handOver: false,
+          },
+        },
+      }),
+    );
+    await open(page, `/issues/${issue.identifier}`);
+    await expect(
+      page.getByText(
+        locale === 'en-US'
+          ? /Waiting for manual continuation:/u
+          : /等待人工继续：/u,
+      ),
+    ).toBeVisible();
+    await page.screenshot({
+      path: path.resolve(screenshots, `pm292-manual-${locale}.png`),
+    });
+    await page.unroute(`**/api/issueProgress/${issue.id}`);
   }
   expect(errors).toEqual([]);
+});
+
+test('shows the shared diagnostics in the Agent queue', async ({
+  page,
+  api,
+}) => {
+  const screenshots = process.env.TMPDIR!;
+  const runner = new FakeRunner(api, `pm292-queue-${Date.now()}`);
+  const agentId = await runner.agent();
+  const issue = await api.post<{
+    id: string;
+    identifier: string;
+    title: string;
+  }>('projects/issues', { title: 'PM-292 queue diagnostics' });
+  await runner.wake(issue);
+  const board = await api.get<AgentBoard>('agentBoard');
+  const original = board.rows.find((row) => row.issue.id === issue.id)!;
+  expect(original.queue).toBeTruthy();
+  for (const locale of ['en-US', 'zh-CN']) {
+    await api.patch('users/me/preferences', { locale });
+    await page.setViewportSize({
+      width: locale === 'en-US' ? 1440 : 375,
+      height: 900,
+    });
+    for (const reason of [
+      'runnersBusy',
+      'noSharedRunner',
+      'toolNotInstalled',
+      'toolUnavailable',
+      'incompatible',
+    ] as const) {
+      const fixture = {
+        ...board,
+        rows: [
+          {
+            ...original,
+            queue: {
+              ...original.queue!,
+              reason,
+              params: {
+                tool: 'claude',
+                used: 8,
+                limit: 8,
+                detail: 'claude 2/2',
+              },
+            },
+          },
+        ],
+        agents: { [agentId]: board.agents[agentId] },
+      };
+      await page.route('**/api/agentBoard*', (route) =>
+        route.fulfill({ json: { data: fixture } }),
+      );
+      await open(page, '/issues?view=agent');
+      const lane = page.locator(`[data-agent="${agentId}"]`);
+      await expect(
+        lane.getByRole('link').filter({ hasText: issue.title }),
+      ).toBeVisible();
+      const text =
+        reason === 'runnersBusy'
+          ? locale === 'en-US'
+            ? 'Compatible runners are full'
+            : '可承接的执行机满载'
+          : reason === 'noSharedRunner'
+            ? locale === 'en-US'
+              ? 'personal'
+              : '个人'
+            : reason === 'toolNotInstalled'
+              ? locale === 'en-US'
+                ? 'installed'
+                : '未安装'
+              : reason === 'toolUnavailable'
+                ? locale === 'en-US'
+                  ? 'signed in'
+                  : '登录'
+                : locale === 'en-US'
+                  ? 'upgrade'
+                  : '升级';
+      await expect(lane).toContainText(text);
+      await page.screenshot({
+        path: path.resolve(screenshots, `pm292-queue-${reason}-${locale}.png`),
+      });
+      await page.unroute('**/api/agentBoard*');
+    }
+  }
+});
+
+test('recovers an expired delegation after SIGKILL and does not report it twice after another restart', async ({
+  page,
+  api,
+}) => {
+  const worker = new FakeRunner(api, `pm292-crash-worker-${Date.now()}`);
+  const workerAgent = await worker.discovered();
+  const manager = new FakeRunner(
+    api,
+    `pm292-crash-manager-${Date.now()}`,
+    true,
+  );
+  const managerChoice = await manager.agent();
+  await api.patch('projectManager', {
+    firstChoiceAgentId: managerChoice,
+    fallbackAgentId: null,
+    delegationQueueTimeoutSeconds: 20,
+  });
+  const issue = await api.post<{ id: string; identifier: string }>(
+    'projects/issues',
+    {
+      title: 'PM-292 restart recovery',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: 'studio-project-manager' },
+    },
+  );
+  const turn = await manager.start(issue.identifier);
+  await api.post<{ comment: { id: string } }>(
+    `projects/issues/${issue.id}/comments`,
+    {
+      content: `[@${workerAgent.name}](mention://agent/${workerAgent.id}) implement the restart recovery step`,
+    },
+    { 'x-nocobase-run-token': turn.token },
+  );
+  await manager.complete(turn.runId, 'Done.');
+  const beforeCrash = await api.get<{ agentId: string; status: string }[]>(
+    `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
+  );
+  expect(
+    beforeCrash.find((run) => run.agentId === workerAgent.id)?.status,
+  ).toBe('queued');
+  await restartOwnedStudio();
+  const comments = () =>
+    api.get<
+      {
+        root: { id: string; authorId: string; content: string };
+        replies: { id: string; authorId: string; content: string }[];
+      }[]
+    >(`projects/issues/${issue.id}/comments`);
+  const replies = async () =>
+    (await comments())
+      .flatMap((thread) => [thread.root, ...thread.replies])
+      .filter((comment) => comment.authorId === workerAgent.id);
+  await expect
+    .poll(async () => await replies(), { timeout: 60_000, intervals: [1000] })
+    .toHaveLength(1);
+  const reply = (await replies())[0]!;
+  expect(reply.content).toContain('withdrawn');
+  expect(reply.content).not.toContain('mention://');
+  const runList = await api.get<
+    { id: string; agentId: string; status: string; failureReason: string }[]
+  >(`agents/runs?subjectKind=issue&subjectId=${issue.id}`);
+  expect(runList.find((run) => run.agentId === workerAgent.id)).toMatchObject({
+    status: 'cancelled',
+    failureReason: 'delegatedQueueTimeout',
+  });
+  const managerRuns = runList.filter(
+    (run) => run.agentId === 'studio-project-manager',
+  );
+  expect(managerRuns).toHaveLength(2);
+  await restartOwnedStudio();
+  expect(await replies()).toHaveLength(1);
+  const afterRestart = await api.get<{ agentId: string }[]>(
+    `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
+  );
+  expect(
+    afterRestart.filter((run) => run.agentId === 'studio-project-manager'),
+  ).toHaveLength(2);
+  await open(page, `/issues/${issue.identifier}`);
+  const timeoutReply = page.getByText(reply.content, { exact: false }).first();
+  await expect(timeoutReply).toBeVisible();
+  await timeoutReply.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: path.resolve(process.env.TMPDIR!, 'pm292-restart-timeout-reply.png'),
+  });
+  await api.patch('projectManager', { delegationQueueTimeoutSeconds: 600 });
 });

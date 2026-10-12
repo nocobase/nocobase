@@ -15,6 +15,12 @@ const enUS = {
   'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
   'issueRuns.selection.preferredUnavailable':
     'First choice unavailable, using fallback',
+  'projectManager.settingsPage.delegationTimeout':
+    'Delegated step queue timeout (seconds)',
+  'projectManager.settingsPage.delegationTimeoutHint':
+    'Default 600 seconds. Withdraw only unclaimed manager delegations and reply in their dispatch thread. At the comment run limit, retain the input for manual continuation.',
+  'projectManager.settingsPage.delegationTimeoutInvalid':
+    'Enter a whole number from 1 to 86400.',
   'projectManager.settingsPage.fallbackAfter': 'Fallback delay (seconds)',
   'projectManager.settingsPage.fallbackAfterHint':
     'Wait 1–3600 seconds before an idle fallback may take queued work. If no compatible runner can take the first choice, use the fallback immediately.',
@@ -1047,6 +1053,7 @@ const enUS = {
     toolNetwork: 'Tool network',
     toolProcess: 'Tool crashed',
     contextOverflow: 'Context overflow',
+    delegatedQueueTimeout: 'Delegation queue timeout; withdrawn',
     queuedExpired: 'Queue expired',
     modelUnavailable: 'Model unavailable',
     stepLimit: 'Too many tool calls',
@@ -1376,10 +1383,21 @@ const enUS = {
     firstChoice: 'First choice',
     fallback: 'Fallback',
     managerModelWait: '{{choice}} {{model}}: {{reason}}{{runners}}',
+    waitingForContinuation:
+      'Waiting for manual continuation: the automatic reply was delivered; the comment run limit was reached and the pending input is retained.',
     managerWaiting: 'Project manager waiting for a runner: {{entries}}',
     fallbackIn: 'Fallback eligible in {{seconds}} seconds',
     fallbackReady: 'Waiting for an idle runner for either choice',
+    runnerLoad:
+      '{{name}}: slots {{used}}/{{limit}}, {{tool}} {{toolUsed}}/{{toolLimit}}, reported total free {{totalFree}}, tool free {{free}}',
+    workerChoice: 'Model',
+    workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
     modelWait: {
+      toolNotInstalled: 'tool not installed',
+      toolUnavailable: 'tool not signed in, disabled, or model unavailable',
+      noSharedRunner: 'only other people’s personal runners are online',
+      unknown: 'workload eligibility is not established',
+
       ready: 'can claim now',
       busy: 'compatible runners are busy',
       incompatible: 'runner incompatible; upgrade required',

@@ -302,6 +302,7 @@ export interface RunService {
 }
 
 export interface RunServiceDeps extends TransitionDeps {
+  readonly diagnose?: import('./claim.js').ClaimService['diagnose'];
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -1131,7 +1132,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     },
 
     workload(query) {
-      return readWorkload(tx.read(), clock, deps.runners, query);
+      return readWorkload(tx.read(), clock, deps.runners, query, deps.diagnose);
     },
 
     async events(runId, afterSeq, limit, types) {

@@ -81,6 +81,27 @@ export async function finishRun(
       f.and([
         f.string('id').eq(run.id),
         f.string('status').eq(run.status),
+        ...(run.status === 'queued'
+          ? [
+              f.number('attempt').eq(Number(run.attempt)),
+              run.queueEnteredAt
+                ? f.and([
+                    f
+                      .date('queueEnteredAt')
+                      .notBefore(new Date(run.queueEnteredAt)),
+                    f
+                      .date('queueEnteredAt')
+                      .notAfter(new Date(run.queueEnteredAt)),
+                  ])
+                : f.date('queueEnteredAt').empty(),
+              run.availableAt
+                ? f.and([
+                    f.date('availableAt').notBefore(new Date(run.availableAt)),
+                    f.date('availableAt').notAfter(new Date(run.availableAt)),
+                  ])
+                : f.date('availableAt').empty(),
+            ]
+          : []),
         run.runnerId === null
           ? f.string('runnerId').eq(null)
           : f.string('runnerId').eq(run.runnerId),
