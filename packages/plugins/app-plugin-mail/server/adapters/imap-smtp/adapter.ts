@@ -1,8 +1,10 @@
 import {
   ImapFlow,
   type FetchMessageObject,
+  type FetchQueryObject,
   type ListResponse,
   type MailboxObject,
+  type MessageStructureObject,
 } from 'imapflow';
 import { type Transporter } from 'nodemailer';
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
@@ -13,8 +15,11 @@ import {
   attachmentParts,
   bodyParts,
   readBody,
+  readRawSource,
+  rawComparable,
   metadataQuery,
   attachmentMetadata,
+  MAX_HEADER_BYTES,
 } from './content.js';
 
 import type {
@@ -39,23 +44,39 @@ import type {
 } from '../../contracts/provider.js';
 
 import type {
+  ImapCopyEvidence,
   ImapFolderCursor,
+  ImapIdSource,
+  ImapLocationChange,
+  ImapLocationPersistence,
+  ImapLocationTuple,
   ImapSmtpCredential,
+  ImapStoredLocation,
   ImapSyncCursor,
+  ImapVerifyFolder,
+  ImapVerifyState,
 } from './types.js';
+import type { MailSyncStepCommit } from '../../contracts/persistence.js';
+import type { MailSyncRun } from '../../../shared/mail.js';
 import type { ImapSmtpMailProviderConfig } from './config.js';
 import {
   IMAP_SMTP_CAPABILITIES,
   MAX_IMAP_BODY_BYTES,
   MAX_IMAP_DETAIL_BODY_BYTES,
+  MAX_IMAP_PROVIDER_ID_LENGTH,
+  MAX_IMAP_RAW_COMPARE_BUDGET,
+  MAX_IMAP_RAW_COMPARE_BYTES,
+  MAX_IMAP_VERIFY_ATTEMPTS,
+  MAX_IMAP_VERIFY_STATE_BYTES,
 } from './constants.js';
 import { createImapClient, createSmtpTransport } from './connection.js';
 import {
+  compressUids,
+  encodeCopyLocator,
   encodeHistoryCursor,
   encodeMessageLocator,
   folderCursor,
   parseHistoryCursor,
-  parseMessageLocator,
   parseSyncCursor,
   rangeFor,
   requireAttachmentLocator,
@@ -92,15 +113,43 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   >();
   private imapClient?: ImapFlow;
   private readonly smtpTransport: Transporter;
+  // Evidence and byte budget of the current step only; never reused across steps.
+  private copies: ImapCopyEvidence[] = [];
+  private changes: ImapLocationChange[] = [];
+  private cleanup = false;
+  private rawBudget = MAX_IMAP_RAW_COMPARE_BUDGET;
+  private readonly rawCache = new Map<string, Buffer | undefined>();
 
   public constructor(
     _context: MailProviderContext,
     private readonly config: ImapSmtpMailProviderConfig,
     account: MailProviderAccount,
     private readonly credential: ImapSmtpCredential,
+    private readonly locations?: ImapLocationPersistence | undefined,
   ) {
     this.identity = account.provider;
     this.smtpTransport = createSmtpTransport(config.smtp, credential);
+  }
+
+  /** True when this instance records message copies in the account's location table. */
+  public get persistsLocations(): boolean {
+    return this.locations !== undefined;
+  }
+
+  /** Commit a sync step together with the location evidence this instance gathered for it. */
+  public async commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncRun> {
+    if (!this.locations)
+      throw new Error('IMAP location persistence is not configured.');
+    const ids = new Set(
+      input.messages.map((message) => message.providerMessageId),
+    );
+    const evidence = {
+      copies: this.copies.filter((copy) => ids.has(copy.providerMessageId)),
+      changes: this.changes,
+      cleanup: this.cleanup,
+    };
+    this.beginStep();
+    return this.locations.commitSyncStep(input, evidence);
   }
 
   public async listFolders(
@@ -144,6 +193,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   public async listMessages(
     input: MailProviderListMessagesInput,
   ): Promise<MailProviderResult<MailProviderMessagePage>> {
+    this.beginStep();
     try {
       throwIfAborted(input.signal);
       const folders = input.providerFolderIds?.length
@@ -163,7 +213,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         );
       }
       const limit = Math.max(1, input.limit ?? 100);
-      const messages: NormalizedMailMessage[] = [];
+      const messages: FetchedCopy[] = [];
       let folderIndex = position.folderIndex;
       let upperUid = position.upperUid;
       let legacyOffset = position.legacyOffset;
@@ -254,20 +304,21 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
             upperUid = start - 1;
           }
         }
-        for (const message of await this.fetchMessages(
+        for (const copy of await this.fetchMessages(
           folder,
           String(mailbox.uidValidity),
           selected,
           input.signal,
         )) {
+          const { receivedAt } = copy.message;
           if (
             input.receivedAfter &&
-            message.receivedAt &&
-            Date.parse(message.receivedAt) < Date.parse(input.receivedAfter)
+            receivedAt &&
+            Date.parse(receivedAt) < Date.parse(input.receivedAfter)
           ) {
             continue;
           }
-          messages.push(message);
+          messages.push(copy);
         }
         if (upperUid !== undefined && upperUid < 1) {
           folderIndex += 1;
@@ -281,7 +332,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       return {
         ok: true,
         value: {
-          messages,
+          messages: await this.assignIdentities(messages, input.signal),
           nextCursor,
           syncCursor: input.cursor ? undefined : input.baselineCursor,
         },
@@ -299,6 +350,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       readonly hasMore: boolean;
     }>
   > {
+    this.beginStep();
     try {
       throwIfAborted(input.signal);
       let previous: ImapSyncCursor;
@@ -317,16 +369,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       }
       const mailboxes = this.selectableMailboxes(await this.listMailboxes());
       const nextFolders: Record<string, ImapFolderCursor> = {};
-      const messages: NormalizedMailMessage[] = [];
-      const deletedProviderMessageIds = new Set<string>();
-      const knownByFolder = new Map<string, Set<string>>();
-      for (const providerMessageId of input.knownProviderMessageIds ?? []) {
-        const locator = parseMessageLocator(providerMessageId);
-        if (!locator) continue;
-        const known = knownByFolder.get(locator.folder) ?? new Set<string>();
-        known.add(providerMessageId);
-        knownByFolder.set(locator.folder, known);
-      }
+      const messages: FetchedCopy[] = [];
       let hasMore = false;
       const limit = Math.max(1, input.limit);
 
@@ -351,8 +394,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           ? Math.min(current.uidNext - 1, start + limit - messages.length - 1)
           : start - 1;
         let nextUid = old?.uidNext ?? 1;
-        const knownIds = knownByFolder.get(mailbox.path);
-        if (start <= end || knownIds?.size) {
+        if (start <= end) {
           const client = await this.imap();
           const selected = await client.mailboxOpen(mailbox.path, {
             readOnly: true,
@@ -364,53 +406,27 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
               'provider',
               false,
             );
-          if (knownIds?.size) {
-            const result = await client.search({ all: true }, { uid: true });
-            if (!Array.isArray(result))
-              return failure(
-                'IMAP_SEARCH_FAILED',
-                `Could not search ${mailbox.path} while reconciling deleted messages.`,
-                'provider',
-                true,
-              );
-            const presentIds = new Set(
-              result.map((uid) =>
-                encodeMessageLocator({
-                  folder: mailbox.path,
-                  uidValidity: current.uidValidity,
-                  uid,
-                }),
-              ),
+          const fetched = await this.fetchMessages(
+            mailbox.path,
+            current.uidValidity,
+            rangeFor(start, end),
+            input.signal,
+          );
+          messages.push(...fetched);
+          // Complete the bounded UID range before advancing, regardless of response order or holes.
+          nextUid = end + 1;
+          if (fetched.length === 0 && nextUid < current.uidNext) {
+            // Some servers assign very large, sparse UIDs. Jump to the next
+            // existing message instead of scheduling every empty UID range.
+            const remaining = await client.search(
+              { uid: rangeFor(nextUid, current.uidNext - 1) },
+              { uid: true },
             );
-            for (const providerMessageId of knownIds) {
-              if (!presentIds.has(providerMessageId)) {
-                deletedProviderMessageIds.add(providerMessageId);
-              }
-            }
-          }
-          if (start <= end) {
-            const fetched = await this.fetchMessages(
-              mailbox.path,
-              current.uidValidity,
-              rangeFor(start, end),
-              input.signal,
-            );
-            messages.push(...fetched);
-            // Complete the bounded UID range before advancing, regardless of response order or holes.
-            nextUid = end + 1;
-            if (fetched.length === 0 && nextUid < current.uidNext) {
-              // Some servers assign very large, sparse UIDs. Jump to the next
-              // existing message instead of scheduling every empty UID range.
-              const remaining = await client.search(
-                { uid: rangeFor(nextUid, current.uidNext - 1) },
-                { uid: true },
-              );
-              const lowerBound = nextUid;
-              nextUid = current.uidNext;
-              if (Array.isArray(remaining)) {
-                for (const uid of remaining) {
-                  if (uid >= lowerBound && uid < nextUid) nextUid = uid;
-                }
+            const lowerBound = nextUid;
+            nextUid = current.uidNext;
+            if (Array.isArray(remaining)) {
+              for (const uid of remaining) {
+                if (uid >= lowerBound && uid < nextUid) nextUid = uid;
               }
             }
           }
@@ -423,12 +439,41 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           uidNext: nextUid,
         };
       }
+      let verify: ImapVerifyState | undefined;
+      if (this.locations) {
+        if (hasMore || messages.length > 0) {
+          // New copies are committed first; verification restarts afterwards.
+          verify = previous.verify && { attempts: previous.verify.attempts };
+          hasMore = true;
+        } else {
+          const result = await this.verifyFolders(
+            mailboxes,
+            nextFolders,
+            previous.verify,
+            input.signal,
+          );
+          if (result === 'generation-changed')
+            return failure(
+              'IMAP_SYNC_CURSOR_INVALID',
+              'Mailbox generation changed during verification.',
+              'provider',
+              false,
+            );
+          hasMore = !result.done;
+          verify = result.verify;
+        }
+      }
       return {
         ok: true,
         value: {
-          messages,
-          deletedProviderMessageIds: [...deletedProviderMessageIds],
-          nextCursor: syncCursor({ version: 1, folders: nextFolders }),
+          messages: await this.assignIdentities(messages, input.signal),
+          // Copies leave through location evidence; one missing UID never deletes a message.
+          deletedProviderMessageIds: [],
+          nextCursor: syncCursor({
+            version: 1,
+            folders: nextFolders,
+            ...(verify ? { verify } : {}),
+          }),
           hasMore,
         },
       };
@@ -443,6 +488,34 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   ): Promise<MailProviderResult<NormalizedMailMessage>> {
     try {
       throwIfAborted(signal);
+      if (this.locations) {
+        // Try each verified copy; a stale copy is skipped, never reported as deleted.
+        for (const location of await this.locations.listValidLocations(
+          providerMessageId,
+        )) {
+          const message = await this.openCopy(location, metadataQuery());
+          if (!message) continue;
+          return {
+            ok: true,
+            value: {
+              ...(await this.normalizeMessage(
+                location.folder,
+                location.uidValidity,
+                message,
+                signal,
+                MAX_IMAP_DETAIL_BODY_BYTES,
+              )),
+              providerMessageId,
+            },
+          };
+        }
+        return failure(
+          'IMAP_MESSAGE_NOT_FOUND',
+          'No verified IMAP copy of this message is available.',
+          'provider',
+          false,
+        );
+      }
       const locator = requireMessageLocator(providerMessageId);
       const mailbox = await (
         await this.imap()
@@ -483,13 +556,27 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   }
 
   public async getAttachment(
-    _providerMessageId: string,
+    providerMessageId: string,
     providerAttachmentId: string,
     signal?: AbortSignal,
   ): Promise<MailProviderResult<MailAttachmentContent>> {
     try {
       throwIfAborted(signal);
       const locator = requireAttachmentLocator(providerAttachmentId);
+      if (this.locations) {
+        // The part index is only meaningful on the copy it was read from.
+        const [location] = await this.locations.findLocations([locator]);
+        if (
+          location?.status !== 'valid' ||
+          location.providerMessageId !== providerMessageId
+        )
+          return failure(
+            'IMAP_ATTACHMENT_NOT_FOUND',
+            'The IMAP copy holding this attachment is no longer available.',
+            'provider',
+            false,
+          );
+      }
       const selected = await (
         await this.imap()
       ).mailboxOpen(locator.folder, { readOnly: true });
@@ -699,7 +786,9 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     read: boolean,
     signal?: AbortSignal,
   ): Promise<MailProviderResult<void>> {
-    return this.updateFlags(providerMessageId, '\\Seen', read, signal);
+    return this.locations
+      ? this.updateCopyFlags(providerMessageId, '\\Seen', read, signal)
+      : this.updateFlags(providerMessageId, '\\Seen', read, signal);
   }
 
   public async setStarred(
@@ -707,7 +796,9 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     starred: boolean,
     signal?: AbortSignal,
   ): Promise<MailProviderResult<void>> {
-    return this.updateFlags(providerMessageId, '\\Flagged', starred, signal);
+    return this.locations
+      ? this.updateCopyFlags(providerMessageId, '\\Flagged', starred, signal)
+      : this.updateFlags(providerMessageId, '\\Flagged', starred, signal);
   }
 
   public async deleteMessage(
@@ -725,10 +816,43 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     }
     try {
       throwIfAborted(signal);
-      const locator = requireMessageLocator(providerMessageId);
       const client = await this.imap();
-      await client.mailboxOpen(locator.folder);
-      await client.messageDelete(locator.uid, { uid: true });
+      // Without UIDPLUS, ImapFlow falls back to a mailbox-wide EXPUNGE.
+      if (!client.capabilities?.has('UIDPLUS'))
+        return failure(
+          'IMAP_UIDPLUS_REQUIRED',
+          'This IMAP server cannot expunge a single message (UIDPLUS is missing). Delete it in your mail client instead.',
+          'configuration',
+          false,
+        );
+      if (!this.locations) {
+        const locator = requireMessageLocator(providerMessageId);
+        await client.mailboxOpen(locator.folder);
+        await client.messageDelete(String(locator.uid), { uid: true });
+        return { ok: true, value: undefined };
+      }
+      const locations =
+        await this.locations.listValidLocations(providerMessageId);
+      if (locations.length === 0)
+        return failure(
+          'IMAP_MESSAGE_NOT_FOUND',
+          'No verified IMAP copy of this message is available.',
+          'provider',
+          false,
+        );
+      for (const location of locations) {
+        throwIfAborted(signal);
+        if (!(await this.openCopy(location, { uid: true }, false)))
+          return this.copyChanged();
+        const uid = String(location.uid);
+        if (!(await client.messageDelete(uid, { uid: true })))
+          throw new Error('The IMAP server did not expunge the message.');
+        const remaining = await client.search({ uid }, { uid: true });
+        if (!Array.isArray(remaining) || remaining.includes(location.uid))
+          throw new Error('The IMAP server still lists the deleted message.');
+        // Earlier copies stay committed if a later copy fails.
+        await this.locations.commitDeleted(location);
+      }
       return { ok: true, value: undefined };
     } catch (error) {
       return { ok: false, error: classifyError(error, 'IMAP_DELETE_MESSAGE') };
@@ -764,6 +888,12 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     } catch (error) {
       return { ok: false, error: classifyError(error, 'IMAP_UPDATE_FLAGS') };
     }
+  }
+
+  private closeImap(): void {
+    const client = this.imapClient;
+    this.imapClient = undefined;
+    client?.close();
   }
 
   private async imap(): Promise<ImapFlow> {
@@ -909,7 +1039,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     uidValidity: string,
     uids: number[] | string,
     signal?: AbortSignal,
-  ): Promise<NormalizedMailMessage[]> {
+  ): Promise<FetchedCopy[]> {
     if (uids.length === 0) return [];
     const metadata: FetchMessageObject[] = [];
     const client = await this.imap();
@@ -920,14 +1050,352 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       throwIfAborted(signal);
       metadata.push(message);
     }
-    const messages: NormalizedMailMessage[] = [];
+    const messages: FetchedCopy[] = [];
     for (const message of metadata) {
       throwIfAborted(signal);
-      messages.push(
-        await this.normalizeMessage(folder, uidValidity, message, signal),
+      const normalized = await this.normalizeMessage(
+        folder,
+        uidValidity,
+        message,
+        signal,
       );
+      messages.push({
+        message: normalized,
+        tuple: { folder, uidValidity, uid: message.uid },
+        emailId: message.emailId,
+        rfcMessageId: validRfcMessageId(normalized.internetMessageId),
+        structure: message.bodyStructure,
+        size: message.size,
+      });
     }
     return messages;
+  }
+
+  private beginStep(): void {
+    this.copies = [];
+    this.changes = [];
+    this.cleanup = false;
+    this.rawBudget = MAX_IMAP_RAW_COMPARE_BUDGET;
+    this.rawCache.clear();
+  }
+
+  /**
+   * Choose each copy's identity: its persisted location first, then the
+   * server's native ID, then an RFC Message-ID proven by identical MIME bytes,
+   * and otherwise the copy's own location.
+   */
+  private async assignIdentities(
+    fetched: readonly FetchedCopy[],
+    signal?: AbortSignal,
+  ): Promise<NormalizedMailMessage[]> {
+    if (!this.locations) return fetched.map((copy) => copy.message);
+    const stored = new Map(
+      (
+        await this.locations.findLocations(fetched.map((copy) => copy.tuple))
+      ).map((location) => [tupleKey(location), location]),
+    );
+    const nativeSource = this.nativeSource();
+    const candidates = new Set<string>();
+    for (const copy of fetched) {
+      if (stored.has(tupleKey(copy.tuple))) continue;
+      const id = validNativeId(nativeSource, copy.emailId) ?? copy.rfcMessageId;
+      if (id) candidates.add(id);
+    }
+    const sources = await this.locations.findMessageSources([...candidates]);
+    const claimed = new Map<string, FetchedCopy>();
+    const messages: NormalizedMailMessage[] = [];
+    for (const copy of fetched) {
+      throwIfAborted(signal);
+      const existing = stored.get(tupleKey(copy.tuple));
+      const locationId = existing?.id ?? randomUUID();
+      const nativeId = validNativeId(nativeSource, copy.emailId);
+      let identity: { id: string; source: ImapIdSource } | undefined;
+      if (existing) {
+        // A verified location keeps its identity even if a native field is missing now.
+        identity = {
+          id: existing.providerMessageId,
+          source: existing.source ?? 'locator',
+        };
+      } else if (nativeId && nativeSource) {
+        if (!sources.has(nativeId) || sources.get(nativeId) === nativeSource)
+          identity = { id: nativeId, source: nativeSource };
+      } else if (copy.rfcMessageId) {
+        const id = copy.rfcMessageId;
+        const claimer = claimed.get(id);
+        if (
+          claimer
+            ? await this.sameRawCopies(claimer, copy, signal)
+            : !sources.has(id) ||
+              (sources.get(id) === 'rfc-message-id' &&
+                (await this.matchesStoredCopy(id, copy, signal)))
+        ) {
+          identity = { id, source: 'rfc-message-id' };
+          if (!claimer) claimed.set(id, copy);
+        }
+      }
+      identity ??= {
+        id: encodeCopyLocator(copy.tuple, locationId),
+        source: 'locator',
+      };
+      this.copies.push({
+        ...copy.tuple,
+        locationId,
+        providerMessageId: identity.id,
+        source: identity.source,
+        read: copy.message.read,
+        starred: copy.message.starred,
+        receivedAt: copy.message.receivedAt,
+      });
+      messages.push({ ...copy.message, providerMessageId: identity.id });
+    }
+    return messages;
+  }
+
+  private nativeSource(): ImapIdSource | undefined {
+    const capabilities = this.imapClient?.capabilities;
+    if (capabilities?.has('OBJECTID')) return 'objectid';
+    if (capabilities?.has('X-GM-EXT-1')) return 'x-gm-msgid';
+    return undefined;
+  }
+
+  /** Compare a new copy with a verified copy already stored under this RFC Message-ID. */
+  private async matchesStoredCopy(
+    id: string,
+    copy: FetchedCopy,
+    signal?: AbortSignal,
+  ): Promise<boolean> {
+    for (const location of await this.locations!.listValidLocations(id)) {
+      if (location.source !== 'rfc-message-id') return false;
+      const stored = await this.openCopy(location, {
+        size: true,
+        bodyStructure: true,
+      });
+      if (!stored) continue;
+      return this.sameRawCopies(
+        {
+          message: copy.message,
+          tuple: location,
+          structure: stored.bodyStructure,
+          size: stored.size,
+        },
+        copy,
+        signal,
+      );
+    }
+    // A candidate that is gone, pending or unreadable cannot prove anything.
+    return false;
+  }
+
+  private async sameRawCopies(
+    left: FetchedCopy,
+    right: FetchedCopy,
+    signal?: AbortSignal,
+  ): Promise<boolean> {
+    const first = await this.rawCopy(left, signal);
+    const second = first && (await this.rawCopy(right, signal));
+    return Boolean(first && second && first.equals(second));
+  }
+
+  /** Complete raw MIME of one copy within the per-message and per-step budgets. */
+  private async rawCopy(
+    copy: Pick<FetchedCopy, 'tuple' | 'structure' | 'size'>,
+    signal?: AbortSignal,
+  ): Promise<Buffer | undefined> {
+    const key = tupleKey(copy.tuple);
+    if (this.rawCache.has(key)) return this.rawCache.get(key);
+    let raw: Buffer | undefined;
+    if (
+      rawComparable(copy.structure, copy.size, MAX_IMAP_RAW_COMPARE_BYTES) &&
+      copy.size! + 1 <= this.rawBudget
+    ) {
+      // The probe byte past the reported size is charged as well.
+      this.rawBudget -= copy.size! + 1;
+      try {
+        const client = await this.imap();
+        const mailbox = await client.mailboxOpen(copy.tuple.folder, {
+          readOnly: true,
+        });
+        raw =
+          String(mailbox.uidValidity) === copy.tuple.uidValidity
+            ? await readRawSource(client, copy.tuple.uid, copy.size!, signal)
+            : undefined;
+      } catch (error) {
+        const classified = classifyError(error, 'IMAP_READ_SOURCE');
+        if (classified.retryable || classified.category === 'authentication')
+          throw error;
+        raw = undefined;
+      }
+    }
+    this.rawCache.set(key, raw);
+    return raw;
+  }
+
+  /**
+   * Select a stored copy and confirm it is still the same message. Returns
+   * undefined for a changed generation, a missing UID or another identity.
+   */
+  private async openCopy(
+    location: ImapStoredLocation,
+    query: FetchQueryObject,
+    readOnly = true,
+  ): Promise<FetchMessageObject | undefined> {
+    try {
+      const client = await this.imap();
+      const mailbox = await client.mailboxOpen(location.folder, { readOnly });
+      if (String(mailbox.uidValidity) !== location.uidValidity)
+        return undefined;
+      const message = await client.fetchOne(
+        location.uid,
+        { ...query, uid: true, envelope: true },
+        { uid: true },
+      );
+      if (!message) return undefined;
+      const source = location.source ?? 'locator';
+      if (source === 'objectid' || source === 'x-gm-msgid')
+        return message.emailId === location.providerMessageId
+          ? message
+          : undefined;
+      if (source === 'rfc-message-id')
+        return message.envelope?.messageId === location.providerMessageId
+          ? message
+          : undefined;
+      return message;
+    } catch (error) {
+      const classified = classifyError(error, 'IMAP_OPEN_COPY');
+      if (classified.retryable || classified.category === 'authentication')
+        throw error;
+      return undefined;
+    }
+  }
+
+  private copyChanged(): MailProviderResult<never> {
+    return failure(
+      'IMAP_MESSAGE_COPY_CHANGED',
+      'An IMAP copy of this message changed. Synchronize the mailbox and try again.',
+      'provider',
+      false,
+    );
+  }
+
+  /** Change one flag on every verified copy, committing each confirmed copy on its own. */
+  private async updateCopyFlags(
+    providerMessageId: string,
+    flag: string,
+    enabled: boolean,
+    signal?: AbortSignal,
+  ): Promise<MailProviderResult<void>> {
+    try {
+      throwIfAborted(signal);
+      const locations =
+        await this.locations!.listValidLocations(providerMessageId);
+      if (locations.length === 0)
+        return failure(
+          'IMAP_MESSAGE_NOT_FOUND',
+          'No verified IMAP copy of this message is available.',
+          'provider',
+          false,
+        );
+      const client = await this.imap();
+      for (const location of locations) {
+        throwIfAborted(signal);
+        if (!(await this.openCopy(location, { uid: true }, false)))
+          return this.copyChanged();
+        const uid = String(location.uid);
+        const method = enabled ? 'messageFlagsAdd' : 'messageFlagsRemove';
+        if (!(await client[method](uid, [flag], { uid: true })))
+          throw new Error('The IMAP server did not update the message flags.');
+        const confirmed = await client.fetchOne(
+          uid,
+          { uid: true, flags: true },
+          { uid: true },
+        );
+        if (
+          !confirmed ||
+          !confirmed.flags ||
+          confirmed.flags.has(flag) !== enabled
+        )
+          throw new Error('The IMAP server did not confirm the message flags.');
+        await this.locations!.commitFlags(
+          location,
+          flag === '\\Seen' ? { read: enabled } : { starred: enabled },
+        );
+      }
+      return { ok: true, value: undefined };
+    } catch (error) {
+      return { ok: false, error: classifyError(error, 'IMAP_UPDATE_FLAGS') };
+    }
+  }
+
+  /**
+   * One complete pass over every selectable folder. It reconciles stored
+   * copies, and two matching passes in a row authorize orphan cleanup.
+   */
+  private async verifyFolders(
+    mailboxes: readonly ListResponse[],
+    folders: Readonly<Record<string, ImapFolderCursor>>,
+    previous: ImapVerifyState | undefined,
+    signal?: AbortSignal,
+  ): Promise<
+    | { readonly done: boolean; readonly verify?: ImapVerifyState }
+    | 'generation-changed'
+  > {
+    const attempts = (previous?.attempts ?? 0) + 1;
+    const snapshot: Record<string, ImapVerifyFolder> = {};
+    const present = new Map<string, Set<number>>();
+    let stable = true;
+    for (const mailbox of mailboxes) {
+      throwIfAborted(signal);
+      const client = await this.imap();
+      const selected = await client.mailboxOpen(mailbox.path, {
+        readOnly: true,
+      });
+      const state = await this.selectedFolderState(selected);
+      const cursor = folders[mailbox.path];
+      if (state.uidValidity !== cursor.uidValidity) return 'generation-changed';
+      // New mail arrived after this page: import it before verifying again.
+      if (state.uidNext !== cursor.uidNext) stable = false;
+      let uids: number[] | false | undefined;
+      try {
+        uids = await client.search({ all: true }, { uid: true });
+      } catch (error) {
+        if (!isResponseLimitError(error)) throw error;
+        // The UID list exceeds the protocol budget: keep every copy and skip cleanup.
+        this.closeImap();
+        return { done: true };
+      }
+      if (!Array.isArray(uids))
+        // Retry the step: an incomplete SEARCH proves nothing about missing copies.
+        throw Object.assign(
+          new Error(`Could not search ${mailbox.path} during verification.`),
+          { code: 'IMAP_SEARCH_FAILED', serverResponseCode: 'UNAVAILABLE' },
+        );
+      present.set(mailbox.path, new Set(uids));
+      snapshot[mailbox.path] = { ...state, uids: compressUids(uids) };
+    }
+    for (const location of await this.locations!.listKnownLocations()) {
+      const uids = present.get(location.folder);
+      const generation = snapshot[location.folder]?.uidValidity;
+      const next: Pick<ImapLocationChange, 'status' | 'reason'> = !uids
+        ? { status: 'pending', reason: 'folder-unavailable' }
+        : generation !== location.uidValidity
+          ? { status: 'pending', reason: 'generation-changed' }
+          : uids.has(location.uid)
+            ? { status: 'valid' }
+            : { status: 'invalid', reason: 'uid-missing' };
+      if (next.status !== location.status)
+        this.changes.push({ id: location.id, ...next });
+    }
+    if (!stable) return { done: false, verify: { attempts } };
+    if (
+      Buffer.byteLength(JSON.stringify(snapshot)) > MAX_IMAP_VERIFY_STATE_BYTES
+    )
+      return { done: true };
+    if (previous?.folders && sameSnapshot(previous.folders, snapshot)) {
+      this.cleanup = true;
+      return { done: true };
+    }
+    if (attempts > MAX_IMAP_VERIFY_ATTEMPTS) return { done: true };
+    return { done: false, verify: { attempts, folders: snapshot } };
   }
 
   private async normalizeMessage(
@@ -937,7 +1405,8 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     signal?: AbortSignal,
     maxBodyBytes: number = MAX_IMAP_BODY_BYTES,
   ): Promise<NormalizedMailMessage> {
-    const header = message.headers?.subarray(0, 64 * 1024);
+    const truncated = (message.headers?.byteLength ?? 0) > MAX_HEADER_BYTES;
+    const header = message.headers?.subarray(0, MAX_HEADER_BYTES);
     const parsed = header
       ? await simpleParser(Buffer.concat([header, Buffer.from('\r\n\r\n')]), {
           skipHtmlToText: true,
@@ -986,7 +1455,11 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       providerMessageId,
       ...body,
       size: message.size,
-      internetMessageId: parsed?.messageId ?? message.envelope?.messageId,
+      internetMessageId: completeMessageId(
+        truncated
+          ? message.envelope?.messageId
+          : (parsed?.messageId ?? message.envelope?.messageId),
+      ),
       providerFolderIds: [folder],
       from,
       to,
@@ -1005,4 +1478,72 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       attachments,
     };
   }
+}
+
+interface FetchedCopy {
+  readonly message: NormalizedMailMessage;
+  readonly tuple: ImapLocationTuple;
+  readonly emailId?: string;
+  readonly rfcMessageId?: string;
+  readonly structure?: MessageStructureObject;
+  readonly size?: number;
+}
+
+function tupleKey(tuple: ImapLocationTuple): string {
+  return JSON.stringify([tuple.folder, tuple.uidValidity, tuple.uid]);
+}
+
+const MAX_UINT64 = 2n ** 64n - 1n;
+
+/** The server's own object ID, never ImapFlow's synthesized message.id. */
+function validNativeId(
+  source: ImapIdSource | undefined,
+  value: string | undefined,
+): string | undefined {
+  if (!value) return undefined;
+  if (source === 'objectid')
+    return /^[A-Za-z0-9_-]{1,255}$/.test(value) ? value : undefined;
+  if (source === 'x-gm-msgid')
+    // Keep the decimal string: a JavaScript number would lose uint64 precision.
+    return /^(0|[1-9]\d{0,19})$/.test(value) && BigInt(value) <= MAX_UINT64
+      ? value
+      : undefined;
+  return undefined;
+}
+
+function validRfcMessageId(value: string | undefined): string | undefined {
+  return value &&
+    value.length <= MAX_IMAP_PROVIDER_ID_LENGTH &&
+    /^<[\x21-\x3b\x3d\x3f-\x7e]+@[\x21-\x3b\x3d\x3f-\x7e]+>$/.test(value)
+    ? value
+    : undefined;
+}
+
+/** Keep a Message-ID only when it is complete; never store a cut value. */
+function completeMessageId(value: string | undefined): string | undefined {
+  return value && Buffer.byteLength(value) < MAX_HEADER_BYTES
+    ? value
+    : undefined;
+}
+
+function sameSnapshot(
+  left: Readonly<Record<string, ImapVerifyFolder>>,
+  right: Readonly<Record<string, ImapVerifyFolder>>,
+): boolean {
+  const paths = Object.keys(right);
+  return (
+    Object.keys(left).length === paths.length &&
+    paths.every(
+      (path) =>
+        left[path]?.uidValidity === right[path].uidValidity &&
+        left[path].uidNext === right[path].uidNext &&
+        left[path].uids === right[path].uids,
+    )
+  );
+}
+
+function isResponseLimitError(error: unknown): boolean {
+  return ['LiteralTooLarge', 'ResponseTooLarge', 'LineTooLarge'].includes(
+    (error as { code?: string } | undefined)?.code ?? '',
+  );
 }

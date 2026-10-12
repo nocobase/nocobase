@@ -21,6 +21,7 @@ import {
   notifyMailMessageChange,
   type MailMessageChangeNotifier,
 } from '../realtime.js';
+import { ImapSmtpAdapter } from '../adapters/imap-smtp/adapter.js';
 
 export interface SyncMailboxOperationDependencies {
   readonly logger?: MailLogger;
@@ -272,8 +273,13 @@ export class SyncMailboxOperation {
 
   private async commitSyncStep(
     input: MailSyncStepCommit,
+    adapter?: MailProviderAdapter,
   ): Promise<MailSyncRun> {
-    const result = await this.dependencies.store.commitSyncStep(input);
+    // The built-in IMAP adapter commits its copies' location evidence with the step.
+    const result =
+      adapter instanceof ImapSmtpAdapter && adapter.persistsLocations
+        ? await adapter.commitSyncStep(input)
+        : await this.dependencies.store.commitSyncStep(input);
     writeMailLog(
       this.dependencies.logger,
       result.status === 'partial' || input.restart ? 'warn' : 'info',
@@ -456,21 +462,24 @@ export class SyncMailboxOperation {
         ),
       );
     }
-    await this.commitSyncStep({
-      run,
-      messages: imported,
-      historyPage: true,
-      phase: page.historyReady === false && hasMore ? 'history' : 'catchUp',
-      historyComplete: !hasMore,
-      status: 'running',
-      historyCursor: hasMore ? page.nextCursor : undefined,
-      baselineCursor: run.baselineCursor,
-      changeCursor:
-        page.historyReady === false
-          ? (page.syncCursor ?? run.changeCursor)
-          : (run.changeCursor ?? page.syncCursor ?? run.baselineCursor),
-      createNextTask: true,
-    });
+    await this.commitSyncStep(
+      {
+        run,
+        messages: imported,
+        historyPage: true,
+        phase: page.historyReady === false && hasMore ? 'history' : 'catchUp',
+        historyComplete: !hasMore,
+        status: 'running',
+        historyCursor: hasMore ? page.nextCursor : undefined,
+        baselineCursor: run.baselineCursor,
+        changeCursor:
+          page.historyReady === false
+            ? (page.syncCursor ?? run.changeCursor)
+            : (run.changeCursor ?? page.syncCursor ?? run.baselineCursor),
+        createNextTask: true,
+      },
+      adapter,
+    );
     return imported.length > 0;
   }
 
@@ -487,15 +496,8 @@ export class SyncMailboxOperation {
         ),
       );
     }
-    const knownProviderMessageIds =
-      adapter.identity.type === 'imap-smtp'
-        ? await this.dependencies.store.listImapProviderMessageIds?.(
-            run.accountId,
-          )
-        : undefined;
     const result = await adapter.listChanges({
       cursor: run.changeCursor,
-      ...(knownProviderMessageIds ? { knownProviderMessageIds } : {}),
       limit: run.policy.batchSize,
       signal,
     });
@@ -512,22 +514,31 @@ export class SyncMailboxOperation {
       run.mode === 'initial' &&
       !run.historyComplete &&
       run.historyCursor !== undefined;
-    await this.commitSyncStep({
-      run,
-      historyCursor: run.historyCursor,
-      messages: page.messages,
-      removedFromFolders: page.removedFromFolders,
-      deletedProviderMessageIds: page.deletedProviderMessageIds,
-      phase: resumeHistory ? 'history' : page.hasMore ? run.phase : 'completed',
-      status: page.hasMore || resumeHistory ? 'running' : 'completed',
-      baselineCursor: run.baselineCursor,
-      changeCursor: page.nextCursor,
-      createNextTask: page.hasMore || resumeHistory,
-    });
+    await this.commitSyncStep(
+      {
+        run,
+        historyCursor: run.historyCursor,
+        messages: page.messages,
+        removedFromFolders: page.removedFromFolders,
+        deletedProviderMessageIds: page.deletedProviderMessageIds,
+        phase: resumeHistory
+          ? 'history'
+          : page.hasMore
+            ? run.phase
+            : 'completed',
+        status: page.hasMore || resumeHistory ? 'running' : 'completed',
+        baselineCursor: run.baselineCursor,
+        changeCursor: page.nextCursor,
+        createNextTask: page.hasMore || resumeHistory,
+      },
+      adapter,
+    );
     return (
       page.messages.length > 0 ||
       (page.removedFromFolders?.length ?? 0) > 0 ||
-      (page.deletedProviderMessageIds?.length ?? 0) > 0
+      (page.deletedProviderMessageIds?.length ?? 0) > 0 ||
+      // IMAP copy changes and orphan cleanup are settled by the final step.
+      (!page.hasMore && adapter instanceof ImapSmtpAdapter)
     );
   }
 }

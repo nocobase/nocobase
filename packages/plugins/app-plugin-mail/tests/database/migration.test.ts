@@ -37,6 +37,7 @@ const COLLECTIONS = [
   'mailLabels',
   'mailMessageLabels',
   'mailMessageParticipants',
+  'mailMessageImapLocations',
 ] as const;
 const MIGRATIONS = [
   '202609030001_create_mail_tables',
@@ -44,6 +45,7 @@ const MIGRATIONS = [
   '202609210001_normalize_mail_folders',
   '202609260001_add_mail_sync_retry_attempts',
   '202610090001_mail_create_message_participants',
+  '202610120001_mail_imap_message_locations',
 ] as const;
 const sources = [
   {

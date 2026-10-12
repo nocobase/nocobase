@@ -10,7 +10,8 @@ import { encodeAttachmentLocator } from './locators.js';
 import { classifyError, throwIfAborted } from './errors.js';
 
 import { MAX_IMAP_BODY_BYTES } from './constants.js';
-const MAX_HEADER_BYTES = 64 * 1024;
+export const MAX_HEADER_BYTES: number = 64 * 1024;
+const RAW_WINDOW_BYTES = 1024 * 1024;
 
 export function metadataQuery(): FetchQueryObject {
   return {
@@ -20,8 +21,61 @@ export function metadataQuery(): FetchQueryObject {
     internalDate: true,
     envelope: true,
     bodyStructure: true,
-    bodyParts: [{ key: 'HEADER', start: 0, maxLength: MAX_HEADER_BYTES }],
+    // One extra byte shows whether the header block was cut at the budget.
+    bodyParts: [{ key: 'HEADER', start: 0, maxLength: MAX_HEADER_BYTES + 1 }],
   };
+}
+
+/**
+ * True when raw MIME bytes can prove two copies identical without reading
+ * attachment or CID content: only known text leaves, within the byte limit.
+ */
+export function rawComparable(
+  structure: MessageStructureObject | undefined,
+  size: number | undefined,
+  maxBytes: number,
+): boolean {
+  if (!structure || size === undefined || !Number.isSafeInteger(size))
+    return false;
+  if (size < 0 || size > maxBytes) return false;
+  const parts = leaves(structure);
+  return parts.every(
+    (part) =>
+      ['text/plain', 'text/html'].includes(part.type.toLowerCase()) &&
+      !part.id &&
+      !(part.disposition && part.disposition.toLowerCase() !== 'inline'),
+  );
+}
+
+/**
+ * Read the complete RFC822 source in bounded windows. Returns undefined unless
+ * every window arrived in order and the total equals RFC822.SIZE.
+ */
+export async function readRawSource(
+  client: ImapFlow,
+  uid: number,
+  size: number,
+  signal?: AbortSignal,
+): Promise<Buffer | undefined> {
+  const chunks: Buffer[] = [];
+  let offset = 0;
+  while (true) {
+    throwIfAborted(signal);
+    // Probe one byte past the reported size so a short report is detected.
+    const length = Math.min(RAW_WINDOW_BYTES, size + 1 - offset);
+    const fetched = await client.fetchOne(
+      uid,
+      { source: { start: offset, maxLength: length } },
+      { uid: true },
+    );
+    const chunk = fetched ? fetched.source : undefined;
+    if (!chunk || chunk.byteLength > length) return undefined;
+    chunks.push(chunk);
+    offset += chunk.byteLength;
+    if (offset > size) return undefined;
+    if (chunk.byteLength < length) break;
+  }
+  return offset === size ? Buffer.concat(chunks, offset) : undefined;
 }
 
 function isAttachment(part: MessageStructureObject): boolean {

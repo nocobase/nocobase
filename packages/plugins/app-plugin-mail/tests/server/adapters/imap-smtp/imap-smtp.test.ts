@@ -728,11 +728,23 @@ describe('IMAP/SMTP mail Provider', () => {
     });
     expect(mocks.imap.mailboxOpen).not.toHaveBeenCalled();
     expect(mocks.imap.messageDelete).not.toHaveBeenCalled();
-    await expect(adapter.deleteMessage!(id, true)).resolves.toEqual({
-      ok: true,
-      value: undefined,
+    // Without UIDPLUS, EXPUNGE would remove every \\Deleted message in the folder.
+    await expect(adapter.deleteMessage!(id, true)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'IMAP_UIDPLUS_REQUIRED', retryable: false },
     });
-    expect(mocks.imap.messageDelete).toHaveBeenCalledWith(7, { uid: true });
+    expect(mocks.imap.mailboxOpen).not.toHaveBeenCalled();
+    expect(mocks.imap.messageDelete).not.toHaveBeenCalled();
+    Object.assign(mocks.imap, { capabilities: new Set(['UIDPLUS']) });
+    try {
+      await expect(adapter.deleteMessage!(id, true)).resolves.toEqual({
+        ok: true,
+        value: undefined,
+      });
+    } finally {
+      Object.assign(mocks.imap, { capabilities: undefined });
+    }
+    expect(mocks.imap.messageDelete).toHaveBeenCalledWith('7', { uid: true });
   });
 
   it('advertises the MVP capability boundary', () => {

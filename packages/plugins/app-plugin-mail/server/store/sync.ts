@@ -1,6 +1,6 @@
 import { lockWritableAccount } from './account-guard.js';
 import { validateLogPagination } from '../log-pagination.js';
-import { type DatabaseManager } from '@nocobase/db';
+import { type DatabaseManager, type QueryAdapter } from '@nocobase/db';
 import { randomUUID } from 'node:crypto';
 import {
   MAIL_LOCAL_DRAFT_FOLDER_ID,
@@ -17,14 +17,27 @@ import {
 } from '../contracts/persistence.js';
 import { fromSyncRunRow, toSyncRunRow } from './mappers.js';
 import {
+  applyImapLocationChanges,
+  deleteImapOrphans,
   deleteMessages,
+  refreshImapMessages,
   removeMessagesFromFolders,
   removeStaleMessageFolders,
   upsertFolders,
+  upsertImapMessages,
   upsertMessages,
 } from './message-writes.js';
+import { MailAccountsStore } from './accounts.js';
+import { closeDrafts } from './draft-states.js';
+import type {
+  ImapIdSource,
+  ImapLocationPersistence,
+  ImapStoredLocation,
+  ImapSyncEvidence,
+} from '../adapters/imap-smtp/types.js';
 import {
   type AccountRow,
+  type ImapLocationRow,
   type MessageRow,
   type OutboxRow,
   type PushPendingRow,
@@ -394,7 +407,10 @@ export class MailSyncStore {
     return result.updatedCount === 1;
   }
 
-  public async commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncRun> {
+  public async commitSyncStep(
+    input: MailSyncStepCommit,
+    imap?: ImapSyncEvidence,
+  ): Promise<MailSyncRun> {
     const now = new Date().toISOString();
     await this.database.transaction(async (connection): Promise<void> => {
       await lockWritableAccount(connection.query, input.run.accountId);
@@ -443,14 +459,35 @@ export class MailSyncStore {
           (message) => !deletedIds.has(message.providerMessageId),
         );
       }
-      await upsertMessages(
-        connection.query,
-        input.run.accountId,
-        messages,
-        input.historyPage
-          ? (input.run.historyStartedAt ?? input.run.createdAt)
-          : undefined,
-      );
+      const preserveUpdatedAfter = input.historyPage
+        ? (input.run.historyStartedAt ?? input.run.createdAt)
+        : undefined;
+      if (imap) {
+        const kept = new Set(
+          messages.map((message) => message.providerMessageId),
+        );
+        await upsertImapMessages(
+          connection.query,
+          input.run.accountId,
+          messages,
+          imap.copies.filter((copy) => kept.has(copy.providerMessageId)),
+          input.run.id,
+          preserveUpdatedAfter,
+        );
+        await applyImapLocationChanges(
+          connection.query,
+          input.run.accountId,
+          imap.changes,
+          input.run.id,
+        );
+      } else {
+        await upsertMessages(
+          connection.query,
+          input.run.accountId,
+          messages,
+          preserveUpdatedAfter,
+        );
+      }
       if (input.run.mode === 'initial' && !input.historyPage) {
         const affectedIds = [
           ...new Set([
@@ -507,6 +544,15 @@ export class MailSyncStore {
           .where('requestToken', '=', pendingPush.requestToken)
           .execute();
       }
+      // Only the step that finishes the run, after every batch and two
+      // matching verification passes, may remove messages without copies.
+      if (imap?.cleanup && input.status === 'completed' && !pendingPush) {
+        await deleteImapOrphans(
+          connection.query,
+          input.run.accountId,
+          input.run.id,
+        );
+      }
       const pending = await connection.query
         .selectFrom<MessageRow>('mailMessages')
         .select(({ fn }) => [fn.countAll().as('count')])
@@ -522,7 +568,7 @@ export class MailSyncStore {
       // Refresh folder metadata too: a send may have created the Sent folder.
       const phase = pendingPush ? 'preparing' : input.phase;
       const createNextTask = pendingPush || input.createNextTask;
-      const result = await connection.query
+      let fenced = connection.query
         .updateTable<SyncRunRow>('mailSyncRuns')
         .set({
           phase,
@@ -572,8 +618,14 @@ export class MailSyncStore {
         })
         .where('id', '=', input.run.id)
         .where('status', '=', 'running')
-        .where('leaseToken', '=', input.run.leaseToken ?? '')
-        .execute();
+        .where('leaseToken', '=', input.run.leaseToken ?? '');
+      // IMAP location writes also require the claimed revision and a live lease.
+      if (imap)
+        fenced = fenced
+          .where('revision', '=', input.run.revision)
+          .where('phase', '=', input.run.phase)
+          .where('leaseExpiresAt', '>', now);
+      const result = await fenced.execute();
       if (result.updatedCount !== 1) {
         throw new Error('Mail sync run lease was lost before commit.');
       }
@@ -674,4 +726,258 @@ export class MailSyncStore {
     if (!updated) throw new Error('Released mail sync run could not be read.');
     return updated;
   }
+}
+
+const IMAP_LOCATIONS = 'mailMessageImapLocations';
+
+/**
+ * Narrow persistence for one account's IMAP adapter. Reads are scoped to the
+ * account; every commit locks it and rechecks the copy inside its transaction.
+ */
+export function createImapLocationPersistence(
+  database: DatabaseManager,
+  accountId: string,
+): ImapLocationPersistence {
+  const sync = new MailSyncStore(database, new MailAccountsStore(database));
+  const resolve = async (
+    query: QueryAdapter,
+    rows: readonly ImapLocationRow[],
+  ): Promise<ImapStoredLocation[]> => {
+    const ids = [...new Set(rows.map((row) => row.messageId))];
+    const messages = new Map<string, MessageRow>();
+    for (const batch of chunks(ids, 100)) {
+      for (const row of await query
+        .selectFrom<MessageRow>('mailMessages')
+        .select([
+          'id',
+          'providerMessageId',
+          'providerDraftMessageId',
+          'imapIdSource',
+          'providerDraftMessageIdSource',
+        ])
+        .where('accountId', '=', accountId)
+        .where('id', 'in', batch)
+        .execute<MessageRow>())
+        messages.set(row.id, row);
+    }
+    return rows.flatMap((row) => {
+      const message = messages.get(row.messageId);
+      return message ? [toStoredLocation(row, message)] : [];
+    });
+  };
+  const select = (query: QueryAdapter) =>
+    query
+      .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
+      .selectAll()
+      .where('accountId', '=', accountId);
+  /** Recheck a copy under the account lock before writing its effect. */
+  const current = async (
+    query: QueryAdapter,
+    location: ImapStoredLocation,
+  ): Promise<ImapStoredLocation> => {
+    await lockWritableAccount(query, accountId);
+    const row = await select(query)
+      .where('id', '=', location.id)
+      .where('messageId', '=', location.messageId)
+      .where('status', '=', 'valid')
+      .executeTakeFirst<ImapLocationRow>();
+    const [stored] = row ? await resolve(query, [row]) : [];
+    if (
+      !stored ||
+      stored.providerMessageId !== location.providerMessageId ||
+      stored.uid !== location.uid ||
+      stored.uidValidity !== location.uidValidity ||
+      stored.folder !== location.folder
+    )
+      throw Object.assign(
+        new Error('The IMAP copy changed before its result was saved.'),
+        { code: 'IMAP_MESSAGE_COPY_CHANGED' },
+      );
+    return stored;
+  };
+  return {
+    async findLocations(tuples) {
+      const found: ImapLocationRow[] = [];
+      for (const tuple of tuples) {
+        const row = await select(database.query())
+          .where('providerFolderId', '=', tuple.folder)
+          .where('uidValidity', '=', tuple.uidValidity)
+          .where('uid', '=', tuple.uid)
+          .executeTakeFirst<ImapLocationRow>();
+        if (row) found.push(row);
+      }
+      return resolve(database.query(), found);
+    },
+    async findMessageSources(providerMessageIds) {
+      const sources = new Map<string, ImapIdSource | undefined>();
+      for (const ids of chunks(providerMessageIds, 100)) {
+        const rows = await database
+          .query()
+          .selectFrom<MessageRow>('mailMessages')
+          .select([
+            'providerMessageId',
+            'providerDraftMessageId',
+            'imapIdSource',
+            'providerDraftMessageIdSource',
+          ])
+          .where('accountId', '=', accountId)
+          .where((builder) =>
+            builder.or([
+              builder('providerMessageId', 'in', ids),
+              builder('providerDraftMessageId', 'in', ids),
+            ]),
+          )
+          .execute<MessageRow>();
+        for (const row of rows) {
+          if (ids.includes(row.providerMessageId))
+            sources.set(
+              row.providerMessageId,
+              (row.imapIdSource ?? undefined) as ImapIdSource | undefined,
+            );
+          if (
+            row.providerDraftMessageId &&
+            ids.includes(row.providerDraftMessageId)
+          )
+            sources.set(
+              row.providerDraftMessageId,
+              (row.providerDraftMessageIdSource ?? undefined) as
+                ImapIdSource | undefined,
+            );
+        }
+      }
+      return sources;
+    },
+    async listValidLocations(providerMessageId) {
+      const query = database.query();
+      const messages = await query
+        .selectFrom<MessageRow>('mailMessages')
+        .select('id')
+        .where('accountId', '=', accountId)
+        .where((builder) =>
+          builder.or([
+            builder('providerMessageId', '=', providerMessageId),
+            builder('providerDraftMessageId', '=', providerMessageId),
+          ]),
+        )
+        .execute<Pick<MessageRow, 'id'>>();
+      if (messages.length === 0) return [];
+      const rows = await select(query)
+        .where(
+          'messageId',
+          'in',
+          messages.map((message) => message.id),
+        )
+        .where('status', '=', 'valid')
+        .orderBy('createdAt', 'asc')
+        .orderBy('id', 'asc')
+        .execute<ImapLocationRow>();
+      return (await resolve(query, rows)).filter(
+        (location) => location.providerMessageId === providerMessageId,
+      );
+    },
+    async listKnownLocations() {
+      const query = database.query();
+      const rows = await select(query)
+        .where('status', 'in', ['valid', 'pending'])
+        .execute<ImapLocationRow>();
+      return resolve(query, rows);
+    },
+    async commitFlags(location, flags) {
+      await database.transaction(async ({ query }) => {
+        const stored = await current(query, location);
+        await query
+          .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+          .set({
+            ...(flags.read === undefined ? {} : { read: flags.read }),
+            ...(flags.starred === undefined ? {} : { starred: flags.starred }),
+            updatedAt: new Date().toISOString(),
+          })
+          .where('id', '=', stored.id)
+          .execute();
+        await refreshImapMessages(
+          query,
+          accountId,
+          [stored.messageId],
+          undefined,
+          new Date().toISOString(),
+        );
+      });
+    },
+    async commitDeleted(location) {
+      await database.transaction(async ({ query }) => {
+        const stored = await current(query, location);
+        const now = new Date().toISOString();
+        await query
+          .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+          .set({
+            status: 'invalid',
+            invalidationReason: 'deleted',
+            updatedAt: now,
+          })
+          .where('id', '=', stored.id)
+          .execute();
+        const remaining = await select(query)
+          .where('messageId', '=', stored.messageId)
+          .where('status', 'in', ['valid', 'pending'])
+          .executeTakeFirst();
+        const message = await query
+          .selectFrom<MessageRow>('mailMessages')
+          .select([
+            'providerMessageId',
+            'imapIdSource',
+            'scheduledSubmissionId',
+            'draft',
+          ])
+          .where('accountId', '=', accountId)
+          .where('id', '=', stored.messageId)
+          .executeTakeFirst<MessageRow>();
+        // Local and scheduled drafts stay; their own deletion path decides.
+        if (
+          !remaining &&
+          message?.imapIdSource &&
+          !message.scheduledSubmissionId
+        ) {
+          // A deleted remote draft is closed so a late copy cannot revive it.
+          if (message.draft)
+            await closeDrafts(query, accountId, stored.messageId);
+          else
+            await deleteMessages(query, accountId, [message.providerMessageId]);
+        } else
+          await refreshImapMessages(
+            query,
+            accountId,
+            [stored.messageId],
+            undefined,
+            now,
+          );
+      });
+    },
+    commitSyncStep(input, evidence) {
+      if (input.run.accountId !== accountId)
+        throw new Error('Mail sync run belongs to another account.');
+      return sync.commitSyncStep(input, evidence);
+    },
+  };
+}
+
+function toStoredLocation(
+  row: ImapLocationRow,
+  message: MessageRow,
+): ImapStoredLocation {
+  // A localized draft keeps its remote copy under the remote draft identity.
+  const draft =
+    message.providerMessageId.startsWith('local-draft:') &&
+    message.providerDraftMessageId;
+  return {
+    id: row.id,
+    messageId: row.messageId,
+    folder: row.providerFolderId,
+    uidValidity: String(row.uidValidity),
+    uid: Number(row.uid),
+    status: row.status,
+    providerMessageId: draft || message.providerMessageId,
+    source: ((draft
+      ? message.providerDraftMessageIdSource
+      : message.imapIdSource) ?? undefined) as ImapIdSource | undefined,
+  };
 }

@@ -14,6 +14,12 @@ import {
 import { assertProviderResult } from '../services/errors.js';
 import { closeAdapter } from '../services/provider-lifecycle.js';
 import { mailFailedPrecondition, mailNotFound } from '../services/errors.js';
+import { ImapSmtpAdapter } from '../adapters/imap-smtp/adapter.js';
+
+/** The built-in IMAP adapter commits each confirmed copy itself. */
+function commitsCopies(adapter: MailProviderAdapter): boolean {
+  return adapter instanceof ImapSmtpAdapter && adapter.persistsLocations;
+}
 
 type MessageMutationStore = Pick<
   MailStore,
@@ -68,6 +74,7 @@ export class MailMessageMutations {
       account,
       context.signal,
     );
+    const copies = commitsCopies(adapter);
     try {
       if (input.read !== undefined) {
         if (!adapter.setRead)
@@ -93,12 +100,13 @@ export class MailMessageMutations {
           ),
         );
       }
+      // IMAP read and starred state is already aggregated from committed copies.
       const updated = await this.dependencies.store.updateMessageState(
         account.id,
         message.id,
         {
-          read: input.read,
-          starred: input.starred,
+          read: copies ? undefined : input.read,
+          starred: copies ? undefined : input.starred,
           note: input.note,
           todo: input.todo,
         },
@@ -110,6 +118,15 @@ export class MailMessageMutations {
         this.dependencies.logger,
       );
       return updated;
+    } catch (error) {
+      // Copies confirmed before the failure stay committed; show them.
+      if (copies)
+        notifyMailMessageChange(
+          this.dependencies.messageChangeNotifier,
+          account.userId,
+          this.dependencies.logger,
+        );
+      throw error;
     } finally {
       await closeAdapter(adapter);
     }
@@ -265,13 +282,25 @@ export class MailMessageMutations {
           'The selected Mail Provider cannot delete messages.',
         );
       }
-      assertProviderResult(
-        await adapter.deleteMessage(
+      const copies = commitsCopies(adapter);
+      let result;
+      try {
+        result = await adapter.deleteMessage(
           message.providerMessageId,
           input.permanently ?? false,
           context.signal,
-        ),
-      );
+        );
+      } finally {
+        if (copies)
+          notifyMailMessageChange(
+            this.dependencies.messageChangeNotifier,
+            account.userId,
+            this.dependencies.logger,
+          );
+      }
+      assertProviderResult(result);
+      // IMAP removes the message only after its last copy is confirmed gone.
+      if (copies) return;
       const deleted = await this.dependencies.store.deleteMessage(
         account.id,
         message.id,

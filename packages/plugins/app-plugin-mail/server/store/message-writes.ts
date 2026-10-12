@@ -7,10 +7,15 @@ import { type NormalizedMailMessage } from '../contracts/provider.js';
 import { toMessageRow } from './mappers.js';
 import {
   type FolderRow,
+  type ImapLocationRow,
   type MessageFolderRow,
   type MessageLabelRow,
   type MessageRow,
 } from './rows.js';
+import type {
+  ImapCopyEvidence,
+  ImapLocationChange,
+} from '../adapters/imap-smtp/types.js';
 import { chunks } from './serialization.js';
 import {
   deleteMessageParticipants,
@@ -22,6 +27,7 @@ export async function upsertMessages(
   accountId: string,
   messages: readonly NormalizedMailMessage[],
   preserveUpdatedAfter?: string,
+  replaceFolders = true,
 ): Promise<void> {
   const uniqueMessages = [
     ...new Map(
@@ -126,6 +132,8 @@ export async function upsertMessages(
   }
   if (rows.length === 0) return;
   await replaceMessageParticipants(query, rows);
+  // IMAP derives folders from every stored copy instead of the latest one.
+  if (!replaceFolders) return;
   const messageIds = rows.map((row) => row.id);
   await query
     .deleteFrom<MessageFolderRow>('mailMessageFolders')
@@ -257,4 +265,283 @@ export async function removeMessagesFromFolders(
       .where('providerFolderId', '=', removal.providerFolderId)
       .execute();
   }
+}
+
+const IMAP_LOCATIONS = 'mailMessageImapLocations';
+
+/**
+ * Write one sync step's IMAP copies: one business message per identity, a
+ * location per copy, and aggregates derived from every verified copy.
+ */
+export async function upsertImapMessages(
+  query: QueryAdapter,
+  accountId: string,
+  messages: readonly NormalizedMailMessage[],
+  copies: readonly ImapCopyEvidence[],
+  runId: string,
+  preserveUpdatedAfter?: string,
+): Promise<void> {
+  const representatives = new Map<string, NormalizedMailMessage>();
+  for (const message of messages) {
+    const current = representatives.get(message.providerMessageId);
+    // An incomplete copy never replaces complete content from another copy.
+    if (
+      !current ||
+      (current.contentStatus !== undefined &&
+        current.contentStatus !== 'complete' &&
+        (message.contentStatus ?? 'complete') === 'complete')
+    )
+      representatives.set(message.providerMessageId, message);
+  }
+  await upsertMessages(
+    query,
+    accountId,
+    [...representatives.values()],
+    preserveUpdatedAfter,
+    false,
+  );
+  const owners = new Map<string, string>();
+  for (const ids of chunks(
+    [...new Set(copies.map((copy) => copy.providerMessageId))],
+    100,
+  )) {
+    const rows = await query
+      .selectFrom<MessageRow>('mailMessages')
+      .select(['id', 'providerMessageId'])
+      .where('accountId', '=', accountId)
+      .where('providerMessageId', 'in', ids)
+      .execute<Pick<MessageRow, 'id' | 'providerMessageId'>>();
+    for (const row of rows) owners.set(row.providerMessageId, row.id);
+  }
+  const now = new Date().toISOString();
+  const touched = new Set<string>();
+  for (const copy of copies) {
+    const messageId = owners.get(copy.providerMessageId);
+    // Skipped writes, such as a closed or accepted draft, keep no location.
+    if (!messageId) continue;
+    const existing = await query
+      .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
+      .select(['id', 'messageId'])
+      .where('accountId', '=', accountId)
+      .where('providerFolderId', '=', copy.folder)
+      .where('uidValidity', '=', copy.uidValidity)
+      .where('uid', '=', copy.uid)
+      .executeTakeFirst<Pick<ImapLocationRow, 'id' | 'messageId'>>();
+    // A stored copy keeps its owner; a new identity never takes it over.
+    if (existing && existing.messageId !== messageId) continue;
+    const values = {
+      status: 'valid' as const,
+      invalidationReason: null,
+      read: copy.read,
+      starred: copy.starred,
+      receivedAt: copy.receivedAt ?? null,
+      updatedAt: now,
+    };
+    if (existing) {
+      await query
+        .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+        .set(values)
+        .where('id', '=', existing.id)
+        .execute();
+    } else {
+      await query
+        .insertInto<ImapLocationRow>(IMAP_LOCATIONS)
+        .values({
+          id: copy.locationId,
+          accountId,
+          messageId,
+          providerFolderId: copy.folder,
+          uidValidity: copy.uidValidity,
+          uid: copy.uid,
+          ...values,
+          createdAt: now,
+        })
+        .execute();
+    }
+    await query
+      .updateTable<MessageRow>('mailMessages')
+      .set({ imapIdSource: copy.source })
+      .where('id', '=', messageId)
+      .execute();
+    touched.add(messageId);
+  }
+  await refreshImapMessages(query, accountId, [...touched], runId);
+}
+
+/** Apply verified status changes of stored copies. */
+export async function applyImapLocationChanges(
+  query: QueryAdapter,
+  accountId: string,
+  changes: readonly ImapLocationChange[],
+  runId: string,
+): Promise<void> {
+  const touched = new Set<string>();
+  const now = new Date().toISOString();
+  for (const change of changes) {
+    const row = await query
+      .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
+      .select('messageId')
+      .where('accountId', '=', accountId)
+      .where('id', '=', change.id)
+      .executeTakeFirst<Pick<ImapLocationRow, 'messageId'>>();
+    if (!row) continue;
+    await query
+      .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+      .set({
+        status: change.status,
+        invalidationReason: change.reason ?? null,
+        updatedAt: now,
+      })
+      .where('id', '=', change.id)
+      .execute();
+    touched.add(row.messageId);
+  }
+  await refreshImapMessages(query, accountId, [...touched], runId);
+}
+
+/**
+ * Derive message state from its copies: read when every verified copy is read,
+ * starred when any is, received at the earliest verified copy. A message with
+ * no verified copy keeps its state and is marked as an orphan of this run.
+ */
+export async function refreshImapMessages(
+  query: QueryAdapter,
+  accountId: string,
+  messageIds: readonly string[],
+  runId?: string,
+  updatedAt?: string,
+): Promise<void> {
+  if (messageIds.length === 0) return;
+  const folders = new Set(
+    (
+      await query
+        .selectFrom<FolderRow>('mailFolders')
+        .select('providerFolderId')
+        .where('accountId', '=', accountId)
+        .execute<Pick<FolderRow, 'providerFolderId'>>()
+    ).map((row) => row.providerFolderId),
+  );
+  for (const ids of chunks(messageIds, 100)) {
+    const locations = await query
+      .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
+      .select(['messageId', 'providerFolderId', 'status', 'read', 'starred'])
+      .select('receivedAt')
+      .where('accountId', '=', accountId)
+      .where('messageId', 'in', ids)
+      .execute<ImapLocationRow>();
+    const messages = await query
+      .selectFrom<MessageRow>('mailMessages')
+      .select(['id', 'receivedAt', 'sentAt', 'createdAt'])
+      .where('accountId', '=', accountId)
+      .where('id', 'in', ids)
+      .execute<
+        Pick<MessageRow, 'id' | 'receivedAt' | 'sentAt' | 'createdAt'>
+      >();
+    for (const message of messages) {
+      const own = locations.filter(
+        (location) => location.messageId === message.id,
+      );
+      const valid = own.filter((location) => location.status === 'valid');
+      const times = valid
+        .map((location) =>
+          location.receivedAt ? Date.parse(String(location.receivedAt)) : NaN,
+        )
+        .filter((time) => Number.isFinite(time));
+      const receivedAt = times.length
+        ? new Date(Math.min(...times)).toISOString()
+        : message.receivedAt;
+      const values: Partial<MessageRow> = valid.length
+        ? {
+            read: valid.every((location) => Boolean(location.read)),
+            starred: valid.some((location) => Boolean(location.starred)),
+            receivedAt,
+            sortAt: receivedAt ?? message.sentAt ?? message.createdAt,
+            imapOrphanRunId: null,
+          }
+        : runId
+          ? { imapOrphanRunId: runId }
+          : {};
+      if (updatedAt) values.updatedAt = updatedAt;
+      if (Object.keys(values).length > 0)
+        await query
+          .updateTable<MessageRow>('mailMessages')
+          .set(values)
+          .where('id', '=', message.id)
+          .execute();
+      // Unconfirmed copies keep their folder until verification decides.
+      const folderIds = new Set(
+        own
+          .filter(
+            (location) =>
+              location.status === 'valid' ||
+              (location.status === 'pending' &&
+                folders.has(location.providerFolderId)),
+          )
+          .map((location) => location.providerFolderId),
+      );
+      await query
+        .deleteFrom<MessageFolderRow>('mailMessageFolders')
+        .where('messageId', '=', message.id)
+        .where('providerFolderId', '!=', MAIL_LOCAL_DRAFT_FOLDER_ID)
+        .execute();
+      if (folderIds.size > 0)
+        await query
+          .insertInto<MessageFolderRow>('mailMessageFolders')
+          .values(
+            [...folderIds].map((providerFolderId) => ({
+              accountId,
+              messageId: message.id,
+              providerFolderId,
+            })),
+          )
+          .execute();
+    }
+  }
+}
+
+/**
+ * Delete IMAP messages with no valid or pending copy after a complete,
+ * twice-verified run. Local, submitted and scheduled messages are never IMAP
+ * orphans: they carry no IMAP identity source or are locked by a schedule.
+ */
+export async function deleteImapOrphans(
+  query: QueryAdapter,
+  accountId: string,
+  runId: string,
+): Promise<void> {
+  const orphans = await query
+    .selectFrom<MessageRow>('mailMessages')
+    .select(['id', 'providerMessageId'])
+    .where('accountId', '=', accountId)
+    .where('imapIdSource', 'is not', null)
+    .where('scheduledSubmissionId', 'is', null)
+    .where((builder) =>
+      builder.not(
+        builder.exists(
+          builder
+            .selectFrom(IMAP_LOCATIONS)
+            .select('id')
+            .whereRef(`${IMAP_LOCATIONS}.messageId`, '=', 'mailMessages.id')
+            .where(`${IMAP_LOCATIONS}.status`, 'in', ['valid', 'pending']),
+        ),
+      ),
+    )
+    .execute<Pick<MessageRow, 'id' | 'providerMessageId'>>();
+  for (const batch of chunks(orphans, 100)) {
+    await query
+      .updateTable<MessageRow>('mailMessages')
+      .set({ imapOrphanRunId: runId })
+      .where('accountId', '=', accountId)
+      .where(
+        'id',
+        'in',
+        batch.map((row) => row.id),
+      )
+      .execute();
+  }
+  await deleteMessages(
+    query,
+    accountId,
+    orphans.map((row) => row.providerMessageId),
+  );
 }
