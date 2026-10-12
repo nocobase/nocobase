@@ -10,7 +10,10 @@ import type { DatabaseManager } from '@nocobase/db';
 
 import type { ProjectsAccess } from './tokens.js';
 
-import { createActivityRecorder } from './kernel/activity.js';
+import {
+  createActivityRecorder,
+  type ActivityRecorder,
+} from './kernel/activity.js';
 import { createKindRegistry, type KindRegistry } from './kernel/kinds.js';
 import { createDomainEventBus, type DomainEventBus } from './kernel/events.js';
 import { createIdSource } from './kernel/ids.js';
@@ -132,6 +135,8 @@ export interface ProjectsDeps {
 }
 
 export interface Projects {
+  /** Application-owned issue events, recorded in the transaction that caused them. */
+  readonly activity: ActivityRecorder;
   readonly events: DomainEventBus;
   readonly tx: TxRunner;
   readonly members: MemberService;
@@ -340,6 +345,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
     kinds,
   });
   return {
+    activity,
     events,
     tx,
     settings,

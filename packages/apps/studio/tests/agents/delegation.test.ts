@@ -289,7 +289,7 @@ describe('delegate and report back', () => {
     const delegated = await delegate();
     for (let round = 0; round <= WAKE_LIMIT; round += 1) {
       await moveIssue('carol', delegated.issueId, 'done');
-      await moveIssue('carol', delegated.issueId, 'in_progress');
+      await moveIssue('alice', delegated.issueId, 'in_progress');
     }
     expect(await cards(delegated.conversationId)).toHaveLength(WAKE_LIMIT + 1);
     expect(await wakes(delegated.conversationId)).toHaveLength(WAKE_LIMIT);

@@ -704,6 +704,8 @@ describe('pull requests', () => {
     });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Fix login',
+      executor: null,
+      statusKey: 'in_progress',
       start: false,
     });
     await mentionAgent(h, 'alice', issue.id, agentId);
@@ -857,6 +859,8 @@ describe('pull requests', () => {
     });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Fix login',
+      executor: null,
+      statusKey: 'in_progress',
       start: false,
     });
     await mentionAgent(h, 'alice', issue.id, agentId);
