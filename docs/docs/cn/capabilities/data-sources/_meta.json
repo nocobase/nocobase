@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概览",
+    "link": "/capabilities/data-sources"
+  },
+  {
+    "type": "file",
+    "name": "usage",
+    "label": "使用说明"
+  }
+]

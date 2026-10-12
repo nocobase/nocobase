@@ -6,7 +6,7 @@ title: 'Authorization'
 
 Authorization determines which pages employees enter, which actions they perform, and which records they access. Northstar account managers maintain transport demand, dispatchers assign drivers, and drivers handle their own tasks in one application.
 
-[Authentication](../auth/index.md) establishes identity. Requiring sign-in for orders is authentication; allowing a driver to handle only assigned tasks is authorization.
+[Authentication](../auth/index.mdx) establishes identity. Requiring sign-in for orders is authentication; allowing a driver to handle only assigned tasks is authorization.
 
 ## Start from responsibilities
 
