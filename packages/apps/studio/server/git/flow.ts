@@ -37,6 +37,8 @@ import {
 } from '../../shared/git.js';
 import { ISSUE_SUBJECT } from '../agents/catalog/triggers.js';
 import { AGENT_KIND, agentsTx } from '../agents/tx.js';
+import { validIssueOwner } from '../agents/execution-identity.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import type { StudioInboxPort } from '../inbox/port.js';
 import {
   IN_REVIEW,
@@ -59,7 +61,7 @@ import {
 export interface GitFlowDeps {
   readonly projects: () => Pick<
     Projects,
-    'tx' | 'statusEvents' | 'issueContext'
+    'tx' | 'statusEvents' | 'issueContext' | 'activity'
   >;
   readonly agents: () => Pick<Agents, 'agents' | 'runs'> | undefined;
   readonly inbox: () => StudioInboxPort | undefined;
@@ -271,7 +273,29 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         tx.conn,
         issue.executor.id,
       );
-      if (!agent || !agents.agents.mayInvoke(agent, issue.owner.id)) continue;
+      if (!agent) continue;
+      const allowed = agents.agents.mayInvoke(agent, issue.owner.id);
+      if (agent.id === PROJECT_MANAGER_ID) {
+        const validOwner = await validIssueOwner(tx.conn, issue.owner.id);
+        if (!validOwner || !allowed) {
+          await deps.projects().activity.record(tx.conn, {
+            issueId: issue.id,
+            actor: { type: 'system', id: null },
+            action: 'studio_execution_wait',
+            details: {
+              reason: validOwner ? 'notAllowed' : 'noOwner',
+              trigger: signal,
+              agentId: agent.id,
+              agent: agent.name,
+              ownerUserId: issue.owner.id,
+              owner: issue.owner.name,
+            },
+          });
+          tx.emit({ type: 'issue.changed', issueId: issue.id });
+          continue;
+        }
+      }
+      if (!allowed) continue;
       await agents.runs.enqueue(
         {
           agentId: agent.id,

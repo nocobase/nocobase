@@ -97,7 +97,7 @@ describe('issues start work for the project manager', () => {
       expect.objectContaining({
         type: 'signal',
         actor: { kind: 'user', id: 'alice', name: 'alice' },
-        payload: { trigger: 'assigned' },
+        payload: { trigger: 'assigned', ownerIdentity: true },
       }),
     ]);
   });
@@ -176,10 +176,11 @@ describe('issues start work for the project manager', () => {
     });
   });
 
-  it("withdraws the previous owner's queued work and queues it again for the new owner", async () => {
+  it('withdraws queued work on transfer without changing identity or restarting', async () => {
     await h.createAgent();
     const issue = await openIssue(alice());
     const assigned = await assign(issue);
+    const [before] = await runsOf(issue.id);
     const { attempts } = await collectRunAttempts(() =>
       h.projects.issues.update(alice(), issue.id, {
         revision: assigned.revision,
@@ -189,11 +190,9 @@ describe('issues start work for the project manager', () => {
     const runs = await runsOf(issue.id);
     expect(runs.map((run) => [run.status, run.actorUserId]).sort()).toEqual([
       ['cancelled', 'alice'],
-      ['queued', 'bob'],
     ]);
-    expect(attempts).toEqual([
-      expect.objectContaining({ triggerType: 'ownerChanged', started: true }),
-    ]);
+    expect(runs[0].id).toBe(before.id);
+    expect(attempts).toEqual([]);
   });
 });
 
@@ -226,7 +225,7 @@ describe('comments reach agents', () => {
     });
   });
 
-  it('queues another person’s comment separately behind the active work', async () => {
+  it('appends another person’s comment to the manager working as the owner', async () => {
     await h.createAgent();
     const issue = await openIssue(alice());
     await assign(issue);
@@ -235,23 +234,25 @@ describe('comments reach agents', () => {
       content: 'Use the v2 API.',
     });
     const work = await runsOf(issue.id);
-    expect(work).toHaveLength(2);
-    const next = work.find((run) => run.id !== payload.run.id)!;
-    expect(next).toMatchObject({ status: 'queued', actorUserId: 'bob' });
+    expect(work).toHaveLength(1);
+    const next = work[0];
+    expect(next).toMatchObject({
+      id: payload.run.id,
+      status: 'dispatched',
+      actorUserId: 'alice',
+    });
     expect(
       (await h.agents.runs.detail(payload.run.id)).inputs.some(
         (input) => input.text === 'Use the v2 API.',
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect((await h.agents.runs.detail(next.id)).inputs.at(-1)).toMatchObject({
       type: 'comment',
       text: 'Use the v2 API.',
       actor: { id: 'bob' },
     });
     const workload = await h.agents.runs.workload({ subjectKind: 'issue' });
-    expect(workload.runs.find((run) => run.id === next.id)?.wait?.reason).toBe(
-      'sameWorkActive',
-    );
+    expect(workload.runs.find((run) => run.id === next.id)?.wait).toBeNull();
   });
 
   it('wakes a mentioned agent, and refuses mentioning one that takes no work', async () => {
@@ -309,7 +310,7 @@ describe("an agent's comment", () => {
     return payload.run.id as string;
   }
 
-  it('wakes the agent it mentions, as the person its run acts for', async () => {
+  it('wakes a step the project manager mentions as the issue owner', async () => {
     const coordinator = PM;
     const worker = await h.createAgent({ name: 'Worker' });
     const issue = await openIssue(alice(), { title: 'Split' });
@@ -320,7 +321,7 @@ describe("an agent's comment", () => {
     );
     expect(triggered).toEqual([{ kind: 'agent', id: worker }]);
     const [run] = await runsOf(issue.id);
-    expect(run).toMatchObject({ agentId: worker, actorUserId: 'bob' });
+    expect(run).toMatchObject({ agentId: worker, actorUserId: 'alice' });
     expect((await h.agents.runs.detail(run!.id)).inputs.at(-1)).toMatchObject({
       type: 'comment',
       actor: { kind: 'agent', id: coordinator, name: 'Project manager' },
@@ -511,6 +512,20 @@ describe("an agent's comment", () => {
       content: `${mention(worker, 'Worker')} again`,
     });
     const pending = (await pendingCommentRun(h.projects, alice(), issue.id))!;
+    h.roles.set('bob', 'admin');
+    expect(
+      await pendingCommentRun(h.projects, h.viewer('bob'), issue.id),
+    ).toBeNull();
+    const refused = await h.request(
+      'POST',
+      `/issueCommentRuns/${issue.id}/continue`,
+      {
+        user: 'bob',
+        body: { token: pending.token },
+      },
+    );
+    expect(refused.status).toBe(403);
+    expect(refused.body.error.reason).toBe('ISSUE_OWNER_START_REQUIRED');
     const attempts = await Promise.all(
       [0, 1].map(() =>
         h.request('POST', `/issueCommentRuns/${issue.id}/continue`, {
@@ -1483,6 +1498,28 @@ describe('an issue moved to another project', () => {
       }),
     );
   }
+
+  it('does not restart a project move after its running agent is stopped by an owner transfer', async () => {
+    const { core, issue } = await movable();
+    const payload = await h.claimOne();
+    const runId = payload.run.id;
+    await start(runId);
+    await move(issue.id, core.id);
+    const current = await h.projects.issueQueries.detail(alice(), issue.id);
+    await h.projects.issues.update(alice(), issue.id, {
+      revision: current.revision,
+      ownerUserId: 'bob',
+    });
+    expect((await h.runner(RUNNER_ROUTES.cancelAck, runId, {})).status).toBe(
+      200,
+    );
+    const runs = await runsOf(issue.id);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      status: 'cancelled',
+      actorUserId: 'alice',
+    });
+  });
 
   /**
    * The repositories the run's context lists as its project's working directories; the project manager checks none

@@ -206,27 +206,41 @@ export function ActivityRow({
         <span className='text-xs'>{via}</span>
       ) : null}
       <span>
-        {prAction
-          ? studioT(prAction)
-          : cannotImplement
-            ? studioT('studioAgents.activity.executorCannotImplement', {
-                name:
-                  text(activity.details.name) ??
+        {activity.action === 'studio_execution_wait'
+          ? studioT(
+              `issueProgress.waiting.${activity.details.reason === 'noOwner' ? 'noOwner' : 'notAllowed'}`,
+              {
+                agent:
+                  text(activity.details.agent) ??
                   text(activity.details.agentId) ??
-                  t('common.unknown'),
-              })
-            : activity.action === EXECUTOR_WAITS_ACTIVITY
-              ? studioT('studioAgents.activity.executorWaits', {
+                  '',
+                owner:
+                  text(activity.details.owner) ??
+                  text(activity.details.ownerUserId) ??
+                  '',
+              },
+            )
+          : prAction
+            ? studioT(prAction)
+            : cannotImplement
+              ? studioT('studioAgents.activity.executorCannotImplement', {
                   name:
-                    (text(activity.details.agentId)
-                      ? agentName(text(activity.details.agentId) ?? '')
-                      : null) ??
                     text(activity.details.name) ??
+                    text(activity.details.agentId) ??
                     t('common.unknown'),
                 })
-              : t(actionLabel(activity.action, activity.details), {
-                  name: text(activity.details.name) ?? t('common.unknown'),
-                })}
+              : activity.action === EXECUTOR_WAITS_ACTIVITY
+                ? studioT('studioAgents.activity.executorWaits', {
+                    name:
+                      (text(activity.details.agentId)
+                        ? agentName(text(activity.details.agentId) ?? '')
+                        : null) ??
+                      text(activity.details.name) ??
+                      t('common.unknown'),
+                  })
+                : t(actionLabel(activity.action, activity.details), {
+                    name: text(activity.details.name) ?? t('common.unknown'),
+                  })}
       </span>
       {prAction ? (
         <PullRequestActivity activity={activity} t={studioT} />
@@ -288,7 +302,7 @@ export function ActivityRow({
       ) : null}
       {activity.action === 'status_changed' &&
       activity.details.event === 'subtasks.done' ? (
-        <span>{t('activity.afterSubtasks')}</span>
+        <span>{studioT('runTranscript.afterSubtasks')}</span>
       ) : null}
       {moved && event && eventTitle(event) ? (
         <span>{t('activity.afterEvent', { event: eventTitle(event) })}</span>

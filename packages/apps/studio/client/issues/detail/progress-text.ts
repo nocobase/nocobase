@@ -18,6 +18,11 @@ export function progressSentence(
   now: number = Date.now(),
 ): string {
   const agent = progress.agent?.name ?? t('issueProgress.anAgent');
+  if (progress.waiting)
+    return t(`issueProgress.waiting.${progress.waiting.reason}`, {
+      agent,
+      owner: progress.waiting.owner?.name ?? '',
+    });
   switch (progress.state) {
     case 'working': {
       const parts = [

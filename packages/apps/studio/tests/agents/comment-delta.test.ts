@@ -147,9 +147,11 @@ describe('an issue run', () => {
     });
     const next = await h.claimOne();
     expect(next.prompt.session).toBe('resume');
-    expect(next.prompt.turn).toContain(`New comments on ${issue.identifier}`);
+    expect(next.prompt.turn).toContain(
+      `New input for issue ${issue.identifier}`,
+    );
     expect(next.prompt.turn).toContain('Background from Bob.');
-    // Alice's comment is this turn's input, so it is not repeated as news.
+    // Both comments merge into the owner's next run; neither is repeated as news.
     expect(next.prompt.turn.match(/Please continue\./gu)).toHaveLength(1);
   });
 

@@ -744,7 +744,15 @@ describe('nb-studio pr open', () => {
         'studio.git/open-pr',
       ],
     });
-    const { issue, resource } = await projectWithRepo(connection);
+    const { issue: created, resource } = await projectWithRepo(
+      connection,
+      'in_progress',
+    );
+    const issue = await h.projects.issues.update(alice(), created.id, {
+      revision: created.revision,
+      executor: null,
+      start: false,
+    });
     await mentionAgent(h, 'alice', issue.id, agentId);
     beforeClaim?.();
     const payload = await h.claimOne();
@@ -952,6 +960,8 @@ describe('nb-studio pr open', () => {
     });
     const loose = await h.projects.issues.create(alice(), {
       title: 'Loose',
+      executor: null,
+      statusKey: 'in_progress',
       start: false,
     });
     await mentionAgent(h, 'alice', loose.id, agentId);
@@ -1000,6 +1010,8 @@ describe('nb-studio pr open', () => {
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     const second = await h.projects.issues.create(alice(), {
       title: 'Second',
+      executor: null,
+      statusKey: 'in_progress',
       projectId: project.id,
       start: false,
     });
@@ -1012,6 +1024,8 @@ describe('nb-studio pr open', () => {
     h.preferences.set(`alice:${ATTRIBUTION_PREFERENCE}`, 'withAgent');
     const third = await h.projects.issues.create(alice(), {
       title: 'Third',
+      executor: null,
+      statusKey: 'in_progress',
       projectId: project.id,
       start: false,
     });

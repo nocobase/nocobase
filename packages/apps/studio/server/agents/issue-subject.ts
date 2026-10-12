@@ -49,6 +49,7 @@ import {
   PROJECT_TITLE,
 } from './catalog/triggers.js';
 import { AGENT_KIND } from './tx.js';
+import { issueExecutionIdentity } from './execution-identity.js';
 
 const SUBJECT_NOUN = 'issue';
 
@@ -638,13 +639,14 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
 }
 
 export function issueBinding(
-  agents: Pick<Agents, 'runs' | 'briefs' | 'gate'>,
+  agents: Pick<Agents, 'runs' | 'briefs' | 'agents' | 'gate'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
+    actsAs: issueExecutionIdentity(agents, projects),
     ...(queuedExpiryMs > 0 ? { queuedExpiryMs } : {}),
     title: ISSUE_TITLE,
     groupTitle: PROJECT_TITLE,
