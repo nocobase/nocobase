@@ -62,7 +62,75 @@ jobs:
           git checkout next
           git pull origin next
           git checkout develop
-          git merge next
+          DEVELOP_VERSION="$(git show develop:package.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).version))')"
+
+          # Merge next into develop. Only resolve package.json conflicts when the
+          # conflicting lines are the version field; keep develop's version.
+          if git merge --no-edit next; then
+            :
+          else
+            merge_status=$?
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            if [ "$conflicts" != "package.json" ]; then
+              echo "::error::Merge has conflicts outside package.json; refusing automatic resolution."
+              exit "$merge_status"
+            fi
+
+            node <<'NODE'
+          const fs = require('fs');
+          const file = 'package.json';
+          const lines = fs.readFileSync(file, 'utf8').split('\n');
+          const output = [];
+          let i = 0;
+          let resolved = 0;
+
+          while (i < lines.length) {
+            if (!lines[i].startsWith('<<<<<<< ')) {
+              if (/^(=======|>>>>>>> )/.test(lines[i])) {
+                throw new Error('Unexpected merge marker in package.json');
+              }
+              output.push(lines[i++]);
+              continue;
+            }
+
+            const ours = [];
+            const theirs = [];
+            i++;
+            while (i < lines.length && lines[i] !== '=======') ours.push(lines[i++]);
+            if (i >= lines.length) throw new Error('Malformed package.json conflict: missing separator');
+            i++;
+            while (i < lines.length && !lines[i].startsWith('>>>>>>> ')) theirs.push(lines[i++]);
+            if (i >= lines.length) throw new Error('Malformed package.json conflict: missing end marker');
+            i++;
+
+            const versionLine = line => line.length === 1 && /^\s*"version"\s*:/.test(line[0]);
+            if (!versionLine(ours) || !versionLine(theirs)) {
+              throw new Error('package.json contains a conflict beyond the version field; refusing automatic resolution');
+            }
+            output.push(ours[0]);
+            resolved++;
+          }
+
+          if (resolved === 0) throw new Error('No version conflict found in package.json');
+          const content = output.join('\n');
+          const parsed = JSON.parse(content);
+          if (!parsed.version) throw new Error('Resolved package.json has no version');
+          fs.writeFileSync(file, JSON.stringify(parsed, null, 2) + '\n');
+          console.log('Resolved package.json version conflict, preserving develop side.');
+          NODE
+
+            git add package.json
+            git commit --no-edit
+          fi
+
+          # Even if Git merged cleanly, keep package.json's version from develop.
+          CURRENT_VERSION="$(node -e 'console.log(require("./package.json").version)')"
+          if [ "$CURRENT_VERSION" != "$DEVELOP_VERSION" ]; then
+            node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync("package.json","utf8"));p.version=process.argv[1];fs.writeFileSync("package.json",JSON.stringify(p,null,2)+"\n")' "$DEVELOP_VERSION"
+            git add package.json
+            git commit -m "chore: preserve develop package version"
+          fi
+
           git push origin develop --tags --atomic
   update-version:
     needs:
