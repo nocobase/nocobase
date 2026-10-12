@@ -7,7 +7,7 @@
  * `releases`), issue previews and deployment marks join as `StudioPreviewsProvider` joins them, their notices kept in
  * `notices`.
  */
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
@@ -1452,7 +1452,15 @@ export async function createBridgeHarness(
           hostname: 'host',
           os: 'darwin',
           arch: 'arm64',
-          version: '0.0.1',
+          version: JSON.parse(
+            readFileSync(
+              path.resolve(
+                import.meta.dirname,
+                '../../../../app/agent-runner/package.json',
+              ),
+              'utf8',
+            ),
+          ).version,
           protocolVersion: PROTOCOL_VERSION,
           features: (features ?? [
             'input',

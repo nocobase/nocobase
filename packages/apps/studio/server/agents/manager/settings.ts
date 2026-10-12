@@ -8,6 +8,8 @@ import { z } from 'zod';
 
 import {
   COMMENT_RUN_LIMIT_MAX,
+  DEFAULT_FALLBACK_AFTER_SECONDS,
+  FALLBACK_AFTER_SECONDS_MAX,
   DEFAULT_COMMENT_RUN_LIMIT,
   PRINCIPLES_MAX,
   type ProjectManagerPatch,
@@ -22,18 +24,28 @@ export const DEFAULT_MANAGER_SETTINGS: ProjectManagerSettings = {
   fallbackAgentId: null,
   principles: null,
   commentRunLimit: DEFAULT_COMMENT_RUN_LIMIT,
+  fallbackAfterSeconds: DEFAULT_FALLBACK_AFTER_SECONDS,
 };
 
 /** The body of `PATCH /api/projectManager`. */
 export const ProjectManagerPatchSchema: z.ZodType<ProjectManagerPatch> = z
   .strictObject({
+    fallbackAfterSeconds: z
+      .number()
+      .int()
+      .min(1)
+      .max(FALLBACK_AFTER_SECONDS_MAX)
+      .meta({
+        description:
+          'Seconds the first choice may wait in the runnable queue before an idle fallback can claim it (default 120).',
+      }),
     firstChoiceAgentId: z.string().min(1).max(64).nullable().meta({
       description:
         'The enabled agent whose tool and model the project manager runs with.',
     }),
     fallbackAgentId: z.string().min(1).max(64).nullable().meta({
       description:
-        'The enabled agent it runs with when no runner can take the first choice’s work; null for none.',
+        'The enabled agent it runs with after the first choice queue delay, or immediately when no compatible runner can take the first choice; null for none.',
     }),
     principles: z.string().max(PRINCIPLES_MAX).nullable().meta({
       description:
@@ -70,6 +82,13 @@ export function settingsOf(value: unknown): ProjectManagerSettings {
     firstChoiceAgentId: text(raw.firstChoiceAgentId),
     fallbackAgentId: text(raw.fallbackAgentId),
     principles: text(raw.principles),
+    fallbackAfterSeconds:
+      typeof raw.fallbackAfterSeconds === 'number' &&
+      Number.isInteger(raw.fallbackAfterSeconds) &&
+      raw.fallbackAfterSeconds >= 1 &&
+      raw.fallbackAfterSeconds <= FALLBACK_AFTER_SECONDS_MAX
+        ? raw.fallbackAfterSeconds
+        : DEFAULT_FALLBACK_AFTER_SECONDS,
     commentRunLimit:
       typeof limit === 'number' &&
       Number.isInteger(limit) &&

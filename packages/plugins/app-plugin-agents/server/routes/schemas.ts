@@ -825,6 +825,15 @@ const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
 
 export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
   .object({
+    selection: z
+      .object({
+        reason: z.enum(['preferredQueued', 'preferredUnavailable']),
+        preferredTool: z.string(),
+        preferredModel: z.string().nullable(),
+        queueEnteredAt: dateTime,
+        waitedSeconds: z.number(),
+      })
+      .optional(),
     attempt: z.number().int(),
     runnerId: z.string(),
     runnerName: z.string().nullable(),
@@ -910,6 +919,7 @@ const runObject = z.object({
   requires: z.array(RunnerFeatureSchema),
   acceptsInput: z.boolean(),
   availableAt: dateTime.nullable(),
+  queueEnteredAt: dateTime.nullable().optional(),
   leaseExpiresAt: dateTime.nullable(),
   dispatchedAt: dateTime.nullable(),
   startedAt: dateTime.nullable(),

@@ -187,6 +187,7 @@ export async function requeueRun(
       ]),
     values: {
       status: 'queued',
+      queueEnteredAt: nowText,
       teamOnlyVariables: null,
       gitCredentialUrls: null,
       runnerId: null,

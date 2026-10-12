@@ -14,7 +14,7 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
     }),
     fallbackAgentId: z.string().nullable().meta({
       description:
-        'The agent it runs with when no runner can take the first choice’s work.',
+        'The agent it runs with after the first choice queue delay, or immediately when no compatible runner can take the first choice.',
     }),
     principles: z.string().nullable().meta({
       description:
@@ -24,6 +24,7 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
       description:
         'How many runs agents’ comments may start on one issue within 24 hours.',
     }),
+    fallbackAfterSeconds: z.number().int(),
     builtInPrinciples: z.string(),
     choices: z.array(
       z.object({
@@ -49,6 +50,31 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
       'finished',
       'idle',
     ]),
+    managerWait: z
+      .object({
+        queueEnteredAt: z.string(),
+        fallbackAfterSeconds: z.number(),
+        sampledAt: z.string(),
+        entries: z.array(
+          z.object({
+            tool: z.string(),
+            model: z.string().nullable(),
+            reason: z.enum([
+              'ready',
+              'busy',
+              'incompatible',
+              'offline',
+              'restricted',
+              'concurrencyFull',
+              'sameWorkActive',
+              'delayed',
+            ]),
+            compatibleCount: z.number(),
+            runners: z.array(z.string()),
+          }),
+        ),
+      })
+      .optional(),
     agent: z.object({ id: z.string(), name: z.string() }).nullable(),
     step: z.string().nullable().meta({
       description:

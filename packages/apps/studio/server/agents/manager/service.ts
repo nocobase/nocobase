@@ -80,10 +80,14 @@ function entryOf(agent: Agent | null): RunnerModelEntry | null {
 export function createProjectManager(deps: {
   readonly agents: Pick<
     Agents,
-    'agents' | 'actions' | 'chat' | 'tx' | 'availability'
+    'agents' | 'actions' | 'chat' | 'tx' | 'availability' | 'selectionPolicies'
   >;
 }): ProjectManager {
   const { agents } = deps;
+  agents.selectionPolicies.register(PROJECT_MANAGER_ID, async (conn) => ({
+    fallbackAfterSeconds: (await readManagerSettings(conn))
+      .fallbackAfterSeconds,
+  }));
 
   const workerActions = (): string[] =>
     agents.actions.keys().filter((key) => !NOT_FOR_WORKERS.includes(key));

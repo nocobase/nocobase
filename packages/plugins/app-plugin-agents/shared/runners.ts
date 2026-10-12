@@ -40,6 +40,29 @@ export const RUNNER_STATUSES = [
 
 export type RunnerStatus = (typeof RUNNER_STATUSES)[number];
 
+/**
+ * workspace.key was implemented by nocobase-runner 0.1.0-beta.7 (commit ddfe1b1874).
+ * Protocol 9 alone cannot establish support: beta.6 also spoke it. Keep the legacy
+ * boundary here until runners announce an explicit workspace capability.
+ */
+export function supportsWorkspaceKey(runner: Pick<Runner, 'version'>): boolean {
+  const match =
+    /^(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+)(?:\.[0-9A-Za-z.-]+)?)?$/.exec(
+      runner.version,
+    );
+  if (!match) return false;
+  const [, major, minor, patch, beta] = match;
+  const release = [Number(major), Number(minor), Number(patch)];
+  if (release[0] > 0 || release[1] > 1 || (release[1] === 1 && release[2] > 0))
+    return true;
+  return (
+    release[0] === 0 &&
+    release[1] === 1 &&
+    release[2] === 0 &&
+    (beta === undefined || Number(beta) >= 7)
+  );
+}
+
 export interface Runner {
   readonly id: string;
   readonly name: string;

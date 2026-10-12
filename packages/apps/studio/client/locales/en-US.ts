@@ -12,6 +12,14 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
+  'issueRuns.selection.preferredUnavailable':
+    'First choice unavailable, using fallback',
+  'projectManager.settingsPage.fallbackAfter': 'Fallback delay (seconds)',
+  'projectManager.settingsPage.fallbackAfterHint':
+    'Wait 1–3600 seconds before an idle fallback may take queued work. If no compatible runner can take the first choice, use the fallback immediately.',
+  'projectManager.settingsPage.fallbackAfterInvalid':
+    'Enter a whole number from 1 to 3600.',
   'issueRuns.model': 'Model: {{model}}',
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
@@ -1343,7 +1351,7 @@ const enUS = {
       noFallback: 'No fallback',
       choose: 'Choose an agent',
       agentsHint:
-        'The fallback is used when no runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
+        'An idle fallback is used after the queue delay, or immediately when no compatible runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
       noChoices: 'No agent is enabled yet. Enable one on the Agent page first.',
       principles: 'Allocation principles',
       restore: 'Restore built-in',
@@ -1365,6 +1373,23 @@ const enUS = {
     arrange: 'Arrange',
   },
   issueProgress: {
+    firstChoice: 'First choice',
+    fallback: 'Fallback',
+    managerModelWait: '{{choice}} {{model}}: {{reason}}{{runners}}',
+    managerWaiting: 'Project manager waiting for a runner: {{entries}}',
+    fallbackIn: 'Fallback eligible in {{seconds}} seconds',
+    fallbackReady: 'Waiting for an idle runner for either choice',
+    modelWait: {
+      ready: 'can claim now',
+      busy: 'compatible runners are busy',
+      incompatible: 'runner incompatible; upgrade required',
+      offline: 'no online runner',
+      restricted:
+        'identity, policy or payload requirements exclude the runners',
+      concurrencyFull: 'agent concurrency limit reached',
+      sameWorkActive: 'another run in this thread is active',
+      delayed: 'scheduled delay or retry backoff',
+    },
     title: 'Now',
     anAgent: 'An agent',
     working: '{{agent}} is working on {{step}}',

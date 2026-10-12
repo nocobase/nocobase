@@ -12,6 +12,12 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'issueRuns.selection.preferredQueued': '首选排队，改用备选',
+  'issueRuns.selection.preferredUnavailable': '首选无兼容执行机，改用备选',
+  'projectManager.settingsPage.fallbackAfter': '备选等待时间（秒）',
+  'projectManager.settingsPage.fallbackAfterHint':
+    '首选排队 1–3600 秒后，可由空闲备选领取。首选无兼容执行机时立即尝试备选。',
+  'projectManager.settingsPage.fallbackAfterInvalid': '请输入 1–3600 的整数。',
   'issueRuns.model': '模型：{{model}}',
   'issueRuns.configuredModel': '配置模型：{{model}}',
   'issueRuns.modelUnknown': '模型尚未报告',
@@ -1231,7 +1237,7 @@ const zhCN: AppResource = {
       noFallback: '不用备选',
       choose: '选择 Agent',
       agentsHint:
-        '首选没有执行机能跑时用备选。项目经理不写代码，用它的执行机也不检出仓库。',
+        '首选排队超时后由空闲备选领取；首选无兼容执行机时立即尝试备选。项目经理不写代码，用它的执行机也不检出仓库。',
       noChoices: '还没有启用的 Agent，先在 Agent 页面启用一个。',
       principles: '分配原则',
       restore: '恢复内置',
@@ -1252,6 +1258,22 @@ const zhCN: AppResource = {
     arrange: '安排',
   },
   issueProgress: {
+    firstChoice: '首选',
+    fallback: '备选',
+    managerModelWait: '{{choice}} {{model}}：{{reason}}{{runners}}',
+    managerWaiting: '项目经理在等执行机：{{entries}}',
+    fallbackIn: '{{seconds}} 秒后可尝试备选',
+    fallbackReady: '等待首选或备选的空闲执行机',
+    modelWait: {
+      ready: '现在可领取',
+      busy: '兼容执行机正忙',
+      incompatible: '执行机不兼容，需升级',
+      offline: '无在线执行机',
+      restricted: '身份、策略或负载要求限制',
+      concurrencyFull: '已达 agent 并发上限',
+      sameWorkActive: '同线程有运行正在执行',
+      delayed: '等待延迟执行或重试退避',
+    },
     title: '现在',
     anAgent: '某个 Agent',
     working: '{{agent}} 正在{{step}}',

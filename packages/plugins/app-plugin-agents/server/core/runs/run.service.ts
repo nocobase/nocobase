@@ -448,6 +448,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         requires: cleanList([...values.requires]),
         acceptsInput: false,
         availableAt: values.availableAt ?? null,
+        queueEnteredAt: now,
         leaseExpiresAt: null,
         dispatchedAt: null,
         startedAt: null,

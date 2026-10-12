@@ -51,11 +51,12 @@ const HELD = new Set(['dispatched', 'running']);
 
 export async function issueProgress(
   deps: {
-    readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners'>;
+    readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners' | 'claims'>;
     readonly projects: Pick<Projects, 'commentQueries'>;
   },
   conn: DatabaseConnection,
   issue: Issue,
+  viewer?: { readonly userId: string; readonly seesMachines: boolean },
 ): Promise<IssueProgress> {
   const subject = { kind: ISSUE_SUBJECT, id: issue.id };
   const comments = await deps.projects.commentQueries.list(conn, issue.id);
@@ -103,6 +104,10 @@ export async function issueProgress(
     list.find((run) => run.agentId !== PROJECT_MANAGER_ID) ?? list[0] ?? null;
   const run = pick(held) ?? pick(queued);
   if (run) {
+    const selection =
+      run.agentId === PROJECT_MANAGER_ID && run.status === 'queued'
+        ? await deps.agents.claims.selectionWait(run.id).catch(() => null)
+        : null;
     const names = await deps.agents.agents.names(conn, [run.agentId]);
     const detail = await deps.agents.runs.detail(run.id).catch(() => null);
     const input = detail?.inputs.find((item) => item.text.trim() !== '');
@@ -112,6 +117,23 @@ export async function issueProgress(
         : null;
     return {
       ...base,
+      ...(selection
+        ? {
+            managerWait: {
+              ...selection,
+              entries: selection.entries.map((entry) => ({
+                ...entry,
+                runners: entry.runners
+                  .filter(
+                    (runner) =>
+                      viewer?.seesMachines ||
+                      runner.ownerUserId === viewer?.userId,
+                  )
+                  .map((runner) => runner.name),
+              })),
+            },
+          }
+        : {}),
       state: HELD.has(run.status) ? 'working' : 'queued',
       agent: { id: run.agentId, name: names.get(run.agentId) ?? run.agentId },
       step:

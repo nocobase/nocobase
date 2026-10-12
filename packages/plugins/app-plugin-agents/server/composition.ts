@@ -14,6 +14,10 @@
  * `conversation` subject.
  */
 import type { RunApp } from '@nocobase/agent-protocol';
+import {
+  createModelSelectionPolicies,
+  type ModelSelectionPolicies,
+} from './core/runs/selection.js';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 
 import {
@@ -234,6 +238,7 @@ export interface Agents {
   readonly downloadTokens: DownloadTokenService;
   readonly runs: RunService;
   readonly claims: ClaimService;
+  readonly selectionPolicies: ModelSelectionPolicies;
   readonly reports: RunnerReports;
   /** Repository credentials a runner asks for while it holds a run (`RepoAccessProvider.issue`). */
   readonly gitCredentials: GitCredentialService;
@@ -436,7 +441,10 @@ export function createAgents(deps: AgentsDeps): Agents {
   const repoAccess = createRepoAccessRegistry();
   // The secrets claims hand out, so what runners report is redacted of them before it is stored.
   const secrets = createSecretMemory();
+  const selectionPolicies = createModelSelectionPolicies();
   const claims = createClaimService({
+    selectionPolicies,
+    runners,
     people,
     sections,
     mounts,
@@ -585,6 +593,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     }),
     runs,
     claims,
+    selectionPolicies,
     reports,
     gitCredentials,
     sweeper,

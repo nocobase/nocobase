@@ -36,6 +36,40 @@ export function progressSentence(
       return parts.join(' · ');
     }
     case 'queued':
+      if (progress.managerWait) {
+        const wait = progress.managerWait;
+        const entries = wait.entries
+          .map((entry, index) =>
+            t('issueProgress.managerModelWait', {
+              choice: t(
+                index === 0
+                  ? 'issueProgress.firstChoice'
+                  : 'issueProgress.fallback',
+              ),
+              model: `${entry.tool}${entry.model ? ` · ${entry.model}` : ''}`,
+              reason: t(`issueProgress.modelWait.${entry.reason}`),
+              runners: entry.runners.length
+                ? ` (${entry.runners.join(', ')})`
+                : '',
+            }),
+          )
+          .join('; ');
+        const seconds = Math.max(
+          0,
+          Math.ceil(
+            (Date.parse(wait.queueEnteredAt) +
+              wait.fallbackAfterSeconds * 1000 -
+              now) /
+              1000,
+          ),
+        );
+        return (
+          t('issueProgress.managerWaiting', { entries }) +
+          (wait.entries.length > 1
+            ? ` · ${t(seconds > 0 ? 'issueProgress.fallbackIn' : 'issueProgress.fallbackReady', { seconds })}`
+            : '')
+        );
+      }
       return progress.step
         ? t('issueProgress.queued', { agent, step: progress.step })
         : t('issueProgress.queuedNoStep', { agent });

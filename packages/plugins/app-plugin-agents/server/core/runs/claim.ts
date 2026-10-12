@@ -33,6 +33,7 @@
  */
 import {
   ANNOUNCED_FAILURES,
+  isProtocolSupported,
   type AgentTool,
   policyAllowsAgent,
   policyAllowsRepo,
@@ -46,13 +47,24 @@ import {
   type WorkspaceDir,
 } from '@nocobase/agent-protocol';
 import type { DistService } from '../../distribution/index.js';
-import { runsEntry, toolLimit, type Runner } from '../../../shared/runners.js';
+import {
+  runsEntry,
+  toolLimit,
+  supportsWorkspaceKey,
+  type Runner,
+} from '../../../shared/runners.js';
+import { queueStart } from './selection.js';
 import type { DatabaseConnection } from '@nocobase/db';
 import { createHash } from 'node:crypto';
 
 import type { Agent, RunnerModelEntry } from '../../../shared/agents.js';
 import type { BriefLayers } from '../../../shared/briefs.js';
-import type { Run } from '../../../shared/runs.js';
+import type {
+  Run,
+  ModelSelectionWait,
+  ModelWaitReason,
+  RunExecutionSnapshot,
+} from '../../../shared/runs.js';
 import { later, type Clock } from '../../kernel/clock.js';
 import { notFound } from '../../kernel/errors.js';
 import type { People } from '../../kernel/people.js';
@@ -114,6 +126,10 @@ import { consumeReset, saveBrief } from './workspace.store.js';
 const CANDIDATES = 50;
 
 export interface ClaimService {
+  /** Structured ordered-model diagnostics; machine visibility is enforced by the caller. */
+  selectionWait(
+    runId: string,
+  ): Promise<import('../../../shared/runs.js').ModelSelectionWait | null>;
   /**
    * Up to `free` runs for `runner`, each with its payload; empty when nothing fits. `tools` is what the runner said it
    * can take of each coding tool it keeps a limit for (`ClaimRequest.tools`); a tool left out is bounded by `free`.
@@ -128,6 +144,11 @@ export interface ClaimService {
 }
 
 export interface ClaimDeps extends TransitionDeps {
+  readonly selectionPolicies?: import('./selection.js').ModelSelectionPolicies;
+  readonly runners?: {
+    online(conn: DatabaseConnection): Promise<Runner[]>;
+    all(conn: DatabaseConnection): Promise<Runner[]>;
+  };
   readonly people?: Pick<People, 'names'>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
@@ -255,6 +276,12 @@ export function fitsActor(
   requires: readonly RunnerFeature[],
 ): boolean {
   if (agent.status !== 'enabled') return false;
+  if (
+    !isProtocolSupported(runner.protocolVersion) ||
+    runner.status === 'upgrade_required' ||
+    runner.status === 'revoked'
+  )
+    return false;
   if (!covers(runner.features, requires)) return false;
   if (!hasTool(runner, agent)) return false;
   if (!policyAllowsAgent(runner.policy, agent)) return false;
@@ -456,6 +483,158 @@ async function settleClaimInputs(
 export function createClaimService(deps: ClaimDeps): ClaimService {
   const { tx, clock } = deps;
 
+  /** Database reads only; used by the actual claim and ordered-model diagnostics. */
+  async function assemblyCompatibility(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    agent: Agent,
+    runner: Runner,
+    assembly: SubjectAssembly,
+  ): Promise<'ready' | 'incompatible' | 'restricted'> {
+    if (
+      !isProtocolSupported(runner.protocolVersion) ||
+      (assembly.workspaceKey && !supportsWorkspaceKey(runner))
+    )
+      return 'incompatible';
+    const skills = await deps.skills.forRun(
+      conn,
+      skillTargets(agent, assembly),
+      run.id,
+    );
+    const targets = variableTargets(agent, assembly);
+    const names = await deps.variables.namesOf(conn, targets);
+    if (
+      !covers(runner.features, [
+        ...toRun(run).requires,
+        ...payloadRequires(
+          payloadDirs(assembly.dirs),
+          skills.length,
+          names.length,
+        ),
+      ])
+    )
+      return 'incompatible';
+    if (
+      !fits(runner, agent, run) ||
+      !policyAllowsSubject(runner.policy, assembly.subject.key) ||
+      assembly.dirs.some(
+        (dir) =>
+          (dir.kind === 'repo' && !policyAllowsRepo(runner.policy, dir.url)) ||
+          (dir.kind === 'directory' && dir.runnerId !== runner.id),
+      )
+    )
+      return 'restricted';
+    if (
+      runner.trust !== 'team' &&
+      (await deps.variables.teamOnly(conn, targets)).length > 0
+    )
+      return 'restricted';
+    return 'ready';
+  }
+
+  async function selectionFacts(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    agent: Agent,
+  ): Promise<ModelSelectionWait | null> {
+    const policy = await deps.selectionPolicies?.forRun(conn, toRun(run));
+    if (!policy || !deps.runners) return null;
+    const now = clock.now();
+    const start = queueStart(toRun(run));
+    const registered = await deps.runners.all(conn);
+    const binding = deps.subjects.get(run.subjectKind);
+    if (!binding)
+      throw new Error(`No context provider for ${run.subjectKind}.`);
+    const inputs = (await pendingInputs(conn, run.id)).map(toInput);
+    const active = await countActive(conn, 'agentId', agent.id);
+    const sameWork = (await runsOfKey(conn, run, ACTIVE)).length > 0;
+    const entries: ModelSelectionWait['entries'][number][] = [];
+    for (const entry of agent.modelEntries) {
+      const single = { ...agent, modelEntries: [entry] };
+      const candidates = registered.filter(
+        (runner) => runsEntry(runner, entry) && runner.status !== 'revoked',
+      );
+      const online = candidates.filter(
+        (runner) =>
+          (runner.status === 'online' ||
+            runner.status === 'upgrade_required') &&
+          runner.lastSeenAt !== null &&
+          new Date(runner.lastSeenAt).getTime() + TIMINGS.offlineAfterMs >
+            now.getTime(),
+      );
+      const compatible: Runner[] = [];
+      let incompatible = false;
+      let ready = false;
+      for (const runner of online) {
+        if (
+          !isProtocolSupported(runner.protocolVersion) ||
+          runner.status === 'upgrade_required'
+        ) {
+          incompatible = true;
+          continue;
+        }
+        const assembly = await binding.context.assemble(conn, {
+          run: toRun(run),
+          agent,
+          runner,
+          inputs,
+          cli: deps.cli.name,
+          appName: deps.app.name,
+        });
+        const reason = await assemblyCompatibility(
+          conn,
+          run,
+          single,
+          runner,
+          assembly,
+        );
+        if (reason !== 'ready') {
+          incompatible ||= reason === 'incompatible';
+          continue;
+        }
+        compatible.push(runner);
+        const byTool = await runsHeldByTool(conn, runner.id);
+        const directory = directoryKeyOf(runner.id, payloadDirs(assembly.dirs));
+        if (
+          (await deps.slotsUsed(conn, runner.id)) < runner.slots &&
+          (byTool[entry.tool] ?? 0) < toolLimit(runner, entry.tool) &&
+          (runner.toolLoad?.[entry.tool]?.free ?? 1) > 0 &&
+          (directory === null ||
+            !(await directoryBusy(conn, runner.id, run.id, directory)))
+        )
+          ready = true;
+      }
+      let reason: ModelWaitReason = compatible.length
+        ? ready
+          ? 'ready'
+          : 'busy'
+        : online.length
+          ? incompatible
+            ? 'incompatible'
+            : 'restricted'
+          : 'offline';
+      if (sameWork) reason = 'sameWorkActive';
+      else if (active >= agent.maxConcurrentRuns) reason = 'concurrencyFull';
+      else if (start > now.getTime()) reason = 'delayed';
+      entries.push({
+        tool: entry.tool,
+        model: entry.model,
+        reason,
+        compatibleCount: compatible.length,
+        runners: compatible.map((runner) => ({
+          name: runner.name,
+          ownerUserId: runner.ownerUserId,
+        })),
+      });
+    }
+    return {
+      queueEnteredAt: new Date(start).toISOString(),
+      fallbackAfterSeconds: policy.fallbackAfterSeconds,
+      sampledAt: now.toISOString(),
+      entries,
+    };
+  }
+
   async function assemble(
     { conn }: Tx,
     run: RunRecord,
@@ -481,6 +660,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       appName: deps.app.name,
     };
     const assembly = await binding.context.assemble(conn, claim);
+    // workspace.key is required for coordinating runs; old runners must not silently ignore it.
+    if (
+      (await assemblyCompatibility(conn, run, agent, runner, assembly)) ===
+      'incompatible'
+    )
+      throw new NotForThisRunner();
     inputs = assembly.inputs ?? inputs;
     const effectiveClaim = { ...claim, inputs };
     // Its owner's local policy keeps this runner off the subject, or off one of the repositories: another runner takes
@@ -811,13 +996,55 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           return null;
         // The first of the agent's tools with room, by its limit here and by what the runner said it can take.
         const byTool = await runsHeldByTool(conn, runner.id);
+        const current = await findRunRecord(conn, candidate.id);
+        if (
+          !current ||
+          current.status !== 'queued' ||
+          (current.availableAt &&
+            new Date(current.availableAt).getTime() > now.getTime())
+        )
+          return null;
+        let selection: ModelSelectionWait | null;
+        try {
+          selection = await selectionFacts(conn, current, agent);
+        } catch (error) {
+          throw new AssemblyError(
+            error instanceof Error ? error.message : String(error),
+            error,
+          );
+        }
+        const elapsed = Math.max(
+          0,
+          (now.getTime() - queueStart(toRun(current))) / 1000,
+        );
+        const preferredAvailable =
+          (selection?.entries[0]?.compatibleCount ?? 0) > 0;
+        const allowFallback =
+          !selection ||
+          !preferredAvailable ||
+          elapsed >= selection.fallbackAfterSeconds;
         const entry = pickOpenEntry(
           runner,
-          agent,
+          allowFallback
+            ? agent
+            : { ...agent, modelEntries: agent.modelEntries.slice(0, 1) },
           (tool) =>
             (byTool[tool] ?? 0) < toolLimit(runner, tool) && reported.has(tool),
         );
         if (!entry) return null;
+        const chosenIndex = agent.modelEntries.indexOf(entry);
+        const selectionSnapshot: RunExecutionSnapshot['selection'] =
+          selection && chosenIndex > 0
+            ? {
+                reason: preferredAvailable
+                  ? 'preferredQueued'
+                  : 'preferredUnavailable',
+                preferredTool: agent.modelEntries[0].tool,
+                preferredModel: agent.modelEntries[0].model,
+                queueEnteredAt: selection.queueEnteredAt,
+                waitedSeconds: elapsed,
+              }
+            : undefined;
         const busy = await runsOfKey(conn, candidate, ACTIVE);
         if (busy.length > 0) return null;
 
@@ -876,6 +1103,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             directoryKey: assembled.directoryKey,
             tool: assembled.entry.tool,
             executionHistory: executionHistory(run, {
+              ...(selectionSnapshot ? { selection: selectionSnapshot } : {}),
               attempt: Number(run.attempt),
               runnerId: runner.id,
               runnerName: runner.name,
@@ -1027,6 +1255,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   }
 
   return {
+    async selectionWait(runId) {
+      const conn = tx.read();
+      const run = await findRunRecord(conn, runId);
+      if (!run || run.status !== 'queued') return null;
+      const agent = await findAgent(conn, run.agentId);
+      return agent ? selectionFacts(conn, run, agent) : null;
+    },
     async claim(runner, free, tools) {
       if (runner.status !== 'online') return [];
       if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots)

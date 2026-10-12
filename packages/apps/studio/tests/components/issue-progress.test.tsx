@@ -63,6 +63,47 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+it.each(['en-US', 'zh-CN'] as const)(
+  'explains ordered-model waiting in %s',
+  async (language) => {
+    await mount(
+      'in_progress',
+      progress({
+        state: 'queued',
+        managerWait: {
+          queueEnteredAt: new Date().toISOString(),
+          fallbackAfterSeconds: 120,
+          sampledAt: new Date().toISOString(),
+          entries: [
+            {
+              tool: 'claude',
+              model: 'opus',
+              reason: 'busy',
+              compatibleCount: 1,
+              runners: ['lima'],
+            },
+            {
+              tool: 'codex',
+              model: 'astra',
+              reason: 'incompatible',
+              compatibleCount: 0,
+              runners: [],
+            },
+          ],
+        },
+      }),
+      vi.fn(),
+      language,
+    );
+    expect(await screen.findByText(/lima/u)).toHaveTextContent(
+      language === 'en-US' ? 'compatible runners are busy' : '兼容执行机正忙',
+    );
+    expect(screen.getByText(/lima/u)).toHaveTextContent(
+      language === 'en-US' ? 'upgrade required' : '需升级',
+    );
+  },
+);
+
 async function translator(language: 'en-US' | 'zh-CN') {
   const runtime = await createTestI18nRuntime({
     application: {
