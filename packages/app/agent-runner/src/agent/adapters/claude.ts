@@ -492,6 +492,9 @@ class ClaudeRun {
     const { session } = this;
     return {
       cwd: session.workDir,
+      ...(session.additionalDirectories === undefined
+        ? {}
+        : { additionalDirectories: [...session.additionalDirectories] }),
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',

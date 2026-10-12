@@ -2,11 +2,55 @@ import { RunPayloadSchema, SkillBundleSchema } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
+import { payloadRequires } from '../server/core/runs/index.js';
 
 describe('claiming', () => {
   let h: Harness;
   afterEach(async () => {
     await h?.close();
+  });
+
+  it('requires prBranches only for a selected PR and leaves the run queued for an old runner', async () => {
+    expect(
+      payloadRequires(
+        [
+          {
+            kind: 'repo',
+            url: 'https://example.test/repo.git',
+            defaultBranch: 'main',
+            branch: 'custom/SMP-1',
+            path: 'repo',
+          },
+        ],
+        0,
+        0,
+      ),
+    ).toEqual(['checkout']);
+    h = await createHarness();
+    const agent = await h.createAgent();
+    h.dirs = [
+      {
+        kind: 'repo',
+        url: 'https://example.test/repo.git',
+        defaultBranch: 'main',
+        branch: 'fix/human',
+        path: 'repo',
+        pullRequest: { number: 42, url: 'https://example.test/pull/42' },
+      },
+    ];
+    const run = await h.enqueue(agent, '1');
+    const old = await h.registerRunner({ features: ['checkout'] });
+    expect(await claim(h, old)).toEqual([]);
+    expect((await h.services.runs.get(run)).status).toBe('queued');
+    const modern = await h.registerRunner({
+      features: ['checkout', 'prBranches'],
+    });
+    const [payload] = await claim(h, modern);
+    expect(payload.run.requires).toEqual(['checkout', 'prBranches']);
+    expect(RunPayloadSchema.parse(payload).workspace.dirs[0]).toMatchObject({
+      branch: 'fix/human',
+      pullRequest: { number: 42 },
+    });
   });
 
   it('hands a queued run to a runner with a complete payload', async () => {

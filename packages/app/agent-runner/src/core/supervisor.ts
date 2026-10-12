@@ -1,3 +1,4 @@
+import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
 // A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
@@ -531,6 +532,8 @@ export async function recoverRun(
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
   }
+  if (record.kind !== 'job' && record.workDir !== undefined)
+    await finalizeRunWorktrees(paths, record.workDir, log);
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
   // A job's directory is its own and goes with it.

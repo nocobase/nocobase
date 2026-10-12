@@ -193,6 +193,12 @@ describe("an agent's step", () => {
     expect(payload.workspace.readOnly).toBeUndefined();
     const system = payload.prompt.system as string;
     expect(system).toContain(firstLine(WORKER_INSTRUCTIONS));
+    expect(WORKER_INSTRUCTIONS).toContain('git push origin HEAD:refs/heads/<targetBranch>');
+    expect(WORKER_INSTRUCTIONS).toContain('private runner alias');
+    expect(WORKER_INSTRUCTIONS).toContain(
+      'never rewrite history already pushed',
+    );
+    expect(WORKER_INSTRUCTIONS).toContain('configured branch rule');
     expect(system).toContain("Do not change the issue's status.");
     expect(system).not.toContain(firstLine(MANAGER_ROLE));
     expect(system).not.toContain('## Agents you can hand work to');

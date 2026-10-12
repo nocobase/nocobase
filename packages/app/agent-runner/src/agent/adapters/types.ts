@@ -98,6 +98,8 @@ export interface ToolDetection {
 export interface AdapterSession {
   /** Absolute path the agent works in (the checked-out worktree). */
   workDir: string;
+  /** Current code directories when starting from a persistent session container. */
+  additionalDirectories?: readonly string[];
   /** The first user message of the run. */
   prompt: string;
   /** The rendered brief (system, task, context, agent layers joined). */
