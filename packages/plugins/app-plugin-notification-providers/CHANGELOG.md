@@ -1,5 +1,16 @@
 # @nocobase/app-plugin-notification-providers
 
+## 0.2.0-beta.11
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.2.0-beta.10
 
 ### Patch Changes

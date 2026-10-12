@@ -19,6 +19,7 @@ import type {
   PullRequestMergePreflight,
 } from '../../shared/git';
 import { MergeButtons } from '../../client/git/pull-requests';
+import { GitRepoSection } from '../../client/git/repo-section';
 import { WebhookSection } from '../../client/git/webhook-section';
 
 const api = {
@@ -34,6 +35,7 @@ vi.mock('../../client/git/api', async (importOriginal) => {
   return {
     ...(await importOriginal<typeof import('../../client/git/api')>()),
     useGitApi: () => api,
+    useGitStatus: () => ({ data: { enabled: true } }),
     useRepoSettings: (resourceId: string) =>
       useQuery({
         queryKey: ['repo', resourceId],
@@ -161,6 +163,7 @@ const settings = (
   webUrl: 'https://github.com/acme/studio',
   hasToken: true,
   wakeOnChecks: true,
+  wakeOnChecksPassed: false,
   wakeOnConflict: true,
   polledAt: null,
   pollError: null,
@@ -251,5 +254,41 @@ describe('the webhook settings', () => {
     expect(
       document.querySelector('[data-last-delivery="invalidSignature"]'),
     ).not.toBeNull();
+  });
+});
+
+describe('a repository’s settings', () => {
+  it('switches what wakes the project manager: failing checks, passing checks and conflicts', async () => {
+    const stored = {
+      ...settings(),
+      branchRules: ['agent/{key}'],
+      connection: { id: 'c1', name: 'GitHub' },
+    } as unknown as GitRepoSettings;
+    api.repo.mockResolvedValue(stored);
+    api.updateRepo.mockResolvedValue({
+      ...stored,
+      wakeOnChecksPassed: true,
+    });
+    render(
+      wrap(
+        <GitRepoSection resource={{ id: 'r1', type: 'gitRepo' } as never} />,
+      ),
+    );
+    const passed = await screen.findByRole('switch', {
+      name: 'studioGit.repo.wakeOnChecksPassed',
+    });
+    expect(
+      screen.getByRole('switch', { name: 'studioGit.repo.wakeOnChecks' }),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('switch', { name: 'studioGit.repo.wakeOnConflict' }),
+    ).toBeInTheDocument();
+    expect(passed).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(passed);
+    await waitFor(() =>
+      expect(api.updateRepo).toHaveBeenCalledWith('r1', {
+        wakeOnChecksPassed: true,
+      }),
+    );
   });
 });

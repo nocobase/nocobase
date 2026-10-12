@@ -1,4 +1,5 @@
-import { chmod, mkdtemp, readdir, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { chmod, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -50,7 +51,7 @@ function session(overrides: Partial<AdapterSession> = {}): AdapterSession {
     workDir: '/work',
     prompt: 'Create hello.txt',
     systemPrompt: 'BRIEF',
-    env: { PATH: '/usr/bin', HOME: '/home/runner' },
+    env: { PATH: '/usr/bin', HOME: dir },
     permission: async () => 'allow',
     abort: new AbortController().signal,
     ...overrides,
@@ -69,6 +70,206 @@ let dir: string;
 beforeEach(async () => {
   calls.length = 0;
   dir = await fakeClaudeDir();
+  const project = path.join(dir, '.claude/projects/-work');
+  await mkdir(project, { recursive: true });
+  for (const id of ['old', 'prev'])
+    await writeFile(path.join(project, `${id}.jsonl`), '{}\n');
+});
+
+describe('missing conversations', () => {
+  it('starts a fresh query for a missing file without consuming or duplicating queued input', async () => {
+    setScript(async function* (ctx) {
+      expect(ctx.options.resume).toBeUndefined();
+      expect(ctx.options.systemPrompt).toMatchObject({ append: 'BRIEF' });
+      const prompt = await ctx.nextInput();
+      expect(prompt?.message.content).toContain('previous conversation');
+      expect(prompt?.message.content).toContain('Create hello.txt');
+      yield init();
+      const steer = await ctx.nextInput();
+      expect(steer?.message.content).toBe('early');
+      yield assistant([{ type: 'text', text: 'ok' }], {
+        user_message_uuids: [prompt?.uuid, steer?.uuid],
+      });
+      yield result({ user_message_uuids: [prompt?.uuid, steer?.uuid] });
+      expect(await ctx.nextInput()).toBeUndefined();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'missing' }),
+    );
+    expect(await handle.steer('early', 'early-input')).toBe(true);
+    const events = await collect(handle.events);
+    expect(await handle.result).toMatchObject({
+      exit: 'completed',
+      sessionId: SESSION_ID,
+    });
+    expect(calls).toHaveLength(1);
+    expect(events.filter((event) => event.type === 'input')).toHaveLength(1);
+    expect(
+      events.filter((event) => event.content === 'sessionRecovery'),
+    ).toHaveLength(1);
+    expect(events.find((event) => event.content === 'started')).toMatchObject({
+      meta: { resumed: false, sessionRecovery: true },
+    });
+  });
+
+  it.each([
+    'throw',
+    'result',
+    'stderr',
+    'generic result before stderr',
+    'generic result after stderr',
+    'generic result before notifications and stderr',
+  ])(
+    'does not reopen a prechecked conversation after a missing-session %s',
+    async (mode) => {
+      setScript(async function* (ctx) {
+        expect(ctx.options.resume).toBe('old');
+        await ctx.nextInput();
+        const steer = await ctx.nextInput();
+        if (mode === 'throw') throw new Error('No conversation found');
+        if (mode === 'stderr') {
+          ctx.options.stderr?.('No conver');
+          ctx.options.stderr?.('sation found');
+          throw new Error('exit 1');
+        }
+        const failure = result({
+          subtype: 'error_during_execution',
+          errors: [
+            mode === 'result'
+              ? 'No conversation found'
+              : 'Process exited with code 1',
+          ],
+          num_turns: 0,
+          usage: {},
+          user_message_uuids: [steer?.uuid],
+        });
+        if (mode.endsWith('after stderr'))
+          ctx.options.stderr?.('No conversation found');
+        yield failure;
+        if (mode.includes('notifications'))
+          yield {
+            type: 'system',
+            subtype: 'session_state_changed',
+            state: 'idle',
+            session_id: 'old',
+            uuid: randomUUID(),
+          };
+        ctx.options.stderr?.('No conversation found');
+      });
+      const handle = adapterWith('9.0.0', dir).start(
+        session({ resumeSessionId: 'old' }),
+      );
+      await handle.steer('early', 'early-input');
+      const events = await collect(handle.events);
+      expect((await handle.result).exit).toBe('error');
+      expect(calls).toHaveLength(1);
+      expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
+        false,
+      );
+    },
+  );
+
+  it('closes streaming input immediately on an unrelated startup error result', async () => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      yield result({
+        subtype: 'error_during_execution',
+        errors: ['startup failed'],
+        num_turns: 0,
+        usage: {},
+      });
+      // A real streaming CLI waits for input to close before exiting.
+      expect(await ctx.nextInput()).toBeUndefined();
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+  }, 1000);
+
+  it('prechecks the encoded working directory under the query configuration directory', async () => {
+    const cwd = path.join(dir, 'work space');
+    const config = path.join(dir, 'custom-config');
+    await mkdir(cwd);
+    const project = path.join(
+      config,
+      'projects',
+      cwd.replace(/[^a-zA-Z0-9]/g, '-'),
+    );
+    await mkdir(project, { recursive: true });
+    await writeFile(path.join(project, 'custom.jsonl'), '{}\n');
+    setScript(replay([init(), result()]));
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        workDir: cwd,
+        env: { HOME: dir, CLAUDE_CONFIG_DIR: config },
+        resumeSessionId: 'custom',
+      }),
+    );
+    expect((await handle.result).exit).toBe('completed');
+    expect(calls[0].options.resume).toBe('custom');
+  });
+
+  it.skipIf(process.getuid?.() === 0)(
+    'does not treat inaccessible history as missing',
+    async () => {
+      const project = path.join(dir, '.claude/projects/-work');
+      await chmod(project, 0o000);
+      try {
+        const handle = adapterWith('9.0.0', dir).start(
+          session({ resumeSessionId: 'old' }),
+        );
+        expect((await handle.result).exit).toBe('error');
+        expect(calls).toHaveLength(0);
+      } finally {
+        await chmod(project, 0o700);
+      }
+    },
+  );
+
+  it('does not start after cancellation while prechecking', async () => {
+    const abort = new AbortController();
+    const handle = adapterWith('9.0.0', dir).start(
+      session({
+        resumeSessionId: 'missing',
+        abort: abort.signal,
+      }),
+    );
+    abort.abort();
+    expect((await handle.result).exit).toBe('aborted');
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not retry a failed fresh conversation', async () => {
+    setScript(async function* (ctx) {
+      yield* [];
+      await ctx.nextInput();
+      throw new Error('No conversation found');
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'missing' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+  });
+
+  it.each([
+    'authentication failed',
+    'No conversation found after model execution',
+  ])('does not replay an unrelated or late error: %s', async (message) => {
+    setScript(async function* (ctx) {
+      await ctx.nextInput();
+      if (message.includes('after model'))
+        yield assistant([{ type: 'text', text: 'working' }]);
+      throw new Error(message);
+    });
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(calls).toHaveLength(1);
+  });
 });
 
 describe('detect and executable', () => {
@@ -252,7 +453,7 @@ describe('query options', () => {
     expect(options.settingSources).toEqual(['project']);
     expect(options.permissionMode).toBe('bypassPermissions');
     expect(options.allowDangerouslySkipPermissions).toBe(true);
-    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: '/home/runner' });
+    expect(options.env).toEqual({ PATH: '/usr/bin', HOME: dir });
     expect(options.cwd).toBe('/work');
     expect(options.pathToClaudeCodeExecutable).toBe(path.join(dir, 'claude'));
     expect(options).toMatchObject({

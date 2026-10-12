@@ -82,7 +82,7 @@ export function createClaimEligibility(deps: {
     request: EligibilityRequest,
     candidates: readonly Runner[],
   ): Promise<Runner[]> {
-    if (agent.archivedAt || agent.type !== 'runner') return [];
+    if (agent.status !== 'enabled') return [];
     // No variable reads when the tool, policy and trust rules already rule every runner out.
     const possible = candidates.filter((runner) =>
       fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
@@ -124,7 +124,6 @@ export function createClaimEligibility(deps: {
       );
     },
     async mayQueue(conn, agent, request) {
-      if (agent.type !== 'runner') return true;
       const registered = (
         request.runners ?? (await deps.runners.all(conn))
       ).filter(

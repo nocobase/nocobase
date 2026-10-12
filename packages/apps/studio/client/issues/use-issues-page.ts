@@ -107,10 +107,10 @@ export function useIssuesPage({
   const otherExecutors = useExecutorOptions(
     !hiddenFilters.includes('executorId'),
   );
-  // The filtered project's workflow, else the workflow of issues without a project: the list's status filter.
+  // The fixed statuses: the list's status filter.
   const statuses = useQuery({
-    queryKey: pmKeys.statuses(filters.projectId ?? null),
-    queryFn: () => api.statuses(filters.projectId),
+    queryKey: pmKeys.statuses,
+    queryFn: () => api.statuses(),
     enabled: view === 'list',
   });
 

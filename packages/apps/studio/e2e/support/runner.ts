@@ -1,11 +1,13 @@
 /**
  * Stands in for a runner, so that browser tests reach states only an agent's run can produce, without starting a real
- * runner or a coding agent: it registers through the runner protocol (`@nocobase/agent-protocol`), claims the run an
- * issue's agent was woken for, and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
+ * runner or a coding agent: it registers through the runner protocol (`@nocobase/agent-protocol`), reporting Claude Code
+ * with a model of its own, so the agent discovered from that report (`agent()`, enabled here as an administrator would)
+ * is one no other runner takes. A person's mention wakes that agent on an issue (`wake`); the fake runner claims the run
+ * and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
  */
 import type { RunEvent } from '@nocobase/agent-protocol';
 
-import { Api } from './fixtures.ts';
+import type { Api } from './fixtures.ts';
 
 /** `PROTOCOL_VERSION` and `HEADERS` of `@nocobase/agent-protocol` (`packages/libs/agent-protocol/src/version.ts`). */
 const PROTOCOL_VERSION = 5;
@@ -27,42 +29,32 @@ export interface Issue {
   title: string;
   statusKey: string;
   revision: number;
-  /** The status change waiting for approval, if any. */
-  pendingApproval?: { id: string } | null;
+  executor?: { type: string; id: string } | null;
 }
 
-export const DESIGN_PROPOSAL = [
-  '## 需求理解',
-  '导出大表时浏览器卡顿。',
-  '',
-  '## 方案',
-  '改为流式导出，并显示进度。',
-  '',
-  '## 影响范围',
-  '导出接口与导出按钮。',
-  '',
-  '## 风险与待定',
-  '旧浏览器不支持流式下载。',
-  '',
-  '## 验证计划',
-  '10 万行导出不超过 10 秒。',
-].join('\n');
-
-/** The built-in agent the Software development workflow runs in Analysis, whatever the issue's executor. */
-const SOLUTION_DESIGNER = 'studio-solution-designer';
-
-/** Runs of the solution designer these tests may hold at once: every claimed run stays held, as if working. */
-const DESIGN_RUNS = 100;
+interface RunnerAgent {
+  readonly id: string;
+  readonly name: string;
+  readonly tool: string | null;
+  readonly model: string | null;
+  readonly status: string;
+  readonly revision: number;
+}
 
 export class FakeRunner {
   private runnerKey: string | null = null;
-  private agentId: string | null = null;
+  private found: { readonly id: string; readonly name: string } | null = null;
 
-  /** `api` is signed in as an administrator, who may register runners and create agents. */
+  /** `api` is signed in as an administrator, who may register runners and enable agents. */
   constructor(
     private readonly api: Api,
     private readonly name: string,
   ) {}
+
+  /** The model this runner reports: its own, so only it has the agent discovered from it. */
+  private get model(): string {
+    return `e2e-${this.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-')}`;
+  }
 
   private runner<T>(
     method: 'GET' | 'POST',
@@ -94,7 +86,9 @@ export class FakeRunner {
         version: '0.0.0',
         protocolVersion: PROTOCOL_VERSION,
         features: ['input', 'checkout', 'directories', 'skills', 'secrets'],
-        tools: [{ kind: 'claude', authenticated: true }],
+        tools: [
+          { kind: 'claude', authenticated: true, models: [{ id: this.model }] },
+        ],
         slots: 20,
       },
     );
@@ -102,24 +96,38 @@ export class FakeRunner {
     return this.runnerKey;
   }
 
-  /** An agent of this runner's own, so other tests' queued runs never hold up its work. */
+  /** The agent discovered from this runner's report, enabled with what it is good at; its id. */
   async agent(): Promise<string> {
-    if (this.agentId) return this.agentId;
-    const agent = await this.api.post<{ id: string }>('agents', {
-      name: `方案设计助手 ${this.name}`,
-      modelEntries: [{ tool: 'claude' }],
-      access: 'everyone',
-      maxConcurrentRuns: 20,
-      description: '先分析，再提交设计方案。',
-      actions: [
-        'pm.projects/view',
-        'pm.issues/view',
-        'pm.issues/edit',
-        'pm.issues/comment',
-      ],
+    return (await this.discovered()).id;
+  }
+
+  /** The agent's id and name, as the catalog names it (`Claude · <model>`). */
+  async discovered(): Promise<{ readonly id: string; readonly name: string }> {
+    if (this.found) return this.found;
+    await this.register();
+    const agent = (await this.api.get<RunnerAgent[]>('agents')).find(
+      (item) => item.tool === 'claude' && item.model === this.model,
+    );
+    if (!agent) throw new Error(`No agent was discovered for ${this.model}.`);
+    if (agent.status !== 'enabled')
+      await this.api.patch(`agents/${agent.id}`, {
+        description: `Takes the steps of the browser test ${this.name}.`,
+        enabled: true,
+        expectedRevision: agent.revision,
+      });
+    this.found = { id: agent.id, name: agent.name };
+    return this.found;
+  }
+
+  /** Mentions the agent in a comment on the issue, as a person would, which wakes it there. */
+  async wake(
+    issue: { readonly id: string },
+    author: Api = this.api,
+  ): Promise<void> {
+    const agent = await this.discovered();
+    await author.post(`projects/issues/${issue.id}/comments`, {
+      content: `[@${agent.name}](mention://agent/${agent.id}) please take a look`,
     });
-    this.agentId = agent.id;
-    return agent.id;
   }
 
   /** Claims the run the issue's agent was woken for and returns its token; the run is then held, as if working. */
@@ -155,12 +163,12 @@ export class FakeRunner {
     ownerUserId: string,
     author = this.api,
   ) {
+    // In backlog nothing else starts: only the mention wakes this runner's agent.
     const issue = await author.post<Issue>('projects/issues', {
       title,
-      statusKey: 'in_progress',
       ownerUserId,
-      executor: { type: 'agent', id: await this.agent() },
     });
+    await this.wake(issue, author);
     const { run } = await this.claimRun(issue.identifier);
     const headers = { [HEADERS.runnerKey]: this.runnerKey! };
     const route = `agents/runners/runs/${run.id}`;
@@ -220,60 +228,5 @@ export class FakeRunner {
       { summary, handledInputIds: status.inputs.map((input) => input.id) },
       headers,
     );
-  }
-
-  /**
-   * Lets the solution designer hold as many runs as the tests leave claimed. Its own limit is a handful, and a fake run
-   * never ends, so later tests would wait for a slot. Several workers may raise it at once: a refused stale edit means
-   * another one did.
-   */
-  private async designerCapacity(): Promise<void> {
-    const designer = await this.api.get<{
-      revision: number;
-      maxConcurrentRuns: number;
-    }>(`agents/${SOLUTION_DESIGNER}`);
-    if (designer.maxConcurrentRuns >= DESIGN_RUNS) return;
-    await this.api
-      .patch(`agents/${SOLUTION_DESIGNER}`, {
-        maxConcurrentRuns: DESIGN_RUNS,
-        expectedRevision: designer.revision,
-      })
-      .catch(async (error: unknown) => {
-        const now = await this.api.get<{ maxConcurrentRuns: number }>(
-          `agents/${SOLUTION_DESIGNER}`,
-        );
-        if (now.maxConcurrentRuns < DESIGN_RUNS) throw error;
-      });
-  }
-
-  /**
-   * Creates an issue in Analysis for this runner's agent, then submits a design proposal as the solution designer, whose
-   * run Analysis started, which moves the issue to Proposal review and sends its owner the decision card.
-   */
-  async issueWithDesignProposal(
-    title: string,
-    options: { ownerUserId: string; projectId?: string },
-  ): Promise<Issue> {
-    await this.designerCapacity();
-    const issue = await this.api.post<Issue>('projects/issues', {
-      title,
-      statusKey: 'analysis',
-      ownerUserId: options.ownerUserId,
-      ...(options.projectId ? { projectId: options.projectId } : {}),
-      executor: { type: 'agent', id: await this.agent() },
-    });
-    const token = await this.claim(issue.identifier);
-    // `nb-studio issue design-proposal`'s endpoint; the issue defaults to the run's.
-    await this.api.post(
-      'designProposals',
-      { content: DESIGN_PROPOSAL },
-      { [HEADERS.runToken]: token },
-    );
-    const after = await this.api.get<Issue>(`projects/issues/${issue.id}`);
-    if (after.statusKey !== 'proposal_review')
-      throw new Error(
-        `${issue.identifier} is in ${after.statusKey}, not proposal_review.`,
-      );
-    return after;
   }
 }

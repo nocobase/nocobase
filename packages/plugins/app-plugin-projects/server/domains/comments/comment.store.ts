@@ -105,10 +105,17 @@ export async function rootsPage(
   issueId: string,
   limit: number,
   cursor?: { readonly createdAt: string; readonly id: string },
+  /** Only these roots. */
+  rootIds?: readonly string[],
 ): Promise<CommentRecord[]> {
+  if (rootIds?.length === 0) return [];
   return comments(conn).findMany({
     filter: (f) =>
-      f.and([f.string('issueId').eq(issueId), f.string('parentId').eq(null)]),
+      f.and([
+        f.string('issueId').eq(issueId),
+        f.string('parentId').eq(null),
+        ...(rootIds ? [oneOf(f, 'id', rootIds)] : []),
+      ]),
     ...(cursor ? { cursor } : {}),
     sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').desc()],
     limit: limit + 1,

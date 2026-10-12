@@ -10,7 +10,7 @@ export interface StageGroup {
 
 /**
  * Sub-issues grouped by stage, the lowest stage first and those without one last; inside a group the server's order
- * (by number) is kept. Whether one is finished comes from the server, by its own workflow.
+ * (by number) is kept. Whether one is finished comes from the server.
  */
 export function groupSubtasksByStage(
   subtasks: readonly SubtaskSummary[],

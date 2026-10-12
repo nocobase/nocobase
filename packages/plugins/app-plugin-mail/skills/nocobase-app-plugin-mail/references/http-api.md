@@ -77,24 +77,32 @@ Mail publishes the user-scoped realtime topic `mail:messages` with `{ kind: 'mai
 
 ## Messages, conversations, attachments, and sending
 
-| Method   | Path                                                                 | Request / result                                                                                                                      |
-| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/messages`                                                          | Filters by `accountId`, `folderId`, `labelId`, `conversationId`, `q`, `unread`, and `starred`; pages with `pageSize` and `pageToken`. |
-| `GET`    | `/messages/countUnread`                                              | Returns the current user's unread count as a number.                                                                                  |
-| `POST`   | `/messages/send`                                                     | Accepts `MailComposeInput`; returns `MailSubmissionView`.                                                                             |
-| `POST`   | `/messages/sendBulk`                                                 | Accepts `MailBulkComposeInput`; returns `MailSubmissionView[]`.                                                                       |
-| `POST`   | `/messages/saveDraft`                                                | Accepts draft compose fields; creates the draft or replaces the one named by `draftMessageId` or `draftKey`; returns `MailMessage`.   |
-| `GET`    | `/accounts/:accountId/conversations/:conversationId/messages`        | Conversation messages, paged with `pageSize` and `pageToken`.                                                                         |
-| `GET`    | `/accounts/:accountId/messages/:messageId`                           | Returns a `MailMessage`.                                                                                                              |
-| `PATCH`  | `/accounts/:accountId/messages/:messageId`                           | Optional read/starred/note/todo changes; returns the updated `MailMessage`.                                                           |
-| `DELETE` | `/accounts/:accountId/messages/:messageId`                           | Optional `permanently=true` query parameter; returns `204`.                                                                           |
-| `GET`    | `/accounts/:accountId/messages/:messageId/attachments/:attachmentId` | Streams a personal mailbox attachment.                                                                                                |
-| `POST`   | `/accounts/:accountId/messages/:messageId/modifyLabels`              | `addLabelIds` and/or `removeLabelIds`; returns the updated `MailMessage`.                                                             |
-| `POST`   | `/accounts/:accountId/messages/:messageId/move`                      | Requires `providerFolderId`; returns the updated `MailMessage`.                                                                       |
-| `POST`   | `/accounts/:accountId/messages/:messageId/retryContent`              | Retries deferred message content retrieval; returns the updated `MailMessage`.                                                        |
-| `POST`   | `/accounts/:accountId/messages/:messageId/resolveDraftConflict`      | Requires `action` `useRemote` or `keepLocal`; returns the resolved `MailMessage`.                                                     |
-| `POST`   | `/attachments`                                                       | `multipart/form-data` with field `file`, at most 27 MiB; returns `201` and `MailOutboundAttachmentView`.                              |
-| `GET`    | `/attachments/:attachmentId`                                         | Streams an uploaded outbound attachment.                                                                                              |
+| Method   | Path                                                                 | Request / result                                                                                                                                     |
+| -------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/messages`                                                          | Filters by `accountId`, `folderId`, `labelId`, `conversationId`, `q`, `participant`, `unread`, and `starred`; pages with `pageSize` and `pageToken`. |
+| `GET`    | `/messages/countUnread`                                              | Returns the current user's unread count as a number.                                                                                                 |
+| `POST`   | `/messages/send`                                                     | Accepts `MailComposeInput`; returns `MailSubmissionView`.                                                                                            |
+| `POST`   | `/messages/sendBulk`                                                 | Accepts `MailBulkComposeInput`; returns `MailSubmissionView[]`.                                                                                      |
+| `POST`   | `/messages/saveDraft`                                                | Accepts draft compose fields; creates the draft or replaces the one named by `draftMessageId` or `draftKey`; returns `MailMessage`.                  |
+| `GET`    | `/accounts/:accountId/conversations/:conversationId/messages`        | Conversation messages, paged with `pageSize` and `pageToken`.                                                                                        |
+| `GET`    | `/accounts/:accountId/messages/:messageId`                           | Returns a `MailMessage`.                                                                                                                             |
+| `PATCH`  | `/accounts/:accountId/messages/:messageId`                           | Optional read/starred/note/todo changes; returns the updated `MailMessage`.                                                                          |
+| `DELETE` | `/accounts/:accountId/messages/:messageId`                           | Optional `permanently=true` query parameter; returns `204`.                                                                                          |
+| `GET`    | `/accounts/:accountId/messages/:messageId/attachments/:attachmentId` | Streams a personal mailbox attachment.                                                                                                               |
+| `POST`   | `/accounts/:accountId/messages/:messageId/modifyLabels`              | `addLabelIds` and/or `removeLabelIds`; returns the updated `MailMessage`.                                                                            |
+| `POST`   | `/accounts/:accountId/messages/:messageId/move`                      | Requires `providerFolderId`; returns the updated `MailMessage`.                                                                                      |
+| `POST`   | `/accounts/:accountId/messages/:messageId/retryContent`              | Retries deferred message content retrieval; returns the updated `MailMessage`.                                                                       |
+| `POST`   | `/accounts/:accountId/messages/:messageId/resolveDraftConflict`      | Requires `action` `useRemote` or `keepLocal`; returns the resolved `MailMessage`.                                                                    |
+| `POST`   | `/attachments`                                                       | `multipart/form-data` with field `file`, at most 27 MiB; returns `201` and `MailOutboundAttachmentView`.                                             |
+| `GET`    | `/attachments/:attachmentId`                                         | Streams an uploaded outbound attachment.                                                                                                             |
+
+### Participant query semantics
+
+`GET /messages` and `GET /management/messages` accept optional `participant` as a full mailbox (`alice@example.com`) or an exact domain (`@example.com`). The server trims leading/trailing whitespace and lowercases the whole mailbox/domain. Supported input is an ASCII dot-atom local part (at most 64 characters) with a dotted DNS domain (at most 253 characters, labels at most 63); the query value is at most 320 characters. Display-name forms, quoted local parts, Unicode addresses and malformed/empty values are rejected with `400 INVALID_ARGUMENT`, reason `INVALID_INPUT`, and a `participant` field violation. Permission is checked first. Omit the parameter to disable it.
+
+Only actual From, To and Cc addresses match. Subject, preview, body, display names, Bcc and Reply-To are excluded; aliases and `+tag` addresses are not folded. `@example.com` does not match `sub.example.com`, `notexample.com` or `example.com.evil`. Existing `q` fuzzy search is unchanged (including display names and Bcc) and intersects with participant and all other filters. Ownership, management permission, sort order and IMAP-copy record granularity are unchanged. The predicate applies before totals and pagination and never duplicates a matching message because several participants match. Searches cover locally synchronized mail only.
+
+Conversation-message detail and full-thread counts retain their existing semantics: a filtered list row can open a complete thread containing other participants. The internal participant index has no public CRUD endpoint. Existing installations must finish the [maintenance-window backfill](synchronization-and-diagnostics.md#participant-index-upgrade) before relying on historical filtered results.
 
 ## Synchronization and delivery history
 
@@ -111,12 +119,12 @@ Mail publishes the user-scoped realtime topic `mail:messages` with `{ kind: 'mai
 
 ## All-user management
 
-| Method | Path                                                                            | Request / result                                                                                    |
-| ------ | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `GET`  | `/management/messages`                                                          | Filters by `accountId`, `folderId`, `q`, `unread`, and `starred`; paged with `page` and `pageSize`. |
-| `POST` | `/management/messages/batchApply`                                               | Accepts `MailManagementMessageActionInput`; returns per-item results.                               |
-| `GET`  | `/management/accounts/:accountId/messages/:messageId`                           | Returns a read-only `MailMessage`; does not mark it read.                                           |
-| `GET`  | `/management/accounts/:accountId/messages/:messageId/attachments/:attachmentId` | Streams an all-user management attachment.                                                          |
+| Method | Path                                                                            | Request / result                                                                                                   |
+| ------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/management/messages`                                                          | Filters by `accountId`, `folderId`, `q`, `participant`, `unread`, and `starred`; paged with `page` and `pageSize`. |
+| `POST` | `/management/messages/batchApply`                                               | Accepts `MailManagementMessageActionInput`; returns per-item results.                                              |
+| `GET`  | `/management/accounts/:accountId/messages/:messageId`                           | Returns a read-only `MailMessage`; does not mark it read.                                                          |
+| `GET`  | `/management/accounts/:accountId/messages/:messageId/attachments/:attachmentId` | Streams an all-user management attachment.                                                                         |
 
 ## OAuth and Provider webhooks
 

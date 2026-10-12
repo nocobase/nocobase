@@ -754,7 +754,6 @@ export function createRunRequestService(
           const usable =
             request.toUserId &&
             agent &&
-            !agent.archivedAt &&
             deps.mayInvoke(agent, request.toUserId);
           if (!usable) {
             if (await expire(unit, record, 'reassignment'))

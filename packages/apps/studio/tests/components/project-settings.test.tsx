@@ -192,12 +192,12 @@ vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
     loading: false,
     failed: false,
     options: [
-      { value: 'studio-project-lead', label: 'Project lead' },
-      { value: 'studio-senior-developer', label: 'Senior developer' },
+      { value: 'claude-opus', label: 'Claude · Opus 5.5' },
+      { value: 'codex-gpt', label: 'Codex · GPT-6.1 Sol' },
     ],
     agents: [
-      pickerAgent('studio-project-lead', 'Project lead'),
-      pickerAgent('studio-senior-developer', 'Senior developer'),
+      pickerAgent('claude-opus', 'Claude · Opus 5.5'),
+      pickerAgent('codex-gpt', 'Codex · GPT-6.1 Sol'),
     ],
   }),
 }));
@@ -344,15 +344,6 @@ globalThis.ResizeObserver ??= class {
   public disconnect(): void {}
 };
 Element.prototype.scrollIntoView ??= () => undefined;
-// CodeMirror measures text ranges, which jsdom does not lay out.
-Range.prototype.getClientRects ??= () =>
-  ({
-    length: 0,
-    item: () => null,
-    [Symbol.iterator]: [][Symbol.iterator],
-  }) as unknown as DOMRectList;
-Range.prototype.getBoundingClientRect ??= () => new DOMRect();
-
 beforeEach(() => {
   vi.clearAllMocks();
   status.enabled = true;
@@ -793,7 +784,7 @@ describe('Deployment', () => {
     expect(configured).toEqual([]);
   });
 
-  it('hands it to the project lead agent unless another is chosen', async () => {
+  it('hands it to the first agent offered unless another is chosen', async () => {
     render(page('?section=ci&configure=1'));
     fireEvent.click(await screen.findByText('ciSetup.methods.agent.title'));
     await waitFor(() =>
@@ -811,7 +802,7 @@ describe('Deployment', () => {
       method: 'agent',
       app: { directory: '.', appId: 'shop' },
       target: { trigger: 'pullRequest', ref: null, environmentId: 'preview' },
-      agentId: 'studio-senior-developer',
+      agentId: 'claude-opus',
     });
   });
 

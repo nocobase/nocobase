@@ -11,7 +11,6 @@ import { createHarness, type Harness } from '../harness.js';
 let h: Harness;
 beforeEach(async () => {
   h = await createHarness();
-  await h.installStandardWorkflow();
   for (const id of ['admin', 'alice', 'bob']) await h.addUser(id, id);
   h.services.kinds.add({
     key: 'bot',
@@ -124,44 +123,6 @@ describe('issueQueries.matching', () => {
       await h.services.issueQueries.matching(alice(), {}, { issueIds: [] }),
     ).toEqual({ issues: [], truncated: false });
     expect(working.id).not.toBe(elsewhere.id);
-  });
-});
-
-describe('approvals.pendingOn', () => {
-  it('answers the pending requests on the issues in one read', async () => {
-    const [workflow] = await h.services.workflows.list(admin());
-    await h.services.workflows.update(admin(), workflow!.id, {
-      revision: workflow!.revision,
-      definition: {
-        states: workflow!.definition.states,
-        transitions: [
-          ...workflow!.definition.transitions,
-          {
-            from: 'todo',
-            to: 'in_progress',
-            actors: ['user'],
-            approval: { approvers: ['owner'] },
-          },
-        ],
-      },
-    });
-    const issue = await h.services.issues.create(bob(), {
-      title: 'Needs a yes',
-      ownerUserId: 'alice',
-    });
-    await h.services.issues.update(bob(), issue.id, {
-      revision: issue.revision,
-      statusKey: 'in_progress',
-    });
-    const [request] = await h.services.approvals.pendingOn([issue.id, 'nope']);
-    expect(request).toMatchObject({
-      issueId: issue.id,
-      toStatus: 'in_progress',
-      requestedById: 'bob',
-      approverUserIds: ['alice'],
-      status: 'pending',
-    });
-    expect(await h.services.approvals.pendingOn([])).toEqual([]);
   });
 });
 

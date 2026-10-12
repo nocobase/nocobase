@@ -136,6 +136,12 @@ export class MailAccountRemovalsStore {
           keys: ['providerFolderId', 'messageId'],
           filter: accountFilter,
         },
+        {
+          table: 'mailMessageParticipants',
+          // Follow the account/address/message index and bound child rows first.
+          keys: ['address', 'messageId', 'role'],
+          filter: accountFilter,
+        },
         { table: 'mailMessages', keys: ['id'], filter: accountFilter },
         { table: 'mailDraftStates', keys: ['id'], filter: accountFilter },
         {

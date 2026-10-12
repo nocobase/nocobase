@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "AI 员工概览"
+  },
+  {
+    "type": "file",
+    "name": "page-context",
+    "label": "理解页面上下文"
+  },
+  {
+    "type": "file",
+    "name": "business-data",
+    "label": "查询业务数据"
+  },
+  {
+    "type": "file",
+    "name": "business-actions",
+    "label": "执行业务操作"
+  },
+  {
+    "type": "file",
+    "name": "work-rules",
+    "label": "职责与工作规则"
+  }
+]

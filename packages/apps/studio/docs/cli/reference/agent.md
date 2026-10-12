@@ -18,30 +18,6 @@ nb-studio agent action list
 
 **Request:** `GET /api/agents/actions` (`agentsListActions`)
 
-## agent archive
-
-Archive an agent
-
-An archived agent is not run: its queued runs are withdrawn. Its owner (at the related level of `agents.agents` edit) or a manager of agents may.
-
-```bash
-nb-studio agent archive <agent>
-```
-
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
-
-| Flag    | Type    | Description                                                                  |
-| ------- | ------- | ---------------------------------------------------------------------------- |
-| `--yes` | boolean | Go ahead without asking “Archive this agent? Its queued runs are withdrawn.” |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `POST /api/agents/{agentId}/archive` (`agentsArchiveAgent`)
-
 ## agent brief
 
 Preview an agent's full prompt
@@ -73,104 +49,11 @@ nb-studio agent brief <agent>
 nb-studio agent brief <agent> --scenario conversation
 ```
 
-## agent copy
-
-Copy an agent for oneself
-
-A private copy of an agent the caller may wake, owned and usable only by them; `makeDefault` makes it the caller's default chat agent.
-
-```bash
-nb-studio agent copy <agent>
-```
-
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
-
-| Flag             | Type    | Description |
-| ---------------- | ------- | ----------- |
-| `--name`         | string  |             |
-| `--make-default` | boolean |             |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `POST /api/agents/{agentId}/copy` (`agentsCopyAgent`)
-
-## agent create
-
-Create an agent
-
-`modelEntries` lists the tools and models it works with, in order (the first is its default): `{ tool, model? }` for a runner agent, `{ modelService, model }` for an online one. Needs `agents.agents` manage.
-
-```bash
-nb-studio agent create
-```
-
-| Flag                    | Type                           | Description                                                                                                                                                                                                                                                                                                                                                                                       |
-| ----------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--name`                | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--description`         | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--avatar`              | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--models`              | json                           | The tools and models, in order, the first its default, each with an optional reasoning effort its tool or service takes: `[{"tool":"codex","model":"gpt-5","effort":"high"},{"tool":"claude"}]` for a runner agent, `[{"modelService":"openai","model":"gpt-5","effort":"low"}]` for an online one. A runner agent needs at least one; an online agent may have none until a model is configured. |
-| `--instructions`        | string                         | (or --instructions-file <path>)                                                                                                                                                                                                                                                                                                                                                                   |
-| `--runtimes`            | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--skills`              | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--actions`             | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--confirm-changes`     | always \| larger               |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--access`              | ownerOnly \| users \| everyone |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--users`               | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--owner`               | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--max-concurrent-runs` | integer                        |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--max-attempts`        | integer                        |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--tool-policy`         | json                           |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--type`                | online \| runner               |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--file`                | path                           | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                                                                                                                                                 |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `POST /api/agents` (`agentsCreateAgent`)
-
-**Examples:**
-
-```bash
-nb-studio agent create --name Coder --models '[{"tool":"claude"},{"tool":"codex","model":"gpt-5"}]'
-nb-studio agent create --name PM --type online --models '[{"modelService":"openai","model":"gpt-5"}]'
-nb-studio agent create --file agent.json
-```
-
-## agent delete
-
-Delete an agent
-
-Deletes an archived agent with no open runs, with its variables, skill attachments and history; its past runs stay. Its owner (at the related level of `agents.agents` edit) or a manager of agents may.
-
-```bash
-nb-studio agent delete <agent>
-```
-
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
-
-| Flag    | Type    | Description                                                                          |
-| ------- | ------- | ------------------------------------------------------------------------------------ |
-| `--yes` | boolean | Go ahead without asking “Delete this archived agent with its variables and history?” |
-
-**Output:** Nothing; prints `Done.`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `DELETE /api/agents/{agentId}` (`agentsDeleteAgent`)
-
 ## agent get
 
 Get an agent
 
-Needs `agents.agents` read.
+An agent as the Agent page shows it. An application’s own agent, such as a project manager, is answered too.
 
 ```bash
 nb-studio agent get <agent>
@@ -216,13 +99,13 @@ nb-studio agent history <agent>
 
 List the agents the caller may give work to
 
-The agents that are not archived and that the caller (for a run, the person who woke its agent) may wake: what each is good at, and whether it can take work now. An online agent with no model of its own answers with the system default chat model, and is left out only while there is none.
+The enabled agents the caller (for a run, the person who woke its agent) may give work to, one for each coding tool and model the runners report: what each is good at, whether a runner would take the caller’s work now, whether only personal runners have it, and how many of its runs have not finished. Agents no runner reported for 14 days are left out.
 
 ```bash
 nb-studio agent list
 ```
 
-**Output:** A list (table columns: `id`, `name`, `type`, `online`, `busy`, `goodAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
+**Output:** A list (table columns: `id`, `name`, `online`, `busy`, `goodAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
 **Who:** People, and agents in a run; needs the action `agents.agents/view`.
 
@@ -239,17 +122,13 @@ nb-studio agent list --json
 
 List agents
 
-With what the list shows about their runs and runners, and whether the caller may change each. Needs `agents.agents` read.
+Every agent discovered from runners: one for each coding tool and model they report, with whether it is enabled, what it is good at, where it can run now (team and personal runners, the caller’s own among them), why it cannot take the caller’s work, and whether the caller may change it. Anyone signed in may read them; only a manager of agents (`agents.agents` manage) changes them.
 
 ```bash
 nb-studio agent list-all
 ```
 
-| Flag         | Type    | Description |
-| ------------ | ------- | ----------- |
-| `--archived` | boolean |             |
-
-**Output:** A list (table columns: `id`, `name`, `type`, `ownerName`, `activeRuns`, `archivedAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
+**Output:** A list (table columns: `id`, `name`, `status`, `unusable`, `busy`, `description`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
 **Who:** People (a sign-in or an API key).
 
@@ -258,79 +137,30 @@ nb-studio agent list-all
 **Examples:**
 
 ```bash
-nb-studio agent list-all --archived
+nb-studio agent list-all
+nb-studio agent list-all --json
 ```
-
-## agent preset list
-
-List agent presets
-
-The roles the application registered that a new agent can start from. Needs `agents.agents` read.
-
-```bash
-nb-studio agent preset list
-```
-
-**Output:** A list (table columns: `key`, `name`, `type`, `description`); with `--json`, `result.data` is the array and `result.meta` the paging.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `GET /api/agents/presets` (`agentsListPresets`)
-
-## agent restore
-
-Restore an archived agent
-
-Its owner (at the related level of `agents.agents` edit) or a manager of agents may.
-
-```bash
-nb-studio agent restore <agent>
-```
-
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `POST /api/agents/{agentId}/restore` (`agentsRestoreAgent`)
 
 ## agent update
 
 Update an agent
 
-Changes the fields given, against `expectedRevision`. Its owner (at the related level of `agents.agents` edit) or a manager of agents may. Only a manager of agents may give it to another owner, and an owner adds only business actions they hold themselves.
+Writes what an agent discovered from runners is good at, its default reasoning effort, and enables or disables it, against the revision the edit was made from. An agent is enabled only with a description. Disabling withdraws its queued runs. An application's own agent is changed through the application. Needs `agents.agents` manage.
 
 ```bash
-nb-studio agent update <agent>
+nb-studio agent update <agent> --expected-revision <integer>
 ```
 
 | Argument | Description |
 | -------- | ----------- |
 | `agent`  |             |
 
-| Flag                    | Type                           | Description                                                                                                                                                                                                                                                                                                                                                                                       |
-| ----------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--name`                | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--description`         | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--avatar`              | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--models`              | json                           | The tools and models, in order, the first its default, each with an optional reasoning effort its tool or service takes: `[{"tool":"codex","model":"gpt-5","effort":"high"},{"tool":"claude"}]` for a runner agent, `[{"modelService":"openai","model":"gpt-5","effort":"low"}]` for an online one. A runner agent needs at least one; an online agent may have none until a model is configured. |
-| `--instructions`        | string                         | (or --instructions-file <path>)                                                                                                                                                                                                                                                                                                                                                                   |
-| `--runtimes`            | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--skills`              | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--actions`             | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--confirm-changes`     | always \| larger               |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--access`              | ownerOnly \| users \| everyone |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--users`               | string[]                       | (repeatable)                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--owner`               | string                         |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--max-concurrent-runs` | integer                        |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--max-attempts`        | integer                        |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--tool-policy`         | json                           |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--revision`            | integer                        |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--type`                | json                           |                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--file`                | path                           | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                                                                                                                                                 |
+| Flag                  | Type    | Description                                                                                                      |
+| --------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| `--good-at`           | string  | What it is good at: the project manager hands it work by this. Required to enable it. (or --good-at-file <path>) |
+| `--effort`            | string  | Its default reasoning effort, one of its tool's; null for the tool's default.                                    |
+| `--enabled`           | boolean | Offer it work, or stop offering it.                                                                              |
+| `--expected-revision` | integer | (required)                                                                                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -341,6 +171,6 @@ nb-studio agent update <agent>
 **Examples:**
 
 ```bash
-nb-studio agent update <agent> --instructions-file notes.md --revision 4
-nb-studio agent update <agent> --models '[{"tool":"codex"},{"tool":"claude","model":"opus"}]' --revision 4
+nb-studio agent update <agent> --good-at "Code review" --enabled --expected-revision 2
+nb-studio agent update <agent> --no-enabled --expected-revision 3
 ```

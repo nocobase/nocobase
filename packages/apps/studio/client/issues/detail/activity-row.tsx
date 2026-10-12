@@ -10,7 +10,6 @@ import type {
   Activity,
   StatusDefinition,
 } from '@nocobase/app-plugin-projects/shared/issues';
-import { isBuiltInEvent } from '@nocobase/app-plugin-projects/shared/workflows';
 import { useTranslation } from '@nocobase/i18n/client';
 import { BotIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
@@ -18,7 +17,6 @@ import { Link } from 'react-router';
 
 import { TimelineActivity } from '@/components/comment-thread';
 
-import { EXECUTOR_WAITS_ACTIVITY } from '../../../shared/design.js';
 import {
   PR_ACTIVITIES,
   PR_EDIT_FIELDS,
@@ -29,6 +27,9 @@ import { PR_ACTIVITY_LABELS } from '../../git/lib.js';
 import type { Translate } from './labels.js';
 import { usePlanLinkTo } from './plan-links.js';
 import { StatusBadge } from './status-badge.js';
+
+/** Recorded by earlier versions when an agent became the executor ahead of its stage; kept readable. */
+const EXECUTOR_WAITS_ACTIVITY = 'executor_waits';
 
 /** The server's activity actions and the keys of their wording. */
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -137,7 +138,12 @@ function actionLabel(action: string, details: Activity['details']): string {
   else if (action === 'stage_action_skipped' && reason === 'blocked')
     key = 'stageActionBlocked';
   else if (action === 'work_skipped')
-    key = reason === 'dormant' ? 'workDormant' : 'workBlocked';
+    key =
+      reason === 'dormant'
+        ? 'workDormant'
+        : reason === 'limited'
+          ? 'workLimited'
+          : 'workBlocked';
   return `activity.actions.${key}`;
 }
 
@@ -206,6 +212,9 @@ export function ActivityRow({
   // Studio's own namespace, for the actions Studio records itself; `t` is the projects plugin's.
   const { i18n, t: studioT } = useTranslation();
   const prAction = PR_ACTIVITY_LABELS[activity.action];
+  const cannotImplement =
+    activity.action === 'stage_action_skipped' &&
+    activity.details.reason === 'executorCannotImplement';
   const planTo = usePlanLinkTo();
   const apiKeys = useApiKeyActors();
   const eventTitle = useEventTitle();
@@ -260,18 +269,25 @@ export function ActivityRow({
       <span>
         {prAction
           ? studioT(prAction)
-          : activity.action === EXECUTOR_WAITS_ACTIVITY
-            ? studioT('studioAgents.activity.executorWaits', {
+          : cannotImplement
+            ? studioT('studioAgents.activity.executorCannotImplement', {
                 name:
-                  (text(activity.details.agentId)
-                    ? agentName(text(activity.details.agentId) ?? '')
-                    : null) ??
                   text(activity.details.name) ??
+                  text(activity.details.agentId) ??
                   t('common.unknown'),
               })
-            : t(actionLabel(activity.action, activity.details), {
-                name: text(activity.details.name) ?? t('common.unknown'),
-              })}
+            : activity.action === EXECUTOR_WAITS_ACTIVITY
+              ? studioT('studioAgents.activity.executorWaits', {
+                  name:
+                    (text(activity.details.agentId)
+                      ? agentName(text(activity.details.agentId) ?? '')
+                      : null) ??
+                    text(activity.details.name) ??
+                    t('common.unknown'),
+                })
+              : t(actionLabel(activity.action, activity.details), {
+                  name: text(activity.details.name) ?? t('common.unknown'),
+                })}
       </span>
       {prAction ? (
         <PullRequestActivity activity={activity} t={studioT} />
@@ -335,10 +351,8 @@ export function ActivityRow({
       activity.details.event === 'subtasks.done' ? (
         <span>{t('activity.afterSubtasks')}</span>
       ) : null}
-      {moved && event && !isBuiltInEvent(event) ? (
-        <span>
-          {t('activity.afterEvent', { event: eventTitle(event) ?? event })}
-        </span>
+      {moved && event && eventTitle(event) ? (
+        <span>{t('activity.afterEvent', { event: eventTitle(event) })}</span>
       ) : null}
       {moved && text(activity.details.note) ? (
         <span className='text-foreground'>{text(activity.details.note)}</span>

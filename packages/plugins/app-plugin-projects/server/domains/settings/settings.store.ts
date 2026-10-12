@@ -1,6 +1,6 @@
 /**
- * The `pmSettings` row. It is created by the seed `202609300005_pm_default_settings`; a missing row reads as the
- * defaults and is recreated by the first write.
+ * Workspace settings and the issue counter. `pmSettings` is created by the seed
+ * `202609300005_pm_default_settings`; a missing settings row reads as the defaults and is recreated by the first write.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -53,8 +53,8 @@ export async function writeSettings(
 }
 
 /**
- * The next issue number and the current prefix. An atomic increment in the caller's transaction: concurrent creates
- * wait for each other, and a rolled-back create releases its number.
+ * The next issue number and the current prefix, allocated atomically in the caller's transaction.
+ * A rolled-back create releases its number.
  */
 export async function nextIssueNumber(
   conn: DatabaseConnection,

@@ -1,53 +1,95 @@
 ---
-title: 'Extension'
-description: 'Organize integration and extension boundaries for approval policies, operations, UI, and execution.'
+title: 'Extensions'
+description: 'Integrate and extend approval policies, operations, interfaces, deadlines, and reliable execution.'
 ---
 
-# Extension
+# Extensions
 
-:::warning Documentation in progress
-This chapter establishes the structure and scope. Full walkthroughs and scenario examples will be added here.
-:::
+This page is for developers and Agents who need integration and extension boundaries. For business design, start with [Approval overview](./index.md). Use the installed approval plugin's Skill and version for detailed API contracts.
 
-This page covers integration boundaries for developers and Agents. Start with [Develop with an Agent](./develop.md); use the installed approval Skill and package version for exact API contracts.
+## Integrate existing records and processes
 
-## Existing records and business lifecycles
+One request record identifies the complete process. `defineApproval` defines drafts, review, correction, execution, and final stages; `approvalState` adds group handling rules to a business state. Each entry creates tasks for a new round. Return and re-entry creates new tasks while preserving earlier records.
 
-One application record identifies the complete process. `defineApproval` defines its states and transitions; `approvalState` attaches human coordination to a business state. Each entry allocates fresh tasks and preserves previous evidence.
-
-The host supplies lifecycle runtime and storage, business tables, organization services, authenticated routes, and UI. Plugin migrations supply approval storage. Close direct state and frozen-field writes through forms, imports, and routes. Keep proposed changes separate from effective business data.
+The application provides its lifecycle runtime, business tables, lifecycle storage, organization services, authentication/authorization APIs, and interface. Plugin migrations supply approval task and evidence storage. Restrict forms, imports, and APIs that directly change states or submitted fields. Contract changes and similar proposals should store requests separately from official data.
 
 ## Custom aggregation policies
 
-Use standard single, all, any, first, sequential, and threshold policies where possible. A custom `StagePolicy` declares planning, possible conclusions, and exits for itemized or partial review. Policies compute results; business transitions write data.
+Standard policies cover single, all, any, first-response, sequential, and threshold decisions. Special itemized or partial results use `StagePolicy`: declare task planning, possible outcomes, and exits. The policy calculates conclusions; the business lifecycle performs data writes.
 
 ## Custom operations and assignment rules
 
-Use `defineApprovalAction` for abstention, line returns, urging, or other business operations. Opt into each stage explicitly. Define inputs, permissions, recipients, presentation, history, forms, and tests. Recheck responsibility constraints after transfer, added signers, appointment, and reassignment.
+Use `defineApprovalAction` for abstention, returning individual items, reminders, or other business operations, explicitly registered on the relevant stages. Declare input, permissions, recipient scope, presentation, and history wording, with forms and tests. Recheck responsibility rules after transfers, added reviewers, appointment, and reassignment.
 
 ## Frozen content, outputs, and opinion reuse
 
-`freeze` selects reviewed fields; decisions carry the displayed content hash. Stage outputs declare reviewed amounts or dates and write them together with the concluding transition. Re-entry normally requires new decisions. `reuse: 'unchanged'` needs explicit business permission and matching content, rule version, and responsibility; new tasks retain source evidence.
+`freeze` declares submitted fields. Confirmations carry the hash of the content displayed on the page. Stage outputs declare reviewer-entered amounts, dates, and similar values; write these with the business state when the conclusion is reached.
+
+Re-entry requires fresh review by default. `reuse: 'unchanged'` reuses earlier opinions only when explicitly permitted and covered content, rule version, responsibility identities, and other conditions match. New tasks retain source evidence.
 
 ## Pages and approval centers
 
-| Contract                            | Purpose                                                  |
-| ----------------------------------- | -------------------------------------------------------- |
-| `previewRoute`                      | Preview before submission                                |
-| `runViewsFor` / `upcomingStagesFor` | Current and historical stays, upcoming stages            |
-| `actionsFor` / `runActionsFor`      | Offered task and run operations                          |
-| `candidatesFor`                     | Eligible operation recipients                            |
-| `perform` / `performBatch`          | Processing and per-target batch results                  |
-| `tasksOf`                           | Approval task queries; host authorization still required |
+| Contract                            | Purpose                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| `previewRoute`                      | Route preview before submission                                            |
+| `runViewsFor` / `upcomingStagesFor` | Current and historical rounds, and future stages                           |
+| `actionsFor` / `runActionsFor`      | Current user's task or round operations                                    |
+| `candidatesFor`                     | Qualified candidates for transfer, added reviewers, and similar operations |
+| `perform` / `performBatch`          | Individual actions and batch handling with per-item results                |
+| `tasksOf`                           | Task aggregation; APIs still need business authorization                   |
 
-The UI Library's `approval-ui` provides progress, timelines, previews, action bars, branches, and receipts. The host maps read models and implements business forms and pages. A center may combine other work sources; each retains its permissions and operations.
+The UI Library's `approval-ui` supplies progress, timeline, route preview, action bar, branch, and receipt components. The Agent maps server data into them; business forms and pages belong to the application. Approval centers can include other work sources, each independently authorizing reads and actions.
 
-## Notifications, time, and reliable execution
+Administrative pages also belong to the application. Query requests, tasks, and execution records within the administrator's business scope and expose authorized appointment and reassignment. Redispatch or process reset requires business recovery exits and rules for earlier rounds; the Agent then implements administrative APIs and pages. Directly changing a state field is not a substitute for lifecycle operations.
 
-The host periodically calls `ApprovalService.sweep()` for task reminders, escalation, and claim expiry; `calendar` supplies optional working-hour calculation. Integrate with lifecycle jobs. Notifications and external calls run after commit. Partial opinions update tasks; conclusion, business transition, and next allocation share one transaction.
+## Notifications, deadlines, and reliable execution
 
-Resource changes and baseline checks belong in the business transaction. Payments, registration, and synchronization use reliable lifecycle effects with retry, failure exits, and stable business keys.
+The application periodically calls `ApprovalService.sweep()` for reminders, escalation, and claim expiry. `calendar` can provide working time. Connect sweeps to lifecycle background work; notifications and external calls execute after transaction commit. Partial opinions update approval tasks only. The final conclusion, business state, and next-stage tasks share a transaction.
 
-## Versions, upgrades, and tests
+Resource reservation/release and official data version checks belong in the business transaction. External payments, registrations, and synchronization use reliable lifecycle execution with retries, failure exits, and stable business identifiers.
 
-Apply migrations, manage rule versions explicitly, and preserve states and exits still in use. Test custom policies, authorized operations, rollback, reuse, duplicates, concurrency, and time. External execution tests cover success, refusal, temporary outage, and unknown outcomes.
+## Rule versions, upgrades, and tests
+
+Apply application migrations on upgrade, manage rule versions explicitly, and retain stages and exits used by ongoing requests. Test custom policies, operation permissions, conclusion rollback, reuse, repeated requests, concurrency, and deadlines. Test external success, explicit rejection, temporary failure, and unknown outcomes.
+
+## Where to find extension examples
+
+The approval example package's `server/action-examples/` contains the following extensions using public approval plugin exports. They do not appear automatically when the core plugin is installed. Register them explicitly in a business stage's `actions`, and implement forms and history wording.
+
+| Example               | Purpose                                | Business constraints                                                   |
+| --------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
+| `urge.ts`             | Applicant reminder                     | Authorization and cooldown; notification does not change opinions      |
+| `remove-signer.ts`    | Remove an added reviewer               | Only removes responsibilities the actor added, as configured           |
+| `retract.ts`          | Retract an individual opinion          | Original task retains its opinion; a new task takes the fresh response |
+| `terminate.ts`        | End a round                            | Explicit authorization and declared business ending exit               |
+| `extend-due.ts`       | Extend deadlines                       | Changes deadlines only; declares batch support                         |
+| `acknowledge.ts`      | Request and complete acknowledgement   | Paired completion operation for an auxiliary task                      |
+| `abstain.ts`          | Committee abstention                   | Separate operation name; abstention is not approval                    |
+| `return-item.ts`      | Return an expense line                 | Per-line outcomes and recovery rules                                   |
+| `vacation-forward.ts` | Forward an absent manager's assignment | Assignment rule rather than a user operation                           |
+
+### Integrate a custom operation
+
+1. Define it with `defineApprovalAction()`, declaring actors, guards, availability, presentation, and effects returned by `plan()`. Do not write to the database inside planning.
+2. Register it on relevant stages. Conclusion operations declare `outcomes`; the business lifecycle provides matching `approvalOutcome` exits.
+3. For material or acknowledgement tasks, register a separate completion operation for recipients and define visibility and completion authority.
+4. Integrate server authorization, input validation, and `perform()`. Pages use offered operations, candidates, and configuration from the server.
+5. Add forms and wording in both languages. Use `registerTimelineRenderer()` for history rendering where needed. Test availability, refusal, tasks, and history changes.
+
+### Assignment and responsibility seats
+
+`assignees` creates one opinion per person, `subjects` one per line, and `pools` one per responsibility seat. Choose exactly one. If legal and finance teams each give one opinion, declare two pools and aggregate with `all`; do not treat every team candidate as a required voter. A pool with one candidate remains a team seat.
+
+Default assignment rules check active status, delegation, applicant exclusion, qualifications, and duplicate responsibility. Transfers, added reviewers, and reassignment are also checked. Transfers and added reviewers require recipient scopes. Replacing the whole assignment chain assumes responsibility for all these constraints; usually compose business rules with the defaults.
+
+### Consistency and retries
+
+The final opinion, round closure, business transition, and next-stage tasks should share one transaction. External calls execute after commit; do not perform bank payments directly within the approval transaction. `perform()` uses a stable `requestId`, with retries retaining action, identity, and target. `performBatch()` returns success or failure per item rather than using one transaction for all requests.
+
+Submit the hash of content displayed on the page with the opinion. Do not silently fetch the newest hash when the user approves, hiding content they have not reviewed. Attachment replacement, related data versions, and historical form reconstruction need additional business storage and validation contracts.
+
+### Background time rules
+
+In the Provider that creates the lifecycle runtime, connect `createLifecycleJobs()`: `onSweep` calls approval `sweep()` and lifecycle `prune()`, while effects also run through jobs. The plugin starts no timer itself. Multi-process production applications should use shared jobs storage so each process does not run an independent memory queue.
+
+The current contract example provides working time in UTC+8, Monday–Friday 09:00–18:00, used for manager deadlines and procurement claim expiry, without a holiday table. The lab sweep processes tasks already due; it does not advance time. Use a controlled clock for precise timeout boundaries. Shared pause and handover deadline rules still need business decisions.

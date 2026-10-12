@@ -36,6 +36,16 @@ const store = vi.hoisted(() => {
     mobile: false,
   };
 });
+vi.mock('../../client/agents/chat-state.js', () => ({
+  useStudioChat: () => ({ temporaryKey: 'new', fromHeader: () => false }),
+  chatEditorKey: (surface: string, id: string | null, temporary: string) =>
+    `${surface}:${id ?? temporary}`,
+}));
+vi.mock('../../client/agents/submission-status.js', () => ({
+  SubmissionStatus: ({ editorKey }: { editorKey: string }) => (
+    <div role='status'>{editorKey}</div>
+  ),
+}));
 vi.mock('@nocobase/app-plugin-agents/client/chat', () => ({
   CHAT_MOBILE_QUERY: 'mobile',
   CHAT_DOCK_QUERY: 'wide',
@@ -135,6 +145,10 @@ describe('ChatPanel full width', () => {
     ).toBeVisible();
     expect(screen.getByRole('textbox', { name: 'Draft' })).toBe(draft);
     expect(draft).toHaveValue('unsent draft');
+    expect(screen.getByRole('status')).toHaveTextContent('panel:first');
+    expect(screen.getByRole('status').parentElement).toBe(
+      draft.parentElement?.parentElement,
+    );
     expect(store.openPage).not.toHaveBeenCalled();
     expect(screen.queryByTestId('chat-history-button')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'chat.restoreSize' }));

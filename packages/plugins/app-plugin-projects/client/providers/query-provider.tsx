@@ -64,10 +64,6 @@ function RealtimeRefresh(): null {
           void queryClient.invalidateQueries({ queryKey: ['pm', 'plans'] });
           return;
         }
-        // A workflow change renames statuses and changes which moves are allowed.
-        if (payload.domain === 'workflows')
-          for (const queryKey of [pmKeys.workflows, ['pm', 'statuses']])
-            void queryClient.invalidateQueries({ queryKey });
         // Issue changes also move project progress.
         for (const queryKey of [
           pmKeys.issues,

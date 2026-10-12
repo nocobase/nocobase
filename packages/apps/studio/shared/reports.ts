@@ -298,8 +298,6 @@ export interface MetricsReport {
   readonly trust: {
     /** Exits from review to a done status, over every exit from review. */
     readonly reviewPassRate: number | null;
-    /** Approval requests approved, over those approved or rejected. */
-    readonly approvalApproveRate: number | null;
     /** Exits from review back to in progress, over every exit from review. */
     readonly reworkRate: number | null;
   };
@@ -337,7 +335,7 @@ export interface MetricsReport {
     }[];
   };
   /**
-   * The decisions people take — approval requests, operation plans, deployment requests, pull requests to merge,
+   * The decisions people take — operation plans, deployment requests, pull requests to merge,
    * failed runs — how fast they are decided, and how they end.
    */
   readonly humanLoad: {
@@ -346,7 +344,7 @@ export interface MetricsReport {
     readonly decisionResolveP50Ms: number | null;
     readonly openDecisions: number;
     readonly byOutcome: Readonly<Record<string, number>>;
-    /** The decisions asked in the range, by kind (`approvals`, `plans`, `deployRequests`, `merges`, `failedRuns`, `other`). */
+    /** The decisions asked in the range, by kind (`plans`, `deployRequests`, `merges`, `failedRuns`, `other`). */
     readonly byKind: Readonly<Record<string, number>>;
   };
   readonly statuses: Readonly<Record<MetricTargetKey, MetricStatus>>;

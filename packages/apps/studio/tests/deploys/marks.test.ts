@@ -16,7 +16,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import {
   ensureRepo,
   insertLink,
@@ -89,11 +88,11 @@ async function pushedIssue(title: string, sha: string): Promise<Issue> {
   const issue = await h.projects.issues.create(alice(), {
     title,
     projectId,
+    executor: null,
   });
-  const current = await h.projects.issueQueries.detail(alice(), issue.id);
-  await h.projects.issues.update(alice(), issue.id, {
-    revision: current.revision,
-    executor: { type: 'agent', id: agentId },
+  // Alice hands it the step.
+  await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {
+    content: `[@Coder](mention://agent/${agentId}) do it`,
   });
   const payload = await h.claimOne();
   await h.runner(RUNNER_ROUTES.start, payload.run.id, {
@@ -139,14 +138,6 @@ beforeEach(async () => {
     id: 'app-staging',
     name: 'App staging',
     environmentId: 'staging',
-  });
-  await asAdmin(async () => {
-    if (!(await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE)))
-      throw new Error('The Software development template did not install.');
-    const software = (await h.projects.workflows.list(alice())).find(
-      (workflow) => workflow.builtInKey === 'software',
-    )!;
-    await h.projects.workflows.setDefault(alice(), software.id);
   });
   const project = await h.projects.projects.create(alice(), {
     name: 'Acme',

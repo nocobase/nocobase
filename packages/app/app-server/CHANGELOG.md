@@ -1,5 +1,40 @@
 # @nocobase/app-server
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- 2a54505: Expose the application's resolved `NODE_ENV` to server providers without inheriting an embedded application's host process environment. Mail now warns once during production startup when its effective OAuth return URL still points to the legacy `/dev/mail/accounts` destination. The current root (`/`) default does not trigger the warning or register an account route: applications must register their own authenticated personal account page and configure `mail.oauthReturnUrl` to that page. This warning does not block startup, change configuration, or verify arbitrary client routes.
+
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-websocket@0.0.2-beta.0
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-dameng@0.1.0-beta.4
+  - @nocobase/db-kingbase@0.1.0-beta.4
+  - @nocobase/db-mssql@0.1.0-beta.4
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oceanbase@0.1.0-beta.4
+  - @nocobase/db-oracle@0.1.0-beta.4
+  - @nocobase/db-postgres@0.1.0-beta.4
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/drive@0.1.0-beta.5
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/logging@0.1.0-beta.7
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/realtime@0.0.2-beta.1
+  - @nocobase/secrets@0.1.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/session@0.1.0-beta.3
+  - @nocobase/snowflake@1.0.0-beta.4
+
 ## 2.0.0-beta.3
 
 ### Patch Changes
