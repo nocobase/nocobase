@@ -106,6 +106,7 @@ test('recovers an expired delegation after SIGKILL and does not report it twice 
       afterRestart.filter((run) => run.agentId === 'studio-project-manager'),
     ).toHaveLength(2);
     await page.goto(`${state.baseURL}/issues/${issue.identifier}`);
+    await page.waitForLoadState('networkidle');
     const timeoutReply = page
       .getByText(reply.content, { exact: false })
       .first();
