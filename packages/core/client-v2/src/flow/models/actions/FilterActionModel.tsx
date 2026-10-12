@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { flipPlacement, tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceDataSourceManager } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
-import { ButtonProps, Popover, Transfer } from 'antd';
+import { ButtonProps, ConfigProvider, Popover, Transfer } from 'antd';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { ActionModel, CollectionBlockModel } from '../base';
@@ -92,33 +92,37 @@ export class FilterActionModel extends ActionModel {
     }
 
     return (
-      <Popover
-        open={this.props.open}
-        content={
-          <FilterContainer
-            value={this.props.filterValue || this.props.defaultFilterValue}
-            ctx={this.context}
-            FilterItem={(props) => (
-              <VariableFilterItem
-                {...props}
-                model={this}
-                ignoreFieldNames={this.getIgnoreFieldNames()}
-                maxAssociationFieldDepth={2}
+      <ConfigProvider.ConfigContext.Consumer>
+        {({ direction }) => (
+          <Popover
+            open={this.props.open}
+            content={
+              <FilterContainer
+                value={this.props.filterValue || this.props.defaultFilterValue}
+                ctx={this.context}
+                FilterItem={(props) => (
+                  <VariableFilterItem
+                    {...props}
+                    model={this}
+                    ignoreFieldNames={this.getIgnoreFieldNames()}
+                    maxAssociationFieldDepth={2}
+                  />
+                )}
               />
-            )}
-          />
-        }
-        trigger="click"
-        placement="bottomLeft"
-        onOpenChange={(open) => {
-          // 解决当鼠标点击其他地方时，Popover 不关闭的问题
-          if (open === false) {
-            this.setProps('open', undefined);
-          }
-        }}
-      >
-        {super.render()}
-      </Popover>
+            }
+            trigger="click"
+            placement={flipPlacement('bottomLeft', direction)}
+            onOpenChange={(open) => {
+              // 解决当鼠标点击其他地方时，Popover 不关闭的问题
+              if (open === false) {
+                this.setProps('open', undefined);
+              }
+            }}
+          >
+            {super.render()}
+          </Popover>
+        )}
+      </ConfigProvider.ConfigContext.Consumer>
     );
   }
 }

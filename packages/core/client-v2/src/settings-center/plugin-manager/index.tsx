@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { MenuOutlined } from '@ant-design/icons';
 import { useDebounce, useMemoizedFn, useRequest } from 'ahooks';
 import { Alert, Button, Card, Divider, Flex, Grid, Input, List, Popover, Space, Spin, theme } from 'antd';
@@ -72,6 +73,7 @@ function CategoryList({
 }
 
 export const PluginManagerPage: React.FC = () => {
+  const placement = useDirectionalPlacement('bottomLeft');
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const app = useApp();
@@ -168,7 +170,7 @@ export const PluginManagerPage: React.FC = () => {
       {!isWide && (
         <Popover
           trigger="click"
-          placement="bottomLeft"
+          placement={placement}
           open={categoryOpen}
           onOpenChange={setCategoryOpen}
           content={
