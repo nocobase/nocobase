@@ -172,6 +172,8 @@ export function createCommentService(deps: CommentDeps): CommentService {
       readonly trigger?: boolean;
       /** The person writing, whose right to mention each principal is checked. */
       readonly userId: string | null;
+      /** Without `userId`: the person the triggers hear it was written for. */
+      readonly forUserId?: string;
       readonly viewer?: Viewer;
     },
   ) {
@@ -240,7 +242,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
         issue,
         parent: parentComment,
         actor,
-        userId: options.userId,
+        userId: options.userId ?? options.forUserId ?? null,
         mentions: refs,
       });
     tx.emit({ type: 'issue.changed', issueId: issue.id });
@@ -313,6 +315,7 @@ export function createCommentService(deps: CommentDeps): CommentService {
           ...(options.trigger === undefined
             ? {}
             : { trigger: options.trigger }),
+          ...(options.forUserId ? { forUserId: options.forUserId } : {}),
           userId: null,
         });
       }, options.outer);

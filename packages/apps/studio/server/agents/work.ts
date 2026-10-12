@@ -12,7 +12,9 @@
  *   or is the executor's own. It acts for the person its run acts for (the owner when no run wrote it); at most the
  *   workflow's `commentRunLimit` runs within `COMMENT_RUN_WINDOW_HOURS` hours, after which it starts nothing
  *   (`skipped: 'limited'`) and the owner is told and may continue it (`comment-run-limit.ts`). A person's comment that
- *   reaches agents restarts that count. A comment in the middle of a run reaches the run as input.
+ *   reaches agents restarts that count. A run an agent's comment started always answers in that comment's thread when it
+ *   completes without commenting or fails for good (`run-report.ts`), which wakes the executing agent in turn. A comment
+ *   in the middle of a run reaches the run as input.
  * - A person moving the issue's status tells a run that has not ended, unless the status's workflow stage already
  *   started work there (`stage-rules.ts`); finishing or closing the issue withdraws queued work instead. Moving it out
  *   of backlog to a status that is not finished starts the executing agent's work (`statusChange`).

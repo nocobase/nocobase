@@ -19,6 +19,11 @@ export interface CommentWriteOptions {
   readonly kind?: string;
   /** What the writer wants to trace with the comment, such as `{ runId }`; never returned. */
   readonly origin?: Readonly<Record<string, unknown>>;
+  /**
+   * The person the comment is written for, as the triggers hear it (`CommentChange.userId`): the person a run acted
+   * for, say. Their right to mention is not checked; the triggers check whom they may wake.
+   */
+  readonly forUserId?: string;
 }
 
 export interface CommentWriter {

@@ -482,6 +482,12 @@ describe('mentions and triggers', () => {
     await services.comments.post(
       { type: 'bot', id: 'b1' },
       issue.id,
+      { content: 'For Bob' },
+      { forUserId: 'bob' },
+    );
+    await services.comments.post(
+      { type: 'bot', id: 'b1' },
+      issue.id,
       { content: 'Quiet' },
       { trigger: false },
     );
@@ -492,6 +498,7 @@ describe('mentions and triggers', () => {
       { content: 'Go [@B](mention://bot/b1)', userId: 'alice' },
       { content: 'Done', userId: null },
       { content: 'Checked', userId: 'alice' },
+      { content: 'For Bob', userId: 'bob' },
     ]);
   });
 
