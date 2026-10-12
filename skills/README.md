@@ -6,13 +6,29 @@ This directory holds every Skill this repository commits. `pnpm install` links e
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`nocobase-create-app`](nocobase-create-app/SKILL.md)                 | Users starting a project to develop, installed globally                                                         | Creates an application with `pnpm create @nocobase/app`, configures it with `nocobase config init`, `config set` and `config check`, and starts it |
 | [`nocobase-app-installer`](nocobase-app-installer/SKILL.md)           | Users deploying a built application locally or over SSH, installed globally                       | Installs, upgrades, rolls back and checks an application's deployment archive with `@nocobase/app-installer`                                      |
-| [`nocobase-plugin-development`](nocobase-plugin-development/SKILL.md) | Contributors developing plugins in a NocoBase 3 source workspace, linked by this checkout or installed globally | Scaffolds, implements, registers and verifies a NocoBase 3 plugin                                                                                  |
+| [`nocobase-app-plugin-development`](nocobase-app-plugin-development/SKILL.md) | Contributors developing plugins in a NocoBase 3 source workspace, linked by this checkout or installed globally | Scaffolds, implements, registers and verifies a NocoBase 3 plugin                                                                                  |
 
 The two global Skills split by what the user ends up with. A project — source code someone changes, developed locally — is `nocobase-create-app`. An installation — built NocoBase that only runs, usually in production — is `nocobase-app-installer`. An application goes from one to the other: it is created and developed as a project, its own `nocobase-deployment` Skill builds the archive, and `nocobase-app-installer` installs it.
 
 The rest of this file is about the two Skills users install globally. `nocobase-create-app` is how an agent reaches NocoBase 3 before any application exists; everything it needs after that ships inside the application, under `.agents/skills/`, synchronized from the installed packages. `nocobase-app-installer` runs where the Agent works: it installs an application archive locally or over SSH and stays in use for later upgrades. With SSH, the server needs no Agent or Skill.
 
 Each is used against the published packages, which is what users do, or against the unreleased checkout, published to a local npm registry, which is how a change is tested before it is released.
+
+## Lightweight distribution
+
+Install all global NocoBase 3 Skills:
+
+```bash
+npx skills@latest add nocobase/skills-v3 --skill '*' -g
+```
+
+Edit only this source directory. `.github/workflows/v3-skills-sync.yml` notifies the distribution repository when `skills/**` changes on `v3-develop`; there is no scheduled polling. The distribution workflow downloads the skills subtree at one immutable commit, preserving references, scripts, assets, executable modes and deletions. Identical content produces no commit. Its `.sync-source.json` records the source revision; failures remain visible in Actions and can be retried manually. The distribution script and its tests are maintained in `nocobase/skills-v3`.
+
+The source notifier reuses `vars.NOCOBASE_APP_ID` and `secrets.NOCOBASE_APP_PRIVATE_KEY`, requesting contents-write access only to `skills-v3`. The target publishes using its own `GITHUB_TOKEN`. The default-branch `main` workflow entry dispatches the `v3-develop` implementation with the same filename and no inputs; land the implementation first. Manual synchronization can also be run directly in the distribution repository.
+
+The source and distribution both use `nocobase-app-plugin-development`, avoiding the V2 `nocobase-plugin-development` name. Reinstall to migrate from an earlier global name; old global installations are not removed automatically. Determine whether an old installation belongs to V2 or V3 before removing it.
+
+Rerun the install command to migrate installations from the old large-repository URL and to update these Skills. `npx skills@latest update` checks all tracked Skills for updates. Global Skills must still describe released package behavior before merging; synchronization does not remove that release requirement. See the [distribution README](https://github.com/nocobase/skills-v3) for maintenance and recovery.
 
 ## Where the packages come from
 
@@ -30,15 +46,15 @@ Published installation commands select `beta` explicitly for the creation tool, 
 ### Install the Skill
 
 ```bash
-npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-create-app --skill nocobase-create-app -g
+npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g
 ```
 
-The full tree URL pins both `v3-develop` and the Skill directory; `--skill` names the selection explicitly. A bare `nocobase/nocobase` source follows the repository's default branch, `main`, which maintains the v1/v2 line, so use the full URL for NocoBase 3. The [skills CLI source parser](https://github.com/vercel-labs/skills/blob/main/src/source-parser.ts) supports this branch and directory syntax. Add `-a claude-code`, or another agent's name, to install for one agent only.
+The lightweight `nocobase/skills-v3` repository distributes the Skills from `v3-develop/skills/` without downloading the application repository. Add `-a claude-code`, or another agent's name, to install for one agent only. `nocobase/skills` remains the NocoBase 2 source.
 
 For an agent working in a fork or another checkout, install the plugin development Skill explicitly; this source checkout links it already:
 
 ```bash
-npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-plugin-development --skill nocobase-plugin-development -g
+npx skills@latest add nocobase/skills-v3 --skill nocobase-app-plugin-development -g
 ```
 
 Agents load Skills when a session starts, so start a new session after installing.
@@ -89,7 +105,7 @@ For installation on the same machine as the Agent, use Linux or macOS (WSL on Wi
 ### Install the Skill
 
 ```bash
-npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-app-installer --skill nocobase-app-installer -g
+npx skills@latest add nocobase/skills-v3 --skill nocobase-app-installer -g
 ```
 
 ### Ask the agent

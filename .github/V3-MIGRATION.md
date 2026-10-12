@@ -1,6 +1,6 @@
 # NocoBase 3 repository migration
 
-NocoBase 3 is maintained in `nocobase/nocobase` on `v3-develop`, with stable promotion to `v3-main`. The repository's default branch is `main`, which continues to maintain the v1/v2 line. See `skills/README.md` for global Skill installation commands that explicitly select the v3 branch and Skill directory.
+NocoBase 3 is maintained in `nocobase/nocobase` on `v3-develop`, with stable promotion to `v3-main`. The repository's default branch is `main`, which continues to maintain the v1/v2 line. See `skills/README.md` for global Skill installation commands using the lightweight `nocobase/skills-v3` distribution.
 
 Regular v3 development branches use `<type>/v3-<name>`, such as `feat/v3-app-installer` or `fix/v3-release-routing`. Quality, changeset, Docs and UI Library checks accept pull requests targeting these branches, with their existing path filters, so stacked pull requests receive the same checks as pull requests targeting `v3-develop` or `v3-main`; pushes continue to run these checks only on `v3-develop`, and the stable guard continues to run only for pull requests targeting `v3-main`. GitHub Actions expresses the stacked target as the glob `*/v3-*`; for a valid branch under this rule, with a non-empty type and name and no extra slash, that is equivalent to the bot and CI regular expression `/^[^/]+\/v3-[^/]+$/`.
 
@@ -39,3 +39,9 @@ The source workflows already target the new OSS repository and public npm. Repos
 ## Historical references
 
 Published `CHANGELOG.md` entries and consumed `.changeset/pre/` files retain links to the archived OSS repository as release history. Pro release-note conversion also accepts archived OSS links so those historical notes still point to their Pro source. These references and the independent Pro repository are intentional; current package metadata, installation commands, and usage links must point to `nocobase/nocobase` and select a v3 branch where needed.
+
+## Skills distribution synchronization
+
+`v3-skills-sync.yml` on `v3-develop` reacts to `skills/**` pushes and manual dispatch. It uses the existing NocoBase GitHub App to send `skills-updated` to `nocobase/skills-v3`, scoped to contents-write on that repository alone. The target's workflow reads the latest source skills subtree and commits changed content using its own token; it performs no scheduled polling. Confirm the App installation covers `skills-v3`, Actions permits contents writes there, and notification and target runs both succeed.
+
+The paired `main` entry has the same filename, exposes `workflow_dispatch` with no inputs and forwards to `v3-develop`. Merge the implementation before the default-branch entry; until both land, invoke the target's manual workflow for recovery. A source notification success means only that dispatch was accepted, so inspect the target run before treating synchronization as complete. Root Skills remain released by merge and must not describe npm features that have not shipped.
