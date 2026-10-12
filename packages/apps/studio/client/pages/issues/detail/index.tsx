@@ -2,25 +2,21 @@
  * Route `/issues/:issueId`: an issue's page, a covering child page over the issues list so the list keeps its filters
  * and scroll. The same page is declared under the other lists that open issues (`issueDetailRoute` in `routes.ts`): a
  * tab of `/my-issues` and a project's Issues tab; its trail and its links to other issues follow the list it is under
- * (`issues/detail/issue-parent.tsx`). The parameter is an id or an identifier (`/issues/PM-12`); the API answers either. The page is the
- * installed `issue-detail` block and its sibling items over the projects plugin's headless hooks
- * (`issues/detail/`), with Studio's own sections placed between the plugin's. The main column is two cards on the page's
- * background, as on Jira, Plane or GitHub. The first is the body: the title and the description, then every other part
- * as one `IssueSection` (heading row over content, a thin divider between), and a part with nothing to show takes no
- * room: the add bar under the description adds its first item. Files dropped or pasted on the body upload. The second
- * card is the activity, its composer pinned at the bottom; the side column is the properties' cards.
+ * (`issues/detail/issue-parent.tsx`). The parameter is an id or an identifier (`/issues/PM-12`); the API answers either.
+ * The page is the installed `issue-detail` block and its sibling items over the projects plugin's headless hooks
+ * (`issues/detail/`), with Studio's own sections placed between the plugin's, and the live summary, feed and composer it
+ * shares with "My follow-ups" (`issues/live/`). The main column, top to bottom:
  *
- * - the header's "Ask agent", and in its meta line Studio's marks (pull requests, deployments) and who is working now;
- * - "Now" under the header: what the issue waits for and the project manager's next step, with "Start" on a backlog
- *   issue (`issues/detail/issue-progress.tsx`), then an agent comment the comment run limit held back;
- * - "Waiting for you" above the description;
- * - the add bar (files, sub-issues, dependencies, and Studio's "Pull request");
- * - after the sub-issues, dependencies and files: the related plans, then Code and
- *   deployments (one row per pull request, unfolding into its previews and the environments it was deployed to);
- * - the agents' runs on the activity line. The side column keeps properties, followers, dates and execution history.
+ * - the summary, pinned while the page scrolls and folding to its title row (a phone starts folded): status, pull
+ *   request and checks, "Now" with "Start", what waits for the viewer, the delivery in review, and the follow star;
+ * - the body card: the header with "Ask agent" and Studio's marks, an agent comment the comment run limit held back,
+ *   "Waiting for you", the description, the add bar, sub-issues, dependencies, files, related plans, project setup,
+ *   then Code and deployments;
+ * - the activity card, newest first, conversation only by default, its composer pinned to the bottom edge.
  *
- * The page polls the issue and its runs even while idle, speeds up after an action, and reloads on run transitions.
- * Its child routes (`new-subtask`, the plugin's; a run's transcript at `runs/:runId`) render beside the covering page.
+ * The side column keeps properties, notifications, dates and execution history. The page polls the issue and its runs
+ * even while idle, speeds up after an action, and reloads on run transitions. Its child routes (`new-subtask`, the
+ * plugin's; a run's transcript at `runs/:runId`) render beside the covering page.
  */
 import { ApiClientError } from '@nocobase/app-client';
 import {
@@ -35,17 +31,18 @@ import {
   usePageContextSource,
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
-import { IN_PROGRESS_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { RouteChildPage } from '@/components/route-child-page';
 import { Button } from '@/components/ui/button';
+import { useMediaQuery } from '@/extensions/nocobase-agent-chat/use-media-query';
 import {
   ISSUE_SURFACE,
   IssueDetailLayout,
   IssueFileDrop,
+  IssueSurface,
 } from '@/extensions/nocobase-issue-detail/issue-detail';
 import { cn } from 'cn';
 
@@ -53,7 +50,6 @@ import { AskAgent } from '../../../agents/ask-agent.js';
 import { IssueLiveRun, IssueRunRow } from '../../../agents/issue-runs.js';
 import { IssueInitSection } from '../../../projects/init-card.js';
 import { IssueWaitingSection } from '../../../inbox/issue-waiting.js';
-import { IssueActivity } from '../../../issues/detail/issue-activity.js';
 import {
   IssueCodeAddButton,
   IssueCodeSection,
@@ -68,12 +64,17 @@ import {
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
 import { IssueCommentRunLimit } from '../../../issues/detail/comment-run-limit.js';
-import { IssueProgressLine } from '../../../issues/detail/issue-progress.js';
 import { IssuePlansSection } from '../../../issues/detail/issue-plans.js';
 import { IssueParentOutlet } from '../../../issues/detail/issue-parent-outlet.js';
 import { useIssueParent } from '../../../issues/detail/issue-parent.js';
 import { useIssuePageWording } from '../../../issues/detail/labels.js';
 import { IssueMarks } from '../../../issues/issue-marks.js';
+import { IssueConversation } from '../../../issues/live/conversation.js';
+import { useIssueConversation } from '../../../issues/live/conversation-state.js';
+import { FollowToggle } from '../../../issues/live/follow-toggle.js';
+import { IssueComposer } from '../../../issues/live/issue-composer.js';
+import { IssueFeed } from '../../../issues/live/issue-feed.js';
+import { IssueSummary } from '../../../issues/live/issue-summary.js';
 import { IssuePageAside } from './aside.js';
 import { useLiveIssue } from './use-live-issue.js';
 
@@ -151,6 +152,7 @@ function IssuePage({
     ...runs.map((run) => `${run.id}:${run.status}`),
   ].join('|');
   const main = useIssueMainState(pageActions);
+  const narrow = useMediaQuery('(max-width: 767px)');
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
   const linking = {
     linking: linkingPullRequest,
@@ -173,13 +175,21 @@ function IssuePage({
     <IssueDetailLayout
       asideLabel={wording.detail.properties}
       main={
-        <IssueActivity
-          detail={detail}
-          detailKey={detailKey}
-          runs={runs}
-          renderRun={(runId) => <IssueRunRow issue={detail} runId={runId} />}
-          kindLabels={kindLabels}
-        >
+        <IssueConversation detail={detail} detailKey={detailKey}>
+          {/* Pinned while the page scrolls; a phone starts with the title row alone. */}
+          <div
+            className='sticky top-0 z-20 max-h-[60vh] overflow-y-auto rounded-lg border bg-card/95 px-4 py-3 text-card-foreground backdrop-blur-md md:px-6'
+            data-testid='issue-summary-pin'
+          >
+            <IssueSummary
+              issue={detail}
+              update={update}
+              refresh={progressRefresh}
+              actions={<FollowToggle issueId={detail.id} />}
+              collapsible
+              defaultCollapsed={narrow}
+            />
+          </div>
           <IssueFileDrop
             {...(main.canUpload ? { onFiles: main.upload } : {})}
             className={cn(ISSUE_SURFACE, 'flex flex-col gap-6')}
@@ -197,12 +207,6 @@ function IssuePage({
                   </span>
                 </>
               }
-            />
-            <IssueProgressLine
-              issue={detail}
-              refresh={progressRefresh}
-              starting={update.isPending}
-              onStart={() => update.mutate({ statusKey: IN_PROGRESS_STATUS })}
             />
             <IssueCommentRunLimit
               issue={detail}
@@ -228,7 +232,18 @@ function IssuePage({
             <IssueInitSection issue={detail} />
             <IssueCodeSection issue={detail} {...linking} />
           </IssueFileDrop>
-        </IssueActivity>
+          <ActivityCard>
+            <IssueFeed
+              runs={runs}
+              renderRun={(runId) => (
+                <IssueRunRow issue={detail} runId={runId} />
+              )}
+              kindLabels={kindLabels}
+            />
+          </ActivityCard>
+          {/* The activity card's bottom edge, pinned while the page scrolls. */}
+          <IssueComposer className='sticky bottom-0 z-10 -mt-4 rounded-b-lg border bg-card/95 px-4 py-3 text-card-foreground backdrop-blur-md md:-mt-6 md:px-6' />
+        </IssueConversation>
       }
       aside={
         <IssuePageAside
@@ -238,5 +253,23 @@ function IssuePage({
         />
       }
     />
+  );
+}
+
+/** The activity's card; its bottom edge is the composer's when the viewer may comment. */
+function ActivityCard({
+  children,
+}: {
+  readonly children: ReactNode;
+}): ReactElement {
+  const { mayComment } = useIssueConversation();
+  const { thread } = useIssuePageWording();
+  return (
+    <IssueSurface
+      className={cn(mayComment && 'rounded-b-none border-b-0')}
+      aria-label={thread.title}
+    >
+      {children}
+    </IssueSurface>
   );
 }

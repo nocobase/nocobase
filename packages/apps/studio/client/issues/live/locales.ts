@@ -1,0 +1,108 @@
+/**
+ * The wording of what the issue page and "My follow-ups" share (`client/issues/live/`), under `issueLive` in the
+ * application's locales.
+ */
+export const issueLiveEnUS = {
+  summary: {
+    label: 'Summary',
+    collapse: 'Collapse summary',
+    expand: 'Expand summary',
+    open: 'Open issue',
+    checks: {
+      success: 'Checks passed',
+      failure: 'Checks failed',
+      pending: 'Checks running',
+    },
+    conflict: 'Has conflicts',
+    needsYou: 'Needs you',
+    delivery: 'Delivery notes',
+    deliveryNone: 'No agent has said what was delivered yet.',
+    viewChanges: 'View changes',
+    sendBack: 'Send back',
+    sendBackHint: 'Move it back to In progress so the work continues.',
+  },
+  ask: {
+    acceptPullRequest: 'Accept: {{label}}',
+    acceptIssue: 'Accept the result',
+    answer: 'Answer: {{question}}',
+    answerNoQuestion: 'Answer the project manager',
+  },
+  feed: {
+    modes: 'What to show',
+    conversation: 'Conversation only',
+    all: 'All',
+    systemRecords_one: '{{count}} system record',
+    systemRecords_other: '{{count}} system records',
+    more: 'Show more',
+    less: 'Show less',
+    handOver: 'Hand-over',
+    approved: 'Review: approved',
+    changesRequested: 'Review: changes requested',
+  },
+  follow: {
+    follow: 'Follow',
+    following: 'Following · {{count}}/{{max}}',
+    unfollow: 'Stop following',
+    full: 'Following {{max}} already',
+    fullHint:
+      'You follow {{max}} issues already. Stop following one to add another.',
+    saveFailed: 'Could not save what you follow.',
+  },
+  notifications: {
+    title: 'Notifications',
+    subscribe: 'Subscribe',
+    unsubscribe: 'Unsubscribe',
+  },
+};
+
+export const issueLiveZhCN: typeof issueLiveEnUS = {
+  summary: {
+    label: '摘要',
+    collapse: '收起摘要',
+    expand: '展开摘要',
+    open: '打开任务',
+    checks: {
+      success: '检查通过',
+      failure: '检查失败',
+      pending: '检查进行中',
+    },
+    conflict: '有冲突',
+    needsYou: '需要你',
+    delivery: '交付说明',
+    deliveryNone: '还没有智能体说明交付了什么。',
+    viewChanges: '看改动',
+    sendBack: '退回修改',
+    sendBackHint: '移回进行中，让工作继续。',
+  },
+  ask: {
+    acceptPullRequest: '验收：{{label}}',
+    acceptIssue: '验收结果',
+    answer: '回答：{{question}}',
+    answerNoQuestion: '回答项目经理的问题',
+  },
+  feed: {
+    modes: '显示内容',
+    conversation: '只看对话',
+    all: '全部',
+    systemRecords_one: '{{count}} 条系统记录',
+    systemRecords_other: '{{count}} 条系统记录',
+    more: '展开全文',
+    less: '收起',
+    handOver: '交接',
+    approved: '评审：通过',
+    changesRequested: '评审：需要修改',
+  },
+  follow: {
+    follow: '关注',
+    following: '已关注 · {{count}}/{{max}}',
+    unfollow: '取消关注',
+    full: '关注已满 {{max}} 个',
+    fullHint: '你已经关注了 {{max}} 个任务。先取消关注一个，再关注新的。',
+    saveFailed: '没能保存关注的任务。',
+  },
+  notifications: {
+    title: '订阅通知',
+    subscribe: '订阅',
+    unsubscribe: '取消订阅',
+  },
+};
