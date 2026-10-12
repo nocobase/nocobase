@@ -97,9 +97,7 @@ Tell the user:
 - Where to continue. The application's `AGENTS.md` and Skills appeared after this session started. Some agents pick them up without a restart; others load them only when a session starts. Check which case applies instead of assuming:
   - **They are loaded here** (for example, the application's `nocobase-app-development` Skill is among your available Skills, and the application directory is this session's working directory): tell the user they can continue in this session. No new session is needed.
   - **They are not loaded here**: tell the user to start a new agent session in the application directory, and say exactly how. When the application is in this session's directory, they only need to end this session and start a new one in the same directory. Otherwise, give the full path and the command that starts your own agent there, for example `cd /work/my-app && claude` for Claude Code. In a desktop client, they open that directory as the project and start a new session there.
-- What to ask for next, in this session or the new one:
-  - A small first feature, for example: "Read the project's AGENTS.md first, then add an order list where signed-in users can create and edit orders, saved to the application database."
-  - The step-by-step guide: https://github.com/nocobase/nocobase/blob/v3-develop/docs/docs/en/get-started/first-feature.md
+- The running application's homepage already includes guidance for developing with an Agent. Point the user there for next steps instead of adding a separate first-feature guide link.
 - Going to production later: the application's own `nocobase-deployment` Skill builds its deployment archive, and the global `nocobase-app-installer` Skill installs it on the machine that runs it. One line; do not start it now.
 
 Keep this handover short: one line per point, commands and paths in code formatting, and only the case that applies to this user.
