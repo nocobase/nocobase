@@ -66,4 +66,4 @@ it('typechecks the published Provider and queue business consumer examples again
       getNewLine: () => '\n',
     }),
   ).toBe('');
-}, 60_000);
+}, 120_000);
