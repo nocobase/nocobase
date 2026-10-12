@@ -11,7 +11,7 @@ import {
 import { createAppTest } from '@nocobase/app-testing/server';
 import { databaseManagerToken } from '@nocobase/db';
 import { expect, vi } from 'vitest';
-import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
+import { sendingServiceToken } from '@nocobase/app-server/sending';
 import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
 
 import {
@@ -345,6 +345,7 @@ test('lets project leads deliver invitations without email while preserving proj
         email,
         outcome: 'invited',
         emailSent,
+        sendStatus: emailSent ? 'sent' : 'failed',
         inviteUrl: expect.stringContaining('/invite/'),
       },
     ]);
@@ -363,6 +364,7 @@ test('lets project leads deliver invitations without email while preserving proj
       email,
       outcome: 'invited',
       emailSent,
+      sendStatus: emailSent ? 'sent' : 'failed',
       inviteUrl: expect.stringContaining('/invite/'),
     });
     const copy = await lead.fetch(
@@ -583,13 +585,12 @@ for (const action of ['revoke', 'rotate'] as const) {
       { length: 7 },
       (_, index) => `${action}-batch-${index}@example.test`,
     );
-    const notification = testApp.application.container.resolve(
-      notificationServiceToken,
-    );
-    const send = notification.sendTransient.bind(notification);
+    const notification =
+      testApp.application.container.resolve(sendingServiceToken);
+    const send = notification.send.bind(notification);
     const release = Promise.withResolvers<void>();
     const blocked = vi
-      .spyOn(notification, 'sendTransient')
+      .spyOn(notification, 'send')
       .mockImplementation(async (input) => {
         await release.promise;
         return send(input);
@@ -636,11 +637,17 @@ for (const action of ['revoke', 'rotate'] as const) {
     expect(results).toEqual([
       ...emails.map((email, index) =>
         index === 5
-          ? { email, outcome: 'invited', emailSent: false }
+          ? {
+              email,
+              outcome: 'invited',
+              emailSent: false,
+              sendStatus: 'skipped',
+            }
           : {
               email,
               outcome: 'invited',
               emailSent: true,
+              sendStatus: 'sent',
               inviteUrl: expect.stringContaining('/main/invite/'),
             },
       ),
@@ -676,6 +683,7 @@ test('retains safe delivery diagnostics without storing provider messages or inv
     );
     expect(result.results[0]).toMatchObject({
       emailSent: false,
+      sendStatus: 'unknown',
       inviteUrl: expect.any(String),
     });
     const database =
@@ -684,9 +692,7 @@ test('retains safe delivery diagnostics without storing provider messages or inv
       .connection()
       .repository('userInvitations')
       .findOne({ filter: { email } });
-    expect(record?.sendError).toBe(
-      `Invitation email submission_unknown (${category}).`,
-    );
+    expect(record?.sendError).toBe('INVITATION_SEND_UNKNOWN');
     expect(JSON.stringify(record)).not.toContain(
       'private invitation credential',
     );

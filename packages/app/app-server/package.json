@@ -97,6 +97,10 @@
     "./secrets": {
       "types": "./src/secrets/index.ts",
       "import": "./src/secrets/index.ts"
+    },
+    "./sending": {
+      "types": "./src/sending/index.ts",
+      "import": "./src/sending/index.ts"
     }
   },
   "files": [
@@ -191,6 +195,10 @@
       "./secrets": {
         "types": "./dist/secrets/index.d.ts",
         "import": "./dist/secrets/index.js"
+      },
+      "./sending": {
+        "types": "./dist/sending/index.d.ts",
+        "import": "./dist/sending/index.js"
       }
     },
     "access": "public"
@@ -222,7 +230,8 @@
     "@standard-schema/spec": "^1.0.0",
     "hono-openapi": "catalog:",
     "zod": "catalog:",
-    "openapi-types": "^12.1.3"
+    "openapi-types": "^12.1.3",
+    "@nocobase/sending": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/db-mysql": "workspace:*",

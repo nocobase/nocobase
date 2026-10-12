@@ -1,15 +1,15 @@
 import type {
-  NotificationProvider,
-  NotificationProviderContext,
-  NotificationProviderSendInput,
-} from '@nocobase/app-plugin-notification';
+  SendingProvider,
+  SendingProviderContext,
+  SendingProviderSendInput,
+} from '../src/index.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createSmtpProviderDefinition,
   defineSmtpProviderConfig,
-} from '../server/email/providers/smtp.js';
-import type { PreparedEmailMessage } from '../server/email/types.js';
+} from '../src/email/providers/smtp.js';
+import type { PreparedEmailMessage } from '../src/email/types.js';
 
 const smtpMock = vi.hoisted(() => ({
   close: vi.fn(),
@@ -222,7 +222,7 @@ describe('SMTP Provider', () => {
 });
 
 async function createProvider(): Promise<
-  NotificationProvider<PreparedEmailMessage>
+  SendingProvider<PreparedEmailMessage>
 > {
   return createSmtpProviderDefinition().createProvider(
     providerContext(),
@@ -235,16 +235,16 @@ async function createProvider(): Promise<
   );
 }
 
-function providerContext(): NotificationProviderContext {
+function providerContext(): SendingProviderContext {
   return {
-    logger: {} as NotificationProviderContext['logger'],
+    logger: {} as SendingProviderContext['logger'],
     async now(): Promise<string> {
       return '2026-08-26T00:00:00.000Z';
     },
   };
 }
 
-function sendInput(): NotificationProviderSendInput<PreparedEmailMessage> {
+function sendInput(): SendingProviderSendInput<PreparedEmailMessage> {
   return {
     notificationId: 'notification-1',
     deliveryId: 'delivery-1',

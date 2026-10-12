@@ -1,57 +1,35 @@
-/**
- * Invitation emails through the notification plugin, on the channel `users.invitations.emailChannel` names
- * (`system-email` by default). A missing or disabled channel, or a delivery the plugin reports as failed, is an error,
- * while domain-authorized inviters can still share the invitation link. Accepting a link does not verify the email address.
- */
-import {
-  NotificationTransportUnavailableError,
-  notificationServiceToken,
-  type NotificationConfig,
-} from '@nocobase/app-plugin-notification/server';
+/** Compatibility name for the invitation mailer, now independent of notification. */
+import { sendingServiceToken } from '@nocobase/app-server/sending';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-
 import type { UsersConfig } from '../tokens.js';
-import { unconfiguredMailer, type InvitationMailer } from './mail.js';
-
-const DEFAULT_CHANNEL = 'system-email';
-
+import type { InvitationMailer } from './mail.js';
 export function createNotificationMailer(
   app: AppPluginApplication,
 ): InvitationMailer {
-  const name =
-    app.config.get<UsersConfig>('users')?.invitations?.emailChannel ??
-    DEFAULT_CHANNEL;
-  const channel =
-    app.config.get<NotificationConfig>('notification')?.channels[name];
-  if (
-    !channel ||
-    channel.enabled === false ||
-    !app.container.has(notificationServiceToken)
-  )
-    return unconfiguredMailer;
   return {
-    async send(email) {
-      const results = await app.container
-        .resolve(notificationServiceToken)
-        .sendTransient({
-          channel: name,
-          message: {
-            to: email.to,
-            subject: email.subject,
-            text: email.text,
-            html: email.html,
-          },
-        })
-        .catch((error: unknown) => {
-          if (error instanceof NotificationTransportUnavailableError)
-            throw new Error('The invitation email channel is unavailable.');
-          throw new Error('The invitation email could not be submitted.');
+    async send(email, options) {
+      const channel =
+        app.config.get<UsersConfig>('users')?.invitations?.emailChannel ??
+        'system-email';
+      if (!app.container.has(sendingServiceToken)) return 'failed';
+      const sending = app.container.resolve(sendingServiceToken);
+      if (!sending.available(channel, 'email')) return 'failed';
+      try {
+        const results = await sending.send({
+          channel,
+          message: email,
+          deadline: options?.deadline,
+          deliveryId: options?.deliveryId,
         });
-      const failure = results.find((result) => result.status !== 'accepted');
-      if (failure)
-        throw new Error(
-          `Invitation email ${failure.status} (${failure.error.category ?? 'unknown'}).`,
-        );
+        if (results.some((result) => result.status === 'submission_unknown'))
+          return 'unknown';
+        return results.length &&
+          results.every((result) => result.status === 'accepted')
+          ? 'sent'
+          : 'failed';
+      } catch {
+        return 'failed';
+      }
     },
   };
 }

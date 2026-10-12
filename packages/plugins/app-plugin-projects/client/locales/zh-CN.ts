@@ -362,6 +362,9 @@ const pages = {
     toggle: '筛选',
   },
   invitations: {
+    sending: '发送中…',
+    unknown: '未确认是否发出',
+    checkResults: '请检查每个邀请的发送结果',
     actions: '操作',
     actionsFor: '发给 {{email}} 的邀请的操作',
     dialogDescription:
@@ -385,9 +388,10 @@ const pages = {
     noProjects: '没有项目',
     notSent: '邮件未发出',
     outcome: {
+      unknown: '未能确认邮件是否发出，如收件人未收到请复制链接转发',
       added: '已有账号，已加入项目',
       alreadyMember: '已是成员',
-      notSent: '邮件未发送',
+      notSent: '邮件未发出，请复制链接转发',
       sent: '邮件已发送',
     },
     pending: '等待接受',

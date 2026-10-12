@@ -43,6 +43,8 @@ const systemZhCN: SystemResource = {
   'auth.confirmPassword': '确认密码',
   'auth.existingAccount': '已有账户？',
   'auth.passwordMismatch': '两次输入的密码不一致。',
+  'auth.resetSuccess': '密码已重置，请用新密码登录',
+  'auth.requestAgain': '重新申请',
   'auth.resetting': '正在重置…',
   'auth.newPassword': '新密码',
   'auth.confirmNewPassword': '确认新密码',

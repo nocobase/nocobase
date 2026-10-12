@@ -14,6 +14,8 @@ export interface InvitationRecord {
   readonly invitedById: string;
   readonly expiresAt: string;
   readonly sentAt: string | null;
+  readonly sendStatus?: import('../tokens.js').InvitationSendStatus;
+  readonly sendClaim?: string | null;
   readonly sendError: string | null;
   readonly acceptedUserId: string | null;
   readonly acceptedAt: string | null;
@@ -65,12 +67,16 @@ export async function recordInvitationDelivery(
   connection: DatabaseConnection,
   row: InvitationRecord,
   error: string | null,
+  sendStatus: import('../tokens.js').InvitationSendStatus = error
+    ? 'failed'
+    : 'sent',
 ): Promise<void> {
   const now = new Date().toISOString();
   await invitations(connection).updateMany({
     filter: { id: row.id, status: 'pending', tokenHash: row.tokenHash },
     values: {
-      sentAt: error ? null : now,
+      sentAt: sendStatus === 'sent' ? now : null,
+      sendStatus,
       sendError: error?.slice(0, 1000) ?? null,
       updatedAt: now,
     },
@@ -95,4 +101,25 @@ export async function claimInvitation(
     },
   });
   return updatedCount > 0;
+}
+
+/** Durable claim scoped to the invitation token; a crash or unknown submission never triggers blind retry. */
+export async function claimInvitationSend(
+  connection: DatabaseConnection,
+  row: InvitationRecord,
+): Promise<boolean> {
+  const result = await invitations(connection).updateMany({
+    filter: {
+      id: row.id,
+      tokenHash: row.tokenHash,
+      status: 'pending',
+      sendClaim: null,
+    },
+    values: {
+      sendClaim: row.tokenHash,
+      sendStatus: 'unknown',
+      updatedAt: new Date().toISOString(),
+    },
+  });
+  return result.updatedCount === 1;
 }

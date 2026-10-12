@@ -200,9 +200,45 @@ export class AppConfig {
   }
 
   /** The values sections publish to the browser, nested under their section names. */
+  private readonly publicContributions = new Map<string, () => boolean>();
+
+  public contributePublicValue(
+    path: string,
+    compute: () => boolean,
+  ): () => void {
+    if (
+      !/^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)+$/.test(path) ||
+      this.publicContributions.has(path)
+    )
+      throw new Error('Invalid or duplicate public value contribution.');
+    this.publicContributions.set(path, compute);
+    return () => {
+      if (this.publicContributions.get(path) === compute)
+        this.publicContributions.delete(path);
+    };
+  }
+
   public publicValues(): ConfigMap {
-    if (this.sections.size === 0) return {};
-    return collectPublicConfig(this.requireCurrent().raw(), this.sections);
+    const result: { -readonly [K in keyof ConfigMap]: ConfigMap[K] } =
+      this.sections.size === 0
+        ? {}
+        : collectPublicConfig(this.requireCurrent().raw(), this.sections);
+    for (const [path, compute] of this.publicContributions) {
+      const parts = path.split('.');
+      let section: { -readonly [K in keyof ConfigMap]: ConfigMap[K] } = result;
+      for (const part of parts.slice(0, -1)) {
+        const value = section[part];
+        section[part] =
+          typeof value === 'object' && value !== null && !Array.isArray(value)
+            ? { ...value }
+            : {};
+        section = section[part] as {
+          -readonly [K in keyof ConfigMap]: ConfigMap[K];
+        };
+      }
+      section[parts.at(-1)!] = compute();
+    }
+    return result;
   }
 
   /** Every published path in full, such as `auth.emailAndPassword.disableSignUp`. */

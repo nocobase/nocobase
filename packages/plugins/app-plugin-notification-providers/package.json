@@ -70,15 +70,12 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format"
   },
-  "dependencies": {
-    "nodemailer": "^9.0.5",
-    "resend": "^6.22.1"
-  },
   "peerDependencies": {
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/i18n": "workspace:^",
-    "@nocobase/service-provider": "workspace:^"
+    "@nocobase/service-provider": "workspace:^",
+    "@nocobase/sending": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

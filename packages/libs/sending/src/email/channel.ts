@@ -1,0 +1,92 @@
+import { type SendingChannelDefinition } from '../types.js';
+
+import type {
+  EmailChannelConfig,
+  EmailMessage,
+  EmailRecipient,
+  PreparedEmailMessage,
+} from './types.js';
+
+export function createEmailChannelDefinition(): SendingChannelDefinition<
+  EmailChannelConfig,
+  EmailRecipient,
+  EmailMessage,
+  PreparedEmailMessage
+> {
+  return {
+    type: 'email',
+    async createChannel() {
+      return {
+        type: 'email',
+        validateMessage(value: unknown) {
+          if (!value || typeof value !== 'object' || Array.isArray(value))
+            throw new Error('Email message is required.');
+          for (const key of Object.keys(value)) {
+            if (
+              ![
+                'to',
+                'subject',
+                'text',
+                'html',
+                'from',
+                'replyTo',
+                'actionUrl',
+              ].includes(key)
+            )
+              throw new Error(`Unsupported Email message field "${key}".`);
+          }
+          const message = value as EmailMessage;
+          const addresses =
+            typeof message.to === 'string' ? [message.to] : message.to;
+          if (
+            !Array.isArray(addresses) ||
+            !addresses.length ||
+            addresses.some(
+              (address: unknown) =>
+                typeof address !== 'string' || !isEmail(address),
+            )
+          )
+            throw new Error('Email to must contain valid email addresses.');
+          if (
+            typeof message.subject !== 'string' ||
+            !message.subject.trim() ||
+            (message.text !== undefined && typeof message.text !== 'string') ||
+            (message.html !== undefined && typeof message.html !== 'string') ||
+            (!message.text?.trim() && !message.html?.trim())
+          )
+            throw new Error('Email subject and text or html are required.');
+          for (const key of ['from', 'replyTo'] as const)
+            if (
+              message[key] !== undefined &&
+              (typeof message[key] !== 'string' || !isEmail(message[key]))
+            )
+              throw new Error(`Email ${key} must be an email address.`);
+          return {
+            message: {
+              to: message.to,
+              subject: message.subject,
+              text: message.text,
+              html: message.html,
+              from: message.from,
+              replyTo: message.replyTo,
+            },
+            recipients: addresses.map((address: string) => ({ address })),
+          };
+        },
+        async prepare(input: {
+          readonly deliveryId: string;
+          readonly notificationId: string;
+          readonly recipient: EmailRecipient;
+          readonly message: EmailMessage;
+          readonly signal: AbortSignal;
+        }): Promise<PreparedEmailMessage> {
+          return { to: input.recipient.address, content: input.message };
+        },
+      };
+    },
+  };
+}
+
+function isEmail(value: string): boolean {
+  return value.length <= 320 && /^[^\s@]+@[^\s@]+$/.test(value);
+}

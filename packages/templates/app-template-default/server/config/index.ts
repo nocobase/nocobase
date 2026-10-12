@@ -4,6 +4,7 @@ import {
 } from '@nocobase/app-server/config';
 import auth from './auth.js';
 import authorization from './authorization.js';
+import sending from './sending.js';
 import notification from './notification.js';
 import mail from './mail.js';
 import secrets from './secrets.js';
@@ -26,6 +27,7 @@ import users from './users.js';
 const defaultConfigs: AppConfigFactory<{
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
+  sending: ReturnType<typeof sending>;
   notification: ReturnType<typeof notification>;
   mail: ReturnType<typeof mail>;
   secrets: ReturnType<typeof secrets>;
@@ -48,6 +50,7 @@ const defaultConfigs: AppConfigFactory<{
   auth,
   authorization,
   notification,
+  sending,
   mail,
   secrets,
   session,

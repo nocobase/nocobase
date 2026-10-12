@@ -152,7 +152,7 @@ it('reports failed delivery without offering a missing link for another inviter'
   await waitFor(() =>
     expect(toasts).toContainEqual({
       type: 'warning',
-      title: 'invitations.outcome.notSent',
+      title: 'invitations.outcome.unknown',
     }),
   );
   expect(screen.queryByRole('dialog')).toBeNull();
@@ -193,4 +193,101 @@ it('explains when a concurrently changed invitation has no link to copy', async 
     }),
   );
   expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('shows progress on the sending row until the request returns', async () => {
+  const gate = Promise.withResolvers<unknown>();
+  api.routes['projects/invitations/i1/resend?sendEmail=true'] = () =>
+    gate.promise;
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <InvitationsSection />
+    </QueryClientProvider>,
+  );
+  await userEvent.click(
+    await screen.findByRole('button', {
+      name: 'invitations.actionsFor(email=ann@example.com)',
+    }),
+  );
+  await userEvent.click(
+    await screen.findByRole('menuitem', { name: 'invitations.resend' }),
+  );
+  expect(await screen.findByText('invitations.sending')).toBeVisible();
+  await act(async () =>
+    gate.resolve({
+      data: {
+        email: invitation.email,
+        outcome: 'invited',
+        emailSent: false,
+        sendStatus: 'unknown',
+        inviteUrl: 'https://example.test/invite/token',
+      },
+    }),
+  );
+  expect(
+    await screen.findByRole('button', { name: 'invitations.copyLink' }),
+  ).toBeVisible();
+  expect(screen.queryByText('invitations.sending')).toBeNull();
+});
+
+it('holds the invite dialog open during submission and displays an unknown result with its link', async () => {
+  const { InviteDialog } =
+    await import('../../client/pages/config/members/invite-dialog.js');
+  const gate = Promise.withResolvers<unknown>();
+  api.routes['projects/invitations'] = () => gate.promise;
+  const onClose = vi.fn();
+  const user = userEvent.setup();
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <InviteDialog
+        open
+        projects={[]}
+        requireProject={false}
+        onClose={onClose}
+      />
+    </QueryClientProvider>,
+  );
+  await user.type(
+    screen.getByLabelText('invitations.emails'),
+    'new@example.test',
+  );
+  await user.click(screen.getByRole('button', { name: 'invitations.send' }));
+  expect(
+    await screen.findByRole('button', { name: /invitations.sending/ }),
+  ).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'actions.cancel' })).toBeDisabled();
+  await user.keyboard('{Escape}');
+  expect(onClose).not.toHaveBeenCalled();
+  const close = screen.queryByRole('button', { name: 'Close' });
+  if (close) await user.click(close);
+  expect(onClose).not.toHaveBeenCalled();
+  await act(async () =>
+    gate.resolve({
+      data: {
+        results: [
+          {
+            email: 'new@example.test',
+            outcome: 'invited',
+            emailSent: false,
+            sendStatus: 'unknown',
+            inviteUrl: 'https://example.test/invite/token',
+          },
+        ],
+      },
+    }),
+  );
+  expect(await screen.findByText('invitations.outcome.unknown')).toBeVisible();
+  expect(
+    screen.getByRole('button', { name: 'invitations.copyLink' }),
+  ).toBeVisible();
+  expect(toasts).toContainEqual({
+    type: 'warning',
+    title: 'invitations.checkResults',
+  });
 });

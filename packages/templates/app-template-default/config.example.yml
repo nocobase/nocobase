@@ -63,19 +63,7 @@ notification:
 
     # Uncomment and configure independent email Channels.
     # Values are read as written: ${NAME} is not expanded. To take a secret from the environment instead, map a
-    # variable onto its path in env of server/config/notification.ts, such as SMTP_PASSWORD.
-    # system-email:
-    #   provider: smtp
-    #   host: smtp.example.com
-    #   port: 587
-    #   auth:
-    #     user: notifications@example.com
-    #     pass: replace-with-the-smtp-password
-    #   from: notifications@example.com
-    # marketing-email:
-    #   provider: resend
-    #   apiKey: replace-with-the-resend-api-key
-    #   from: marketing@example.com
+    # variable onto its path in env of server/config/sending.ts, such as SMTP_PASSWORD.
 
     # ops-feishu:
     #   provider: feishu-webhook
@@ -159,3 +147,19 @@ logging:
     enabled: true
     # Set true for human-readable terminal output.
     pretty: false
+
+# External transports are shared by authentication, invitations and notifications.
+sending:
+  channels:
+    # system-email:
+    #   provider: smtp
+    #   host: smtp.example.com
+    #   port: 587
+    #   auth:
+    #     user: notifications@example.com
+    #     pass: replace-with-the-smtp-password
+    #   from: notifications@example.com
+    # marketing-email:
+    #   provider: resend
+    #   apiKey: replace-with-the-resend-api-key
+    #   from: marketing@example.com

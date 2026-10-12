@@ -1,3 +1,7 @@
+import {
+  sendingServiceToken,
+  sendingExtensionRegistryToken,
+} from '@nocobase/app-server/sending';
 import { databaseManagerToken } from '@nocobase/db';
 import {
   authorizationToken,
@@ -45,7 +49,11 @@ export class NotificationProvider<
     if (!this.app.container.has(loggingToken))
       throw new Error('Notification core requires the logging dependency.');
     const jobsConfiguration = this.jobsConfiguration();
-    const registry = createNotificationRegistry();
+    const registry = createNotificationRegistry(
+      this.app.container.has(sendingExtensionRegistryToken)
+        ? this.app.container.resolve(sendingExtensionRegistryToken)
+        : undefined,
+    );
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
       createNotificationManager<NotificationChannelMap>({
@@ -59,7 +67,19 @@ export class NotificationProvider<
           .child({
             module: 'notification',
           }),
-        config: this.app.config.get<NotificationConfig>('notification')!,
+        config: {
+          ...this.app.config.get<NotificationConfig>('notification')!,
+          channels: {
+            ...this.app.config.get<NotificationConfig>('notification')
+              ?.channels,
+            ...(container.has(sendingServiceToken)
+              ? container.resolve(sendingServiceToken).config().channels
+              : {}),
+          },
+        },
+        ...(container.has(sendingServiceToken)
+          ? { sending: container.resolve(sendingServiceToken) }
+          : {}),
         registry,
       }),
     );

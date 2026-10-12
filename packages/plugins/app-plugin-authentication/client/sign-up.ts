@@ -4,6 +4,7 @@ declare module '@nocobase/app-client' {
   /** The `auth` fields `defineAuthConfig` publishes; keep in step with `AUTH_PUBLIC_PATHS` on the server. */
   interface PublicAppConfig {
     auth: {
+      passwordReset?: { available?: boolean };
       emailAndPassword?: { enabled?: boolean; disableSignUp?: boolean };
     };
   }
@@ -26,4 +27,12 @@ export function useSignUpAvailable(): boolean {
     ? config.get('auth.emailAndPassword.disableSignUp')
     : undefined;
   return enabled !== false && disableSignUp !== true;
+}
+
+export function usePasswordResetAvailable(): boolean {
+  const config = useClientApplication().config.public;
+  return (
+    config.has('auth.passwordReset.available') &&
+    config.get('auth.passwordReset.available') === true
+  );
 }

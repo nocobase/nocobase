@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { createAuthMiddleware } from 'better-auth/api';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   APIError,
@@ -160,6 +162,9 @@ export class Auth {
       ? config.plugins
       : [username({ displayUsername: false }), ...(config.plugins ?? [])];
     const configuredSessionCreate = config.databaseHooks?.session?.create;
+    const resetUserIds = new WeakMap<object, string>();
+    const throttledResetRequests = new WeakSet<Request>();
+    const configuredAccountUpdate = config.databaseHooks?.account?.update;
     const configuredAccountCreate = config.databaseHooks?.account?.create;
     const configuredSendResetPassword =
       config.emailAndPassword?.sendResetPassword;
@@ -200,11 +205,69 @@ export class Auth {
         ...(configuredSendResetPassword
           ? {
               sendResetPassword: async (data, request) => {
-                if (isServiceAccount(data.user)) return;
+                if (request && throttledResetRequests.has(request)) return;
+                const user = await connection.query
+                  .selectFrom('user')
+                  .select(['id', 'kind', 'disabledAt', 'deletedAt'])
+                  .where('id', '=', data.user.id)
+                  .executeTakeFirst();
+                if (
+                  !user ||
+                  isServiceAccount(user) ||
+                  user.disabledAt != null ||
+                  user.deletedAt != null
+                )
+                  return;
                 await configuredSendResetPassword(data, request);
               },
             }
           : {}),
+      },
+      hooks: {
+        ...config.hooks,
+        before: createAuthMiddleware(async (context) => {
+          const body = context.body as Record<string, unknown> | undefined;
+          if (
+            context.path === '/request-password-reset' &&
+            typeof body?.email === 'string' &&
+            config.secondaryStorage?.increment
+          ) {
+            const key =
+              'reset-email:' +
+              createHash('sha256')
+                .update(body.email.trim().toLowerCase())
+                .digest('hex');
+            const count = await config.secondaryStorage.increment(key, 60);
+            if (count > 1 && context.request)
+              throttledResetRequests.add(context.request);
+          }
+          if (context.path === '/reset-password') {
+            const token: unknown = body?.token ?? context.query?.token;
+            const verification =
+              typeof token === 'string'
+                ? await context.context.internalAdapter.findVerificationValue(
+                    `reset-password:${token}`,
+                  )
+                : undefined;
+            if (verification) {
+              resetUserIds.set(context.context, verification.value);
+              const user = await context.context.internalAdapter.findUserById(
+                verification.value,
+              );
+              if (
+                !user ||
+                isServiceAccount(user) ||
+                Reflect.get(user, 'disabledAt') != null ||
+                Reflect.get(user, 'deletedAt') != null
+              )
+                throw APIError.from('BAD_REQUEST', {
+                  code: 'INVALID_TOKEN',
+                  message: 'Invalid token.',
+                });
+            }
+          }
+          return config.hooks?.before?.(context);
+        }),
       },
       user: {
         ...config.user,
@@ -230,6 +293,30 @@ export class Auth {
         ...config.databaseHooks,
         account: {
           ...config.databaseHooks?.account,
+          update: {
+            ...configuredAccountUpdate,
+            before: async (account, context) => {
+              if (
+                account.password !== undefined &&
+                context?.path === '/reset-password'
+              ) {
+                const user = await context.context.internalAdapter.findUserById(
+                  account.userId ?? resetUserIds.get(context.context) ?? '',
+                );
+                if (
+                  !user ||
+                  isServiceAccount(user) ||
+                  Reflect.get(user, 'disabledAt') != null ||
+                  Reflect.get(user, 'deletedAt') != null
+                )
+                  throw APIError.from('BAD_REQUEST', {
+                    code: 'INVALID_TOKEN',
+                    message: 'Invalid token.',
+                  });
+              }
+              return configuredAccountUpdate?.before?.(account, context);
+            },
+          },
           create: {
             ...configuredAccountCreate,
             // No password and no linked provider for a service account: a reset link or a social sign-in that got

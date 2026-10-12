@@ -15,6 +15,7 @@ import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 
 import {
   UserManagementError,
+  type InvitationSendStatus,
   type AcceptedUserInvitation,
   type UserInvitation,
   type UserInvitationAcceptedHandler,
@@ -34,6 +35,7 @@ import {
 } from './rules.js';
 import {
   claimInvitation,
+  claimInvitationSend,
   recordInvitationDelivery,
   findInvitation,
   insertInvitation,
@@ -76,7 +78,7 @@ export type InvitationManager = Pick<
 >;
 
 const DELIVERY_CONCURRENCY = 5;
-const DELIVERY_BUDGET_MS = 30_000;
+const DELIVERY_BUDGET_MS = 20_000;
 
 /** A link to deliver once the rows have committed. */
 interface Outgoing {
@@ -125,15 +127,25 @@ export function createInvitationManager(
     row: InvitationRecord,
     url: string,
     deadline: number,
-  ): Promise<boolean> {
-    let error: string | null = null;
+  ): Promise<InvitationSendStatus> {
+    let status: InvitationSendStatus = 'unknown';
+    let error: string | null;
+    if (!(await claimInvitationSend(database.connection(), row)))
+      return 'unknown';
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const inviterName = await nameOf(row.invitedById);
       const remaining = deadline - Date.now();
-      if (remaining <= 0)
-        throw new Error('Invitation email delivery budget exhausted.');
-      await Promise.race([
+      if (remaining <= 0) {
+        await recordInvitationDelivery(
+          database.connection(),
+          row,
+          'INVITATION_SEND_SKIPPED',
+          'skipped',
+        );
+        return 'skipped';
+      }
+      const result = await Promise.race([
         options.mailer.send(
           buildInvitationEmail({
             to: row.email,
@@ -143,6 +155,7 @@ export function createInvitationManager(
             url,
             expiresAt: new Date(row.expiresAt),
           }),
+          { deadline, deliveryId: `invitation:${row.tokenHash}` },
         ),
         new Promise<never>((_, reject) => {
           timeout = setTimeout(
@@ -156,13 +169,16 @@ export function createInvitationManager(
           );
         }),
       ]);
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
+      status = result ?? 'sent';
+      error =
+        status === 'sent' ? null : `INVITATION_SEND_${status.toUpperCase()}`;
+    } catch {
+      error = 'INVITATION_SEND_UNKNOWN';
     } finally {
       if (timeout) clearTimeout(timeout);
     }
-    await recordInvitationDelivery(database.connection(), row, error);
-    return error === null;
+    await recordInvitationDelivery(database.connection(), row, error, status);
+    return status;
   }
 
   /** Submits each email after the rows committed and records the outcome on the row. */
@@ -177,7 +193,7 @@ export function createInvitationManager(
     const pending = outgoing.entries();
     async function sendNext(): Promise<void> {
       for (const [index, { row, token }] of pending) {
-        let emailSent = false;
+        let sendStatus: InvitationSendStatus = 'skipped';
         // Check before sending and again afterwards so concurrent closure or rotation never returns a stale link.
         const before = await findInvitation(database.connection(), {
           id: row.id,
@@ -188,7 +204,7 @@ export function createInvitationManager(
           before?.tokenHash === row.tokenHash &&
           statusOf(before) === 'pending'
         )
-          emailSent = await sendInvitation(
+          sendStatus = await sendInvitation(
             row,
             `${base}/invite/${token}`,
             deadline,
@@ -203,7 +219,8 @@ export function createInvitationManager(
           email: row.email,
           outcome: 'invited',
           invitationId: row.id,
-          emailSent: isOpen && emailSent,
+          emailSent: isOpen && sendStatus === 'sent',
+          sendStatus: isOpen ? sendStatus : 'skipped',
           ...(isOpen ? { inviteUrl: `${base}/invite/${token}` } : {}),
         };
       }
@@ -238,6 +255,7 @@ export function createInvitationManager(
       summary: row.summary,
       expiresAt: row.expiresAt,
       sentAt: row.sentAt,
+      sendStatus: row.sendStatus ?? (row.sentAt ? 'sent' : 'unknown'),
       createdAt: row.createdAt,
     }));
   }
@@ -271,6 +289,8 @@ export function createInvitationManager(
               now.getTime() + INVITATION_TTL_MS,
             ).toISOString(),
             sentAt: null,
+            sendClaim: null,
+            sendStatus: 'skipped',
             sendError: null,
             acceptedUserId: null,
             acceptedAt: null,
@@ -322,6 +342,8 @@ export function createInvitationManager(
           tokenHash: hash,
           expiresAt,
           sentAt: null,
+          sendClaim: null,
+          sendStatus: 'skipped',
           sendError: null,
         });
         return { row: { ...row, tokenHash: hash, expiresAt }, token };

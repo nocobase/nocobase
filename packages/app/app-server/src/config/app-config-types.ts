@@ -39,6 +39,7 @@ export interface AppConfigAccessor {
   validate?(): Promise<readonly ConfigIssue[]>;
   /** Values the sections publish to the browser; an accessor without declared rules may omit it. */
   publicValues?(): ConfigMap;
+  contributePublicValue?(path: string, compute: () => boolean): () => void;
   /** Every published path in full, such as `auth.emailAndPassword.disableSignUp`. */
   publicPaths?(): readonly string[];
   subscribe<TValue>(

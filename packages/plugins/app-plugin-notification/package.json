@@ -106,7 +106,8 @@
     "@nocobase/service-provider": "workspace:^",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@nocobase/sending": "workspace:^"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",

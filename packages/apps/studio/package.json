@@ -222,7 +222,8 @@
     "better-auth": "catalog:",
     "hono": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/sending": "workspace:^"
   },
   "scripts": {
     "postinstall": "nocobase skills sync",

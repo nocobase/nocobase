@@ -170,6 +170,9 @@ const enUS = {
   'auth.email': 'Email',
   'auth.confirmPassword': 'Confirm password',
   'auth.existingAccount': 'Already have an account?',
+  'auth.resetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestAgain': 'Request another link',
   'auth.resetting': 'Resetting…',
   'auth.newPassword': 'New password',
   'auth.confirmNewPassword': 'Confirm new password',

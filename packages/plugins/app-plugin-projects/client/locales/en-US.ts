@@ -379,6 +379,9 @@ const pages = {
     toggle: 'Filters',
   },
   invitations: {
+    sending: 'Sending…',
+    unknown: 'Submission unconfirmed',
+    checkResults: 'Check each invitation result before sharing links.',
     actions: 'Actions',
     actionsFor: 'Actions for invitation to {{email}}',
     dialogDescription:
@@ -404,9 +407,11 @@ const pages = {
     noProjects: 'No projects',
     notSent: 'Email not sent',
     outcome: {
+      unknown:
+        'Could not confirm whether the email was sent. If the recipient has not received it, copy and share the link.',
       added: 'Has an account — added to the projects',
       alreadyMember: 'Already a member',
-      notSent: 'Email not sent',
+      notSent: 'Email not sent. Copy and share the link.',
       sent: 'Email sent',
     },
     pending: 'Waiting',

@@ -15,7 +15,11 @@ const authHandler = vi.hoisted(() =>
 );
 const getSession = vi.hoisted(() => vi.fn());
 const createAuthentication = vi.hoisted(() =>
-  vi.fn(() => ({ handler: authHandler, getSession })),
+  vi.fn(() => ({
+    handler: authHandler,
+    getSession,
+    passwordResetAvailable: () => false,
+  })),
 );
 
 vi.mock('../../auth.js', async (importOriginal) => {

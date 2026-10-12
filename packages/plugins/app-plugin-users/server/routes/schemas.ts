@@ -270,6 +270,7 @@ export const UserInvitationSchema: z.ZodType<UserInvitation> = z
         'Shown to the invitee, for example the names of the projects they join.',
     }),
     expiresAt: dateTime(),
+    sendStatus: z.enum(['sent', 'failed', 'unknown', 'skipped']).optional(),
     sentAt: dateTime().nullable().meta({
       description: 'The last successful send; `null` when sending failed.',
     }),
@@ -296,6 +297,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       outcome: z.literal('invited'),
       invitationId: z.string(),
       emailSent: z.boolean(),
+      sendStatus: z.enum(['sent', 'failed', 'unknown', 'skipped']).optional(),
       inviteUrl: z.string().optional().meta({
         description:
           'Shareable invitation link, returned regardless of email delivery. Resends require the original inviter and empty plugin data.',

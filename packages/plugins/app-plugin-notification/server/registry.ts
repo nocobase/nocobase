@@ -6,6 +6,8 @@ import type {
   NotificationTestTargetDescriptor,
 } from './types.js';
 
+import type { SendingRegistry } from '@nocobase/sending';
+
 /** Collects definitions without creating runtime resources. */
 export class NotificationRegistry implements NotificationExtensionRegistry {
   private readonly channelDefinitions = new Map<
@@ -17,12 +19,21 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
     NotificationProviderDefinition
   >();
 
+  constructor(
+    private readonly sending: SendingRegistry | undefined = undefined,
+  ) {}
+
   registerChannel(definition: NotificationChannelDefinition): this {
     if (this.channelDefinitions.has(definition.type))
       throw new Error(
         `Notification message type "${definition.type}" is already registered.`,
       );
     this.channelDefinitions.set(definition.type, definition);
+    if (
+      ['email', 'im'].includes(definition.type) &&
+      !this.sending?.channel(definition.type)
+    )
+      this.sending?.registerChannel(definition);
     return this;
   }
 
@@ -40,6 +51,11 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
         `Notification Provider "${definition.type}" is already registered.`,
       );
     this.providerDefinitions.set(definition.type, definition);
+    if (
+      ['email', 'im'].includes(definition.messageType) &&
+      !this.sending?.provider(definition.type)
+    )
+      this.sending?.registerProvider(definition);
     return this;
   }
 
@@ -147,6 +163,8 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
   }
 }
 
-export function createNotificationRegistry(): NotificationRegistry {
-  return new NotificationRegistry();
+export function createNotificationRegistry(
+  sending?: SendingRegistry,
+): NotificationRegistry {
+  return new NotificationRegistry(sending);
 }

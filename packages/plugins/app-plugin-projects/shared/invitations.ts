@@ -17,6 +17,7 @@ export interface Invitation {
   readonly expiresAt: string;
   /** The last successful send; null when sending failed. */
   readonly sentAt: string | null;
+  readonly sendStatus?: 'sent' | 'failed' | 'unknown' | 'skipped';
   readonly createdAt: string;
 }
 
@@ -41,6 +42,7 @@ export interface InvitationResult {
   readonly outcome: InvitationOutcome;
   /** On `invited`: whether the email went out. */
   readonly emailSent?: boolean;
+  readonly sendStatus?: 'sent' | 'failed' | 'unknown' | 'skipped';
   /** The newly generated link, once, whether or not email was sent; the list never shows it. */
   readonly inviteUrl?: string;
 }

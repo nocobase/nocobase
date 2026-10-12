@@ -48,6 +48,7 @@ import { usePmApi } from '../../../hooks/use-pm-api.js';
 import { useViewer } from '../../../hooks/use-viewer.js';
 import { usePmFormatters } from '../../../lib/format.js';
 import { InviteResults } from './invite-dialog.js';
+import { Spinner } from '../../../components/ui/spinner.js';
 import { SectionHeading } from '../section-heading.js';
 
 /**
@@ -94,7 +95,11 @@ export function InvitationsSection(): ReactElement | null {
       } else if (sendEmail && result.emailSent === false) {
         toaster.show({
           type: 'warning',
-          title: t('invitations.outcome.notSent'),
+          title: t(
+            result.sendStatus === 'failed' || result.sendStatus === 'skipped'
+              ? 'invitations.outcome.notSent'
+              : 'invitations.outcome.unknown',
+          ),
         });
       } else if (sendEmail)
         notify.success(t('invitations.resent', { email: result.email }));
@@ -110,7 +115,12 @@ export function InvitationsSection(): ReactElement | null {
     onSettled: refresh,
   });
   // `useMutation` answers a new object every render; depending on it would rebuild the cells and close an open row menu.
-  const { isPending: resending, mutate: resendInvitation } = resend;
+  const {
+    isPending: resending,
+    mutate: resendInvitation,
+    variables: resendingVariables,
+  } = resend;
+  const sendingId = resending ? resendingVariables?.invitation.id : undefined;
 
   const columns = useMemo<ColumnDef<Invitation, unknown>[]>(
     () => [
@@ -139,12 +149,24 @@ export function InvitationsSection(): ReactElement | null {
         id: 'status',
         header: t('invitations.status'),
         cell: ({ row }) =>
-          row.original.status === 'expired' ? (
+          sendingId === row.original.id ? (
+            <span role='status' className='flex items-center gap-2'>
+              <Spinner />
+              {t('invitations.sending')}
+            </span>
+          ) : row.original.status === 'expired' ? (
             <PmTag tone='grey'>{t('invitations.expired')}</PmTag>
           ) : row.original.sentAt ? (
             <PmTag tone='blue'>{t('invitations.pending')}</PmTag>
           ) : (
-            <PmTag tone='grey'>{t('invitations.notSent')}</PmTag>
+            <PmTag tone='grey'>
+              {t(
+                row.original.sendStatus === 'failed' ||
+                  row.original.sendStatus === 'skipped'
+                  ? 'invitations.notSent'
+                  : 'invitations.unknown',
+              )}
+            </PmTag>
           ),
       },
       {
@@ -222,7 +244,7 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [t, format, resending, resendInvitation, viewer?.userId],
+    [t, format, resending, sendingId, resendInvitation, viewer?.userId],
   );
 
   const rows = invitations.data;

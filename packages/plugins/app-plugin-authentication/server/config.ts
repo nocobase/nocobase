@@ -8,7 +8,9 @@ import {
   type ConfigValidator,
 } from '@nocobase/app-server/config';
 
-export type AuthConfig = import('better-auth').BetterAuthOptions;
+export type AuthConfig = import('better-auth').BetterAuthOptions & {
+  readonly passwordReset?: import('./password-reset.js').PasswordResetConfig;
+};
 
 /**
  * The `auth` fields the browser may read, through `config.public`. `useSignUpAvailable()` on the client combines them;
@@ -36,6 +38,32 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
   auth,
   context,
 ) => {
+  if (
+    auth.passwordReset !== undefined &&
+    (!auth.passwordReset ||
+      typeof auth.passwordReset !== 'object' ||
+      Array.isArray(auth.passwordReset))
+  )
+    context.error('passwordReset', 'must be an object.');
+  if (
+    auth.passwordReset?.enabled !== undefined &&
+    typeof auth.passwordReset.enabled !== 'boolean'
+  )
+    context.error('passwordReset.enabled', 'must be true or false.');
+  if (
+    auth.passwordReset?.emailChannel !== undefined &&
+    (typeof auth.passwordReset.emailChannel !== 'string' ||
+      !auth.passwordReset.emailChannel.trim())
+  )
+    context.error(
+      'passwordReset.emailChannel',
+      'must be a non-empty channel name.',
+    );
+  if (
+    auth.passwordReset?.renderEmail !== undefined &&
+    typeof auth.passwordReset.renderEmail !== 'function'
+  )
+    context.error('passwordReset.renderEmail', 'must be a function.');
   const emailAndPassword: Record<string, unknown> =
     (auth.emailAndPassword as Record<string, unknown> | undefined) ?? {};
   for (const field of BOOLEAN_FIELDS) {

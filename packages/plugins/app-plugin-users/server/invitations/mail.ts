@@ -1,5 +1,5 @@
 /**
- * The invitation email and the port it goes through. The provider backs the port with the notification plugin; tests
+ * The invitation email and the port it goes through. The provider backs the port with the shared sending service; tests
  * pass a recording double.
  *
  * The invitee has no account yet, so there is no language to choose: the email carries every language the server
@@ -17,13 +17,15 @@ export interface InvitationEmail {
 
 export interface InvitationMailer {
   /** Submits the email; throws when no channel is configured or the submission is refused. */
-  send(email: InvitationEmail): Promise<void>;
+  send(
+    email: InvitationEmail,
+    options?: { readonly deadline: number; readonly deliveryId: string },
+  ): Promise<void | import('../tokens.js').InvitationSendStatus>;
 }
 
 /** Used when no channel is configured: delivery fails; authorized inviters can deliver the link themselves. */
 export const unconfiguredMailer: InvitationMailer = {
-  send: () =>
-    Promise.reject(new Error('No invitation email channel is configured.')),
+  send: () => Promise.resolve('failed'),
 };
 
 type Texts = (typeof enUS)['invitationEmail'];

@@ -128,7 +128,7 @@ describe('user invitations', () => {
     if (!revoked || !rotated) throw new Error('Missing queued invitations');
     await batchService.revokeInvitation(revoked.id);
     await batchService.resendInvitation(rotated.id, { sendEmail: false });
-    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.advanceTimersByTimeAsync(20_000);
     const results = await pending;
     expect(results.map((result) => result.email)).toEqual(emails);
     expect(results[0]).toMatchObject({ emailSent: true });
@@ -138,6 +138,7 @@ describe('user invitations', () => {
           ? {
               email,
               outcome: 'invited',
+              sendStatus: 'skipped',
               invitationId: expect.any(String),
               emailSent: false,
             }
@@ -156,9 +157,7 @@ describe('user invitations', () => {
       .repository<{ sendError: string | null }>('userInvitations')
       .findMany();
     expect(
-      deliveries.filter((row) =>
-        row.sendError?.includes('delivery is unknown'),
-      ),
+      deliveries.filter((row) => row.sendError === 'INVITATION_SEND_UNKNOWN'),
     ).toHaveLength(5);
     const last = results.at(-1);
     if (last?.outcome !== 'invited') throw new Error('Missing invitation');

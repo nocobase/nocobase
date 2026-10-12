@@ -398,6 +398,7 @@ export interface NotificationManagerOptions<
     readonly [TType in keyof TChannels]: NotificationChannelSchema;
   },
 > {
+  readonly sending?: import('@nocobase/app-server/sending').SendingService;
   readonly database: DatabaseManager;
   /**
    * Runs Delivery tasks. The Manager owns its lifecycle: it registers the

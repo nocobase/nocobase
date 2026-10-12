@@ -40,7 +40,8 @@ vi.mock('@nocobase/app-plugin-authentication/client/actions', () => ({
 
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useSignUpAvailable: () => signUpAvailable.value,
-  usePasswordResetCapability: () => resetCapability,
+  usePasswordResetAvailable: () =>
+    resetCapability.data?.passwordResetAvailable === true,
 }));
 
 const runtime = await createTestI18nRuntime({
@@ -137,50 +138,18 @@ describe('application authentication pages', () => {
     resetCapability.data = { passwordResetAvailable: true };
   });
 
-  it('shows the administrator contact message on direct access while recovery is disabled', () => {
+  it('replaces direct access with login while recovery is disabled', () => {
     resetCapability.data = { passwordResetAvailable: false };
     renderAt('/forgot-password', <ForgotPasswordPage />);
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Self-service password reset is not enabled',
-    );
+    expect(screen.getByText('Login route')).toBeVisible();
     expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     resetCapability.data = { passwordResetAvailable: true };
   });
 
-  it('shows loading, retries a failed capability request, and restores the form', () => {
-    resetCapability.data = undefined;
-    resetCapability.isPending = true;
-    resetCapability.isError = false;
-    const { rerender } = renderAt('/forgot-password', <ForgotPasswordPage />);
-    expect(screen.getByLabelText('Loading')).toBeVisible();
-
-    resetCapability.isPending = false;
-    resetCapability.isError = true;
-    rerender(
-      <TestI18nProvider runtime={runtime}>
-        <MemoryRouter initialEntries={['/forgot-password']}>
-          <Routes>
-            <Route element={<ForgotPasswordPage />} path='/forgot-password' />
-          </Routes>
-        </MemoryRouter>
-      </TestI18nProvider>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(resetCapability.refetch).toHaveBeenCalled();
-
+  it('renders an available recovery form immediately without a capability request', () => {
     resetCapability.data = { passwordResetAvailable: true };
-    resetCapability.isPending = false;
-    resetCapability.isError = false;
     passwordResetRequest.submit.mockClear();
-    rerender(
-      <TestI18nProvider runtime={runtime}>
-        <MemoryRouter initialEntries={['/forgot-password']}>
-          <Routes>
-            <Route element={<ForgotPasswordPage />} path='/forgot-password' />
-          </Routes>
-        </MemoryRouter>
-      </TestI18nProvider>,
-    );
+    renderAt('/forgot-password', <ForgotPasswordPage />);
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'person@example.com' },
     });
@@ -188,6 +157,7 @@ describe('application authentication pages', () => {
     expect(passwordResetRequest.submit).toHaveBeenCalledWith({
       email: 'person@example.com',
     });
+    expect(resetCapability.refetch).not.toHaveBeenCalled();
   });
 
   it('sends a visitor back to sign-in while sign-up is off', () => {

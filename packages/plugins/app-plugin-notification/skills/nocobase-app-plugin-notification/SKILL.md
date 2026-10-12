@@ -34,3 +34,7 @@ Rollback source/configuration through the application's normal deployment proces
 ### Sensitive messages
 
 Use `notificationService.sendTransient({ channel, message })` for a message containing a one-time credential. It validates and prepares the message with the configured channel and submits it once with the provider timeout, without creating notification rows, jobs, retry state, or status events. The result is one provider outcome per recipient; raw provider diagnostics are replaced with generic errors while retaining an allowlisted category and submission status for credential-free troubleshooting. There is no durable idempotency or automatic retry, and a timeout is `submission_unknown`. The caller owns safe recovery, rate limits, and any credential-free audit. The external mail provider and recipient still receive the message.
+
+## Shared external sending
+
+External transports are owned by `@nocobase/sending` and hosted by `SendingProvider` from `@nocobase/app-server/sending`. New applications configure `sending.channels`; legacy external `notification.channels` still work, with new configuration winning by name, including disabled entries. Notification uses the same transport without owning its closure, while retaining histories, jobs, leases, native idempotency, retries and protected management routes. In-app channels and user mailboxes retain their separate owners. Authentication and users invitations call sending directly and create no notification records.

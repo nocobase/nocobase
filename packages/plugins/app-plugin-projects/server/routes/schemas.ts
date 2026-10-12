@@ -771,6 +771,7 @@ export const InvitationSchema: z.ZodType<Invitation> = z.object({
   projects: z.array(z.object({ id: z.string(), name: z.string() })),
   invitedBy: z.object({ userId: z.string(), name: z.string() }),
   expiresAt: dateTime,
+  sendStatus: z.enum(['sent', 'failed', 'unknown', 'skipped']).optional(),
   sentAt: dateTime.nullable(),
   createdAt: dateTime,
 });
@@ -792,6 +793,7 @@ export const InvitationResultSchema: z.ZodType<InvitationResult> = z
     email: z.string(),
     outcome: z.enum(['invited', 'added', 'alreadyMember']),
     emailSent: z.boolean().optional(),
+    sendStatus: z.enum(['sent', 'failed', 'unknown', 'skipped']).optional(),
     inviteUrl: z.string().optional().meta({
       description:
         'The new shareable invitation link, returned to an authorized original inviter using an unscoped person credential, regardless of email delivery.',

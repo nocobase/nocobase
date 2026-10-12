@@ -21,14 +21,29 @@ export default function ResetPasswordPage(): ReactElement {
     >
       <PasswordResetForm
         disabled={!token}
+        success={reset.isSuccess}
         error={token ? reset.error?.message : t('auth.invalidResetLink')}
-        footer={<Link to='/login'>{t('auth.backToSignIn')}</Link>}
+        footer={
+          <>
+            <Link to='/login'>{t('auth.backToSignIn')}</Link>
+            {(!token ||
+              ['INVALID_TOKEN', 'TOKEN_EXPIRED'].includes(
+                reset.error?.code ?? '',
+              )) && (
+              <>
+                {' '}
+                · <Link to='/forgot-password'>{t('auth.requestAgain')}</Link>
+              </>
+            )}
+          </>
+        }
         labels={{
           confirmPassword: t('auth.confirmNewPassword'),
           password: t('auth.newPassword'),
           passwordMismatch: t('auth.passwordMismatch'),
           submit: t('auth.resetTitle'),
           submitting: t('auth.resetting'),
+          success: t('auth.resetSuccess'),
         }}
         onSubmit={({ password }) => reset.submit({ password, token })}
         submitting={reset.isPending}

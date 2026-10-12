@@ -105,6 +105,8 @@ export interface CreateManagedUserInput extends CreateAdministratedUserInput {
   readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
 }
 
+export type InvitationSendStatus = 'sent' | 'failed' | 'unknown' | 'skipped';
+
 export type UserInvitationStatus =
   'pending' | 'expired' | 'accepted' | 'revoked';
 
@@ -124,6 +126,7 @@ export interface UserInvitation {
   readonly expiresAt: string;
   /** The last successful send; null when sending failed. */
   readonly sentAt: string | null;
+  readonly sendStatus?: InvitationSendStatus;
   readonly createdAt: string;
 }
 
@@ -153,6 +156,7 @@ export type UserInvitationResult =
       readonly outcome: 'invited';
       readonly invitationId: string;
       readonly emailSent: boolean;
+      readonly sendStatus?: InvitationSendStatus;
       readonly inviteUrl?: string;
     }
   | {

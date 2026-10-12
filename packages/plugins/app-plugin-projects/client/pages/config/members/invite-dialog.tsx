@@ -1,3 +1,4 @@
+import { useToaster } from '@nocobase/app-client';
 import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -60,17 +61,18 @@ export function InviteDialog({
   readonly onClose: () => void;
 }): ReactElement {
   const { t } = useTranslation();
+  const [saving, setSaving] = useState(false);
   const unsaved = useUnsavedChangesGuard();
   const requestClose = useGuardedClose(unsaved, onClose);
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) requestClose();
+        if (!next && !saving) requestClose();
       }}
     >
-      <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
+      <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-md'>
+        <DialogHeader className='shrink-0'>
           <DialogTitle>{t('invitations.dialogTitle')}</DialogTitle>
           <DialogDescription>
             {t('invitations.dialogDescription')}
@@ -83,6 +85,8 @@ export function InviteDialog({
               requireProject={requireProject}
               onClose={onClose}
               onCancel={requestClose}
+              saving={saving}
+              setSaving={setSaving}
             />
           ) : null}
         </UnsavedChangesBoundary>
@@ -96,11 +100,15 @@ function InviteForm({
   requireProject,
   onClose,
   onCancel,
+  saving,
+  setSaving,
 }: {
   readonly projects: readonly InviteProjectOption[];
   readonly requireProject: boolean;
   readonly onClose: () => void;
   readonly onCancel: () => void;
+  readonly saving: boolean;
+  readonly setSaving: (saving: boolean) => void;
 }): ReactElement {
   const { t } = useTranslation();
   const api = usePmApi();
@@ -110,7 +118,7 @@ function InviteForm({
   const [projectIds, setProjectIds] = useState<string[]>([]);
   const [emailError, setEmailError] = useState<string>();
   const [projectError, setProjectError] = useState<string>();
-  const [saving, setSaving] = useState(false);
+  const toaster = useToaster();
   const [results, setResults] = useState<readonly InvitationResult[] | null>(
     null,
   );
@@ -121,6 +129,7 @@ function InviteForm({
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
+    if (saving) return;
     const emails = parseEmailList(text);
     const invalid = emails.filter((email) => !isEmailAddress(email));
     setEmailError(
@@ -147,7 +156,11 @@ function InviteForm({
     try {
       const sent = await api.invite({ emails, projectIds });
       setResults(sent);
-      notify.success(t('invitations.sent', { number: sent.length }));
+      if (
+        sent.some((result) => result.outcome === 'invited' && !result.emailSent)
+      )
+        toaster.show({ type: 'warning', title: t('invitations.checkResults') });
+      else notify.success(t('invitations.sent', { number: sent.length }));
       // Invitations sit under `members`; an address added to projects changes the member list too.
       void queryClient.invalidateQueries({ queryKey: pmKeys.members });
       void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
@@ -164,7 +177,7 @@ function InviteForm({
     return (
       <>
         <InviteResults results={results} />
-        <DialogFooter>
+        <DialogFooter className='shrink-0'>
           <Button type='button' onClick={onClose}>
             {t('invitations.done')}
           </Button>
@@ -183,6 +196,7 @@ function InviteForm({
           <Textarea
             id='pm-invite-emails'
             rows={4}
+            disabled={saving}
             value={text}
             autoFocus
             placeholder='alice@example.com&#10;bob@example.com'
@@ -201,6 +215,7 @@ function InviteForm({
           </FieldLabel>
           <PmMultiSelect
             id='pm-invite-projects'
+            disabled={saving}
             aria-label={t('invitations.projects')}
             options={projects.map((project) => ({
               value: project.id,
@@ -219,12 +234,17 @@ function InviteForm({
         </Field>
       </FieldGroup>
       <DialogFooter className='mt-6'>
-        <Button type='button' variant='outline' onClick={onCancel}>
+        <Button
+          type='button'
+          variant='outline'
+          onClick={onCancel}
+          disabled={saving}
+        >
           {t('actions.cancel')}
         </Button>
         <Button type='submit' disabled={saving}>
           {saving ? <Spinner /> : null}
-          {t('invitations.send')}
+          {t(saving ? 'invitations.sending' : 'invitations.send')}
         </Button>
       </DialogFooter>
     </form>
@@ -240,7 +260,11 @@ function outcomeLabel(
     return t('invitations.outcome.alreadyMember');
   return result.emailSent
     ? t('invitations.outcome.sent')
-    : t('invitations.outcome.notSent');
+    : t(
+        result.sendStatus === 'failed' || result.sendStatus === 'skipped'
+          ? 'invitations.notSent'
+          : 'invitations.unknown',
+      );
 }
 
 /** One row per address; each newly generated link is shown once, with a copy button. */
@@ -253,7 +277,10 @@ export function InviteResults({
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <ul className='space-y-3' aria-label={t('invitations.resultsLabel')}>
+    <ul
+      className='min-h-0 flex-1 space-y-3 overflow-y-auto'
+      aria-label={t('invitations.resultsLabel')}
+    >
       {results.map((result) => (
         <li key={result.email} className='space-y-2'>
           <div className='flex items-center justify-between gap-3'>
@@ -268,6 +295,16 @@ export function InviteResults({
               {linkOnly ? t('invitations.linkReady') : outcomeLabel(t, result)}
             </PmTag>
           </div>
+          {result.outcome === 'invited' && !result.emailSent && !linkOnly && (
+            <p className='text-sm text-muted-foreground'>
+              {t(
+                result.sendStatus === 'failed' ||
+                  result.sendStatus === 'skipped'
+                  ? 'invitations.outcome.notSent'
+                  : 'invitations.outcome.unknown',
+              )}
+            </p>
+          )}
           {result.inviteUrl ? <CopyLink url={result.inviteUrl} /> : null}
         </li>
       ))}

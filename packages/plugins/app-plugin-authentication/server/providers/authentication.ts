@@ -1,3 +1,6 @@
+import { sendingServiceToken } from '@nocobase/app-server/sending';
+import { i18nToken } from '@nocobase/app-server/i18n';
+import { automaticResetSender, PasswordResetTasks } from '../password-reset.js';
 import { joinBasePath, normalizeBasePath } from '@nocobase/app-server/support';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
@@ -66,7 +69,37 @@ export class AuthenticationProvider<
 > extends ServiceProvider<TApplication> {
   public readonly name: string = '@nocobase/app-plugin-authentication';
 
+  private tasks: PasswordResetTasks | undefined;
+  private removePublicValue: (() => void) | undefined;
+
   public override register(): void {
+    this.removePublicValue = this.app.config.contributePublicValue?.(
+      'auth.passwordReset.available',
+      () => {
+        const config = this.app.config.get<AuthConfig>('auth');
+        if (
+          !this.app.container
+            .resolve(authenticationToken)
+            .passwordResetAvailable()
+        )
+          return false;
+        if (
+          config?.passwordReset?.enabled === false ||
+          config?.emailAndPassword?.enabled === false
+        )
+          return false;
+        if (config?.emailAndPassword?.sendResetPassword) return true;
+        return (
+          this.app.container.has(sendingServiceToken) &&
+          this.app.container
+            .resolve(sendingServiceToken)
+            .available(
+              config?.passwordReset?.emailChannel ?? 'system-email',
+              'email',
+            )
+        );
+      },
+    );
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
@@ -132,10 +165,20 @@ export class AuthenticationProvider<
     );
   }
 
+  public override async shutdown(): Promise<void> {
+    this.removePublicValue?.();
+    await this.tasks?.close();
+  }
+
   private createAuthentication(container: ServiceResolver): Auth {
     const app = this.app.config.get<AppIdentityConfig>('app')!;
     const configuredAuth = this.app.config.get<AuthConfig>('auth') ?? {};
-    const { secret: _secret, secrets: _secrets, ...rest } = configuredAuth;
+    const {
+      secret: _secret,
+      secrets: _secrets,
+      passwordReset,
+      ...rest
+    } = configuredAuth;
     const authConfig = {
       ...rest,
       ...(rest.plugins
@@ -161,6 +204,31 @@ export class AuthenticationProvider<
     const logger = container.has(loggingToken)
       ? container.resolve(loggingToken).getLogger('auth')
       : undefined;
+    const tasks = new PasswordResetTasks(logger);
+    this.tasks = tasks;
+    const channel = passwordReset?.emailChannel ?? 'system-email';
+    const sending = container.has(sendingServiceToken)
+      ? container.resolve(sendingServiceToken)
+      : undefined;
+    const sender =
+      passwordReset?.enabled === false
+        ? undefined
+        : (authConfig.emailAndPassword?.sendResetPassword ??
+          (sending?.available(channel, 'email')
+            ? automaticResetSender({
+                sending,
+                channel,
+                config: passwordReset ?? {},
+                appName: app.name,
+                ...(container.has(i18nToken)
+                  ? { i18n: container.resolve(i18nToken) }
+                  : {}),
+                current: () =>
+                  this.app.config.get<AuthConfig>('auth')?.passwordReset ?? {},
+                defaultLocale:
+                  this.app.config.get<string>('i18n.defaultLocale'),
+              })
+            : undefined));
     const publicPaths = this.app.config.publicPaths?.();
     if (
       publicPaths &&
@@ -176,6 +244,56 @@ export class AuthenticationProvider<
       secondaryStorage: createAuthStorage(caching),
       appName: app.name,
       ...authConfig,
+      emailAndPassword: {
+        ...authConfig.emailAndPassword,
+        enabled: authConfig.emailAndPassword?.enabled ?? true,
+        revokeSessionsOnPasswordReset:
+          authConfig.emailAndPassword?.revokeSessionsOnPasswordReset ?? true,
+        sendResetPassword: sender
+          ? (data, request) =>
+              tasks.submit(async () => {
+                if (
+                  this.app.config.get<AuthConfig>('auth')?.passwordReset
+                    ?.enabled === false ||
+                  (sending &&
+                    !authConfig.emailAndPassword?.sendResetPassword &&
+                    !sending.available(
+                      this.app.config.get<AuthConfig>('auth')?.passwordReset
+                        ?.emailChannel ?? 'system-email',
+                      'email',
+                    ))
+                )
+                  return;
+                const user = await database
+                  ?.connection()
+                  .query.selectFrom('user')
+                  .select(['id', 'kind', 'disabledAt', 'deletedAt'])
+                  .where('id', '=', data.user.id)
+                  .executeTakeFirst();
+                if (
+                  !user ||
+                  user.kind === 'service' ||
+                  user.disabledAt != null ||
+                  user.deletedAt != null
+                )
+                  return;
+                await sender(data, request);
+              })
+          : undefined,
+      },
+      rateLimit: {
+        storage: 'secondary-storage',
+        ...authConfig.rateLimit,
+        enabled: authConfig.rateLimit?.enabled ?? true,
+        customRules: {
+          '/request-password-reset': { window: 60, max: 3 },
+          ...authConfig.rateLimit?.customRules,
+          ...(authConfig.rateLimit?.enabled === undefined &&
+          process.env.NODE_ENV !== 'production'
+            ? { '*': false as const }
+            : {}),
+        },
+      },
       logger:
         authConfig.logger ??
         (logger
@@ -204,6 +322,24 @@ export class AuthenticationProvider<
               : undefined,
         }),
         ...authConfig.advanced,
+        backgroundTasks: {
+          handler: (promise) => {
+            tasks.track(promise);
+            try {
+              const returned: unknown =
+                authConfig.advanced?.backgroundTasks?.handler?.(
+                  promise.catch(() => undefined),
+                );
+              if (returned instanceof Promise) tasks.track(returned);
+            } catch {
+              tasks.track(
+                Promise.reject(
+                  new Error('Application background task handler failed.'),
+                ),
+              );
+            }
+          },
+        },
         database: {
           ...authConfig.advanced?.database,
           generateId:
@@ -216,6 +352,20 @@ export class AuthenticationProvider<
         },
       },
     });
+    const installedResetAvailable = auth.passwordResetAvailable();
+    auth.passwordResetAvailable = (): boolean => {
+      const current = this.app.config.get<AuthConfig>('auth');
+      return (
+        installedResetAvailable &&
+        current?.emailAndPassword?.enabled !== false &&
+        current?.passwordReset?.enabled !== false &&
+        (!!authConfig.emailAndPassword?.sendResetPassword ||
+          !!sending?.available(
+            current?.passwordReset?.emailChannel ?? 'system-email',
+            'email',
+          ))
+      );
+    };
     const originalAuthHandler = auth.handler.bind(auth);
     auth.handler = (request: Request): Promise<Response> =>
       originalAuthHandler(toPublicRequest(request, app.publicBasePath));

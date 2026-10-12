@@ -23,10 +23,12 @@ export interface PasswordResetLabels {
   readonly submit: string;
   readonly submitting: string;
   /** Shown under the confirmation when it differs from the password; the form checks this itself. */
+  readonly success: string;
   readonly passwordMismatch: string;
 }
 
 const defaultPasswordResetLabels: PasswordResetLabels = {
+  success: 'Your password has been reset. Sign in with your new password.',
   password: 'New password',
   confirmPassword: 'Confirm new password',
   submit: 'Reset password',
@@ -37,6 +39,7 @@ const defaultPasswordResetLabels: PasswordResetLabels = {
 export interface PasswordResetFormProps {
   /** Called once the new password and its confirmation match. */
   readonly onSubmit: (values: PasswordResetValues) => void | Promise<void>;
+  readonly success?: boolean;
   readonly submitting?: boolean;
   /** Disables every field, for example while the reset link is missing its token. */
   readonly disabled?: boolean;
@@ -57,6 +60,7 @@ export function PasswordResetForm({
   labels: labelOverrides,
   onSubmit,
   submitting = false,
+  success = false,
 }: PasswordResetFormProps): ReactElement {
   const labels = { ...defaultPasswordResetLabels, ...labelOverrides };
   const id = useId();
@@ -68,7 +72,7 @@ export function PasswordResetForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (disabled) return;
+    if (disabled || submitting || success) return;
     if (password !== confirmation) {
       setMismatch(true);
       return;
@@ -90,7 +94,7 @@ export function PasswordResetForm({
           <Input
             autoComplete='new-password'
             autoFocus
-            disabled={disabled}
+            disabled={disabled || submitting || success}
             id={passwordId}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -106,7 +110,7 @@ export function PasswordResetForm({
         >
           <Input
             autoComplete='new-password'
-            disabled={disabled}
+            disabled={disabled || submitting || success}
             id={confirmationId}
             onChange={(event) => setConfirmation(event.target.value)}
             required
@@ -115,11 +119,16 @@ export function PasswordResetForm({
             {...invalidProps(confirmationId, confirmationError)}
           />
         </AuthField>
-        {error ? <AuthFormStatus type='error'>{error}</AuthFormStatus> : null}
+        {success ? (
+          <AuthFormStatus type='success'>{labels.success}</AuthFormStatus>
+        ) : null}
+        {error && !success ? (
+          <AuthFormStatus type='error'>{error}</AuthFormStatus>
+        ) : null}
         <AuthFormSubmit footer={footer}>
           <Button
             className='w-full'
-            disabled={disabled || submitting}
+            disabled={disabled || submitting || success}
             size='lg'
             type='submit'
           >

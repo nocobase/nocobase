@@ -919,6 +919,19 @@ export class NotificationManager<
       throw new NotificationTransportUnavailableError(
         `Notification Channel "${name}" is not enabled.`,
       );
+    if (this.options.sending?.available(name)) {
+      const runtime = await this.options.sending.runtime(name);
+      // Sending owns the shared transport; notification owns only its jobs and subscriptions.
+      this.channelManager.register(name, {
+        channel: runtime.channel,
+        provider: {
+          type: runtime.provider.type,
+          capabilities: runtime.provider.capabilities,
+          send: (input) => runtime.provider.send(input),
+        },
+      });
+      return;
+    }
     const providerDefinition = this.registry.provider(config.provider);
     const definition =
       providerDefinition &&

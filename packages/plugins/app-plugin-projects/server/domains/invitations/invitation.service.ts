@@ -157,6 +157,7 @@ function sentResult(result: UserInvitationResult): InvitationResult {
         email: result.email,
         outcome: 'invited',
         emailSent: result.emailSent,
+        sendStatus: result.sendStatus,
         ...(result.inviteUrl ? { inviteUrl: result.inviteUrl } : {}),
       }
     : { email: result.email, outcome: 'alreadyMember' };
@@ -202,6 +203,7 @@ export function createInvitationService(
         invitedBy: { userId: row.invitedBy.id, name: row.invitedBy.name },
         expiresAt: row.expiresAt,
         sentAt: row.sentAt,
+        sendStatus: row.sendStatus,
         createdAt: row.createdAt,
       }));
     },

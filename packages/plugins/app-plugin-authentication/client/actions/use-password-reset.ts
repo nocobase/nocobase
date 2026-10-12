@@ -3,28 +3,30 @@ import { useAuthentication } from '../auth-provider.js';
 import { useAuthenticationErrorResolver } from './errors.js';
 import type {
   AuthenticationActionError,
-  AuthenticationActionState,
-  PasswordResetInput,
+  PasswordResetActionState,
 } from './types.js';
-export function usePasswordReset(): AuthenticationActionState<PasswordResetInput> {
-  const { client, refresh } = useAuthentication();
+export function usePasswordReset(): PasswordResetActionState {
+  const { client } = useAuthentication();
   const resolveError = useAuthenticationErrorResolver();
   const [state, setState] = useState<{
     error?: AuthenticationActionError;
     pending: boolean;
+    success?: boolean;
   }>({ pending: false });
   return {
     error: state.error,
     isPending: state.pending,
+    isSuccess: state.success === true,
     submit: async (input) => {
+      if (state.pending || state.success) return;
       setState({ pending: true });
       try {
         await client.resetPassword(
           { newPassword: input.password, token: input.token },
           { throw: true },
         );
-        await refresh();
-        setState({ pending: false });
+        setState({ pending: false, success: true });
+        // Refreshing the guest session here unmounts this page and loses its completed state.
       } catch (error) {
         setState({
           pending: false,

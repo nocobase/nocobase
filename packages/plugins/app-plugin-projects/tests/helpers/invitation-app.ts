@@ -1,5 +1,8 @@
 import path from 'node:path';
-import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
+import {
+  sendingServiceToken,
+  type SendingConfig,
+} from '@nocobase/app-server/sending';
 
 import authentication, {
   defineAuthConfig,
@@ -56,13 +59,19 @@ class ProjectAccessProvider extends ServiceProvider<AppPluginApplication> {
   override register(): void {
     const mailbox: InvitationMailbox = { messages: new Map(), fail: false };
     this.app.container.instance(invitationMailboxToken, mailbox);
-    this.app.container.instance(notificationServiceToken, {
-      send: async () => {
-        throw new Error(
-          'Invitation credentials must not use durable notifications',
-        );
+    const config = (): SendingConfig =>
+      this.app.config.get<SendingConfig>('notification') ?? { channels: {} };
+    this.app.container.instance(sendingServiceToken, {
+      available: (name, type) =>
+        !!config().channels[name] &&
+        config().channels[name].enabled !== false &&
+        (!type || type === 'email'),
+      config,
+      runtime: async () => {
+        throw new Error('Not used by invitation consumers.');
       },
-      sendTransient: async (input) => {
+      close: async () => {},
+      send: async (input) => {
         if (mailbox.failureCategory)
           return [
             {
@@ -73,17 +82,21 @@ class ProjectAccessProvider extends ServiceProvider<AppPluginApplication> {
               },
             },
           ];
-        if (mailbox.fail) throw new Error('SMTP unavailable');
+        if (mailbox.fail)
+          return [
+            {
+              status: 'failed',
+              disposition: 'never',
+              error: {
+                category: 'network',
+                message: 'private invitation credential',
+              },
+            },
+          ];
         const email = input.message as { to: string; text: string };
         mailbox.messages.set(email.to, email.text);
         return [{ status: 'accepted' }];
       },
-      getByIdempotencyKey: async () => undefined,
-      getNotification: async () => undefined,
-      retryDelivery: async () => {
-        throw new Error('Not used by invitations');
-      },
-      onStatusChanged: () => () => {},
     });
     const authz = this.app.container.resolve(authorizationToken);
     this.app.container.instance(projectsAccessToken, {
@@ -132,6 +145,7 @@ const appRuntime = defineAppRuntime({
     snowflake: defineAppConfig(() => ({ workerId: 1 })),
     auth: defineAuthConfig({
       defaults: () => ({
+        rateLimit: { enabled: false },
         secret: 'invitation-integration-test-secret-at-least-32-characters',
         emailAndPassword: { enabled: true, disableSignUp: true },
       }),
