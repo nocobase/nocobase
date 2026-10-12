@@ -2,6 +2,17 @@ import { beforeEach } from 'vitest';
 
 const RUNTIME_CONFIG_ELEMENT_ID = 'nocobase-runtime-config';
 
+// ProseMirror and CodeMirror measure ranges, which jsdom does not lay out.
+if (typeof Range !== 'undefined' && typeof DOMRect !== 'undefined') {
+  Range.prototype.getClientRects ??= () =>
+    ({
+      length: 0,
+      item: () => null,
+      [Symbol.iterator]: [][Symbol.iterator],
+    }) as unknown as DOMRectList;
+  Range.prototype.getBoundingClientRect ??= () => new DOMRect();
+}
+
 /**
  * The application server renders the client configuration into every page, and the client reads its mount path and
  * API URL from nowhere else. A test page has no server in front of it, so this puts the same block in place, mounted
