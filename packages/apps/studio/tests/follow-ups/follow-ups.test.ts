@@ -67,14 +67,20 @@ describe('the overview', () => {
       })
       .allowAllRows()
       .execute();
-    await create('alice', {
+    const busy = await create('alice', {
       statusKey: 'in_progress',
-      executor: { type: 'agent', id: worker },
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), busy.id, {
+      content: `[@Worker](mention://agent/${worker}) first step`,
     });
     await h.claimOne();
     const queued = await create('alice', {
       statusKey: 'in_progress',
-      executor: { type: 'agent', id: worker },
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), queued.id, {
+      content: `[@Worker](mention://agent/${worker}) second step`,
     });
     const data = await overview();
     const item = data.issues.find(
