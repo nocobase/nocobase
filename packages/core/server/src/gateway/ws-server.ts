@@ -12,7 +12,7 @@ import WebSocket, { WebSocketServer as WSS } from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
-import { applyErrorWithArgs, getErrorWithCode } from './errors';
+import { applyErrorWithArgs, getErrorWithCode, InvalidAppNameError } from './errors';
 import lodash from 'lodash';
 import { Logger } from '@nocobase/logger';
 import EventEmitter from 'events';
@@ -72,10 +72,19 @@ export class WSServer extends EventEmitter {
 
     Gateway.getInstance().on('appSelectorChanged', () => {
       this.loopThroughConnections(async (client) => {
-        const handleAppName = await Gateway.getInstance().getRequestHandleAppName({
-          url: client.url,
-          headers: client.headers,
-        } as any);
+        let handleAppName: string;
+        try {
+          handleAppName = await Gateway.getInstance().getRequestHandleAppName({
+            url: client.url,
+            headers: client.headers,
+          } as any);
+        } catch (error) {
+          if (!(error instanceof InvalidAppNameError)) {
+            throw error;
+          }
+          this.rejectInvalidAppName(client);
+          return;
+        }
 
         for (const tag of client.tags) {
           if (tag.startsWith('app#')) {
@@ -265,13 +274,31 @@ export class WSServer extends EventEmitter {
     });
   }
 
+  /**
+   * Drop a connection whose url or headers resolve to an app name that can never exist. Closing beats tagging it with
+   * the raw value: the tag would end up as a map key and would bootstrap an app on every selector change.
+   */
+  private rejectInvalidAppName(client: WebSocketClient) {
+    client.ws.close(1008, 'INVALID_APP_NAME');
+    this.removeConnection(client.id);
+  }
+
   async setClientApp(client: WebSocketClient) {
     const req: IncomingRequest = {
       url: client.url,
       headers: client.headers,
     };
 
-    const handleAppName = await Gateway.getInstance().getRequestHandleAppName(req);
+    let handleAppName: string;
+    try {
+      handleAppName = await Gateway.getInstance().getRequestHandleAppName(req);
+    } catch (error) {
+      if (!(error instanceof InvalidAppNameError)) {
+        throw error;
+      }
+      this.rejectInvalidAppName(client);
+      return;
+    }
 
     client.app = handleAppName;
     console.log(`client tags: app#${handleAppName}`);
