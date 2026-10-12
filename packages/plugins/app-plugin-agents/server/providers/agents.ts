@@ -209,6 +209,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
               headers: {
                 [HEADERS.runToken]: token,
                 accept: 'application/json',
+                'x-nocobase-client': 'cli',
                 // A form sets its own multipart content type.
                 ...(typeof request.body === 'string'
                   ? { 'content-type': 'application/json' }
@@ -372,6 +373,13 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
               kind: 'run.status',
               runId: event.runId,
               status: event.status,
+            });
+            return;
+          case 'run.retried':
+            publish(runTopic(event.retryOfRunId), {
+              kind: 'run.status',
+              runId: event.retryOfRunId,
+              status: event.previousStatus,
             });
             return;
           case 'run.events':

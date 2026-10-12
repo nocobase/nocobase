@@ -25,6 +25,7 @@ const state = vi.hoisted(() => ({
   userId: 'alice' as string | undefined,
   basePath: '/main',
   events: [] as RunTranscriptEvent[],
+  retriedRunId: null as string | null,
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -55,6 +56,7 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', async (original) => ({
     run: {
       data: {
         id: 'run-1',
+        retriedRunId: state.retriedRunId,
         agentId: 'coder',
         status: 'failed',
         createdAt: '2026-10-01T00:00:00.000Z',
@@ -132,10 +134,29 @@ beforeEach(() => {
   state.userId = 'alice';
   state.basePath = '/main';
   state.events = mixedRunEvents();
+  state.retriedRunId = null;
 });
 afterEach(cleanup);
 
 describe('Studio issue run transcript', () => {
+  it.each(['en-US', 'zh-CN'])(
+    'links the replacement instead of offering another retry (%s)',
+    async (locale) => {
+      state.retriedRunId = 'run-2';
+      await setup(locale);
+      const label =
+        locale === 'zh-CN' ? '已重试 → 新运行' : 'Retried → New run';
+      expect(screen.getByRole('link', { name: label })).toHaveAttribute(
+        'href',
+        '/run-2',
+      );
+      expect(
+        screen.queryByRole('button', {
+          name: locale === 'zh-CN' ? '重试' : 'Retry',
+        }),
+      ).not.toBeInTheDocument();
+    },
+  );
   it('keeps the reading position in expanded history during live updates and follows again after collapse', async () => {
     state.events = [
       event(1, 'text'),

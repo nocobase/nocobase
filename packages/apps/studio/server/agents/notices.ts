@@ -94,6 +94,8 @@ export function runFailedRule(
           identifier: issue.identifier,
           runId: run.id,
           agentId: run.agentId,
+          executorType: issue.executor?.type ?? '',
+          executorId: issue.executor?.id ?? '',
           agentName,
           ...agentNameParams(agent?.nameText),
           failureReason: reason,
@@ -141,9 +143,10 @@ export function settleFailedRunCards(
   return projects().events.on('issue.updated', (event) => {
     const status = event.changes.status;
     const inbox = port();
-    if (!status || !inbox) return;
+    const reassigned = event.changes.executor;
+    if ((!status && !reassigned) || !inbox) return;
     void (async () => {
-      if (status.to !== IN_REVIEW) {
+      if (!reassigned && status?.to !== IN_REVIEW) {
         const issue = await projects().issueContext.contextFor(
           projects().tx.read(),
           event.issueId,
@@ -155,7 +158,7 @@ export function settleFailedRunCards(
         source: PROJECTS_SOURCE,
         subject: { type: INBOX_ISSUE, id: event.issueId },
         types: [RUN_FAILED_FINAL],
-        outcome: 'issueMoved',
+        outcome: reassigned ? 'issueReassigned' : 'issueMoved',
       });
     })().catch(onError);
   });

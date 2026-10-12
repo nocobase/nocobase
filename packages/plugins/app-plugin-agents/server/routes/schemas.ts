@@ -926,6 +926,7 @@ const runObject = z.object({
 export const RunSchema: z.ZodType<Run> = runObject.meta({ ref: 'AgentsRun' });
 
 export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
+  retriedRunId: z.string().nullable().optional(),
   inputs: z.array(
     z.object({
       id: z.string(),

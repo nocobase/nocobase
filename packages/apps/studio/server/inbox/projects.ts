@@ -50,9 +50,13 @@ export function projectNoticeToInbox(notice: ProjectNotice): InboxSend {
 
 export function createProjectsNotices(
   port: () => StudioInboxPort,
+  afterSend?: (notice: ProjectNotice) => Promise<void>,
 ): ProjectsNotices {
   return {
-    send: (notice) => port().send(projectNoticeToInbox(notice)),
+    send: async (notice) => {
+      await port().send(projectNoticeToInbox(notice));
+      await afterSend?.(notice);
+    },
     resolve: ({ approvalRequestId, outcome }) =>
       port().resolve({
         source: PROJECTS_SOURCE,

@@ -44,7 +44,7 @@ export interface FailedRunResult {
 }
 
 export interface FailedRunDeps {
-  readonly runs: Pick<RunService, 'get' | 'retry'>;
+  readonly runs: Pick<RunService, 'get' | 'retry' | 'detail'>;
   readonly projects: () => Pick<Projects, 'issueQueries' | 'issues'>;
   /** The person deciding, as the projects plugin sees them. */
   readonly viewerOf: (userId: string) => Promise<Viewer>;
@@ -67,10 +67,6 @@ export async function decideFailedRun(
       code: 'FAILED_RUN_NOT_FOUND',
     });
   const ref = runFailedDecision(run.id);
-  if (!(await deps.inbox.waiting(ref)))
-    throw new ProtocolError('CONFLICT', 'This decision was already taken.', {
-      code: 'DECISION_ALREADY_TAKEN',
-    });
   try {
     const viewer = await deps.viewerOf(userId);
     const issue = await deps
@@ -84,10 +80,23 @@ export async function decideFailedRun(
         'Only the owner of the issue or someone who may edit it decides.',
         { code: 'FAILED_RUN_DECISION_FORBIDDEN' },
       );
+    if (!(await deps.inbox.waiting(ref))) {
+      const detail =
+        request.action === 'retry' ? await deps.runs.detail(run.id) : null;
+      if (detail?.retriedRunId)
+        throw new ProtocolError(
+          'CONFLICT',
+          'This run has already been retried.',
+          { code: 'RUN_ALREADY_RETRIED', runId: detail.retriedRunId },
+        );
+      throw new ProtocolError('CONFLICT', 'This decision was already taken.', {
+        code: 'DECISION_ALREADY_TAKEN',
+      });
+    }
     let result: FailedRunResult;
     switch (request.action) {
       case 'retry': {
-        const next = await deps.runs.retry(run.id, userId);
+        const next = await deps.runs.retry(run.id, userId, 'card');
         result = { outcome: FAILED_RUN_OUTCOMES.retry, runId: next.id };
         break;
       }
@@ -108,7 +117,27 @@ export async function decideFailedRun(
         result = { outcome: FAILED_RUN_OUTCOMES.cancel };
         break;
     }
-    await deps.inbox.resolve({ ...ref, outcome: result.outcome });
+    const next = result.runId ? await deps.runs.detail(result.runId) : null;
+    await deps.inbox.resolve({
+      ...ref,
+      outcome: result.outcome,
+      ...(next
+        ? {
+            data: {
+              retriedByUserId: userId,
+              retriedByName:
+                next.inputs.find(
+                  (input) =>
+                    input.type === 'retry' &&
+                    (input.payload as { retryOfRunId?: unknown } | null)
+                      ?.retryOfRunId === run.id,
+                )?.actor.name ?? userId,
+              retrySource: 'card',
+              retriedRunId: next.id,
+            },
+          }
+        : {}),
+    });
     return result;
   } catch (error) {
     throw translated(error);

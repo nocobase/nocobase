@@ -221,7 +221,11 @@ export interface RunService {
     outer?: Tx,
   ): Promise<Run[]>;
   /** Starts a failed or cancelled run's work again as a new run, with its unhandled input, as `byUserId`. */
-  retry(runId: string, byUserId: string): Promise<Run>;
+  retry(
+    runId: string,
+    byUserId: string,
+    source?: 'card' | 'cli' | 'runRecord' | 'api',
+  ): Promise<Run>;
   get(runId: string): Promise<Run>;
   detail(runId: string): Promise<RunDetail>;
   list(filter: RunFilter): Promise<Run[]>;
@@ -877,8 +881,18 @@ export function createRunService(deps: RunServiceDeps): RunService {
         return ended;
       }, outer),
 
-    retry: (runId, byUserId) =>
-      tx.run(async (unit) => {
+    retry: async (runId, byUserId, source = 'api') => {
+      const target = await require(tx.read(), runId);
+      // Resolve collection metadata outside the transaction too. The lock must
+      // precede consistent reads so repeatable-read databases see a concurrent
+      // retry that committed while this request waited for the lock.
+      await findAgent(tx.read(), target.agentId);
+      return tx.run(async (unit) => {
+        await lockAgentForClaim(
+          unit.conn,
+          target.agentId,
+          clock.now().toISOString(),
+        );
         const run = await require(unit.conn, runId);
         if (run.status !== 'failed' && run.status !== 'cancelled')
           throw precondition(
@@ -890,8 +904,21 @@ export function createRunService(deps: RunServiceDeps): RunService {
             'RUN_NOT_RETRYABLE',
             'A consultation is not retried: the agent that asked asks again.',
           );
+        // The agent lock serializes retry and enqueue across server instances. Check
+        // the relationship even after the replacement has already ended.
+        const retried = await runsRepo(unit.conn).findOne({
+          filter: { retryOfRunId: run.id },
+          sort: (sort) => [
+            sort.field('createdAt').asc(),
+            sort.field('id').asc(),
+          ],
+        });
+        if (retried)
+          throw conflict('This run has already been retried.', {
+            code: 'RUN_ALREADY_RETRIED',
+            runId: retried.id,
+          });
         const agent = await requireInvocable(unit, run.agentId, byUserId);
-        await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
         const open = await runsOfKey(
           unit.conn,
           run,
@@ -927,12 +954,29 @@ export function createRunService(deps: RunServiceDeps): RunService {
           });
         await insertInput(unit, newId, {
           type: 'retry',
-          actor: { kind: 'user', id: byUserId, name: byUserId },
+          actor: {
+            kind: 'user',
+            id: byUserId,
+            name:
+              (await deps.people.names(unit.conn, [byUserId])).get(byUserId) ??
+              byUserId,
+          },
           text: 'Retry the work of the previous run.',
-          payload: { retryOfRunId: run.id, failureReason: run.failureReason },
+          payload: {
+            retryOfRunId: run.id,
+            failureReason: run.failureReason,
+            source,
+          },
+        });
+        unit.emit({
+          type: 'run.retried',
+          runId: newId,
+          retryOfRunId: run.id,
+          previousStatus: run.status,
         });
         return toRun(await require(unit.conn, newId));
-      }),
+      });
+    },
 
     get: async (runId) =>
       (await readRuns([await require(tx.read(), runId)]))[0],
@@ -945,6 +989,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
       const repos = await reposRepo(conn).findMany({ filter: { runId } });
+      const retried = await runsRepo(conn).findOne({
+        filter: { retryOfRunId: runId },
+        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      });
       const children = await runsRepo(conn).findMany({
         filter: { parentRunId: runId },
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
@@ -958,6 +1006,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
           );
       return {
         ...(await readRuns([run]))[0],
+        retriedRunId: retried?.id ?? null,
         inputs: inputs.map(toInputView),
         repos: repos.map(toRepo),
         usage: await usageOf(conn, runId),

@@ -1555,7 +1555,7 @@ export function createAdminRoutes(
         flags: { runId: { name: 'run' } },
       }),
       description:
-        'Queues a new run with the same input. Whoever started or owns it, or a manager of agents, may.',
+        'Queues a new run with the same input once. Whoever started or owns it, or a manager of agents, may. Repeating a retry returns CONFLICT with RUN_ALREADY_RETRIED and the replacement run id.',
       responses: {
         200: dataResponse(RunSchema),
         400: apiErrorResponse(
@@ -1563,6 +1563,7 @@ export function createAdminRoutes(
           'The run cannot be retried (`RUN_NOT_RETRYABLE`).',
         ),
         404: noRun,
+        409: apiErrorResponse(409, 'The run has already been retried.'),
         ...apiErrorResponses,
       },
     }),
@@ -1573,6 +1574,9 @@ export function createAdminRoutes(
           await services.runs.retry(
             context.req.valid('param').runId,
             caller(context).userId,
+            context.req.header('x-nocobase-client') === 'cli'
+              ? 'cli'
+              : 'runRecord',
           ),
           await machineViewer(context),
         ),
