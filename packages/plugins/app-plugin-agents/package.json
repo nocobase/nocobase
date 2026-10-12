@@ -181,9 +181,9 @@
         "types": "./dist/shared/conversations.d.ts",
         "import": "./dist/shared/conversations.js"
       },
-      "./shared/presets": {
-        "types": "./dist/shared/presets.d.ts",
-        "import": "./dist/shared/presets.js"
+      "./shared/model-catalog": {
+        "types": "./dist/shared/model-catalog.d.ts",
+        "import": "./dist/shared/model-catalog.js"
       },
       "./shared/models": {
         "types": "./dist/shared/models.d.ts",
