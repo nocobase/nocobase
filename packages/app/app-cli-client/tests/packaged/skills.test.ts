@@ -24,6 +24,52 @@ function fixture() {
 }
 
 describe('packaged offline skills commands', () => {
+  it('reports nested-target conflicts in real and dry-run JSON without claiming success or altering copies', async () => {
+    const { home, env } = fixture();
+    const parent = path.join(home, '.agents/skills/nb-studio-cli');
+    const config = path.join(parent, 'claude-config');
+    const child = path.join(config, 'skills/nb-studio-cli');
+    mkdirSync(child, { recursive: true });
+    writeFileSync(path.join(parent, 'SKILL.md'), 'parent instructions');
+    writeFileSync(path.join(child, 'SKILL.md'), 'child instructions');
+    writeFileSync(path.join(config, 'settings.json'), 'preserve settings');
+    const configured = { ...env, CLAUDE_CONFIG_DIR: config };
+    for (const dryRun of [true, false]) {
+      const result = await cli(
+        [
+          'skills',
+          'install',
+          '--tool',
+          'all',
+          ...(dryRun ? ['--dry-run'] : []),
+          '--json',
+        ],
+        configured,
+        { cwd: home },
+      );
+      expect(result.code).toBe(5);
+      expect(JSON.parse(result.stdout)).toMatchObject({
+        ok: false,
+        status: 'failure',
+        error: {
+          code: 'SKILLS_TARGET_OVERLAP',
+          details: { paths: [child, parent] },
+        },
+      });
+      expect(readFileSync(path.join(parent, 'SKILL.md'), 'utf8')).toBe(
+        'parent instructions',
+      );
+      expect(readFileSync(path.join(child, 'SKILL.md'), 'utf8')).toBe(
+        'child instructions',
+      );
+      expect(readFileSync(path.join(config, 'settings.json'), 'utf8')).toBe(
+        'preserve settings',
+      );
+      expect(existsSync(path.join(home, '.acme/skills.json'))).toBe(false);
+      if (dryRun) expect(existsSync(path.join(home, '.acme'))).toBe(false);
+    }
+  });
+
   it('returns one JSON envelope for dry-run, first install, repeat, and read-only status without a login', async () => {
     const { home, env } = fixture();
     const dry = await cli(

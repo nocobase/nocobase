@@ -350,7 +350,9 @@ async function statusOf(
   source: Snapshot,
   registry: Registry,
 ): Promise<SkillStatus> {
-  const record = registry.targets.find((record) => record.path === target.path);
+  const record = registry.targets.find(
+    (record) => path.resolve(record.path) === path.resolve(target.path),
+  );
   const base = {
     ...target,
     legacy:
@@ -378,7 +380,14 @@ async function statusOf(
 }
 
 function unique(targets: readonly Target[]): Target[] {
-  return [...new Map(targets.map((target) => [target.path, target])).values()];
+  return [
+    ...new Map(
+      targets.map((target) => {
+        const normalized = path.resolve(target.path);
+        return [normalized, { ...target, path: normalized }] as const;
+      }),
+    ).values(),
+  ];
 }
 
 /** Includes manual and legacy copies, and previously registered paths after environment variables change. */
@@ -410,6 +419,31 @@ function overlaps(first: string, second: string): boolean {
     contains(path.resolve(first), path.resolve(second)) ||
     contains(path.resolve(second), path.resolve(first))
   );
+}
+
+// Check the complete plan before replacing any directory: replacing a parent would delete a child Skill.
+function targetConflicts(
+  targets: readonly Target[],
+): Map<string, CliCommandError> {
+  const destinations = unique(targets);
+  const conflicts = new Map<string, CliCommandError>();
+  for (let index = 0; index < destinations.length; index++) {
+    const first = destinations[index];
+    for (const second of destinations.slice(index + 1)) {
+      if (!overlaps(first.path, second.path)) continue;
+      const error = new CliCommandError(
+        'SKILLS_TARGET_OVERLAP',
+        `Skill destinations contain one another: ${first.path} and ${second.path}. Choose separate tool configuration directories before installing.`,
+        {
+          exit: EXIT_CODES.validation,
+          details: { paths: [first.path, second.path] },
+        },
+      );
+      conflicts.set(first.path, error);
+      conflicts.set(second.path, error);
+    }
+  }
+  return conflicts;
 }
 
 async function replace(
@@ -450,7 +484,9 @@ async function replace(
       const next: Registry = {
         skill: SKILL,
         targets: [
-          ...registry.targets.filter((item) => item.path !== target.path),
+          ...registry.targets.filter(
+            (item) => path.resolve(item.path) !== path.resolve(target.path),
+          ),
           record,
         ],
       };
@@ -560,6 +596,10 @@ export async function installSkills(
   );
   const perform = async (): Promise<SkillsInstallResult> => {
     const registry = await readRegistry(environment);
+    const conflict = targetConflicts([...targets, ...registry.targets])
+      .values()
+      .next().value;
+    if (conflict !== undefined) throw conflict;
     const results: SkillInstall[] = [];
     for (const target of targets) {
       if (
@@ -622,7 +662,9 @@ export async function syncInstalledSkills(
       try {
         if (
           (await stat(target.path)) !== undefined &&
-          !registry.targets.some((record) => record.path === target.path)
+          !registry.targets.some(
+            (record) => path.resolve(record.path) === path.resolve(target.path),
+          )
         )
           advise(
             `An unregistered nb-studio-cli copy at ${target.path} was left unchanged.`,
@@ -636,9 +678,13 @@ export async function syncInstalledSkills(
     if (registry.targets.length > 0)
       await lock(path.join(environment.stateHome, '.skills.lock'), async () => {
         const current = await readRegistry(environment);
+        const destinations = unique(current.targets);
+        const conflicts = targetConflicts(destinations);
         // Read the new source inside each attempt so every registered target has a failure result if it is missing.
-        for (const target of [...current.targets]) {
+        for (const target of destinations) {
           try {
+            const conflict = conflicts.get(target.path);
+            if (conflict !== undefined) throw conflict;
             const result = await replace(
               target,
               environment,

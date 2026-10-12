@@ -72,6 +72,272 @@ function record(env: SkillsEnvironment): {
   );
 }
 
+function nestedFixture(direction: 'codex-parent' | 'claude-parent'): {
+  env: SkillsEnvironment;
+  parent: string;
+  child: string;
+  parentTool: string;
+  childTool: string;
+} {
+  const base = fixture();
+  if (direction === 'codex-parent') {
+    const parent = codex(base);
+    const config = path.join(parent, 'claude-config');
+    return {
+      env: { ...base, env: { PATH: '', CLAUDE_CONFIG_DIR: config } },
+      parent,
+      child: path.join(config, 'skills/nb-studio-cli'),
+      parentTool: 'codex',
+      childTool: 'claude',
+    };
+  }
+  const parent = claude(base);
+  const env = {
+    ...base,
+    home: path.join(parent, 'codex-home'),
+    env: { PATH: '', CLAUDE_CONFIG_DIR: path.join(base.home!, '.claude') },
+  };
+  return {
+    env,
+    parent,
+    child: codex(env),
+    parentTool: 'claude',
+    childTool: 'codex',
+  };
+}
+
+describe('overlapping Skill destinations', () => {
+  it('preflights both parent directions before installing any target, including dry-run', async () => {
+    for (const direction of ['codex-parent', 'claude-parent'] as const) {
+      for (const dryRun of [false, true]) {
+        const { env, parent, child } = nestedFixture(direction);
+        copy(parent, 'parent instructions');
+        copy(child, 'child instructions');
+        const neighbor = path.join(path.dirname(parent), 'my-own-skill');
+        copy(neighbor, 'preserve neighbor');
+        writeFileSync(path.join(parent, 'settings.json'), 'preserve settings');
+        await expect(installSkills(env, ['all'], dryRun)).rejects.toMatchObject(
+          { code: 'SKILLS_TARGET_OVERLAP', exit: 5 },
+        );
+        expect(readFileSync(path.join(parent, 'SKILL.md'), 'utf8')).toBe(
+          'parent instructions',
+        );
+        expect(readFileSync(path.join(child, 'SKILL.md'), 'utf8')).toBe(
+          'child instructions',
+        );
+        expect(readFileSync(path.join(parent, 'settings.json'), 'utf8')).toBe(
+          'preserve settings',
+        );
+        expect(readFileSync(path.join(neighbor, 'SKILL.md'), 'utf8')).toBe(
+          'preserve neighbor',
+        );
+        expect(existsSync(path.join(env.stateHome, 'skills.json'))).toBe(false);
+        if (dryRun) expect(existsSync(env.stateHome)).toBe(false);
+      }
+    }
+  });
+
+  it('checks existing registrations for sequential installs in either order and preserves the original record', async () => {
+    for (const direction of ['codex-parent', 'claude-parent'] as const) {
+      for (const first of ['parent', 'child'] as const) {
+        const { env, parent, child, parentTool, childTool } =
+          nestedFixture(direction);
+        await installSkills(env, [first === 'parent' ? parentTool : childTool]);
+        const installed = first === 'parent' ? parent : child;
+        const before = readFileSync(
+          path.join(env.stateHome, 'skills.json'),
+          'utf8',
+        );
+        const neighbor = path.join(path.dirname(parent), 'my-own-skill');
+        copy(neighbor, 'preserve neighbor');
+        const next = first === 'parent' ? childTool : parentTool;
+        for (const dryRun of [true, false]) {
+          await expect(
+            installSkills(env, [next], dryRun),
+          ).rejects.toMatchObject({ code: 'SKILLS_TARGET_OVERLAP' });
+          expect(readFileSync(path.join(installed, 'SKILL.md'), 'utf8')).toBe(
+            'current instructions',
+          );
+          expect(
+            readFileSync(path.join(env.stateHome, 'skills.json'), 'utf8'),
+          ).toBe(before);
+          expect(readFileSync(path.join(neighbor, 'SKILL.md'), 'utf8')).toBe(
+            'preserve neighbor',
+          );
+        }
+      }
+    }
+  });
+
+  it('deduplicates equal normalized destinations instead of treating them as nested', async () => {
+    const base = fixture();
+    const env = {
+      ...base,
+      env: {
+        PATH: '',
+        CLAUDE_CONFIG_DIR: path.join(base.home!, '.agents', 'unused', '..'),
+      },
+    };
+    const installed = await installSkills(env, ['all']);
+    expect(installed.targets).toHaveLength(1);
+    expect(installed.targets[0]).toMatchObject({
+      tool: 'codex',
+      path: codex(env),
+      present: true,
+      upToDate: true,
+    });
+    const original = record(env).targets[0]!;
+    writeFileSync(
+      path.join(env.stateHome, 'skills.json'),
+      JSON.stringify({
+        skill: 'nb-studio-cli',
+        targets: [
+          {
+            ...original,
+            path: `${path.dirname(original.path)}//nb-studio-cli`,
+          },
+        ],
+      }),
+    );
+    expect((await installSkills(env, ['all'])).targets[0]?.action).toBe(
+      'unchanged',
+    );
+    expect(record(env).targets).toHaveLength(1);
+  });
+
+  it('reads the winning concurrent registration before retrying an overlapping install', async () => {
+    const { env, parent, child, parentTool, childTool } =
+      nestedFixture('codex-parent');
+    const results = await Promise.allSettled([
+      installSkills(env, [parentTool]),
+      installSkills(env, [childTool]),
+    ]);
+    expect(
+      results.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    expect(
+      results.find((result) => result.status === 'rejected'),
+    ).toMatchObject({ reason: { code: 'SKILLS_BUSY' } });
+    const parentWon = results[0]?.status === 'fulfilled';
+    const before = readFileSync(
+      path.join(env.stateHome, 'skills.json'),
+      'utf8',
+    );
+    await expect(
+      installSkills(env, [parentWon ? childTool : parentTool]),
+    ).rejects.toMatchObject({ code: 'SKILLS_TARGET_OVERLAP' });
+    expect(
+      readFileSync(path.join(parentWon ? parent : child, 'SKILL.md'), 'utf8'),
+    ).toBe('current instructions');
+    expect(readFileSync(path.join(env.stateHome, 'skills.json'), 'utf8')).toBe(
+      before,
+    );
+  });
+
+  it('skips every conflicting registered copy before synchronization and updates unrelated destinations', async () => {
+    for (const direction of ['codex-parent', 'claude-parent'] as const) {
+      for (const reverse of [false, true]) {
+        const { env, parent, child, parentTool, childTool } =
+          nestedFixture(direction);
+        await installSkills(env, [parentTool]);
+        const original = record(env).targets[0]!;
+        copy(child, 'child instructions');
+        const independent = path.join(
+          path.dirname(env.packageRoot),
+          'independent/skills/nb-studio-cli',
+        );
+        copy(independent, 'independent instructions');
+        const conflicted = [
+          original,
+          {
+            tool: childTool,
+            path: child,
+            hash: 'child-hash',
+            cliVersion: '0.5.0',
+          },
+        ];
+        if (reverse) conflicted.reverse();
+        writeFileSync(
+          path.join(env.stateHome, 'skills.json'),
+          JSON.stringify({
+            skill: 'nb-studio-cli',
+            targets: [
+              ...conflicted,
+              {
+                tool: 'codex',
+                path: independent,
+                hash: 'independent-hash',
+                cliVersion: '0.5.0',
+              },
+            ],
+          }),
+        );
+        const before = readFileSync(
+          path.join(env.stateHome, 'skills.json'),
+          'utf8',
+        );
+        const unregisteredConfig = path.join(
+          path.dirname(env.packageRoot),
+          'new-claude-config',
+        );
+        for (const dryRun of [true, false]) {
+          await expect(
+            installSkills(
+              {
+                ...env,
+                env: { PATH: '', CLAUDE_CONFIG_DIR: unregisteredConfig },
+              },
+              ['claude'],
+              dryRun,
+            ),
+          ).rejects.toMatchObject({ code: 'SKILLS_TARGET_OVERLAP' });
+          expect(
+            readFileSync(path.join(env.stateHome, 'skills.json'), 'utf8'),
+          ).toBe(before);
+          expect(existsSync(unregisteredConfig)).toBe(false);
+        }
+        const neighbor = path.join(path.dirname(parent), 'my-own-skill');
+        copy(neighbor, 'preserve neighbor');
+        writeFileSync(
+          path.join(env.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+          'new instructions',
+        );
+        const result = await syncInstalledSkills({
+          ...env,
+          cliVersion: '2.0.0',
+        });
+        expect(result.targets.map((target) => target.action)).toEqual([
+          'failed',
+          'failed',
+          'updated',
+        ]);
+        for (const failure of result.targets.slice(0, 2)) {
+          expect(failure.error).toContain('contain one another');
+          expect(failure.error).toContain(parent);
+          expect(failure.error).toContain(child);
+        }
+        expect(result.warnings).toHaveLength(2);
+        expect(result.warnings.join('')).toContain('acme skills install');
+        expect(
+          record(env).targets.filter((target) => target.path !== independent),
+        ).toEqual(conflicted);
+        expect(readFileSync(path.join(parent, 'SKILL.md'), 'utf8')).toBe(
+          'current instructions',
+        );
+        expect(readFileSync(path.join(child, 'SKILL.md'), 'utf8')).toBe(
+          'child instructions',
+        );
+        expect(readFileSync(path.join(independent, 'SKILL.md'), 'utf8')).toBe(
+          'new instructions',
+        );
+        expect(readFileSync(path.join(neighbor, 'SKILL.md'), 'utf8')).toBe(
+          'preserve neighbor',
+        );
+      }
+    }
+  });
+});
+
 describe('local Skill installation', () => {
   it('installs both tools, repeats without rewriting the Skill, replaces obsolete contents, and preserves neighbors', async () => {
     const env = fixture();
