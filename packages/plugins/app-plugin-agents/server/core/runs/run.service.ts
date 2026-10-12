@@ -81,7 +81,6 @@ import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { gateInputs, gatePending } from './input-gate.js';
 import { findBrief, requestReset } from './workspace.store.js';
-import { refreshQueuedIdentity } from './identity.js';
 
 export const DEFAULT_THREAD = 'main';
 
@@ -199,12 +198,6 @@ export interface RunService {
    * events).
    */
   enqueue(request: EnqueueRequest, outer?: Tx): Promise<EnqueueResult>;
-  /** Refreshes subject-selected queued identities in place, and tells held work of a responsibility change. */
-  reassignQueued(
-    subject: { readonly kind: string; readonly id: string },
-    input: NewInput,
-    outer?: Tx,
-  ): Promise<void>;
   /** Reads causal work inside the caller's transaction, without opening a second database connection. */
   identityInputs(
     conn: DatabaseConnection,
@@ -848,33 +841,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
       const inputs = await inputsRepo(conn).findMany({ filter: { runId } });
       return { run: toRun(run), inputs: inputs.map(toInput) };
     },
-
-    reassignQueued: (subject, input, outer) =>
-      tx.run(async (unit) => {
-        const open = await openRunsOn(unit.conn, subject);
-        // Use a stable order when several agents have work on the same subject.
-        for (const id of [...new Set(open.map((run) => run.agentId))].sort())
-          await lockAgentForClaim(unit.conn, id, clock.now().toISOString());
-        for (const previous of open) {
-          const run = await findRunRecord(unit.conn, previous.id);
-          if (!run || isTerminal(run.status)) continue;
-          const inputs = await inputsRepo(unit.conn).findMany({
-            filter: { runId: run.id },
-          });
-          const identity = await deps.subjects
-            .get(subject.kind)
-            ?.actsAs?.(unit.conn, {
-              subjectId: subject.id,
-              agentId: run.agentId,
-              inputs: inputs.map(toInput),
-              causedByRunId: run.retryOfRunId ?? undefined,
-            });
-          if (!identity) continue;
-          await insertInput(unit, run.id, input);
-          if (run.status === 'queued')
-            await refreshQueuedIdentity(unit, deps, run);
-        }
-      }, outer),
 
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {

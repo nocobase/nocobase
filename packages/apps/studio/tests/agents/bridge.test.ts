@@ -176,7 +176,7 @@ describe('issues start work for the project manager', () => {
     });
   });
 
-  it('updates the queued identity in place for the new owner', async () => {
+  it('withdraws queued work on transfer without changing identity or restarting', async () => {
     await h.createAgent();
     const issue = await openIssue(alice());
     const assigned = await assign(issue);
@@ -189,7 +189,7 @@ describe('issues start work for the project manager', () => {
     );
     const runs = await runsOf(issue.id);
     expect(runs.map((run) => [run.status, run.actorUserId]).sort()).toEqual([
-      ['queued', 'bob'],
+      ['cancelled', 'alice'],
     ]);
     expect(runs[0].id).toBe(before.id);
     expect(attempts).toEqual([]);
@@ -512,6 +512,20 @@ describe("an agent's comment", () => {
       content: `${mention(worker, 'Worker')} again`,
     });
     const pending = (await pendingCommentRun(h.projects, alice(), issue.id))!;
+    h.roles.set('bob', 'admin');
+    expect(
+      await pendingCommentRun(h.projects, h.viewer('bob'), issue.id),
+    ).toBeNull();
+    const refused = await h.request(
+      'POST',
+      `/issueCommentRuns/${issue.id}/continue`,
+      {
+        user: 'bob',
+        body: { token: pending.token },
+      },
+    );
+    expect(refused.status).toBe(403);
+    expect(refused.body.error.reason).toBe('ISSUE_OWNER_START_REQUIRED');
     const attempts = await Promise.all(
       [0, 1].map(() =>
         h.request('POST', `/issueCommentRuns/${issue.id}/continue`, {
@@ -1514,6 +1528,28 @@ describe('an issue moved to another project', () => {
       }),
     );
   }
+
+  it('does not restart a project move after its running agent is stopped by an owner transfer', async () => {
+    const { core, issue } = await movable();
+    const payload = await h.claimOne();
+    const runId = payload.run.id;
+    await start(runId);
+    await move(issue.id, core.id);
+    const current = await h.projects.issueQueries.detail(alice(), issue.id);
+    await h.projects.issues.update(alice(), issue.id, {
+      revision: current.revision,
+      ownerUserId: 'bob',
+    });
+    expect((await h.runner(RUNNER_ROUTES.cancelAck, runId, {})).status).toBe(
+      200,
+    );
+    const runs = await runsOf(issue.id);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      status: 'cancelled',
+      actorUserId: 'alice',
+    });
+  });
 
   /**
    * The repositories the run's context lists as its project's working directories; the project manager checks none

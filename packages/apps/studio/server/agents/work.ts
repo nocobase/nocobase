@@ -21,7 +21,7 @@
  * - A person moving the issue into In progress starts the executing agent's work (`started` from backlog or a finished
  *   status, else `statusChange`), unless they asked not to start now; moving it elsewhere tells a run that has not
  *   ended. Finishing or closing the issue withdraws queued work instead.
- * - A new owner: unclaimed manager work and delegated steps switch identity in place; held work keeps its identity and is told.
+ * - A new owner: all queued agent work is withdrawn and held work is asked to stop. Resumption belongs to the handover flow.
  * - Moved to another project (`project-move.ts`): work starts in the new project's working directories
  *   (`projectChanged`). A run claimed before the move works in the previous project's, so it is told to end and asked
  *   to stop (left to end on its own when its agent moved the issue), and the new run starts once it has ended
@@ -569,6 +569,18 @@ export function createAgentWork(deps: {
   return {
     async onRunFinished(tx, run) {
       if (run.subject.kind !== ISSUE_SUBJECT) return;
+      // An owner transfer cancels project-move continuation too; it must not restart work on its own.
+      const previous = await runs.identityInputs(tx.conn, run.id);
+      if (
+        previous?.inputs.some(
+          (input) =>
+            input.payload &&
+            typeof input.payload === 'object' &&
+            (input.payload as Record<string, unknown>).trigger ===
+              'ownerChanged',
+        )
+      )
+        return;
       // Admission cancellations never restart old work; acknowledged project moves still do.
       if (
         run.status === 'cancelled' &&
@@ -668,6 +680,8 @@ export function createAgentWork(deps: {
 
     async onIssueChanged(tx, change) {
       const { before, after } = change;
+      // The owner-change hook already withdrew/stopped work. PM-299 decides when the new owner resumes it.
+      if (before && before.ownerUserId !== after.ownerUserId) return [];
       const from = agentOf(before);
       const to = agentOf(after);
       if (
@@ -816,18 +830,37 @@ export function createAgentWork(deps: {
       return wakeComment(tx, issue, held, userId, { continuedFrom });
     },
 
-    async onOwnerChanged(tx, { issue, from, to }) {
+    async onOwnerChanged(tx, { issue, from, to, actor }) {
       if (tx.rehearsal) return [];
-      await runs.reassignQueued(
-        subjectOf(issue),
+      const subject = subjectOf(issue);
+      const who = await actorOf(
+        tx,
+        actor ?? { type: 'system', id: null },
+        issue,
+      );
+      // Preserve a transfer marker and every original input before cancellation sinks can run.
+      for (const run of await runs.openOn(tx.conn, subject))
+        await runs.addInput(
+          run.id,
+          {
+            type: 'signal',
+            actor: who.ref,
+            text: `${issue.identifier} has a new owner. Stop this work; the new owner decides when to resume.`,
+            payload: { trigger: 'ownerChanged', from, to },
+          },
+          agentsTx(tx),
+        );
+      await runs.withdrawQueued(
         {
-          type: 'signal',
-          actor: { kind: 'system', id: 'system', name: 'Studio' },
-          text: `${issue.identifier} has a new owner. Claimed work keeps its identity; subsequent work runs as the new owner.`,
-          payload: { trigger: 'ownerChanged', from, to },
+          subject,
+          byUserId: actor?.type === 'user' ? actor.id : null,
+          detail: `${issue.identifier} is waiting for its new owner to take over.`,
         },
         agentsTx(tx),
       );
+      for (const run of await runs.openOn(tx.conn, subject))
+        if (run.status !== 'queued')
+          await runs.cancel(run.id, who.userId, agentsTx(tx));
       return [];
     },
 

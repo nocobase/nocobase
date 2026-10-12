@@ -341,7 +341,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
         ...cliRoute(false),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
         description:
-          'Needs pm.issues/edit on the issue. Wakes the agents the comment names as the caller and restarts the count; the token is consumed once, and failed preconditions leave it pending.',
+          'Needs pm.issues/edit and the current issue owner. Wakes the agents the comment names and restarts the count; project manager work uses the owner identity. The token is consumed once, and failed preconditions leave it pending.',
         responses: {
           200: dataResponse(z.object({ runIds: z.array(z.string()) })),
           ...apiErrorResponses,

@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { HEADERS, PROTOCOL_VERSION } from '@nocobase/agent-protocol';
+import {
+  HEADERS,
+  PROTOCOL_VERSION,
+  RUNNER_ROUTES,
+} from '@nocobase/agent-protocol';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 import { PROJECT_MANAGER_ID as PM } from '../../shared/project-manager.js';
 
@@ -159,12 +163,13 @@ describe('manager and delegated identities', () => {
         (run) => run.agentId === worker && run.actorUserId === 'bob',
       ),
     ).toBeDefined();
+    expect(switched.every((run) => run.status === 'cancelled')).toBe(true);
     expect(switched.find((run) => run.id === chain.id)?.actorUserId).toBe(
-      'carol',
+      'alice',
     );
   });
 
-  it('preserves queued inputs on owner changes and corrects legacy delegated data at claim', async () => {
+  it('corrects legacy delegated data at claim and requests cancellation on transfer', async () => {
     const task = await issue();
     const worker = await h.createAgent({ name: 'Worker' });
     await h.projects.comments.create(
@@ -202,21 +207,70 @@ describe('manager and delegated identities', () => {
       ownerUserId: 'bob',
     });
     expect((await h.agents.runs.get(run.id)).actorUserId).toBe('alice');
+    expect((await h.agents.runs.get(run.id)).cancelRequestedAt).not.toBeNull();
     expect(
       (await h.agents.runs.detail(run.id)).inputs.at(-1)?.payload,
     ).toMatchObject({ trigger: 'ownerChanged' });
-    await h.projects.comments.create(
-      {
-        ...h.viewer('alice'),
-        actor: { type: 'agent', id: PM, trace: { runId: run.id } },
-      },
-      task.id,
-      { content: mention(worker) },
+    expect(await runs(task.id)).toHaveLength(1);
+    expect((await h.runner(RUNNER_ROUTES.cancelAck, run.id, {})).status).toBe(
+      200,
     );
-    const following = (await runs(task.id)).find(
-      (item) => item.id !== run.id && item.agentId === worker,
-    )!;
-    expect(following.actorUserId).toBe('bob');
+  });
+
+  it('withdraws every queued agent on transfer, retains inputs and stops held work even when the executor is cleared', async () => {
+    const task = await issue();
+    await h.request('POST', `/projectManager/issues/${task.id}/start`, {
+      user: 'alice',
+    });
+    const payload = await h.claimOne();
+    const worker = await h.createAgent({ name: 'Direct worker' });
+    await h.projects.comments.create(h.viewer('bob'), task.id, {
+      content: mention(worker),
+    });
+    const before = await runs(task.id);
+    const queued = before.filter((run) => run.status === 'queued');
+    expect(queued.length).toBeGreaterThan(0);
+    const inputs = await Promise.all(
+      queued.map((run) => h.agents.runs.detail(run.id)),
+    );
+    const current = await h.projects.issueQueries.detail(
+      h.viewer('bob'),
+      task.id,
+    );
+    await h.projects.issues.update(h.viewer('bob'), task.id, {
+      revision: current.revision,
+      ownerUserId: 'bob',
+      executor: null,
+    });
+    const after = await runs(task.id);
+    expect(after).toHaveLength(before.length);
+    for (const previous of inputs) {
+      const now = await h.agents.runs.detail(previous.id);
+      expect(now.status).toBe('cancelled');
+      expect(now.actorUserId).toBe(previous.actorUserId);
+      expect(now.inputs.slice(0, previous.inputs.length)).toEqual(
+        previous.inputs,
+      );
+    }
+    expect(await h.agents.runs.get(payload.run.id)).toMatchObject({
+      actorUserId: 'alice',
+      status: 'dispatched',
+      cancelRequestedAt: expect.any(String),
+    });
+    expect(
+      (await h.agents.runs.detail(payload.run.id)).inputs.at(-1)?.actor.id,
+    ).toBe('bob');
+    const acknowledged = await h.runner(
+      RUNNER_ROUTES.cancelAck,
+      payload.run.id,
+      {},
+    );
+    expect(acknowledged.status).toBe(200);
+    expect((await h.agents.runs.get(payload.run.id)).status).toBe('cancelled');
+    await expect(
+      h.agents.runs.authenticateToken(payload.cli.credential.content.token),
+    ).rejects.toMatchObject({ code: 'RUN_TOKEN_INVALID' });
+    expect(await runs(task.id)).toHaveLength(before.length);
   });
 
   it('follows recorded run provenance for user-approved steps and legacy queued inputs', async () => {
@@ -260,7 +314,10 @@ describe('manager and delegated identities', () => {
       revision: current.revision,
       ownerUserId: 'carol',
     });
-    expect((await h.agents.runs.get(step.id)).actorUserId).toBe('carol');
+    expect(await h.agents.runs.get(step.id)).toMatchObject({
+      actorUserId: 'alice',
+      status: 'cancelled',
+    });
   });
 
   it('retains the system source and reports no runner and inactive owner waiting', async () => {

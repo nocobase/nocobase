@@ -54,18 +54,10 @@ describe('subject-selected execution identity', () => {
     });
     expect(await claim(h, bob)).toEqual([]);
     setOwner('bob');
-    await h.services.runs.reassignQueued(
-      { kind: 'owned', id: '1' },
-      {
-        type: 'signal',
-        actor: { kind: 'system', id: 'system', name: 'System' },
-        text: 'Owner changed',
-      },
-    );
     expect(await claim(h, owner)).toEqual([]);
     const [payload] = await claim(h, bob);
     expect(payload.inputs.map((input: { text: string }) => input.text)).toEqual(
-      ['Work', 'More', 'Owner changed'],
+      ['Work', 'More'],
     );
     expect(await h.services.runs.get(result.runId!)).toMatchObject({
       actorUserId: 'bob',
@@ -110,21 +102,13 @@ describe('subject-selected execution identity', () => {
     );
     expect(await claim(h, bob)).toEqual([]);
     setOwner('bob');
-    await h.services.runs.reassignQueued(
-      { kind: 'owned', id: '1' },
-      {
-        type: 'signal',
-        actor: { kind: 'system', id: 'system', name: 'System' },
-        text: 'Owner changed',
-      },
-    );
     expect(await h.services.runs.get(result.runId!)).toMatchObject({
       actorUserId: 'owner',
       status: 'dispatched',
     });
     expect(
       (await h.services.runs.detail(result.runId!)).inputs.at(-1)?.text,
-    ).toBe('Owner changed');
+    ).toBe('Work');
     expect(await enqueue('Next')).toMatchObject({ outcome: 'created' });
     const failed = await h.request(
       'POST',
@@ -169,14 +153,6 @@ describe('subject-selected execution identity', () => {
     await prepared;
     try {
       setOwner('bob');
-      await h.services.runs.reassignQueued(
-        { kind: 'owned', id: '1' },
-        {
-          type: 'signal',
-          actor: { kind: 'system', id: 'system', name: 'System' },
-          text: 'Owner changed during preparation',
-        },
-      );
     } finally {
       resume();
     }

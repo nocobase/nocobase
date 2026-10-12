@@ -492,7 +492,7 @@ test.describe('issue page', () => {
     ).toBeHidden();
   });
 
-  test('another user starts the project manager as the issue owner and the transcript names both', async ({
+  test('only the owner starts; another user comments as a trigger and the transcript names both', async ({
     page,
     api,
     browser,
@@ -523,7 +523,16 @@ test.describe('issue page', () => {
         roleScopes: { studio: ['admin'] },
       });
       await signIn(context, triggerUser);
-      const trigger = await api.get<{ userId: string }>('projects/me');
+      await open(page, `/issues/${issue.identifier}`);
+      await expect(
+        page
+          .getByRole('region', { name: '现在' })
+          .getByRole('button', { name: '开始', exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        api.post(`projectManager/issues/${issue.id}/start`),
+      ).rejects.toThrow('ISSUE_OWNER_START_REQUIRED');
+      await signIn(context, 'alex');
       await open(page, `/issues/${issue.identifier}`);
       await page
         .getByRole('region', { name: '现在' })
@@ -535,6 +544,13 @@ test.describe('issue page', () => {
             (await api.get<Issue>(`projects/issues/${issue.id}`)).statusKey,
         )
         .toBe('in_progress');
+      const first = await runner.start(issue.identifier);
+      await runner.complete(first.runId, 'Ready for comments.');
+      await signIn(context, triggerUser);
+      const trigger = await api.get<{ userId: string }>('projects/me');
+      await api.post(`projects/issues/${issue.id}/comments`, {
+        content: `Please check the implementation, ${suffix}.`,
+      });
       const started = await runner.start(issue.identifier);
       const detail = await admin.api.get<{
         actorUserId: string;
