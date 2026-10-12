@@ -117,6 +117,8 @@ export interface Harness {
   dirs: SubjectDir[];
   /** The scopes (a registered `team`) whose variables and skills the fake subject's runs get. */
   scopes: SubjectScope[];
+  /** What the fake subject adds to the turn of a resumed or a fresh session. */
+  sessionNotes: { resumed?: string; fresh?: string };
   createAgent(input?: Partial<AgentInput>): Promise<string>;
   registerRunner(options?: RunnerOptions): Promise<RegisteredRunner>;
   enqueue(
@@ -307,11 +309,13 @@ export async function createHarness(
     settled: undefined,
     dirs: [],
     scopes: [],
+    sessionNotes: {},
   } as {
     failAssembly: boolean;
     settled: Set<string> | undefined;
     dirs: SubjectDir[];
     scopes: SubjectScope[];
+    sessionNotes: { resumed?: string; fresh?: string };
   };
   services.subjects.register({
     kind: 'sample',
@@ -352,6 +356,7 @@ export async function createHarness(
           context: `Sample ${claim.run.subject.id}`,
           turn: {
             prompt: claim.inputs.map((input) => input.text).join('\n'),
+            ...harness.sessionNotes,
           },
           data: { sampleId: claim.run.subject.id },
           dirs: harness.dirs,

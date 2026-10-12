@@ -12,6 +12,67 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'issueRuns.model': '模型：{{model}}',
+  'issueRuns.configuredModel': '配置模型：{{model}}',
+  'issueRuns.modelUnknown': '模型尚未报告',
+  'issueRuns.clearFilters': '清除筛选',
+  'issueRuns.emptyHint': '请在属性中确认执行者和任务状态，以启动 Agent 工作。',
+  'issueRuns.loading': '正在加载执行记录…',
+  'issueRuns.failed': '执行记录加载失败，请重试。',
+  'issueRuns.refreshFailed': '执行记录刷新失败，当前显示上次加载的记录。',
+  'issueRuns.forbidden': '无权查看执行记录，请联系项目负责人申请权限。',
+  'issueRuns.unavailable': '执行记录不可用，请返回任务列表确认任务是否仍存在。',
+  'issueRuns.unauthenticated': '登录已失效，请重新登录后查看执行记录。',
+  'issueRuns.signIn': '重新登录',
+  'issueRuns.retry': '重试',
+
+  globalChat: {
+    notSubmitted: '问题未发送',
+    editRejected: '将问题和附件放回编辑区',
+    placeholder: '向 Agent 提问…',
+    label: '向 Agent 提问',
+    edit: '在面板中继续编辑',
+    preview: '预览页面上下文',
+    send: '发送问题',
+    target: '与 {{name}} 新建会话',
+    continue: '继续：{{title}} · {{name}}',
+    newConversation: '新会话',
+    noAgent: '请在面板选择 Agent',
+    noAgentHelp:
+      '没有可用 Agent。请在账号偏好中选择默认 Agent，或请管理员配置。',
+    unavailableHelp:
+      '当前会话不可用。请打开面板选择或新建会话；问题仍保留在这里。',
+    loadingHelp: '正在加载当前会话。请等待加载完成，或打开面板选择会话。',
+    pendingHelp: '上一条问题仍在发送或等待确认。请打开面板核对后再发送。',
+    replying: 'Agent 正在回复',
+    truncated: '页面上下文已按长度预算精简。',
+    unknown: '发送结果待确认',
+    creationUnknown: '会话创建结果待确认',
+    sending: '正在发送…',
+    unknownHelp: '此问题可能已保存。请核对会话后再继续提问。',
+    check: '刷新核对',
+    viewConversation: '查看会话',
+    creationHelp:
+      '问题尚未发送。请选择会话继续，或另建会话；可能已有一个空会话。',
+    refreshConversations: '刷新会话列表',
+    chooseConversation: '在“{{title}}”中继续',
+    moreConversations: '更多会话',
+    createAnother: '另建会话（可能已有空会话）',
+    draftConflict: '面板已有草稿，如何处理顶部问题？',
+    keepDraft: '保留面板草稿',
+    appendDraft: '追加顶部问题',
+  },
+  runTranscriptFilters: {
+    title: '事件类型',
+    agent: 'Agent',
+    input: '输入',
+    tools: '工具',
+    thinking: '思考',
+    system: '系统',
+    hiddenGroup: '{{count}} 条{{group}}',
+    expandHidden: '隐藏事件：{{summary}}',
+    errorsAlwaysVisible: '错误始终显示',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
@@ -61,6 +122,20 @@ const zhCN: AppResource = {
   'auth.registerDescription': '创建账户以开始使用。',
   'auth.forgotTitle': '忘记密码',
   'auth.forgotDescription': '输入邮箱，如果账户存在，我们将发送重置链接。',
+  'auth.passwordResetUnavailable': '未开启自助找回，请联系管理员重置密码。',
+  'auth.capabilityLoadFailed': '无法检查自助找回是否已开启。',
+  'auth.retry': '重试',
+  'auth.loading': '加载中',
+  'auth.passwordRequired': '请输入新密码。',
+  'members.accountLink': '个人资料',
+  'members.actions': '成员操作',
+  'members.resetPassword': '重置密码',
+  'members.resettingPassword': '正在重置密码…',
+  'members.passwordResetSuccess': '已重置 {{name}} 的密码。',
+  'members.resetPasswordSessionsNotice':
+    '重置密码后，该成员现有登录会话将失效。',
+  'members.changeOwnPasswordInstead': '请在个人资料中修改自己的密码。',
+  'members.memberNotFound': '找不到该成员。',
   'auth.resetTitle': '重置密码',
   'auth.resetDescription': '为账户设置新密码。',
   'auth.identifier': '用户名或邮箱',
@@ -128,32 +203,36 @@ const zhCN: AppResource = {
     },
     send: '发送',
     setUpModels: '添加模型服务',
+    runnerUnavailable:
+      '这个 Agent 暂无可用的运行环境。请添加或启动运行环境，并确保对应编码工具已安装、已登录。消息发送后会等待 Runner 就绪。',
+    setUpRunners: '配置运行环境',
     sendFailed: '消息没有发出去，请重试。',
     recent: '最近的对话',
     allConversations: '查看全部',
     untitled: '未命名对话',
     agentSetup: {
-      open: '在你的 Agent 中使用 Studio',
-      title: '在你的 Agent 中使用 Studio',
+      open: '用本地 Coding Agent 管理 Studio',
+      title: '连接本地 Coding Agent',
       description:
-        '把这段提示发给 Claude Code、Codex 等编程 Agent，它会安装 studio 命令行并登录。',
+        '将下面的配置指令发给你常用的本地 Coding Agent（如 Claude Code、Codex）。完成配置后，就能让它帮你查询项目、创建任务、更新进度。',
       prompt:
-        '请帮我安装并配置 Studio CLI，用来操作 Studio（{{server}}）的项目和任务：\n' +
-        '1. 运行 `{{install}}` 安装 studio；\n' +
-        '2. 运行 `nb-studio login --server {{server}}`，把它显示的验证码告诉我，我在浏览器里确认；\n' +
-        '3. 登录后运行 `nb-studio docs` 了解可用命令，之后按我的要求用 studio 操作，不要直接调用 HTTP 接口。',
-      promptLabel: '给 Agent 的提示',
-      preparing: '正在准备提示',
+        '请帮我安装并配置 NocoBase Studio CLI，用来管理 NocoBase Studio（{{server}}）的项目和任务：\n' +
+        '1. `nb-studio` 需要 Node.js 24 或更高版本及 npm：先用 `node --version` 检查，缺少或版本过低时先征得我同意再安装；然后运行 `{{install}}` 安装 `nb-studio`；\n' +
+        '2. 运行 `nb-studio login --server {{server}}`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；\n' +
+        '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；\n' +
+        '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
+      promptLabel: '发送给 Coding Agent 的配置指令',
+      preparing: '正在生成配置指令',
       identity:
-        'CLI 会以你的身份操作，权限和你在 Studio 里一样，登录时需要你在浏览器确认。',
-      expiry: '此链接 30 分钟内有效，可重新生成。',
+        'Coding Agent 将通过 CLI 以你的身份操作，操作范围受你的 Studio 权限限制。登录需要你在浏览器中确认。',
+      expiry: '配置指令中的安装链接 30 分钟内有效，过期后请重新生成。',
       runtime:
-        '这里只安装 CLI。要让 Agent 在这台机器上运行，请在「Agent 团队 › 运行环境 › 添加运行环境」中添加，它会安装 nocobase-runner。',
-      regenerate: '重新生成',
-      copy: '复制',
-      copied: '已复制',
-      copyFailed: '复制失败',
-      failed: '提示准备失败，请重试。',
+        '要让 Studio 将任务派发到你的电脑执行，请前往「Agent 团队 › 运行环境 › 添加运行环境」安装并注册 Runner。',
+      regenerate: '重新生成配置指令',
+      copy: '复制配置指令',
+      copied: '已复制配置指令',
+      copyFailed: '配置指令复制失败，请重试。',
+      failed: '配置指令生成失败，请重试。',
     },
   },
   dashboard: {
@@ -746,6 +825,16 @@ const zhCN: AppResource = {
   'inbox.someone': '有人',
   'inbox.titles.approval_requested': '状态变更待审批',
   'inbox.outcomes.retried': '已重试',
+  'inbox.outcomes.newRun': '已有新的运行',
+  'inbox.outcomes.issueReassigned': '任务已改派',
+  'issueRuns.alreadyRetried': '已重试 → 新运行',
+  'inbox.runFailed.retryRecord': '已由 {{name}} 通过 {{source}} 重试。',
+  'inbox.runFailed.alreadyRetried': '这次运行已重试。',
+  'inbox.runFailed.sources.card': '决定卡片',
+  'inbox.runFailed.sources.cli': 'CLI',
+  'inbox.runFailed.sources.runRecord': '运行记录',
+  'inbox.runFailed.sources.api': 'API',
+  'inbox.runFailed.sources.unknown': '未记录的入口',
   'inbox.outcomes.reassigned': '已改派给人',
   'inbox.outcomes.cancelled': '不再重试',
   'inbox.runFailed.retry': '重试',
@@ -775,6 +864,29 @@ const zhCN: AppResource = {
   'design.by': '{{name}}，{{time}}',
   'design.expand': '展开全文',
   'design.collapse': '收起',
+  'design.executor.clear': '清空执行者',
+  'design.executor.search': '搜索执行者',
+  'design.executor.signIn': '重新登录',
+  'design.executor.notFound': '议题已不存在，请关闭对话框返回。',
+  'design.executor.clearSearch': '清空搜索',
+  'design.executor.sessionExpired': '登录已失效，请重新登录后继续。',
+  'design.executor.forbidden':
+    '批准权限已撤销，请关闭对话框并联系负责人恢复权限。',
+  'design.executor.title': '批准方案',
+  'design.executor.description': '请选择进入开发中的执行者。',
+  'design.executor.label': '执行者',
+  'design.executor.placeholder': '请选择执行者',
+  'design.executor.noMatches': '没有匹配的执行者',
+  'design.executor.agent': '开发 agent',
+  'design.executor.user': '项目成员',
+  'design.executor.empty':
+    '没有可选的开发 agent 或项目成员，请联系负责人调整。',
+  'design.executor.reload': '重新加载候选',
+  'design.executor.confirm': '批准并进入开发中',
+  'design.executor.invalid': '所选执行者已失效，请重新选择。',
+  'design.executor.unavailable': '阶段或批准权限已变化，无法继续批准。',
+  'design.executor.changed': '当前执行者已变化，请选择执行者后批准。',
+  'design.executor.loadFailed': '加载执行者候选失败，请重试。',
   'design.approve': '批准进入开发',
   'design.requestChanges': '打回修改',
   'design.done.approve': '方案已批准，任务进入开发。',
@@ -859,8 +971,17 @@ const zhCN: AppResource = {
     '运行在 {{attempts}} 次尝试后失败（{{reason}}）。可以重试、改派给人，或不再重试。',
   'inbox.body.stage_action_problem':
     '状态「{{status}}」的「{{rule}}」被跳过：{{why}}。',
+  'inbox.types.comment_runs_limited': 'Agent 评论已暂停唤醒',
+  'inbox.text.comment_runs_limited': '{{identifier}} 上的 Agent 评论达到上限',
+  'inbox.body.comment_runs_limited':
+    'Agent 的评论在 {{windowHours}} 小时内已启动 {{limit}} 次运行，{{agentName}} 的一条评论没有唤醒任何 Agent。',
   'inbox.stageRules.runAgent': '运行 Agent',
   'inbox.stageRules.suggestExecutor': '建议执行者',
+  'inbox.stageSkips.executorCannotImplement':
+    '{{agentName}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
+  'errors.INTERNAL': '请求失败，请重试。',
+  'errors.DESIGN_EXECUTOR_REQUIRED': '当前执行者已变化，请选择执行者后批准。',
+  'errors.DESIGN_EXECUTOR_INVALID': '所选执行者已失效，请重新选择。',
   'inbox.stageSkips.ownerCannotInvoke': '负责人无权把工作交给这个 Agent',
   'inbox.stageSkips.noAgentExecutor':
     '还没有执行者，请指派执行者，指派后立即开始',
@@ -877,6 +998,7 @@ const zhCN: AppResource = {
     cancelled: '已取消',
     idleTimeout: '长时间无响应',
     setupFailed: '准备失败',
+    workspaceBusy: '工作目录被另一个运行占用，等待重试。',
     checkoutFailed: '检出失败',
     cliUnavailable: 'CLI 不可用',
     toolAuth: '编码工具未登录',
@@ -1002,6 +1124,8 @@ const zhCN: AppResource = {
       knowledge: '知识',
     },
     activity: {
+      executorCannotImplement:
+        '{{name}} 没有开 PR 的权限（studio.git/open-pr），不能在开发中作为执行者运行。给它开 PR 的权限，或改派有该权限的 agent。',
       executorWaits: '执行者设为 {{name}}，进入开发中时开始',
     },
     presets: {
@@ -1068,6 +1192,10 @@ const zhCN: AppResource = {
       },
     },
     stageRules: {
+      freshSession: '每次新开会话',
+      freshSessionHint:
+        '开启后，每次阶段运行时 Agent 不续接上一轮会话，适合评审，避免沿用上次的结论；工作目录保留。',
+      withFreshSession: '{{summary}} · 每次新开会话',
       agent: 'Agent',
       agentsUnavailable: '你无法在这里列出 Agent；规则会保留它指定的 Agent。',
       assign: '设为执行者',
@@ -1106,6 +1234,14 @@ const zhCN: AppResource = {
       suggestNoAgent: '向负责人建议执行者（未选择 Agent）',
       unknownAgent: '你看不到的 Agent',
       withInstruction: '{{summary}}：{{instruction}}',
+    },
+    commentRuns: {
+      limitReached: 'Agent 评论已暂停唤醒',
+      continueHint:
+        'Agent 的评论在 {{windowHours}} 小时内已在这个任务上启动 {{maxRuns}} 次运行，最近一条没有唤醒任何 Agent。继续可唤醒它提到的 Agent 一次，并重新开始计数。',
+      continued: '已继续 Agent 评论',
+      continueStale: '这条评论已不再等待，请刷新任务。',
+      continueFailed: '暂时无法继续，请检查 Agent 和任务阻塞后重试。',
     },
   },
   pmChat: {

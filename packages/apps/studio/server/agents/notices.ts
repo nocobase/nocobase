@@ -15,7 +15,7 @@ import type {
   Projects,
 } from '@nocobase/app-plugin-projects/server/tokens';
 
-import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
+import type { Agents, Tx } from '@nocobase/app-plugin-agents/server/tokens';
 import type { Run } from '@nocobase/app-plugin-agents/shared/runs';
 import type { StudioInboxPort, InboxDecisionRef } from '../inbox/port.js';
 import {
@@ -25,6 +25,11 @@ import {
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
 import { agentNameParams } from './agent-name.js';
 import { AGENT_KIND } from './tx.js';
+import {
+  STAGE_NOTICE_KIND,
+  STAGE_ACTION_PROBLEM,
+  RUN_AGENT,
+} from './stage-rules.js';
 
 /** The key of the announcements this file reads. */
 export const NOTICE_KIND = 'agent.notice';
@@ -90,6 +95,8 @@ export function runFailedRule(
           identifier: issue.identifier,
           runId: run.id,
           agentId: run.agentId,
+          executorType: issue.executor?.type ?? '',
+          executorId: issue.executor?.id ?? '',
           agentName,
           ...agentNameParams(agent?.nameText),
           failureReason: reason,
@@ -128,6 +135,37 @@ export function announceFailedRuns(
 /** The status an issue is handed over for review in; a failed run's card is no longer needed there. */
 const IN_REVIEW = 'in_review';
 
+// issue.updated is emitted before issues.update returns. Let a card decision
+// persist its specific outcome before the broad issue listener settles siblings.
+const reassignments = new WeakMap<object, Map<string, Promise<void>>>();
+
+export async function withFailedRunReassignment<T>(
+  projects: object,
+  issueId: string,
+  decide: () => Promise<T>,
+): Promise<T> {
+  let pending = reassignments.get(projects);
+  if (!pending) {
+    pending = new Map();
+    reassignments.set(projects, pending);
+  }
+  const previous = pending.get(issueId);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const current = previous
+    ? Promise.all([previous, gate]).then(() => undefined)
+    : gate;
+  pending.set(issueId, current);
+  try {
+    return await decide();
+  } finally {
+    release();
+    if (pending.get(issueId) === current) pending.delete(issueId);
+  }
+}
+
 /** Settles failed-run cards when an issue moves on or their run is retried; returns what stops it. */
 export function settleFailedRunCards(
   agents: Pick<Agents, 'events' | 'runs'>,
@@ -138,9 +176,12 @@ export function settleFailedRunCards(
   const stopIssueUpdates = projects().events.on('issue.updated', (event) => {
     const status = event.changes.status;
     const inbox = port();
-    if (!status || !inbox) return;
+    const reassigned = event.changes.executor;
+    const cardDecision = reassignments.get(projects())?.get(event.issueId);
+    if ((!status && !reassigned) || !inbox) return;
     void (async () => {
-      if (status.to !== IN_REVIEW) {
+      if (reassigned && cardDecision) await cardDecision;
+      if (!reassigned && status?.to !== IN_REVIEW) {
         const issue = await projects().issueContext.contextFor(
           projects().tx.read(),
           event.issueId,
@@ -152,7 +193,131 @@ export function settleFailedRunCards(
         source: PROJECTS_SOURCE,
         subject: { type: INBOX_ISSUE, id: event.issueId },
         types: [RUN_FAILED_FINAL],
-        outcome: 'issueMoved',
+        outcome: reassigned ? 'issueReassigned' : 'issueMoved',
+      });
+    })().catch(onError);
+  });
+  const stopRunChanges = agents.events.on('run.changed', (event) => {
+    if (event.status !== 'queued') return;
+    void (async () => {
+      const run = await agents.runs.get(event.runId);
+      if (!run.retryOfRunId || run.subject.kind !== ISSUE_SUBJECT) return;
+      const inbox = port();
+      if (!inbox) return;
+      await inbox.resolve({
+        ...runFailedDecision(run.retryOfRunId),
+        outcome: 'retried',
+      });
+    })().catch(onError);
+  });
+  return () => {
+    stopIssueUpdates();
+    stopRunChanges();
+  };
+}
+
+/** Persist the rejection in the transaction that cancels the claim, so rollback leaves no activity. */
+export async function recordRejectedClaim(
+  tx: Tx,
+  run: Run,
+  agents: Pick<Agents, 'agents'>,
+  projects: () => Pick<Projects, 'issueContext'>,
+): Promise<void> {
+  if (
+    run.subject.kind !== ISSUE_SUBJECT ||
+    run.status !== 'cancelled' ||
+    !run.failureDetail?.startsWith('executorCannotImplement:')
+  )
+    return;
+  const issue = await projects().issueContext.contextFor(
+    tx.conn,
+    run.subject.id,
+  );
+  if (!issue) return;
+  const agent = await agents.agents.find(tx.conn, run.agentId);
+  await tx.conn.repository('pmActivities').createOne({
+    values: {
+      id: `claim:${run.id}`,
+      issueId: issue.id,
+      actorType: 'system',
+      actorId: null,
+      action: 'stage_action_skipped',
+      details: {
+        rule: RUN_AGENT,
+        reason: 'executorCannotImplement',
+        agentId: run.agentId,
+        name: agent?.name ?? run.agentId,
+        runId: run.id,
+        statusKey: 'in_progress',
+        ownerUserId: issue.owner.id,
+      },
+      createdAt: new Date(),
+    },
+  });
+}
+
+/** Once cancellation commits, plan its owner notice exactly once, using the recorded rejection. */
+export function announceRejectedRuns(
+  agents: Pick<Agents, 'events' | 'runs' | 'agents'>,
+  projects: () => Pick<Projects, 'tx' | 'issueContext'>,
+  onError: (error: unknown) => void,
+): () => void {
+  return agents.events.on('run.changed', (event) => {
+    if (event.status !== 'cancelled') return;
+    void (async () => {
+      const run = await agents.runs.get(event.runId);
+      if (
+        run.subject.kind !== ISSUE_SUBJECT ||
+        !run.failureDetail?.startsWith('executorCannotImplement:')
+      )
+        return;
+      await projects().tx.run(async (tx) => {
+        const activity = tx.conn.repository<{
+          id: string;
+          details: Record<string, unknown>;
+        }>('pmActivities');
+        const id = `claim:${run.id}`;
+        // A no-op update locks this activity until commit on every supported database.
+        // Concurrent delivery of the same cancellation then reads the committed notice marker.
+        await activity.updateMany({ filter: { id }, values: { id } });
+        const recorded = await activity.findOne({ filter: { id } });
+        if (!recorded || recorded.details.noticePlanned) return;
+        const issue = await projects().issueContext.contextFor(
+          tx.conn,
+          run.subject.id,
+        );
+        if (!issue) return;
+        const agent = await agents.agents.find(tx.conn, run.agentId);
+        await activity.updateOne({
+          filter: { id },
+          values: { details: { ...recorded.details, noticePlanned: true } },
+        });
+        tx.emit({
+          type: 'work.announced',
+          kind: STAGE_NOTICE_KIND,
+          payload: {
+            notice: STAGE_ACTION_PROBLEM,
+            issue: {
+              id: issue.id,
+              identifier: issue.identifier,
+              title: issue.title,
+              ownerUserId:
+                typeof recorded.details.ownerUserId === 'string'
+                  ? recorded.details.ownerUserId
+                  : issue.owner.id,
+            },
+            rule: RUN_AGENT,
+            statusKey: 'in_progress',
+            statusName:
+              issue.statuses.find((status) => status.key === 'in_progress')
+                ?.name ?? 'In progress',
+            reason: 'executorCannotImplement',
+            agentId: run.agentId,
+            agentName: recorded.details.name,
+            agentNameText: agent?.nameText,
+            at: run.id,
+          },
+        });
       });
     })().catch(onError);
   });

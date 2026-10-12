@@ -68,6 +68,7 @@ import { createPermissionSource } from './commands/permissions.js';
 import { createAskerLookup } from './conversation/acting.js';
 import { createDesignService } from './design.js';
 import { readAgentBoard, startAgentBoardIssue } from './board.js';
+import { readIssueAgentWork } from './issue-agent-work.js';
 import { callerOfRequest, runSubjectOf } from './run-principal.js';
 import { INTAKE_SUBJECT } from './intake/subject.js';
 import { AGENT_KIND } from './tx.js';
@@ -78,12 +79,15 @@ import {
   AgentBoardQuery,
   AgentBoardSchema,
   AgentBoardStartResultSchema,
+  IssueAgentWorkInput,
+  IssueAgentWorkSchema,
   DecideFailedRunInput,
   DelegationListQuery,
   DelegationParams,
   DelegationPatchInput,
   DelegationSchema,
   DesignDecisionInput,
+  DesignApproveInput,
   DesignProposalSubmittedSchema,
   DesignStateSchema,
   FailedRunResultSchema,
@@ -346,7 +350,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             200: dataResponse(FailedRunResultSchema),
             400: apiErrorResponse(
               400,
-              'When the decision was already taken (`DECISION_ALREADY_TAKEN`).',
+              'When the decision was already taken (`DECISION_ALREADY_TAKEN`) or the run has already been retried (`RUN_ALREADY_RETRIED`).',
             ),
             404: apiErrorResponse(
               404,
@@ -380,6 +384,8 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
     // Design-first proposals (`design.ts`): the issue page's section and the owner's inbox card read and decide here.
     if (container.has(projectsToken)) {
       const design = createDesignService({
+        agents: container.resolve(agentsToken),
+        kinds: container.resolve(projectsToken).kinds,
         projects: () => container.resolve(projectsToken),
         inbox: () =>
           container.has(studioInboxPortToken)
@@ -522,6 +528,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
               flags: {
                 issueId: { name: 'issue' },
                 comment: { contentFile: true },
+                ...(action === 'approve' ? { executor: {} } : {}),
               },
               ...(action === 'approve'
                 ? { examples: ['design approve PM-12'] }
@@ -533,6 +540,10 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             }),
             responses: {
               200: dataResponse(DesignStateSchema),
+              409: apiErrorResponse(
+                409,
+                'DESIGN_EXECUTOR_REQUIRED: choose an eligible executor; or the proposal changed.',
+              ),
               400: apiErrorResponse(
                 400,
                 'When the issue does not wait in Proposal review, has no proposal, or the comment is missing or too long.',
@@ -542,7 +553,10 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             },
           }),
           apiValidator('param', IssueParams),
-          apiValidator('json', DesignDecisionInput),
+          apiValidator(
+            'json',
+            action === 'approve' ? DesignApproveInput : DesignDecisionInput,
+          ),
           async (context) => {
             const request = context.req.valid('json');
             const viewer = await viewerOf(userIdOf(context));
@@ -636,6 +650,31 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             ),
           });
         },
+      );
+      board.post(
+        '/issueWork',
+        describeRoute({
+          tags,
+          summary: 'Get current agent work on visible issues',
+          operationId: 'agentBoardIssueWork',
+          description:
+            'At most 100 issue IDs. Only visible issues with an agent executor are returned; matching pending approvals suppress working. No run details are exposed.',
+          ...cliRoute({ command: 'board issueWork' }),
+          responses: {
+            200: dataResponse(z.array(IssueAgentWorkSchema)),
+            400: apiErrorResponse(400),
+            ...signedInErrors,
+          },
+        }),
+        apiValidator('json', IssueAgentWorkInput),
+        async (context) =>
+          context.json({
+            data: await readIssueAgentWork(
+              { projects: container.resolve(projectsToken), runs: agents.runs },
+              await viewerFrom(context),
+              context.req.valid('json').issueIds,
+            ),
+          }),
       );
       const work = createAgentWork({
         agents,

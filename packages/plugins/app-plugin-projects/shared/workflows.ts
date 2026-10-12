@@ -5,7 +5,8 @@
  * plugins' templates may add some.
  *
  * A status may carry rules, run when an issue enters it (and, for a checklist, when it leaves it); a transition may
- * need an approval before it takes effect.
+ * need an approval before it takes effect. A workflow also caps the work comments of principals other than people
+ * start on an issue (`commentRunLimit`).
  */
 import type { Color } from './common.js';
 import type { StatusCategory } from './issues.js';
@@ -171,7 +172,16 @@ export interface WorkflowTransition {
 export interface WorkflowDefinition {
   readonly states: readonly WorkflowStatus[];
   readonly transitions: readonly WorkflowTransition[];
+  /**
+   * At most this many runs that comments of principals other than people (an agent's) start on one issue within
+   * `COMMENT_RUN_WINDOW_HOURS` hours; `DEFAULT_COMMENT_RUN_LIMIT` when left out. The kind that starts the work keeps
+   * the count; a positive integer.
+   */
+  readonly commentRunLimit?: number;
 }
+
+export const DEFAULT_COMMENT_RUN_LIMIT = 20;
+export const COMMENT_RUN_WINDOW_HOURS = 24;
 
 export interface Workflow {
   readonly id: string;

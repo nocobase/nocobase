@@ -76,6 +76,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table.js';
+import { WorkspaceDiagnostics } from './workspace-diagnostics.js';
 import { POLICY_FIELDS, policyRule } from './runner-policy.js';
 import {
   readToolSlots,
@@ -165,6 +166,7 @@ function RunnerDetail({
 
   return (
     <div className='min-h-0 flex-1 space-y-6 overflow-y-auto p-4'>
+      <WorkspaceDiagnostics runner={runner} />
       {runner.status === 'upgrade_required' ? (
         <RunnerUpgradeRequired runner={runner} />
       ) : null}

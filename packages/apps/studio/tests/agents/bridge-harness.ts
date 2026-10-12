@@ -438,6 +438,7 @@ export async function createBridgeHarness(
     readonly releases?: boolean;
     readonly previews?: boolean;
     readonly knowledge?: boolean;
+    readonly inApp?: boolean;
   } = {},
 ): Promise<BridgeHarness> {
   const projectsRoot = packageRoot('@nocobase/app-plugin-projects');
@@ -464,6 +465,17 @@ export async function createBridgeHarness(
           '@nocobase/app-plugin-projects',
         ],
         [AGENTS_MIGRATIONS, AGENTS_PACKAGE],
+        ...(options.inApp
+          ? [
+              [
+                path.join(
+                  packageRoot('@nocobase/app-plugin-notification-in-app'),
+                  'database/migrations',
+                ),
+                '@nocobase/app-plugin-notification-in-app',
+              ] as const,
+            ]
+          : []),
         [
           path.join(
             packageRoot('@nocobase/app-plugin-releases'),
@@ -887,6 +899,7 @@ export async function createBridgeHarness(
       access: () => access,
     });
     const api = createPreviewApi({
+      syncPreviewLabels: (issueId) => git.syncPreviewLabels(issueId),
       database,
       previews: () => service,
       issues,
@@ -1371,7 +1384,12 @@ export async function createBridgeHarness(
         name: 'Coder',
         modelEntries: [{ tool: 'claude', model: null }],
         access: 'everyone',
-        actions: ['pm.issues/view', 'pm.issues/comment', 'pm.issues/edit'],
+        actions: [
+          'pm.issues/view',
+          'pm.issues/comment',
+          'pm.issues/edit',
+          'studio.git/open-pr',
+        ],
         instructions: 'Prefer small commits.',
         ...input,
       });

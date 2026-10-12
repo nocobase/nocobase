@@ -72,6 +72,12 @@ export type AgentsEvent =
       readonly runId: string;
       readonly status: RunStatus;
     }
+  | {
+      readonly type: 'run.retried';
+      readonly runId: string;
+      readonly retryOfRunId: string;
+      readonly previousStatus: RunStatus;
+    }
   /** Events were stored; `lastSeq` is the highest one. */
   | {
       readonly type: 'run.events';

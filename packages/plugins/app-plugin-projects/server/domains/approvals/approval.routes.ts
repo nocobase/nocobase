@@ -90,6 +90,10 @@ export function createApprovalRoutes(
           ...apiErrorResponses,
           400: decided,
           404: apiErrorResponse(404),
+          409: apiErrorResponse(
+            409,
+            'When the request was decided meanwhile (`APPROVAL_DECIDED`) or the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload before retrying.',
+          ),
         },
       }),
       apiValidator('param', ApprovalParams),

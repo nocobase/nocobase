@@ -68,6 +68,7 @@ attachment get <file> -> GET /api/projects/attachments/{attachmentId} (person)
 attachment upload [--file!] -> POST /api/projects/attachments (person,run) pm.attachments/upload
 board failed-run decide <run> [--action! --user] -> POST /api/failedRuns/{runId}/decide (person)
 board get [--q --project --label --owner --executor] -> GET /api/agentBoard (person)
+board issue-work [--issue-ids!] -> POST /api/agentBoard/issueWork (person)
 board start <issue> -> POST /api/agentBoard/issues/{issueId}/start (person)
 build ci configure <repo> [--method --app --target --workflow-files --agent-id --file] -> POST /api/repositoryDeployments/{resourceId}/ci/configure (person)
 build ci connection <repo> -> GET /api/repositoryDeployments/{resourceId}/ci/connection (person)
@@ -118,7 +119,7 @@ deploy request get <request> -> GET /api/releases/deploymentRequests/{requestId}
 deploy request list [--page --limit --app --status --awaiting-me] -> GET /api/releases/deploymentRequests (person)
 deploy request reject <request> [--note] -> POST /api/releases/deploymentRequests/{requestId}/reject (person)
 deploy status <project> -> GET /api/deploys/projects/{projectId}/environments (person)
-design approve <issue> [--comment] -> POST /api/designProposals/{issueId}/approve (person)
+design approve <issue> [--comment --executor] -> POST /api/designProposals/{issueId}/approve (person)
 design get <issue> -> GET /api/designProposals/{issueId} (person)
 design request-changes <issue> [--comment] -> POST /api/designProposals/{issueId}/requestChanges (person)
 env check <env> -> POST /api/releases/environments/{environmentId}/check (person) rel.environments/read
@@ -177,7 +178,7 @@ issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}
 issue checklist list <issue> -> GET /api/projects/issues/{issueId}/checklists (person) pm.issues/view
 issue checklist mark <issue> <status> <item> [--checked!] -> PATCH /api/projects/issues/{issueId}/checklists/{statusKey}/items/{itemKey} (person) pm.issues/edit
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
-issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
 issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
@@ -261,6 +262,7 @@ pr update <issue> <pr> [--auto-complete-disabled!] -> PATCH /api/git/pullRequest
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview preference set [--issue --not-required!] -> POST /api/previews/preference (person,run) pm.issues/edit
 preview retry <issue> <app> -> POST /api/previews/retry (person)
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
 project create <name> [--description --visibility --status --priority --lead --start-date --due-date --workflow] -> POST /api/projects (person) pm.projects/create
@@ -268,7 +270,7 @@ project delete <project> -> DELETE /api/projects/{projectId} (person) pm.project
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project invitation create [--email! --project] -> POST /api/projects/invitations (person)
 project invitation list -> GET /api/projects/invitations (person)
-project invitation resend <invitation> -> POST /api/projects/invitations/{invitationId}/resend (person)
+project invitation resend <invitation> [--send-email] -> POST /api/projects/invitations/{invitationId}/resend (person)
 project invitation revoke <invitation> -> DELETE /api/projects/invitations/{invitationId} (person) confirm
 project list -> GET /api/projects (person,run) pm.projects/view
 project location add <project> [--code-location --init-agent --new-repo --existing-repo --runner-directory --label --deploy --ci --file] -> POST /api/projects/{projectId}/codeLocations (person)
@@ -306,7 +308,7 @@ report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) 
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run brief <run> -> GET /api/agents/runs/{runId}/brief (person)
 run cancel <run> -> POST /api/agents/runs/{runId}/cancel (person) confirm
-run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
 run list [--subject-kind --subject --agent --status --limit --page-token] -> GET /api/agents/runs (person)
 run request confirm <request> -> POST /api/agents/runRequests/{requestId}/confirm (person) confirm
@@ -352,7 +354,7 @@ user enable <user> -> POST /api/users/{userId}/enable (person)
 user invitation create [--emails! --role-scopes] -> POST /api/users/invitations (person)
 user invitation delete <invitation> -> DELETE /api/users/invitations/{invitationId} (person) confirm
 user invitation list -> GET /api/users/invitations (person)
-user invitation resend <invitation> -> POST /api/users/invitations/{invitationId}/resend (person)
+user invitation resend <invitation> [--send-email] -> POST /api/users/invitations/{invitationId}/resend (person)
 user list [--page --limit --q --status --role-scope --role] -> GET /api/users (person)
 user options -> GET /api/users/options (person)
 user preference delete <key> -> DELETE /api/users/me/preferences/{key} (person)
@@ -399,7 +401,7 @@ inbox list [--unread --limit --page-token] -> GET /api/inbox/items (person,run) 
 issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}/content (person,run) pm.issues/view
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
-issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
 issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
@@ -429,6 +431,7 @@ pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (per
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview preference set [--issue --not-required!] -> POST /api/previews/preference (person,run) pm.issues/edit
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project list -> GET /api/projects (person,run) pm.projects/view
@@ -437,7 +440,7 @@ release list <app> [--page --limit --label] -> GET /api/releases/apps/{appId}/re
 report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run context -> GET /api/agents/runs/current/context (run) agents.runs/self
-run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
 run self -> GET /api/agents/runs/current (run) agents.runs/self"
 `;

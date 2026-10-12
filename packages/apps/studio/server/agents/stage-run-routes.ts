@@ -27,6 +27,7 @@ import { createPermissionSource } from './commands/permissions.js';
 import { createAskerLookup } from './conversation/acting.js';
 import { callerOfRequest } from './run-principal.js';
 import { pendingStageRun, continueStageRun } from './continue-stage-run.js';
+import { continueCommentRun, pendingCommentRun } from './comment-run-limit.js';
 
 const Params = z.object({ issueId: z.string().min(1) });
 const Input = z.object({ token: z.string().uuid() });
@@ -34,6 +35,13 @@ const Pending = z
   .object({
     token: z.string(),
     statusKey: z.string(),
+    maxRuns: z.number(),
+    windowHours: z.number(),
+  })
+  .nullable();
+const PendingComment = z
+  .object({
+    token: z.string(),
     maxRuns: z.number(),
     windowHours: z.number(),
   })
@@ -138,7 +146,75 @@ export const stageRunRoutes: AppApiRouteContribution<Application> =
           ),
         }),
     );
+    // The comment of an agent held back once agents' comments started as many runs as the workflow allows.
+    const comments = new Hono<AuthorizationEnv>();
+    comments.onError(studioErrorHandler);
+    comments.use(
+      '*',
+      container.resolve(authenticationToken).required({ scopedKeys: true }),
+    );
+    comments.use('*', container.resolve(authorizationToken).middleware());
+    comments.get(
+      '/:issueId',
+      describeRoute({
+        tags: ['Studio'],
+        operationId: 'issueCommentRunPending',
+        summary: 'Get an agent comment held back by the comment run limit',
+        ...cliRoute(false),
+        security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
+        description:
+          'Needs pm.issues/view. Returns a continuation only to a person who may edit the issue.',
+        responses: {
+          200: dataResponse(PendingComment),
+          ...apiErrorResponses,
+          404: apiErrorResponse(404, 'Issue not found.'),
+        },
+      }),
+      apiValidator('param', Params),
+      async (context) =>
+        context.json({
+          data: await pendingCommentRun(
+            projects,
+            await viewerOf(context, 'pm.issues/view'),
+            context.req.valid('param').issueId,
+          ),
+        }),
+    );
+    comments.post(
+      '/:issueId/continue',
+      describeRoute({
+        tags: ['Studio'],
+        operationId: 'issueCommentRunContinue',
+        summary: 'Continue an agent comment held back by the comment run limit',
+        ...cliRoute(false),
+        security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
+        description:
+          'Needs pm.issues/edit on the issue. Wakes the agents the comment names as the caller and restarts the count; the token is consumed once, and failed preconditions leave it pending.',
+        responses: {
+          200: dataResponse(z.object({ runIds: z.array(z.string()) })),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'Invalid input or stale/unavailable continuation.',
+          ),
+          404: apiErrorResponse(404, 'Issue not found.'),
+        },
+      }),
+      apiValidator('param', Params),
+      apiValidator('json', Input),
+      async (context) =>
+        context.json({
+          data: await continueCommentRun(
+            projects,
+            agents,
+            await viewerOf(context, 'pm.issues/edit'),
+            context.req.valid('param').issueId,
+            context.req.valid('json').token,
+          ),
+        }),
+    );
     const router = new Hono();
     router.route('/issueStageRuns', routes);
+    router.route('/issueCommentRuns', comments);
     return router;
   });

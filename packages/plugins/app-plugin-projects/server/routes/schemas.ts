@@ -122,6 +122,7 @@ import {
   type AddDependencyRequest,
   type DependencyType,
   type IssueDependency,
+  type UpdateDependencyRequest,
 } from '../../shared/subtasks.js';
 import type {
   CreateWorkflowRequest,
@@ -253,7 +254,7 @@ const definition = z
   .custom<WorkflowDefinition>(isObject, 'definition must be an object.')
   .meta({
     description:
-      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions }`.',
+      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions, commentRunLimit? }`.',
   });
 
 export const CreateWorkflowBody: z.ZodType<CreateWorkflowRequest> =
@@ -429,6 +430,24 @@ export const CursorPageQuery: z.ZodType<CursorQuery> = z
     ...(cursor ? { cursor } : {}),
   }));
 
+/** An issue's comment threads, optionally only what was written after a time. */
+export const CommentThreadsQuery: z.ZodType<
+  CursorQuery & { readonly since?: string }
+> = z
+  .object({
+    pageSize: pageSize(),
+    pageToken,
+    since: z.iso.datetime({ offset: true }).optional().meta({
+      description:
+        'RFC 3339. Only threads with a comment written after it, each with its root and only the replies written after it.',
+    }),
+  })
+  .transform(({ pageSize: limit, pageToken: cursor, since }) => ({
+    limit,
+    ...(cursor ? { cursor } : {}),
+    ...(since ? { since } : {}),
+  }));
+
 const issueFields = {
   description: z.string().optional(),
   statusKey: z.string().optional(),
@@ -479,6 +498,15 @@ export const AddDependencyBody: z.ZodType<AddDependencyRequest> =
 /** `POST /projects/issues/{issueId}/removeDependency`: the link to another issue, by that issue and the type. */
 export const RemoveDependencyBody: z.ZodType<AddDependencyRequest> =
   AddDependencyBody;
+
+export const UpdateDependencyBody: z.ZodType<UpdateDependencyRequest> =
+  z.strictObject({
+    type: z.enum(['blockedBy', 'relatedTo']),
+    expectedType: z.enum(['blockedBy', 'relatedTo']).meta({
+      description:
+        'The relationship type the caller read; a stale value is a conflict.',
+    }),
+  });
 
 // Comments and approvals
 
@@ -747,6 +775,18 @@ export const InvitationSchema: z.ZodType<Invitation> = z.object({
   createdAt: dateTime,
 });
 
+export const ResendInvitationQuery: z.ZodObject<
+  {
+    sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+  },
+  z.core.$strip
+> = z.object({
+  sendEmail: z.enum(['true', 'false']).optional().meta({
+    description:
+      'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
+  }),
+});
+
 export const InvitationResultSchema: z.ZodType<InvitationResult> = z
   .object({
     email: z.string(),
@@ -754,7 +794,7 @@ export const InvitationResultSchema: z.ZodType<InvitationResult> = z
     emailSent: z.boolean().optional(),
     inviteUrl: z.string().optional().meta({
       description:
-        'When sending failed, the link, once, for the inviter to forward.',
+        'The new shareable invitation link, returned to an authorized original inviter using an unscoped person credential, regardless of email delivery.',
     }),
   })
   .meta({ ref: 'ProjectsInvitationResult' });
@@ -822,6 +862,10 @@ const WorkflowDefinitionSchema: z.ZodType<WorkflowDefinition> = z
         }),
       }),
     ),
+    commentRunLimit: z.number().int().positive().optional().meta({
+      description:
+        'At most this many runs that comments of agents (principals other than people) start on one issue within 24 hours; 20 when left out.',
+    }),
   })
   .meta({ ref: 'ProjectsWorkflowDefinition' });
 

@@ -11,7 +11,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { DesignState } from '../../../shared/design.js';
+import type { DesignState, DesignExecutor } from '../../../shared/design.js';
 import { inboxKeys } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 
 export const designKeys = {
@@ -44,22 +44,27 @@ export function useDesignState(
   });
 }
 
-export function useDesignDecision(
-  issueId: string,
-): UseMutationResult<
+export function useDesignDecision(issueId: string): UseMutationResult<
   DesignState,
   Error,
-  { readonly decision: DesignDecision; readonly comment: string }
+  {
+    readonly decision: DesignDecision;
+    readonly comment: string;
+    readonly executor?: DesignExecutor;
+  }
 > {
   const api = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ decision, comment }) =>
+    mutationFn: async ({ decision, comment, executor }) =>
       (
         await api.request<{ readonly data: DesignState }>({
           path: `${path(issueId)}/${decision}`,
           method: 'POST',
-          json: comment ? { comment } : {},
+          json: {
+            ...(comment ? { comment } : {}),
+            ...(executor ? { executor } : {}),
+          },
         })
       ).data,
     onSettled: () => {

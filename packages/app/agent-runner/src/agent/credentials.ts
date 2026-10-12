@@ -38,10 +38,3 @@ export async function writeRunCredentials(
 export async function deleteRunCredentials(file: string): Promise<void> {
   await rm(file, { force: true });
 }
-
-/** What a policy must keep tools away from: the credential's directory, or the file when it sits at the top. */
-export function credentialsGuard(workDir: string, file: string): string {
-  const resolved = credentialsPath(workDir, file);
-  const dir = path.dirname(resolved);
-  return dir === workDir ? resolved : dir;
-}

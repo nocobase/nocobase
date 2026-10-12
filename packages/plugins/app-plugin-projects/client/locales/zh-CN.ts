@@ -31,6 +31,7 @@ const pages = {
       stageActionBlocked: '跳过了一个阶段动作：任务在等待',
       workBlocked: '没有开始工作：任务在等待',
       workDormant: '没有开始工作，因为任务处于',
+      workLimited: '没有开始工作：Agent 评论已达到任务的运行上限',
       workWithdrawn: '撤回了排队中的工作：任务现在在等待',
       stageActionFailed: '未能执行状态的规则',
       created: '创建了任务',
@@ -310,6 +311,8 @@ const pages = {
     WORKFLOW_STATUS_CONFLICT:
       '还有任务处在这次修改要删除的状态里，请先把它们移走。',
     DEPENDENCY_CYCLE: '这个依赖会形成循环。',
+    DEPENDENCY_CHANGED: '任务关联已发生变化，请刷新后重试。',
+    DEPENDENCY_GRAPH_CHANGED: '任务依赖已发生变化，请刷新后重试。',
     DEPENDENCY_EXISTS: '这个依赖已经存在。',
     DEPENDENCY_TOO_DEEP: '依赖链过长。',
     INVALID_DEPENDENCY: '这个任务不能作为这里的依赖。',
@@ -384,7 +387,7 @@ const pages = {
     outcome: {
       added: '已有账号，已加入项目',
       alreadyMember: '已是成员',
-      notSent: '邮件未发出，请复制链接转发',
+      notSent: '邮件未发送',
       sent: '邮件已发送',
     },
     pending: '等待接受',
@@ -393,6 +396,13 @@ const pages = {
     projectsHint: '被邀请人以成员身份加入这些项目。',
     projectsPlaceholder: '选择项目',
     resend: '重新发送',
+    generateLink: '生成新链接',
+    generateDescription:
+      '生成后，旧邀请链接将立即失效。此次不会发送邮件，请在生成后复制新链接。',
+    linkReady: '新链接已生成',
+    newLinkDescription: '旧链接已失效，请复制并分享下方的新链接。',
+    linkUnavailable: '邀请已发生变化，请刷新列表后重试。',
+    copyLink: '复制邀请链接',
     resent: '已重新发送邀请给 {{email}}',
     resultsLabel: '邀请结果',
     revoke: '撤销',
@@ -932,6 +942,13 @@ const pages = {
     matrix: '转换矩阵',
     matrixDescription:
       '行是当前状态，列是下一状态，格子里是可以执行这次转换的角色。',
+    limitsTitle: '限制',
+    limitsDescription:
+      'Agent 等非人类主体的评论在一个任务上最多能启动多少工作。人的评论不受限制，并会重新开始计数。',
+    commentRunLimit:
+      '每个任务 {{windowHours}} 小时内由 Agent 评论启动的运行次数',
+    commentRunLimitValue:
+      '每个任务 {{windowHours}} 小时内最多 {{limit}} 次运行。超过后会通知负责人，由其决定是否继续。',
     rulesTitle: '规则',
     rulesDescription:
       '谁可以做哪些转换、哪些转换需要审批，以及进入各状态时会发生什么。',

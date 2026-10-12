@@ -60,3 +60,15 @@ export const MAX_CLAIM_FAILURES: number = 3;
 
 /** How long a run token lives at most; it is revoked as soon as the run leaves its runner. */
 export const RUN_TOKEN_TTL_MS: number = 7 * 24 * 60 * 60_000;
+
+/**
+ * How long a run may keep waiting for its subject's working directory while another live run holds it
+ * (`workspaceBusy`), counted from the first of its consecutive attempts that found it held. Such waits do not use up
+ * the run's attempts, so this is what bounds them; past it the run fails `workspaceBusy`.
+ */
+export const WORKSPACE_WAIT_LIMIT_MS: number = 6 * 60 * 60_000;
+
+/** How long before the next try after the `busyAttempts`-th consecutive attempt that found the workspace held. */
+export function workspaceBusyDelayMs(busyAttempts: number): number {
+  return Math.min(2 * 60_000, 30_000 * 2 ** Math.max(0, busyAttempts - 1));
+}

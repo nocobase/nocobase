@@ -122,6 +122,7 @@ import {
   findRunRecord,
   markDelivered,
   pendingInputs,
+  type InputRecord,
   runsOfKey,
   runsRepo,
   sessionsRepo,
@@ -129,6 +130,7 @@ import {
   toRun,
   type RunRecord,
 } from './run.store.js';
+import { dropInputs } from './input-gate.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
@@ -481,6 +483,15 @@ interface Assembled {
   readonly requires: readonly RunnerFeature[];
   readonly directoryKey: string | null;
   readonly entry: RunnerModelEntry;
+  /** The repositories the runner asks credentials for on demand (`RunGit.onDemand`). */
+  readonly gitOnDemand: readonly string[];
+}
+
+/** Whether `runner` asks for repository credentials on demand rather than taking them with the claim. */
+export function asksCredentialsOnDemand(
+  runner: Pick<Runner, 'features'>,
+): boolean {
+  return runner.features.includes('gitCredentials');
 }
 
 const DIRECTORY_KEY_SEPARATOR = '\n';
@@ -519,6 +530,26 @@ async function directoryBusy(
   );
 }
 
+/** Resolve omitted subject input in the claim transaction, keeping it in the audit history. */
+async function settleClaimInputs(
+  conn: DatabaseConnection,
+  pending: readonly InputRecord[],
+  effective: readonly RunInput[],
+  now: string,
+): Promise<void> {
+  const ids = new Set(effective.map((input) => input.id));
+  await dropInputs(
+    conn,
+    pending.filter((input) => !ids.has(input.id)).map((input) => input.id),
+    now,
+  );
+  await markDelivered(
+    conn,
+    pending.filter((input) => ids.has(input.id)),
+    now,
+  );
+}
+
 export function createClaimService(deps: ClaimDeps): ClaimService {
   const { tx, clock } = deps;
 
@@ -548,6 +579,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       dialect: 'cli',
     };
     const assembly = await binding.context.assemble(conn, claim);
+    inputs = assembly.inputs ?? inputs;
+    const effectiveClaim = { ...claim, inputs };
     // Its owner's local policy keeps this runner off the subject, or off one of the repositories: another runner takes
     // the run.
     if (
@@ -627,6 +660,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           (dir): dir is Extract<WorkspaceDir, { kind: 'repo' }> =>
             dir.kind === 'repo',
         ),
+        onDemand: asksCredentialsOnDemand(runner),
       },
       prepared,
     );
@@ -641,13 +675,20 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     });
     const brief = briefOf(
       agent,
-      await withSections(conn, deps.sections, claim, assembly, prepared),
+      await withSections(
+        conn,
+        deps.sections,
+        effectiveClaim,
+        assembly,
+        prepared,
+      ),
       skills,
       deps.cli.name,
       deps.app.name,
     );
     const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
     const resume =
+      !run.freshSession &&
       !clean &&
       session &&
       !session.poisoned &&
@@ -659,7 +700,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           conn,
           deps.mounts,
           {
-            claim,
+            claim: effectiveClaim,
             assembly,
             session: resume ? 'resume' : 'fresh',
             sessionKey: sessionKeyOf(view),
@@ -667,7 +708,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           prepared,
         )
       : { mounts: [], resumeNotes: [] };
-    const turn = [brief.turn, ...resumeNotes].join('\n\n');
+    const sessionNote = resume ? assembly.turn.resumed : assembly.turn.fresh;
+    const turn = [
+      brief.turn,
+      ...resumeNotes,
+      ...(sessionNote ? [sessionNote] : []),
+    ].join('\n\n');
     await saveBrief(conn, () => deps.ids.next(), {
       runId: run.id,
       attempt: Number(run.attempt),
@@ -742,6 +788,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       requires,
       directoryKey,
       entry,
+      gitOnDemand: git?.onDemand ?? [],
     };
   }
 
@@ -792,6 +839,33 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     });
   }
 
+  async function admit(
+    unit: Tx,
+    run: RunRecord,
+    agent: Agent,
+    runner: Runner | null,
+    inputs: readonly RunInput[],
+  ): Promise<boolean> {
+    const rejection = await deps.subjects
+      .get(run.subjectKind)
+      ?.context.admit?.(unit.conn, {
+        run: toRun(run),
+        agent,
+        runner,
+        inputs,
+        cli: deps.cli.name,
+        appName: deps.app.name,
+        dialect: dialectOf(agent),
+      });
+    if (!rejection) return true;
+    await finishRun(unit, deps, run, {
+      status: 'cancelled',
+      reason: null,
+      detail: `${rejection.reason}${rejection.detail ? `: ${rejection.detail}` : ''}`,
+    });
+    return false;
+  }
+
   async function attempt(
     runner: Runner,
     agent: Agent,
@@ -815,6 +889,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       deps.mounts,
       (error) => deps.onClaimFailure?.(candidate.id, error),
       deps.repoAccess,
+      { onDemand: asksCredentialsOnDemand(runner) },
     );
     let taken: RunPayload | null;
     try {
@@ -865,6 +940,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const pending = await pendingInputs(conn, run.id);
         let assembled: Assembled;
         try {
+          if (!(await admit(unit, run, agent, runner, pending.map(toInput))))
+            return null;
           assembled = await assemble(
             unit,
             run,
@@ -882,7 +959,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             error,
           );
         }
-        await markDelivered(conn, pending, nowText);
+        await settleClaimInputs(
+          conn,
+          pending,
+          assembled.payload.inputs,
+          nowText,
+        );
         await runsRepo(conn).updateMany({
           filter: { id: run.id },
           values: {
@@ -917,6 +999,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             model: assembled.entry.model,
             effort: assembled.entry.effort ?? null,
             teamOnlyVariables: null,
+            gitCredentialUrls:
+              assembled.gitOnDemand.length > 0
+                ? [...assembled.gitOnDemand]
+                : null,
           },
         });
         unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
@@ -1052,6 +1138,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const inputs = pending.map(toInput);
       let claimed: ServerClaim;
       try {
+        if (!(await admit(unit, run, agent, null, inputs))) return null;
         claimed = await assembleServer(
           unit,
           run,
@@ -1067,7 +1154,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           error,
         );
       }
-      await markDelivered(conn, pending, nowText);
+      await settleClaimInputs(conn, pending, claimed.inputs, nowText);
       await runsRepo(conn).updateMany({
         filter: { id: run.id },
         values: {
@@ -1133,6 +1220,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       dialect: 'tools',
     };
     const assembly = await binding.context.assemble(conn, claim);
+    inputs = assembly.inputs ?? inputs;
+    const effectiveClaim = { ...claim, inputs };
     if (assembly.dirs.length > 0)
       throw new Error(
         'An online agent has no working directory, and this work needs one.',
@@ -1145,7 +1234,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const own = new Set(skills.map((skill) => skill.slug));
     const rendered = briefOf(
       agent,
-      await withSections(conn, deps.sections, claim, assembly, prepared),
+      await withSections(
+        conn,
+        deps.sections,
+        effectiveClaim,
+        assembly,
+        prepared,
+      ),
       [],
       deps.cli.name,
       deps.app.name,

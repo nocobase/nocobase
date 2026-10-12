@@ -19,7 +19,8 @@
  * - resolves issues, projects and inbox items in a page context (`conversation/context-kinds.ts`);
  * - relays the agents plugin's events announced in projects transactions, and asks people what next when a run on an
  *   issue fails for good (`notices.ts`, a card that folds away once the issue moves on) or when an agent reports itself
- *   blocked (`blocked.ts`);
+ *   blocked (`blocked.ts`), or when agents' comments reached the issue's run limit (`comment-run-limit.ts`), and has
+ *   each run an agent's comment started answer in that comment's thread (`run-report.ts`);
  * - organises requirement intake with AI (`intake/`): a request is a run of the person's online agent on the private
  *   `intake` subject, which hands its drafts back with `intake drafts`, bound as the projects plugin's organiser;
  * - clears an archived or deleted agent as executor of the unfinished issues it was given (`removal.ts`);
@@ -87,6 +88,8 @@ import { createAgentKind } from './kind.js';
 import { agentBlockedRule, settleBlockedCards } from './blocked.js';
 import {
   announceFailedRuns,
+  announceRejectedRuns,
+  recordRejectedClaim,
   runFailedRule,
   settleFailedRunCards,
 } from './notices.js';
@@ -100,6 +103,8 @@ import {
 import { relayAnnouncements } from './tx.js';
 import { inactiveUsers } from './users.js';
 import { createAgentWork, startHandedOverStages } from './work.js';
+import { commentRunNoticeRule } from './comment-run-limit.js';
+import { reportCommentRuns } from './run-report.js';
 
 export interface StudioAgentsDeps {
   readonly agents: Agents;
@@ -168,6 +173,8 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
   const direct = createDirectWrites({ agents, projects: deps.projects });
   const design = createDesignService({
+    agents,
+    kinds: deps.kinds,
     projects: deps.projects,
     inbox: deps.inboxPort ?? (() => undefined),
   });
@@ -191,7 +198,12 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
         agents,
         deps.projects,
         // A run told its issue moved to another project is followed by a run there.
-        { onRunFinished: work.onRunFinished },
+        {
+          onRunFinished: async (tx, run) => {
+            await recordRejectedClaim(tx, run, agents, deps.projects);
+            await work.onRunFinished(tx, run);
+          },
+        },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
       ),
       reports: issueReports(deps.projects, viewerOf),
@@ -253,8 +265,15 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
           })
         ).map((member) => ({ id: member.userId, name: member.name })),
     }),
+    announceRejectedRuns(agents, deps.projects, (error) =>
+      onError('Agents could not announce a rejected claim.', error),
+    ),
     announceFailedRuns(agents, deps.projects, (error) =>
       onError('Agents could not announce a failed run.', error),
+    ),
+    // A run an agent's comment started always answers in that comment's thread.
+    reportCommentRuns(agents, deps.projects, (error) =>
+      onError('Agents could not report a run an agent comment started.', error),
     ),
     releaseRemovedAgents(agents, deps.projects, (error) =>
       onError('Agents could not clear a removed agent as executor.', error),
@@ -296,6 +315,7 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       deps.noticeRules.add(runFailedRule(agents, deps.projects)),
       deps.noticeRules.add(agentBlockedRule(deps.projects, agents)),
       deps.noticeRules.add(stageNoticeRule()),
+      deps.noticeRules.add(commentRunNoticeRule()),
     );
   // The rule types before the template, which names them and is validated when it is installed.
   if (deps.statusRules) {

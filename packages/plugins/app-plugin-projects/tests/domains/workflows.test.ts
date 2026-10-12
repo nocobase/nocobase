@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createWorkflowTemplates } from '../../server/domains/workflows/index.js';
 import {
   BUILTIN_STATUSES,
+  DEFAULT_COMMENT_RUN_LIMIT,
   type WorkflowDefinition,
   type WorkflowListItem,
 } from '../../shared/workflows.js';
@@ -327,6 +328,39 @@ describe('workflows', () => {
         ],
       },
     });
+  });
+
+  it('keeps a limit on the runs comments of other principals start, a positive integer', async () => {
+    const source = await defaultWorkflow();
+    const catalogOf = () =>
+      h.services.workflows.catalogs.forProject(h.database.connection(), null);
+    expect((await catalogOf()).commentRunLimit).toBe(DEFAULT_COMMENT_RUN_LIMIT);
+    for (const commentRunLimit of [0, 1.5, '3', null])
+      await expect(
+        h.services.workflows.update(admin(), source.id, {
+          revision: source.revision,
+          definition: {
+            ...source.definition,
+            commentRunLimit,
+          } as unknown as WorkflowDefinition,
+        }),
+      ).rejects.toMatchObject({
+        code: 'INVALID_WORKFLOW',
+        details: { issues: [{ path: 'commentRunLimit' }] },
+      });
+    const updated = await h.services.workflows.update(admin(), source.id, {
+      revision: source.revision,
+      definition: { ...source.definition, commentRunLimit: 5 },
+    });
+    expect(updated.definition.commentRunLimit).toBe(5);
+    expect((await catalogOf()).commentRunLimit).toBe(5);
+    const { commentRunLimit: _limit, ...unset } = updated.definition;
+    const cleared = await h.services.workflows.update(admin(), source.id, {
+      revision: updated.revision,
+      definition: unset,
+    });
+    expect(cleared.definition).not.toHaveProperty('commentRunLimit');
+    expect((await catalogOf()).commentRunLimit).toBe(DEFAULT_COMMENT_RUN_LIMIT);
   });
 
   it('refuses a stale revision', async () => {

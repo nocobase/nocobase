@@ -12,6 +12,76 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'issueRuns.model': 'Model: {{model}}',
+  'issueRuns.configuredModel': 'Configured model: {{model}}',
+  'issueRuns.modelUnknown': 'Model not reported',
+  'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.emptyHint':
+    'Check the executor and status in Properties to start agent work.',
+  'issueRuns.loading': 'Loading execution log…',
+  'issueRuns.failed': 'Could not load the execution log. Try again.',
+  'issueRuns.refreshFailed':
+    'Could not refresh the execution log. Showing the last loaded records.',
+  'issueRuns.forbidden':
+    'You do not have permission to view these runs. Contact the project owner to request access.',
+  'issueRuns.unavailable':
+    'These records are unavailable. Return to the issue list and check whether the issue still exists.',
+  'issueRuns.unauthenticated':
+    'Your session has expired. Sign in again to view the execution log.',
+  'issueRuns.signIn': 'Sign in',
+  'issueRuns.retry': 'Retry',
+
+  globalChat: {
+    notSubmitted: 'Question was not sent',
+    editRejected: 'Return question and files to editor',
+    placeholder: 'Ask Agent…',
+    label: 'Question for Agent',
+    edit: 'Continue editing in panel',
+    preview: 'Preview page context',
+    send: 'Send question',
+    target: 'New conversation with {{name}}',
+    continue: 'Continue: {{title}} · {{name}}',
+    newConversation: 'New conversation',
+    noAgent: 'Choose an agent in the panel',
+    noAgentHelp:
+      'No agent is available. Choose a default agent in account preferences, or ask an administrator to configure one.',
+    unavailableHelp:
+      'This conversation is unavailable. Open the panel to choose or start a conversation; your question is kept here.',
+    loadingHelp:
+      'Loading this conversation. Wait for it to load, or open the panel to choose a conversation.',
+    pendingHelp:
+      'The previous question is still sending or awaiting confirmation. Open the panel to check it before sending more.',
+    replying: 'Agent is replying',
+    truncated: 'Page context was shortened to stay within the budget.',
+    unknown: 'Send result awaiting confirmation',
+    creationUnknown: 'Conversation creation awaiting confirmation',
+    sending: 'Sending…',
+    unknownHelp:
+      'This question may already be saved. Check the conversation before sending more.',
+    check: 'Refresh confirmation',
+    viewConversation: 'View conversation',
+    creationHelp:
+      'The question has not been sent. Choose a conversation to continue, or create another; an empty conversation may already exist.',
+    refreshConversations: 'Refresh conversations',
+    chooseConversation: 'Continue in {{title}}',
+    moreConversations: 'More conversations',
+    createAnother: 'Create another conversation (an empty one may exist)',
+    draftConflict:
+      'The panel has a draft. How should the header question be handled?',
+    keepDraft: 'Keep panel draft',
+    appendDraft: 'Append header question',
+  },
+  runTranscriptFilters: {
+    title: 'Event types',
+    agent: 'Agent',
+    input: 'Input',
+    tools: 'Tools',
+    thinking: 'Thinking',
+    system: 'System',
+    hiddenGroup: '{{count}} {{group}}',
+    expandHidden: 'Hidden events: {{summary}}',
+    errorsAlwaysVisible: 'Errors are always shown',
+  },
   overrides: {
     '@nocobase/app-plugin-agents': {
       runWait: {
@@ -65,6 +135,22 @@ const enUS = {
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
+  'auth.passwordResetUnavailable':
+    'Self-service password reset is not enabled. Contact an administrator to reset your password.',
+  'auth.capabilityLoadFailed': 'Could not check password reset availability.',
+  'auth.retry': 'Retry',
+  'auth.loading': 'Loading',
+  'auth.passwordRequired': 'Enter a new password.',
+  'members.accountLink': 'Personal profile',
+  'members.actions': 'Member actions',
+  'members.resetPassword': 'Reset password',
+  'members.resettingPassword': 'Resetting password…',
+  'members.passwordResetSuccess': 'Password reset for {{name}}.',
+  'members.resetPasswordSessionsNotice':
+    'Resetting the password will end this member’s existing sessions.',
+  'members.changeOwnPasswordInstead':
+    'Change your own password from your profile.',
+  'members.memberNotFound': 'This member could not be found.',
   'auth.resetTitle': 'Reset password',
   'auth.resetDescription': 'Choose a new password for your account.',
   'auth.identifier': 'Username or email',
@@ -135,32 +221,37 @@ const enUS = {
     },
     send: 'Send',
     setUpModels: 'Add a model service',
+    runnerUnavailable:
+      'No runtime is available for this agent. Add or start a runtime with its coding tool installed and signed in. Messages will wait until a runner is ready.',
+    setUpRunners: 'Set up a runtime',
     sendFailed: 'The message could not be sent. Try again.',
     recent: 'Recent conversations',
     allConversations: 'View all',
     untitled: 'Untitled conversation',
     agentSetup: {
-      open: 'Use Studio in your agent',
-      title: 'Use Studio in your agent',
+      open: 'Manage Studio with a local Coding Agent',
+      title: 'Connect a local Coding Agent',
       description:
-        'Paste this prompt into a coding agent such as Claude Code or Codex. It installs the nb-studio CLI and signs it in.',
+        'Send the setup instructions below to your preferred local Coding Agent, such as Claude Code or Codex. Once connected, it can help you find projects, create tasks, and update progress.',
       prompt:
-        'Please install and set up the Studio CLI so you can work with the projects and issues on Studio ({{server}}):\n' +
-        '1. Run `{{install}}` to install studio.\n' +
-        '2. Run `nb-studio login --server {{server}}` and tell me the code it shows; I will confirm it in my browser.\n' +
-        '3. Once signed in, run `nb-studio docs` to learn the commands, then use nb-studio for what I ask instead of calling the HTTP API directly.',
-      promptLabel: 'Prompt for your agent',
-      preparing: 'Preparing the prompt',
+        'Please install and configure the NocoBase Studio CLI to manage projects and issues in NocoBase Studio ({{server}}):\n' +
+        '1. `nb-studio` needs Node.js 24 or newer with npm: check with `node --version`, and if it is missing or older, ask me before installing it. Then run `{{install}}` to install `nb-studio`.\n' +
+        '2. Run `nb-studio login --server {{server}}`, share the sign-in URL and code it displays, and wait for me to confirm the sign-in in my browser.\n' +
+        '3. Once signed in, run `nb-studio whoami` to check the identity and permissions, then run `nb-studio docs` to learn the available commands.\n' +
+        '4. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',
+      promptLabel: 'Setup instructions for your Coding Agent',
+      preparing: 'Generating setup instructions',
       identity:
-        'The CLI acts as you, with the same permissions you have in Studio. Signing in needs your confirmation in the browser.',
-      expiry: 'This link works for 30 minutes; you can generate a new one.',
+        'Your Coding Agent uses the CLI to act as you, within your Studio permissions. You need to confirm the sign-in in your browser.',
+      expiry:
+        'The installation link in these instructions is valid for 30 minutes. Generate new instructions if it expires.',
       runtime:
-        'This installs the CLI only. To run agents on this machine, add it under Agent team › Runtimes › Add runtime, which installs nocobase-runner.',
-      regenerate: 'Generate new link',
-      copy: 'Copy',
-      copied: 'Copied',
-      copyFailed: 'Could not copy the prompt',
-      failed: 'Could not prepare the prompt. Try again.',
+        'To let Studio assign tasks to run on your computer, go to Agent team › Runtimes › Add runtime to install and register a Runner.',
+      regenerate: 'Regenerate instructions',
+      copy: 'Copy setup instructions',
+      copied: 'Setup instructions copied',
+      copyFailed: 'Could not copy the setup instructions. Try again.',
+      failed: 'Could not generate the setup instructions. Try again.',
     },
   },
   dashboard: {
@@ -800,6 +891,16 @@ const enUS = {
   'inbox.someone': 'Someone',
   'inbox.titles.approval_requested': 'Status change waiting for approval',
   'inbox.outcomes.retried': 'Retried',
+  'inbox.outcomes.newRun': 'A new run has started',
+  'inbox.outcomes.issueReassigned': 'Issue reassigned',
+  'issueRuns.alreadyRetried': 'Retried → New run',
+  'inbox.runFailed.retryRecord': 'Retried by {{name}} through {{source}}.',
+  'inbox.runFailed.alreadyRetried': 'This run has already been retried.',
+  'inbox.runFailed.sources.card': 'the decision card',
+  'inbox.runFailed.sources.cli': 'CLI',
+  'inbox.runFailed.sources.runRecord': 'the run record',
+  'inbox.runFailed.sources.api': 'the API',
+  'inbox.runFailed.sources.unknown': 'an unrecorded entry point',
   'inbox.outcomes.reassigned': 'Given to a person',
   'inbox.outcomes.cancelled': 'Not retried',
   'inbox.runFailed.retry': 'Retry',
@@ -830,6 +931,34 @@ const enUS = {
   'design.by': '{{name}}, {{time}}',
   'design.expand': 'Show the whole proposal',
   'design.collapse': 'Show less',
+  'design.executor.clear': 'Clear executor',
+  'design.executor.search': 'Search executors',
+  'design.executor.signIn': 'Sign in again',
+  'design.executor.notFound':
+    'This issue no longer exists. Close this dialog to return.',
+  'design.executor.clearSearch': 'Clear search',
+  'design.executor.sessionExpired':
+    'Your session ended. Sign in again to continue.',
+  'design.executor.forbidden':
+    'Approval access was revoked. Close this dialog and ask the owner to restore access.',
+  'design.executor.title': 'Approve proposal',
+  'design.executor.description': 'Choose the executor for development.',
+  'design.executor.label': 'Executor',
+  'design.executor.placeholder': 'Choose an executor',
+  'design.executor.noMatches': 'No matching executors',
+  'design.executor.agent': 'Developer agent',
+  'design.executor.user': 'Project member',
+  'design.executor.empty':
+    'No developer agents or project members are available. Ask the owner to adjust access.',
+  'design.executor.reload': 'Reload choices',
+  'design.executor.confirm': 'Approve and enter development',
+  'design.executor.invalid':
+    'The selected executor is no longer available. Choose again.',
+  'design.executor.unavailable':
+    'The stage or your approval permission changed. Approval is no longer available.',
+  'design.executor.changed':
+    'The executor changed. Choose an executor before approving.',
+  'design.executor.loadFailed': 'Could not load executor choices. Try again.',
   'design.approve': 'Approve for development',
   'design.requestChanges': 'Send back',
   'design.done.approve': 'Approved. The issue moves to development.',
@@ -927,8 +1056,20 @@ const enUS = {
     'The run failed after {{attempts}} attempts ({{reason}}). Retry it, give the issue to a person, or leave it.',
   'inbox.body.stage_action_problem':
     '"{{rule}}" in {{status}} was skipped: {{why}}.',
+  'inbox.types.comment_runs_limited': 'Agent comments paused',
+  'inbox.text.comment_runs_limited':
+    'Agent comments on {{identifier}} reached their limit',
+  'inbox.body.comment_runs_limited':
+    'Agents’ comments started {{limit}} runs within {{windowHours}} hours, so a comment of {{agentName}} woke nobody.',
   'inbox.stageRules.runAgent': 'Run agent',
   'inbox.stageRules.suggestExecutor': 'Suggest executor',
+  'inbox.stageSkips.executorCannotImplement':
+    '{{agentName}} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.',
+  'errors.INTERNAL': 'The request failed. Try again.',
+  'errors.DESIGN_EXECUTOR_REQUIRED':
+    'The executor changed. Choose an executor before approving.',
+  'errors.DESIGN_EXECUTOR_INVALID':
+    'The selected executor is no longer available. Choose again.',
   'inbox.stageSkips.ownerCannotInvoke':
     'the owner may not give work to the agent',
   'inbox.stageSkips.noAgentExecutor':
@@ -948,6 +1089,8 @@ const enUS = {
     cancelled: 'Cancelled',
     idleTimeout: 'Idle too long',
     setupFailed: 'Setup failed',
+    workspaceBusy:
+      'The working directory is busy; waiting for another attempt.',
     checkoutFailed: 'Checkout failed',
     cliUnavailable: 'CLI unavailable',
     toolAuth: 'Tool not signed in',
@@ -1098,6 +1241,8 @@ const enUS = {
       knowledge: 'Knowledge',
     },
     activity: {
+      executorCannotImplement:
+        '{{name}} lacks permission to open pull requests (studio.git/open-pr) and cannot run as the executor in In progress. Grant that permission or assign an agent that has it.',
       executorWaits:
         'made {{name}} the executor; it starts when the issue enters In progress',
     },
@@ -1168,6 +1313,10 @@ const enUS = {
       },
     },
     stageRules: {
+      freshSession: 'Start a new session every time',
+      freshSessionHint:
+        'On: each stage run starts a new Agent session, useful for reviews to avoid carrying over earlier conclusions. The working directory is kept.',
+      withFreshSession: '{{summary}} · New session every time',
       agent: 'Agent',
       agentsUnavailable:
         'You cannot list agents here; the rule keeps the agent it names.',
@@ -1210,6 +1359,15 @@ const enUS = {
       suggestNoAgent: 'Suggests an executor to the owner (no agent chosen)',
       unknownAgent: 'an agent you cannot see',
       withInstruction: '{{summary}}: {{instruction}}',
+    },
+    commentRuns: {
+      limitReached: 'Agent comments paused',
+      continueHint:
+        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+      continued: 'Agent comment continued',
+      continueStale: 'This comment no longer waits. Refresh the issue.',
+      continueFailed:
+        'Could not continue. Check the agents and issue blockers, then retry.',
     },
   },
   pmChat: {

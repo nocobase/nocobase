@@ -44,6 +44,8 @@ async function fixture(strict = false, wrapper = false) {
     import { loadStandaloneAppEnv } from ${JSON.stringify(envLoader)};
     const env = loadStandaloneAppEnv({ rootDir: ${JSON.stringify(root)} });
     const record = (event) => appendFileSync(${JSON.stringify(log)}, JSON.stringify({event, value: env.VALUE, removed: env.REMOVED, shell: env.SHELL_OVERRIDE, pid: process.pid}) + '\\n');
+    process.stdin.on('end', () => appendFileSync(${JSON.stringify(path.join(root, 'stdin-ended'))}, 'ended'));
+    process.stdin.resume();
     process.on('SIGUSR2', () => process.exit(7));
     process.on('SIGTERM', () => setTimeout(() => { record('stop'); process.exit(0); }, 150));
     setInterval(() => {}, 1000);
@@ -229,3 +231,18 @@ it.skipIf(process.platform === 'win32')(
     expect(() => process.kill(pid, 0)).toThrow();
   },
 );
+
+it('keeps worker input open after background stdin closes, including after dotenv restart', async () => {
+  const { root, events } = await fixture();
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  await expect(readFile(path.join(root, 'stdin-ended'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  });
+  await writeFile(path.join(root, '.env.local'), 'VALUE=updated\n');
+  await waitFor(async () => (await events()).length === 3);
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  await expect(readFile(path.join(root, 'stdin-ended'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  });
+  expect((await events())[2].value).toBe('updated');
+});

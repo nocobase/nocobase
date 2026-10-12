@@ -49,6 +49,8 @@ export interface StatusCatalog {
   /** Who may move an issue where; every status change goes through `move` with it and `rules`. */
   readonly machine: LifecycleMachine;
   readonly rules: IssueRules;
+  /** The workflow's `commentRunLimit`, or `DEFAULT_COMMENT_RUN_LIMIT`. */
+  readonly commentRunLimit: number;
 }
 
 export interface StatusCatalogs {
@@ -164,6 +166,11 @@ export interface CommentChange {
   /** The comment it answers, if it is a reply. */
   readonly parent: IssueComment | null;
   readonly actor: Actor;
+  /**
+   * The person the comment was written for: its writer, or for an agent's the person its run acts for. Null when it
+   * was written through `CommentWriter`, which names no person.
+   */
+  readonly userId: string | null;
   /** Every principal the comment mentions, of any kind. */
   readonly mentions: readonly MentionRef[];
 }
@@ -173,6 +180,8 @@ export interface CommentChange {
  * caller's transaction.
  */
 export interface IssueRelations {
+  /** Before issue/counter writes; held until the outer transaction ends. Pass false when adding no waits. */
+  lock(tx: Tx, advance?: boolean): Promise<void>;
   /** A new issue: 400 unless every `blockedBy` is an issue the viewer sees; inserts them, then checks for a cycle. */
   created(
     tx: Tx,
@@ -196,6 +205,7 @@ export interface IssueRelations {
 }
 
 export const noRelations: IssueRelations = {
+  lock: () => Promise.resolve(),
   created: () => Promise.resolve(),
   placed: () => Promise.resolve(),
   changed: () => Promise.resolve(),

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { Logger } from '@nocobase/logging';
+import { NOTIFICATION_PROVIDER_ERROR_CATEGORIES } from './types.js';
 
 import type {
   NotificationAttemptRecord,
@@ -76,6 +77,65 @@ export class ChannelManager {
     return provider ? [{ type: provider.type }] : [];
   }
 
+  /** A one-shot path for credentials: deliberately bypasses storage and retries. */
+  async sendTransient(
+    name: string,
+    input: object,
+  ): Promise<readonly ProviderSendResult[]> {
+    const runtime = this.runtimes.get(name);
+    if (!runtime)
+      throw new Error(`Notification Channel "${name}" is unavailable.`);
+    const { message, recipients } = runtime.channel.validateMessage(input);
+    if (!recipients.length)
+      throw new Error('At least one notification recipient is required.');
+    const notificationId = randomUUID();
+    return Promise.all(
+      recipients.map(async (recipient): Promise<ProviderSendResult> => {
+        const delivery = {
+          id: randomUUID(),
+          notificationId,
+          providerType: runtime.provider.type,
+          recipientSnapshot: recipient,
+          messageSnapshot: message,
+        };
+        const prepared = await this.prepare(runtime.channel, delivery);
+        if (!prepared.ok)
+          return {
+            status: 'failed',
+            disposition: 'never',
+            error: {
+              code: 'TRANSIENT_PREPARATION_FAILED',
+              category: 'channel',
+              message: 'Sensitive notification preparation failed.',
+            },
+          };
+        const result = await this.invoke(
+          runtime.provider,
+          prepared.value,
+          delivery,
+          randomUUID(),
+          new Date().toISOString(),
+        );
+        // Providers may echo credentials in diagnostics. Do not expose those errors to callers that persist them.
+        if (result.status === 'accepted') return { status: 'accepted' };
+        const error = {
+          code: 'TRANSIENT_DELIVERY_FAILED',
+          category:
+            result.error.category &&
+            NOTIFICATION_PROVIDER_ERROR_CATEGORIES.includes(
+              result.error.category,
+            )
+              ? result.error.category
+              : ('unknown' as const),
+          message: 'Sensitive notification was not confirmed by the provider.',
+        };
+        return result.status === 'failed'
+          ? { status: 'failed', disposition: 'never', error }
+          : { status: 'submission_unknown', error };
+      }),
+    );
+  }
+
   async send(
     deliveryId: string,
   ): Promise<NotificationDeliveryRecord | undefined> {
@@ -146,7 +206,14 @@ export class ChannelManager {
 
   private async prepare(
     channel: NotificationChannel,
-    delivery: NotificationDeliveryRecord,
+    delivery: Pick<
+      NotificationDeliveryRecord,
+      | 'id'
+      | 'notificationId'
+      | 'recipientSnapshot'
+      | 'messageSnapshot'
+      | 'providerType'
+    >,
   ): Promise<
     | { readonly ok: true; readonly value: object }
     | { readonly ok: false; readonly error: NotificationProviderSendError }
@@ -314,7 +381,7 @@ export class ChannelManager {
   private async invoke(
     provider: NotificationProvider,
     message: object,
-    delivery: NotificationDeliveryRecord,
+    delivery: Pick<NotificationDeliveryRecord, 'id' | 'notificationId'>,
     attemptId: string,
     submittedAt: string,
   ): Promise<ProviderSendResult> {

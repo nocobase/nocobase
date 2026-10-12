@@ -25,6 +25,11 @@ const systemEnUS = {
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
+  'auth.passwordResetUnavailable':
+    'Self-service password reset is not enabled. Contact an administrator to reset your password.',
+  'auth.capabilityLoadFailed': 'Could not check password reset availability.',
+  'auth.retry': 'Retry',
+  'auth.loading': 'Loading',
   'auth.resetDescription': 'Choose a new password for your account.',
   'auth.resetTitle': 'Reset password',
   'auth.identifier': 'Username or email',
@@ -135,13 +140,28 @@ const systemEnUS = {
             label: 'Close sign-up',
             text: 'This application is for company employees only. Administrators create all accounts.\nDisable self-registration and remove the registration link from the sign-in page.\nExisting employees must still be able to sign in with their accounts and passwords.\nKeep the forgot-password link.',
           },
-          passwordRules: {
-            label: 'Password rules',
-            text: 'Require at least 12 characters when registering or resetting a password.\nShow this requirement in both forms and use consistent validation messages.\nKeep existing accounts able to sign in without requiring an immediate password change.',
-          },
           companySso: {
             label: 'Company SSO',
             text: "Let employees sign in with our company identity platform using OIDC.\n\nKeep account-password sign-in and add a Company account button.\nThe button opens the company identity platform. After successful sign-in, return to the application's home page.\n\nAllow first sign-in to create an application account, identified by the platform's stable user identifier.\nDo not automatically link accounts by matching names or emails. New accounts use the application's default permissions.\n\nList the information the identity platform administrator must provide and the callback URL they need to register.",
+          },
+          apiKeys: {
+            label: 'API keys',
+            text: "Add an Integration keys entry to the user menu, using the application's built-in API keys capability.\nEmployees manage only the keys they created, entering a purpose and a validity period in days.\nShow the full key only once after creation, with a prompt to copy and store it right away.\nList each key's name, an identifiable fragment, status, expiry, and last use, and allow revoking it after confirmation.\nNever show the full key in the list, logs, or details.",
+          },
+        },
+      },
+      dataSources: {
+        title: 'Data sources',
+        description:
+          'Choose the application database and use business data from existing external databases.',
+        prompts: {
+          postgres: {
+            label: 'Switch database',
+            text: "Switch the application database from SQLite to PostgreSQL.\nRead the connection details from the server's runtime configuration, not from source code.\nExplain which database driver to install and which settings to fill in, and remind me that existing data is not migrated automatically.",
+          },
+          externalDatabase: {
+            label: 'External database',
+            text: "Connect the company's existing finance database as a read-only external data source; do not modify its tables.\nMatch records by supplier number and add a Settlement section to supplier details showing the settlement cycle, credit limit, and settlement status, labeled with its source.\nKeep reading supplier contact details from the application database, and read settlement data directly from the external database without importing it.\nRead the connection credentials from the server's runtime configuration.",
           },
         },
       },
@@ -158,9 +178,28 @@ const systemEnUS = {
             label: 'Data scopes',
             text: "Let purchase requesters view only their own orders, using the order's requester field to determine ownership.\nOrder reviewers can view all orders and process pending approvals.\nAdministrators can adjust each job's order-viewing scope in its permission set.",
           },
-          sharing: {
-            label: 'Sharing',
-            text: "Share Bob's order PO-2026-004 with Alice so she can review it.\nAlice already has permission to view orders; add viewing access to this order.\nKeep her existing responsibilities. Order reviewers still process approvals.\nLet administrators manage this sharing rule.",
+          restrictions: {
+            label: 'Restrictions',
+            text: 'Bob is temporarily helping review purchase orders and may view only orders of 2,000 or less.\nAdd an amount limit to his View orders action, keeping his existing job and data scopes.\nApply the limit to his own orders and to orders shared with him.\nAdministrators can change the amount or remove the rule; before removal, explain that his visible scope may grow.',
+          },
+        },
+      },
+      workflow: {
+        title: 'Workflows',
+        description:
+          'Move business records through stages, with waiting, timeouts, retries, and a history of who did what.',
+        prompts: {
+          stages: {
+            label: 'Stages',
+            text: "Add a process to purchase orders: Pending approval → Pending purchase → Received → Completed.\nReviewers approve or reject; a rejection requires a reason and returns the order to the applicant to revise and resubmit.\nAfter the buyer places the purchase, the order is pending purchase; confirming delivery with a signed receipt moves it to Received, and the applicant's confirmation completes it.\nOrder details offer only the actions of the current stage, and ordinary edits cannot change the stage.\nCheck stages and required information on the server, and never overwrite a result someone else has already submitted.",
+          },
+          backgroundExport: {
+            label: 'Background export',
+            text: 'Add an order report page that exports existing orders to CSV.\nAfter submission the export waits to be processed, is generated in the background, and completes with a download link.\nShow the current stage, filename, number of exported orders, and the submission and system processing records.\nRetry failed generation according to rules, and keep a final failure for the owner to handle; running it again must not create duplicate report files.\nKeep the progress and result visible after a page refresh, and allow only authorized people to export orders.',
+          },
+          history: {
+            label: 'History',
+            text: 'Show the current stage and processing history in order details.\nEach entry shows who acted, when, the action, the stage before and after, and any rejection reason or signed receipt.\nMark actions performed automatically as done by the system.\nKeep the progress and history after a page refresh, so the whole process can be reviewed once completed.',
           },
         },
       },
@@ -199,13 +238,17 @@ const systemEnUS = {
         description:
           'Connect personal mailboxes, then read, reply to, and send business email.',
         prompts: {
+          providers: {
+            label: 'Mail provider',
+            text: "Configure mailbox.org for the application in the server configuration's mail.providers:\n- IMAP incoming server: imap.mailbox.org, port 993, SSL/TLS.\n- SMTP outgoing server: smtp.mailbox.org, port 465, SSL/TLS.\nUsers enter their own email address, username, and password on the mailbox accounts page and choose the date to start the first synchronization from; never write mailbox passwords into configuration or source code.",
+          },
           mailCenter: {
             label: 'Mail center',
-            text: 'Add a mail center and a mailbox account management entry to the application. Users can connect their own mailboxes, select a mailbox, synchronize incoming messages, read messages and attachments, and reply.\n\nWhen a sales representative receives a quotation request, they can reply from the mail center. Keep the original subject and conversation context, and address the reply to the original sender. Each user works with their own connected mailboxes.',
+            text: 'Mail is built into this application; reuse it instead of building it again or installing another plugin.\nAdd Mail center and Mailbox accounts pages to the navigation, using the mail workspace and mailbox accounts pages the mail capability provides.\nUsers can connect their own mailboxes, synchronize incoming messages, read messages and attachments, and reply, keeping the original subject and conversation context and addressing the reply to the original sender.\nEach user works with their own connected mailboxes.',
           },
           correspondence: {
             label: 'Customer emails',
-            text: "Add a correspondence section to customer details. Show messages whose sender or recipient matches the current customer's contact email addresses. Sales representatives can read messages, view attachments, and reply using their own connected mailboxes.",
+            text: "Add a correspondence section to customer details, reusing the application's built-in mail reading and compose components.\nShow messages whose sender or recipient matches the current customer's contact email addresses. Sales representatives can read messages, view attachments, and reply using their own connected mailboxes.",
           },
         },
       },
@@ -221,21 +264,6 @@ const systemEnUS = {
           avatar: {
             label: 'Avatar',
             text: 'Add an avatar to each employee, with one image per employee.\nSupport uploading and replacing the avatar, and show it in employee lists and details.\nUse the new avatar after replacement and keep it visible after refreshing the page.',
-          },
-        },
-      },
-      templatePrint: {
-        title: 'Template printing',
-        description:
-          'Fill business data into Word or Excel templates and generate files.',
-        prompts: {
-          approvalForm: {
-            label: 'Approval form',
-            text: "Add a “Generate approval form” action to order details.\n\nUse the Word template I provided to fill in the current order's number, purchase request, applicant, amount, approval result, and processing time.\nKeep the template's heading, table layout, and sign-off area. Name the output “Purchase-approval-order-number” and provide a Word download.\nAnyone with access to the order can generate its approval form. Use the current order data when generating the file.",
-          },
-          pdf: {
-            label: 'PDF output',
-            text: "Add PDF download for the purchase approval form, preserving the Word template's fonts, tables, and sign-off area.",
           },
         },
       },

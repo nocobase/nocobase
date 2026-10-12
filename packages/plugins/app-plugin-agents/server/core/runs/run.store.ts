@@ -44,6 +44,7 @@ export interface RunRecord {
   readonly subjectKind: string;
   readonly subjectId: string;
   readonly threadScope: string;
+  readonly freshSession?: boolean;
   readonly actorUserId: string;
   /** Null only on a run older than the column that no backfill reached; read as the actor then. */
   readonly requestedByUserId?: string | null;
@@ -69,6 +70,8 @@ export interface RunRecord {
   readonly payloadFingerprint: string | null;
   /** While queued: the variables for team runners only that kept a personal runner off it (`VariableRef[]`). */
   readonly teamOnlyVariables?: JsonColumn;
+  /** While held: the repository URLs its runner may ask credentials for on demand (`RunGit.onDemand`); null otherwise. */
+  readonly gitCredentialUrls?: JsonColumn;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -124,6 +127,8 @@ export interface RepoRecord {
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha: string | null;
+  readonly failureReason?: string | null;
+  readonly failureDetail?: string | null;
   readonly updatedAt: string;
 }
 
@@ -243,6 +248,7 @@ export function toRun(record: RunRecord): Run {
     attempt: Number(record.attempt),
     maxAttempts: Number(record.maxAttempts),
     retryOfRunId: record.retryOfRunId,
+    freshSession: Boolean(record.freshSession),
     parentRunId: record.parentRunId ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
@@ -307,6 +313,13 @@ export function toRepo(record: RepoRecord): RunRepo {
     branch: record.branch,
     pushed: Boolean(record.pushed),
     headSha: record.headSha,
+    failure:
+      record.failureReason === null || record.failureReason === undefined
+        ? null
+        : {
+            reason: record.failureReason,
+            message: record.failureDetail ?? '',
+          },
     updatedAt: record.updatedAt,
   };
 }

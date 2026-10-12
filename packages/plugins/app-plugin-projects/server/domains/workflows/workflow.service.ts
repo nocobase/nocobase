@@ -22,6 +22,7 @@ import type {
 import {
   ANY_STATUS,
   BUILTIN_STATUSES,
+  DEFAULT_COMMENT_RUN_LIMIT,
   INITIAL_STATUS,
   WORKFLOW_NAME_MAX,
   type CreateWorkflowRequest,
@@ -172,6 +173,7 @@ function catalogOf(
     category: (key) => byKey.get(key)?.category ?? null,
     machine: compile(definition),
     rules,
+    commentRunLimit: definition.commentRunLimit ?? DEFAULT_COMMENT_RUN_LIMIT,
   };
 }
 

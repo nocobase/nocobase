@@ -1,5 +1,107 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.46
+
+### Patch Changes
+
+- d54dd59: Show actionable origin errors with the browser address and the app.publicOrigin setting in config.yml. Use localized authentication errors for sign-out in both templates while preserving the session on failure.
+- Updated dependencies [d54dd59]
+- Updated dependencies [d54dd59]
+- Updated dependencies [693e43d]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.20
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.7
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.14
+  - @nocobase/app-plugin-i18n@1.0.0-beta.16
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.4
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.6
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.3
+
+## 1.0.0-beta.45
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.15
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.15
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.11
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.6
+  - @nocobase/app-plugin-database-example@0.1.0-beta.8
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.13
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-file-example@1.0.0-beta.19
+  - @nocobase/app-plugin-i18n@1.0.0-beta.15
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.6
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.3
+  - @nocobase/app-plugin-mail@1.0.0-beta.11
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.5
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.8
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.24
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.11
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.2
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.11
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.8
+  - @nocobase/app-plugin-repository-example@1.0.0-beta.21
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.20
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.17
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.8
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.7
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.6
+  - @nocobase/app-plugin-users@2.0.0-beta.4
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/authorization@1.0.0-beta.13
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/lifecycle@0.1.0-beta.1
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/snowflake@1.0.0-beta.4
+
+## 1.0.0-beta.44
+
+### Patch Changes
+
+- 251d19e: Report password reset availability from the authentication server, hide unavailable self-service recovery, and let authorized Studio members reset another member's password.
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.3
+  - @nocobase/app-plugin-notification@1.0.0-beta.26
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.2
+
+## 1.0.0-beta.43
+
+### Patch Changes
+
+- d515c68: Let nested navigation icons inherit the menu item's text color so idle, hovered and selected icons follow the same state as their labels instead of always using the brand accent.
+- Updated dependencies [17a183c]
+- Updated dependencies [13620d9]
+- Updated dependencies [459c33f]
+  - @nocobase/app-cli@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.4
+
 ## 1.0.0-beta.42
 
 ### Minor Changes

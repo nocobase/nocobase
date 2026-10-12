@@ -7,6 +7,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -161,13 +162,10 @@ describe('runner end to end', () => {
           'say starting',
           'bash env',
           'bash appcli whoami',
-          'bash cat .app/run.json',
-          `bash cat ${path.join(home, 'credentials', 'test-app.json')}`,
           'bash ls /',
           'read /etc/hosts',
           'write notes.txt hello from the agent',
           `bash ${COMMIT} add notes.txt && ${COMMIT} commit -q -m agent-work`,
-          `bash ${COMMIT} push origin HEAD:main`,
           'say all done',
         ].join('\n'),
       },
@@ -205,7 +203,7 @@ describe('runner end to end', () => {
       },
     });
 
-    // The agent's environment: whitelisted variables and the run's variables, its own HOME and TMPDIR, the push
+    // The agent's environment: whitelisted variables and the run's variables, the real HOME, its own TMPDIR, the push
     // guard as its hooks, nothing else. The variable's value is redacted from the transcript.
     const envOutput = events.find(
       (event) => event.type === 'toolResult' && event.output?.includes('PATH='),
@@ -214,7 +212,9 @@ describe('runner end to end', () => {
     expect(JSON.stringify(events)).not.toContain('secret-value');
     expect(envOutput).not.toContain('should-not-leak');
     expect(envOutput).not.toMatch(/^NOCOBASE_RUNNER_/m);
-    expect(envOutput).toContain(`HOME=${workDir}/.nocobase-runner/home`);
+    // The real home of the user the runner runs as, not one inside the work directory.
+    expect(envOutput).toMatch(/^HOME=/m);
+    expect(envOutput).not.toContain(`HOME=${workDir}`);
     expect(envOutput).toContain(`TMPDIR=${workDir}/.nocobase-runner/tmp`);
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
     expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
@@ -238,26 +238,16 @@ describe('runner end to end', () => {
         token: '[REDACTED]',
         server: server.url,
       },
-      home: `${workDir}/.nocobase-runner/home`,
+      home: os.homedir(),
     });
 
-    // Refusals are in the transcript.
-    const denials = events.filter((event) => event.type === 'permission');
-    expect(denials.map((event) => event.meta?.reason)).toEqual([
-      'The runner keeps credentials there; tools may not touch them.',
-      'The runner keeps credentials there; tools may not touch them.',
-      'ls outside the work directory: /',
-      'Read outside the work directory: /etc/hosts',
-    ]);
-    // The push guard refused a push to main.
+    // Nothing is refused: the runner is not a sandbox, so reading outside the work directory is allowed.
     expect(
-      events.some(
+      events.filter(
         (event) =>
-          event.type === 'toolResult' &&
-          event.output?.includes('may push only the branch agent/PM-7'),
+          event.type === 'permission' && event.meta?.decision !== 'allow',
       ),
-    ).toBe(true);
-
+    ).toEqual([]);
     // The branch reached the remote.
     expect(run.complete?.repos).toEqual([
       expect.objectContaining({
@@ -342,6 +332,7 @@ describe('runner end to end', () => {
     );
     server.cancel(run.payload.run.id);
     await waitFor(() => run.status === 'cancelled', 15_000, 'cancel');
+    expect(run.cancelAck?.sessionId).toMatch(/^echo-/);
     // The worker removes it as it exits, right after acknowledging the cancel.
     await waitFor(() => !existsSync(file), 5_000, 'credentials removal');
   });
@@ -402,9 +393,34 @@ describe('runner end to end', () => {
     expect(run.complete?.handledInputIds).toContain(input.id);
   });
 
+  it('completes again instead of starting an empty turn when pending input is withdrawn', async () => {
+    const run = server.enqueue({
+      prompt: { system: '', session: 'fresh', turn: 'say one' },
+    });
+    server.withdrawPendingOnNextComplete(run.payload.run.id);
+    daemon();
+    const id = run.payload.run.id;
+    await waitFor(() => run.status === 'completed', 15_000, 'completion');
+    expect(
+      run.reports
+        .filter((report) => report.kind === 'complete')
+        .map((report) => report.status),
+    ).toEqual([409, 200]);
+    expect(
+      server
+        .events(id)
+        .some((event) => event.content === 'echo: (empty prompt)'),
+    ).toBe(false);
+  });
+
   it('kills the process group within 15 s of a cancel, even when the tool ignores SIGTERM', async () => {
     const run = server.enqueue({
-      prompt: { system: '', session: 'fresh', turn: 'say working\nhang-hard' },
+      prompt: {
+        system: '',
+        session: 'resume',
+        resumeSessionId: 'unconfirmed-old-session',
+        turn: 'say working\nhang-hard',
+      },
     });
     daemon();
     const id = run.payload.run.id;
@@ -429,6 +445,7 @@ describe('runner end to end', () => {
     expect(Date.now() - cancelledAt).toBeLessThan(15_000);
     await waitFor(() => run.status === 'cancelled', 10_000, 'cancelAck');
     expect(run.cancelAck).toBeDefined();
+    expect(run.cancelAck?.sessionId).toBeUndefined();
     expect(server.events(id).at(-1)).toMatchObject({
       type: 'status',
       meta: { status: 'cancelled' },
@@ -612,6 +629,9 @@ describe('runner end to end', () => {
       const beats = runner.heartbeatsSent;
       await new Promise((resolve) => setTimeout(resolve, 1_500));
       expect(runner.protocolHeader).toBe(String(PROTOCOL_VERSION));
+      expect(runner.register.features).toEqual(
+        expect.arrayContaining(['npm', 'gitCredentials']),
+      );
       expect(runner.heartbeatsSent).toBeGreaterThan(beats);
       expect(runner.claims).toBe(claims);
       expect(run.status).toBe('queued');
@@ -688,6 +708,60 @@ describe('runner end to end', () => {
       });
     }
     expect(groupAlive(pid)).toBe(false);
+  });
+
+  it('starts a coding run in a verified empty remote and publishes its first commit', async () => {
+    const remote = path.join(scratch, 'empty.git');
+    git(['init', '--quiet', '--bare', '--initial-branch=main', remote]);
+    const run = server.enqueue({
+      workspace: {
+        dirs: [
+          {
+            kind: 'repo',
+            url: `file://${remote}`,
+            defaultBranch: 'main',
+            branch: 'agent/PM-9',
+            path: 'app',
+            initializeIfEmpty: true,
+          },
+        ],
+        env: [],
+      },
+      prompt: {
+        system: '{{runner.workspaceNotes}}',
+        session: 'fresh',
+        turn: [
+          'system',
+          'write app.txt initialized',
+          `bash ${COMMIT} add app.txt && ${COMMIT} commit -q -m Initialize`,
+          'say done',
+        ].join('\n'),
+      },
+    });
+    daemon();
+    await waitFor(
+      () => run.status === 'completed' || run.status === 'failed',
+      20_000,
+      'empty repository run',
+    );
+    expect(run.fail).toBeUndefined();
+    expect(run.status).toBe('completed');
+    expect([...run.events.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'checkout',
+          meta: expect.objectContaining({ branch: 'main', initializing: true }),
+        }),
+      ]),
+    );
+    expect(run.complete?.repos).toEqual([
+      expect.objectContaining({
+        branch: 'main',
+        pushed: true,
+        headSha: git(['rev-parse', 'refs/heads/main'], remote),
+      }),
+    ]);
+    expect(git(['show', 'main:app.txt'], remote)).toBe('initialized');
   });
 
   it('fails with checkoutFailed when a repository cannot be cloned', async () => {

@@ -23,10 +23,14 @@ function I18n({ children }: { readonly children: ReactNode }) {
   return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
 }
 
-const { signOut, refresh, showToast } = vi.hoisted(() => ({
+const { signOut, refresh, showToast, resolveError } = vi.hoisted(() => ({
+  resolveError: vi.fn(),
   signOut: vi.fn(),
   refresh: vi.fn(),
   showToast: vi.fn(),
+}));
+vi.mock('@nocobase/app-plugin-authentication/client/actions', () => ({
+  useAuthenticationErrorResolver: () => resolveError,
 }));
 vi.mock('@nocobase/app-client', () => {
   const toaster = { show: showToast, close: vi.fn() };
@@ -59,6 +63,7 @@ describe('account menu sign out', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     refresh.mockResolvedValue(undefined);
+    resolveError.mockReturnValue({ message: 'Localized authentication error' });
   });
   async function signOutFromMenu() {
     render(<UserMenu />, { wrapper: I18n });
@@ -80,9 +85,13 @@ describe('account menu sign out', () => {
     await waitFor(() =>
       expect(showToast).toHaveBeenCalledWith({
         type: 'error',
-        title: 'Unable to sign out. Please try again.',
+        title: 'Localized authentication error',
       }),
     );
+    expect(resolveError).toHaveBeenCalledWith({
+      status: 403,
+      code: 'INVALID_ORIGIN',
+    });
     expect(refresh).not.toHaveBeenCalled();
     await openAccountMenu();
     expect(

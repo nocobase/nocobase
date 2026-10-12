@@ -1,5 +1,11 @@
 # @nocobase/cli-envelope
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+
 ## 0.1.0-beta.0
 
 ### Minor Changes
