@@ -138,11 +138,12 @@ export interface FakeGitHub {
     readonly clientId: string;
     readonly clientSecret: string;
     readonly installations: Map<string, string>;
-    /** The installation tokens minted, with the repositories each was limited to. */
+    /** The installation tokens minted, with the repositories and permissions each was limited to. */
     readonly minted: {
       token: string;
       installationId: string;
       repositories: string[] | null;
+      permissions: Record<string, string> | null;
     }[];
     /** OAuth codes waiting to be exchanged, with the account they authorize. */
     readonly codes: Map<string, FakeUser>;
@@ -637,6 +638,10 @@ export function createFakeGitHub(
         repositories: Array.isArray(body.repositories)
           ? (body.repositories as string[])
           : null,
+        permissions:
+          body.permissions && typeof body.permissions === 'object'
+            ? (body.permissions as Record<string, string>)
+            : null,
       });
       record(201);
       return json(201, {
