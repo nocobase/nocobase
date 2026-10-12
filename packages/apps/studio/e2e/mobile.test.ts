@@ -8,7 +8,8 @@ test.use({
 
 /** Key pages at phone width, and what shows that each one rendered. */
 const PAGES: readonly { path: string; heading: string | null }[] = [
-  { path: '/', heading: '今天要做什么？' },
+  { path: '/', heading: '收件箱' },
+  { path: '/chat', heading: '今天要做什么？' },
   { path: '/dashboard', heading: '仪表盘' },
   { path: '/inbox', heading: '收件箱' },
   { path: '/follow-ups', heading: '我的跟进' },

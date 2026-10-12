@@ -21,7 +21,7 @@ pnpm dev
 pnpm lint && pnpm typecheck && pnpm test && pnpm openapi:check && pnpm cli-reference:check
 ```
 
-Type-aware lint and typecheck load the framework's sources too; give Node a larger heap if they run out of memory (`NODE_OPTIONS=--max-old-space-size=6144`).
+Type-aware lint and typecheck load the framework's sources too. The lint scripts allow a 4 GiB Node heap; give typecheck a larger heap if it runs out of memory (`NODE_OPTIONS=--max-old-space-size=6144`).
 
 Studio's database migrations follow `AGENTS.md`: once a migration has been merged it is never edited, and every later change is a new migration, because installations keep their data across updates.
 
