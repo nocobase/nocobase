@@ -21,7 +21,7 @@
  * - A person moving the issue into In progress starts the executing agent's work (`started` from backlog or a finished
  *   status, else `statusChange`), unless they asked not to start now; moving it elsewhere tells a run that has not
  *   ended. Finishing or closing the issue withdraws queued work instead.
- * - A new owner: queued work the previous owner woke is withdrawn, and starts again as the new owner's.
+ * - A new owner: unclaimed manager work and delegated steps switch identity in place; held work keeps its identity and is told.
  * - Moved to another project (`project-move.ts`): work starts in the new project's working directories
  *   (`projectChanged`). A run claimed before the move works in the previous project's, so it is told to end and asked
  *   to stop (left to end on its own when its agent moved the issue), and the new run starts once it has ended
@@ -85,6 +85,7 @@ import {
 import { readManagerSettings } from './manager/settings.js';
 import { COMMENT_RUN_WINDOW_HOURS } from '../../shared/project-manager.js';
 import { AGENT_KIND, agentsTx } from './tx.js';
+import { issueExecutionIdentity } from './execution-identity.js';
 
 interface Wake {
   readonly agentId: string;
@@ -92,6 +93,7 @@ interface Wake {
   readonly actorUserId: string;
   readonly triggerType: string;
   readonly freshSession?: boolean;
+  readonly causedByRunId?: string;
   readonly input: {
     readonly type: RunInputType;
     readonly actor: ActorRef;
@@ -165,7 +167,10 @@ export interface AgentWork extends IssueWorkHandler {
 
 export function createAgentWork(deps: {
   readonly agents: Pick<Agents, 'runs' | 'agents'>;
-  readonly projects: () => Pick<Projects, 'subtasks' | 'issueContext'>;
+  readonly projects: () => Pick<
+    Projects,
+    'subtasks' | 'issueContext' | 'commentQueries' | 'activity'
+  >;
 }): AgentWork {
   const { runs } = deps.agents;
   const subjectOf = (issue: Issue) => ({ kind: ISSUE_SUBJECT, id: issue.id });
@@ -182,7 +187,44 @@ export function createAgentWork(deps: {
       request.agentId,
     );
     if (!agent) return { ...attempt, started: false, skipped: 'unavailable' };
-    if (!deps.agents.agents.mayInvoke(agent, request.actorUserId))
+    const identity = await issueExecutionIdentity(deps.agents, deps.projects)(
+      tx.conn,
+      {
+        subjectId: request.issue.id,
+        agentId: request.agentId,
+        causedByRunId: request.causedByRunId,
+        inputs: [request.input],
+      },
+    );
+    if (identity && !identity.actorUserId) {
+      if (!tx.rehearsal) {
+        await deps.projects().activity.record(tx.conn, {
+          issueId: request.issue.id,
+          actor: { type: request.input.actor.kind, id: request.input.actor.id },
+          action: 'studio_execution_wait',
+          details: {
+            reason: identity.reason ?? 'noOwner',
+            trigger: request.triggerType,
+            agentId: request.agentId,
+            agent: agent.name,
+            ownerUserId: request.issue.ownerUserId,
+            owner: await userName(tx.conn, request.issue.ownerUserId),
+          },
+        });
+        tx.emit({ type: 'issue.changed', issueId: request.issue.id });
+      }
+      return {
+        ...attempt,
+        started: false,
+        skipped: identity.reason === 'noOwner' ? 'unavailable' : 'denied',
+      };
+    }
+    if (
+      !deps.agents.agents.mayInvoke(
+        agent,
+        identity?.actorUserId ?? request.actorUserId,
+      )
+    )
       return { ...attempt, started: false, skipped: 'denied' };
     // Held by unfinished issues: the release wakes the agent once nothing holds it.
     const blockers = await deps
@@ -197,6 +239,8 @@ export function createAgentWork(deps: {
         agentId: agent.id,
         subject: subjectOf(request.issue),
         actorUserId: request.actorUserId,
+        requestedByUserId: request.actorUserId,
+        causedByRunId: request.causedByRunId,
         ownerUserId: request.issue.ownerUserId,
         priority: runPriorityOf(request.issue.priority),
         freshSession: request.freshSession,
@@ -204,6 +248,10 @@ export function createAgentWork(deps: {
           ...request.input,
           payload: {
             trigger: request.triggerType,
+            ...(identity ? { ownerIdentity: true } : {}),
+            ...(request.causedByRunId
+              ? { causedByRunId: request.causedByRunId }
+              : {}),
             ...(request.input.payload &&
             typeof request.input.payload === 'object'
               ? request.input.payload
@@ -229,10 +277,15 @@ export function createAgentWork(deps: {
     tx: ProjectsTx,
     actor: Actor,
     issue: Issue,
-  ): Promise<{ readonly userId: string; readonly ref: ActorRef }> {
+  ): Promise<{
+    readonly userId: string;
+    readonly ref: ActorRef;
+    readonly causedByRunId?: string;
+  }> {
     if (actor.type === 'user' && actor.id)
       return {
         userId: actor.id,
+        causedByRunId: actor.trace?.runId,
         ref: {
           kind: 'user',
           id: actor.id,
@@ -241,6 +294,7 @@ export function createAgentWork(deps: {
       };
     return {
       userId: issue.ownerUserId,
+      causedByRunId: actor.trace?.runId,
       ref: {
         kind: actor.type === AGENT_KIND ? 'agent' : 'system',
         id: actor.id ?? 'system',
@@ -301,6 +355,10 @@ export function createAgentWork(deps: {
               agentId,
               issue,
               actorUserId: userId,
+              causedByRunId:
+                typeof extra.causedByRunId === 'string'
+                  ? extra.causedByRunId
+                  : undefined,
               triggerType,
               input: {
                 type: 'comment',
@@ -397,7 +455,11 @@ export function createAgentWork(deps: {
     tx: ProjectsTx,
     issue: Issue,
     agentId: string,
-    who: { readonly userId: string; readonly ref: ActorRef },
+    who: {
+      readonly userId: string;
+      readonly ref: ActorRef;
+      readonly causedByRunId?: string;
+    },
     triggerType: 'assigned' | 'started' = 'assigned',
   ): Promise<RunAttempt> {
     // In backlog, or finished: the work starts when the issue leaves backlog.
@@ -406,6 +468,7 @@ export function createAgentWork(deps: {
       agentId,
       issue,
       actorUserId: who.userId,
+      causedByRunId: who.causedByRunId,
       triggerType,
       input: {
         type: 'signal',
@@ -522,12 +585,45 @@ export function createAgentWork(deps: {
         .at(-1);
       if (!move) return;
       const agent = await deps.agents.agents.findWorkable(conn, run.agentId);
-      if (!agent || !deps.agents.agents.mayInvoke(agent, move.byUserId)) return;
+      if (!agent) return;
+      const identity = await issueExecutionIdentity(deps.agents, deps.projects)(
+        conn,
+        {
+          subjectId: issue.id,
+          agentId: run.agentId,
+          causedByRunId: run.id,
+          inputs: [],
+        },
+      );
+      if (identity && !identity.actorUserId) {
+        await deps.projects().activity.record(conn, {
+          issueId: issue.id,
+          actor: { type: move.by.kind, id: move.by.id },
+          action: 'studio_execution_wait',
+          details: {
+            reason: identity.reason ?? 'noOwner',
+            trigger: PROJECT_CHANGED,
+            agentId: agent.id,
+            agent: agent.name,
+            ownerUserId: issue.owner.id,
+            owner: issue.owner.name,
+          },
+        });
+        return;
+      }
+      if (
+        !deps.agents.agents.mayInvoke(
+          agent,
+          identity?.actorUserId ?? move.byUserId,
+        )
+      )
+        return;
       await runs.enqueue(
         {
           agentId: agent.id,
           subject: run.subject,
           actorUserId: move.byUserId,
+          causedByRunId: run.id,
           ownerUserId: issue.owner.id,
           priority: runPriorityOf(issue.priority as Priority),
           input: {
@@ -618,6 +714,7 @@ export function createAgentWork(deps: {
           agentId: to,
           issue: after,
           actorUserId: who.userId,
+          causedByRunId: who.causedByRunId,
           triggerType: started && fromDormant ? 'started' : 'statusChange',
           input: {
             type: 'statusChange',
@@ -678,7 +775,10 @@ export function createAgentWork(deps: {
           triggerType,
         })),
       };
-      if (!byAgent) return wakeComment(tx, issue, held, authorId, {});
+      if (!byAgent)
+        return wakeComment(tx, issue, held, authorId, {
+          causedByRunId: change.actor.trace?.runId,
+        });
       if (await commentLimited(tx, issue, held))
         return held.targets.map((target) =>
           skipped(target.agentId, issue, target.triggerType, 'limited'),
@@ -686,6 +786,7 @@ export function createAgentWork(deps: {
       // Runs act for a person: the one the agent's run acts for, else the owner.
       return wakeComment(tx, issue, held, change.userId ?? issue.ownerUserId, {
         byAgent: true,
+        causedByRunId: change.actor.trace?.runId,
       });
     },
 
@@ -695,31 +796,18 @@ export function createAgentWork(deps: {
     },
 
     async onOwnerChanged(tx, { issue, from, to }) {
-      const withdrawn = await runs.withdrawQueued(
-        { subject: subjectOf(issue), actorUserId: from, byUserId: null },
+      if (tx.rehearsal) return [];
+      await runs.reassignQueued(
+        subjectOf(issue),
+        {
+          type: 'signal',
+          actor: { kind: 'system', id: 'system', name: 'Studio' },
+          text: `${issue.identifier} has a new owner. Claimed work keeps its identity; subsequent work runs as the new owner.`,
+          payload: { trigger: 'ownerChanged', from, to },
+        },
         agentsTx(tx),
       );
-      const attempts: RunAttempt[] = [];
-      for (const agentId of new Set(withdrawn.map((run) => run.agentId)))
-        attempts.push(
-          await wake(tx, {
-            agentId,
-            issue,
-            actorUserId: to,
-            triggerType: 'ownerChanged',
-            input: {
-              type: 'signal',
-              actor: {
-                kind: 'user',
-                id: to,
-                name: await userName(tx.conn, to),
-              },
-              text: `${issue.identifier} has a new owner; the work continues for them.`,
-              payload: { from, to },
-            },
-          }),
-        );
-      return attempts;
+      return [];
     },
 
     async onBlocked(tx, { issue }) {

@@ -237,7 +237,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
             'ACTION_FORBIDDEN',
             'Only a person who may edit the issue may hand it over.',
           );
-        const runId = await projects.tx.unit(async (tx) => {
+        const attempt = await projects.tx.unit(async (tx) => {
           const issue = await projects.issueQueries.detail(
             viewer,
             context.req.valid('param').issueId,
@@ -256,17 +256,17 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
             agents,
             projects: () => projects,
           }).startNow(tx, issue, { type: 'user', id: viewer.userId });
-          if (!attempt.started || !attempt.runId)
-            throw studioError(
-              'FAILED_PRECONDITION',
-              'PROJECT_MANAGER_NOT_STARTED',
-              'The project manager cannot take this issue now.',
-              { metadata: { reason: attempt.skipped ?? 'unknown' } },
-            );
           tx.emit({ type: 'issue.changed', issueId: issue.id });
-          return attempt.runId;
+          return attempt;
         });
-        return context.json({ data: { runId } });
+        if (!attempt.started || !attempt.runId)
+          throw studioError(
+            'FAILED_PRECONDITION',
+            'PROJECT_MANAGER_NOT_STARTED',
+            'The project manager cannot take this issue now.',
+            { metadata: { reason: attempt.skipped ?? 'unknown' } },
+          );
+        return context.json({ data: { runId: attempt.runId } });
       },
     );
     progress.get(
