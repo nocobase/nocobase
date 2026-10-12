@@ -1,17 +1,26 @@
 /**
  * Replays recorded real runs (Codex CLI 0.158.0, app-server over stdio,
  * 2026-10-01; paths and the user agent sanitized):
- * - steer-deny: the agent writes hello.txt, the policy denies `rm`, a steer
- *   sent at the first tool call joins the running turn and the agent also
- *   writes world.txt before finishing.
+ * - steer-deny: the agent writes hello.txt and runs `rm` (recorded while a
+ *   runner policy still declined it; the recorded item stays declined), a
+ *   steer sent at the first tool call joins the running turn and the agent
+ *   also writes world.txt before finishing. The adapter now accepts every
+ *   approval request.
  * - stop: the run is stopped while `sleep 60` waits for approval; the turn
  *   is interrupted.
  */
-import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { beforeAll, expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 
 import { CodexAdapter } from '../../src/agent/adapters/codex.ts';
 import type {
@@ -28,18 +37,18 @@ async function fixture(name: string): Promise<TrafficLine[]> {
   ) as TrafficLine[];
 }
 
+let workDir: string;
+let binDir: string;
+
 function session(prompt: string): AdapterSession {
   return {
-    workDir: '/work',
+    workDir,
     prompt,
     systemPrompt: 'brief',
     effort: 'low',
     env: { PATH: '/usr/bin' },
     abort: new AbortController().signal,
-    permission: async (tool, input) =>
-      tool === 'shell' && String(input.command).startsWith('rm')
-        ? { deny: 'rm is not allowed in this run' }
-        : 'allow',
+    permission: async () => 'allow',
   };
 }
 
@@ -54,9 +63,19 @@ const installed = {
 beforeAll(async () => {
   // detect() looks for an executable `codex`; a stub stands in for it.
   const bin = await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-bin-'));
+  binDir = bin;
+  workDir = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'nocobase-runner-codex-work-')),
+  );
   await writeFile(path.join(bin, 'codex'), '#!/bin/sh\n');
   await chmod(path.join(bin, 'codex'), 0o755);
   installed.searchPath = bin;
+});
+
+afterAll(async () => {
+  await Promise.all(
+    [binDir, workDir].map((dir) => rm(dir, { recursive: true, force: true })),
+  );
 });
 
 async function drain(
@@ -71,7 +90,7 @@ async function drain(
   return events;
 }
 
-it('replays a recorded run with a denial and a steer', async () => {
+it('replays a recorded run with a steer, accepting every approval', async () => {
   const traffic = await fixture('codex-steer-deny.json');
   let answers: ReturnType<typeof replay> | undefined;
   const spawn = fakeSpawn((fake) => {
@@ -97,15 +116,16 @@ it('replays a recorded run with a denial and a steer', async () => {
   expect(fake.options.env).toEqual({ PATH: '/usr/bin' });
   const threadStart = fake.received.find((m) => m.method === 'thread/start');
   expect(threadStart?.params).toMatchObject({
-    cwd: '/work',
-    approvalPolicy: 'untrusted',
-    sandbox: 'workspace-write',
+    cwd: workDir,
+    approvalPolicy: 'never',
+    sandbox: 'danger-full-access',
     developerInstructions: 'brief',
   });
   const turnStart = fake.received.find((m) => m.method === 'turn/start');
   expect(turnStart?.params).toMatchObject({
     effort: 'low',
-    sandboxPolicy: { type: 'workspaceWrite', writableRoots: ['/work'] },
+    approvalPolicy: 'never',
+    sandboxPolicy: { type: 'dangerFullAccess' },
   });
   const steer = fake.received.find((m) => m.method === 'turn/steer');
   expect(steer?.params).toMatchObject({
@@ -116,7 +136,7 @@ it('replays a recorded run with a denial and a steer', async () => {
   const recorded = await answers!;
   expect([...recorded.values()].map((m) => m.result)).toEqual([
     { decision: 'accept' },
-    { decision: 'decline' },
+    { decision: 'accept' },
     { decision: 'accept' },
     { decision: 'accept' },
   ]);
@@ -130,20 +150,7 @@ it('replays a recorded run with a denial and a steer', async () => {
     'ls',
     'printf world > world.txt',
   ]);
-  expect(
-    events
-      .filter((e) => e.type === 'permission')
-      .map((e) => [e.tool, e.meta?.decision, e.meta?.reason]),
-  ).toEqual([
-    ['shell', 'allow', undefined],
-    ['shell', 'deny', 'rm is not allowed in this run'],
-    ['shell', 'allow', undefined],
-    ['shell', 'allow', undefined],
-  ]);
-  const declined = events.find(
-    (e) => e.type === 'toolResult' && e.meta?.status === 'declined',
-  );
-  expect(declined?.meta?.isError).toBe(true);
+  expect(events.filter((e) => e.type === 'permission')).toEqual([]);
   expect(events.filter((e) => e.type === 'input')).toMatchObject([
     { content: 'also create world.txt', meta: { inputId: 'in-1' } },
   ]);

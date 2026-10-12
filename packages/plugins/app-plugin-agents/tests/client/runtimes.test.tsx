@@ -14,6 +14,7 @@ import type { RunnerSummary } from '../../shared/runners.js';
 import { callsTo, clientMocks, realtime, resetApi } from './fake-client.js';
 import { runner } from './fixtures.js';
 import { renderPage, renderRoute } from './render.js';
+import { RunnersRefresh } from '../../client/components/runners-refresh.js';
 
 vi.mock('@nocobase/app-client', () => clientMocks.appClient());
 vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
@@ -43,6 +44,7 @@ describe('runtimes page', () => {
         ],
         canChangeTrust: true,
         canManage: true,
+        canRevoke: true,
         activeRuns: 1,
         slots: 2,
       }),
@@ -82,6 +84,136 @@ describe('runtimes page', () => {
     fireEvent.click(await screen.findByTestId(`runner-${id}`));
     return await screen.findByTestId('runner-sheet');
   };
+
+  it('removes low disk warnings only when a new workspace report shows recovered space', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: { freeBytes: 1, totalBytes: 100, minFreeBytes: 20 },
+        count: 0,
+        unpushedCount: 0,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [],
+      },
+    };
+    renderPage(
+      <>
+        <RunnersRefresh />
+        <RuntimesPage />
+      </>,
+    );
+    await screen.findByText('runtimes.workspaces.previousLow');
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.empty'),
+    ).toBeInTheDocument();
+    runners = [
+      { ...runners[0]!, lastSeenAt: new Date().toISOString() },
+      ...runners.slice(1),
+    ];
+    realtime.publish(RUNNERS_TOPIC, {
+      kind: 'runners.changed',
+      runnerId: 'r1',
+    });
+    expect(
+      within(sheet).getByText('runtimes.workspaces.stale'),
+    ).toBeInTheDocument();
+    runners = [
+      {
+        ...runners[0]!,
+        workspaceUsage: {
+          ...runners[0]!.workspaceUsage!,
+          measuredAt: new Date().toISOString(),
+          disk: { freeBytes: 50, totalBytes: 100, minFreeBytes: 20 },
+        },
+      },
+      ...runners.slice(1),
+    ];
+    realtime.publish(RUNNERS_TOPIC, {
+      kind: 'runners.changed',
+      runnerId: 'r1',
+    });
+    await waitFor(() =>
+      expect(within(sheet).queryByRole('alert')).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByText('runtimes.workspaces.previousLow'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.stale'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a previous low disk report and hides private directory diagnostics without explicit permission', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      status: 'offline',
+      workspaceUsage: {
+        disk: { freeBytes: 1, totalBytes: 100, minFreeBytes: 20 },
+        count: 1,
+        unpushedCount: 1,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    expect(
+      await screen.findByText('runtimes.workspaces.previousLow'),
+    ).toBeInTheDocument();
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.low'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.stale'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.title'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.empty'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps ended work distinct from cleanup and exposes diagnostic details through a keyboard trigger', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: null,
+        count: 1,
+        unpushedCount: 1,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [
+          {
+            runId: 'run',
+            workDir: '/work/long/subject',
+            unpushed: true,
+            lastUsedAt: '2026-10-01T00:00:00.000Z',
+            subjectKind: 'sample',
+            subjectId: 'subject',
+            settled: true,
+          },
+        ],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    const trigger = within(sheet).getByRole('button', {
+      name: /subject · runtimes.workspaces.ended/u,
+    });
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(within(sheet).getByText('/work/long/subject')).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.noCleanup'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.oldRunner'),
+    ).toBeInTheDocument();
+  });
 
   it('lists each runtime as one overview row, without switches', async () => {
     renderPage(<RuntimesPage />);
@@ -268,7 +400,12 @@ describe('runtimes page', () => {
       toolLoad: _toolLoad,
       activeByTool: _activeByTool,
       ...older
-    } = runner('r1', { activeRuns: 1, slots: 2, canManage: true });
+    } = runner('r1', {
+      activeRuns: 1,
+      slots: 2,
+      canManage: true,
+      canRevoke: true,
+    });
     runners = [older];
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
@@ -419,6 +556,10 @@ describe('runtimes page', () => {
         /^nocobase-runner register .*--token fgreg_secret.* && nocobase-runner service install$/u,
       ),
     ).toBeInTheDocument();
+    // The packages run on the host's own Node.js, which the command says beside it.
+    expect(
+      within(dialog).getAllByText('connect.nodeRequired').length,
+    ).toBeGreaterThan(0);
     runners = [...runners, runner('r3', { name: 'build-box' })];
     realtime.publish(RUNNERS_TOPIC, {
       kind: 'runners.changed',
@@ -508,7 +649,12 @@ describe('runtimes page', () => {
   });
 
   it('shows the settings read-only to someone who may not manage the runtime', async () => {
-    runners[0] = { ...runners[0]!, canManage: false, canChangeTrust: false };
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canChangeTrust: false,
+      canRevoke: false,
+    };
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
     expect(
@@ -526,6 +672,24 @@ describe('runtimes page', () => {
     expect(toggle).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(toggle);
     expect(callsTo('PATCH', 'agents/runners/r1')).toHaveLength(0);
+  });
+
+  it("offers a manager of runtimes only revoking someone else's runtime, not changing it", async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canChangeTrust: false,
+      canRevoke: true,
+    };
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    await userEvent.click(
+      within(row).getByRole('button', { name: /actionsFor/u }),
+    );
+    expect(
+      await screen.findByText('runtimes.revoke.confirm'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('runtimes.edit.button')).toBeNull();
   });
 
   it('adds a runtime that runs only the coding tools checked, with its concurrency', async () => {

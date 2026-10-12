@@ -19,7 +19,7 @@ export function PmStatusBadge({
   className,
 }: {
   readonly statusKey: string;
-  /** The issue's workflow; without it, the status shows by its key. */
+  /** The statuses; without them, the status shows by its key. */
   readonly statuses?: readonly StatusDefinition[];
   readonly className?: string;
 }): ReactElement {

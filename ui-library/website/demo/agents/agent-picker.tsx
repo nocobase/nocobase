@@ -4,8 +4,8 @@ import { useState, type ReactElement } from 'react';
 import {
   AgentIdentity,
   AgentPicker,
+  AgentTag,
   AvailabilityDot,
-  ModeTag,
 } from '#components/agent-picker';
 
 const online = { online: true, reason: null, onlineRunners: 1 } as const;
@@ -13,63 +13,55 @@ const online = { online: true, reason: null, onlineRunners: 1 } as const;
 const AGENTS: readonly ChatAgent[] = [
   {
     id: 'assistant',
-    name: 'Assistant',
-    description: 'Answers in seconds on the server.',
+    name: 'Claude · Sonnet 5',
+    description: 'Everyday coding and writing.',
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'online',
-    models: [],
-    personal: false,
     isSystemDefault: false,
     isMyDefault: true,
     availability: online,
+    personalOnly: false,
   },
   {
     id: 'writer',
-    name: 'Release notes writer',
+    name: 'Codex · GPT-5',
     description: null,
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'online',
-    models: [],
-    personal: true,
     isSystemDefault: false,
     isMyDefault: false,
     availability: {
       online: false,
-      reason: 'modelUnavailable',
+      reason: 'othersPersonal',
       onlineRunners: 0,
     },
+    personalOnly: true,
   },
   {
     id: 'coder',
-    name: 'Coding agent',
-    description: 'Works in a repository on a runner.',
+    name: 'Claude · Opus 5',
+    description: 'Long refactors and reviews.',
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'runner',
-    models: [],
-    personal: false,
     isSystemDefault: true,
     isMyDefault: false,
     availability: online,
+    personalOnly: false,
   },
   {
     id: 'reviewer',
-    name: 'Reviewer',
+    name: 'Gemini · 3 Pro',
     description: null,
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'runner',
-    models: [],
-    personal: false,
     isSystemDefault: false,
     isMyDefault: false,
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+    personalOnly: false,
   },
 ];
 
@@ -94,7 +86,7 @@ function Section({
 }
 
 /**
- * The agent picker in its two appearances: a form field (one with a "no agent" choice, one offering runner agents only)
+ * The agent picker in its two appearances: a form field (with and without a "no agent" choice)
  * and a composer's toolbar at two widths, an existing conversation whose agent stays (picking starts a new
  * one), and the plain parts it is built from.
  */
@@ -110,7 +102,7 @@ export function AgentPickerDemo(): ReactElement {
       <div className='mx-auto flex max-w-2xl flex-col gap-4'>
         <Section
           title='As a form field'
-          description={`Looks like the form's selects: the chosen agent with its availability, the menu grouped by type. Default agent: ${name(fallback)}; rule agent: ${name(runner)}.`}
+          description={`Looks like the form's selects: the chosen agent with its availability, the menu with each agent's tags. Default agent: ${name(fallback)}; rule agent: ${name(runner)}.`}
         >
           <div className='grid gap-3 sm:grid-cols-2'>
             <AgentPicker
@@ -124,16 +116,15 @@ export function AgentPickerDemo(): ReactElement {
             />
             <AgentPicker
               agents={AGENTS}
-              type='runner'
               value={runner}
               onSelect={setRunner}
-              placeholder='Choose a runner agent'
+              placeholder='Choose an agent'
             />
           </div>
         </Section>
         <Section
           title="In a composer's toolbar"
-          description='Fitted to the composer: where it is narrow, the dot sits on the avatar and the mode tag is left out; where it is wide, the mode tag shows too.'
+          description='Fitted to the composer: where it is narrow, the dot sits on the avatar; where it is wide, the name has more room before it truncates.'
         >
           <div className='flex flex-col gap-3'>
             {[
@@ -172,9 +163,8 @@ export function AgentPickerDemo(): ReactElement {
             bound
             appearance='toolbar'
             shown={{
-              name: 'Coding agent',
+              name: 'Claude · Opus 5',
               availability: online,
-              mode: 'runner',
               temporary: true,
             }}
             onSelect={setStarted}
@@ -183,7 +173,7 @@ export function AgentPickerDemo(): ReactElement {
         </Section>
         <Section
           title='Parts'
-          description='The availability dot, the mode tag and an agent as one row (AgentIdentity), as an executor picker lists it among people.'
+          description='The availability dot, a tag and an agent as one row (AgentIdentity), as an executor picker lists it among people.'
         >
           <div className='flex flex-wrap items-center gap-3 text-sm'>
             <span className='inline-flex items-center gap-1.5'>
@@ -199,10 +189,9 @@ export function AgentPickerDemo(): ReactElement {
               />
               No runner online
             </span>
-            <ModeTag mode='online' />
-            <ModeTag mode='runner' />
+            <AgentTag tone='violet'>Personal runners only</AgentTag>
             <AgentIdentity
-              name='Reviewer'
+              name='Gemini · 3 Pro'
               availability={{
                 online: false,
                 reason: 'noRunner',

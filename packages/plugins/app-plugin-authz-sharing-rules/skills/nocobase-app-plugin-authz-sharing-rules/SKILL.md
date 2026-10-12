@@ -16,7 +16,7 @@ For sharing between departments, read the application development Skill's `refer
 1. Identify the real collaboration exception: who receives which records, for which actions, and why. Use explicit records for one handover; use a record access selection for a maintained region or team rule.
 2. Grant the recipients the business action through a permission set first. Register inherited subjects and their active membership resolver through the main authorization Skill.
 3. Inspect every data scope the operation requires. Quote submission needs the selected quote and its actual parent project. Add each action and data scope deliberately; view, edit and submit are different permissions.
-4. Save a complete rule through the settings page or the service. Keep record ids tied to their data scope's collection and preserve the other entries on update.
+4. Save a complete rule through the HTTP routes or the service. Keep record ids tied to their data scope's collection and preserve the other entries on update.
 5. Verify the handover works, an unshared parent still blocks the workflow, restrictions still exclude confidential records, and sharing alone cannot activate a missing operation.
 6. Revoke the recipient or the team's permission set and verify the next request loses only that source. Independent direct-user sharing and direct assignments must survive.
 
@@ -91,6 +91,6 @@ Build the rule with `defineSharingRule` in a portable seed-data module and persi
 
 ## Administration and acceptance
 
-Use the existing settings page, `/settings/authorization/sharing-rules`, and its subject and record pickers for ordinary configuration; its HTTP routes are listed in the package README and each checks `settings:authorization.sharing-rules` with `read`, `create`, `update` or `delete`. Reading options never grants write access.
+The plugin contributes no page; an application that edits these rules builds its page on the HTTP routes, which are listed in the package README and each checks `settings:authorization.sharing-rules` with `read`, `create`, `update` or `delete`. Reading options never grants write access.
 
-Run the owning feature's route and policy tests for allowed and denied records, multiple grants and rule removal. Verify changes with a new request and inspect the same operation in Settings → Authorization → Inspector; a client snapshot does not prove that a row operation is allowed. Report the rules and subjects changed and the observed allow and deny outcomes.
+Run the owning feature's route and policy tests for allowed and denied records, multiple grants and rule removal. Verify changes with a new request and inspect the same operation with `POST /api/authorization/inspector/decide`; a client snapshot does not prove that a row operation is allowed. Report the rules and subjects changed and the observed allow and deny outcomes.

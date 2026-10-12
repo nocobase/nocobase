@@ -1,9 +1,6 @@
 import { RunnerCommand } from '../lib/command.ts';
-import {
-  readConnections,
-  readSettings,
-  type AgentHome,
-} from '../lib/config.ts';
+import type { AgentTools } from '../agent/runner-tools.ts';
+import { readConnections, readSettings } from '../lib/config.ts';
 import { formatToolSlots } from '../lib/slots.ts';
 import type { ToolSlots } from '../protocol/index.ts';
 import { readDaemonPid } from '../core/loop.ts';
@@ -16,7 +13,7 @@ interface RunnerStatus {
   slots: number;
   /** Limits per coding tool beside `slots`; absent when none is set. */
   toolSlots?: ToolSlots;
-  agentHome: AgentHome;
+  agentTools: AgentTools;
   apps: {
     key: string;
     name: string;
@@ -61,7 +58,10 @@ export default class Status extends RunnerCommand {
       `Slots    ${settings.slots}${settings.toolSlots === undefined ? '' : ` (${formatToolSlots(settings.toolSlots)})`}`,
     );
     this.log(
-      `Home     agents get ${settings.agentHome === 'real' ? 'the real home' : 'an isolated home'}`,
+      'Access   agents run with full access and your real home; the runner is not a sandbox',
+    );
+    this.log(
+      `Tools    agents get ${settings.agentTools === 'system' ? "the machine's Node.js and pnpm" : "the runner's Node.js and pnpm"}`,
     );
     if (apps.length === 0)
       this.log(`Not registered. Run \`${runnerCommandLine('register')}\`.`);
@@ -83,7 +83,7 @@ export default class Status extends RunnerCommand {
       ...(settings.toolSlots === undefined
         ? {}
         : { toolSlots: settings.toolSlots }),
-      agentHome: settings.agentHome,
+      agentTools: settings.agentTools,
       apps,
       running: daemon !== undefined,
       ...(daemon === undefined ? {} : { pid: daemon.pid }),

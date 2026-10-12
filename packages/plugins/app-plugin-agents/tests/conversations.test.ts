@@ -354,7 +354,7 @@ describe('conversations', () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'PM' });
     const id = await newConversation(agentId);
-    await h.services.agents.archive(agentId, 'owner');
+    await h.disableAgent(agentId);
 
     const sent = await send(id, 'Anyone there?');
     expect(sent.run).toBeNull();
@@ -367,9 +367,6 @@ describe('conversations', () => {
     expect(await h.services.runs.list({ subjectKind: 'conversation' })).toEqual(
       [],
     );
-
-    const other = await h.createAgent({ name: 'Private', access: 'ownerOnly' });
-    expect((await alice().post(base, { agentId: other })).status).toBe(403);
 
     const online = await h.createAgent({ name: 'Online' });
     await h.registerRunner();
@@ -385,6 +382,7 @@ describe('conversations', () => {
 
   it('switches to the system default and back, each time with a new session', async () => {
     h = await createHarness();
+    await h.registerRunner();
     const own = await h.createAgent({ name: 'My PM' });
     const fallback = await h.createAgent({ name: 'Team PM' });
     const id = await newConversation(own);
@@ -404,7 +402,7 @@ describe('conversations', () => {
       ).status,
     ).toBe(403);
 
-    await h.services.agents.archive(own, 'owner');
+    await h.disableAgent(own);
     const waiting = await send(id, 'Plan the release.');
     expect(waiting.run).toBeNull();
     expect(waiting.conversation).toMatchObject({
@@ -434,7 +432,7 @@ describe('conversations', () => {
     ).toEqual(['Plan the release.']);
 
     expect((await alice().post(`${base}/${id}/restore`)).status).toBe(400);
-    await h.services.agents.restore(own, 'owner');
+    await h.enableAgent(own);
     const back = await alice().post(`${base}/${id}/restore`);
     expect(back.body.data).toMatchObject({
       agent: { id: own },
@@ -549,13 +547,30 @@ describe('conversations', () => {
 
   it('lists the agents a person may give work to, with whether each can take it now', async () => {
     h = await createHarness();
-    await h.createAgent({ name: 'Designer', description: 'Good at CSS.' });
-    await h.createAgent({ name: 'Mine', access: 'ownerOnly' });
-    // An online agent with no model yet is not offered work.
-    await h.createAgent({ name: 'Unset', type: 'online', modelEntries: [] });
-    const archived = await h.createAgent({ name: 'Old' });
-    await h.services.agents.archive(archived, 'owner');
-    await h.registerRunner();
+    await h.createAgent({
+      name: 'Designer',
+      description: 'Good at CSS.',
+      source: 'runner',
+    });
+    // The application's own agents, pending and disabled ones are not offered.
+    await h.createAgent({ name: 'Manager' });
+    await h.createAgent({ name: 'New', source: 'runner', status: 'pending' });
+    const old = await h.createAgent({ name: 'Old', source: 'runner' });
+    await h.disableAgent(old);
+    const stale = await h.createAgent({ name: 'Stale', source: 'runner' });
+    // No runner reported it for more than 14 days: hidden, its record kept.
+    await h.database
+      .connection()
+      .repository('agAgents')
+      .updateOne({
+        filter: { id: stale },
+        values: {
+          lastReportedAt: new Date(
+            h.clock.now().getTime() - 15 * 24 * 60 * 60_000,
+          ),
+        },
+      });
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: ALICE });
 
     const listed = await alice().get('/agents/available');
     expect(listed.status).toBe(200);
@@ -564,16 +579,24 @@ describe('conversations', () => {
       expect.objectContaining({
         name: 'Designer',
         goodAt: 'Good at CSS.',
-        type: 'runner',
         tool: 'claude',
         online: true,
+        personalOnly: true,
         busy: 0,
       }),
     ]);
-    const owner = await as('owner').get('/agents/available');
+    // Someone else's personal runner takes none of bob's work.
+    const bob = await as(BOB).get('/agents/available');
+    expect(bob.body.data).toEqual([
+      expect.objectContaining({ name: 'Designer', online: false }),
+    ]);
+    const chat = (await as(BOB).get('/agents/chatAgents')).body.data;
     expect(
-      owner.body.data.map((agent: { name: string }) => agent.name).sort(),
-    ).toEqual(['Designer', 'Mine']);
+      chat.find((agent: { name: string }) => agent.name === 'Designer'),
+    ).toMatchObject({
+      personalOnly: true,
+      availability: { online: false, reason: 'othersPersonal' },
+    });
   });
 
   it('shows a conversation to its owner only, administrators included', async () => {
@@ -716,13 +739,12 @@ describe('conversations', () => {
   it('checks the page context, keeps what the owner may see, and hands it over as data', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'PM' });
-    const hidden = await h.createAgent({ name: 'Hidden', access: 'ownerOnly' });
     const id = await newConversation(agentId);
     const context = {
       route: '/tickets?status=open',
       items: [
         { kind: 'agent', id: agentId },
-        { kind: 'agent', id: hidden },
+        { kind: 'agent', id: 'gone' },
         { kind: 'ticket', id: 'TKT-1' },
       ],
       filter: { page: 'tickets', params: { status: 'open' } },
@@ -786,8 +808,10 @@ describe('conversations', () => {
 
   it('picks the agent for a new conversation: chosen, my default, the system default', async () => {
     h = await createHarness();
-    const team = await h.createAgent({ name: 'Team PM' });
-    const mine = await h.createAgent({ name: 'My PM' });
+    const team = await h.createAgent({ name: 'Team PM', source: 'runner' });
+    const mine = await h.createAgent({ name: 'My PM', source: 'runner' });
+    // The application's own agents do work of their own: people are not offered them to talk to.
+    await h.createAgent({ name: 'Own agent' });
     expect((await alice().post(base, {})).body.error).toMatchObject({
       reason: 'CONVERSATION_CONFLICT',
       metadata: { reason: 'noChatAgent' },
@@ -805,7 +829,7 @@ describe('conversations', () => {
     ).toEqual({ defaultAgentId: mine });
     expect((await alice().post(base, {})).body.data.agent.id).toBe(mine);
     // A default that can no longer be used falls back to the system default.
-    await h.services.agents.archive(mine, 'owner');
+    await h.disableAgent(mine);
     expect((await alice().post(base, {})).body.data.agent.id).toBe(team);
 
     const agents = (await alice().get('/agents/chatAgents')).body.data;
@@ -815,93 +839,6 @@ describe('conversations', () => {
     expect(agents[0]).toMatchObject({
       isSystemDefault: true,
       isMyDefault: false,
-    });
-  });
-
-  it('copies an agent for one person only', async () => {
-    h = await createHarness();
-    const team = await h.createAgent({
-      name: 'Team PM',
-      instructions: 'Be brief.',
-      actions: ['crm.deals/view'],
-      confirmChanges: 'always',
-    });
-    const copied = await alice().post(`/agents/${team}/copy`, {
-      makeDefault: true,
-    });
-    expect(copied.status).toBe(200);
-    expect(copied.body.data).toMatchObject({
-      name: 'Team PM (copy)',
-      instructions: 'Be brief.',
-      actions: ['crm.deals/view'],
-      confirmChanges: 'always',
-      access: 'ownerOnly',
-      ownerUserId: ALICE,
-    });
-    expect(
-      (await alice().get('/agents/chatPreferences')).body.data.defaultAgentId,
-    ).toBe(copied.body.data.id);
-    const mine = (await alice().get('/agents/chatAgents')).body.data.find(
-      (agent: { id: string }) => agent.id === copied.body.data.id,
-    );
-    expect(mine).toMatchObject({ personal: true, isMyDefault: true });
-    // Bob may not use Alice's copy, nor copy it.
-    expect(
-      (await as(BOB).post(base, { agentId: copied.body.data.id })).status,
-    ).toBe(403);
-    expect(
-      (await as(BOB).post(`/agents/${copied.body.data.id}/copy`)).status,
-    ).toBe(404);
-    expect(
-      (
-        await as(BOB).patch('/agents/chatPreferences', {
-          defaultAgentId: copied.body.data.id,
-        })
-      ).status,
-    ).toBe(403);
-  });
-
-  it('offers the presets the application registers, with the actions it has', async () => {
-    h = await createHarness();
-    expect((await as(BOB).get('/agents/presets')).status).toBe(403);
-    let presets = await as(ADMIN, ['agents.agents/read']).get(
-      '/agents/presets',
-    );
-    expect(presets.body.data).toEqual([]);
-    h.services.presets.register({
-      key: 'dealDesk',
-      name: 'Deal desk',
-      description: 'Keeps deals moving.',
-      nameText: { key: 'presets.dealDesk.name', ns: 'test' },
-      descriptionText: { key: 'presets.dealDesk.description', ns: 'test' },
-      instructions: 'Read the deals before you answer.',
-      actions: ['crm.deals/view', 'crm.deals/comment'],
-    });
-    presets = await as(ADMIN, ['agents.agents/read']).get('/agents/presets');
-    expect(presets.body.data).toHaveLength(1);
-    expect(presets.body.data[0]).toMatchObject({
-      key: 'dealDesk',
-      name: 'Deal desk',
-      nameText: { key: 'presets.dealDesk.name', ns: 'test' },
-      actions: [],
-    });
-    h.services.actions.provide(() => [
-      { key: 'crm.deals/view', group: 'crm.deals', defaultOn: true },
-      { key: 'crm.deals/comment', group: 'crm.deals' },
-      { key: 'crm.other/do', group: 'crm.other' },
-    ]);
-    presets = await as(ADMIN, ['agents.agents/read']).get('/agents/presets');
-    expect(presets.body.data[0].actions).toEqual([
-      'crm.deals/view',
-      'crm.deals/comment',
-    ]);
-    const actions = await as(ADMIN, ['agents.agents/read']).get(
-      '/agents/actions',
-    );
-    expect(actions.body.data[0]).toEqual({
-      key: 'crm.deals/view',
-      group: 'crm.deals',
-      defaultOn: true,
     });
   });
 });

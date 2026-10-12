@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-notification': patch
 ---
 

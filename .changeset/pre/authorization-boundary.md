@@ -2,13 +2,11 @@
 '@nocobase/authorization': minor
 '@nocobase/app-plugin-authorization': minor
 '@nocobase/app-plugin-authorization-example': minor
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-users': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-server': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-client': minor
 ---
 

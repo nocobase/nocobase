@@ -17,6 +17,11 @@ export {
 export { createSlots, type HeldItems, type Slots } from './slots.js';
 export { createWorkSignal, type WorkSignal } from './signal.js';
 export {
+  createRunnerWorkspaces,
+  type RunnerWorkspaces,
+  type RunnerWorkspacesDeps,
+} from './workspaces.js';
+export {
   createRunnerSweeper,
   type RunnerSweeper,
   type SweepReport,

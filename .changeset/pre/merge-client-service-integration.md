@@ -1,8 +1,6 @@
 ---
 '@nocobase/app-template-default': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/db': patch
-'@nocobase/app-plugin-ai-employee': patch
 '@nocobase/app-client': patch
 '@nocobase/realtime': patch
 '@nocobase/app-plugin-file': patch

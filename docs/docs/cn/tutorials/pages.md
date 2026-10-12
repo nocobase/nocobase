@@ -49,8 +49,6 @@ description: '从真实数据库读取订单，完成创建、列表和独立详
 
 ![订单详情：SO-001，远山科技，金额 1280 元，状态为草稿](https://static-docs.nocobase.com/nb3-docs-20260916-tutorial-detail.png)
 
-“提交审批”操作将在[审批章节](./workflow)中添加。
-
 ## 检查持久化和地址
 
 1. 刷新详情页，确认仍能打开同一张订单。

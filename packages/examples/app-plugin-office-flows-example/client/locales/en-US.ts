@@ -2,7 +2,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   navigation: {
-    group: 'Office Flows Example',
+    group: 'Workflow: Lightweight Approval',
     dataRequests: 'Data usage requests',
     incoming: 'Incoming documents',
     tasks: 'My tasks',

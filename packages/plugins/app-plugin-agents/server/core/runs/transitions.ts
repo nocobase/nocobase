@@ -8,12 +8,18 @@ import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
 import { later, type Clock } from '../../kernel/clock.js';
 import type { Tx } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
-import { retryDelayMs } from './policy.js';
+import {
+  retryDelayMs,
+  WORKSPACE_WAIT_LIMIT_MS,
+  workspaceBusyDelayMs,
+} from './policy.js';
+import { endExecution } from './execution.js';
 import {
   ACTIVE,
   findRunRecord,
   runsRepo,
   tokensRepo,
+  toExecutions,
   toRun,
   type RunRecord,
 } from './run.store.js';
@@ -25,7 +31,7 @@ export interface TransitionDeps {
 
 export interface FinishOutcome {
   readonly status: 'completed' | 'failed' | 'cancelled';
-  readonly reason?: FailureReason;
+  readonly reason?: FailureReason | null;
   readonly detail?: string;
   readonly summary?: string;
   readonly sessionId?: string;
@@ -82,6 +88,7 @@ export async function finishRun(
     values,
   });
   if (result.updatedCount !== 1) return null;
+  await endExecution(tx.conn, run, now, outcome.reason ?? null);
   await revokeTokens(tx, run.id, now);
   const ended = (await findRunRecord(tx.conn, run.id))!;
   tx.emit({ type: 'run.changed', runId: run.id, status: ended.status });
@@ -89,6 +96,45 @@ export async function finishRun(
     .get(ended.subjectKind)
     ?.sink?.onRunFinished?.(tx, toRun(ended));
   return ended;
+}
+
+interface WorkspaceWaits {
+  /** Attempts that found the subject's working directory held by another live run, the current one included. */
+  readonly total: number;
+  /** Those among the latest attempts, without another failure between them. */
+  readonly trailing: number;
+  /** When the first of the trailing ones was dispatched. */
+  readonly since: string | null;
+}
+
+/**
+ * The run's attempts that only waited for its working directory (`workspaceBusy`). They are not counted against
+ * `maxAttempts`: nothing was tried, another run was still working there. The current attempt is still open in the
+ * history (its reason is written when it ends), so it counts as one when the run is now reporting `workspaceBusy`.
+ */
+function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
+  const executions = toExecutions(run.executionHistory);
+  const current = executions.find(
+    (item) => item.attempt === Number(run.attempt) && item.finishedAt === null,
+  );
+  const ended = executions.filter((item) => item !== current);
+  let total = ended.filter(
+    (item) => item.failureReason === 'workspaceBusy',
+  ).length;
+  let trailing = 0;
+  let since: string | null = null;
+  if (reporting) {
+    total += 1;
+    trailing = 1;
+    since = current?.dispatchedAt ?? run.dispatchedAt ?? null;
+    for (let i = ended.length - 1; i >= 0; i -= 1) {
+      const item = ended[i];
+      if (item.failureReason !== 'workspaceBusy') break;
+      trailing += 1;
+      since = item.dispatchedAt;
+    }
+  }
+  return { total, trailing, since };
 }
 
 export interface RequeueOutcome {
@@ -109,7 +155,14 @@ export async function requeueRun(
   reason: FailureReason,
   detail?: string,
 ): Promise<RequeueOutcome> {
-  if (Number(run.attempt) >= Number(run.maxAttempts)) {
+  const now = deps.clock.now();
+  const waits = workspaceWaits(run, reason === 'workspaceBusy');
+  const exhausted =
+    reason === 'workspaceBusy'
+      ? waits.since !== null &&
+        now.getTime() - Date.parse(waits.since) >= WORKSPACE_WAIT_LIMIT_MS
+      : Number(run.attempt) - waits.total >= Number(run.maxAttempts);
+  if (exhausted) {
     const ended = await finishRun(tx, deps, run, {
       status: 'failed',
       reason,
@@ -117,9 +170,11 @@ export async function requeueRun(
     });
     return { status: ended?.status ?? run.status, run: ended };
   }
-  const now = deps.clock.now();
   const nowText = now.toISOString();
-  const delay = retryDelayMs(reason, Number(run.attempt));
+  const delay =
+    reason === 'workspaceBusy'
+      ? workspaceBusyDelayMs(waits.trailing)
+      : retryDelayMs(reason, Number(run.attempt) - waits.total);
   const availableAt = delay > 0 ? later(now, delay) : null;
   const result = await runsRepo(tx.conn).updateMany({
     filter: (f) =>
@@ -132,6 +187,8 @@ export async function requeueRun(
       ]),
     values: {
       status: 'queued',
+      teamOnlyVariables: null,
+      gitCredentialUrls: null,
       runnerId: null,
       attempt: Number(run.attempt) + 1,
       availableAt,
@@ -146,6 +203,7 @@ export async function requeueRun(
     },
   });
   if (result.updatedCount !== 1) return { status: run.status, run: null };
+  await endExecution(tx.conn, run, nowText, reason);
   await revokeTokens(tx, run.id, nowText);
   tx.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
   tx.emit({ type: 'run.requeued', runId: run.id, availableAt });

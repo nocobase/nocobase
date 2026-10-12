@@ -4,8 +4,12 @@
  */
 import {
   AGENT_TOOLS,
+  WorkspaceDecisionSchema,
+  WorkspaceCleanupResultSchema,
   RunnerPolicySchema,
+  RunnerVariableNamesSchema,
   ToolLoadSchema,
+  ReportedToolInfoSchema,
   ToolSlotsSchema,
   type AgentTool,
   type RunnerFeature,
@@ -20,6 +24,10 @@ import type {
   Runner,
   RunnerStatus,
   RunnerTrust,
+  RunnerWorkspace,
+  RunnerWorkspaceDisk,
+  RunnerWorkspaceUsage,
+  UnavailableModel,
 } from '../../shared/runners.js';
 import { jsonObject, stringArray } from '../kernel/values.js';
 
@@ -43,6 +51,9 @@ export interface RunnerRecord {
   readonly load: unknown;
   readonly acceptJobs: boolean;
   readonly policy: unknown;
+  readonly variables?: unknown;
+  readonly workspaceUsage?: unknown;
+  readonly unavailableModels?: unknown;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -92,12 +103,10 @@ export function registrationTokensRepo(
 
 function toolList(value: unknown): ToolInfo[] {
   const list = Array.isArray(value) ? (value as unknown[]) : [];
-  return list.filter(
-    (item): item is ToolInfo =>
-      !!item &&
-      typeof item === 'object' &&
-      typeof (item as { kind?: unknown }).kind === 'string',
-  );
+  return list.flatMap((item) => {
+    const parsed = ReportedToolInfoSchema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 /** A stored tool choice: null (every tool) stays null; otherwise the known tools in their canonical order. */
@@ -156,6 +165,115 @@ export function storedPolicy(value: unknown): RunnerPolicy | null {
     : policy;
 }
 
+/** Reported variable names as stored: valid names, each once, sorted; null when it reported none. */
+export function storedVariableNames(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  const parsed = RunnerVariableNamesSchema.safeParse(
+    typeof value === 'string' ? safeJson(value) : value,
+  );
+  return parsed.success ? [...new Set(parsed.data)].sort() : null;
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+function storedWorkspace(value: unknown): RunnerWorkspace | null {
+  const item = jsonObject(value);
+  if (
+    (item.runId !== undefined && typeof item.runId !== 'string') ||
+    typeof item.workDir !== 'string'
+  )
+    return null;
+  const text = (field: unknown): string | null =>
+    typeof field === 'string' ? field : null;
+  return {
+    ...(typeof item.runId === 'string' ? { runId: item.runId } : {}),
+    ...(WorkspaceDecisionSchema.safeParse(item.decision).success
+      ? { decision: WorkspaceDecisionSchema.parse(item.decision) }
+      : {}),
+    ...(WorkspaceCleanupResultSchema.safeParse(item.cleanup).success
+      ? { cleanup: WorkspaceCleanupResultSchema.parse(item.cleanup) }
+      : {}),
+    workDir: item.workDir,
+    unpushed: item.unpushed === true,
+    lastUsedAt: text(item.lastUsedAt) ?? '',
+    subjectKind: text(item.subjectKind),
+    subjectId: text(item.subjectId),
+    settled: typeof item.settled === 'boolean' ? item.settled : null,
+  };
+}
+
+function storedDisk(value: unknown): RunnerWorkspaceDisk | null {
+  if (value === null || value === undefined) return null;
+  const disk = jsonObject(value);
+  if (!isFiniteNumber(disk.freeBytes) || !isFiniteNumber(disk.totalBytes))
+    return null;
+  return {
+    freeBytes: disk.freeBytes,
+    totalBytes: disk.totalBytes,
+    minFreeBytes: isFiniteNumber(disk.minFreeBytes) ? disk.minFreeBytes : null,
+  };
+}
+
+/** The tools and models marked unavailable on a runner, as stored; empty when there are none. */
+export function storedUnavailableModels(value: unknown): UnavailableModel[] {
+  const parsed = typeof value === 'string' ? safeJson(value) : value;
+  if (!Array.isArray(parsed)) return [];
+  return (parsed as unknown[]).flatMap((value): UnavailableModel[] => {
+    const item = jsonObject(value);
+    if (
+      typeof item.tool !== 'string' ||
+      !AGENT_TOOLS.includes(item.tool as AgentTool) ||
+      typeof item.model !== 'string' ||
+      typeof item.at !== 'string'
+    )
+      return [];
+    return [
+      {
+        tool: item.tool as AgentTool,
+        model: item.model,
+        at: item.at,
+        reported: stringArray(item.reported),
+      },
+    ];
+  });
+}
+
+/** A runner's last workspace report as stored: null when it never reported one. */
+export function storedWorkspaceUsage(
+  value: unknown,
+): RunnerWorkspaceUsage | null {
+  if (value === null || value === undefined) return null;
+  const usage = jsonObject(value);
+  if (typeof usage.measuredAt !== 'string') return null;
+  const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
+    .map(storedWorkspace)
+    .filter((item): item is RunnerWorkspace => item !== null);
+  const count = (field: unknown, fallback: number): number =>
+    isFiniteNumber(field) ? field : fallback;
+  return {
+    disk: storedDisk(usage.disk),
+    count: count(usage.count, workspaces.length),
+    unpushedCount: count(
+      usage.unpushedCount,
+      workspaces.filter((item) => item.unpushed).length,
+    ),
+    measuredAt: usage.measuredAt,
+    ...(isFiniteNumber(usage.intervalMs)
+      ? { intervalMs: usage.intervalMs }
+      : {}),
+    workspaces,
+  };
+}
+
 export function toRunner(
   record: RunnerRecord,
   ownerName: string | null = null,
@@ -181,6 +299,9 @@ export function toRunner(
     toolLoad: storedToolLoad(record.load),
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
+    variables: storedVariableNames(record.variables),
+    workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
+    unavailableModels: storedUnavailableModels(record.unavailableModels),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

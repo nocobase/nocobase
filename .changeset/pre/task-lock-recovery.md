@@ -5,7 +5,6 @@
 "@nocobase/app-skills": patch
 "@nocobase/app-template-default": patch
 "@nocobase/app-template-examples": patch
-"@nocobase/app-template-hub": patch
 ---
 
 Expire a task lock whose holder was killed, and add `nocobase app db unlock` to inspect and release one.

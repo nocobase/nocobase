@@ -84,6 +84,7 @@ function chatAgent(id: string, overrides: Partial<ChatAgent> = {}): ChatAgent {
     isSystemDefault: false,
     isMyDefault: false,
     availability: { online: true, reason: null, onlineRunners: 1 },
+    fallbackAgentId: null,
     ...overrides,
   };
 }
@@ -574,7 +575,7 @@ describe('conversation hooks', () => {
     expect(callsTo('POST', `agents/${C}/messages`)).toHaveLength(1);
   });
 
-  it('stops a run, switches to the system default and back, picks a model and renames', async () => {
+  it('stops a run, switches to the system default and back, and renames', async () => {
     resetApi(
       routes({
         [`POST agents/${C}/stop`]: () => conversation,
@@ -591,10 +592,6 @@ describe('conversation hooks', () => {
       await result.current.stop.mutateAsync('c1');
       await result.current.fallback.mutateAsync('c1');
       await result.current.restore.mutateAsync('c1');
-      await result.current.chooseModel.mutateAsync({
-        id: 'c1',
-        model: { modelService: 'openai', model: 'gpt-y' },
-      });
       await result.current.rename.mutateAsync({
         id: 'c1',
         title: 'Release plan',
@@ -603,7 +600,6 @@ describe('conversation hooks', () => {
     for (const route of ['stop', 'fallback', 'restore'])
       expect(callsTo('POST', `agents/${C}/${route}`)).toHaveLength(1);
     expect(callsTo('PATCH', `agents/${C}`).map((call) => call.json)).toEqual([
-      { model: { modelService: 'openai', model: 'gpt-y' } },
       { title: 'Release plan' },
     ]);
   });
@@ -720,29 +716,5 @@ describe('profile and presets', () => {
     expect(system).toHaveTextContent('chatProfile.systemDefaultNamed');
     await userEvent.click(system!);
     await waitFor(() => expect(preferences.defaultAgentId).toBeNull());
-  });
-
-  it('fills a new agent from a preset, keeping a typed name', async () => {
-    const { applyPreset, newAgentDraft } =
-      await import('../../client/pages/agents/agent-model.js');
-    const preset = {
-      key: 'dealDesk',
-      name: 'Deal desk',
-      description: 'Keeps deals moving',
-      nameText: { key: 'presets.dealDesk.name', ns: 'crm' },
-      descriptionText: { key: 'presets.dealDesk.description', ns: 'crm' },
-      instructions: 'You keep deals moving.',
-      actions: ['crm.deals/view'],
-    };
-    const filled = applyPreset(newAgentDraft(), preset, '商机助手', '推进商机');
-    expect(filled).toMatchObject({
-      name: '商机助手',
-      description: '推进商机',
-      instructions: 'You keep deals moving.',
-      actions: ['crm.deals/view'],
-    });
-    expect(
-      applyPreset({ ...newAgentDraft(), name: 'Mine' }, preset, 'x', 'y').name,
-    ).toBe('Mine');
   });
 });

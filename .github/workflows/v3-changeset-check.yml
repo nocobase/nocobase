@@ -9,6 +9,9 @@ on:
     branches:
       - v3-main
       - v3-develop
+      - '*/v3-*'
+    paths-ignore:
+      - 'docs/**'
 
 permissions:
   contents: read

@@ -20,6 +20,15 @@ export {
 
 /** A run's transcript fetched incrementally (`fetchMore` after each `runTopic(runId)` announcement), for a chat UI's live steps. */
 export { useRunEvents, type RunEventsState } from './runs/use-run-events.js';
+/** Why a queued run waits, in words, from the reason and `params` the server sends; for queue and progress views. */
+export {
+  BLOCKING_RUN_WAIT_REASONS,
+  formatRunWait,
+  runWaitBlocks,
+  type FormatRunWaitOptions,
+  type RunWaitDescription,
+  type RunWaitTranslate,
+} from './runs/format-wait.js';
 export { useRealtimeTopic } from './hooks/use-realtime-topic.js';
 export { useAgentsApi } from './hooks/use-agents-api.js';
 export type { AgentsApi } from './api/client.js';

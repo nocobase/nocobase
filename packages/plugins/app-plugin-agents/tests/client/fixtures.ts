@@ -1,4 +1,4 @@
-import type { AgentSummary } from '../../shared/agents.js';
+import type { AgentView } from '../../shared/agents.js';
 import type { RunnerSummary } from '../../shared/runners.js';
 import type { RunDetail } from '../../shared/runs.js';
 import type { Skill, SkillView } from '../../shared/skills.js';
@@ -38,6 +38,7 @@ export function runner(
     activeByTool: {},
     canManage: false,
     canChangeTrust: false,
+    canRevoke: false,
     updateVersion: null,
     requiredProtocol: { min: 3, max: 4 },
     offersJobs: false,
@@ -47,8 +48,8 @@ export function runner(
 
 export function agent(
   id: string,
-  overrides: Partial<AgentSummary> = {},
-): AgentSummary {
+  overrides: Partial<AgentView> = {},
+): AgentView {
   return {
     id,
     name: `Agent ${id}`,
@@ -56,28 +57,31 @@ export function agent(
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'runner',
-    modelEntries: [{ tool: 'claude', model: null }],
+    source: 'runner',
+    status: 'enabled',
+    tool: 'claude',
+    model: 'claude-sonnet-5',
+    modelEntries: [{ tool: 'claude', model: 'claude-sonnet-5', effort: null }],
     instructions: null,
     actions: [],
     confirmChanges: 'larger',
-    access: 'everyone',
-    userIds: [],
-    ownerUserId: 'u1',
-    runnerIds: [],
     skillIds: [],
-    maxConcurrentRuns: 2,
+    maxConcurrentRuns: 100,
     maxAttempts: 3,
     toolPolicy: null,
-    archivedAt: null,
+    lastReportedAt: AT,
     revision: 1,
     createdAt: AT,
     updatedAt: AT,
-    ownerName: 'Alice',
-    activeRuns: 0,
-    onlineRunners: 1,
+    effort: null,
+    efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+    reported: true,
+    runners: { team: 1, personal: 0, mine: 0, names: ['dev-2'] },
+    personalOnly: false,
+    unusable: null,
+    busy: 0,
+    suggestion: null,
     canEdit: true,
-    canCopy: true,
     ...overrides,
   };
 }

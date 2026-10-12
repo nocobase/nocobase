@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-hub': minor
 '@nocobase/app-plugin-users': patch
 ---
 

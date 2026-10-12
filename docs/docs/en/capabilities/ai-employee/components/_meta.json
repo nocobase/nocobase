@@ -1,8 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "Components overview" },
-  { "type": "file", "name": "chat", "label": "Chat" },
-  { "type": "file", "name": "floating", "label": "Global chat entry" },
-  { "type": "file", "name": "tasks", "label": "Employee tasks" },
-  { "type": "file", "name": "context", "label": "Page context" },
-  { "type": "file", "name": "tool-cards", "label": "Tool cards" }
-]

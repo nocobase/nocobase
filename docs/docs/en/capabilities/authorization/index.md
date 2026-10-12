@@ -1,27 +1,55 @@
 ---
-title: 'Permissions'
-description: 'Assign job capabilities and scope data through business relationships.'
+title: 'Authorization'
 ---
 
-# Permissions
+# Authorization
 
-Authorization answers three separate questions: which page a person can enter, which business operation they can perform, and which records that operation may use. A sales engineer may edit a quote they prepared but submit it only when they also have responsibility for its project. Opening a page does not grant its data operations.
+Authorization determines which pages employees enter, which actions they perform, and which records they access. Northstar account managers maintain transport demand, dispatchers assign drivers, and drivers handle their own tasks in one application.
 
-| Capability           | Purpose                                               | Example                                              |
-| -------------------- | ----------------------------------------------------- | ---------------------------------------------------- |
-| Permission sets      | Assign pages, business operations and administration  | Sales engineer, project manager, delivery specialist |
-| Record scopes        | Select the records an operation can use               | Prepared by me, my region, assigned projects         |
-| Default access       | Give existing action holders a common record baseline | Non-confidential reference quotes                    |
-| Sharing rules        | Add records or a dynamic range for collaborators      | Hand a quote to a proposal team                      |
-| Restriction rules    | Narrow records otherwise accessible                   | Exclude confidential projects                        |
-| Permission inspector | Explain decisions and their sources                   | Why editing is allowed but submission is denied      |
+[Authentication](../auth/index.mdx) establishes identity. Requiring sign-in for orders is authentication; allowing a driver to handle only assigned tasks is authorization.
 
-The main authorization plugin provides permission sets, page, business and administration permissions, and inspection. Default access, sharing and restrictions are optional plugins. If a settings section is missing, ask the developer to check installation and configuration.
+## Start from responsibilities
 
-Each page under Settings → Authorization is itself an administration permission. Read opens the page; creating, updating and deleting are separate actions, permission sets add Manage assignments, and the inspector needs Inspect permissions. Grant them in the Administration section of a permission set.
+| Job                       | Pages and actions                               | Record scope                               |
+| ------------------------- | ----------------------------------------------- | ------------------------------------------ |
+| Account manager           | Customers, order creation and editing           | Customers and orders owned by the employee |
+| Dispatcher                | Dispatch workspace and driver assignment        | Orders needed for coordination             |
+| Driver                    | Tasks, acceptance, departure, delivery evidence | Assigned tasks                             |
+| Operations lead           | Transport monitoring and special transport      | Orders and requests within responsibility  |
+| Finance lead              | Settlement details and extra-fee review         | Authorized financial records               |
+| Application administrator | Assignments and access rules                    | Administrative responsibility              |
 
-Developers or AI coding agents define operations, fields, relations and scope choices, then enforce them on the server. Administrators assign sets and configure scopes/rules. The permission editor does not edit arbitrary database fields; adding a writable field requires changing the business operation's declaration.
+The application declares pages, actions, and scopes; authorization calculates access. Record state remains a separate requirement: driver assignment permission does not make a completed order assignable.
 
-Teams/departments require an integrated membership model. A user can hold direct and inherited grants; removing one source does not remove the others. Start with [permission sets](permission-sets), then [scope rules](data-scopes), [AI development requests](develop-with-ai) and [inspection](inspector).
+## In this section
 
-Unrestricted administrators bypass business scope rules, so use ordinary accounts for validation. Protected set keys cannot be renamed. The default set permits allowed content edits but cannot be deleted or lose its default assignment through generic management. Removing the final active administrator assignment is also prevented.
+| Capability                                              | Purpose                                           |
+| ------------------------------------------------------- | ------------------------------------------------- |
+| [Permission sets and assignments](./permission-sets.md) | Reusable job responsibilities                     |
+| [Data scopes and rules](./data-scopes.md)               | Owned, assigned, all, and conditional records     |
+| [Default data access](./default-access.md)              | Shared baseline scope for existing action holders |
+| [Sharing rules](./sharing-rules.md)                     | Additional records for selected collaborators     |
+| [Restriction rules](./restriction-rules.md)             | Narrow existing access                            |
+| [Inspecting permissions](./inspector.md)                | Results, conditions, and sources                  |
+
+## Business-oriented administration
+
+Administrators need to update jobs and access rules as people join, change responsibilities or collaborate. Provide a business-oriented entry for maintaining supported configurations.
+
+Northstar can provide a Team access entry using authorization capabilities without retaining a shared Settings page.
+
+```text
+Provide Team access for authorized Northstar administrators.
+Define jobs for account managers, dispatchers, drivers, operations leads, and finance leads.
+Specify pages, actions, and record scopes, enforced on the server.
+Support assignments, default scope, temporary sharing, restrictions, and permission source inspection.
+Use business names; do not merely display role labels without enforcing access.
+```
+
+## See the result
+
+Alice and Bob have an account manager job scoped to their own orders. Dispatcher Emma can view all orders. Administrators configure common access, sharing and fee limits in Access rules; employees see their results in the existing order page. Ordinary account managers do not see the administration entry.
+
+![Configure order sharing and its recipient](../assets/northstar-sharing-config-en.png)
+
+**The sharing rule gives Bob viewing access to the selected order.**

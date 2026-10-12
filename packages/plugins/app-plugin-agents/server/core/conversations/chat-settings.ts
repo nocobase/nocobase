@@ -28,7 +28,9 @@ export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
   .partial();
 
 export const ChatSettingsPatchSchema: z.ZodType<ChatSettingsPatch> = z
-  .strictObject({ defaultAgentId: z.string().min(1).max(64).nullable() })
+  .strictObject({
+    defaultAgentId: z.string().min(1).max(64).nullable(),
+  })
   .partial();
 
 export interface ChatSettingsService {
@@ -86,8 +88,8 @@ export function createChatSettingsService(deps: {
         const next: ChatSettings = { ...current, ...patch };
         if (next.defaultAgentId !== null) {
           const agent = await findAgent(conn, next.defaultAgentId);
-          if (!agent || agent.archivedAt)
-            throw invalid('defaultAgentId names no agent.', {
+          if (!agent || agent.status !== 'enabled')
+            throw invalid('defaultAgentId names no enabled agent.', {
               field: 'defaultAgentId',
             });
         }

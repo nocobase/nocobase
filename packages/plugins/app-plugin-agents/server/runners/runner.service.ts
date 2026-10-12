@@ -1,14 +1,14 @@
 /**
  * Runners: registering with a one-time token, authenticating by key, heartbeats, and what people change afterwards
  * (name, trust, slots, which coding tools it may run, revocation). What a runner has (its system, features and coding
- * tools, each with whether it is signed in) and what its owner's local policy lets it take (`policy`) is what it
- * reports, never configured here; which of its tools it is offered work for is chosen on the web (`enabledTools`,
+ * tools, each with whether it is signed in), what its owner's local policy lets it take (`policy`) and the names of the
+ * variables it provides to runs (`variables`) are what it reports, never configured here; which of its tools it is offered work for is chosen on the web (`enabledTools`,
  * carried over from the registration token, as are its slots and its limits per coding tool unless the runner names
  * its own).
  *
  * A runner speaking a protocol this application does not serve is not turned away: it registers and stays connected
  * as `upgrade_required`, is given no work (claims want `online`), and its owner is told once per protocol
- * (`runner_upgrade_required`, a `RunnerNotice`); once it connects again speaking a protocol this application serves,
+ * (`runner_upgrade_required`, an `AgentsNotice`); once it connects again speaking a protocol this application serves,
  * the notice is cleared (`notice.cleared`). A runner whose owner can no longer act (an account disabled or
  * deleted, as the application's people directory says) is refused with `RUNNER_OWNER_DISABLED` until they can again.
  *
@@ -21,20 +21,25 @@ import {
   PROTOCOL_VERSION,
   ProtocolError,
   TIMINGS,
+  ReportedToolInfoSchema,
   type HeartbeatRequest,
   type RegisterRequest,
   type RegisterResponse,
+  type AgentTool,
   type RunApp,
+  type ToolInfo,
   type UpgradeRequired,
 } from '@nocobase/agent-protocol';
 
 import type { DatabaseConnection } from '@nocobase/db';
 
+import { normalizeModel } from '../../shared/model-catalog.js';
 import type {
   RegistrationToken,
   RegistrationTokenInput,
   Runner,
   RunnerPatch,
+  UnavailableModel,
 } from '../../shared/runners.js';
 import { later, type Clock } from '../kernel/clock.js';
 import {
@@ -44,10 +49,10 @@ import {
   hashCredential,
 } from '../kernel/crypto.js';
 import { notFound, precondition } from '../kernel/errors.js';
-import type { RunnerNotice } from '../kernel/events.js';
+import type { AgentsNotice } from '../kernel/events.js';
 import type { IdSource } from '../kernel/ids.js';
 import type { People } from '../kernel/people.js';
-import type { TxRunner } from '../kernel/tx.js';
+import type { Tx, TxRunner } from '../kernel/tx.js';
 import { asJson, cleanList } from '../kernel/values.js';
 import {
   absentRunners,
@@ -56,6 +61,7 @@ import {
   registrationTokensRepo,
   runnersRepo,
   storedPolicy,
+  storedVariableNames,
   storedToolChoice,
   storedToolLoad,
   storedToolSlots,
@@ -92,8 +98,11 @@ export interface RunnerService {
   /** 404 when absent. */
   get(id: string): Promise<Runner>;
   update(id: string, patch: RunnerPatch): Promise<Runner>;
-  /** Revokes the runner and every key it has. The runs it holds go back to the queue (the runs service). */
-  revoke(id: string): Promise<Runner>;
+  /**
+   * Revokes the runner and every key it has. The runs it holds go back to the queue (the runs service). When `by` is
+   * someone other than its owner, the owner is told (`runner_revoked`).
+   */
+  revoke(id: string, options?: { readonly by?: string }): Promise<Runner>;
   /** Deletes a revoked runner and its keys; `CONFLICT` while it is not revoked. Its past runs keep their `runnerId`. */
   remove(id: string): Promise<void>;
   /** Marks online (and `upgrade_required`) runners not seen since `before` offline; returns their ids. */
@@ -106,6 +115,16 @@ export interface RunnerService {
   absent(conn: DatabaseConnection, ids: readonly string[]): Promise<string[]>;
   /** The runner, read on `conn`; null when there is none. */
   find(conn: DatabaseConnection, id: string): Promise<Runner | null>;
+  /**
+   * Marks `model` of `tool` unavailable on the runner, in the caller's transaction: it is not offered there until the
+   * runner reports that tool's models differently.
+   */
+  markModelUnavailable(
+    unit: Tx,
+    runnerId: string,
+    tool: AgentTool,
+    model: string,
+  ): Promise<void>;
 }
 
 export interface RunnerServiceDeps {
@@ -118,6 +137,30 @@ export interface RunnerServiceDeps {
   readonly people?: People;
   /** The newest runner the application serves for a runner's platform, for the upgrade notice; none without it. */
   readonly latestRunner?: (runner: Runner) => Promise<string | null>;
+  /** What a runner reported, as stored, in the transaction of its registration or heartbeat. */
+  readonly onReport?: (unit: Tx, runner: Runner) => Promise<void>;
+}
+
+/** A tool's reported models, normalized and sorted, to tell when the runner reports them differently. */
+function modelsOf(tools: readonly ToolInfo[], tool: AgentTool): string[] {
+  const info = tools.find((item) => item.kind === tool);
+  return [
+    ...new Set(
+      (info?.models ?? []).map((model) => normalizeModel(tool, model.id)),
+    ),
+  ].sort();
+}
+
+/** The marks that still hold: those whose tool the runner reports the same models for as when it was marked. */
+export function keptMarks(
+  marks: readonly UnavailableModel[],
+  tools: readonly ToolInfo[],
+): UnavailableModel[] {
+  return marks.filter(
+    (mark) =>
+      JSON.stringify(modelsOf(tools, mark.tool)) ===
+      JSON.stringify([...mark.reported].sort()),
+  );
 }
 
 /** What a runner speaking `protocolVersion` is told while this application cannot work with it. */
@@ -144,7 +187,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
 
   /** Tells the runner's owner it needs an upgrade; once per runner and protocol. */
   const noticeUpgrade = async (
-    emit: (event: { type: 'notice'; notice: RunnerNotice }) => void,
+    emit: (event: { type: 'notice'; notice: AgentsNotice }) => void,
     runner: Runner,
   ): Promise<void> => {
     if (!runner.ownerUserId) return;
@@ -264,7 +307,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             product: request.product ?? null,
             protocolVersion: request.protocolVersion,
             features: cleanList(request.features),
-            tools: request.tools,
+            tools: request.tools.map((tool) =>
+              ReportedToolInfoSchema.parse(tool),
+            ),
             enabledTools: storedToolChoice(token.enabledTools),
             trust: token.trust,
             ownerUserId: token.createdById,
@@ -274,6 +319,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             load: null,
             acceptJobs: false,
             policy: asJson(storedPolicy(request.policy)),
+            variables: asJson(storedVariableNames(request.variables)),
             lastSeenAt: nowText,
             createdAt: nowText,
             updatedAt: nowText,
@@ -295,6 +341,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           filter: { id: token.id },
           values: { runnerId },
         });
+        await deps.onReport?.({ conn, emit }, await require(conn, runnerId));
         emit({ type: 'runner.changed', runnerId });
         if (status === 'upgrade_required')
           await noticeUpgrade(emit, await require(conn, runnerId));
@@ -395,24 +442,38 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       }),
 
     heartbeat: (runner, request) =>
-      tx.run(async ({ conn, emit }) => {
+      tx.run(async (unit) => {
+        const { conn, emit } = unit;
         const now = clock.now().toISOString();
         const policy = storedPolicy(request.policy);
+        const variables = storedVariableNames(request.variables);
+        const tools = request.tools.map((tool) =>
+          ReportedToolInfoSchema.parse(tool),
+        );
+        const marks = runner.unavailableModels ?? [];
+        const kept = keptMarks(marks, tools);
         const changed =
+          kept.length !== marks.length ||
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
           JSON.stringify(runner.features) !==
             JSON.stringify(cleanList(request.features)) ||
           JSON.stringify(runner.tools) !== JSON.stringify(request.tools) ||
-          JSON.stringify(runner.policy) !== JSON.stringify(policy);
+          JSON.stringify(runner.policy) !== JSON.stringify(policy) ||
+          JSON.stringify(runner.variables ?? null) !==
+            JSON.stringify(variables);
         await runnersRepo(conn).updateMany({
           filter: { id: runner.id },
           values: {
             version: request.version,
             product: request.product ?? null,
             features: cleanList(request.features),
-            tools: request.tools,
+            tools,
             policy: asJson(policy),
+            variables: asJson(variables),
+            ...(kept.length !== marks.length
+              ? { unavailableModels: asJson(kept) }
+              : {}),
             // What it holds per tool across every application: read for why a run waits, so it changes nothing else.
             load: asJson(storedToolLoad(request.load.tools ?? null)),
             lastSeenAt: now,
@@ -420,7 +481,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           },
         });
         if (changed) emit({ type: 'runner.changed', runnerId: runner.id });
-        return require(conn, runner.id);
+        const reported = await require(conn, runner.id);
+        await deps.onReport?.(unit, reported);
+        return reported;
       }),
 
     list: async () => {
@@ -475,9 +538,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         return require(conn, id);
       }),
 
-    revoke: (id) =>
+    revoke: (id, options) =>
       tx.run(async ({ conn, emit }) => {
-        await require(conn, id);
+        const runner = await require(conn, id);
         const now = clock.now().toISOString();
         await runnersRepo(conn).updateMany({
           filter: { id },
@@ -488,6 +551,27 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             f.and([f.string('runnerId').eq(id), f.date('revokedAt').empty()]),
           values: { revokedAt: now },
         });
+        const by = options?.by;
+        if (by && runner.ownerUserId && runner.ownerUserId !== by) {
+          const byName =
+            (await deps.people?.names(conn, [by]))?.get(by) ?? null;
+          emit({
+            type: 'notice',
+            notice: {
+              key: `runners:runner-revoked:${runner.id}`,
+              type: 'runner_revoked',
+              userIds: [runner.ownerUserId],
+              subject: { kind: 'runner', id: runner.id, label: runner.name },
+              title: `${runner.name} was revoked`,
+              body: `${byName ?? 'A manager of runners'} revoked your runner ${runner.name}. It takes no more work; register it again to use it.`,
+              params: {
+                runnerName: runner.name,
+                revokedByUserId: by,
+                revokedByName: byName,
+              },
+            },
+          });
+        }
         emit({ type: 'runner.changed', runnerId: id });
         return require(conn, id);
       }),
@@ -551,5 +635,28 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
     absent: (conn, ids) => absentRunners(conn, ids),
 
     find: (conn, id) => findRunner(conn, id),
+
+    async markModelUnavailable(unit, runnerId, tool, model) {
+      const runner = await findRunner(unit.conn, runnerId);
+      if (!runner) return;
+      const normalized = normalizeModel(tool, model);
+      const marks = (runner.unavailableModels ?? []).filter(
+        (mark) => !(mark.tool === tool && mark.model === normalized),
+      );
+      const mark: UnavailableModel = {
+        tool,
+        model: normalized,
+        at: clock.now().toISOString(),
+        reported: modelsOf(runner.tools, tool),
+      };
+      await runnersRepo(unit.conn).updateMany({
+        filter: { id: runnerId },
+        values: {
+          unavailableModels: asJson([...marks, mark]),
+          updatedAt: clock.now().toISOString(),
+        },
+      });
+      unit.emit({ type: 'runner.changed', runnerId });
+    },
   };
 }

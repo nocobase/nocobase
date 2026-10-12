@@ -2,10 +2,8 @@
 '@nocobase/app-server': minor
 '@nocobase/app-host': minor
 '@nocobase/app-skills': patch
-'@nocobase/app-plugin-hub': minor
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
 ---
 
 Unify application directory fields and path helpers in AppPaths, shared by configuration factories, runtime and Application. Replace ConfigPaths and runtime.configPaths with AppPaths and runtime.paths, and construct applications through createAppFromRuntime so Host logging policy and the runtime application reference are wired consistently.

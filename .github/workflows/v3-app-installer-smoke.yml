@@ -1,10 +1,10 @@
 name: V3 app-installer smoke test
 
 # Build the default application's deployment archive and exercise the compiled installer's
-# install, upgrade and rollback paths on Debian. Quality calls this workflow for its source snapshot.
+# install, upgrade and rollback paths on Debian. Quality runs the same job in chenos/nocobase-ci
+# (nocobase3-quality.yml) for every forwarded change; this entry runs it on demand.
 
 on:
-  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -52,7 +52,7 @@ jobs:
           test -f packages/templates/app-template-default/storage/exports/dist.tar.gz
 
       - name: Install, upgrade and roll back the archive
-        run: node scripts/smoke-app-installer.mjs --source archive --archive packages/templates/app-template-default/storage/exports/dist.tar.gz --root "$APP_ROOT" --port 13000 -- node packages/tools/app-installer/bin/run.js
+        run: node scripts/smoke-app-installer.mjs --archive packages/templates/app-template-default/storage/exports/dist.tar.gz --root "$APP_ROOT" --port 13000 -- node packages/tools/app-installer/bin/run.js
 
       - name: Show logs
         if: failure()

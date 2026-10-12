@@ -12,6 +12,7 @@ import {
   type GitAuth,
 } from '../checkout.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
+import { GIT_LOW_SPEED_CONFIG } from '../git-retry.ts';
 import { JobFailure } from './types.ts';
 
 const failed = (error: unknown): string =>
@@ -49,7 +50,7 @@ async function fetchInto(
   const lock = await lockCache(cache);
   try {
     return await gitOk(
-      ['fetch', '--quiet', 'origin', ...refspecs],
+      [...GIT_LOW_SPEED_CONFIG, 'fetch', '--quiet', 'origin', ...refspecs],
       cache,
       gitAuthEnv(auth),
     );

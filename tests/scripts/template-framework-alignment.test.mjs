@@ -3,12 +3,11 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import path from 'node:path';
 import test from 'node:test';
-import ts from 'typescript';
 
 import { collectRuntimeSpecifiers } from '../../scripts/check-runtime-deps.mjs';
 
 const root = path.resolve(import.meta.dirname, '../../packages/templates');
-const templates = ['default', 'examples', 'hub'].map((kind) => {
+const templates = ['default', 'examples'].map((kind) => {
   const directory = path.join(root, `app-template-${kind}`);
   return {
     kind,
@@ -122,168 +121,21 @@ function runtimeDependencies(template) {
 
 function sharedFrameworkSource(template, file) {
   let source = readFileSync(path.join(template.directory, file), 'utf8');
-  if (
-    template.kind !== 'hub' &&
-    file === 'client/layouts/components/header-actions.tsx'
-  ) {
-    // Default and Examples preinstall the UI Library inbox; the Hub registers no in-app notifications. Exclude only
-    // the inbox's explicit entry; all shared header behavior must still match across the three.
-    const additions = [
-      /^import \{ InboxHeaderButton \} from '#components\/inbox-header-button';\n/gm,
-      /^[\t ]*\{\/\* The inbox's entry, from the UI Library; keep its unread shortcut on every authenticated surface\. \*\/\}\n[\t ]*<InboxHeaderButton \/>\n/gm,
-    ];
-    return additions.reduce((shared, addition) => {
-      assert.equal(
-        [...shared.matchAll(addition)].length,
-        1,
-        `${template.kind} header must contain exactly one inbox entry`,
-      );
-      return shared.replace(addition, '');
-    }, source);
-  }
 
-  if (
-    template.kind === 'examples' &&
-    file === 'client/layouts/app-layout.tsx'
-  ) {
-    // Examples owns the AI employee demonstration: its global entry wraps the signed-in shell, so every page below
-    // it can start an AI employee task. Remove only that wrapper and re-indent what it wraps; the shell itself must
-    // still match Default.
-    const lines = source.split('\n');
-    const only = (predicate, message) => {
-      const indexes = lines.flatMap((line, index) =>
-        predicate(line) ? [index] : [],
-      );
-      assert.equal(indexes.length, 1, message);
-      return indexes[0];
-    };
-    const importLine = only(
-      (line) =>
-        line ===
-        "import { AIEmployeeEntry } from '../components/ai-employee-entry.js';",
-      'Examples layout must import the AI employee entry exactly once',
-    );
-    const marker = only(
-      (line) =>
-        line.trim() ===
-        '{/* Examples owns the AI employee demonstration; its global entry wraps only the signed-in shell. */}',
-      'Examples layout must explain its AI employee entry exactly once',
-    );
-    const open = only(
-      (line) => line.trim() === '<AIEmployeeEntry>',
-      'Examples layout must open the AI employee entry exactly once',
-    );
-    const close = only(
-      (line) => line.trim() === '</AIEmployeeEntry>',
-      'Examples layout must close the AI employee entry exactly once',
-    );
-    assert.ok(
-      marker + 1 === open && open < close,
-      'Examples layout must wrap its shell in the AI employee entry right after its comment',
-    );
-    return [
-      ...lines.slice(0, importLine),
-      ...lines.slice(importLine + 1, marker),
-      ...lines.slice(open + 1, close).map((line) => line.replace(/^ {2}/u, '')),
-      ...lines.slice(close + 1),
-    ].join('\n');
-  }
-
-  // The image recipe is shared. Only the template's own directory, named in the usage comment, and Hub's `/hub` runtime
-  // mount path differ; both are normalized to Default's before comparing.
+  // The image recipe is shared. Only the template's own directory, named in the usage comment, differs; it is
+  // normalized to Default's before comparing.
   if (file === 'Dockerfile') {
     source = source.replaceAll(
       `packages/templates/app-template-${template.kind}`,
       'packages/templates/app-template-default',
     );
-    if (template.kind === 'hub') {
-      const runtimeDefault = /^ {4}APP_BASE_PATH=\/hub \\$/gmu;
-      assert.equal(
-        [...source.matchAll(runtimeDefault)].length,
-        1,
-        'Hub Dockerfile must default the runtime APP_BASE_PATH to /hub',
-      );
-      source = source.replace(runtimeDefault, '    APP_BASE_PATH=/main \\');
-    }
   }
 
-  // Keep product identity and Hub's deliberate menu order local while comparing the shared layout.
+  // Keep product identity local while comparing the shared layout.
   if (file === 'client/layouts/components/sidebar-footer.tsx') {
-    source = source
-      .replace("'Examples Template'", "'Default Template'")
-      .replace("'NocoBase Hub'", "'Default Template'");
+    source = source.replace("'Examples Template'", "'Default Template'");
   }
-  if (
-    template.kind === 'hub' &&
-    file === 'client/layouts/components/app-brand.tsx'
-  ) {
-    source = source
-      .replace('AppBrand(props:', 'AppBrand(inputProps:')
-      .replace('= props;', '= inputProps;')
-      .replace(
-        /aria-label=\{t\('navigation.brandApps', \{\s*defaultValue: 'NocoBase applications',\s*\}\)\}/u,
-        "aria-label={t('navigation.brandHome', { defaultValue: 'NocoBase home' })}",
-      );
-  }
-  if (template.kind === 'hub' && file === 'client/layouts/app-layout.tsx') {
-    source = source
-      .replace('  type RouteNavigationItem,\n', '')
-      .replace(
-        'const { items, denied } = useRouteNavigation(routes);\n  const menuItems = orderHubNavigation(items);',
-        'const { items: menuItems, denied } = useRouteNavigation(routes);',
-      )
-      .replace("t('navigation.console',", "t('shell.workspace',")
-      .replace(
-        "defaultValue: 'Hub console'",
-        "defaultValue: 'AI application workspace'",
-      );
-    // The Hub client-shell suite verifies this product-specific sort order.
-    const helper = source.indexOf('\nconst HUB_NAVIGATION_PATHS');
-    assert.notEqual(
-      helper,
-      -1,
-      'Hub must retain its navigation ordering helper',
-    );
-    source = source.slice(0, helper).trimEnd() + '\n';
-  }
-
-  if (template.kind !== 'hub' || file !== 'server/standalone.ts') {
-    return source;
-  }
-
-  // Hub alone fronts App Host. Its proxy behavior is covered by the Hub tests;
-  // compare every other part of the standalone entry with Default unchanged.
-  const parsed = ts.createSourceFile(
-    file,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-  );
-  const standalone = parsed.statements
-    .filter(ts.isVariableStatement)
-    .flatMap(({ declarationList }) => declarationList.declarations)
-    .find(({ name }) => ts.isIdentifier(name) && name.text === 'standalone');
-  const call = standalone?.initializer;
-  assert.ok(
-    call &&
-      ts.isCallExpression(call) &&
-      ts.isIdentifier(call.expression) &&
-      call.expression.text === 'defineStandaloneServer',
-  );
-  const [options] = call.arguments;
-  assert.ok(options && ts.isObjectLiteralExpression(options));
-  const proxy = options.properties.find(
-    (property) =>
-      ts.isPropertyAssignment(property) &&
-      ts.isIdentifier(property.name) &&
-      property.name.text === 'proxy',
-  );
-  assert.ok(proxy, 'Hub standalone must configure its App Host proxy');
-  const end = proxy.end + (source[proxy.end] === ',' ? 1 : 0);
-  return (source.slice(0, proxy.getFullStart()) + source.slice(end)).replace(
-    "import { hubServiceToken } from '@nocobase/app-plugin-hub/server';\n",
-    '',
-  );
+  return source;
 }
 
 // These are shared framework mechanisms, not product pages or plugin composition.
@@ -330,27 +182,19 @@ for (const template of templates) {
         `${template.kind}: ${file}`,
       );
     }
-    // Product-specific scripts need a documented exception; compare the shared contract in both directions.
-    const exceptions = [
-      ...(template.kind === 'hub' ? ['test:e2e'] : []), // Hub has no AI plugin.
-    ];
-    const sharedScripts = (scripts) =>
-      Object.fromEntries(
-        Object.entries(scripts).filter(([name]) => !exceptions.includes(name)),
-      );
+    // The scripts are the shared command contract; compare them in both directions.
     assert.deepEqual(
-      sharedScripts(template.manifest.scripts),
-      sharedScripts(baseline.manifest.scripts),
+      template.manifest.scripts,
+      baseline.manifest.scripts,
       `${template.kind}: shared scripts`,
     );
   });
 
-  test(`${template.kind} enables Hub publishing only when supported`, () => {
-    // `hub deploy` and `hub upload` come from depending on @nocobase/hub-cli, so the dependency is the whole
-    // publishing switch. The flag it replaced must not come back.
+  test(`${template.kind} carries no Hub publishing`, () => {
+    // NocoBase Hub is discontinued: neither @nocobase/hub-cli nor the publishing flag it replaced may come back.
     assert.equal(
-      template.manifest.devDependencies?.['@nocobase/hub-cli'] !== undefined,
-      template.kind === 'default',
+      template.manifest.devDependencies?.['@nocobase/hub-cli'],
+      undefined,
     );
     assert.equal(
       template.manifest.dependencies?.['@nocobase/hub-cli'],

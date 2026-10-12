@@ -1,5 +1,5 @@
 /**
- * Apps, releases and deployments. Adapted from the Hub plugin's service: uploads are deduplicated by checksum and made
+ * Apps, releases and deployments: uploads are deduplicated by checksum and made
  * idempotent by key, every deploy and rollback is an immutable deployment record with phases and a log, configuration
  * starts from the release's `config.example.yml` with generated secrets, and the runtime is reached only through the
  * environment's driver session.

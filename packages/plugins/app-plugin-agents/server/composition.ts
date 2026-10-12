@@ -6,13 +6,15 @@
  * off-by-default runner build method (`jobs/`) from the runners' shared slots, and jobs open the stored variables they
  * name here. The runner and CLI tarballs the application serves are `distribution/`.
  *
- * Subject kinds (what runs work on), scopes, business actions, presets and who holds which action are added later by
- * the application that assembles the plugin (through `subjects`, `scopes`, `actions`, `presets`, `gate`); this plugin
+ * Agents are discovered from what runners report (`agents.syncRunner`, on each registration and heartbeat): one for each
+ * coding tool and model, which someone who manages agents enables. Subject kinds (what runs work on), scopes, business
+ * actions, the instructions every discovered agent gets and who holds which action are added later by the application
+ * that assembles the plugin (through `subjects`, `scopes`, `actions`, `agents.setDefaults`, `gate`); this plugin
  * brings the
  * `conversation` subject.
  */
 import type { RunApp } from '@nocobase/agent-protocol';
-import type { DatabaseManager } from '@nocobase/db';
+import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 
 import {
   createDistService,
@@ -43,19 +45,25 @@ import { createTxRunner, type TxRunner } from './kernel/tx.js';
 import {
   createRunnerService,
   createRunnerSweeper,
+  createRunnerWorkspaces,
   createSlots,
   createWorkSignal,
   type RunnerService,
   type RunnerSweeper,
+  type RunnerWorkspaces,
   type Slots,
   type WorkSignal,
 } from './runners/index.js';
 import {
+  agentViews,
+  availableAgents,
   createAgentActionCatalog,
   createAgentService,
+  listAgents,
   type AgentActionCatalog,
   type AgentService,
 } from './core/agents/index.js';
+import type { AgentView, AvailableAgent } from '../shared/agents.js';
 import {
   createChatAttachments,
   createChatFileStorage,
@@ -68,19 +76,7 @@ import {
   type ConversationService,
   type ResolvedRef,
 } from './core/conversations/index.js';
-import {
-  createConsultationService,
-  type ConsultationService,
-} from './core/consultations/index.js';
-import {
-  createPresetRegistry,
-  type PresetRegistry,
-} from './core/presets/index.js';
-import {
-  createCallerGate,
-  type CallerGate,
-  type CallerIdentity,
-} from './core/callers/index.js';
+import { createCallerGate, type CallerGate } from './core/callers/index.js';
 import {
   createModelUsageRecorder,
   createPriceService,
@@ -102,13 +98,8 @@ import {
 import {
   createModelGateway,
   createModelServices,
-  createServerExecutor,
   type ModelGateway,
   type ModelServices,
-  type ServerExecutor,
-  type CommandSurface,
-  type OnlineSkill,
-  type ServerExecutorOptions,
 } from './online/index.js';
 import {
   createVectors,
@@ -118,7 +109,9 @@ import {
 import {
   createBriefPreviewer,
   createBriefSectionRegistry,
+  createClaimEligibility,
   createClaimService,
+  createGitCredentialService,
   createRepoAccessRegistry,
   createRunMountRegistry,
   createRunnerReports,
@@ -134,7 +127,9 @@ import {
   type AgentCli,
   type Availability,
   type BriefPreviewer,
+  type ClaimEligibility,
   type ClaimService,
+  type GitCredentialService,
   type RunnerReports,
   type RepoAccessRegistry,
   type RunMountRegistry,
@@ -173,8 +168,6 @@ export interface AgentsDeps {
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;
-  /** The server executor of online runs (`agents.server`): model calls per run, its holder id. */
-  readonly server?: ServerExecutorOptions;
   /**
    * The vector store of vector collections (`agents.vectors`), apart from the application's database: sqlite-vec in
    * `storage/vectors.sqlite` by default.
@@ -182,14 +175,6 @@ export interface AgentsDeps {
   readonly vectors?: VectorsConfig;
   /** The application's root and storage directories, which the vector store's relative paths resolve against. */
   readonly paths?: { readonly root: string; readonly storage: string };
-  /**
-   * An online run's commands from the application's command manifest, sent as the run (`online/cli-command.ts`);
-   * undefined when there is none, and then its shell has no CLI.
-   */
-  readonly commandsOf?: (
-    identity: CallerIdentity,
-    token: string,
-  ) => Promise<CommandSurface> | undefined;
 }
 
 export interface Agents {
@@ -198,11 +183,29 @@ export interface Agents {
   readonly clock: Clock;
   readonly agents: AgentService;
   /**
-   * Per agent, whether it could start work now (a runner agent: an online runner with its tool enabled, installed and
-   * signed in, among the runners it may use and whose owner's policy lets it; an online agent: its model service offers
-   * its model), and how many of its runs have not finished.
+   * Per agent, whether it could start work now (an online runner with its tool and model, installed and signed in,
+   * among the runners it may use and whose owner's policy lets it), and how many of its runs have not finished.
    */
   readonly availability: Availability;
+  /**
+   * The agents a person may give work to, read on `conn` (the roster a project manager picks from): enabled agents
+   * discovered from runners and reported recently, each with whether a runner would take the person's work now.
+   */
+  readonly roster: (
+    conn: DatabaseConnection,
+    userId: string,
+  ) => Promise<AvailableAgent[]>;
+  /** Every agent as the Agent page shows it to a person, read on `conn`. */
+  readonly views: (
+    conn: DatabaseConnection,
+    userId: string,
+    options: { readonly canEdit: boolean },
+  ) => Promise<AgentView[]>;
+  /**
+   * Whether a runner would actually take an agent's work done as a person, by the claim's rules: trust, features and
+   * whether it may receive the work's variables. For deciding before a run exists; call it outside a transaction.
+   */
+  readonly eligibility: ClaimEligibility;
   /** Who runners register with: the application's id and name. */
   readonly app: RunApp;
   /** The application's CLI (`agents.cli`, resolved): what runs talk to it with and what the install script installs. */
@@ -212,13 +215,18 @@ export interface Agents {
   /** Which agents each runner may run and which runs one holds, for the runtimes pages. */
   readonly runnerView: RunnerView;
   /**
+   * The working directories runners report: which may go because their subject's work is over, and the disk they
+   * take, kept for the runtimes pages.
+   */
+  readonly workspaces: RunnerWorkspaces;
+  /**
    * Jobs: deterministic steps runners execute without a model (a build), of the kinds the application registers; used
    * by the off-by-default runner build method.
    */
   readonly jobs: JobService;
   /** A runner's slots, shared by its runs and its jobs. */
   readonly slots: Slots;
-  /** Wakes long-polling runners (and the online executor); notified whenever work may have arrived. */
+  /** Wakes long-polling runners; notified whenever work may have arrived. */
   readonly signal: WorkSignal;
   /** The runner and CLI tarballs the application serves. */
   readonly dist: DistService;
@@ -227,6 +235,8 @@ export interface Agents {
   readonly runs: RunService;
   readonly claims: ClaimService;
   readonly reports: RunnerReports;
+  /** Repository credentials a runner asks for while it holds a run (`RepoAccessProvider.issue`). */
+  readonly gitCredentials: GitCredentialService;
   /** Marks silent runners offline, then takes back and ends the runs and jobs nobody will finish. */
   readonly sweeper: RunnerSweeper;
   /** Variables of agents, working directories and the scopes the application registers. */
@@ -266,29 +276,15 @@ export interface Agents {
   readonly conversations: ConversationService;
   /** The files people send with chat messages: uploads, reading them, and purging those never sent. */
   readonly chatAttachments: ChatAttachmentService;
-  /**
-   * Online agents consulting each other (`ask_agent`): the `consultation` subject kind of runs, and where the
-   * application adds rules to a consulted agent's brief (`rules.provide`).
-   */
-  readonly consultations: ConsultationService;
   /** The system default chat agent, and each person's default and "always confirm". */
   readonly chat: ChatSettingsService;
-  /** Roles a new agent can start from, as the application registers them. */
-  readonly presets: PresetRegistry;
   /**
-   * Online agents, run by the application itself: the model services they call (`agModelServices`), the gateway that
-   * calls their models (and the application's embedding, rerank and utility text calls: `embed`, `rerank`,
-   * `generate`), and this instance's executor, which the provider starts at boot.
+   * The model services the application calls models of (`agModelServices`), and the gateway that calls them for its
+   * embedding, rerank and utility text calls (`embed`, `rerank`, `generate`), such as a knowledge base's search.
    */
-  readonly online: {
+  readonly models: {
     readonly services: ModelServices;
     readonly gateway: ModelGateway;
-    readonly executor: ServerExecutor;
-    /** Skills every online run gets besides its own, such as the CLI's: `register` one, a release removes it. */
-    readonly skills: {
-      register(skill: OnlineSkill): () => void;
-      list(): readonly OnlineSkill[];
-    };
   };
   /**
    * Vector collections the application keeps (`collection(spec)`), embedded with the model services' embedding models
@@ -331,6 +327,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     people,
     latestRunner: async (runner) =>
       (await upgradeFor(dist, runner))?.latestVersion ?? null,
+    // Every tool and model a runner reports becomes an agent, pending until someone enables it.
+    onReport: (unit, runner) => agents.syncRunner(unit, runner),
   });
   const jobs = createJobService({
     tx,
@@ -369,6 +367,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     onError,
   });
   const actions = createAgentActionCatalog();
+  const scopes = createScopeKinds();
   const variables = createVariableService({
     tx,
     ids,
@@ -399,26 +398,23 @@ export function createAgents(deps: AgentsDeps): Agents {
     ids,
     clock,
     people,
-    models: () => gateway.catalog(),
-    actionTypes: (key) =>
-      actions.list().find((option) => option.key === key)?.types,
     owned: {
-      openRuns: async (conn, agentId) =>
-        (await openCounts(conn, [agentId])).get(agentId) ?? 0,
-      clearVariables: (conn, agentId) =>
-        variables.clear(conn, { scope: 'agent', scopeId: agentId }),
       withdrawQueued: async (unit, agentId, byUserId) => {
         await runs.withdrawQueued(
-          { agentId, byUserId, detail: 'The agent was archived.' },
+          { agentId, byUserId, detail: 'The agent was disabled.' },
           unit,
         );
       },
     },
   });
+  const eligibility = createClaimEligibility({
+    runners,
+    variables,
+  });
   const availability = createAvailability({
     runners,
+    eligibility,
     openRuns: openCounts,
-    models: gateway,
   });
   const runs = createRunService({
     ...transitions,
@@ -432,31 +428,16 @@ export function createAgents(deps: AgentsDeps): Agents {
       find: (conn, id) => runners.find(conn, id),
       jobsByRunner: (conn) => slots.jobsByRunner(conn),
     },
+    eligibility,
+    people,
   });
   const sections = createBriefSectionRegistry();
   const mounts = createRunMountRegistry();
   const repoAccess = createRepoAccessRegistry();
   // The secrets claims hand out, so what runners report is redacted of them before it is stored.
   const secrets = createSecretMemory();
-  const consultations = createConsultationService({
-    tx,
-    runs,
-    mayInvoke: (agent, userId) => agents.mayInvoke(agent, userId),
-    people,
-  });
-  subjects.register(consultations.binding);
-  const builtInSkills = new Map<string, OnlineSkill>();
-  const onlineSkills = {
-    register(skill: OnlineSkill) {
-      builtInSkills.set(skill.slug, skill);
-      return () => {
-        if (builtInSkills.get(skill.slug) === skill)
-          builtInSkills.delete(skill.slug);
-      };
-    },
-    list: () => [...builtInSkills.values()],
-  };
   const claims = createClaimService({
+    people,
     sections,
     mounts,
     repoAccess,
@@ -471,19 +452,33 @@ export function createAgents(deps: AgentsDeps): Agents {
     app,
     cli,
     secrets,
-    onlineSkills: onlineSkills.list,
-    consultations,
     onClaimFailure: (runId, error) =>
       onError(`Agents could not assemble run ${runId}.`, error),
-    defaultModel: async (conn) =>
-      (await modelServices.defaults(conn)).effectiveChat,
   });
-  const reports = createRunnerReports({ ...transitions, tx, ids, secrets });
+  const reports = createRunnerReports({
+    ...transitions,
+    tx,
+    ids,
+    secrets,
+    cliName: cli.name,
+    appName: app.name,
+    onModelUnavailable: (unit, runnerId, tool, model) =>
+      runners.markModelUnavailable(unit, runnerId, tool, model),
+  });
+  const gitCredentials = createGitCredentialService({
+    tx,
+    clock,
+    reports,
+    repoAccess,
+    secrets,
+    onError,
+  });
   const sweeper = createRunnerSweeper({
     clock,
     runners,
     runs: createSweeper({ ...transitions, tx, ids, runners }),
     jobs,
+    requests: runs.requests,
   });
   // Jobs open the stored variables they name here.
   jobs.provideSecrets({
@@ -509,45 +504,17 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     agents,
     runners,
+    eligibility,
     runs,
     people,
     settings: chat,
     contextKinds: createPageContextKinds(),
-    models: gateway,
     attachments: chatAttachments.links,
     basePath,
   });
   subjects.register(conversations.binding);
   registerCoreContextKinds(conversations, agents, runs);
   const gate = createCallerGate();
-
-  const executor = createServerExecutor(
-    {
-      clock,
-      claims,
-      reports,
-      runs,
-      conversations,
-      consultations,
-      images: (conversationId, ids, maxBytes) =>
-        chatAttachments.service.images(conversationId, ids, maxBytes),
-      commands: (identity, token) =>
-        deps.commandsOf?.(identity, token) ?? Promise.resolve(undefined),
-      skill: async (skill) => {
-        const snapshot = await skills.snapshot(skill.slug, skill.hash);
-        return {
-          ...snapshot,
-          name: skill.name,
-          description: skill.description,
-        };
-      },
-      builtInSkills: onlineSkills.list,
-      gateway,
-      signal,
-      onError,
-    },
-    deps.server,
-  );
 
   events.on('run.queued', () => signal.notify());
   events.on('run.requeued', () => signal.notify());
@@ -571,7 +538,6 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs
       .get(event.runId)
       .then(async (run) => {
-        // A consultation's changes show on the card of the conversation that asked it.
         const conversation = await conversations.homeOf(tx.read(), run);
         if (conversation)
           events.emit({
@@ -589,10 +555,24 @@ export function createAgents(deps: AgentsDeps): Agents {
     clock,
     agents,
     availability,
+    roster: async (conn, userId) =>
+      availableAgents(conn, await agents.listActive(conn), {
+        availability,
+        userId,
+        now: clock.now(),
+      }),
+    views: async (conn, userId, options) =>
+      agentViews(
+        conn,
+        (await listAgents(conn)).filter((agent) => agent.source === 'runner'),
+        { availability, userId, canEdit: options.canEdit, now: clock.now() },
+      ),
+    eligibility,
     app,
     cli,
     runners,
     runnerView: createRunnerView({ agents, subjects, tx }),
+    workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,
     signal,
@@ -606,6 +586,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runs,
     claims,
     reports,
+    gitCredentials,
     sweeper,
     variables,
     skills,
@@ -621,7 +602,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     mounts,
     repoAccess,
     people,
-    scopes: createScopeKinds(),
+    scopes,
     subjects,
     gate,
     actions,
@@ -629,14 +610,10 @@ export function createAgents(deps: AgentsDeps): Agents {
     prices: createPriceService({ tx, ids, clock }),
     conversations,
     chatAttachments: chatAttachments.service,
-    consultations,
     chat,
-    presets: createPresetRegistry(() => actions.keys()),
-    online: {
+    models: {
       services: modelServices,
       gateway,
-      executor,
-      skills: onlineSkills,
     },
     vectors,
   };

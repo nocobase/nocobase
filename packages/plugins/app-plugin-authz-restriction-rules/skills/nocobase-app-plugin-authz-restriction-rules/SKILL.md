@@ -14,7 +14,7 @@ For a restriction assigned to a department, or to the root department for the wh
 ## Development workflow
 
 1. State the invariant positively, for example "this team may access only non-confidential projects". Define who it applies to and whether it covers one operation or every path to a collection.
-2. Use a rule on a composite, with `scopeKey`, for an operation-specific limit. For a limit across every business branch, create a rule on the `database.collection` with its CRUD actions; the settings page offers declared business data scopes, and collection-wide invariants can be provisioned through the service.
+2. Use a rule on a composite, with `scopeKey`, for an operation-specific limit. For a limit across every business branch, create a rule on the `database.collection` with its CRUD actions; declared business data scopes and collection-wide invariants are both provisioned through the HTTP routes or the service.
 3. Register a suitable record access and save the complete rule. Apply the restriction directly to a user as well when it must remain after that person's team membership is removed.
 4. Bind policies on all protected reads and writes. For relation targets, declare relation record access explicitly; a standalone collection restriction is not inherited by nested relation writes.
 5. Verify the excluded row stays inaccessible after adding broad sharing and another permission set, across each protected operation, and that unrelated actors keep their intended access.
@@ -88,6 +88,6 @@ Build the rule with `defineRestrictionRule` in a portable seed-data module and p
 
 ## Administration and acceptance
 
-Use the existing settings page, `/settings/authorization/restriction-rules`, and its subject and record pickers for ordinary configuration; its HTTP routes are listed in the package README and each checks `settings:authorization.restriction-rules` with `read`, `create`, `update` or `delete`. Reading options never grants write access.
+The plugin contributes no page; an application that edits these rules builds its page on the HTTP routes, which are listed in the package README and each checks `settings:authorization.restriction-rules` with `read`, `create`, `update` or `delete`. Reading options never grants write access.
 
-Run the owning feature's route and policy tests for allowed and denied records, multiple grants and rule removal. Verify changes with a new request and inspect the same operation in Settings → Authorization → Inspector; a client snapshot does not prove that a row operation is allowed. Report the rules and subjects changed and the observed allow and deny outcomes.
+Run the owning feature's route and policy tests for allowed and denied records, multiple grants and rule removal. Verify changes with a new request and inspect the same operation with `POST /api/authorization/inspector/decide`; a client snapshot does not prove that a row operation is allowed. Report the rules and subjects changed and the observed allow and deny outcomes.

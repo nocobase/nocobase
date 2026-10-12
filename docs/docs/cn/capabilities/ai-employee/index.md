@@ -1,63 +1,34 @@
 ---
-title: 'AI 员工'
-description: '了解 NocoBase AI 员工的模型、员工、Skill、Tool、MCP、聊天组件和服务端运行时。'
-keywords: 'NocoBase,AI 员工,LLM,Agent,Skill,Tool,MCP'
+title: 'AI 员工概览'
 ---
 
-# AI 员工
+# AI 员工概览
 
-在 NocoBase 中，**AI 员工（AI Employee）** 是一类可以围绕具体职责持续工作的 Agent。一个 AI 员工由角色设定、LLM、Skill 和 Tool 共同组成：角色设定说明它是谁、怎样回答；LLM 负责理解和生成；Skill 提供完成任务的方法；Tool 让它读取业务数据或执行操作。
+AI 员工是应用中围绕具体职责工作的助手。它可以理解页面上下文、查询业务数据、按照工作规则调用允许的操作，并结合企业知识回答问题。你可以让开发 Agent 将这些能力接入应用，构建适合员工使用的对话与结果展示。
 
-AI 员工并不局限于一个聊天窗口。你可以把完整对话放在独立页面或业务区块里，也可以把入口放在应用右下角、记录操作区或表单旁边。页面还可以把当前记录、表单和局部操作作为上下文交给 AI 员工，让对话和正在处理的业务保持一致。
+## 提供哪些能力
 
-## 从哪里开始
+| 能力 | 可以解决什么问题 |
+| --- | --- |
+| [理解页面上下文](./page-context.md) | 围绕正在查看的订单、客户或表单回答问题，减少重复描述。 |
+| [查询业务数据](./business-data.md) | 用自然语言查找业务记录，将结果与应用页面连接。 |
+| [执行业务操作](./business-actions.md) | 根据业务需要接入可调用操作，并保留权限检查和执行记录。 |
+| [职责与工作规则](./work-rules.md) | 通过职责说明和工作方法，明确助手的任务、回答方式与操作范围。 |
+| [使用企业知识](../ai-knowledge-base/answers.md) | 从指定资料中查找依据，让回答附带可查阅的来源。 |
 
-| 我想要……                                       | 去哪里看                                    |
-| ---------------------------------------------- | ------------------------------------------- |
-| 配置一个模型，并在应用里打开第一次对话         | [快速开始](./quick-start.md)                |
-| 定义自己的员工、Tool 或 Skill                  | [定义 AI 员工](./development/index.md)      |
-| 在页面中加入聊天入口、任务、上下文或 Tool 卡片 | [使用 AI 组件](./components/index.md)       |
-| 查询 `config.yml` 中 AI 配置项的完整写法       | [配置参考](./configuration/index.md)        |
-| 在管理后台维护员工、模型和 MCP Tool 权限       | [管理 AI 服务](./management/index.md)       |
-| 从服务端直接创建和运行 Agent                   | [扩展服务端 AI 服务](./server-extension.md) |
+对话入口可以是独立页面、业务区块或页面侧栏。员工提出业务问题时，不必离开正在处理的页面。
 
-## 先分清三类扩展
+## 准备 AI 员工
 
-AI 员工相关内容分别属于应用源码、应用配置和管理后台。三者解决的问题不同。
-
-| 位置                                                         | 适合放什么                                                            | 何时生效                                 |
-| ------------------------------------------------------------ | --------------------------------------------------------------------- | ---------------------------------------- |
-| `server/ai/`、`ai/skills/`、`client/extensions/nocobase-ai/` | 员工定义、后端 Tool、Skill 和前端组件                                 | 修改 TypeScript 或静态资源后重启开发服务 |
-| `config.yml`                                                 | LLM 连接、MCP 连接、附件存储和额外 Skill 目录                         | 修改后重启服务生效                       |
-| 设置页的「AI」分组                                           | 员工启用状态、角色设定、可用模型、Skill、Tool、知识库和 MCP Tool 权限 | 保存后生效                               |
-
-应用运行时只有一个由 AI 员工插件注册的 `AIManager`。应用资源应接入这个实例，不要另外调用 `createAIManager()` 建一套平行运行时。普通前端对话使用插件提供的 `nocobase-ai` Registry 安装副本；安装后由其中的 Service 和 Transport 处理会话、文件上传、流式响应、Tool 审批和断线恢复。
-
-## 应用中的目录
-
-下面是和 AI 员工扩展直接相关的目录。
+应用需要接入 Agents 能力，并准备可用的模型服务。模型、职责和业务操作的接入可以由开发 Agent 完成；不必先搭建一套员工创建表单。
 
 ```text
-config.yml
-server/
-├── ai/
-│   ├── employees/          # 应用自己的 AI 员工
-│   ├── tools/              # 应用级后端 Tool
-│   └── index.ts            # 静态聚合并注册 Employee 和 Tool
-└── providers/              # 把应用 AI 资源接入运行时
-ai/
-└── skills/<name>/SKILL.md  # Skill 的工作说明，不包含 Tool 代码
-client/
-└── extensions/nocobase-ai/ # 应用拥有的 AI 前端 Registry 源码
+为 Northstar 运输应用接入一个「运输助理」，使用我已配置的可用模型服务。
+它负责解释订单、查询待调度记录，并根据运输规范提供建议。
+接入读取订单的业务操作，沿用当前用户的数据访问范围；先开放查询，不自动修改订单或发送通知。
+在订单列表和详情提供对话入口，员工能继续追问并打开回答中的订单。
 ```
 
-Employee 和 Tool 通过静态 import 注册，Skill 使用 `SkillsLoader` 从 `SKILL.md` 加载。MCP 连接只通过 `config.yml` 的 `ai.mcpServers` 配置。Skill 目录不定义 Tool，Skill 的 `tools` 只写已经在代码中注册的 Tool 名称。员工引用的 Skill 和 Tool 在运行时按名称查找，和注册的先后顺序无关，详见 [定义自己的 AI 员工](./development/index.md#每类资源在哪里注册)。
+模型服务可使用云端服务或可用的本地服务。接入时明确模型地址、可用模型和凭据的配置方式，业务操作在服务端检查权限。
 
-## 相关链接
-
-- [快速开始](./quick-start.md) — 配置 LLM 并创建全局对话入口
-- [定义 AI 员工](./development/index.md) — 注册 Employee、Tool 和 Skill
-- [使用 AI 组件](./components/index.md) — 将 AI 对话接入应用页面
-- [配置参考](./configuration/index.md) — 查看 `config.yml` 的 AI 配置项
-- [管理 AI 服务](./management/index.md) — 使用管理页调整运行状态
-- [扩展服务端 AI 服务](./server-extension.md) — 在服务端直接调用 Agent
+本章以 Northstar 的运输助理为例。先看[在业务页面使用 AI](./page-context.md)，再看[查询业务数据](./business-data.md)。

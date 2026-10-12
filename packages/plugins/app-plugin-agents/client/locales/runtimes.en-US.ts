@@ -1,6 +1,48 @@
 /** The runtimes page's and the "Add runtime" dialog's words, merged into this plugin's locale (`en-US.ts`). */
 const runtimesEnUS = {
   runtimes: {
+    workspaces: {
+      title: 'Workspace diagnostics',
+      low: 'Low disk space',
+      previousLow: 'Last report: low disk space',
+      notReported: 'No workspace report received yet',
+      diskUnknown: 'Disk space could not be measured',
+      thresholdOff: 'No minimum free space warning configured',
+      free: 'Free space: {{value}}',
+      threshold: 'Minimum free space: {{value}}',
+      reportedAt: 'Last reported: {{time}}',
+      stale:
+        'These are previous readings; current disk space is not confirmed.',
+      empty: 'No working directories in the latest report',
+      ended: 'Ended',
+      active: 'Work continues',
+      unknown: 'Cannot confirm whether work ended',
+      oldRunner: 'This runner has not provided diagnostic reasons',
+      noCleanup: 'Local cleanup result has not been received',
+      discardsUntracked: 'Cleanup will discard untracked files',
+      decision: {
+        settled: 'Work ended; local cleanup checks are required',
+        active: 'Work continues',
+        runNotFound: 'Cannot confirm: run not found',
+        ownershipUnknown:
+          'Cannot confirm: runner ownership could not be verified',
+        ambiguousSubject: 'Cannot confirm: ambiguous subject key',
+        bindingUnavailable:
+          'Cannot confirm: application has no workspace binding',
+        subjectUnknown:
+          'Cannot confirm: application could not resolve the subject',
+      },
+      cleanup: {
+        allowed: 'Ended; cleanup allowed',
+        inUse: 'Retained: directory is in use',
+        changed: 'Retained: directory has been reused',
+        trackedChanges: 'Retained: tracked files have uncommitted changes',
+        unpushed:
+          'Retained: unpushed commits or insufficient local commit objects',
+        missingEvidence: 'Retained: insufficient commit evidence',
+        gitFailed: 'Retained: Git check failed',
+      },
+    },
     title: 'Runtimes',
     description:
       'The runtimes that run agents, and the coding tools each one reported.',
@@ -51,6 +93,14 @@ const runtimesEnUS = {
       subjects: 'Subjects',
       repos: 'Repositories',
     },
+    variables: {
+      title: 'Variables from this machine',
+      description:
+        'The variables it provides to runs that take them from the runtime, by name; the values stay on the machine. Set one there with `nocobase-runner env set NAME`, or pass it with `--pass-env NAME`.',
+      none: 'None: a run that takes a variable from the runtime fails here before it starts.',
+      unknown:
+        'Not reported: its runner is older than this feature. Update the runner to see them.',
+    },
     jobs: {
       allow: 'Allow build jobs',
       hint: 'Builds and other steps this application configures, run without a model. This runtime reports: {{kinds}}.',
@@ -77,7 +127,7 @@ const runtimesEnUS = {
       runs: 'Recent runs',
       runsEmpty: 'No runs yet.',
       runsFailed: 'Could not load its runs.',
-      readOnly: 'Only its owner or a manager of runtimes can change it.',
+      readOnly: 'Only its owner can change it.',
       owner: 'Owner {{name}}',
     },
     status: {
@@ -160,10 +210,12 @@ const runtimesEnUS = {
   connect: {
     title: 'Add runtime',
     description:
-      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device.',
+      'Run the command below on a host that has a coding tool installed: a server, a VM or your own device. Agents run there with full access, as the user who runs the runner, and can read and change anything that user can, SSH keys and other credentials included. The runner is not a security boundary: run it as a dedicated user, in a container or in a VM.',
     createCredential: 'Generate install command',
     advanced: 'Advanced: limits per coding tool',
-    run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application (no Node.js needed), registers the runner and starts it at login:",
+    run: "Run this on that host. It downloads the runner (nocobase-runner) and this application's CLI from this application, registers the runner and starts it at login:",
+    nodeRequired:
+      'The host needs Node.js 24 or newer (check with node --version). The command stops and says how to install it when it is missing.',
     installed: 'Already have nocobase-runner installed? Register it instead:',
     unsupported:
       'The runner does not run on Windows yet. Use macOS or Linux, or WSL.',

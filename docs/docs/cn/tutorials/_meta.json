@@ -21,17 +21,12 @@
   },
   {
     "type": "file",
-    "name": "workflow",
-    "label": "4. 接一条审批流"
-  },
-  {
-    "type": "file",
     "name": "notifications",
-    "label": "5. 发通知"
+    "label": "4. 发通知"
   },
   {
     "type": "file",
     "name": "deploy",
-    "label": "6. 上线"
+    "label": "5. 上线"
   }
 ]

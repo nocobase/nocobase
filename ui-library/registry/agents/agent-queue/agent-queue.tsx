@@ -48,10 +48,10 @@ import {
   agentQueueTotals,
   elapsed,
   idleText,
-  isBlockingWait,
   laneState,
   waitingForNames,
-  waitText,
+  waitView,
+  type AgentQueueFormatWait,
   type AgentQueueItem,
   type AgentQueueLane,
 } from './model.js';
@@ -79,6 +79,11 @@ export interface AgentQueueProps {
   /** Something more on the summary strip's end, such as a spinner while it refreshes. */
   readonly extra?: ReactNode;
   readonly labels?: AgentQueueLabels;
+  /**
+   * Words why a queued run waits, from its reason code and `params`: such as the agents plugin's `formatRunWait` with
+   * the page's `t`. The item knows no reason; without this it shows the code.
+   */
+  readonly formatWait?: AgentQueueFormatWait;
   /** The language durations and times are written in. */
   readonly locale?: string;
   readonly className?: string;
@@ -290,17 +295,25 @@ function QueueList({
   labels,
   nav,
   locale,
+  formatWait,
 }: {
   readonly lane: AgentQueueLane;
   readonly labels: AgentQueueLabels;
   readonly nav: Nav;
   readonly locale: string | undefined;
+  readonly formatWait: AgentQueueFormatWait | undefined;
 }): ReactElement {
   return (
     <ol className='flex flex-col'>
       {lane.next.map((item, index) => {
-        const reason = waitText(labels, item, lane.agent, locale);
-        const blocking = isBlockingWait(item);
+        const view = waitView(labels, item, lane.agent, formatWait);
+        const blocking = view?.blocking === true;
+        const hover =
+          typeof view?.detail === 'string'
+            ? view.detail
+            : typeof view?.text === 'string'
+              ? view.text
+              : undefined;
         const last = index === lane.next.length - 1;
         return (
           <li key={item.issue.id} className='relative'>
@@ -323,10 +336,10 @@ function QueueList({
               <div className='flex min-w-0 flex-col gap-1'>
                 <IssueLine item={item} labels={labels} />
                 <div className='flex min-w-0 items-center gap-1.5'>
-                  {reason ? (
+                  {view ? (
                     <Badge
                       variant='secondary'
-                      title={reason}
+                      title={hover}
                       className={cn(
                         'h-auto max-w-full min-w-0 justify-start rounded-md bg-muted px-1.5 py-0 text-[11px] font-normal text-muted-foreground',
                         blocking &&
@@ -334,7 +347,7 @@ function QueueList({
                       )}
                     >
                       {blocking ? <CircleAlertIcon aria-hidden /> : null}
-                      <span className='truncate'>{reason}</span>
+                      <span className='truncate'>{view.text}</span>
                     </Badge>
                   ) : null}
                   {item.entry.run ? (
@@ -529,10 +542,12 @@ function Lane({
   locale,
   onStart,
   expandIdle,
+  formatWait,
   className,
 }: {
   readonly lane: AgentQueueLane;
   readonly labels: AgentQueueLabels;
+  readonly formatWait: AgentQueueFormatWait | undefined;
   readonly nav: Nav;
   readonly viewerId: string | null;
   readonly locale: string | undefined;
@@ -636,7 +651,13 @@ function Lane({
             >
               {labels.sections.next}
             </SectionTitle>
-            <QueueList lane={lane} labels={labels} nav={nav} locale={locale} />
+            <QueueList
+              lane={lane}
+              labels={labels}
+              nav={nav}
+              locale={locale}
+              formatWait={formatWait}
+            />
           </div>
         ) : null}
         {lane.waiting.length > 0 ? (
@@ -751,6 +772,7 @@ export function AgentQueue({
   expandIdle = false,
   extra,
   labels = defaultAgentQueueLabels,
+  formatWait,
   locale,
   className,
 }: AgentQueueProps): ReactElement {
@@ -899,6 +921,7 @@ export function AgentQueue({
                   locale={locale}
                   onStart={onStart}
                   expandIdle={expandIdle}
+                  formatWait={formatWait}
                   className={cn(
                     lane.agent.id !== current?.agent.id && 'max-md:hidden',
                   )}

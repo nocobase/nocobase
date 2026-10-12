@@ -168,14 +168,27 @@ export function git(args: string[], cwd?: string): string {
 export function makeRemote(root: string, name = 'origin-repo'): string {
   const bare = path.join(root, `${name}.git`);
   const seed = path.join(root, `${name}-seed`);
-  git(['init', '--quiet', '--bare', '--initial-branch=main', bare]);
   git(['init', '--quiet', '--initial-branch=main', seed]);
   writeFileSync(path.join(seed, 'README.md'), '# seed\n');
   git(['add', '.'], seed);
   git(['-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'seed'], seed);
+  // A clone rather than a push, so the fixture does not depend on the pre-push hooks of whoever runs the tests.
+  git(['clone', '--quiet', '--bare', seed, bare]);
   git(['remote', 'add', 'origin', bare], seed);
-  git(['push', '--quiet', 'origin', 'main'], seed);
   return `file://${bare}`;
+}
+
+/** Publishes the seed's `main` (`makeRemote`) to its remote, by fetching rather than pushing for the same reason. */
+export function publishSeed(root: string, name = 'origin-repo'): void {
+  git(
+    [
+      'fetch',
+      '--quiet',
+      path.join(root, `${name}-seed`),
+      '+refs/heads/main:refs/heads/main',
+    ],
+    path.join(root, `${name}.git`),
+  );
 }
 
 export async function registerRunner(

@@ -1,5 +1,37 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- e6dd56e: Generated applications now commit `.agents/rules/`, the application's own agent guidance, while the rest of `.agents/` stays ignored: `create-app` writes `/.agents/*` followed by `!/.agents/rules/` instead of `/.agents/`, and replaces a legacy `/.agents/` or `.agents/` line in a template's `.gitignore` rather than appending beside it, since git cannot re-include a path inside an excluded directory. The skills sync documentation now states that only `.agents/skills/` and its ownership file are generated state. An existing application that wants to commit `.agents/rules/` replaces `/.agents/` in its own `.gitignore` with those two lines.
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/cli-envelope@0.1.0-beta.1
+
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- a695d19: Use the public npm registry as the default source for NocoBase packages, templates, deployment commands, and generated application guidance.
+
 ## 0.1.0-beta.28
 
 ### Patch Changes

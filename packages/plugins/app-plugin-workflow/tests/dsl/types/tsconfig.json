@@ -1,9 +1,0 @@
-{
-  "extends": "@nocobase/dev-config/tsconfig/server.json",
-  "compilerOptions": { "noEmit": true },
-  "include": [
-    "**/*.ts",
-    "../fixtures/**/*.ts",
-    "../../fixtures/context-workflows/**/*.ts"
-  ]
-}

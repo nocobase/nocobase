@@ -19,6 +19,7 @@ const TABLES = [
   'agWorkspaceResets',
   'agSecrets',
   'agSecretAudits',
+  'agRunnerVariables',
   'agSkills',
   'agSkillVersions',
   'agSkillAttachments',
@@ -65,8 +66,17 @@ describe('database', () => {
     const agentFields =
       (await collections.get('agAgents'))?.fields.map((field) => field.name) ??
       [];
-    expect(agentFields).toContain('modelEntries');
-    expect(agentFields).not.toContain('tool');
+    expect(agentFields).toEqual(
+      expect.arrayContaining([
+        'modelEntries',
+        'source',
+        'status',
+        'tool',
+        'model',
+        'lastReportedAt',
+        'deletedAt',
+      ]),
+    );
     expect(agentFields).not.toContain('modelService');
     expect(agentFields).not.toContain('reasoningEffort');
     expect(

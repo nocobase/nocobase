@@ -24,12 +24,7 @@ import {
   stopApp,
   type ServiceOptions,
 } from '../lib/service.ts';
-import {
-  capitalize,
-  hostsApplications,
-  nodeRebuildAdvice,
-  subjectOf,
-} from '../lib/source.ts';
+import { nodeRebuildAdvice } from '../lib/source.ts';
 import {
   fixedMountPathOf,
   readState,
@@ -160,7 +155,6 @@ export async function rollback(
     // Read under the lock: a run that waited on it must see what the previous one wrote.
     const state = await readState(layout);
     checkPlatform();
-    const subject = subjectOf(state);
     const from = state.current;
     const interrupted = state.pending;
     const requested = flags.to ?? defaultRollbackTarget(state);
@@ -182,7 +176,7 @@ export async function rollback(
       return {
         status: 'success-noop',
         result: { directory: root, current: from, rolledBack: false },
-        summary: [`${capitalize(subject)} is already on ${from}.`],
+        summary: [`The application is already on ${from}.`],
       };
     }
     if (!record || !existsSync(releaseDir(layout, record.id))) {
@@ -240,10 +234,8 @@ export async function rollback(
     }
     await confirm(
       [
-        `Roll ${subject} at ${root} back from ${from} to ${target}.`,
-        hostsApplications(state)
-          ? `${capitalize(subject)} and every application it hosts stop while the release switches.`
-          : `${capitalize(subject)} stops while the release switches.`,
+        `Roll the application at ${root} back from ${from} to ${target}.`,
+        'The application stops while the release switches.',
         restoreFrom
           ? `The SQLite databases are restored from ${restoreFrom}: whatever was written since that upgrade is lost.`
           : 'The databases are left as they are; rolling back does not undo migrations.',
@@ -306,8 +298,8 @@ export async function rollback(
       throw new InstallerError(
         'ROLLBACK_FAILED',
         switched
-          ? `${target} did not come back${reason}. ${capitalize(subject)} is down.`
-          : `${restoreFrom && !restored ? 'Restoring the databases' : 'Switching to ' + target} failed${reason}; ${subject} is stopped and still on ${from}.`,
+          ? `${target} did not come back${reason}. The application is down.`
+          : `${restoreFrom && !restored ? 'Restoring the databases' : 'Switching to ' + target} failed${reason}; the application is stopped and still on ${from}.`,
         {
           exitCode: EXIT_ROLLBACK_FAILED,
           details: {
@@ -363,8 +355,8 @@ export async function rollback(
       },
       summary: [
         interrupted
-          ? `Recovered from the interrupted ${interrupted.action} (${interrupted.from} to ${interrupted.to}); ${subject} runs ${target}.`
-          : `Rolled ${subject} back from ${from} to ${target}.`,
+          ? `Recovered from the interrupted ${interrupted.action} (${interrupted.from} to ${interrupted.to}); the application runs ${target}.`
+          : `Rolled the application back from ${from} to ${target}.`,
         restored
           ? `  Databases restored from ${restoreFrom}`
           : '  Databases left as they were',

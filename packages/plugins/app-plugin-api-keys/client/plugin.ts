@@ -3,20 +3,12 @@ import {
   type AppClientPluginFactory,
 } from '@nocobase/app-client/plugins';
 
-import locales from './locales/index.js';
-import { createApiKeysRoutes } from './routes.js';
-
-export interface ApiKeysClientOptions {
-  /** Path relative to /settings, for example `/api-keys`. */
-  readonly path?: string;
-  readonly title?: string;
-}
-
-const apiKeys: AppClientPluginFactory<ApiKeysClientOptions> =
-  defineClientPlugin({
-    packageName: '@nocobase/app-plugin-api-keys',
-    locales,
-    routes: (options) => createApiKeysRoutes(options),
-  });
+/**
+ * Registers the plugin with the client application. It contributes no pages: an application that wants a page for
+ * managing keys builds it on `apiKeyClient` and declares it among its own routes.
+ */
+const apiKeys: AppClientPluginFactory = defineClientPlugin({
+  packageName: '@nocobase/app-plugin-api-keys',
+});
 
 export default apiKeys;

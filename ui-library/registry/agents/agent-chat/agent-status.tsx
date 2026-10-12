@@ -1,8 +1,8 @@
 /**
  * Whether a conversation's agent can answer, in words: a dot beside its name, the agent line above the conversation
  * (who it talks to, read-only: a conversation stays with its agent), and the notice above the composer when the agent
- * cannot answer (the message is kept; the conversation may switch to the system default) or while the conversation uses
- * the system default in its place (it may switch back).
+ * cannot answer (the message is kept; the conversation may switch to another agent) or while another agent answers
+ * in its place (it may switch back).
  */
 import {
   AgentAvatar,
@@ -22,7 +22,7 @@ import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
 import { useAgentPickerLabels, useChatTranslation } from './chat-i18n.js';
-import { ChatTag, ModeTag } from './chat-ui.js';
+import { ChatTag } from './chat-ui.js';
 
 /** A green or grey dot with its meaning for screen readers (`agent-picker`'s, in the chat's wording). */
 export function AvailabilityDot({
@@ -44,7 +44,7 @@ export function AvailabilityDot({
 
 /**
  * Who a conversation talks to, whether they can answer now, and its mode, read-only: the panel's header and the
- * full-page view show it under the title. "Temporary" marks the system default answering in place of the conversation's
+ * full-page view show it under the title. "Temporary" marks another agent answering in place of the conversation's
  * own agent.
  */
 export function AgentLine({
@@ -70,7 +70,6 @@ export function AgentLine({
       <AgentAvatar name={own} size='xs' />
       <span className='truncate font-medium text-foreground'>{name}</span>
       <AvailabilityDot availability={conversation.availability} />
-      <ModeTag mode={conversation.mode} />
       {conversation.fallbackFrom ? (
         <ChatTag tone='amber'>{t('chat.agents.temporary')}</ChatTag>
       ) : null}
@@ -86,8 +85,8 @@ export interface AgentNoticeProps {
 }
 
 /**
- * The notice about who answers: the agent is offline (the message waits; "use the system default"), or the
- * conversation uses the system default for now ("switch back"). Nothing while the agent answers normally.
+ * The notice about who answers: the agent is offline (the message waits; "use another agent"), or another agent
+ * answers for now ("switch back"). Nothing while the agent answers normally.
  */
 export function AgentNotice({
   conversation,

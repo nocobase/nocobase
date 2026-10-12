@@ -1,16 +1,15 @@
 # @nocobase/app-plugin-routes-example
 
-This full-stack Routes example is the normative reference for the five Route
-types contributed by an application plugin:
+This full-stack Routes example is the normative reference for the Route types
+contributed by an application plugin:
 
 - `server/routes/root.ts` contributes authenticated
   `GET /routes-example/root` with `defineRootRoutes()`;
 - `server/routes/api.ts` contributes authenticated
   `GET /api/routesExample`, answering `{ data }`, with `defineApiRoutes()`;
 - `client/routes.ts` contributes the authenticated `/routes-example` page with
-  `defineAppRoutes()` and `/settings/routes-example` with
-  `defineSettingsRoutes()`, plus the development-only `/dev/routes-example`
-  page with `defineDevRoutes()`;
+  `defineAppRoutes()`, the only Client route API: there is no separate settings
+  or dev surface;
 - `client/react-providers.ts` contributes a synchronous React Provider with
   `defineClientReactProviders`;
 - `client/components/` contains React Provider component implementations;
@@ -27,13 +26,13 @@ package.
 The Client plugin declaration statically contributes `routes` and
 `reactProviders`; route page components remain lazy through `componentLoader()`.
 
-All three Client route APIs accept `navigation` for menu entries and `children`
+`defineAppRoutes()` accepts `navigation` for menu entries and `children`
 for nested pages or navigation groups. Omit `navigation` for a page without a
 menu entry, as the App page in this example does. Pages with children must place
 `<Outlet />` at the intended content location; pure navigation groups have no
 `componentLoader`. Refine resources serve CRUD configuration, not menus.
 
-Each entry page declares `authz`; nothing is inferred from the route name. Nested pages inherit it, and an entry page that omits it registers with a development warning and a default of `'unrestricted'` (root only) on protected App and settings pages or `'skip'` on guest, optional and dev pages. The App page checks a page grant, the Settings page names the check it requires, and the development page declares `'skip'`, which checks nothing beyond sign-in and parent routes:
+Each entry page declares `authz`; nothing is inferred from the route name. Nested pages inherit it, and an entry page that omits it registers with a development warning and a default of `'unrestricted'` (root only) on protected pages or `'skip'` on guest and optional pages. The App page checks a page grant:
 
 ```ts
 defineAppRoutes([
@@ -45,22 +44,13 @@ defineAppRoutes([
     componentLoader: () => import('./pages/routes-example-page.js'),
   },
 ]);
-defineDevRoutes([
-  {
-    name: 'routes-example',
-    path: '/routes-example',
-    navigation: { title: 'title' },
-    authz: 'skip',
-    componentLoader: () => import('./pages/routes-example-dev-page.js'),
-  },
-]);
 ```
 
 The Root Route and API Route each resolve the public Authentication Token and
 install `auth.required()` on their own router. Neither depends on App
 middleware, the other Route, or Server contribution order. The App Route guard
-and Settings access independently protect browser navigation; Client checks do
-not replace Server authentication or authorization.
+protects browser navigation; Client checks do not replace Server authentication
+or authorization.
 
 Every `/api` route declares itself for the application's API document, which a signed-in user reads at `/api/swagger/docs`. The API Route does it with `describeRoute()` from `@nocobase/app-server/router`, placed after the authentication middleware and before the handler; its response schema lives in `server/routes/schemas.ts` and carries `.meta({ ref })` so the document names it:
 

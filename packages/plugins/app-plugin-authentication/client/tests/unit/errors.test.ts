@@ -13,6 +13,8 @@ function fetchError(status: number, statusText: string, body: unknown) {
   });
 }
 
+const undefinedOrigin = '';
+
 const chinese = (key: string, defaultValue: string) =>
   (zhCN.errors as Record<string, string>)[key] ?? defaultValue;
 
@@ -25,26 +27,65 @@ describe('resolveAuthenticationActionError', () => {
     ['INVALID_EMAIL_OR_PASSWORD', 401, '邮箱或密码不正确。'],
     ['INVALID_USERNAME_OR_PASSWORD', 401, '用户名或密码不正确。'],
     ['ACCOUNT_DISABLED', 403, '该账号已停用，请联系管理员。'],
+    [
+      'INVALID_ORIGIN',
+      403,
+      '当前访问地址未受信任。请检查 config.yml 中的 app.publicOrigin，重启应用后重试。',
+    ],
     ['USERNAME_IS_ALREADY_TAKEN', 422, '这个用户名已被占用。'],
   ])('localizes the server code %s', (code, status, message) => {
     const error = fetchError(status, 'Unauthorized', {
       code,
       message: 'English from the server',
     });
-    expect(resolveAuthenticationActionError(error, chinese)).toEqual({
+    expect(
+      resolveAuthenticationActionError(error, chinese, undefinedOrigin),
+    ).toEqual({
       code,
       message,
     });
-    expect(resolveAuthenticationActionError(error)?.message).toBe(
-      (enUS.errors as Record<string, string>)[code],
-    );
+    expect(
+      resolveAuthenticationActionError(error, undefined, undefinedOrigin)
+        ?.message,
+    ).toBe((enUS.errors as Record<string, string>)[code]);
+  });
+
+  it.each(['http://192.168.50.82:13000', 'https://app.example.com'])(
+    'includes the browser origin %s in both languages',
+    (origin) => {
+      const error = { code: 'INVALID_ORIGIN', status: 403 };
+      for (const translate of [undefined, chinese]) {
+        const result = resolveAuthenticationActionError(
+          error,
+          translate,
+          origin,
+        );
+        expect(result?.message).toContain(origin);
+        expect(result?.message).toContain('app.publicOrigin');
+        expect(result?.message).toContain('config.yml');
+        expect(result?.message).not.toContain('{{origin}}');
+      }
+    },
+  );
+
+  it('uses the browser origin for both returned and thrown errors', () => {
+    for (const error of [
+      { code: 'INVALID_ORIGIN', status: 403 },
+      fetchError(403, 'Forbidden', { code: 'INVALID_ORIGIN' }),
+    ]) {
+      expect(resolveAuthenticationActionError(error)?.message).toContain(
+        window.location.origin,
+      );
+    }
   });
 
   it('reports a rate limit, which carries no code', () => {
     const error = fetchError(429, 'Too Many Requests', {
       message: 'Too many requests. Please try again later.',
     });
-    expect(resolveAuthenticationActionError(error, chinese)).toEqual({
+    expect(
+      resolveAuthenticationActionError(error, chinese, undefinedOrigin),
+    ).toEqual({
       code: 'RATE_LIMITED',
       message: '尝试次数过多，请稍后再试。',
     });

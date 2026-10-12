@@ -1,17 +1,10 @@
 import { readdir } from 'node:fs/promises';
 import { createServer } from 'node:net';
-import {
-  EXIT_INVALID,
-  InstallerError,
-  type CommandLine,
-  type Suggestion,
-} from './errors.ts';
+import { EXIT_INVALID, InstallerError, type CommandLine } from './errors.ts';
 import type { Pm2 } from './pm2.ts';
-import { runCommand, type RunCommand } from './run-command.ts';
 import { compareVersions } from './version.ts';
 
 export const MINIMUM_NODE_MAJOR = 24;
-export const MINIMUM_PNPM_MAJOR = 11;
 /**
  * pm2 recognises `ecosystem.config.cjs` as a configuration from 4.3 on; an older one runs the file as the application
  * instead, which exits at once and looks like an application that cannot start.
@@ -40,46 +33,6 @@ export function checkPlatform(
       },
     );
   }
-}
-
-export async function checkPnpm(run: RunCommand = runCommand): Promise<string> {
-  let version: string;
-  try {
-    version = (await run('pnpm', ['--version'])).stdout.trim();
-  } catch {
-    throw new InstallerError('PNPM_MISSING', 'pnpm was not found on PATH.', {
-      exitCode: EXIT_INVALID,
-      suggestions: installPnpmAdvice(),
-    });
-  }
-  if (!(majorOf(version) >= MINIMUM_PNPM_MAJOR)) {
-    throw new InstallerError(
-      'PNPM_UNSUPPORTED',
-      `pnpm ${MINIMUM_PNPM_MAJOR} or later is required; found ${version}.`,
-      {
-        exitCode: EXIT_INVALID,
-        suggestions: installPnpmAdvice(),
-      },
-    );
-  }
-  return version;
-}
-
-/** Two steps, since a suggestion runs one command: corepack is enabled, then pnpm is activated through it. */
-function installPnpmAdvice(): Suggestion[] {
-  return [
-    {
-      message: `Enable corepack, which provides pnpm ${MINIMUM_PNPM_MAJOR}:`,
-      run: { command: 'corepack', args: ['enable'] },
-    },
-    {
-      message: `Then activate pnpm ${MINIMUM_PNPM_MAJOR}, and open a new shell:`,
-      run: {
-        command: 'corepack',
-        args: ['prepare', `pnpm@${MINIMUM_PNPM_MAJOR}`, '--activate'],
-      },
-    },
-  ];
 }
 
 /** The C library Node runs on, which a Linux build's native modules are compiled against. */

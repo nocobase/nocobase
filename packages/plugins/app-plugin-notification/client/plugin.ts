@@ -4,7 +4,6 @@ import {
 } from '@nocobase/app-client/plugins';
 
 import locales from './locales/index.js';
-import routes from './routes.js';
 import serviceProviders from './service-provider.js';
 
 export interface NotificationClientOptions {
@@ -16,7 +15,6 @@ const notification: AppClientPluginFactory<NotificationClientOptions> =
     packageName: '@nocobase/app-plugin-notification',
     serviceProviders,
     locales,
-    routes,
   });
 
 export default notification;

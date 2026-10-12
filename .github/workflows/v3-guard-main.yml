@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - v3-main
+    paths-ignore:
+      - 'docs/**'
 
 permissions:
   contents: read

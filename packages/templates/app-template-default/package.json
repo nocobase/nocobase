@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-default",
   "displayName": "Default Template",
-  "version": "1.0.0-beta.56",
+  "version": "1.0.0-beta.67",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.56"
+    "defaultTemplateVersion": "1.0.0-beta.67"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -18,7 +18,6 @@
     "@dicebear/core": "^9.4.3",
     "@gchust/agent-annotations": "0.1.9",
     "@hookform/resolvers": "^5.0.1",
-    "@nocobase/ai-employee-avatars": "^1.0.2",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
     "@nocobase/app-skills": "workspace:*",
@@ -26,7 +25,6 @@
     "@nocobase/app-websocket": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",
-    "@nocobase/hub-cli": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",
@@ -96,7 +94,6 @@
     "cli",
     "client",
     "server",
-    "workflows",
     "database/tsconfig.json",
     "database/*/migrations/**",
     "database/*/seeds/**",
@@ -117,6 +114,7 @@
     "config.example.yml",
     "README.MD",
     "AGENTS.md",
+    ".agents/rules",
     "CLAUDE.md",
     "playwright.config.ts"
   ],
@@ -125,7 +123,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/templates/app-template-default"
   },
   "scripts": {
@@ -159,19 +157,18 @@
   },
   "dependencies": {
     "zod": "catalog:",
-    "@nocobase/app-plugin-ai-employee": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-plugin-database-explorer": "workspace:^",
     "@nocobase/app-plugin-file": "workspace:^",
     "@nocobase/app-plugin-i18n": "workspace:^",
+    "@nocobase/app-plugin-mail": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
     "@nocobase/app-plugin-notification-providers": "workspace:^",
     "@nocobase/app-plugin-scheduler": "workspace:^",
     "@nocobase/app-plugin-users": "workspace:^",
-    "@nocobase/app-plugin-workflow": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/db": "workspace:^",
@@ -187,9 +184,9 @@
     "@nocobase/authorization": "workspace:^",
     "@nocobase/queue": "workspace:^",
     "@nocobase/jobs": "workspace:^",
+    "@nocobase/lifecycle": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
-    "@nocobase/ai-employee": "workspace:^",
     "@nocobase/repository-input": "workspace:^",
     "@nocobase/app-cli": "workspace:^"
   },

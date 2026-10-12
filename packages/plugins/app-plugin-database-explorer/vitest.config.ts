@@ -1,3 +1,3 @@
-import { createReactVitestConfig } from '@nocobase/dev-config/vitest/react';
+import { createNodeVitestConfig } from '@nocobase/dev-config/vitest/node';
 
-export default createReactVitestConfig();
+export default createNodeVitestConfig();

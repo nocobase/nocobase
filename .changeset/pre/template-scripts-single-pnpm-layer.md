@@ -1,7 +1,6 @@
 ---
 "@nocobase/app-template-default": patch
 "@nocobase/app-template-examples": patch
-"@nocobase/app-template-hub": patch
 ---
 
 Run the CLI-backed package scripts through `tsx ./cli/index.ts` directly instead of through `pnpm nocobase`.

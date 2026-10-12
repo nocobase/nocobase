@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["tests/just-bash-types.test.ts"]
+  "include": ["tests/shared-compatibility.test.ts"]
 }

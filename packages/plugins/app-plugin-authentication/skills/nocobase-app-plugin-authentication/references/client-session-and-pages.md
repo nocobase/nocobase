@@ -166,11 +166,7 @@ If `server/config/auth.ts` still uses a plain `defineAppConfig`, the server refu
 
 ### Password reset
 
-The forms are present, but sending the email is the application's job:
-configure `emailAndPassword.sendResetPassword` on the server as described in
-[user lifecycle and deployment](user-lifecycle-and-deployment.md). Until it is
-configured, the forgot-password page succeeds silently and sends nothing, so
-do not link to it from a production login page.
+The forms are present, but sending the email is the application's job: configure `emailAndPassword.sendResetPassword` on the server as described in [user lifecycle and deployment](user-lifecycle-and-deployment.md). The public `GET /api/authentication/capabilities` endpoint reports whether password reset is available; use `usePasswordResetCapability()` to show the forgot-password link only when the server returns `true`, and keep direct page access closed while it is false or unknown.
 
 ## Testing components
 

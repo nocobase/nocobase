@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-mail",
   "displayName": "Mail App Plugin",
   "description": "Provides mail sending and resumable mailbox synchronization architecture.",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.13",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -84,7 +84,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && nocobase-db-manifests",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/fixtures/composer-callback-types/tsconfig.json",
     "test": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
@@ -92,8 +92,7 @@
     "format:check": "prettier . --check",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
-    "test:postgres": "NOCOBASE_TEST_DB_DIALECT=postgres vitest run tests/server/message-queries.test.ts",
-    "test:e2e": "playwright test --config tests/playwright/playwright.config.ts"
+    "test:postgres": "NOCOBASE_TEST_DB_DIALECT=postgres vitest run tests/server/message-queries.test.ts"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",
@@ -109,7 +108,6 @@
     "lucide-react": "catalog:",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router": "catalog:",
     "date-fns": "^4.4.0",
     "react-day-picker": "^10.0.1",
     "cn": "catalog:"
@@ -136,17 +134,19 @@
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-router": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "@nocobase/app-testing": "workspace:*",
+    "@nocobase/config": "workspace:*",
     "@playwright/test": "catalog:"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/app-plugin-mail"
   }
 }

@@ -1,12 +1,10 @@
 ---
 '@nocobase/app-plugin-scheduler': minor
-'@nocobase/app-plugin-workflow': minor
 '@nocobase/app-plugin-cli-example': minor
 '@nocobase/create-plugin': minor
 '@nocobase/app-skills': minor
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-authz-default-access': patch

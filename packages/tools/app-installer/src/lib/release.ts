@@ -1,33 +1,17 @@
 import { existsSync } from 'node:fs';
-import {
-  mkdir,
-  readFile,
-  rename,
-  rm,
-  rmdir,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdir, readFile, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { extract } from 'tar';
 import { EXIT_INVALID, InstallerError, isInstallerError } from './errors.ts';
 import {
   RELEASE_APP_DIR,
-  buildRoot,
   releaseDir,
   releaseId,
   stagingDir,
   type Layout,
-  type TemplateDefinition,
 } from './layout.ts';
-import type { Reporter } from './output.ts';
 import { currentNodeMajor, rebuildCommandLine } from './prechecks.ts';
-import { normalizeRegistry } from './registry.ts';
-import {
-  CommandFailedError,
-  runCommand,
-  tail,
-  type RunCommand,
-} from './run-command.ts';
+import { CommandFailedError, tail } from './run-command.ts';
 import type { BuildTarget } from './state.ts';
 
 /** Every official database dialect; each has its driver in `@nocobase/db-<dialect>`. */
@@ -43,88 +27,6 @@ export const DIALECTS = [
 ] as const;
 
 export type Dialect = (typeof DIALECTS)[number];
-
-/** SQLite ships with every template; any other dialect's driver has to be added before the build. */
-export function driversFor(dialect: Dialect): string[] {
-  return dialect === 'sqlite' ? [] : [`@nocobase/db-${dialect}`];
-}
-
-/**
- * The environment every install step runs with. pnpm 11 holds back versions younger than a day by default, which would
- * make a template released today uninstallable until tomorrow; the NocoBase documentation clears it the same way.
- */
-export function installEnv(
-  base: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
-  return { ...base, PNPM_CONFIG_MINIMUM_RELEASE_AGE: '0' };
-}
-
-/** What the installer reads from create-app's `--json` result. */
-export interface CreateResult {
-  /** Whether a result was printed and says the project was created. */
-  ok: boolean;
-  /** The stage a failure stopped at, such as `install`. */
-  stage?: string;
-  message?: string;
-}
-
-interface CreateJson {
-  ok?: boolean;
-  status?: string;
-  stage?: string;
-  message?: string;
-  error?: { message?: string; details?: { stage?: unknown } };
-}
-
-/**
- * `pnpm create` prints pnpm's own notices around create-app's result; the result is the last line that parses. It is
- * the application CLI's envelope, with the stage under `error.details`. `pnpm create` runs whichever create-app the
- * registry serves as latest, so the flat `status`, `stage` and `message` a create-app before that envelope printed are
- * read too.
- */
-export function parseCreateResult(stdout: string): CreateResult {
-  for (const line of stdout.trim().split('\n').reverse()) {
-    if (!line.startsWith('{')) continue;
-    let parsed: CreateJson;
-    try {
-      parsed = JSON.parse(line) as CreateJson;
-    } catch {
-      continue;
-    }
-    const stage = parsed.error?.details?.stage;
-    return {
-      ok: parsed.ok ?? parsed.status === 'success',
-      stage: typeof stage === 'string' ? stage : parsed.stage,
-      message: parsed.error?.message ?? parsed.message,
-    };
-  }
-  return { ok: false };
-}
-
-/**
- * The range the installed runtime accepts for a driver, read from `@nocobase/app-server`'s peer dependencies the same
- * way `nocobase config init` suggests it. A bare `pnpm add` would take the newest driver, which during a prerelease can
- * be one the runtime was never built against.
- */
-export async function driverSpecifier(
-  projectDir: string,
-  driver: string,
-): Promise<string> {
-  try {
-    const manifest = JSON.parse(
-      await readFile(
-        path.join(projectDir, 'node_modules/@nocobase/app-server/package.json'),
-        'utf8',
-      ),
-    ) as { peerDependencies?: Record<string, string> };
-    const range = manifest.peerDependencies?.[driver]?.trim();
-    return range && !range.startsWith('workspace:')
-      ? `${driver}@${range}`
-      : driver;
-  } catch {
-    return driver;
-  }
-}
 
 export function verifyBuildTarget(
   target: BuildTarget | undefined,
@@ -159,7 +61,6 @@ export interface ReleaseManifest {
     /** Written by earlier builds instead: the one mount path their client was compiled for. */
     basePath?: string;
     builtAt?: string;
-    templateKind?: string;
   };
 }
 
@@ -183,8 +84,6 @@ export interface PreparedRelease {
   /** The one mount path an earlier, non-relocatable build was compiled for; absent from a relocatable one. */
   basePath?: string;
   buildTarget: BuildTarget;
-  /** `nocobase.templateKind` from the manifest: `hub` for a Hub, `app` for an application; absent from older builds. */
-  templateKind?: string;
   /** The release was already on disk under this id, so nothing was unpacked. */
   reused: boolean;
 }
@@ -192,12 +91,6 @@ export interface PreparedRelease {
 export interface UnpackOptions {
   layout: Layout;
   archive: string;
-  /**
-   * What to assume when the manifest predates `nocobase.builtAt` and `nocobase.basePath`. Only a template build passes
-   * this, since the installer knows its template's base path and has just built it; an archive from elsewhere that
-   * lacks them is refused before this is called.
-   */
-  fallback?: { builtAt: string; basePath: string };
 }
 
 function stepFailure(
@@ -229,7 +122,6 @@ export async function unpackRelease(
 ): Promise<PreparedRelease> {
   const staging = stagingDir(options.layout);
   const stagedApp = path.join(staging, RELEASE_APP_DIR);
-  const fromArchive = options.fallback === undefined;
   await rm(staging, { recursive: true, force: true });
   try {
     await mkdir(stagedApp, { recursive: true });
@@ -263,7 +155,7 @@ export async function unpackRelease(
     try {
       buildTarget = verifyBuildTarget(manifest.nocobase?.buildTarget);
     } catch (error) {
-      if (!fromArchive || !isInstallerError(error)) throw error;
+      if (!isInstallerError(error)) throw error;
       throw new InstallerError(error.code, error.message, {
         exitCode: EXIT_INVALID,
         suggestions: [
@@ -276,11 +168,9 @@ export async function unpackRelease(
       });
     }
     const version = manifest.version ?? '0.0.0';
-    const builtAt = manifest.nocobase?.builtAt ?? options.fallback?.builtAt;
+    const builtAt = manifest.nocobase?.builtAt;
     const relocatable = manifest.nocobase?.relocatable === true;
-    const basePath = relocatable
-      ? undefined
-      : (manifest.nocobase?.basePath ?? options.fallback?.basePath);
+    const basePath = relocatable ? undefined : manifest.nocobase?.basePath;
     if (!builtAt || (!relocatable && !basePath) || !manifest.name) {
       throw new InstallerError(
         'ARCHIVE_TOO_OLD',
@@ -313,141 +203,10 @@ export async function unpackRelease(
       relocatable,
       ...(basePath === undefined ? {} : { basePath }),
       buildTarget,
-      templateKind: manifest.nocobase?.templateKind,
       reused,
     };
   } finally {
     await rm(staging, { recursive: true, force: true });
-  }
-}
-
-export interface BuildFromTemplateOptions {
-  layout: Layout;
-  template: TemplateDefinition;
-  version: string;
-  registry: string;
-  drivers: readonly string[];
-  keepSource: boolean;
-  reporter: Reporter;
-  run?: RunCommand;
-}
-
-/**
- * Builds one release from a published template: the project is generated and built in `.build/<version>/`, and only
- * the deployment archive it produces is unpacked into `releases/<id>/app`. The build directory, with the sources and
- * development dependencies, is removed afterwards unless `keepSource` is set. Nothing here touches the running
- * application; on failure every directory this call created is removed again, so a retry starts clean.
- */
-export async function buildFromTemplate(
-  options: BuildFromTemplateOptions,
-): Promise<PreparedRelease> {
-  const { layout, template, version, reporter } = options;
-  const run = options.run ?? runCommand;
-  const build = buildRoot(layout, version);
-  const projectDir = path.join(build, template.projectName);
-  const env = installEnv();
-  const startedAt = new Date().toISOString();
-
-  try {
-    await rm(build, { recursive: true, force: true });
-    await mkdir(build, { recursive: true });
-    // `pnpm create` looks up @nocobase/create-app with the configuration of the directory it runs in, not with
-    // --registry, so the registry has to be named here too while NocoBase packages live outside the public npm.
-    await writeFile(
-      path.join(build, '.npmrc'),
-      `@nocobase:registry=${normalizeRegistry(options.registry)}/\n`,
-    );
-
-    reporter.progress(`Generating the ${template.title} ${version} project`);
-    let createStdout: string;
-    try {
-      ({ stdout: createStdout } = await run(
-        'pnpm',
-        [
-          'create',
-          '@nocobase/app',
-          template.projectName,
-          `--template=${template.package}@${version}`,
-          `--registry=${normalizeRegistry(options.registry)}`,
-          '--json',
-        ],
-        { cwd: build, env, timeoutMs: 20 * 60_000 },
-      ));
-    } catch (error) {
-      if (isInstallerError(error)) throw error;
-      const result: CreateResult =
-        error instanceof CommandFailedError
-          ? parseCreateResult(error.stdout)
-          : { ok: false };
-      throw new InstallerError(
-        'CREATE_FAILED',
-        `create-app failed${result.stage ? ` at its ${result.stage} stage` : ''}: ${result.message ?? (error instanceof Error ? error.message : String(error))}`,
-        {
-          cause: error,
-          ...(error instanceof CommandFailedError
-            ? { details: { output: tail(error.stderr) } }
-            : {}),
-        },
-      );
-    }
-    const created = parseCreateResult(createStdout);
-    if (!created.ok) {
-      throw new InstallerError(
-        'CREATE_FAILED',
-        `create-app did not succeed: ${created.message ?? 'no result'}`,
-      );
-    }
-
-    for (const driver of options.drivers) {
-      const specifier = await driverSpecifier(projectDir, driver);
-      reporter.progress(`Adding ${specifier}`);
-      try {
-        await run('pnpm', ['add', specifier], {
-          cwd: projectDir,
-          env,
-          timeoutMs: 10 * 60_000,
-        });
-      } catch (error) {
-        throw stepFailure(
-          'DRIVER_INSTALL_FAILED',
-          `pnpm add ${specifier}`,
-          error,
-        );
-      }
-    }
-
-    reporter.progress(`Building the ${template.title} ${version}`);
-    try {
-      // A template version from before relocatable builds compiles the base path into its client, so an APP_BASE_PATH
-      // left in the caller's shell must not leak in. A current version ignores it.
-      await run('pnpm', ['build', '--tar'], {
-        cwd: projectDir,
-        env: { ...env, APP_BASE_PATH: template.basePath },
-        timeoutMs: 30 * 60_000,
-      });
-    } catch (error) {
-      throw stepFailure('BUILD_FAILED', 'pnpm build', error);
-    }
-
-    const prepared = await unpackRelease({
-      layout,
-      archive: path.join(projectDir, 'storage/exports/dist.tar.gz'),
-      // Published templates built before `pnpm build` recorded these have neither; the installer knows both.
-      fallback: { builtAt: startedAt, basePath: template.basePath },
-    });
-
-    if (!options.keepSource) {
-      await rm(build, { recursive: true, force: true });
-      // Only removes `.build/` once it is empty; another version's kept build stays.
-      await rmdir(layout.buildDir).catch(() => undefined);
-    }
-    return prepared;
-  } catch (error) {
-    if (!options.keepSource) {
-      await rm(build, { recursive: true, force: true });
-      await rmdir(layout.buildDir).catch(() => undefined);
-    }
-    throw error;
   }
 }
 

@@ -1,5 +1,105 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.21
+
+### Patch Changes
+
+- e6dd56e: Generated applications now commit `.agents/rules/`, the application's own agent guidance, while the rest of `.agents/` stays ignored: `create-app` writes `/.agents/*` followed by `!/.agents/rules/` instead of `/.agents/`, and replaces a legacy `/.agents/` or `.agents/` line in a template's `.gitignore` rather than appending beside it, since git cannot re-include a path inside an excluded directory. The skills sync documentation now states that only `.agents/skills/` and its ownership file are generated state. An existing application that wants to commit `.agents/rules/` replaces `/.agents/` in its own `.gitignore` with those two lines.
+
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- d54dd59: Keep development restart input open when a background or Agent-run process receives stdin EOF, so configuration and dependency changes can still restart the server. Preserve the supervisor worker input across background starts and dotenv restarts.
+
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/cli-envelope@0.1.0-beta.1
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/dev-config@0.1.0-beta.22
+  - @nocobase/logging@0.1.0-beta.7
+  - @nocobase/secrets@0.1.0-beta.1
+
+## 1.0.0-beta.18
+
+### Minor Changes
+
+- 459c33f: `nocobase cli build --universal` packs the application's CLI, or with `--runner` the runner, into one platform-independent tarball, `<product>-v<version>-universal.tar.gz`, that carries no Node.js and runs on the machine's own Node.js 24 or newer; without `--targets` it is the only tarball packed. Its launcher runs on `NOCOBASE_NODE`, the installation's `<prefix>/node`, `node` on PATH, or the Node a previous standalone version of the installation still carries, so a runner's user service, whose PATH usually has no `node`, keeps starting.
+
+  The agents plugin serves that tarball to every platform without a tarball of its own (one built for the platform still wins) and marks the answer with `universal: true` (`universal=true` with `format=env`); answers for platform tarballs are unchanged. For a universal tarball the install script checks that `node` is Node.js 24 or newer before downloading, stops with how to install it otherwise, and links `<prefix>/node` to it; with `--runner` it prints a `corepack enable` hint when `pnpm` is missing. The "Add runtime" dialog says the host needs Node.js 24 or newer.
+
+  An update of an installed CLI or runner to a version without a bundled Node (`applyUpdate` of `@nocobase/app-cli-client/install`) first leaves the Node it runs on in `<prefix>/node` (`pinNode`), copied when it is a Node an older version bundles, so a runner that updates itself from a standalone version keeps a Node after the old versions are removed.
+
+### Patch Changes
+
+- 17a183c: Respect the configured public origin during local development instead of overriding it with a loopback address. Explain rejected sign-in origins with actionable English and Chinese messages, and document verification of the browser-facing address and authentication request.
+- 13620d9: The runner and an application's CLI can now be installed and updated from npm when the application serves no tarball of them and names the exact npm version instead (`agents.dist.npm`). The install script asks with `accept=npm`; for an npm answer it checks for Node.js 24 or newer and `npm` (or `NOCOBASE_NPM`), runs `npm install --prefix <prefix>/versions/<version> --no-save --no-audit --no-fund --omit=optional <package>@<version>` and writes a launcher at `versions/<version>/bin/<command>`, so `current`, the linked command and the runner's user service work as they do for a tarball, and links `<prefix>/node` to the Node.js it checked. The runner declares the `npm` feature and installs a heartbeat's `npmUpgrade` the same way between runs; `nocobase-runner update` and `<cli> update` follow either answer, and an installation moves between tarball and npm versions in both directions (`installNpmVersion`, `npmLauncherScript` and `UpdateTarget` in `@nocobase/app-cli-client/install`). An application that answers no npm form is handled exactly as before.
+
+  `@nocobase/agent-runner` and `@nocobase/app-cli-client` now depend on exactly the `@nocobase/agent-protocol` they were built with, and `@nocobase/studio-cli` and `@nocobase/agent-runner` on exactly their `@nocobase/app-cli-client`, so a version installed from npm behaves as it was built.
+
+  `nocobase skills sync` no longer reads Skills from a packaged application CLI (a dependency declaring `nocobase.cli`, such as `@nocobase/studio-cli`): its `skills/` is for that command's users. NocoBase Studio declares `@nocobase/studio-cli`, so its build pins `nb-studio` to the version it was built with, and its CLI documentation and home-page agent prompt say that `nb-studio` needs Node.js 24 or newer with npm. The application development Skill documents `nocobase cli build --universal`.
+
+## 1.0.0-beta.17
+
+### Patch Changes
+
+- c796cb9: Remove the AI employee packages from the repository
+
+  `@nocobase/app-plugin-ai-employee`, `@nocobase/ai-employee` and `@nocobase/app-plugin-ai-employee-example` were already deprecated and no template installed them; they are now deleted and will not be released again. The Default and Examples templates drop `@nocobase/ai-employee-avatars`, which only the plugin's avatars used.
+
+  Generated plugins' `AGENTS.md` and the copies shipped with existing plugins no longer list `@nocobase/ai-employee` among the identity-sensitive packages. The HTTP API references in the application development Skill use other plugins for their examples, and the upgrade Skill tells an application that still depends on the removed packages to review their usage before removing them, because the runtime will move past what their peer ranges accept.
+
+  `pnpm build` no longer copies `ai/skills` into `dist/ai/skills`. The AI employee plugin was the only reader of that directory; an application that keeps Skills there for another purpose has to copy them itself, for example from a build hook.
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+- 98e79a5: Remove the Workflow plugin from the repository
+
+  `@nocobase/app-plugin-workflow` was already disabled in every template; it is now deleted and will not be released again. Record lifecycles built with `@nocobase/lifecycle` take its place for business processes, and the Workflow pages of the documentation now describe them.
+
+  Breaking for the Default and Examples templates: they no longer depend on `@nocobase/app-plugin-workflow` and drop `server/config/workflow.ts`, the `workflows` directory in `files`, and the TypeScript and ESLint settings for workflow packages. The Examples template also drops its flow examples: its `workflows` directory, the quotation review task API under `/api/quotationReviewTasks`, the waiting-task pages under `/workflow/waiting-tasks`, and the two schedules that ran the analytics report and the scheduled test flow. A new migration, `202610100001_drop_review_tasks_and_daily_reports`, drops the `quotationReviewTasks` and `exampleDailyReports` tables nothing uses any more. Workflow rows an existing database already holds stay where they are, since no remaining plugin owns them. An application that still uses the plugin keeps its dependency on the last published version, whose peer ranges will stop accepting the runtime as it moves on.
+
+  The scheduler no longer describes a `workflow` target or ships labels for it; every schedule points at a target the application or a plugin registers with `registerTarget()`, and an unlabelled target type or reason is shown as it is. The application development, deployment and upgrade Skills no longer route approvals to the plugin, describe its wait node, its Artifacts after a production build or its pages, and their examples use other plugins. The command help of `@nocobase/app-cli`, the i18n Skill, and the plugin scaffold's guidance use other plugins as examples too.
+
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [98e79a5]
+  - @nocobase/dev-config@0.1.0-beta.21
+  - @nocobase/app-server@2.0.0-beta.3
+  - @nocobase/db@1.0.0-beta.18
+
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 9235602: Let a Codex run write the `.agents` directory of each of its working trees. Codex's `workspaceWrite` sandbox keeps `.agents` read-only inside every writable root as its own skills root, so an application's `pnpm install` failed with `SKILLS_SYNC_FAILED` when its `skills sync` wrote `.agents/skills`. The runner now creates `.agents` in every working directory and every checked-out submodule before Codex starts, and opens each as a writable root; `~/.agents` and anything outside the run's working directories stay closed.
+
+  Open `.agents` only when its real path is exactly the canonical working tree's `.agents` directory. Links to other paths, including protected siblings or the working tree root, dangling links and non-directory paths are left intact and skipped without stopping the run. Use checked-out submodules' complete paths, including spaces and recursively nested submodules.
+
+  `nocobase skills sync` no longer rewrites a skill whose synchronized copy already matches its source byte for byte, nor a `.claude/skills` link that already points at it, nor an unchanged `.agents/.skills-sync.json`. A sync with nothing new writes nothing.
+
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- a6758ec: Point published package repository metadata to nocobase/nocobase while preserving each package's monorepo directory.
+- Updated dependencies [487921c]
+- Updated dependencies [a6758ec]
+  - @nocobase/app-server@2.0.0-beta.2
+  - @nocobase/dev-config@0.1.0-beta.20
+  - @nocobase/db@1.0.0-beta.18
+
 ## 1.0.0-beta.14
 
 ### Minor Changes

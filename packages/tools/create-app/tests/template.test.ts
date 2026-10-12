@@ -7,10 +7,8 @@ import {
   DEFAULT_TEMPLATE,
   DEFAULT_TEMPLATE_TAG,
   downloadTemplate,
-  HUB_TEMPLATE_PACKAGE,
   isLocalTemplateSource,
   isTemplateAlias,
-  resolveTemplateKind,
   resolveTemplateSource,
   TEMPLATE_ALIASES,
   TEMPLATE_TAGS,
@@ -52,36 +50,21 @@ describe('DEFAULT_TEMPLATE', () => {
 });
 
 describe('TEMPLATE_ALIASES', () => {
-  it('resolves examples through the app flow and selected release channel', () => {
+  it('resolves examples at the selected release channel', () => {
     expect(TEMPLATE_ALIASES.examples).toEqual({
-      kind: 'app',
       packageName: '@nocobase/app-template-examples',
     });
-    expect(resolveTemplateKind('examples')).toBe('app');
     expect(resolveTemplateSource('examples')).toBe(
       '@nocobase/app-template-examples@latest',
     );
     expect(resolveTemplateSource('examples', { tag: 'beta' })).toBe(
       '@nocobase/app-template-examples@beta',
     );
-    expect(
-      resolveTemplateKind('./local-examples', {
-        nocobase: { templateKind: 'app' },
-      }),
-    ).toBe('app');
   });
 
   it('maps the default name to the app template', () => {
     expect(TEMPLATE_ALIASES.default).toEqual({
-      kind: 'app',
       packageName: '@nocobase/app-template-default',
-    });
-  });
-
-  it('maps the hub name to the hub template', () => {
-    expect(TEMPLATE_ALIASES.hub).toEqual({
-      kind: 'hub',
-      packageName: '@nocobase/app-template-hub',
     });
   });
 
@@ -90,64 +73,6 @@ describe('TEMPLATE_ALIASES', () => {
     for (const { packageName } of Object.values(TEMPLATE_ALIASES)) {
       expect(packageName).not.toMatch(/@(?:latest|beta|\d)/u);
     }
-  });
-});
-
-describe('resolveTemplateKind', () => {
-  /** A name settles the kind outright, before anything is downloaded, so the flow knows which prompts to ask. */
-  it('reads the kind from a known name without a manifest', () => {
-    expect(resolveTemplateKind('default')).toBe('app');
-    expect(resolveTemplateKind('hub')).toBe('hub');
-    expect(resolveTemplateKind('  hub  ')).toBe('hub');
-  });
-
-  it('prefers the name over a manifest that disagrees', () => {
-    expect(
-      resolveTemplateKind('hub', { name: '@nocobase/app-template-default' }),
-    ).toBe('hub');
-  });
-
-  it('reads a declared kind from the manifest', () => {
-    expect(
-      resolveTemplateKind('./local', { nocobase: { templateKind: 'hub' } }),
-    ).toBe('hub');
-    expect(
-      resolveTemplateKind('./local', { nocobase: { templateKind: 'app' } }),
-    ).toBe('app');
-  });
-
-  /**
-   * A checkout predating `nocobase.templateKind` still has to scaffold correctly, which is what makes
-   * `--template ./packages/templates/app-template-hub` work against one.
-   */
-  it('falls back to the package name when no kind is declared', () => {
-    expect(
-      resolveTemplateKind('./packages/templates/app-template-hub', {
-        name: HUB_TEMPLATE_PACKAGE,
-      }),
-    ).toBe('hub');
-    expect(resolveTemplateKind('@nocobase/app-template-hub@0.0.1')).toBe('app');
-    expect(
-      resolveTemplateKind('@nocobase/app-template-hub@0.0.1', {
-        name: HUB_TEMPLATE_PACKAGE,
-      }),
-    ).toBe('hub');
-  });
-
-  /** Every template was an app before this distinction existed, so that is what an unrecognized one stays. */
-  it('treats an unrecognized template as an app', () => {
-    expect(resolveTemplateKind('some-other-template')).toBe('app');
-    expect(resolveTemplateKind('./local', { name: 'my-template' })).toBe('app');
-    expect(
-      resolveTemplateKind('./local', {
-        nocobase: { templateKind: 'nonsense' },
-      }),
-    ).toBe('app');
-  });
-
-  /** Inherited Object properties must not read as templates here either. */
-  it('is not fooled by inherited properties', () => {
-    expect(resolveTemplateKind('constructor')).toBe('app');
   });
 });
 
@@ -168,8 +93,8 @@ describe('resolveTemplateSource', () => {
     expect(resolveTemplateSource('default')).toBe(
       '@nocobase/app-template-default@latest',
     );
-    expect(resolveTemplateSource('hub')).toBe(
-      '@nocobase/app-template-hub@latest',
+    expect(resolveTemplateSource('examples')).toBe(
+      '@nocobase/app-template-examples@latest',
     );
   });
 
@@ -223,7 +148,8 @@ describe('resolveTemplateSource', () => {
 describe('isTemplateAlias', () => {
   it('recognizes only the names in the table', () => {
     expect(isTemplateAlias('default')).toBe(true);
-    expect(isTemplateAlias('hub')).toBe(true);
+    expect(isTemplateAlias('examples')).toBe(true);
+    expect(isTemplateAlias('hub')).toBe(false);
     expect(isTemplateAlias('@nocobase/app-template-default')).toBe(false);
     expect(isTemplateAlias('./local')).toBe(false);
   });

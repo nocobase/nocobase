@@ -19,11 +19,15 @@
  * - The run ends when the session's execution settles and no steered input
  *   is still waiting.
  */
-import { execFile } from 'node:child_process';
 import { existsSync, constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
+import type { ToolCapabilities } from '@nocobase/agent-protocol';
+import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import { withDetectionEnvironment } from './detection.ts';
 
+import { detectExec } from './detect-exec.ts';
 import { OpencodeClient, OpencodeHttpError } from './opencode/client.ts';
 import type {
   FetchFn,
@@ -116,8 +120,10 @@ export interface ExecResult {
 export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
 
 export interface OpencodeAdapterOptions {
-  /** PATH searched for `opencode`; defaults to the runner's PATH. */
+  /** PATH searched for `opencode`; defaults to the PATH of `env`. */
   searchPath?: string;
+  /** What detection runs with (`detectionEnv`); the runner's own environment when absent. */
+  env?: Record<string, string>;
   /** Extra places to look when it is not on PATH (the installer's default). */
   fallbackPaths?: string[];
   /** Runs a command for detection; replaceable in tests. */
@@ -131,23 +137,6 @@ export interface OpencodeAdapterOptions {
 // ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
-
-const defaultExec: ExecFn = (file, args) =>
-  new Promise((resolve) => {
-    execFile(
-      file,
-      args,
-      { timeout: 15_000, maxBuffer: 1024 * 1024 },
-      (error, stdout) => {
-        const code = error
-          ? typeof error.code === 'number'
-            ? error.code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout ?? '') });
-      },
-    );
-  });
 
 function parseVersion(text: string): string | undefined {
   return /(\d+\.\d+\.\d+)/.exec(text)?.[1];
@@ -201,15 +190,20 @@ export class OpencodeAdapter implements AgentAdapter {
   private readonly exec: ExecFn;
   private readonly launch: LaunchFn;
   private readonly fetchFn?: FetchFn;
-  private readonly searchPath?: string;
+  private readonly searchPath: string;
+  private readonly home?: string;
   private readonly fallbackPaths?: string[];
+  private readonly detectionEnv?: Record<string, string>;
   private detection?: Promise<ToolDetection>;
 
   constructor(options: OpencodeAdapterOptions = {}) {
-    this.exec = options.exec ?? defaultExec;
+    const env = options.env ?? process.env;
+    this.detectionEnv = options.env;
+    this.exec = options.exec ?? detectExec(options.env);
     this.launch = options.launch ?? launchServer;
     this.fetchFn = options.fetch;
-    this.searchPath = options.searchPath;
+    this.searchPath = options.searchPath ?? env.PATH ?? '';
+    this.home = env.HOME;
     this.fallbackPaths = options.fallbackPaths;
   }
 
@@ -222,9 +216,60 @@ export class OpencodeAdapter implements AgentAdapter {
     return this.detection;
   }
 
+  async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
+    const detection = await this.detect();
+    if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
+    const binary = detection.path;
+    return withDetectionEnvironment(
+      signal,
+      async (cwd, env) => {
+        const server = await this.launch({
+          binary,
+          cwd,
+          env,
+          signal,
+          startTimeoutMs: 15_000,
+        });
+        try {
+          const client = new OpencodeClient({
+            baseUrl: server.baseUrl,
+            username: server.username,
+            password: server.password,
+            fetch: this.fetchFn,
+          });
+          const models = await client.listModels(signal);
+          if (
+            models.some(
+              (model) =>
+                typeof model?.providerID !== 'string' ||
+                typeof (model.modelID ?? model.id) !== 'string',
+            )
+          )
+            return {
+              modelsDetectionStatus: 'failed',
+              modelsDetectionError: 'Invalid model listing response',
+            };
+          return {
+            modelsDetectionStatus: 'detected',
+            models: boundedModels(
+              models.map((model) => ({
+                id: `${model.providerID}/${model.modelID ?? model.id}`,
+                ...(model.variants === undefined
+                  ? {}
+                  : { efforts: model.variants.map((variant) => variant.id) }),
+              })),
+            ),
+          };
+        } finally {
+          await server.close(1000);
+        }
+      },
+      this.detectionEnv,
+    );
+  }
+
   private async runDetection(): Promise<ToolDetection> {
-    const searchPath = this.searchPath ?? process.env.PATH ?? '';
-    const home = process.env.HOME;
+    const { searchPath, home } = this;
     const fallbacks =
       this.fallbackPaths ??
       (home ? [path.join(home, '.opencode', 'bin', 'opencode')] : []);
@@ -440,9 +485,26 @@ class OpencodeRun {
     void this.consume(stream);
 
     const model = await this.resolveModel(client);
-    let sessionId: string;
+    let sessionId: string | undefined;
+    let recovered = false;
     if (session.resumeSessionId) {
-      sessionId = (await client.getSession(session.resumeSessionId)).id;
+      try {
+        sessionId = (await client.getSession(session.resumeSessionId)).id;
+      } catch (error) {
+        if (
+          !(error instanceof OpencodeHttpError) ||
+          error.status !== 404 ||
+          // A 404 without the session error, such as an unknown route, is not a missing conversation.
+          !/SessionNotFound|session not found/i.test(error.body) ||
+          this.stopping
+        )
+          throw error;
+        recovered = true;
+        this.emit(recoveryEvent('opencode'));
+      }
+    }
+    if (this.stopping) return { kind: 'stopped' };
+    if (sessionId) {
       await client.updateSession(sessionId, {
         permissions: [...ASK_EVERYTHING],
       });
@@ -460,7 +522,7 @@ class OpencodeRun {
     this.sessionId = sessionId;
     this.sessions.add(sessionId);
 
-    let prompt = session.prompt;
+    let prompt = recovered ? recoveryPrompt(session.prompt) : session.prompt;
     if (session.systemPrompt) {
       try {
         await client.putInstruction(
@@ -469,7 +531,7 @@ class OpencodeRun {
           session.systemPrompt,
         );
       } catch {
-        prompt = `<instructions>\n${session.systemPrompt}\n</instructions>\n\n${session.prompt}`;
+        prompt = `<instructions>\n${session.systemPrompt}\n</instructions>\n\n${prompt}`;
       }
     }
     this.emit({
@@ -479,7 +541,8 @@ class OpencodeRun {
         sessionId,
         ...(model ? { model: `${model.providerID}/${model.id}` } : {}),
         ...(detection.version ? { opencodeVersion: detection.version } : {}),
-        ...(session.resumeSessionId ? { resumed: true } : {}),
+        ...(session.resumeSessionId ? { resumed: !recovered } : {}),
+        ...(recovered ? { sessionRecovery: true } : {}),
       },
     });
     if (this.stopping) return { kind: 'stopped' };

@@ -102,7 +102,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
         start: async () => ({ state: 'completed', outcome: 'succeeded' }),
         inspect,
       });
-      const reference = { type: 'workflow-run', id: 'run-1' };
+      const reference = { type: 'pipeline-run', id: 'run-1' };
       await occurrences.start(
         { scheduleId: 'schedule-1', occurrenceId: 'long-run' },
         'hash',
@@ -296,9 +296,9 @@ describe('@nocobase/app-plugin-scheduler', () => {
       occurrences,
       new ScheduleTargetRegistry(),
     );
-    const workflow = scheduler.registerTarget({
-      type: 'workflow',
-      title: 'Workflow',
+    const pipeline = scheduler.registerTarget({
+      type: 'pipeline',
+      title: 'Pipeline',
       validate: () => ({ valid: true }),
       start: async () => ({ state: 'accepted', reference }),
     });
@@ -308,11 +308,11 @@ describe('@nocobase/app-plugin-scheduler', () => {
       validate: () => ({ valid: true }),
       start: async () => ({ state: 'completed', outcome: 'succeeded' }),
     });
-    const reference = { type: 'workflow-run', id: '7' };
+    const reference = { type: 'pipeline-run', id: '7' };
     await occurrences.start(
       { scheduleId: 'schedule-1', occurrenceId: 'occurrence-scoped' },
       'hash',
-      'workflow',
+      'pipeline',
     );
     await occurrences.wait('occurrence-scoped', reference);
 
@@ -326,7 +326,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
       code: 'REFERENCE_MISMATCH',
     });
     await expect(
-      workflow.reportCompletion('occurrence-scoped', reference, {
+      pipeline.reportCompletion('occurrence-scoped', reference, {
         status: 'succeeded',
       }),
     ).resolves.toBeUndefined();
@@ -350,7 +350,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
       'hash',
       'test',
     );
-    const reference = { type: 'workflow-run', id: '42' };
+    const reference = { type: 'pipeline-run', id: '42' };
     await store.wait('occurrence-report', reference, { eventKey: 'event-42' });
     await store.complete('occurrence-report', reference, {
       status: 'succeeded',
@@ -362,7 +362,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
     await expect(
       store.complete(
         'occurrence-report',
-        { type: 'workflow-run', id: 'different' },
+        { type: 'pipeline-run', id: 'different' },
         { status: 'succeeded' },
       ),
     ).rejects.toMatchObject<Partial<ScheduleOccurrenceError>>({
@@ -382,7 +382,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
         .executeTakeFirst(),
     ).resolves.toMatchObject({
       status: 'succeeded',
-      targetReferenceType: 'workflow-run',
+      targetReferenceType: 'pipeline-run',
       targetReferenceId: '42',
       resultSummary: JSON.stringify({ count: 2 }),
     });
@@ -396,14 +396,14 @@ describe('@nocobase/app-plugin-scheduler', () => {
         occurrenceId: 'occurrence-race',
       },
       'hash',
-      'workflow',
+      'pipeline',
     );
 
-    // The workflow terminal observer can win this race with dispatch.wait().
+    // The pipeline's terminal observer can win this race with dispatch.wait().
     await expect(
       store.complete(
         'occurrence-race',
-        { type: 'workflow-run', id: '137' },
+        { type: 'pipeline-run', id: '137' },
         {
           status: 'succeeded',
         },
@@ -411,12 +411,12 @@ describe('@nocobase/app-plugin-scheduler', () => {
     ).resolves.toBeUndefined();
 
     await store.wait('occurrence-race', {
-      type: 'workflow-run',
+      type: 'pipeline-run',
       id: '137',
     });
     await store.complete(
       'occurrence-race',
-      { type: 'workflow-run', id: '137' },
+      { type: 'pipeline-run', id: '137' },
       {
         status: 'succeeded',
       },

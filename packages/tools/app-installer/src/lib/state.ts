@@ -12,12 +12,9 @@ export interface BuildTarget {
   nodeMajor: number;
 }
 
-/**
- * Where an installation's releases come from, fixed at install time: a published template built on the server, or a
- * deployment archive built elsewhere. An upgrade takes the same kind of source the install did.
- */
+/** The published application package or deployment archives used for this installation. */
 export type ReleaseSource =
-  { kind: 'template'; template: string; package: string } | { kind: 'archive' };
+  { kind: 'archive' } | { kind: 'app'; package: string };
 
 export interface ReleaseRecord {
   /** `<version>_<build time>`, also the directory under `releases/`. */
@@ -56,8 +53,6 @@ export interface HistoryEntry {
   /** Backup directory, relative to the root, taken before the upgrade migrated anything. */
   backup?: string;
   databaseRestored?: boolean;
-  /** An upgrade that built the running version again, for this machine, rather than moving to another version. */
-  rebuild?: boolean;
 }
 
 /**
@@ -79,8 +74,6 @@ export interface PendingOperation {
   switched?: boolean;
   /** Rollback: the backup it restores, so an interrupted rollback restores it again when it is finished. */
   restoreFrom?: string;
-  /** Upgrade: `to` is the running version built again for this machine. */
-  rebuild?: boolean;
 }
 
 /** `installer.json`: what the installer knows about the application it manages. */
@@ -93,16 +86,12 @@ export interface InstallerState {
    * uses now; a release that is not relocatable only runs while the two agree.
    */
   basePath: string;
-  /** `nocobase.templateKind` of the installed application: `hub` hosts applications of its own, `app` does not. */
-  templateKind: string;
   source: ReleaseSource;
   /** pm2 process name. */
   name: string;
-  /** Where the installer, and a template, are fetched from. */
+  /** Where the installer is fetched from. */
   registry: string;
   dialect: string;
-  /** Template source: driver packages added before each build, so an upgrade adds them again. */
-  drivers: string[];
   /** Id of the running release. */
   current: string;
   releases: ReleaseRecord[];
@@ -153,6 +142,29 @@ export async function readState(layout: Layout): Promise<InstallerState> {
       },
     );
   }
+  // `{ kind: 'template' }` was the published Hub template built on the server, which this installer no longer offers.
+  if (
+    state.source?.kind !== 'archive' &&
+    !(
+      state.source?.kind === 'app' &&
+      typeof state.source.package === 'string' &&
+      state.source.package === state.appName
+    )
+  ) {
+    throw new InstallerError(
+      'STATE_UNSUPPORTED',
+      `${layout.root} was installed from a published template, which this app-installer no longer builds; use the installer version that created it.`,
+      {
+        exitCode: EXIT_INVALID,
+        suggestions: [
+          {
+            message:
+              'Keep managing it with the app-installer version that installed it, or install the application again from a deployment archive built by `pnpm build --tar`.',
+          },
+        ],
+      },
+    );
+  }
   return state;
 }
 
@@ -176,7 +188,7 @@ export function findRelease(
 /**
  * The release a `--to` names: an id exactly, or a version, meaning the newest build of it on record other than the
  * running one. A version is what a person remembers; the id is what `status` prints when two builds of one version are
- * on disk. Rolling back "to 1.0.0" while a rebuild of 1.0.0 runs means the earlier build, not the one already running.
+ * on disk. Rolling back "to 1.0.0" while a later build of 1.0.0 runs means the earlier build, not the one already running.
  */
 export function resolveReleaseRef(
   state: InstallerState,

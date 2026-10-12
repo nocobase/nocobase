@@ -6,6 +6,14 @@
  * Variables are set on an agent, on a working directory (`workdir`), or on a scope the application registers (the
  * group a run's subject belongs to, say), and a run gets them merged: the subject's scopes < its working directories <
  * the agent, a later scope replacing an earlier one's value.
+ *
+ * A run's variables go to whichever runner takes it, including a personal runner of whoever may use the agent: sharing
+ * an agent shares the tokens it works with. A variable marked `teamRunnersOnly` keeps a run that gets it off personal
+ * runners: only a team runner takes such a run.
+ *
+ * A variable taken from the runner (`fromRunner`) is a name only: the runner that takes the run provides its value from
+ * its own configuration, and the value never reaches the application. It merges with the others by name, a later
+ * scope's entry replacing an earlier one's whichever kind each is.
  */
 
 /** The scopes this plugin knows; the application registers the others (`GET agents/vocabulary` lists them). */
@@ -16,9 +24,24 @@ export type VariableScope = string;
 
 export interface Variable {
   readonly name: string;
+  /** Only team runners receive it: a run that gets it waits for one (`secretsNotAllowed`); absent means false. */
+  readonly teamRunnersOnly?: boolean;
+  /**
+   * Taken from the runner: the variable has no value here, and the runner that takes the run provides it from its own
+   * configuration (`nocobase-runner env set NAME`, or `--pass-env NAME`); a runner that does not fails the run before
+   * the agent starts. Absent means false.
+   */
+  readonly fromRunner?: boolean;
   readonly updatedAt: string;
   readonly updatedById: string | null;
   readonly updatedByName: string | null;
+}
+
+/** A variable named by where it is kept, such as one that asks for a team runner. */
+export interface VariableRef {
+  readonly scope: VariableScope;
+  readonly scopeId: string;
+  readonly name: string;
 }
 
 export interface VariableValue {
@@ -65,7 +88,7 @@ export function cliEnvPrefix(cli: string): string {
 export function isReservedVariable(name: string, cli?: string): boolean {
   return (
     ['PATH', 'HOME', 'TMPDIR', 'SHELL', 'USER'].includes(name) ||
-    /^(AGENT_RUN_|GIT_)/u.test(name) ||
+    /^(NOCOBASE_RUNNER_|AGENT_RUN_|GIT_)/u.test(name) ||
     (cli !== undefined && name.startsWith(cliEnvPrefix(cli)))
   );
 }

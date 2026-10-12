@@ -33,10 +33,5 @@
     "type": "file",
     "name": "inspector",
     "label": "检查权限结果"
-  },
-  {
-    "type": "file",
-    "name": "develop-with-ai",
-    "label": "向 AI 描述业务权限"
   }
 ]

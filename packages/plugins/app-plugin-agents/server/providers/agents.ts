@@ -1,10 +1,9 @@
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
- * conversations, and this instance's server executor, which runs online agents' runs (stopped again at shutdown,
- * handing back what it holds). The runners' side (their announcements, the sweeper and the wake-ups of work sent back
- * with a back-off) is `runners.ts`.
+ * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
+ * work sent back with a back-off) is `runners.ts`.
  */
-import { HEADERS, type RunApp } from '@nocobase/agent-protocol';
+import type { RunApp } from '@nocobase/agent-protocol';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
@@ -31,11 +30,9 @@ import { directoryDisk } from '../core/skills/index.js';
 import { createAgentsSecretsStores } from '../secrets-stores.js';
 import type { VectorsConfig } from '../vectors/index.js';
 import type { DistConfig } from '../distribution/index.js';
-import { resolveAgentCli, type AgentCli } from '../core/runs/index.js';
+import type { AgentCli } from '../core/runs/index.js';
 import { runCredentialResolver } from '../cli/run-credential.js';
-import { bindCliSurface, type CliSurface } from '../cli/surface.js';
-import type { CallerIdentity } from '../core/callers/index.js';
-import type { CommandSurface } from '../online/index.js';
+import { bindCliSurface } from '../cli/surface.js';
 import { agentsSecurityFragment } from '../routes/openapi.js';
 import { agentsToken } from '../tokens.js';
 
@@ -59,19 +56,6 @@ export interface AgentsConfig {
    */
   readonly dist?: DistConfig;
   /**
-   * Online agents' runs, which each instance runs itself: `enabled` (true by default; false leaves them to the other
-   * instances), `maxSteps`, the model calls a run may make (16 by default), and `consult`, the bounds of one agent
-   * consulting another (`ask_agent`): `timeoutMs` (120000) and `tokenBudget`, input and output tokens (200000).
-   */
-  readonly server?: {
-    readonly enabled?: boolean;
-    readonly maxSteps?: number;
-    readonly consult?: {
-      readonly timeoutMs?: number;
-      readonly tokenBudget?: number;
-    };
-  };
-  /**
    * The vector store of vector collections, apart from the application's database: `store` (`sqlite-vec` by default,
    * in `path`, `storage/vectors.sqlite` by default; `pgvector` with its own `url` or `host`, `port`, `database`,
    * `user`, `password` and `ssl`; `false` turns vectors off). See `VectorsConfig`.
@@ -90,9 +74,7 @@ const PURGE_INTERVAL_MS = 60 * 60_000;
 export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = ACCESS_NAMESPACE;
   private readonly releases: (() => void)[] = [];
-  private stopping: Promise<void> | undefined;
   private stoppingVectors: Promise<void> | undefined;
-  private surface: CliSurface | undefined;
 
   public override register(): void {
     this.app.container.singleton(agentsToken, (resolver) => {
@@ -112,24 +94,11 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           : {}),
         ...(config?.cli ? { cli: config.cli } : {}),
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
-        ...(config?.server?.maxSteps || config?.server?.consult
-          ? {
-              server: {
-                ...(config.server.maxSteps
-                  ? { maxSteps: config.server.maxSteps }
-                  : {}),
-                ...(config.server.consult
-                  ? { consult: config.server.consult }
-                  : {}),
-              },
-            }
-          : {}),
         ...(config?.vectors ? { vectors: config.vectors } : {}),
         paths: {
           root: this.app.paths.root(),
           storage: this.app.paths.storage(),
         },
-        commandsOf: (identity, token) => this.commandsOf(identity, token),
         // The contents of skills' files: on the Drive disk `agents.skills.disk` names (Drive's default), else under the
         // application's storage. Asked on each use, so a configuration reload applies.
         skillDisk: resolver.has(driveManagerToken)
@@ -171,57 +140,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     return { id, name: id };
   }
 
-  /**
-   * An online run's commands from the application's command manifest, sent through the application itself with the
-   * run's token; undefined without one (no API documentation or command line), which leaves its shell without a CLI.
-   */
-  private commandsOf(
-    identity: CallerIdentity,
-    token: string,
-  ): Promise<CommandSurface> | undefined {
-    const { container } = this.app;
-    const surface = this.surface;
-    if (!surface || !container.has(cliToken) || !container.has(apiDocsToken))
-      return undefined;
-    const cli = container.resolve(cliToken);
-    const base = this.app.publicBasePath.replace(/\/+$/u, '');
-    const agentsConfig = this.app.config.get<AgentsConfig>('agents');
-    const bin = resolveAgentCli(
-      agentsConfig?.cli,
-      this.runApp(agentsConfig),
-    ).name;
-    return (async () => {
-      const manifest = cli.manifestFor(
-        await container.resolve(apiDocsToken).getDocument(),
-        await surface.callerOf(identity),
-      );
-      return {
-        bin,
-        commands: manifest.commands,
-        send: async (request) => {
-          const path =
-            base && request.path.startsWith(`${base}/`)
-              ? request.path.slice(base.length)
-              : request.path;
-          return this.app.router.fetch(
-            new Request(`http://application${path}`, {
-              method: request.method,
-              headers: {
-                [HEADERS.runToken]: token,
-                accept: 'application/json',
-                // A form sets its own multipart content type.
-                ...(typeof request.body === 'string'
-                  ? { 'content-type': 'application/json' }
-                  : {}),
-              },
-              ...(request.body === undefined ? {} : { body: request.body }),
-            }),
-          );
-        },
-      };
-    })();
-  }
-
   /** Where the plugin keeps sealed values, for `nocobase secrets status` and `secrets rotate`. */
   private registerSecretsStores(): void {
     const { container } = this.app;
@@ -249,14 +167,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.releases.push(() => {
       this.stoppingVectors = services.vectors.stop();
     });
-    if (
-      this.app.config.get<AgentsConfig>('agents')?.server?.enabled !== false
-    ) {
-      services.online.executor.start();
-      this.releases.push(() => {
-        this.stopping = services.online.executor.stop();
-      });
-    }
     return Promise.resolve();
   }
 
@@ -299,18 +209,12 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       ),
       gate: services.gate,
     });
-    this.surface = surface;
-    this.releases.push(() => {
-      surface.release();
-      if (this.surface === surface) this.surface = undefined;
-    });
+    this.releases.push(() => surface.release());
   }
 
   public override async shutdown(): Promise<void> {
     for (const release of this.releases.splice(0)) release();
-    await this.stopping;
     await this.stoppingVectors;
-    this.stopping = undefined;
     this.stoppingVectors = undefined;
   }
 
@@ -372,6 +276,13 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
               kind: 'run.status',
               runId: event.runId,
               status: event.status,
+            });
+            return;
+          case 'run.retried':
+            publish(runTopic(event.retryOfRunId), {
+              kind: 'run.status',
+              runId: event.retryOfRunId,
+              status: event.previousStatus,
             });
             return;
           case 'run.events':

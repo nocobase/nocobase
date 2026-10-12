@@ -204,8 +204,8 @@ function Toolbar({
       api.usage({ from: params.from, to: params.to, groupBy: 'group' }),
   });
   const agents = useQuery({
-    queryKey: [...agentsKeys.agents, 'archived'],
-    queryFn: () => api.agents(true),
+    queryKey: agentsKeys.agentNames,
+    queryFn: () => api.agentNames(),
   });
   const people = useQuery({
     queryKey: agentsKeys.users,

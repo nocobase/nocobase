@@ -34,7 +34,7 @@ vi.mock('@nocobase/app-plugin-i18n/client', async (importOriginal) => ({
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useClientApplication: () => ({ runtime: { settingsRouteTree: [] } }),
+  useClientApplication: () => ({ runtime: {} }),
 }));
 vi.mock('../../client/routing/route-navigation.js', async (original) => ({
   ...(await original<
@@ -58,10 +58,6 @@ beforeEach(() =>
 afterEach(() => vi.unstubAllGlobals());
 vi.mock('../../client/layouts/components/header-actions.js', () => ({
   HeaderActions: () => null,
-}));
-// The global AI entry loads AI employees from the server; these tests are about the shell around it.
-vi.mock('../../client/components/ai-employee-entry.js', () => ({
-  AIEmployeeEntry: ({ children }: { readonly children: ReactNode }) => children,
 }));
 
 const detail: AppClientRegisteredRoute = {

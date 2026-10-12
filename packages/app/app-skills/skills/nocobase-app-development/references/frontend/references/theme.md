@@ -340,15 +340,15 @@ The steps below add a preset with the id `forest`.
 
    `ThemePresetId` is derived from the array, so the new id is accepted wherever a preset id is typed. `defaultThemePreset` does not decide the fallback, and no template code reads it; keep it equal to the first entry.
 
-5. **Add the label** to `appearance.themes` in every locale file. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; a label missing from both fails `tests/logic/app-locale-coverage.test.ts`, which reads the registry's `labelKey` (without the label the popover would show the capitalized id). Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in [`i18n.md`](i18n.md).
+5. **Add the label** to `appearance.themes` in every application locale file, spreading the system group as [`i18n.md`](i18n.md) describes; removing or renaming a template preset rewords its key after the spread rather than editing `client/locales/system/`. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; a label missing from both fails `tests/logic/app-locale-coverage.test.ts`, which reads the registry's `labelKey` (without the label the popover would show the capitalized id). Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in [`i18n.md`](i18n.md).
 
    ```ts
    // client/locales/en-US.ts
-   const messages = {
-     // …
+   const enUS = {
+     ...systemEnUS,
      appearance: {
-       // …
-       themes: { default: 'Spacious', compact: 'Compact', forest: 'Forest' },
+       ...systemEnUS.appearance,
+       themes: { ...systemEnUS.appearance.themes, forest: 'Forest' },
      },
      // …
    };
@@ -357,10 +357,10 @@ The steps below add a preset with the id `forest`.
    ```ts
    // client/locales/zh-CN.ts
    const zhCN: AppResource = {
-     // …
+     ...systemZhCN,
      appearance: {
-       // …
-       themes: { default: '宽松', compact: '紧凑', forest: '森林' },
+       ...systemZhCN.appearance,
+       themes: { ...systemZhCN.appearance.themes, forest: '森林' },
      },
      // …
    };
@@ -384,7 +384,7 @@ The steps below add a preset with the id `forest`.
 A user makes two independent choices, each saved in the browser: the color mode (Light, Dark or System) and the preset.
 
 - `next-themes` owns the color mode: the `light` or `dark` class on `<html>` and its `color-scheme`. A preset only sets `data-theme`. Do not make a preset force a mode. Keep DOM changes in `client/theme/`.
-- The Appearance popover (`client/theme/theme-settings.tsx`) sits in the header of the App and Settings layouts (`client/layouts/components/header-actions.tsx`) and in the top-right corner of guest and optional pages (`client/routing/standalone-page-layout.tsx`). It opens on hover, click or keyboard. A choice applies and is saved at once, the panel stays open for further changes, and Escape closes it and returns focus to the trigger. Its copy comes from `appearance.title`, `appearance.mode`, `appearance.preset`, `appearance.light`, `appearance.dark`, `appearance.system` and `appearance.themes.<id>`. The hover and dismissal rules for header entries are in [section 2 of `shell.md`](shell.md#2-header-icon-buttons).
+- The Appearance popover (`client/theme/theme-settings.tsx`) sits in the header of the App layout (`client/layouts/components/header-actions.tsx`) and in the top-right corner of guest and optional pages (`client/routing/standalone-page-layout.tsx`). It opens on hover, click or keyboard. A choice applies and is saved at once, the panel stays open for further changes, and Escape closes it and returns focus to the trigger. Its copy comes from `appearance.title`, `appearance.mode`, `appearance.preset`, `appearance.light`, `appearance.dark`, `appearance.system` and `appearance.themes.<id>`. The hover and dismissal rules for header entries are in [section 2 of `shell.md`](shell.md#2-header-icon-buttons).
 - Code that needs a choice reads it from the provider. `useTheme()` from `next-themes`, also re-exported by `client/theme/index.ts`, gives `theme` (`light`, `dark` or `system`), `resolvedTheme` (the mode actually applied) and `setTheme`. `useThemePreset()` from `client/theme/theme-context.ts` gives `preset` and `setPreset`. Both need `AppThemeProvider`, and `useThemePreset()` throws outside it. Do not read or write the storage keys or the `<html>` attributes yourself, and do not keep a copy of a choice in component state.
 - The storage keys come from `resolveAppBase()`, the deployment base path, not from the current route or the first path segment: `/crm/` becomes `crm`, `/team/crm/` becomes `team%2Fcrm`, and the root becomes `%2F`. The keys are `nocobase:<scope>:theme:color-scheme` and `nocobase:<scope>:theme:preset`. They are browser-local and per application, not synchronized with the account: two applications on the same origin keep separate choices, and tabs of the same application follow each other through `storage` events.
 - `client/index.tsx` calls `initializeTheme()` before the application starts. It applies the saved or default choices to `<html>` (class, `data-theme` and `color-scheme`) and removes an invalid saved mode before `next-themes` can read it. No script runs before the first paint; the loading indicator in `index.html` follows only `prefers-color-scheme`.

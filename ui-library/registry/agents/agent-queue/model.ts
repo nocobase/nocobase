@@ -2,16 +2,14 @@
  * The queue as lanes, one per agent, kept apart from the components so a consumer can test it: what each agent runs
  * now, what it takes next in claim order, what waits for a person, and what it is assigned with nothing going on.
  */
-import {
-  defaultAgentQueueLabels,
-  fill,
-  type AgentQueueLabels,
-} from './labels.js';
+import { fill, type AgentQueueLabels } from './labels.js';
 import type {
   AgentQueueAgent,
   AgentQueueData,
   AgentQueueEntry,
   AgentQueueIssue,
+  AgentQueueWait,
+  AgentQueueWaitView,
 } from './types.js';
 
 /** One issue in a lane: where that agent stands on it. */
@@ -195,55 +193,39 @@ export function idleText(
   return labels.idle[idle.reason];
 }
 
-/** Why a queued item waits, in words. */
-export function waitText(
+/** Words a wait: the consumer's own (`AgentQueueProps.formatWait`), or the reason code itself. */
+export type AgentQueueFormatWait = (
+  wait: AgentQueueWait,
+  agent: AgentQueueAgent,
+) => AgentQueueWaitView;
+
+/**
+ * Why a queued item waits, in words: what blocks it, else its wait as `formatWait` words it, else its reason code, which
+ * the item never interprets.
+ */
+export function waitView(
   labels: AgentQueueLabels,
   item: AgentQueueItem,
   agent: AgentQueueAgent,
-  locale: string | undefined,
-): string | null {
+  formatWait?: AgentQueueFormatWait,
+): AgentQueueWaitView | null {
   const { entry } = item;
   if (entry.blockedBy)
-    return entry.blockedBy.length > 0
-      ? fill(labels.queue.blockedBy, {
-          issues: entry.blockedBy
-            .map((blocker) => blocker.identifier)
-            .join(', '),
-        })
-      : fill(labels.queue.blockedCount, { count: item.issue.blockedCount });
+    return {
+      text:
+        entry.blockedBy.length > 0
+          ? fill(labels.queue.blockedBy, {
+              issues: entry.blockedBy
+                .map((blocker) => blocker.identifier)
+                .join(', '),
+            })
+          : fill(labels.queue.blockedCount, {
+              count: item.issue.blockedCount,
+            }),
+    };
   const wait = entry.queue;
   if (!wait) return null;
-  const template =
-    labels.queue.reasons[wait.reason] ??
-    defaultAgentQueueLabels.queue.reasons[wait.reason] ??
-    labels.queue.reasons.next;
-  return fill(template, {
-    max: agent.maxConcurrentRuns,
-    tool: wait.tool ?? '',
-    features: wait.missing.join(', '),
-    time: wait.until
-      ? new Intl.DateTimeFormat(locale, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }).format(new Date(wait.until))
-      : '—',
-  });
-}
-
-/** Reasons that need someone to act (an administrator, the agent's owner) rather than time. */
-export function isBlockingWait(item: AgentQueueItem): boolean {
-  const reason = item.entry.queue?.reason;
-  return (
-    reason === 'agentArchived' ||
-    reason === 'noRunnerOnline' ||
-    reason === 'runnersOffline' ||
-    reason === 'toolUnavailable' ||
-    reason === 'noSharedRunner' ||
-    reason === 'missingFeatures' ||
-    reason === 'setupRetrying'
-  );
+  return formatWait ? formatWait(wait, agent) : { text: wait.reason };
 }
 
 /** Who a waiting item waits for: the viewer as "you", first. */

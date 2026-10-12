@@ -8,7 +8,9 @@ import {
   MAX_EVENT_CONTENT_BYTES,
   ProtocolError,
   TIMINGS,
+  UsageSchema,
   type ActiveRun,
+  type AgentTool,
   type CancelAckRequest,
   type CompleteRequest,
   type EventsRequest,
@@ -23,8 +25,9 @@ import {
   type Usage,
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
+import { z } from 'zod';
+import type { RunEffortReport } from '../../../shared/runs.js';
 
-import { ONLINE_TOOL } from '../../../shared/reports.js';
 import type { Runner } from '../../../shared/runners.js';
 import { later, type Clock } from '../../kernel/clock.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -34,7 +37,9 @@ import {
   type SecretMemory,
 } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { asJson, truncateBytes } from '../../kernel/values.js';
+import { asJson, jsonObject, truncateBytes } from '../../kernel/values.js';
+import { recordActualModels } from './execution.js';
+import { dropInputs, gatePending, type InputGateDeps } from './input-gate.js';
 import { everHeld } from './run-tokens.js';
 import {
   eventsRepo,
@@ -43,7 +48,6 @@ import {
   isActive,
   isTerminal,
   markDelivered,
-  pendingInputs,
   reposRepo,
   runsRepo,
   sessionsRepo,
@@ -52,6 +56,11 @@ import {
   type RunRecord,
 } from './run.store.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
+
+const executionReport = z.object({
+  effort: z.string().trim().min(1).max(200).nullable(),
+  source: z.string().trim().min(1).max(200),
+});
 
 export interface RunnerReports {
   /** Resolves while `runner` holds the run; `LEASE_LOST`, `RUN_NOT_ACTIVE` or `RUN_NOT_OWNED` otherwise. */
@@ -62,15 +71,6 @@ export interface RunnerReports {
     runId: string,
     request: Pick<StartRequest, 'workDir' | 'acceptsInput' | 'sessionId'>,
   ): Promise<StartResponse>;
-  /**
-   * Records one model call of an online run as it happens (`tool` `online`), so what it used reaches the reports however the
-   * run ends. The run must still be held.
-   */
-  onlineUsage(
-    holder: Pick<Runner, 'id'>,
-    runId: string,
-    usage: OnlineUsageRecord,
-  ): Promise<void>;
   events(
     runner: Pick<Runner, 'id'>,
     runId: string,
@@ -99,19 +99,7 @@ export interface RunnerReports {
   ): Promise<{ cancelRequested: string[]; release: string[] }>;
 }
 
-/** What one model call of an online run used. */
-export interface OnlineUsageRecord {
-  /** The model service the call went through, which prices it. */
-  readonly modelService: string | null;
-  readonly model: string | null;
-  readonly inputTokens: number;
-  readonly outputTokens: number;
-  readonly cacheReadTokens?: number;
-  readonly cacheWriteTokens?: number;
-  readonly reasoningTokens?: number;
-}
-
-export interface RunnerReportsDeps extends TransitionDeps {
+export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -120,6 +108,16 @@ export interface RunnerReportsDeps extends TransitionDeps {
    * patterns before they are stored, whatever the runner did (`kernel/redaction.ts`).
    */
   readonly secrets?: SecretMemory;
+  /**
+   * A run failed `modelUnavailable` on `runnerId` with its tool and model: the runner's mark that the model is not
+   * offered there (`RunnerService.markModelUnavailable`), in the failure's transaction.
+   */
+  readonly onModelUnavailable?: (
+    unit: Tx,
+    runnerId: string,
+    tool: AgentTool,
+    model: string,
+  ) => Promise<void>;
 }
 
 export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
@@ -162,10 +160,30 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     return leaseExpiresAt;
   }
 
-  async function deliver(conn: DatabaseConnection, runId: string) {
-    const pending = await pendingInputs(conn, runId);
-    await markDelivered(conn, pending, clock.now().toISOString());
+  /**
+   * The run's unhandled input, marking what is new delivered. New input passes the subject's policy first, as it would
+   * at a claim: what the run's agent may not act on now is marked handled instead and never reaches the runner.
+   */
+  async function deliver(conn: DatabaseConnection, run: RunRecord) {
+    const now = clock.now().toISOString();
+    const pending = await settlePending(conn, run, now);
+    await markDelivered(conn, pending, now);
     return pending.map(toInput);
+  }
+
+  /** The run's unhandled input it may act on, marking what it may no longer act on handled. */
+  async function settlePending(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    now: string,
+  ) {
+    const { kept, withheld } = await gatePending(conn, deps, run);
+    await dropInputs(
+      conn,
+      withheld.map((input) => input.id),
+      now,
+    );
+    return kept;
   }
 
   /** Records what every ending reports: handled inputs, usage, branches. */
@@ -206,6 +224,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           createdAt: now,
         },
       });
+    await recordActualModels(conn, run, report.usage ?? [], now);
     for (const repo of report.repos ?? []) {
       const existing = await reposRepo(conn).findOne({
         filter: { runId: run.id, url: repo.url },
@@ -214,6 +233,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         branch: repo.branch,
         pushed: repo.pushed,
         headSha: repo.headSha ?? null,
+        failureReason: repo.failure?.reason ?? null,
+        failureDetail:
+          repo.failure === undefined
+            ? null
+            : redactorOf(run.id).text(repo.failure.message).slice(0, 2000),
         updatedAt: now,
       };
       if (existing)
@@ -265,25 +289,6 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     async holds(runner, runId) {
       await held(tx.read(), runner, runId);
     },
-    onlineUsage: (holder, runId, usage) =>
-      tx.run(async ({ conn }) => {
-        const run = await held(conn, holder, runId);
-        await usageRepo(conn).createOne({
-          values: {
-            id: ids.next(),
-            runId: run.id,
-            tool: ONLINE_TOOL,
-            modelService: usage.modelService?.slice(0, 64) ?? null,
-            model: usage.model?.slice(0, 200) ?? null,
-            inputTokens: usage.inputTokens,
-            outputTokens: usage.outputTokens,
-            cacheReadTokens: usage.cacheReadTokens ?? 0,
-            cacheWriteTokens: usage.cacheWriteTokens ?? 0,
-            reasoningTokens: usage.reasoningTokens ?? 0,
-            createdAt: clock.now().toISOString(),
-          },
-        });
-      }),
     lease: (runner, runId) =>
       tx.run(async ({ conn }) => {
         const run = await held(conn, runner, runId);
@@ -291,7 +296,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return {
           leaseExpiresAt,
           cancelRequested: run.cancelRequestedAt !== null,
-          inputs: await deliver(conn, run.id),
+          inputs: await deliver(conn, run),
         };
       }),
 
@@ -326,7 +331,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           status: current.status,
           leaseExpiresAt,
           cancelRequested,
-          inputs: await deliver(conn, run.id),
+          inputs: await deliver(conn, run),
         };
       }),
 
@@ -350,6 +355,8 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         const redact = redactorOf(run.id);
         let accepted = 0;
         let lastSeq = 0;
+        const reportedUsage: Usage[] = [];
+        const efforts: RunEffortReport[] = [];
         for (const event of request.events) {
           lastSeq = Math.max(lastSeq, event.seq);
           if (stored.has(event.seq)) continue;
@@ -391,11 +398,29 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             },
           });
           accepted += 1;
+          if (event.type === 'usage') {
+            const usage = UsageSchema.array().safeParse(
+              jsonObject(redact.value(event.meta)).usage,
+            );
+            if (usage.success) reportedUsage.push(...usage.data);
+          }
+          if (event.type === 'status' && event.tool === run.tool) {
+            const meta = jsonObject(redact.value(event.meta));
+            const report = executionReport.safeParse(meta.execution);
+            if (report.success)
+              efforts.push({
+                ...report.data,
+                at: Number.isNaN(Date.parse(event.at))
+                  ? now
+                  : new Date(event.at).toISOString(),
+              });
+          }
         }
         await runsRepo(conn).updateMany({
           filter: { id: run.id },
           values: { lastActivityAt: now },
         });
+        await recordActualModels(conn, run, reportedUsage, now, efforts, true);
         if (accepted > 0)
           unit.emit({ type: 'run.events', runId: run.id, lastSeq });
         return {
@@ -420,7 +445,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return {
           status: current.status,
           cancelRequested: current.cancelRequestedAt !== null,
-          inputs: await deliver(conn, current.id),
+          inputs: await deliver(conn, current),
           leaseExpiresAt: current.leaseExpiresAt,
         };
       }),
@@ -429,9 +454,10 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
         const handled = new Set(request.handledInputIds);
-        const missing = (await pendingInputs(unit.conn, run.id)).filter(
-          (input) => !handled.has(input.id),
-        );
+        // Input the run may no longer act on does not hold it open: the runner would get none of it.
+        const missing = (
+          await settlePending(unit.conn, run, clock.now().toISOString())
+        ).filter((input) => !handled.has(input.id));
         if (missing.length > 0)
           throw new ProtocolError(
             'RUN_INPUT_PENDING',
@@ -465,6 +491,13 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
                 detail: redactorOf(run.id).text(reported.detail),
               };
         await recordOutcome(unit, run, request);
+        if (request.reason === 'modelUnavailable' && run.tool && run.model)
+          await deps.onModelUnavailable?.(
+            unit,
+            runner.id,
+            run.tool as AgentTool,
+            run.model,
+          );
         await rememberSession(
           unit,
           run,
@@ -504,9 +537,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
         await recordOutcome(unit, run, request);
+        await rememberSession(unit, run, request.sessionId, false);
         const ended = await finishRun(unit, deps, run, {
           status: 'cancelled',
           reason: 'cancelled',
+          ...(request.sessionId ? { sessionId: request.sessionId } : {}),
         });
         if (!ended)
           throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');

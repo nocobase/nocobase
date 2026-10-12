@@ -40,6 +40,7 @@ function agent(id: string): ChatAgent {
     isSystemDefault: false,
     isMyDefault: false,
     availability: { online: true, reason: null, onlineRunners: 1 },
+    fallbackAgentId: null,
   };
 }
 

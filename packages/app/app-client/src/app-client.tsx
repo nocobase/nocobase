@@ -3,6 +3,8 @@ import routerProvider from '@refinedev/react-router';
 import { type ReactElement, type ReactNode } from 'react';
 import { BrowserRouter } from 'react-router';
 
+import { NavigationGuardProvider } from './navigation-guard-provider.js';
+
 import type { ClientApplication } from './application.js';
 import { ClientApplicationContext } from './application-context.js';
 import { normalizeAppClientBasename } from './config.js';
@@ -59,7 +61,7 @@ export function AppClientProviders({
 
   return (
     <ClientApplicationContext.Provider value={app}>
-      {content}
+      <NavigationGuardProvider>{content}</NavigationGuardProvider>
     </ClientApplicationContext.Provider>
   );
 }

@@ -37,7 +37,35 @@ import type {
   SettingsAction,
   SettingsItem,
 } from '../shared/access.js';
-import type { AgentInput } from '../shared/agents.js';
+import type {
+  AgentStatus,
+  ConfirmChanges,
+  RunnerModelEntry,
+} from '../shared/agents.js';
+import type { ToolPolicy } from '@nocobase/agent-protocol';
+import { agentsRepo } from '../server/core/agents/agent.store.js';
+import { replaceAttachments } from '../server/core/skills/skill.store.js';
+
+/** An agent a test sets up: what the application's own agents take, and the fields only tests change directly. */
+export interface TestAgentInput {
+  readonly id?: string;
+  readonly name?: string;
+  readonly description?: string | null;
+  readonly modelEntries?: readonly RunnerModelEntry[];
+  readonly instructions?: string | null;
+  readonly actions?: readonly string[];
+  readonly confirmChanges?: ConfirmChanges;
+  readonly skillIds?: readonly string[];
+  readonly maxConcurrentRuns?: number;
+  readonly maxAttempts?: number;
+  readonly toolPolicy?: Partial<ToolPolicy> | null;
+  readonly status?: AgentStatus;
+  /**
+   * `runner`: kept as one discovered from runners, with its first entry's tool and model and reported now, so the Agent
+   * page lists it; the application's own (`system`) by default.
+   */
+  readonly source?: 'runner' | 'system';
+}
 import { composeSkillMarkdown } from '../shared/skills.js';
 import type { RunnerTrust } from '../shared/runners.js';
 import type { DistConfig } from '../server/distribution/index.js';
@@ -54,6 +82,7 @@ import { createAdminRoutes, type AdminEnv } from '../server/routes/admin.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import { createModelRoutes } from '../server/online/routes.js';
 import { createRunRoutes } from '../server/routes/run.js';
+import { createRunRequestRoutes } from '../server/routes/run-requests.js';
 import { createRosterRoutes } from '../server/routes/roster.js';
 import {
   createAdminRoutes as createRunnersAdminRoutes,
@@ -91,6 +120,7 @@ export interface Harness {
     readonly failed: number;
     readonly cancelled: number;
     readonly jobs: { requeued: number; failed: number; cancelled: number };
+    readonly requestsExpired: number;
   }>;
   readonly clock: FakeClock;
   /** Where the contents of skills' files are stored. */
@@ -106,11 +136,22 @@ export interface Harness {
   readonly finished: Run[];
   /** Makes the fake context provider throw, to test failed assembly. */
   failAssembly: boolean;
+  /**
+   * The samples whose work is over, as the fake subject's `workspaces.settled` says; undefined for a subject kind that
+   * cannot say (no `workspaces` member).
+   */
+  settled: Set<string> | undefined;
   /** The working directories the fake subject has. */
   dirs: SubjectDir[];
   /** The scopes (a registered `team`) whose variables and skills the fake subject's runs get. */
   scopes: SubjectScope[];
-  createAgent(input?: Partial<AgentInput>): Promise<string>;
+  /** What the fake subject adds to the turn of a resumed or a fresh session. */
+  sessionNotes: { resumed?: string; fresh?: string };
+  /** An enabled agent (unless `status` says otherwise), as the application's own agents are kept. */
+  createAgent(input?: TestAgentInput): Promise<string>;
+  /** Disables an agent as a manager of agents does (its queued runs withdrawn), or enables it again. */
+  disableAgent(id: string): Promise<void>;
+  enableAgent(id: string): Promise<void>;
   registerRunner(options?: RunnerOptions): Promise<RegisteredRunner>;
   enqueue(
     agentId: string,
@@ -297,12 +338,16 @@ export async function createHarness(
   const finished: Run[] = [];
   const harness = {
     failAssembly: false,
+    settled: undefined,
     dirs: [],
     scopes: [],
+    sessionNotes: {},
   } as {
     failAssembly: boolean;
+    settled: Set<string> | undefined;
     dirs: SubjectDir[];
     scopes: SubjectScope[];
+    sessionNotes: { resumed?: string; fresh?: string };
   };
   services.subjects.register({
     kind: 'sample',
@@ -343,6 +388,7 @@ export async function createHarness(
           context: `Sample ${claim.run.subject.id}`,
           turn: {
             prompt: claim.inputs.map((input) => input.text).join('\n'),
+            ...harness.sessionNotes,
           },
           data: { sampleId: claim.run.subject.id },
           dirs: harness.dirs,
@@ -355,6 +401,15 @@ export async function createHarness(
         finished.push(run);
         return Promise.resolve();
       },
+    },
+    get workspaces() {
+      const settled = harness.settled;
+      return settled === undefined
+        ? undefined
+        : {
+            settled: (_conn: unknown, ids: readonly string[]) =>
+              Promise.resolve(new Set(ids.filter((id) => settled.has(id)))),
+          };
     },
   });
 
@@ -439,6 +494,7 @@ export async function createHarness(
     }),
   );
   app.route('/agents', createRunRoutes(services));
+  app.route('/agents', createRunRequestRoutes(services, guard));
   app.route('/agents', createRosterRoutes(services, guard));
   app.route('/agents', createChatRoutes(services, guard, personOrRun));
   app.route('/agents', createModelRoutes(services, guard));
@@ -475,6 +531,25 @@ export async function createHarness(
     };
   };
 
+  /** An agent changed as one discovered from runners, which a manager of agents may enable and disable. */
+  async function setEnabled(id: string, enabled: boolean): Promise<void> {
+    await services.tx.run(async ({ conn }) => {
+      const record = await agentsRepo(conn).findOne({ filter: { id } });
+      await agentsRepo(conn).updateMany({
+        filter: { id },
+        values: {
+          source: 'runner',
+          description: record?.description ?? 'Works on samples',
+        },
+      });
+    });
+    const agent = await services.agents.get(id);
+    await services.agents.update(id, 'owner', {
+      enabled,
+      expectedRevision: agent.revision,
+    });
+  }
+
   return Object.assign(harness, {
     database,
     services,
@@ -488,14 +563,52 @@ export async function createHarness(
     app,
     finished,
     request,
-    async createAgent(input: Partial<AgentInput> = {}) {
-      const agent = await services.agents.create('owner', {
-        name: 'Coder',
-        modelEntries: [{ tool: 'claude', model: null }],
-        access: 'everyone',
-        ...input,
+    async createAgent(input: TestAgentInput = {}) {
+      const id = input.id ?? `agent-${randomUUID().slice(0, 8)}`;
+      await services.agents.ensureSystem({
+        id,
+        name: input.name ?? 'Coder',
+        description: input.description ?? null,
+        instructions: input.instructions ?? null,
+        actions: input.actions ?? [],
+        modelEntries: input.modelEntries ?? [{ tool: 'claude', model: null }],
       });
-      return agent.id;
+      await services.tx.run(async ({ conn }) => {
+        await agentsRepo(conn).updateMany({
+          filter: { id },
+          values: {
+            maxConcurrentRuns: input.maxConcurrentRuns ?? 2,
+            maxAttempts: input.maxAttempts ?? 3,
+            toolPolicy: input.toolPolicy ?? null,
+            confirmChanges: input.confirmChanges ?? 'larger',
+            ...(input.status ? { status: input.status } : {}),
+            ...(input.source === 'runner'
+              ? {
+                  source: 'runner',
+                  tool: (input.modelEntries ?? [])[0]?.tool ?? 'claude',
+                  model: (input.modelEntries ?? [])[0]?.model ?? null,
+                  lastReportedAt: clock.now().toISOString(),
+                }
+              : {}),
+          },
+        });
+        if (input.skillIds)
+          await replaceAttachments(
+            conn,
+            'agent',
+            id,
+            [...input.skillIds],
+            () => randomUUID(),
+            new Date().toISOString(),
+          );
+      });
+      return id;
+    },
+    async disableAgent(id: string) {
+      await setEnabled(id, false);
+    },
+    async enableAgent(id: string) {
+      await setEnabled(id, true);
     },
     async registerRunner(options: RunnerOptions = {}) {
       const token = await runners.runners.createRegistrationToken(

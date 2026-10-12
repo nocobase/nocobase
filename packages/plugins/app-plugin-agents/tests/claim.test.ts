@@ -54,7 +54,7 @@ describe('claiming', () => {
     });
   });
 
-  it('matches the tool, the named runners, trust and features', async () => {
+  it('matches the tool, trust and features', async () => {
     h = await createHarness();
     const codex = await h.createAgent({
       modelEntries: [{ tool: 'codex', model: null }],
@@ -79,9 +79,7 @@ describe('claiming', () => {
       'SMP-2',
     ]);
 
-    // Codex signed in; an agent that names another runner is not for this one.
-    const named = await h.createAgent({ runnerIds: [basic.runnerId] });
-    await h.enqueue(named, '3');
+    // Codex signed in.
     const capable = await h.registerRunner({
       tools: [
         { kind: 'claude', authenticated: true },
@@ -91,9 +89,6 @@ describe('claiming', () => {
     });
     expect((await claim(h, capable, 4)).map((run) => run.subject.key)).toEqual([
       'SMP-1',
-    ]);
-    expect((await claim(h, basic, 4)).map((run) => run.subject.key)).toEqual([
-      'SMP-3',
     ]);
   });
 
@@ -107,10 +102,15 @@ describe('claiming', () => {
       ],
     });
     const first = await h.enqueue(agentId, '1');
-    // Codex is not signed in here: the first Claude entry is taken, and recorded on the run.
+    // Codex is not signed in here: the first Claude entry is taken, and recorded on the run. An entry naming a model
+    // needs the runner to report it, under any spelling of it (`opus` is Opus 5.5).
     const claudeOnly = await h.registerRunner({
       tools: [
-        { kind: 'claude', authenticated: true },
+        {
+          kind: 'claude',
+          authenticated: true,
+          models: [{ id: 'claude-opus-5-5' }],
+        },
         { kind: 'codex', authenticated: false },
       ],
     });
@@ -133,7 +133,7 @@ describe('claiming', () => {
     const both = await h.registerRunner({
       tools: [
         { kind: 'claude', authenticated: true },
-        { kind: 'codex', authenticated: true },
+        { kind: 'codex', authenticated: true, models: [{ id: 'gpt-6' }] },
       ],
     });
     const [onCodex] = await claim(h, both);
@@ -347,6 +347,104 @@ describe('claiming', () => {
     });
   });
 
+  it('fills passthrough with the variables taken from the runner, a later scope replacing an earlier one', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    h.scopes = [{ scope: 'team', scopeId: 't-1' }];
+    h.dirs = [
+      {
+        kind: 'repo',
+        url: 'https://example.com/app.git',
+        defaultBranch: 'main',
+        branch: 'agent/SMP-1',
+        path: 'app',
+        scopeId: 'res-1',
+      },
+    ];
+    const variables = h.services.variables;
+    const fromRunner = (scope: string, scopeId: string, name: string) =>
+      variables.set({ scope, scopeId }, name, undefined, 'owner', {
+        fromRunner: true,
+      });
+    // A key the runner provides on the agent, one on the working directory, and a value on the team that the
+    // working directory takes from the runner instead.
+    await fromRunner('agent', agentId, 'NOCOBASE_CPA_API_KEY');
+    await variables.set(
+      { scope: 'team', scopeId: 't-1' },
+      'PROXY_TOKEN',
+      'team',
+      'owner',
+    );
+    await fromRunner('workdir', 'res-1', 'PROXY_TOKEN');
+    // And one the agent sets a value for over the working directory's runner entry.
+    await fromRunner('workdir', 'res-1', 'API_URL');
+    await variables.set(
+      { scope: 'agent', scopeId: agentId },
+      'API_URL',
+      'agent',
+      'owner',
+    );
+    await h.enqueue(agentId, '1');
+
+    const runner = await h.registerRunner();
+    const [payload] = await claim(h, runner);
+    expect(payload.workspace.passthrough).toEqual([
+      'NOCOBASE_CPA_API_KEY',
+      'PROXY_TOKEN',
+    ]);
+    expect(payload.workspace.env).toEqual([
+      { name: 'API_URL', value: 'agent' },
+    ]);
+    expect(
+      (await variables.list({ scope: 'agent', scopeId: agentId })).map(
+        (variable) => [variable.name, variable.fromRunner === true],
+      ),
+    ).toEqual([
+      ['API_URL', false],
+      ['NOCOBASE_CPA_API_KEY', true],
+    ]);
+    await expect(
+      variables.set(
+        { scope: 'agent', scopeId: agentId },
+        'X_KEY',
+        'v',
+        'owner',
+        {
+          fromRunner: true,
+        },
+      ),
+    ).rejects.toMatchObject({ details: { reason: 'valueNotAllowed' } });
+  });
+
+  it('gives a run with nothing taken from the runner no passthrough', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    await h.enqueue(agentId, '1');
+    const [payload] = await claim(h, await h.registerRunner());
+    expect(payload.workspace.passthrough).toBeUndefined();
+  });
+
+  it('rejects runner-owned variable names before saving a runner declaration or a value', async () => {
+    h = await createHarness();
+    const target = { scope: 'agent', scopeId: await h.createAgent() };
+    for (const name of [
+      'NOCOBASE_RUNNER_CUSTOM_KEY',
+      'AGENT_RUN_CREDENTIALS',
+      'GIT_CONFIG_COUNT',
+      'PATH',
+    ]) {
+      await expect(
+        h.services.variables.set(target, name, undefined, 'owner', {
+          fromRunner: true,
+        }),
+      ).rejects.toMatchObject({ details: { reason: 'reserved' } });
+      await expect(
+        h.services.variables.set(target, name, 'unused', 'owner'),
+      ).rejects.toMatchObject({ details: { reason: 'reserved' } });
+    }
+    expect(await h.services.variables.list(target)).toEqual([]);
+  });
+
   it('starts from a fresh working directory once after a reset', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();
@@ -441,19 +539,16 @@ describe('claiming', () => {
     expect(third).toMatchObject({ runId: first.runId, outcome: 'appended' });
   });
 
-  it('refuses work from someone who may not wake the agent', async () => {
+  it('refuses work for an agent that is not enabled', async () => {
     h = await createHarness();
-    const agentId = await h.createAgent({ access: 'users', userIds: ['bob'] });
-    await expect(
-      h.enqueue(agentId, '1', { actorUserId: 'mallory' }),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    const agentId = await h.createAgent();
     await expect(
       h.enqueue(agentId, '1', { actorUserId: 'bob' }),
     ).resolves.toBeTruthy();
-    await h.services.agents.archive(agentId, 'owner');
+    await h.disableAgent(agentId);
     await expect(
       h.enqueue(agentId, '2', { actorUserId: 'bob' }),
-    ).rejects.toMatchObject({ code: 'AGENT_ARCHIVED' });
+    ).rejects.toMatchObject({ code: 'AGENT_NOT_ENABLED' });
   });
 
   it('leaves a run queued when its payload cannot be assembled, then fails it', async () => {

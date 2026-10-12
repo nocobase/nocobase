@@ -238,7 +238,7 @@ export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
         'REFERENCE_MISMATCH',
         `Occurrence "${occurrenceId}" does not belong to target type "${expectedTargetType}"`,
       );
-    // A workflow may finish between target.start() returning its run id and
+    // A target may finish between target.start() returning its run id and
     // wait() persisting that id on the occurrence. The terminal observer is
     // best-effort in that small window; dispatch performs an immediate inspect
     // after wait(), and reconciliation covers any missed notification.

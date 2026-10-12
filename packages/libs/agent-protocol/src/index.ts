@@ -9,3 +9,4 @@ export * from './errors.js';
 export * from './dist.js';
 export * from './redact.js';
 export * from './policy.js';
+export * from './workspaces.js';

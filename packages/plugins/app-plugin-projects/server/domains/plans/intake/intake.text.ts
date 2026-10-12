@@ -1,10 +1,9 @@
 /**
- * The text of intake files, for the rule parser. Plain-text formats are decoded as UTF-8; Office, OpenDocument, RTF
- * and PDF files go through `officeparser` (the same library and major version NocoProject used, already in this
- * workspace through the AI employee library). Its AST keeps headings and lists, which are written back as Markdown
- * (`#`, `-` with indentation) so the parser sees a document's outline; a sheet becomes CSV when its first row has a
- * title column, and a list of rows otherwise. Legacy binary Office files, images and anything else are not read:
- * only their names count.
+ * The text of intake files, for the rule parser. Plain-text formats are decoded as UTF-8; Office, OpenDocument, RTF and
+ * PDF files go through `officeparser` (the same library and major version NocoProject used). Its AST keeps headings and
+ * lists, which are written back as Markdown (`#`, `-` with indentation) so the parser sees a document's outline; a
+ * sheet becomes CSV when its first row has a title column, and a list of rows otherwise. Legacy binary Office files,
+ * images and anything else are not read: only their names count.
  *
  * Each file is cut at `INTAKE_FILE_CHARS`, all of them together at `INTAKE_TOTAL_CHARS`, and one extraction may take
  * `EXTRACT_TIMEOUT_MS`.

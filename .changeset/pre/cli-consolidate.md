@@ -2,8 +2,6 @@
 '@nocobase/app-cli': major
 '@nocobase/app-template-default': minor
 '@nocobase/app-template-examples': minor
-'@nocobase/app-template-hub': minor
-'@nocobase/app-plugin-workflow': minor
 '@nocobase/app-plugin-scheduler': minor
 '@nocobase/app-plugin-cli-example': minor
 '@nocobase/create-app': minor
@@ -12,7 +10,6 @@
 '@nocobase/app-server': patch
 '@nocobase/db': patch
 '@nocobase/app-plugin-authentication': patch
-'@nocobase/app-plugin-hub': patch
 '@nocobase/app-plugin-i18n': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-repository-example': patch

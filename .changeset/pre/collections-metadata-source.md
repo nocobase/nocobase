@@ -5,7 +5,6 @@
 '@nocobase/app-skills': minor
 '@nocobase/app-template-examples': minor
 '@nocobase/app-template-default': patch
-'@nocobase/app-template-hub': patch
 '@nocobase/create-app': patch
 ---
 

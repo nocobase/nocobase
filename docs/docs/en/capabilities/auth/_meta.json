@@ -6,13 +6,27 @@
   },
   {
     "type": "file",
-    "name": "quick-start",
-    "label": "Quick start"
+    "name": "password",
+    "label": "Password authentication and accounts"
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "development",
-    "label": "Develop with an Agent"
+    "type": "file",
+    "name": "api-keys",
+    "label": "API keys"
+  },
+  {
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "Adding sign-in methods"
+  },
+  {
+    "type": "file",
+    "name": "protecting-access",
+    "label": "Protecting pages and APIs"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "Customizing sign-in pages"
   }
 ]

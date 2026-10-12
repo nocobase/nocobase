@@ -3,7 +3,7 @@
 What the agents are doing, as a work queue. One lane per agent, ordered by activity, each showing:
 
 1. **Now**: the issues it runs, with a live elapsed time, the runtime and the last thing the run reported.
-2. **Up next**: its queued issues, numbered in claim order, each with why it waits (no runtime online, concurrency full, blocked by another issue, …).
+2. **Up next**: its queued issues, numbered in claim order, each with why it waits (blocked by another issue, or the wait the consumer words through `formatWait`).
 3. **Waiting for reply**: issues it waits on a person for, who that is ("Waiting for you" highlighted), and a "Handle" action that leads to where it is decided.
 4. **Assigned, idle**: a folded list of issues it executes with nothing going on, each with why (in backlog, last run completed or failed, the status does not wake the agent, not run yet) and a "Start" action where the viewer may start it (`onStart`). `expandIdle` unfolds it, such as while the page is searched or filtered.
 
@@ -16,7 +16,7 @@ The lane header shows the agent's avatar, name, state, its taken slots (`2/3`, w
 | `agent-queue.tsx` | `AgentQueue`, `AgentQueueProps`                                                                         |
 | `types.ts`        | `AgentQueueData` and the row, entry, run, wait and agent types it is made of                            |
 | `labels.ts`       | `AgentQueueLabels`, `defaultAgentQueueLabels` (English), `fill`                                         |
-| `model.ts`        | `agentQueueLanes`, `agentQueueTotals`, `laneState`, `elapsed`, `waitText` and the other wording helpers |
+| `model.ts`        | `agentQueueLanes`, `agentQueueTotals`, `laneState`, `elapsed`, `waitView` and the other wording helpers |
 
 ## Data
 
@@ -33,6 +33,10 @@ import { AgentQueue } from '#extensions/nocobase-agent-queue/agent-queue';
   onlyMine={onlyMine}
   onOnlyMineChange={setOnlyMine}
   onStart={(issue, agentId) => startAgent(issue.id, agentId)}
+  formatWait={(wait) => ({
+    text: formatRunWait(t, wait),
+    blocking: runWaitBlocks(wait),
+  })}
   labels={labels}
   locale={i18n.language}
 />;
@@ -42,7 +46,9 @@ import { AgentQueue } from '#extensions/nocobase-agent-queue/agent-queue';
 
 The item does not translate. Every word comes from `labels`, which defaults to `defaultAgentQueueLabels` in English. Give it an `AgentQueueLabels` from your own locale resources; placeholders use single braces (`{count}`), which the item fills in and i18next leaves alone, so the object can be read with `t('agentQueue', { returnObjects: true })`.
 
-`queue.reasons.toolSlotsFull` describes a runtime with room overall but no room for the run's tool. It is optional for existing label objects and falls back to the English default. Add a translated string using `{tool}`, for example "{tool} 的并发槽位已满". Applications upgrading the agents plugin must merge the `toolSlotsFull` reason in `types.ts` and the corresponding `labels.ts` and `model.ts` changes into their installed copy; updating the plugin or this registry does not update copied source.
+## Why a run waits
+
+The item knows no wait reason. A queued run's wait carries a code (`reason`, such as `secretsNotAllowed`) and the values its words need (`params`), and the consumer words it with `formatWait`, which answers the text, an optional `detail` shown on hover and whether it is `blocking` (drawn as a warning). In an application with the agents plugin, `formatRunWait(t, wait)` and `runWaitBlocks(wait)` from `@nocobase/app-plugin-agents/client/runs` do this in the plugin's own translations, which the application may override; without `formatWait` the reason code is shown. A reason the plugin adds later therefore needs no change to this copy.
 
 ## Customizing
 

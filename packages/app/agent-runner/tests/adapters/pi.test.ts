@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_MIN_PI_VERSION,
   PiAdapter,
+  parsePiModels,
   denialMessage,
 } from '../../src/agent/adapters/pi.ts';
 import { JsonlSplitter } from '../../src/agent/adapters/pi/util.ts';
@@ -58,6 +59,100 @@ const settled = [
 ];
 
 describe('detect', () => {
+  it.each([0, 3, undefined])(
+    'uses successful structured state for recovery (messageCount=%s), independently of late stderr',
+    async (messageCount) => {
+      const { spawn, processes } = fakeSpawn(
+        (pi) => {
+          void pi.next('prompt').then((prompt) => {
+            expect(
+              String(prompt.message).includes('previous conversation'),
+            ).toBe(messageCount === 0);
+            pi.stderr.write('Warning: session ');
+            pi.stderr.write('not found\n');
+            pi.respond(prompt, { disposition: 'started' });
+            writeAll(pi, [
+              ...assistantMessage([{ type: 'text', text: 'ok' }]),
+              ...settled,
+            ]);
+          });
+        },
+        { messageCount, sessionId: 'old' },
+      );
+      const handle = (await adapterWith(spawn)).start(
+        session({ resumeSessionId: 'old' }),
+      );
+      const events = await collect(handle);
+      expect(await handle.result).toMatchObject({
+        exit: 'completed',
+        sessionId: 'old',
+      });
+      expect(processes).toHaveLength(1);
+      expect(events.some((e) => e.content === 'sessionRecovery')).toBe(
+        messageCount === 0,
+      );
+      expect(events.some((e) => e.content === 'sessionRecoveryUnknown')).toBe(
+        messageCount === undefined,
+      );
+    },
+  );
+
+  it('does not prompt or recover from an unsuccessful state response', async () => {
+    const { spawn, processes } = fakeSpawn(() => {}, {
+      messageCount: 0,
+      stateSuccess: false,
+    });
+    const handle = (await adapterWith(spawn)).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(processes[0]?.commands.some((c) => c.type === 'prompt')).toBe(false);
+  });
+  it('parses the available model table and leaves per-model effort levels unknown', () => {
+    expect(parsePiModels(MODELS_TABLE)).toEqual([
+      { id: 'anthropic/claude-sonnet-4-5' },
+    ]);
+    expect(
+      parsePiModels(
+        'provider model context max-out thinking images\r\nopenai gpt-6-sol 200K 64K yes yes\r\nother gpt-6-sol 200K 64K yes yes',
+      ),
+    ).toEqual([{ id: 'openai/gpt-6-sol' }, { id: 'other/gpt-6-sol' }]);
+    expect(() => parsePiModels('unexpected configuration dump')).toThrow();
+  });
+
+  it('detects fresh models, command failures, empty results and malformed output', async () => {
+    let output = MODELS_TABLE;
+    let code = 0;
+    const adapter = new PiAdapter({
+      searchPath: await fakePiDir(),
+      exec: (_file, args) =>
+        Promise.resolve(
+          args[0] === '--version'
+            ? { code: 0, stdout: '0.99.2' }
+            : { code, stdout: output },
+        ),
+    });
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [{ id: 'anthropic/claude-sonnet-4-5' }],
+    });
+    code = 1;
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Model listing command failed',
+    });
+    code = 0;
+    output = 'No models available. Use /login or set an API key.';
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'detected',
+      models: [],
+    });
+    output = 'token=private';
+    expect(await adapter.detectModels()).toEqual({
+      modelsDetectionStatus: 'failed',
+      modelsDetectionError: 'Invalid model listing response',
+    });
+  });
   it('reports the installed version and whether a model has credentials', async () => {
     const dir = await fakePiDir();
     const calls: string[][] = [];
