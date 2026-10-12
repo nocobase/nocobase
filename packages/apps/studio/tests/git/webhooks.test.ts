@@ -978,6 +978,25 @@ describe('repository settings', () => {
     expect(saved.connection).toMatchObject({ name: 'GitHub', kind: 'token' });
   });
 
+  it('keeps reference checks per repository, by name', async () => {
+    const workdir = await resource();
+    expect(
+      (await h.git.repoSettings(alice(), workdir.id)).referenceChecks,
+    ).toEqual([]);
+    await expect(
+      h.git.updateRepoSettings(alice(), workdir.id, {
+        referenceChecks: ['Preview', ' '],
+      }),
+    ).rejects.toMatchObject({ details: { code: 'INVALID_REFERENCE_CHECKS' } });
+    const saved = await h.git.updateRepoSettings(alice(), workdir.id, {
+      referenceChecks: [' Preview ', 'Studio preview', 'Preview'],
+    });
+    expect(saved.referenceChecks).toEqual(['Preview', 'Studio preview']);
+    expect(
+      (await h.git.repoSettings(alice(), workdir.id)).referenceChecks,
+    ).toEqual(['Preview', 'Studio preview']);
+  });
+
   it('keeps the webhook secret write-only, and shows where GitHub posts and what it last sent', async () => {
     const workdir = await resource();
     const empty = await h.git.repoSettings(alice(), workdir.id);

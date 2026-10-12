@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders the sidebar with Home and Dashboard first, then My issues, the Development, Releases and Agent team sections, and Settings', () => {
+  it('orders the sidebar with Home and Dashboard first, then My follow-ups and My issues, the Development, Releases and Agent team sections, and Settings', () => {
     // The inbox is not among them: it is the header's button (`client/inbox/header-button.tsx`).
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
@@ -96,6 +96,7 @@ describe('app client routes', () => {
     expect(menu(routes)).toEqual([
       'navigation.home',
       'navigation.dashboard',
+      'navigation.followUps',
       'navigation.myIssues',
       'navigation.development',
       'navigation.releases',
@@ -168,6 +169,8 @@ describe('app client routes', () => {
       { name: 'chat-pm-conversation', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
+      // My follow-ups opens with My issues' grant.
+      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
       // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).

@@ -15,6 +15,9 @@ test('parallel fake runners only claim the runs of their own agents', async ({
       api.post<Issue>('projects/issues', {
         title: `Concurrent mention ${index} ${unique()}`,
         ownerUserId: me.userId,
+        statusKey: 'in_progress',
+        executor: null,
+        start: false,
       }),
     ),
   );
