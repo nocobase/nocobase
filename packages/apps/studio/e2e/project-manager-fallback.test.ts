@@ -297,7 +297,14 @@ test('shows the shared diagnostics in the Agent queue', async ({
             },
           },
         ],
-        agents: { [agentId]: board.agents[agentId] },
+        agents: {
+          [agentId]: {
+            ...board.agents[agentId]!,
+            ...(reason === 'concurrencyFull'
+              ? { active: 1, maxConcurrentRuns: 1 }
+              : {}),
+          },
+        },
       };
       await page.route('**/api/agentBoard*', (route) =>
         route.fulfill({ json: { data: fixture } }),
