@@ -344,7 +344,36 @@ describe("an agent's comment", () => {
     });
   });
 
-  it('wakes the agent whose comment it answers, and never the executor by default', async () => {
+  it('wakes nobody by answering an agent, unless it mentions one', async () => {
+    const reviewer = await h.createAgent({ name: 'Reviewer' });
+    const developer = await h.createAgent({ name: 'Developer' });
+    const issue = await h.projects.issues.create(alice(), { title: 'Review' });
+    const { comment: review } = await h.projects.comments.create(
+      asAgent(reviewer),
+      issue.id,
+      { content: `${mention(developer, 'Developer')} rename the helper` },
+    );
+    const before = (await runsOf(issue.id)).length;
+    const reply = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(developer), issue.id, {
+        content: 'Renamed.',
+        parentId: review.id,
+      }),
+    );
+    expect(reply.attempts).toEqual([]);
+    expect(await runsOf(issue.id)).toHaveLength(before);
+    const { triggered } = await h.projects.comments.create(
+      asAgent(developer),
+      issue.id,
+      {
+        content: `${mention(reviewer, 'Reviewer')} renamed, look again`,
+        parentId: review.id,
+      },
+    );
+    expect(triggered).toEqual([{ kind: 'agent', id: reviewer }]);
+  });
+
+  it('wakes the executing agent when it mentions nobody, but not the executor itself, nor past a person', async () => {
     const coordinator = await h.createAgent({ name: 'Coordinator' });
     const worker = await h.createAgent({ name: 'Worker' });
     const issue = await h.projects.issues.create(alice(), {
@@ -352,24 +381,10 @@ describe("an agent's comment", () => {
       executor: { type: 'agent', id: coordinator },
       start: false,
     });
-    const { comment: ask } = await h.projects.comments.create(
-      asAgent(coordinator),
-      issue.id,
-      { content: `${mention(worker)} take the API part` },
-    );
-    const before = (await runsOf(issue.id)).length;
-    // The worker's top-level comment wakes nobody, not even the executor.
-    const loose = await collectRunAttempts(() =>
-      h.projects.comments.create(asAgent(worker), issue.id, {
-        content: 'Started on it.',
-      }),
-    );
-    expect(loose.attempts).toEqual([]);
-    expect(await runsOf(issue.id)).toHaveLength(before);
     const { triggered } = await h.projects.comments.create(
       asAgent(worker),
       issue.id,
-      { content: 'Done: see branch agent/api.', parentId: ask.id },
+      { content: 'Done: see branch agent/api.' },
     );
     expect(triggered).toEqual([{ kind: 'agent', id: coordinator }]);
     const woken = (await runsOf(issue.id)).filter(
@@ -378,7 +393,21 @@ describe("an agent's comment", () => {
     expect(woken).toHaveLength(1);
     expect(
       (await h.agents.runs.detail(woken[0]!.id)).inputs.at(-1)?.payload,
-    ).toMatchObject({ trigger: 'reply', parentId: ask.id, byAgent: true });
+    ).toMatchObject({ trigger: 'comment', byAgent: true });
+    const before = (await runsOf(issue.id)).length;
+    const own = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(coordinator), issue.id, {
+        content: 'Merging the parts.',
+      }),
+    );
+    expect(own.attempts).toEqual([]);
+    const toPerson = await collectRunAttempts(() =>
+      h.projects.comments.create(asAgent(worker), issue.id, {
+        content: '[@bob](mention://user/bob) which API version?',
+      }),
+    );
+    expect(toPerson.attempts).toEqual([]);
+    expect(await runsOf(issue.id)).toHaveLength(before);
   });
 
   it('never wakes its own agent', async () => {

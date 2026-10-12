@@ -7,11 +7,12 @@
  *   asked not to start now, or the issue is dormant: in backlog, finished or closed (`skipped: 'dormant'`). Taken off
  *   an issue: its queued work is withdrawn and work in progress is asked to stop.
  * - A person's comment (not a note) wakes the agents it mentions, the agent whose comment it answers, and the agent
- *   executing the issue. An agent's comment wakes only the agents it mentions and the agent whose comment it answers,
- *   never itself, as the person its run acts for (the owner when no run wrote it); at most the workflow's
- *   `commentRunLimit` runs within `COMMENT_RUN_WINDOW_HOURS` hours, after which it starts nothing (`skipped: 'limited'`)
- *   and the owner is told and may continue it (`comment-run-limit.ts`). A person's comment that reaches agents restarts
- *   that count. A comment in the middle of a run reaches the run as input.
+ *   executing the issue. An agent's comment wakes the agents it mentions, never itself and never the agent whose
+ *   comment it answers; mentioning no agent, it wakes the executing agent (the coordinator) unless it mentions a person
+ *   or is the executor's own. It acts for the person its run acts for (the owner when no run wrote it); at most the
+ *   workflow's `commentRunLimit` runs within `COMMENT_RUN_WINDOW_HOURS` hours, after which it starts nothing
+ *   (`skipped: 'limited'`) and the owner is told and may continue it (`comment-run-limit.ts`). A person's comment that
+ *   reaches agents restarts that count. A comment in the middle of a run reaches the run as input.
  * - A person moving the issue's status tells a run that has not ended, unless the status's workflow stage already
  *   started work there (`stage-rules.ts`); finishing or closing the issue withdraws queued work instead. Moving it out
  *   of backlog to a status that is not finished starts the executing agent's work (`statusChange`).
@@ -754,14 +755,25 @@ export function createAgentWork(deps: {
       for (const ref of change.mentions)
         if (ref.kind === AGENT_KIND && !targets.has(ref.id))
           targets.set(ref.id, 'mention');
-      if (parent?.authorType === AGENT_KIND && parent.authorId)
-        if (!targets.has(parent.authorId))
-          targets.set(parent.authorId, 'reply');
-      // An agent's comment wakes only whom it names or answers, never the executor by default, nor itself.
       const executing = agentOf(issue);
-      if (byAgent) targets.delete(authorId);
-      else if (executing && !targets.has(executing))
-        targets.set(executing, 'comment');
+      if (byAgent) {
+        // An agent's comment wakes whom it names; naming nobody, the executor coordinates, unless a person is addressed.
+        const named = targets.size > 0;
+        targets.delete(authorId);
+        if (
+          !named &&
+          executing &&
+          executing !== authorId &&
+          !change.mentions.some((ref) => ref.kind === 'user')
+        )
+          targets.set(executing, 'comment');
+      } else {
+        if (parent?.authorType === AGENT_KIND && parent.authorId)
+          if (!targets.has(parent.authorId))
+            targets.set(parent.authorId, 'reply');
+        if (executing && !targets.has(executing))
+          targets.set(executing, 'comment');
+      }
       if (targets.size === 0) return [];
       const held = {
         commentId: comment.id,
