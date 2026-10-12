@@ -258,7 +258,10 @@ describe('My follow-ups', () => {
         'Next: merge once accepted',
       ),
     );
-    expect(panel.textContent).toContain('Checks passed · Has conflicts');
+    // The pull request mark arrives in a batched request of its own, after the issue's progress.
+    await waitFor(() =>
+      expect(panel.textContent).toContain('Checks passed · Has conflicts'),
+    );
     expect(
       within(panel).getByTestId('follow-ups-needs-you').textContent,
     ).toContain('Accept: PR #12');
