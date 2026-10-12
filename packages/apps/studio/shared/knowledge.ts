@@ -54,10 +54,6 @@ export function spaceSettingKey(space: SpaceRef): string {
   return `${space.scope}:${space.scopeId}`;
 }
 
-/** The token threshold under which an online agent gets its readable knowledge whole, by default. */
-export const DEFAULT_WHOLE_TOKENS = 150_000;
-export const WHOLE_TOKENS_MAX = 1_000_000;
-
 /**
  * How the knowledge base is searched (Settings › Knowledge search, `studio.knowledgeSearch`):
  *
@@ -67,8 +63,6 @@ export const WHOLE_TOKENS_MAX = 1_000_000;
  * - `contextModel` and `contextual`: contextual retrieval. For the spaces named in `contextual` (`spaceSettingKey`),
  *   `contextModel` (a cheap chat model) writes one sentence situating each section in its document before it is
  *   embedded; off without a context model or a space.
- * - `wholeTokens`: an online agent whose readable knowledge is estimated below this many tokens gets it whole in its
- *   system prompt instead of searching; 0 turns it off.
  * - `chunking`: how every space without its own is cut into sections (`KnowledgeChunking`); changing it cuts those
  *   spaces again in the background.
  * - `recall`: how search ranks and cuts its hits (`KnowledgeRecallSettings`).
@@ -78,7 +72,6 @@ export interface KnowledgeSearchSettings {
   readonly rerank: KnowledgeModelRef | null;
   readonly contextModel: KnowledgeModelRef | null;
   readonly contextual: readonly string[];
-  readonly wholeTokens: number;
   readonly chunking: KnowledgeChunking;
   readonly recall: KnowledgeRecallSettings;
 }
@@ -108,7 +101,6 @@ export const DEFAULT_KNOWLEDGE_SEARCH: KnowledgeSearchSettings = {
   rerank: null,
   contextModel: null,
   contextual: [],
-  wholeTokens: DEFAULT_WHOLE_TOKENS,
   chunking: DEFAULT_CHUNKING,
   recall: DEFAULT_RECALL_SETTINGS,
 };

@@ -152,7 +152,7 @@ export interface StudioGitDeps {
     | 'issueContext'
     | 'projects'
     | 'kinds'
-    | 'workflowEvents'
+    | 'statusEvents'
   >;
   readonly providers: GitProviders;
   readonly connections: GitConnections;
@@ -828,7 +828,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     if (others.length > 0) return keep('otherPrs');
     let target: string | null;
     try {
-      target = (await projects().workflowEvents.target(MERGED_EVENT, issue.id))
+      target = (await projects().statusEvents.target(MERGED_EVENT, issue.id))
         .to;
     } catch {
       // The event is not registered (an application without Studio's workflow binding): nothing moves it.
@@ -1085,6 +1085,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       connection: host ? choiceOf(host) : null,
       branchRules: row?.branchRules ?? [],
       wakeOnChecks: row?.wakeOnChecks ?? true,
+      wakeOnChecksPassed: row?.wakeOnChecksPassed ?? true,
       wakeOnConflict: row?.wakeOnConflict ?? true,
       polledAt: row?.polledAt ?? null,
       pollError: row?.pollError ?? null,
@@ -1816,6 +1817,8 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       }
       if (typeof input.wakeOnChecks === 'boolean')
         values.wakeOnChecks = input.wakeOnChecks;
+      if (typeof input.wakeOnChecksPassed === 'boolean')
+        values.wakeOnChecksPassed = input.wakeOnChecksPassed;
       if (typeof input.wakeOnConflict === 'boolean')
         values.wakeOnConflict = input.wakeOnConflict;
       await updateRepo(conn(), row.id, values);

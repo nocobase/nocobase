@@ -428,7 +428,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
 
     async function agentNames(): Promise<Map<string, string>> {
       return new Map(
-        (await agents.agents.list({ includeArchived: true })).map((agent) => [
+        (await agents.agents.directory(agents.tx.read())).map((agent) => [
           agent.id,
           agent.name,
         ]),

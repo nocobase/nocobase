@@ -8,12 +8,10 @@
  * - the agents plugin: the `nb-studio kb` routes (`/api/kb`, `routes.ts` over `views.ts`), the brief's knowledge sections
  *   (`brief.ts`) and the `knowledge` mount (`mount.ts`), with what a conversation run reads (`conversation.ts`); the
  *   action gate's knowledge actions (`actions.ts`) are added where Studio joins the agents (`../agents/provider.ts`);
- * - the projects plugin's workflows: the `retrospective` status rule (`retrospective.ts`);
  * - Studio's inbox: proposal cards and decisions (`inbox.ts`);
  * - the agents plugin's model services and vector index: vector search, reranking, contextual retrieval and each
  *   section's index state (`vectors.ts`), configured in Settings › Knowledge search (`search-settings.ts`,
- *   `search-routes.ts`) with the default chunking and recall the plugin reads (`tuning.ts`), and the whole knowledge in
- *   an online agent's prompt when it is small (`brief.ts`).
+ *   `search-routes.ts`) with the default chunking and recall the plugin reads (`tuning.ts`).
  *
  * The plugin announces each change on its own realtime topic (`knowledge`).
  */
@@ -25,7 +23,6 @@ import {
 import {
   projectsAccessToken,
   projectsKindsToken,
-  projectsStatusRulesToken,
   projectsToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Application } from '@nocobase/app-server/application';
@@ -50,7 +47,6 @@ import { conversationKnowledge } from './conversation.js';
 import { createStudioDirectory, levelsFrom } from './directory.js';
 import { bindKnowledgeInbox } from './inbox.js';
 import { knowledgeMount } from './mount.js';
-import { retrospectiveRule } from './retrospective.js';
 import { studioKnowledgeViewsToken } from './routes.js';
 import { studioSubjects } from './subjects.js';
 import { studioKnowledgeSearchToken } from './search-routes.js';
@@ -246,15 +242,6 @@ export default class StudioKnowledgeProvider extends ServiceProvider<Application
       }),
     );
 
-    if (container.has(projectsStatusRulesToken) && container.has(agentsToken))
-      keep(
-        container
-          .resolve(projectsStatusRulesToken)
-          .add(
-            retrospectiveRule({ agents: () => container.resolve(agentsToken) }),
-          ),
-      );
-
     if (container.has(agentsToken)) {
       const agents = container.resolve(agentsToken);
       const permissions = this.permissions();
@@ -270,14 +257,13 @@ export default class StudioKnowledgeProvider extends ServiceProvider<Application
         permissions,
         manualLines: this.manualLines,
         conversationOf,
-        searchSettings: () => this.settingsStore().get(),
       };
       keep(agents.briefs.sections.register(knowledgeBriefSection(briefDeps)));
       keep(agents.mounts.register(knowledgeMount(() => knowledge, briefDeps)));
       const vectors = createKnowledgeVectors({
         knowledge: () => knowledge,
         vectors: () => agents.vectors,
-        gateway: () => agents.online.gateway,
+        gateway: () => agents.models.gateway,
         settings: this.settingsStore(),
         database: container.resolve(databaseManagerToken),
         onError: this.onError,

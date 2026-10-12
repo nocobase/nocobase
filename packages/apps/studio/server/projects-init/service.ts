@@ -44,6 +44,7 @@ import type {
   Viewer,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import { ISSUE_TITLE_MAX } from '@nocobase/app-plugin-projects/shared/issues';
+import { IN_PROGRESS_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { isAbsoluteDirectory } from '@nocobase/app-plugin-projects/shared/projects';
 import type { DatabaseManager, Row } from '@nocobase/db';
 
@@ -62,7 +63,9 @@ import {
 import type { DeploySettings } from '../../shared/releases.js';
 import { conflict, forbidden, invalid, notFound } from '../access/errors.js';
 import { ISSUE_SUBJECT } from '../agents/catalog/triggers.js';
+import { handOverNote } from '../agents/manager/texts.js';
 import { AGENT_KIND } from '../agents/tx.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import type { GitConnections } from '../git/connections.js';
 import type { RepoEvent } from '../git/events.js';
 import type { WorkflowRun } from '../git/platform.js';
@@ -350,7 +353,7 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
       : systemViewer();
     try {
       const issue = await projects.issueQueries.detail(viewer, found.issueId);
-      const categories = await categoriesOf(projects, issue.projectId);
+      const categories = categoriesOf();
       if (categories.get(issue.statusKey) === 'done') return null;
       const done = categories.has('done')
         ? 'done'
@@ -758,10 +761,10 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
       const agent = agents
         ? await agents.agents.get(initAgentId).catch(() => null)
         : null;
-      if (!agent || agent.archivedAt)
+      if (!agent || agent.source !== 'runner' || agent.status !== 'enabled')
         throw invalid(
           'UNKNOWN_AGENT',
-          'The agent does not exist or is archived.',
+          'The agent does not exist or is not enabled.',
         );
     }
     const label = optionalText(input.label);
@@ -1039,9 +1042,19 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
       .execute();
     // Once the initialization is recorded: the CI of a repository Studio created waits for it (`commitInitial`).
     const deployed = await applyDeploy(viewer, resourceId, checked.deploy);
+    // The project manager executes the init issue and hands it to the agent chosen to initialize it.
     const executor = initAgentId
-      ? { executor: { type: AGENT_KIND, id: initAgentId } }
+      ? {
+          executor: { type: AGENT_KIND, id: PROJECT_MANAGER_ID },
+          statusKey: IN_PROGRESS_STATUS,
+        }
       : {};
+    const initAgent = initAgentId
+      ? await deps
+          .agents()
+          ?.agents.get(initAgentId)
+          .catch(() => null)
+      : null;
     const issue = await projects.issues.create(viewer, {
       title: options.setup
         ? INIT_ISSUE_TITLE
@@ -1049,11 +1062,17 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
             0,
             ISSUE_TITLE_MAX,
           ),
-      description: initDescription(prompt, target),
+      description: [
+        initDescription(prompt, target),
+        ...(initAgent ? ['', handOverNote(initAgent)] : []),
+      ].join('\n'),
       projectId,
       // The project's setup is claimable at once (`initialDirOf` knows it by the project's setup issue); a later
       // one gets its agent once recorded below.
-      ...(options.setup ? { ...executor, projectSetup: true } : {}),
+      // Without an agent, or until recorded, no one executes it in Studio (not the project manager by default).
+      ...(options.setup
+        ? { executor: null, ...executor, projectSetup: true }
+        : { executor: null }),
     });
     await conn()
       .query.updateTable(INITS)
@@ -1063,7 +1082,8 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
     if (!options.setup && initAgentId)
       await projects.issues.update(viewer, issue.id, {
         revision: issue.revision,
-        executor: { type: AGENT_KIND, id: initAgentId },
+        executor: { type: AGENT_KIND, id: PROJECT_MANAGER_ID },
+        statusKey: IN_PROGRESS_STATUS,
       });
     // After the init issue, which the agent's own issue (`agent`) then waits for in a new project, and before a
     // template without a workflow finishes, which commits the workflows Studio writes (`commitInitial`).
@@ -1279,12 +1299,14 @@ export function createProjectInits(deps: ProjectInitsDeps): ProjectInits {
       const work = (async () => {
         const run = await conn()
           .query.selectFrom('agRuns')
-          .select(['subjectKind', 'subjectId', 'failureReason'])
+          .select(['subjectKind', 'subjectId', 'agentId', 'failureReason'])
           .where('id', '=', runId)
           .executeTakeFirst<Row>();
         if (run?.subjectKind !== ISSUE_SUBJECT) return;
         const found = await initOfIssue(conn(), String(run.subjectId));
         if (found?.method !== 'prompt' || found.state !== 'pending') return;
+        // Only the run of the agent chosen to initialize it: the project manager's runs only hand it over.
+        if (found.agentId && String(run.agentId) !== found.agentId) return;
         if (status === 'completed') {
           await moveInit(
             conn(),

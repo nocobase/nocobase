@@ -1,7 +1,7 @@
 /**
- * The loop guard of agents' comments (`work.ts`): once they started as many runs on an issue as its workflow allows
- * (`commentRunLimit`), the owner is told, and a person who may edit the issue continues the comment held back once,
- * which restarts the count. As the stage loop guard (`continue-stage-run.ts`), with the same guard table.
+ * The loop guard of agents' comments (`work.ts`): once they started as many runs on an issue as the project manager's
+ * settings allow (`commentRunLimit`, 20 by default), the owner is told, and a person who may edit the issue continues
+ * the comment held back once, which restarts the count.
  */
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type {
@@ -11,15 +11,15 @@ import type {
 } from '@nocobase/app-plugin-projects/server/tokens';
 import { businessKey } from '@nocobase/app-plugin-projects/shared/access';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
-import { COMMENT_RUN_WINDOW_HOURS } from '@nocobase/app-plugin-projects/shared/workflows';
 
+import { COMMENT_RUN_WINDOW_HOURS } from '../../shared/project-manager.js';
 import { studioError } from '../http/errors.js';
 import {
   COMMENT_RUNS_NOTICE_KIND,
   commentGuardId,
-  stageGuards,
+  commentGuards,
   type HeldCommentWake,
-} from './stage-run-guard.js';
+} from './comment-guard.js';
 import { createAgentWork } from './work.js';
 
 /** The notice type of the owner's card. */
@@ -91,7 +91,7 @@ export async function pendingCommentRun(
 } | null> {
   const issue = await projects.issueQueries.detail(viewer, issueId);
   if (!mayContinue(viewer)) return null;
-  const guard = await stageGuards(projects.tx.read()).findOne({
+  const guard = await commentGuards(projects.tx.read()).findOne({
     filter: { id: commentGuardId(issue.id) },
   });
   if (!guard?.pendingToken) return null;
@@ -126,10 +126,10 @@ export async function continueCommentRun(
         'COMMENT_CONTINUE_STALE',
         'This comment no longer waits to continue.',
       );
-    const guard = await stageGuards(tx.conn).findOne({ filter: { id } });
+    const guard = await commentGuards(tx.conn).findOne({ filter: { id } });
     if (!guard || guard.pendingToken !== token || !guard.ruleConfig)
       throw stale();
-    const consumed = await stageGuards(tx.conn).updateMany({
+    const consumed = await commentGuards(tx.conn).updateMany({
       filter: { id, pendingToken: token },
       values: { pendingToken: null, resetAt: new Date().toISOString() },
     });

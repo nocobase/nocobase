@@ -1,14 +1,15 @@
 /**
- * Persistent loop-guard state and a read-only projection of runs and their inputs, on the change's connection: per
- * issue and status for stage runs, and per issue (`commentGuardId`) for the runs agents' comments start.
+ * The guard of the runs agents' comments start on an issue (`commentGuardId`), kept across restarts, and a read-only
+ * projection of runs and their inputs on the change's connection to count them. The guards live in
+ * `studioStageRunGuards`, where earlier versions also kept a guard per issue and workflow stage.
  */
 import type { ActorRef, FailureReason } from '@nocobase/agent-protocol';
 import type { Run } from '@nocobase/app-plugin-agents/shared/runs';
 import type { DatabaseConnection } from '@nocobase/db';
 import { jsonObject } from './values.js';
 
-export const STAGE_RUN_GUARDS = 'studioStageRunGuards';
-export interface StageRunGuard {
+export const COMMENT_GUARDS = 'studioStageRunGuards';
+export interface CommentGuard {
   readonly id: string;
   readonly issueId: string;
   readonly statusKey: string;
@@ -18,9 +19,6 @@ export interface StageRunGuard {
   readonly fromStatus: string | null;
   readonly ruleConfig: Readonly<Record<string, unknown>> | null;
 }
-
-export const stageGuardId = (issueId: string, statusKey: string): string =>
-  `${issueId}:${statusKey}`;
 
 /** The announcement of a comment the limit held back, for `commentRunNoticeRule`. */
 export const COMMENT_RUNS_NOTICE_KIND = 'agent.commentRuns';
@@ -44,10 +42,14 @@ export interface HeldCommentWake {
 /** The guard of the runs agents' comments start on an issue; its `statusKey` is no status key. */
 export const COMMENT_GUARD = '@comments';
 export const commentGuardId = (issueId: string): string =>
-  stageGuardId(issueId, COMMENT_GUARD);
+  guardIdOf(issueId, COMMENT_GUARD);
 
-export const stageGuards = (conn: DatabaseConnection) =>
-  conn.repository<StageRunGuard>(STAGE_RUN_GUARDS);
+/** A guard row's id: the issue and what it guards. */
+export const guardIdOf = (issueId: string, key: string): string =>
+  `${issueId}:${key}`;
+
+export const commentGuards = (conn: DatabaseConnection) =>
+  conn.repository<CommentGuard>(COMMENT_GUARDS);
 
 /** These failures describe the execution environment or network, rather than work the agent finished attempting. */
 const ENVIRONMENT_FAILURES: ReadonlySet<FailureReason> = new Set([
@@ -69,7 +71,7 @@ const ENVIRONMENT_FAILURES: ReadonlySet<FailureReason> = new Set([
   'cancelled',
 ]);
 
-export function countsAsStageRun(
+export function countsAsRun(
   run: Pick<
     Run,
     'status' | 'startedAt' | 'failureReason' | 'cancelRequestedAt'
@@ -86,7 +88,7 @@ export function countsAsStageRun(
   );
 }
 
-interface StageRunRow extends Pick<
+interface RunRow extends Pick<
   Run,
   'id' | 'status' | 'startedAt' | 'failureReason' | 'cancelRequestedAt'
 > {
@@ -105,7 +107,7 @@ async function recentRunCount(
   windowHours: number,
   counts: (payload: Readonly<Record<string, unknown>>) => boolean,
 ): Promise<number> {
-  const guard = await stageGuards(conn).findOne({ filter: { id: guardId } });
+  const guard = await commentGuards(conn).findOne({ filter: { id: guardId } });
   const since = new Date(
     Math.max(
       Date.now() - windowHours * 3_600_000,
@@ -128,30 +130,12 @@ async function recentRunCount(
     .where('run.startedAt', 'is not', null)
     .where('input.createdAt', '>=', since)
     .where('input.deliveredAt', 'is not', null)
-    .execute<StageRunRow>();
+    .execute<RunRow>();
   return new Set(
     rows
-      .filter((row) => countsAsStageRun(row) && counts(jsonObject(row.payload)))
+      .filter((row) => countsAsRun(row) && counts(jsonObject(row.payload)))
       .map((row) => row.id),
   ).size;
-}
-
-export function recentStageRunCount(
-  conn: DatabaseConnection,
-  issueId: string,
-  statusKey: string,
-  windowHours: number,
-): Promise<number> {
-  return recentRunCount(
-    conn,
-    issueId,
-    stageGuardId(issueId, statusKey),
-    windowHours,
-    (payload) =>
-      payload.byPerson !== true &&
-      payload.trigger === 'stageEntered' &&
-      payload.to === statusKey,
-  );
 }
 
 /** The runs agents' comments started on the issue (their input's `byAgent`). */

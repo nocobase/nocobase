@@ -35,18 +35,10 @@ export type AgentBoardState = (typeof AGENT_BOARD_STATES)[number];
  * What an agent waits for a person on, in the order one is chosen when several hold:
  *
  * - `failedRun`: its run failed for good and the failed-run card waits for a decision (retry, reassign or cancel);
- * - `approval`: it asked to move the issue and the move waits for an approver;
- * - `proposal`: its design proposal waits in Proposal review for the owner, decided in the issue's design section;
  * - `question`: it put the issue in Blocked, its way of asking the owner;
  * - `review`: it handed the issue over for review (In review) and nobody answered yet.
  */
-export const AGENT_WAIT_KINDS = [
-  'failedRun',
-  'approval',
-  'proposal',
-  'question',
-  'review',
-] as const;
+export const AGENT_WAIT_KINDS = ['failedRun', 'question', 'review'] as const;
 
 export type AgentWaitKind = (typeof AGENT_WAIT_KINDS)[number];
 
@@ -56,17 +48,11 @@ export type AgentWaitKind = (typeof AGENT_WAIT_KINDS)[number];
  * - `backlog`: the issue is in backlog, where nothing starts; it starts when it leaves backlog;
  * - `lastRun`: the agent ran on it and the run ended (completed, failed with its card settled, or cancelled), and
  *   nothing woke it since;
- * - `noAutoRun`: it never ran, and its status has no rule that runs an agent on entering it;
  * - `neverRan`: it never ran (it was given without starting).
  *
  * An issue an agent executes that waits for unfinished issues is queued behind them, not idle.
  */
-export const AGENT_IDLE_REASONS = [
-  'backlog',
-  'lastRun',
-  'noAutoRun',
-  'neverRan',
-] as const;
+export const AGENT_IDLE_REASONS = ['backlog', 'lastRun', 'neverRan'] as const;
 
 export type AgentIdleReason = (typeof AGENT_IDLE_REASONS)[number];
 

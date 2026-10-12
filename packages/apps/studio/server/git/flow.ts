@@ -3,8 +3,8 @@
  * a refresh, a merge preflight, a merge or a person marking it merged.
  *
  * - **Merged**: for each linked issue whose counted pull requests (links without `autoCompleteDisabled`, closed ones left out) are now all
- *   merged, Studio fires the workflow event `studio.merged` (`projects.workflowEvents.fire`); the issue moves along its
- *   workflow's transition on it (the "Software development" template: In review or In progress → Done). The move is the
+ *   merged, Studio fires the status event `studio.merged` (`projects.statusEvents.fire`); the issue moves to Done from
+ *   In progress, Blocked or In review (`workflow.ts`). The move is the
  *   system's; the activity names the merging person when Studio knows them (Studio merged it, a person marked it, or
  *   GitHub's `merged_by` login is a Studio username) and notes `owner/name#12 merged`. Merge cards settle `merged`, and
  *   the followers of every linked issue hear it (`pr_merged`, `notices.ts`).
@@ -12,7 +12,9 @@
  * - **Signals**, while it is open: failing checks (`ciState = failure`) and a conflict (`mergeableState = dirty`) wake the
  *   agent executing each linked issue (an issue run input, trigger `prChecksFailed` / `prConflict`), once per head
  *   commit, at most `SIGNAL_WAKE_LIMIT` heads in a row; after that the owner is told instead. Passing checks or a known
- *   mergeable state clear the count. A repository can turn either off.
+ *   mergeable state clear the count. Checks that all finished without a failure (`ciState = success`) wake it once per
+ *   head commit (`prChecksPassed`), so the project manager may wait for them before handing the issue over for
+ *   acceptance. A repository can turn each off.
  *
  * Writes run in one projects transaction, so the issue moves and the stored state commit together; inbox items go out
  * after the commit.
@@ -57,7 +59,7 @@ import {
 export interface GitFlowDeps {
   readonly projects: () => Pick<
     Projects,
-    'tx' | 'workflowEvents' | 'issueContext'
+    'tx' | 'statusEvents' | 'issueContext'
   >;
   readonly agents: () => Pick<Agents, 'agents' | 'runs'> | undefined;
   readonly inbox: () => StudioInboxPort | undefined;
@@ -98,9 +100,12 @@ export interface GitFlow {
 
 type After = (() => Promise<void>)[];
 
-const TRIGGERS: Readonly<Record<'checks' | 'conflict', PullRequestTrigger>> = {
+type Signal = 'checks' | 'conflict' | 'passed';
+
+const TRIGGERS: Readonly<Record<Signal, PullRequestTrigger>> = {
   checks: 'prChecksFailed',
   conflict: 'prConflict',
+  passed: 'prChecksPassed',
 };
 
 /** Known and not a conflict: GitHub's `clean`, `unstable`, `blocked`, `behind`, `has_hooks`, `draft`. */
@@ -132,8 +137,10 @@ async function userOfLogin(
   return row ? String((row as { id: unknown }).id) : null;
 }
 
-function signalText(pr: PullRequestRow, signal: 'checks' | 'conflict'): string {
+function signalText(pr: PullRequestRow, signal: Signal): string {
   const ref = `${pr.repo}#${pr.number} (${pr.url}, branch \`${pr.headRef}\`, head ${pr.headSha.slice(0, 12)})`;
+  if (signal === 'passed')
+    return `All checks of pull request ${ref} passed. Decide whether the change is ready for acceptance.`;
   return signal === 'checks'
     ? `The checks of pull request ${ref} failed. Find out why, fix it on the same branch and push.`
     : `Pull request ${ref} conflicts with \`${pr.baseRef}\`. Bring the branch up to date with \`${pr.baseRef}\`, resolve the conflicts and push.`;
@@ -185,7 +192,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
     if (userId && !pr.mergedByUserId)
       await updatePullRequest(tx.conn, pr.id, { mergedByUserId: userId });
     if (complete.length > 0)
-      await deps.projects().workflowEvents.fire(
+      await deps.projects().statusEvents.fire(
         {
           event: MERGED_EVENT,
           issueIds: complete,
@@ -236,7 +243,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
   async function wake(
     tx: ProjectsTx,
     pr: PullRequestRow,
-    signal: 'checks' | 'conflict',
+    signal: Signal,
     count: number,
     after: After,
   ): Promise<void> {
@@ -252,7 +259,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         issue.executor?.type !== AGENT_KIND
       )
         continue;
-      if (count > SIGNAL_WAKE_LIMIT) {
+      if (signal !== 'passed' && count > SIGNAL_WAKE_LIMIT) {
         const port = deps.inbox();
         const card = await cardIssue(tx.conn, issue.id);
         if (port && card && count === SIGNAL_WAKE_LIMIT + 1)
@@ -336,6 +343,15 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       changed = true;
       if (signal === 'checks' ? repo.wakeOnChecks : repo.wakeOnConflict)
         await wake(tx, pr, signal, count, after);
+    }
+    // All checks of this head finished without a failure: once per head.
+    if (pr.ciState === 'success') {
+      const key = `passed@${pr.headSha}`;
+      if (pr.signals.passed?.key !== key) {
+        next.passed = { key, count: 1 };
+        changed = true;
+        if (repo.wakeOnChecksPassed) await wake(tx, pr, 'passed', 1, after);
+      }
     }
     if (changed) await updatePullRequest(tx.conn, pr.id, { signals: next });
   }
