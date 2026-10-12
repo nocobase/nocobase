@@ -40,6 +40,14 @@ it('typechecks the published Provider and queue business consumer examples again
       example,
     ]),
   );
+  const documentedPaths = [...sourceFiles.keys()];
+  const invalidPath = resolve(packageRoot, 'server/__invalid_sync_example.ts');
+  const invalidExample = examples[0]!.replace(
+    '.onMessagesSynced(',
+    '.onMessagesSyncedTypo(',
+  );
+  expect(invalidExample).not.toBe(examples[0]);
+  sourceFiles.set(invalidPath, invalidExample);
   const originalGetSourceFile = host.getSourceFile.bind(host);
   host.getSourceFile = (
     path,
@@ -58,7 +66,13 @@ it('typechecks the published Provider and queue business consumer examples again
       : ts.createSourceFile(path, example, languageVersion, true);
   };
   const program = ts.createProgram([...sourceFiles.keys()], options, host);
-  const diagnostics = ts.getPreEmitDiagnostics(program);
+  const checkExample = (path: string): readonly ts.Diagnostic[] => {
+    const source = program.getSourceFile(path);
+    expect(source).toBeDefined();
+    // Imports still resolve to real public APIs; package typecheck owns dependency-source diagnostics.
+    return ts.getPreEmitDiagnostics(program, source!);
+  };
+  const diagnostics = documentedPaths.flatMap(checkExample);
   expect(
     ts.formatDiagnosticsWithColorAndContext(diagnostics, {
       getCurrentDirectory: () => packageRoot,
@@ -66,4 +80,13 @@ it('typechecks the published Provider and queue business consumer examples again
       getNewLine: () => '\n',
     }),
   ).toBe('');
+  // Prove that limiting diagnostics to examples does not skip their semantic contract checks.
+  const invalidDiagnostics = checkExample(invalidPath)
+    .filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error)
+    .map((diagnostic) =>
+      ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+    );
+  expect(invalidDiagnostics).toContainEqual(
+    expect.stringContaining("Property 'onMessagesSyncedTypo' does not exist"),
+  );
 }, 60_000);
