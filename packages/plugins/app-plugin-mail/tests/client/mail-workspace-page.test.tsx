@@ -2315,8 +2315,10 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('previews an uploaded inline image and sends image-only HTML with its attachment', async () => {
     render(<MailWorkspacePage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
-    fireEvent.change(screen.getByLabelText('TO'), {
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    fireEvent.click(compose);
+    fireEvent.change(await screen.findByLabelText('TO'), {
       target: { value: 'recipient@example.com' },
     });
     fireEvent.change(screen.getByLabelText('Subject'), {
