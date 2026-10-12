@@ -112,7 +112,7 @@ export type AgentsEvent =
       readonly type: 'agent.removed';
       readonly agentId: string;
       readonly name: string;
-      readonly reason: 'archived' | 'deleted';
+      readonly reason: 'archived' | 'deleted' | 'disabled';
       readonly byUserId: string | null;
     }
   | { readonly type: 'runner.changed'; readonly runnerId: string }

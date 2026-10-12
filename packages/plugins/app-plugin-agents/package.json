@@ -66,9 +66,9 @@
       "types": "./shared/conversations.ts",
       "import": "./shared/conversations.ts"
     },
-    "./shared/presets": {
-      "types": "./shared/presets.ts",
-      "import": "./shared/presets.ts"
+    "./shared/model-catalog": {
+      "types": "./shared/model-catalog.ts",
+      "import": "./shared/model-catalog.ts"
     },
     "./shared/models": {
       "types": "./shared/models.ts",
@@ -233,7 +233,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ./scripts/bundle-just-bash.mjs && nocobase-db-manifests",
+    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -300,10 +300,8 @@
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "esbuild": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
-    "just-bash": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

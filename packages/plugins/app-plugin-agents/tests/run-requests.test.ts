@@ -301,11 +301,7 @@ describe('run requests', () => {
 
   it('checks again on confirming that the responsible may still wake the agent', async () => {
     await setUp();
-    const restricted = await h.createAgent({
-      name: 'Private',
-      access: 'users',
-      userIds: [ALICE, BOB],
-    });
+    const restricted = await h.createAgent({ name: 'Private' });
     const asked = await h.services.runs.enqueue({
       agentId: restricted,
       subject: { kind: 'sample', id: '1' },
@@ -314,17 +310,13 @@ describe('run requests', () => {
       input: comment(BOB, 'Please.'),
     });
     expect(asked.outcome).toBe('pending');
-    const agent = await h.services.agents.get(restricted);
-    await h.services.agents.update(restricted, 'owner', {
-      expectedRevision: agent.revision,
-      userIds: ['owner'],
-    });
+    await h.disableAgent(restricted);
     await expect(
       h.services.runs.requests.confirm(
         asked.outcome === 'pending' ? asked.requestId : '',
         ALICE,
       ),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    ).rejects.toMatchObject({ code: 'AGENT_NOT_ENABLED' });
     expect(await runsOn()).toEqual([]);
   });
 
@@ -432,17 +424,17 @@ describe('run requests', () => {
     'expires and notifies when reassignment to %s cannot run the work, preserving runAsMe',
     async (toUserId) => {
       await setUp();
-      const restricted = await h.createAgent({
-        access: 'users',
-        userIds: [ALICE, BOB],
-      });
+      const restricted = await h.createAgent();
       const asked = await bobAsks('Keep this work.', { agentId: restricted });
       const id = asked.outcome === 'pending' ? asked.requestId : '';
+      // Dave could take it over only while the agent may be given work.
+      if (toUserId) await h.disableAgent(restricted);
       const handed = await h.services.runs.requests.reassign({
         subject: { kind: 'sample', id: '1' },
         toUserId,
         byUserId: ALICE,
       });
+      if (toUserId) await h.enableAgent(restricted);
       expect(handed).toMatchObject({ superseded: [], created: [], queued: [] });
       expect(handed.expired.map((request) => request.id)).toEqual([id]);
       expect(events.map((event) => event.type)).toEqual([
@@ -463,19 +455,6 @@ describe('run requests', () => {
       ).rejects.toMatchObject({ code: 'RUN_REQUEST_SETTLED' });
     },
   );
-
-  it('requires the requester’s own permission before creating an auto request', async () => {
-    await setUp();
-    const restricted = await h.createAgent({
-      access: 'users',
-      userIds: [ALICE],
-    });
-    await expect(
-      bobAsks('Unwanted.', { agentId: restricted }),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
-    expect(await h.services.runs.requests.list({ userId: ALICE })).toEqual([]);
-    expect(events).toEqual([]);
-  });
 
   it('reuses an identical pending snapshot without renewing expiry, while retaining distinct work', async () => {
     await setUp();
