@@ -1,5 +1,6 @@
 node_modules/
-.agents/
+.agents/*
+!.agents/rules/
 .pnpm-store/
 dist-ssr/
 logs/

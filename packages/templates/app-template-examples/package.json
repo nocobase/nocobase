@@ -116,6 +116,7 @@
     "config.example.yml",
     "README.MD",
     "AGENTS.md",
+    ".agents/rules",
     "CLAUDE.md",
     "playwright.config.ts"
   ],
