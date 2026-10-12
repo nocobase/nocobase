@@ -4,9 +4,15 @@ title: 'API keys'
 
 # API keys
 
+[← Authentication overview](./index.md) · [Open the related scenario](./index.md#api)
+
 An API key lets scripts, scheduled tasks, and external systems call application APIs without browser sign-in. By default, it represents its creator and uses that user’s existing permissions.
 
 A Northstar account manager can use a Key to send accessible transport orders to a reporting system, while continuing to use the application through browser sign-in.
+
+> API keys provide programmatic credentials. The integration-key screen and order API below belong to the Northstar example; verify the actual endpoints, response fields, and user permissions in your application.
+
+[Provide an integration keys entry](#provide-an-integration-keys-entry) · [Create, save, and revoke](#create-save-and-revoke) · [Read transport orders with a script](#read-transport-orders-with-a-script) · [Result](#result)
 
 ## Provide an integration keys entry
 
@@ -48,6 +54,8 @@ Explain how to configure the application address and run the script.
 ```
 
 This example uses a Key created by Alice, an account manager. The script calls `GET /main/api/northstar` with the `x-api-key` header, extracts orders from the workspace response, and resolves customer names. This endpoint returns accessible workspace records in a single response, without pagination.
+
+> This script targets the Northstar example API, not a universal NocoBase orders endpoint. Check paths, response structure, and pagination before using it with another application.
 
 ### Run the script
 
@@ -139,10 +147,14 @@ The integration keys page lists the purpose, recognizable fragment, status, expi
 
 ![Transport reporting integration key](../assets/northstar-keys-en.png)
 
-**Users can manage their integration keys and view expiration and usage.**
-
 The creation view displays the full key once. Its value is masked in this screenshot.
 
 ![One-time key display](../assets/northstar-key-created-en.png)
 
-**The complete key is shown once after creation; the list keeps a recognizable fragment.**
+## Verify the result
+
+- The script returns the expected order fields within the user's scope.
+- The Key comes from the environment and never appears in code or logs.
+- Revoked or expired credentials produce an error rather than an empty success result.
+
+Return to the [related overview scenario](./index.md#api) to adapt the prompt and continue with your Agent.

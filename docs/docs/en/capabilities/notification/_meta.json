@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/capabilities/notification"
+  },
+  {
+    "type": "file",
+    "name": "usage",
+    "label": "Usage guide"
+  }
+]

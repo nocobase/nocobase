@@ -4,9 +4,15 @@ title: 'Customizing sign-in pages'
 
 # Customizing sign-in pages
 
+[← Authentication overview](./index.md) · [Open the related scenario](./index.md#brand)
+
 After setting up accounts and the required authentication methods, customize the sign-in page for your company.
 
 The sign-in page belongs to the application source. Its name, logo, copy, imagery, layout, and colors can follow a company brand while preserving authentication, error feedback, and password recovery.
+
+> Customize application-owned branding, layout, and text while preserving the existing authentication actions, error handling, account rules, and recovery flows.
+
+[Example: Northstar employee sign-in](#example-northstar-employee-sign-in) · [View the result](#view-the-result) · [Further customization](#further-customization)
 
 ## Example: Northstar employee sign-in
 
@@ -29,8 +35,6 @@ The sign-in page uses a pale-blue mountain-road and truck illustration with comp
 
 ![Transport company sign-in with a pale-blue truck illustration and branded form](../assets/northstar-branded-login-en.png)
 
-**The sign-in page uses the company’s background, branding and layout while retaining authentication.**
-
 Page customization reuses existing forms and authentication actions. Hiding a registration link must be accompanied by disabling registration on the server.
 
 ## Further customization
@@ -38,3 +42,11 @@ Page customization reuses existing forms and authentication actions. Hiding a re
 Describe background images, form position, brand colors, fonts, or role-specific landing pages. Consider narrow screens and dark mode, and enforce business access on the server.
 
 Password recovery requires an actual configured reset-email service. A visible link does not mean that service is ready.
+
+## Verify the result
+
+- The transport branding and form work on desktop and mobile.
+- Password visibility, errors, and password recovery remain usable.
+- Self-registration is disabled on the server, with reusable registration components retained.
+
+Return to the [related overview scenario](./index.md#brand) to adapt the prompt and continue with your Agent.

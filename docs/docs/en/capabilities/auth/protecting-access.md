@@ -4,7 +4,13 @@ title: 'Protecting pages and APIs'
 
 # Protecting pages and APIs
 
+[← Authentication overview](./index.md) · [Open the related scenario](./index.md#protect)
+
 Northstar can publish its transport service information while keeping customer records, orders, and its workspace internal. Authentication establishes whether a caller is signed in; authorization determines access afterward.
+
+> The /main/services, /main/orders, and /main/api/northstar paths belong to this example. Ask the Agent to use your application’s actual routes, APIs, and base path.
+
+[Public information and internal work](#public-information-and-internal-work) · [Use the current employee identity](#use-the-current-employee-identity) · [Page and API requirements](#page-and-api-requirements) · [Account lifecycle and deployment](#account-lifecycle-and-deployment)
 
 ## Public information and internal work
 
@@ -25,8 +31,6 @@ Open `/main/services` to browse Northstar’s public service page directly. Visi
 
 ![Public Northstar service information without sign-in](../assets/northstar-public-services-en.png)
 
-**Visitors can browse public service information without signing in.**
-
 The business prompt above produces this page. Branding, layout, and service information can follow the company’s needs.
 
 ### Require sign-in for employee orders
@@ -36,8 +40,6 @@ Choose **Open employee orders** to visit the internal `/main/orders` address. An
 Entering the internal order URL directly also leads to sign-in. Knowing the address does not grant business access.
 
 ![Opening employee orders anonymously redirects to sign-in](../assets/northstar-internal-orders-login-en.png)
-
-**Opening internal orders without a session redirects to sign-in.**
 
 Compare these example addresses:
 
@@ -84,3 +86,11 @@ Disable accounts and revoke sessions when employees leave or access is paused. A
 Deployment configuration covers application secrets, public address and path, cookies, and shared storage for multiple instances. Provider callbacks and password reset links must match the actual access address. Reverse proxies must forward protocol, Host, and cookies correctly.
 
 Give the Agent these access requirements to implement page and API protection with the application’s authentication and authorization capabilities.
+
+## Verify the result
+
+- Visitors can read public information without receiving internal records.
+- Internal pages redirect unauthenticated visitors to sign-in.
+- Internal APIs enforce identity and business authorization on the server.
+
+Return to the [related overview scenario](./index.md#protect) to adapt the prompt and continue with your Agent.
