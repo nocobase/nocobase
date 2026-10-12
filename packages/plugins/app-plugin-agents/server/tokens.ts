@@ -12,6 +12,7 @@ export type { AgentDefaults, AgentService } from './core/agents/index.js';
 export { runnerAgentId } from './core/agents/index.js';
 export type {
   ActionGate,
+  ActionDenial,
   CallerGate,
   CallerIdentity,
   CallerKind,

@@ -9,7 +9,7 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 
 ## Who you are
 
-- Inside a run's working directory (a `.nb-studio/run.json` at or above it) `nb-studio` acts as the run: it presents the run's token and can do what the agent is given. You never need a key or `nb-studio login` there, and must not pass any credential on the command line.
+- Inside a run's working directory (a `.nb-studio/run.json` at or above it) `nb-studio` acts as the run, within the authenticated run identity's permissions and the run's restrictions. That identity is the person who woke the agent and can differ from the issue owner. You never need a key or `nb-studio login` there, and must not pass any credential on the command line.
 - Elsewhere it acts as the person signed in with `nb-studio login` (the current profile, or `--profile <name>`), or with `NB_STUDIO_SERVER` and `NB_STUDIO_API_KEY` in CI.
 - `nb-studio whoami` shows the server, who you act as, the actions you hold, and how many commands need an action you lack; `nb-studio whoami --missing` lists them by action.
 
@@ -17,7 +17,7 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 
 1. `nb-studio --help` lists every command you may run; `nb-studio <area> --help` (such as `nb-studio issue --help`) narrows it.
 2. `nb-studio docs <command words>` shows a command's arguments, flags, output, who may run it, the action it needs, the request it makes and examples. `nb-studio docs` alone lists the areas.
-3. A command you are not offered answers why: `ACTION_REQUIRED` names the action it needs (give the agent that capability, or ask a person), `IDENTITY_MISMATCH` says it is a person's (or only a run's).
+3. A command you are not offered answers why: `ACTION_REQUIRED` names the action it needs and, when available, the evidenced permission reason; `IDENTITY_MISMATCH` says it is a person's (or only a run's). A missing reason is unknown, not evidence that the agent lacks a capability.
 
 ## Calling it well
 
@@ -26,6 +26,25 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 - A command that asks first needs `--yes`; take it as the moment to be sure. `--dry-run` works only where the command has one (`nb-studio plan undo <plan> --dry-run`); elsewhere it is refused and nothing is sent.
 - A missing argument is refused with `MISSING_ARGUMENT` naming what to pass; do not loop on the same line.
 - Exit codes: 0 ok, 2 network (retry later), 3 authentication or permission (do not retry), 4 not found, 5 invalid input (fix the line), 6 conflict (read again, then retry), 7 a plan is required (propose it with `nb-studio plan create`).
+
+## When a command is refused
+
+Read the failure with `--json`: `error.code` preserves the API reason or CLI code. An API refusal's evidence is in `error.details.metadata` (`permissionReason`, `action`, `requiredAction`, `runActor`, and `issueOwner` when applicable). A local `ACTION_REQUIRED` refusal's evidence is directly in `error.details` (`permissionReason`, `action`, `requiredAction`, `actingFor`); the manifest supplies the run identity in `identity.actingFor`. Use `requiredAction` when supplied, otherwise `action`; a derived action may need a different base permission. Old servers may omit this evidence: explicitly say the cause is unknown and quote the original error, rather than guessing who lacks permission.
+
+Report in this order: the actual result (what was refused or remains undone), the cause supported by the error, then the concrete next step (who should do what). Include the code/reason and supplied permission evidence, and distinguish the run identity from the issue owner. Do not name a specific grantor unless the context proves who has the authority.
+
+| Evidence                                               | Next step                                                                                                                                                                          |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACTOR_LACKS_ACTION`                                   | Ask someone with role management permission in Settings › Roles to grant the required action, or a role containing it, to the reported run identity. Continue after authorization. |
+| `AGENT_NOT_GIVEN`                                      | Ask someone who manages agents to check the configuration for the reported action, or ask an authorized person to perform the operation.                                           |
+| `NOT_FOR_AGENTS`, `READ_ONLY_RUN`, `IDENTITY_MISMATCH` | Ask an authorized person to perform the operation or confirm a supported proposal.                                                                                                 |
+| `NO_ACTION_DECLARED`                                   | Ask the application maintainer to check the route declaration.                                                                                                                     |
+| Missing, `UNKNOWN`, or unrecognized reason             | State that the cause is unknown; ask the application maintainer to investigate with the original error.                                                                            |
+| `PLAN_REQUIRED`                                        | Propose the operation with `nb-studio plan create` as the error suggests; this is not evidence of missing identity permission.                                                     |
+| `RATE_LIMITED`, model quota, or model rate limit       | Report the actual limit and supplied retry guidance; ask the person managing usage to check quota when required. Do not attribute it to identity permissions.                      |
+| Shell/tool/runner refusal                              | Report the tool's actual reason and the required authorized next step; use another permitted local file tool only within the same scope.                                           |
+
+Never work around a refusal with personal CLI login, personal API keys, a different identity, direct HTTP, or reinstalling or reconfiguring the runner. Do not blindly retry or switch agents to bypass it. When a refusal prevents an issue step, report it once in the hand-over thread and end the step. A project manager with `ACTOR_LACKS_ACTION` evidence first comments the authorization needed, then moves the issue to `blocked`, so the owner's notification includes that requirement; workers do not change the status.
 
 ## Common work
 

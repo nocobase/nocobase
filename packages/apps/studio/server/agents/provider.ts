@@ -232,7 +232,19 @@ function scopeRuns(
   if (!container.has(authorizationToken) || scopedContainers.has(container))
     return;
   scopedContainers.add(container);
-  container.resolve(authorizationToken).use(runScopeStep(agents, grantsOf));
+  container.resolve(authorizationToken).use(
+    runScopeStep(agents, grantsOf, async (identity) => {
+      const run = identity.run?.run;
+      if (run?.subjectKind !== 'issue' || !container.has(projectsToken))
+        return undefined;
+      const issue = await container
+        .resolve(projectsToken)
+        .issueContext.contextFor(agents.tx.read(), run.subjectId);
+      return issue
+        ? { userId: issue.owner.id, name: issue.owner.name || issue.owner.id }
+        : undefined;
+    }),
+  );
 }
 
 /** Studio's inbox as agents read it, when Studio keeps one. */

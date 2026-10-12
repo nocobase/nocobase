@@ -61,6 +61,10 @@ describe('CLI surface', () => {
     h = await createHarness();
     const services = h.services;
     services.gate.set({
+      explain: async (_identity, action) => ({
+        permissionReason: 'ACTOR_LACKS_ACTION',
+        requiredAction: action,
+      }),
       allowed: (identity) =>
         Promise.resolve(
           new Set(
@@ -110,6 +114,11 @@ describe('CLI surface', () => {
           data: {
             identity: { kind: string; userId: string };
             commands: { id: string }[];
+            withheld: {
+              id: string;
+              permissionReason?: string;
+              requiredAction?: string;
+            }[];
           };
         },
       };
@@ -124,6 +133,12 @@ describe('CLI surface', () => {
     expect(run.body.data.commands.map((command) => command.id)).toEqual([
       'doc:get',
     ]);
+    expect(
+      run.body.data.withheld.find((command) => command.id === 'doc:delete'),
+    ).toMatchObject({
+      permissionReason: 'ACTOR_LACKS_ACTION',
+      requiredAction: 'docs/delete',
+    });
     const person = await manifest({ 'x-person': 'ada' });
     expect(person.body.data.identity).toMatchObject({
       kind: 'person',

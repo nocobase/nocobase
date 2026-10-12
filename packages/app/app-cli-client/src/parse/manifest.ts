@@ -92,6 +92,8 @@ export interface CliCommand {
 
 /** A command the caller is not offered, and why. */
 export interface CliWithheldCommand {
+  readonly permissionReason?: string | undefined;
+  readonly requiredAction?: string | undefined;
   readonly id: string;
   readonly summary: string;
   readonly reason: 'identity' | 'action';
@@ -107,6 +109,8 @@ export interface CliManifest {
     readonly userId: string;
     readonly displayName: string;
     readonly runId?: string | undefined;
+    readonly actingFor?:
+      { readonly userId: string; readonly name: string } | undefined;
     /** Absent from a server older than manifest version 4. */
     readonly actions?: readonly string[] | undefined;
   };

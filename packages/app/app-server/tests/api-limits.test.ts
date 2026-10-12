@@ -265,7 +265,8 @@ describe('api.rateLimit', () => {
     const retryAfter = Number(limited.headers.get('retry-after'));
     expect(retryAfter).toBeGreaterThan(0);
     expect(retryAfter).toBeLessThanOrEqual(60);
-    expect(await limited.json()).toMatchObject({
+    const refusal = await limited.json();
+    expect(refusal).toMatchObject({
       error: {
         code: 429,
         status: 'RESOURCE_EXHAUSTED',
@@ -274,6 +275,7 @@ describe('api.rateLimit', () => {
         requestId: 'trace-rate',
       },
     });
+    expect(refusal).not.toHaveProperty('error.metadata.permissionReason');
   });
 
   it('counts each client address separately', async () => {

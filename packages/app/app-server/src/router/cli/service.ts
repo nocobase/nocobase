@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   createServiceToken,
   type ServiceToken,
@@ -12,6 +14,7 @@ import {
 } from './derive.js';
 import type {
   CliCaller,
+  CliActionDenial,
   CliCommand,
   CliDescription,
   CliExclusion,
@@ -121,6 +124,42 @@ export class CliService {
   /** The manifest of `caller`: the commands `document` describes that it may run. */
   public manifestFor(document: ApiDocument, caller: CliCaller): CliManifest {
     return cliManifestOf(this.commandsOf(document), caller);
+  }
+
+  /** Adds authorization evidence without changing the synchronous manifest API or its filtering. */
+  public async explainedManifestFor(
+    document: ApiDocument,
+    caller: CliCaller,
+  ): Promise<CliManifest> {
+    const manifest = this.manifestFor(document, caller);
+    if (!caller.explain) return manifest;
+    const explanations = new Map<string, CliActionDenial>();
+    for (const command of manifest.withheld) {
+      if (
+        command.reason !== 'action' ||
+        !command.action ||
+        explanations.has(command.action)
+      )
+        continue;
+      explanations.set(command.action, await caller.explain(command.action));
+    }
+    const withheld = manifest.withheld.map((command) => ({
+      ...command,
+      ...(command.reason === 'action' && command.action
+        ? explanations.get(command.action)
+        : {}),
+    }));
+    const etag = createHash('sha256')
+      .update(
+        JSON.stringify({
+          identity: manifest.identity,
+          commands: manifest.commands,
+          withheld,
+        }),
+      )
+      .digest('hex')
+      .slice(0, 32);
+    return { ...manifest, withheld, etag };
   }
 
   private changed(): void {

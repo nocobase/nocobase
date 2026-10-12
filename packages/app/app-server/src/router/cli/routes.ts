@@ -123,6 +123,7 @@ const CliManifestSchema: z.ZodType<CliManifest> = z
       userId: z.string(),
       displayName: z.string(),
       runId: z.string().optional(),
+      actingFor: z.object({ userId: z.string(), name: z.string() }).optional(),
       actions: z.array(z.string()).meta({
         description: 'The business actions the caller holds.',
       }),
@@ -137,6 +138,8 @@ const CliManifestSchema: z.ZodType<CliManifest> = z
             reason: z.enum(['identity', 'action']),
             identities: z.array(Identity),
             action: z.string().optional(),
+            permissionReason: z.string().optional(),
+            requiredAction: z.string().optional(),
           })
           .meta({ ref: 'CliWithheldCommand' }),
       )
@@ -201,7 +204,7 @@ export function createCliRouter(cli: CliService, docs: ApiDocsService): Hono {
         domain: appErrorDomain,
         message: 'Sign in, or present an API key or a run token.',
       });
-    return cli.manifestFor(await docs.getDocument(), caller);
+    return cli.explainedManifestFor(await docs.getDocument(), caller);
   };
   router.get(
     '/cli/manifest',

@@ -7,7 +7,7 @@
  *   (`../access/action-policy.ts`) and Studio's own (`capabilities.ts`); reading only for a run on an intake request),
  *   so every route that honours a key's
  *   scope honours the run's, and nothing else;
- * - who acts (`runActor`): the agent itself for a run on an issue; for a run on a conversation, the person who asked,
+ * - the request's audit actor (`RunPrincipal.actor`): the agent itself for a run on an issue; for a run on a conversation, the person who asked,
  *   via the agent (`conversation/acting.ts`);
  * - what a conversation run writes (`delegatedWrites`): a direct write for the asker within the quota
  *   (`conversation/quota.ts`), made as an undoable plan of theirs, or 409 `PLAN_REQUIRED`.
@@ -15,6 +15,8 @@
  * Routes accept a run only where their security lists `runToken`; elsewhere the application refuses it. Such a route
  * names the business action it performs (`cliRoute({ action })`), and a run that does not hold it is refused 403
  * `RUN_ACTION_FORBIDDEN` before the route runs (`runScopeStep`).
+ * Refusal metadata's `runActor` names the authenticated person whose permissions bound the run, separately from its
+ * audit actor and the current issue owner.
  */
 import { ApiError, declaredRouteActionOf } from '@nocobase/app-server/router';
 import type { AuthSession } from '@nocobase/app-plugin-authentication';
@@ -37,6 +39,7 @@ import type { Context } from 'hono';
 
 import {
   runIdentityOf,
+  type ActionDenial,
   type Agents,
   type CallerIdentity,
 } from '@nocobase/app-plugin-agents/server/tokens';
@@ -187,8 +190,14 @@ export function runSubjectOf(
  * run's figures on the Reports page when the person may read them.
  */
 export function runScopeStep(
-  agents: { readonly gate: Pick<Agents['gate'], 'allowed' | 'reach'> },
+  agents: {
+    readonly gate: Pick<Agents['gate'], 'allowed' | 'reach'> &
+      Partial<Pick<Agents['gate'], 'explain'>>;
+  },
   grantsOf: ReaderGrantsOf,
+  ownerOf?: (
+    identity: CallerIdentity,
+  ) => Promise<{ userId: string; name: string } | undefined>,
 ): AuthorizationMiddleware {
   return async (request, next) => {
     const identity = runOfRequest(request.http);
@@ -196,16 +205,31 @@ export function runScopeStep(
       const allowed = await agents.gate.allowed(identity);
       // A route that takes a run names the action it performs; the run holds it, or the route never runs.
       const action = declaredRouteActionOf(request.http);
-      if (!action || !allowed.has(action))
+      if (!action || !allowed.has(action)) {
+        const denial: ActionDenial = action
+          ? ((await agents.gate.explain?.(identity, action)) ?? {
+              permissionReason: 'UNKNOWN',
+              requiredAction: action,
+            })
+          : { permissionReason: 'NO_ACTION_DECLARED' };
+        const runActor = identity.actingFor ?? {
+          userId: identity.userId,
+          name: identity.userId,
+        };
+        const issueOwner = await ownerOf?.(identity);
         throw new ApiError({
           status: 'PERMISSION_DENIED',
           reason: 'RUN_ACTION_FORBIDDEN',
           domain: 'studio',
-          message: action
-            ? `The agent is not given ${action}, which this needs.`
-            : 'This route names no action an agent may be given.',
-          ...(action ? { metadata: { action } } : {}),
+          message: `The operation was refused for run identity ${runActor.name} (${runActor.userId}): ${denial.permissionReason}${action ? `; required action ${denial.requiredAction ?? action}` : ''}.`,
+          metadata: {
+            ...(action ? { action } : {}),
+            ...denial,
+            runActor,
+            ...(issueOwner ? { issueOwner } : {}),
+          },
         });
+      }
       // A consulted agent's run reads only, but the plans it proposes reach as far as its agent and person do: the
       // person confirms them.
       request.keyScope = runKeyScope(

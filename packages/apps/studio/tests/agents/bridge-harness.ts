@@ -1055,11 +1055,24 @@ export async function createBridgeHarness(
     request.headers.has('x-test-key-scope'),
   );
   const steps: AuthorizationMiddleware[] = [
-    runScopeStep(agents, (identity) =>
-      Promise.resolve({
-        reports: roleOf(identity.userId) !== 'none',
-        allRuns: roleOf(identity.userId) === 'admin',
-      }),
+    runScopeStep(
+      agents,
+      (identity) =>
+        Promise.resolve({
+          reports: roleOf(identity.userId) !== 'none',
+          allRuns: roleOf(identity.userId) === 'admin',
+        }),
+      async (identity) => {
+        const run = identity.run?.run;
+        if (run?.subjectKind !== 'issue') return undefined;
+        const issue = await projects.issueContext.contextFor(
+          agents.tx.read(),
+          run.subjectId,
+        );
+        return issue
+          ? { userId: issue.owner.id, name: issue.owner.name || issue.owner.id }
+          : undefined;
+      },
     ),
   ];
   const authorization = {

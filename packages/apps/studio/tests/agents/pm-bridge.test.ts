@@ -270,6 +270,11 @@ describe('a conversation run acts as the person who asked', () => {
     const none = await command(bobs, 'issue:get', [secret.identifier]);
     expect(none.status).toBe(403);
     expect(none.body.error.reason).toBe('RUN_ACTION_FORBIDDEN');
+    expect(none.body.error.metadata).toMatchObject({
+      permissionReason: 'ACTOR_LACKS_ACTION',
+      requiredAction: 'pm.issues/view',
+      runActor: { userId: 'bob', name: 'bob' },
+    });
   });
 
   it('acts as the agent itself when it works on an issue', async () => {
@@ -348,6 +353,7 @@ describe('the direct-write quota', () => {
       reason: 'PLAN_REQUIRED',
       metadata: { reasons: ['quota'], quota: { used: 2, limit: 2 } },
     });
+    expect(third.body.error.metadata).not.toHaveProperty('permissionReason');
     expect(
       (await h.projects.issueQueries.detail(alice(), c.id)).priority,
     ).not.toBe('urgent');

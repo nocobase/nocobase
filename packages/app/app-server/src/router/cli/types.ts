@@ -256,6 +256,9 @@ export interface CliCaller {
   readonly userId: string;
   readonly displayName: string;
   readonly runId?: string;
+  readonly actingFor?: { readonly userId: string; readonly name: string };
+  /** Evidence for withheld actions, supplied by the caller's authorization gate. */
+  readonly explain?: (action: string) => Promise<CliActionDenial>;
   /** The business actions the caller holds; a command with an action outside them is left out. None when absent. */
   readonly actions?: ReadonlySet<string>;
 }
@@ -265,8 +268,14 @@ export interface CliManifestIdentity {
   readonly userId: string;
   readonly displayName: string;
   readonly runId?: string;
+  readonly actingFor?: { readonly userId: string; readonly name: string };
   /** The business actions the caller holds, sorted; what decides which commands that name one it is offered. */
   readonly actions: readonly string[];
+}
+
+export interface CliActionDenial {
+  readonly permissionReason?: string;
+  readonly requiredAction?: string;
 }
 
 /**
@@ -279,6 +288,8 @@ export interface CliWithheldCommand {
   readonly reason: 'identity' | 'action';
   readonly identities: readonly CliIdentity[];
   readonly action?: string;
+  readonly permissionReason?: string;
+  readonly requiredAction?: string;
 }
 
 /** What `CliService.describe()` tells about the application's CLI, for the agent-readable reference. */

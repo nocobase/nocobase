@@ -59,6 +59,13 @@ export function bindCliSurface(options: CliSurfaceOptions): CliSurface {
       userId: identity.userId,
       displayName: identity.displayName,
       ...(identity.run ? { runId: identity.run.run.id } : {}),
+      ...(identity.actingFor ? { actingFor: identity.actingFor } : {}),
+      explain: (action) =>
+        options.gate.explain?.(identity, action) ??
+        Promise.resolve({
+          permissionReason: 'UNKNOWN',
+          requiredAction: action,
+        }),
       actions: await options.gate.allowed(identity),
     };
     return caller;

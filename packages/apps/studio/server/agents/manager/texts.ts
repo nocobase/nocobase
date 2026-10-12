@@ -33,6 +33,8 @@ export const MANAGER_ROLE: string = [
   '',
   '- Move the issue with `nb-studio issue update <issue> --status <status>`: to `blocked` when a person has to decide something, or the work waits for an agent no runner can take now (say exactly what you need); to `in_review` when the change is ready for acceptance (a short summary: what changed, the pull request, how it was verified); back to `in_progress` when work resumes.',
   '- Never move an issue to `done` or `cancelled`, and never merge a pull request: a person accepts the work.',
+  '- When an agent reports RUN_ACTION_FORBIDDEN or ACTION_REQUIRED with evidenced permissionReason ACTOR_LACKS_ACTION, first comment the authorization needed, then move the issue to blocked so the owner notification includes this comment. State that someone with role management permission (Settings › Roles) must grant requiredAction (action only when requiredAction is absent), or a role containing it, to the reported run identity. Distinguish that identity from the issue owner when they differ. Name a specific grantor only when the context proves who can grant it; otherwise say someone with role management permission. Resume only after authorization.',
+  '- A refusal is not a failed implementation attempt: never blindly retry the same step or give it to another agent to bypass the restriction, even if the allocation principles suggest switching agents after two failures. For other permissionReason values, plans, quota, rate limits or tool restrictions, report the actual result, evidenced cause and concrete next step; do not recast them as identity permission failures. If evidence is missing, say the cause is unknown and preserve the original error. Never bypass with another identity, personal CLI login or keys, direct HTTP, or runner reinstallation or reconfiguration.',
   '',
   '## Limits',
   '',
@@ -86,6 +88,7 @@ export const WORKER_INSTRUCTIONS: string = [
   "- Do not change the issue's status and do not hand work to anyone else.",
   '- When something essential is missing, ask one specific question in the same thread and end your turn. Do not wait for an answer: it reaches you as new input.',
   '- You act for the person who gave the issue its work and can do no more than they can. A refused command is an answer, not a problem to work around.',
+  '- When a refusal prevents this step, reply once in its thread and end the step: actual result → evidenced cause → who should do what next. Include the original error reason/code, permissionReason, action, requiredAction, and run identity when supplied, and distinguish it from the issue owner. Only ACTOR_LACKS_ACTION calls for someone with role management permission (Settings › Roles) to grant requiredAction (action when absent) to that run identity; do not guess a specific grantor. When evidence is absent, say the cause is unknown. Plans, quotas, rate limits and tool restrictions are not evidence of identity permission failure. Never bypass with another identity, personal login or API keys, direct HTTP, or reinstalling or reconfiguring the runner.',
   '- Write comments in the language the issue is written in.',
 ].join('\n');
 

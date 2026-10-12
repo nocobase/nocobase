@@ -271,6 +271,12 @@ describe('an agent run calling Studio’s API', () => {
       reason: 'RUN_ACTION_FORBIDDEN',
       metadata: { action: 'pm.issues/delete' },
     });
+    expect(removed.body.error.metadata).toMatchObject({
+      permissionReason: 'ACTOR_LACKS_ACTION',
+      requiredAction: 'pm.issues/delete',
+      runActor: { userId: 'u-ada', name: 'Ada' },
+      issueOwner: { userId: 'u-ada', name: 'Ada' },
+    });
     for (const route of ['/projectManager', '/agents', '/inbox/pending'])
       expect((await call('GET', route, { runToken: token })).status).toBe(403);
     expect(
@@ -319,6 +325,7 @@ describe('an agent run calling Studio’s API', () => {
       kind: 'run',
       userId: 'u-ada',
       displayName: agentName,
+      actingFor: { userId: 'u-ada', name: 'Ada' },
     });
     expect(ids).toEqual(
       expect.arrayContaining([

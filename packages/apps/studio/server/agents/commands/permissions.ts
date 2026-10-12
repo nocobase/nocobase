@@ -26,9 +26,16 @@ import type {
   ActionGate,
   CallerIdentity,
 } from '@nocobase/app-plugin-agents/server/tokens';
-import { grantableToAgents } from '../../access/action-policy.js';
+import {
+  ACTION_POLICIES,
+  grantableToAgents,
+} from '../../access/action-policy.js';
 import { narrowedProjectPermissions } from '../../access/key-scope.js';
-import { CALLER_ACTIONS, DERIVED_ACTIONS } from '../capabilities.js';
+import {
+  CALLER_ACTIONS,
+  DERIVED_ACTIONS,
+  isAgentAction,
+} from '../capabilities.js';
 import { askerActor, type AskerLookup } from '../conversation/acting.js';
 import { INTAKE_SUBJECT } from '../intake/subject.js';
 import { AGENT_KIND } from '../tx.js';
@@ -69,6 +76,8 @@ export function translated(error: unknown): unknown {
 }
 
 export interface PermissionSource {
+  /** Whether the source can establish a person's permissions, rather than deny everything as a safe fallback. */
+  available?(): boolean;
   /** What `identity` may do in projects, already narrowed for a run. */
   permissionsOf(identity: CallerIdentity): Promise<Permissions>;
   viewerOf(identity: CallerIdentity): Promise<Viewer>;
@@ -102,6 +111,7 @@ export function createPermissionSource(
     return { scopes, settings: noSettings() };
   }
   return {
+    available: () => Boolean(access()?.permissionsOfUser),
     permissionsOf,
     async viewerOf(identity) {
       const asker = await askerOf(identity);
@@ -169,6 +179,46 @@ export function createActionGate(
         allowed.add(derived);
       }
       return allowed;
+    },
+    async explain(identity, action) {
+      if (!action) return { permissionReason: 'NO_ACTION_DECLARED' };
+      const unknown = {
+        permissionReason: 'UNKNOWN' as const,
+        requiredAction: action,
+      };
+      if ((await this.allowed(identity)).has(action)) return unknown;
+      if (isIntakeRun(identity))
+        return { permissionReason: 'READ_ONLY_RUN', requiredAction: action };
+      if (identity.kind !== 'run') return unknown;
+      // Release management permits reading environments without an agent-configured action.
+      const environmentRead = action === 'rel.environments/read';
+      if (
+        !environmentRead &&
+        ACTION_POLICIES[action] &&
+        !grantableToAgents(action)
+      )
+        return { permissionReason: 'NOT_FOR_AGENTS', requiredAction: action };
+      if (!environmentRead && !isAgentAction(action)) return unknown;
+      const requiredAction = DERIVED_ACTIONS[action] ?? action;
+      if (
+        BUSINESS_KEYS.some(({ key }) => key === requiredAction) &&
+        source.available?.() === false
+      )
+        return unknown;
+      // Use the same sources as authorization, as the actual person, before agent restrictions.
+      const person = await this.allowed({
+        kind: 'user',
+        userId: identity.userId,
+        displayName: identity.actingFor?.name ?? identity.userId,
+      });
+      if (!person.has(requiredAction))
+        return { permissionReason: 'ACTOR_LACKS_ACTION', requiredAction };
+      if (!environmentRead && !(identity.agent?.actions ?? []).includes(action))
+        return { permissionReason: 'AGENT_NOT_GIVEN', requiredAction: action };
+      // A derived action also requires its base to survive the run's restrictions.
+      if (requiredAction !== action)
+        return this.explain!(identity, requiredAction);
+      return unknown;
     },
   };
 }
