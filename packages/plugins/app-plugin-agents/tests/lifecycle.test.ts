@@ -48,6 +48,70 @@ describe('run lifecycle', () => {
       body,
     });
 
+  it('atomically persists cancellation preservation and acknowledges same-owner retry after cancellation', async () => {
+    h = await createHarness();
+    const { runner, runId } = await claimed();
+    await post(runner, runId, 'start', start);
+    await h.services.runs.cancel(runId, 'owner');
+    const recovery = {
+      attempt: 1,
+      detail: '/work/recovery: writer quiescence cannot be verified',
+      localSave: [
+        { path: '/work/recovery', saved: false, reason: 'Recovery required' },
+      ],
+    };
+    const body = { recovery };
+    expect((await post(runner, runId, 'cancelAck', body)).body.data).toEqual({
+      status: 'cancelled',
+      recoveryAccepted: true,
+    });
+    expect((await post(runner, runId, 'cancelAck', body)).body.data).toEqual({
+      status: 'cancelled',
+      recoveryAccepted: true,
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'cancelled',
+      failureDetail: recovery.detail,
+    });
+    const page = await h.services.runs.events(runId, 0, 100);
+    expect(page.events).toHaveLength(1);
+    expect(page.events[0]).toMatchObject({
+      type: 'status',
+      content: recovery.detail,
+      meta: { localSave: recovery.localSave },
+    });
+    const other = await h.registerRunner();
+    expect((await post(other, runId, 'cancelAck', body)).status).not.toBe(200);
+    expect(
+      (
+        await post(runner, runId, 'cancelAck', {
+          recovery: { ...recovery, attempt: 2 },
+        })
+      ).status,
+    ).not.toBe(200);
+    expect(h.finished).toHaveLength(1);
+  });
+
+  it('attaches preservation to an already cancelled attempt without reopening it', async () => {
+    h = await createHarness();
+    const { runner, runId } = await claimed();
+    await h.services.runs.cancel(runId, 'owner');
+    h.clock.advance(61_000);
+    await h.sweep();
+    expect((await h.services.runs.get(runId)).status).toBe('cancelled');
+    const recovery = {
+      attempt: 1,
+      detail: 'Recovery path /work/preserved',
+      localSave: [{ path: '/work/preserved', saved: false }],
+    };
+    expect(
+      (await post(runner, runId, 'cancelAck', { recovery })).body.data,
+    ).toEqual({ status: 'cancelled', recoveryAccepted: true });
+    expect(
+      (await h.services.runs.events(runId, 0, 100)).events.at(-1),
+    ).toMatchObject({ content: recovery.detail });
+  });
+
   it.each(['complete', 'fail', 'cancelAck'])(
     'remembers a replacement session after %s and resumes it on the next claim',
     async (action) => {

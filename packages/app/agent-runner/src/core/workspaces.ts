@@ -501,6 +501,13 @@ export async function removePlanned(
     const meta = await readWorkspaceMeta(paths, entry.workDir);
     if (meta === undefined) return 'changed';
     if (
+      meta.runWorktrees === true ||
+      meta.recoveryRequired === true ||
+      (meta.continuationOnly === true &&
+        (meta.activeWorkDirs ?? []).some((dir) => existsSync(dir)))
+    )
+      return 'unpushed';
+    if (
       meta.lastUsedAt !== entry.lastUsedAt ||
       meta.lastRunId !== entry.lastRunId
     )

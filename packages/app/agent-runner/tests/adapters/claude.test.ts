@@ -1,5 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { chmod, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readdir,
+  writeFile,
+  readFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -16,6 +23,7 @@ import type {
 } from '../../src/agent/adapters/types.ts';
 import { calls, replay, setScript, setSupportedModels } from './fake-sdk.ts';
 import { SESSION_ID, assistant, init, result, toolResult } from './messages.ts';
+import { claudeProjectKey } from '../../src/agent/session-migration.ts';
 
 vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
   query: (await import('./fake-sdk.ts')).fakeQuery,
@@ -67,6 +75,44 @@ async function collect(
 }
 
 let dir: string;
+it('migrates only the assigned legacy cwd conversation and passes its original resume id to the SDK', async () => {
+  const target = path.join(dir, 'persistent-thread');
+  await mkdir(target);
+  const legacy = path.join(dir, '.claude/projects/-work');
+  const history = '{"type":"assistant","message":"synthetic history"}\n';
+  await writeFile(path.join(legacy, 'old.jsonl'), history);
+  await mkdir(path.join(legacy, 'old/subagents'), { recursive: true });
+  await writeFile(
+    path.join(legacy, 'old/subagents/helper.jsonl'),
+    'synthetic subagent',
+  );
+  setScript(replay([init(), result()]));
+  const handle = adapterWith('9.0.0', dir).start(
+    session({
+      workDir: target,
+      legacyWorkDirs: ['/work'],
+      resumeSessionId: 'old',
+      additionalDirectories: [path.join(dir, 'new-worktree')],
+    }),
+  );
+  const events = await collect(handle.events);
+  await handle.result;
+  expect(calls.at(-1)?.options.resume).toBe('old');
+  expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
+    false,
+  );
+  const project = path.join(
+    dir,
+    '.claude/projects',
+    await claudeProjectKey(target),
+  );
+  expect(await readFile(path.join(project, 'old.jsonl'), 'utf8')).toBe(history);
+  expect(await readdir(project)).not.toContain('prev.jsonl');
+  expect(
+    await readFile(path.join(project, 'old/subagents/helper.jsonl'), 'utf8'),
+  ).toBe('synthetic subagent');
+  expect(await readFile(path.join(legacy, 'old.jsonl'), 'utf8')).toBe(history);
+});
 beforeEach(async () => {
   calls.length = 0;
   dir = await fakeClaudeDir();

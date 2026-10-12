@@ -8,10 +8,20 @@ import { readConnection, readSettings } from '../lib/config.ts';
 import { runnerPaths, readJson } from '../lib/home.ts';
 import { JobPayloadSchema, RunPayloadSchema } from '../protocol/index.ts';
 import { JobWorker } from './job-worker.ts';
-import { killLeftovers } from './process-tree.ts';
+import { observeWriters, workspaceWriters } from './writer-ownership.ts';
+import {
+  killLeftovers,
+  killTagged,
+  PROCESS_TAG_ENV,
+  taggedProcesses,
+  listProcesses,
+  descendantsOf,
+  groupsBelow,
+} from './process-tree.ts';
 import {
   jobRecordKey,
   recordPath,
+  isAlive,
   type RunRecord,
   type WorkerJob,
 } from './supervisor.ts';
@@ -88,6 +98,25 @@ async function main(): Promise<number> {
     log: '',
   };
   const settings = await readSettings(paths);
+  const seenGroups = new Set<number>();
+  const observeGroups = async () => {
+    const processes = await listProcesses();
+    for (const group of groupsBelow(process.pid, processes))
+      seenGroups.add(group);
+    await observeWriters(
+      paths,
+      payload.run.id,
+      process.pid,
+      'worker',
+      processes,
+    );
+  };
+  let quiescing = false;
+  let observation = Promise.resolve();
+  const scan = setInterval(() => {
+    if (!quiescing)
+      observation = observation.then(observeGroups).catch(() => undefined);
+  }, job.timings.processScanMs ?? 1_000);
   const worker = new RunWorker(
     payload,
     job.timings,
@@ -95,6 +124,40 @@ async function main(): Promise<number> {
       paths,
       connection,
       settings,
+      stopWriters: async () => {
+        quiescing = true;
+        try {
+          await observation;
+          await observeGroups();
+          const left = await killLeftovers(process.pid, {
+            groups: seenGroups,
+            graceMs: 2_000,
+          });
+          const tag = process.env[PROCESS_TAG_ENV];
+          const tagged = tag === undefined ? 0 : await killTagged([tag]);
+          if (left.groups > 0)
+            log(
+              `worker: stopped ${left.groups} process group(s) before saving`,
+            );
+          if (left.processes + tagged > 0)
+            log(
+              `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
+            );
+          if (
+            descendantsOf(process.pid, await listProcesses()).some((entry) =>
+              isAlive(entry.pid),
+            ) ||
+            (tag !== undefined && (await taggedProcesses([tag])).length > 0) ||
+            (record.workDir !== undefined &&
+              (await workspaceWriters(record.workDir)).length > 0)
+          )
+            throw new Error(
+              'Writers remain after stopping the tool; preserve the worktree for recovery.',
+            );
+        } finally {
+          quiescing = false;
+        }
+      },
       adapters: loadAdapters(
         process.env,
         settings.passEnv,
@@ -111,7 +174,7 @@ async function main(): Promise<number> {
   process.on('SIGUSR2', () => void worker.pollStatus());
   process.on('SIGTERM', () => worker.end({ kind: 'shutdown' }));
   process.on('SIGINT', () => worker.end({ kind: 'shutdown' }));
-  const outcome = await worker.run();
+  const outcome = await worker.run().finally(() => clearInterval(scan));
   log(`run ${payload.run.id}: worker done (${outcome})`);
   // The outcome was reported to the server; the exit code only tells the daemon the worker did not crash.
   return 0;

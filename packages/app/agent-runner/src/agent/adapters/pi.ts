@@ -31,6 +31,7 @@ import type { ToolCapabilities, ToolModel } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
 import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
+import { migratePiConversation } from '../session-migration.ts';
 
 import {
   PERMISSION_COMMAND,
@@ -527,6 +528,9 @@ class PiRun {
     if (this.session.model) args.push('--model', this.session.model);
     if (this.session.effort && THINKING_LEVELS.has(this.session.effort))
       args.push('--thinking', this.session.effort);
+    await migratePiConversation(this.session);
+    if (this.session.sessionStoreDir)
+      args.push('--session-dir', this.session.sessionStoreDir);
     if (this.session.resumeSessionId)
       args.push('--session-id', this.session.resumeSessionId);
     // One `--skill <dir>` per skill of the run (repeatable, additive to Pi's own discovery:

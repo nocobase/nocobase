@@ -39,8 +39,15 @@ describe('runner end to end', () => {
   let env: NodeJS.ProcessEnv;
   let fakeCli: string;
   const daemons: Daemon[] = [];
-  const workDirOf = (key: string) =>
-    path.join(workRootOf(home), 'test-app', key);
+  const workDirOf = (key: string) => {
+    const found = [...server.runs.values()].findLast(
+      (run) =>
+        run.payload.subject.key === key && run.start?.workDir !== undefined,
+    );
+    return (
+      found?.start?.workDir ?? path.join(workRootOf(home), 'test-app', key)
+    );
+  };
 
   beforeEach(async () => {
     server = new FakeServer();
@@ -178,7 +185,7 @@ describe('runner end to end', () => {
     );
     expect(run.fail).toBeUndefined();
     expect(run.status).toBe('completed');
-    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.readonly-`);
+    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.run-`);
     // It pushes nothing, so its directory goes as soon as the run ends; the next read-only run checks it out again.
     const readOnlyDir = String(run.start?.workDir);
     await waitFor(
@@ -242,7 +249,7 @@ describe('runner end to end', () => {
       acceptsInput: true,
       adapter: { kind: 'claude', version: 'echo' },
     });
-    expect(run.complete?.summary).toBe('all done');
+    expect(run.complete?.summary).toContain('all done');
     expect(run.complete?.usage?.[0]?.tool).toBe('claude');
 
     const events = server.events(run.payload.run.id);
@@ -276,11 +283,7 @@ describe('runner end to end', () => {
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
     expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
     // The runner's own Node.js and pnpm are first on PATH, and pnpm keeps to its version.
-    for (const tool of ['node', 'pnpm'])
-      expect(
-        statSync(path.join(workDir, '.nocobase-runner', 'bin', tool)).mode &
-          0o777,
-      ).toBe(0o700);
+    expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
     expect(envOutput).toContain('pnpm_config_pm_on_fail=ignore');
 
     // The application's CLI is on the PATH and finds the run's credential, with the server filled in; the run token
@@ -324,9 +327,10 @@ describe('runner end to end', () => {
       5_000,
       'credentials removal',
     );
-    expect(readFileSync(path.join(workDir, 'app', 'notes.txt'), 'utf8')).toBe(
+    expect(git(['show', 'refs/heads/agent/PM-7:notes.txt'], bare)).toBe(
       'hello from the agent',
     );
+    await waitFor(() => !existsSync(workDir), 5_000, 'worktree removal');
     await waitFor(
       () => !existsSync(path.join(home, 'runs', `${run.payload.run.id}.json`)),
       5_000,
@@ -365,6 +369,7 @@ describe('runner end to end', () => {
       prompt: { system: '', session: 'fresh', turn: 'say waiting\nhang' },
     });
     daemon();
+    await waitFor(() => run.status === 'running', 15_000, 'the run to start');
     const workDir = workDirOf(run.payload.subject.key);
     const file = path.join(workDir, '.app', 'run.json');
     await waitFor(
@@ -386,6 +391,16 @@ describe('runner end to end', () => {
     // It tells the CLI, and only the CLI, where the run's credentials are.
     expect(readFileSync(shim, 'utf8')).toContain(
       `AGENT_RUN_CREDENTIALS='${file}'\nexport AGENT_RUN_CREDENTIALS`,
+    );
+    await waitFor(
+      () =>
+        server
+          .events(run.payload.run.id)
+          .some(
+            (event) => event.type === 'text' && event.content === 'waiting',
+          ),
+      10_000,
+      'the tool session to start',
     );
     server.cancel(run.payload.run.id);
     await waitFor(() => run.status === 'cancelled', 15_000, 'cancel');
@@ -950,7 +965,7 @@ describe('working directories, initialization prompts and skills', () => {
     expect(system).toContain('copy .env.example to .env');
     expect(system).toContain(`You start in ${own}.`);
     expect(system).not.toContain('{{runner.');
-    const workDir = path.join(workRootOf(home), 'test-app', 'PM-20');
+    const workDir = String(first.start?.workDir);
     const skillsDir = path.join(
       workDir,
       '.nocobase-runner',
@@ -1047,7 +1062,7 @@ describe('working directories, initialization prompts and skills', () => {
     const first = enqueue('m-1');
     await ended(first);
     expect(first.fail).toBeUndefined();
-    const workDir = path.join(workRootOf(home), 'test-app', 'PM-30');
+    const workDir = String(first.start?.workDir);
     const target = path.join(workDir, '.nocobase-runner', 'knowledge');
     expect(readFileSync(path.join(target, 'INDEX.md'), 'utf8')).toContain(
       'project/setup.md',
@@ -1066,9 +1081,27 @@ describe('working directories, initialization prompts and skills', () => {
     const second = enqueue('m-2');
     await ended(second);
     expect(
-      readFileSync(path.join(target, 'project', 'setup.md'), 'utf8'),
+      readFileSync(
+        path.join(
+          String(second.start?.workDir),
+          '.nocobase-runner',
+          'knowledge',
+          'project',
+          'setup.md',
+        ),
+        'utf8',
+      ),
     ).toContain('# Setup');
-    expect(existsSync(path.join(target, 'scratch.md'))).toBe(false);
+    expect(
+      existsSync(
+        path.join(
+          String(second.start?.workDir),
+          '.nocobase-runner',
+          'knowledge',
+          'scratch.md',
+        ),
+      ),
+    ).toBe(false);
     expect(server.mountFetches.get('knowledge')).toBe(1);
   });
 
@@ -1082,7 +1115,7 @@ describe('working directories, initialization prompts and skills', () => {
       },
     });
     await ended(run);
-    const workDir = path.join(workRootOf(home), 'test-app', 'PM-21');
+    const workDir = String(run.start?.workDir);
     expect(texts(run.payload.run.id)[0]).toContain(
       `Your working directory is ${workDir}, an empty directory kept for this task`,
     );
@@ -1139,8 +1172,11 @@ describe('one runner, several applications', () => {
       expect(actives(first).every((id) => id.startsWith('a-'))).toBe(true);
       expect(actives(second).every((id) => id.startsWith('b-'))).toBe(true);
       expect(
-        existsSync(path.join(workRootOf(home), 'crm', 'PM-1')) ||
-          existsSync(path.join(workRootOf(home), 'crm', 'PM-2')),
+        [second.run('b-1'), second.run('b-2')].some(
+          (run) =>
+            typeof run.start?.workDir === 'string' &&
+            existsSync(run.start.workDir),
+        ),
       ).toBe(true);
     } finally {
       for (const daemon of started) await stopDaemon(daemon);

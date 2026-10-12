@@ -535,18 +535,84 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
 
     cancelAck: (runner, runId, request) =>
       tx.run(async (unit) => {
-        const run = await held(unit.conn, runner, runId);
+        const previous = await findRunRecord(unit.conn, runId);
+        // Only the same owner and attempt may attach preservation information to an acknowledged cancellation.
+        const repeated =
+          request.recovery !== undefined &&
+          previous?.status === 'cancelled' &&
+          previous.runnerId === runner.id &&
+          previous.attempt === request.recovery.attempt;
+        const run = repeated ? previous : await held(unit.conn, runner, runId);
+        if (request.recovery !== undefined) {
+          if (request.recovery.attempt !== run.attempt)
+            throw new ProtocolError(
+              'LEASE_LOST',
+              'The run attempt moved on; stop it.',
+            );
+          const detail = redactorOf(run.id).text(request.recovery.detail);
+          const existing = await eventsRepo(unit.conn).findMany({
+            filter: { runId: run.id },
+          });
+          if (
+            !existing.some(
+              (event) =>
+                jsonObject(event.meta).cancellationRecoveryAttempt ===
+                run.attempt,
+            )
+          ) {
+            const seq =
+              existing.reduce(
+                (latest, event) => Math.max(latest, Number(event.seq)),
+                0,
+              ) + 1;
+            const now = clock.now().toISOString();
+            await eventsRepo(unit.conn).createOne({
+              values: {
+                id: ids.next(),
+                runId: run.id,
+                seq,
+                at: now,
+                type: 'status',
+                tool: null,
+                content: detail,
+                input: null,
+                output: null,
+                meta: asJson(
+                  redactorOf(run.id).value({
+                    orphaned: true,
+                    cancellationRecoveryAttempt: run.attempt,
+                    localSave: request.recovery.localSave,
+                  }),
+                ),
+                truncated: false,
+                createdAt: now,
+              },
+            });
+            await runsRepo(unit.conn).updateMany({
+              filter: { id: run.id },
+              values: { failureDetail: detail },
+            });
+            unit.emit({ type: 'run.events', runId: run.id, lastSeq: seq });
+          }
+          if (repeated) return { status: run.status, recoveryAccepted: true };
+        }
         await recordOutcome(unit, run, request);
         await rememberSession(unit, run, request.sessionId, false);
         const ended = await finishRun(unit, deps, run, {
           status: 'cancelled',
           reason: 'cancelled',
+          ...(request.recovery
+            ? { detail: redactorOf(run.id).text(request.recovery.detail) }
+            : {}),
           ...(request.sessionId ? { sessionId: request.sessionId } : {}),
         });
         if (!ended)
           throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');
         secrets.forget(runSecretsKey(run.id));
-        return { status: ended.status };
+        return {
+          status: ended.status,
+          ...(request.recovery ? { recoveryAccepted: true } : {}),
+        };
       }),
 
     async reconcile(runner, active) {

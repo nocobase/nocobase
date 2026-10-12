@@ -1,3 +1,10 @@
+import { finalizeRunWorktrees } from './run-worktrees.ts';
+import {
+  observeWriters,
+  stopRecordedWriters,
+  workspaceWriters,
+  removeWriterOwnership,
+} from './writer-ownership.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
 // A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
@@ -23,13 +30,14 @@ import {
   writeJsonAtomic,
   type RunnerPaths,
 } from '../lib/home.ts';
-import { delay, ApiError, type ApiClient } from '../lib/http.ts';
+import { delay, ApiError, dataOf, type ApiClient } from '../lib/http.ts';
 import {
   RUNNER_ROUTES,
   routePath,
   type AgentTool,
   type JobPayload,
   type RunPayload,
+  StatusResponseSchema,
 } from '../protocol/index.ts';
 import { deleteRunCredentials } from '../agent/credentials.ts';
 import { EventSpool, spoolPaths } from './events.ts';
@@ -66,6 +74,8 @@ export interface RunRecord {
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
   phase: 'spawned' | 'running' | 'reporting' | (string & {});
   log: string;
+  /** Retain cancellation semantics across failed report delivery and daemon restarts. */
+  recoveryReason?: 'cancelled';
 }
 
 export interface Timings {
@@ -129,8 +139,11 @@ export async function readRecords(paths: RunnerPaths): Promise<RunRecord[]> {
 export async function removeRecord(
   paths: RunnerPaths,
   runId: string,
+  options: { preserveWriters?: boolean } = {},
 ): Promise<void> {
   await rm(recordPath(paths, runId), { force: true });
+  if (options.preserveWriters !== true)
+    await removeWriterOwnership(paths, runId);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -242,18 +255,37 @@ export class Supervisor {
   /** The process tags of the runs it started, the latest `MAX_TAGS`: swept once more when it stops. */
   private readonly tags = new Set<string>();
   private scanTimer: NodeJS.Timeout | undefined;
+  private groupObservation = Promise.resolve();
 
   constructor(options: SupervisorOptions) {
     this.options = options;
   }
 
   /** Notes the process groups below every worker now. */
-  async scanGroups(): Promise<void> {
+  scanGroups(): Promise<void> {
+    const next = this.groupObservation.then(() => this.observeGroups());
+    this.groupObservation = next.catch((error) =>
+      this.options.log(
+        `Writer ownership observation failed: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    );
+    return this.groupObservation;
+  }
+
+  private async observeGroups(): Promise<void> {
     if (this.runs.size === 0) return;
     const processes = await listProcesses();
-    for (const run of this.runs.values())
+    for (const run of this.runs.values()) {
       for (const group of groupsBelow(run.pid, processes))
         run.groups.add(group);
+      await observeWriters(
+        this.options.paths,
+        run.runId,
+        run.pid,
+        'supervisor',
+        processes,
+      );
+    }
   }
 
   private watchGroups(): void {
@@ -531,6 +563,45 @@ export async function recoverRun(
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
   }
+  let ownershipError = '';
+  const survivors = await stopRecordedWriters(paths, runId).catch((error) => {
+    ownershipError = `; ownership recovery failed: ${error instanceof Error ? error.message : String(error)}`;
+    return [] as number[];
+  });
+  const holders =
+    record.workDir === undefined ? [] : await workspaceWriters(record.workDir);
+  // Restarted supervision has no process containment boundary. Even no observed survivors cannot rule out a
+  // descendant that escaped between scans. Retain every unfinished attempt rather than deleting on that assumption.
+  const recovery =
+    record.kind !== 'job' && record.workDir !== undefined
+      ? await finalizeRunWorktrees(paths, record.workDir, log, {
+          unsafeReason: `Recovery required: orphan writer quiescence cannot be verified${survivors.length + holders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...holders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`,
+        }).catch((error) => [
+          {
+            path: record.workDir!,
+            saved: false,
+            reason: `Recovery required: could not persist preservation metadata; directory retained: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ])
+      : [];
+  const recoveryDetail = recovery
+    .map(
+      (result) =>
+        `${result.path}: ${result.saved ? 'Local continuation saved; not pushed' : result.reason}`,
+    )
+    .join('\n');
+  let detail =
+    recoveryDetail === ''
+      ? options.detail
+      : `${options.detail}\n\n${recoveryDetail}`;
+  if (options.reason === 'cancelled' && record.recoveryReason !== 'cancelled') {
+    record.recoveryReason = 'cancelled';
+    await writeRecord(paths, record).catch((error) => {
+      // The old record still protects the directory. A restart can also recover cancellation from the owned status.
+      detail += `\n\nCancellation retry metadata could not be stored: ${error instanceof Error ? error.message : String(error)}`;
+      log(detail);
+    });
+  }
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
   // A job's directory is its own and goes with it.
@@ -559,46 +630,97 @@ export async function recoverRun(
     const files = spoolPaths(paths.runsDir, runId);
     await rm(files.spool, { force: true });
     await rm(files.ack, { force: true });
-    await removeRecord(paths, runId);
+    await removeRecord(paths, runId, {
+      preserveWriters: recovery.some((result) => !result.saved),
+    });
     return;
   }
-  const spool = EventSpool.open<{
+  type OrphanEvent = {
     seq: number;
     at: string;
     type: string;
     content?: string;
     stream?: string;
     meta?: Record<string, unknown>;
-  }>({
-    runsDir: paths.runsDir,
-    runId,
-    route: routes.events,
-    client,
-    firstSeq: record.firstSeq,
-    log,
-  });
-  spool.push(
-    job
-      ? { type: 'log', stream: 'runner', content: options.detail }
-      : { type: 'status', content: options.detail, meta: { orphaned: true } },
-  );
-  const delivered = await spool.drain(
-    options.timings.reportTimeoutMs ?? 30_000,
-  );
+  };
+  let spool: EventSpool<OrphanEvent> | undefined;
+  let delivered = false;
   try {
-    if (options.reason === 'cancelled')
-      await client.request('POST', routes.cancelAck, {});
-    else
+    spool = EventSpool.open<OrphanEvent>({
+      runsDir: paths.runsDir,
+      runId,
+      route: routes.events,
+      client,
+      firstSeq: record.firstSeq,
+      log,
+    });
+    spool.push(
+      job
+        ? { type: 'log', stream: 'runner', content: options.detail }
+        : {
+            type: 'status',
+            content: detail,
+            meta: { orphaned: true, localSave: recovery },
+          },
+    );
+    delivered = await spool.drain(options.timings.reportTimeoutMs ?? 30_000);
+  } catch (error) {
+    // Storage failure must not prevent a server-visible failure report when the server remains reachable.
+    detail += `\n\nRecovery status could not be spooled: ${error instanceof Error ? error.message : String(error)}`;
+    log(detail);
+  }
+  try {
+    if (options.reason === 'cancelled') {
+      const response = dataOf(
+        await client.request(
+          'POST',
+          routes.cancelAck,
+          job
+            ? {}
+            : {
+                recovery: {
+                  attempt: record.attempt,
+                  detail: detail.slice(0, 10_000),
+                  localSave: recovery,
+                },
+              },
+        ),
+      );
+      if (
+        !job &&
+        recovery.length > 0 &&
+        !delivered &&
+        !(
+          response !== null &&
+          typeof response === 'object' &&
+          'recoveryAccepted' in response &&
+          response.recoveryAccepted === true
+        )
+      ) {
+        log(
+          `run ${runId}: server did not acknowledge preservation details; record retained`,
+        );
+        return;
+      }
+    } else
       await client.request('POST', routes.fail, {
         reason: options.reason,
-        detail: options.detail,
+        detail,
       });
-    log(`run ${runId}: reported as failed (${options.reason})`);
+    log(
+      `run ${runId}: reported as ${options.reason === 'cancelled' ? 'cancelled' : 'failed'} (${options.reason})`,
+    );
   } catch (error) {
     if (
       error instanceof ApiError &&
       (LOST_CODES.has(error.reason) || error.status === 404)
     ) {
+      if (options.reason === 'cancelled' && recovery.length > 0) {
+        log(
+          `run ${runId}: cancellation preservation report not acknowledged (${error.reason}); record retained`,
+        );
+        return;
+      }
       log(`run ${runId}: already ended on the server (${error.reason})`);
     } else {
       // Leave the record for the next start to try again.
@@ -608,10 +730,13 @@ export async function recoverRun(
       return;
     }
   }
-  if (delivered || spool.failure !== undefined) await spool.remove();
-  await removeRecord(paths, runId);
+  if (spool !== undefined && (delivered || spool.failure !== undefined))
+    await spool.remove();
+  await removeRecord(paths, runId, {
+    preserveWriters: recovery.some((result) => !result.saved),
+  });
   const files = spoolPaths(paths.runsDir, runId);
-  if (!delivered && spool.failure === undefined)
+  if (spool !== undefined && !delivered && spool.failure === undefined)
     log(`run ${runId}: undelivered events kept in ${files.spool}`);
 }
 
@@ -621,9 +746,22 @@ export async function recoverOrphans(
   const records = await readRecords(options.paths);
   const recovered: string[] = [];
   for (const record of records) {
+    let reason: 'cancelled' | 'leaseExpired' =
+      record.recoveryReason ?? 'leaseExpired';
+    if (record.kind !== 'job' && record.recoveryReason === undefined) {
+      const client = options.clientFor(record.appKey);
+      const status = await client
+        ?.get(
+          routePath(RUNNER_ROUTES.status, { runId: record.runId }),
+          StatusResponseSchema,
+        )
+        .catch(() => undefined);
+      if (status?.cancelRequested === true || status?.status === 'cancelled')
+        reason = 'cancelled';
+    }
     await recoverRun(record, {
       ...options,
-      reason: 'leaseExpired',
+      reason,
       detail:
         record.kind === 'job'
           ? 'The runner restarted; the job it left behind was stopped.'

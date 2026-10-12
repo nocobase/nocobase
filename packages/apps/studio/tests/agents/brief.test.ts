@@ -147,6 +147,32 @@ const stepInputs: RunInput[] = [
 ];
 
 describe('issue brief', () => {
+  it('passes the selected PR branch, base and exclusions to the workspace without empty initialization', () => {
+    const selection = {
+      branch: 'fix/human',
+      base: 'release',
+      pullRequest: { number: 42, url: 'https://example.test/pull/42' },
+      excludedPullRequests: [
+        {
+          number: 43,
+          url: 'https://example.test/pull/43',
+          reason: 'unknown' as const,
+        },
+      ],
+    };
+    expect(
+      dirsOf(context, new Map([['res-1', selection]]), null, true)[0],
+    ).toMatchObject({
+      kind: 'repo',
+      branch: selection.branch,
+      defaultBranch: selection.base,
+      pullRequest: selection.pullRequest,
+      excludedPullRequests: selection.excludedPullRequests,
+    });
+    expect(
+      dirsOf(context, new Map([['res-1', selection]]), null, true)[0],
+    ).not.toHaveProperty('initializeIfEmpty');
+  });
   it('renders the project manager’s task and the issue context', () => {
     expect(
       renderTask(context, managerInputs, { manager: true }),

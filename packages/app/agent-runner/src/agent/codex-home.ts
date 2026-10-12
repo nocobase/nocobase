@@ -2,7 +2,7 @@
 // history and logs stay with the task, so runs on the same subject can resume their thread, while the login and the
 // person's settings come from the real `~/.codex` through links to `auth.json` and `config.toml`.
 import { existsSync, lstatSync } from 'node:fs';
-import { mkdir, symlink } from 'node:fs/promises';
+import { mkdir, symlink, readdir, cp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -29,4 +29,40 @@ export async function prepareCodexHome(
     await symlink(source, target);
   }
   return dir;
+}
+
+/** Copy only the selected conversation rollout, never authentication/configuration or other conversations. */
+export async function migrateCodexConversation(
+  target: string,
+  source: string,
+  sessionId: string | undefined,
+): Promise<void> {
+  if (sessionId === undefined || !/^[a-zA-Z0-9-]+$/u.test(sessionId)) return;
+  const walk = async (dir: string, relative: string): Promise<void> => {
+    const entries = await readdir(dir, { withFileTypes: true }).catch(
+      (error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+      },
+    );
+    for (const entry of entries) {
+      const child = path.join(dir, entry.name);
+      const suffix = path.join(relative, entry.name);
+      if (entry.isDirectory()) await walk(child, suffix);
+      else if (
+        entry.isFile() &&
+        entry.name.endsWith('.jsonl') &&
+        entry.name.includes(sessionId)
+      ) {
+        const destination = path.join(target, suffix);
+        await mkdir(path.dirname(destination), {
+          recursive: true,
+          mode: 0o700,
+        });
+        await cp(child, destination, { force: false, errorOnExist: false });
+      }
+    }
+  };
+  for (const folder of ['sessions', 'archived_sessions'])
+    await walk(path.join(source, folder), folder);
 }

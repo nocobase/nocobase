@@ -1243,6 +1243,39 @@ describe('push credentials on demand', () => {
     expect(h.github.app.minted).toHaveLength(0);
   });
 
+  it('keeps a selected PR branch when the runner obtains its push credential on demand', async () => {
+    const app = await appConnection();
+    const { issue } = await projectWithRepo(app);
+    h.github.addPull(REPO, {
+      number: 42,
+      head: { ref: 'fix/human', sha: 'pr-head', repo: { full_name: REPO } },
+    });
+    await h.git.link(alice(), issue.id, `https://github.com/${REPO}/pull/42`, {
+      type: 'user',
+      id: 'alice',
+    });
+    // Linking the PR may mint an API token; the claim must not mint a push credential as well.
+    const mintedBeforeClaim = h.github.app.minted.length;
+    const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
+    await mentionAgent(h, 'alice', issue.id, agentId);
+    const payload = await h.claimOne([...ON_DEMAND, 'prBranches']);
+    expect(payload.workspace.dirs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'repo',
+          branch: 'fix/human',
+          pullRequest: expect.objectContaining({ number: 42 }),
+        }),
+      ]),
+    );
+    expect(payload.workspace.git.onDemand).toEqual([URL_OF_REPO]);
+    expect(payload.workspace.git.credentials).toBeUndefined();
+    expect(h.github.app.minted).toHaveLength(mintedBeforeClaim);
+    const response = await ask(payload);
+    expect(response.status).toBe(200);
+    expect(h.github.app.minted).toHaveLength(mintedBeforeClaim + 1);
+  });
+
   it('still hands an older runner its credential at the claim', async () => {
     const { payload } = await claimed([
       'input',

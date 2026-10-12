@@ -369,6 +369,56 @@ describe('session setup', () => {
     ).toEqual({ permissions: ASK_EVERYTHING });
   });
 
+  it('moves the same legacy session to its stable container before prompting', async () => {
+    const fake = new FakeOpencode({
+      script: [...begin(), succeeded],
+      knownSessions: [SID],
+      location: '/legacy',
+    });
+    const handle = adapterFor(fake).start(
+      session({ workDir: '/container', resumeSessionId: SID }),
+    );
+    const events = await collect(handle.events);
+    expect((await handle.result).sessionId).toBe(SID);
+    expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
+      false,
+    );
+    expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(0);
+    expect(fake.requestsTo('POST', /\/move$/)[0].body).toEqual({
+      directory: '/container',
+      delivery: 'steer',
+    });
+    expect(
+      fake.requests.findIndex((request) => request.path.endsWith('/move')),
+    ).toBeLessThan(
+      fake.requests.findIndex((request) => request.path.endsWith('/prompt')),
+    );
+  });
+
+  it('preserves history instead of creating a session when a legacy move is unsupported', async () => {
+    const fake = new FakeOpencode({
+      script: [],
+      knownSessions: [SID],
+      location: '/legacy',
+    });
+    const fetchFn: typeof fetch = (input, options) =>
+      String(input).endsWith('/move')
+        ? Promise.resolve(
+            new Response('{"_tag":"SessionNotFoundError"}', { status: 404 }),
+          )
+        : fetch(input, options);
+    const handle = adapterFor(fake, '2.0.12', fetchFn).start(
+      session({ workDir: '/container', resumeSessionId: SID }),
+    );
+    const events = await collect(handle.events);
+    expect((await handle.result).exit).toBe('error');
+    expect(events.some((event) => event.content === 'sessionRecovery')).toBe(
+      false,
+    );
+    expect(fake.requestsTo('POST', /^\/api\/session$/)).toHaveLength(0);
+    expect(fake.requestsTo('POST', /\/prompt$/)).toHaveLength(0);
+  });
+
   it.each([
     ['GET', 401, '{}'],
     ['GET', 503, '{}'],

@@ -113,6 +113,7 @@ export function runnerVersion(): string {
 export const BASE_FEATURES: readonly RunnerFeature[] = [
   'input',
   'checkout',
+  'prBranches',
   'directories',
   'secrets',
   'skills',
