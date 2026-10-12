@@ -11,7 +11,7 @@ name: V3 Studio image
 # architecture's `pnpm build --target`, because dist/ carries native modules (better-sqlite3, sqlite-vec) for one
 # platform and the Dockerfile refuses a prebuilt dist/ whose recorded target differs from the image. arm64 builds on a
 # native ARM runner, so neither the build nor the image's own RUN steps go through emulation. Each architecture is
-# pushed by digest, and `publish` joins them into one multi-architecture image under every tag.
+# pushed by digest, and `publish` names the tags and joins them into one multi-architecture image under every tag.
 #
 # Internal images (dev versions of Studio, nb-studio and the runner) are built in 2013xile/nocobase-ci and pushed to the
 # internal registry instead.
@@ -47,57 +47,8 @@ permissions:
   contents: read
 
 jobs:
-  tags:
-    name: Name the Studio image tags
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      version: ${{ steps.tags.outputs.version }}
-      tags: ${{ steps.tags.outputs.tags }}
-    steps:
-      - name: Check out the release
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag }}
-          persist-credentials: false
-          show-progress: false
-          sparse-checkout: packages/apps/studio/package.json
-          sparse-checkout-cone-mode: false
-
-      - name: Name the tags
-        id: tags
-        env:
-          ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
-          TAG: ${{ inputs.tag }}
-          UPDATE_BETA_OR_LATEST: ${{ inputs.update_beta_or_latest }}
-        run: |
-          manifest=packages/apps/studio/package.json
-          version=$(jq -r '.version // empty' "$manifest" 2>/dev/null || true)
-          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
-            echo "::error::$TAG has no valid version in $manifest (found '${version}'), so a release image cannot be tagged."
-            exit 1
-          fi
-          case "$version" in
-            *-*) channel=beta ;;
-            *) channel=latest ;;
-          esac
-          tags=
-          for image in nocobase/studio "$ALI_REGISTRY/nocobase/studio"; do
-            tags="${tags}${image}:${version}"$'\n'
-            if [ "${UPDATE_BETA_OR_LATEST:-true}" != false ]; then
-              tags="${tags}${image}:${channel}"$'\n'
-            fi
-          done
-          {
-            echo "version=${version}"
-            echo "tags<<EOF"
-            printf '%s' "$tags"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
   image:
     name: Build the Studio image (${{ matrix.platform }})
-    needs: tags
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
@@ -182,12 +133,54 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: echo "digest-${PLATFORM#linux/}=${DIGEST}" >> "$GITHUB_OUTPUT"
 
+  # The tags are named in this job rather than passed from another: they include Aliyun's registry, which is a secret,
+  # and GitHub drops a job output that contains one.
   publish:
     name: Publish the Studio image
-    needs: [tags, image]
+    needs: image
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Check out the release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+          show-progress: false
+          sparse-checkout: packages/apps/studio/package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Name the tags
+        id: tags
+        env:
+          ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
+          TAG: ${{ inputs.tag }}
+          UPDATE_BETA_OR_LATEST: ${{ inputs.update_beta_or_latest }}
+        run: |
+          manifest=packages/apps/studio/package.json
+          version=$(jq -r '.version // empty' "$manifest" 2>/dev/null || true)
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::$TAG has no valid version in $manifest (found '${version}'), so a release image cannot be tagged."
+            exit 1
+          fi
+          case "$version" in
+            *-*) channel=beta ;;
+            *) channel=latest ;;
+          esac
+          tags=
+          for image in nocobase/studio "$ALI_REGISTRY/nocobase/studio"; do
+            tags="${tags}${image}:${version}"$'\n'
+            if [ "${UPDATE_BETA_OR_LATEST:-true}" != false ]; then
+              tags="${tags}${image}:${channel}"$'\n'
+            fi
+          done
+          {
+            echo "version=${version}"
+            echo "tags<<EOF"
+            printf '%s' "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Sign in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -208,7 +201,7 @@ jobs:
       # Hub to Aliyun's registry as it goes.
       - name: Tag the multi-architecture image
         env:
-          TAGS: ${{ needs.tags.outputs.tags }}
+          TAGS: ${{ steps.tags.outputs.tags }}
           AMD64: ${{ needs.image.outputs.digest-amd64 }}
           ARM64: ${{ needs.image.outputs.digest-arm64 }}
         run: |
@@ -229,8 +222,8 @@ jobs:
       - name: Summary
         env:
           TAG: ${{ inputs.tag }}
-          VERSION: ${{ needs.tags.outputs.version }}
-          TAGS: ${{ needs.tags.outputs.tags }}
+          VERSION: ${{ steps.tags.outputs.version }}
+          TAGS: ${{ steps.tags.outputs.tags }}
         run: |
           {
             echo '### Studio image'

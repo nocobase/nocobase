@@ -347,6 +347,12 @@ test('a beta release that publishes Studio builds its public release image from 
   assert.match(image, /platforms: \$\{\{ matrix\.platform \}\}\n/u);
   assert.match(image, /build-args: DIST=prebuilt\n/u);
   assert.match(image, /push-by-digest=true/u);
+  // The tags hold Aliyun's registry, a secret, and GitHub drops a job output containing one, so publish names them.
+  assert.doesNotMatch(image, /needs\.\w+\.outputs\.tags/u);
+  assert.match(
+    image,
+    /\n {2}publish:\n[\s\S]*?- name: Name the tags\n[\s\S]*?TAGS: \$\{\{ steps\.tags\.outputs\.tags \}\}/u,
+  );
   assert.match(
     image,
     /docker buildx imagetools create "\$\{args\[@\]\}" "nocobase\/studio@\$\{AMD64\}" "nocobase\/studio@\$\{ARM64\}"/u,
