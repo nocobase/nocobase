@@ -1,5 +1,131 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.49
+
+### Patch Changes
+
+- e6dd56e: Slim `AGENTS.md` to an index of always-on rules, at most 32 KB, and move template-specific guidance into a committed `.agents/rules/` directory that ships with the template and is linked from that index. Framework-wide guidance is linked from the synchronized `nocobase-app-development` Skill instead of being copied. `CLAUDE.md` now only imports `AGENTS.md`. `.gitignore`, `.npmignore` and `.prettierignore` ignore `.agents/*` except `.agents/rules/`, and `tests/logic/agents-md.test.ts` enforces the size limit and the links. Existing applications that upgrade should change a `/.agents/` line in their `.gitignore` to `/.agents/*` followed by `!/.agents/rules/`.
+- Updated dependencies [e6dd56e]
+- Updated dependencies [f675e8d]
+  - @nocobase/app-cli@1.0.0-beta.21
+  - @nocobase/app-plugin-mail@1.0.0-beta.13
+
+## 1.0.0-beta.48
+
+### Patch Changes
+
+- 9f02fe3: Route requests to upgrade NocoBase or its core version to the application upgrade Skill, since users rarely refer to the template they generated the application from.
+- 2a54505: Compose all seven MAIL_* environment mappings with the Mail configuration section and preserve them in the examples application. Keep the legacy fully prefixed application-level mappings compatible. Deployment environment values now override configuration files and code defaults automatically: review existing OAuth, sync, webhook and jobs variables before upgrading, including empty or invalid integers. Applications with custom parsers must retain or override the section rules explicitly; calling the defaults factory alone does not inherit them. Mail server configuration and webhook secrets remain outside public browser configuration.
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+  - @nocobase/app-plugin-mail@1.0.0-beta.12
+  - @nocobase/app-server@2.0.0-beta.5
+
+## 1.0.0-beta.47
+
+### Patch Changes
+
+- 9e84d15: Exclude `database/*/migrations/` and `database/*/seeds/` from Prettier in generated applications, so formatting never changes the checksum an installation recorded for an applied migration or seed.
+
+## 1.0.0-beta.46
+
+### Patch Changes
+
+- d54dd59: Show actionable origin errors with the browser address and the app.publicOrigin setting in config.yml. Use localized authentication errors for sign-out in both templates while preserving the session on failure.
+- Updated dependencies [d54dd59]
+- Updated dependencies [d54dd59]
+- Updated dependencies [693e43d]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.20
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.7
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.14
+  - @nocobase/app-plugin-i18n@1.0.0-beta.16
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.4
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.6
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.3
+
+## 1.0.0-beta.45
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.15
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.15
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.11
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.6
+  - @nocobase/app-plugin-database-example@0.1.0-beta.8
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.13
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-file-example@1.0.0-beta.19
+  - @nocobase/app-plugin-i18n@1.0.0-beta.15
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.6
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.3
+  - @nocobase/app-plugin-mail@1.0.0-beta.11
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.5
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.8
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.24
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.11
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.2
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.11
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.8
+  - @nocobase/app-plugin-repository-example@1.0.0-beta.21
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.20
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.17
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.8
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.7
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.6
+  - @nocobase/app-plugin-users@2.0.0-beta.4
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/authorization@1.0.0-beta.13
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/lifecycle@0.1.0-beta.1
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/snowflake@1.0.0-beta.4
+
+## 1.0.0-beta.44
+
+### Patch Changes
+
+- 251d19e: Report password reset availability from the authentication server, hide unavailable self-service recovery, and let authorized Studio members reset another member's password.
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.3
+  - @nocobase/app-plugin-notification@1.0.0-beta.26
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.2
+
 ## 1.0.0-beta.43
 
 ### Patch Changes

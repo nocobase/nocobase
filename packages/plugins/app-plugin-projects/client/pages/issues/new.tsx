@@ -62,6 +62,7 @@ export default function NewIssuePage(): ReactElement {
   // Over a project's page the dialog stays there: created, it closes instead of opening the issue.
   const overProject = useParams().projectId !== undefined;
   const [submitting, setSubmitting] = useState(false);
+  const [startNow, setStartNow] = useState(true);
   const submittingRef = useRef(false);
   const unsaved = useUnsavedChangesGuard();
   const asked = params.get('tab');
@@ -103,7 +104,9 @@ export default function NewIssuePage(): ReactElement {
       closeTo={{ pathname: '..', search: listSearch }}
       beforeClose={() => !submittingRef.current && unsaved.confirmDiscard()}
       footer={
-        tab === 'manual' ? <NewIssueFooter submitting={submitting} /> : null
+        tab === 'manual' ? (
+          <NewIssueFooter submitting={submitting} startNow={startNow} />
+        ) : null
       }
     >
       <Tabs
@@ -122,6 +125,7 @@ export default function NewIssuePage(): ReactElement {
           <UnsavedChangesBoundary guard={unsaved}>
             <NewIssueForm
               onSubmittingChange={onSubmittingChange}
+              onStartChange={setStartNow}
               {...(overProject
                 ? {
                     onCreated: () =>

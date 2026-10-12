@@ -2,10 +2,8 @@
  * What the home page's composer decides before anything is sent: which agent it starts with and why it cannot send
  * yet. Pure, so the rules are tested without a browser.
  *
- * The composer's agent picker lists every agent the person may chat with, of both types (`online`: a model on the
- * server; `runner`: a coding agent on a runner); the agent's type is the conversation's mode, fixed by its first
- * message. The page starts with the person's own default agent, else the team's default, else the first online agent
- * that can answer now, else the first agent that can, else the first runner agent, else the first at all.
+ * The composer's agent picker lists every enabled agent the person may chat with. The page starts with the person's
+ * own default agent, else the team's default, else the first agent that can answer now, else the first at all.
  */
 import type { ChatAgent } from '@nocobase/app-plugin-agents/shared/conversations';
 
@@ -14,11 +12,7 @@ export function defaultAgent(agents: readonly ChatAgent[]): ChatAgent | null {
   return (
     agents.find((agent) => agent.isMyDefault) ??
     agents.find((agent) => agent.isSystemDefault) ??
-    agents.find(
-      (agent) => agent.type === 'online' && agent.availability.online,
-    ) ??
     agents.find((agent) => agent.availability.online) ??
-    agents.find((agent) => agent.type === 'runner') ??
     agents[0] ??
     null
   );
@@ -36,22 +30,21 @@ export function chosenAgent(
 }
 
 /**
- * Why the chosen agent cannot be written to now, for the note under the composer: `noModel` (an online agent while no
- * model service offers a model, or none offers the agent's models, and no agent at all before any model service offers
- * one; an administrator has to configure one), `noAgent` (the person may chat with no agent), or null when it can. A
- * runner agent with no runner online is not blocked: the message waits for one. `modelsOffered` is whether any model
- * service offers a model (`ModelCatalog.services`).
+ * Why the chosen agent cannot be written to now, for the note under the composer: `noAgent` (the person may chat with
+ * no agent), `unavailable` (it is not enabled, deleted or forbidden to the person), or null when it can. An agent with
+ * no runner online is not blocked: the message waits for one.
  */
 export function agentBlocker(
   agent: ChatAgent | null,
-  modelsOffered: boolean,
-): 'noAgent' | 'noModel' | null {
-  if (!agent) return modelsOffered ? 'noAgent' : 'noModel';
+): 'noAgent' | 'unavailable' | null {
+  if (!agent) return 'noAgent';
+  const reason = agent.availability.reason;
   if (
-    agent.type === 'online' &&
-    (!modelsOffered || agent.availability.reason === 'modelUnavailable')
+    reason === 'agentMissing' ||
+    reason === 'agentArchived' ||
+    reason === 'forbidden'
   )
-    return 'noModel';
+    return 'unavailable';
   return null;
 }
 

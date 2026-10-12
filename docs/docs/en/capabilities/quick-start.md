@@ -7,12 +7,24 @@ description: 'Create and start a NocoBase application, then build a transport wo
 
 Start a NocoBase application, describe your business to an AI Agent, and begin building your system. This guide uses Northstar Logistics to create customers, drivers, transport orders, and a workspace with one prompt. Later chapters extend the same application with more capabilities.
 
-## 1. Create and start the application
+## Prepare your AI Agent
 
-Prepare Node.js 24 or later and pnpm. In the directory where you keep projects, run this command to download the default application template from npm and install its dependencies:
+Prepare a Coding Agent, Node.js 24 or later, and pnpm 11. Use a Bash terminal, or WSL on Windows, to install the global NocoBase 3 Skills:
 
 ```bash
-pnpm create @nocobase/app northstar-logistics
+npx skills@latest add nocobase/skills-v3 --skill '*' -g
+```
+
+Select your Coding Agent when prompted, then start a new Agent session to load the installed Skills. The [lightweight distribution repository](https://github.com/nocobase/skills-v3) provides these Skills, including application creation guidance.
+
+Creating an application synchronizes its development Skills into `.agents/skills/` in the application directory. Start a new session in that directory so the Agent can follow the application’s `AGENTS.md` and project Skills for development.
+
+## 1. Create and start the application
+
+In the directory where you keep projects, run this command to obtain the creation tool and default application template from the npm beta channel and install dependencies:
+
+```bash
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta northstar-logistics --template-tag=beta
 ```
 
 Enter the application directory, initialize its configuration, and start it. This example uses SQLite, which requires no separate database service:

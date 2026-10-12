@@ -10,7 +10,6 @@ import {
   url,
   type Api,
 } from './support/fixtures.ts';
-import { projectWithDoneApproval } from './support/approval.ts';
 import type { Issue } from './support/runner.ts';
 
 /** The sidebar's inbox entry, including its full count label. */
@@ -24,51 +23,46 @@ async function pendingDecisions(api: Api): Promise<number> {
   return (await api.get<{ decision: number }>('inbox/pending')).decision;
 }
 
+/** The viewer's unread notifications, as the server counts them. */
+async function unreadCount(api: Api): Promise<number> {
+  return (
+    await api.get<{ count: number }>('notificationInApp/messages/unreadCount')
+  ).count;
+}
+
 test.describe('sidebar inbox', () => {
-  // Lisa Nguyen, a contributor, leads a project whose workflow makes a member moving an issue to Done wait for her
-  // approval. No other test asks her for a decision, so the count is hers alone.
+  // Lisa Nguyen, a contributor, is mentioned by Wendy Foster. No other test mentions her or asks her for a decision,
+  // so the count is hers alone.
   test.use({ user: 'lisa' });
 
-  test('the badge counts the decisions waiting and follows a new one without a reload', async ({
+  test('the badge counts unread notifications and follows a new one without a reload', async ({
     page,
     api,
     browser,
   }) => {
     await open(page, '/issues');
-    const before = await pendingDecisions(api);
-    await expect(inboxButton(page)).toHaveAccessibleName(
-      before > 0 ? `收件箱，${before} 项待处理` : /^收件箱/,
-    );
+    expect(await pendingDecisions(api)).toBe(0);
+    const before = await unreadCount(api);
 
     const lisa = await api.get<{ userId: string }>('projects/me');
-    const admin = await apiAs(browser, 'alex');
-    const project = await projectWithDoneApproval(
-      admin.api,
-      lisa.userId,
-    ).finally(() => admin.close());
     const wendy = await apiAs(browser, 'wendy');
     try {
       const me = await wendy.api.get<{ userId: string }>('projects/me');
       const issue = await wendy.api.post<Issue>('projects/issues', {
         title: `侧栏收件箱角标 ${unique()}`,
-        projectId: project.id,
         ownerUserId: me.userId,
-        statusKey: 'in_progress',
-        executor: { type: 'user', id: me.userId },
       });
-      const current = await wendy.api.get<Issue>(`projects/issues/${issue.id}`);
-      await wendy.api.patch(`projects/issues/${issue.id}`, {
-        revision: current.revision,
-        statusKey: 'done',
+      await wendy.api.post(`projects/issues/${issue.id}/comments`, {
+        content: `[@Lisa Nguyen](mention://user/${lisa.userId}) 请看一下`,
       });
     } finally {
       await wendy.close();
     }
 
-    await expect.poll(() => pendingDecisions(api)).toBe(before + 1);
+    await expect.poll(() => unreadCount(api)).toBe(before + 1);
     // The realtime event refreshes the badge on the page already open.
     await expect(inboxButton(page)).toHaveAccessibleName(
-      `收件箱，${before + 1} 项待处理`,
+      `收件箱，${before + 1} 条未读`,
     );
     await expect(
       inboxButton(page).getByTestId('studio-inbox-badge'),

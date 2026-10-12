@@ -16,7 +16,6 @@ import {
 import {
   PmListSkeleton,
   PmLoadError,
-  StartDialog,
   useViewer,
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueListItem } from '@nocobase/app-plugin-projects/shared/issues';
@@ -263,11 +262,6 @@ export function IssueBoardView({
           );
         }}
       </KanbanProvider>
-      <StartDialog
-        request={move.startRequest}
-        onDecide={move.decide}
-        onCancel={move.cancel}
-      />
     </div>
   );
 }

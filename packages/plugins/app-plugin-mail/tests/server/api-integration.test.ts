@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { createApiClient } from '@nocobase/app-client';
 import {
   authenticationToken,
@@ -85,6 +86,7 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
               authorizationSubject: input.address,
               scopes: [],
               credentialReference: await context.credentials.put({
+                username: input.username,
                 password: input.password,
               }),
               identities: [
@@ -242,6 +244,34 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
       }),
     );
   }
+
+  it.each([
+    [undefined, 'Alice@Example.com'],
+    ['', 'Alice@Example.com'],
+    ['   ', 'Alice@Example.com'],
+    ['  CorporateLogin  ', 'CorporateLogin'],
+  ])(
+    'normalizes optional credential login %j on the server',
+    async (username, expected) => {
+      const connected = await alice.connectAccount({
+        type: 'fixture',
+        name: 'fixture',
+        address: 'Alice@Example.com',
+        username,
+        password: 'password',
+        initialSyncReceivedAfter: '2026-01-01T00:00:00.000Z',
+      });
+      const account = await store.getAccount(connected.id);
+      expect(account).toBeDefined();
+      const vault = new DatabaseMailCredentialVault(database);
+      expect(await vault.get(account!.credentialReference)).toMatchObject({
+        username: expected,
+        password: 'password',
+      });
+      expect(connected).not.toHaveProperty('username');
+      expect(connected).not.toHaveProperty('credentialReference');
+    },
+  );
 
   it('persists bulk logs, retries the original mail once, and cancels queued delivery', async () => {
     const account = await alice.connectAccount({
@@ -453,7 +483,7 @@ describe('MailClient → HTTP routes → service → database and jobs', () => {
     });
     for (let index = 0; index < 102; index += 1) {
       await store.createSubmission(
-        { id: `history-${index}`, accountId: account.id, status: 'accepted' },
+        { id: randomUUID(), accountId: account.id, status: 'accepted' },
         index === 101 ? 'single' : `bulk:history:${index}`,
         'fixture',
       );

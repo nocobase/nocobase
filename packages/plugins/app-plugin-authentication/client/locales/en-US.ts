@@ -31,8 +31,10 @@ const enUS = {
     ACCOUNT_DISABLED: 'This account is disabled. Contact your administrator.',
     SERVICE_ACCOUNT_NO_LOGIN:
       'A service account cannot sign in; it acts only through API keys.',
+    invalidOriginWithAddress:
+      'This origin is not trusted. Set app.publicOrigin in config.yml to {{origin}}, restart the application, and try again.',
     INVALID_ORIGIN:
-      'This site address is not allowed to sign in. Use the address provided by your administrator, or ask them to check the application address configuration.',
+      'This origin is not trusted. Check app.publicOrigin in config.yml, restart the application, and try again.',
     INVALID_CSRF_ORIGIN:
       'This request came from another site and was refused. Reload the page and try again.',
   },

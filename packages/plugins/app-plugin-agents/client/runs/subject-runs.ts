@@ -75,8 +75,8 @@ export function useAgentNames(): (agentId: string) => string | null {
   const api = useAgentsApi();
   const agents = useQuery(
     {
-      queryKey: agentsKeys.agents,
-      queryFn: () => api.agents(true),
+      queryKey: agentsKeys.agentNames,
+      queryFn: () => api.agentNames(),
       retry: false,
       staleTime: 60_000,
     },

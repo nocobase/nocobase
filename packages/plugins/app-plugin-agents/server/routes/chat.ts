@@ -1,8 +1,7 @@
 /**
- * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`), and the agent presets at
- * `/api/agents/presets`. Every route is behind the guard (a signed-in person and their authorization context). A
- * conversation is its owner's alone: the service answers 404 to anyone else, whatever they may manage. Changing the
- * team's default chat agent needs `agents.agents` manage; reading presets needs `agents.agents` read.
+ * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`). Every route is behind the guard (a
+ * signed-in person and their authorization context). A conversation is its owner's alone: the service answers 404 to
+ * anyone else, whatever they may manage. Changing the team's default chat agent needs `agents.agents` manage.
  */
 import {
   apiErrorResponse,
@@ -27,7 +26,6 @@ import {
   CONVERSATION_TITLE_MAX,
   MESSAGE_CONTENT_MAX,
   type ConversationPatch,
-  type CopyAgentRequest,
   type CreateConversationRequest,
   type MessageAttachment,
   type SendMessageRequest,
@@ -50,9 +48,6 @@ import {
 import type { AdminEnv } from './admin.js';
 import { personOrRunSecurity, tags } from './openapi.js';
 import {
-  AgentParams,
-  AgentPresetSchema,
-  AgentSchema,
   ChatAgentSchema,
   ChatSettingsSchema,
   ChatAttachmentContentQuery,
@@ -86,17 +81,6 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
     .max(CONVERSATION_TITLE_MAX * 2)
     .optional(),
   source: z.string().regex(CONVERSATION_SOURCE_PATTERN).optional(),
-  model: z
-    .strictObject({
-      modelService: z.string().min(1).max(100),
-      model: z.string().min(1).max(200),
-    })
-    .nullable()
-    .optional()
-    .meta({
-      description:
-        "An online agent: the entry of its list (`ChatAgent.models`) to answer with; the agent's default when left out.",
-    }),
 });
 
 const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
@@ -105,13 +89,6 @@ const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
     .max(CONVERSATION_TITLE_MAX * 2)
     .optional(),
   archived: z.boolean().optional(),
-  model: z
-    .strictObject({
-      modelService: z.string().min(1).max(100),
-      model: z.string().min(1).max(200),
-    })
-    .nullable()
-    .optional(),
 });
 
 const SendSchema: z.ZodType<SendMessageRequest> = z.strictObject({
@@ -204,11 +181,6 @@ const StartSchema: z.ZodType<StartConversationRequest> = z.strictObject({
   clientId: z.string().min(1).max(100).optional(),
 });
 
-const CopySchema: z.ZodType<CopyAgentRequest> = z.strictObject({
-  name: z.string().max(400).optional(),
-  makeDefault: z.boolean().optional(),
-});
-
 /**
  * `guard` authenticates the request and sets `caller`; the route contribution passes the real one, tests a fake.
  * `personOrRun` also takes a run token (setting `caller.run`), for reading a conversation's files; `guard` by default.
@@ -277,7 +249,7 @@ export function createChatRoutes(
         flags: { agentId: { name: 'agent' } },
       }),
       description:
-        "With the given agent, or the caller's default chat agent when none is named; for an online agent, `model` chooses one of its `models` to answer with (400, `metadata.reason` `MODEL_NOT_LISTED`, for any other).",
+        "With the given enabled agent, or the caller's default chat agent when none is named.",
       responses: {
         201: dataResponse(ConversationDetailSchema, 'Created.'),
         400: conversationConflict('No chat agent is available'),
@@ -359,10 +331,8 @@ export function createChatRoutes(
     guard,
     describeRoute({
       tags,
-      summary: 'Rename, archive or choose the model of a conversation',
+      summary: 'Rename or archive a conversation',
       operationId: 'agentsUpdateConversation',
-      description:
-        "`model` picks one of the online conversation's `models` for its next runs (null: the agent's default); 400 `INVALID_REQUEST` with `reason: MODEL_NOT_LISTED` when the agent does not list it.",
       ...cliRoute({
         command: 'conversation update',
         args: ['conversationId'],
@@ -531,7 +501,7 @@ export function createChatRoutes(
       },
       summary: 'Switch a conversation to the default agent',
       description:
-        'Continues the conversation with the default chat agent while its own agent cannot answer; a runner conversation whose default is not a runner agent continues with the online fallback agent.',
+        'Continues the conversation with the default chat agent while its own agent cannot answer.',
       conflict: 'The conversation cannot fall back',
     },
     restore: {
@@ -594,41 +564,6 @@ export function createChatRoutes(
       return context.json({ data, meta: { total: data.length } });
     },
   );
-  router.post(
-    '/:agentId/copy',
-    guard,
-    describeRoute({
-      tags,
-      summary: 'Copy an agent for oneself',
-      operationId: 'agentsCopyAgent',
-      ...cliRoute({
-        command: 'agent copy',
-        args: ['agentId'],
-        flags: { agentId: { name: 'agent' } },
-      }),
-      description:
-        "A private copy of an agent the caller may wake, owned and usable only by them; `makeDefault` makes it the caller's default chat agent.",
-      responses: {
-        200: dataResponse(AgentSchema),
-        404: apiErrorResponse(
-          404,
-          'The agent does not exist, or the caller may not wake it.',
-        ),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator('param', AgentParams),
-    apiValidator('json', CopySchema),
-    async (context) =>
-      context.json({
-        data: await conversations.copyAgent(
-          me(context),
-          context.req.valid('param').agentId,
-          context.req.valid('json'),
-        ),
-      }),
-  );
-
   router.get(
     '/chatPreferences',
     guard,
@@ -702,11 +637,10 @@ export function createChatRoutes(
         command: 'conversation settings update',
         flags: {
           defaultAgentId: { name: 'default-agent' },
-          onlineFallbackAgentId: { name: 'online-fallback-agent' },
         },
       }),
       description:
-        "Sets the team's default chat agent and the online agent that answers in place of a runner agent with no runner for the person. Needs `agents.agents` manage.",
+        "Sets the team's default chat agent, an enabled agent. Needs `agents.agents` manage.",
       responses: {
         200: dataResponse(ChatSettingsSchema),
         ...apiErrorResponses,
@@ -841,32 +775,6 @@ export function createChatRoutes(
           context.req.valid('query').download,
         ),
       });
-    },
-  );
-
-  router.get(
-    '/presets',
-    guard,
-    describeRoute({
-      tags,
-      summary: 'List agent presets',
-      operationId: 'agentsListPresets',
-      ...cliRoute({
-        command: 'agent preset list',
-        columns: ['key', 'name', 'type', 'description'],
-      }),
-      description:
-        'The roles the application registered that a new agent can start from. Needs `agents.agents` read.',
-      responses: {
-        200: listResponse(AgentPresetSchema),
-        ...apiErrorResponses,
-      },
-    }),
-    async (context) => {
-      if (!(await context.get('caller').can('agents.agents', 'read')))
-        throw forbidden('This needs agents.agents read permission.');
-      const data = services.presets.list();
-      return context.json({ data, meta: { total: data.length } });
     },
   );
 

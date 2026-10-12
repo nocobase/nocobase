@@ -5,16 +5,11 @@ import {
   fireEvent,
   renderHook,
   screen,
-  waitFor,
 } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ProjectResource } from '../../shared/projects.js';
-import {
-  BUILTIN_STATUSES,
-  type WorkflowListItem,
-} from '../../shared/workflows.js';
 import { api, clientMocks, me, resetApi } from './fake-client.js';
 import { renderAt } from './render.js';
 
@@ -24,7 +19,7 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
   clientMocks.authorization(),
 );
 
-const { useProjectResources, useProjectWorkflow, useResourceValidation } =
+const { useProjectResources, useResourceValidation } =
   await import('../../client/projects.js');
 const { default: NewProjectPage } =
   await import('../../client/pages/projects/new.js');
@@ -55,19 +50,6 @@ const directory: ProjectResource = {
   label: null,
   initPrompt: null,
   position: 1,
-};
-
-const workflow: WorkflowListItem = {
-  id: 'wf1',
-  name: 'Release train',
-  description: null,
-  isDefault: true,
-  builtInKey: null,
-  definition: { states: BUILTIN_STATUSES, transitions: [] },
-  revision: 1,
-  createdAt: '2026-09-30T00:00:00.000Z',
-  updatedAt: '2026-09-30T00:00:00.000Z',
-  projectCount: 1,
 };
 
 function wrapper({
@@ -177,56 +159,11 @@ describe("a project's working directories", () => {
   });
 });
 
-describe("a project's workflow", () => {
-  it('names the default workflow for a project without one, and saves choosing it as none', async () => {
-    resetApi({ 'projects/workflows': () => ({ data: [workflow] }) });
-    const { result } = renderHook(
-      () => useProjectWorkflow({ workflowId: null }),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.name).toBe('Release train'));
-    expect(result.current.value).toBe('wf1');
-    expect(result.current.noneLabel).toBeUndefined();
-    expect(result.current.toWorkflowId('wf1')).toBeUndefined();
-  });
-
-  it('names the built-in statuses while no workflow is the default', async () => {
-    resetApi({ 'projects/workflows': () => ({ data: [] }) });
-    const { result } = renderHook(
-      () => useProjectWorkflow({ workflowId: null }),
-      { wrapper },
-    );
-    await waitFor(() =>
-      expect(result.current.name).toBe('workflows.builtInStatuses'),
-    );
-    expect(result.current.noneLabel).toBe('workflows.builtInStatuses');
-  });
-});
-
-describe('a new project while no workflow is the default', () => {
-  it('offers the built-in statuses as the workflow of a new project', async () => {
-    resetApi({
-      'projects/me': () => ({ data: me('admin') }),
-      'projects/members': () => ({ data: [] }),
-      'projects/workflows': () => ({ data: [] }),
-    });
-    renderAt('/projects/new', [
-      { path: '/projects/new', element: <NewProjectPage /> },
-    ]);
-    await waitFor(() =>
-      expect(screen.getByLabelText('projects.workflow').textContent).toContain(
-        'workflows.builtInStatuses',
-      ),
-    );
-  });
-});
-
 describe('new project', () => {
   it('asks before discarding a name being typed', async () => {
     resetApi({
       'projects/me': () => ({ data: me('admin') }),
       'projects/members': () => ({ data: [] }),
-      'projects/workflows': () => ({ data: [workflow] }),
     });
     renderAt('/projects/new', [
       { path: '/projects', element: <p>list</p> },

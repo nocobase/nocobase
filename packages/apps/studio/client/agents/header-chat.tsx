@@ -6,7 +6,6 @@ import {
   useConversation,
 } from '@nocobase/app-plugin-agents/client/chat';
 import { MESSAGE_CONTENT_MAX } from '@nocobase/app-plugin-agents/shared/conversations';
-import type { OnlineModelEntry } from '@nocobase/app-plugin-agents/shared/agents';
 import { useTranslation } from '@nocobase/i18n/client';
 import { STUDIO_NAMESPACE } from '../../shared/access.js';
 import {
@@ -139,10 +138,6 @@ function HeaderEditor({
   }
   function submit(): void {
     if (!canSend) return;
-    const model = editor.read<{
-      agentId: string;
-      model: OnlineModelEntry | null;
-    } | null>('model', null);
     const taken = state.submissions.submit({
       content,
       context: snapshot.context,
@@ -152,9 +147,6 @@ function HeaderEditor({
       create: {
         source: panel.source,
         ...(chosen ? { agentId: chosen.id } : {}),
-        ...(chosen && model?.agentId === chosen.id && model.model
-          ? { model: model.model }
-          : {}),
       },
     });
     if (taken) {

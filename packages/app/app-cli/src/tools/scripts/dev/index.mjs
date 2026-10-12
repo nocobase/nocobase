@@ -316,7 +316,8 @@ if (!proxyTarget) {
   );
 
   if (!strictStartup && serverChild.stdin) {
-    process.stdin.pipe(serverChild.stdin);
+    // Background runs may receive EOF; internal restart input must remain writable.
+    process.stdin.pipe(serverChild.stdin, { end: false });
   }
 
   if (!strictStartup)

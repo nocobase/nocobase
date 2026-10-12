@@ -3,9 +3,8 @@
  * sentence, worded by type from the notice's values in the reader's language. Studio's own wording (`inbox.types.*`, `inbox.text.*`, `inbox.body.*`, `inbox.request.*`).
  */
 import { ACCESS_NAMESPACE } from '@nocobase/app-plugin-projects/shared/access';
-import type { ApprovalRequest } from '@nocobase/app-plugin-projects/shared/approvals';
 import type { StatusDefinition } from '@nocobase/app-plugin-projects/shared/issues';
-import { hasDefaultName } from '@nocobase/app-plugin-projects/shared/workflows';
+import { hasDefaultName } from '@nocobase/app-plugin-projects/shared/statuses';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useCallback } from 'react';
 
@@ -150,11 +149,10 @@ export function useEntryTitle(): (entry: InboxEntry) => string {
   };
 }
 
-/** What the detail pane knows beyond the item: the issue's title and statuses, and the request being decided. */
+/** What the detail pane knows beyond the item: the issue's title and statuses. */
 export interface EntryContext {
   readonly issueTitle?: string | null;
   readonly statuses?: readonly StatusDefinition[];
-  readonly request?: ApprovalRequest | null;
 }
 
 /**
@@ -181,16 +179,6 @@ export function useEntryText(): (
 
     let sentence: string | null = null;
     switch (notice.type) {
-      case 'approval_requested': {
-        const request = context.request;
-        if (request)
-          sentence = t('inbox.request.move', {
-            actor: request.requestedByName ?? t('inbox.someone'),
-            from: statusLabel(request.fromStatus, null, context.statuses),
-            to: statusLabel(request.toStatus, null, context.statuses),
-          });
-        break;
-      }
       case 'status_changed': {
         const from = status(params.from);
         if (from && to)
@@ -288,8 +276,13 @@ export function useEntryText(): (
               agentName: params.agentName ?? params.agentId ?? '',
             }),
           });
-        if (params.reason === 'suppressed')
-          sentence += ` ${t('studioAgents.stageRules.continueInIssue')}`;
+        break;
+      case 'comment_runs_limited':
+        sentence = `${t('inbox.body.comment_runs_limited', {
+          limit: params.limit ?? '',
+          windowHours: params.windowHours ?? '',
+          agentName: params.agentName ?? '',
+        })} ${t('studioAgents.commentRuns.continueInIssue')}`;
         break;
       case 'commented':
       case 'mentioned':

@@ -10,34 +10,14 @@ import type {
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type {
-  Agent,
-  AgentType,
-  OnlineModelEntry,
-} from '../../../shared/agents.js';
+import type { Agent } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
 import type { Runner } from '../../../shared/runners.js';
 import type { Run } from '../../../shared/runs.js';
 import type { Tx } from '../../kernel/tx.js';
 
-/**
- * How the agent reaches the application's commands: `cli` for a runner agent (it types `acme issue get PM-12` in its
- * terminal), `tools` for an online agent (it runs the same command in its sandboxed shell, the `bash` tool). Both name
- * commands the same way; what differs is where files go (a working directory, or `/tmp`).
- */
-export type CommandDialect = 'cli' | 'tools';
-
-/** The dialect a run of `agent` speaks. */
-export function dialectOf(agent: Pick<Agent, 'type'>): CommandDialect {
-  return agent.type === 'online' ? 'tools' : 'cli';
-}
-
-/**
- * A command as a brief names it: `` `acme issue get` ``, with a flag named in `flag` after it (`--file`). Both
- * dialects run the CLI; `dialect` stays for the subject's own wording.
- */
+/** A command as a brief names it: `` `acme issue get` ``, with a flag named in `flag` after it (`--file`). */
 export function commandRef(
-  _dialect: CommandDialect,
   cli: string,
   commandId: string,
   flag?: string,
@@ -50,7 +30,7 @@ export function commandRef(
 export interface ClaimContext {
   readonly run: Run;
   readonly agent: Agent;
-  /** The runner claiming; null for a preview, and for an online run (which the application runs itself). */
+  /** The runner claiming; null for a preview. */
   readonly runner: Runner | null;
   /** The run's input not yet handled, oldest first. */
   readonly inputs: readonly RunInput[];
@@ -58,8 +38,6 @@ export interface ClaimContext {
   readonly cli: string;
   /** The application's name in prose (`agents.app.name`, such as `Acme`). */
   readonly appName: string;
-  /** How the agent reaches the commands: name them with `commandRef(claim.dialect, claim.cli, id)`. */
-  readonly dialect: CommandDialect;
 }
 
 /**
@@ -114,6 +92,12 @@ export interface SubjectAssembly {
   readonly turn: {
     readonly prompt: string;
     readonly previousSummary?: string;
+    /**
+     * Added to a runner's turn once the claim knows whether the tool's session resumes (`resumed`) or starts fresh
+     * (`fresh`): what is new since the agent's last run, say, which only a resumed session can rely on.
+     */
+    readonly resumed?: string;
+    readonly fresh?: string;
   };
   /** Passed to the agent unchanged (`acme run context`). */
   readonly data: Readonly<Record<string, unknown>>;
@@ -124,10 +108,15 @@ export interface SubjectAssembly {
    */
   readonly scopes: readonly SubjectScope[];
   /**
-   * For an online run: the entry of the agent's list the subject asks for (a conversation's choice). Ignored when the
-   * agent does not list it; absent, the run uses the agent's first entry.
+   * The runner's work directory for this run in place of the subject's (`RunWorkspace.key`), such as a coordinating
+   * agent's that checks nothing out and so never waits for the subject's lock. Letters, digits, `.`, `_` and `-`.
    */
-  readonly model?: OnlineModelEntry;
+  readonly workspaceKey?: string;
+  /**
+   * The run only reads (a review, reading a failed check): the runner gives it a work directory of its own with the
+   * same branches checked out and pushes nothing (`RunWorkspace.readOnly`), so it runs alongside the run that writes.
+   */
+  readonly readOnly?: boolean;
 }
 
 export interface ContextProvider {
@@ -281,20 +270,6 @@ export interface SubjectBinding {
    * it, no subject of the kind counts as over and runners keep their directories under their own retention rules.
    */
   readonly workspaces?: SubjectWorkspaces;
-  /**
-   * The agent types that may run on this kind; `['runner']` when absent. An online agent has no working directory, so a
-   * kind offers `online` only when its runs need none (its assembly has no `dirs`); enqueueing a run of another type is
-   * refused (`AGENT_TYPE_NOT_ALLOWED`).
-   */
-  readonly agentTypes?: readonly AgentType[];
-}
-
-/** Whether runs of `binding`'s kind may be given to an agent of `type`. */
-export function takesType(
-  binding: Pick<SubjectBinding, 'agentTypes'> | undefined,
-  type: AgentType,
-): boolean {
-  return (binding?.agentTypes ?? ['runner']).includes(type);
 }
 
 export interface SubjectRegistry {

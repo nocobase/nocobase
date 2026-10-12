@@ -243,8 +243,6 @@ describe('app client routes', () => {
         authorizedAs: 'settings:studio.knowledgeSearch',
       },
       { name: 'config-git', authorizedAs: 'settings:studio.git' },
-      { name: 'config-workflows', authorizedAs: 'settings:pm.workflows' },
-      { name: 'config-workflow', authorizedAs: 'settings:pm.workflows' },
       { name: 'config-labels', authorizedAs: 'settings:pm.labels' },
     ]);
   });

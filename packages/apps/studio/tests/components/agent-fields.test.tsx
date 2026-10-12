@@ -1,9 +1,8 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { useExecutorAgent } from '../../client/agents/executor-agent';
-import { RuleAgentField } from '../../client/agents/stage-rule-editors';
 import { pickerAgent } from '../fixtures/picker-agents';
 
 const AGENTS = [
@@ -14,13 +13,11 @@ const AGENTS = [
 ];
 
 vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
-  useAgentOptions: (filter: { type?: string } = {}) => ({
+  useAgentOptions: () => ({
     loading: false,
     failed: false,
     options: [],
-    agents: AGENTS.filter(
-      (agent) => !filter.type || agent.type === filter.type,
-    ),
+    agents: AGENTS,
     nameOf: (id: string) =>
       AGENTS.find((agent) => agent.id === id)?.name ?? null,
   }),
@@ -32,76 +29,6 @@ vi.mock('@nocobase/i18n/client', async (importOriginal) => ({
     i18n: { language: 'en-US' },
   }),
 }));
-
-const LABEL = 'studioAgents.stageRules.agent';
-
-describe('a status rule’s agent', () => {
-  it('is the agent picker as a field: the issue’s executor first, then the runner agents', async () => {
-    const onChange = vi.fn();
-    render(
-      <RuleAgentField
-        id='rule-agent'
-        value=''
-        allowCurrent
-        onChange={onChange}
-      />,
-    );
-    const trigger = screen.getByLabelText(LABEL);
-    expect(trigger).toHaveAttribute('data-appearance', 'field');
-    expect(trigger).toHaveTextContent(
-      'studioAgents.stageRules.currentExecutor',
-    );
-    fireEvent.click(trigger);
-    const menu = await screen.findByRole('menu');
-    const [current] = within(menu).getAllByRole('menuitem');
-    expect(current).toHaveTextContent(
-      'studioAgents.stageRules.currentExecutor',
-    );
-    expect(
-      within(
-        within(menu).getByRole('menuitem', { name: /Reviewer/u }),
-      ).getByRole('img'),
-    ).toHaveAttribute('data-online', 'false');
-    fireEvent.click(within(menu).getByRole('menuitem', { name: /Coder/u }));
-    expect(onChange).toHaveBeenCalledWith('coder');
-  });
-
-  it('shows the chosen agent with its availability, a placeholder, or an agent it cannot list', () => {
-    const { rerender } = render(
-      <RuleAgentField
-        id='rule-agent'
-        value='reviewer'
-        allowCurrent={false}
-        onChange={() => undefined}
-      />,
-    );
-    const trigger = screen.getByLabelText(LABEL);
-    expect(trigger).toHaveTextContent('Reviewer');
-    expect(within(trigger).getByRole('img')).toHaveClass('absolute');
-    rerender(
-      <RuleAgentField
-        id='rule-agent'
-        value=''
-        allowCurrent={false}
-        onChange={() => undefined}
-      />,
-    );
-    expect(screen.getByLabelText(LABEL)).toHaveTextContent(
-      'studioAgents.stageRules.chooseAgent',
-    );
-    rerender(
-      <RuleAgentField
-        id='rule-agent'
-        value='gone'
-        allowCurrent={false}
-        onChange={() => undefined}
-      />,
-    );
-    expect(screen.getByLabelText(LABEL)).toHaveTextContent(
-      'studioAgents.stageRules.unknownAgent',
-    );
-  });
-});
 
 function Executor({ id, name }: { id: string; name: string }): ReactElement {
   const executorAgent = useExecutorAgent();

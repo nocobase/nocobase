@@ -257,7 +257,7 @@ describe('projects', () => {
     expect(item?.issueCounts).toEqual({
       total: 2,
       done: 1,
-      byStatus: { todo: 1, done: 1 },
+      byStatus: { backlog: 1, done: 1 },
     });
   });
 });

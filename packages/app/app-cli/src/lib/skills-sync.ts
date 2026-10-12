@@ -1,15 +1,14 @@
 // Copies skills from an application's direct NocoBase dependencies and registered plugins.
 //
-// Upstream is the single source of truth: every synchronized directory that
-// differs from upstream is replaced wholesale (one that matches is left
-// untouched), and a directory whose name does not start with
-// `nocobase-` is never touched, so an application can keep local skills
-// alongside the synchronized ones. The entire app-side `.agents/` tree is
-// ignored generated state, not a version-controlled source of truth.
+// Upstream is the single source of truth: every synchronized directory that differs from upstream is replaced
+// wholesale (one that matches is left untouched), and a directory whose name does not start with `nocobase-` is never
+// touched, so an application can keep local skills alongside the synchronized ones. On the application side,
+// `.agents/skills/` and the `.agents/.skills-sync.json` ownership file are ignored generated state, not a
+// version-controlled source of truth. The rest of `.agents/`, notably `.agents/rules/`, is application-owned guidance
+// that the application commits and this sync never reads, writes or removes.
 //
-// Where the packages live differs by caller. Inside this repository they sit
-// under `packages/`; in a generated application they are installed into
-// `node_modules`. Everything except that lookup is shared, so the lookup is a
+// Where the packages live differs by caller. Inside this repository they sit under `packages/`; in a generated
+// application they are installed into `node_modules`. Everything except that lookup is shared, so the lookup is a
 // parameter rather than a branch.
 import {
   createClientPluginsEditor,

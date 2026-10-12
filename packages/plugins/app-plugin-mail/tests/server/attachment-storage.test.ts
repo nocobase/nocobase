@@ -87,7 +87,9 @@ describe('outbound attachment bytes and metadata', () => {
     expect(await readFile(objectPath(row!.key), 'utf8')).toBe('hello');
     disk.getStream.mockClear();
     await expect(storage.open('bob', uploaded.id)).rejects.toThrow('not found');
-    await expect(storage.open('alice', 'missing')).rejects.toThrow('not found');
+    await expect(
+      storage.open('alice', '00000000-0000-4000-8000-000000000001'),
+    ).rejects.toThrow('not found');
     expect(disk.getStream).not.toHaveBeenCalled();
   });
 

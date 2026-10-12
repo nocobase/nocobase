@@ -1,6 +1,6 @@
 # Customizing the application shell
 
-The shell is `client/routing/` and `client/layouts/`, with the header, sidebar and account controls in `client/layouts/components/`. It is template scaffolding this application owns: declare business pages, menus and permissions on the routes instead ([`page.md`](page.md)), and change the shell only when they cannot express the requirement. When you do, comment in the code what you changed and why, so that a later template upgrade can judge whether the change is still needed (see `AGENTS.md`).
+The shell is `client/routing/` and `client/layouts/`, with the header, sidebar and account controls in `client/layouts/components/`. It is template scaffolding this application owns: declare business pages, menus and permissions on the routes instead ([`page.md`](page.md)), and change the shell only when they cannot express the requirement. When you do, comment in the code what you changed and why, so that a later template upgrade can judge whether the change is still needed, and record the shell's application-specific behavior in `.agents/rules/` as [application structure](../../app-structure.md#the-rest-is-framework-structure) describes.
 
 ## 1. Behaviors to keep
 

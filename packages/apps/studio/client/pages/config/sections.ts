@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Tag,
   Users,
-  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -87,18 +86,6 @@ const GROUPS: readonly {
         item: 'studio.apiKeys',
         label: 'config.nav.apiKeys',
         icon: KeyRound,
-      },
-    ],
-  },
-  {
-    id: 'projects',
-    label: 'config.nav.groups.projects',
-    sections: [
-      {
-        path: 'workflows',
-        item: 'pm.workflows',
-        label: 'config.nav.workflows',
-        icon: Workflow,
       },
     ],
   },

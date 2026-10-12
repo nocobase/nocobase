@@ -4,7 +4,13 @@ title: 'Adding sign-in methods'
 
 # Adding sign-in methods
 
+[← Authentication overview](./index.md) · [Open the related scenario](./index.md#sso)
+
 Northstar employees can use the company identity provider to enter the transport application. The provider verifies their identity; the application creates its own session and applies business permissions afterward.
+
+> This guide uses OIDC as an example. Prepare an independent identity provider and account-linking rules first. Company sign-in is not enabled in the default application.
+
+[Supported integration approaches](#supported-integration-approaches) · [Prepare the integration](#prepare-the-integration) · [Corporate sign-in example](#corporate-sign-in-example) · [Other integration needs](#other-integration-needs)
 
 ## Supported integration approaches
 
@@ -46,15 +52,11 @@ Choose **Continue with Company account** on the transport application’s sign-i
 
 ![Company sign-in entry in the transport application](../assets/northstar-company-entry-en.png)
 
-**The same page offers password and company-account sign-in.**
-
 ### 2. Authenticate with the company identity provider
 
 The browser redirects to the independent **Northstar Identity** service. Enter the company username and password, then click **Sign in**. The transport application does not collect the company password on its own page.
 
 ![Sign in at the company identity provider](../assets/northstar-company-login-en.png)
-
-**Company credentials are verified by the separate identity provider.**
 
 ### 3. Authorize the transport application
 
@@ -64,15 +66,11 @@ Choose **Allow access** to continue, or **Cancel** to stop authorization.
 
 ![Company identity and requested access on the consent page](../assets/northstar-company-consent-en.png)
 
-**Users can review the requested access and allow or cancel it.**
-
 ### 4. Return to the workspace
 
 Authorization redirects back to the transport application. Open the avatar menu to see **Dana Reed** and the company email. The application has established its own signed-in session.
 
 ![Return to the workspace with Dana Reed’s identity](../assets/northstar-company-signed-in-en.png)
-
-**After authorization, the application recognizes the signed-in company user.**
 
 Creating an account on first sign-in does not grant order access or administrator permissions. This new account has no business data permissions yet, so its workspace shows no orders. Administrators can assign appropriate [Permission sets](../authorization/permission-sets.md).
 
@@ -92,3 +90,11 @@ Keep password sign-in and enter the transport workspace after success.
 ```
 
 Also specify whether sign-out leaves the identity provider, how existing employees link accounts, and role-specific landing pages. The integration includes any required binding pages, authentication extensions, and data structures.
+
+## Verify the result
+
+- Password sign-in remains available and company sign-in redirects to the identity provider.
+- Allowing access returns the correct identity; cancelling does not sign in.
+- Repeated sign-in does not duplicate or incorrectly merge accounts; new accounts receive no automatic administrator permissions.
+
+Return to the [related overview scenario](./index.md#sso) to adapt the prompt and continue with your Agent.

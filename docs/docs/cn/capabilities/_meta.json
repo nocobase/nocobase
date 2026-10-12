@@ -16,9 +16,10 @@
     "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "data-sources",
-    "label": "数据源"
+    "label": "数据源",
+    "collapsed": true
   },
   {
     "type": "dir",
@@ -39,34 +40,57 @@
     "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "file",
-    "label": "文件"
+    "label": "文件",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "i18n",
-    "label": "多语言"
+    "label": "多语言",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "theme",
-    "label": "主题"
+    "label": "主题",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "notification",
-    "label": "通知"
+    "label": "通知",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "scheduler",
-    "label": "定时任务"
+    "label": "定时任务",
+    "collapsed": true
   },
   {
     "type": "dir",
     "name": "mail",
     "label": "邮件",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI 员工",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-knowledge-base",
+    "label": "AI 知识库",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "template-print",
+    "label": "模板打印",
     "collapsed": true
   }
 ]

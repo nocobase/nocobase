@@ -4,7 +4,7 @@
  */
 export const PM_REALTIME_TOPIC = 'pm:changes';
 
-export type PmChangeDomain = 'issues' | 'labels' | 'workflows' | 'plans';
+export type PmChangeDomain = 'issues' | 'labels' | 'plans';
 
 export interface PmChangeEvent {
   readonly kind: 'pm.changed';

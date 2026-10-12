@@ -100,7 +100,11 @@ describe('limits per coding tool', () => {
     await h.enqueue(either, '1');
     await h.enqueue(either, '2');
     const runner = await h.registerRunner({
-      tools: BOTH.map((tool) => ({ ...tool, version: `${tool.kind}-version` })),
+      tools: BOTH.map((tool) => ({
+        ...tool,
+        version: `${tool.kind}-version`,
+        models: [{ id: `${tool.kind}-requested` }],
+      })),
       slots: 2,
       toolSlots: { claude: 1 },
     });

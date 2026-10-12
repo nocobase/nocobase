@@ -72,3 +72,16 @@ After Emma approves, the request becomes **Approved**. Olivia's handover reason 
 Specify permitted addition modes and transfer recipients. Define how added participants affect the original decision policy, rather than allowing arbitrary users to become reviewers.
 
 :::
+
+## Administrative responsibility changes
+
+Ask the Agent to build a business-specific management page for inactive staff, missing reviewers or execution failures. Define its record scope, permissions and assignment, reassignment, redispatch or reset actions. Preserve reasons, original tasks and history.
+
+Define whether redispatch or reset replaces a handler or ends the current round and resubmits. Specify eligible states, the restart stage and how previous opinions, deadlines, budgets and completed work are handled.
+
+```text
+Build a Northstar approval management page. Authorized administrators can view only requests, tasks, history and execution results within their business responsibility, and handle inactive staff, missing reviewers and execution failures.
+Allow assignment and reassignment with a reason. Before adding redispatch or reset, confirm when it is allowed, where review restarts, whether opinions and deadlines remain, and what happens to reserved budgets and completed work. Never delete the original records. Show me the page and permission plan first.
+```
+
+Verify added-reviewer order, candidate restrictions and administrative permissions. Invalidated tasks cannot be handled, and responsibility changes remain traceable.

@@ -1,5 +1,96 @@
 # @nocobase/app-plugin-agents
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 65ec64a: Preserve failures after issue status transitions, isolate background card reconciliation failures, and return a specific failed precondition for repeated retries.
+- 65ec64a: Prevent concurrent and repeated retries of the same run, retain retry attribution, and link retried runs to their replacements. Automatically settle obsolete failed-run decisions after retries, new work, reassignment, or issue completion, including outstanding cards from earlier releases.
+- Updated dependencies [65ec64a]
+- Updated dependencies [65ec64a]
+  - @nocobase/agent-protocol@0.1.0-beta.6
+  - @nocobase/app-cli-client@0.1.0-beta.5
+
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 3668ab1: Tell each issue run what was said since the agent's last run. A subject's assembly may add a note to the turn of a resumed session (`turn.resumed`) or of a fresh one (`turn.fresh`), chosen once the claim knows which it is. The comment threads list (`GET /api/projects/issues/{issueId}/comments`, `issue comment list`) takes `since` to return only what was written after it. Studio uses both: a resumed run hears that no comment arrived, the few new comments, or how many and the `--since` command that reads them; a fresh session or a first run is told to read the issue's comments before acting.
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+- Updated dependencies [d54dd59]
+- Updated dependencies [d54dd59]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.20
+
+## 0.1.0-beta.7
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/agent-protocol@0.1.0-beta.5
+  - @nocobase/app-cli@1.0.0-beta.19
+  - @nocobase/app-cli-client@0.1.0-beta.4
+  - @nocobase/app-client@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/authorization@1.0.0-beta.13
+  - @nocobase/cli-envelope@0.1.0-beta.1
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 0.1.0-beta.6
+
+### Minor Changes
+
+- 4044a42: Allow workflow Run agent rules to start a fresh session on every stage entry while preserving working directories and other agents' sessions. Preserve the choice across queued run merges, confirmation requests and retries, and expose it in run responses.
+
+  New software development workflows enable fresh sessions for proposal review and code review. Existing workflows are unchanged: workflow owners can enable “Start a new session every time” in the rule editor. The agents database migration adds `freshSession` columns to runs and run requests with a default of false; no existing workflow configuration is migrated.
+
+- 0f7ed64: Give a run's git a repository credential whenever it needs one, instead of one handed out at the claim that a long run outlives, and say why a push failed.
+
+  - Protocol version 9 adds the `gitCredentials` runner feature, `RunGit.onDemand` (repository URLs whose credential the runner asks for), `POST /api/agents/runners/runs/:runId/gitCredentials` (`GitCredentialRequest` → `GitCredential`), the reasons `REPO_ACCESS_UNAVAILABLE` and `REPO_ACCESS_DENIED`, the run failures `repoAccessUnavailable` (retried) and `repoAccessDenied`, and `RepoReport.failure` (`authFailed`, `credentialUnavailable`, `credentialDenied`, `leaseLost`, `rejected`, `error`). Nothing of version 8 changed: an application on this version still hands claim-time credentials to runners without the feature. A runner of this version is refused by an application that does not know version 9, so update the application before its runners.
+  - Repository access providers may implement `issue(request)`. For a runner with the feature the claim tells them `onDemand` (in `forRun`'s context and `prepare(run, { onDemand })`), they list their repositories in `RunGit.onDemand` and mint nothing at the claim; the plugin then calls `issue` outside any transaction, within 15 seconds, only while that runner holds that attempt of the run under a live lease, and only for a URL the claim listed, compared exactly. `issue` answers a credential with its expiry, null when the repository is not its own, or throws `RepoAccessError('unavailable' | 'denied', message)` with a message safe to show; with `refresh` it should issue a new credential rather than a cached one. Each issued credential is added to the run's redaction, and is never stored. A provider without `issue` keeps working as before.
+  - Migration `202610100002_ag_add_run_git_credentials` adds `agRuns.gitCredentialUrls` (the URLs the claim listed) and `agRunRepos.failureReason` and `failureDetail`; a run's repositories (`RunRepo`) gain optional `failure` so existing application schemas remain compatible. The server always supplies it, null when the repository was pushed or not tried. Applications should show it, since a run that completed may still have work that was not pushed.
+  - The runner keeps a run's credentials in the worker's memory and no longer puts any password in the agent's environment. The agent's git gets them through the runner's credential helper, which reaches the worker over a Unix socket private to the run; the runner's own git (checkout, submodules, the end-of-run push, which previously sent no credential) uses the same, never the host's credential helpers, and retries once with a fresh credential when the remote refuses one. The agent is told on stderr why git got no credential, and each failure is recorded as an `error` event with `meta.kind` `gitCredential`.
+  - Host-side operations in task checkouts use the safe Git wrapper, retaining its metadata and configuration checks, protected hooks and fixed push URL/refspec. Run credentials disable restoration of host helpers; the agent environment clears helpers per repository URL before installing the runner's helper. Confirmed pushes update remote-tracking refs and the protected workspace record so cleanup recognizes pushed work.
+
+- e9301ed: Check a subject’s admission policy in the claim transaction and cancel outdated issue runs without failing or retrying them. The same policy, with the subject's new optional `selectInputs`, also decides whether input may join a working run and whether pending input is delivered to it: input the subject rejects waits in a queued run for the claim to admit or cancel, and pending input it no longer admits or selects is marked handled instead of being delivered, or of holding the run's completion open. The runner completes again, rather than starting a turn with an empty prompt, when input it was told is pending never arrives. Studio permits its executor only in execution statuses and workflow agents only in their current stage; an agent mentioned by name, or answered under its own comment, runs in any stage, except the executor. Earlier stage instructions are left out of the turn rather than cancelling the run, which is cancelled only when nothing else remains. Approving a proposal now requires an eligible executor (`DESIGN_EXECUTOR_REQUIRED` otherwise). Requeue live workspace contention without consuming execution attempts, bounded by a six-hour wait, with a compatible failure fallback for older applications.
+
+  Filter obsolete stage instructions consistently from the assembled task, turn and delivered inputs. Record permission-rejected executor claims atomically and notify the owner once with the required pull request permission and reassignment options. Preserve restart after an acknowledged project move.
+
+- ee41a40: Show the executing agent's active work on issue tables and boards using scoped batch summaries, with pending approvals taking precedence and visible-page refreshes.
+
+### Patch Changes
+
+- 69309da: Normalize the runner artifact response description's string quoting to satisfy the shared formatter, without changing its text or runtime behavior.
+- a50b4f6: Expose the chat query cache for application submission coordinators and keep conversation details and history current after sends. Explain unavailable header targets and query recovery conversations only when creation results are unknown. Keep upload tasks attached to their draft when an editor switches conversations, preserving pending sends across remounts.
+- ca0bfe2: Normalize formatting of the agent distribution API description without changing its content or behavior.
+- ee217d5: Start a fresh conversation with context recovery instructions when the requested conversation no longer exists, and report its session so later runs resume it. Claude checks its session file before opening the query, preserving immediate handling of startup errors. Cancelled runs now also report their confirmed session.
+- b4c2116: Add compatible directory settlement diagnostics and repository-scoped merged head evidence. Recheck ended workspaces before cleanup, permit untracked leftovers only after commit and tracked-change checks, preserve unpushed submodule commits, cancel a removal when the follow-up report no longer confirms the work is over, and show low disk reports with permission-aware workspace diagnostics.
+- 107edd5: Keep in-flight subject run requests when refresh signals arrive so slow responses can update the shared run cache instead of being repeatedly cancelled by discovery polling.
+- c1b397d: Correct Alibaba Qwen's default DashScope base URL.
+- 90d5fab: Remove a working directory once its subject's work is over, on the subject's status alone. Studio counts an issue as over when it is done or cancelled, whatever its pull requests are, and resolves directories without a known run by their issue key. The agents plugin no longer checks which runner worked on a subject, so legacy directories on any runner are decided too, and no longer asks bindings for commit evidence. The runner removes an ended directory with anything never pushed in it, and logs that it did; it still keeps one a run holds or used since the report, and one the second report no longer confirms as ended. Directories whose work goes on keep their unpushed-work protection. Runners released earlier still keep ended directories with unpushed work, since decisions now carry no commit evidence.
+
+  New runners connected to older applications that only return legacy remove lists continue protecting unpushed commits and changes. Only a settled directory decision permits discarding unpushed work; automatic collection confirms that decision in a second report before deletion.
+
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+- Updated dependencies [0f7ed64]
+- Updated dependencies [e9301ed]
+- Updated dependencies [ee217d5]
+- Updated dependencies [b4c2116]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-cli-client@0.1.0-beta.3
+  - @nocobase/agent-protocol@0.1.0-beta.4
+
 ## 0.1.0-beta.5
 
 ### Minor Changes

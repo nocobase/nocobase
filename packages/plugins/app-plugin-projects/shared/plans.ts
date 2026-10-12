@@ -158,7 +158,7 @@ export interface IssueCreateParams {
   readonly start?: boolean;
 }
 
-/** The fields `issue.update` may change; at least one. Changing `statusKey` moves the issue through its workflow. */
+/** The fields `issue.update` may change; at least one. Changing `statusKey` moves the issue as its decider may. */
 export interface IssueFieldChanges {
   readonly title?: string;
   readonly description?: string;
@@ -177,8 +177,7 @@ export interface IssueFieldChanges {
 
 /**
  * `issue.update`. No revision: the rehearsal records the fields' current values (`PlanBaseline`) and execution refuses
- * the plan (`stale`) when one of them changed meanwhile. A status change that needs an approval fails the row
- * (`APPROVAL_REQUIRED`): plans never raise approval requests.
+ * the plan (`stale`) when one of them changed meanwhile.
  */
 export interface IssueUpdateParams {
   readonly issue: IssueTarget;
@@ -215,8 +214,6 @@ export interface ProjectCreateParams {
   readonly leadUserId?: string | null;
   readonly startDate?: string | null;
   readonly dueDate?: string | null;
-  /** The workflow of its issues; null or left out for the default workflow. */
-  readonly workflowId?: string | null;
 }
 
 /** An undo row: the issue, comment or project the plan created. */
@@ -290,7 +287,8 @@ export interface PlanProposer {
  * - `finalStatus`: it moves an issue to a done or closed status.
  * - `ownerChange`: it changes an issue's owner, or creates one owned by someone else.
  * - `createsProject`: it creates a project.
- * - `agentExecutor`: it makes a principal other than a person (an agent) an issue's executor.
+ * - `agentExecutor`: it makes a principal other than a person (an agent) an issue's executor; a new issue given the
+ *   kind's default executor because the row names none does not count.
  */
 export const PLAN_RISK_FLAGS = [
   'startsRun',

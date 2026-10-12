@@ -39,7 +39,7 @@ Studio's database migrations follow `AGENTS.md`: once a migration has been merge
 
 | File                                                       | What it covers                                                       |
 | ---------------------------------------------------------- | -------------------------------------------------------------------- |
-| `docs/software-development.md`                             | Projects, issues, workflows, online and runner agents                |
+| `docs/software-development.md`                             | Projects, issue statuses, the project manager and agents             |
 | `docs/knowledge.md`                                        | The knowledge base for people and agents                             |
 | `docs/releases.md`                                         | Apps, environments, releases and deployments                         |
 | `docs/permission-scopes.md`, `docs/authorization-needs.md` | Roles and what each business action allows                           |

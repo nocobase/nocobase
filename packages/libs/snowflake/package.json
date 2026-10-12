@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/snowflake",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "main": "dist/index.js",

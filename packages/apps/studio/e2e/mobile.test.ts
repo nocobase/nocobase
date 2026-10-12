@@ -25,7 +25,7 @@ const PAGES: readonly { path: string; heading: string | null }[] = [
   { path: '/projects', heading: '项目' },
   { path: '/knowledge', heading: '系统知识' },
   { path: '/config/members', heading: '成员' },
-  { path: '/config/workflows', heading: '流程模板' },
+  { path: '/agents', heading: 'Agent' },
   { path: '/config/api-keys', heading: 'API 密钥' },
   { path: '/environments', heading: '部署环境' },
 ];

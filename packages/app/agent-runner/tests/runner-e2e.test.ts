@@ -139,6 +139,63 @@ describe('runner end to end', () => {
     );
   });
 
+  it('runs a read-only step in a work directory of its own while the subject is held, pushes nothing and removes it', async () => {
+    const remote = makeRemote(scratch);
+    // The run writing the subject's code holds its work directory.
+    const held = `${workDirOf('PM-8')}.lock`;
+    mkdirSync(held, { recursive: true });
+    writeFileSync(path.join(held, 'owner'), String(process.pid));
+    const run = server.enqueue({
+      subject: { key: 'PM-8', url: 'http://app.test/PM-8' },
+      workspace: {
+        dirs: [
+          {
+            kind: 'repo',
+            url: remote,
+            defaultBranch: 'main',
+            branch: 'agent/PM-8',
+            path: 'app',
+          },
+        ],
+        env: [],
+        readOnly: true,
+      },
+      prompt: {
+        system: 'System rules.',
+        session: 'fresh',
+        turn: [
+          'write review.txt looks fine',
+          `bash ${COMMIT} add review.txt && ${COMMIT} commit -q -m stray`,
+          'say reviewed',
+        ].join('\n'),
+      },
+    });
+    daemon();
+    await waitFor(
+      () => run.status === 'completed' || run.status === 'failed',
+      20_000,
+      'the run to end',
+    );
+    expect(run.fail).toBeUndefined();
+    expect(run.status).toBe('completed');
+    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.readonly-`);
+    // It pushes nothing, so its directory goes as soon as the run ends; the next read-only run checks it out again.
+    const readOnlyDir = String(run.start?.workDir);
+    await waitFor(
+      () => !existsSync(readOnlyDir) && !existsSync(`${readOnlyDir}.lock`),
+      10_000,
+      'the read-only directory to be removed',
+    );
+    expect(run.complete?.repos?.[0]).toMatchObject({
+      branch: 'agent/PM-8',
+      pushed: false,
+    });
+    const bare = remote.replace('file://', '');
+    expect(() =>
+      git(['rev-parse', '--verify', '-q', 'refs/heads/agent/PM-8'], bare),
+    ).toThrow();
+  });
+
   it('claims, checks out, starts, streams events, pushes and completes', async () => {
     const remote = makeRemote(scratch);
     const run = server.enqueue({

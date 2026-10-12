@@ -17,7 +17,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import type { WorkflowRun } from '../../server/git/platform.js';
 import {
   createProjectInits,
@@ -30,6 +29,8 @@ import {
   createBridgeHarness,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
+import { claimHandedOver } from './hand-over.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 let h: BridgeHarness;
 let inits: ProjectInits;
@@ -58,11 +59,6 @@ beforeEach(async () => {
   h = await createBridgeHarness();
   for (const id of ['alice', 'bob']) await h.addUser(id);
   h.roles.set('alice', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
-  const software = (await h.projects.workflows.list(alice())).find(
-    (workflow) => workflow.builtInKey === 'software',
-  )!;
-  await h.projects.workflows.setDefault(alice(), software.id);
   agentId = await h.createAgent({ name: 'Coder' });
   connection = await appConnection();
   let next = 0;
@@ -419,7 +415,9 @@ describe('a new project an agent initializes', () => {
       alice(),
       created.initIssueId!,
     );
-    expect(init.executor).toEqual({ type: 'agent', id: agentId });
+    // The project manager executes it, told to hand it to the agent chosen.
+    expect(init.executor).toEqual({ type: 'agent', id: PROJECT_MANAGER_ID });
+    expect(init.description).toContain(`(mention://agent/${agentId})`);
     expect(init.description).toContain('A NocoBase app selling shoes.');
     expect(
       await initialDirOf(
@@ -429,7 +427,7 @@ describe('a new project an agent initializes', () => {
       ),
     ).toEqual({ resourceId: created.resourceId, defaultBranch: 'main' });
 
-    const payload = await h.claimOne();
+    const payload = await claimHandedOver(h, agentId);
     expect(payload.workspace.dirs).toEqual([
       expect.objectContaining({
         kind: 'repo',
@@ -464,7 +462,7 @@ describe('a new project an agent initializes', () => {
 
   it('finishes when the run succeeds before the push arrives', async () => {
     const created = await inits.newProject(alice(), byPrompt());
-    const payload = await h.claimOne();
+    const payload = await claimHandedOver(h, agentId);
     await inits.runChanged(payload.run.id as string, 'completed');
     expect(await inits.view(alice(), created.projectId)).toMatchObject({
       state: 'pending',
@@ -522,7 +520,9 @@ describe('a new project that starts as a NocoBase application', () => {
       alice(),
       created.initIssueId!,
     );
-    expect(issue.executor).toEqual({ type: 'agent', id: agentId });
+    // The project manager executes it, told to hand it to the agent chosen.
+    expect(issue.executor).toEqual({ type: 'agent', id: PROJECT_MANAGER_ID });
+    expect(issue.description).toContain(`(mention://agent/${agentId})`);
     const brief = issue.description ?? '';
     for (const step of [
       'node --version',
@@ -574,7 +574,7 @@ describe('a new project that starts as a NocoBase application', () => {
       waitingForRunner: true,
     });
     // A runner comes online and claims the init issue's run.
-    await h.claimOne();
+    await claimHandedOver(h, agentId);
     expect(await inits.view(alice(), created.projectId)).toMatchObject({
       state: 'pending',
       waitingForRunner: false,
@@ -670,7 +670,9 @@ describe('a new project with code elsewhere', () => {
       alice(),
       created.initIssueId!,
     );
-    expect(issue.executor).toEqual({ type: 'agent', id: agentId });
+    // The project manager executes it, told to hand it to the agent chosen.
+    expect(issue.executor).toEqual({ type: 'agent', id: PROJECT_MANAGER_ID });
+    expect(issue.description).toContain(`(mention://agent/${agentId})`);
     expect(issue.description).toContain('add an AGENTS.md');
     // Not the initial run of an empty repository: it works on its own branch.
     expect(
@@ -680,7 +682,7 @@ describe('a new project with code elsewhere', () => {
         created.projectId,
       ),
     ).toBeNull();
-    const payload = await h.claimOne();
+    const payload = await claimHandedOver(h, agentId);
     expect(payload.workspace.dirs[0]).not.toMatchObject({ initial: true });
     await inits.runChanged(payload.run.id as string, 'completed');
     expect(await inits.view(alice(), created.projectId)).toMatchObject({
@@ -718,7 +720,9 @@ describe('a new project with code elsewhere', () => {
       alice(),
       created.initIssueId!,
     );
-    expect(issue.executor).toEqual({ type: 'agent', id: agentId });
+    // The project manager executes it, told to hand it to the agent chosen.
+    expect(issue.executor).toEqual({ type: 'agent', id: PROJECT_MANAGER_ID });
+    expect(issue.description).toContain(`(mention://agent/${agentId})`);
     expect(issue.description).toContain('Install the dependencies.');
     expect(issue.description).toContain('/srv/app');
   });
