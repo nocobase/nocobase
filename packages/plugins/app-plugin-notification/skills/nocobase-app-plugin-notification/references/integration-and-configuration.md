@@ -59,7 +59,6 @@ Targets are the intersection of registered definitions and enabled configured in
 
 A production test is a real external send and requires explicit scope, the recipient or recipientless mode, Channel, permission, and follow-up verification.
 
-
 ## Executable ownership and management metadata
 
 With the host sending service, external executable definitions have one owner in `sendingExtensionRegistryToken`. Legacy email/IM definitions and extensions explicitly marked `deliveryLayer: 'sending'` forward there; notification stores their management forms and labels independently. Built-in definitions register as fallbacks, so an explicit application definition through either token replaces a fallback once. Two explicit registrations conflict regardless of order, as do separate-layer owners with the same identifier. Runtime activation freezes executable registration; an already-owned fallback can be ignored without changing execution.
