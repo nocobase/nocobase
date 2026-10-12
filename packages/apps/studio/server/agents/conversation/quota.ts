@@ -14,7 +14,7 @@
  * | `startsRun`      | wake an agent (an executor, a mention, a reply), as the rehearsal reports              |
  * | `finalStatus`    | move an issue to a done or closed status                                               |
  * | `ownerChange`    | change an issue's owner, or create one owned by someone else                           |
- * | `agentExecutor`  | make an agent an issue's executor (a person, or none, is fine)                         |
+ * | `agentExecutor`  | make an agent an issue's executor (a person, none, or the default of a new issue is fine) |
  * | `createsProject` | create a project                                                                       |
  * | `quota`          | touch a third distinct object in this turn (a comment or a dependency counts on its issue) |
  *
@@ -217,8 +217,13 @@ export function createDirectWrites(deps: {
       if (failing?.error) throw rowError(failing.error);
 
       const reasons = new Set<PlanRequiredReason>();
-      for (const row of rehearsal.rows)
-        for (const flag of row.flags) reasons.add(FLAG_REASONS[flag]);
+      rehearsal.rows.forEach((row, index) => {
+        for (const flag of row.flags)
+          if (!(
+            flag === 'agentExecutor' && defaultsExecutor(request.rows[index])
+          ))
+            reasons.add(FLAG_REASONS[flag]);
+      });
       const before = await keysOf(read, asker.runId);
       const touched = touchedBy(rehearsal.rows);
       const after = new Set([...before, ...touched.known]);
@@ -292,6 +297,17 @@ export function createDirectWrites(deps: {
 }
 
 /** The objects rehearsed rows touch: existing ones by key, and how many they create. */
+/**
+ * Whether the row creates an issue without naming its executor: the issue gets the kind's default, the project
+ * manager, which arranges it; that is not making an agent the executor.
+ */
+function defaultsExecutor(row: PlanRowInput | undefined): boolean {
+  return (
+    row?.op === 'issue.create' &&
+    (row.params as { readonly executor?: unknown }).executor === undefined
+  );
+}
+
 function touchedBy(rows: readonly PlanRowCheck[]): {
   readonly known: ReadonlySet<string>;
   readonly created: number;

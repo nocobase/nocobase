@@ -1080,12 +1080,10 @@ export async function createBridgeHarness(
         authzRequest.keyScope ??
         testKeyScope(context.req.header('x-test-key-scope'));
       const role = roleOf(session.user.id);
-      const held = (resource: { type: string; id: string }, action: string) =>
+      const held = (resource: { type: string; id: string }) =>
         resource.type === 'page'
           ? role !== 'none'
-          : resource.type === 'settings' &&
-              resource.id === 'agents.agents' &&
-              action === 'read'
+          : resource.type === 'settings' && resource.id === 'agents.agents'
             ? role === 'admin'
             : role !== 'none';
       context.set(
@@ -1104,8 +1102,7 @@ export async function createBridgeHarness(
             action: string;
           }) =>
             Promise.resolve(
-              held(resource, action) &&
-                (keyScope?.allows(resource, action) ?? true),
+              held(resource) && (keyScope?.allows(resource, action) ?? true),
             ),
         } as never,
       );

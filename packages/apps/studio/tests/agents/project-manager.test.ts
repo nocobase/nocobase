@@ -130,6 +130,27 @@ describe('the project manager’s settings', () => {
     );
   });
 
+  it('holds an API key to its scope: a manager’s key changes them only with agents in it at write', async () => {
+    const keyed = (groups: unknown, commentRunLimit: number) =>
+      h.request('PATCH', '/projectManager', {
+        user: 'root',
+        headers: { 'x-test-key-scope': JSON.stringify(groups) },
+        body: { commentRunLimit },
+      });
+    expect(
+      (await keyed({ 'agents.agents': { level: 'read' } }, 5)).status,
+    ).toBe(403);
+    expect(
+      (await keyed({ 'releases.apps': { level: 'admin' } }, 5)).status,
+    ).toBe(403);
+    expect((await h.manager.settings()).commentRunLimit).toBe(
+      DEFAULT_COMMENT_RUN_LIMIT,
+    );
+    const allowed = await keyed({ 'agents.agents': { level: 'write' } }, 7);
+    expect(allowed.status).toBe(200);
+    expect((await h.manager.settings()).commentRunLimit).toBe(7);
+  });
+
   it('runs with the first choice then the fallback, which must be other enabled agents discovered from runners', async () => {
     const reviewer = await h.createAgent({
       name: 'Reviewer',

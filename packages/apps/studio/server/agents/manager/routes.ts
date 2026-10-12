@@ -34,7 +34,6 @@ import {
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 
-import { studioAccessToken } from '../../access/token.js';
 import { studioError, studioErrorHandler } from '../../http/errors.js';
 import { createPermissionSource } from '../commands/permissions.js';
 import { continueCommentRun, pendingCommentRun } from '../comment-run-limit.js';
@@ -109,21 +108,19 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
       return permissions.viewerOf(identity);
     };
 
-    /** Whether the signed-in person manages agents (`agents.agents` manage). */
+    /**
+     * Whether the caller manages agents (`agents.agents` manage), as the authorization context decides it: a person by
+     * their roles, an API key within its scope too.
+     */
     const managesAgents = async (
       context: Context<AuthorizationEnv>,
     ): Promise<boolean> => {
       const identity = callerOfRequest(context as unknown as Context);
-      if (
-        !identity ||
-        identity.kind !== 'user' ||
-        !container.has(studioAccessToken)
-      )
-        return false;
-      const { settings } = await container
-        .resolve(studioAccessToken)
-        .grantsOfUser(identity.userId);
-      return settings['agents.agents/manage'] === true;
+      if (!identity || identity.kind !== 'user') return false;
+      return context.get('authz').can({
+        resource: { type: 'settings', id: 'agents.agents' },
+        action: 'manage',
+      });
     };
 
     const userIdOf = (context: Context<AuthorizationEnv>): string => {

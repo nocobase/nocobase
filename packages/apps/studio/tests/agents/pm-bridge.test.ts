@@ -421,6 +421,25 @@ describe('the direct-write quota', () => {
     });
     expect(toBob.status).toBe(201);
 
+    // Naming no executor leaves the new issue to the project manager to arrange, in backlog: no plan needed.
+    const unassigned = await command(
+      await conversationRun(),
+      'issue:create',
+      [],
+      {
+        title: 'For the project manager to arrange',
+      },
+    );
+    expect(unassigned.status).toBe(201);
+    expect(
+      (
+        await h.projects.issueQueries.detail(
+          alice(),
+          unassigned.body.data.issue?.id ?? unassigned.body.data.id,
+        )
+      ).executor,
+    ).toMatchObject({ type: 'agent', id: PROJECT_MANAGER_ID });
+
     // A comment on an issue an agent executes would wake it.
     const busy = await h.projects.issues.create(alice(), {
       title: 'Busy',
