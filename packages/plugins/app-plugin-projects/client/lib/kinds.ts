@@ -46,7 +46,7 @@ export function useKindLabel(): (key: string) => string {
  * The executors of other kinds the viewer may give work to (agents, when the agents plugin registers them), for
  * `PmExecutorSelect`'s `others`: each with a note when nothing can run its work now, or how much it is doing.
  */
-export function useExecutorOptions(): readonly ExecutorOption[] {
+export function useExecutorOptions(enabled = true): readonly ExecutorOption[] {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const nameOf = usePrincipalName();
   const api = usePmApi();
@@ -56,7 +56,7 @@ export function useExecutorOptions(): readonly ExecutorOption[] {
   const candidates = useQuery({
     queryKey: pmKeys.executors,
     queryFn: () => api.executors(),
-    enabled: hasOthers,
+    enabled: enabled && hasOthers,
     staleTime: 30_000,
   });
   return (candidates.data ?? []).map((candidate) => {

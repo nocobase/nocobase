@@ -1413,7 +1413,11 @@ export function createConversationService(
       ]);
       return Promise.all(
         agents
-          .filter((agent) => deps.agents.mayInvoke(agent, userId))
+          // People talk to the agents discovered from runners; an application's own agents do work of its own.
+          .filter(
+            (agent) =>
+              agent.source === 'runner' && deps.agents.mayInvoke(agent, userId),
+          )
           .map(async (agent): Promise<ChatAgent> => {
             const fitting = runners.filter((runner) =>
               runnerTakesAgent(runner, agent),

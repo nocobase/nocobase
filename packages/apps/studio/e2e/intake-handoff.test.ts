@@ -2,6 +2,7 @@
 import type { Page } from '@playwright/test';
 
 import { apiAs, expect, open, test, unique } from './support/fixtures.ts';
+import { FakeRunner } from './support/runner.ts';
 
 // These tests change only this person's preference, never the team's default.
 test.use({ user: 'wendy' });
@@ -16,7 +17,28 @@ async function intake(page: Page) {
 
 test('a server failure preserves the input and retry completes the handoff', async ({
   page,
+  api,
+  browser,
 }) => {
+  // The demo's runtimes are offline: a runner of this test's own takes the agent the retry hands the request to.
+  const admin = await apiAs(browser, 'admin');
+  const preference = await api.get<{ defaultAgentId: string | null }>(
+    'agents/chatPreferences',
+  );
+  const agentId = await new FakeRunner(
+    admin.api,
+    `intake-retry-${unique()}`,
+  ).agent();
+  await admin.close();
+  await api.patch('agents/chatPreferences', { defaultAgentId: agentId });
+  try {
+    await retriedHandoff(page);
+  } finally {
+    await api.patch('agents/chatPreferences', preference);
+  }
+});
+
+async function retriedHandoff(page: Page): Promise<void> {
   await page.route(
     '**/api/organizeIntake',
     (route) =>
@@ -43,7 +65,7 @@ test('a server failure preserves the input and retry completes the handoff', asy
   await expect(dialog).toBeHidden();
   await expect(page).toHaveURL(/\/issues\?view=list$/u);
   await expect(page.getByTestId('chat-panel')).toContainText(text);
-});
+}
 
 test('a network failure leaves an enabled retry and can be cancelled', async ({
   page,

@@ -36,9 +36,10 @@ test.describe('inbox notifications', () => {
     await item.click();
     expect(new URL(page.url()).searchParams.get('item')).toBeTruthy();
     const card = page.getByRole('article').filter({ hasText: title }).first();
-    await expect(card.getByText('请帮忙看一下。')).toBeVisible();
+    // The comment is quoted; the issue's recent activity below it lists it too.
+    await expect(card.getByRole('blockquote')).toContainText('请帮忙看一下。');
 
-    await card.getByRole('link', { name: '打开任务' }).first().click();
+    await card.getByRole('link', { name: title }).click();
     await expect(
       page.getByRole('heading', { name: title, level: 1 }),
     ).toBeVisible();

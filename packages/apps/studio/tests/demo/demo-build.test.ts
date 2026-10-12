@@ -171,10 +171,11 @@ describe('the demo data', () => {
         },
       ].sort((a, b) => a.name.localeCompare(b.name)),
     );
-    // Never heard from again, they go offline and take no work.
+    // Never heard from again, they are offline at once and take no work.
+    expect(await h.agents.runners.online(h.database.connection())).toEqual([]);
     expect(
       await h.agents.runners.markOffline(new Date(Date.now() + 60_000)),
-    ).toHaveLength(3);
+    ).toEqual([]);
   });
 
   it('puts its issues in the fixed statuses, the agents’ work executed by the project manager and not started', async () => {

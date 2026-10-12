@@ -179,8 +179,9 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
     }
 
     // Runtimes: each registers once through a registration token its owner creates, as a runner does, reporting the
-    // models of its coding tools, and is never heard from again; the sweeper marks it offline, so it shows on the
-    // Runtimes page and takes no work. Its report discovers an agent for each tool and model, pending.
+    // models of its coding tools, and is never heard from again: it is marked offline at once, as the sweeper would
+    // later, so it shows on the Runtimes page and takes no work. Its report discovers an agent for each tool and model,
+    // pending.
     for (const runtime of DEMO_RUNTIMES) {
       const ownerId = userIds.get(runtime.owner);
       if (!ownerId) throw new Error(`Unknown demo user ${runtime.owner}`);
@@ -216,6 +217,8 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
         });
       created('runtimes');
     }
+    if (DEMO_RUNTIMES.length > 0)
+      await deps.agents.runners.markOffline(new Date(Date.now() + 1));
 
     // The discovered agents the demo enables, with what each is good at and its skills, as an administrator would.
     for (const spec of DEMO_AGENTS)

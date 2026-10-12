@@ -407,7 +407,9 @@ const issueCreate: OpDefinition = {
     });
     const flags: PlanRiskFlag[] = [];
     if (issue.ownerUserId !== ctx.viewer.userId) flags.push('ownerChange');
-    if (otherKind(issue)) flags.push('agentExecutor');
+    // An issue given the kind's default executor (left out of the row) is not one the row gives to an agent.
+    if (params.executor !== undefined && otherKind(issue))
+      flags.push('agentExecutor');
     return {
       target: issueRef(issue),
       created: issueRef(issue),

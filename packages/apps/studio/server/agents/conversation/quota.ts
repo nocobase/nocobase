@@ -217,13 +217,8 @@ export function createDirectWrites(deps: {
       if (failing?.error) throw rowError(failing.error);
 
       const reasons = new Set<PlanRequiredReason>();
-      rehearsal.rows.forEach((row, index) => {
-        for (const flag of row.flags)
-          if (!(
-            flag === 'agentExecutor' && defaultsExecutor(request.rows[index])
-          ))
-            reasons.add(FLAG_REASONS[flag]);
-      });
+      for (const row of rehearsal.rows)
+        for (const flag of row.flags) reasons.add(FLAG_REASONS[flag]);
       const before = await keysOf(read, asker.runId);
       const touched = touchedBy(rehearsal.rows);
       const after = new Set([...before, ...touched.known]);
@@ -297,17 +292,6 @@ export function createDirectWrites(deps: {
 }
 
 /** The objects rehearsed rows touch: existing ones by key, and how many they create. */
-/**
- * Whether the row creates an issue without naming its executor: the issue gets the kind's default, the project
- * manager, which arranges it; that is not making an agent the executor.
- */
-function defaultsExecutor(row: PlanRowInput | undefined): boolean {
-  return (
-    row?.op === 'issue.create' &&
-    (row.params as { readonly executor?: unknown }).executor === undefined
-  );
-}
-
 function touchedBy(rows: readonly PlanRowCheck[]): {
   readonly known: ReadonlySet<string>;
   readonly created: number;

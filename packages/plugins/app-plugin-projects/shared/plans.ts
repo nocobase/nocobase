@@ -287,7 +287,8 @@ export interface PlanProposer {
  * - `finalStatus`: it moves an issue to a done or closed status.
  * - `ownerChange`: it changes an issue's owner, or creates one owned by someone else.
  * - `createsProject`: it creates a project.
- * - `agentExecutor`: it makes a principal other than a person (an agent) an issue's executor.
+ * - `agentExecutor`: it makes a principal other than a person (an agent) an issue's executor; a new issue given the
+ *   kind's default executor because the row names none does not count.
  */
 export const PLAN_RISK_FLAGS = [
   'startsRun',

@@ -808,8 +808,10 @@ describe('conversations', () => {
 
   it('picks the agent for a new conversation: chosen, my default, the system default', async () => {
     h = await createHarness();
-    const team = await h.createAgent({ name: 'Team PM' });
-    const mine = await h.createAgent({ name: 'My PM' });
+    const team = await h.createAgent({ name: 'Team PM', source: 'runner' });
+    const mine = await h.createAgent({ name: 'My PM', source: 'runner' });
+    // The application's own agents do work of their own: people are not offered them to talk to.
+    await h.createAgent({ name: 'Own agent' });
     expect((await alice().post(base, {})).body.error).toMatchObject({
       reason: 'CONVERSATION_CONFLICT',
       metadata: { reason: 'noChatAgent' },
