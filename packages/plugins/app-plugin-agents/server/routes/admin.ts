@@ -415,6 +415,76 @@ export function createAdminRoutes(
     },
   );
 
+  router.put(
+    '/discoveryPreferences',
+    scoped,
+    can('agents.agents', 'manage'),
+    describeRoute({
+      tags,
+      summary: 'Ignore or restore discovery groups',
+      operationId: 'agentsSetDiscoveryPreferences',
+      ...cliRoute({ command: 'agent discovery set', bodyFile: 'input' }),
+      description:
+        'Shared administrator preferences. Only pending groups can be changed. Batches are atomic and checked against each group revision. Reports do not reset preferences.',
+      responses: {
+        200: listResponse(
+          z.object({
+            key: z.string(),
+            ignored: z.boolean(),
+            revision: z.number().int(),
+          }),
+        ),
+        400: apiErrorResponse(400, 'The group contains a non-pending agent.'),
+        409: apiErrorResponse(409, 'The discovery group changed.'),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator(
+      'json',
+      z.strictObject({
+        groups: z
+          .array(
+            z.strictObject({
+              key: z
+                .string()
+                .min(1)
+                .max(256)
+                .meta({ description: 'The discoveryKey from the agent list.' }),
+              expectedRevision: z
+                .number()
+                .int()
+                .min(0)
+                .meta({
+                  description: 'The discoveryRevision from the agent list.',
+                }),
+            }),
+          )
+          .min(1)
+          .max(256)
+          .refine(
+            (groups) =>
+              new Set(groups.map((group) => group.key)).size === groups.length,
+            'Groups must be unique.',
+          )
+          .meta({
+            description:
+              'Unique pending discovery groups to update atomically.',
+          }),
+        ignored: z
+          .boolean()
+          .meta({
+            description:
+              'True to ignore pending discoveries; false to restore them without enabling.',
+          }),
+      }),
+    ),
+    async (context) => {
+      const { groups, ignored } = context.req.valid('json');
+      const data = await services.agents.setIgnored(groups, ignored);
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
   // Every agent's name, removed ones and the application's own included, for the runs that name them.
   router.get(
     '/agentNames',

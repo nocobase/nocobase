@@ -75,6 +75,22 @@ const pages = {
     description:
       'Each coding tool and model a runner reports is an agent. The project manager hands each step of an issue to the agent whose description fits it.',
     fromRunners: 'Agents from runners',
+    discovery: {
+      selectAll: 'Select all results',
+      clearSelection: 'Clear selection',
+      new: 'New discoveries ({{count}})',
+      ignored: 'Ignored ({{count}})',
+      search: 'Search models or providers',
+      select: 'Select {{name}}',
+      ignore: 'Ignore',
+      restore: 'Restore',
+      ignoreSelected: 'Ignore selected',
+      restoreSelected: 'Restore selected',
+      enabled: 'Show enabled',
+      disabled: 'Show disabled',
+      provider: 'Provider and runner',
+      saved: 'Discovery preferences saved',
+    },
     filterLabel: 'Show agents',
     filters: {
       all: 'All {{count}}',

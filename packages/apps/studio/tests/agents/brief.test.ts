@@ -231,11 +231,12 @@ describe('issue brief', () => {
 
   it('permits empty initialization only to an agent doing a step that may open pull requests, on an open issue', () => {
     const coding = { id: 'a-1', actions: ['studio.git/open-pr'] };
-    expect(mayInitializeEmptyRepository(context, coding)).toBe(true);
+    expect(mayInitializeEmptyRepository(context, coding, true)).toBe(true);
     expect(
       mayInitializeEmptyRepository(
         { ...context, status: statusOf('blocked') },
         coding,
+        true,
       ),
     ).toBe(true);
     expect(
@@ -252,6 +253,7 @@ describe('issue brief', () => {
         mayInitializeEmptyRepository(
           { ...context, status: statusOf(key) },
           coding,
+          true,
         ),
       ).toBe(false);
     expect(dirsOf(context, new Map(), null, true)[0]).toMatchObject({

@@ -60,23 +60,32 @@ describe('the Agent page', () => {
     });
   });
 
-  it('lists the agents by state, pending first, and filters them', async () => {
+  it('defaults to enabled, keeping discoveries collapsed and disabled reachable', async () => {
     renderPage(<AgentsPage />);
     const rows = await screen.findAllByTestId(/^agent-(opus|sonnet|kimi)$/u);
     expect(rows.map((row) => row.dataset.state)).toEqual([
-      'pending',
       'enabled',
       'unreported',
     ]);
-    fireEvent.click(screen.getByTestId('agents-filter-unreported'));
+    expect(screen.getByTestId('agents-discovery-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    fireEvent.click(screen.getByTestId('agents-discovery-toggle'));
+    expect(
+      await screen.findByTestId('agent-discovery-opus'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText('agents.discovery.disabled'));
     await waitFor(() =>
       expect(screen.queryByTestId('agent-opus')).not.toBeInTheDocument(),
     );
-    expect(screen.getByTestId('agent-kimi')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-kimi')).not.toBeInTheDocument();
   });
 
   it('enables a pending agent with what it is good at, starting from the suggestion', async () => {
     renderPage(<AgentsPage />);
+    await screen.findByTestId('agent-sonnet');
+    fireEvent.click(screen.getByTestId('agents-discovery-toggle'));
     fireEvent.click(await screen.findByTestId('agent-edit-opus'));
     const dialog = await screen.findByTestId('agent-dialog');
     const goodAt = within(dialog).getByTestId('agent-good-at');
@@ -106,7 +115,9 @@ describe('the Agent page', () => {
   it('offers no change to who does not manage agents', async () => {
     agents = agents.map((each) => ({ ...each, canEdit: false }));
     renderPage(<AgentsPage />);
-    await screen.findByTestId('agent-opus');
+    await screen.findByTestId('agent-sonnet');
+    fireEvent.click(screen.getByTestId('agents-discovery-toggle'));
+    await screen.findByTestId('agent-discovery-opus');
     expect(screen.queryByTestId('agent-edit-opus')).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-edit-sonnet')).not.toBeInTheDocument();
   });
