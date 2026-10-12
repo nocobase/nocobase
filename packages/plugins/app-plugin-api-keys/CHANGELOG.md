@@ -1,5 +1,13 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+- Updated dependencies [d54dd59]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+
 ## 1.0.0-beta.15
 
 ### Patch Changes

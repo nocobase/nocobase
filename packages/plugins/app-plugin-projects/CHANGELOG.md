@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- 3668ab1: Let an agent's comment wake other agents, so one agent can hand work to another and be woken by its reply. A comment of anyone but the system now reaches the work handlers, with the person it was written for (`CommentChange.userId`). In Studio, an agent's comment wakes the agents it mentions, never itself and never the agent whose comment it answers; mentioning no agent, it wakes the issue's executing agent unless it mentions a person or the executor wrote it. It acts for the person its run acts for (the issue's owner when no run wrote it). A workflow's new `commentRunLimit` (20 by default, edited in the workflow's Limits card or through `definition.commentRunLimit`) caps such runs per issue within 24 hours; past it the comment starts nothing (`work_skipped`, reason `limited`), the owner is notified, and a person who may edit the issue can continue it once from the issue page. A run an agent's comment started always answers in that comment's thread once it ends: with its final output when it completed without commenting, or with why it failed when it failed for good; `CommentWriter.post` takes `forUserId`, the person the triggers hear the comment was written for.
+- 3668ab1: Tell each issue run what was said since the agent's last run. A subject's assembly may add a note to the turn of a resumed session (`turn.resumed`) or of a fresh one (`turn.fresh`), chosen once the claim knows which it is. The comment threads list (`GET /api/projects/issues/{issueId}/comments`, `issue comment list`) takes `since` to return only what was written after it. Studio uses both: a resumed run hears that no comment arrived, the few new comments, or how many and the `--since` command that reads them; a fresh session or a first run is told to read the issue's comments before acting.
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+- Updated dependencies [d54dd59]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+
 ## 0.1.0-beta.6
 
 ### Patch Changes

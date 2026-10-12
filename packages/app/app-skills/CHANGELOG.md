@@ -1,5 +1,11 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- 42615cd: Clarify beta, latest and exact-version selection for application upgrades, resolve tags to fixed versions, and prevent implicit channel changes or downgrades.
+
 ## 0.1.0-beta.31
 
 ### Patch Changes
