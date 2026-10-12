@@ -12,8 +12,11 @@ pnpm-lock.yaml
 # out of date when nothing about the schema changed.
 database/*/collections/
 
-# Applied seed: preserve its recorded source checksum.
-database/main/seeds/202609080001_seed_articles.ts
+# Migrations and seeds are recorded with a checksum of their source when they run, and an installation never runs one
+# twice. Once merged they are history: reformatting one changes no schema, yet it changes the checksum every existing
+# installation recorded and warns each of them on the next `pnpm nocobase db apply`.
+database/*/migrations/
+database/*/seeds/
 
 # Synchronized by `pnpm nocobase skills sync` from the installed NocoBase packages: `.agents/skills/` is copied from them and
 # `.claude/skills/` holds symbolic links into it. They are upstream prose, replaced wholesale on the next sync, so
