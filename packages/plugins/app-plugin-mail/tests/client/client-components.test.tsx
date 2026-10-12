@@ -457,6 +457,10 @@ describe('[UI][SEC] mail client components and capability states', () => {
     });
     const connect = screen.getByRole('button', { name: 'Connect account' });
     expect(connect).toBeDisabled();
+    // A helper under the optional username must not stretch the adjacent email label's grid tracks.
+    expect(
+      screen.getByLabelText('Email address').closest('label')?.parentElement,
+    ).toHaveClass('items-start');
     fireEvent.change(screen.getByLabelText('Email address'), {
       target: { value: 'user@example.com' },
     });

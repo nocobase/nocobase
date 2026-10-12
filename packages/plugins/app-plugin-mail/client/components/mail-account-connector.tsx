@@ -133,7 +133,7 @@ export function MailAccountConnector({
       </div>
 
       {usesCredentials && providerConfigured ? (
-        <div className='grid gap-3 sm:grid-cols-2'>
+        <div className='grid items-start gap-3 sm:grid-cols-2'>
           <label className='grid gap-2 text-sm font-medium'>
             <span>{labels.emailAddress ?? 'Email address'}</span>
             <Input

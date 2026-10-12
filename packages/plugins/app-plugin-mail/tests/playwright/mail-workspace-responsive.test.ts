@@ -155,6 +155,56 @@ async function screenshot(
   }
 }
 
+for (const width of [375, 1280]) {
+  test(`${width}px credential fields align without stretching for username help`, async ({
+    page,
+    mailApi,
+  }, info) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('connector');
+    await page
+      .getByLabel('Mail account type')
+      .selectOption('imap-smtp:fixture-credentials');
+    const email = await page
+      .getByLabel('Email address', { exact: true })
+      .boundingBox();
+    const username = await page
+      .getByLabel('Username (optional)', { exact: true })
+      .boundingBox();
+    const password = await page
+      .getByLabel('Password', { exact: true })
+      .boundingBox();
+    const sender = await page
+      .getByLabel('Sender name', { exact: true })
+      .boundingBox();
+    if (!email || !username || !password || !sender)
+      throw new Error('Credential fields must be visible');
+    if (width >= 640) {
+      expect(Math.abs(email.y - username.y)).toBeLessThan(1);
+      expect(Math.abs(email.height - username.height)).toBeLessThan(1);
+      expect(Math.abs(password.y - sender.y)).toBeLessThan(1);
+    } else {
+      expect(username.y).toBeGreaterThanOrEqual(email.y + email.height);
+      expect(password.y).toBeGreaterThanOrEqual(username.y + username.height);
+      expect(sender.y).toBeGreaterThanOrEqual(password.y + password.height);
+    }
+    await expect(
+      page.getByLabel('Username (optional)'),
+    ).toHaveAccessibleDescription(
+      'Usually your email address. Leave blank to use the email address you entered.',
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    expect(mailApi.requests.every((request) => request.method === 'GET')).toBe(
+      true,
+    );
+    await screenshot(page, info, `${width}-credential-alignment.png`);
+  });
+}
+
 for (const width of [320, 390]) {
   test(`${width}px reading retains the actual list DOM, page and scroll`, async ({
     page,

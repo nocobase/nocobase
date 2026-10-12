@@ -23,6 +23,7 @@ import mail, {
   MailWorkspacePage,
   mailClientToken,
 } from '../../../client/index.js';
+import { MailAccountConnector } from '../../../client/components/public.js';
 import './styles.css';
 
 function Workspace(): React.ReactElement {
@@ -40,6 +41,58 @@ function Workspace(): React.ReactElement {
         </button>
       }
     />
+  );
+}
+
+// Pure credential-form geometry fixture: no account connection, credentials, or mailbox operations.
+function CredentialConnectorFixture(): React.ReactElement {
+  return (
+    <div className='mx-auto w-full max-w-[40rem] p-4'>
+      <MailAccountConnector
+        providers={[
+          {
+            name: 'fixture-credentials',
+            type: 'imap-smtp',
+            label: 'IMAP / SMTP',
+            connection: 'credentials',
+            configured: true,
+            capabilities: {
+              send: true,
+              receive: true,
+              incrementalSync: true,
+              pushNotifications: false,
+              folders: true,
+              labels: false,
+              drafts: false,
+              moveMessage: false,
+              aliases: false,
+            },
+          },
+        ]}
+        connectedAccountCount={() => 0}
+        labels={{
+          accountType: 'Mail account type',
+          chooseAccountType: 'Select a type',
+          connect: 'Connect',
+          connecting: 'Connecting',
+          connectedAccounts: (count) => `${count} connected`,
+          capability: (value) => value,
+          configurationRequired: 'Setup required',
+          emailAddress: 'Email address',
+          username: 'Username (optional)',
+          password: 'Password',
+          displayName: 'Sender name',
+          usernameDescription:
+            'Usually your email address. Leave blank to use the email address you entered.',
+        }}
+        onConnect={() => {
+          throw new Error('The geometry fixture never connects accounts');
+        }}
+        onConnectCredentials={() => {
+          throw new Error('The geometry fixture never connects accounts');
+        }}
+      />
+    </div>
   );
 }
 
@@ -84,6 +137,10 @@ function FixtureRouter(): React.ReactElement {
           <Suspense fallback={<p>Loading workspace…</p>}>
             <Routes>
               <Route path='/mail' element={<Workspace />} />
+              <Route
+                path='/connector'
+                element={<CredentialConnectorFixture />}
+              />
               <Route path='*' element={<p>Fixture route not found</p>} />
             </Routes>
           </Suspense>
