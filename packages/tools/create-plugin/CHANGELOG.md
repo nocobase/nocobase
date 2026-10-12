@@ -1,5 +1,11 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+
 ## 0.1.0-beta.21
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-mail-example
 
+## 1.0.0-beta.6
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+
 ## 1.0.0-beta.5
 
 ### Patch Changes

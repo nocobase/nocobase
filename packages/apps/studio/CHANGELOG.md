@@ -1,5 +1,33 @@
 # @nocobase/studio
 
+## 1.0.0-beta.55
+
+### Minor Changes
+
+- 3668ab1: Let an agent's comment wake other agents, so one agent can hand work to another and be woken by its reply. A comment of anyone but the system now reaches the work handlers, with the person it was written for (`CommentChange.userId`). In Studio, an agent's comment wakes the agents it mentions, never itself and never the agent whose comment it answers; mentioning no agent, it wakes the issue's executing agent unless it mentions a person or the executor wrote it. It acts for the person its run acts for (the issue's owner when no run wrote it). A workflow's new `commentRunLimit` (20 by default, edited in the workflow's Limits card or through `definition.commentRunLimit`) caps such runs per issue within 24 hours; past it the comment starts nothing (`work_skipped`, reason `limited`), the owner is notified, and a person who may edit the issue can continue it once from the issue page. A run an agent's comment started always answers in that comment's thread once it ends: with its final output when it completed without commenting, or with why it failed when it failed for good; `CommentWriter.post` takes `forUserId`, the person the triggers hear the comment was written for.
+- 3668ab1: Tell each issue run what was said since the agent's last run. A subject's assembly may add a note to the turn of a resumed session (`turn.resumed`) or of a fresh one (`turn.fresh`), chosen once the claim knows which it is. The comment threads list (`GET /api/projects/issues/{issueId}/comments`, `issue comment list`) takes `since` to return only what was written after it. Studio uses both: a resumed run hears that no comment arrived, the few new comments, or how many and the `--since` command that reads them; a fresh session or a first run is told to read the issue's comments before acting.
+
+### Patch Changes
+
+- dcdc0c9: Move issue execution history below details in the sidebar, display run models, and preserve loading, error and keyboard focus behavior in narrow containers.
+- Updated dependencies [3668ab1]
+- Updated dependencies [d54dd59]
+- Updated dependencies [d54dd59]
+- Updated dependencies [3668ab1]
+- Updated dependencies [693e43d]
+  - @nocobase/app-plugin-projects@0.1.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.20
+  - @nocobase/app-plugin-agents@0.1.0-beta.8
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.14
+  - @nocobase/app-plugin-i18n@1.0.0-beta.16
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.3
+  - @nocobase/app-plugin-releases@0.1.0-beta.4
+
 ## 1.0.0-beta.54
 
 ### Patch Changes
