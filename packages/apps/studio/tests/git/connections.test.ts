@@ -1235,9 +1235,20 @@ describe('push credentials on demand', () => {
     const app = await appConnection();
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     const linked = await projectWithRepo(app);
-    await mentionAgent(h, 'alice', linked.issue.id, agentId);
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Push credentials',
+      projectId: linked.project.id,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
+    });
+    await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne(features);
-    return { app, payload, ...linked };
+    expect(await h.agents.runs.get(payload.run.id)).toMatchObject({
+      agentId,
+      subject: { kind: 'issue', id: issue.id },
+    });
+    return { app, payload, ...linked, issue };
   }
 
   const ask = (payload: any, body: { url?: string; refresh?: boolean } = {}) =>
@@ -1274,7 +1285,14 @@ describe('push credentials on demand', () => {
 
   it('lists nothing on demand for a token connection', async () => {
     const connection = await tokenConnection(h);
-    const { issue } = await projectWithRepo(connection);
+    const { project } = await projectWithRepo(connection);
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Token credentials',
+      projectId: project.id,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
+    });
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne(ON_DEMAND);

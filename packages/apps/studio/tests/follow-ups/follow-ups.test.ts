@@ -6,6 +6,8 @@
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+
 import {
   FOLLOWING_PREFERENCE,
   SEEN_MAX,
@@ -50,6 +52,41 @@ const follow = (issueIds: readonly string[], user = 'alice') =>
   h.request('PUT', '/followUps/following', { user, body: { issueIds } });
 
 describe('the overview', () => {
+  it('reports a manager’s queued step and the owner waiting for a runner', async () => {
+    const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
+    const issue = await create('alice', {
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+      start: false,
+    });
+    await h.projects.comments.create(
+      {
+        ...h.viewer('alice'),
+        actor: { type: 'agent', id: PROJECT_MANAGER_ID },
+      },
+      issue.id,
+      { content: `[@Coder](mention://agent/${agentId}) Check the queued step` },
+    );
+    const runs = await h.agents.runs.list({
+      subjectKind: 'issue',
+      subjectId: issue.id,
+      agentId,
+    });
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ status: 'queued', actorUserId: 'alice' });
+    const data = await overview();
+    expect(data.issues.find((item: any) => item.id === issue.id)).toMatchObject(
+      {
+        progress: {
+          state: 'queued',
+          agent: { id: agentId },
+          step: 'Check the queued step',
+          waiting: { reason: 'noRunner', owner: { id: 'alice' } },
+        },
+      },
+    );
+  });
+
   it('lists the caller’s open issues by status, following their blocked and in-review ones by default', async () => {
     const backlog = await create('alice', { title: 'Later' });
     const blocked = await create('alice', { title: 'Asks' });
