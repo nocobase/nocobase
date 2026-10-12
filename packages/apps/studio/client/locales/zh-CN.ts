@@ -816,6 +816,7 @@ const zhCN: AppResource = {
   'inbox.text.executor_assigned': '{{actor}} 把 {{identifier}} 交给你执行',
   'inbox.text.executor_suggested': '建议由 {{agentName}} 执行 {{identifier}}',
   'inbox.someone': '有人',
+  'inbox.anAgent': '某个 agent',
   'inbox.titles.approval_requested': '状态变更待审批',
   'inbox.outcomes.retried': '已重试',
   'inbox.outcomes.newRun': '已有新的运行',
@@ -1222,6 +1223,8 @@ const zhCN: AppResource = {
     settings: '设置',
     loadFailed: '项目经理的设置没有加载出来。',
     settingsPage: {
+      name: '名称',
+      identityDescription: '描述',
       title: '项目经理',
       description: '全局只有一个，所有项目的任务都由它安排。',
       readOnly: '只有能管理 Agent 的人可以修改这些设置。',

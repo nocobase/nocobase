@@ -44,6 +44,8 @@ const { default: ProjectManagerSettingsPage } =
 const BUILT_IN = '## Who does what\n- Reviews: another vendor';
 const view = (overrides: Partial<ProjectManagerView> = {}) =>
   ({
+    name: 'Project manager',
+    description: 'Arranges work.',
     firstChoiceAgentId: 'opus',
     fallbackAgentId: 'astra',
     principles: null,
@@ -188,12 +190,36 @@ describe('the project manager settings', () => {
         path: 'projectManager',
         method: 'PATCH',
         json: {
+          name: 'Project manager',
+          description: 'Arranges work.',
           firstChoiceAgentId: 'opus',
           fallbackAgentId: null,
           principles: null,
           commentRunLimit: 30,
         },
       }),
+    );
+  });
+
+  it('edits the current identity, clears its description, and refuses an empty name', async () => {
+    await show('/agents/project-manager');
+    const name = await screen.findByLabelText('Name');
+    const description = screen.getByLabelText('Description');
+    fireEvent.change(name, { target: { value: '  ' } });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    fireEvent.change(name, { target: { value: '项目负责人' } });
+    fireEvent.change(description, { target: { value: '  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'PATCH',
+          json: expect.objectContaining({
+            name: '项目负责人',
+            description: null,
+          }),
+        }),
+      ),
     );
   });
 

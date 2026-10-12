@@ -14,6 +14,8 @@
 
 /** The project manager's agent id. */
 export const PROJECT_MANAGER_ID = 'studio-project-manager';
+/** Invalidation only, with no identity or settings values in its payload. */
+export const PROJECT_MANAGER_IDENTITY_TOPIC = 'studio:manager:identity';
 
 /** How many runs agents' comments may start on one issue within `COMMENT_RUN_WINDOW_HOURS` hours, by default. */
 export const DEFAULT_COMMENT_RUN_LIMIT = 20;
@@ -24,6 +26,8 @@ export const COMMENT_RUN_WINDOW_HOURS = 24;
 export const PRINCIPLES_MAX = 20_000;
 
 export interface ProjectManagerSettings {
+  readonly name: string;
+  readonly description: string | null;
   /** The agent whose tool and model the project manager runs with; null until someone chooses. */
   readonly firstChoiceAgentId: string | null;
   /** Used when no runner can take the first choice's work; null for none. */

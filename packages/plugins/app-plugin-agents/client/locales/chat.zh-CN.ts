@@ -35,6 +35,7 @@ const chatZhCN: ChatLocale = {
       runCancelled: '已停止。',
     },
     consultation: {
+      snapshotTitle: '当时请求的对象：{{name}}',
       title: '咨询了 {{name}}',
     },
     steps: {

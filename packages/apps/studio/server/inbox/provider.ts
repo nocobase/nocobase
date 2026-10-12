@@ -31,6 +31,7 @@ import { bindRunnersNotices } from './runners.js';
 import { studioInboxPortToken } from './port.js';
 import { createProjectsNotices } from './projects.js';
 import { createStudioInbox } from './service.js';
+import { noticeIdentities } from './identities.js';
 import { createInboxSource } from '../agents/conversation/inbox.js';
 import { studioInboxSourceToken, studioInboxToken } from './token.js';
 import {
@@ -77,6 +78,15 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
     this.app.container.singleton(studioInboxToken, (resolver) =>
       createStudioInbox({
         database: resolver.resolve(databaseManagerToken),
+        identities: (_userId, rows, notices) =>
+          resolver.has(agentsToken)
+            ? noticeIdentities(
+                resolver.resolve(databaseManagerToken).connection(),
+                resolver.resolve(agentsToken),
+                rows,
+                notices,
+              )
+            : Promise.resolve(notices),
         notifications: () =>
           channel && resolver.has(notificationServiceToken)
             ? resolver.resolve(notificationServiceToken)

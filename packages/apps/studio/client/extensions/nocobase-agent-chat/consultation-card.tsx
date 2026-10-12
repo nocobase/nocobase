@@ -95,7 +95,12 @@ export function ConsultationCard({
           aria-hidden='true'
         />
         <span className='min-w-0 truncate font-medium'>
-          {t('chat.consultation.title', { name: notice.agentName })}
+          {t(
+            notice.identitySnapshot
+              ? 'chat.consultation.snapshotTitle'
+              : 'chat.consultation.title',
+            { name: notice.agentName },
+          )}
         </span>
         <span className='ml-auto flex shrink-0 items-center gap-1.5'>
           {running ? <Pulse /> : null}

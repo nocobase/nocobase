@@ -71,7 +71,11 @@ export function useSubjectRuns(
 }
 
 /** The agents' names in the viewer's language, for people who may read agents; anyone else sees runs without one. */
-export function useAgentNames(): (agentId: string) => string | null {
+export function useAgentIdentities(): {
+  readonly loading: boolean;
+  readonly failed: boolean;
+  readonly nameOf: (agentId: string) => string | null;
+} {
   const api = useAgentsApi();
   const agents = useQuery(
     {
@@ -83,8 +87,14 @@ export function useAgentNames(): (agentId: string) => string | null {
     agentsQueryClient(),
   );
   const text = useAgentText();
-  return (agentId) => {
+  const nameOf = (agentId: string) => {
+    if (agents.isError || agents.isPending) return null;
     const agent = agents.data?.find((item) => item.id === agentId);
     return agent ? text.name(agent) : null;
   };
+  return { loading: agents.isPending, failed: agents.isError, nameOf };
+}
+
+export function useAgentNames(): (agentId: string) => string | null {
+  return useAgentIdentities().nameOf;
 }

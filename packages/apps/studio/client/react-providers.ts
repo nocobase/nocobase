@@ -6,6 +6,7 @@ import {
 import { Toaster } from '@/components/ui/toast';
 
 import { AgentIntakeWaitFormat } from './agents/intake-wait-format.js';
+import { ProjectManagerIdentityRefresh } from './agents/project-manager/identity-refresh.js';
 import { ReleaseActorNames } from './releases/actor-names.js';
 import { ReleaseDeleteAppImpact } from './releases/delete-app-impact.js';
 import { ReleaseAppOrigin } from './releases/app-origin.js';
@@ -16,6 +17,12 @@ import { AppThemeProvider } from './theme/theme-provider.js';
 
 export const reactProviders: readonly AppClientReactProviderDefinition[] =
   defineClientReactProviders([
+    {
+      component: ProjectManagerIdentityRefresh,
+      layer: 'extension',
+      name: 'project-manager-identity-refresh',
+      after: ['@nocobase/app-plugin-projects:pm-query'],
+    },
     {
       component: AppThemeProvider,
       layer: 'root',

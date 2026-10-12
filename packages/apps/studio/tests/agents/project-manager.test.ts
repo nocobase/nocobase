@@ -5,6 +5,7 @@
  * statuses it may move an issue between, and the comment run limit with its continuation (`/issueCommentRuns`).
  */
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
+import identitySeed from '../../database/main/seeds/202610250010_studio_project_manager_identity.js';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -95,6 +96,145 @@ const progress = async (issueId: string) => {
 };
 
 describe('the project manager’s settings', () => {
+  it('shows current identities on old comments, activities, executors and completed runs after Chinese upgrade and two renames', async () => {
+    const issue = await create();
+    const comment = await h.projects.comments.create(
+      asAgent(PROJECT_MANAGER_ID),
+      issue.id,
+      { content: 'Historical Project manager body' },
+    );
+    const queued = await h.agents.runs.enqueue({
+      agentId: PROJECT_MANAGER_ID,
+      subject: { kind: 'issue', id: issue.id },
+      actorUserId: 'alice',
+      input: {
+        type: 'comment',
+        actor: {
+          kind: 'agent',
+          id: PROJECT_MANAGER_ID,
+          name: 'Project manager',
+        },
+        text: 'Historical Project manager input',
+      },
+    });
+    const conn = h.database.connection();
+    await conn.query
+      .updateTable('agRuns')
+      .set({ status: 'completed' })
+      .where('id', '=', queued.runId)
+      .execute();
+    await conn.query
+      .updateTable('studioSettings')
+      .set({
+        value: JSON.stringify({
+          firstChoiceAgentId: coder,
+          unknown: 'preserved',
+        }),
+      })
+      .where('key', '=', 'projectManager')
+      .execute();
+    await identitySeed.run({
+      query: conn.query,
+      repository: (name: string) => conn.repository(name),
+      config: { get: () => 'zh-CN' },
+    } as never);
+    await h.manager.sync();
+    for (const name of ['项目经理', 'Team lead', '负责人']) {
+      if (name !== '项目经理') await h.manager.update('root', { name });
+      const comments = await h.request(
+        'GET',
+        `/projects/issues/${issue.id}/comments`,
+        { user: 'alice' },
+      );
+      expect(comments.body.data[0].root).toMatchObject({
+        authorName: name,
+        content: 'Historical Project manager body',
+      });
+      expect(
+        (await h.projects.issueQueries.detail(alice(), issue.id)).executorName,
+      ).toBe(name);
+      const activities = (
+        await h.projects.issueQueries.activities(alice(), issue.id, {})
+      ).data.filter((activity) => activity.actorId === PROJECT_MANAGER_ID);
+      expect(activities.length).toBeGreaterThan(0);
+      expect(activities.every((activity) => activity.actorName === name)).toBe(
+        true,
+      );
+      const run = await h.request('GET', `/issueRuns/${queued.runId}`, {
+        user: 'root',
+      });
+      expect(run.status).toBe(200);
+      expect(run.body.data.inputs[0].actor).toBe(name);
+      expect(
+        (await h.agents.runs.detail(queued.runId)).inputs[0].actor.name,
+      ).toBe(name);
+    }
+    expect(comment.comment.content).toBe('Historical Project manager body');
+    const stored = await conn.query
+      .selectFrom('agRunInputs')
+      .select('actorName')
+      .where('runId', '=', queued.runId)
+      .executeTakeFirstOrThrow();
+    expect(stored.actorName).toBe('Project manager');
+    const settings = await conn
+      .repository('studioSettings')
+      .findOne({ filter: { key: 'projectManager' } });
+    const raw =
+      typeof settings?.value === 'string'
+        ? (JSON.parse(settings.value) as Record<string, unknown>)
+        : settings?.value;
+    expect(raw).toMatchObject({ unknown: 'preserved' });
+  });
+  it('keeps renamed identities and cleared descriptions through repeated saves and startup', async () => {
+    for (const name of ['Team lead', '项目负责人']) {
+      const result = await h.request('PATCH', '/projectManager', {
+        user: 'root',
+        body: { name: ` ${name} `, description: '' },
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data).toMatchObject({ name, description: null });
+      await h.manager.ready();
+      await h.request('PATCH', '/projectManager', {
+        user: 'root',
+        body: { commentRunLimit: 10 },
+      });
+      expect(await h.agents.agents.get(PROJECT_MANAGER_ID)).toMatchObject({
+        name,
+        description: null,
+        nameText: null,
+      });
+      expect((await h.agents.agents.get(coder)).name).toBe('Coder');
+    }
+    for (const description of [null, '', '   ']) {
+      expect(
+        (
+          await h.request('PATCH', '/projectManager', {
+            user: 'root',
+            body: { description },
+          })
+        ).body.data.description,
+      ).toBeNull();
+      await h.manager.ready();
+      expect((await h.manager.settings()).description).toBeNull();
+    }
+    for (const name of [null, '', '  ', 'a'.repeat(201)])
+      expect(
+        (
+          await h.request('PATCH', '/projectManager', {
+            user: 'root',
+            body: { name },
+          })
+        ).status,
+      ).toBe(400);
+    expect(
+      (
+        await h.request('PATCH', '/projectManager', {
+          user: 'root',
+          body: { description: 'a'.repeat(10_001) },
+        })
+      ).status,
+    ).toBe(400);
+  });
   it('reads them for anyone signed in, editable by a manager of agents', async () => {
     const member = await h.request('GET', '/projectManager', { user: 'alice' });
     expect(member.status).toBe(200);

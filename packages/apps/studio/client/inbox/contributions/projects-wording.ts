@@ -45,8 +45,12 @@ export function useParamsOf(): (
         t(key, { ns, defaultValue: fallback });
       return {
         ...params,
-        ...(params.agentName ? { agentName: translate(params.agentName) } : {}),
-        ...(params.actorName ? { actorName: translate(params.actorName) } : {}),
+        ...(params.agentName && !entry.notice?.data?.agentDatabaseName
+          ? { agentName: translate(params.agentName) }
+          : {}),
+        ...(params.actorName && !entry.notice?.data?.actorDatabaseName
+          ? { actorName: translate(params.actorName) }
+          : {}),
       };
     },
     [t],
@@ -281,7 +285,7 @@ export function useEntryText(): (
         sentence = `${t('inbox.body.comment_runs_limited', {
           limit: params.limit ?? '',
           windowHours: params.windowHours ?? '',
-          agentName: params.agentName ?? '',
+          agentName: params.agentName ?? t('inbox.anAgent'),
         })} ${t('studioAgents.commentRuns.continueInIssue')}`;
         break;
       case 'commented':

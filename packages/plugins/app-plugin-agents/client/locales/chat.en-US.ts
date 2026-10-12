@@ -39,6 +39,7 @@ const chatEnUS = {
       runCancelled: 'Stopped.',
     },
     consultation: {
+      snapshotTitle: 'Requested {{name}} at the time',
       title: 'Consulted {{name}}',
     },
     steps: {

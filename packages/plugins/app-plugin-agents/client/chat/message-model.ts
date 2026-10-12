@@ -333,7 +333,12 @@ export function noticeText(
     case 'news':
       return newsText?.(notice, t) ?? notice.title;
     case 'consultation':
-      return t('chat.consultation.title', { name: notice.agentName });
+      return t(
+        notice.identitySnapshot
+          ? 'chat.consultation.snapshotTitle'
+          : 'chat.consultation.title',
+        { name: notice.agentName },
+      );
     default:
       return fallback;
   }

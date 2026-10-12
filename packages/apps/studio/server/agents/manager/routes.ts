@@ -169,6 +169,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
             firstChoiceAgentId: { name: 'first-choice' },
             fallbackAgentId: { name: 'fallback' },
             principles: { contentFile: true },
+            description: { contentFile: true },
           },
         }),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
