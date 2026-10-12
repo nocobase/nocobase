@@ -46,6 +46,7 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
   private topic?: DefinedRealtimeTopic<StudioInboxEvent, 'user'>;
   private releaseRunners?: () => void;
   private releaseFailedRuns?: () => Promise<void>;
+  private reconciliation?: Promise<void>;
 
   private reconcileFailedRuns(issueId?: string): Promise<void> {
     const { container } = this.app;
@@ -139,7 +140,13 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
         (error) =>
           console.error('Studio could not settle failed-run cards.', error),
       );
-    return this.reconcileFailedRuns();
+    this.reconciliation ??= this.reconcileFailedRuns().catch((error) =>
+      console.error(
+        'Studio could not reconcile failed-run cards at startup.',
+        error,
+      ),
+    );
+    return Promise.resolve();
   }
 
   public override async shutdown(): Promise<void> {
@@ -147,6 +154,8 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
     this.releaseRunners = undefined;
     await this.releaseFailedRuns?.();
     this.releaseFailedRuns = undefined;
+    await this.reconciliation;
+    this.reconciliation = undefined;
     this.topic?.close();
     this.topic = undefined;
     return Promise.resolve();

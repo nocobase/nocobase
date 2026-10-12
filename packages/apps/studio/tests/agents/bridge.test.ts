@@ -1254,8 +1254,8 @@ describe('claims and endings', () => {
       await expect(
         decideFailedRun(deps, 'alice', runId, { action: 'retry' }),
       ).rejects.toMatchObject({
-        code: 'CONFLICT',
-        details: { code: 'RUN_ALREADY_RETRIED', runId: result.runId },
+        code: 'RUN_ALREADY_RETRIED',
+        details: { runId: result.runId },
       });
     });
 

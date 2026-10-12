@@ -299,7 +299,7 @@ nb-studio run request withdraw <request>
 
 Retry a run
 
-Queues a new run with the same input once. Whoever started or owns it, or a manager of agents, may. Repeating a retry returns CONFLICT with RUN_ALREADY_RETRIED and the replacement run id.
+Queues a new run with the same input once. Whoever started or owns it, or a manager of agents, may. Repeating a retry returns RUN_ALREADY_RETRIED (FAILED_PRECONDITION) with the replacement run id.
 
 ```bash
 nb-studio run retry <run>

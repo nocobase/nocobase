@@ -228,6 +228,13 @@ export interface RunService {
   ): Promise<Run>;
   get(runId: string): Promise<Run>;
   detail(runId: string): Promise<RunDetail>;
+  /** The first replacement and its retry attribution, without loading a run transcript. */
+  retryInfo(runId: string): Promise<{
+    readonly runId: string;
+    readonly actorUserId: string;
+    readonly actorName: string;
+    readonly source: string;
+  } | null>;
   list(filter: RunFilter): Promise<Run[]>;
   /** The newest ended run of each agent on each of the subjects (`subjectIds` of `subjectKind`), in no order. */
   lastEnded(subjectKind: string, subjectIds: readonly string[]): Promise<Run[]>;
@@ -914,10 +921,13 @@ export function createRunService(deps: RunServiceDeps): RunService {
           ],
         });
         if (retried)
-          throw conflict('This run has already been retried.', {
-            code: 'RUN_ALREADY_RETRIED',
-            runId: retried.id,
-          });
+          throw precondition(
+            'RUN_ALREADY_RETRIED',
+            'This run has already been retried.',
+            {
+              runId: retried.id,
+            },
+          );
         const agent = await requireInvocable(unit, run.agentId, byUserId);
         const open = await runsOfKey(
           unit.conn,
@@ -980,6 +990,29 @@ export function createRunService(deps: RunServiceDeps): RunService {
 
     get: async (runId) =>
       (await readRuns([await require(tx.read(), runId)]))[0],
+
+    async retryInfo(runId) {
+      const conn = tx.read();
+      const next = await runsRepo(conn).findOne({
+        filter: { retryOfRunId: runId },
+        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      });
+      if (!next) return null;
+      const input = await inputsRepo(conn).findOne({
+        filter: { runId: next.id, type: 'retry' },
+        sort: (sort) => [
+          sort.field('createdAt').desc(),
+          sort.field('id').desc(),
+        ],
+      });
+      const source = (input?.payload as { source?: unknown } | null)?.source;
+      return {
+        runId: next.id,
+        actorUserId: next.actorUserId,
+        actorName: input ? toInputView(input).actor.name : next.actorUserId,
+        source: typeof source === 'string' ? source : 'unknown',
+      };
+    },
 
     async detail(runId) {
       const conn = tx.read();

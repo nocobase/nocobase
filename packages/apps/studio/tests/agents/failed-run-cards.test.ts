@@ -1,5 +1,11 @@
 // @vitest-environment node
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
+import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+import { projectsToken } from '@nocobase/app-plugin-projects/server/tokens';
+import type { Application } from '@nocobase/app-server/application';
+import { ServiceContainer } from '@nocobase/service-provider';
+import StudioInboxProvider from '../../server/inbox/provider.js';
+import { studioInboxToken } from '../../server/inbox/token.js';
 import type {
   NotificationService,
   NotificationSendInput,
@@ -89,7 +95,11 @@ afterEach(async () => {
     });
 });
 
-async function failedRun(issueId?: string, agentId?: string) {
+async function failedRun(
+  issueId?: string,
+  agentId?: string,
+  reconcile = false,
+) {
   agentId ??= await h.createAgent({ maxAttempts: 1 });
   const issue = issueId
     ? await h.projects.issueQueries.detail(h.viewer('alice'), issueId)
@@ -116,7 +126,7 @@ async function failedRun(issueId?: string, agentId?: string) {
     reason: 'toolAuth',
     detail: 'Not signed in.',
   });
-  await sendCard(result.runId);
+  await sendCard(result.runId, reconcile);
   return { runId: result.runId, issue, agentId };
 }
 
@@ -152,6 +162,161 @@ async function sendCard(runId: string, reconcile = false) {
 }
 
 describe('failed-run card lifecycle over committed runs and the real inbox', () => {
+  it('keeps the card reassignment outcome while settling sibling cards', async () => {
+    const first = await failedRun();
+    const sibling = await failedRun(first.issue.id);
+    await decideFailedRun(
+      {
+        runs: h.agents.runs,
+        projects: () => h.projects,
+        viewerOf: async (id) => h.viewer(id),
+        inbox,
+      },
+      'alice',
+      first.runId,
+      { action: 'reassign', userId: 'bob' },
+    );
+    await expect
+      .poll(() => inbox.waiting(runFailedDecision(sibling.runId)))
+      .toBe(false);
+    const items = await store.list({ userId: 'alice' });
+    const notices = await inbox.notices(
+      'alice',
+      items.map((item) => item.notificationId),
+    );
+    expect(notices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          decisionKey: runFailedKey(first.runId),
+          outcome: 'reassigned',
+        }),
+        expect.objectContaining({
+          decisionKey: runFailedKey(sibling.runId),
+          outcome: 'issueReassigned',
+        }),
+      ]),
+    );
+  });
+
+  it('leaves the decision open when card reassignment fails', async () => {
+    const { runId } = await failedRun();
+    await expect(
+      decideFailedRun(
+        {
+          runs: h.agents.runs,
+          projects: () => h.projects,
+          viewerOf: async (id) => h.viewer(id),
+          inbox,
+        },
+        'alice',
+        runId,
+        { action: 'reassign', userId: 'missing-user' },
+      ),
+    ).rejects.toBeDefined();
+    expect(await inbox.waiting(runFailedDecision(runId))).toBe(true);
+  });
+  it.each(['in_review', 'done', 'cancelled'])(
+    'preserves failures delivered after moving to %s',
+    async (statusKey) => {
+      const issue = await h.projects.issues.create(h.viewer('alice'), {
+        title: 'Review work',
+      });
+      await h.projects.issues.update(h.viewer('alice'), issue.id, {
+        revision: issue.revision,
+        statusKey,
+      });
+      const { runId } = await failedRun(issue.id, undefined, true);
+      await reconcileFailedRunCards(h.agents, h.projects, inbox);
+      expect(await inbox.waiting(runFailedDecision(runId))).toBe(true);
+      for (const userId of ['alice', 'bob'])
+        expect(
+          await inbox.waitingFor(userId, { type: 'issue', id: issue.id }),
+        ).toHaveLength(1);
+    },
+  );
+
+  it('logs a broken card and continues to settle other cards without loading details', async () => {
+    await stop[0]!();
+    const first = await failedRun();
+    const second = await failedRun();
+    await h.agents.runs.retry(second.runId, 'alice', 'cli');
+    const get = h.agents.runs.get.bind(h.agents.runs);
+    const broken = new Error('Transient read failure');
+    vi.spyOn(h.agents.runs, 'get').mockImplementation((id) =>
+      id === first.runId ? Promise.reject(broken) : get(id),
+    );
+    const detail = vi.spyOn(h.agents.runs, 'detail');
+    const onError = vi.fn();
+    await reconcileFailedRunCards(
+      h.agents,
+      h.projects,
+      inbox,
+      undefined,
+      onError,
+    );
+    expect(onError).toHaveBeenCalledWith(broken, runFailedKey(first.runId));
+    expect(await inbox.waiting(runFailedDecision(first.runId))).toBe(true);
+    expect(await inbox.waiting(runFailedDecision(second.runId))).toBe(false);
+    expect(detail).not.toHaveBeenCalled();
+  });
+
+  it('boots before startup reconciliation finishes and contains its failure', async () => {
+    let reject!: (error: unknown) => void;
+    const pending = new Promise<never>((_, rejectPromise) => {
+      reject = rejectPromise;
+    });
+    const container = new ServiceContainer();
+    container.singleton(agentsToken, () => h.agents);
+    container.singleton(projectsToken, () => h.projects);
+    container.singleton(studioInboxToken, () => ({
+      ...inbox,
+      openDecisions: () => pending,
+    }));
+    const provider = new StudioInboxProvider({
+      container,
+    } as unknown as Application);
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      await provider.boot();
+      const failure = new Error('Page read failed');
+      reject(failure);
+      await provider.shutdown();
+      expect(log).toHaveBeenCalledWith(
+        'Studio could not reconcile failed-run cards at startup.',
+        failure,
+      );
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it('keeps a delivered notification when afterSend reconciliation fails', async () => {
+    const { runId } = await failedRun();
+    const failure = new Error('Page read failed');
+    const onError = vi.fn();
+    const notices = createProjectsNotices(
+      () => inbox,
+      () => Promise.reject(failure),
+      onError,
+    );
+    const run = await h.agents.runs.get(runId);
+    await expect(
+      notices.send({
+        key: 'another-card',
+        kind: 'decision',
+        type: RUN_FAILED_FINAL,
+        userIds: ['alice'],
+        title: 'Failure',
+        body: 'What next?',
+        issue: { id: run.subject.id, identifier: 'PM-1' },
+        params: { runId },
+      }),
+    ).resolves.toBeUndefined();
+    expect(onError).toHaveBeenCalledWith(failure);
+    expect(
+      await inbox.waiting({ source: 'projects', decisionKey: 'another-card' }),
+    ).toBe(true);
+  });
   it.each(['cli', 'runRecord', 'card'] as const)(
     'settles every recipient after a %s retry and keeps its attribution',
     async (source) => {

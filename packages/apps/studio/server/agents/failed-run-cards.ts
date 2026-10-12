@@ -12,6 +12,15 @@ export async function reconcileFailedRunCards(
   projects: Pick<Projects, 'issueContext' | 'tx'>,
   inbox: Pick<StudioInbox, 'openDecisions' | 'resolve'>,
   issueId?: string,
+  onError: (error: unknown, decisionKey: string) => void = (
+    error,
+    decisionKey,
+  ) =>
+    console.error(
+      'Studio could not reconcile a failed-run card.',
+      decisionKey,
+      error,
+    ),
 ): Promise<void> {
   let afterKey = '';
   for (;;) {
@@ -24,95 +33,93 @@ export async function reconcileFailedRunCards(
     if (cards.length === 0) return;
     for (const card of cards) {
       afterKey = card.decisionKey;
-      const runId = card.data?.runId;
-      if (typeof runId !== 'string') continue;
-      let run;
       try {
-        run = await agents.runs.detail(runId);
-      } catch (error) {
-        if (error instanceof ProtocolError && error.code === 'RUN_NOT_FOUND') {
+        const runId = card.data?.runId;
+        if (typeof runId !== 'string') continue;
+        let run;
+        try {
+          run = await agents.runs.get(runId);
+        } catch (error) {
+          if (
+            error instanceof ProtocolError &&
+            error.code === 'RUN_NOT_FOUND'
+          ) {
+            await inbox.resolve({
+              source: PROJECTS_SOURCE,
+              decisionKey: card.decisionKey,
+              outcome: 'stale',
+            });
+            continue;
+          }
+          throw error;
+        }
+        if (
+          run.subject.kind !== ISSUE_SUBJECT ||
+          card.subject?.type !== 'issue' ||
+          card.subject.id !== run.subject.id ||
+          card.decisionKey !== runFailedDecision(run.id).decisionKey
+        )
+          continue;
+        const retry = await agents.runs.retryInfo(run.id);
+        if (retry) {
           await inbox.resolve({
-            source: PROJECTS_SOURCE,
-            decisionKey: card.decisionKey,
-            outcome: 'stale',
+            ...runFailedDecision(run.id),
+            outcome: 'retried',
+            data: {
+              retriedRunId: retry.runId,
+              retriedByUserId: retry.actorUserId,
+              retriedByName: retry.actorName,
+              retrySource: retry.source,
+            },
           });
           continue;
         }
-        throw error;
-      }
-      if (
-        run.subject.kind !== ISSUE_SUBJECT ||
-        card.subject?.type !== 'issue' ||
-        card.subject.id !== run.subject.id ||
-        card.decisionKey !== runFailedDecision(run.id).decisionKey
-      )
-        continue;
-      if (run.retriedRunId) {
-        const next = await agents.runs.detail(run.retriedRunId);
-        const input = next.inputs.find(
-          (input) =>
-            input.type === 'retry' &&
-            (input.payload as { retryOfRunId?: unknown } | null)
-              ?.retryOfRunId === run.id,
+        const issue = await projects.issueContext.contextFor(
+          projects.tx.read(),
+          run.subject.id,
         );
-        const source = (input?.payload as { source?: unknown } | null)?.source;
-        await inbox.resolve({
-          ...runFailedDecision(run.id),
-          outcome: 'retried',
-          data: {
-            retriedRunId: next.id,
-            retriedByUserId: next.actorUserId,
-            retriedByName: input?.actor.name ?? next.actorUserId,
-            retrySource: typeof source === 'string' ? source : 'unknown',
-          },
+        // Status changes settle existing cards through issue.updated. A new
+        // failure after that transition must remain visible, including reviews.
+        if (!issue) {
+          await inbox.resolve({
+            ...runFailedDecision(run.id),
+            outcome: 'issueMoved',
+          });
+          continue;
+        }
+        if (
+          typeof card.data?.executorType === 'string' &&
+          typeof card.data.executorId === 'string' &&
+          (card.data.executorType !== (issue.executor?.type ?? '') ||
+            card.data.executorId !== (issue.executor?.id ?? ''))
+        ) {
+          await inbox.resolve({
+            ...runFailedDecision(run.id),
+            outcome: 'issueReassigned',
+          });
+          continue;
+        }
+        // The newest run of this exact issue/agent pair suffices, regardless of who
+        // woke it or which thread it belongs to. Never settle another agent's card.
+        const [newest] = await agents.runs.list({
+          subjectKind: ISSUE_SUBJECT,
+          subjectId: run.subject.id,
+          agentId: run.agentId,
+          limit: 1,
         });
-        continue;
+        if (
+          newest &&
+          (newest.createdAt > run.createdAt ||
+            (newest.createdAt === run.createdAt && newest.id > run.id))
+        )
+          await inbox.resolve({
+            ...runFailedDecision(run.id),
+            outcome: 'newRun',
+            data: { replacementRunId: newest.id },
+          });
+      } catch (error) {
+        onError(error, card.decisionKey);
       }
-      const issue = await projects.issueContext.contextFor(
-        projects.tx.read(),
-        run.subject.id,
-      );
-      if (
-        !issue ||
-        ['done', 'closed'].includes(issue.status.category) ||
-        issue.status.key === 'in_review'
-      ) {
-        await inbox.resolve({
-          ...runFailedDecision(run.id),
-          outcome: 'issueMoved',
-        });
-        continue;
-      }
-      if (
-        typeof card.data?.executorType === 'string' &&
-        typeof card.data.executorId === 'string' &&
-        (card.data.executorType !== (issue.executor?.type ?? '') ||
-          card.data.executorId !== (issue.executor?.id ?? ''))
-      ) {
-        await inbox.resolve({
-          ...runFailedDecision(run.id),
-          outcome: 'issueReassigned',
-        });
-        continue;
-      }
-      // The newest run of this exact issue/agent pair suffices, regardless of who
-      // woke it or which thread it belongs to. Never settle another agent's card.
-      const [newest] = await agents.runs.list({
-        subjectKind: ISSUE_SUBJECT,
-        subjectId: run.subject.id,
-        agentId: run.agentId,
-        limit: 1,
-      });
-      if (
-        newest &&
-        (newest.createdAt > run.createdAt ||
-          (newest.createdAt === run.createdAt && newest.id > run.id))
-      )
-        await inbox.resolve({
-          ...runFailedDecision(run.id),
-          outcome: 'newRun',
-          data: { replacementRunId: newest.id },
-        });
     }
   }
 }

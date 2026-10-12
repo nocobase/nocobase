@@ -134,6 +134,37 @@ export function announceFailedRuns(
 /** The status an issue is handed over for review in; a failed run's card is no longer needed there. */
 const IN_REVIEW = 'in_review';
 
+// issue.updated is emitted before issues.update returns. Let a card decision
+// persist its specific outcome before the broad issue listener settles siblings.
+const reassignments = new WeakMap<object, Map<string, Promise<void>>>();
+
+export async function withFailedRunReassignment<T>(
+  projects: object,
+  issueId: string,
+  decide: () => Promise<T>,
+): Promise<T> {
+  let pending = reassignments.get(projects);
+  if (!pending) {
+    pending = new Map();
+    reassignments.set(projects, pending);
+  }
+  const previous = pending.get(issueId);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const current = previous
+    ? Promise.all([previous, gate]).then(() => undefined)
+    : gate;
+  pending.set(issueId, current);
+  try {
+    return await decide();
+  } finally {
+    release();
+    if (pending.get(issueId) === current) pending.delete(issueId);
+  }
+}
+
 /** Settles an issue's failed-run cards once it moves to review or finishes; returns what stops it. */
 export function settleFailedRunCards(
   projects: () => Pick<Projects, 'events' | 'issueContext' | 'tx'>,
@@ -144,8 +175,10 @@ export function settleFailedRunCards(
     const status = event.changes.status;
     const inbox = port();
     const reassigned = event.changes.executor;
+    const cardDecision = reassignments.get(projects())?.get(event.issueId);
     if ((!status && !reassigned) || !inbox) return;
     void (async () => {
+      if (reassigned && cardDecision) await cardDecision;
       if (!reassigned && status?.to !== IN_REVIEW) {
         const issue = await projects().issueContext.contextFor(
           projects().tx.read(),

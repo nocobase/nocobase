@@ -611,10 +611,10 @@ describe('admin API', () => {
     const twice = await h.request('POST', `/agents/runs/${mine}/retry`, {
       user: 'bob',
     });
-    expect(twice.status).toBe(409);
-    expect(twice.body.error.reason).toBe('CONFLICT');
+    expect(twice.status).toBe(400);
+    expect(twice.body.error.status).toBe('FAILED_PRECONDITION');
+    expect(twice.body.error.reason).toBe('RUN_ALREADY_RETRIED');
     expect(twice.body.error.metadata).toMatchObject({
-      code: 'RUN_ALREADY_RETRIED',
       runId: retried.body.data.id,
     });
     expect((await h.services.runs.detail(mine)).retriedRunId).toBe(
@@ -659,8 +659,9 @@ describe('admin API', () => {
     expect(results.filter((result) => result.status === 'rejected')).toEqual([
       expect.objectContaining({
         reason: expect.objectContaining({
-          code: 'CONFLICT',
-          details: expect.objectContaining({ code: 'RUN_ALREADY_RETRIED' }),
+          code: 'RUN_ALREADY_RETRIED',
+          status: 400,
+          apiStatus: 'FAILED_PRECONDITION',
         }),
       }),
     ]);
@@ -677,8 +678,8 @@ describe('admin API', () => {
     await expect(
       h.services.runs.retry(original, 'owner'),
     ).rejects.toMatchObject({
-      code: 'CONFLICT',
-      details: { code: 'RUN_ALREADY_RETRIED', runId: next },
+      code: 'RUN_ALREADY_RETRIED',
+      details: { runId: next },
     });
     expect(await h.services.runs.list({ agentId })).toHaveLength(2);
     expect(events).toHaveLength(1);

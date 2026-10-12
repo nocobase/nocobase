@@ -51,11 +51,17 @@ export function projectNoticeToInbox(notice: ProjectNotice): InboxSend {
 export function createProjectsNotices(
   port: () => StudioInboxPort,
   afterSend?: (notice: ProjectNotice) => Promise<void>,
+  onError: (error: unknown) => void = (error) =>
+    console.error('Studio could not reconcile a delivered notice.', error),
 ): ProjectsNotices {
   return {
     send: async (notice) => {
       await port().send(projectNoticeToInbox(notice));
-      await afterSend?.(notice);
+      try {
+        await afterSend?.(notice);
+      } catch (error) {
+        onError(error);
+      }
     },
     resolve: ({ approvalRequestId, outcome }) =>
       port().resolve({

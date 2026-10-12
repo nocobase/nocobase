@@ -20,7 +20,11 @@ import type { RunService } from '@nocobase/app-plugin-agents/server/tokens';
 import type { StudioInbox } from '../inbox/service.js';
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
 import { translated } from './commands/permissions.js';
-import { RUN_FAILED_ACTIONS, runFailedDecision } from './notices.js';
+import {
+  RUN_FAILED_ACTIONS,
+  runFailedDecision,
+  withFailedRunReassignment,
+} from './notices.js';
 
 export type FailedRunAction = (typeof RUN_FAILED_ACTIONS)[number];
 
@@ -85,9 +89,9 @@ export async function decideFailedRun(
         request.action === 'retry' ? await deps.runs.detail(run.id) : null;
       if (detail?.retriedRunId)
         throw new ProtocolError(
-          'CONFLICT',
+          'RUN_ALREADY_RETRIED',
           'This run has already been retried.',
-          { code: 'RUN_ALREADY_RETRIED', runId: detail.retriedRunId },
+          { runId: detail.retriedRunId },
         );
       throw new ProtocolError('CONFLICT', 'This decision was already taken.', {
         code: 'DECISION_ALREADY_TAKEN',
@@ -106,12 +110,19 @@ export async function decideFailedRun(
             'INVALID_REQUEST',
             'userId: the person who takes the issue over is required.',
           );
-        await deps.projects().issues.update(viewer, issue.id, {
-          revision: issue.revision,
-          executor: { type: 'user', id: request.userId },
+        const projects = deps.projects();
+        await withFailedRunReassignment(projects, issue.id, async () => {
+          await projects.issues.update(viewer, issue.id, {
+            revision: issue.revision,
+            executor: { type: 'user', id: request.userId! },
+          });
+          await deps.inbox.resolve({
+            ...ref,
+            outcome: FAILED_RUN_OUTCOMES.reassign,
+          });
         });
         result = { outcome: FAILED_RUN_OUTCOMES.reassign };
-        break;
+        return result;
       }
       case 'cancel':
         result = { outcome: FAILED_RUN_OUTCOMES.cancel };

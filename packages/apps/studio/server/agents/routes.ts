@@ -350,7 +350,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             200: dataResponse(FailedRunResultSchema),
             400: apiErrorResponse(
               400,
-              'When the decision was already taken (`DECISION_ALREADY_TAKEN`).',
+              'When the decision was already taken (`DECISION_ALREADY_TAKEN`) or the run has already been retried (`RUN_ALREADY_RETRIED`).',
             ),
             404: apiErrorResponse(
               404,
