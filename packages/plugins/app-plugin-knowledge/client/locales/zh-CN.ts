@@ -399,6 +399,9 @@ const zhCN: KnowledgeClientResource = {
       notReranked: '未重排',
     },
     revisions: {
+      historicalWaiting: '历史重复提议，等待之前的提议处理完毕。',
+      targetExists:
+        '目标已存在。请拒绝或撤回此历史重复提议，然后对已有文档提交修改。',
       sendBack: '退回修改',
       askAgent: '让 Agent 修改',
       sendBackHint:
@@ -422,6 +425,7 @@ const zhCN: KnowledgeClientResource = {
       history: '按 {{name}} 的意见修改',
     },
     proposals: {
+      withdraw: '撤回',
       listTitle: '提议',
       statuses: {
         pending: '待审阅',

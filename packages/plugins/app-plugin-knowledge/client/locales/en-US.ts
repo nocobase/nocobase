@@ -424,6 +424,10 @@ const enUS = {
       notReranked: 'Not reranked',
     },
     revisions: {
+      historicalWaiting:
+        'Historical duplicate, waiting for earlier proposals to finish.',
+      targetExists:
+        'The target already exists. Reject or withdraw this historical duplicate and propose an update instead.',
       sendBack: 'Send back',
       askAgent: 'Ask the agent to revise',
       sendBackHint:
@@ -448,6 +452,7 @@ const enUS = {
       history: 'Revised as {{name}} asked',
     },
     proposals: {
+      withdraw: 'Withdraw',
       listTitle: 'Proposals',
       statuses: {
         pending: 'Pending',

@@ -297,6 +297,36 @@ nb-studio kb doc replace-file <doc> --file <path>
 
 **Request:** `POST /api/knowledge/docs/{docId}/replaceFile` (`knowledgeReplaceDocFile`)
 
+## kb doc request-changes
+
+Send a document's version back to its agent
+
+Requires `edit`. Sends the current version, which an actor (an agent) wrote, back to it with what should change: a `revising` proposal of `origin` `document` stands for it, the application wakes the actor where it wrote the version, and the proposal it submits from there replaces it and is reviewed like any other.
+
+```bash
+nb-studio kb doc request-changes <doc> --comment <string>
+```
+
+| Argument | Description |
+| -------- | ----------- |
+| `doc`    |             |
+
+| Flag        | Type   | Description                                                |
+| ----------- | ------ | ---------------------------------------------------------- |
+| `--comment` | string | What should change, for the proposer to act on. (required) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `POST /api/knowledge/docs/{docId}/requestChanges` (`knowledgeRequestDocChanges`)
+
+**Examples:**
+
+```bash
+nb-studio kb doc request-changes <doc> --comment "Edit the plugin in place; do not export a patch"
+```
+
 ## kb doc restore
 
 Restore an archived document
@@ -514,7 +544,7 @@ nb-studio kb list --parent known-pitfalls
 
 Accept a proposal
 
-Requires `edit` where the proposal applies. Applies it as the document's next version (or a new document), authored by its proposer. A stale `update` is refused unless `confirmStale` is true, which makes its content the next version whole.
+Requires `edit` where the proposal applies and the active group slot. Historical waiting items cannot be accepted; a historical duplicate create whose target exists must be rejected or withdrawn. Applies it as the document's next version (or a new document), authored by its proposer. A stale `update` is refused unless `confirmStale` is true, which makes its content the next version whole.
 
 ```bash
 nb-studio kb proposal accept <proposal>
@@ -595,15 +625,15 @@ Proposals of `status` (`pending` by default) in the spaces the caller reads, nar
 nb-studio kb proposal list
 ```
 
-| Flag          | Type                                         | Description                                                                                                         |
-| ------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `--status`    | pending \| accepted \| rejected \| withdrawn | (default "pending")                                                                                                 |
-| `--scope`     | string                                       |                                                                                                                     |
-| `--owner`     | string                                       | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
-| `--doc`       | string                                       |                                                                                                                     |
-| `--decidable` | boolean                                      |                                                                                                                     |
-| `--page`      | integer                                      | (default 1)                                                                                                         |
-| `--limit`     | integer                                      | (default 20)                                                                                                        |
+| Flag          | Type                                                                   | Description                                                                                                         |
+| ------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `--status`    | pending \| revising \| accepted \| rejected \| withdrawn \| superseded | (default "pending")                                                                                                 |
+| `--scope`     | string                                                                 |                                                                                                                     |
+| `--owner`     | string                                                                 | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
+| `--doc`       | string                                                                 |                                                                                                                     |
+| `--decidable` | boolean                                                                |                                                                                                                     |
+| `--page`      | integer                                                                | (default 1)                                                                                                         |
+| `--limit`     | integer                                                                | (default 20)                                                                                                        |
 
 **Output:** A list (table columns: `id`, `kind`, `status`, `docTitle`, `proposer.name`, `reason`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -621,7 +651,7 @@ nb-studio kb proposal list --decidable true
 
 Reject a proposal
 
-Requires `edit` where the proposal applies. The same content from the same source is refused from then on.
+Requires `edit` where the proposal applies, pending or sent back for changes, including historical waiting items. The same content from the same source is refused from then on. Closing the active item hands off to the oldest waiting item without waking an agent.
 
 ```bash
 nb-studio kb proposal reject <proposal>
@@ -642,11 +672,41 @@ nb-studio kb proposal reject <proposal>
 
 **Request:** `POST /api/knowledge/proposals/{proposalId}/reject` (`knowledgeRejectProposal`)
 
+## kb proposal request-changes
+
+Send a proposal back for changes
+
+Requires `edit` where the proposal applies and the active group slot. Historical waiting items and duplicate creates whose target exists cannot be sent back. The proposal waits as `revising` and emits `proposal.changesRequested` for the application to wake its proposer with the comment. Its legal revision from the same source replaces this one (`superseded`) and retains priority over waiting items.
+
+```bash
+nb-studio kb proposal request-changes <proposal> --comment <string>
+```
+
+| Argument   | Description |
+| ---------- | ----------- |
+| `proposal` |             |
+
+| Flag        | Type   | Description                                                |
+| ----------- | ------ | ---------------------------------------------------------- |
+| `--comment` | string | What should change, for the proposer to act on. (required) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `POST /api/knowledge/proposals/{proposalId}/requestChanges` (`knowledgeRequestProposalChanges`)
+
+**Examples:**
+
+```bash
+nb-studio kb proposal request-changes <proposal> --comment "Say where the code lives"
+```
+
 ## kb proposal withdraw
 
 Withdraw a proposal
 
-For the person it was made for, or the actor that made it.
+For the person it was made for, or the actor that made it; pending or sent back for changes, including historical waiting items. Closing the active item hands off without waking an agent.
 
 ```bash
 nb-studio kb proposal withdraw <proposal>

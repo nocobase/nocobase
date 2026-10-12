@@ -467,6 +467,13 @@ export class KnowledgeApi {
   }
 
   /** Sends a pending proposal back to its proposer with what should change. */
+  public withdraw(id: string): Promise<KnowledgeProposal> {
+    return this.data<KnowledgeProposal>({
+      method: 'POST',
+      path: `${base}/proposals/${encodeURIComponent(id)}/withdraw`,
+    });
+  }
+
   public requestChanges(
     id: string,
     input: RequestKnowledgeChangesRequest,

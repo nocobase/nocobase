@@ -1375,14 +1375,14 @@ export function createKnowledgeRoutes(
       summary: 'Accept a proposal',
       operationId: 'knowledgeAcceptProposal',
       description:
-        "Requires `edit` where the proposal applies. Applies it as the document's next version (or a new document), authored by its proposer. A stale `update` is refused unless `confirmStale` is true, which makes its content the next version whole.",
+        "Requires `edit` where the proposal applies and the active group slot. Historical waiting items cannot be accepted; a historical duplicate create whose target exists must be rejected or withdrawn. Applies it as the document's next version (or a new document), authored by its proposer. A stale `update` is refused unless `confirmStale` is true, which makes its content the next version whole.",
       responses: {
         200: dataResponse(KnowledgeProposalSchema, 'The accepted proposal.'),
         ...apiErrorResponses,
         404: proposalNotFoundResponse,
         409: apiErrorResponse(
           409,
-          'It is no longer pending (`KNOWLEDGE_PROPOSAL_DECIDED`), it is stale or its document or file is gone (`KNOWLEDGE_PROPOSAL_STALE`), the document is archived (`KNOWLEDGE_ARCHIVED`), or the slug is taken (`KNOWLEDGE_SLUG_TAKEN`).',
+          'It is no longer pending (`KNOWLEDGE_PROPOSAL_DECIDED`), is waiting behind historical items (`KNOWLEDGE_PROPOSAL_WAITING`), its historical create target exists (`KNOWLEDGE_PROPOSAL_TARGET_EXISTS`), it is stale or its document or file is gone (`KNOWLEDGE_PROPOSAL_STALE`), the document is archived (`KNOWLEDGE_ARCHIVED`), or the slug is taken (`KNOWLEDGE_SLUG_TAKEN`).',
         ),
       },
       ...cliRoute({
@@ -1409,7 +1409,7 @@ export function createKnowledgeRoutes(
       summary: 'Reject a proposal',
       operationId: 'knowledgeRejectProposal',
       description:
-        'Requires `edit` where the proposal applies, pending or sent back for changes. The same content from the same source is refused from then on.',
+        'Requires `edit` where the proposal applies, pending or sent back for changes, including historical waiting items. The same content from the same source is refused from then on. Closing the active item hands off to the oldest waiting item without waking an agent.',
       responses: {
         200: dataResponse(KnowledgeProposalSchema, 'The rejected proposal.'),
         ...apiErrorResponses,
@@ -1444,7 +1444,7 @@ export function createKnowledgeRoutes(
       summary: 'Send a proposal back for changes',
       operationId: 'knowledgeRequestProposalChanges',
       description:
-        'Requires `edit` where the proposal applies. The proposal waits as `revising`, the application wakes its proposer where it proposed it, with `comment` as what should change, and the proposal it submits from the same source replaces this one (`superseded`).',
+        'Requires `edit` where the proposal applies and the active group slot. Historical waiting items and duplicate creates whose target exists cannot be sent back. The proposal waits as `revising` and emits `proposal.changesRequested` for the application to wake its proposer with the comment. Its legal revision from the same source replaces this one (`superseded`) and retains priority over waiting items.',
       responses: {
         200: dataResponse(KnowledgeProposalSchema, 'The proposal sent back.'),
         ...apiErrorResponses,
@@ -1480,7 +1480,7 @@ export function createKnowledgeRoutes(
       summary: 'Withdraw a proposal',
       operationId: 'knowledgeWithdrawProposal',
       description:
-        'For the person it was made for, or the actor that made it; pending or sent back for changes.',
+        'For the person it was made for, or the actor that made it; pending or sent back for changes, including historical waiting items. Closing the active item hands off without waking an agent.',
       responses: {
         200: dataResponse(KnowledgeProposalSchema, 'The withdrawn proposal.'),
         ...apiErrorResponses,

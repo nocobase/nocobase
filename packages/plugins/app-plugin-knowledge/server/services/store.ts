@@ -142,8 +142,12 @@ export interface ProposalRecord {
   readonly replacesId: string | null;
   /** `document` for a document's version sent back for changes; null for a proposal. */
   readonly origin: string | null;
-  /** `open:` and the SHA-256 of its target and source while pending or sent back, else its id (`openKeyOf`). */
+  /** The stable group key for the active item; its id for waiting or closed items. */
   readonly openKey: string;
+  /** Stable target/source identity, including after a create receives a docId. */
+  readonly groupKey: string;
+  /** A create retained from a historical duplicate group; never auto-renamed after its target exists. */
+  readonly legacyDuplicate: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

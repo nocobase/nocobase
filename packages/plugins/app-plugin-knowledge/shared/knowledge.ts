@@ -440,6 +440,12 @@ export interface KnowledgeProposal {
    * revision.
    */
   readonly canDecide: boolean;
+  readonly coordination: 'active' | 'waiting' | 'closed';
+  readonly targetConflict: boolean;
+  readonly canAccept: boolean;
+  readonly canRequestChanges: boolean;
+  readonly canReject: boolean;
+  readonly canWithdraw: boolean;
 }
 
 /**

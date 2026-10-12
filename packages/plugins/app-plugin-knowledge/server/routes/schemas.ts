@@ -862,6 +862,25 @@ export const KnowledgeProposalSchema: z.ZodType<KnowledgeProposal> = z
       .nullable()
       .meta({ description: 'The revision that replaced it, once superseded.' }),
     createdAt: dateTime(),
+    coordination: z.enum(['active', 'waiting', 'closed']).meta({
+      description:
+        'Whether this proposal holds its group activity slot or waits behind historical duplicates.',
+    }),
+    targetConflict: z.boolean().meta({
+      description: 'A historical duplicate create whose target already exists.',
+    }),
+    canAccept: z.boolean().meta({
+      description: 'Whether the viewer may accept this proposal now.',
+    }),
+    canRequestChanges: z
+      .boolean()
+      .meta({ description: 'Whether the viewer may request changes now.' }),
+    canReject: z.boolean().meta({
+      description: 'Whether the viewer may reject this proposal now.',
+    }),
+    canWithdraw: z.boolean().meta({
+      description: 'Whether the viewer may withdraw this proposal now.',
+    }),
     canDecide: z.boolean().meta({
       description:
         'Whether the caller may decide it now: accept, reject or send back a pending one, or reject one sent back.',

@@ -207,6 +207,15 @@ export function ProposalBody({
       <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
         <ProposalKindBadge proposal={proposal} />
         <ProposalStatusBadge status={proposal.status} />
+        {proposal.coordination === 'waiting' || proposal.targetConflict ? (
+          <Badge variant='outline'>
+            {t(
+              proposal.targetConflict
+                ? 'knowledge.revisions.targetExists'
+                : 'knowledge.revisions.historicalWaiting',
+            )}
+          </Badge>
+        ) : null}
         <span>{proposer(proposal)}</span>
         <span>· {relativeTime(proposal.createdAt, i18n.language)}</span>
         {proposal.source?.title ? (
@@ -355,19 +364,23 @@ export function ProposalActions({
   const [sendingBack, setSendingBack] = useState(false);
   const decide = useMutation({
     mutationFn: (input: {
-      readonly decision: 'accept' | 'reject';
+      readonly decision: 'accept' | 'reject' | 'withdraw';
       readonly confirmStale?: boolean;
     }) =>
-      api.decide(proposal.id, input.decision, {
-        ...(comment.trim() ? { comment: comment.trim() } : {}),
-        ...(input.confirmStale ? { confirmStale: true } : {}),
-      }),
+      input.decision === 'withdraw'
+        ? api.withdraw(proposal.id)
+        : api.decide(proposal.id, input.decision, {
+            ...(comment.trim() ? { comment: comment.trim() } : {}),
+            ...(input.confirmStale ? { confirmStale: true } : {}),
+          }),
     onSuccess: (_, input) => {
       notify.success(
         t(
-          input.decision === 'accept'
-            ? 'knowledge.proposals.accepted'
-            : 'knowledge.proposals.rejected',
+          input.decision === 'withdraw'
+            ? 'knowledge.proposals.statuses.withdrawn'
+            : input.decision === 'accept'
+              ? 'knowledge.proposals.accepted'
+              : 'knowledge.proposals.rejected',
         ),
       );
       onDecided?.();
@@ -389,9 +402,9 @@ export function ProposalActions({
       void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
     },
   });
-  if (!proposal.canDecide) return null;
+  if (!proposal.canReject && !proposal.canWithdraw) return null;
   const pending = decide.isPending ? decide.variables : undefined;
-  const reject = (
+  const reject = proposal.canReject ? (
     <Button
       variant='outline'
       disabled={decide.isPending}
@@ -405,7 +418,41 @@ export function ProposalActions({
       )}
       {t('knowledge.proposals.reject')}
     </Button>
-  );
+  ) : null;
+  const withdraw = proposal.canWithdraw ? (
+    <Button
+      variant='outline'
+      data-action='withdraw'
+      disabled={decide.isPending}
+      onClick={() => decide.mutate({ decision: 'withdraw' })}
+    >
+      {t('knowledge.proposals.withdraw')}
+    </Button>
+  ) : null;
+  if (
+    proposal.coordination === 'waiting' ||
+    proposal.targetConflict ||
+    (proposal.status === 'pending' &&
+      !proposal.canAccept &&
+      !proposal.canRequestChanges)
+  )
+    return (
+      <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+        <p className='text-sm text-muted-foreground'>
+          {t(
+            proposal.targetConflict
+              ? 'knowledge.revisions.targetExists'
+              : proposal.coordination === 'waiting'
+                ? 'knowledge.revisions.historicalWaiting'
+                : 'knowledge.proposals.readOnly',
+          )}
+        </p>
+        <div className='flex gap-2'>
+          {reject}
+          {withdraw}
+        </div>
+      </div>
+    );
   // Sent back: it waits for its revision, or is given up on.
   if (proposal.status === 'revising')
     return (
@@ -415,7 +462,10 @@ export function ProposalActions({
             name: proposal.proposer.name ?? t('knowledge.someone'),
           })}
         </p>
-        <div className='flex shrink-0 gap-2'>{reject}</div>
+        <div className='flex shrink-0 gap-2'>
+          {reject}
+          {withdraw}
+        </div>
       </div>
     );
   if (proposal.status !== 'pending') return null;
@@ -431,33 +481,38 @@ export function ProposalActions({
       />
       <div className='flex shrink-0 gap-2'>
         {reject}
-        <Button
-          variant='outline'
-          disabled={decide.isPending}
-          data-action='send-back'
-          onClick={() => setSendingBack(true)}
-        >
-          <Undo2Icon data-icon='inline-start' />
-          {t('knowledge.revisions.sendBack')}
-        </Button>
-        <Button
-          disabled={decide.isPending}
-          data-action={stale ? 'accept-anyway' : 'accept'}
-          onClick={() =>
-            decide.mutate({ decision: 'accept', confirmStale: stale })
-          }
-        >
-          {pending?.decision === 'accept' ? (
-            <Spinner data-icon='inline-start' />
-          ) : (
-            <CheckIcon data-icon='inline-start' />
-          )}
-          {t(
-            stale
-              ? 'knowledge.proposals.acceptAnyway'
-              : 'knowledge.proposals.accept',
-          )}
-        </Button>
+        {withdraw}
+        {proposal.canRequestChanges ? (
+          <Button
+            variant='outline'
+            disabled={decide.isPending}
+            data-action='send-back'
+            onClick={() => setSendingBack(true)}
+          >
+            <Undo2Icon data-icon='inline-start' />
+            {t('knowledge.revisions.sendBack')}
+          </Button>
+        ) : null}
+        {proposal.canAccept ? (
+          <Button
+            disabled={decide.isPending}
+            data-action={stale ? 'accept-anyway' : 'accept'}
+            onClick={() =>
+              decide.mutate({ decision: 'accept', confirmStale: stale })
+            }
+          >
+            {pending?.decision === 'accept' ? (
+              <Spinner data-icon='inline-start' />
+            ) : (
+              <CheckIcon data-icon='inline-start' />
+            )}
+            {t(
+              stale
+                ? 'knowledge.proposals.acceptAnyway'
+                : 'knowledge.proposals.accept',
+            )}
+          </Button>
+        ) : null}
       </div>
       {sendingBack ? (
         <RequestChangesDialog
@@ -621,9 +676,9 @@ export function ProposalDetail({
         <ProposalBody proposal={item} />
       </div>
       {item.status === 'pending' ||
-      (item.status === 'revising' && item.canDecide) ? (
+      (item.status === 'revising' && (item.canReject || item.canWithdraw)) ? (
         <div className='sticky bottom-0 z-10 -mx-4 -mb-4 border-t bg-background/95 px-4 py-3 backdrop-blur-md md:-mx-6 md:-mb-6 md:px-6'>
-          {item.canDecide ? (
+          {item.canReject || item.canWithdraw ? (
             <ProposalActions proposal={item} onDecided={onDecided} />
           ) : (
             <p className='text-sm text-muted-foreground'>

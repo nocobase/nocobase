@@ -342,6 +342,9 @@ describe('the knowledge view', () => {
           authorizedBy: author,
           createdAt: '2026-10-02T00:00:00Z',
           canDecide: true,
+          canReject: true,
+          canAccept: true,
+          canRequestChanges: true,
         },
       ],
     );
@@ -352,6 +355,85 @@ describe('the knowledge view', () => {
     expect(
       within(list).getByText('Scout on behalf of Ada', { exact: false }),
     ).toBeInTheDocument();
+  });
+
+  it.each(['waiting', 'targetConflict'] as const)(
+    'limits historical %s proposals to reject and withdraw',
+    async (state) => {
+      const proposal: Partial<KnowledgeProposal> = {
+        id: 'historical',
+        kind: 'create',
+        status: 'pending',
+        ...space,
+        title: 'Historical',
+        docTitle: 'Historical',
+        content: 'Retained',
+        reason: 'Test',
+        proposer: { kind: 'agent', id: 'a1', name: 'Scout' },
+        authorizedBy: author,
+        createdAt: '2026-10-02T00:00:00Z',
+        canDecide: true,
+        canReject: true,
+        canWithdraw: true,
+        coordination: state === 'waiting' ? 'waiting' : 'active',
+        targetConflict: state === 'targetConflict',
+        canAccept: false,
+        canRequestChanges: false,
+        source: null,
+        file: null,
+        replaces: null,
+      };
+      extra = (request) =>
+        request.path === 'knowledge/proposals/historical'
+          ? { data: proposal }
+          : undefined;
+      serve([], [proposal]);
+      show('/?proposal=historical');
+      await screen.findByRole('button', { name: 'Reject' });
+      expect(
+        screen.getByRole('button', { name: 'Withdraw' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Send back' })).toBeNull();
+      expect(
+        screen.getAllByText(
+          state === 'waiting'
+            ? /Historical duplicate, waiting/
+            : /The target already exists/,
+        ).length,
+      ).toBeGreaterThan(0);
+    },
+  );
+
+  it('shows no linked feedback or people when the proposal API hides its associated revision', async () => {
+    const proposal: Partial<KnowledgeProposal> = {
+      id: 'hidden',
+      kind: 'update',
+      status: 'accepted',
+      ...space,
+      docId: 'd1',
+      docTitle: 'Public',
+      content: 'Public',
+      reason: 'Test',
+      proposer: author,
+      authorizedBy: author,
+      canDecide: false,
+      createdAt: '2026-10-02T00:00:00Z',
+      replaces: null,
+      replacedContent: null,
+      supersededById: null,
+      source: null,
+      file: null,
+      comment: null,
+    };
+    extra = (request) =>
+      request.path === 'knowledge/proposals/hidden'
+        ? { data: proposal }
+        : undefined;
+    serve([], [proposal]);
+    show('/?proposal=hidden');
+    await screen.findByTestId('knowledge-proposal');
+    expect(screen.queryByTestId('knowledge-proposal-revises')).toBeNull();
   });
 
   it('sends a proposal back to its agent with what should change', async () => {
@@ -380,6 +462,9 @@ describe('the knowledge view', () => {
       file: null,
       createdAt: '2026-10-02T00:00:00Z',
       canDecide: true,
+      canReject: true,
+      canAccept: true,
+      canRequestChanges: true,
     };
     const sent: unknown[] = [];
     extra = (request) => {
@@ -447,6 +532,9 @@ describe('the knowledge view', () => {
       file: null,
       createdAt: '2026-10-02T02:00:00Z',
       canDecide: true,
+      canReject: true,
+      canAccept: true,
+      canRequestChanges: true,
     };
     extra = (request) =>
       request.path === 'knowledge/proposals/p2'

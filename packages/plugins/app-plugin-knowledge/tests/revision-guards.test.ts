@@ -77,6 +77,8 @@ async function insertRow(
   const now = new Date().toISOString();
   await proposalsRepo(k.database.connection()).createOne({
     values: {
+      groupKey: values.openKey,
+      legacyDuplicate: false,
       docId: null,
       kind: 'update',
       parentId: null,
@@ -206,11 +208,16 @@ describe('what a proposal shows of another', () => {
   it('refuses a revision naming one sent back for another parent, even with access to both', async () => {
     const k = await harness();
     const { docs, proposals } = k.knowledge;
-    const [left, right] = await Promise.all(
-      ['Left', 'Right'].map((title) =>
-        docs.create(k.user('lead'), { ...project, kind: 'folder', title }),
-      ),
-    );
+    const left = await docs.create(k.user('lead'), {
+      ...project,
+      kind: 'folder',
+      title: 'Left',
+    });
+    const right = await docs.create(k.user('lead'), {
+      ...project,
+      kind: 'folder',
+      title: 'Right',
+    });
     const first = await proposals.propose(k.agent('member', 'a1', 'r1'), {
       kind: 'create',
       space: project,

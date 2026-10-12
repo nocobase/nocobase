@@ -1,3 +1,4 @@
+import { canReadProposal } from './proposal-access.js';
 /**
  * Entries as people work on them: a space's tree with the spaces it inherits, one entry, its versions, creating an
  * article or a folder (files are uploaded, `files.ts`), editing under an optimistic lock (`expectedVersion`), moving (no
@@ -365,6 +366,9 @@ export function createDocumentService(
         conn,
         rows.map((row) => row.proposalId),
       );
+      for (const [id, old] of replaced)
+        if (!(await canReadProposal(context, resolverFor(viewer), old)))
+          replaced.delete(id);
       const names = await namesFor(context.access, [
         ...rows.flatMap((row) => [
           { kind: row.authorKind, id: row.authorId },
@@ -405,10 +409,14 @@ export function createDocumentService(
       const { doc } = await readableDoc(context, resolverFor(viewer), docId);
       const row = await findVersion(context.read(), doc.id, number);
       if (!row) throw notFound('Knowledge version', 'VERSION_NOT_FOUND');
-      const replaced =
+      const found =
         (await replacedOf(context.read(), [row.proposalId])).get(
           row.proposalId ?? '',
         ) ?? null;
+      const replaced =
+        found && (await canReadProposal(context, resolverFor(viewer), found))
+          ? found
+          : null;
       const names = await namesFor(context.access, [
         { kind: row.authorKind, id: row.authorId },
         { kind: 'user', id: row.approvedById },

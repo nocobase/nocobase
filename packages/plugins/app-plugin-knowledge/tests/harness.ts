@@ -84,6 +84,9 @@ export interface KnowledgeHarness {
 }
 
 export interface HarnessOptions {
+  readonly onNames?: (
+    refs: readonly { readonly kind: string; readonly id: string }[],
+  ) => void;
   /** The largest file stored. */
   readonly maxBytes?: number;
   /** What a reported failure does; it fails the test by default. */
@@ -154,12 +157,14 @@ export async function createKnowledgeHarness(
           ? (projects.get(space.scopeId)?.name ?? null)
           : null,
       ),
-    names: (refs) =>
-      Promise.resolve(
+    names: (refs) => {
+      options.onNames?.(refs);
+      return Promise.resolve(
         new Map(
           refs.map((ref) => [`${ref.kind}:${ref.id}`, `${ref.kind} ${ref.id}`]),
         ),
-      ),
+      );
+    },
   };
   let clock = Date.parse('2026-10-02T08:00:00.000Z');
   let next = 0;

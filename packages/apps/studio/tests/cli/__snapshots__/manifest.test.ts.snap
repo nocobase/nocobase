@@ -190,6 +190,7 @@ kb doc permission set <doc> [--mode --entries --file] -> PUT /api/knowledge/docs
 kb doc reindex <doc> -> POST /api/knowledge/docs/{docId}/reindex (person)
 kb doc reparse <doc> [--version] -> POST /api/knowledge/docs/{docId}/reparse (person)
 kb doc replace-file <doc> [--file! --expected-version --note] -> POST /api/knowledge/docs/{docId}/replaceFile (person)
+kb doc request-changes <doc> [--comment!] -> POST /api/knowledge/docs/{docId}/requestChanges (person)
 kb doc restore <doc> -> POST /api/knowledge/docs/{docId}/restore (person)
 kb doc update <doc> [--expected-version! --title --summary --content --note] -> PATCH /api/knowledge/docs/{docId} (person)
 kb doc upload [--file! --scope! --owner --parent --title --slug --summary] -> POST /api/knowledge/docs/upload (person)
@@ -203,6 +204,7 @@ kb proposal download <proposal> -> GET /api/knowledge/proposals/{proposalId}/fil
 kb proposal get <proposal> -> GET /api/knowledge/proposals/{proposalId} (person)
 kb proposal list [--status --scope --owner --doc --decidable --page --limit] -> GET /api/knowledge/proposals (person)
 kb proposal reject <proposal> [--comment] -> POST /api/knowledge/proposals/{proposalId}/reject (person) confirm
+kb proposal request-changes <proposal> [--comment!] -> POST /api/knowledge/proposals/{proposalId}/requestChanges (person)
 kb proposal withdraw <proposal> -> POST /api/knowledge/proposals/{proposalId}/withdraw (person) confirm
 kb propose [--doc --title --slug --parent --space --content --summary --reason! --project --verify --changed] -> POST /api/kb/proposals (person,run) kb.knowledge/propose
 kb read <doc> [--version --project] -> GET /api/kb/docs/{doc} (person,run) kb.knowledge/read

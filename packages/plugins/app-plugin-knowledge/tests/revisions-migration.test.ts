@@ -43,6 +43,7 @@ const legacy = [
   // Two pending from one source for one document: the check before the insert let both through.
   { ...base, id: 'twin-old', createdAt: at(1) },
   { ...base, id: 'twin-new', content: 'Other text.', createdAt: at(2) },
+  { ...base, id: 'twin-third', content: 'Third text.', createdAt: at(2) },
   // A new document under a parent, and a person's proposal without a source.
   {
     ...base,
@@ -81,10 +82,23 @@ describeMigration('202610240040_kb_proposals_add_revisions', {
     await proposals.toHaveField('openKey', { nullable: false });
     await proposals.toHaveIndex(['replacesId']);
     await proposals.toHaveIndex(['openKey'], { unique: true });
+    await proposals.toHaveField('groupKey', { nullable: false });
+    await proposals.toHaveField('legacyDuplicate');
+    await proposals.toHaveIndex(['groupKey']);
+    await expectCollection('kbProposalGroups').toHaveField('activeProposalId', {
+      nullable: true,
+    });
 
     const rows = await connection.query
       .selectFrom('kbProposals')
-      .select(['id', 'status', 'content', 'openKey'])
+      .select([
+        'id',
+        'status',
+        'content',
+        'openKey',
+        'groupKey',
+        'legacyDuplicate',
+      ])
       .execute();
     const byId = new Map(rows.map((row) => [String(row.id), row]));
     // Every proposal is still there, as it was.
@@ -102,6 +116,18 @@ describeMigration('202610240040_kb_proposals_add_revisions', {
       expect(keyOf(id)).toBe(runtime(id));
     expect(runtime('twin-new')).toBe(runtime('twin-old'));
     expect(keyOf('twin-new')).toBe('twin-new');
+    expect(keyOf('twin-third')).toBe('twin-third');
+    const groups = await connection.query
+      .selectFrom('kbProposalGroups')
+      .select(['groupKey', 'activeProposalId'])
+      .execute();
+    expect(
+      groups.find((row) => row.groupKey === runtime('twin-old')),
+    ).toMatchObject({ activeProposalId: 'twin-old' });
+    for (const row of legacy)
+      expect(byId.get(row.id)?.groupKey).toBe(openKeyOf(row));
+    for (const id of ['twin-old', 'twin-new', 'twin-third'])
+      expect(Boolean(byId.get(id)?.legacyDuplicate)).toBe(true);
     for (const id of ['accepted', 'rejected', 'withdrawn'])
       expect(keyOf(id)).toBe(id);
   },
@@ -111,5 +137,8 @@ describeMigration('202610240040_kb_proposals_add_revisions', {
     await proposals.not.toHaveField('replacesId');
     await proposals.not.toHaveField('origin');
     await proposals.not.toHaveField('openKey');
+    await proposals.not.toHaveField('groupKey');
+    await proposals.not.toHaveField('legacyDuplicate');
+    await expectCollection('kbProposalGroups').not.toExist();
   },
 });
