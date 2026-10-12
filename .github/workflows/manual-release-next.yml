@@ -126,7 +126,7 @@ jobs:
           # Even if Git merged cleanly, keep package.json's version from develop.
           CURRENT_VERSION="$(node -e 'console.log(require("./package.json").version)')"
           if [ "$CURRENT_VERSION" != "$DEVELOP_VERSION" ]; then
-            node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync("package.json","utf8"));p.version=process.argv[1];fs.writeFileSync("package.json",JSON.stringify(p,null,2)+"\\n")' "$DEVELOP_VERSION"
+            node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync("package.json","utf8"));p.version=process.argv[1];fs.writeFileSync("package.json",JSON.stringify(p,null,2)+"\n")' "$DEVELOP_VERSION"
             git add package.json
             git commit -m "chore: preserve develop package version"
           fi
