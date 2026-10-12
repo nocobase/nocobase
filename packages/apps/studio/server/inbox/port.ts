@@ -80,9 +80,12 @@ export interface InboxSettleRef {
 
 export interface StudioInboxPort {
   send(notice: InboxSend): Promise<void>;
-  /** The decision no longer waits: `outcome` is how it ended, in the contributor's words. */
+  /** The decision no longer waits: `outcome` names how it ended; `data` adds shared resolution facts to its original data. */
   resolve(
-    ref: InboxDecisionRef & { readonly outcome: InboxOutcome },
+    ref: InboxDecisionRef & {
+      readonly outcome: InboxOutcome;
+      readonly data?: InboxData;
+    },
   ): Promise<void>;
   /** The contributor took the question back: settled as `withdrawn`. */
   withdraw(ref: InboxDecisionRef): Promise<void>;

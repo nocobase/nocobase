@@ -31,7 +31,6 @@ import {
 } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
-import type { OnlineModelEntry } from '../../shared/agents.js';
 import {
   CONVERSATIONS_TOPIC,
   MESSAGE_PAGE_DEFAULT,
@@ -332,21 +331,18 @@ export interface SendInput {
 
 /**
  * Sends a message, showing it at once and replacing it with the server's copy (matched by `clientId`). A new
- * conversation (`conversationId` null) is created first, with `agentId`, `source` and, for an online agent, `model`.
+ * conversation (`conversationId` null) is created first, with `agentId` and `source`.
  */
 export function useSendMessage({
   conversationId,
   agentId,
   source,
-  model = null,
   dispatch,
   onCreated,
 }: {
   readonly conversationId: string | null;
   readonly agentId: string | null;
   readonly source: ConversationSource;
-  /** A new conversation with an online agent: the entry of `ChatAgent.models` it answers with; null for the default. */
-  readonly model?: OnlineModelEntry | null;
   readonly dispatch: Dispatch<MessagesAction>;
   readonly onCreated: (conversation: ConversationDetail) => void;
 }): (input: SendInput) => Promise<SendMessageResult | null> {
@@ -378,7 +374,6 @@ export function useSendMessage({
           const created = await api.createConversation({
             ...(agentId ? { agentId } : {}),
             source,
-            ...(model ? { model } : {}),
           });
           id = created.id;
           createdRef.current = id;
@@ -414,7 +409,6 @@ export function useSendMessage({
       conversationId,
       agentId,
       source,
-      model,
       dispatch,
       onCreated,
       queryClient,
@@ -454,12 +448,6 @@ export interface ConversationActions {
     ConversationDetail,
     unknown,
     { readonly id: string; readonly archived: boolean }
-  >;
-  /** Chooses the model an online conversation answers with from its next run (null: the agent's default). */
-  readonly chooseModel: UseMutationResult<
-    ConversationDetail,
-    unknown,
-    { readonly id: string; readonly model: OnlineModelEntry | null }
   >;
   readonly stop: UseMutationResult<ConversationDetail, unknown, string>;
   readonly fallback: UseMutationResult<ConversationDetail, unknown, string>;
@@ -530,18 +518,6 @@ export function useConversationActions(): ConversationActions {
     queryClient,
   );
 
-  const chooseModel = useMutation(
-    {
-      mutationFn: (input: {
-        readonly id: string;
-        readonly model: OnlineModelEntry | null;
-      }) => api.updateConversation(input.id, { model: input.model }),
-      onSuccess: remember,
-      onError: failed,
-    },
-    queryClient,
-  );
-
   const stop = useMutation(
     {
       mutationFn: (id: string) => api.stop(id),
@@ -593,5 +569,5 @@ export function useConversationActions(): ConversationActions {
     [api, remember],
   );
 
-  return { rename, archive, chooseModel, stop, fallback, restore, markRead };
+  return { rename, archive, stop, fallback, restore, markRead };
 }

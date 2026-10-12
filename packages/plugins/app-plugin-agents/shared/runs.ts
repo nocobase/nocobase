@@ -184,6 +184,10 @@ export interface RunChild {
 }
 
 export interface RunDetail extends Run {
+  readonly actorName?: string;
+  readonly requestedByName?: string;
+  /** The first run that retried this one; absent on older servers. */
+  readonly retriedRunId?: string | null;
   readonly inputs: readonly RunInputRecord[];
   readonly repos: readonly RunRepo[];
   readonly usage: readonly RunUsageTotal[];
@@ -416,4 +420,11 @@ export interface RunRequestItem extends RunRequest {
   readonly agentName: string | null;
   readonly responsibleName: string | null;
   readonly requestedByName: string | null;
+}
+
+/** A subject and agent with at least one dispatched or running run; no run details. */
+export interface SubjectAgentWork {
+  readonly subjectId: string;
+  readonly agentId: string;
+  readonly working: boolean;
 }

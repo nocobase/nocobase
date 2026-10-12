@@ -95,7 +95,7 @@ export const MODEL_PROVIDERS: readonly ModelProviderOption[] = [
   {
     name: 'alibaba',
     title: 'Alibaba Qwen',
-    defaultBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     keyRequired: true,
     kinds: ['chat', 'embedding'],
   },

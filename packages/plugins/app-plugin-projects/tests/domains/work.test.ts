@@ -133,11 +133,28 @@ describe('work handlers of registered kinds', () => {
       revision: issue.revision,
       ownerUserId: 'bob',
     });
-    expect(seen.at(-1)).toEqual({
+    expect(seen.slice(-2).map((event) => event.hook)).toEqual([
+      'owner',
+      'changed',
+    ]);
+    expect(seen.at(-2)).toEqual({
       hook: 'owner',
       issueId: issue.id,
       detail: ['alice', 'bob'],
     });
+  });
+
+  it('notifies all work kinds on transfer even when there is no executor', async () => {
+    const seen = addBots();
+    const issue = await h.services.issues.create(alice(), { title: 'A' });
+    await h.services.issues.update(alice(), issue.id, {
+      revision: issue.revision,
+      ownerUserId: 'bob',
+      executor: null,
+    });
+    expect(seen).toEqual([
+      { hook: 'owner', issueId: issue.id, detail: ['alice', 'bob'] },
+    ]);
   });
 
   it('starts work for a mentioned principal and returns it as triggered', async () => {
@@ -162,7 +179,8 @@ describe('work handlers of registered kinds', () => {
 describe('work held back, and withdrawn', () => {
   /**
    * A kind whose handler asks the plugin what holds an issue, as an agent runtime does: it starts nothing for a held
-   * issue (`blocked`) or one in backlog (`dormant`), and withdraws one queued run when the issue becomes held.
+   * issue (`blocked`) or one in backlog (`dormant`), and withdraws one queued run when the issue becomes held. Its
+   * comment runs are always used up (`limited`).
    */
   function addCautiousBots(): { blocked: string[] } {
     const heard = { blocked: [] as string[] };
@@ -182,6 +200,18 @@ describe('work held back, and withdrawn', () => {
         if (blockers.length > 0)
           return [{ ...attempt, started: false, skipped: 'blocked' }];
         return [{ ...attempt, started: true, runId: 'run-1' }];
+      },
+      onCommentCreated(_tx, change) {
+        return Promise.resolve(
+          change.mentions.map((ref) => ({
+            kind: 'bot',
+            principalId: ref.id,
+            subjectId: change.issue.id,
+            triggerType: 'mention',
+            started: false,
+            skipped: 'limited' as const,
+          })),
+        );
       },
       onBlocked(_tx, { issue }) {
         heard.blocked.push(issue.id);
@@ -216,7 +246,10 @@ describe('work held back, and withdrawn', () => {
   it('records, as the principal’s, that work did not start while the issue waits for another', async () => {
     addCautiousBots();
     const blocker = await h.services.issues.create(alice(), { title: 'First' });
-    const issue = await h.services.issues.create(alice(), { title: 'Then' });
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Then',
+      statusKey: 'in_progress',
+    });
     await h.services.subtasks.addDependency(alice(), issue.id, {
       dependsOnIssueId: blocker.id,
     });
@@ -260,6 +293,26 @@ describe('work held back, and withdrawn', () => {
     ).toMatchObject({
       actorType: 'bot',
       details: { reason: 'dormant', trigger: 'assigned', status: 'backlog' },
+    });
+  });
+
+  it('records that a comment started no work once the issue’s comment runs were used up', async () => {
+    addCautiousBots();
+    const issue = await h.services.issues.create(alice(), { title: 'Busy' });
+    const { value } = await collectRunAttempts(() =>
+      h.services.comments.create(alice(), issue.id, {
+        content: 'Again [@B](mention://bot/b2)',
+      }),
+    );
+    expect(value.triggered).toEqual([]);
+    expect(
+      (await activities(issue.id)).find(
+        (entry) => entry.action === 'work_skipped',
+      ),
+    ).toMatchObject({
+      actorType: 'bot',
+      actorId: 'b2',
+      details: { reason: 'limited', trigger: 'mention' },
     });
   });
 

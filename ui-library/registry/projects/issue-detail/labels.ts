@@ -20,29 +20,6 @@ export interface IssueDetailLabels {
   readonly saving: string;
   readonly createNamed: string;
   readonly noOptions: string;
-  readonly checklist: {
-    readonly title: string;
-    readonly label: string;
-    /** `{done}` of `{total}`. */
-    readonly progress: string;
-    readonly required: string;
-    /** `{name}`, `{time}`. */
-    readonly checkedBy: string;
-    readonly incomplete: string;
-  };
-  readonly approvals: {
-    readonly label: string;
-    readonly pending: string;
-    readonly requester: string;
-    readonly approvers: string;
-    readonly comment: string;
-    readonly commentPlaceholder: string;
-    readonly approve: string;
-    readonly reject: string;
-    readonly withdraw: string;
-    readonly waiting: string;
-    readonly recent: string;
-  };
   readonly subtasks: {
     readonly title: string;
     readonly none: string;
@@ -106,27 +83,6 @@ export const defaultIssueDetailLabels: IssueDetailLabels = {
   saving: 'Saving…',
   createNamed: 'Create “{name}”',
   noOptions: 'No options',
-  checklist: {
-    title: 'Checklist',
-    label: 'Checklist of the current status',
-    progress: '{done} of {total}',
-    required: 'Required',
-    checkedBy: '{name} · {time}',
-    incomplete: 'The issue moves on once the required items are checked.',
-  },
-  approvals: {
-    label: 'Status change waiting for approval',
-    pending: 'Waiting for approval',
-    requester: 'Asked by',
-    approvers: 'Approvers',
-    comment: 'Comment',
-    commentPlaceholder: 'Add a comment (optional)',
-    approve: 'Approve',
-    reject: 'Reject',
-    withdraw: 'Withdraw',
-    waiting: 'Waiting for an approver.',
-    recent: 'Recent approvals',
-  },
   subtasks: {
     title: 'Sub-issues',
     none: 'none',

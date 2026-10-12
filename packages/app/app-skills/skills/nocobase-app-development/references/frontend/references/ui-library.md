@@ -30,7 +30,7 @@ An agent's runs on one subject: a compact side-column log with a live timer, an 
 
 ### agent-composer
 
-The message box for talking to an agent: page-context chips inside it, files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a model or mode picker. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
+The message box for talking to an agent: page-context chips inside it, files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a picker such as the agent's. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-composer`
@@ -41,18 +41,18 @@ The message box for talking to an agent: page-context chips inside it, files to 
 
 ### agent-picker
 
-The one way to pick an agent: a trigger with the agent's avatar (availability dot on its corner) and name, and a menu of the agents grouped by type (Online, Runner) with their default and personal tags and availability. Two appearances: field, which looks like a form's select, for forms and settings; toolbar, compact with the mode tag, for a composer. Presentational: pass ChatAgent records from @nocobase/app-plugin-agents/shared/conversations.
+The one way to pick an agent: a trigger with the agent's avatar (availability dot on its corner) and name, and a menu of every enabled agent with what it is good at, its default and "personal runners only" tags, and why one cannot answer the viewer now (it cannot be picked then). Two appearances: field, which looks like a form's select, for forms and settings; toolbar, compact, for a composer. Presentational: pass ChatAgent records from @nocobase/app-plugin-agents/shared/conversations.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-picker`
 - Installs to: `client/components/agent-picker.tsx`
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Example: `@nocobase/agent-picker-demo` (`pnpm exec shadcn view @nocobase/agent-picker-demo`)
-- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (type filters to Online or Runner, noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, ModeTag, AgentTags and AgentTag. Every word comes from the labels prop, English by default.
+- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, AgentTags and AgentTag. Every word comes from the labels prop, English by default.
 
 ### agent-chat
 
-The agents' chat: a side panel beside the content area with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), model and agent pickers, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.
+The agents' chat: a side panel beside the content area with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), the agent picker, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
@@ -328,7 +328,7 @@ One issue, compact: identifier, title, status in its workflow colour, priority, 
 
 ### issue-detail
 
-An issue's page as presentational parts: the two-column frame of cards on the page background, the header and description opening the body card, an add bar under it, the secondary parts (checklist, approvals, sub-issues, dependencies with an issue search, files) as sections sharing one heading pattern and hidden while empty, files dropped or pasted on the body, and the side column over property-fields. Use it for an issue detail page over the hooks of @nocobase/app-plugin-projects/client/issues.
+An issue's page as presentational parts: the two-column frame of cards on the page background, the header and description opening the body card, an add bar under it, the secondary parts (sub-issues, dependencies with an issue search, files) as sections sharing one heading pattern and hidden while empty, files dropped or pasted on the body, and the side column over property-fields. Use it for an issue detail page over the hooks of @nocobase/app-plugin-projects/client/issues.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/issue-detail`

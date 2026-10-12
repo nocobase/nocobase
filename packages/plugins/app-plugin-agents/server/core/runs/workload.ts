@@ -11,7 +11,12 @@ import type { AgentTool, RunnerFeature } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import { entryTools, type Agent } from '../../../shared/agents.js';
-import { runsTool, toolLimit, type Runner } from '../../../shared/runners.js';
+import {
+  runsEntry,
+  runsTool,
+  toolLimit,
+  type Runner,
+} from '../../../shared/runners.js';
 import {
   RUN_ACTIVITY_TEXT_MAX,
   type AgentLoad,
@@ -108,27 +113,28 @@ export function explainWait(
   context: WaitContext,
 ): Omit<RunWait, 'position' | 'agentPosition'> {
   const { agent } = context;
-  if (!agent || agent.archivedAt) return wait('agentArchived');
+  if (!agent || agent.status !== 'enabled') return wait('agentArchived');
   const availableAt = time(run.availableAt);
   if (availableAt !== null && availableAt > context.now.getTime()) {
     const until = iso(run.availableAt);
     return wait('delayed', { until, params: until ? { until } : {} });
   }
-  // An online run needs no runner: the application takes it as soon as an instance looks.
-  if (agent.type === 'online') return wait('next');
   const tools = entryTools(agent);
   const tool = tools[0] ?? null;
+  const model = agent.modelEntries[0]?.model ?? null;
   let fitting = context.runners;
   if (fitting.length === 0) return wait('noRunnerOnline');
-  if (agent.runnerIds.length > 0) {
-    fitting = fitting.filter((runner) => agent.runnerIds.includes(runner.id));
-    if (fitting.length === 0) return wait('runnersOffline');
-  }
   fitting = fitting.filter((runner) =>
-    tools.some((each) => runsTool(runner, each)),
+    agent.modelEntries.some((entry) => runsEntry(runner, entry)),
   );
   if (fitting.length === 0)
-    return wait('toolUnavailable', { tool, params: tool ? { tool } : {} });
+    return wait('toolUnavailable', {
+      tool,
+      params: {
+        ...(tool ? { tool } : {}),
+        ...(model ? { model } : {}),
+      },
+    });
   fitting = fitting.filter(
     (runner) =>
       runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
@@ -170,7 +176,9 @@ export function explainWait(
   if (
     free.every(
       (runner) =>
-        !tools.some((each) => runsTool(runner, each) && hasRoom(runner, each)),
+        !agent.modelEntries.some(
+          (entry) => runsEntry(runner, entry) && hasRoom(runner, entry.tool),
+        ),
     )
   ) {
     const full =
@@ -276,7 +284,7 @@ export async function readWorkload(
   const runners = await runnerSource.all(conn);
   const online = runners.filter((runner) => runner.status === 'online');
   const jobs = await runnerSource.jobsByRunner(conn);
-  const agents = await listAgents(conn, true);
+  const agents = await listAgents(conn);
   const agentById = new Map(agents.map((agent) => [agent.id, agent]));
 
   const runnerUsed = new Map<string, number>();
@@ -395,22 +403,17 @@ export async function readWorkload(
   const loads: AgentLoad[] = [];
   const agentsWithRuns = new Set(mine.map((run) => run.agentId));
   for (const agent of agents) {
-    if (agent.archivedAt && !agentsWithRuns.has(agent.id)) continue;
+    if (agent.status !== 'enabled' && !agentsWithRuns.has(agent.id)) continue;
     loads.push({
       agentId: agent.id,
       active: agentActive.get(agent.id) ?? 0,
       queued: agentQueued.get(agent.id) ?? 0,
       maxConcurrentRuns: agent.maxConcurrentRuns,
-      // An online agent needs no runner; whether its model is offered is the availability's business.
       online:
-        !agent.archivedAt &&
-        (agent.type === 'online' ||
-          online.some(
-            (runner) =>
-              entryTools(agent).some((tool) => runsTool(runner, tool)) &&
-              (agent.runnerIds.length === 0 ||
-                agent.runnerIds.includes(runner.id)),
-          )),
+        agent.status === 'enabled' &&
+        online.some((runner) =>
+          agent.modelEntries.some((entry) => runsEntry(runner, entry)),
+        ),
     });
   }
 

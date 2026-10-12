@@ -96,7 +96,10 @@ export interface RepoRow {
   /** In order; the first names the branches agents work on. */
   readonly branchRules: readonly string[];
   readonly wakeOnChecks: boolean;
+  readonly wakeOnChecksPassed: boolean;
   readonly wakeOnConflict: boolean;
+  /** Check names only for information (`CheckSummary`). */
+  readonly referenceChecks: readonly string[];
   readonly listEtag: string | null;
   readonly polledAt: string | null;
   readonly pollError: string | null;
@@ -143,6 +146,13 @@ function rulesOf(value: unknown): string[] {
   return rules.length > 0 ? rules : [DEFAULT_BRANCH_RULE];
 }
 
+function namesOf(value: unknown): string[] {
+  const parsed = json(value);
+  return Array.isArray(parsed)
+    ? parsed.filter((name): name is string => typeof name === 'string')
+    : [];
+}
+
 function repoOf(row: Row): RepoRow {
   return {
     id: str(row.id) ?? '',
@@ -153,7 +163,9 @@ function repoOf(row: Row): RepoRow {
     externalId: str(row.externalId),
     branchRules: rulesOf(row.branchRules),
     wakeOnChecks: bool(row.wakeOnChecks),
+    wakeOnChecksPassed: bool(row.wakeOnChecksPassed),
     wakeOnConflict: bool(row.wakeOnConflict),
+    referenceChecks: namesOf(row.referenceChecks),
     listEtag: str(row.listEtag),
     polledAt: iso(row.polledAt),
     pollError: str(row.pollError),
@@ -211,7 +223,9 @@ export async function ensureRepo(
           externalId: null,
           branchRules: null,
           wakeOnChecks: true,
+          wakeOnChecksPassed: true,
           wakeOnConflict: true,
+          referenceChecks: null,
           listEtag: null,
           polledAt: null,
           pollError: null,
@@ -243,6 +257,9 @@ export async function updateRepo(
       ...values,
       ...(values.branchRules !== undefined
         ? { branchRules: JSON.stringify(values.branchRules) }
+        : {}),
+      ...(values.referenceChecks !== undefined
+        ? { referenceChecks: JSON.stringify(values.referenceChecks) }
         : {}),
       updatedAt: new Date(),
     })
@@ -310,7 +327,7 @@ export interface SignalState {
 }
 
 export type Signals = Readonly<
-  Partial<Record<'checks' | 'conflict', SignalState>>
+  Partial<Record<'checks' | 'conflict' | 'passed', SignalState>>
 >;
 
 export interface PullRequestRow {
@@ -452,6 +469,22 @@ export async function linkedOpenPullRequests(
     .where('repoId', '=', repoId)
     .where('state', '=', 'open')
     .where('id', 'in', linked)
+    .execute();
+  return withRepos(conn, rows);
+}
+
+/** Open pull requests whose preview labels Studio manages, including those no issue links anymore. */
+export async function previewManagedOpenPullRequests(
+  conn: DatabaseConnection,
+  repoId: string,
+): Promise<PullRequestRow[]> {
+  const rows = await conn.query
+    .selectFrom('studioPreviewLabels as label')
+    .innerJoin(`${PULL_REQUESTS} as pr`, 'pr.id', 'label.pullRequestId')
+    .selectAll('pr')
+    .where('pr.repoId', '=', repoId)
+    .where('pr.state', '=', 'open')
+    .where('label.managed', '=', true)
     .execute();
   return withRepos(conn, rows);
 }

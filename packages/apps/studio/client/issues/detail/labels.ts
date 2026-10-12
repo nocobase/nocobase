@@ -36,6 +36,7 @@ export interface IssuePageWording {
 
 export function useIssuePageWording(): IssuePageWording {
   const { t } = useTranslation(PROJECTS_NS);
+  const { t: appT } = useTranslation();
   return useMemo(
     () => ({
       t,
@@ -111,27 +112,6 @@ export function useIssuePageWording(): IssuePageWording {
         saving: t('common.saving'),
         createNamed: t('common.createNamed', keep('name')),
         noOptions: t('common.noOptions'),
-        checklist: {
-          title: t('checklist.title'),
-          label: t('checklist.cardLabel'),
-          progress: t('checklist.progress', keep('done', 'total')),
-          required: t('checklist.required'),
-          checkedBy: t('checklist.checkedBy', keep('name', 'time')),
-          incomplete: t('checklist.incomplete'),
-        },
-        approvals: {
-          label: t('approvals.cardLabel'),
-          pending: t('approvals.pendingTitle'),
-          requester: t('approvals.requester'),
-          approvers: t('approvals.approvers'),
-          comment: t('approvals.comment'),
-          commentPlaceholder: t('approvals.commentPlaceholder'),
-          approve: t('approvals.approve'),
-          reject: t('approvals.reject'),
-          withdraw: t('approvals.withdraw'),
-          waiting: t('approvals.waiting'),
-          recent: t('approvals.recentTitle'),
-        },
         subtasks: {
           title: t('subtasks.title'),
           none: t('issueAdd.none'),
@@ -144,7 +124,13 @@ export function useIssuePageWording(): IssuePageWording {
           blocks: t('dependencies.blocks'),
           related: t('dependencies.related'),
           remove: t('dependencies.remove', keep('identifier')),
-          add: t('dependencies.add'),
+          add: appT('issuesPage.relationships.add'),
+          type: appT('issuesPage.relationships.type'),
+          prerequisite: appT('issuesPage.relationships.prerequisite'),
+          hint: appT('issuesPage.relationships.hint'),
+          actions: appT('issuesPage.relationships.actions'),
+          toRelated: appT('issuesPage.relationships.toRelated'),
+          toBlocker: appT('issuesPage.relationships.toBlocker'),
           addPlaceholder: t('dependencies.addPlaceholder'),
           addLabel: t('issueAdd.label'),
           addDependency: t('issueAdd.dependency'),
@@ -168,9 +154,9 @@ export function useIssuePageWording(): IssuePageWording {
           updated: t('properties.updated'),
         },
         start: {
-          title: t('start.title'),
-          later: t('start.later'),
-          start: t('start.start'),
+          title: appT('issueStart.title'),
+          later: appT('issueStart.later'),
+          start: appT('issueStart.start'),
         },
       },
       richText: {
@@ -189,6 +175,6 @@ export function useIssuePageWording(): IssuePageWording {
         },
       },
     }),
-    [t],
+    [t, appT],
   );
 }

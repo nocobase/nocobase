@@ -149,7 +149,6 @@ describe('intake with AI', () => {
     h = await createHarness();
     await h.addUser('alice');
     await h.addUser('bob');
-    await h.installStandardWorkflow();
     organizer = fakeOrganizer();
     h.intakeOrganizer.current = organizer;
   });

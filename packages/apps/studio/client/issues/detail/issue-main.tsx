@@ -1,8 +1,7 @@
 /**
  * The projects plugin's sections of an issue's main column, drawn with the installed `issue-detail` block and
  * `attachment-list` over the plugin's headless hooks (`client/issues`), in the plugin's words: the header, the
- * description, the add bar under it, a status change waiting for approval and the last decided ones, the checklist, the
- * sub-issues, the dependencies and the files. A part with nothing to show renders nothing; the add bar adds its first
+ * description, the add bar under it, the sub-issues, the dependencies and the files. A part with nothing to show renders nothing; the add bar adds its first
  * item. Each checks the viewer's permissions: without `issues/edit` nothing here changes the issue.
  */
 import {
@@ -12,7 +11,6 @@ import {
   groupSubtasksByStage,
   statusTone,
   useIntakeBreakdown,
-  useKindLabel,
   useMentionSearch,
   useStatusName,
   type IssuePageActions,
@@ -37,15 +35,12 @@ import { Link, useNavigate } from 'react-router';
 import {
   IssueAddBar,
   IssueAddButton,
-  IssueApprovalCard,
   IssueAttachments,
-  IssueChecklist,
   IssueDeleteButton,
   IssueDependencies,
   IssueDescription,
   IssueFilesButton,
   IssueHeader,
-  IssueRecentApprovals,
   IssueSubtasks,
   type DependencyItem,
   type IssueDetailLink,
@@ -55,6 +50,7 @@ import {
 import { toneColor } from '../rows.js';
 import { IssueMarkdown } from '../markdown.js';
 import { attachmentFile, useFilePreviewState } from './files.js';
+import { useDependencyActions } from './dependency-actions.js';
 import { issueHrefUnder, useIssueParent } from './issue-parent.js';
 import { useIssueTrail } from './issue-trail.js';
 import { useIssuePageWording } from './labels.js';
@@ -67,7 +63,7 @@ const routerLink: IssueDetailLink = ({ href, className, children }) => (
   </Link>
 );
 
-/** A status of the issue's workflow as the block shows it. */
+/** A status as the block shows it. */
 function useStatusOf(
   statuses: readonly StatusDefinition[],
 ): (key: string) => IssueDetailStatus {
@@ -291,112 +287,6 @@ export function IssueAddSection({
   );
 }
 
-const OUTCOME_TONE = {
-  approved: 'green',
-  rejected: 'red',
-  withdrawn: 'grey',
-  stale: 'amber',
-} as const;
-
-/** A status change waiting for approval (unless `hidePending`, shown elsewhere), then the last decided ones. */
-export function IssueApprovalsSection({
-  detail,
-  pageActions,
-  hidePending,
-}: {
-  readonly detail: IssueDetail;
-  readonly pageActions: IssuePageActions;
-  readonly hidePending: boolean;
-}): ReactElement {
-  const { i18n } = useTranslation();
-  const { t, detail: labels } = useIssuePageWording();
-  const viewer = useViewer();
-  const kindLabel = useKindLabel();
-  const statusOf = useStatusOf(detail.statuses);
-  const pending = detail.pendingApproval;
-  return (
-    <>
-      {pending && !hidePending ? (
-        <IssueApprovalCard
-          from={statusOf(pending.fromStatus)}
-          to={statusOf(pending.toStatus)}
-          requester={`${pending.requestedByName ?? t('common.unknown')}${
-            pending.requestedByType === 'user'
-              ? ''
-              : ` · ${kindLabel(pending.requestedByType)}`
-          }`}
-          requestedAt={pending.createdAt}
-          approvers={pending.approverNames}
-          canDecide={
-            viewer !== undefined &&
-            pending.approverUserIds.includes(viewer.userId)
-          }
-          canWithdraw={
-            pending.requestedByType === 'user' &&
-            pending.requestedById === viewer?.userId
-          }
-          onDecide={(decision, comment) =>
-            pageActions.decideApproval(pending.id, decision, comment)
-          }
-          locale={i18n.language}
-          labels={labels}
-        />
-      ) : null}
-      <IssueRecentApprovals
-        approvals={detail.recentApprovals.map((approval) => ({
-          id: approval.id,
-          from: statusOf(approval.fromStatus),
-          to: statusOf(approval.toStatus),
-          outcome: t(`approvals.outcomes.${approval.status}`),
-          outcomeTone:
-            OUTCOME_TONE[approval.status as keyof typeof OUTCOME_TONE] ??
-            'grey',
-          decidedBy: approval.decidedByName,
-          at: approval.decidedAt ?? approval.updatedAt,
-          comment: approval.comment,
-        }))}
-        locale={i18n.language}
-        labels={labels}
-      />
-    </>
-  );
-}
-
-/** The checklist of the current status, when its workflow has one. */
-export function IssueChecklistSection({
-  detail,
-  pageActions,
-}: {
-  readonly detail: IssueDetail;
-  readonly pageActions: IssuePageActions;
-}): ReactElement | null {
-  const { i18n } = useTranslation();
-  const { t, detail: labels } = useIssuePageWording();
-  const viewer = useViewer();
-  const statusOf = useStatusOf(detail.statuses);
-  const checklist = detail.checklist;
-  if (!checklist) return null;
-  return (
-    <IssueChecklist
-      status={statusOf(checklist.statusKey)}
-      items={checklist.items.map((item) => ({
-        key: item.itemKey,
-        label: item.label,
-        required: item.required,
-        checked: item.checked,
-        checkedBy: item.checkedByName ?? t('common.unknown'),
-        checkedAt: item.checkedAt,
-      }))}
-      complete={checklist.complete}
-      {...(canEditIssues(viewer)
-        ? { onToggle: pageActions.toggleChecklistItem }
-        : {})}
-      locale={i18n.language}
-      labels={labels}
-    />
-  );
-}
-
 /**
  * The sub-issues by stage, with "Break into sub-issues" and "New sub-issue" for whoever may edit; nothing without any
  * (`IssueAddSection` offers the first).
@@ -486,6 +376,7 @@ export function IssueDependenciesSection({
   const { t, detail: labels } = useIssuePageWording();
   const viewer = useViewer();
   const parent = useIssueParent();
+  const dependencies = useDependencyActions(detail.id);
   const item = (
     dependency: IssueDetail['blockedBy'][number],
   ): DependencyItem => ({
@@ -512,7 +403,8 @@ export function IssueDependenciesSection({
       }
       {...(canEdit
         ? {
-            onAdd: (issue: { id: string }) => pageActions.addBlocker(issue.id),
+            onAdd: (issue, type) => dependencies.add(issue.id, type),
+            onChangeType: dependencies.change,
             onRemove: (dependency: DependencyItem) =>
               pageActions.removeDependency(dependency.id),
           }

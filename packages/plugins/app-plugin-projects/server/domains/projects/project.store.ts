@@ -27,7 +27,6 @@ export interface ProjectRecord {
   readonly leadUserId: string | null;
   readonly startDate: string | null;
   readonly dueDate: string | null;
-  readonly workflowId: string | null;
   readonly setupIssueId: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -118,7 +117,6 @@ const PROJECT_FIELDS = [
   'leadUserId',
   'startDate',
   'dueDate',
-  'workflowId',
   'setupIssueId',
   'createdAt',
   'updatedAt',

@@ -1,4 +1,5 @@
 import agents from '@nocobase/app-plugin-agents/client';
+import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -12,6 +13,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -24,6 +26,9 @@ const state = vi.hoisted(() => ({
   userId: 'alice' as string | undefined,
   basePath: '/main',
   events: [] as RunTranscriptEvent[],
+  retriedRunId: null as string | null,
+  retryOfRunId: null as string | null,
+  inputs: [] as RunDetail['inputs'],
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -54,6 +59,10 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', async (original) => ({
     run: {
       data: {
         id: 'run-1',
+        retriedRunId: state.retriedRunId,
+        retryOfRunId: state.retryOfRunId,
+        actorUserId: 'alice',
+        actorName: 'Alice',
         agentId: 'coder',
         status: 'failed',
         createdAt: '2026-10-01T00:00:00.000Z',
@@ -62,7 +71,7 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', async (original) => ({
         cancelRequestedAt: null,
         failureReason: 'toolProcess',
         failureDetail: 'The command failed',
-        inputs: [],
+        inputs: state.inputs,
         maxAttempts: 1,
         summary: 'Run summary',
       },
@@ -81,11 +90,16 @@ async function setup(locale = 'en-US') {
     locale,
     strict: true,
   });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
   const view = () => (
     <TestI18nProvider runtime={runtime} namespace='studio'>
-      <MemoryRouter>
-        <IssueRunTranscript runId='run-1' />
-      </MemoryRouter>
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <IssueRunTranscript runId='run-1' />
+        </MemoryRouter>
+      </QueryClientProvider>
     </TestI18nProvider>
   );
   const result = render(view());
@@ -126,10 +140,59 @@ beforeEach(() => {
   state.userId = 'alice';
   state.basePath = '/main';
   state.events = mixedRunEvents();
+  state.retriedRunId = null;
+  state.retryOfRunId = null;
+  state.inputs = [];
 });
 afterEach(cleanup);
 
 describe('Studio issue run transcript', () => {
+  it.each(['en-US', 'zh-CN'])(
+    'shows the current retry trigger rather than a copied retry (%s)',
+    async (locale) => {
+      state.retryOfRunId = 'bob-retry';
+      state.inputs = ['Bob', 'Alice'].map((name, index) => ({
+        id: `input-${index}`,
+        runId: 'run-1',
+        type: 'retry',
+        text: 'Retry',
+        actor: { kind: 'user', id: name.toLowerCase(), name },
+        payload: { retryOfRunId: index === 0 ? 'original' : 'bob-retry' },
+        createdAt: '2026-10-01T00:00:00.000Z',
+        handledAt: null,
+        deliveredAt: null,
+      }));
+      await setup(locale);
+      expect(
+        screen.getByText(
+          locale === 'zh-CN' ? /触发人：Alice/u : /Triggered by Alice/u,
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(
+          locale === 'zh-CN' ? /触发人：Bob/u : /Triggered by Bob/u,
+        ),
+      ).not.toBeInTheDocument();
+    },
+  );
+  it.each(['en-US', 'zh-CN'])(
+    'links the replacement instead of offering another retry (%s)',
+    async (locale) => {
+      state.retriedRunId = 'run-2';
+      await setup(locale);
+      const label =
+        locale === 'zh-CN' ? '已重试 → 新运行' : 'Retried → New run';
+      expect(screen.getByRole('link', { name: label })).toHaveAttribute(
+        'href',
+        '/run-2',
+      );
+      expect(
+        screen.queryByRole('button', {
+          name: locale === 'zh-CN' ? '重试' : 'Retry',
+        }),
+      ).not.toBeInTheDocument();
+    },
+  );
   it('keeps the reading position in expanded history during live updates and follows again after collapse', async () => {
     state.events = [
       event(1, 'text'),

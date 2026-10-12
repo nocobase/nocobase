@@ -293,7 +293,7 @@ export const crossRefCanonicalMap: Record<string, string> = {};
  * 为目标页面创建虚拟路由并改写侧边栏链接。
  *
  * 完全不修改源文件。通过 themeConfig.sidebar 生成完整侧边栏配置。
- * 只为顶层目录创建 sidebar key（与 Rspress 自动生成行为一致）。
+ * 为顶层目录生成 sidebar；应用能力模块使用自己的 _meta.json 生成独立 sidebar。
  */
 export function pluginCrossRefSidebar(): RspressPlugin {
   let crossRefs: CrossRef[] = [];
@@ -346,7 +346,25 @@ export function pluginCrossRefSidebar(): RspressPlugin {
         crossRefCanonicalMap[ref.aliasRoute] = ref.targetLink.split('#')[0];
       }
 
-      if (crossRefs.length === 0 && !hasTargetBlankLinks) return config;
+      // Capability subpages use their module's metadata as the sidebar root.
+      // Keep the capability overview's complete navigation at /capabilities.
+      const capabilitiesMeta = path.join(root, 'capabilities', '_meta.json');
+      const capabilityEntries: Array<{
+        type?: string;
+        name?: string;
+        label?: string;
+      }> = fs.existsSync(capabilitiesMeta)
+        ? JSON.parse(fs.readFileSync(capabilitiesMeta, 'utf-8'))
+        : [];
+      const modules = capabilityEntries.filter(
+        (entry) => entry.type === 'dir' && typeof entry.name === 'string',
+      );
+      if (
+        crossRefs.length === 0 &&
+        !hasTargetBlankLinks &&
+        modules.length === 0
+      )
+        return config;
 
       // 2. 为所有顶层目录生成 sidebar（设置后 _meta.json 不再生效）
       const sidebar: Sidebar = (config.themeConfig?.sidebar as Sidebar) || {};
@@ -380,6 +398,20 @@ export function pluginCrossRefSidebar(): RspressPlugin {
         // Rspress 默认 sidebar key 不带尾斜杠（如 '/plugin-development'）。
         // 若未来 Rspress 启用 trailingSlash，需改为 sidebar[relDir + '/']。
         sidebar[relDir] = items;
+      }
+
+      for (const module of modules) {
+        const route = `/capabilities/${module.name}`;
+        sidebar[route] = [
+          {
+            text:
+              config.lang === 'cn' ? '← 全部应用能力' : '← All capabilities',
+            link: '/#capabilities',
+          },
+          { dividerType: 'solid' },
+          { sectionHeaderText: module.label || module.name || '' },
+          ...readSubDirMeta(root, route, crossRefs, '/capabilities'),
+        ];
       }
 
       config.themeConfig = config.themeConfig || {};

@@ -7,6 +7,10 @@ description: 'Instructions for an AI Agent to initialize a NocoBase 3 applicatio
 
 Use this guide to create or start a **single NocoBase 3 application**. By default, initialize it in the user's current empty directory and continue configuration and startup in the same session. Continue existing applications without recreating them.
 
+## Creation Skill and project guidance
+
+The global `nocobase-create-app` Skill is installed from the [lightweight distribution repository](https://github.com/nocobase/skills-v3). Follow it when loaded; when a user supplies this guide directly, the steps below also apply. Use the lightweight repository for creation guidance. Once the application exists, follow its `AGENTS.md` and `.agents/skills/` for development.
+
 ## 1. Confirm the current directory
 
 Confirm that the current working directory is the empty directory where the user wants the application. Use it directly rather than adding another `my-app` subdirectory. Its name becomes the application name: it must start with a lowercase letter or digit and contain only lowercase letters, digits, dots, dashes, or underscores.
@@ -24,10 +28,12 @@ The creation tool does not accept `.` as an application name. Running it from th
 ```bash
 node --version
 pnpm --version
-(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app my-app --json)
+(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app@beta my-app --template-tag=beta --json)
 ```
 
 NocoBase 3 packages, `@nocobase/create-app` included, are published to the public npm registry. The command sets that registry only for this process while allowing `NOCOBASE_REGISTRY` to select a private registry or an unreleased local snapshot; `create-app` uses the same registry for the template and dependency installation, and records only a non-public override in the project's `.npmrc`. Do not change the user's pnpm configuration. `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` applies to this command and its child processes, allowing newly published versions. `--json` never prompts: it prints one JSON document on stdout, in the same envelope as `pnpm nocobase … --json`, whose `result.nextCommands` are the configuration and startup commands to run next.
+
+Use the beta channel for both the creation tool and application template: `@beta` selects the tool and `--template-tag=beta` selects the template. An explicitly requested version or local snapshot takes precedence.
 
 Do not switch to NocoBase 2 installation instructions when a package cannot be found.
 

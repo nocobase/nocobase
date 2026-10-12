@@ -29,6 +29,33 @@ nb-studio pr check-merge <issue> <pr>
 nb-studio pr check-merge PM-12 <pr>
 ```
 
+## pr checks
+
+Read why a pull request’s checks failed
+
+For whoever sees the issue. Reads the failed checks of the pull request’s head from the code host now: each check’s report, its annotations and the failing part of its log (each error line with the 20 lines around it, and the end; the host masks secrets). A check another CI reported has no log here (`logUnavailable: notActions`): its log is behind `url`. `reference` marks the repository’s reference checks, which neither block merging nor wake the agent.
+
+```bash
+nb-studio pr checks <issue> <pr>
+```
+
+| Argument | Description                                                   |
+| -------- | ------------------------------------------------------------- |
+| `issue`  | The issue the pull request is linked to (`PM-12`, or its id). |
+| `pr`     | The pull request’s id in Studio (`pr list`).                  |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People, and agents in a run; needs the action `pm.issues/view`.
+
+**Request:** `GET /api/git/pullRequests/{pullRequestId}/checks` (`gitListFailedPullRequestChecks`)
+
+**Examples:**
+
+```bash
+nb-studio pr checks PM-12 <pr>
+```
+
 ## pr close
 
 Close a pull request
@@ -184,7 +211,7 @@ nb-studio pr mark-merged <issue> <pr>
 
 Merge a pull request
 
-For whoever may merge (the issue’s owner, or a manager of its project). Squash-merges the head `expectedHeadSha` names, as the caller when they authorized the app, else as the repository’s connection.
+For whoever may merge (the issue’s owner, or a manager of its project). Squash-merges the head `expectedHeadSha` names, as the caller when they authorized the app, else as the repository’s connection. Failed reference checks do not block it. With `force` and a `reason`, a manager of the issue’s project (or whoever closes any issue) merges past failed required checks: the reason and the failed checks are commented on the pull request first and kept in the issue’s activity, and the code host’s branch protection still applies (`PR_NOT_MERGEABLE` with `protected` when it refuses).
 
 ```bash
 nb-studio pr merge <issue> <pr> --expected-head <string>
@@ -195,10 +222,12 @@ nb-studio pr merge <issue> <pr> --expected-head <string>
 | `issue`  | The issue the pull request is linked to (`PM-12`, or its id). |
 | `pr`     | The pull request’s id in Studio (`pr list`).                  |
 
-| Flag              | Type    | Description                                               |
-| ----------------- | ------- | --------------------------------------------------------- |
-| `--expected-head` | string  | (required)                                                |
-| `--yes`           | boolean | Go ahead without asking “Squash-merge this pull request?” |
+| Flag              | Type    | Description                                                                                                        |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
+| `--expected-head` | string  | (required)                                                                                                         |
+| `--force`         | boolean | Merge although required checks failed (a manager of the project only); needs --reason.                             |
+| `--reason`        | string  | Why a forced merge is safe; commented on the pull request with the failed checks and kept in the issue’s activity. |
+| `--yes`           | boolean | Go ahead without asking “Squash-merge this pull request?”                                                          |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -210,13 +239,14 @@ nb-studio pr merge <issue> <pr> --expected-head <string>
 
 ```bash
 nb-studio pr merge PM-12 <pr> --expected-head <sha from pr check-merge>
+nb-studio pr merge PM-12 <pr> --expected-head <sha> --force --reason "Flaky upstream test, see #15"
 ```
 
 ## pr open
 
 Open a pull request for an issue
 
-For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless `repo` names another), from the run’s branch (the repository’s first branch rule, `agent/PM-12` by default) unless `head` names another, as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. Once every linked pull request is merged, the issue moves on. An agent’s run on an issue may leave `issueId` out for its own issue.
+For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless `repo` names another), from the run’s branch (the repository’s first branch rule, `agent/PM-12` by default) unless `head` names another, as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. The issue’s preview preference is applied to the no-preview label. A label failure keeps the PR linked, returns previewLabelSyncFailed and retries automatically; do not open a second PR. Once every linked pull request is merged, the issue moves on. An agent’s run on an issue may leave `issueId` out for its own issue.
 
 ```bash
 nb-studio pr open --title <string>

@@ -110,6 +110,86 @@ async function handshake(
 }
 
 describe('reported execution settings', () => {
+  it('starts a new thread only when resume reports a missing rollout, retaining prompt and early input', async () => {
+    const { adapter, spawn } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), {});
+      const resume = await fake.nextRequest('thread/resume');
+      fake.emit({
+        id: resume.id,
+        error: { code: -32000, message: 'no rollout found for thread id old' },
+      });
+      const start = await fake.nextRequest('thread/start');
+      expect(start.params).toMatchObject({
+        developerInstructions: 'brief',
+        model: 'model-test',
+      });
+      fake.respond(start, { thread: { id: 'thread-1' }, model: 'model-test' });
+      const turn = await fake.nextRequest('turn/start');
+      expect(turn.params).toMatchObject({
+        input: [
+          { type: 'text', text: expect.stringContaining('do it') },
+          { type: 'text', text: 'early' },
+        ],
+      });
+      expect(JSON.stringify(turn.params)).toContain('previous conversation');
+      fake.respond(turn, {
+        turn: { id: 'turn-1', status: 'inProgress', error: null },
+      });
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      completeTurn(fake);
+    });
+    const handle = adapter.start(
+      session({ resumeSessionId: 'old', model: 'model-test' }),
+    );
+    expect(await handle.steer('early', 'input-1')).toBe(true);
+    const events = await drain(handle);
+    expect(await handle.result).toMatchObject({
+      exit: 'completed',
+      sessionId: 'thread-1',
+    });
+    expect(events.find((e) => e.content === 'started')).toMatchObject({
+      meta: { resumed: false, sessionRecovery: true },
+    });
+    expect(events.filter((e) => e.type === 'input')).toHaveLength(1);
+    expect(spawn.processes).toHaveLength(1);
+  });
+
+  it.each(['authentication failed', 'permission denied', 'network timeout'])(
+    'does not recover from %s',
+    async (message) => {
+      const { adapter } = adapterWith(async (fake) => {
+        fake.respond(await fake.nextRequest('initialize'), {});
+        const resume = await fake.nextRequest('thread/resume');
+        fake.emit({ id: resume.id, error: { code: -32000, message } });
+      });
+      const handle = adapter.start(session({ resumeSessionId: 'old' }));
+      expect((await handle.result).exit).toBe('error');
+      expect(
+        (await drain(handle)).some((e) => e.content === 'sessionRecovery'),
+      ).toBe(false);
+    },
+  );
+
+  it('does not retry a failed fresh thread after recovery', async () => {
+    const { adapter } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), {});
+      const resume = await fake.nextRequest('thread/resume');
+      fake.emit({
+        id: resume.id,
+        error: { code: -32000, message: 'no rollout found for thread id old' },
+      });
+      const start = await fake.nextRequest('thread/start');
+      fake.emit({
+        id: start.id,
+        error: { code: -32000, message: 'network timeout' },
+      });
+    });
+    const handle = adapter.start(session({ resumeSessionId: 'old' }));
+    expect(await handle.result).toMatchObject({ exit: 'error' });
+    expect(
+      (await drain(handle)).filter((e) => e.content === 'sessionRecovery'),
+    ).toHaveLength(1);
+  });
   it('reports only tool-returned thread effort and its source', async () => {
     const { adapter } = adapterWith(async (fake) => {
       await handshake(fake, 'turn-1', 'medium');

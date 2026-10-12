@@ -1,41 +1,16 @@
 /**
- * What Studio's pull requests add to the projects plugin's workflow editor: the event `studio.merged` (where the system
- * moves an issue once its pull requests are merged) and the entry condition `prMerged`. The server registers the same
- * keys with the same placement (`server/git/workflow.ts`).
+ * What Studio's pull requests add to the projects plugin's statuses: the title of the status event `studio.merged`,
+ * which moves an issue to done once its pull requests are merged. The server registers the same key
+ * (`server/git/workflow.ts`).
  */
-import type {
-  StatusRuleTypeUI,
-  WorkflowEventUI,
-} from '@nocobase/app-plugin-projects/client/kit';
-import { GitMergeIcon } from 'lucide-react';
+import type { StatusEventUI } from '@nocobase/app-plugin-projects/client/kit';
 
 import { STUDIO_NAMESPACE } from '../../shared/access.js';
-import { MERGED_EVENT, PR_MERGED_RULE } from '../../shared/git.js';
-import { PrMergedEditor, PrMergedSummary } from './workflow-editors.js';
+import { MERGED_EVENT } from '../../shared/git.js';
 
-const text = (key: string) => ({ key, ns: STUDIO_NAMESPACE });
-
-export const GIT_RULE_TYPES: readonly StatusRuleTypeUI[] = [
-  {
-    type: PR_MERGED_RULE,
-    title: text('studioGit.rule.title'),
-    hint: text('studioGit.rule.hint'),
-    categories: ['started', 'done'],
-    // Only an entry condition: listed under "Entry conditions".
-    group: 'condition',
-    Icon: GitMergeIcon,
-    initialConfig: {},
-    Editor: PrMergedEditor,
-    Summary: PrMergedSummary,
-  },
-];
-
-export const GIT_WORKFLOW_EVENTS: readonly WorkflowEventUI[] = [
+export const GIT_STATUS_EVENTS: readonly StatusEventUI[] = [
   {
     key: MERGED_EVENT,
-    from: ['started'],
-    to: ['done'],
-    title: text('studioGit.event.title'),
-    hint: text('studioGit.event.hint'),
+    title: { key: 'studioGit.event.title', ns: STUDIO_NAMESPACE },
   },
 ];

@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders the sidebar with Home and Dashboard first, then My issues, the Development, Releases and Agent team sections, and Settings', () => {
+  it('orders the sidebar with Home and Dashboard first, then My follow-ups and My issues, the Development, Releases and Agent team sections, and Settings', () => {
     // The inbox is not among them: it is the header's button (`client/inbox/header-button.tsx`).
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
@@ -96,6 +96,7 @@ describe('app client routes', () => {
     expect(menu(routes)).toEqual([
       'navigation.home',
       'navigation.dashboard',
+      'navigation.followUps',
       'navigation.myIssues',
       'navigation.development',
       'navigation.releases',
@@ -168,6 +169,8 @@ describe('app client routes', () => {
       { name: 'chat-pm-conversation', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
+      // My follow-ups opens with My issues' grant.
+      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
       // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).
@@ -233,6 +236,7 @@ describe('app client routes', () => {
       { name: 'config', authorizedAs: null },
       { name: 'config-general', authorizedAs: 'settings:pm.general' },
       { name: 'config-members', authorizedAs: 'settings:pm.members' },
+      { name: 'config-member-reset-password', authorizedAs: null },
       { name: 'config-roles', authorizedAs: 'settings:pm.members' },
       { name: 'config-role', authorizedAs: 'settings:pm.members' },
       { name: 'config-api-keys', authorizedAs: 'settings:studio.apiKeys' },
@@ -241,8 +245,6 @@ describe('app client routes', () => {
         authorizedAs: 'settings:studio.knowledgeSearch',
       },
       { name: 'config-git', authorizedAs: 'settings:studio.git' },
-      { name: 'config-workflows', authorizedAs: 'settings:pm.workflows' },
-      { name: 'config-workflow', authorizedAs: 'settings:pm.workflows' },
       { name: 'config-labels', authorizedAs: 'settings:pm.labels' },
     ]);
   });

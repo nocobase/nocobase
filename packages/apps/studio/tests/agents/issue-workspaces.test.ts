@@ -21,6 +21,7 @@ import {
   upsertPullRequest,
 } from '../../server/git/store.js';
 import { API } from '../git/helpers.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 const FULL_NAME = 'acme/app';
@@ -182,21 +183,40 @@ describe('directories named by their issue key', () => {
       (
         await binding().resolveKeys!(h.database.connection(), [
           issue.identifier,
+          `${issue.identifier}.manager`,
         ])
       ).size,
     ).toBe(0);
   });
+
+  it("resolve the project manager's directory, named by the key with .manager, to the same issue", async () => {
+    const issue = await issueIn('in_progress');
+    const keys = await binding().resolveKeys!(h.database.connection(), [
+      `${issue.identifier}.manager`,
+      issue.identifier,
+      'NOPE-1.manager',
+      '.manager',
+    ]);
+    expect(Object.fromEntries(keys)).toEqual({
+      [`${issue.identifier}.manager`]: [issue.id],
+      [issue.identifier]: [issue.id],
+    });
+  });
 });
 
 describe("a runner's report", () => {
-  /** An issue of the project an agent worked on through the harness's runner, its run finished. */
-  async function workedOn(): Promise<{ issue: Issue; runId: string }> {
-    const agentId = await h.createAgent({ name: `Coder ${nextNumber++}` });
-    const issue = await issueIn(null);
-    const current = await h.projects.issueQueries.detail(alice(), issue.id);
-    await h.projects.issues.update(alice(), issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: agentId },
+  /** An issue of the project its project manager worked on through the harness's runner, its run finished. */
+  async function workedOn(): Promise<{
+    issue: Issue;
+    runId: string;
+    workspaceKey: string;
+  }> {
+    await h.createAgent({ name: `Coder ${nextNumber++}` });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Worked on',
+      projectId,
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
     });
     const payload = await h.claimOne();
     await h.runner(RUNNER_ROUTES.start, payload.run.id, {
@@ -209,7 +229,11 @@ describe("a runner's report", () => {
       handledInputIds: payload.inputs.map((input: { id: string }) => input.id),
     });
     expect(done.status).toBe(200);
-    return { issue, runId: payload.run.id as string };
+    return {
+      issue,
+      runId: payload.run.id as string,
+      workspaceKey: payload.workspace.key as string,
+    };
   }
 
   async function report(directories: WorkspacesRequest['directories']) {
@@ -244,14 +268,16 @@ describe("a runner's report", () => {
   });
 
   it('lets every directory of a finished issue go, new or old, unpushed or not, whoever worked on it', async () => {
-    const { issue, runId } = await workedOn();
+    const { issue, runId, workspaceKey } = await workedOn();
+    expect(workspaceKey).toBe(`${issue.identifier}.manager`);
     await linkPullRequest(issue, 'open');
     await move(issue, 'done');
     const cancelled = await issueIn('cancelled');
 
     const answer = await report([
-      dir('/w/new', issue.identifier, runId),
+      dir('/w/new', workspaceKey, runId),
       dir('/w/old', issue.identifier),
+      dir('/w/manager', `${issue.identifier}.manager`),
       dir('/w/gone-run', issue.identifier, 'no-such-run'),
       dir('/w/never', cancelled.identifier),
       dir('/w/unknown', 'NOPE-1'),
@@ -261,7 +287,13 @@ describe("a runner's report", () => {
     const byDir = Object.fromEntries(
       answer.decisions.map((decision) => [decision.workDir, decision]),
     );
-    for (const workDir of ['/w/new', '/w/old', '/w/gone-run', '/w/never'])
+    for (const workDir of [
+      '/w/new',
+      '/w/old',
+      '/w/manager',
+      '/w/gone-run',
+      '/w/never',
+    ])
       expect(byDir[workDir]).toMatchObject({
         settled: true,
         reason: 'settled',
@@ -276,7 +308,7 @@ describe("a runner's report", () => {
   it('keeps them while the issue goes on, or a run on it has not finished', async () => {
     const { issue, runId } = await workedOn();
     const answer = await report([
-      dir('/w/new', issue.identifier, runId),
+      dir('/w/new', `${issue.identifier}.manager`, runId),
       dir('/w/old', issue.identifier),
     ]);
     expect(answer.remove).toEqual([]);

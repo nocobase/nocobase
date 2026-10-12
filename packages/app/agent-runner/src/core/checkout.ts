@@ -137,6 +137,11 @@ export interface Lock {
   release(): Promise<void>;
 }
 
+/** A live process still holds a working directory; another attempt may take it later. */
+export class WorkspaceBusyError extends CheckoutError {
+  override name = 'WorkspaceBusyError';
+}
+
 export async function acquireLock(
   lockDir: string,
   options: { timeoutMs?: number; pollMs?: number } = {},
@@ -163,7 +168,7 @@ export async function acquireLock(
       continue;
     }
     if (Date.now() >= deadline)
-      throw new CheckoutError(
+      throw new WorkspaceBusyError(
         `${lockDir} is held by process ${owner || 'unknown'}`,
       );
     await delay(options.pollMs ?? 200);
@@ -342,6 +347,8 @@ export interface WorkspaceMeta {
   /** Whether the directory held unpushed work when last checked (`measuredAt`). */
   unpushed?: boolean;
   measuredAt?: string;
+  /** When regenerable build artifacts were last removed from it (core/artifacts.ts). */
+  artifactsCleanedAt?: string;
   /**
    * Read from a record in the work directory, kept before the runner kept its own, or measured from one since: only
    * its layout is believed. A run preparing the directory again writes a record of the runner's own.
@@ -423,6 +430,7 @@ function believable(
     ...text('endedAt'),
     ...text('lastRunId'),
     ...text('measuredAt'),
+    ...text('artifactsCleanedAt'),
     ...(typeof raw.unpushed === 'boolean' ? { unpushed: raw.unpushed } : {}),
     ...(legacy
       ? { legacy: true as const }

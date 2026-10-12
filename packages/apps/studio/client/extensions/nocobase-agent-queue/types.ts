@@ -9,8 +9,7 @@ import type { ReactNode } from 'react';
 export type AgentQueueState = 'waiting' | 'working' | 'queued' | 'idle';
 
 /** What an agent waits for a person on. */
-export type AgentQueueWaitKind =
-  'failedRun' | 'approval' | 'proposal' | 'question' | 'review';
+export type AgentQueueWaitKind = 'failedRun' | 'question' | 'review';
 
 export interface AgentQueueWait {
   /**
@@ -88,8 +87,7 @@ export interface AgentQueueBlocker {
 }
 
 /** Why an agent is assigned an issue with nothing going on. */
-export type AgentQueueIdleReason =
-  'backlog' | 'lastRun' | 'noAutoRun' | 'neverRan';
+export type AgentQueueIdleReason = 'backlog' | 'lastRun' | 'neverRan';
 
 export interface AgentQueueIdle {
   readonly reason: AgentQueueIdleReason;

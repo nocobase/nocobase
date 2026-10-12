@@ -64,6 +64,26 @@ nb-studio board get
 nb-studio board get --project 12
 ```
 
+## board issue-work
+
+Get current agent work on visible issues
+
+At most 100 issue IDs. Only visible issues with an agent executor are returned. No run details are exposed.
+
+```bash
+nb-studio board issue-work --issue-ids <string[]>
+```
+
+| Flag          | Type     | Description            |
+| ------------- | -------- | ---------------------- |
+| `--issue-ids` | string[] | (required; repeatable) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `POST /api/agentBoard/issueWork` (`agentBoardIssueWork`)
+
 ## board start
 
 Start the agent’s work on an idle issue

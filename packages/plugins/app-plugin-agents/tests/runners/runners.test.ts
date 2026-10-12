@@ -63,10 +63,8 @@ describe('runners', () => {
 
   it('persists per-runner capabilities from heartbeats and exposes suggestions through existing visibility', async () => {
     h = await createHarness();
-    const agentId = await h.createAgent({
-      access: 'users',
-      userIds: ['owner'],
-    });
+    // No agent may be given work yet, so a reader of agents is no one who may use one.
+    const agentId = await h.createAgent({ status: 'pending' });
     const agentBefore = await h.services.agents.get(agentId);
     const first = await h.registerRunner();
     const other = await h.registerRunner({
@@ -460,7 +458,7 @@ describe('runners', () => {
 
   it('shows the host name and tool paths to the owner, the managers of runners and those who may use an agent', async () => {
     h = await createHarness();
-    await h.createAgent({ access: 'users', userIds: ['user'] });
+    const agentId = await h.createAgent({ status: 'pending' });
     const runner = await h.registerRunner({
       tools: [
         {
@@ -482,7 +480,6 @@ describe('runners', () => {
     for (const manager of [
       await view('owner'),
       await view('admin', ['agents.runners/manage']),
-      await view('user', ['agents.runners/read']),
     ]) {
       expect(manager.hostname).toBe('host');
       expect(manager.tools).toEqual([
@@ -502,6 +499,8 @@ describe('runners', () => {
     });
     expect(list.body.data[0].hostname).toBeNull();
     expect(JSON.stringify(list.body.data)).not.toContain('/Users/alice');
+    // Once an agent may be given work, everyone signed in may use it, and sees where it runs.
+    await h.enableAgent(agentId);
     const usersList = await h.request('GET', '/agents/runners', {
       user: 'user',
       can: ['agents.runners/read'],

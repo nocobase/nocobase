@@ -10,7 +10,6 @@ import type {
   Activity,
   StatusDefinition,
 } from '@nocobase/app-plugin-projects/shared/issues';
-import { isBuiltInEvent } from '@nocobase/app-plugin-projects/shared/workflows';
 import { useTranslation } from '@nocobase/i18n/client';
 import { BotIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
@@ -18,7 +17,6 @@ import { Link } from 'react-router';
 
 import { TimelineActivity } from '@/components/comment-thread';
 
-import { EXECUTOR_WAITS_ACTIVITY } from '../../../shared/design.js';
 import {
   PR_ACTIVITIES,
   PR_EDIT_FIELDS,
@@ -27,50 +25,12 @@ import {
 import { PR_ACTIVITY_LABELS } from '../../git/lib.js';
 
 import type { Translate } from './labels.js';
+import { actionLabel } from './activity-labels.js';
 import { usePlanLinkTo } from './plan-links.js';
 import { StatusBadge } from './status-badge.js';
 
-/** The server's activity actions and the keys of their wording. */
-const ACTION_LABELS: Readonly<Record<string, string>> = {
-  issue_created: 'created',
-  issue_deleted: 'deleted',
-  issue_restored: 'restored',
-  title_changed: 'titleChanged',
-  description_changed: 'descriptionChanged',
-  status_changed: 'statusChanged',
-  priority_changed: 'priorityChanged',
-  owner_changed: 'ownerChanged',
-  executor_changed: 'executorChanged',
-  project_changed: 'projectChanged',
-  parent_changed: 'parentChanged',
-  labels_changed: 'labelsChanged',
-  start_date_changed: 'datesChanged',
-  due_date_changed: 'datesChanged',
-  checklist_item_checked: 'checklistItemChecked',
-  checklist_item_unchecked: 'checklistItemUnchecked',
-  owner_notified: 'ownerNotified',
-  stage_action_applied: 'stageActionApplied',
-  stage_action_skipped: 'stageActionSkipped',
-  stage_action_failed: 'stageActionFailed',
-  approval_requested: 'approvalRequested',
-  approval_approved: 'approvalApproved',
-  approval_rejected: 'approvalRejected',
-  approval_withdrawn: 'approvalWithdrawn',
-  approval_stale: 'approvalStale',
-  approval_self: 'approvalSelf',
-  approval_no_approver: 'approvalNoApprover',
-  comment_deleted: 'commentDeleted',
-  attachment_added: 'attachmentAdded',
-  attachment_removed: 'attachmentRemoved',
-  thread_resolved: 'threadResolved',
-  thread_unresolved: 'threadUnresolved',
-  subtask_added: 'subtaskAdded',
-  dependency_added: 'dependencyAdded',
-  dependency_removed: 'dependencyRemoved',
-  stage_changed: 'stageChanged',
-  auto_move_skipped: 'autoMoveSkipped',
-  work_withdrawn: 'workWithdrawn',
-};
+/** Recorded by earlier versions when an agent became the executor ahead of its stage; kept readable. */
+const EXECUTOR_WAITS_ACTIVITY = 'executor_waits';
 
 /** The fields a pull request edit changed, in Studio's words. */
 function editedFields(t: Translate, details: Activity['details']): string {
@@ -100,7 +60,20 @@ function PullRequestActivity({
   const fields =
     activity.action === PR_ACTIVITIES.edited ? editedFields(t, details) : '';
   const reason =
-    activity.action === PR_ACTIVITIES.closed ? text(details.reason) : null;
+    activity.action === PR_ACTIVITIES.closed ||
+    activity.action === PR_ACTIVITIES.forceMerged ||
+    activity.action === PR_ACTIVITIES.forceMergeRefused
+      ? text(details.reason)
+      : null;
+  const failedChecks = Array.isArray(details.failedChecks)
+    ? details.failedChecks.flatMap((check: unknown) => {
+        const name =
+          check && typeof check === 'object'
+            ? (check as { name?: unknown }).name
+            : null;
+        return typeof name === 'string' && name ? [name] : [];
+      })
+    : [];
   return (
     <>
       {label && url ? (
@@ -122,23 +95,11 @@ function PullRequestActivity({
       {reason ? (
         <span className='min-w-0 break-words text-foreground'>{reason}</span>
       ) : null}
+      {failedChecks.length > 0 ? (
+        <span className='min-w-0 break-words'>({failedChecks.join(', ')})</span>
+      ) : null}
     </>
   );
-}
-
-/** The wording of an action whose reason changes what it says. */
-function actionLabel(action: string, details: Activity['details']): string {
-  const reason = details.reason;
-  let key = ACTION_LABELS[action] ?? 'updated';
-  if (action === 'executor_changed' && reason === 'executorRemoved')
-    key = 'executorRemoved';
-  else if (action === 'stage_action_skipped' && reason === 'suppressed')
-    key = 'stageActionSuppressed';
-  else if (action === 'stage_action_skipped' && reason === 'blocked')
-    key = 'stageActionBlocked';
-  else if (action === 'work_skipped')
-    key = reason === 'dormant' ? 'workDormant' : 'workBlocked';
-  return `activity.actions.${key}`;
 }
 
 /** The identifiers of the issues an activity says the issue waits for. */
@@ -206,6 +167,9 @@ export function ActivityRow({
   // Studio's own namespace, for the actions Studio records itself; `t` is the projects plugin's.
   const { i18n, t: studioT } = useTranslation();
   const prAction = PR_ACTIVITY_LABELS[activity.action];
+  const cannotImplement =
+    activity.action === 'stage_action_skipped' &&
+    activity.details.reason === 'executorCannotImplement';
   const planTo = usePlanLinkTo();
   const apiKeys = useApiKeyActors();
   const eventTitle = useEventTitle();
@@ -258,20 +222,41 @@ export function ActivityRow({
         <span className='text-xs'>{via}</span>
       ) : null}
       <span>
-        {prAction
-          ? studioT(prAction)
-          : activity.action === EXECUTOR_WAITS_ACTIVITY
-            ? studioT('studioAgents.activity.executorWaits', {
-                name:
-                  (text(activity.details.agentId)
-                    ? agentName(text(activity.details.agentId) ?? '')
-                    : null) ??
-                  text(activity.details.name) ??
-                  t('common.unknown'),
-              })
-            : t(actionLabel(activity.action, activity.details), {
-                name: text(activity.details.name) ?? t('common.unknown'),
-              })}
+        {activity.action === 'studio_execution_wait'
+          ? studioT(
+              `issueProgress.waiting.${activity.details.reason === 'noOwner' ? 'noOwner' : 'notAllowed'}`,
+              {
+                agent:
+                  text(activity.details.agent) ??
+                  text(activity.details.agentId) ??
+                  '',
+                owner:
+                  text(activity.details.owner) ??
+                  text(activity.details.ownerUserId) ??
+                  '',
+              },
+            )
+          : prAction
+            ? studioT(prAction)
+            : cannotImplement
+              ? studioT('studioAgents.activity.executorCannotImplement', {
+                  name:
+                    text(activity.details.name) ??
+                    text(activity.details.agentId) ??
+                    t('common.unknown'),
+                })
+              : activity.action === EXECUTOR_WAITS_ACTIVITY
+                ? studioT('studioAgents.activity.executorWaits', {
+                    name:
+                      (text(activity.details.agentId)
+                        ? agentName(text(activity.details.agentId) ?? '')
+                        : null) ??
+                      text(activity.details.name) ??
+                      t('common.unknown'),
+                  })
+                : t(actionLabel(activity.action, activity.details), {
+                    name: text(activity.details.name) ?? t('common.unknown'),
+                  })}
       </span>
       {prAction ? (
         <PullRequestActivity activity={activity} t={studioT} />
@@ -333,12 +318,10 @@ export function ActivityRow({
       ) : null}
       {activity.action === 'status_changed' &&
       activity.details.event === 'subtasks.done' ? (
-        <span>{t('activity.afterSubtasks')}</span>
+        <span>{studioT('runTranscript.afterSubtasks')}</span>
       ) : null}
-      {moved && event && !isBuiltInEvent(event) ? (
-        <span>
-          {t('activity.afterEvent', { event: eventTitle(event) ?? event })}
-        </span>
+      {moved && event && eventTitle(event) ? (
+        <span>{t('activity.afterEvent', { event: eventTitle(event) })}</span>
       ) : null}
       {moved && text(activity.details.note) ? (
         <span className='text-foreground'>{text(activity.details.note)}</span>

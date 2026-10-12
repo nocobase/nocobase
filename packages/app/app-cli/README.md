@@ -91,7 +91,7 @@ Every command — built-in, an application's, or a plugin's — extends `AppComm
 
 A command writes text for people with `this.log`, which `--json` silences, progress with `this.logToStderr`, which stays on stderr under `--json`, and warnings with `this.warn`, which `--json` collects into `warnings`. A `CommandError`'s `cause` is kept off the printed error and shown, redacted, only under `NOCOBASE_CLI_DEBUG`. It never calls `this.exit()`, `this.logJson()` or `console.log`: `AppCommand` refuses the first two, and the shared ESLint preset refuses all three in `cli/`. It does not use `this.error()` either, which reports `COMMAND_FAILED` with oclif's default exit `2`. What the application logs while a command runs goes to stderr. The runner closes a runtime a command left open and names the command on stderr; a command that uses `withApp()` never triggers it. A failure to put the application away after `withApp()` is a warning, and never changes the command's outcome.
 
-The root entry is kept free of the server runtime and the optional peers, because every plugin's `cli/index.ts` imports it whenever the command tree is assembled; `tests/deployment-imports.test.ts` holds it there. The `nocobase-app-development` and `nocobase-plugin-development` Skills carry the full authoring guide.
+The root entry is kept free of the server runtime and the optional peers, because every plugin's `cli/index.ts` imports it whenever the command tree is assembled; `tests/deployment-imports.test.ts` holds it there. The `nocobase-app-development` and `nocobase-app-plugin-development` Skills carry the full authoring guide.
 
 ## Plugin contract
 

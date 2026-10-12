@@ -50,7 +50,7 @@
       "name": "agent-picker-demo",
       "type": "registry:example",
       "title": "Agent Picker Demo",
-      "description": "Usage example of @nocobase/agent-picker. Choosing who a new conversation goes to from agents grouped by mode, an existing conversation whose agent stays, and the availability dot, mode tag and a toolbar picker on their own.",
+      "description": "Usage example of @nocobase/agent-picker. Choosing who a new conversation goes to from the enabled agents, an existing conversation whose agent stays, and the availability dot, a tag and an agent's row on their own.",
       "categories": ["agents"],
       "dependencies": ["@nocobase/app-plugin-agents@^0.1.0-beta.0"],
       "registryDependencies": ["@nocobase/agent-picker"],

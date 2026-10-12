@@ -1,16 +1,14 @@
 /**
  * What the agents are doing (`shared/agent-board.ts`), for the issues pages' Agent queue: Studio joins the agents plugin's
- * runs and queue, the projects plugin's issues, approvals and follows, and its own inbox's failed-run cards, since only Studio knows that a run on an
+ * runs and queue, the projects plugin's issues and follows, and its own inbox's failed-run cards, since only Studio knows that a run on an
  * issue is an agent working on it. Each issue an agent is involved in is one row, in the section of the most pressing
  * thing an agent has on it; the other agents with something on it are named beside it.
  *
  * Reads, none per issue: the open runs on issues with the queue explained (`runs.workload`), the failed-run cards that
  * wait, then the issues the viewer sees within the page's filters that an agent executes (unfinished) or that one of
- * those name (`issueQueries.matching`), the pending approvals on them, what holds the agents' issues that wait for
+ * those name (`issueQueries.matching`), what holds the agents' issues that wait for
  * others (`subtasks.visibleBlockers`), the agents, the newest ended run of each idle issue's agent
- * (`runs.lastEnded`), the people's names, and each project's statuses and workflow. An agent's
- * approval request shows on an issue that an agent executes or has a run on, which is where an agent asks for one; a
- * design proposal is its issue waiting in Proposal review. Operation plans are not here: they are decided in the
+ * (`runs.lastEnded`) and the people's names. Operation plans are not here: they are decided in the
  * conversation that proposed them. An issue an agent executes that waits for unfinished issues is queued behind
  * them, since the agent is woken when they finish.
  *
@@ -37,14 +35,15 @@ import type {
 import { businessKey } from '@nocobase/app-plugin-projects/shared/access';
 import {
   BACKLOG_STATUS,
-  BUILTIN_STATUSES,
-} from '@nocobase/app-plugin-projects/shared/workflows';
+  BLOCKED_STATUS,
+  FIXED_STATUSES,
+  IN_REVIEW_STATUS,
+  isTerminalCategory,
+  statusCategory,
+} from '@nocobase/app-plugin-projects/shared/statuses';
 
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
-import {
-  runnerEntries,
-  type Agent,
-} from '@nocobase/app-plugin-agents/shared/agents';
+import type { Agent } from '@nocobase/app-plugin-agents/shared/agents';
 import type {
   AgentLoad,
   Run,
@@ -68,13 +67,8 @@ import {
 } from '../../shared/agent-board.js';
 import type { OpenDecision } from '../inbox/service.js';
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
-import {
-  DESIGN_SECTION_ANCHOR,
-  PROPOSAL_REVIEW_STATUS,
-} from '../../shared/design.js';
 import { INBOX_DECISIONS_PATH } from '../../shared/inbox.js';
 import { RUN_FAILED_FINAL } from './notices.js';
-import { RUN_AGENT } from './stage-rules.js';
 import type { AgentWork } from './work.js';
 import { AGENT_KIND } from './tx.js';
 
@@ -83,19 +77,10 @@ export const AGENT_BOARD_ISSUES = 300;
 /** The most open runs on issues the view reads. */
 export const AGENT_BOARD_RUNS = 500;
 
-/** The status an agent asks the owner with, and those it hands an issue over for review in. */
-const QUESTION_STATUS = 'blocked';
-const REVIEW_STATUSES = new Set(['in_review']);
-
 export interface AgentBoardDeps {
   readonly projects: () => Pick<
     Projects,
-    | 'issueQueries'
-    | 'approvals'
-    | 'subtasks'
-    | 'subscriptions'
-    | 'workflows'
-    | 'tx'
+    'issueQueries' | 'subtasks' | 'subscriptions' | 'tx'
   >;
   readonly agents: Pick<Agents, 'runs' | 'agents' | 'people' | 'tx'>;
   /** The decisions of a source and type that still wait (`StudioInbox.openDecisions`); none without an inbox. */
@@ -147,13 +132,12 @@ function agentOf(agent: Agent, load: AgentLoad | undefined): AgentBoardAgent {
     name: agent.name,
     nameText: agent.nameText,
     avatar: agent.avatar,
-    // Only runner agents execute issues, so every agent here has a coding tool.
-    tool: runnerEntries(agent)[0]?.tool ?? '',
-    model: runnerEntries(agent)[0]?.model ?? null,
-    models: runnerEntries(agent).map((entry) =>
+    tool: agent.tool ?? agent.modelEntries[0]?.tool ?? '',
+    model: agent.model ?? agent.modelEntries[0]?.model ?? null,
+    models: agent.modelEntries.map((entry) =>
       [entry.tool, entry.model, entry.effort].filter(Boolean).join(' · '),
     ),
-    archived: agent.archivedAt !== null,
+    archived: agent.status !== 'enabled',
     online: load?.online ?? false,
     active: load?.active ?? 0,
     maxConcurrentRuns: agent.maxConcurrentRuns,
@@ -162,12 +146,11 @@ function agentOf(agent: Agent, load: AgentLoad | undefined): AgentBoardAgent {
 
 /**
  * Why an agent is idle on an issue it executes (`AGENT_IDLE_REASONS`): in backlog; else its newest run there ended;
- * else the status starts no agent on entering it (`autoRuns` false); else it never ran.
+ * else it never ran.
  */
 export function idleReasonOf(input: {
   readonly statusKey: string;
   readonly lastRun: Pick<Run, 'status' | 'finishedAt' | 'updatedAt'> | null;
-  readonly autoRuns: boolean;
 }): Omit<AgentBoardIdle, 'mayStart'> {
   const { lastRun } = input;
   if (input.statusKey === BACKLOG_STATUS)
@@ -185,10 +168,7 @@ export function idleReasonOf(input: {
         at: lastRun.finishedAt ?? lastRun.updatedAt,
       },
     };
-  return {
-    reason: input.autoRuns ? 'neverRan' : 'noAutoRun',
-    lastRun: null,
-  };
+  return { reason: 'neverRan', lastRun: null };
 }
 
 const noCounts = (): Record<AgentBoardState, number> =>
@@ -252,7 +232,6 @@ export async function readAgentBoard(
   );
   const issues = new Map(matches.issues.map((issue) => [issue.id, issue]));
   const issueIds = [...issues.keys()];
-  const approvals = await projects.approvals.pendingOn(issueIds);
   const followed = await projects.subscriptions.followedBy(
     projects.tx.read(),
     viewer.userId,
@@ -263,27 +242,12 @@ export async function readAgentBoard(
     issue.createdById === viewer.userId ||
     followed.has(issue.id);
 
-  // Each project's statuses, for the badges and to tell finished issues.
+  // The fixed statuses, for the badges, under each project the issues are in.
   const statuses: Record<string, readonly StatusDefinition[]> = {};
-  for (const projectId of new Set(
-    matches.issues.map((issue) => issue.projectId),
-  )) {
-    try {
-      statuses[projectId ?? ''] = await projects.issueQueries.statuses(
-        viewer,
-        projectId,
-      );
-    } catch {
-      // A project the viewer does not see, of an issue they own: its issues show by their status keys.
-      statuses[projectId ?? ''] = BUILTIN_STATUSES;
-    }
-  }
-  const finished = (issue: IssueListItem): boolean => {
-    const category = statuses[issue.projectId ?? '']?.find(
-      (status) => status.key === issue.statusKey,
-    )?.category;
-    return category === 'done' || category === 'closed';
-  };
+  for (const issue of matches.issues)
+    statuses[issue.projectId ?? ''] = FIXED_STATUSES;
+  const finished = (issue: IssueListItem): boolean =>
+    isTerminalCategory(statusCategory(issue.statusKey));
   // Work waits for its blockers only where it would start: not in backlog, where nothing runs.
   const waitsForBlockers = (issue: IssueListItem): boolean =>
     issue.blockedCount > 0 && issue.statusKey !== BACKLOG_STATUS;
@@ -382,24 +346,6 @@ export async function readAgentBoard(
     });
   }
 
-  for (const request of approvals) {
-    const issue = issues.get(request.issueId);
-    if (!issue || request.requestedByType !== AGENT_KIND) continue;
-    const decides = request.approverUserIds.includes(viewer.userId);
-    waiting(request.requestedById, issue.id, {
-      kind: 'approval',
-      since: request.createdAt,
-      waitingFor: request.approverUserIds.map((userId, index) => ({
-        userId,
-        name: request.approverNames[index] ?? null,
-      })),
-      viewerDecides: decides,
-      // Decided in the inbox; anyone else sees the request on the issue.
-      path: decides ? INBOX_DECISIONS_PATH : issuePath(issue.identifier),
-      detail: request.toStatus,
-    });
-  }
-
   // The issues an agent executes: waiting on the owner in Blocked or a review status, queued behind the unfinished
   // issues they wait for (the agent is woken when those finish), else idle.
   const executed = matches.issues.filter(
@@ -419,12 +365,9 @@ export async function readAgentBoard(
       .map((issue) => issue.id),
   );
   const agents = new Map(
-    (await deps.agents.agents.list({ includeArchived: true })).map((agent) => [
-      agent.id,
-      agent,
-    ]),
+    (await deps.agents.agents.list()).map((agent) => [agent.id, agent]),
   );
-  // Why an idle one is idle: the agent's newest ended run there, and whether its status starts an agent on entering.
+  // Why an idle one is idle: the agent's newest ended run there.
   const lastRuns = new Map(
     (
       await deps.agents.runs.lastEnded(
@@ -433,44 +376,13 @@ export async function readAgentBoard(
       )
     ).map((run) => [`${run.agentId}:${run.subject.id}`, run]),
   );
-  const catalogs = new Map<
-    string,
-    Awaited<ReturnType<typeof projects.workflows.catalogs.forProject>>
-  >();
-  const autoRuns = async (issue: IssueListItem, agentId: string) => {
-    const key = issue.projectId ?? '';
-    let catalog = catalogs.get(key);
-    if (!catalog)
-      catalogs.set(
-        key,
-        (catalog = await projects.workflows.catalogs.forProject(
-          projects.tx.read(),
-          issue.projectId,
-        )),
-      );
-    return (
-      catalog.machine.states
-        .find((state) => state.key === issue.statusKey)
-        ?.rules?.some((rule) => {
-          const named = rule.config?.agentId;
-          return (
-            rule.type === RUN_AGENT &&
-            (typeof named !== 'string' || !named || named === agentId)
-          );
-        }) ?? false
-    );
-  };
   const editsIssues =
     viewer.permissions.scopes[businessKey('pm.issues', 'edit')] !== 'none';
-  const idleOf = async (
-    issue: IssueListItem,
-    agentId: string,
-  ): Promise<AgentBoardIdle> => {
+  const idleOf = (issue: IssueListItem, agentId: string): AgentBoardIdle => {
     const agent = agents.get(agentId);
     const reason = idleReasonOf({
       statusKey: issue.statusKey,
       lastRun: lastRuns.get(`${agentId}:${issue.id}`) ?? null,
-      autoRuns: await autoRuns(issue, agentId),
     });
     return {
       ...reason,
@@ -478,7 +390,7 @@ export async function readAgentBoard(
         reason.reason !== 'backlog' &&
         editsIssues &&
         agent !== undefined &&
-        agent.archivedAt === null &&
+        agent.status === 'enabled' &&
         deps.agents.agents.mayInvoke(agent, viewer.userId),
     };
   };
@@ -486,24 +398,18 @@ export async function readAgentBoard(
     if (issue.executor?.type !== AGENT_KIND || !issue.executor.id) continue;
     const agentId = issue.executor.id;
     const kind: AgentWaitKind | null =
-      issue.statusKey === QUESTION_STATUS && issue.blockedCount === 0
+      issue.statusKey === BLOCKED_STATUS && issue.blockedCount === 0
         ? 'question'
-        : issue.statusKey === PROPOSAL_REVIEW_STATUS
-          ? 'proposal'
-          : REVIEW_STATUSES.has(issue.statusKey)
-            ? 'review'
-            : null;
+        : issue.statusKey === IN_REVIEW_STATUS
+          ? 'review'
+          : null;
     if (kind)
       waiting(agentId, issue.id, {
         kind,
         since: issue.lastActivityAt,
         waitingFor: [person(issue.ownerUserId)],
         viewerDecides: issue.ownerUserId === viewer.userId,
-        // A design proposal is decided where it is shown in full: the issue's design section.
-        path:
-          kind === 'proposal'
-            ? `${issuePath(issue.identifier)}#${DESIGN_SECTION_ANCHOR}`
-            : issuePath(issue.identifier),
+        path: issuePath(issue.identifier),
         detail: null,
       });
     else if (quiet(issue))
@@ -520,12 +426,12 @@ export async function readAgentBoard(
             }))
           : null,
         waiting: null,
-        idle: waitsForBlockers(issue) ? null : await idleOf(issue, agentId),
+        idle: waitsForBlockers(issue) ? null : idleOf(issue, agentId),
       });
   }
 
-  // The rows: one per issue, its most pressing entry first, the issue's executor first among equals. Only work
-  // agents: an online agent never executes an issue or runs on one, and an agent no longer there is left out.
+  // The rows: one per issue, its most pressing entry first, the issue's executor first among equals. An agent no
+  // longer there is left out.
   const loads = new Map(workload.agents.map((load) => [load.agentId, load]));
   const named = new Map<string, AgentBoardAgent>();
   const rows: AgentBoardRow[] = [];
@@ -535,7 +441,7 @@ export async function readAgentBoard(
     const executorId =
       issue.executor?.type === AGENT_KIND ? issue.executor.id : null;
     const ordered = [...byAgent.values()]
-      .filter((entry) => agents.get(entry.agentId)?.type === 'runner')
+      .filter((entry) => agents.has(entry.agentId))
       .sort(
         (a, b) =>
           (before(a, b) ? -1 : before(b, a) ? 1 : 0) ||
@@ -555,8 +461,7 @@ export async function readAgentBoard(
   for (const agent of agents.values())
     if (
       !named.has(agent.id) &&
-      agent.type === 'runner' &&
-      agent.archivedAt === null &&
+      agent.status === 'enabled' &&
       (caller.readsAllRuns ||
         deps.agents.agents.mayInvoke(agent, viewer.userId))
     )

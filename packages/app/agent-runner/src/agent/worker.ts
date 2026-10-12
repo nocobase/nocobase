@@ -87,6 +87,7 @@ import {
   agentCwd,
   PREPARE_STEPS,
   PrepareError,
+  stepFailure,
   type PrepareContext,
 } from './prepare/index.ts';
 import {
@@ -146,6 +147,8 @@ export function workspaceNotes(options: {
   mounts?: readonly { readonly dir: string; readonly note?: string }[];
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
+  /** The run only reads (`workspace.readOnly`): nothing it commits is pushed. */
+  readOnly?: boolean;
 }): string {
   const { workDir, cwd, dirs } = options;
   const lines = [
@@ -163,9 +166,15 @@ export function workspaceNotes(options: {
       lines.push(
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
-          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
+          : options.readOnly === true
+            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
+            : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
       );
     }
+    if (options.readOnly === true)
+      lines.push(
+        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Read and run checks here, but change, commit and push nothing; the runner pushes nothing from this checkout.',
+      );
     for (const dir of dirs) {
       if (dir.repo?.initializing)
         lines.push(
@@ -325,6 +334,7 @@ export class RunWorker {
   private idleTimer: NodeJS.Timeout | undefined;
   private lastActivity = Date.now();
   private sessionId: string | undefined;
+  private confirmedSessionId: string | undefined;
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
@@ -474,6 +484,18 @@ export class RunWorker {
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
   private recordEvent(event: AdapterEvent): void {
+    if (event.type === 'status' && event.content === 'sessionRecovery') {
+      this.sessionId = undefined;
+      this.confirmedSessionId = undefined;
+    }
+    if (
+      event.type === 'status' &&
+      event.content === 'started' &&
+      typeof event.meta?.sessionId === 'string'
+    ) {
+      this.sessionId = event.meta.sessionId;
+      this.confirmedSessionId = event.meta.sessionId;
+    }
     if (event.type === 'input') {
       const inputId = event.meta?.inputId;
       if (typeof inputId === 'string' && this.inputs.has(inputId)) {
@@ -608,7 +630,7 @@ export class RunWorker {
         });
         if (this.ending !== undefined) return this.finishEnding();
         return this.finishFailed(
-          error instanceof PrepareError ? error.reason : step.failure,
+          stepFailure(step, error, payload.run.acceptedFailures),
           detail,
         );
       } finally {
@@ -742,6 +764,7 @@ export class RunWorker {
           : { skillsDir: context.skills.dir }),
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
         pnpmStoreDir,
+        ...(payload.workspace.readOnly === true ? { readOnly: true } : {}),
       }),
       init,
     );
@@ -799,6 +822,7 @@ export class RunWorker {
       this.steered.clear();
       this.usage.push(...result.usage);
       this.sessionId = result.sessionId ?? this.sessionId;
+      this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       this.summaryText = result.summary ?? this.summaryText;
 
       if (this.ending !== undefined) return this.finishEnding();
@@ -820,19 +844,36 @@ export class RunWorker {
         this.deliverInPrompt(pending, 'turn');
         continue;
       }
+      const late = await this.completeOrCollect();
+      if (!Array.isArray(late)) return late;
+      prompt = formatInputs(late);
+      this.deliverInPrompt(late, 'turn');
+    }
+  }
+
+  /**
+   * Completes the run, or returns the input the server held it open for. The server may withdraw pending input it no
+   * longer lets the run act on (its subject moved on) between answering `RUN_INPUT_PENDING` and delivering, so when
+   * nothing new arrives the run completes again rather than starting a turn with an empty prompt.
+   */
+  private async completeOrCollect(): Promise<WorkerOutcome | RunInput[]> {
+    let empty = 0;
+    for (;;) {
       const outcome = await this.finishCompleted();
       if (outcome !== 'inputPending') return outcome;
       await this.pollStatus();
       if (this.ending !== undefined) return this.finishEnding();
-      const next = this.undelivered();
-      if (next.length === 0) {
+      if (this.undelivered().length === 0) {
         // The server says inputs are pending but sent none we have not seen; ask once more after a pause.
         await delay(1_000);
         await this.pollStatus();
+        if (this.ending !== undefined) return this.finishEnding();
       }
       const late = this.undelivered();
-      prompt = formatInputs(late);
-      this.deliverInPrompt(late, 'turn');
+      if (late.length > 0) return late;
+      empty += 1;
+      // An older server that keeps answering so without sending anything gets the turn it used to.
+      if (empty >= 3) return late;
     }
   }
 
@@ -852,6 +893,7 @@ export class RunWorker {
       if (result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
+        this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
     }
   }
@@ -893,7 +935,10 @@ export class RunWorker {
 
   private async finishCompleted(): Promise<WorkerOutcome | 'inputPending'> {
     await this.updateRecord({ phase: 'reporting' });
-    const repos = await this.repoReports(this.deps.push ?? true);
+    // A read-only run pushes nothing: another run may be writing the same branch.
+    const repos = await this.repoReports(
+      (this.deps.push ?? true) && this.payload.workspace.readOnly !== true,
+    );
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir !== undefined)
@@ -990,6 +1035,9 @@ export class RunWorker {
           await this.report(
             routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
             {
+              ...(this.confirmedSessionId === undefined
+                ? {}
+                : { sessionId: this.confirmedSessionId }),
               handledInputIds: [...this.delivered],
               usage: this.usage,
             },

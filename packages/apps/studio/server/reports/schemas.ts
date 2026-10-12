@@ -177,7 +177,6 @@ export const MetricsReportSchema: z.ZodType<MetricsReport> = z.object({
   }),
   trust: z.object({
     reviewPassRate: ratio,
-    approvalApproveRate: ratio,
     reworkRate: ratio,
   }),
   reliability: z.object({

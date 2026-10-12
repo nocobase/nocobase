@@ -2,10 +2,17 @@
 name: nocobase-app-upgrade
 description: >-
   Upgrade this application to a newer release of the template it was generated
-  from. Use when the user asks to upgrade the template, pull in template
-  changes, move to a newer template version, or reconcile the application with
-  upstream. Do not use for ordinary feature development or for upgrading a
-  single dependency.
+  from, which is how this application moves to a newer NocoBase version. Users
+  rarely think in terms of templates, so use it whenever the user asks to
+  upgrade or update NocoBase, the NocoBase core, kernel or framework version,
+  or the @nocobase packages as a whole — for example "upgrade NocoBase",
+  "update the NocoBase core version", "move to the latest NocoBase release",
+  "升级 NocoBase", "升级 NocoBase 内核版本", "更新 NocoBase 到最新版" — as well as
+  when they ask to upgrade the template, pull in template changes, move to a
+  newer template version, or reconcile the application with upstream. Do not
+  use for ordinary feature development, for upgrading a single dependency, or
+  for upgrading an already deployed build on a server, which the app installer
+  handles.
 metadata:
   short-description: Merge a newer template release into this application
 ---
@@ -47,13 +54,27 @@ node -p "JSON.stringify(require('./package.json').nocobase, null, 2)"
 
 If `nocobase.templatePackage` is missing, use the confirmed package name for `TEMPLATE` instead of the manifest lookup below, then record it in the manifest during the agreed source merge.
 
-## 3. Fetch both releases
+## 3. Select the release channel and fetch both releases
+
+Resolve the user's requested channel before choosing TARGET. An explicit version takes precedence. For a beta upgrade, use the template's `beta` dist-tag; for an explicit `latest` upgrade, use its `latest` dist-tag. If the user only asks to upgrade, retain the baseline's channel: use `beta` for a beta baseline and `latest` for a stable baseline; clarify other prerelease channels instead of guessing. State the selected channel and resolved version in the upgrade plan.
+
+The tags are independent pointers, not a version ordering: `beta` tracks beta releases, while `latest` is npm's default tag and can still point to an older beta before a stable release exists. Do not assume `latest` is newer or stable, or choose the highest version across all channels. If the user asks for a stable release but `latest` resolves to a prerelease, explain that the tag does not provide a stable target and clarify before proceeding. A missing requested tag is not permission to fall back to another channel.
 
 ```bash
 REGISTRY=https://registry.npmjs.org
 TEMPLATE=$(node -p "require('./package.json').nocobase.templatePackage")
 BASE=$(node -p "require('./package.json').nocobase.defaultTemplateVersion")
-TARGET=<target version>
+npm view "$TEMPLATE" dist-tags --json --registry="$REGISTRY"
+
+# Set CHANNEL to beta or latest according to the selection above.
+CHANNEL=beta
+TARGET=$(npm view "$TEMPLATE@$CHANNEL" version --registry="$REGISTRY")
+# For an explicitly requested version, assign that exact version to TARGET instead.
+```
+
+Use semantic version ordering to compare the resolved TARGET with BASE. If equal, there is no template upgrade; if older, report the result rather than performing an implicit downgrade. Resolve a tag once, then use that exact version for fetching, the source diff and `defaultTemplateVersion`, even if the tag moves during the upgrade. Fetch dependencies from the target template's manifest; do not independently move every `@nocobase/*` dependency to a dist-tag, since packages have separate versions and release schedules.
+
+```bash
 WORK=$(mktemp -d)
 
 for VERSION in "$BASE" "$TARGET"; do
@@ -64,8 +85,6 @@ done
 ```
 
 These are published tarballs, not Git checkouts — they carry only what `files` publishes, and npm never publishes `.gitignore`. That is fine: both sides are missing the same things.
-
-Do not read the `beta` dist-tag as "newest". While every release is a prerelease, changesets tags each one `latest` and leaves `beta` on the first version ever published.
 
 ## 4. Read what changed, and who else changed it
 

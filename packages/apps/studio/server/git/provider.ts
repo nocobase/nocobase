@@ -3,8 +3,7 @@
  * webhooks reach them through `gitWebhookRoutes` (`routes.ts`). The code hosts are the providers registered here
  * (`providers.ts`): GitHub (`github.ts`), which covers GitHub Enterprise Server by its address.
  *
- * Boots before `StudioAgentsProvider` (`server/providers/index.ts`), so the workflow event `studio.merged` is registered
- * before the "Software development" template that names it is installed.
+ * Registers the status event `studio.merged`, which moves an issue whose pull requests are all merged to done.
  *
  * Configuration (`studio.git`, all optional):
  *
@@ -19,9 +18,8 @@
 import {
   projectsAccessToken,
   projectsNoticeRulesToken,
-  projectsStatusRulesToken,
+  projectsStatusEventsToken,
   projectsToken,
-  projectsWorkflowEventsToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Application } from '@nocobase/app-server/application';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
@@ -210,11 +208,8 @@ export default class StudioGitProvider extends ServiceProvider<Application> {
       : undefined;
     const bound = bindStudioGit({
       projects: () => container.resolve(projectsToken),
-      ...(container.has(projectsWorkflowEventsToken)
-        ? { events: container.resolve(projectsWorkflowEventsToken) }
-        : {}),
-      ...(container.has(projectsStatusRulesToken)
-        ? { statusRules: container.resolve(projectsStatusRulesToken) }
+      ...(container.has(projectsStatusEventsToken)
+        ? { events: container.resolve(projectsStatusEventsToken) }
         : {}),
       ...(container.has(projectsNoticeRulesToken)
         ? { noticeRules: container.resolve(projectsNoticeRulesToken) }

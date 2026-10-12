@@ -2,6 +2,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { RUN_CREDENTIALS_ENV } from '@nocobase/agent-protocol';
 
 // A packaged CLI branded as an application would brand it, run from the sources: the entry `nocobase cli build` and
 // `nocobase cli link` generate, with the `nocobase.cli` of its own package.json.
@@ -31,6 +32,8 @@ export function cliEnv(
   // The keychain stays off: a test never writes to the real one (tests/secrets.test.ts covers it with fakes).
   return {
     ...process.env,
+    // A packaged test uses only its own synthetic run credential.
+    [RUN_CREDENTIALS_ENV]: undefined,
     ACME_HOME: home,
     ACME_KEYCHAIN: 'off',
     ...extra,

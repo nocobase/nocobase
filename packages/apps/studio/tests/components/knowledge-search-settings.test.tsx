@@ -1,8 +1,8 @@
 /**
  * Settings › Knowledge search in the browser: the search status (keyword search always, semantic search with why it is
  * unavailable and how to fix it), the vector store with its location and index progress, the model pickers' link to
- * the model services and their empty hint, contextual retrieval as a switch with its model and spaces, and the
- * whole-knowledge threshold with its approximate size. Each part saves on its own over the latest settings.
+ * the model services and their empty hint, and contextual retrieval as a switch with its model and spaces. Each part
+ * saves on its own over the latest settings.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -281,36 +281,6 @@ describe('the knowledge search settings page', () => {
         ...DEFAULT_KNOWLEDGE_SEARCH,
         contextModel: null,
         contextual: ['project:p1'],
-      }),
-    );
-  });
-
-  it('names the whole-knowledge threshold and states its size', async () => {
-    api.knowledgeSearch.mockResolvedValue(config());
-    render(wrap(<KnowledgeSearchSettingsPage />));
-    expect(
-      await screen.findByText('knowledge.searchSettings.whole.title'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/whole\.approx .*"value":"150K"/u),
-    ).toBeInTheDocument();
-    const input = screen.getByRole('textbox', {
-      name: 'knowledge.searchSettings.whole.title',
-    });
-    await userEvent.clear(input);
-    await userEvent.type(input, '20000');
-    expect(
-      screen.getByText(/whole\.approx .*"value":"20K"/u),
-    ).toBeInTheDocument();
-    await userEvent.click(
-      section('whole').getByRole('button', {
-        name: 'knowledge.searchSettings.save',
-      }),
-    );
-    await waitFor(() =>
-      expect(api.updateKnowledgeSearch).toHaveBeenLastCalledWith({
-        ...DEFAULT_KNOWLEDGE_SEARCH,
-        wholeTokens: 20000,
       }),
     );
   });
