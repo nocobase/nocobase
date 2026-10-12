@@ -17,3 +17,5 @@ Register the host mailer in both templates and Studio, add bilingual reset succe
 Automatic credential links require an explicitly configured public origin (`app.publicOrigin` / `APP_PUBLIC_ORIGIN`), or a direct Better Auth consumer's restricted host configuration, so a client-controlled Host cannot choose the reset-link destination. Custom sender configuration remains compatible.
 
 Reject malformed SMTP authentication settings when validating email channel availability.
+
+Keep default SMTP password and Resend API key environment mappings optional and secret in deployment manifests. Applications may explicitly require selected credentials, while enabled email channels still validate their configuration.

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { AppConfig } from '../src/config/index.js';
+import {
+  AppConfig,
+  buildVariablesManifest,
+  envString,
+} from '../src/config/index.js';
 import {
   createMailer,
   defineMailChannelsConfig,
@@ -124,4 +128,112 @@ describe('host mailer ownership', () => {
       'Invalid built-in email channel configuration.',
     );
   });
+});
+
+describe('host mailer deployment variables', () => {
+  it.each([
+    ['no channels', {}],
+    [
+      'disabled channel',
+      { 'system-email': { provider: 'smtp', enabled: false } },
+    ],
+    [
+      'SMTP only',
+      { 'system-email': { provider: 'smtp', host: 'localhost', port: 2525 } },
+    ],
+    [
+      'Resend only',
+      {
+        'system-email': {
+          provider: 'resend',
+          apiKey: 'synthetic-key',
+          from: 'synthetic@example.test',
+        },
+      },
+    ],
+  ])(
+    'keeps default credentials optional and secret with %s',
+    (_scenario, channels) => {
+      const declaration = defineMailChannelsConfig({ defaults: { channels } });
+      const manifest = buildVariablesManifest({
+        app: { name: 'synthetic-mailer' },
+        variables: Object.fromEntries(
+          Object.entries(declaration.rules?.env ?? {}).map(
+            ([name, mapping]) => [
+              name,
+              { ...mapping, path: `notification.${mapping.path}` },
+            ],
+          ),
+        ),
+        defaults: { notification: { channels } },
+      });
+      const credentials = manifest.variables.filter(({ name }) =>
+        ['SMTP_PASSWORD', 'RESEND_API_KEY'].includes(name),
+      );
+      expect(credentials).toHaveLength(2);
+      for (const credential of credentials)
+        expect(credential).toMatchObject({ required: false, secret: true });
+      const error = vi.fn();
+      validateMailChannels(
+        { channels },
+        { error, warning: vi.fn(), isUserProvided: () => true },
+      );
+      expect(error).not.toHaveBeenCalled();
+    },
+  );
+
+  it('preserves application overrides that explicitly require a credential', () => {
+    const declaration = defineMailChannelsConfig({
+      defaults: { channels: {} },
+      env: {
+        SMTP_PASSWORD: envString('channels.system-email.auth.pass', {
+          required: true,
+          secret: true,
+        }),
+      },
+    });
+    const manifest = buildVariablesManifest({
+      app: { name: 'synthetic-mailer' },
+      variables: declaration.rules?.env ?? {},
+      defaults: {},
+    });
+    expect(
+      manifest.variables.find(({ name }) => name === 'SMTP_PASSWORD'),
+    ).toMatchObject({ required: true, secret: true });
+    expect(
+      manifest.variables.find(({ name }) => name === 'RESEND_API_KEY'),
+    ).toMatchObject({ required: false, secret: true });
+  });
+
+  it.each([
+    {
+      provider: 'smtp',
+      host: 'localhost',
+      port: 2525,
+      auth: { user: 'synthetic' },
+    },
+    { provider: 'resend', from: 'synthetic@example.test' },
+  ])(
+    'still rejects an enabled channel with missing credentials: $provider',
+    (channel) => {
+      const declaration = defineMailChannelsConfig({
+        defaults: { channels: {} },
+      });
+      const error = vi.fn();
+      expect(declaration.rules?.validators).toContain(validateMailChannels);
+      validateMailChannels(
+        { channels: { 'system-email': channel } },
+        { error, warning: vi.fn(), isUserProvided: () => true },
+      );
+      expect(error).toHaveBeenCalledExactlyOnceWith(
+        'channels.system-email',
+        'Invalid built-in email channel configuration.',
+      );
+      expect(
+        createMailer({ channels: { 'system-email': channel } }).available(
+          'system-email',
+        ),
+      ).toBe(false);
+    },
+  );
 });

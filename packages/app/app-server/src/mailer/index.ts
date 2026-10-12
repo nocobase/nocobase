@@ -76,9 +76,11 @@ export function defineMailChannelsConfig<T extends MailChannelsConfig>(
     env: {
       SMTP_PASSWORD: envString('channels.system-email.auth.pass', {
         secret: true,
+        required: false,
       }),
       RESEND_API_KEY: envString('channels.system-email.apiKey', {
         secret: true,
+        required: false,
       }),
       ...definition.env,
     },
