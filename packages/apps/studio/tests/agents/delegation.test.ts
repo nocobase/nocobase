@@ -8,6 +8,7 @@ import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { WAKE_LIMIT } from '../../server/agents/conversation/delegation.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -66,14 +67,17 @@ interface Delegated {
 }
 
 /**
- * Alice's PM agent proposes a plan that creates an issue for the Coder agent; its turn ends, and Alice executes the
- * plan, which queues the Coder's run.
+ * Alice's assistant proposes a plan that creates an issue in progress for the project manager; its turn ends, and
+ * Alice executes the plan, which queues the project manager's run.
  */
 async function delegate(): Promise<Delegated> {
-  const pmId = await h.createAgent({ name: 'PM', actions: PM_ACTIONS });
-  const coderId = await h.createAgent({ name: 'Coder' });
+  const assistantId = await h.createAgent({
+    name: 'Assistant',
+    actions: PM_ACTIONS,
+  });
+  const coderId = PROJECT_MANAGER_ID;
   const conversation = await h.agents.conversations.create('alice', {
-    agentId: pmId,
+    agentId: assistantId,
   });
   await h.agents.conversations.send('alice', conversation.id, {
     content: 'Get the login fixed.',
@@ -85,12 +89,13 @@ async function delegate(): Promise<Delegated> {
   const proposed = await h.request('POST', '/projects/plans', {
     runToken: token,
     body: {
-      title: 'Hand the login to Coder',
+      title: 'Hand the login to the project manager',
       rows: [
         {
           op: 'issue.create',
           params: {
             title: 'Fix login',
+            statusKey: 'in_progress',
             executor: { type: 'agent', id: coderId },
           },
         },
@@ -203,20 +208,24 @@ describe('delegate and report back', () => {
         event: 'finished',
         issueId: delegated.issueId,
         identifier: delegated.identifier,
-        agentName: 'Coder',
+        agentName: 'Project manager',
         excerpt: 'Fixed the login form and added a test.',
       },
     });
     expect(card?.code === 'news' && card.title).toBe(
-      `${delegated.identifier} · Coder finished its work: Fixed the login form and added a test.`,
+      `${delegated.identifier} · Project manager finished its work: Fixed the login form and added a test.`,
     );
     const woke = await wakes(delegated.conversationId);
     expect(woke).toHaveLength(1);
     expect(woke[0]).toMatchObject({
       type: 'signal',
-      actor: { kind: 'agent', id: delegated.coderId, name: 'Coder' },
+      actor: {
+        kind: 'agent',
+        id: delegated.coderId,
+        name: 'Project manager',
+      },
     });
-    expect(woke[0]?.text).toContain('Coder finished its run on it.');
+    expect(woke[0]?.text).toContain('Project manager finished its run on it.');
     // The same end heard again is not told twice.
     h.agents.events.emit({
       type: 'run.changed',
@@ -245,7 +254,7 @@ describe('delegate and report back', () => {
     // Alice finishing it, by hand or through her conversation's plan, is not news to her.
     await moveIssue('alice', delegated.issueId, 'done');
     expect(await cards(delegated.conversationId)).toEqual([]);
-    await moveIssue('alice', delegated.issueId, 'todo');
+    await moveIssue('alice', delegated.issueId, 'in_progress');
     await moveIssue('carol', delegated.issueId, 'done');
     const [card, ...more] = await cards(delegated.conversationId);
     expect(more).toEqual([]);
@@ -280,7 +289,7 @@ describe('delegate and report back', () => {
     const delegated = await delegate();
     for (let round = 0; round <= WAKE_LIMIT; round += 1) {
       await moveIssue('carol', delegated.issueId, 'done');
-      await moveIssue('carol', delegated.issueId, 'todo');
+      await moveIssue('carol', delegated.issueId, 'in_progress');
     }
     expect(await cards(delegated.conversationId)).toHaveLength(WAKE_LIMIT + 1);
     expect(await wakes(delegated.conversationId)).toHaveLength(WAKE_LIMIT);

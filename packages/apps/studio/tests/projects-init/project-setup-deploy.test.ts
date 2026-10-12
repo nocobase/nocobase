@@ -15,7 +15,6 @@
 import { SYSTEM_CALLER } from '@nocobase/app-plugin-releases/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import {
   createProjectInits,
   type ProjectInits,
@@ -27,6 +26,7 @@ import {
 } from '../../server/releases/links.js';
 import { linkReleases } from '../../server/releases/provider.js';
 import type { GitConnection } from '../../shared/git.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import type { NewProjectRequest } from '../../shared/project-init.js';
 import type { DeploySettings } from '../../shared/releases.js';
 import {
@@ -47,7 +47,6 @@ beforeEach(async () => {
   h = await createBridgeHarness({ releases: true });
   for (const id of ['alice', 'bob']) await h.addUser(id);
   h.roles.set('alice', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
   agentId = await h.createAgent({ name: 'Coder' });
   h.github.app.installations.set('acme', '77');
   connection = await h.gitConnections.create('alice', {
@@ -239,7 +238,12 @@ describe('a working directory added to a project', () => {
       alice(),
       added.initIssueId!,
     );
-    expect(issue.executor).toEqual({ type: 'agent', id: agentId });
+    // The project manager executes it, told to hand it to the agent chosen.
+    expect(issue).toMatchObject({
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+      statusKey: 'in_progress',
+    });
+    expect(issue.description).toContain(`(mention://agent/${agentId})`);
     expect(issue.title).toContain('acme/shop');
     expect(
       (await h.projects.projects.get(alice(), project.projectId)).setupIssueId,

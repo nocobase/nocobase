@@ -166,7 +166,7 @@ beforeEach(() => {
 
 describe('issue execution history', () => {
   it.each(['en-US', 'zh-CN'] as const)(
-    'shows models and distinguishable transcript links in %s',
+    'shows models, “Turn ended” and distinguishable transcript links in %s',
     async (locale) => {
       mocks.runs.mockResolvedValue([
         run('first'),
@@ -180,7 +180,11 @@ describe('issue execution history', () => {
         links[1]?.getAttribute('aria-label'),
       );
       expect(links[0]).not.toHaveTextContent('configured-model');
+      // A finished run ended its turn; the work may go on in another one.
       expect(links[0]).toHaveTextContent(
+        locale === 'en-US' ? 'Turn ended' : '本轮结束',
+      );
+      expect(links[0]).not.toHaveTextContent(
         locale === 'en-US' ? 'Completed' : '已完成',
       );
     },

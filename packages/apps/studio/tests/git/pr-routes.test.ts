@@ -6,7 +6,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import {
   createBridgeHarness,
   type BridgeHarness,
@@ -20,24 +19,21 @@ let h: BridgeHarness;
 beforeEach(async () => {
   h = await createBridgeHarness();
   await h.addUser('alice');
-  h.roles.set('alice', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
-  const software = (await h.projects.workflows.list(h.viewer('alice'))).find(
-    (workflow) => workflow.builtInKey === 'software',
-  )!;
-  await h.projects.workflows.setDefault(h.viewer('alice'), software.id);
-  h.roles.delete('alice');
 });
 afterEach(() => h.close());
 
-/** An issue alice owns, executed by an agent with `actions`, and the token of the run it was given. */
+/** An issue alice owns, an agent with `actions` she mentions on it, and the token of the step run it was given. */
 async function runOn(actions: readonly string[]) {
   const agentId = await h.createAgent({ actions: [...actions] });
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Fix login',
-    executor: { type: 'agent', id: agentId },
+    start: false,
+  });
+  await h.projects.comments.create(h.viewer('alice'), issue.id, {
+    content: `[@Coder](mention://agent/${agentId}) please look`,
   });
   const payload = await h.claimOne();
+  expect(payload.agent.id).toBe(agentId);
   return {
     issue,
     agentId,

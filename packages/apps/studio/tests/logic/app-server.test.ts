@@ -97,8 +97,10 @@ import appRuntime from '../../server/runtime.ts';
 import serverPlugins from '../../server/plugins.ts';
 import {
   projectsKindsToken,
-  projectsStatusRulesToken,
+  projectsStatusEventsToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
+import { MERGED_EVENT } from '../../shared/git.ts';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.ts';
 import {
   createStandaloneServer,
   type StandaloneServer,
@@ -700,7 +702,7 @@ describe('app server', () => {
     }
   });
 
-  it('joins agents to projects before the first request: the agent kind and the Software development workflow', async () => {
+  it('joins agents to projects before the first request: the agent kind, the merge event and the project manager', async () => {
     const app = trackCloseable(
       await createInstalledStandaloneServer({ viteDevUrl: false }),
     );
@@ -708,25 +710,17 @@ describe('app server', () => {
     // StudioAgentsProvider binds at boot, after the plugins' providers booted and before any request or `ready()`.
     expect(container.resolve(projectsKindsToken).get('agent')).toBeDefined();
     expect(
-      container.resolve(projectsStatusRulesToken).get('runAgent'),
-    ).toBeDefined();
-    // The projects plugin's `ready()` waited for the template: it is the default workflow when the server answers.
-    const workflows = await container
+      container.resolve(projectsStatusEventsToken).get(MERGED_EVENT),
+    ).toMatchObject({ to: 'done' });
+    // The project manager's agent is kept when the server answers.
+    const manager = await container
       .resolve(databaseManagerToken)
       .connection()
-      .repository<{
-        builtInKey: string | null;
-        isDefault: boolean;
-        definition: { states: unknown[] };
-      }>('pmWorkflows')
-      .findMany();
-    expect(workflows).toHaveLength(1);
-    expect(workflows[0]).toMatchObject({
-      builtInKey: 'software',
-      isDefault: true,
-    });
-    // The nine built-in statuses and the template's own UI review.
-    expect(workflows[0]?.definition.states).toHaveLength(10);
+      .repository<{ id: string; source: string | null; status: string }>(
+        'agAgents',
+      )
+      .findOne({ filter: { id: PROJECT_MANAGER_ID } });
+    expect(manager).toMatchObject({ source: 'system', status: 'enabled' });
   });
 
   it('serves Users and API Keys with the application authentication and permissions', async () => {

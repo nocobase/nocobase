@@ -1,16 +1,17 @@
 // @vitest-environment node
 /**
- * The demo data over the real services: it adds its review checklist to the installed Software development workflow
- * instead of a workflow of its own, its projects use the default workflow, and adding the checklist again changes
- * nothing.
+ * The demo data over the real services: its runtimes' reports discover the agents, the demo enables some of them and
+ * the project manager runs with two, its issues are in the fixed statuses, and the project manager executes the work
+ * that agents do without starting it.
  */
+import { runnerAgentId } from '@nocobase/app-plugin-agents/server/tokens';
+import { STATUS_KEYS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
-import builtInAgents from '../../database/main/seeds/202610010030_studio_builtin_agents.js';
 import presetLabels from '../../database/main/seeds/202610010060_studio_preset_labels.js';
-import { addReviewChecklist, buildDemo } from '../../server/demo/build.js';
-import { DEMO_REVIEW_CHECKLIST } from '../../server/demo/data.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { buildDemo } from '../../server/demo/build.js';
+import { DEMO_AGENTS, DEMO_ISSUES } from '../../server/demo/data.js';
 import { DEMO_HISTORY } from '../../server/demo/history.js';
 import { createPermissionSource } from '../../server/agents/commands/permissions.js';
 import { createStudioReports } from '../../server/reports/service.js';
@@ -25,8 +26,6 @@ beforeEach(async () => {
   h = await createBridgeHarness({ knowledge: true });
   await h.addUser('admin');
   h.roles.set('admin', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
-  // The installation's built-in agents, owned by its administrator.
   const conn = h.database.connection();
   const now = new Date();
   await conn.query
@@ -40,18 +39,6 @@ beforeEach(async () => {
       updatedAt: now,
     })
     .execute();
-  await builtInAgents.run({
-    query: conn.query,
-    repository: (name: string) => conn.repository(name),
-    config: { get: () => undefined },
-  } as never);
-  // An installation with a model service: the built-in assistant gets its model.
-  await h.agents.online.services.create({
-    title: 'Local',
-    provider: 'openai-compatible',
-    baseUrl: 'http://127.0.0.1:9/v1',
-    models: [{ value: 'mock-model', label: 'Mock model' }],
-  });
 });
 afterEach(() => h.close());
 
@@ -76,6 +63,7 @@ async function build(
         Promise.resolve(permissionsOf(h.roles.get(userId) ?? 'member', userId)),
     } as never,
     agents: h.agents,
+    projectManager: h.manager,
     knowledge: h.knowledge!,
     adminId: 'admin',
     onWarning: (message, error) => warnings.push({ message, error }),
@@ -84,56 +72,57 @@ async function build(
   expect(warnings.map((warning) => warning.message)).toEqual(expected);
 }
 
+const idOf = (key: string): string => {
+  const agent = DEMO_AGENTS.find((each) => each.key === key)!;
+  return runnerAgentId(agent.tool, agent.model);
+};
+
 describe('the demo data', () => {
-  it('gives the built-in assistant a model and makes it the team default when a model service offers one', async () => {
+  it('enables the agents its runtimes discovered, with what they are good at and their skills', async () => {
     await build();
-    const agents = await h.agents.agents.list();
-    // No chat agent of its own beside the built-in ones.
-    expect(agents.map((agent) => agent.name).sort()).toEqual(
-      [
-        'Code Reviewer',
-        'Frontend Developer',
-        'Project lead',
-        'Project assistant',
-      ].sort(),
+    const discovered = (await h.agents.agents.list()).filter(
+      (agent) => agent.source === 'runner',
     );
-    const assistant = agents.find(
-      (agent) => agent.id === 'studio-project-assistant',
-    )!;
-    expect(assistant).toMatchObject({
-      type: 'online',
-      modelEntries: [
-        { modelService: 'local', model: 'mock-model', effort: null },
-      ],
-    });
-    // A runner agent lists its tools in order: a runtime takes its work with the first one it has signed in.
     expect(
-      agents.find((agent) => agent.name === 'Code Reviewer'),
-    ).toMatchObject({
-      type: 'runner',
-      modelEntries: [
-        { tool: 'codex', model: null, effort: null },
-        { tool: 'claude', model: 'opus', effort: null },
-      ],
-    });
-    expect((await h.agents.chat.settings()).defaultAgentId).toBe(assistant.id);
+      discovered
+        .map((agent) => ({
+          tool: agent.tool,
+          model: agent.model,
+          status: agent.status,
+        }))
+        .sort((a, b) => a.model!.localeCompare(b.model!)),
+    ).toEqual([
+      { tool: 'claude', model: 'claude-haiku-4-5', status: 'pending' },
+      { tool: 'claude', model: 'claude-opus-5-5', status: 'enabled' },
+      { tool: 'claude', model: 'claude-sonnet-5', status: 'enabled' },
+      { tool: 'codex', model: 'gpt-6.1-sol', status: 'enabled' },
+    ]);
+    for (const spec of DEMO_AGENTS) {
+      expect(await h.agents.agents.get(idOf(spec.key))).toMatchObject({
+        description: spec.description,
+      });
+      const skills = await h.agents.skills.attached({
+        scope: 'agent',
+        scopeId: idOf(spec.key),
+      });
+      expect(skills).toHaveLength(spec.skills.length);
+    }
   });
 
-  it('leaves the built-in assistant waiting for a model, and says why, without a model service', async () => {
-    await h.agents.online.services.remove('local');
-    await build([
-      'The built-in Project assistant has no model: set up a model service with a model in Agent team › Models, then give it one on its page to chat with it',
+  it('makes two of them the project manager’s first choice and fallback', async () => {
+    await build();
+    expect(await h.manager.settings()).toMatchObject({
+      firstChoiceAgentId: idOf('opus'),
+      fallbackAgentId: idOf('gpt'),
+    });
+    expect(
+      (await h.agents.agents.get(PROJECT_MANAGER_ID)).modelEntries.map(
+        (entry) => [entry.tool, entry.model],
+      ),
+    ).toEqual([
+      ['claude', 'claude-opus-5-5'],
+      ['codex', 'gpt-6.1-sol'],
     ]);
-    expect(await h.agents.agents.get('studio-project-assistant')).toMatchObject(
-      {
-        type: 'online',
-        modelEntries: [],
-      },
-    );
-    // It stays the team's default chat agent, as the installation made it.
-    expect((await h.agents.chat.settings()).defaultAgentId).toBe(
-      'studio-project-assistant',
-    );
   });
 
   it('connects runtimes with their slots and limits per coding tool, owned by the people who connected them', async () => {
@@ -188,36 +177,33 @@ describe('the demo data', () => {
     ).toHaveLength(3);
   });
 
-  it('adds its review checklist to Software development and creates no workflow', async () => {
+  it('puts its issues in the fixed statuses, the agents’ work executed by the project manager and not started', async () => {
     await build();
-    const workflows = await h.projects.workflows.list(admin());
-    expect(workflows).toHaveLength(1);
-    const [software] = workflows;
-    expect(software).toMatchObject({ builtInKey: 'software', isDefault: true });
-    const review = software!.definition.states.find(
-      (state) => state.key === 'in_review',
-    )!;
-    // The template's own rules stay: telling the owner, and the code reviewer's run.
-    expect(review.rules?.map((rule) => rule.type)).toEqual([
-      'checklist',
-      'notifyOwner',
-      'runAgent',
-    ]);
-    expect(review.rules?.[0]).toEqual({
-      type: 'checklist',
-      config: { items: DEMO_REVIEW_CHECKLIST },
-    });
-    const projects = await h.projects.projects.list(admin());
-    expect(projects.length).toBeGreaterThan(0);
-    expect(projects.every((project) => project.workflowId === null)).toBe(true);
-    // An issue in review got the checklist on entering it, with what the demo checked.
-    const reviewed = (
-      await h.projects.issueQueries.page(admin(), { statusKey: 'in_review' })
-    ).data[0]!;
-    const detail = await h.projects.issueQueries.detail(admin(), reviewed.id);
-    expect(detail.checklist?.items.map((item) => item.itemKey)).toEqual(
-      DEMO_REVIEW_CHECKLIST.map((item) => item.key),
+    const issues = (await h.projects.issueQueries.page(admin(), { limit: 100 }))
+      .data;
+    expect(issues).toHaveLength(DEMO_ISSUES.length);
+    expect(issues.every((issue) => STATUS_KEYS.includes(issue.statusKey))).toBe(
+      true,
     );
+    expect(
+      new Set(issues.map((issue) => issue.statusKey)).size,
+    ).toBeGreaterThanOrEqual(STATUS_KEYS.length);
+    const managed = DEMO_ISSUES.filter((spec) => spec.projectManager);
+    expect(managed.length).toBeGreaterThan(0);
+    for (const spec of managed) {
+      const issue = issues.find((each) => each.title === spec.title)!;
+      expect(issue).toMatchObject({
+        statusKey: spec.status,
+        executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+      });
+    }
+    expect(
+      await h.database
+        .connection()
+        .query.selectFrom('agRuns')
+        .select('id')
+        .execute(),
+    ).toEqual([]);
   });
 
   it('reuses the preset labels of an English installation instead of creating them again', async () => {
@@ -241,15 +227,6 @@ describe('the demo data', () => {
     expect(labelled.length).toBeGreaterThan(0);
     const presetIds = new Set(before.map((label) => label.id));
     expect(labelled.every((id) => presetIds.has(id))).toBe(true);
-  });
-
-  it('leaves a workflow that has the checklist alone', async () => {
-    expect(await addReviewChecklist(h.projects, admin())).toBe(true);
-    const [first] = await h.projects.workflows.list(admin());
-    expect(await addReviewChecklist(h.projects, admin())).toBe(true);
-    const [second] = await h.projects.workflows.list(admin());
-    expect(second!.revision).toBe(first!.revision);
-    expect(second!.definition).toEqual(first!.definition);
   });
 
   it('builds a knowledge base in the system and the projects, with one proposal waiting for its lead', async () => {
@@ -287,16 +264,12 @@ describe('the demo data', () => {
   });
 
   it('has a past the dashboard measures: work finished over two months and the agents’ runs on it', async () => {
-    // The installation's price table (seeded by the agents plugin) prices Claude Code's Sonnet.
+    // The installation's price table prices the demo agents' models.
     await h.agents.prices.replace({
       subscriptions: [],
       prices: [
-        {
-          tool: 'claude',
-          model: 'claude-sonnet-4*',
-          inputPerM: 3,
-          outputPerM: 15,
-        },
+        { tool: 'claude', model: 'claude-*', inputPerM: 3, outputPerM: 15 },
+        { tool: 'codex', model: 'gpt-*', inputPerM: 2, outputPerM: 10 },
       ],
     });
     await build([], true);
