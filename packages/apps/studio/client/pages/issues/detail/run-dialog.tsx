@@ -6,6 +6,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { useParams } from 'react-router';
 
+import { runReturnFocus } from '@/agents/run-focus';
 import { RouteDialog } from '@/components/route-dialog';
 
 import { IssueRunTranscript } from '../../../agents/issue-runs.js';
@@ -16,6 +17,7 @@ export default function RunDialogPage(): ReactElement {
   const { runId = '' } = useParams();
   return (
     <RouteDialog
+      finalFocus={runReturnFocus}
       title={t('issuesPage.detail.runTranscript')}
       className='sm:max-w-4xl'
     >
