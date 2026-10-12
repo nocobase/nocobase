@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLang } from '@rspress/core/runtime';
 import chinese from './markup.json';
 import english from './markup.en.json';
@@ -10,6 +10,8 @@ export function FullHome() {
   const lang = useLang();
   const markup = lang === 'cn' ? chinese : english;
   const root = useRef<HTMLDivElement>(null);
+  // Keep React from replacing DOM initialized by the effect on parent rerenders.
+  const html = useMemo(() => ({ __html: markup }), [markup]);
   useEffect(() => {
     const element = root.current;
     if (!element) return;
@@ -18,10 +20,6 @@ export function FullHome() {
     return initializeHomepage(element, lang);
   }, [lang, markup]);
   return (
-    <div
-      className='docs-full-home'
-      ref={root}
-      dangerouslySetInnerHTML={{ __html: markup }}
-    />
+    <div className='docs-full-home' ref={root} dangerouslySetInnerHTML={html} />
   );
 }
