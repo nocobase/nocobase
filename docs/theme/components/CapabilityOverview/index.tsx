@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLang } from '@rspress/core/runtime';
 import pages from './pages.json';
 import englishPages from './pages.en.json';
@@ -30,6 +30,8 @@ export function CapabilityOverview({ routePath }: { routePath: string }) {
       /assets\/([^"\s]+)/g,
       (source, file: string) => images[file] ?? source,
     );
+  // Keep React from replacing DOM initialized by the effect on parent rerenders.
+  const html = useMemo(() => ({ __html: markup }), [markup]);
   useEffect(() => {
     if (!root.current) return;
     root.current.innerHTML = markup;
@@ -49,7 +51,7 @@ export function CapabilityOverview({ routePath }: { routePath: string }) {
       className='capability-overview'
       lang={lang === 'cn' ? 'zh-CN' : 'en'}
       ref={root}
-      dangerouslySetInnerHTML={{ __html: markup }}
+      dangerouslySetInnerHTML={html}
     />
   );
 }
