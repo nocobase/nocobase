@@ -66,7 +66,9 @@ jobs:
 
           # Merge next into develop. Only resolve package.json conflicts when the
           # conflicting lines are the version field; keep develop's version.
-          if ! git merge --no-edit next; then
+          if git merge --no-edit next; then
+            :
+          else
             merge_status=$?
             conflicts="$(git diff --name-only --diff-filter=U)"
             if [ "$conflicts" != "package.json" ]; then
