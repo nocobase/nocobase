@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import {
   COMMIT_ATTRIBUTIONS,
+  FORCE_REASON_MAX,
   GIT_PERSONAL_METHODS,
   GIT_PROVIDERS,
   MARKS_MAX,
@@ -28,6 +29,7 @@ import {
   type IssuePullRequest,
   type IssuePullRequests,
   type PullRequestMark,
+  type PullRequestFailedChecks,
   type PullRequestMergePreflight,
   type PullRequestSuggestion,
   type WebhookDelivery,
@@ -186,6 +188,14 @@ export const ClosePullRequestInput = z.strictObject({
 
 export const MergeInput = z.strictObject({
   expectedHeadSha: z.string().trim().min(1),
+  force: z.boolean().optional().meta({
+    description:
+      'Merge although required checks failed (`ciFailed`, nothing else blocking), for a manager of the issue’s project. The code host’s branch protection still applies.',
+  }),
+  reason: z.string().trim().min(1).max(FORCE_REASON_MAX).optional().meta({
+    description:
+      'Why, required with `force`: commented on the pull request with the failed checks and kept in the issue’s activity.',
+  }),
 });
 
 export const MarksQuery = z.object({ issueIds: idList(MARKS_MAX) });
@@ -196,12 +206,18 @@ export const UpdateRepositoryInput = z.strictObject({
   wakeOnChecksPassed: z.boolean().optional(),
   wakeOnConflict: z.boolean().optional(),
   branchRules: z.array(z.string()).optional(),
+  referenceChecks: z.array(z.string()).optional().meta({
+    description:
+      'Check names only for information: their failures neither wake the agent nor block merging.',
+  }),
 });
 
 /** What the host sends the person back with: absent on a refusal, which the callback reports. */
 export const OAuthCallbackQuery = z.object({
   code: z.string().optional(),
   state: z.string().optional(),
+  /** What the host sends in place of a code when it did not authorize (`access_denied`, `redirect_uri_mismatch`). */
+  error: z.string().optional(),
 });
 
 export const RepositoryWebhookParams = z.object({
@@ -539,6 +555,11 @@ export const IssuePullRequestsMeta: z.ZodType<
   }),
 });
 
+const CheckRefSchema = z.object({
+  name: z.string(),
+  url: z.string().nullable(),
+});
+
 export const PullRequestMergePreflightSchema: z.ZodType<PullRequestMergePreflight> =
   z.object({
     blocker: mergeBlocker,
@@ -555,7 +576,58 @@ export const PullRequestMergePreflightSchema: z.ZodType<PullRequestMergePrefligh
         .enum(['terminal', 'optedOut', 'otherPrs', 'noTransition'])
         .nullable(),
     }),
+    failedChecks: z.array(CheckRefSchema).meta({
+      description: 'The required checks that failed.',
+    }),
+    referenceFailures: z.array(CheckRefSchema).meta({
+      description:
+        'The reference checks that failed: they do not block the merge.',
+    }),
+    canForce: z.boolean().meta({
+      description:
+        'Whether the caller may merge past failed required checks (`force`).',
+    }),
   });
+
+export const PullRequestFailedChecksSchema: z.ZodType<PullRequestFailedChecks> =
+  z
+    .object({
+      headSha: z.string(),
+      checks: z.array(
+        z.object({
+          name: z.string(),
+          conclusion: z.string(),
+          url: z.string().nullable(),
+          reference: z.boolean().meta({
+            description:
+              'A reference check: it neither blocks merging nor wakes the agent.',
+          }),
+          summary: z.string().nullable(),
+          annotations: z.array(
+            z.object({
+              path: z.string(),
+              startLine: z.number().int().nullable(),
+              endLine: z.number().int().nullable(),
+              level: z.string(),
+              title: z.string().nullable(),
+              message: z.string(),
+            }),
+          ),
+          log: z.string().nullable().meta({
+            description:
+              'The failing part of the log: each error line with the 20 lines around it, and the end.',
+          }),
+          logUnavailable: z
+            .enum(['notActions', 'unavailable', 'rateLimited', 'budget'])
+            .nullable()
+            .meta({
+              description:
+                'Why there is no log: `notActions` means another CI reported the check, and its log is behind `url`.',
+            }),
+        }),
+      ),
+    })
+    .meta({ ref: 'StudioGitFailedChecks' });
 
 export const PullRequestMarksSchema: z.ZodType<
   Record<string, PullRequestMark>
@@ -584,6 +656,7 @@ export const GitRepoSettingsSchema: z.ZodType<GitRepoSettings> = z.object({
   wakeOnChecks: z.boolean(),
   wakeOnChecksPassed: z.boolean(),
   wakeOnConflict: z.boolean(),
+  referenceChecks: z.array(z.string()),
   polledAt: dateTime().nullable(),
   pollError: z.string().nullable(),
   webhookUrl: z.string().nullable(),

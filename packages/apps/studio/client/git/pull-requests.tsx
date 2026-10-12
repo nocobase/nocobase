@@ -3,8 +3,9 @@
  * the issue page's Code and deployments section (`issues/detail/code-section.tsx`: link by URL, each pull request with
  * its state, checks and conflicts, each check of its latest commit, merge, mark as merged, refresh, unlink, and whether
  * it counts toward moving the issue on; pull requests that only name the issue's key wait as suggestions for a person to
- * link or dismiss), the badge an issue's mark shows, and the merge actions the inbox reuses. Merge is greyed out with the reason while what Studio last read says it cannot be merged
- * (`mergeBlocker`); otherwise it opens the confirmation, which asks GitHub again (`merge-dialog.tsx`).
+ * link or dismiss), the badge an issue's mark shows, and the merge actions the inbox reuses. Merge is greyed out for
+ * stored blockers except failed CI, which opens the confirmation to check current force permission and gates
+ * (`merge-dialog.tsx`). Every enabled entry asks GitHub again before offering confirmation.
  */
 import { inboxKeys } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 import { pmKeys } from '@nocobase/app-plugin-projects/client/kit';
@@ -372,7 +373,9 @@ export function MergeButtons({
       <Button
         size={size}
         data-action='merge'
-        disabled={actions.pending || blocker !== null}
+        disabled={
+          actions.pending || (blocker !== null && blocker !== 'ciFailed')
+        }
         title={blocker ? t(`studioGit.merge.blocker.${blocker}`) : undefined}
         onClick={actions.merge}
       >
@@ -524,7 +527,7 @@ export function PullRequestRow({
               <Button
                 size='sm'
                 data-action='merge'
-                disabled={busy || blocker !== null}
+                disabled={busy || (blocker !== null && blocker !== 'ciFailed')}
                 title={
                   blocker ? t(`studioGit.merge.blocker.${blocker}`) : undefined
                 }
