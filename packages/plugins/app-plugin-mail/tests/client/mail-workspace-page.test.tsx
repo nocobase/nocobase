@@ -716,6 +716,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
     );
+    await waitFor(() => expect(mail.listMessages).toHaveBeenCalledTimes(1));
     const requests = mail.listMessages.mock.calls.length;
     fireEvent.click(
       screen.getByRole('button', { name: 'Mailboxes and folders' }),
