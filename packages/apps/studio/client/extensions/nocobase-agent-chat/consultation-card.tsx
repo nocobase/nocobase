@@ -4,7 +4,11 @@
  * answer as it is written and then final, the plans it proposed and what it used. The server rewrites the card in
  * place while it runs (`metadata.streaming`), so the conversation fetches it again.
  */
-import { useLiveRunEvents } from '@nocobase/app-plugin-agents/client/chat';
+import {
+  useLiveRunEvents,
+  useConsultationIdentity,
+  noticeText,
+} from '@nocobase/app-plugin-agents/client/chat';
 import type { ConsultationNotice } from '@nocobase/app-plugin-agents/shared/conversations';
 import { useLocale } from '@nocobase/i18n/client';
 import { ChevronRightIcon, MessagesSquareIcon } from 'lucide-react';
@@ -70,6 +74,7 @@ export function ConsultationCard({
   readonly notice: ConsultationNotice;
 }): ReactElement {
   const { t } = useChatTranslation();
+  const identity = useConsultationIdentity(notice);
   const running = notice.state === 'running';
   const [open, setOpen] = useState(false);
   const status = t(`chat.consultation.state.${notice.state}`);
@@ -95,12 +100,7 @@ export function ConsultationCard({
           aria-hidden='true'
         />
         <span className='min-w-0 truncate font-medium'>
-          {t(
-            notice.identitySnapshot
-              ? 'chat.consultation.snapshotTitle'
-              : 'chat.consultation.title',
-            { name: notice.agentName },
-          )}
+          {noticeText(t, notice, '', () => '', undefined, identity)}
         </span>
         <span className='ml-auto flex shrink-0 items-center gap-1.5'>
           {running ? <Pulse /> : null}

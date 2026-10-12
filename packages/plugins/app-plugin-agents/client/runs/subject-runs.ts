@@ -71,7 +71,7 @@ export function useSubjectRuns(
 }
 
 /** The agents' names in the viewer's language, for people who may read agents; anyone else sees runs without one. */
-export function useAgentIdentities(): {
+export function useAgentIdentities(enabled = true): {
   readonly loading: boolean;
   readonly failed: boolean;
   readonly nameOf: (agentId: string) => string | null;
@@ -81,6 +81,7 @@ export function useAgentIdentities(): {
     {
       queryKey: agentsKeys.agentNames,
       queryFn: () => api.agentNames(),
+      enabled,
       retry: false,
       staleTime: 60_000,
     },

@@ -63,6 +63,7 @@ export interface AgentChatLocale {
       readonly runCancelled: string;
     };
     readonly consultation: {
+      readonly unavailableTitle: string;
       readonly snapshotTitle: string;
       readonly title: string;
       readonly question: string;
@@ -273,6 +274,7 @@ const agentChatEnUS: AgentChatLocale = {
       runCancelled: 'Stopped.',
     },
     consultation: {
+      unavailableTitle: 'Consulted agent unavailable',
       snapshotTitle: 'Requested {{name}} at the time',
       title: 'Consulted {{name}}',
       question: 'Question',

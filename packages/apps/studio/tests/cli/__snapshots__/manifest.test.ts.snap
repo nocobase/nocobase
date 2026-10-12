@@ -251,7 +251,7 @@ preview retry <issue> <app> -> POST /api/previews/retry (person)
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
 project-manager get -> GET /api/projectManager (person)
 project-manager start <issue> -> POST /api/projectManager/issues/{issueId}/start (person)
-project-manager update [--first-choice --fallback --principles --comment-run-limit] -> PATCH /api/projectManager (person)
+project-manager update [--name --description --first-choice --fallback --principles --comment-run-limit] -> PATCH /api/projectManager (person)
 project create <name> [--description --visibility --status --priority --lead --start-date --due-date] -> POST /api/projects (person) pm.projects/create
 project delete <project> -> DELETE /api/projects/{projectId} (person) pm.projects/delete confirm
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
