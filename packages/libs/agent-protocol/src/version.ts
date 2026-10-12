@@ -50,6 +50,10 @@ import { z } from 'zod';
  *
  * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
  * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
+ * `ToolInfo.modelsSource` (`detected`, or `builtin` for a tool that cannot list its models) was added the same way.
+ *
+ * `RunWorkspace.readOnly` was added within version 9 as an optional field: a run that only reads gets a work directory
+ * of its own and pushes nothing. A runner that ignores it shares the subject's work directory, as before.
  *
  * `RepoDir.initializeIfEmpty` optionally permits a coding run to make the first commit of a verified empty remote.
  * Older runners ignore it and retain their missing-branch refusal. Unlike `initial`, it never allows a default-branch
@@ -62,8 +66,13 @@ import { z } from 'zod';
  * (`HeartbeatResponse.npmUpgrade`) when the application serves no tarball of it. Nothing of version 7 changed, so a
  * server speaking 8 serves runners speaking 3 to 7 and offers them only what it offered before. The number moved so
  * that a runner announcing `npm` is refused cleanly by a server that does not know it.
+ * Version 9 added repository credentials on demand (the `gitCredentials` feature, `RunGit.onDemand`,
+ * `RUNNER_ROUTES.gitCredential`), the `repoAccessUnavailable` and `repoAccessDenied` failures and why a repository was
+ * not pushed (`RepoReport.failure`). Nothing of version 8 changed, and a run never requires the feature: a runner
+ * without it still gets the credentials in its payload. The number moved so that a runner announcing
+ * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -93,6 +102,8 @@ export function isProtocolSupported(version: number): boolean {
  * - `mounts`: places the run's mounts (`RunPayload.mounts`) in its work directory before the agent starts.
  * - `npm` (`NPM_UPGRADE_FEATURE`, protocol 8): updates itself from the npm registry when the application names a
  *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
+ * - `gitCredentials`: asks for a repository's credential whenever git needs one (`RunGit.onDemand`,
+ *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
  */
 export const RUNNER_FEATURES = [
   'input',
@@ -106,6 +117,7 @@ export const RUNNER_FEATURES = [
   'jobs.build',
   'mounts',
   'npm',
+  'gitCredentials',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];

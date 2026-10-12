@@ -1,8 +1,7 @@
 /**
  * The chat's wording this plugin uses itself: its hooks' notices (rename, archive, a failed send, switching agents),
- * the texts `noticeText` and `stepLineText` look up, the agents' availability, the system default chat agent setting,
- * the profile's "Agent" section and the new-agent presets. The chat UI's own wording ships with the UI Library's
- * agent-chat block.
+ * the texts `noticeText` and `stepLineText` look up, the agents' availability and the profile's "Agent" section. The
+ * chat UI's own wording ships with the UI Library's agent-chat block.
  */
 const chatEnUS = {
   chat: {
@@ -15,9 +14,11 @@ const chatEnUS = {
     availability: {
       online: 'Online',
       agentMissing: 'Deleted',
-      agentArchived: 'Archived',
+      agentArchived: 'Not enabled',
       forbidden: 'Not available to you',
-      noRunner: 'No runner online',
+      noRunner: 'No runner online, cannot be chosen',
+      othersPersonal: "Only others' personal runners have it",
+      // The reason earlier versions wrote on a notice that their online fallback could not answer.
       modelUnavailable: 'Model unavailable',
     },
     offline: {
@@ -46,7 +47,8 @@ const chatEnUS = {
       working: 'Working on {{subject}}',
     },
     agents: {
-      personal: 'Only me',
+      personalOnly: 'Personal runners only',
+      hint: 'Lists the enabled agents and says why one cannot answer you now. Answers run on a runner: the first reply waits for one to take it, usually a few seconds.',
       chooseFor: 'Choose an agent',
       empty: 'No agent you may choose',
       none: 'No agent',
@@ -54,28 +56,6 @@ const chatEnUS = {
       placeholder: 'Choose an agent',
       myDefault: 'My default',
       systemDefault: 'System default',
-      onlineGroup: 'Online agents',
-      runnerGroup: 'Runner agents',
-      online: 'Online',
-      runner: 'Runner',
-      onlineHint: 'Answers in seconds on the server',
-      runnerHint: 'A coding agent on a runtime',
-    },
-    settings: {
-      requiresEveryone:
-        'Only agents available to everyone can be the system default.',
-      title: 'System default chat agent',
-      description:
-        'New conversations go to this agent when a person has no default of their own; a conversation may also switch to it while its agent is offline.',
-      none: 'None',
-      unknown: 'An agent you cannot see',
-      saved: 'System default chat agent saved',
-      onlineFallback: {
-        title: 'Online fallback agent',
-        description:
-          'Answers in place of a runner agent that has no runner for the person: new conversations with that agent start here, and a runner conversation may switch to it.',
-        saved: 'Online fallback agent saved',
-      },
     },
   },
   chatProfile: {
@@ -85,11 +65,6 @@ const chatEnUS = {
     systemDefaultNamed: 'System default ({{name}})',
     noDefault: 'No system default is set.',
     saved: 'Default chat agent saved',
-  },
-  agentPresets: {
-    label: 'Start from',
-    blank: 'Blank agent',
-    hint: 'A preset fills in the description, instructions and business actions; you can change all of them.',
   },
 };
 

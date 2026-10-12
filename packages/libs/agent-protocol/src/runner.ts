@@ -113,8 +113,20 @@ export const ModelsDetectionErrorSchema: z.ZodType<ModelsDetectionError> =
     'Invalid model listing response',
   ]);
 
+/**
+ * Where a tool's model list came from: asked of the tool (`detected`), or, for a tool that cannot list its models, the
+ * runner's built-in list for it (`builtin`). Either may carry the runner owner's additions and removals.
+ */
+export type ModelsSource = 'detected' | 'builtin';
+export const ModelsSourceSchema: z.ZodType<ModelsSource> = z.enum([
+  'detected',
+  'builtin',
+]);
+
 export interface ToolCapabilities {
   readonly models?: readonly ToolModel[];
+  /** Absent from runners that predate it, which only report detected lists. */
+  readonly modelsSource?: ModelsSource;
   readonly modelsDetectedAt?: string;
   readonly modelsDetectionStatus?: ModelsDetectionStatus;
   readonly modelsDetectionError?: ModelsDetectionError;
@@ -138,6 +150,7 @@ const toolInfoFields = {
 export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
   ...toolInfoFields,
   models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
+  modelsSource: ModelsSourceSchema.optional(),
   modelsDetectedAt: z.iso.datetime().optional(),
   modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
   modelsDetectionError: ModelsDetectionErrorSchema.optional(),
@@ -160,6 +173,7 @@ export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
         return value.length > 0 && models.length === 0 ? undefined : models;
       })
       .optional(),
+    modelsSource: ModelsSourceSchema.optional().catch(undefined),
     modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
     modelsDetectionStatus:
       ModelsDetectionStatusSchema.optional().catch(undefined),
@@ -565,11 +579,40 @@ export const StatusResponseSchema: z.ZodType<StatusResponse> = z.object({
   leaseExpiresAt: z.string().nullable(),
 });
 
+/**
+ * Why the runner could not push a repository at the end of a run:
+ *
+ * - `authFailed`: the remote refused the credential, also after one fresh one;
+ * - `credentialUnavailable`: the application could not issue a credential just now (its code host unavailable or slow);
+ * - `credentialDenied`: the application will not issue one (no access to the repository, an installation gone);
+ * - `leaseLost`: the run was no longer this runner's, so nothing was pushed;
+ * - `rejected`: the remote or the push guard refused the push itself (not a fast-forward, a protected branch);
+ * - `error`: anything else, such as the network.
+ */
+export const REPO_PUSH_FAILURES = [
+  'authFailed',
+  'credentialUnavailable',
+  'credentialDenied',
+  'leaseLost',
+  'rejected',
+  'error',
+] as const;
+
+export type RepoPushFailure = (typeof REPO_PUSH_FAILURES)[number];
+
+export const RepoPushFailureSchema: z.ZodType<RepoPushFailure> =
+  z.enum(REPO_PUSH_FAILURES);
+
 export interface RepoReport {
   readonly url: string;
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha?: string;
+  /** Why it was not pushed, when the runner tried and failed (protocol 9); `message` is redacted and safe to show. */
+  readonly failure?: {
+    readonly reason: RepoPushFailure;
+    readonly message: string;
+  };
 }
 
 export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
@@ -577,6 +620,12 @@ export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
   branch: z.string().min(1),
   pushed: z.boolean(),
   headSha: z.string().max(64).optional(),
+  failure: z
+    .object({
+      reason: RepoPushFailureSchema,
+      message: z.string().max(2000),
+    })
+    .optional(),
 });
 
 export interface CompleteRequest {
@@ -620,11 +669,13 @@ export const FailRequestSchema: z.ZodType<FailRequest> = z.object({
 });
 
 export interface CancelAckRequest {
+  readonly sessionId?: string;
   readonly handledInputIds?: readonly string[];
   readonly usage?: readonly Usage[];
 }
 
 export const CancelAckRequestSchema: z.ZodType<CancelAckRequest> = z.object({
+  sessionId: z.string().max(200).optional(),
   handledInputIds: z.array(z.string()).optional(),
   usage: z.array(UsageSchema).optional(),
 });

@@ -37,10 +37,6 @@ agents:
     versions: { acme: 0.1.0 } # pin a product instead of the channel's highest
     npm: # a product with no tarball in dir, named on npm instead (exact versions)
       nocobase-runner: { package: '@nocobase/agent-runner', version: 1.0.0 }
-  server: # online agents, run by every instance
-    enabled: true
-    maxSteps: 16
-    consult: { timeoutMs: 120000, tokenBudget: 200000 }
   vectors:
     store: sqlite-vec # the default; pgvector (own PostgreSQL), or false
     path: storage/vectors.sqlite
@@ -49,16 +45,15 @@ agents:
 ```
 
 - `agents.cli.name` defaults to `agents.app.id`; set it to the App's `nocobase.cli.bin` so runs install and call the same CLI the App serves.
-- `agents.server.enabled: false` leaves online runs to the other instances.
 - `sqlite-vec` is local to an instance and has no build for Alpine (musl), where it reports `SQLITE_VEC_UNSUPPORTED`; an App running several instances, or on Alpine, uses `pgvector`, which takes its own PostgreSQL connection and never the App's.
 - Moving `agents.skills.disk` does not copy what is stored: copy `skills/blobs/` across first.
-- Model services are not configured here; they are added on the Models page or through the API.
+- Model services, for the App's own model calls, are not configured here; they are added on the Models page or through the API.
 - `secrets.keys` (the App's secrets service) must be set before variables or model service keys can be stored. `pnpm nocobase secrets rotate` reseals both stores.
 
 ## Pages and chat
 
-The plugin has no routes of its own. The App routes what `@nocobase/app-plugin-agents/client/routes` exports (`agentsRoute`, `runtimesRoute`, `skillsRoute`, `usageRoute`, `modelsRoute`), each behind a page grant named like its route (`PAGES` in `shared/access`); `modelsRoute` stands behind `agents.services` read. `client/kit` has the pieces for the App's own settings pages (`VariablesSection`, `DefaultSkillsSection`, `useRunnerOptions`, `useAgentOptions`), `client/runs` the headless parts of a subject's runs, `client/profile` the person's default chat agent, and `client/config` the business-action catalog context.
+The plugin has no routes of its own. The App routes what `@nocobase/app-plugin-agents/client/routes` exports (`agentsRoute`, `runtimesRoute`, `skillsRoute`, `usageRoute`, `modelsRoute`), each behind a page grant named like its route (`PAGES` in `shared/access`); `modelsRoute` stands behind `agents.services` read. `client/kit` has the pieces for the App's own pages (`RunnerAgentsSection`, the Agent page's list for an App that shows its own agents beside it, `VariablesSection`, `DefaultSkillsSection`, `useRunnerOptions`, `useAgentOptions`), `client/runs` the headless parts of a subject's runs, `client/profile` the person's default chat agent, and `client/config` the business-action catalog context.
 
 The chat is headless in `client/chat`: wrap the App's routes in `ChatProvider` and install the UI Library's `agent-chat` block (`yes n | pnpm exec shadcn add @nocobase/agent-chat`) for its UI. The README's "Web UI" section describes every export.
 
-The system default chat agent must be unarchived and available to everyone. Change or clear the system default before restricting its access to its owner or selected users. Historical restricted defaults must be replaced, cleared, or made available to everyone before saving chat settings; they are not cleared automatically. Personal defaults may only name agents the person can use.
+The system default chat agent must be enabled and available to everyone. New agents are discovered from runners or kept by the application with everyone access; the agent API does not accept access changes. A legacy restricted default cannot be saved: replace or clear it. The runner-agent migration removes legacy agents and clears their default references. Personal defaults may only name enabled agents the person can use.

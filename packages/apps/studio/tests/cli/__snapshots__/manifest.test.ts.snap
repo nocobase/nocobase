@@ -24,18 +24,12 @@ access role update <role> [--title --pages --settings --abilities --file] -> PAT
 access settings get -> GET /api/access/settings (person)
 access settings set [--default-role!] -> PUT /api/access/settings (person)
 agent action list -> GET /api/agents/actions (person)
-agent archive <agent> -> POST /api/agents/{agentId}/archive (person) confirm
 agent brief <agent> [--scenario] -> GET /api/agents/{agentId}/previewBrief (person)
-agent copy <agent> [--name --make-default] -> POST /api/agents/{agentId}/copy (person)
-agent create [--name --description --avatar --models --instructions --runtimes --skills --actions --confirm-changes --access --users --owner --max-concurrent-runs --max-attempts --tool-policy --type --file] -> POST /api/agents (person)
-agent delete <agent> -> DELETE /api/agents/{agentId} (person) confirm
 agent get <agent> -> GET /api/agents/{agentId} (person)
 agent history <agent> [--after --limit --page-token] -> GET /api/agents/{agentId}/history (person)
 agent list -> GET /api/agents/available (person,run) agents.agents/view
-agent list-all [--archived] -> GET /api/agents (person)
-agent preset list -> GET /api/agents/presets (person)
-agent restore <agent> -> POST /api/agents/{agentId}/restore (person)
-agent update <agent> [--name --description --avatar --models --instructions --runtimes --skills --actions --confirm-changes --access --users --owner --max-concurrent-runs --max-attempts --tool-policy --revision --type --file] -> PATCH /api/agents/{agentId} (person)
+agent list-all -> GET /api/agents (person)
+agent update <agent> [--good-at --effort --enabled --expected-revision!] -> PATCH /api/agents/{agentId} (person)
 api-key create [--name --description --expires-in-days --scope --file] -> POST /api/apiKeys (person)
 api-key delete <key> -> DELETE /api/apiKeys/{keyId} (person) confirm
 api-key list -> GET /api/apiKeys (person)
@@ -59,15 +53,12 @@ app rollback <app> [--deployment!] -> POST /api/releases/apps/{appId}/rollback (
 app start <app> -> POST /api/releases/apps/{appId}/start (person) rel.apps/operate
 app stop <app> -> POST /api/releases/apps/{appId}/stop (person) rel.apps/operate
 app update <app> [--name --description --label --activation --idle-stop-minutes --dormant-after-hours] -> PATCH /api/releases/apps/{appId} (person) rel.apps/configure
-approval approve <approval> [--comment] -> POST /api/projects/approvals/{approvalId}/approve (person)
-approval list -> GET /api/projects/approvals (person)
-approval reject <approval> [--comment] -> POST /api/projects/approvals/{approvalId}/reject (person)
-approval withdraw <approval> -> POST /api/projects/approvals/{approvalId}/withdraw (person)
 attachment delete <file> -> DELETE /api/projects/attachments/{attachmentId} (person,run) pm.attachments/upload confirm
 attachment get <file> -> GET /api/projects/attachments/{attachmentId} (person)
 attachment upload [--file!] -> POST /api/projects/attachments (person,run) pm.attachments/upload
 board failed-run decide <run> [--action! --user] -> POST /api/failedRuns/{runId}/decide (person)
 board get [--q --project --label --owner --executor] -> GET /api/agentBoard (person)
+board issue-work [--issue-ids!] -> POST /api/agentBoard/issueWork (person)
 board start <issue> -> POST /api/agentBoard/issues/{issueId}/start (person)
 build ci configure <repo> [--method --app --target --workflow-files --agent-id --file] -> POST /api/repositoryDeployments/{resourceId}/ci/configure (person)
 build ci connection <repo> -> GET /api/repositoryDeployments/{resourceId}/ci/connection (person)
@@ -90,7 +81,7 @@ comment unreact <comment> <emoji> -> POST /api/projects/comments/{commentId}/unr
 comment unresolve <comment> -> POST /api/projects/comments/{commentId}/unresolve (person)
 comment update <comment> [--content!] -> PATCH /api/projects/comments/{commentId} (person)
 conversation attachment upload [--file!] -> POST /api/agents/chatAttachments (person)
-conversation create [--agent --title --source --model] -> POST /api/agents/conversations (person)
+conversation create [--agent --title --source] -> POST /api/agents/conversations (person)
 conversation fallback <conversation> -> POST /api/agents/conversations/{conversationId}/fallback (person)
 conversation get <conversation> -> GET /api/agents/conversations/{conversationId} (person)
 conversation list [--query --archived --agent --source --limit --page-token] -> GET /api/agents/conversations (person)
@@ -100,9 +91,9 @@ conversation preferences get -> GET /api/agents/chatPreferences (person)
 conversation preferences update [--default-agent] -> PATCH /api/agents/chatPreferences (person)
 conversation restore <conversation> -> POST /api/agents/conversations/{conversationId}/restore (person)
 conversation settings get -> GET /api/agents/chatSettings (person)
-conversation settings update [--default-agent --online-fallback-agent] -> PATCH /api/agents/chatSettings (person)
+conversation settings update [--default-agent] -> PATCH /api/agents/chatSettings (person)
 conversation stop <conversation> -> POST /api/agents/conversations/{conversationId}/stop (person)
-conversation update <conversation> [--title --archived --model] -> PATCH /api/agents/conversations/{conversationId} (person)
+conversation update <conversation> [--title --archived] -> PATCH /api/agents/conversations/{conversationId} (person)
 delegation get <delegation> -> GET /api/delegations/{delegationId} (person)
 delegation list [--conversation!] -> GET /api/delegations (person)
 delegation update <delegation> [--followed!] -> PATCH /api/delegations/{delegationId} (person)
@@ -118,9 +109,6 @@ deploy request get <request> -> GET /api/releases/deploymentRequests/{requestId}
 deploy request list [--page --limit --app --status --awaiting-me] -> GET /api/releases/deploymentRequests (person)
 deploy request reject <request> [--note] -> POST /api/releases/deploymentRequests/{requestId}/reject (person)
 deploy status <project> -> GET /api/deploys/projects/{projectId}/environments (person)
-design approve <issue> [--comment] -> POST /api/designProposals/{issueId}/approve (person)
-design get <issue> -> GET /api/designProposals/{issueId} (person)
-design request-changes <issue> [--comment] -> POST /api/designProposals/{issueId}/requestChanges (person)
 env check <env> -> POST /api/releases/environments/{environmentId}/check (person) rel.environments/read
 env create [env] [--name --config --secret --secret-changes --url --protected --approvers --max-apps --default-idle-stop-minutes --default-dormant-after-hours --registry --sample-data-on-first-deploy --driver --file] -> POST /api/releases/environments (person) rel.environments/manage
 env delete <env> -> DELETE /api/releases/environments/{environmentId} (person) rel.environments/manage confirm
@@ -148,7 +136,7 @@ git project set <project> [--attribution!] -> PUT /api/git/projects/{projectId} 
 git repo create <connection> [--owner --name! --private! --description --empty] -> POST /api/git/connections/{connectionId}/repositories (person)
 git repo list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/repositories (person)
 git resource get <resource> -> GET /api/git/resources/{resourceId} (person)
-git resource update <resource> [--webhook-secret --wake-on-checks --wake-on-conflict --branch-rules] -> PATCH /api/git/resources/{resourceId} (person)
+git resource update <resource> [--webhook-secret --wake-on-checks --wake-on-checks-passed --wake-on-conflict --branch-rules] -> PATCH /api/git/resources/{resourceId} (person)
 git status -> GET /api/git/status (person)
 git template get <connection> <owner> <name> -> GET /api/git/connections/{connectionId}/templateRepositories/{owner}/{name} (person)
 git template list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/templateRepositories (person)
@@ -174,20 +162,19 @@ issue activity list <issue> [--limit --page-token] -> GET /api/projects/issues/{
 issue attachment add <issue> [--file!] -> POST /api/projects/issues/{issueId}/attachments (person) pm.attachments/upload
 issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}/content (person,run) pm.issues/view
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
-issue checklist list <issue> -> GET /api/projects/issues/{issueId}/checklists (person) pm.issues/view
-issue checklist mark <issue> <status> <item> [--checked!] -> PATCH /api/projects/issues/{issueId}/checklists/{statusKey}/items/{itemKey} (person) pm.issues/edit
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
-issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
 issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
 issue executor list -> GET /api/projects/executors (person)
 issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/view
+issue progress <issue> -> GET /api/issueProgress/{issueId} (person)
 issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
 issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
 issue search [--status --project --owner --executor --label --parent --q --deleted --order-by --limit --page-token] -> GET /api/projects/issues (person,run) pm.issues/view
-issue status list [--project] -> GET /api/projects/issues/statuses (person)
+issue status list -> GET /api/projects/issues/statuses (person)
 issue subscribe <issue> -> POST /api/projects/issues/{issueId}/subscribe (person) pm.issues/view
 issue unsubscribe <issue> -> POST /api/projects/issues/{issueId}/unsubscribe (person) pm.issues/view
 issue update <issue> [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
@@ -221,7 +208,7 @@ kb propose [--doc --title --slug --parent --space --content --summary --reason! 
 kb read <doc> [--version --project] -> GET /api/kb/docs/{doc} (person,run) kb.knowledge/read
 kb search <query> [--limit --project] -> GET /api/kb/search (person,run) kb.knowledge/read
 kb settings get -> GET /api/knowledgeSearch (person)
-kb settings set [--embedding --rerank --context-model --contextual --whole-tokens --chunking --recall --file] -> PUT /api/knowledgeSearch (person)
+kb settings set [--embedding --rerank --context-model --contextual --chunking --recall --file] -> PUT /api/knowledgeSearch (person)
 kb subject list [--scope! --owner --q --type --limit] -> GET /api/knowledge/subjects (person)
 kb tree [--project] -> GET /api/kb/tree (person,run) kb.knowledge/read
 kb upload [--doc --title --parent --space --summary --reason! --project --file!] -> POST /api/kb/uploadTickets (person,run) kb.knowledge/propose
@@ -230,8 +217,6 @@ label delete <label> -> DELETE /api/projects/labels/{labelId} (person) confirm
 label list -> GET /api/projects/labels (person)
 label update <label> [--name --color] -> PATCH /api/projects/labels/{labelId} (person)
 model check [--service! --model!] -> POST /api/agents/checkModel (person)
-model default get -> GET /api/agents/defaultModels (person)
-model default set [--service! --model!] -> PUT /api/agents/defaultModels/chat (person)
 model list [--kind] -> GET /api/agents/models (person)
 model price get -> GET /api/agents/prices (person)
 model price set [--prices --subscriptions --file] -> PUT /api/agents/prices (person) confirm
@@ -261,14 +246,18 @@ pr update <issue> <pr> [--auto-complete-disabled!] -> PATCH /api/git/pullRequest
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview preference set [--issue --not-required!] -> POST /api/previews/preference (person,run) pm.issues/edit
 preview retry <issue> <app> -> POST /api/previews/retry (person)
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
-project create <name> [--description --visibility --status --priority --lead --start-date --due-date --workflow] -> POST /api/projects (person) pm.projects/create
+project-manager get -> GET /api/projectManager (person)
+project-manager start <issue> -> POST /api/projectManager/issues/{issueId}/start (person)
+project-manager update [--first-choice --fallback --principles --comment-run-limit] -> PATCH /api/projectManager (person)
+project create <name> [--description --visibility --status --priority --lead --start-date --due-date] -> POST /api/projects (person) pm.projects/create
 project delete <project> -> DELETE /api/projects/{projectId} (person) pm.projects/delete confirm
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project invitation create [--email! --project] -> POST /api/projects/invitations (person)
 project invitation list -> GET /api/projects/invitations (person)
-project invitation resend <invitation> -> POST /api/projects/invitations/{invitationId}/resend (person)
+project invitation resend <invitation> [--send-email] -> POST /api/projects/invitations/{invitationId}/resend (person)
 project invitation revoke <invitation> -> DELETE /api/projects/invitations/{invitationId} (person) confirm
 project list -> GET /api/projects (person,run) pm.projects/view
 project location add <project> [--code-location --init-agent --new-repo --existing-repo --runner-directory --label --deploy --ci --file] -> POST /api/projects/{projectId}/codeLocations (person)
@@ -283,7 +272,7 @@ project settings update [--issue-prefix] -> PATCH /api/projects/settings (person
 project setup create [--name --description --workflow --code-location --init-agent --new-repo --existing-repo --runner-directory --label --deploy --ci --file] -> POST /api/projectSetups (person)
 project setup get <project> -> GET /api/projectSetups/{projectId} (person)
 project setup retry <project> -> POST /api/projectSetups/{projectId}/retry (person)
-project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date --workflow] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
+project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
 registry check <registry> -> POST /api/releases/registries/{registryId}/check (person) rel.environments/read
 registry create [registry] [--name --url --namespace --pull-username --secret-changes --file] -> POST /api/releases/registries (person) rel.environments/manage
 registry delete <registry> -> DELETE /api/releases/registries/{registryId} (person) rel.environments/manage confirm
@@ -306,7 +295,7 @@ report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) 
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run brief <run> -> GET /api/agents/runs/{runId}/brief (person)
 run cancel <run> -> POST /api/agents/runs/{runId}/cancel (person) confirm
-run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
 run list [--subject-kind --subject --agent --status --limit --page-token] -> GET /api/agents/runs (person)
 run request confirm <request> -> POST /api/agents/runRequests/{requestId}/confirm (person) confirm
@@ -352,7 +341,7 @@ user enable <user> -> POST /api/users/{userId}/enable (person)
 user invitation create [--emails! --role-scopes] -> POST /api/users/invitations (person)
 user invitation delete <invitation> -> DELETE /api/users/invitations/{invitationId} (person) confirm
 user invitation list -> GET /api/users/invitations (person)
-user invitation resend <invitation> -> POST /api/users/invitations/{invitationId}/resend (person)
+user invitation resend <invitation> [--send-email] -> POST /api/users/invitations/{invitationId}/resend (person)
 user list [--page --limit --q --status --role-scope --role] -> GET /api/users (person)
 user options -> GET /api/users/options (person)
 user preference delete <key> -> DELETE /api/users/me/preferences/{key} (person)
@@ -367,14 +356,7 @@ variable audit list <kind> <scope> [--limit --page-token] -> GET /api/agents/var
 variable delete <kind> <scope> <name> -> DELETE /api/agents/variables/{scopeKind}/{scopeId}/{variableName} (person) confirm
 variable list <kind> <scope> -> GET /api/agents/variables/{scopeKind}/{scopeId} (person)
 variable reveal <kind> <scope> -> POST /api/agents/variables/{scopeKind}/{scopeId}/reveal (person) confirm
-variable set <kind> <scope> <name> [--value --team-runners-only --from-runner] -> PUT /api/agents/variables/{scopeKind}/{scopeId}/{variableName} (person)
-workflow create <name> [--copy-from!] -> POST /api/projects/workflows (person)
-workflow delete <workflow> -> DELETE /api/projects/workflows/{workflowId} (person) confirm
-workflow get <workflow> -> GET /api/projects/workflows/{workflowId} (person)
-workflow list -> GET /api/projects/workflows (person)
-workflow preview <workflow> [--definition --file] -> POST /api/projects/workflows/{workflowId}/preview (person)
-workflow set-default <workflow> -> POST /api/projects/workflows/{workflowId}/setDefault (person)
-workflow update <workflow> [--revision --name --description --definition --file] -> PATCH /api/projects/workflows/{workflowId} (person)"
+variable set <kind> <scope> <name> [--value --team-runners-only --from-runner] -> PUT /api/agents/variables/{scopeKind}/{scopeId}/{variableName} (person)"
 `;
 
 exports[`Studio’s command manifest > offers a run what its agent may do, on the routes that take a run token 1`] = `
@@ -399,12 +381,11 @@ inbox list [--unread --limit --page-token] -> GET /api/inbox/items (person,run) 
 issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}/content (person,run) pm.issues/view
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
-issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
 issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
-issue design-proposal [issue] [--content!] -> POST /api/designProposals (run) pm.issues/comment
 issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/view
 issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
 issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
@@ -429,15 +410,14 @@ pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (per
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage
+preview preference set [--issue --not-required!] -> POST /api/previews/preference (person,run) pm.issues/edit
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project list -> GET /api/projects (person,run) pm.projects/view
-project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date --workflow] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
+project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
 release list <app> [--page --limit --label] -> GET /api/releases/apps/{appId}/releases (person,run) rel.apps/view
-report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
-report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run context -> GET /api/agents/runs/current/context (run) agents.runs/self
-run events <run> [--after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
+run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view
 run self -> GET /api/agents/runs/current (run) agents.runs/self"
 `;

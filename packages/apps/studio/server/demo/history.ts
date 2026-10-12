@@ -3,12 +3,13 @@
  * visit. The rest of the demo is built through the plugins' services as people would; this part cannot be, since no
  * service writes the past. Each finished issue is created and moved to Done through the projects plugin like any other,
  * then its history is written directly: its creation and status changes are dated back (started, handed in for review,
- * sent back now and then, done), its executor is set (no demo runtime is online, so no run could have been started),
- * and the agents' runs on it, with their outcomes and the tokens they used, are added to the agents plugin's tables.
+ * sent back now and then, done) and its executor is set (no demo runtime is online, so no run could have been started).
+ * Work agents did is executed by the project manager, which handed its steps to the demo's agents: their runs on it,
+ * with their outcomes and the tokens they used on their own tool and model, are added to the agents plugin's tables.
  *
- * On top of that: one run asks its issue's owner by moving it to Blocked, and one of today's open issues has a run that
- * failed a few hours ago. Overdue and blocked issues come with the demo's own issues; the deployment demo opens a pull
- * request that has waited for review for days (`deploy-data.ts`).
+ * On top of that: one run's question is asked of its issue's owner (moved to Blocked), and the project manager's open
+ * issue has a run that failed a few hours ago. Overdue and blocked issues come with the demo's own issues; the
+ * deployment demo opens a pull request that has waited for review for days (`deploy-data.ts`).
  */
 import { randomUUID } from 'node:crypto';
 
@@ -18,8 +19,10 @@ import type {
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
 
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { ISSUE_SUBJECT } from '../agents/catalog/triggers.js';
 import { AGENT_KIND } from '../agents/tx.js';
+import { DEMO_AGENTS } from './data.js';
 
 type Outcome = 'completed' | 'failed' | 'cancelled';
 
@@ -27,7 +30,7 @@ type Outcome = 'completed' | 'failed' | 'cancelled';
 export interface DemoHistoryIssue {
   readonly project: string;
   readonly title: string;
-  /** The agent that executed it (a demo agent's name); a person otherwise. */
+  /** The demo agent (its key) the project manager handed its steps to; a person executed it otherwise. */
   readonly agent?: string;
   /** The person who executed it, when no agent did. */
   readonly person?: string;
@@ -39,14 +42,15 @@ export interface DemoHistoryIssue {
   readonly reworked?: boolean;
   /** The agent's runs on it, in order; a failed run is retried by the next. */
   readonly runs?: readonly Outcome[];
-  /** Its agent asked its owner during its first run (moved it to Blocked). */
+  /** Its first run raised a question the project manager asked its owner (moved it to Blocked). */
   readonly asked?: boolean;
 }
 
 const STUDIO = 'Studio Platform';
 const SITE = 'Website Redesign';
-const FRONTEND = 'Frontend Developer';
-const REVIEWER = 'Code Reviewer';
+const FRONTEND = 'sonnet';
+const REVIEWER = 'opus';
+const BUILDER = 'gpt';
 
 export const DEMO_HISTORY: readonly DemoHistoryIssue[] = [
   // The last 30 days.
@@ -180,7 +184,7 @@ export const DEMO_HISTORY: readonly DemoHistoryIssue[] = [
   {
     project: SITE,
     title: 'Image gallery on the customer stories page',
-    agent: FRONTEND,
+    agent: BUILDER,
     doneDaysAgo: 26,
     cycleDays: 4,
     runs: ['completed', 'completed'],
@@ -188,7 +192,7 @@ export const DEMO_HISTORY: readonly DemoHistoryIssue[] = [
   {
     project: STUDIO,
     title: 'Export issues to CSV',
-    agent: FRONTEND,
+    agent: BUILDER,
     doneDaysAgo: 28,
     cycleDays: 2,
     runs: ['completed'],
@@ -204,7 +208,7 @@ export const DEMO_HISTORY: readonly DemoHistoryIssue[] = [
   {
     project: SITE,
     title: 'New navigation bar',
-    agent: FRONTEND,
+    agent: BUILDER,
     doneDaysAgo: 36,
     cycleDays: 5,
     reworked: true,
@@ -242,8 +246,9 @@ export const DEMO_HISTORY: readonly DemoHistoryIssue[] = [
   },
 ];
 
-/** The open demo issue whose run failed a few hours ago. */
+/** The open demo issue whose run failed a few hours ago, and the demo agent whose run it was. */
 export const DEMO_FAILED_RUN_ISSUE = 'agent-logs';
+const FAILED_RUN_AGENT = FRONTEND;
 
 const DAY = 24 * 3600 * 1000;
 const MINUTE = 60_000;
@@ -254,6 +259,7 @@ export interface DemoHistoryContext {
   readonly connection: () => DatabaseConnection;
   readonly now: () => Date;
   readonly projectIds: ReadonlyMap<string, string>;
+  /** The demo agents enabled, by key. */
   readonly agentIds: ReadonlyMap<string, string>;
   readonly userIds: ReadonlyMap<string, string>;
   /** The demo's own issues, by key. */
@@ -285,9 +291,9 @@ export async function buildDemoHistory(ctx: DemoHistoryContext): Promise<void> {
       const issue = await ctx.projects.issues.create(ctx.admin, {
         title: spec.title,
         description: spec.title,
-        statusKey: 'todo',
+        statusKey: 'backlog',
         projectId,
-        start: false,
+        executor: null,
       });
       await ctx.projects.issues.update(ctx.admin, issue.id, {
         revision: issue.revision,
@@ -325,7 +331,9 @@ export async function buildDemoHistory(ctx: DemoHistoryContext): Promise<void> {
         });
       }
 
-      const moves: Move[] = [{ from: 'todo', to: 'in_progress', at: started }];
+      const moves: Move[] = [
+        { from: 'backlog', to: 'in_progress', at: started },
+      ];
       if (spec.asked && runs[0]) {
         const asked = new Date(runs[0].start.getTime() + 5 * MINUTE);
         moves.push(
@@ -333,7 +341,8 @@ export async function buildDemoHistory(ctx: DemoHistoryContext): Promise<void> {
             from: 'in_progress',
             to: 'blocked',
             at: asked,
-            agentId,
+            // Only the project manager moves an issue; the trace names the step's run that raised the question.
+            agentId: PROJECT_MANAGER_ID,
             runId: runs[0].id,
           },
           {
@@ -369,7 +378,7 @@ export async function buildDemoHistory(ctx: DemoHistoryContext): Promise<void> {
         done,
         moves,
         executor: agentId
-          ? { type: AGENT_KIND, id: agentId }
+          ? { type: AGENT_KIND, id: PROJECT_MANAGER_ID }
           : spec.person && ctx.userIds.get(spec.person)
             ? { type: 'user', id: ctx.userIds.get(spec.person)! }
             : null,
@@ -378,7 +387,7 @@ export async function buildDemoHistory(ctx: DemoHistoryContext): Promise<void> {
         for (const [at, run] of runs.entries()) {
           await writeRun(conn, {
             id: run.id,
-            agentId,
+            agent: { id: agentId, ...modelOf(spec.agent!) },
             issueId: issue.id,
             actorUserId: ctx.admin.userId,
             outcome: run.outcome,
@@ -402,13 +411,13 @@ export async function buildDemoHistory(ctx: DemoHistoryContext): Promise<void> {
 
   // A run on one of today's open issues failed a few hours ago.
   const openIssue = ctx.issueIds.get(DEMO_FAILED_RUN_ISSUE);
-  const agentId = ctx.agentIds.get(FRONTEND);
+  const agentId = ctx.agentIds.get(FAILED_RUN_AGENT);
   if (openIssue && agentId)
     try {
       const start = new Date(now - 3 * 3600 * 1000);
       await writeRun(conn, {
         id: randomUUID(),
-        agentId,
+        agent: { id: agentId, ...modelOf(FAILED_RUN_AGENT) },
         issueId: openIssue,
         actorUserId: ctx.admin.userId,
         outcome: 'failed',
@@ -473,12 +482,23 @@ async function writeHistory(
   });
 }
 
-/** An agent's run on an issue, ended, with the tokens it used on Claude Code's Sonnet. */
+/** The coding tool and model of a demo agent. */
+function modelOf(key: string): { tool: string; model: string } {
+  const agent = DEMO_AGENTS.find((each) => each.key === key);
+  if (!agent) throw new Error(`Unknown demo agent ${key}`);
+  return { tool: agent.tool, model: agent.model };
+}
+
+/** An agent's run on an issue, ended, with the tokens it used on its tool and model. */
 async function writeRun(
   conn: DatabaseConnection,
   run: {
     readonly id: string;
-    readonly agentId: string;
+    readonly agent: {
+      readonly id: string;
+      readonly tool: string;
+      readonly model: string;
+    };
     readonly issueId: string;
     readonly actorUserId: string;
     readonly outcome: Outcome;
@@ -493,10 +513,10 @@ async function writeRun(
   await conn.repository('agRuns').createOne({
     values: {
       id: run.id,
-      agentId: run.agentId,
+      agentId: run.agent.id,
       agentType: 'runner',
-      tool: 'claude',
-      model: 'claude-sonnet-4-5',
+      tool: run.agent.tool,
+      model: run.agent.model,
       runnerId: null,
       status: run.outcome,
       priority: 0,
@@ -528,9 +548,9 @@ async function writeRun(
     values: {
       id: randomUUID(),
       runId: run.id,
-      tool: 'claude',
+      tool: run.agent.tool,
       modelService: null,
-      model: 'claude-sonnet-4-5',
+      model: run.agent.model,
       inputTokens: run.tokens,
       outputTokens: Math.round(run.tokens / 20),
       cacheReadTokens: run.tokens * 3,

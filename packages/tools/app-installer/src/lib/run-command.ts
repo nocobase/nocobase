@@ -2,6 +2,8 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { interruptError, onInterrupt, takeInterrupt } from './interrupt.ts';
 
 export interface RunCommandOptions {
+  /** Input is sent through stdin, never included in command labels or errors. */
+  input?: string;
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   timeoutMs?: number;
@@ -76,9 +78,14 @@ export const runCommand: RunCommand = (command, args, options = {}) =>
     const child = spawn(command, args, {
       cwd: options.cwd,
       env: options.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [options.input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
       detached: true,
     });
+
+    child.stdin?.on('error', () => {
+      /* A child may exit before reading stdin; close reports its status. */
+    });
+    child.stdin?.end(options.input);
 
     let stdout = '';
     let stderr = '';
@@ -100,11 +107,11 @@ export const runCommand: RunCommand = (command, args, options = {}) =>
     timer?.unref();
     const stopListening = onInterrupt(() => stop('interrupt'));
 
-    child.stdout.on('data', (chunk: Buffer) => {
+    child.stdout?.on('data', (chunk: Buffer) => {
       stdout += chunk.toString();
       options.echo?.write(chunk);
     });
-    child.stderr.on('data', (chunk: Buffer) => {
+    child.stderr?.on('data', (chunk: Buffer) => {
       stderr += chunk.toString();
       options.echo?.write(chunk);
     });

@@ -1,13 +1,13 @@
 /**
  * The kinds of principal the plugin knows (`shared/kinds.ts`): `user` and `system` built in, more registered through
  * `projectsKindsToken` before the plugin's services are first used. A kind says how its ids are named, whether it may
- * execute issues and be mentioned, and which moves a workflow may let it make.
+ * execute issues and be mentioned, which status moves its principals may make, and which executor new issues get.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { BusinessKey } from '../../shared/access.js';
 import type { MentionCandidate, MentionRef } from '../../shared/comments.js';
-import type { StatusCategory } from '../../shared/issues.js';
+import type { Executor, Issue } from '../../shared/issues.js';
 import {
   BUILTIN_KINDS,
   SYSTEM_KIND,
@@ -17,6 +17,7 @@ import {
   type KindTitle,
   type NameText,
 } from '../../shared/kinds.js';
+import type { Actor } from './actor.js';
 import { forbidden, invalid } from './errors.js';
 import type { UserDirectory } from './users.js';
 import type { IssueWorkHandler } from './work.js';
@@ -86,10 +87,29 @@ export interface PrincipalKind {
   readonly executor?: ExecutorDirectory;
   /** Present when the kind may be mentioned. */
   readonly mention?: MentionDirectory;
-  /** Whether a workflow may let this kind move an issue into a status of `category`. Every category by default. */
-  mayEnter?(category: StatusCategory): boolean;
-  /** Whether a workflow may let this kind move an issue to "any status". True by default. */
-  readonly mayTargetAny?: boolean;
+  /**
+   * The status moves its principals may make (`shared/statuses.ts`); `from` may be `*` for any status. None by default:
+   * only people move an issue freely.
+   */
+  readonly moves?: readonly {
+    readonly from: string;
+    readonly to: string;
+  }[];
+  /** A further check on one of `moves` for a given principal and issue; false refuses it (400 `TRANSITION_NOT_ALLOWED`). */
+  mayMove?(
+    conn: DatabaseConnection,
+    actor: Actor,
+    move: {
+      readonly issue: Issue;
+      readonly from: string;
+      readonly to: string;
+    },
+  ): boolean | Promise<boolean>;
+  /**
+   * The executor of this kind an issue gets when it is created without naming one (`executor` left out, not null), or
+   * null for none. The first kind that answers an id wins.
+   */
+  defaultExecutor?(conn: DatabaseConnection): Promise<string | null>;
   /** What the kind does when issues it executes or is named in change (`kernel/work.ts`). */
   readonly work?: IssueWorkHandler;
   /**
@@ -146,6 +166,8 @@ export interface KindRegistry {
     conn: DatabaseConnection,
     userId: string,
   ): Promise<ExecutorCandidate[]>;
+  /** The executor a new issue gets when it names none: the first kind's `defaultExecutor` that answers one. */
+  defaultExecutor(conn: DatabaseConnection): Promise<Executor | null>;
   /** 400 `INVALID_EXECUTOR` unless `kind` may execute issues and `id` is one `userId` may give work to. */
   requireExecutor(
     conn: DatabaseConnection,
@@ -278,6 +300,11 @@ export function createKindRegistry(users: UserDirectory): KindRegistry {
     },
     async executorCandidates(conn, userId) {
       const result: ExecutorCandidate[] = [];
+      const fallback = await this.defaultExecutor(conn);
+      const isDefault = (type: string, id: string) =>
+        fallback?.type === type && fallback.id === id
+          ? { isDefault: true }
+          : {};
       for (const kind of all()) {
         const executor = kind.executor;
         if (!executor?.candidates) continue;
@@ -292,14 +319,28 @@ export function createKindRegistry(users: UserDirectory): KindRegistry {
               ...(found.nameText ? { nameText: found.nameText } : {}),
               ...(found.online === undefined ? {} : { online: found.online }),
               ...(found.busy === undefined ? {} : { busy: found.busy }),
+              ...isDefault(kind.key, found.id),
             });
           continue;
         }
         const names = await this.names(conn, kind.key, ids);
         for (const id of ids)
-          result.push({ type: kind.key, id, name: names.get(id) ?? id });
+          result.push({
+            type: kind.key,
+            id,
+            name: names.get(id) ?? id,
+            ...isDefault(kind.key, id),
+          });
       }
       return result;
+    },
+    async defaultExecutor(conn) {
+      for (const kind of all()) {
+        if (!kind.defaultExecutor || !kind.executor) continue;
+        const id = await kind.defaultExecutor(conn);
+        if (id) return { type: kind.key, id };
+      }
+      return null;
     },
     async requireExecutor(conn, key, id, userId) {
       const executor = get(key)?.executor;

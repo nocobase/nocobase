@@ -1,6 +1,6 @@
 /**
- * Who new conversations go to: the team's system default chat agent and online fallback agent (`agSettings`, key
- * `chat`) and each person's own default (`agChatPreferences`).
+ * Who new conversations go to: the team's system default chat agent (`agSettings`, key `chat`) and each person's own
+ * default (`agChatPreferences`).
  */
 import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
@@ -17,6 +17,7 @@ import type { TxRunner } from '../../kernel/tx.js';
 import { asJson, jsonObject } from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent } from '../agents/index.js';
+import { isAvailableToEveryone } from '../agents/agent.store.js';
 import { preferencesRepo, settingsRepo } from './conversation.store.js';
 
 const CHAT_SETTINGS_KEY = 'chat';
@@ -30,14 +31,11 @@ export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
 export const ChatSettingsPatchSchema: z.ZodType<ChatSettingsPatch> = z
   .strictObject({
     defaultAgentId: z.string().min(1).max(64).nullable(),
-    onlineFallbackAgentId: z.string().min(1).max(64).nullable(),
   })
   .partial();
 
 export interface ChatSettingsService {
   settings(conn?: DatabaseConnection): Promise<ChatSettings>;
-  /** Locks the shared defaults row before either defaults or access are changed. */
-  lockDefaults(conn: DatabaseConnection): Promise<void>;
   /** Who may change it is the route's concern (`agents.agents` manage). */
   updateSettings(
     byUserId: string,
@@ -69,10 +67,6 @@ export function createChatSettingsService(deps: {
     return {
       defaultAgentId:
         typeof value.defaultAgentId === 'string' ? value.defaultAgentId : null,
-      onlineFallbackAgentId:
-        typeof value.onlineFallbackAgentId === 'string'
-          ? value.onlineFallbackAgentId
-          : null,
     };
   }
 
@@ -87,7 +81,7 @@ export function createChatSettingsService(deps: {
   }
 
   async function lockDefaults(conn: DatabaseConnection): Promise<void> {
-    // Write before reading: row locks serialize both writers without changing an agent's revision.
+    // Write before reading: row locks serialize settings writers without changing an agent's revision.
     const result = await settingsRepo(conn).updateMany({
       filter: { key: CHAT_SETTINGS_KEY },
       values: { key: CHAT_SETTINGS_KEY },
@@ -123,7 +117,6 @@ export function createChatSettingsService(deps: {
   }
 
   return {
-    lockDefaults,
     settings: (conn) => readSettings(conn ?? tx.read()),
 
     updateSettings: (byUserId, patch) =>
@@ -133,11 +126,11 @@ export function createChatSettingsService(deps: {
         const next: ChatSettings = { ...current, ...patch };
         if (next.defaultAgentId !== null) {
           const agent = await findAgent(conn, next.defaultAgentId);
-          if (!agent || agent.archivedAt)
-            throw invalid('defaultAgentId names no agent.', {
+          if (!agent || agent.status !== 'enabled')
+            throw invalid('defaultAgentId names no enabled agent.', {
               field: 'defaultAgentId',
             });
-          if (agent.access !== 'everyone')
+          if (!(await isAvailableToEveryone(conn, agent.id)))
             throw invalid(
               'Only agents available to everyone can be the system default.',
               {
@@ -145,20 +138,6 @@ export function createChatSettingsService(deps: {
                 reason: 'SYSTEM_DEFAULT_REQUIRES_EVERYONE',
               },
             );
-        }
-        if (
-          patch.onlineFallbackAgentId !== undefined &&
-          next.onlineFallbackAgentId !== null
-        ) {
-          const agent = await findAgent(conn, next.onlineFallbackAgentId);
-          if (!agent || agent.archivedAt)
-            throw invalid('onlineFallbackAgentId names no agent.', {
-              field: 'onlineFallbackAgentId',
-            });
-          if (agent.type !== 'online')
-            throw invalid('onlineFallbackAgentId must name an online agent.', {
-              field: 'onlineFallbackAgentId',
-            });
         }
         const now = clock.now().toISOString();
         const values = {

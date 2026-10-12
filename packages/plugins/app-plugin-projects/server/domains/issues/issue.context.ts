@@ -1,7 +1,6 @@
 /**
- * What an executor of another kind needs to know about an issue to work on it: the issue, its workflow and where the
- * kind may move it, its owner, project and repositories, parent and sub-issues, the current checklist, a status change
- * waiting for approval, and the newest comments. Plain data, read on the caller's connection (a claim's transaction,
+ * What an executor of another kind needs to know about an issue to work on it: the issue, the statuses and where the
+ * kind may move it, its owner, project and repositories, parent and sub-issues, its files, and the newest comments. Plain data, read on the caller's connection (a claim's transaction,
  * say), with no permission of a person applied: the plugin that asks decides who may see it.
  */
 import type { DatabaseConnection } from '@nocobase/db';
@@ -13,7 +12,7 @@ import type { ProjectResourceBinding } from '../../../shared/projects.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
 import { findProject, projectResources } from '../projects/index.js';
 import { findIssue, findIssueRow, liveChildren } from './issue.store.js';
-import type { IssueExtras, StatusCatalogs } from './ports.js';
+import type { IssueExtras, StatusService } from './ports.js';
 
 /** The newest comments an issue context carries. */
 export const CONTEXT_COMMENT_LIMIT = 20;
@@ -63,7 +62,7 @@ export interface IssueContext {
   /** Markdown. */
   readonly description: string;
   readonly status: IssueContextStatus;
-  /** The statuses of the issue's workflow, in order. */
+  /** The fixed statuses, in order. */
   readonly statuses: readonly IssueContextStatus[];
   /** The statuses the kind asked for may move the issue to from where it is. */
   readonly allowedTransitions: readonly string[];
@@ -84,21 +83,6 @@ export interface IssueContext {
   } | null;
   readonly parent: IssueContextIssueRef | null;
   readonly children: readonly IssueContextIssueRef[];
-  readonly checklist: {
-    readonly statusKey: string;
-    readonly complete: boolean;
-    readonly items: readonly {
-      readonly key: string;
-      readonly label: string;
-      readonly required: boolean;
-      readonly checked: boolean;
-    }[];
-  } | null;
-  readonly pendingApproval: {
-    readonly id: string;
-    readonly toStatus: string;
-    readonly requestedBy: string | null;
-  } | null;
   /** The issue's own files, oldest first. */
   readonly attachments: readonly IssueContextFile[];
   /** The newest comments, oldest first; deleted ones left out. */
@@ -138,11 +122,8 @@ export interface IssueContextProvider {
 
 export interface IssueContextDeps {
   readonly kinds: KindRegistry;
-  readonly statuses: StatusCatalogs;
-  readonly extras: () => Pick<
-    IssueExtras,
-    'checklist' | 'pendingApproval' | 'attachments'
-  >;
+  readonly statuses: Pick<StatusService, 'catalog'>;
+  readonly extras: () => Pick<IssueExtras, 'attachments'>;
   readonly comments: (
     conn: DatabaseConnection,
     issueId: string,
@@ -168,7 +149,7 @@ export function createIssueContextProvider(
       const issue = await findIssue(conn, idOrKey);
       if (!issue || issue.deletedAt) return undefined;
       const row = await findIssueRow(conn, issue.id);
-      const catalog = await deps.statuses.forProject(conn, issue.projectId);
+      const catalog = deps.statuses.catalog();
       const statusOf = (key: string): IssueContextStatus => {
         const found = catalog.statuses.find((status) => status.key === key);
         return {
@@ -191,8 +172,6 @@ export function createIssueContextProvider(
             ])
           ).get(issue.executor.id) ?? null)
         : null;
-      const checklist = await deps.extras().checklist(conn, issue);
-      const pending = await deps.extras().pendingApproval(conn, issue);
       const comments = (await deps.comments(conn, issue.id))
         .filter((comment) => !comment.deleted)
         .slice(-CONTEXT_COMMENT_LIMIT);
@@ -245,25 +224,6 @@ export function createIssueContextProvider(
           : null,
         parent: parent && !parent.deletedAt ? ref(parent) : null,
         children: children.map(ref),
-        checklist: checklist
-          ? {
-              statusKey: checklist.statusKey,
-              complete: checklist.complete,
-              items: checklist.items.map((item) => ({
-                key: item.itemKey,
-                label: item.label,
-                required: item.required,
-                checked: item.checked,
-              })),
-            }
-          : null,
-        pendingApproval: pending
-          ? {
-              id: pending.id,
-              toStatus: pending.toStatus,
-              requestedBy: pending.requestedByName,
-            }
-          : null,
         attachments: (await deps.extras().attachments(conn, null, issue)).map(
           fileOf,
         ),

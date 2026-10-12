@@ -5,8 +5,11 @@
  * - registers `agent` as a kind of principal (`kind.ts`), whose work handler queues runs (`work.ts`);
  * - makes issues a subject of runs (`issue-subject.ts`): their context, brief and guidance at claim time, the names of
  *   their triggers and their preview, and what the reports say about them (`../reports/issue-facts.ts`);
- * - offers the catalog (`catalog/`): the business actions an agent may be given, the project lead and assistant presets, the
- *   `project` and `workdir` scopes, the conversation sources;
+ * - keeps the project manager (`manager/`), every issue's executor, which hands each step to an agent discovered from
+ *   runners: its agent, the instructions and actions every agent gets, and the roster of agents each of its turns
+ *   lists (`manager/roster.ts`);
+ * - offers the catalog (`catalog/`): the business actions an agent may be given, the `project` and `workdir` scopes, the
+ *   conversation sources;
  * - decides who may run the CLI's commands (`commands/permissions.ts`), the gate that also bounds a run calling Studio's
  *   API (`run-principal.ts`), with the report actions (`../reports/text.ts`) and the release actions each identity
  *   holds when Studio assembles release management (`../releases/caller.ts`);
@@ -19,13 +22,12 @@
  * - resolves issues, projects and inbox items in a page context (`conversation/context-kinds.ts`);
  * - relays the agents plugin's events announced in projects transactions, and asks people what next when a run on an
  *   issue fails for good (`notices.ts`, a card that folds away once the issue moves on) or when an agent reports itself
- *   blocked (`blocked.ts`);
- * - organises requirement intake with AI (`intake/`): a request is a run of the person's online agent on the private
- *   `intake` subject, which hands its drafts back with `intake drafts`, bound as the projects plugin's organiser;
- * - clears an archived or deleted agent as executor of the unfinished issues it was given (`removal.ts`);
- * - contributes the workflow status rules `runAgent` and `suggestExecutor` (whose suggestion is a decision card for
- *   the issue's owner) and tells owners what they skipped (`stage-rules.ts`), and the "Software development" workflow
- *   template that uses them (`catalog/workflow-templates.ts`), with its design-first proposals (`design.ts`).
+ *   blocked (`blocked.ts`), or when agents' comments reached the issue's run limit (`comment-run-limit.ts`), and has
+ *   each run an agent's comment started answer in that comment's thread (`run-report.ts`);
+ * - organises requirement intake with AI (`intake/`): a request is a run of an agent the person picks (the team's
+ *   default chat agent unless they pick another) on the private `intake` subject, which hands its drafts back with
+ *   `intake drafts`, bound as the projects plugin's organiser;
+ * - clears a disabled agent as executor of the unfinished issues it was given (`removal.ts`).
  *
  * The projects plugin's services are resolved lazily, so binding may happen before they are first used.
  */
@@ -36,8 +38,6 @@ import type {
   PlanHooks,
   Projects,
   ProjectsAccess,
-  StatusRuleTypes,
-  WorkflowTemplates,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import {
   noAbilities,
@@ -50,10 +50,8 @@ import { issueReports } from '../reports/issue-facts.js';
 import { reportActionsOf } from '../reports/text.js';
 import type { Catalog } from '../access/catalog.js';
 import { agentActionOptions } from './capabilities.js';
-import { PRESETS } from './catalog/presets.js';
 import { studioScopes } from './catalog/scopes.js';
 import { CONVERSATION_SOURCES } from './catalog/sources.js';
-import { SOFTWARE_TEMPLATE } from './catalog/workflow-templates.js';
 import {
   createActionGate,
   createPermissionSource,
@@ -69,11 +67,10 @@ import {
 } from './conversation/context-kinds.js';
 import type { StudioInboxPort } from '../inbox/port.js';
 import type { InboxSource } from './conversation/inbox.js';
-import { createDesignService } from './design.js';
 import type { Delegations } from './conversation/delegation.js';
 import { createPlanHooks } from './conversation/plan-hooks.js';
 import { createDirectWrites } from './conversation/quota.js';
-import { consultationRules, conversationRules } from './conversation/rules.js';
+import { conversationRules } from './conversation/rules.js';
 import { createRunPrincipal, type RunPrincipal } from './run-principal.js';
 import {
   releaseActionsOf,
@@ -91,25 +88,22 @@ import {
   settleFailedRunCards,
 } from './notices.js';
 import { releaseRemovedAgents } from './removal.js';
-import {
-  createStageRules,
-  proposeSuggestions,
-  settleSuggestions,
-  stageNoticeRule,
-} from './stage-rules.js';
+import { managerRoster } from './manager/roster.js';
+import type { ProjectManager } from './manager/service.js';
 import { relayAnnouncements } from './tx.js';
 import { inactiveUsers } from './users.js';
-import { createAgentWork, startHandedOverStages } from './work.js';
+import { createAgentWork } from './work.js';
+import { commentRunNoticeRule } from './comment-run-limit.js';
+import { reportCommentRuns } from './run-report.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 export interface StudioAgentsDeps {
   readonly agents: Agents;
   readonly kinds: KindRegistry;
   readonly projects: () => Projects;
   readonly noticeRules?: NoticeRules;
-  /** Where the stage rules go; without it workflows cannot name them. */
-  readonly statusRules?: StatusRuleTypes;
-  /** Where the "Software development" template goes; without it the template is not installed. */
-  readonly templates?: WorkflowTemplates;
+  /** The project manager, kept up to date when an agent it runs with changes; none without it. */
+  readonly manager?: ProjectManager;
   /** The application's roles; without them no command with a business action is offered. */
   readonly access: () => Pick<ProjectsAccess, 'permissionsOfUser'> | undefined;
   /** What the plugins registered with the authorization plugin, which the agent editor offers from; none without. */
@@ -167,10 +161,6 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
   const viewerOf = (userId: string) =>
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
   const direct = createDirectWrites({ agents, projects: deps.projects });
-  const design = createDesignService({
-    projects: deps.projects,
-    inbox: deps.inboxPort ?? (() => undefined),
-  });
   const principal = createRunPrincipal({
     askerOf,
     direct,
@@ -191,12 +181,14 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
         agents,
         deps.projects,
         // A run told its issue moved to another project is followed by a run there.
-        { onRunFinished: work.onRunFinished },
+        {
+          onRunFinished: (tx, run) => work.onRunFinished(tx, run),
+        },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
       ),
       reports: issueReports(deps.projects, viewerOf),
       // Runners remove the working directories of finished issues (`issue-workspaces.ts`).
-      workspaces: issueWorkspaces(deps.projects),
+      workspaces: issueWorkspaces(),
     }),
     agents.subjects.register(intakeBinding(deps.projects)),
     watchIntakeRuns(agents, deps.projects, (error) =>
@@ -206,7 +198,6 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       const catalog = deps.catalog?.();
       return catalog ? agentActionOptions(catalog) : [];
     }),
-    ...PRESETS.map((preset) => agents.presets.register(preset)),
     ...studioScopes({ projects: deps.projects, permissions }).map((kind) =>
       agents.scopes.register(kind),
     ),
@@ -226,7 +217,8 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       agents.conversations.sources.register(source),
     ),
     agents.conversations.rules.provide(conversationRules()),
-    agents.consultations.rules.provide(consultationRules()),
+    // Each of the project manager's turns lists the agents it may hand work to.
+    agents.briefs.sections.register(managerRoster(agents)),
     agents.briefs.sections.register(
       askerBriefSection({
         agents,
@@ -256,12 +248,12 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     announceFailedRuns(agents, deps.projects, (error) =>
       onError('Agents could not announce a failed run.', error),
     ),
+    // A run an agent's comment started always answers in that comment's thread.
+    reportCommentRuns(agents, deps.projects, (error) =>
+      onError('Agents could not report a run an agent comment started.', error),
+    ),
     releaseRemovedAgents(agents, deps.projects, (error) =>
       onError('Agents could not clear a removed agent as executor.', error),
-    ),
-    // The owner's card of a design proposal, while the issue waits in Proposal review.
-    design.bindCards((error) =>
-      onError('Agents could not update a design review card.', error),
     ),
     settleFailedRunCards(
       deps.projects,
@@ -294,30 +286,21 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     releases.push(
       deps.noticeRules.add(runFailedRule(agents, deps.projects)),
       deps.noticeRules.add(agentBlockedRule(deps.projects, agents)),
-      deps.noticeRules.add(stageNoticeRule()),
+      deps.noticeRules.add(commentRunNoticeRule()),
     );
-  // The rule types before the template, which names them and is validated when it is installed.
-  if (deps.statusRules) {
-    for (const type of createStageRules({ agents, projects: deps.projects }))
-      releases.push(deps.statusRules.add(type));
+  // The project manager runs with the tool and model of the agents it names: one of them changing changes it.
+  const manager = deps.manager;
+  if (manager)
     releases.push(
-      // Creating an issue enters its status by no move, so no status rule runs, and a release without an agent executor
-      // reaches no kind: the stage a status hands to an agent starts here.
-      startHandedOverStages(deps.projects(), work, (error) =>
-        onError('Agents could not start the stage of an issue.', error),
-      ),
-      proposeSuggestions(deps.projects(), (error) =>
-        onError('Agents could not propose a suggested executor.', error),
-      ),
-      settleSuggestions(
-        deps.projects(),
-        deps.inboxPort ?? (() => undefined),
-        (error) =>
-          onError('Agents could not settle a suggested executor.', error),
-      ),
+      agents.events.on('agent.changed', (event) => {
+        if (event.agentId === PROJECT_MANAGER_ID) return;
+        manager
+          .sync()
+          .catch((error: unknown) =>
+            onError('Agents could not update the project manager.', error),
+          );
+      }),
     );
-    if (deps.templates) releases.push(deps.templates.add(SOFTWARE_TEMPLATE));
-  }
   return () => {
     for (const release of releases.splice(0).reverse()) release();
   };

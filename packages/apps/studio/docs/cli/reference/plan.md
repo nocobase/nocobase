@@ -92,15 +92,15 @@ For people, and for an agent’s run in a person’s conversation (its run token
 nb-studio plan list
 ```
 
-| Flag            | Type    | Description                                                                               |
-| --------------- | ------- | ----------------------------------------------------------------------------------------- |
-| `--status`      | open \\ | pending \\                                                                                | executing \\ | executed \\ | failed \\ | stale \\ | voided \\ | expired \\ | undone |     |
-| `--source-kind` | string  |                                                                                           |
-| `--source-key`  | string  |                                                                                           |
-| `--issue`       | string  |                                                                                           |
-| `--all`         | boolean | From an agent in a conversation: every plan of the person rather than the conversation’s. |
-| `--limit`       | integer | (default 20)                                                                              |
-| `--page-token`  | string  |                                                                                           |
+| Flag            | Type                                                                                       | Description                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `--status`      | open \| pending \| executing \| executed \| failed \| stale \| voided \| expired \| undone |                                                                                           |
+| `--source-kind` | string                                                                                     |                                                                                           |
+| `--source-key`  | string                                                                                     |                                                                                           |
+| `--issue`       | string                                                                                     |                                                                                           |
+| `--all`         | boolean                                                                                    | From an agent in a conversation: every plan of the person rather than the conversation’s. |
+| `--limit`       | integer                                                                                    | (default 20)                                                                              |
+| `--page-token`  | string                                                                                     |                                                                                           |
 
 **Output:** A list (table columns: `id`, `status`, `title`, `source.kind`, `expiresAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

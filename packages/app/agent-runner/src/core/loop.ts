@@ -40,7 +40,10 @@ import {
   readConnection,
   passEnvNames,
   dropWorkspaceLimit,
+  artifactPatterns,
+  artifactTtlMs,
   minFreeDisk,
+  modelListOverrides,
   readSettings,
   runnerClient,
   type AppConnection,
@@ -99,6 +102,7 @@ import {
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
 import { ToolCapabilitiesCache } from './tool-capabilities.ts';
+import { reportedModels } from './model-list.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
 export function runnerVersion(): string {
@@ -117,6 +121,8 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'jobs.build',
   // Mounts (runner/mounts.ts): directories of files the application places beside the agent.
   'mounts',
+  // Repository credentials asked for whenever git needs one (agent/git-credentials.ts).
+  'gitCredentials',
   // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
   NPM_UPGRADE_FEATURE,
 ];
@@ -497,7 +503,9 @@ export class RunnerDaemon {
     capabilities.refresh();
     return {
       variables: providedNames(process.env, passEnv, localVariables),
-      tools: [...capabilities.tools],
+      tools: capabilities.tools.map((tool) =>
+        reportedModels(tool, modelListOverrides(settings.models)[tool.kind]),
+      ),
     };
   }
 
@@ -543,8 +551,17 @@ export class RunnerDaemon {
         const collected = await collectWorkspaces({
           paths,
           reporters,
+          decisionApps: new Set(
+            this.live
+              .filter((link) => link.workspaceReporting?.decisions === true)
+              .map((link) => link.key),
+          ),
           log,
           threshold: minFreeDisk(settings),
+          artifacts: {
+            ttlMs: artifactTtlMs(settings),
+            patterns: artifactPatterns(settings),
+          },
         });
         if (collected.removed.length > 0) this.pruneDue = true;
       } catch (error) {

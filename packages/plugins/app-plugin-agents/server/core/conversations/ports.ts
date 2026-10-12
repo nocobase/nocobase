@@ -13,14 +13,12 @@ import type { Agent } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
 import type {
   ChatAgent,
-  ConsultationNotice,
   ConversationNotice,
   ConversationDetail,
   ConversationListQuery,
   ConversationPage,
   ConversationPatch,
   ConversationSource,
-  CopyAgentRequest,
   CreateConversationRequest,
   MessagePage,
   SendMessageRequest,
@@ -47,10 +45,8 @@ export interface ConversationRulesContext {
   readonly conversation: ConversationRef;
   readonly agent: Agent;
   readonly ownerName: string;
-  /** The CLI command the brief names (`acme`). */
+  /** The CLI command the brief names (`acme`): name commands with `commandRef(context.cli, id)`. */
   readonly cli: string;
-  /** How the agent reaches the commands: name them with `commandRef(context.dialect, context.cli, id)`. */
-  readonly dialect: 'cli' | 'tools';
 }
 
 /** What the application adds to the system layer of a conversation's runs. */
@@ -168,14 +164,6 @@ export interface ConversationService {
     },
   ): Promise<ConversationRef | null>;
   /**
-   * Writes or rewrites the card of a consultation `run` made (`ask_agent`), one per tool call; nothing for a run on
-   * anything but a conversation.
-   */
-  consultation(
-    run: Pick<Run, 'id' | 'subject' | 'actorUserId'>,
-    card: ConsultationNotice,
-  ): Promise<void>;
-  /**
    * In the caller's transaction: writes `news.notice` to the conversation and hands `news.input` to its agent (a new
    * run, or the open one), as a message would. Answers the run, or null when the agent was not woken (no input, or
    * the agent can no longer be woken) or the conversation is gone.
@@ -196,21 +184,7 @@ export interface ConversationService {
   };
   /** Turns the run's new text events into assistant messages; nothing for runs on other subjects. */
   syncRun(runId: string): Promise<void>;
-  /**
-   * An online agent's reply as written so far, shown as a draft message that grows in place; the run's next text event
-   * makes it final. Nothing for runs on other subjects.
-   */
-  streamDraft(
-    run: Pick<Run, 'id' | 'agentId' | 'subject' | 'actorUserId'>,
-    text: string,
-  ): Promise<void>;
 
-  /** The agents the person may chat with, with whether each can answer now. */
+  /** The enabled agents the person may chat with, with whether each can answer now. */
   chatAgents(userId: string): Promise<ChatAgent[]>;
-  /** A private copy of an agent the person may wake, owned and usable only by them. */
-  copyAgent(
-    userId: string,
-    agentId: string,
-    request: CopyAgentRequest,
-  ): Promise<Agent>;
 }

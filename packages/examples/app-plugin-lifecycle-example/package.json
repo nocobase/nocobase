@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-lifecycle-example",
   "displayName": "Lifecycle Example App Plugin",
   "description": "Example app plugin showing record lifecycles: a support ticket that waits for its customer and an expense report that goes through approval.",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.4",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -37,6 +37,16 @@
         "import": "./dist/client/index.js"
       },
       "./package.json": "./package.json"
+    },
+    "imports": {
+      "#components/flow-diagram": {
+        "types": "./dist/client/components/flow-diagram.d.ts",
+        "import": "./dist/client/components/flow-diagram.js"
+      },
+      "#components/flow-layout": {
+        "types": "./dist/client/components/flow-layout.d.ts",
+        "import": "./dist/client/components/flow-layout.js"
+      }
     }
   },
   "scripts": {
@@ -63,12 +73,13 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",
     "@nocobase/lifecycle": "workspace:^",
-    "@nocobase/markdown-mermaid": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "lucide-react": "catalog:",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "@xyflow/react": "^12.11.5",
+    "elkjs": "^0.10.2"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
@@ -83,5 +94,9 @@
     "react-dom": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "imports": {
+    "#components/flow-diagram": "./client/components/flow-diagram.tsx",
+    "#components/flow-layout": "./client/components/flow-layout.ts"
   }
 }

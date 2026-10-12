@@ -2,4 +2,4 @@
 "@nocobase/app-plugin-agents": patch
 ---
 
-Require system default chat agents to be available to everyone, prevent restricting their access until the default is changed or cleared, and explain disabled choices and validation failures in chat settings.
+Require system default chat agents to be enabled and available to everyone, return field validation errors, and support disabled choices with readable reasons in the shared agent picker.

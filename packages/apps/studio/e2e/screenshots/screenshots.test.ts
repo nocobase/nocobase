@@ -27,7 +27,7 @@ const outDir = path.resolve(
 
 interface Target {
   readonly name: string;
-  /** `{project}`, `{designIssue}` and `{workflow}` are filled in from the data the screenshots set up. */
+  /** `{project}` and `{workingIssue}` are filled in from the data the screenshots set up. */
   readonly path: string;
   /** Also taken at phone width. */
   readonly phone?: boolean;
@@ -41,7 +41,7 @@ const TARGETS: readonly Target[] = [
   { name: 'issues-board', path: '/issues?view=board' },
   { name: 'issues-agent-queue', path: '/issues?view=agent', phone: true },
   { name: 'issue', path: '/issues/PM-1', phone: true },
-  { name: 'issue-design-proposal', path: '/issues/{designIssue}' },
+  { name: 'issue-agent-working', path: '/issues/{workingIssue}' },
   { name: 'new-issue-ai', path: '/issues/new' },
   { name: 'projects', path: '/projects' },
   { name: 'project', path: '/projects/{project}' },
@@ -53,7 +53,6 @@ const TARGETS: readonly Target[] = [
   { name: 'environments', path: '/environments' },
   { name: 'config-members', path: '/config/members' },
   { name: 'config-roles', path: '/config/roles' },
-  { name: 'config-workflow', path: '/config/workflows/{workflow}' },
   { name: 'config-labels', path: '/config/labels' },
   { name: 'config-api-keys', path: '/config/api-keys' },
   { name: 'account-preferences', path: '/account/preferences', phone: true },
@@ -118,16 +117,13 @@ test.beforeAll(async ({ browser }) => {
     const project =
       projects.find((item) => item.name === 'Studio Platform') ?? projects[0];
     ids.project = project?.id ?? '';
-    const workflows =
-      await api.get<{ id: string; isDefault: boolean }[]>('projects/workflows');
-    ids.workflow =
-      workflows.find((item) => item.isDefault)?.id ?? workflows[0]?.id ?? '';
     const runner = new FakeRunner(api, 'screenshots');
-    // Outside the demo projects: their working directory sends runs to the demo's own runner.
-    const issue = await runner.issueWithDesignProposal('流式导出大表', {
-      ownerUserId: me.userId,
-    });
-    ids.designIssue = issue.identifier;
+    // Outside the demo projects: an agent the project manager could hand a step to, working on it now.
+    const { issue } = await runner.issueWithTranscript(
+      '流式导出大表',
+      me.userId,
+    );
+    ids.workingIssue = issue.identifier;
   } finally {
     await context.close();
   }

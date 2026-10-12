@@ -1,12 +1,10 @@
 /**
- * The human load of the metrics beyond the projects plugin's approval requests: the other decisions people take in
- * Studio, read from where each is kept.
+ * The human load of the metrics: the decisions people take in Studio, read from where each is kept.
  *
  * - Inbox decisions (`studioInboxNotices`, kind `decision`): a deployment request (source `releases`), a pull request
  *   waiting to be merged (`git`), an agent run that failed for good (`projects`, `run_failed_final`), and any other
  *   decision a contributor sends. A decision sent to several people is one decision, created when it was first sent
- *   and taken when it was resolved. Approval requests also reach the inbox (source `projects`, keyed by the request);
- *   they are left out here, as the projects plugin counts them.
+ *   and taken when it was resolved.
  * - Operation plans (`pmPlans`) waiting for their decider: taken once executed, voided, expired or failed.
  *
  * A decision about an issue counts when the person may see the issue, and in a project's report when the issue is in
@@ -22,9 +20,9 @@ import type { DatabaseConnection, Row } from '@nocobase/db';
 import { RUN_FAILED_FINAL } from '../agents/notices.js';
 import { PROJECTS_SOURCE } from '../inbox/projects.js';
 
-/** The kinds of decision the metrics name; `approvals` are the projects plugin's. */
+/** The kinds of decision the metrics name. */
 export type DecisionKind =
-  'approvals' | 'plans' | 'deployRequests' | 'merges' | 'failedRuns' | 'other';
+  'plans' | 'deployRequests' | 'merges' | 'failedRuns' | 'other';
 
 export interface DecisionFigures {
   readonly created: number;
@@ -97,27 +95,9 @@ async function inboxDecisions(
     const key = `${String(row.source)}\u0000${text(row.decisionKey) ?? String(row.notificationId)}`;
     grouped.set(key, [...(grouped.get(key) ?? []), row]);
   }
-  // Approval requests are the projects plugin's figures.
-  const projectKeys = [...grouped.values()]
-    .map((list) => list[0])
-    .filter((row) => row.source === PROJECTS_SOURCE && text(row.decisionKey))
-    .map((row) => String(row.decisionKey));
-  const approvals = new Set<string>();
-  for (let at = 0; at < projectKeys.length; at += 500)
-    for (const row of await conn.query
-      .selectFrom('pmApprovalRequests')
-      .select('id')
-      .where('id', 'in', projectKeys.slice(at, at + 500))
-      .execute<Row>())
-      approvals.add(String(row.id));
   const decisions: Decision[] = [];
   for (const list of grouped.values()) {
     const first = list[0];
-    if (
-      first.source === PROJECTS_SOURCE &&
-      approvals.has(String(first.decisionKey))
-    )
-      continue;
     const created = Math.min(
       ...list.map((row) => time(row.createdAt) ?? Number.POSITIVE_INFINITY),
     );
@@ -162,7 +142,7 @@ async function planDecisions(
   });
 }
 
-/** The decisions other than approval requests, over `range` and what `viewer` may see. */
+/** The decisions, over `range` and what `viewer` may see. */
 export async function decisionFigures(
   conn: DatabaseConnection,
   projects: Pick<Projects, 'reports'>,

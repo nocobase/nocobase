@@ -14,7 +14,7 @@ An item is one of two kinds, and its kind decides where it installs:
 Two neighbours look similar and are not the same thing:
 
 - Behavior a plugin must keep consistent across upgrades belongs in the plugin, as a runtime component, route, or public export. Nothing updates installed source, so it cannot carry anything the plugin has to control.
-- A plugin can also ship its own recipes from a `registry/` directory described by `registry.config.json`, built and materialized with `pnpm registry`; see the [plugin Registry reference](../.agents/skills/nocobase-plugin-development/references/registry.md). Those travel inside the plugin's npm package. This library is the registry served over HTTP, which is what lets any project run `shadcn add @nocobase/<item>`.
+- A plugin can also ship its own recipes from a `registry/` directory described by `registry.config.json`, built and materialized with `pnpm registry`; see the [plugin Registry reference](../.agents/skills/nocobase-app-plugin-development/references/registry.md). Those travel inside the plugin's npm package. This library is the registry served over HTTP, which is what lets any project run `shadcn add @nocobase/<item>`.
 
 ## Layout
 

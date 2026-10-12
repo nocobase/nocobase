@@ -145,9 +145,8 @@ describe('explainWait', () => {
   const agent = {
     id: 'a1',
     modelEntries: [{ tool: 'claude', model: null }],
-    runnerIds: [],
+    status: 'enabled',
     maxConcurrentRuns: 2,
-    archivedAt: null,
   } as unknown as Agent;
   const runner = (patch: Partial<Runner> = {}): Runner =>
     ({
@@ -243,9 +242,24 @@ describe('explainWait', () => {
       'noRunnerOnline',
     );
     expect(
-      explainWait(run, { ...context, agent: { ...agent, runnerIds: ['r9'] } })
-        .reason,
-    ).toBe('runnersOffline');
+      explainWait(run, {
+        ...context,
+        agent: { ...agent, status: 'disabled' },
+      }).reason,
+    ).toBe('agentArchived');
+    // A model the runner does not report is not taken there.
+    expect(
+      explainWait(run, {
+        ...context,
+        agent: {
+          ...agent,
+          modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
+        },
+      }),
+    ).toMatchObject({
+      reason: 'toolUnavailable',
+      params: { tool: 'claude', model: 'claude-opus-5-5' },
+    });
     expect(
       explainWait(run, {
         ...context,

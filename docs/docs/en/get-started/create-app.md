@@ -7,6 +7,16 @@ description: 'Create and start a NocoBase 3 application with an AI Agent, then c
 
 Ask your AI Agent to check the environment, create a project, and start it locally.
 
+## Install application creation Skills
+
+Prepare Node.js 24 or later and pnpm 11, then use a Bash terminal, or WSL on Windows, to install the global NocoBase 3 Skills:
+
+```bash
+npx skills@latest add nocobase/skills-v3 --skill '*' -g
+```
+
+Select your Coding Agent when prompted and start a new Agent session. The [lightweight distribution repository](https://github.com/nocobase/skills-v3) provides `nocobase-create-app` to guide environment checks, application creation, and startup. After generation, development follows the project Skills in the application directory.
+
 ## Create the application
 
 1. **Start an AI Agent session**
@@ -38,7 +48,7 @@ Ask your AI Agent to check the environment, create a project, and start it local
 
    **After the application starts, start a new session before you continue development.**
 
-   Creating the application synchronizes the development Skills into `.agents/skills/` in the project directory. AI Agents load Skills when a session starts; a session that began before this directory existed does not have them, so later development works without this project guidance.
+   Creating the application synchronizes its development Skills into `.agents/skills/` in the project directory. These files appear after the current session starts, so it may not load them automatically. Start a new session in the application directory before continuing development.
 
    :::
 

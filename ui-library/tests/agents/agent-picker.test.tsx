@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   AgentIdentity,
   AgentPicker,
-  ModeTag,
+  AgentTag,
 } from '../../registry/agents/agent-picker';
 
 // The avatar comes from the plugin's chat entry; the preview's stand-in renders it without a server.
@@ -30,30 +30,30 @@ function agent(overrides: Partial<ChatAgent> & Pick<ChatAgent, 'id'>) {
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'online',
-    models: [],
-    personal: false,
     isSystemDefault: false,
     isMyDefault: false,
-    fallbackAgentId: null,
     availability: online,
+    personalOnly: false,
     ...overrides,
   } satisfies ChatAgent;
 }
 
 const AGENTS: readonly ChatAgent[] = [
-  agent({ id: 'assistant', name: 'Assistant', isMyDefault: true }),
   agent({
-    id: 'coder',
-    name: 'Coding agent',
-    type: 'runner',
-    isSystemDefault: true,
+    id: 'assistant',
+    name: 'Assistant',
+    description: 'Everyday coding',
+    isMyDefault: true,
+  }),
+  agent({ id: 'coder', name: 'Coding agent', isSystemDefault: true }),
+  agent({
+    id: 'mine',
+    name: 'Mine',
+    personalOnly: true,
   }),
   agent({
     id: 'reviewer',
     name: 'Reviewer',
-    type: 'runner',
-    personal: true,
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
   }),
 ];
@@ -88,10 +88,10 @@ describe('AgentPicker', () => {
     );
     await userEvent.keyboard('{ArrowDown}');
     await waitFor(() =>
-      expect(screen.getByRole('menuitem', { name: /Reviewer/ })).toHaveFocus(),
+      expect(screen.getByRole('menuitem', { name: /Mine/ })).toHaveFocus(),
     );
     await userEvent.keyboard('{Enter}');
-    expect(onSelect).toHaveBeenCalledWith('reviewer');
+    expect(onSelect).toHaveBeenCalledWith('mine');
     onSelect.mockClear();
     await userEvent.click(
       screen.getByRole('button', { name: 'Agent: Assistant, Online' }),
@@ -102,7 +102,7 @@ describe('AgentPicker', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('shows the chosen agent with its availability and mode, and lists the agents grouped by mode', async () => {
+  it('shows the chosen agent with its availability, and lists every agent with its tags and why it cannot answer', async () => {
     const onSelect = vi.fn();
     render(
       <AgentPicker
@@ -116,22 +116,24 @@ describe('AgentPicker', () => {
       name: 'Chatting with Assistant, Online; choose another agent',
     });
     expect(within(trigger).getByRole('img', { name: 'Online' })).toBeVisible();
-    expect(trigger).toHaveTextContent('Online');
     // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
     await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
-    expect(within(menu).getByText('Online agents')).toBeVisible();
-    expect(within(menu).getByText('Runner agents')).toBeVisible();
-    const reviewer = within(menu).getByRole('menuitem', { name: /Reviewer/ });
-    expect(reviewer).toHaveTextContent('Only me');
     expect(
-      within(reviewer).getByRole('img', { name: 'No runner online' }),
-    ).toBeVisible();
+      within(menu).getByRole('menuitem', { name: /Assistant/ }),
+    ).toHaveTextContent('Everyday coding');
     expect(
       within(menu).getByRole('menuitem', { name: /Coding agent/ }),
     ).toHaveTextContent('System default');
-    fireEvent.click(reviewer);
-    expect(onSelect).toHaveBeenCalledWith('reviewer');
+    expect(
+      within(menu).getByRole('menuitem', { name: /Mine/ }),
+    ).toHaveTextContent('Personal runners only');
+    const reviewer = within(menu).getByRole('menuitem', { name: /Reviewer/ });
+    expect(reviewer).toHaveTextContent('No runner online, cannot be chosen');
+    expect(reviewer).toHaveAttribute('aria-disabled', 'true');
+    expect(within(menu).getByText(/Answers run on a runner/)).toBeVisible();
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /Mine/ }));
+    expect(onSelect).toHaveBeenCalledWith('mine');
   });
 
   it('starts a new conversation when bound, and shows what the conversation has', async () => {
@@ -140,7 +142,7 @@ describe('AgentPicker', () => {
         agents={AGENTS}
         value='coder'
         bound
-        shown={{ name: 'Gone agent', mode: 'runner', temporary: true }}
+        shown={{ name: 'Gone agent', temporary: true }}
         appearance='toolbar'
         onSelect={() => undefined}
       />,
@@ -149,7 +151,6 @@ describe('AgentPicker', () => {
       name: 'Chatting with Gone agent; choose another agent',
     });
     expect(trigger).toHaveTextContent('Temporary');
-    expect(trigger).toHaveTextContent('Runner');
     await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
     expect(
@@ -189,7 +190,7 @@ describe('AgentPicker', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('fits a composer’s toolbar: the dot on the avatar, the mode only where the container is wide', () => {
+  it('fits a composer’s toolbar: the dot on the avatar', () => {
     render(
       <AgentPicker
         agents={AGENTS}
@@ -200,19 +201,19 @@ describe('AgentPicker', () => {
     );
     // The availability the dot shows is in the accessible name.
     const trigger = screen.getByRole('button', {
-      name: 'Chatting with Reviewer, No runner online; choose another agent',
+      name: 'Chatting with Reviewer, No runner online, cannot be chosen; choose another agent',
     });
     expect(trigger).toHaveClass('max-w-44', '@md:max-w-64');
-    const dot = within(trigger).getByRole('img', { name: 'No runner online' });
+    const dot = within(trigger).getByRole('img', {
+      name: 'No runner online, cannot be chosen',
+    });
     expect(dot).toHaveClass('absolute');
     // Placed on the avatar's corner, the two sharing one positioned box.
     expect(dot.parentElement).toHaveClass('relative');
     expect(dot.previousElementSibling).not.toBeNull();
-    const mode = within(trigger).getByText('Runner').closest('[title]');
-    expect(mode).toHaveClass('hidden', '@md:inline-flex');
   });
 
-  it('looks like a select as a field: the dot on the avatar, no mode or tags on the trigger', async () => {
+  it('looks like a select as a field: the dot on the avatar, no tags on the trigger', async () => {
     render(
       <AgentPicker
         id='rule-agent'
@@ -229,42 +230,37 @@ describe('AgentPicker', () => {
     expect(trigger).toHaveClass('h-8', 'w-full', 'border-input', 'rounded-lg');
     const dot = within(trigger).getByRole('img', { name: 'Online' });
     expect(dot).toHaveClass('absolute');
-    expect(trigger).not.toHaveTextContent('Runner');
     expect(trigger).not.toHaveTextContent('System default');
     await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
-    expect(within(menu).getByText('Online agents')).toBeVisible();
-    expect(within(menu).getByText('Runner agents')).toBeVisible();
+    expect(within(menu).getAllByRole('menuitem')).toHaveLength(AGENTS.length);
     // No hint under a field's menu.
-    expect(within(menu).queryByText(/Online answers on the server/)).toBeNull();
+    expect(within(menu).queryByText(/Answers run on a runner/)).toBeNull();
   });
 
-  it('offers only one type as a field, with its placeholder while nothing is chosen', async () => {
+  it('shows its placeholder as a field while nothing is chosen', async () => {
     const onSelect = vi.fn();
     render(
       <AgentPicker
         agents={AGENTS}
         value={null}
-        type='runner'
-        placeholder='Choose a runner agent'
+        placeholder='Choose a rule agent'
         onSelect={onSelect}
       />,
     );
     const trigger = screen.getByRole('button', {
-      name: 'Agent: Choose a runner agent',
+      name: 'Agent: Choose a rule agent',
     });
-    expect(within(trigger).getByText('Choose a runner agent')).toHaveClass(
+    expect(within(trigger).getByText('Choose a rule agent')).toHaveClass(
       'text-muted-foreground',
     );
     expect(within(trigger).queryByRole('img')).toBeNull();
     await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
-    expect(within(menu).queryByText('Online agents')).toBeNull();
-    expect(
-      within(menu).queryByRole('menuitem', { name: /Assistant/ }),
-    ).toBeNull();
-    fireEvent.click(within(menu).getByRole('menuitem', { name: /Reviewer/ }));
-    expect(onSelect).toHaveBeenCalledWith('reviewer');
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: /Coding agent/ }),
+    );
+    expect(onSelect).toHaveBeenCalledWith('coder');
   });
 
   it('names an agent the list does not hold, or what `shown` says, and can be disabled', () => {
@@ -302,7 +298,9 @@ describe('AgentPicker', () => {
         ringClassName='ring-popover'
       />,
     );
-    const dot = screen.getByRole('img', { name: 'No runner online' });
+    const dot = screen.getByRole('img', {
+      name: 'No runner online, cannot be chosen',
+    });
     expect(dot).toHaveClass('absolute', 'ring-popover');
     expect(screen.getByText('Reviewer')).toBeVisible();
   });
@@ -319,12 +317,7 @@ describe('AgentPicker', () => {
     expect(
       screen.getByRole('button', { name: '默认 Agent：选择 Agent' }),
     ).toBeVisible();
-    render(
-      <ModeTag
-        mode='runner'
-        labels={{ mode: { online: '在线', runner: '运行器' } }}
-      />,
-    );
-    expect(screen.getByText('运行器')).toBeVisible();
+    render(<AgentTag tone='violet'>仅个人运行器</AgentTag>);
+    expect(screen.getByText('仅个人运行器')).toBeVisible();
   });
 });

@@ -20,9 +20,14 @@
 // - no event for `idleTimeoutMs`: abort the tool and `fail(idleTimeout)`.
 //
 // Nothing leaves the worker unredacted (`runSecrets`): every event is redacted as it is spooled, and so are the
-// summary, the failure detail and the worker's log lines. The redactor removes the values of the secrets the run was
-// given (its variables, the passthrough values taken from this host, the proxy and `--pass-env` values the runner
-// passes, its CLI credential's tokens, the runner key) and the common secret patterns of `@nocobase/agent-protocol`.
+// summary, the failure detail, the repositories' push failures and the worker's log lines. The redactor removes the
+// values of the secrets the run was given (its variables, the passthrough values taken from this host, the proxy and
+// `--pass-env` values the runner passes, its CLI credential's tokens, the runner key, and every repository credential
+// as the broker gets it) and the common secret patterns of `@nocobase/agent-protocol`.
+//
+// The run's repository credentials (`workspace.git`) are kept by a broker in this process (git-credentials.ts), which
+// the checkout, the agent's git (through the runner's credential helper and a socket only this worker serves) and the
+// end-of-run push all ask; it is closed, and the socket removed, when the run ends or is no longer this runner's.
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -67,6 +72,12 @@ import { deleteRunCredentials } from './credentials.ts';
 import { prepareCodexHome } from './codex-home.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
+import {
+  GitCredentialBroker,
+  installCredentialHelper,
+  serveGitCredentials,
+  type CredentialServer,
+} from './git-credentials.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
@@ -76,6 +87,7 @@ import {
   agentCwd,
   PREPARE_STEPS,
   PrepareError,
+  stepFailure,
   type PrepareContext,
 } from './prepare/index.ts';
 import {
@@ -135,6 +147,8 @@ export function workspaceNotes(options: {
   mounts?: readonly { readonly dir: string; readonly note?: string }[];
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
+  /** The run only reads (`workspace.readOnly`): nothing it commits is pushed. */
+  readOnly?: boolean;
 }): string {
   const { workDir, cwd, dirs } = options;
   const lines = [
@@ -143,22 +157,33 @@ export function workspaceNotes(options: {
       : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
   ];
   if (dirs.length > 0) {
+    lines.push(
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Once the task is done or cancelled, its working directory is removed, with anything never pushed.`,
+    );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
       const name = dir.name === undefined ? '' : ` (${dir.name})`;
       lines.push(
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
-          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
+          : options.readOnly === true
+            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
+            : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
       );
     }
+    if (options.readOnly === true)
+      lines.push(
+        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Read and run checks here, but change, commit and push nothing; the runner pushes nothing from this checkout.',
+      );
     for (const dir of dirs) {
       if (dir.repo?.initializing)
         lines.push(
           `The remote ${dir.repo.url} has no refs. This checkout is initializing it on ${dir.repo.branch}, with no base commit. Implement the task in this directory, verify the result, then commit and push this branch. This first delivery needs no pull request, even if the usual workflow asks for one: there is no base branch yet. The push may only create the branch, not overwrite a branch created by someone else. Preserve existing files and commits on a retry. Report the actual checks and any failure; do not claim the task is complete merely because the first push succeeded.`,
         );
     }
-    lines.push('Keep every file you write inside these directories.');
+    lines.push(
+      `Keep every file you write inside these directories or the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}).`,
+    );
   }
   if (options.pnpmStoreDir !== undefined)
     lines.push(
@@ -238,6 +263,39 @@ export function runSecrets(
   return secrets;
 }
 
+/** A redactor that takes in secrets the run is given later, such as a repository credential issued on demand. */
+export class GrowingRedactor implements Redactor {
+  private current: Redactor;
+
+  constructor(initial: Redactor) {
+    this.current = initial;
+  }
+
+  get secrets(): readonly string[] {
+    return this.current.secrets;
+  }
+
+  add(secrets: Iterable<string | null | undefined>): void {
+    this.current = this.current.with(secrets);
+  }
+
+  text(text: string): string {
+    return this.current.text(text);
+  }
+
+  optional(text: string | undefined): string | undefined {
+    return this.current.optional(text);
+  }
+
+  value<T>(value: T): T {
+    return this.current.value(value);
+  }
+
+  with(secrets: Iterable<string | null | undefined>): Redactor {
+    return this.current.with(secrets);
+  }
+}
+
 function failureReason(result: AdapterResult): {
   reason: FailureReason;
   detail: string;
@@ -255,7 +313,9 @@ export class RunWorker {
   private readonly timings: Timings;
   private readonly deps: WorkerDeps;
   private readonly client: ApiClient;
-  private readonly redactor: Redactor;
+  private readonly redactor: GrowingRedactor;
+  private readonly broker: GitCredentialBroker | undefined;
+  private credentialServer: CredentialServer | undefined;
   private readonly runId: string;
   private readonly record: RunRecord;
   private readonly spool: EventSpool;
@@ -274,6 +334,7 @@ export class RunWorker {
   private idleTimer: NodeJS.Timeout | undefined;
   private lastActivity = Date.now();
   private sessionId: string | undefined;
+  private confirmedSessionId: string | undefined;
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
@@ -286,8 +347,15 @@ export class RunWorker {
   ) {
     this.payload = payload;
     this.timings = timings;
-    this.redactor = createRedactor(
-      runSecrets(payload, deps.connection, process.env, deps.settings.passEnv),
+    this.redactor = new GrowingRedactor(
+      createRedactor(
+        runSecrets(
+          payload,
+          deps.connection,
+          process.env,
+          deps.settings.passEnv,
+        ),
+      ),
     );
     const redact = this.redactor;
     this.deps = {
@@ -323,6 +391,21 @@ export class RunWorker {
         this.absorb(response.cancelRequested, response.inputs),
       onLost: (error) => this.end({ kind: 'lost', code: error.reason }),
     });
+    const git = payload.workspace.git;
+    this.broker =
+      (git?.onDemand?.length ?? 0) > 0 || (git?.credentials?.length ?? 0) > 0
+        ? new GitCredentialBroker({
+            client: this.client,
+            runId: this.runId,
+            attempt: payload.run.attempt,
+            ...(git?.onDemand ? { onDemand: git.onDemand } : {}),
+            ...(git?.credentials ? { credentials: git.credentials } : {}),
+            onSecret: (secret) => this.redactor.add([secret]),
+            onLost: (code) => this.end({ kind: 'lost', code }),
+            event: (event) => this.spool.push(event),
+            log: this.deps.log,
+          })
+        : undefined;
     for (const input of payload.inputs) this.inputs.set(input.id, input);
   }
 
@@ -401,6 +484,18 @@ export class RunWorker {
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
   private recordEvent(event: AdapterEvent): void {
+    if (event.type === 'status' && event.content === 'sessionRecovery') {
+      this.sessionId = undefined;
+      this.confirmedSessionId = undefined;
+    }
+    if (
+      event.type === 'status' &&
+      event.content === 'started' &&
+      typeof event.meta?.sessionId === 'string'
+    ) {
+      this.sessionId = event.meta.sessionId;
+      this.confirmedSessionId = event.meta.sessionId;
+    }
     if (event.type === 'input') {
       const inputId = event.meta?.inputId;
       if (typeof inputId === 'string' && this.inputs.has(inputId)) {
@@ -465,6 +560,8 @@ export class RunWorker {
       );
     } finally {
       this.lease.stop();
+      this.broker?.close();
+      await this.credentialServer?.close().catch(() => undefined);
       if (this.statusTimer !== undefined) clearInterval(this.statusTimer);
       if (this.idleTimer !== undefined) clearInterval(this.idleTimer);
       this.spool.stop();
@@ -505,6 +602,7 @@ export class RunWorker {
       log: deps.log,
       event: (event) => this.spool.push(event),
       onRelease: (release) => this.releases.push(release),
+      ...(this.broker === undefined ? {} : { gitAuth: this.broker }),
       dirs: [],
     };
     this.prepared = context;
@@ -530,8 +628,9 @@ export class RunWorker {
             phase: step.name,
           },
         });
+        if (this.ending !== undefined) return this.finishEnding();
         return this.finishFailed(
-          error instanceof PrepareError ? error.reason : step.failure,
+          stepFailure(step, error, payload.run.acceptedFailures),
           detail,
         );
       } finally {
@@ -588,6 +687,23 @@ export class RunWorker {
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
     const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
+    if (this.broker !== undefined && this.broker.urls.length > 0) {
+      this.credentialServer = await serveGitCredentials(
+        this.broker,
+        deps.paths.home,
+      );
+    }
+    const credentialHelper =
+      this.broker !== undefined && this.credentialServer !== undefined
+        ? {
+            helper: await installCredentialHelper(
+              path.join(deps.paths.home, 'helpers'),
+            ),
+            socket: this.credentialServer.socket,
+            nonce: this.credentialServer.nonce,
+            urls: this.broker.urls,
+          }
+        : undefined;
     const env = buildAgentEnv({
       source: process.env,
       binDir,
@@ -597,6 +713,7 @@ export class RunWorker {
       pnpmImportMethod: importMethod,
       pinPnpm: runnerTools.includes('pnpm'),
       hooksDir: deps.paths.hooksDir,
+      ...(credentialHelper === undefined ? {} : { credentialHelper }),
       ...(deps.settings.passEnv === undefined
         ? {}
         : { passEnv: deps.settings.passEnv }),
@@ -647,6 +764,7 @@ export class RunWorker {
           : { skillsDir: context.skills.dir }),
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
         pnpmStoreDir,
+        ...(payload.workspace.readOnly === true ? { readOnly: true } : {}),
       }),
       init,
     );
@@ -704,6 +822,7 @@ export class RunWorker {
       this.steered.clear();
       this.usage.push(...result.usage);
       this.sessionId = result.sessionId ?? this.sessionId;
+      this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       this.summaryText = result.summary ?? this.summaryText;
 
       if (this.ending !== undefined) return this.finishEnding();
@@ -725,19 +844,36 @@ export class RunWorker {
         this.deliverInPrompt(pending, 'turn');
         continue;
       }
+      const late = await this.completeOrCollect();
+      if (!Array.isArray(late)) return late;
+      prompt = formatInputs(late);
+      this.deliverInPrompt(late, 'turn');
+    }
+  }
+
+  /**
+   * Completes the run, or returns the input the server held it open for. The server may withdraw pending input it no
+   * longer lets the run act on (its subject moved on) between answering `RUN_INPUT_PENDING` and delivering, so when
+   * nothing new arrives the run completes again rather than starting a turn with an empty prompt.
+   */
+  private async completeOrCollect(): Promise<WorkerOutcome | RunInput[]> {
+    let empty = 0;
+    for (;;) {
       const outcome = await this.finishCompleted();
       if (outcome !== 'inputPending') return outcome;
       await this.pollStatus();
       if (this.ending !== undefined) return this.finishEnding();
-      const next = this.undelivered();
-      if (next.length === 0) {
+      if (this.undelivered().length === 0) {
         // The server says inputs are pending but sent none we have not seen; ask once more after a pause.
         await delay(1_000);
         await this.pollStatus();
+        if (this.ending !== undefined) return this.finishEnding();
       }
       const late = this.undelivered();
-      prompt = formatInputs(late);
-      this.deliverInPrompt(late, 'turn');
+      if (late.length > 0) return late;
+      empty += 1;
+      // An older server that keeps answering so without sending anything gets the turn it used to.
+      if (empty >= 3) return late;
     }
   }
 
@@ -757,6 +893,7 @@ export class RunWorker {
       if (result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
+        this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
     }
   }
@@ -775,22 +912,33 @@ export class RunWorker {
       await markWorkspaceEnded(this.deps.paths, workDir, []);
       return [];
     }
-    const reports = await reportRepos(repos, {
-      push,
-      ...(this.payload.workspace.git?.credentials === undefined
-        ? {}
+    const reports = (
+      await reportRepos(repos, {
+        push,
+        ...(this.broker === undefined ? {} : { auth: this.broker }),
+        log: this.deps.log,
+      })
+    ).map((report) =>
+      report.failure === undefined
+        ? report
         : {
-            credentials: this.payload.workspace.git.credentials,
-          }),
-      log: this.deps.log,
-    });
+            ...report,
+            failure: {
+              reason: report.failure.reason,
+              message: this.redactor.text(report.failure.message),
+            },
+          },
+    );
     await markWorkspaceEnded(this.deps.paths, workDir, reports);
     return reports;
   }
 
   private async finishCompleted(): Promise<WorkerOutcome | 'inputPending'> {
     await this.updateRecord({ phase: 'reporting' });
-    const repos = await this.repoReports(this.deps.push ?? true);
+    // A read-only run pushes nothing: another run may be writing the same branch.
+    const repos = await this.repoReports(
+      (this.deps.push ?? true) && this.payload.workspace.readOnly !== true,
+    );
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir !== undefined)
@@ -887,6 +1035,9 @@ export class RunWorker {
           await this.report(
             routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
             {
+              ...(this.confirmedSessionId === undefined
+                ? {}
+                : { sessionId: this.confirmedSessionId }),
               handledInputIds: [...this.delivered],
               usage: this.usage,
             },

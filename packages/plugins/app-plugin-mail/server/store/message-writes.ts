@@ -12,6 +12,10 @@ import {
   type MessageRow,
 } from './rows.js';
 import { chunks } from './serialization.js';
+import {
+  deleteMessageParticipants,
+  replaceMessageParticipants,
+} from './message-participants.js';
 
 export async function upsertMessages(
   query: QueryAdapter,
@@ -121,6 +125,7 @@ export async function upsertMessages(
     await query.insertInto<MessageRow>('mailMessages').values(batch).execute();
   }
   if (rows.length === 0) return;
+  await replaceMessageParticipants(query, rows);
   const messageIds = rows.map((row) => row.id);
   await query
     .deleteFrom<MessageFolderRow>('mailMessageFolders')
@@ -213,6 +218,7 @@ export async function deleteMessages(
       .execute<Pick<MessageRow, 'id'>>();
     if (messages.length > 0) {
       const messageIds = messages.map((message) => message.id);
+      await deleteMessageParticipants(query, messageIds, accountId);
       for (const ids of chunks(messageIds, 100)) {
         await query
           .deleteFrom<MessageFolderRow>('mailMessageFolders')

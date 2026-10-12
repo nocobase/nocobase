@@ -41,8 +41,7 @@ export function errorText(
         metadata &&
         typeof metadata === 'object' &&
         'reason' in metadata &&
-        (metadata.reason === 'SYSTEM_DEFAULT_REQUIRES_EVERYONE' ||
-          metadata.reason === 'SYSTEM_DEFAULT_ACCESS_RESTRICTED')
+        metadata.reason === 'SYSTEM_DEFAULT_REQUIRES_EVERYONE'
       )
         return t(`errors.${metadata.reason}`);
     }

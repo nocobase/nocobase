@@ -4,11 +4,17 @@ import type {
   FailureReason,
   RunPayload,
 } from '../../protocol/index.ts';
+import { acceptedFailure } from '../../protocol/index.ts';
+import { WorkspaceBusyError } from '../../core/checkout.ts';
 import type { SkillsPlacement } from '../adapters/types.ts';
 import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import type { ApiClient } from '../../lib/http.ts';
-import type { PreparedDir, WorkspaceLock } from '../../core/checkout.ts';
+import type {
+  PreparedDir,
+  RepoAuthSource,
+  WorkspaceLock,
+} from '../../core/checkout.ts';
 import type { GitRetryOptions } from '../../core/git-retry.ts';
 import type { PlacedMount } from '../mounts.ts';
 import type { SpoolEvent } from '../../core/events.ts';
@@ -27,6 +33,8 @@ export interface PrepareContext {
   readonly event: (event: SpoolEvent) => void;
   /** Called, last first, when the run ends, prepared or not. */
   readonly onRelease: (release: () => Promise<void>) => void;
+  /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
+  readonly gitAuth?: RepoAuthSource;
   /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
   readonly gitRetry?: GitRetryOptions;
   workspace?: WorkspaceLock;
@@ -65,6 +73,34 @@ export class PrepareError extends Error {
     this.reason = reason;
     this.meta = meta;
   }
+}
+
+/**
+ * Why a run fails when `step` throws `error`: the error's own reason, else the step's. A lock another live process
+ * holds (`WorkspaceBusyError`), found by any step, is the workspace being busy, which the application requeues without
+ * counting an attempt, when it announces that it accepts it (`acceptedFailures`).
+ */
+export function stepFailure(
+  step: Pick<PrepareStep, 'failure'>,
+  error: unknown,
+  accepted: readonly string[] | undefined,
+): FailureReason {
+  if (error instanceof PrepareError) return error.reason;
+  if (error instanceof WorkspaceBusyError)
+    return acceptedFailure('workspaceBusy', accepted);
+  return step.failure;
+}
+
+/**
+ * The key of the run's work directory: the one the application names (`workspace.key`), else the subject's; for a run
+ * that only reads (`workspace.readOnly`), one of its own per subject and agent, so it runs alongside the run that
+ * writes the subject's code and resumes its own session.
+ */
+export function workspaceKey(payload: RunPayload): string {
+  const base = payload.workspace.key ?? payload.subject.key;
+  return payload.workspace.readOnly === true
+    ? `${base}.readonly-${payload.agent?.id ?? payload.run.id}`
+    : base;
 }
 
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */

@@ -7,6 +7,16 @@ description: '让 AI Agent 创建并启动 NocoBase 3 应用，然后在新会�
 
 让 AI Agent 帮你完成环境检查、项目创建和本地启动。
 
+## 安装创建应用的 Skills
+
+准备 Node.js 24 或更高版本及 pnpm 11，以下命令在 Bash 终端执行，Windows 用户可在 WSL 中操作。在终端安装 NocoBase 3 的全局 Skills：
+
+```bash
+npx skills@latest add nocobase/skills-v3 --skill '*' -g
+```
+
+按提示选择你使用的 Coding Agent，再开启新的 Agent 会话。Skills 由[轻量分发仓库](https://github.com/nocobase/skills-v3)提供，其中的 `nocobase-create-app` 指导 Agent 检查环境、创建和启动应用。应用生成后，开发工作使用应用目录中的项目 Skills。
+
 ## 创建应用
 
 1. **开启 AI Agent 会话**
@@ -38,7 +48,7 @@ description: '让 AI Agent 创建并启动 NocoBase 3 应用，然后在新会�
 
    **应用创建并启动后，请重新开启一个会话来继续开发。**
 
-   创建应用时，NocoBase 会把开发用的 Skills 同步到项目目录的 `.agents/skills/`。AI Agent 只在会话开始时加载 Skills；在当前会话里继续，它读不到这些项目指引，后续开发容易偏离项目约定。
+   创建应用时，NocoBase 会把开发用的 Skills 同步到项目目录的 `.agents/skills/`。这些项目指引是在当前会话开始后才生成的，当前会话未必自动加载。请在应用目录重新开启会话，再继续开发。
 
    :::
 

@@ -24,7 +24,7 @@ pnpm --version
 
 ```bash
 # 允许下载刚发布的版本，并创建应用
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
 ```
 
 `my-app` 是目标目录名，也会作为应用的默认名称。名称必须以小写英文字母或数字开头，且仅包含小写英文字母、数字、点（`.`）、短横线（`-`）或下划线（`_`），不能包含中文、空格或大写字母。建议使用 `my-app`、`crm-demo` 或 `order-system` 这样的名称。目标目录可以尚不存在，也可以是已准备好的空目录。

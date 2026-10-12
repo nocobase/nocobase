@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/realtime",
-  "version": "0.0.2-beta.0",
+  "version": "0.0.2-beta.1",
   "description": "Shared realtime protocol and browser WebSocket client for NocoBase.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

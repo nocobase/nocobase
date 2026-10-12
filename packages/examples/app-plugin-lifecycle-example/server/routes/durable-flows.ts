@@ -14,6 +14,8 @@ import type { DurableFlow } from '../../shared/flows.js';
 import type { DurableFlowService } from '../services/durable-flows.js';
 import type { Plain } from '../tokens.js';
 import { SIGNATURE_HEADER } from '../webhooks/receiver.js';
+import { SandboxError } from '../sandbox/sandbox.js';
+import { invoicePdf } from '../sandbox/invoice-pdf.js';
 import { outward, signedInUser, tags, toApiError } from './api.js';
 import {
   CheckoutParams,
@@ -21,6 +23,8 @@ import {
   CreateExportInput,
   CreateFulfilmentInput,
   CreateOrderInput,
+  CreateInvoiceInput,
+  CompleteInvoiceInput,
   CreatePurchaseInput,
   CreateSubscriptionInput,
   DeliveryResultSchema,
@@ -231,7 +235,79 @@ export function durableFlowRoutes(
     create: (service, body, actor) => service.createSubscription(body, actor),
   });
 
+  flowRoutes(router, base, flows, {
+    flow: 'invoices',
+    noun: 'Invoice',
+    plural: 'invoices',
+    input: CreateInvoiceInput,
+    description:
+      'One invoice per completed sandbox order. Requests, callbacks and timeout queries reuse one provider key.',
+    create: (service, body, actor) => service.createInvoice(body, actor),
+  });
+
+  router.get(
+    `${base}/invoices/:recordId/pdf`,
+    describeRoute({
+      tags,
+      summary: 'Download the sample invoice PDF',
+      operationId: 'lifecycleExampleDownloadInvoice',
+      responses: {
+        200: {
+          description: 'A sample PDF marked as a sandbox document.',
+          content: {
+            'application/pdf': { schema: { type: 'string', format: 'binary' } },
+          },
+        },
+        401: apiErrorResponse(401),
+        404: apiErrorResponse(404),
+        400: apiErrorResponse(400),
+        500: apiErrorResponse(500),
+      },
+    }),
+    apiValidator('param', RecordParams),
+    async (context) => {
+      const { recordId } = context.req.valid('param');
+      const view = await flows.runtime.view('invoices', recordId, {
+        id: signedInUser(context),
+      });
+      if (view.record.status !== 'issued')
+        throw new SandboxError(
+          'NOT_FOUND',
+          'The invoice PDF is not available yet.',
+        );
+      return context.body(invoicePdf(String(view.record.invoiceNumber)), 200, {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="invoice-${recordId}.pdf"`,
+      });
+    },
+  );
+
   const sandbox = `${base}/sandbox`;
+  router.post(
+    `${sandbox}/invoices/:recordId/complete`,
+    describeRoute({
+      tags,
+      summary: 'Complete an invoice at the sandbox platform',
+      operationId: 'lifecycleExampleCompleteSandboxInvoice',
+      responses: {
+        201: dataResponse(WebhookEventSchema),
+        400: apiErrorResponse(400),
+        401: apiErrorResponse(401),
+        404: apiErrorResponse(404),
+        500: apiErrorResponse(500),
+      },
+    }),
+    apiValidator('param', RecordParams),
+    apiValidator('json', CompleteInvoiceInput),
+    async (context) => {
+      const { recordId } = context.req.valid('param');
+      const { outcome, hold } = context.req.valid('json');
+      return context.json(
+        { data: await flows.completeInvoice(recordId, outcome, hold) },
+        201,
+      );
+    },
+  );
 
   router.get(
     `${sandbox}/events`,

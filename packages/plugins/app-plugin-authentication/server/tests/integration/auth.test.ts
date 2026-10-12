@@ -22,6 +22,22 @@ describe('Auth', () => {
     );
   });
 
+  it('reports password reset only when password authentication and its sender are configured', async () => {
+    const disabled = await createAuthFixture({
+      emailAndPassword: { enabled: false, sendResetPassword: vi.fn() },
+    });
+    const missingSender = await createAuthFixture({
+      emailAndPassword: { enabled: true },
+    });
+    const configured = await createAuthFixture({
+      emailAndPassword: { enabled: true, sendResetPassword: vi.fn() },
+    });
+    fixtures.push(disabled, missingSender, configured);
+    expect(disabled.auth.passwordResetAvailable()).toBe(false);
+    expect(missingSender.auth.passwordResetAvailable()).toBe(false);
+    expect(configured.auth.passwordResetAvailable()).toBe(true);
+  });
+
   it('signs up and exposes its session to a protected route', async () => {
     const { router, signUp, connection } = await setup();
     const { response, cookie } = await signUp();
