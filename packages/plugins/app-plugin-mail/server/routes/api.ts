@@ -1802,7 +1802,12 @@ function toMailApiError(error: unknown, context: Context): unknown {
               ],
             }
           : {}),
-        ...localized(context, 'errors.invalidRequest'),
+        ...localized(
+          context,
+          error.reason === 'MAIL_ACCOUNT_CREDENTIALS_INVALID'
+            ? 'errors.accountCredentialsInvalid'
+            : 'errors.invalidRequest',
+        ),
         cause: error,
       });
     }

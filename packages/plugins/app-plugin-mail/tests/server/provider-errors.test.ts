@@ -29,6 +29,7 @@ import {
   assertProviderResult,
   classifyMailProviderError,
   isMailProviderError,
+  MailError,
   MailProviderRequestError,
 } from '../../server/services/errors.js';
 import { createDatabaseMailStore } from '../../server/store.js';
@@ -424,7 +425,7 @@ describe('[API] mail routes answer Provider failures', () => {
     });
     const i18n = new I18nRuntime({
       defaultLocale: 'en-US',
-      locales: ['en-US'],
+      locales: ['en-US', 'zh-CN'],
     });
     i18n.registerNamespace('@nocobase/app-plugin-mail', locales);
     await i18n.init();
@@ -437,11 +438,14 @@ describe('[API] mail routes answer Provider failures', () => {
     await database?.destroy();
   });
 
-  function connectAccount(): Promise<Response> {
+  function connectAccount(locale: string = 'en-US'): Promise<Response> {
     return Promise.resolve(
       router.request('/api/mail/accounts/connect', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'accept-language': locale,
+        },
         body: JSON.stringify({
           type: 'fixture',
           name: 'fixture',
@@ -553,24 +557,74 @@ describe('[API] mail routes answer Provider failures', () => {
     });
   });
 
-  it('answers wrong credentials while connecting as invalid input, not as reauthorization', async () => {
-    connect.mockResolvedValue({
-      ok: false,
-      error: providerError('authentication', false, {
-        code: 'AUTHENTICATIONFAILED',
-      }),
-    });
-    const response = await connectAccount();
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: {
-        status: 'INVALID_ARGUMENT',
-        reason: 'MAIL_ACCOUNT_CREDENTIALS_INVALID',
-        domain: 'mail',
-        fieldViolations: [{ field: 'password' }],
-      },
-    });
-  });
+  it.each([
+    [
+      'en-US',
+      'Mailbox authentication failed. Check your login name and password or authorization code, and confirm that IMAP/SMTP is enabled. Gmail and other services may require an app password.',
+    ],
+    [
+      'zh-CN',
+      '邮箱认证失败。请检查登录名和密码或授权码，并确认已开启 IMAP/SMTP。Gmail 等邮箱可能需要使用应用专用密码。',
+    ],
+  ] as const)(
+    'explains rejected credentials in %s without changing the error contract',
+    async (locale, localizedMessage) => {
+      connect.mockResolvedValue({
+        ok: false,
+        error: providerError('authentication', false, {
+          code: 'AUTHENTICATIONFAILED',
+        }),
+      });
+      const response = await connectAccount(locale);
+      expect(response.status).toBe(400);
+      const body: unknown = await response.json();
+      expect(body).toMatchObject({
+        error: {
+          status: 'INVALID_ARGUMENT',
+          reason: 'MAIL_ACCOUNT_CREDENTIALS_INVALID',
+          domain: 'mail',
+          message: 'The mail Provider rejected the account credentials.',
+          fieldViolations: [
+            {
+              field: 'password',
+              description:
+                'The mail Provider rejected the account credentials.',
+            },
+          ],
+          localizedMessage: { locale, message: localizedMessage },
+        },
+      });
+      expect(JSON.stringify(body)).not.toContain('Private provider details');
+    },
+  );
+
+  it.each([
+    ['en-US', 'The mail request is invalid.'],
+    ['zh-CN', '邮件请求无效。'],
+  ] as const)(
+    'keeps the generic message for other invalid arguments in %s',
+    async (locale, localizedMessage) => {
+      connect.mockRejectedValue(
+        new MailError({
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_MAIL_REQUEST',
+          message: 'A mailbox address is required.',
+          field: 'address',
+        }),
+      );
+      const response = await connectAccount(locale);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        error: {
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_MAIL_REQUEST',
+          domain: 'mail',
+          fieldViolations: [{ field: 'address' }],
+          localizedMessage: { locale, message: localizedMessage },
+        },
+      });
+    },
+  );
 
   it('answers any other Provider refusal with 400 MAIL_PROVIDER_REQUEST_FAILED', async () => {
     setRead.mockResolvedValue({

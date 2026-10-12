@@ -58,7 +58,7 @@ export class MailAuthorizationService {
       {
         address: input.address,
         displayName: input.displayName,
-        username: input.username,
+        username: input.username?.trim() || input.address.trim(),
         password: input.password,
         signal: context.signal,
       },

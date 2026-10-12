@@ -84,7 +84,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && nocobase-db-manifests",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/fixtures/composer-callback-types/tsconfig.json",
     "test": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
@@ -134,12 +134,15 @@
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-router": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "@nocobase/app-testing": "workspace:*"
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/config": "workspace:*",
+    "@playwright/test": "catalog:"
   },
   "repository": {
     "type": "git",
