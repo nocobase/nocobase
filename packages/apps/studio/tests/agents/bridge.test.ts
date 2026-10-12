@@ -630,11 +630,13 @@ describe('the CLI manifest', () => {
     expect(ids).toEqual(
       expect.arrayContaining([
         'pr:open',
+        'pr:checks',
         'issue:comment:add',
         'issue:create',
         'project:get',
       ]),
     );
+    expect(ids).not.toContain('pr:merge');
     expect(ids).not.toContain('project:delete');
     expect(ids).not.toContain('issue:delete');
     const add = manifest.commands.find(
@@ -683,6 +685,7 @@ describe('the CLI manifest', () => {
     expect(viewOnly.commands.map((command) => command.id)).toEqual(
       expect.arrayContaining([
         'pr:open',
+        'pr:checks',
         'issue:comment:add',
         'issue:create',
         'project:get',

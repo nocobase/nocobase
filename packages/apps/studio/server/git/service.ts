@@ -49,8 +49,16 @@ import {
   PR_ACTIVITIES,
   WEBHOOK_SECRET_MAX,
   WEBHOOK_SECRET_MIN,
+  FORCE_REASON_MAX,
+  REFERENCE_CHECK_MAX,
+  REFERENCE_CHECKS_MAX,
+  checkSummaryOf,
+  isReferenceCheck,
   mergeBlockerOf,
   mergeCommitTitle,
+  type CheckSummary,
+  type FailedCheckReport,
+  type PullRequestFailedChecks,
   COMMIT_ATTRIBUTIONS,
   type CommitAttribution,
   type GitProjectSettings,
@@ -76,6 +84,7 @@ import {
 } from './links.js';
 import {
   GitApiError,
+  type FailedCheck,
   type GitAuth,
   type GitEvent,
   type PullRequestSnapshot,
@@ -265,13 +274,25 @@ export interface StudioGit {
     issue: string,
     pullRequestId: string,
   ): Promise<IssuePullRequest>;
-  /** Merges from Studio as the viewer when they authorized the app, else as the repository's connection. */
+  /**
+   * Merges from Studio as the viewer when they authorized the app, else as the repository's connection; `force` goes
+   * past failed required checks with a `reason` (`MergePullRequestRequest`).
+   */
   merge(
     viewer: Viewer,
     issue: string,
     pullRequestId: string,
     expectedHeadSha: unknown,
+    options?: { readonly force?: unknown; readonly reason?: unknown },
   ): Promise<IssuePullRequest>;
+  /** Why the checks of a linked pull request's head failed, read from the host now (`nb-studio pr checks`). */
+  failedChecks(
+    viewer: Viewer,
+    issue: string,
+    pullRequestId: string,
+  ): Promise<PullRequestFailedChecks>;
+  /** The failed checks of a commit, read through the repository's connection, for an agent woken by them (`flow.ts`). */
+  explainFailures(repo: RepoRow, sha: string): Promise<FailedCheck[]>;
   markMerged(
     viewer: Viewer,
     issue: string,
@@ -480,6 +501,40 @@ type Ci = NonNullable<StoreOptions['ci']>;
 const text = (value: unknown, max: number): string | null =>
   typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
 
+/** What a forced merge says on the pull request's conversation: who decided is the comment's author. */
+function forceMergeComment(audit: {
+  readonly reason: string;
+  readonly headSha: string;
+  readonly failedChecks: PullRequestMergePreflight['failedChecks'];
+}): string {
+  const checks = audit.failedChecks.map(({ name, url }) =>
+    url ? `- [${name}](${url})` : `- ${name}`,
+  );
+  return [
+    `Merged from NocoBase Studio although required checks failed on ${audit.headSha.slice(0, 12)}.`,
+    '',
+    `Reason: ${audit.reason}`,
+    ...(checks.length > 0 ? ['', 'Failed checks:', ...checks] : []),
+  ].join('\n');
+}
+
+/** A failed check as `nb-studio pr checks` answers it. */
+export function reportOf(
+  check: FailedCheck,
+  reference: boolean,
+): FailedCheckReport {
+  return {
+    name: check.name,
+    conclusion: check.conclusion,
+    url: check.url,
+    reference,
+    summary: check.summary,
+    annotations: check.annotations,
+    log: check.log,
+    logUnavailable: check.logUnavailable,
+  };
+}
+
 export function createStudioGit(deps: StudioGitDeps): StudioGit {
   const { providers, connections, secrets, flow } = deps;
   /** The platform of the repository's host. */
@@ -528,6 +583,29 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     return access?.manage === true;
   }
 
+  /** Who may merge past failed required checks: a manager of the issue's project, or whoever closes any issue. */
+  async function canForce(
+    viewer: Viewer,
+    issue: { projectId: string | null },
+  ): Promise<boolean> {
+    if (viewer.actor.type === AGENT_KIND) return false;
+    if (viewer.permissions.scopes['pm.issues/close'] === 'all') return true;
+    if (!issue.projectId) return false;
+    const access = await projects().projects.accessTo(viewer, {
+      projectId: issue.projectId,
+    });
+    return access?.manage === true;
+  }
+
+  /** The blocker of what was read, its required checks folded apart from the repository's reference checks. */
+  function blockerOf(
+    pr: Omit<Parameters<typeof mergeBlockerOf>[0], 'ciState'>,
+    summary: CheckSummary,
+    mergeable?: boolean | null,
+  ): PullRequestMergeBlocker | null {
+    return mergeBlockerOf({ ...pr, ciState: summary.ciState }, mergeable);
+  }
+
   async function views(
     connection: DatabaseConnection,
     issueId: string,
@@ -549,12 +627,14 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         .map(({ link }) => link.linkedById),
     );
     const reachable = new Map<string, boolean>();
+    const references = new Map<string, readonly string[]>();
     for (const repoId of new Set(rows.map(({ pr }) => pr.repoId))) {
       const repo = await findRepoById(connection, repoId);
       reachable.set(
         repoId,
         !!repo?.connectionId && !!(await connections.find(repo.connectionId)),
       );
+      references.set(repoId, repo?.referenceChecks ?? []);
     }
     return rows.map(({ link, pr }) => ({
       ...pullRequestView(
@@ -573,7 +653,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       autoCompleteDisabled: link.autoCompleteDisabled,
       linkedAt: link.createdAt,
       mergeBlocker:
-        mergeBlockerOf(pr) ??
+        blockerOf(pr, checkSummaryOf(pr, references.get(pr.repoId) ?? [])) ??
         (reachable.get(pr.repoId) ? null : ('notConfigured' as const)),
     }));
   }
@@ -865,26 +945,32 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       );
     const { link, pr, repo } = await linked(issue.id, pullRequestId);
     const statusAfter = await outcomeOf(issue, link);
+    const mayForce = await canForce(viewer, issue);
     const acting = await connections
       .actingAuth(repo, viewer.userId)
       .catch((error: unknown) => {
         throw hostFailure(error);
       });
-    if (acting.as === 'none')
+    if (acting.as === 'none') {
+      const summary = checkSummaryOf(pr, repo.referenceChecks);
       return {
         issueId: issue.id,
         repo,
         pr,
         auth: acting.auth,
         preflight: {
-          blocker: mergeBlockerOf(pr) ?? 'notConfigured',
+          blocker: blockerOf(pr, summary) ?? 'notConfigured',
           method: 'squash',
           headSha: pr.headSha,
           baseRef: pr.baseRef,
           commitTitle: mergeCommitTitle(pr),
           statusAfter,
+          failedChecks: summary.failed,
+          referenceFailures: summary.referenceFailed,
+          canForce: false,
         },
       };
+    }
     let full;
     try {
       full = await readFull(repo, pr.number, acting.auth);
@@ -895,21 +981,22 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       pullEtag: full.pullEtag,
       ci: full.ci,
     });
+    const summary = checkSummaryOf(full.ci, repo.referenceChecks);
     return {
       issueId: issue.id,
       repo,
       pr: stored,
       auth: acting.auth,
       preflight: {
-        blocker: mergeBlockerOf(
-          { ...full.snapshot, ciState: full.ci.ciState },
-          full.mergeable,
-        ),
+        blocker: blockerOf(full.snapshot, summary, full.mergeable),
         method: 'squash',
         headSha: full.snapshot.headSha,
         baseRef: full.snapshot.baseRef,
         commitTitle: mergeCommitTitle(full.snapshot),
         statusAfter,
+        failedChecks: summary.failed,
+        referenceFailures: summary.referenceFailed,
+        canForce: mayForce,
       },
     };
   }
@@ -1087,6 +1174,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       wakeOnChecks: row?.wakeOnChecks ?? true,
       wakeOnChecksPassed: row?.wakeOnChecksPassed ?? true,
       wakeOnConflict: row?.wakeOnConflict ?? true,
+      referenceChecks: row?.referenceChecks ?? [],
       polledAt: row?.polledAt ?? null,
       pollError: row?.pollError ?? null,
       webhookUrl:
@@ -1664,20 +1752,55 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       return (await check(viewer, idOrKey, pullRequestId)).preflight;
     },
 
-    async merge(viewer, idOrKey, pullRequestId, expectedHeadSha) {
+    async merge(viewer, idOrKey, pullRequestId, expectedHeadSha, options = {}) {
       if (typeof expectedHeadSha !== 'string' || expectedHeadSha.trim() === '')
         throw new ProtocolError(
           'INVALID_REQUEST',
           'expectedHeadSha must be the head commit shown when confirming.',
           { code: 'INVALID_EXPECTED_HEAD' },
         );
+      const force = options.force === true;
+      const reason =
+        typeof options.reason === 'string' ? options.reason.trim() : '';
+      if (force && (!reason || reason.length > FORCE_REASON_MAX))
+        throw new ProtocolError(
+          'INVALID_REQUEST',
+          `A forced merge needs a reason of 1 to ${FORCE_REASON_MAX} characters.`,
+          { code: 'INVALID_FORCE_REASON' },
+        );
       const { preflight, repo, pr, issueId, auth } = await check(
         viewer,
         idOrKey,
         pullRequestId,
       );
-      if (preflight.blocker) throw notMergeable(preflight.blocker);
+      // Only failed required checks can be forced; anything else that blocks the merge still does.
+      if (preflight.blocker && !(force && preflight.blocker === 'ciFailed'))
+        throw notMergeable(preflight.blocker);
+      if (preflight.blocker && !preflight.canForce)
+        throw forbidden(
+          'Only a manager of the issue’s project may merge past failed checks.',
+        );
       if (preflight.headSha !== expectedHeadSha.trim()) throw prChanged();
+      const forced = preflight.blocker === 'ciFailed';
+      const audit = forced
+        ? {
+            reason,
+            headSha: preflight.headSha,
+            failedChecks: preflight.failedChecks,
+          }
+        : null;
+      if (audit)
+        try {
+          // The reason stands on the pull request's conversation before the merge; no merge without it.
+          await platformOf(repo).commentOnPullRequest(
+            auth,
+            repo.repo,
+            pr.number,
+            forceMergeComment(audit),
+          );
+        } catch (error) {
+          throw hostFailure(error);
+        }
       let merged: { sha: string };
       try {
         merged = await platformOf(repo).mergePullRequest(
@@ -1690,7 +1813,16 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           },
         );
       } catch (error) {
-        throw mergeFailure(error);
+        const failure = mergeFailure(error);
+        if (audit)
+          await recordActivity(
+            viewer,
+            issueId,
+            PR_ACTIVITIES.forceMergeRefused,
+            pr,
+            { ...audit, error: failure.message },
+          );
+        throw failure;
       }
       // The squash commit the host made: deployment marks look for it, as the squashed head never reaches the base.
       const mergeCommitSha = /^[0-9a-f]{7,64}$/u.test(merged.sha)
@@ -1709,11 +1841,49 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
               mergedAt: now().toISOString(),
               mergeCommitSha,
             };
-      await flow.store(repo, snapshot, {
+      const stored = await flow.store(repo, snapshot, {
         mergedByUserId: viewer.userId,
         ...(full ? { pullEtag: full.pullEtag } : {}),
       });
+      if (audit)
+        await recordActivity(
+          viewer,
+          issueId,
+          PR_ACTIVITIES.forceMerged,
+          stored,
+          audit,
+        );
       return viewOf(issueId, pullRequestId);
+    },
+
+    async failedChecks(viewer, idOrKey, pullRequestId) {
+      const issue = await visibleIssue(viewer, idOrKey);
+      const { pr, repo } = await linked(issue.id, pullRequestId);
+      if (!pr.headSha) return { headSha: '', checks: [] };
+      let found: FailedCheck[];
+      try {
+        found = await platformOf(repo).failedChecks(
+          await readAuth(repo),
+          repo.repo,
+          pr.headSha,
+        );
+      } catch (error) {
+        throw hostFailure(error);
+      }
+      return {
+        headSha: pr.headSha,
+        checks: found.map((check) =>
+          reportOf(check, isReferenceCheck(check.name, repo.referenceChecks)),
+        ),
+      };
+    },
+
+    async explainFailures(repo, sha) {
+      return platformOf(repo).failedChecks(
+        await readAuth(repo),
+        repo.repo,
+        sha,
+      );
     },
 
     async markMerged(viewer, idOrKey, pullRequestId) {
@@ -1821,6 +1991,24 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         values.wakeOnChecksPassed = input.wakeOnChecksPassed;
       if (typeof input.wakeOnConflict === 'boolean')
         values.wakeOnConflict = input.wakeOnConflict;
+      if (input.referenceChecks !== undefined) {
+        const names = Array.isArray(input.referenceChecks)
+          ? input.referenceChecks.map((name) =>
+              typeof name === 'string' ? name.trim() : '',
+            )
+          : null;
+        if (
+          !names ||
+          names.length > REFERENCE_CHECKS_MAX ||
+          names.some((name) => !name || name.length > REFERENCE_CHECK_MAX)
+        )
+          throw new ProtocolError(
+            'INVALID_REQUEST',
+            `A repository has at most ${REFERENCE_CHECKS_MAX} reference checks, each a check name of 1 to ${REFERENCE_CHECK_MAX} characters.`,
+            { code: 'INVALID_REFERENCE_CHECKS' },
+          );
+        values.referenceChecks = [...new Set(names)];
+      }
       await updateRepo(conn(), row.id, values);
       return settingsOf(await findRepoById(conn(), row.id), true);
     },
