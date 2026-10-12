@@ -7,11 +7,7 @@ import {
   apiAs,
   signIn,
 } from './support/fixtures.ts';
-import {
-  approveWithDeveloper,
-  FakeRunner,
-  type Issue,
-} from './support/runner.ts';
+import { FakeRunner, type Issue } from './support/runner.ts';
 
 test.describe('issue page', () => {
   let me: { userId: string };
@@ -88,12 +84,12 @@ test.describe('issue page', () => {
       await admin.close();
     }
     await signIn(context, user);
-    const name = 'Layout Agent with a very long readable name '.repeat(3);
-    const agent = await api.post<{ id: string }>('agents', {
-      name,
-      modelEntries: [{ tool: 'claude' }],
-      access: 'everyone',
-    });
+    const agent = {
+      id: await new FakeRunner(
+        api,
+        `layout agent with a very long readable name ${suffix}`,
+      ).agent(),
+    };
     const records = [
       'running',
       'queued',
@@ -330,9 +326,6 @@ test.describe('issue page', () => {
     }
     status = 200;
     visibleRecords = [];
-    await api.patch(`projects/issues/${issue.id}`, {
-      executor: { type: 'agent', id: agent.id },
-    });
     await page.reload();
     await expect(history.getByText('暂无运行。')).toBeVisible();
     await history.screenshot({
@@ -410,10 +403,7 @@ test.describe('issue page', () => {
     api,
   }, testInfo) => {
     const runner = new FakeRunner(api, `live-issue-${unique()}`);
-    await api.patch(`projects/issues/${issue.id}`, {
-      executor: { type: 'agent', id: await runner.agent() },
-      start: false,
-    });
+    await runner.agent();
     const runsPath = `agents/runs?subjectKind=issue&subjectId=${issue.id}`;
     expect(await api.get<unknown[]>(runsPath)).toEqual([]);
     await open(page, `/issues/${issue.identifier}`);
@@ -431,9 +421,8 @@ test.describe('issue page', () => {
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame()) navigations.push(frame.url());
     });
-    const editor = page.getByRole('textbox', { name: '评论' });
-    await editor.fill(`请开始处理 ${unique()}`);
-    await page.getByRole('button', { name: '评论', exact: true }).click();
+    // A person's mention wakes the runner's agent.
+    await runner.wake(issue);
     const running = await runner.start(issue.identifier);
     const timeline = page.getByRole('list', { name: '动态' });
     await expect(timeline.getByText(/开始工作/u)).toBeVisible({
@@ -447,23 +436,14 @@ test.describe('issue page', () => {
       { content: result },
       { 'x-nocobase-run-token': running.token },
     );
-    await api.patch(
-      `projects/issues/${issue.id}`,
-      { statusKey: 'in_progress' },
-      { 'x-nocobase-run-token': running.token },
-    );
     await runner.complete(running.runId, result);
-    await expect(timeline.getByText(/已完成$/u)).toBeVisible({
+    // A finished run ends the agent's turn.
+    await expect(timeline.getByText(/本轮结束$/u)).toBeVisible({
       timeout: 20_000,
     });
     await expect(
       timeline.getByRole('article').filter({ hasText: result }),
     ).toBeVisible();
-    await expect(
-      page
-        .getByRole('region', { name: '属性' })
-        .getByRole('combobox', { name: '状态' }),
-    ).toContainText('进行中');
     expect(navigations).toEqual([]);
     await page.screenshot({ path: testInfo.outputPath('run-completed.png') });
     await page.unrouteAll({ behavior: 'wait' });
@@ -488,71 +468,41 @@ test.describe('issue page', () => {
       .toBe('in_progress');
   });
 
-  test.describe('design proposal', () => {
-    test('approving it from the issue page moves the issue to In progress', async ({
-      page,
-      api,
-    }) => {
-      const runner = new FakeRunner(api, `issue-approve-${unique()}`);
-      const proposal = await runner.issueWithDesignProposal(
-        `流式导出（任务页批准）${unique()}`,
-        { ownerUserId: me.userId },
-      );
-      const developer = await runner.developer();
-      await open(page, `/issues/${proposal.identifier}`);
-      const card = page.getByRole('article', { name: '设计方案' });
-      await expect(card.getByRole('heading', { name: '方案' })).toBeVisible();
-      await card.getByRole('button', { name: '批准进入开发' }).click();
-      // The proposal's designer cannot implement it: approving asks who develops it.
-      await approveWithDeveloper(page, developer);
+  test('a backlog issue says it has not started and Start moves it to In progress', async ({
+    page,
+    api,
+  }) => {
+    await open(page, `/issues/${issue.identifier}`);
+    const now = page.getByRole('region', { name: '现在' });
+    await expect(now).toContainText('还没开始');
+    await now.getByRole('button', { name: '开始', exact: true }).click();
+    await expect
+      .poll(
+        async () =>
+          (await api.get<Issue>(`projects/issues/${issue.id}`)).statusKey,
+      )
+      .toBe('in_progress');
+    await expect(
+      page
+        .getByRole('region', { name: '属性' })
+        .getByRole('combobox', { name: '状态' }),
+    ).toContainText('进行中');
+    await expect(
+      now.getByRole('button', { name: '开始', exact: true }),
+    ).toBeHidden();
+  });
 
-      await expect
-        .poll(
-          async () =>
-            (await api.get<Issue>(`projects/issues/${proposal.id}`)).statusKey,
-        )
-        .toBe('in_progress');
-      expect(
-        (await api.get<Issue>(`projects/issues/${proposal.id}`)).executor,
-      ).toEqual({ type: 'agent', id: developer.id });
-      await expect(
-        card.getByRole('button', { name: '批准进入开发' }),
-      ).toBeHidden();
-      await expect(
-        page
-          .getByRole('region', { name: '属性' })
-          .getByRole('combobox', { name: '状态' }),
-      ).toContainText('进行中');
-    });
-
-    test('sending it back with a comment returns the issue to Analysis', async ({
-      page,
-      api,
-    }) => {
-      const runner = new FakeRunner(api, `issue-back-${unique()}`);
-      const proposal = await runner.issueWithDesignProposal(
-        `流式导出（任务页打回）${unique()}`,
-        { ownerUserId: me.userId },
-      );
-      await open(page, `/issues/${proposal.identifier}`);
-      const card = page.getByRole('article', { name: '设计方案' });
-      await card.getByRole('button', { name: '打回修改' }).click();
-      const reason = '请补充旧浏览器的降级方案。';
-      await card.getByRole('textbox').fill(reason);
-      await card
-        .getByRole('button', { name: /打回|发送|提交/ })
-        .last()
-        .click();
-
-      await expect
-        .poll(
-          async () =>
-            (await api.get<Issue>(`projects/issues/${proposal.id}`)).statusKey,
-        )
-        .toBe('analysis');
-      await expect(
-        page.getByRole('list', { name: '动态' }).getByText(reason),
-      ).toBeVisible();
-    });
+  test('the project manager arranges an issue among the agents', async ({
+    page,
+  }) => {
+    await open(page, `/issues/${issue.identifier}`);
+    const properties = page.getByRole('region', { name: '属性' });
+    await properties.getByRole('combobox', { name: '安排' }).click();
+    // Of the agents, only the project manager is offered; people still are.
+    await expect(
+      page.getByRole('option', { name: /项目经理|Project manager/ }),
+    ).toBeVisible();
+    await expect(page.getByRole('option', { name: /Claude ·/ })).toHaveCount(0);
+    await page.keyboard.press('Escape');
   });
 });

@@ -1,7 +1,7 @@
 import { expect, test, unique } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 
-test('parallel fake runners only claim their own design and executor runs', async ({
+test('parallel fake runners only claim the runs of their own agents', async ({
   api,
 }) => {
   const me = await api.get<{ userId: string }>('projects/me');
@@ -9,24 +9,17 @@ test('parallel fake runners only claim their own design and executor runs', asyn
     (index) => new FakeRunner(api, `isolated-${index}-${unique()}`),
   );
   const agents = await Promise.all(runners.map((runner) => runner.agent()));
-  const proposals = await Promise.all(
-    runners.map((runner, index) =>
-      runner.issueWithDesignProposal(
-        `Concurrent proposal ${index} ${unique()}`,
-        { ownerUserId: me.userId },
-      ),
-    ),
-  );
-  for (const proposal of proposals)
-    expect(proposal.statusKey).toBe('proposal_review');
+  expect(new Set(agents).size).toBe(2);
   const issues = await Promise.all(
-    agents.map((id, index) =>
+    runners.map((_, index) =>
       api.post<Issue>('projects/issues', {
-        title: `Concurrent executor ${index} ${unique()}`,
+        title: `Concurrent mention ${index} ${unique()}`,
         ownerUserId: me.userId,
-        executor: { type: 'agent', id },
       }),
     ),
+  );
+  await Promise.all(
+    runners.map((runner, index) => runner.wake(issues[index]!)),
   );
   // Even sequential claims must not take the second runner's already queued work.
   for (const [index, runner] of runners.entries())

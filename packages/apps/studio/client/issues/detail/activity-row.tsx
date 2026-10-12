@@ -10,7 +10,6 @@ import type {
   Activity,
   StatusDefinition,
 } from '@nocobase/app-plugin-projects/shared/issues';
-import { isBuiltInEvent } from '@nocobase/app-plugin-projects/shared/workflows';
 import { useTranslation } from '@nocobase/i18n/client';
 import { BotIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
@@ -18,7 +17,6 @@ import { Link } from 'react-router';
 
 import { TimelineActivity } from '@/components/comment-thread';
 
-import { EXECUTOR_WAITS_ACTIVITY } from '../../../shared/design.js';
 import {
   PR_ACTIVITIES,
   PR_EDIT_FIELDS,
@@ -29,6 +27,9 @@ import { PR_ACTIVITY_LABELS } from '../../git/lib.js';
 import type { Translate } from './labels.js';
 import { usePlanLinkTo } from './plan-links.js';
 import { StatusBadge } from './status-badge.js';
+
+/** Recorded by earlier versions when an agent became the executor ahead of its stage; kept readable. */
+const EXECUTOR_WAITS_ACTIVITY = 'executor_waits';
 
 /** The server's activity actions and the keys of their wording. */
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -350,10 +351,8 @@ export function ActivityRow({
       activity.details.event === 'subtasks.done' ? (
         <span>{t('activity.afterSubtasks')}</span>
       ) : null}
-      {moved && event && !isBuiltInEvent(event) ? (
-        <span>
-          {t('activity.afterEvent', { event: eventTitle(event) ?? event })}
-        </span>
+      {moved && event && eventTitle(event) ? (
+        <span>{t('activity.afterEvent', { event: eventTitle(event) })}</span>
       ) : null}
       {moved && text(activity.details.note) ? (
         <span className='text-foreground'>{text(activity.details.note)}</span>

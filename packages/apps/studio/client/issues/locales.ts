@@ -155,8 +155,6 @@ export const issuesEnUS = {
     wait: {
       kinds: {
         failedRun: 'Failed run',
-        approval: 'Approval',
-        proposal: 'Proposal',
         question: 'Question',
         review: 'Review',
       },
@@ -167,7 +165,6 @@ export const issuesEnUS = {
     },
     idle: {
       backlog: 'In backlog; it does not start on its own',
-      noAutoRun: 'This status does not wake the agent',
       neverRan: 'Not run yet',
       lastRun: {
         completed: 'Last run completed · {time}',
@@ -339,8 +336,6 @@ export const issuesZhCN: IssuesWording = {
     wait: {
       kinds: {
         failedRun: '运行失败',
-        approval: '审批',
-        proposal: '方案',
         question: '提问',
         review: '评审',
       },
@@ -351,7 +346,6 @@ export const issuesZhCN: IssuesWording = {
     },
     idle: {
       backlog: '在待规划中，不会自动开始',
-      noAutoRun: '此状态不会自动唤醒 Agent',
       neverRan: '尚未运行',
       lastRun: {
         completed: '上次运行已完成 · {time}',
