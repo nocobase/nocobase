@@ -253,7 +253,7 @@ describe('required and reference checks', () => {
     });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne();
-    expect(payload.run.agentId).toBe(agentId);
+    expect((await h.agents.runs.get(payload.run.id)).agentId).toBe(agentId);
     const token = payload.cli.credential.content.token as string;
     const url = `/git/pullRequests/${pullRequest.id}/checks`;
     const read = await h.request('GET', `${url}?issueId=${issue.id}`, {
@@ -306,7 +306,9 @@ describe('required and reference checks', () => {
     const restrictedAgent = await h.createAgent({ actions: [] });
     await mentionAgent(h, 'alice', issue.id, restrictedAgent);
     const restricted = await h.claimOne();
-    expect(restricted.run.agentId).toBe(restrictedAgent);
+    expect((await h.agents.runs.get(restricted.run.id)).agentId).toBe(
+      restrictedAgent,
+    );
     const forbidden = await h.request('GET', `${url}?issueId=${issue.id}`, {
       runToken: restricted.cli.credential.content.token as string,
     });
