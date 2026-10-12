@@ -120,6 +120,7 @@ env var declared <env> -> GET /api/releases/environments/{environmentId}/declare
 env var list <env> -> GET /api/releases/environments/{environmentId}/variables (person) rel.environments/read
 env var set <env> <name> <value> [--secret --description] -> PUT /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
 env var unset <env> <name> -> DELETE /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
+follow-up list -> GET /api/followUps (person)
 git authorization delete <connection> -> DELETE /api/git/authorizations/{connectionId} (person) confirm
 git authorization list -> GET /api/git/authorizations (person)
 git authorization poll <connection> [--handle!] -> POST /api/git/authorizations/{connectionId}/pollDeviceFlow (person)

@@ -133,11 +133,28 @@ describe('work handlers of registered kinds', () => {
       revision: issue.revision,
       ownerUserId: 'bob',
     });
-    expect(seen.at(-1)).toEqual({
+    expect(seen.slice(-2).map((event) => event.hook)).toEqual([
+      'owner',
+      'changed',
+    ]);
+    expect(seen.at(-2)).toEqual({
       hook: 'owner',
       issueId: issue.id,
       detail: ['alice', 'bob'],
     });
+  });
+
+  it('notifies all work kinds on transfer even when there is no executor', async () => {
+    const seen = addBots();
+    const issue = await h.services.issues.create(alice(), { title: 'A' });
+    await h.services.issues.update(alice(), issue.id, {
+      revision: issue.revision,
+      ownerUserId: 'bob',
+      executor: null,
+    });
+    expect(seen).toEqual([
+      { hook: 'owner', issueId: issue.id, detail: ['alice', 'bob'] },
+    ]);
   });
 
   it('starts work for a mentioned principal and returns it as triggered', async () => {

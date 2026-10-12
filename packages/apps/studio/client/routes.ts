@@ -23,6 +23,7 @@ import {
   FolderKanban,
   House,
   LayoutDashboard,
+  ListChecks,
   ListTodo,
   MonitorCog,
   Rocket,
@@ -86,7 +87,7 @@ function issueDetailRoute(owner?: string): AppClientRouteDefinition {
 
 /**
  * The sidebar: Home (0, the composer that starts a conversation) and Dashboard (1), then My
- * issues (2) on top, then the sections Development (4: issues, projects, knowledge), Releases (4.5: Apps, environments)
+ * follow-ups (1.5) and My issues (2) on top, then the sections Development (4: issues, projects, knowledge), Releases (4.5: Apps, environments)
  * and Agent team (5: agents, runtimes, skills, models, usage), and Settings (7). The inbox is the header's button
  * (`inbox/header-button.tsx`), not a sidebar entry. A section is a route without a page of its own;
  * the layout draws it as a label over its entries (`layouts/components/navigation-menu.tsx`). The projects and
@@ -193,6 +194,21 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'inbox',
     breadcrumb: { title: 'navigation.inbox' },
     path: '/inbox',
+  },
+  {
+    // The issues the viewer follows and owns, each with what it waits for now and its live activity
+    // (`pages/follow-ups`), above My issues. It shows issues as My issues does, behind the same page grant.
+    name: 'follow-ups',
+    path: '/follow-ups',
+    auth: 'required',
+    authz: { resource: { type: 'page', id: 'pm-my-issues' }, action: 'access' },
+    navigation: {
+      title: 'navigation.followUps',
+      icon: ListChecks,
+      order: 1.5,
+    },
+    breadcrumb: { title: 'navigation.followUps' },
+    componentLoader: () => import('./pages/follow-ups/index.js'),
   },
   {
     // The issues the viewer owns or executes (`pages/my-issues`), the list by default; `owned` and `executing` tabs.

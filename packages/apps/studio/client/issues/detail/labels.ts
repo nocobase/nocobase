@@ -154,9 +154,9 @@ export function useIssuePageWording(): IssuePageWording {
           updated: t('properties.updated'),
         },
         start: {
-          title: t('start.title'),
-          later: t('start.later'),
-          start: t('start.start'),
+          title: appT('issueStart.title'),
+          later: appT('issueStart.later'),
+          start: appT('issueStart.start'),
         },
       },
       richText: {

@@ -1,4 +1,5 @@
 import { accountSettingsEnUS, preferencesEnUS } from '../account/locales.js';
+import { followUpsEnUS } from '../follow-ups/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
@@ -70,6 +71,24 @@ const enUS = {
       'The panel has a draft. How should the header question be handled?',
     keepDraft: 'Keep panel draft',
     appendDraft: 'Append header question',
+  },
+  runTranscript: {
+    usedModel: 'Model: {{model}}',
+    defaultModel: 'Default model',
+    actingAs: 'Running as {{actor}}',
+    triggeredBy: 'Triggered by {{person}}',
+    systemTrigger: 'Triggered by the system',
+    afterSubtasks: 'After all sub-issues finished',
+    efforts: {
+      off: 'Off',
+      minimal: 'Minimal',
+      low: 'Low',
+      medium: 'Medium',
+      high: 'High',
+      xhigh: 'Extra high',
+      max: 'Maximum',
+      ultra: 'Ultra',
+    },
   },
   runTranscriptFilters: {
     title: 'Event types',
@@ -429,6 +448,7 @@ const enUS = {
   navigation: {
     inbox: 'Inbox',
     myIssues: 'My issues',
+    followUps: 'My follow-ups',
     development: 'Development',
     issues: 'Issues',
     projects: 'Projects',
@@ -1308,6 +1328,7 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  followUps: followUpsEnUS,
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupEnUS,
@@ -1364,7 +1385,19 @@ const enUS = {
   issuePage: {
     arrange: 'Arrange',
   },
+  issueStart: { title: 'Start now?', later: "Don't start now", start: 'Start' },
   issueProgress: {
+    waiting: {
+      noOwner: 'Waiting for a valid issue owner',
+      notConfigured:
+        '{{agent}} waits: no preferred or fallback model is configured',
+      noRunner:
+        '{{agent}} waits: no online runner supports its preferred or fallback model',
+      ownerHasNoRunner:
+        '{{agent}} waits: owner {{owner}} has no online runner for its preferred or fallback model',
+      notAllowed:
+        '{{agent}} waits: owner {{owner}} cannot run this agent with the available runners',
+    },
     title: 'Now',
     anAgent: 'An agent',
     working: '{{agent}} is working on {{step}}',

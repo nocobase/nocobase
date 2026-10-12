@@ -1,4 +1,5 @@
 import { accountSettingsZhCN, preferencesZhCN } from '../account/locales.js';
+import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
@@ -61,6 +62,24 @@ const zhCN: AppResource = {
     draftConflict: '面板已有草稿，如何处理顶部问题？',
     keepDraft: '保留面板草稿',
     appendDraft: '追加顶部问题',
+  },
+  runTranscript: {
+    usedModel: '使用模型：{{model}}',
+    defaultModel: '默认模型',
+    actingAs: '运行身份：{{actor}}',
+    triggeredBy: '触发人：{{person}}',
+    systemTrigger: '由系统触发',
+    afterSubtasks: '所有子任务完成后',
+    efforts: {
+      off: '关闭',
+      minimal: '最低',
+      low: '低',
+      medium: '中',
+      high: '高',
+      xhigh: '特高',
+      max: '最高',
+      ultra: '极高',
+    },
   },
   runTranscriptFilters: {
     title: '事件类型',
@@ -399,6 +418,7 @@ const zhCN: AppResource = {
   navigation: {
     inbox: '收件箱',
     myIssues: '我的任务',
+    followUps: '我的跟进',
     development: '开发',
     issues: '任务',
     projects: '项目',
@@ -1197,6 +1217,7 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  followUps: followUpsZhCN,
   projectPage: projectPageZhCN,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupZhCN,
@@ -1251,7 +1272,17 @@ const zhCN: AppResource = {
   issuePage: {
     arrange: '安排',
   },
+  issueStart: { title: '现在开始？', later: '暂不开始', start: '开始' },
   issueProgress: {
+    waiting: {
+      noOwner: '正在等待有效的任务负责人',
+      notConfigured: '{{agent}} 正在等待：尚未配置首选或备选模型',
+      noRunner: '{{agent}} 正在等待：没有能运行首选或备选模型的在线执行机',
+      ownerHasNoRunner:
+        '{{agent}} 正在等待：负责人 {{owner}} 没有能运行首选或备选模型的在线执行机',
+      notAllowed:
+        '{{agent}} 正在等待：负责人 {{owner}} 无权运行此 Agent，或可用执行机不满足运行要求',
+    },
     title: '现在',
     anAgent: '某个 Agent',
     working: '{{agent}} 正在{{step}}',

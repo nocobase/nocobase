@@ -25,53 +25,12 @@ import {
 import { PR_ACTIVITY_LABELS } from '../../git/lib.js';
 
 import type { Translate } from './labels.js';
+import { actionLabel } from './activity-labels.js';
 import { usePlanLinkTo } from './plan-links.js';
 import { StatusBadge } from './status-badge.js';
 
 /** Recorded by earlier versions when an agent became the executor ahead of its stage; kept readable. */
 const EXECUTOR_WAITS_ACTIVITY = 'executor_waits';
-
-/** The server's activity actions and the keys of their wording. */
-const ACTION_LABELS: Readonly<Record<string, string>> = {
-  issue_created: 'created',
-  issue_deleted: 'deleted',
-  issue_restored: 'restored',
-  title_changed: 'titleChanged',
-  description_changed: 'descriptionChanged',
-  status_changed: 'statusChanged',
-  priority_changed: 'priorityChanged',
-  owner_changed: 'ownerChanged',
-  executor_changed: 'executorChanged',
-  project_changed: 'projectChanged',
-  parent_changed: 'parentChanged',
-  labels_changed: 'labelsChanged',
-  start_date_changed: 'datesChanged',
-  due_date_changed: 'datesChanged',
-  checklist_item_checked: 'checklistItemChecked',
-  checklist_item_unchecked: 'checklistItemUnchecked',
-  owner_notified: 'ownerNotified',
-  stage_action_applied: 'stageActionApplied',
-  stage_action_skipped: 'stageActionSkipped',
-  stage_action_failed: 'stageActionFailed',
-  approval_requested: 'approvalRequested',
-  approval_approved: 'approvalApproved',
-  approval_rejected: 'approvalRejected',
-  approval_withdrawn: 'approvalWithdrawn',
-  approval_stale: 'approvalStale',
-  approval_self: 'approvalSelf',
-  approval_no_approver: 'approvalNoApprover',
-  comment_deleted: 'commentDeleted',
-  attachment_added: 'attachmentAdded',
-  attachment_removed: 'attachmentRemoved',
-  thread_resolved: 'threadResolved',
-  thread_unresolved: 'threadUnresolved',
-  subtask_added: 'subtaskAdded',
-  dependency_added: 'dependencyAdded',
-  dependency_removed: 'dependencyRemoved',
-  stage_changed: 'stageChanged',
-  auto_move_skipped: 'autoMoveSkipped',
-  work_withdrawn: 'workWithdrawn',
-};
 
 /** The fields a pull request edit changed, in Studio's words. */
 function editedFields(t: Translate, details: Activity['details']): string {
@@ -125,26 +84,6 @@ function PullRequestActivity({
       ) : null}
     </>
   );
-}
-
-/** The wording of an action whose reason changes what it says. */
-function actionLabel(action: string, details: Activity['details']): string {
-  const reason = details.reason;
-  let key = ACTION_LABELS[action] ?? 'updated';
-  if (action === 'executor_changed' && reason === 'executorRemoved')
-    key = 'executorRemoved';
-  else if (action === 'stage_action_skipped' && reason === 'suppressed')
-    key = 'stageActionSuppressed';
-  else if (action === 'stage_action_skipped' && reason === 'blocked')
-    key = 'stageActionBlocked';
-  else if (action === 'work_skipped')
-    key =
-      reason === 'dormant'
-        ? 'workDormant'
-        : reason === 'limited'
-          ? 'workLimited'
-          : 'workBlocked';
-  return `activity.actions.${key}`;
 }
 
 /** The identifiers of the issues an activity says the issue waits for. */
@@ -267,27 +206,41 @@ export function ActivityRow({
         <span className='text-xs'>{via}</span>
       ) : null}
       <span>
-        {prAction
-          ? studioT(prAction)
-          : cannotImplement
-            ? studioT('studioAgents.activity.executorCannotImplement', {
-                name:
-                  text(activity.details.name) ??
+        {activity.action === 'studio_execution_wait'
+          ? studioT(
+              `issueProgress.waiting.${activity.details.reason === 'noOwner' ? 'noOwner' : 'notAllowed'}`,
+              {
+                agent:
+                  text(activity.details.agent) ??
                   text(activity.details.agentId) ??
-                  t('common.unknown'),
-              })
-            : activity.action === EXECUTOR_WAITS_ACTIVITY
-              ? studioT('studioAgents.activity.executorWaits', {
+                  '',
+                owner:
+                  text(activity.details.owner) ??
+                  text(activity.details.ownerUserId) ??
+                  '',
+              },
+            )
+          : prAction
+            ? studioT(prAction)
+            : cannotImplement
+              ? studioT('studioAgents.activity.executorCannotImplement', {
                   name:
-                    (text(activity.details.agentId)
-                      ? agentName(text(activity.details.agentId) ?? '')
-                      : null) ??
                     text(activity.details.name) ??
+                    text(activity.details.agentId) ??
                     t('common.unknown'),
                 })
-              : t(actionLabel(activity.action, activity.details), {
-                  name: text(activity.details.name) ?? t('common.unknown'),
-                })}
+              : activity.action === EXECUTOR_WAITS_ACTIVITY
+                ? studioT('studioAgents.activity.executorWaits', {
+                    name:
+                      (text(activity.details.agentId)
+                        ? agentName(text(activity.details.agentId) ?? '')
+                        : null) ??
+                      text(activity.details.name) ??
+                      t('common.unknown'),
+                  })
+                : t(actionLabel(activity.action, activity.details), {
+                    name: text(activity.details.name) ?? t('common.unknown'),
+                  })}
       </span>
       {prAction ? (
         <PullRequestActivity activity={activity} t={studioT} />
@@ -349,7 +302,7 @@ export function ActivityRow({
       ) : null}
       {activity.action === 'status_changed' &&
       activity.details.event === 'subtasks.done' ? (
-        <span>{t('activity.afterSubtasks')}</span>
+        <span>{studioT('runTranscript.afterSubtasks')}</span>
       ) : null}
       {moved && event && eventTitle(event) ? (
         <span>{t('activity.afterEvent', { event: eventTitle(event) })}</span>
