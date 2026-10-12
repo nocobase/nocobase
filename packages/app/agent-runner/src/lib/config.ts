@@ -9,12 +9,16 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
+  AGENT_TOOLS,
   HEADERS,
+  MAX_MODEL_ID_LENGTH,
   PROTOCOL_VERSION,
   ToolSlotsSchema,
+  type AgentTool,
   type RunApp,
   type ToolSlots,
 } from '../protocol/index.ts';
+import type { ModelListOverrides } from '../core/model-list.ts';
 import { ENV_NAME_PATTERN, forbidden } from '../agent/env.ts';
 import type { AgentTools } from '../agent/runner-tools.ts';
 import { ApiClient } from './http.ts';
@@ -61,6 +65,44 @@ export interface RunnerSettings {
    * `DEFAULT_MIN_FREE_DISK`, null when the owner turned it off.
    */
   minFreeDisk?: FreeSpace | null;
+  /**
+   * Model ids the owner adds to or removes from what each coding tool reports (`config models <tool> add|remove <id>`),
+   * on top of the detected or built-in list; absent for none.
+   */
+  models?: ModelListOverrides;
+}
+
+/** A model id as a runner reports it. */
+export const MODEL_ID_PATTERN: RegExp = /^[a-zA-Z0-9][a-zA-Z0-9._:@/+-]*$/u;
+
+function modelIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [
+    ...new Set(
+      value.filter(
+        (id): id is string =>
+          typeof id === 'string' &&
+          id.length <= MAX_MODEL_ID_LENGTH &&
+          MODEL_ID_PATTERN.test(id),
+      ),
+    ),
+  ];
+}
+
+/** The stored model list changes: valid ids only, tools with nothing to change left out. */
+export function modelListOverrides(value: unknown): ModelListOverrides {
+  if (typeof value !== 'object' || value === null) return {};
+  const result: Partial<
+    Record<AgentTool, { add: string[]; remove: string[] }>
+  > = {};
+  for (const tool of AGENT_TOOLS) {
+    const entry = (value as Record<string, unknown>)[tool];
+    if (typeof entry !== 'object' || entry === null) continue;
+    const add = modelIds((entry as { add?: unknown }).add);
+    const remove = modelIds((entry as { remove?: unknown }).remove);
+    if (add.length > 0 || remove.length > 0) result[tool] = { add, remove };
+  }
+  return result;
 }
 
 /** The free space the runner keeps on the disk holding the working directories; null for none. */
@@ -128,6 +170,9 @@ export async function readSettings(
       ? { passEnv: passEnvNames(stored?.passEnv) }
       : {}),
     ...(minFree === undefined ? {} : { minFreeDisk: minFree }),
+    ...(Object.keys(modelListOverrides(stored?.models)).length > 0
+      ? { models: modelListOverrides(stored?.models) }
+      : {}),
   };
 }
 
