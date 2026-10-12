@@ -199,6 +199,42 @@ describe('inbox', () => {
     );
   });
 
+  it('pages waiting decisions by key without skipping cards beyond the first window', async () => {
+    for (let index = 0; index < 501; index++) {
+      const key = `decision-${String(index).padStart(4, '0')}`;
+      await projects.send({
+        ...decision(['lead']),
+        key,
+        approvalRequestId: key,
+      });
+    }
+    const first = await inbox.openDecisions(
+      'projects',
+      'approval_requested',
+      '',
+    );
+    expect(first).toHaveLength(500);
+    const second = await inbox.openDecisions(
+      'projects',
+      'approval_requested',
+      first.at(-1)!.decisionKey,
+    );
+    expect(second.map((card) => card.decisionKey)).toEqual(['decision-0500']);
+    expect(
+      await inbox.openDecisions(
+        'projects',
+        'approval_requested',
+        second[0]!.decisionKey,
+      ),
+    ).toEqual([]);
+    expect(
+      await inbox.openDecisions('projects', 'approval_requested', '', {
+        type: 'issue',
+        id: 'other',
+      }),
+    ).toEqual([]);
+  });
+
   it('records a notice sent twice once', async () => {
     const deduplicating = {
       send: (input: NotificationSendInput<never>) =>

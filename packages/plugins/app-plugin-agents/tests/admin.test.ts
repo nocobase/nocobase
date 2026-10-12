@@ -612,7 +612,77 @@ describe('admin API', () => {
       user: 'bob',
     });
     expect(twice.status).toBe(400);
-    expect(twice.body.error.reason).toBe('AGENT_BUSY');
+    expect(twice.body.error.status).toBe('FAILED_PRECONDITION');
+    expect(twice.body.error.reason).toBe('RUN_ALREADY_RETRIED');
+    expect(twice.body.error.metadata).toMatchObject({
+      runId: retried.body.data.id,
+    });
+    expect((await h.services.runs.detail(mine)).retriedRunId).toBe(
+      retried.body.data.id,
+    );
+    expect(retryDetail.inputs.at(-1)?.payload).toMatchObject({
+      source: 'runRecord',
+    });
+    await h.services.runs.cancel(retried.body.data.id, 'bob');
+    const cliRetry = await h.request(
+      'POST',
+      `/agents/runs/${retried.body.data.id}/retry`,
+      { user: 'bob', headers: { 'x-nocobase-client': 'cli' } },
+    );
+    expect(cliRetry.status).toBe(200);
+    expect(
+      (await h.services.runs.detail(cliRetry.body.data.id)).inputs.at(-1)
+        ?.payload,
+    ).toMatchObject({ source: 'cli' });
+  });
+
+  it('serializes simultaneous retries and remembers the retry after its replacement ends', async () => {
+    h = await createHarness();
+    const events: {
+      runId: string;
+      retryOfRunId: string;
+      previousStatus: string;
+    }[] = [];
+    h.services.events.on('run.retried', (event) => {
+      events.push(event);
+    });
+    const agentId = await h.createAgent();
+    const original = await h.enqueue(agentId);
+    await h.services.runs.cancel(original, 'owner');
+    const results = await Promise.allSettled([
+      h.services.runs.retry(original, 'owner', 'cli'),
+      h.services.runs.retry(original, 'owner', 'card'),
+    ]);
+    expect(
+      results.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toEqual([
+      expect.objectContaining({
+        reason: expect.objectContaining({
+          code: 'RUN_ALREADY_RETRIED',
+          status: 400,
+          apiStatus: 'FAILED_PRECONDITION',
+        }),
+      }),
+    ]);
+    const next = (await h.services.runs.detail(original)).retriedRunId!;
+    expect(events).toEqual([
+      {
+        type: 'run.retried',
+        runId: next,
+        retryOfRunId: original,
+        previousStatus: 'cancelled',
+      },
+    ]);
+    await h.services.runs.cancel(next, 'owner');
+    await expect(
+      h.services.runs.retry(original, 'owner'),
+    ).rejects.toMatchObject({
+      code: 'RUN_ALREADY_RETRIED',
+      details: { runId: next },
+    });
+    expect(await h.services.runs.list({ agentId })).toHaveLength(2);
+    expect(events).toHaveLength(1);
   });
 
   it('pages a run transcript after a seq', async () => {

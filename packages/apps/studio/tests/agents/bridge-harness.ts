@@ -438,6 +438,7 @@ export async function createBridgeHarness(
     readonly releases?: boolean;
     readonly previews?: boolean;
     readonly knowledge?: boolean;
+    readonly inApp?: boolean;
   } = {},
 ): Promise<BridgeHarness> {
   const projectsRoot = packageRoot('@nocobase/app-plugin-projects');
@@ -464,6 +465,17 @@ export async function createBridgeHarness(
           '@nocobase/app-plugin-projects',
         ],
         [AGENTS_MIGRATIONS, AGENTS_PACKAGE],
+        ...(options.inApp
+          ? [
+              [
+                path.join(
+                  packageRoot('@nocobase/app-plugin-notification-in-app'),
+                  'database/migrations',
+                ),
+                '@nocobase/app-plugin-notification-in-app',
+              ] as const,
+            ]
+          : []),
         [
           path.join(
             packageRoot('@nocobase/app-plugin-releases'),
