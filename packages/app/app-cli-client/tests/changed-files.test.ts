@@ -11,7 +11,7 @@ import { removeDir, tempDir } from './helpers.ts';
 const sha = (text: string) => createHash('sha256').update(text).digest('hex');
 
 const spec: ChangedFilesSpec = {
-  dir: '.cli-changed-files-fixture/knowledge',
+  dir: '.changed-files-fixture/knowledge',
   manifest: '.manifest.json',
   maxBytes: 1000,
   maxFiles: 2,

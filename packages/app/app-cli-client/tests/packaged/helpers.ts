@@ -2,6 +2,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { RUN_CREDENTIALS_ENV } from '@nocobase/agent-protocol';
 
 // A packaged CLI branded as an application would brand it, run from the sources: the entry `nocobase cli build` and
 // `nocobase cli link` generate, with the `nocobase.cli` of its own package.json.
@@ -32,7 +33,7 @@ export function cliEnv(
   return {
     ...process.env,
     // A caller may explicitly supply a synthetic run file in extra; never inherit the runner's pointer.
-    AGENT_RUN_CREDENTIALS: '',
+    [RUN_CREDENTIALS_ENV]: undefined,
     ACME_HOME: home,
     ACME_KEYCHAIN: 'off',
     ...extra,

@@ -120,6 +120,7 @@ env var declared <env> -> GET /api/releases/environments/{environmentId}/declare
 env var list <env> -> GET /api/releases/environments/{environmentId}/variables (person) rel.environments/read
 env var set <env> <name> <value> [--secret --description] -> PUT /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
 env var unset <env> <name> -> DELETE /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
+follow-up list -> GET /api/followUps (person)
 git authorization delete <connection> -> DELETE /api/git/authorizations/{connectionId} (person) confirm
 git authorization list -> GET /api/git/authorizations (person)
 git authorization poll <connection> [--handle!] -> POST /api/git/authorizations/{connectionId}/pollDeviceFlow (person)
@@ -136,7 +137,7 @@ git project set <project> [--attribution!] -> PUT /api/git/projects/{projectId} 
 git repo create <connection> [--owner --name! --private! --description --empty] -> POST /api/git/connections/{connectionId}/repositories (person)
 git repo list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/repositories (person)
 git resource get <resource> -> GET /api/git/resources/{resourceId} (person)
-git resource update <resource> [--webhook-secret --wake-on-checks --wake-on-checks-passed --wake-on-conflict --branch-rules] -> PATCH /api/git/resources/{resourceId} (person)
+git resource update <resource> [--webhook-secret --wake-on-checks --wake-on-checks-passed --wake-on-conflict --branch-rules --reference-checks] -> PATCH /api/git/resources/{resourceId} (person)
 git status -> GET /api/git/status (person)
 git template get <connection> <owner> <name> -> GET /api/git/connections/{connectionId}/templateRepositories/{owner}/{name} (person)
 git template list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/templateRepositories (person)
@@ -231,12 +232,13 @@ plan undo <plan> [--dry-run] -> POST /api/projects/plans/{planId}/undo (person) 
 plan update <plan> [--revision --title --description --rows --file] -> PATCH /api/projects/plans/{planId} (person)
 plan void <plan> [--revision!] -> POST /api/projects/plans/{planId}/void (person) confirm
 pr check-merge <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/checkMerge (person)
+pr checks <issue> <pr> -> GET /api/git/pullRequests/{pullRequestId}/checks (person,run) pm.issues/view
 pr close <issue> <pr> [--reason! --unlink] -> POST /api/git/pullRequests/{pullRequestId}/close (person,run) studio.git/open-pr
 pr edit <issue> <pr> [--title --body --base --draft --ready] -> POST /api/git/pullRequests/{pullRequestId}/edit (person,run) studio.git/open-pr
 pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/open-pr
 pr list [--issue] -> GET /api/git/pullRequests (person,run) pm.issues/view
 pr mark-merged <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/markMerged (person) confirm
-pr merge <issue> <pr> [--expected-head!] -> POST /api/git/pullRequests/{pullRequestId}/merge (person) confirm
+pr merge <issue> <pr> [--expected-head! --force --reason] -> POST /api/git/pullRequests/{pullRequestId}/merge (person) confirm
 pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/pullRequests/open (person,run) studio.git/open-pr
 pr refresh <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/refresh (person) pm.issues/view
 pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
@@ -401,6 +403,7 @@ kb upload [--doc --title --parent --space --summary --reason! --project --file!]
 plan create [--title --description --source --rows --file] -> POST /api/projects/plans (person,run) pm.plans/use
 plan get <plan> -> GET /api/projects/plans/{planId} (person,run) pm.plans/use
 plan list [--status --source-kind --source-key --issue --all --limit --page-token] -> GET /api/projects/plans (person,run) pm.plans/use
+pr checks <issue> <pr> -> GET /api/git/pullRequests/{pullRequestId}/checks (person,run) pm.issues/view
 pr close <issue> <pr> [--reason! --unlink] -> POST /api/git/pullRequests/{pullRequestId}/close (person,run) studio.git/open-pr
 pr edit <issue> <pr> [--title --body --base --draft --ready] -> POST /api/git/pullRequests/{pullRequestId}/edit (person,run) studio.git/open-pr
 pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/open-pr

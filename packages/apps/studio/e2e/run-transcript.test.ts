@@ -18,6 +18,52 @@ interface ScrollViewport {
 test.use({ user: 'admin' });
 test.setTimeout(120_000);
 
+test('shows the current retry initiator after an unclaimed retry was cancelled', async ({
+  page,
+  api,
+  browser,
+}) => {
+  const me = await api.get<{ userId: string }>('projects/me');
+  const runner = new FakeRunner(api, `retry-audit-${unique()}`);
+  await runner.agent();
+  const issue = await api.post<{ id: string; identifier: string }>(
+    'projects/issues',
+    {
+      title: `Retry audit ${unique()}`,
+      ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
+    },
+  );
+  await runner.wake(issue);
+  const [original] = await api.get<{ id: string }[]>(
+    `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
+  );
+  await api.post(`agents/runs/${original!.id}/cancel`, {});
+  const other = await apiAs(browser, 'alex');
+  try {
+    const first = await other.api.post<{ id: string }>(
+      `agents/runs/${original!.id}/retry`,
+      {},
+    );
+    await other.api.post(`agents/runs/${first.id}/cancel`, {});
+    const second = await api.post<{ id: string }>(
+      `agents/runs/${first.id}/retry`,
+      {},
+    );
+    await open(page, `/issues/${issue.identifier}/runs/${second.id}`);
+    await expect(
+      page.getByText(/(?:触发人：|Triggered by )Super Admin/u),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/(?:触发人：|Triggered by )Alex Turner/u),
+    ).toHaveCount(0);
+  } finally {
+    await other.close();
+  }
+});
+
 test('filters a real 200-event run, preserves preferences and follows live failures', async ({
   page,
   api,
