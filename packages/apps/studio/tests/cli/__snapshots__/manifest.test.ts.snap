@@ -178,7 +178,7 @@ issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}
 issue checklist list <issue> -> GET /api/projects/issues/{issueId}/checklists (person) pm.issues/view
 issue checklist mark <issue> <status> <item> [--checked!] -> PATCH /api/projects/issues/{issueId}/checklists/{statusKey}/items/{itemKey} (person) pm.issues/edit
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
-issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
 issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
@@ -401,7 +401,7 @@ inbox list [--unread --limit --page-token] -> GET /api/inbox/items (person,run) 
 issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}/content (person,run) pm.issues/view
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
-issue comment list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
+issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
 issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit

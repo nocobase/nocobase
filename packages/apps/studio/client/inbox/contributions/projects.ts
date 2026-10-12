@@ -71,6 +71,7 @@ const TYPE_ICON: Readonly<Record<string, LucideIcon>> = {
   agent_blocked: HandIcon,
   pr_merged: GitMergeIcon,
   stage_action_problem: TriangleAlertIcon,
+  comment_runs_limited: TriangleAlertIcon,
 };
 
 /** The decisions settled through the projects plugin's approvals; any other decision has no approval to find. */

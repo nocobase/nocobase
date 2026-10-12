@@ -1484,6 +1484,17 @@ describe('comments over HTTP', () => {
     ).json()) as { data: unknown[]; meta: object };
     expect(threads).toMatchObject({ meta: {} });
     expect(threads.data).toHaveLength(1);
+    const later = (await (
+      await call(
+        `/issues/PM-1/comments?since=${encodeURIComponent('2999-01-01T00:00:00Z')}`,
+        { role: 'member' },
+      )
+    ).json()) as { data: unknown[] };
+    expect(later.data).toEqual([]);
+    const invalid = await call('/issues/PM-1/comments?since=yesterday', {
+      role: 'member',
+    });
+    expect(invalid.status).toBe(400);
     const mentions = (await (
       await call('/mentionCandidates?q=ali&issueId=PM-1', { role: 'member' })
     ).json()) as { data: { id: string }[] };

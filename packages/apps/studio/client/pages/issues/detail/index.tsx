@@ -69,7 +69,10 @@ import {
   IssueSubtasksSection,
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
-import { IssueStageRunLimit } from '../../../issues/detail/stage-run-limit.js';
+import {
+  IssueCommentRunLimit,
+  IssueStageRunLimit,
+} from '../../../issues/detail/stage-run-limit.js';
 import { IssuePlansSection } from '../../../issues/detail/issue-plans.js';
 import { IssueParentOutlet } from '../../../issues/detail/issue-parent-outlet.js';
 import { useIssueParent } from '../../../issues/detail/issue-parent.js';
@@ -197,6 +200,10 @@ function IssuePage({
               }
             />
             <IssueStageRunLimit
+              issue={detail}
+              onContinued={() => setStageRunRefresh((value) => value + 1)}
+            />
+            <IssueCommentRunLimit
               issue={detail}
               onContinued={() => setStageRunRefresh((value) => value + 1)}
             />

@@ -254,7 +254,7 @@ const definition = z
   .custom<WorkflowDefinition>(isObject, 'definition must be an object.')
   .meta({
     description:
-      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions }`.',
+      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions, commentRunLimit? }`.',
   });
 
 export const CreateWorkflowBody: z.ZodType<CreateWorkflowRequest> =
@@ -428,6 +428,24 @@ export const CursorPageQuery: z.ZodType<CursorQuery> = z
   .transform(({ pageSize: limit, pageToken: cursor }) => ({
     limit,
     ...(cursor ? { cursor } : {}),
+  }));
+
+/** An issue's comment threads, optionally only what was written after a time. */
+export const CommentThreadsQuery: z.ZodType<
+  CursorQuery & { readonly since?: string }
+> = z
+  .object({
+    pageSize: pageSize(),
+    pageToken,
+    since: z.iso.datetime({ offset: true }).optional().meta({
+      description:
+        'RFC 3339. Only threads with a comment written after it, each with its root and only the replies written after it.',
+    }),
+  })
+  .transform(({ pageSize: limit, pageToken: cursor, since }) => ({
+    limit,
+    ...(cursor ? { cursor } : {}),
+    ...(since ? { since } : {}),
   }));
 
 const issueFields = {
@@ -844,6 +862,10 @@ const WorkflowDefinitionSchema: z.ZodType<WorkflowDefinition> = z
         }),
       }),
     ),
+    commentRunLimit: z.number().int().positive().optional().meta({
+      description:
+        'At most this many runs that comments of agents (principals other than people) start on one issue within 24 hours; 20 when left out.',
+    }),
   })
   .meta({ ref: 'ProjectsWorkflowDefinition' });
 

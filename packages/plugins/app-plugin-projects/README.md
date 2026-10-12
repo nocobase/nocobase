@@ -25,7 +25,9 @@ Projects, issues, workflows, labels and members for a NocoBase application.
   executor before and after, the kinds a comment mentions or answers), which answers what it started (`RunAttempt[]`;
   `collectRunAttempts` gathers them around a call). A handler asks `projects.subtasks.blockersOf` whether the issue
   waits for unfinished issues and then starts nothing (`skipped: 'blocked'`); it starts nothing either for an issue in
-  backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`). When a new `blockedBy` holds the issue, every kind's
+  backlog (`BACKLOG_STATUS`, `skipped: 'dormant'`), or for a principal's comment past the workflow's
+  `commentRunLimit` (`skipped: 'limited'`). A comment of anyone but the system reaches the handlers, with the person it
+  was written for (`CommentChange.userId`). When a new `blockedBy` holds the issue, every kind's
   `onBlocked` withdraws the work it had not taken up yet. These skips and withdrawals are recorded on the issue's
   activity as the principal's (`work_skipped`, `work_withdrawn`, with the issues it waits for). It may name the business actions a principal of the kind may be
   given at most (`actions`) and describe executors for a picker (`executor.describe`). `projects.issueContext`

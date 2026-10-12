@@ -708,7 +708,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           prepared,
         )
       : { mounts: [], resumeNotes: [] };
-    const turn = [brief.turn, ...resumeNotes].join('\n\n');
+    const sessionNote = resume ? assembly.turn.resumed : assembly.turn.fresh;
+    const turn = [
+      brief.turn,
+      ...resumeNotes,
+      ...(sessionNote ? [sessionNote] : []),
+    ].join('\n\n');
     await saveBrief(conn, () => deps.ids.next(), {
       runId: run.id,
       attempt: Number(run.attempt),
