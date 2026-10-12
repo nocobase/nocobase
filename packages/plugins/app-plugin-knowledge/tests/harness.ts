@@ -88,6 +88,8 @@ export interface HarnessOptions {
   readonly maxBytes?: number;
   /** What a reported failure does; it fails the test by default. */
   readonly onError?: (message: string, error: unknown) => void;
+  /** The ids given out, from the harness's own sequence (`next`) unless this decides otherwise. */
+  readonly newId?: (next: () => string) => string;
 }
 
 const NONE: KnowledgeAccess = {
@@ -173,7 +175,10 @@ export async function createKnowledgeHarness(
   const knowledge = createKnowledge({
     database,
     access,
-    newId: () => `k${String((next += 1)).padStart(5, '0')}`,
+    newId: () => {
+      const sequence = () => `k${String((next += 1)).padStart(5, '0')}`;
+      return options.newId ? options.newId(sequence) : sequence();
+    },
     now: () => new Date(clock),
     basePath: () => '/app',
     files: {

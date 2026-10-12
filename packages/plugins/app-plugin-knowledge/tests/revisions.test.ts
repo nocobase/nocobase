@@ -227,7 +227,7 @@ describe('sending knowledge back for changes', () => {
     });
   });
 
-  it('takes a revision naming what it replaces, from its proposer only, and lets one sent back be rejected or withdrawn', async () => {
+  it('takes a revision naming what it replaces, from its source only, and lets one sent back be rejected or withdrawn', async () => {
     const { proposals } = h.knowledge;
     const first = await proposals.propose(
       h.agent('member', 'agent-1', 'run-1'),
@@ -242,18 +242,23 @@ describe('sending knowledge back for changes', () => {
     await proposals.requestChanges(h.user('lead'), first.id, {
       comment: 'Say more.',
     });
-    // Another agent cannot claim it, nor can a pending proposal be named.
-    await expect(
-      proposals.propose(h.agent('member', 'agent-2', 'run-9'), {
-        kind: 'update',
-        docId,
-        content: 'B',
-        reason: 'B.',
-        source: { kind: 'issue', id: 'i9', title: 'Other' },
-        replacesId: first.id,
-      }),
-    ).rejects.toMatchObject({ code: 'KNOWLEDGE_PROPOSAL_NOT_REVISING' });
-    // Its proposer, from elsewhere, can.
+    // Another agent from another source cannot claim it, nor can its own proposer from elsewhere: a revision comes
+    // from the source it was sent back to.
+    for (const [agent, source] of [
+      ['agent-2', { kind: 'issue', id: 'i9', title: 'Other' }],
+      ['agent-1', { kind: 'conversation', id: 'c1', title: 'Chat' }],
+    ] as const)
+      await expect(
+        proposals.propose(h.agent('member', agent, 'run-9'), {
+          kind: 'update',
+          docId,
+          content: 'B',
+          reason: 'B.',
+          source,
+          replacesId: first.id,
+        }),
+      ).rejects.toMatchObject({ code: 'KNOWLEDGE_PROPOSAL_NOT_REVISING' });
+    // From the same source, naming it.
     const revision = await proposals.propose(
       h.agent('member', 'agent-1', 'run-2'),
       {
@@ -261,7 +266,7 @@ describe('sending knowledge back for changes', () => {
         docId,
         content: 'A, with more.',
         reason: 'More.',
-        source: { kind: 'conversation', id: 'c1', title: 'Chat' },
+        source: issue,
         replacesId: first.id,
       },
     );

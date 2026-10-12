@@ -406,7 +406,7 @@ export const ProposeFileForm: z.ZodType = z.strictObject({
   baseVersion: versionNumber.optional(),
   replacesId: z.string().optional().meta({
     description:
-      'The proposal sent back that this one revises; left out, the one sent back from the same source for the same document.',
+      'The proposal sent back that this one revises: the one sent back from the same source for the same target, which is replaced on its own when this is left out. Any other is refused with `KNOWLEDGE_PROPOSAL_NOT_REVISING`.',
   }),
 });
 

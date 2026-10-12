@@ -142,6 +142,8 @@ export interface ProposalRecord {
   readonly replacesId: string | null;
   /** `document` for a document's version sent back for changes; null for a proposal. */
   readonly origin: string | null;
+  /** `open:` and the SHA-256 of its target and source while pending or sent back, else its id (`openKeyOf`). */
+  readonly openKey: string;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

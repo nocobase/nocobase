@@ -19,9 +19,18 @@
  * |          | wrote is sent back the same way (`requestDocChanges`): a `revising` record of `origin` `document` with  |
  * |          | the version's content, author, source and run stands for it (409 `KNOWLEDGE_PROPOSAL_PENDING` while    |
  * |          | that source has one pending or sent back for the document)                                               |
- * | revise   | the next proposal from the same source for the same document (or naming it, `replacesId`, from the same |
- * |          | proposer) replaces the one sent back, which becomes `superseded`; its review shows the diff from it      |
+ * | revise   | the next proposal from the same source for the same target (the document, or a new document's parent    |
+ * |          | and slug) replaces the one sent back, which becomes `superseded`, and its review shows the diff from it; |
+ * |          | `replacesId` names that one, and is refused alike (409 `KNOWLEDGE_PROPOSAL_NOT_REVISING`) for any other |
  * | withdraw | the person it was made for, or the actor that made it; pending or sent back                               |
+ *
+ * One proposal per target and source is open (pending or sent back) at a time, and the database keeps it so: an open
+ * proposal holds `openKeyOf` its target and source under a unique index, a closed one its own id. The checks before a
+ * write give the friendly refusal; two writes at once that both pass them meet at the index, and the one that loses is
+ * refused the same way (409 `KNOWLEDGE_PROPOSAL_PENDING`) with nothing written and no event.
+ *
+ * What a proposal shows of another (the one it replaces: its content, comment and who sent it back; the one that
+ * superseded it; the one a refusal names) is shown only to whoever may read that other one, checked on every read.
  *
  * The "source" is what the proposal came from, as the application names it (the issue a run works on), or else the
  * proposer itself. A new version from a proposal is authored by its proposer and records the run, the proposal and who
@@ -237,6 +246,81 @@ const sourceKey = (record: {
     ? { sourceKind: record.sourceKind, sourceId: record.sourceId }
     : { proposerKind: record.proposerKind, proposerId: record.proposerId };
 
+/** What a proposal's open key is made of: its target and its source. */
+export type OpenKeyInput = Pick<
+  ProposalRecord,
+  | 'docId'
+  | 'spaceId'
+  | 'parentId'
+  | 'slug'
+  | 'sourceKind'
+  | 'sourceId'
+  | 'proposerKind'
+  | 'proposerId'
+>;
+
+/**
+ * The key an open proposal holds: `open:` and the SHA-256 of its target (the document; for a new one its space, parent
+ * and slug) and its source (else its proposer), encoded as a JSON array so no two of them read alike. The migration
+ * `202610240040_kb_proposals_add_revisions` computes the same for the proposals pending before it.
+ */
+export function openKeyOf(record: OpenKeyInput): string {
+  const target = record.docId
+    ? ['doc', record.docId]
+    : ['new', record.spaceId, record.parentId, record.slug];
+  const source =
+    record.sourceKind && record.sourceId
+      ? ['source', record.sourceKind, record.sourceId]
+      : ['proposer', record.proposerKind, record.proposerId];
+  return `open:${sha256(JSON.stringify([...target, ...source]))}`;
+}
+
+/** Whether `error` is the database refusing a second open proposal's key, rather than any other failure. */
+function violatesOpenKey(error: unknown): boolean {
+  if (!isUniqueConstraintViolation(error)) return false;
+  const visited = new Set<unknown>();
+  let current: unknown = error;
+  while (current && typeof current === 'object' && !visited.has(current)) {
+    visited.add(current);
+    const record = current as Record<string, unknown>;
+    // The index's name, or its column's, as each dialect reports it.
+    if (
+      [record.message, record.constraint, record.detail, record.sqlMessage]
+        .filter((part): part is string => typeof part === 'string')
+        .some((part) => /open_?key/i.test(part))
+    )
+      return true;
+    current = record.cause ?? record.originalError;
+  }
+  return false;
+}
+
+/** A unique constraint refusing a write, as the dialects report it (the shape `@nocobase/db` recognizes internally). */
+function isUniqueConstraintViolation(error: unknown): boolean {
+  const visited = new Set<unknown>();
+  let current: unknown = error;
+  while (current && typeof current === 'object' && !visited.has(current)) {
+    visited.add(current);
+    const record = current as Record<string, unknown>;
+    const code = record.code;
+    const number = record.errno ?? record.number ?? record.errorNum;
+    if (
+      record.errCode === -6602 ||
+      code === '23505' ||
+      code === 'ER_DUP_ENTRY' ||
+      code === 'SQLITE_CONSTRAINT' ||
+      code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+      number === 1 ||
+      number === 1062 ||
+      number === 2601 ||
+      number === 2627
+    )
+      return true;
+    current = record.cause ?? record.originalError;
+  }
+  return false;
+}
+
 export function createProposalService(
   context: KnowledgeContext,
   files: ProposalFileDeps,
@@ -275,6 +359,70 @@ export function createProposalService(
     return access.access(space);
   }
 
+  /** Whether the proposal is the reader's own: made by the actor, or for the person. */
+  const ownBy = (access: AccessCheck, record: ProposalRecord) =>
+    record.authorizedById === access.reader.userId ||
+    (!!access.reader.actor && record.proposerId === access.reader.actor.id);
+
+  /** Whether the reader may see another proposal one shows (or a refusal names): as `readable` decides, now. */
+  async function canSee(
+    access: AccessCheck | null,
+    record: ProposalRecord,
+  ): Promise<boolean> {
+    if (!access) return false;
+    if (ownBy(access, record)) return true;
+    const space = await findSpaceById(context.read(), record.spaceId);
+    if (!space) return false;
+    return (
+      await rightsOver(access, record, {
+        scope: space.scope,
+        scopeId: space.scopeId ?? '',
+      })
+    ).read;
+  }
+
+  /**
+   * What a write refused tells the reader: the key of an open proposal taken meanwhile becomes the same refusal as the
+   * check before the write gives, and a refusal names another proposal only to whoever may read it.
+   */
+  async function refusal(
+    access: AccessCheck,
+    error: unknown,
+    openKey: string | null,
+    message: string,
+  ): Promise<unknown> {
+    if (openKey !== null && violatesOpenKey(error)) {
+      const holder = await proposalsRepo(context.read()).findOne({
+        filter: { openKey },
+      });
+      return conflict(
+        'KNOWLEDGE_PROPOSAL_PENDING',
+        message,
+        holder && (await canSee(access, holder))
+          ? { proposalId: holder.id }
+          : undefined,
+      );
+    }
+    if (
+      error instanceof KnowledgeError &&
+      error.status === 409 &&
+      typeof error.details?.proposalId === 'string'
+    ) {
+      const named = await proposalsRepo(context.read()).findOne({
+        filter: { id: error.details.proposalId },
+      });
+      if (!named || !(await canSee(access, named))) {
+        const { proposalId: _hidden, ...rest } = error.details;
+        return conflict(
+          error.code,
+          error.message,
+          Object.keys(rest).length > 0 ? rest : undefined,
+        );
+      }
+    }
+    return error;
+  }
+
   async function spaceOf(record: ProposalRecord): Promise<SpaceRef> {
     const space = await findSpaceById(context.read(), record.spaceId);
     if (!space) throw notFound('Knowledge proposal', 'PROPOSAL_NOT_FOUND');
@@ -298,16 +446,23 @@ export function createProposalService(
       currentVersion !== null &&
       baseVersion !== null &&
       currentVersion > baseVersion;
+    // Another proposal's content, comment and people are shown only to whoever may read that one.
+    const related = async (found: ProposalRecord | null | undefined) =>
+      found && (await canSee(access, found)) ? found : null;
     const replaced = record.replacesId
-      ? ((await proposalsRepo(conn).findOne({
-          filter: { id: record.replacesId },
-        })) ?? null)
+      ? await related(
+          await proposalsRepo(conn).findOne({
+            filter: { id: record.replacesId },
+          }),
+        )
       : null;
     const supersededBy =
       record.status === 'superseded'
-        ? ((await proposalsRepo(conn).findOne({
-            filter: { replacesId: record.id },
-          })) ?? null)
+        ? await related(
+            await proposalsRepo(conn).findOne({
+              filter: { replacesId: record.id },
+            }),
+          )
         : null;
     const names = await namesFor(context.access, [
       { kind: record.proposerKind, id: record.proposerId },
@@ -390,10 +545,7 @@ export function createProposalService(
     const record = await find(id);
     const space = await spaceOf(record);
     const rights = await rightsOver(access, record, space);
-    const own =
-      record.authorizedById === access.reader.userId ||
-      (access.reader.actor && record.proposerId === access.reader.actor.id);
-    if (!rights.read && !own)
+    if (!rights.read && !ownBy(access, record))
       throw notFound('Knowledge proposal', 'PROPOSAL_NOT_FOUND');
     return { record, space, rights };
   }
@@ -445,6 +597,8 @@ export function createProposalService(
           f.and([f.string('id').eq(id), f.string('status').eq(current.status)]),
         values: {
           status: decision,
+          // Closed, it holds no key: its id.
+          openKey: id,
           decidedById: viewer.userId,
           decidedAt: nowText(),
           // Rejecting one sent back without a word keeps what it was sent back with.
@@ -758,178 +912,195 @@ export function createProposalService(
         ...proposer,
       });
 
-      const id = await context.transaction(async (tx) => {
-        const now = nowText();
-        const spaceRecord = await findSpace(tx.conn, space);
-        if (kind === 'create') {
-          if (spaceRecord) {
-            await checkParent(tx.conn, spaceRecord.id, parentId);
-            if (await findDocBySlug(tx.conn, spaceRecord.id, slug!))
-              throw conflict(
-                'KNOWLEDGE_SLUG_TAKEN',
-                `A document with slug ${slug!} exists; propose a change to it instead.`,
-              );
+      const replacesId =
+        input.replacesId === undefined || input.replacesId === null
+          ? null
+          : String(input.replacesId);
+      let openKey: string | null = null;
+      let id: string;
+      try {
+        id = await context.transaction(async (tx) => {
+          const now = nowText();
+          const spaceRecord = await findSpace(tx.conn, space);
+          if (kind === 'create') {
+            if (spaceRecord) {
+              await checkParent(tx.conn, spaceRecord.id, parentId);
+              if (await findDocBySlug(tx.conn, spaceRecord.id, slug!))
+                throw conflict(
+                  'KNOWLEDGE_SLUG_TAKEN',
+                  `A document with slug ${slug!} exists; propose a change to it instead.`,
+                );
+            }
           }
-        }
-        const sameTarget = (f: Parameters<Filter>[0]) =>
-          docId
-            ? f.string('docId').eq(docId)
-            : f.and([
-                f.string('docId').empty(),
-                f.string('slug').eq(slug),
-                ...(spaceRecord
-                  ? [f.string('spaceId').eq(spaceRecord.id)]
-                  : []),
-              ]);
-        const fromSource = (f: Parameters<Filter>[0]) =>
-          f.and(
-            (Object.entries(key) as [string, string][]).map(([field, value]) =>
-              f.string(field).eq(value),
-            ),
-          );
-        const pending = await proposalsRepo(tx.conn).findMany({
-          filter: (f) =>
-            f.and([
-              f.string('status').eq('pending'),
-              sameTarget(f),
-              fromSource(f),
-            ]),
-          limit: 1,
-        });
-        if (pending.length > 0)
-          throw conflict(
-            'KNOWLEDGE_PROPOSAL_PENDING',
-            'A proposal for this document from the same source is still waiting; put everything into that one, or wait for it to be decided.',
-            { proposalId: pending[0].id },
-          );
-        const rejected = await proposalsRepo(tx.conn).findMany({
-          filter: (f) =>
-            f.and([
-              f.string('status').eq('rejected'),
-              f.string('contentHash').eq(contentHash),
-              sameTarget(f),
-              fromSource(f),
-            ]),
-          limit: 1,
-        });
-        if (rejected.length > 0)
-          throw conflict(
-            'KNOWLEDGE_PROPOSAL_REJECTED',
-            'The same change was rejected before; propose something different, or ask the decider why.',
-            { proposalId: rejected[0].id },
-          );
-        if (viewer.actor?.runId) {
-          const ofRun = await proposalsRepo(tx.conn).findMany({
-            filter: { runId: viewer.actor.runId },
-          });
-          if (ofRun.length >= KNOWLEDGE_PROPOSALS_PER_RUN)
-            throw conflict(
-              'KNOWLEDGE_PROPOSAL_LIMIT',
-              `A run proposes at most ${KNOWLEDGE_PROPOSALS_PER_RUN} knowledge changes.`,
+          // The target, as `openKeyOf` names it: the document, or a new document's space, parent and slug.
+          const sameTarget = (f: Parameters<Filter>[0]) =>
+            docId
+              ? f.string('docId').eq(docId)
+              : f.and([
+                  f.string('docId').empty(),
+                  f.string('slug').eq(slug),
+                  parentId
+                    ? f.string('parentId').eq(parentId)
+                    : f.string('parentId').empty(),
+                  ...(spaceRecord
+                    ? [f.string('spaceId').eq(spaceRecord.id)]
+                    : []),
+                ]);
+          const fromSource = (f: Parameters<Filter>[0]) =>
+            f.and(
+              (Object.entries(key) as [string, string][]).map(
+                ([field, value]) => f.string(field).eq(value),
+              ),
             );
-        }
-        // What it revises: the proposal named, or the one sent back from the same source for the same document.
-        const replacing =
-          input.replacesId !== undefined && input.replacesId !== null
-            ? await proposalsRepo(tx.conn).findOne({
-                filter: { id: String(input.replacesId) },
-              })
-            : (
-                await proposalsRepo(tx.conn).findMany({
-                  filter: (f) =>
-                    f.and([
-                      f.string('status').eq('revising'),
-                      sameTarget(f),
-                      fromSource(f),
-                    ]),
-                  limit: 1,
-                })
-              )[0];
-        if (
-          input.replacesId !== undefined &&
-          input.replacesId !== null &&
-          !(
-            replacing &&
-            replacing.status === 'revising' &&
-            (kind === 'create'
-              ? !replacing.docId && replacing.spaceId === spaceRecord?.id
-              : replacing.docId === docId) &&
-            ((replacing.proposerKind === proposer.proposerKind &&
-              replacing.proposerId === proposer.proposerId) ||
-              JSON.stringify(sourceKey(replacing)) === JSON.stringify(key))
-          )
-        )
-          throw conflict(
-            'KNOWLEDGE_PROPOSAL_NOT_REVISING',
-            'replacesId names no proposal of yours sent back for changes to this document.',
-            { proposalId: String(input.replacesId) },
-          );
-        const space2 =
-          spaceRecord ?? (await ensureSpace(context, tx.conn, space, now));
-        const proposalId = context.newId();
-        await proposalsRepo(tx.conn).createOne({
-          values: {
-            id: proposalId,
-            spaceId: space2.id,
-            docId,
-            kind,
-            parentId,
-            slug,
-            title,
-            summary,
-            content,
-            contentHash,
-            fileId: file?.id ?? null,
-            baseVersion,
-            reason,
-            ...proposer,
-            authorizedById: viewer.userId,
-            sourceKind: source?.kind ?? null,
-            sourceId: source?.id ?? null,
-            sourceTitle: source?.title?.slice(0, 255) ?? null,
-            sourceUrl: source?.url?.slice(0, 500) ?? null,
-            runId: viewer.actor?.runId ?? null,
-            status: 'pending',
-            decidedById: null,
-            decidedAt: null,
-            comment: null,
-            appliedVersion: null,
-            replacesId: replacing?.id ?? null,
-            origin: null,
-            createdAt: now,
-            updatedAt: now,
-          },
-        });
-        if (replacing) {
-          const replaced = await proposalsRepo(tx.conn).updateMany({
+          const pending = await proposalsRepo(tx.conn).findMany({
             filter: (f) =>
               f.and([
-                f.string('id').eq(replacing.id),
-                f.string('status').eq('revising'),
+                f.string('status').eq('pending'),
+                sameTarget(f),
+                fromSource(f),
               ]),
-            values: { status: 'superseded', updatedAt: now },
+            limit: 1,
           });
-          if (replaced.updatedCount !== 1)
+          if (pending.length > 0)
+            throw conflict(
+              'KNOWLEDGE_PROPOSAL_PENDING',
+              'A proposal for this document from the same source is still waiting; put everything into that one, or wait for it to be decided.',
+              { proposalId: pending[0].id },
+            );
+          const rejected = await proposalsRepo(tx.conn).findMany({
+            filter: (f) =>
+              f.and([
+                f.string('status').eq('rejected'),
+                f.string('contentHash').eq(contentHash),
+                sameTarget(f),
+                fromSource(f),
+              ]),
+            limit: 1,
+          });
+          if (rejected.length > 0)
+            throw conflict(
+              'KNOWLEDGE_PROPOSAL_REJECTED',
+              'The same change was rejected before; propose something different, or ask the decider why.',
+              { proposalId: rejected[0].id },
+            );
+          if (viewer.actor?.runId) {
+            const ofRun = await proposalsRepo(tx.conn).findMany({
+              filter: { runId: viewer.actor.runId },
+            });
+            if (ofRun.length >= KNOWLEDGE_PROPOSALS_PER_RUN)
+              throw conflict(
+                'KNOWLEDGE_PROPOSAL_LIMIT',
+                `A run proposes at most ${KNOWLEDGE_PROPOSALS_PER_RUN} knowledge changes.`,
+              );
+          }
+          // What it revises: the one sent back from the same source for the same target, which `replacesId`, when
+          // given, must name. The target is this proposal's own, whose `propose` the proposer was checked for above, so
+          // nothing beyond what it may propose to is replaced (or shown); one sent back elsewhere stays as it is, and a
+          // `replacesId` naming one elsewhere, or none, is refused alike.
+          const [replacing] = await proposalsRepo(tx.conn).findMany({
+            filter: (f) =>
+              f.and([
+                f.string('status').eq('revising'),
+                sameTarget(f),
+                fromSource(f),
+                ...(replacesId === null ? [] : [f.string('id').eq(replacesId)]),
+              ]),
+            limit: 1,
+          });
+          if (replacesId !== null && !replacing)
             throw conflict(
               'KNOWLEDGE_PROPOSAL_NOT_REVISING',
-              'The proposal sent back was decided meanwhile.',
-              { proposalId: replacing.id },
+              'replacesId names no proposal from this source sent back for changes to this document.',
             );
-          if (replacing.fileId) {
-            const fileId = replacing.fileId;
-            tx.afterCommit(() => discardFile(context, store(), fileId));
+          const space2 =
+            spaceRecord ?? (await ensureSpace(context, tx.conn, space, now));
+          openKey = openKeyOf({
+            docId,
+            spaceId: space2.id,
+            parentId,
+            slug,
+            sourceKind: source?.kind ?? null,
+            sourceId: source?.id ?? null,
+            ...proposer,
+          });
+          // The one replaced lets go of the key first, so the revision can take it.
+          if (replacing) {
+            const replaced = await proposalsRepo(tx.conn).updateMany({
+              filter: (f) =>
+                f.and([
+                  f.string('id').eq(replacing.id),
+                  f.string('status').eq('revising'),
+                ]),
+              values: {
+                status: 'superseded',
+                openKey: replacing.id,
+                updatedAt: now,
+              },
+            });
+            if (replaced.updatedCount !== 1)
+              throw conflict(
+                'KNOWLEDGE_PROPOSAL_NOT_REVISING',
+                'The proposal sent back was decided meanwhile.',
+                { proposalId: replacing.id },
+              );
+            if (replacing.fileId) {
+              const fileId = replacing.fileId;
+              tx.afterCommit(() => discardFile(context, store(), fileId));
+            }
           }
-        }
-        tx.emit({
-          type: 'proposal.created',
-          proposal: (await proposalsRepo(tx.conn).findOne({
-            filter: { id: proposalId },
-          }))!,
-          space,
-          doc: await proposalDoc(tx.conn, docId),
+          const proposalId = context.newId();
+          await proposalsRepo(tx.conn).createOne({
+            values: {
+              id: proposalId,
+              spaceId: space2.id,
+              docId,
+              kind,
+              parentId,
+              slug,
+              title,
+              summary,
+              content,
+              contentHash,
+              fileId: file?.id ?? null,
+              baseVersion,
+              reason,
+              ...proposer,
+              authorizedById: viewer.userId,
+              sourceKind: source?.kind ?? null,
+              sourceId: source?.id ?? null,
+              sourceTitle: source?.title?.slice(0, 255) ?? null,
+              sourceUrl: source?.url?.slice(0, 500) ?? null,
+              runId: viewer.actor?.runId ?? null,
+              status: 'pending',
+              decidedById: null,
+              decidedAt: null,
+              comment: null,
+              appliedVersion: null,
+              replacesId: replacing?.id ?? null,
+              origin: null,
+              openKey,
+              createdAt: now,
+              updatedAt: now,
+            },
+          });
+          tx.emit({
+            type: 'proposal.created',
+            proposal: (await proposalsRepo(tx.conn).findOne({
+              filter: { id: proposalId },
+            }))!,
+            space,
+            doc: await proposalDoc(tx.conn, docId),
+          });
+          return proposalId;
         });
-        return proposalId;
-      });
+      } catch (error) {
+        throw await refusal(
+          access,
+          error,
+          openKey,
+          'A proposal for this document from the same source was made meanwhile; put everything into that one, or wait for it to be decided.',
+        );
+      }
       return viewOf(access, await find(id));
     },
 
@@ -978,10 +1149,7 @@ export function createProposalService(
           scope: space.scope,
           scopeId: space.scopeId ?? '',
         });
-        const own =
-          row.authorizedById === viewer.userId ||
-          (viewer.actor && row.proposerId === viewer.actor.id);
-        if (!rights.read && !own) continue;
+        if (!rights.read && !ownBy(access, row)) continue;
         if (filter.decidable && !rights.edit) continue;
         result.push(await viewOf(access, row));
       }
@@ -1074,78 +1242,97 @@ export function createProposalService(
         proposerId: version.authorId,
       };
       const key = sourceKey(author);
-      const id = await context.transaction(async (tx) => {
-        const open = await proposalsRepo(tx.conn).findMany({
-          filter: (f) =>
-            f.and([
-              f.or([
-                f.string('status').eq('pending'),
-                f.string('status').eq('revising'),
-              ]),
-              f.string('docId').eq(doc.id),
-              ...(Object.entries(key) as [string, string][]).map(
-                ([field, value]) => f.string(field).eq(value),
-              ),
-            ]),
-          limit: 1,
-        });
-        if (open.length > 0)
-          throw conflict(
-            'KNOWLEDGE_PROPOSAL_PENDING',
-            open[0].status === 'pending'
-              ? 'A proposal for this document from the same source is waiting; send that one back instead.'
-              : 'This document was sent back to the same source already; wait for its revision.',
-            { proposalId: open[0].id },
-          );
-        const now = nowText();
-        const proposalId = context.newId();
-        await proposalsRepo(tx.conn).createOne({
-          values: {
-            id: proposalId,
-            spaceId: doc.spaceId,
-            docId: doc.id,
-            kind: 'update',
-            parentId: null,
-            slug: null,
-            title: null,
-            summary: null,
-            content: version.content,
-            // Never matched by the check for rejected content: nobody proposed it.
-            contentHash: null,
-            fileId: null,
-            baseVersion: num(version.version),
-            reason: comment.slice(0, KNOWLEDGE_REASON_MAX),
-            proposerKind: version.authorKind,
-            proposerId: version.authorId!,
-            authorizedById: viewer.userId,
-            sourceKind: version.sourceKind,
-            sourceId: version.sourceId,
-            sourceTitle: version.sourceTitle,
-            sourceUrl: null,
-            runId: version.runId,
-            status: 'revising',
-            decidedById: viewer.userId,
-            decidedAt: now,
-            comment,
-            appliedVersion: null,
-            replacesId: null,
-            origin: 'document',
-            createdAt: now,
-            updatedAt: now,
-          },
-        });
-        tx.emit({
-          type: 'proposal.changesRequested',
-          proposal: (await proposalsRepo(tx.conn).findOne({
-            filter: { id: proposalId },
-          }))!,
-          space,
-          doc: { id: doc.id, slug: doc.slug, title: doc.title },
-          comment,
-          byUserId: viewer.userId,
-        });
-        return proposalId;
+      const openKey = openKeyOf({
+        docId: doc.id,
+        spaceId: doc.spaceId,
+        parentId: null,
+        slug: null,
+        ...author,
+        proposerId: version.authorId,
       });
+      let id: string;
+      try {
+        id = await context.transaction(async (tx) => {
+          const open = await proposalsRepo(tx.conn).findMany({
+            filter: (f) =>
+              f.and([
+                f.or([
+                  f.string('status').eq('pending'),
+                  f.string('status').eq('revising'),
+                ]),
+                f.string('docId').eq(doc.id),
+                ...(Object.entries(key) as [string, string][]).map(
+                  ([field, value]) => f.string(field).eq(value),
+                ),
+              ]),
+            limit: 1,
+          });
+          if (open.length > 0)
+            throw conflict(
+              'KNOWLEDGE_PROPOSAL_PENDING',
+              open[0].status === 'pending'
+                ? 'A proposal for this document from the same source is waiting; send that one back instead.'
+                : 'This document was sent back to the same source already; wait for its revision.',
+              { proposalId: open[0].id },
+            );
+          const now = nowText();
+          const proposalId = context.newId();
+          await proposalsRepo(tx.conn).createOne({
+            values: {
+              id: proposalId,
+              spaceId: doc.spaceId,
+              docId: doc.id,
+              kind: 'update',
+              parentId: null,
+              slug: null,
+              title: null,
+              summary: null,
+              content: version.content,
+              // Never matched by the check for rejected content: nobody proposed it.
+              contentHash: null,
+              fileId: null,
+              baseVersion: num(version.version),
+              reason: comment.slice(0, KNOWLEDGE_REASON_MAX),
+              proposerKind: version.authorKind,
+              proposerId: version.authorId!,
+              authorizedById: viewer.userId,
+              sourceKind: version.sourceKind,
+              sourceId: version.sourceId,
+              sourceTitle: version.sourceTitle,
+              sourceUrl: null,
+              runId: version.runId,
+              status: 'revising',
+              decidedById: viewer.userId,
+              decidedAt: now,
+              comment,
+              appliedVersion: null,
+              replacesId: null,
+              origin: 'document',
+              openKey,
+              createdAt: now,
+              updatedAt: now,
+            },
+          });
+          tx.emit({
+            type: 'proposal.changesRequested',
+            proposal: (await proposalsRepo(tx.conn).findOne({
+              filter: { id: proposalId },
+            }))!,
+            space,
+            doc: { id: doc.id, slug: doc.slug, title: doc.title },
+            comment,
+            byUserId: viewer.userId,
+          });
+          return proposalId;
+        });
+      } catch (error) {
+        throw await refusal(
+          access,
+          error,
+          openKey,
+          'This document was sent back to the same source meanwhile, or a proposal from it arrived; wait for that one.',
+        );
+      }
       return viewOf(access, await find(id), { contents: true });
     },
 
@@ -1171,7 +1358,7 @@ export function createProposalService(
                 f.string('status').eq('revising'),
               ]),
             ]),
-          values: { status: 'withdrawn', updatedAt: nowText() },
+          values: { status: 'withdrawn', openKey: id, updatedAt: nowText() },
         });
         if (taken.updatedCount !== 1)
           throw conflict(

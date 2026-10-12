@@ -460,8 +460,8 @@ export interface ProposeKnowledgeRequest {
   readonly content?: string;
   readonly baseVersion?: number;
   /**
-   * The proposal sent back (`revising`) that this one revises. Left out, a proposal from the same source for the same
-   * document replaces the one sent back on its own.
+   * The proposal sent back (`revising`) that this one revises: the one from the same source for the same target (the
+   * document, or a new document's parent and slug), which a proposal replaces on its own when this is left out.
    */
   readonly replacesId?: string;
 }
