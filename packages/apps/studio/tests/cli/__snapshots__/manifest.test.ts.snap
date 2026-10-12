@@ -25,6 +25,7 @@ access settings get -> GET /api/access/settings (person)
 access settings set [--default-role!] -> PUT /api/access/settings (person)
 agent action list -> GET /api/agents/actions (person)
 agent brief <agent> [--scenario] -> GET /api/agents/{agentId}/previewBrief (person)
+agent discovery set [--groups --ignored --input] -> PUT /api/agents/discoveryPreferences (person)
 agent get <agent> -> GET /api/agents/{agentId} (person)
 agent history <agent> [--after --limit --page-token] -> GET /api/agents/{agentId}/history (person)
 agent list -> GET /api/agents/available (person,run) agents.agents/view
@@ -417,6 +418,8 @@ project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/
 project list -> GET /api/projects (person,run) pm.projects/view
 project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
 release list <app> [--page --limit --label] -> GET /api/releases/apps/{appId}/releases (person,run) rel.apps/view
+report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
+report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run context -> GET /api/agents/runs/current/context (run) agents.runs/self
 run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view

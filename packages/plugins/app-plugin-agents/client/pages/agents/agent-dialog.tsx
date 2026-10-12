@@ -108,6 +108,10 @@ function AgentChoice({
           </FieldLabel>
           <Select
             disabled={saving}
+            items={candidates.map((candidate) => ({
+              value: candidate.id,
+              label: `${candidate.model} · ${candidate.runners.names.join(', ') || t('agents.where.none')}`,
+            }))}
             value={target.id}
             onValueChange={(value) => {
               const next = candidates.find(

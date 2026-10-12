@@ -450,13 +450,9 @@ export function createAdminRoutes(
                 .min(1)
                 .max(256)
                 .meta({ description: 'The discoveryKey from the agent list.' }),
-              expectedRevision: z
-                .number()
-                .int()
-                .min(0)
-                .meta({
-                  description: 'The discoveryRevision from the agent list.',
-                }),
+              expectedRevision: z.number().int().min(0).meta({
+                description: 'The discoveryRevision from the agent list.',
+              }),
             }),
           )
           .min(1)
@@ -470,12 +466,10 @@ export function createAdminRoutes(
             description:
               'Unique pending discovery groups to update atomically.',
           }),
-        ignored: z
-          .boolean()
-          .meta({
-            description:
-              'True to ignore pending discoveries; false to restore them without enabling.',
-          }),
+        ignored: z.boolean().meta({
+          description:
+            'True to ignore pending discoveries; false to restore them without enabling.',
+        }),
       }),
     ),
     async (context) => {

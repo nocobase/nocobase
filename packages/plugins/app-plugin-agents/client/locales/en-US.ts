@@ -77,6 +77,8 @@ const pages = {
     fromRunners: 'Agents from runners',
     discovery: {
       selectAll: 'Select all results',
+      selectFirst: 'Select the first {{limit}} results',
+      selectionCount: 'Selected {{count}} / {{limit}} groups',
       clearSelection: 'Clear selection',
       new: 'New discoveries ({{count}})',
       ignored: 'Ignored ({{count}})',

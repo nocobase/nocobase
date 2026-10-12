@@ -76,6 +76,8 @@ const zhCN: AgentsResource = {
     fromRunners: '来自执行机的 agent',
     discovery: {
       selectAll: '全选当前结果',
+      selectFirst: '选择当前结果中的前 {{limit}} 组',
+      selectionCount: '已选 {{count}} / {{limit}} 组',
       clearSelection: '清除所选',
       new: '新发现（{{count}}）',
       ignored: '已忽略（{{count}}）',

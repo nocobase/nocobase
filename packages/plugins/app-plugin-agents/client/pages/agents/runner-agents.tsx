@@ -117,9 +117,10 @@ export function RunnerAgentsSection(): ReactElement {
   const list = (targets: AgentView[][], restoring: boolean) => {
     const filtered = targets.filter(matchesSearch);
     const selectable = filtered.filter((group) => group[0].canEdit);
+    const batch = selectable.slice(0, 256);
     const allSelected =
       selectable.length > 0 &&
-      selectable.every((group) => selected.includes(group[0].discoveryKey!));
+      batch.every((group) => selected.includes(group[0].discoveryKey!));
     return (
       <div className='space-y-3'>
         <Input
@@ -137,19 +138,26 @@ export function RunnerAgentsSection(): ReactElement {
             disabled={preference.isPending}
             onClick={() =>
               setSelected(
-                allSelected
-                  ? []
-                  : selectable.map((group) => group[0].discoveryKey!),
+                allSelected ? [] : batch.map((group) => group[0].discoveryKey!),
               )
             }
           >
             {t(
               allSelected
                 ? 'agents.discovery.clearSelection'
-                : 'agents.discovery.selectAll',
+                : selectable.length > 256
+                  ? 'agents.discovery.selectFirst'
+                  : 'agents.discovery.selectAll',
+              { limit: 256 },
             )}
           </Button>
         ) : null}
+        <p className='text-sm text-muted-foreground'>
+          {t('agents.discovery.selectionCount', {
+            count: selected.length,
+            limit: 256,
+          })}
+        </p>
         {filtered.some((group) => group[0].canEdit) ? (
           <Button
             disabled={
@@ -194,7 +202,11 @@ export function RunnerAgentsSection(): ReactElement {
                   >
                     {agent.canEdit ? (
                       <Checkbox
-                        disabled={preference.isPending}
+                        disabled={
+                          preference.isPending ||
+                          (selected.length >= 256 &&
+                            !selected.includes(agent.discoveryKey!))
+                        }
                         aria-label={t('agents.discovery.select', {
                           name: agent.name,
                         })}
@@ -202,7 +214,9 @@ export function RunnerAgentsSection(): ReactElement {
                         onCheckedChange={(checked) =>
                           setSelected((current) =>
                             checked
-                              ? [...new Set([...current, agent.discoveryKey!])]
+                              ? [
+                                  ...new Set([...current, agent.discoveryKey!]),
+                                ].slice(0, 256)
                               : current.filter(
                                   (key) => key !== agent.discoveryKey,
                                 ),
@@ -307,7 +321,10 @@ export function RunnerAgentsSection(): ReactElement {
       </Collapsible>
       {ignored.length > 0 ? (
         <Collapsible>
-          <CollapsibleTrigger className='flex items-center gap-2 py-1 text-sm text-muted-foreground'>
+          <CollapsibleTrigger
+            data-testid='agents-ignored-toggle'
+            className='flex items-center gap-2 py-1 text-sm text-muted-foreground'
+          >
             <ChevronDownIcon className='size-4' aria-hidden />
             {t('agents.discovery.ignored', { count: ignored.length })}
           </CollapsibleTrigger>
