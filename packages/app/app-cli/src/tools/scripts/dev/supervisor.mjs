@@ -109,7 +109,8 @@ export async function superviseDevelopment({
       // even if their immediate parent has already exited.
       child.stdout.pipe(process.stdout);
       child.stderr.pipe(process.stderr);
-      process.stdin.pipe(child.stdin);
+      // Background runs may receive EOF; internal restart input must remain writable.
+      process.stdin.pipe(child.stdin, { end: false });
       child.stdin.on('error', (error) => {
         if (error.code !== 'EPIPE' && error.code !== 'ERR_STREAM_DESTROYED') {
           console.error('[dev] Failed to forward input', error);
