@@ -399,10 +399,14 @@ export interface GitConnections {
     repo: { readonly connectionId: string | null; readonly apiBaseUrl: string },
     userId: string | null,
   ): Promise<ActingAuth>;
-  /** A push credential for some repositories of an app connection; null for a token connection. */
+  /**
+   * A push credential for some repositories of an app connection; null for a token connection. A kept token is reused
+   * while it has at least 30 minutes left; `refresh` mints a new one.
+   */
   pushCredential(
     connectionId: string,
     repos: readonly string[],
+    options?: { readonly refresh?: boolean },
   ): Promise<PushCredential | null>;
   webhookSecretOf(connection: ConnectionRow): string | null;
   /** Live, searched by name when `query` is given. */
@@ -1555,7 +1559,7 @@ export function createGitConnections(deps: {
       return connectionAuth(repo);
     },
 
-    async pushCredential(connectionId, repos) {
+    async pushCredential(connectionId, repos, options = {}) {
       const row = await findConnection(conn(), connectionId);
       if (!row) throw notFound();
       if (row.kind !== 'app' || repos.length === 0) return null;
@@ -1569,7 +1573,10 @@ export function createGitConnections(deps: {
       const token = await on(row).installationToken(
         appOf(row),
         row.installationId,
-        { repositories: [...new Set(repos)].sort() },
+        {
+          repositories: [...new Set(repos)].sort(),
+          ...(options.refresh ? { refresh: true } : {}),
+        },
       );
       return on(row).pushCredential(token);
     },

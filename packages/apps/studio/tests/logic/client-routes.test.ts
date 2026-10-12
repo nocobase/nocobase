@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders My tasks, Inbox and Dashboard without a Home entry, followed by the existing sections', () => {
+  it('orders My tasks, Inbox, Dashboard and My follow-ups without a Home entry, followed by the existing sections', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
@@ -96,6 +96,7 @@ describe('app client routes', () => {
       'navigation.myIssues',
       'navigation.inbox',
       'navigation.dashboard',
+      'navigation.followUps',
       'navigation.development',
       'navigation.releases',
       'navigation.agentTeam',
@@ -193,6 +194,8 @@ describe('app client routes', () => {
       { name: 'inbox', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
+      // My follow-ups opens with My issues' grant.
+      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-issues', authorizedAs: 'pm-issues' },
       { name: 'pm-issue-new', authorizedAs: 'pm-issues' },
       { name: 'pm-plan', authorizedAs: 'pm-issues' },
