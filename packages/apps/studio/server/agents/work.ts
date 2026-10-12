@@ -680,7 +680,7 @@ export function createAgentWork(deps: {
 
     async onIssueChanged(tx, change) {
       const { before, after } = change;
-      // The owner-change hook already withdrew/stopped work. PM-299 decides when the new owner resumes it.
+      // The owner-change hook withdrew queued work and requested cancellation; the waiting-for-takeover flow controls when work resumes.
       if (before && before.ownerUserId !== after.ownerUserId) return [];
       const from = agentOf(before);
       const to = agentOf(after);
