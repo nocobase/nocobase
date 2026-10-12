@@ -86,7 +86,7 @@ export function useCodeLocation(host: CodeLocationHost) {
   const connections: readonly GitConnectionChoice[] = status?.enabled
     ? connectionsByAge(status.connections)
     : [];
-  const agents = useAgentOptions({ type: 'runner' });
+  const agents = useAgentOptions();
   const runners = useRunnerOptions();
   const gitApi = useGitApi();
   const locations = codeLocationsFor(host);

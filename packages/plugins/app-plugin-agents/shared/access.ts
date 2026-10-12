@@ -54,12 +54,8 @@ export type SettingsAction = 'read' | 'manage';
  *
  * | Action               | What it allows                                                                              |
  * | -------------------- | ------------------------------------------------------------------------------------------- |
- * | `agents.agents/edit` | change an agent (its settings, skills and variables; archive, restore and delete it) and   |
- * |                      | edit a skill (save it, restore a version). Related to a user: the agents they own, the      |
- * |                      | skills they created. Creating agents and skills, and deleting skills, still needs `manage`. |
- *
- * An agent edited this way is still given only what its editor may grant: someone who does not manage agents adds to
- * an agent only the business actions they hold themselves, and does not hand the agent to another owner.
+ * | `agents.agents/edit` | edit a skill (save it, restore a version). Related to a user: the skills they created.      |
+ * |                      | Creating and deleting skills needs `manage`; so does changing an agent.                     |
  */
 export const BUSINESS_ACTIONS = {
   'agents.agents': ['edit'],

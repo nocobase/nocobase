@@ -1,9 +1,10 @@
 /**
  * Invitation emails through the notification plugin, on the channel `users.invitations.emailChannel` names
  * (`system-email` by default). A missing or disabled channel, or a delivery the plugin reports as failed, is an error,
- * so the inviter gets the link to forward instead.
+ * while domain-authorized inviters can still share the invitation link. Accepting a link does not verify the email address.
  */
 import {
+  NotificationTransportUnavailableError,
   notificationServiceToken,
   type NotificationConfig,
 } from '@nocobase/app-plugin-notification/server';
@@ -30,26 +31,26 @@ export function createNotificationMailer(
     return unconfiguredMailer;
   return {
     async send(email) {
-      const result = await app.container
+      const results = await app.container
         .resolve(notificationServiceToken)
-        .send({
-          idempotencyKey: email.idempotencyKey,
-          source: { type: 'user-invitation' },
-          messages: {
-            [name]: {
-              to: email.to,
-              subject: email.subject,
-              text: email.text,
-              html: email.html,
-            },
+        .sendTransient({
+          channel: name,
+          message: {
+            to: email.to,
+            subject: email.subject,
+            text: email.text,
+            html: email.html,
           },
+        })
+        .catch((error: unknown) => {
+          if (error instanceof NotificationTransportUnavailableError)
+            throw new Error('The invitation email channel is unavailable.');
+          throw new Error('The invitation email could not be submitted.');
         });
-      const failed = result.deliveries.find(
-        (delivery) => delivery.status === 'failed',
-      );
-      if (failed)
+      const failure = results.find((result) => result.status !== 'accepted');
+      if (failure)
         throw new Error(
-          failed.error?.message ?? 'The email was not delivered.',
+          `Invitation email ${failure.status} (${failure.error.category ?? 'unknown'}).`,
         );
     },
   };

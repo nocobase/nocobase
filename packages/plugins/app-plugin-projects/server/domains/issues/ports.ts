@@ -1,7 +1,7 @@
 /**
- * What issues depend on but other domains provide. Until those domains exist, the defaults below stand in:
+ * What issues depend on but other domains provide:
  *
- * - `StatusCatalogs`: the workflow of a project, provided by `domains/workflows`.
+ * - `StatusService`: the fixed statuses and the machine every move goes through, provided by `domains/statuses`.
  * - `IssueTriggers`: what a change or a comment starts, such as work for an executor of a registered kind. Bound by
  *   another plugin through `projectsTriggersToken`; default: nothing.
  * - `IssueRelations`: sub-issues and dependencies, provided by `domains/subtasks`. Default: none.
@@ -10,9 +10,7 @@
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { ApprovalRequest } from '../../../shared/approvals.js';
 import type { Attachment } from '../../../shared/attachments.js';
-import type { IssueChecklist } from '../../../shared/checklists.js';
 import type {
   IssueComment,
   MentionRef,
@@ -21,7 +19,6 @@ import type {
 import type {
   Issue,
   IssueDetail,
-  IssueStartOption,
   StatusCategory,
   StatusDefinition,
 } from '../../../shared/issues.js';
@@ -33,30 +30,28 @@ import type {
   LifecycleMachine,
   LifecycleRegistry,
 } from '../../lifecycle/index.js';
-import { invalid } from '../../kernel/errors.js';
 import type { Tx } from '../../kernel/tx.js';
 
-/** The rules a workflow may name, run in the transaction of the move. */
+/** The rules the fixed statuses name, run in the transaction of the move. */
 export type IssueRules = LifecycleRegistry<Issue, Tx>;
 
+/** The fixed statuses as one machine: who may move an issue where, and what entering a status does. */
 export interface StatusCatalog {
   readonly statuses: readonly StatusDefinition[];
-  /** Where a new issue starts. */
-  readonly initialStatus: string;
-  /** The ways a new issue may start, for the New issue form (`IssueStarts`). */
-  readonly starts: readonly IssueStartOption[];
   category(key: string): StatusCategory | null;
-  /** Who may move an issue where; every status change goes through `move` with it and `rules`. */
+  /** Every status change goes through `move` with it and `rules`. */
   readonly machine: LifecycleMachine;
   readonly rules: IssueRules;
 }
 
-export interface StatusCatalogs {
-  /** The workflow of a project; `null` is the workflow of issues without one. */
-  forProject(
-    conn: DatabaseConnection,
-    projectId: string | null,
-  ): Promise<StatusCatalog>;
+/** The fixed statuses (`shared/statuses.ts`), and where principals of each kind may move an issue. */
+export interface StatusService {
+  list(): readonly StatusDefinition[];
+  category(key: string): StatusCategory | null;
+  /** The statuses a principal of `kind` may move an issue in `from` to, in order; `mayMove` is not asked. */
+  allowedMoves(kind: string, from: string): string[];
+  /** The machine as the kinds and status events registered now make it. */
+  catalog(): StatusCatalog;
 }
 
 export interface IssueChange {
@@ -68,39 +63,9 @@ export interface IssueChange {
   readonly start: boolean;
 }
 
-/** Status changes held for approval (`domains/approvals`). */
-export interface IssueApprovals {
-  /** Holds the change; answers the pending request. */
-  request(
-    tx: Tx,
-    input: {
-      readonly issue: Issue;
-      readonly toStatus: string;
-      readonly actor: Actor;
-      readonly approvers: readonly string[];
-      readonly approverIds: readonly string[];
-    },
-  ): Promise<ApprovalRequest>;
-  /** The issue is in `statusKey` now: requests to leave another status are stale, except the one being applied. */
-  supersede(
-    tx: Tx,
-    issueId: string,
-    statusKey: string,
-    except?: string,
-  ): Promise<void>;
-}
-
-export const noApprovals: IssueApprovals = {
-  request: () =>
-    Promise.reject(
-      invalid('APPROVAL_UNAVAILABLE', 'Approvals are not available.'),
-    ),
-  supersede: () => Promise.resolve(),
-};
-
 /**
- * What the issue page and the list show beside the issue: the current checklist, a status change waiting for approval,
- * sub-issues and dependencies, the newest threads and who follows it.
+ * What the issue page and the list show beside the issue: sub-issues and dependencies, the newest threads, its files
+ * and who follows it.
  */
 export interface IssueExtras {
   threads(
@@ -118,18 +83,6 @@ export interface IssueExtras {
     conn: DatabaseConnection,
     issue: Issue,
   ): Promise<IssueSubscriber[]>;
-  checklist(
-    conn: DatabaseConnection,
-    issue: Issue,
-  ): Promise<IssueChecklist | null>;
-  pendingApproval(
-    conn: DatabaseConnection,
-    issue: Issue,
-  ): Promise<ApprovalRequest | null>;
-  recentApprovals(
-    conn: DatabaseConnection,
-    issue: Issue,
-  ): Promise<ApprovalRequest[]>;
   relations(
     conn: DatabaseConnection,
     viewer: Viewer,
@@ -164,6 +117,11 @@ export interface CommentChange {
   /** The comment it answers, if it is a reply. */
   readonly parent: IssueComment | null;
   readonly actor: Actor;
+  /**
+   * The person the comment was written for: its writer, or for an agent's the person its run acts for. Null when it
+   * was written through `CommentWriter`, which names no person.
+   */
+  readonly userId: string | null;
   /** Every principal the comment mentions, of any kind. */
   readonly mentions: readonly MentionRef[];
 }
@@ -173,6 +131,8 @@ export interface CommentChange {
  * caller's transaction.
  */
 export interface IssueRelations {
+  /** Before issue/counter writes; held until the outer transaction ends. Pass false when adding no waits. */
+  lock(tx: Tx, advance?: boolean): Promise<void>;
   /** A new issue: 400 unless every `blockedBy` is an issue the viewer sees; inserts them, then checks for a cycle. */
   created(
     tx: Tx,
@@ -196,6 +156,7 @@ export interface IssueRelations {
 }
 
 export const noRelations: IssueRelations = {
+  lock: () => Promise.resolve(),
   created: () => Promise.resolve(),
   placed: () => Promise.resolve(),
   changed: () => Promise.resolve(),
@@ -247,7 +208,10 @@ export const noTriggers: IssueTriggers = {
   onIssueChanged: () => Promise.resolve(),
 };
 
-export function isTerminal(catalog: StatusCatalog, key: string): boolean {
+export function isTerminal(
+  catalog: Pick<StatusCatalog, 'category'>,
+  key: string,
+): boolean {
   const category = catalog.category(key);
   return category === 'done' || category === 'closed';
 }

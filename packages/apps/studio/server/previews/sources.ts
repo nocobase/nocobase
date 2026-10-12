@@ -1,13 +1,9 @@
 /**
  * What previews and deployment marks read of the plugins Studio assembles, straight from their tables on the caller's
  * connection (Studio owns the join, not the plugins): issues, and the newest commits agent runs pushed for issues
- * (`agRunRepos`, the agents plugin's record of what a run reported). A status's category comes from the projects
- * plugin's own services, as workflows can be edited.
+ * (`agRunRepos`, the agents plugin's record of what a run reported). A status's category is the fixed statuses'.
  */
-import type {
-  Projects,
-  Viewer,
-} from '@nocobase/app-plugin-projects/server/tokens';
+import type { Viewer } from '@nocobase/app-plugin-projects/server/tokens';
 import {
   BUSINESS_KEYS,
   noSettings,
@@ -15,6 +11,7 @@ import {
   type Scope,
 } from '@nocobase/app-plugin-projects/shared/access';
 import type { StatusCategory } from '@nocobase/app-plugin-projects/shared/issues';
+import { FIXED_STATUSES } from '@nocobase/app-plugin-projects/shared/statuses';
 import type { DatabaseConnection, Row } from '@nocobase/db';
 
 /** The projects plugin's subject kind of runs on issues (`../agents/catalog/triggers.ts`). */
@@ -179,14 +176,7 @@ export function systemViewer(): Viewer {
   };
 }
 
-/** The category of each status of the project's workflow. */
-export async function categoriesOf(
-  projects: Pick<Projects, 'issueQueries'>,
-  projectId: string | null,
-): Promise<Map<string, StatusCategory>> {
-  const statuses = await projects.issueQueries.statuses(
-    systemViewer(),
-    projectId,
-  );
-  return new Map(statuses.map((status) => [status.key, status.category]));
+/** The category of each of the fixed statuses. */
+export function categoriesOf(): Map<string, StatusCategory> {
+  return new Map(FIXED_STATUSES.map((status) => [status.key, status.category]));
 }

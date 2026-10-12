@@ -40,33 +40,6 @@ describe('intake requires a runnable handoff', () => {
     await expectNothingStarted();
   });
 
-  it('explains a missing online model instead of blaming runners', async () => {
-    const id = await h.createAgent({ type: 'online', modelEntries: [] });
-    await h.agents.chat.updateSettings('admin', { defaultAgentId: id });
-    const response = await submit();
-    expect(response.status).toBe(409);
-    expect(response.body.error.reason).toBe('INTAKE_MODEL_MISSING');
-    await expectNothingStarted();
-  });
-
-  it('explains an unavailable online model', async () => {
-    const service = await h.agents.online.services.create({
-      title: 'Local',
-      provider: 'openai-compatible',
-      baseUrl: 'http://127.0.0.1:9/v1',
-      models: [{ value: 'mock-model', label: 'Mock model' }],
-    });
-    const id = await h.createAgent({
-      type: 'online',
-      modelEntries: [{ modelService: service.name, model: 'mock-model' }],
-    });
-    await h.agents.online.services.remove(service.name);
-    const response = await submit(id);
-    expect(response.status).toBe(409);
-    expect(response.body.error.reason).toBe('INTAKE_MODEL_UNAVAILABLE');
-    await expectNothingStarted();
-  });
-
   it('explains an absent runner and creates no queued work', async () => {
     const id = await h.createAgent();
     const response = await submit(id);
@@ -75,10 +48,25 @@ describe('intake requires a runnable handoff', () => {
     await expectNothingStarted();
   });
 
-  it('refuses agents the caller cannot invoke', async () => {
-    const id = await h.createAgent({ access: 'ownerOnly' });
+  it('explains an absent runner for the default agent too', async () => {
+    await h.createAgent();
+    const response = await submit();
+    expect(response.status).toBe(409);
+    expect(response.body.error.reason).toBe('INTAKE_NO_RUNNER');
+    await expectNothingStarted();
+  });
+
+  it('refuses an agent that is not enabled', async () => {
+    const id = await h.createAgent();
+    await h.database
+      .connection()
+      .query.updateTable('agAgents')
+      .set({ status: 'disabled' })
+      .where('id', '=', id)
+      .execute();
     const response = await submit(id, 'bob');
     expect(response.status).toBe(403);
+    expect(response.body.error.reason).toBe('INTAKE_AGENT_UNAVAILABLE');
     await expectNothingStarted();
   });
 });

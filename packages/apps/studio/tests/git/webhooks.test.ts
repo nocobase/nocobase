@@ -10,7 +10,6 @@ import type { ScheduleExecutor } from '@nocobase/jobs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PullRequestMergeBlocker } from '../../shared/git.js';
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import { createGitPoller } from '../../server/git/poller.js';
 import { verifyWebhookSignature } from '../../server/git/github.js';
 import { createWebhookRouter } from '../../server/git/routes.js';
@@ -58,13 +57,6 @@ let h: BridgeHarness;
 beforeEach(async () => {
   h = await createBridgeHarness();
   for (const id of ['alice', 'bob']) await h.addUser(id);
-  h.roles.set('alice', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
-  const software = (await h.projects.workflows.list(h.viewer('alice'))).find(
-    (workflow) => workflow.builtInKey === 'software',
-  )!;
-  await h.projects.workflows.setDefault(h.viewer('alice'), software.id);
-  h.roles.delete('alice');
 });
 afterEach(() => h.close());
 
@@ -83,13 +75,13 @@ async function move(issue: Pick<Issue, 'id'>, statusKey: string) {
   });
 }
 
-/** An issue alice owns, in `statusKey` of the Software development workflow. */
-async function issueIn(statusKey: 'todo' | 'in_progress' | 'in_review') {
+/** An issue alice owns, in `statusKey`. */
+async function issueIn(statusKey: 'backlog' | 'in_progress' | 'in_review') {
   const issue = await h.projects.issues.create(alice(), {
     title: 'Fix login',
     start: false,
   });
-  if (statusKey !== 'todo') await move(issue, 'in_progress');
+  if (statusKey !== 'backlog') await move(issue, 'in_progress');
   if (statusKey === 'in_review') await move(issue, 'in_review');
   return issue;
 }
@@ -591,8 +583,17 @@ describe('webhook events', () => {
     expect(linked).toMatchObject([
       { number: 2, state: 'open', linkedBy: { type: 'system' } },
     ]);
-    // The payload is the read: GitHub was not asked.
-    expect(h.github.requests.length).toBe(before);
+    // The snapshot comes from the payload; the only fresh reads reconcile its preview label.
+    expect(h.github.requests.slice(before).length).toBeGreaterThan(0);
+    expect(
+      h.github.requests
+        .slice(before)
+        .every(
+          (request) =>
+            request.method === 'GET' &&
+            request.path === `/repos/${REPO}/pulls/2`,
+        ),
+    ).toBe(true);
     expect(h.port.sent.map((notice) => notice.decisionKey)).toContain(
       `pr:${linked[0]!.id}:${issue.id}`,
     );
@@ -636,6 +637,10 @@ describe('webhook events', () => {
     ).toMatchObject({ ignored: true, reason: 'notLinked' });
     expect(
       (await deliver(row, 'pull_request', pullPayload(3, 'labeled'))).body.data,
+    ).toMatchObject({ ignored: true, reason: 'notLinked' });
+    expect(
+      (await deliver(row, 'pull_request', pullPayload(3, 'assigned'))).body
+        .data,
     ).toMatchObject({ ignored: true, reason: 'unsupportedAction' });
     expect(await findPullRequest(h.projects.tx.read(), row.id, 3)).toBeNull();
   });
@@ -1027,13 +1032,43 @@ describe('repository settings', () => {
       }),
     ).rejects.toThrow();
   });
+
+  it('wakes the project manager on passing checks by default, and lets the repository turn it off', async () => {
+    const workdir = await resource();
+    const path = `/git/resources/${workdir.id}`;
+    const read = await h.request('GET', path, { user: 'alice' });
+    expect(read.status).toBe(200);
+    expect(read.body.data).toMatchObject({
+      wakeOnChecks: true,
+      wakeOnConflict: true,
+      wakeOnChecksPassed: true,
+    });
+    const saved = await h.request('PATCH', path, {
+      user: 'alice',
+      body: { wakeOnChecksPassed: false },
+    });
+    expect(saved.status).toBe(200);
+    expect(saved.body.data).toMatchObject({
+      wakeOnChecks: true,
+      wakeOnChecksPassed: false,
+    });
+    expect(
+      (await h.request('GET', path, { user: 'alice' })).body.data
+        .wakeOnChecksPassed,
+    ).toBe(false);
+    const invalid = await h.request('PATCH', path, {
+      user: 'alice',
+      body: { wakeOnChecksPassed: 'no' },
+    });
+    expect(invalid.status).toBe(400);
+  });
 });
 
 describe('merge preflight', () => {
   async function linkedPull(
     number: number,
     pull: Parameters<BridgeHarness['github']['addPull']>[1] = { number },
-    statusKey: 'todo' | 'in_progress' | 'in_review' = 'in_review',
+    statusKey: 'backlog' | 'in_progress' | 'in_review' = 'in_review',
   ) {
     const issue = await issueIn(statusKey);
     h.github.addPull(REPO, {
@@ -1120,7 +1155,7 @@ describe('merge preflight', () => {
     expect(
       (await preflight(moves.issue, moves.pullRequest.id)).statusAfter,
     ).toEqual({ statusKey: 'done', statusName: 'Done', keepReason: null });
-    const early = await linkedPull(31, { number: 31 }, 'todo');
+    const early = await linkedPull(31, { number: 31 }, 'backlog');
     expect(
       (await preflight(early.issue, early.pullRequest.id)).statusAfter,
     ).toEqual({

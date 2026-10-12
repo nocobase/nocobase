@@ -1,0 +1,34 @@
+name: V3 Skills Sync
+on:
+  push:
+    branches: [v3-develop]
+    paths:
+      - 'skills/**'
+      - '.github/workflows/v3-skills-sync.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: v3-skills-sync-notification
+  cancel-in-progress: false
+jobs:
+  notify:
+    if: github.repository == 'nocobase/nocobase' && github.ref == 'refs/heads/v3-develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create narrowly scoped distribution token
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: skills-v3
+          permission-contents: write
+      - name: Notify the Skills distribution repository
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          gh api --method POST repos/nocobase/skills-v3/dispatches -f event_type=skills-updated
+          echo 'Sent skills-updated to nocobase/skills-v3. Check its Sync NocoBase 3 Skills run for the synchronization result.' >> "$GITHUB_STEP_SUMMARY"

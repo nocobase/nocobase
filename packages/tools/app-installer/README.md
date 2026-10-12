@@ -1,10 +1,25 @@
 # @nocobase/app-installer
 
-Installs, upgrades and rolls back a NocoBase 3 application on a server, and runs it under pm2. It installs a deployment archive you build in the application project with `pnpm build --tar`: the server unpacks it and runs it, and needs neither the sources nor pnpm.
+Installs, upgrades and rolls back a NocoBase 3 application on a server, and runs it under pm2. Use `--app studio` to download and build the published `@nocobase/studio` application on the server, or `--archive` to unpack a deployment archive built elsewhere with `pnpm build --tar`. Only npm application installs need pnpm (11 or later); neither route needs a repository checkout.
 
 Each installation lives in a directory of its own, with its own port and pm2 process, so one server can run several. Docker remains the other way to run an application.
 
 Earlier versions could also build the published Hub template on the server (`--template hub`). That source is gone: an installation recorded as built from a template is refused with `STATE_UNSUPPORTED`, and stays manageable with the app-installer version that installed it.
+
+## Published applications
+
+```bash
+npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer install /srv/nocobase/studio --app studio --origin https://studio.example.com
+# Equivalent application name: --app @nocobase/studio
+# Select a version or tag: --app studio@beta or --app @nocobase/studio@<version>
+npx --yes --registry=https://registry.npmjs.org @nocobase/app-installer upgrade --dir /srv/nocobase/studio --yes
+```
+
+Bare application names expand to `@nocobase/<name>`. Other publishers use the full scoped name, such as `--app @acme/crm`. Choose exactly one of `--app` and `--archive`; `--template` is not supported. A published application includes its buildable sources, development dependencies, `build` script and `nocobase.templateKind: app`. The installer preserves its package name and version, installs dependencies and builds its deployment archive in a temporary directory, then removes the sources and build dependencies. The application package and dependencies execute their normal install/build scripts, so choose a publisher you trust. A requested database driver must be declared by the application package.
+
+`--registry` (or `NOCOBASE_REGISTRY`) selects the registry used for the application and its dependencies and is saved in `installer.json`. npm and pnpm use the service user's registry credentials. Installing an npm application requires npm and pnpm 11+ on PATH, in addition to Node and pm2. The build needs more memory, disk space and time than unpacking an archive.
+
+An npm installation records `source.kind: app` and the full package name. `upgrade` resolves that package's `latest` tag; `--to <version or tag>` selects another release for that operation, and `--rebuild` rebuilds the installed version for the current server. An install with `@beta` or an exact version does not pin future upgrades: use `--to beta` or `--to <version>` when needed. The installed version is a no-op unless rebuilding or adapting to a changed Node major. Downgrades require rollback. The new build completes while the previous release keeps serving; configuration, SQLite backup, migration, health checks and rollback use the same path as archive upgrades. Archive installations still require `upgrade --archive` and cannot switch source kinds in place.
 
 ## Requirements
 
@@ -198,3 +213,42 @@ Under `--json`, a failure prints `ok: false` and `status: "failure"` with `error
 | `UNEXPECTED`            | `1`  | An error the installer does not recognise. The message is all there is; report it.                                                                                                                                                                                                                         |
 | `UPGRADE_ROLLED_BACK`   | `3`  | The new release failed after the switch; the previous one runs again, on the restored databases when the new one may have migrated them.                                                                                                                                                                   |
 | `ROLLBACK_FAILED`       | `4`  | The application is down. Follow the suggestions: read the log, fix the cause, and run `rollback` again, which retries the restore.                                                                                                                                                                         |
+
+## SSH deployment without server internet access
+
+Build the application locally for the server's platform, then deploy its archive. The local installer packages its own installed runtime dependencies and uploads them with the application; it does not invoke npm, npx or pnpm on the server. The remote Linux machine needs Node.js 24+, tar and pm2 on the non-interactive SSH session's PATH. It needs neither an Agent nor a Skill. External services that the application uses must remain reachable.
+
+```bash
+app-installer deploy --ssh deploy@server --dir /srv/apps/crm \
+  --archive storage/exports/dist.tar.gz --origin https://crm.example.com --json
+app-installer status --ssh deploy@server --dir /srv/apps/crm --json
+app-installer upgrade --ssh deploy@server --dir /srv/apps/crm \
+  --archive storage/exports/dist.tar.gz --json
+app-installer rollback --ssh deploy@server --dir /srv/apps/crm --json
+```
+
+These commands are invoked through the installed `app-installer` binary on the local machine. `deploy` selects install when there is no `installer.json`, and upgrade when there is one. `install --ssh` always requests a fresh installation. An existing target retains its configuration: omit install-only flags, such as `--origin`, `--port` and `--set`, when deploying an update. Review an upgrade or rollback's confirmation notes and repeat with `--yes` to proceed. The remote operation always uses JSON, so it never waits for an invisible terminal prompt. Existing SQLite backup, external database `--backup-done`, release retention and rollback rules apply unchanged.
+
+| Flag             | Meaning                                                             |
+| ---------------- | ------------------------------------------------------------------- |
+| `--ssh`          | `user@host` or an alias from SSH config; required for `deploy`      |
+| `--ssh-port`     | Override the SSH port                                               |
+| `--ssh-identity` | Local private key file; otherwise use SSH config or the SSH agent   |
+| `--ssh-config`   | Local SSH config file, including aliases and ProxyJump              |
+| `--ssh-timeout`  | Maximum seconds for each transfer or remote execution, default 1800 |
+
+SSH uses batch authentication and strict host-key checking. Establish and verify the server's host key in known_hosts beforehand; the installer never disables verification or asks for an SSH password. Use system SSH configuration for jump hosts and authentication. `--dir` must be an explicit absolute remote path; `--archive`, identity and config paths are local. Configure the remote account's non-interactive PATH for Node and pm2, without relying on an interactive shell's version-manager initialization.
+
+`--set-from-env key=VARIABLE` reads a local environment variable and sends its value through encrypted SSH stdin, not command arguments or a temporary configuration file. The remote child receives only generated secret environment names. Do not put passwords in `--set`. Application configuration and secrets remain in the installation's persistent configuration as with a local install.
+
+Before uploading, the installer checks the remote runtime, archive platform, writable parent and available disk space. Disk space is an estimate allowing twice the archive's expanded size plus installer overhead; large existing databases may require more space for backups. Uploaded files are checked with SHA-256 before execution. `--app`, npm upgrades and `--rebuild` are not supported remotely: build an archive locally instead. A remote operation that succeeds but whose public health URL is unreachable returns a warning and `result.remote.publicHealth: false`; private URLs may legitimately be unreachable from the local machine.
+
+If SSH disconnects or times out after execution starts, `REMOTE_STATE_UNKNOWN` means the remote process may still be running. Query `status --ssh` before retrying, and inspect `pending` plus the persistent application logs if necessary. Do not assume the operation failed or automatically run another deployment. Pre-execution transfer failures leave the application unchanged. Successful operations remove their randomly named `/tmp/nocobase-deploy-*` directory; failures retain it for diagnosis and return its path. It contains archives and installer code, not transported secret values. Remove that directory only after confirming no remote operation is using it. Retrying creates a new transfer; resumable uploads are not implemented.
+
+### Export an offline installer
+
+```bash
+app-installer bundle --out installer.tar.gz --json
+```
+
+This packages the currently installed installer and its runtime dependency graph without querying a registry. Extract it on the server, then use `node installer/bin/run.js install ... --archive ... --json`, or `status`, `upgrade` and `rollback` the same way. In a source checkout, build app-installer and its workspace dependencies before bundling. The bundle does not include Node or pm2, and recovery suggestions written as `npx ...` must be invoked through this offline entry instead on a disconnected server. SSH commands create and transfer this bundle automatically.

@@ -193,6 +193,7 @@ export const MarksQuery = z.object({ issueIds: idList(MARKS_MAX) });
 export const UpdateRepositoryInput = z.strictObject({
   webhookSecret: z.string().nullable().optional(),
   wakeOnChecks: z.boolean().optional(),
+  wakeOnChecksPassed: z.boolean().optional(),
   wakeOnConflict: z.boolean().optional(),
   branchRules: z.array(z.string()).optional(),
 });
@@ -504,6 +505,7 @@ export const IssuePullRequestSchema: z.ZodType<IssuePullRequest> = z
       id: z.string().nullable(),
       name: z.string().nullable(),
     }),
+    previewLabelSyncFailed: z.boolean().optional(),
     autoCompleteDisabled: z.boolean(),
     linkedAt: dateTime(),
     mergeBlocker: mergeBlocker.meta({
@@ -580,6 +582,7 @@ export const GitRepoSettingsSchema: z.ZodType<GitRepoSettings> = z.object({
   connection: GitConnectionChoiceSchema.nullable(),
   branchRules: z.array(z.string()),
   wakeOnChecks: z.boolean(),
+  wakeOnChecksPassed: z.boolean(),
   wakeOnConflict: z.boolean(),
   polledAt: dateTime().nullable(),
   pollError: z.string().nullable(),

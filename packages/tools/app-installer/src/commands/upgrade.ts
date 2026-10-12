@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
 import { Flags } from '@oclif/core';
+import { buildApp, resolveApp } from '../lib/app-source.ts';
 import { pendingTaskCount, runAppCli } from '../lib/app-cli.ts';
 import {
   backupForUpgrade,
@@ -70,6 +71,15 @@ export const UPGRADE_FLAGS = {
     description:
       'Installation root managed by app-installer. Defaults to the current directory.',
   }),
+  to: Flags.string({
+    description:
+      'Version or dist-tag of an npm application to install; defaults to latest.',
+  }),
+  rebuild: Flags.boolean({
+    default: false,
+    description:
+      'Build the currently installed npm application version again for this machine.',
+  }),
   archive: Flags.string({
     description:
       'The new deployment archive, built by `pnpm build --tar` for this machine.',
@@ -105,6 +115,8 @@ export interface UpgradeInput {
   flags: {
     dir?: string;
     archive?: string;
+    to?: string;
+    rebuild?: boolean;
     'backup-done': boolean;
     'health-timeout': number;
     keep: number;
@@ -385,10 +397,24 @@ export async function upgrade(
     // Read under the lock: a run that waited on it must see what the previous one wrote.
     const state = await readState(layout);
     assertNoPending(state, root);
-    const archive = resolveArchivePath(
-      deps.cwd ?? process.cwd(),
-      requireArchive(state, root, flags),
-    );
+    const npmApp = state.source.kind === 'app' ? state.source : undefined;
+    if (
+      (npmApp && flags.archive !== undefined) ||
+      (!npmApp && (flags.to !== undefined || flags.rebuild)) ||
+      (flags.to !== undefined && flags.rebuild)
+    ) {
+      throw new InstallerError(
+        'INVALID_USAGE',
+        'Use --archive for archive installations, or --to / --rebuild for npm applications; --to and --rebuild cannot be combined.',
+        { exitCode: EXIT_INVALID },
+      );
+    }
+    const archive = npmApp
+      ? undefined
+      : resolveArchivePath(
+          deps.cwd ?? process.cwd(),
+          requireArchive(state, root, flags),
+        );
     const env = await readAppEnv(layout);
     const from = findRelease(state, state.current);
     if (!from) {
@@ -450,8 +476,25 @@ export async function upgrade(
     await checkPm2Ownership(service);
 
     // What to switch to: an archive has to be unpacked first, because only its manifest says which release it is.
-    reporter.progress(`Unpacking ${archive}`);
-    const unpacked = await unpackRelease({ layout, archive });
+    const app = npmApp
+      ? await resolveApp(
+          {
+            package: npmApp.package,
+            selector: flags.rebuild ? from.version : (flags.to ?? 'latest'),
+          },
+          state.registry,
+          run,
+        )
+      : undefined;
+    if (app) {
+      if ((compareVersions(app.selector, from.version) ?? 0) < 0)
+        refuseDowngrade(app.selector);
+      if (app.selector === from.version && !flags.rebuild && !nodeChanged)
+        return noop();
+    }
+    const unpacked = app
+      ? await buildApp({ app, registry: state.registry, layout, run, reporter })
+      : await unpackRelease({ layout, archive: archive! });
     const discard = async () => {
       if (!unpacked.reused) {
         await rm(path.dirname(unpacked.dir), {

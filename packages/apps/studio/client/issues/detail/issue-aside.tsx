@@ -1,8 +1,8 @@
 /**
  * The projects plugin's cards of an issue's side column, drawn with the installed `issue-detail` block over the
  * plugin's headless hooks, in its words: the editable properties, who follows the issue, and when it was created and
- * changed. Setting an agent as the executor, or moving an issue an agent executes out of backlog, asks "Start now?"
- * first (`useConfirmedUpdate`). Controls the server would refuse are disabled rather than hidden: every field without
+ * changed. Among the agents only the project manager may be the executor ("Arrange"); people may be too. Moving an
+ * issue to In progress starts the work. Controls the server would refuse are disabled rather than hidden: every field without
  * `issues/edit`; the owner and the done or closed statuses also for anyone but the owner, the project lead and whoever
  * holds them on every issue.
  */
@@ -13,9 +13,7 @@ import {
   isClosing,
   STAGE_MAX,
   statusTone,
-  useConfirmedUpdate,
   useExecutorOptions,
-  useKindLabel,
   useStatusName,
   type IssuePageActions,
   type IssueUpdate,
@@ -36,6 +34,8 @@ import { useQuery } from '@tanstack/react-query';
 import { enUS, zhCN } from 'date-fns/locale';
 import type { ReactElement } from 'react';
 
+import { PreviewPreferenceField } from '../../previews/preference-field.js';
+
 import { IssuePriority, IssueStatusBadge } from '@/components/issue-table';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,7 +51,6 @@ import {
 import {
   IssueDates,
   IssueFollowers,
-  IssueStartDialog,
   PropertyColorPicker,
 } from '@/extensions/nocobase-issue-detail/issue-properties';
 import { cn } from 'cn';
@@ -73,7 +72,7 @@ const DOT: Readonly<Record<string, string>> = {
 
 const NONE = 'none';
 
-/** The editable properties, then "Start now?" when a change would start an agent. */
+/** The editable properties. */
 export function IssuePropertiesCard({
   detail,
   update,
@@ -83,12 +82,11 @@ export function IssuePropertiesCard({
   readonly update: IssueUpdate;
   readonly pageActions: IssuePageActions;
 }): ReactElement {
-  const { i18n } = useTranslation();
+  const { i18n, t: studioT } = useTranslation();
   const { t, detail: labels } = useIssuePageWording();
   const api = usePmApi();
   const viewer = useViewer();
   const statusName = useStatusName();
-  const kindLabel = useKindLabel();
   const initExecutor = useInitExecutorLabel(detail);
   const members = useQuery({
     queryKey: pmKeys.members,
@@ -104,7 +102,6 @@ export function IssuePropertiesCard({
   });
   const others = useExecutorOptions();
   const executorAgent = useExecutorAgent();
-  const confirmed = useConfirmedUpdate({ issue: detail, others, update });
 
   const canEdit = canEditIssues(viewer);
   const canClose = canEdit && canCloseIssue(viewer, detail);
@@ -126,11 +123,10 @@ export function IssuePropertiesCard({
     members.data?.find((member) => `user:${member.userId}` === value)?.name ??
     detail.executorName ??
     value;
-  const request = confirmed.startRequest;
-  const requestKind = request ? kindLabel(request.kind) : '';
 
   return (
     <PropertyCard title={labels.properties} busy={busy} labels={labels}>
+      <PreviewPreferenceField issueId={detail.id} />
       <PropertyRow label={t('properties.status')} htmlFor='pm-prop-status'>
         <PropertySelect
           id='pm-prop-status'
@@ -146,7 +142,7 @@ export function IssuePropertiesCard({
           disabled={disabled}
           renderValue={(key) => <IssueStatusBadge status={status(key)} />}
           onChange={(statusKey) => {
-            if (statusKey) confirmed.apply({ statusKey });
+            if (statusKey) update.mutate({ statusKey });
           }}
         />
       </PropertyRow>
@@ -207,7 +203,10 @@ export function IssuePropertiesCard({
           </Button>
         </PropertyRow>
       ) : null}
-      <PropertyRow label={t('properties.executor')} htmlFor='pm-prop-executor'>
+      <PropertyRow
+        label={studioT('issuePage.arrange')}
+        htmlFor='pm-prop-executor'
+      >
         <PropertySelect
           id='pm-prop-executor'
           noneLabel={initExecutor ?? t('executor.none')}
@@ -240,11 +239,11 @@ export function IssuePropertiesCard({
           }
           onChange={(value) => {
             if (value === null || value === NONE) {
-              confirmed.apply({ executor: null });
+              update.mutate({ executor: null });
               return;
             }
             const separator = value.indexOf(':');
-            confirmed.apply({
+            update.mutate({
               executor: {
                 type: value.slice(0, separator),
                 id: value.slice(separator + 1),
@@ -358,18 +357,6 @@ export function IssuePropertiesCard({
           onChange={(dueDate) => update.mutate({ dueDate })}
         />
       </PropertyRow>
-      <IssueStartDialog
-        open={request !== null}
-        description={t('start.descriptionFor', {
-          identifier: detail.identifier,
-          kind: requestKind,
-        })}
-        workersTitle={t('start.workers', { kind: requestKind })}
-        workers={request?.names ?? []}
-        onDecide={confirmed.decide}
-        onCancel={confirmed.cancel}
-        labels={labels}
-      />
     </PropertyCard>
   );
 }

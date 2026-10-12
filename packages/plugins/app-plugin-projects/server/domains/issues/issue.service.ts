@@ -2,11 +2,6 @@
  * Issue writes: create, update, and an administrator's delete and restore. Each write records its activities and emits
  * `issue.changed` plus an event saying what happened, and hands the change to the triggers in the same transaction.
  */
-import type { ApprovalRequest } from '../../../shared/approvals.js';
-import {
-  isBuiltInEvent,
-  type WorkflowEvent,
-} from '../../../shared/workflows.js';
 import type {
   CreateIssueRequest,
   Executor,
@@ -50,7 +45,6 @@ import {
 import { moveIssue } from './issue.status.js';
 import {
   isTerminal,
-  type IssueApprovals,
   type IssueRelations,
   type IssueTriggers,
 } from './ports.js';
@@ -60,13 +54,8 @@ interface StartOption {
   readonly start?: boolean;
 }
 
-/**
- * The issue after an update. When the status change waits for approval, the issue is unchanged (nothing in the
- * request was applied) and `pendingApproval` is the request that holds it.
- */
-export type IssueUpdateOutcome = Issue & {
-  readonly pendingApproval?: ApprovalRequest;
-};
+/** The issue after an update. */
+export type IssueUpdateOutcome = Issue;
 
 export interface IssueService {
   create(
@@ -96,46 +85,29 @@ export interface IssueService {
   retract(viewer: Viewer, idOrKey: string): Promise<void>;
   restore(viewer: Viewer, idOrKey: string): Promise<Issue>;
   /**
-   * For the approvals domain, in its transaction: the move an approver accepted, checked again as the requester's
-   * (who may, and the guards) and recorded as the system's with the approver named. Null when it moved, else why not.
-   */
-  applyApproved(
-    tx: Tx,
-    request: {
-      readonly id: string;
-      readonly issueId: string;
-      readonly fromStatus: string;
-      readonly toStatus: string;
-      readonly requestedByType: string;
-      readonly requestedById: string;
-    },
-    approver: Actor,
-  ): Promise<{ readonly code: string; readonly message: string } | null>;
-  /**
-   * In the caller's transaction (the subtasks domain's, or a contributed event's through `workflowEvents.fire`): moves
-   * the issue where a workflow event takes it, as the system. The activity names the event and its cause, and is
-   * recorded as `cause.actor` when given (the person whose action the event reports). A guard's refusal is recorded
-   * as `auto_move_skipped` and nothing moves; without an event transition from its status nothing happens. A finished
-   * issue ignores the built-in events.
+   * In the caller's transaction (a registered status event's, through `statusEvents.fire`): moves the issue where the
+   * event takes it, as the system. The activity names the event and its cause, and is recorded as `cause.actor` when
+   * given (the person whose action the event reports). A refusal is recorded as `auto_move_skipped` and nothing moves;
+   * when the issue is in none of the event's `from` statuses nothing happens.
    */
   fireEvent(
     tx: Tx,
     issueId: string,
-    event: WorkflowEvent,
+    event: string,
     cause: EventCause,
   ): Promise<EventMove>;
   /**
-   * Where `fireEvent` would take the issue, without moving it: the status its workflow's transition on the event
-   * enters, or why there is none. Entry conditions are not checked, so a move this answers may still be refused.
+   * Where `fireEvent` would take the issue, without moving it: the status the event enters from the issue's status, or
+   * why there is none.
    */
   eventTarget(
     conn: Tx['conn'],
     issueId: string,
-    event: WorkflowEvent,
+    event: string,
   ): Promise<EventTarget>;
 }
 
-/** Where a workflow event would take an issue (`eventTarget`). */
+/** Where a status event would take an issue (`eventTarget`). */
 export type EventTarget =
   | {
       readonly issueId: string;
@@ -145,13 +117,13 @@ export type EventTarget =
   | {
       readonly issueId: string;
       readonly to: null;
-      /** As `EventMove`'s `ignored`: no such live issue, no transition on the event, or finished and built in. */
-      readonly reason: 'notFound' | 'noTransition' | 'finished';
+      /** As `EventMove`'s `ignored`: no such live issue, or no transition on the event from its status. */
+      readonly reason: 'notFound' | 'noTransition';
     };
 
-/** What made a workflow event happen, as the activity records it. */
+/** What made a status event happen, as the activity records it. */
 export interface EventCause {
-  /** The issue whose change caused it (the last sub-issue finished). */
+  /** The issue whose change caused it, if any. */
   readonly issueId?: string;
   /** Who the activity names; the system when left out. The move itself is always the system's. */
   readonly actor?: Actor;
@@ -161,7 +133,7 @@ export interface EventCause {
   readonly details?: Readonly<Record<string, unknown>>;
 }
 
-/** What a workflow event did to one issue. */
+/** What a status event did to one issue. */
 export type EventMove =
   | {
       readonly issueId: string;
@@ -172,15 +144,15 @@ export type EventMove =
   | {
       readonly issueId: string;
       readonly outcome: 'ignored';
-      /** No such live issue, no transition on the event from its status, or a finished issue and a built-in event. */
-      readonly reason: 'notFound' | 'noTransition' | 'finished';
+      /** No such live issue, or no transition on the event from its status. */
+      readonly reason: 'notFound' | 'noTransition';
     }
   | {
       readonly issueId: string;
       readonly outcome: 'refused';
       readonly from: string;
       readonly to: string;
-      /** The guard's code, such as `CHECKLIST_INCOMPLETE`, and its message. */
+      /** The refusal's code and message. */
       readonly code: string;
       readonly message: string;
     };
@@ -191,7 +163,6 @@ export interface IssueDeps extends FieldDeps {
   readonly activity: ActivityRecorder;
   readonly settings: Pick<SettingsService, 'allocateIssueNumber'>;
   readonly triggers: () => IssueTriggers;
-  readonly approvals: () => IssueApprovals;
   readonly relations: () => IssueRelations;
 }
 
@@ -229,20 +200,15 @@ export function createIssueService(deps: IssueDeps): IssueService {
     details = {},
   ) => deps.activity.record(tx.conn, { issueId, actor, action, details });
 
-  /** After an update is written: the triggers, the stale approvals, and what changed. */
+  /** After an update is written: the triggers, and what changed. */
   async function announce(
     tx: Tx,
     before: Issue,
     after: Issue,
     actor: Actor,
     start: boolean,
-    approvedRequest?: string,
   ): Promise<void> {
     await deps.triggers().onIssueChanged(tx, { before, after, actor, start });
-    if (before.statusKey !== after.statusKey)
-      await deps
-        .approvals()
-        .supersede(tx, after.id, after.statusKey, approvedRequest);
     await deps.relations().changed(tx, { before, after, actor });
     tx.emit({ type: 'issue.changed', issueId: after.id });
     for (const parentId of new Set([before.parentIssueId, after.parentIssueId]))
@@ -266,6 +232,13 @@ export function createIssueService(deps: IssueDeps): IssueService {
           { ...deps, conn: tx.conn, viewer },
           input,
         );
+        // Take the graph before the counter even without waits: a later plan row may add relationships.
+        await deps
+          .relations()
+          .lock(
+            tx,
+            Boolean(values.parentIssueId) || values.blockedBy.length > 0,
+          );
         const { number, identifier } =
           await deps.settings.allocateIssueNumber(tx);
         const id = deps.ids.next();
@@ -340,6 +313,18 @@ export function createIssueService(deps: IssueDeps): IssueService {
       return deps.tx.run(async (tx) => {
         const before = await requireVisible(tx.conn, viewer, idOrKey);
         requireEditor(viewer);
+        // Status and project changes can release waits. Take the graph guard
+        // before this issue's first write, in the same order as relationship edits and plan execution.
+        if (
+          patch.parentIssueId !== undefined ||
+          patch.stage !== undefined ||
+          (patch.statusKey !== undefined &&
+            patch.statusKey !== before.statusKey) ||
+          (patch.projectId !== undefined &&
+            patch.projectId !== before.projectId)
+        ) {
+          await deps.relations().lock(tx);
+        }
         const { values, activities, labelIds, status, placed } =
           await resolveUpdate(
             { ...deps, conn: tx.conn, viewer },
@@ -370,35 +355,15 @@ export function createIssueService(deps: IssueDeps): IssueService {
             await record(tx, before.id, viewer.actor, action, details);
           written = true;
         };
-        if (status) {
-          const moved = await moveIssue(deps, tx, {
+        if (status)
+          await moveIssue(deps, tx, {
             issue: before,
             catalog: status.catalog,
             to: status.to,
             actor: viewer.actor,
             write,
           });
-          if (moved.outcome === 'pending') {
-            const pendingApproval = await deps.approvals().request(tx, {
-              issue: before,
-              toStatus: status.to,
-              actor: viewer.actor,
-              approvers: moved.approvers,
-              approverIds: moved.approverIds,
-            });
-            return { ...before, pendingApproval };
-          }
-          if (moved.outcome === 'moved' && moved.approval !== 'none')
-            await record(
-              tx,
-              before.id,
-              viewer.actor,
-              moved.approval === 'self'
-                ? 'approval_self'
-                : 'approval_no_approver',
-              { from: before.statusKey, to: status.to },
-            );
-        } else await write();
+        else await write();
         if (!written) return before;
         const after = await reload(tx, before.id);
         if (placed) await deps.relations().placed(tx, after);
@@ -407,61 +372,11 @@ export function createIssueService(deps: IssueDeps): IssueService {
       });
     },
 
-    async applyApproved(tx, request, approver) {
-      const issue = await findIssue(tx.conn, request.issueId);
-      if (!issue || issue.deletedAt)
-        return { code: 'ISSUE_GONE', message: 'The issue was deleted.' };
-      if (issue.statusKey !== request.fromStatus)
-        return {
-          code: 'STATUS_CHANGED',
-          message: `The issue left ${request.fromStatus} meanwhile.`,
-        };
-      const catalog = await deps.statuses.forProject(tx.conn, issue.projectId);
-      try {
-        await moveIssue(deps, tx, {
-          issue,
-          catalog,
-          to: request.toStatus,
-          actor: { type: request.requestedByType, id: request.requestedById },
-          approved: true,
-          write: async () => {
-            const now = new Date().toISOString();
-            await updateIssue(tx.conn, issue.id, {
-              statusKey: request.toStatus,
-              updatedAt: now,
-              lastActivityAt: now,
-            });
-            await record(tx, issue.id, SYSTEM_ACTOR, 'status_changed', {
-              from: issue.statusKey,
-              to: request.toStatus,
-              requestId: request.id,
-              approvedById: approver.id,
-            });
-          },
-        });
-      } catch (error) {
-        if (error instanceof DomainError)
-          return { code: error.code, message: error.message };
-        throw error;
-      }
-      await announce(
-        tx,
-        issue,
-        await reload(tx, issue.id),
-        SYSTEM_ACTOR,
-        true,
-        request.id,
-      );
-      return null;
-    },
-
     async eventTarget(conn, issueId, event) {
       const issue = await findIssue(conn, issueId);
       if (!issue || issue.deletedAt)
         return { issueId, to: null, reason: 'notFound' };
-      const catalog = await deps.statuses.forProject(conn, issue.projectId);
-      if (isBuiltInEvent(event) && isTerminal(catalog, issue.statusKey))
-        return { issueId: issue.id, to: null, reason: 'finished' };
+      const catalog = deps.statuses.catalog();
       const to = catalog.machine.eventTarget(issue.statusKey, event);
       return to === null
         ? { issueId: issue.id, to: null, reason: 'noTransition' }
@@ -469,12 +384,12 @@ export function createIssueService(deps: IssueDeps): IssueService {
     },
 
     async fireEvent(tx, issueId, event, cause) {
+      // A contributed event batch enters here before its first issue write; subtask joins already hold the guard.
+      await deps.relations().lock(tx);
       const issue = await findIssue(tx.conn, issueId);
       if (!issue || issue.deletedAt)
         return { issueId, outcome: 'ignored', reason: 'notFound' };
-      const catalog = await deps.statuses.forProject(tx.conn, issue.projectId);
-      if (isBuiltInEvent(event) && isTerminal(catalog, issue.statusKey))
-        return { issueId: issue.id, outcome: 'ignored', reason: 'finished' };
+      const catalog = deps.statuses.catalog();
       const to = catalog.machine.eventTarget(issue.statusKey, event);
       if (to === null)
         return {
@@ -490,7 +405,6 @@ export function createIssueService(deps: IssueDeps): IssueService {
           to,
           actor: SYSTEM_ACTOR,
           sourceActor: recorded,
-          approved: true,
           event,
           write: async () => {
             const now = new Date().toISOString();
@@ -541,11 +455,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
       deps.tx.run(async (tx) => {
         const released: string[] = [];
         for (const before of await issuesExecutedBy(tx.conn, executor)) {
-          const catalog = await deps.statuses.forProject(
-            tx.conn,
-            before.projectId,
-          );
-          if (isTerminal(catalog, before.statusKey)) continue;
+          if (isTerminal(deps.statuses.catalog(), before.statusKey)) continue;
           const now = new Date().toISOString();
           await updateIssue(tx.conn, before.id, {
             executorType: null,
@@ -578,6 +488,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     async restore(viewer, idOrKey) {
       requireDeleter(viewer);
       return deps.tx.run(async (tx) => {
+        await deps.relations().lock(tx);
         const issue = await findIssue(tx.conn, idOrKey);
         if (!issue?.deletedAt) throw notFound('Deleted issue');
         const now = new Date().toISOString();
@@ -586,6 +497,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
           deletedById: null,
           updatedAt: now,
         });
+        await deps.relations().placed(tx, await reload(tx, issue.id));
         await record(tx, issue.id, viewer.actor, 'issue_restored');
         tx.emit({ type: 'issue.changed', issueId: issue.id });
         tx.emit({
@@ -606,6 +518,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
     retracted: boolean,
   ): Promise<void> {
     await deps.tx.run(async (tx) => {
+      await deps.relations().lock(tx);
       const issue = await requireVisible(tx.conn, viewer, idOrKey);
       if (
         retracted &&

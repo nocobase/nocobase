@@ -1,6 +1,6 @@
 /**
  * Sub-issues and dependencies. An issue may wait for others: `blockedBy` holds it until the other is finished (in a
- * done or closed status of its own workflow), `relatedTo` only links the two. Sub-issues with a stage form batches: a
+ * done or closed status), `relatedTo` only links the two. Sub-issues with a stage form batches: a
  * sub-issue waits until every sibling of a lower stage is finished.
  */
 import type { Executor, StatusDefinition } from './issues.js';
@@ -24,7 +24,7 @@ export interface IssueDependency {
   readonly issueId: string;
   readonly identifier: string;
   readonly title: string;
-  /** That issue's current status, from its own workflow (it may be in another project). */
+  /** That issue's current status, as it is now (it may be in another project). */
   readonly status: StatusDefinition;
   readonly type: DependencyType;
 }
@@ -48,7 +48,7 @@ export interface SubtaskSummary {
   readonly executorName: string | null;
   /** Unfinished issues it waits for. */
   readonly blockedCount: number;
-  /** Finished, by its own workflow. */
+  /** Finished: done or cancelled. */
   readonly terminal: boolean;
 }
 
@@ -61,4 +61,10 @@ export interface AddDependencyRequest {
   readonly dependsOnIssueId: string;
   /** `blockedBy` when left out. */
   readonly type?: DependencyType;
+}
+
+/** Changes a link in place; a stale type or an existing target relationship is a conflict. */
+export interface UpdateDependencyRequest {
+  readonly type: DependencyType;
+  readonly expectedType: DependencyType;
 }

@@ -574,7 +574,6 @@ function InitAgentField({
       <AgentPicker
         id='code-location-init-agent'
         agents={state.agents.agents}
-        type='runner'
         value={state.initAgentId || null}
         onSelect={state.setInitAgentId}
         labels={labels}

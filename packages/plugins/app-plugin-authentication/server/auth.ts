@@ -322,6 +322,13 @@ export class Auth {
     return this.auth.handler(request);
   }
 
+  passwordResetAvailable(): boolean {
+    return (
+      this.options.emailAndPassword?.enabled !== false &&
+      typeof this.options.emailAndPassword?.sendResetPassword === 'function'
+    );
+  }
+
   async getSession(
     headers: Headers,
     options: GetSessionOptions = {},
@@ -399,6 +406,19 @@ export class Auth {
       return invalidCsrfOrigin(context);
     }
 
+    // Match Better Auth's request context when no base URL is configured; never derive trust from the Origin header.
+    const requestBaseURL = authContext.options.baseURL
+      ? undefined
+      : getBaseURL(
+          undefined,
+          authContext.options.basePath,
+          context.req.raw,
+          undefined,
+          authContext.options.advanced?.trustedProxyHeaders,
+        );
+    const requestOrigin = requestBaseURL
+      ? getOrigin(requestBaseURL)
+      : undefined;
     // Better Auth also accepts per-request trusted origins. Its static context contains the
     // configured base URL, static origins, plugin origins, and BETTER_AUTH_TRUSTED_ORIGINS.
     const configuredOrigins = authContext.options.trustedOrigins;
@@ -409,6 +429,7 @@ export class Auth {
     const requestAuthContext = Object.create(authContext) as typeof authContext;
     requestAuthContext.trustedOrigins = [
       ...authContext.trustedOrigins,
+      ...(requestOrigin ? [requestOrigin] : []),
       ...mergedOrigins.filter(
         (origin): origin is string =>
           typeof origin === 'string' && Boolean(origin),

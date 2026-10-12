@@ -6,7 +6,7 @@ import { ciRunRoutes } from '../builds/ci-run-routes.js';
 import { buildsRoutes } from '../builds/routes.js';
 import { studioAgentsRoutes } from '../agents/routes.js';
 import { issueRunsRoutes } from '../agents/run-views.js';
-import { stageRunRoutes } from '../agents/stage-run-routes.js';
+import { projectManagerRoutes } from '../agents/manager/routes.js';
 import { gitOAuthRoutes, gitRoutes, gitWebhookRoutes } from '../git/routes.js';
 import { inboxRoutes } from '../inbox/routes.js';
 import { knowledgeViewRoutes } from '../knowledge/routes.js';
@@ -21,7 +21,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   inboxRoutes,
   studioAgentsRoutes,
   issueRunsRoutes,
-  stageRunRoutes,
+  projectManagerRoutes,
   reportsRoutes,
   releasesRoutes,
   ciRunRoutes,

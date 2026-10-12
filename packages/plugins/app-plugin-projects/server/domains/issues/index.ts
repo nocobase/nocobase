@@ -45,16 +45,14 @@ export { createIssueRoutes } from './issue.routes.js';
 export { createProjectIssues } from './issue.projects.js';
 export {
   isTerminal,
-  noApprovals,
   noRelations,
   noTriggers,
   type CommentChange,
-  type IssueApprovals,
   type IssueChange,
   type IssueExtras,
   type IssueRelations,
   type IssueRules,
   type IssueTriggers,
   type StatusCatalog,
-  type StatusCatalogs,
+  type StatusService,
 } from './ports.js';

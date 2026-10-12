@@ -1,14 +1,14 @@
 // Prepares a run's working directories before the agent starts.
 //
 // A `directory` entry is a directory that already exists on this machine: it is used in place (no checkout, no branch,
-// no push guard of the runner's) and locked so one run at a time works in it.
+// no branch) and locked so one run at a time works in it.
 //
 // Each repository URL has one bare cache, `~/.nocobase-runner/repos/<sha1(url)>.git`, fetched into
 // `refs/remotes/origin/*`. Each subject of each application has one long-lived work directory,
 // `<work root>/<app>/<subjectKey>/`, and every new repository is a reference clone at `<workDir>/<repo.path>` on the
 // run's branch (`agent/<key>`). Git metadata stays inside that directory; only existing objects are borrowed from the
 // cache, whose automatic GC is disabled. A later run finds the clone (or a legacy worktree) and keeps working; nothing is
-// reset. Every checkout gets the push guard (push-guard.ts): it may push only that branch, to that repository. A run
+// reset. Every checkout gets the runner's commit hook (git-hooks.ts); nothing limits where an agent pushes. A run
 // never works on the default branch, except the one run that makes an empty repository's first commit
 // (`RepoDir.initial`): its checkout starts on the default branch with no parent, and that branch is the one it pushes.
 //
@@ -20,9 +20,11 @@
 // work directory lives in its own directory, out of the agent's reach (`workspaceRecordPath`). The application's word that the work is over, and the owner's size limit, remove others
 // (workspaces.ts).
 //
-// A repository the run carries a credential for (`workspace.git.credentials`, a short-lived token) is fetched with it,
-// and the agent's git pushes with it through a credential helper (env.ts); it is never written to disk. Without one,
-// the host's own git credentials are used.
+// A repository the run carries a credential for (`workspace.git.credentials`, or `onDemand`: see
+// agent/git-credentials.ts) is fetched and pushed with the credential its `RepoAuthSource` gives, never with the host's
+// own git credentials, and with one fresh credential again when the remote refuses the first (`withRepoAuth`); the
+// agent's git gets it through a credential helper (env.ts). It is never written to disk. Without one, the host's own
+// git credentials are used.
 //
 // A repository with a `.gitmodules` has its submodules initialized here, before the agent starts and outside any
 // sandbox of its tool. New checkouts keep their Git metadata (including submodule `modules/`) in their own `.git`;
@@ -55,19 +57,19 @@ import {
   type RunnerPaths,
 } from '../lib/home.ts';
 import type {
-  RepoCredential,
   RepoDir,
+  RepoPushFailure,
   RepoReport,
   WorkspaceDir,
 } from '../protocol/index.ts';
-import { isInside } from './command-policy.ts';
+import { isInside } from '../lib/paths.ts';
 import {
   GIT_LOW_SPEED_CONFIG,
   GitNetworkError,
   retryGit,
   type GitRetryOptions,
 } from './git-retry.ts';
-import { allowPush, installGitHooks } from './push-guard.ts';
+import { installGitHooks } from './git-hooks.ts';
 import { isAlive } from './supervisor.ts';
 import { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 import {
@@ -79,11 +81,65 @@ import {
 
 export { CheckoutError, git, gitAuthEnv, gitOk, type GitAuth } from './git.ts';
 
+/** Why a repository's credential could not be had (agent/git-credentials.ts). */
+export class RepoAccessFailure extends Error {
+  override name = 'RepoAccessFailure';
+  /** `unavailable`: try again later; `denied`: the application will not issue one; `leaseLost`: the run is over here. */
+  readonly kind: 'unavailable' | 'denied' | 'leaseLost';
+
+  constructor(kind: 'unavailable' | 'denied' | 'leaseLost', message: string) {
+    super(message);
+    this.kind = kind;
+  }
+}
+
+/** Where the runner's own git gets a repository's credential from. */
+export interface RepoAuthSource {
+  /** Whether it answers for `url`; for such a URL nothing else is used, not even the host's credentials. */
+  covers(url: string): boolean;
+  /** Throws `RepoAccessFailure`. `refresh` asks for a new credential rather than the one held. */
+  get(url: string, options?: { refresh?: boolean }): Promise<GitAuth>;
+  /** The remote refused `auth`; true when it was the credential held, which is now forgotten. */
+  erase(url: string, auth: GitAuth): boolean;
+}
+
+/** Whether git failed because the remote refused its credential. */
+export function isAuthFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Authentication failed|Invalid username or (?:password|token)|could not read Username|could not read Password|The requested URL returned error: 40[13]|HTTP Basic: Access denied|terminal prompts disabled/iu.test(
+    message,
+  );
+}
+
+/**
+ * Runs `operation` with `url`'s credential from `source`, and once more with a fresh one when the remote refused the
+ * first. Without a source that answers for `url`, runs it without one (the host's credentials).
+ */
+export async function withRepoAuth<T>(
+  source: RepoAuthSource | undefined,
+  url: string,
+  operation: (auth: GitAuth | undefined) => Promise<T>,
+): Promise<T> {
+  if (source === undefined || !source.covers(url)) return operation(undefined);
+  const auth = await source.get(url);
+  try {
+    return await operation(auth);
+  } catch (error) {
+    if (!isAuthFailure(error) || !source.erase(url, auth)) throw error;
+    return operation(await source.get(url, { refresh: true }));
+  }
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Locks
 
 export interface Lock {
   release(): Promise<void>;
+}
+
+/** A live process still holds a working directory; another attempt may take it later. */
+export class WorkspaceBusyError extends CheckoutError {
+  override name = 'WorkspaceBusyError';
 }
 
 export async function acquireLock(
@@ -112,7 +168,7 @@ export async function acquireLock(
       continue;
     }
     if (Date.now() >= deadline)
-      throw new CheckoutError(
+      throw new WorkspaceBusyError(
         `${lockDir} is held by process ${owner || 'unknown'}`,
       );
     await delay(options.pollMs ?? 200);
@@ -137,7 +193,7 @@ export function subjectWorkDir(
   return path.join(paths.workRoot, safeName(appKey), safeName(subjectKey));
 }
 
-/** The runner's own files in a working directory: the agent's home, tmp, the CLI shim and the workspace record. */
+/** The runner's own files in a working directory: tmp, Codex's home, the CLI shim and the workspace record. */
 export const RUNNER_DIR = '.nocobase-runner';
 
 /** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */
@@ -182,7 +238,7 @@ export async function updateCache(
     await git(['config', 'gc.auto', '0'], cache);
     await git(['config', 'gc.pruneExpire', 'never'], cache);
     await git(['config', 'maintenance.auto', 'false'], cache);
-    await installGitHooks(path.join(cache, 'hooks'), paths.pushAllowDir);
+    await installGitHooks(path.join(cache, 'hooks'));
     await retryGit(
       `git fetch ${url}`,
       () =>
@@ -291,6 +347,8 @@ export interface WorkspaceMeta {
   /** Whether the directory held unpushed work when last checked (`measuredAt`). */
   unpushed?: boolean;
   measuredAt?: string;
+  /** When regenerable build artifacts were last removed from it (core/artifacts.ts). */
+  artifactsCleanedAt?: string;
   /**
    * Read from a record in the work directory, kept before the runner kept its own, or measured from one since: only
    * its layout is believed. A run preparing the directory again writes a record of the runner's own.
@@ -372,6 +430,7 @@ function believable(
     ...text('endedAt'),
     ...text('lastRunId'),
     ...text('measuredAt'),
+    ...text('artifactsCleanedAt'),
     ...(typeof raw.unpushed === 'boolean' ? { unpushed: raw.unpushed } : {}),
     ...(legacy
       ? { legacy: true as const }
@@ -412,54 +471,156 @@ export async function writeWorkspaceMeta(
  * saw the remote task branch hold. A record from an earlier runner, which recorded neither, is judged by the task
  * branch's remote-tracking ref instead. A checkout that cannot be read counts as unpushed, so it is kept.
  */
-export async function hasUnpushedWork(
+export interface WorkspaceGitCheck {
+  readonly reason: import('../protocol/index.ts').WorkspaceCleanupReason;
+  readonly discardsUntracked: boolean;
+}
+
+/** Reads local objects only, never the network: what the runner last saw the remote hold. */
+export async function checkWorkspaceGit(
   workDir: string,
   meta: WorkspaceMeta,
   log?: (message: string) => void,
-): Promise<boolean> {
+): Promise<WorkspaceGitCheck> {
+  let discardsUntracked = false;
+  const result = (reason: WorkspaceGitCheck['reason']): WorkspaceGitCheck => ({
+    reason,
+    discardsUntracked,
+  });
   for (const repo of meta.repos) {
     const dir = path.join(workDir, repo.path);
-    if (!existsSync(dir)) continue;
     const context = { dir, cache: repo.cache, url: repo.url };
     try {
+      if (!existsSync(dir)) return result('gitFailed');
       const status = await taskGit(context, [
         'status',
         '--porcelain',
         '--untracked-files=normal',
+        '--ignore-submodules=untracked',
       ]);
-      if (status.trim() !== '') return true;
+      const lines = status.split('\n').filter(Boolean);
+      discardsUntracked ||= lines.some((line) => line.startsWith('??'));
+      if (lines.some((line) => !line.startsWith('??')))
+        return result('trackedChanges');
+      if (discardsUntracked) return result('unpushed');
+      // Parent status checks gitlink changes, but a committed gitlink does not prove the submodule commit was pushed.
+      // taskGit validates every initialized submodule's config and metadata pointer before entering it with -C.
+      const submodules = await taskGit(context, [
+        'submodule',
+        'foreach',
+        '--quiet',
+        '--recursive',
+        'printf "%s\\0" "./$displaypath"',
+      ]);
+      for (const relative of submodules.split('\0').filter(Boolean)) {
+        const child = path.resolve(dir, relative);
+        if (!isInside(dir, child) || child === dir) return result('gitFailed');
+        const childArgs = ['-C', child];
+        const childStatus = await taskGit(context, [
+          ...childArgs,
+          'status',
+          '--porcelain',
+          '--untracked-files=normal',
+          '--ignore-submodules=untracked',
+        ]);
+        const childLines = childStatus.split('\n').filter(Boolean);
+        discardsUntracked ||= childLines.some((line) => line.startsWith('??'));
+        if (childLines.some((line) => !line.startsWith('??')))
+          return result('trackedChanges');
+        if (discardsUntracked) return result('unpushed');
+        const childHead = await taskGit(context, [
+          ...childArgs,
+          'rev-parse',
+          '--verify',
+          'HEAD',
+        ]);
+        const refs = await taskGit(context, [
+          ...childArgs,
+          'for-each-ref',
+          '--format=%(objectname)',
+          'refs/remotes/origin/',
+        ]);
+        const childCandidates = refs
+          .split('\n')
+          .filter((sha) => /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(sha));
+        let childProven = false;
+        for (const candidate of childCandidates) {
+          if (
+            childHead === candidate ||
+            (await taskGitOk(context, [
+              ...childArgs,
+              'merge-base',
+              '--is-ancestor',
+              childHead,
+              candidate,
+            ]))
+          ) {
+            childProven = true;
+            break;
+          }
+        }
+        if (!childProven) return result('unpushed');
+      }
       const head = await taskGit(context, [
         'rev-parse',
         '--verify',
         '-q',
         'HEAD',
-      ]).catch(() => '');
-      // No commit at all: nothing to push.
-      if (head === '') continue;
-      if (head === repo.startSha || head === repo.pushedSha) continue;
+      ]);
+      if (
+        meta.legacy !== true &&
+        (head === repo.startSha || head === repo.pushedSha)
+      )
+        continue;
+      const candidates: string[] = [];
       const pushed =
         meta.legacy === true
           ? `refs/remotes/origin/${repo.branch}`
           : repo.pushedSha;
-      if (
-        pushed !== undefined &&
-        (await taskGitOk(context, [
-          'merge-base',
-          '--is-ancestor',
-          head,
-          pushed,
-        ]))
-      )
-        continue;
-      return true;
+      if (pushed !== undefined) candidates.push(pushed);
+      let proven = false;
+      let hasObjects = false;
+      for (const candidate of candidates) {
+        if (
+          !(await taskGitOk(context, [
+            'rev-parse',
+            '--verify',
+            '-q',
+            `${candidate}^{commit}`,
+          ]))
+        )
+          continue;
+        hasObjects = true;
+        if (
+          head === candidate ||
+          (await taskGitOk(context, [
+            'merge-base',
+            '--is-ancestor',
+            head,
+            candidate,
+          ]))
+        ) {
+          proven = true;
+          break;
+        }
+      }
+      if (!proven) return result(hasObjects ? 'unpushed' : 'missingEvidence');
     } catch (error) {
       log?.(
-        `workspaces: ${dir}: counted as unpushed: ${error instanceof Error ? error.message : String(error)}`,
+        `workspaces: ${dir}: kept after Git check failed: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return true;
+      return result('gitFailed');
     }
   }
-  return false;
+  return result('allowed');
+}
+
+export async function hasUnpushedWork(
+  workDir: string,
+  meta: WorkspaceMeta,
+  log?: (message: string) => void,
+): Promise<boolean> {
+  return (await checkWorkspaceGit(workDir, meta, log)).reason !== 'allowed';
 }
 
 async function addClone(
@@ -745,7 +906,11 @@ export async function initSubmodules(
             '--checkout',
             ...(all ? [] : ['--', ...selected]),
           ],
-          origin === undefined ? {} : gitAuthEnv(options.auth, origin),
+          {},
+          {
+            ...(options.auth === undefined ? {} : { auth: options.auth }),
+            ...(origin === undefined ? {} : { authScope: origin }),
+          },
         ),
       options.retry,
     );
@@ -843,8 +1008,8 @@ export interface PrepareDirsOptions {
   /** Locked by the caller. */
   workDir: string;
   dirs: readonly WorkspaceDir[];
-  /** Short-lived credentials by repository URL (`workspace.git.credentials`). */
-  credentials?: readonly RepoCredential[];
+  /** The run's repository credentials (`workspace.git`). */
+  auth?: RepoAuthSource;
   lockTimeoutMs?: number;
   log?: (message: string) => void;
   /** How cloning, fetching and the submodules' update are retried. */
@@ -855,7 +1020,7 @@ export interface PrepareDirsOptions {
 
 /**
  * Prepares every working directory: a repository is checked out (a bare cache and a long-lived clone on its branch,
- * with the push guard); a directory used in place must exist, is locked for the run, and is not checked out or
+ * with the runner's commit hook); a directory used in place must exist, is locked for the run, and is not checked out or
  * branched. A directory counts as fresh until a run of the subject finishes in it (`markDirsPrepared`), so a run that
  * dies before doing what the initialization prompt asks leaves it for the next attempt. The result's `release` gives
  * the directory locks back.
@@ -930,18 +1095,14 @@ export async function prepareDirs(
       options.log?.(
         `checkout: ${entry.url} -> ${entry.path} (${entry.branch})`,
       );
+      const retry = options.retry === undefined ? {} : { retry: options.retry };
       const repoUrl = entry.url;
-      const credential = options.credentials?.find(
-        (item) => item.url === repoUrl,
+      const cache = await withRepoAuth(options.auth, repoUrl, (auth) =>
+        updateCache(paths, repoUrl, {
+          ...(auth === undefined ? {} : { auth }),
+          ...retry,
+        }),
       );
-      const auth: GitAuth | undefined =
-        credential === undefined
-          ? undefined
-          : { username: credential.username, token: credential.password };
-      const cache = await updateCache(paths, entry.url, {
-        ...(auth === undefined ? {} : { auth }),
-        ...(options.retry === undefined ? {} : { retry: options.retry }),
-      });
       // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
       // above; read all advertised refs before granting the narrowly scoped first-push exception.
       let initializing = false;
@@ -967,15 +1128,17 @@ export async function prepareDirs(
           cache,
         ))
       ) {
-        const refs = await retryGit(
-          `git ls-remote ${entry.url}`,
-          () =>
-            git(
-              [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
-              cache,
-              gitAuthEnv(auth),
-            ),
-          options.retry,
+        const refs = await withRepoAuth(options.auth, repoUrl, (auth) =>
+          retryGit(
+            `git ls-remote ${repoUrl}`,
+            () =>
+              git(
+                [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
+                cache,
+                gitAuthEnv(auth),
+              ),
+            options.retry,
+          ),
         );
         if (refs.trim() === '') {
           initializing = true;
@@ -1003,19 +1166,18 @@ export async function prepareDirs(
           ? { pushedSha: known.pushedSha }
           : {}),
       });
-      // Refresh hooks on resumed clones too, so their local hook never keeps an obsolete registry or Node path.
+      // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
-        await installGitHooks(path.join(gitDir, 'hooks'), paths.pushAllowDir);
-      await allowPush(gitDir, entry.url, entry.branch, paths.pushAllowDir, {
-        createOnly: initializing,
-      });
-      const submodules = await initSubmodules(dir, {
-        all: created,
-        url: entry.url,
-        cache,
-        ...(auth === undefined ? {} : { auth }),
-        ...(options.retry === undefined ? {} : { retry: options.retry }),
-      });
+        await installGitHooks(path.join(gitDir, 'hooks'));
+      const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
+        initSubmodules(dir, {
+          all: created,
+          url: entry.url,
+          cache,
+          ...(auth === undefined ? {} : { auth }),
+          ...retry,
+        }),
+      );
       if (submodules.length > 0)
         options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
@@ -1115,54 +1277,72 @@ export async function checkout(options: CheckoutOptions): Promise<Checkout> {
   }
 }
 
-/** Pushes each branch that has commits the remote lacks and reports where every repository stands. */
+/** Why a push failed, as `RepoReport.failure` names it. */
+export function pushFailureOf(error: unknown): RepoPushFailure {
+  if (error instanceof RepoAccessFailure)
+    return error.kind === 'leaseLost'
+      ? 'leaseLost'
+      : error.kind === 'denied'
+        ? 'credentialDenied'
+        : 'credentialUnavailable';
+  if (isAuthFailure(error)) return 'authFailed';
+  const message = error instanceof Error ? error.message : String(error);
+  if (
+    /\[rejected\]|\[remote rejected\]|pre-push hook declined|nocobase-runner:|protected branch|non-fast-forward/iu.test(
+      message,
+    )
+  )
+    return 'rejected';
+  return 'error';
+}
+
+/**
+ * Pushes each branch that has commits the remote lacks and reports where every repository stands; a push that failed
+ * says why (`RepoReport.failure`). With `auth`, a repository it answers for is reached with its credential only: once
+ * the run is no longer this runner's, nothing is pushed.
+ */
 export async function reportRepos(
   repos: readonly CheckedOutRepo[],
   options: {
     push: boolean;
-    credentials?: readonly RepoCredential[];
+    auth?: RepoAuthSource;
     log?: (message: string) => void;
   },
 ): Promise<RepoReport[]> {
   const reports: RepoReport[] = [];
   for (const repo of repos) {
-    const credential = options.credentials?.find(
-      (item) => item.url === repo.url,
-    );
-    const env = gitAuthEnv(
-      credential === undefined
-        ? undefined
-        : {
-            username: credential.username,
-            token: credential.password,
-          },
-      httpOrigin(repo.url),
-    );
     let headSha: string;
     try {
       headSha = await taskGit(repo, ['rev-parse', 'HEAD']);
     } catch (error) {
-      options.log?.(
-        `report: ${repo.url}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      options.log?.(`report: ${repo.url}: ${message}`);
       reports.push({
         url: repo.url,
         branch: repo.branch,
         pushed: false,
         headSha: '',
+        failure: {
+          reason: pushFailureOf(error),
+          message: message.slice(0, 2000),
+        },
       });
       continue;
     }
     const remoteSha = async (): Promise<string> =>
       (
-        await taskGit(
-          repo,
-          ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
-          env,
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          taskGit(
+            repo,
+            ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
+            {},
+            auth === undefined ? {} : { auth },
+          ),
         ).catch(() => '')
       ).split(/\s+/)[0] ?? '';
     const remote = await remoteSha();
     let pushed = headSha !== '' && remote === headSha;
+    let failure: RepoReport['failure'];
     // Work to push: commits on top of the default branch, or a branch the remote already has and HEAD moved past.
     const base = await taskGit(repo, [
       'rev-parse',
@@ -1171,27 +1351,44 @@ export async function reportRepos(
     const hasWork = headSha !== '' && (headSha !== base || remote !== '');
     if (options.push && !pushed && hasWork) {
       try {
-        await taskGit(
-          repo,
-          ['push', '--quiet', '--', repo.url, `HEAD:refs/heads/${repo.branch}`],
-          env,
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          taskGit(
+            repo,
+            [
+              'push',
+              '--quiet',
+              '--',
+              repo.url,
+              `HEAD:refs/heads/${repo.branch}`,
+            ],
+            {},
+            auth === undefined ? {} : { auth },
+          ),
         );
         pushed = (await remoteSha()) === headSha;
       } catch (error) {
-        options.log?.(
-          `push: ${repo.url} ${repo.branch}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        failure = {
+          reason: pushFailureOf(error),
+          message: message.slice(0, 2000),
+        };
+        options.log?.(`push: ${repo.url} ${repo.branch}: ${message}`);
       }
     }
-    // The push went to the URL rather than to `origin`, which leaves the tracking ref behind; bring it along so the
-    // checkout itself says what the remote has (core/workspaces.ts counts commits no remote-tracking ref has).
+    // Direct URL pushes leave origin's tracking ref behind; workspace cleanup needs the confirmed remote head.
     if (pushed)
       await taskGitOk(repo, [
         'update-ref',
         `refs/remotes/origin/${repo.branch}`,
         headSha,
       ]).catch(() => false);
-    reports.push({ url: repo.url, branch: repo.branch, pushed, headSha });
+    reports.push({
+      url: repo.url,
+      branch: repo.branch,
+      pushed,
+      headSha,
+      ...(failure === undefined ? {} : { failure }),
+    });
   }
   return reports;
 }

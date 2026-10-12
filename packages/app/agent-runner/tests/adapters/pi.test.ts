@@ -59,6 +59,55 @@ const settled = [
 ];
 
 describe('detect', () => {
+  it.each([0, 3, undefined])(
+    'uses successful structured state for recovery (messageCount=%s), independently of late stderr',
+    async (messageCount) => {
+      const { spawn, processes } = fakeSpawn(
+        (pi) => {
+          void pi.next('prompt').then((prompt) => {
+            expect(
+              String(prompt.message).includes('previous conversation'),
+            ).toBe(messageCount === 0);
+            pi.stderr.write('Warning: session ');
+            pi.stderr.write('not found\n');
+            pi.respond(prompt, { disposition: 'started' });
+            writeAll(pi, [
+              ...assistantMessage([{ type: 'text', text: 'ok' }]),
+              ...settled,
+            ]);
+          });
+        },
+        { messageCount, sessionId: 'old' },
+      );
+      const handle = (await adapterWith(spawn)).start(
+        session({ resumeSessionId: 'old' }),
+      );
+      const events = await collect(handle);
+      expect(await handle.result).toMatchObject({
+        exit: 'completed',
+        sessionId: 'old',
+      });
+      expect(processes).toHaveLength(1);
+      expect(events.some((e) => e.content === 'sessionRecovery')).toBe(
+        messageCount === 0,
+      );
+      expect(events.some((e) => e.content === 'sessionRecoveryUnknown')).toBe(
+        messageCount === undefined,
+      );
+    },
+  );
+
+  it('does not prompt or recover from an unsuccessful state response', async () => {
+    const { spawn, processes } = fakeSpawn(() => {}, {
+      messageCount: 0,
+      stateSuccess: false,
+    });
+    const handle = (await adapterWith(spawn)).start(
+      session({ resumeSessionId: 'old' }),
+    );
+    expect((await handle.result).exit).toBe('error');
+    expect(processes[0]?.commands.some((c) => c.type === 'prompt')).toBe(false);
+  });
   it('parses the available model table and leaves per-model effort levels unknown', () => {
     expect(parsePiModels(MODELS_TABLE)).toEqual([
       { id: 'anthropic/claude-sonnet-4-5' },

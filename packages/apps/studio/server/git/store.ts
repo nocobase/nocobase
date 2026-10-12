@@ -96,6 +96,7 @@ export interface RepoRow {
   /** In order; the first names the branches agents work on. */
   readonly branchRules: readonly string[];
   readonly wakeOnChecks: boolean;
+  readonly wakeOnChecksPassed: boolean;
   readonly wakeOnConflict: boolean;
   readonly listEtag: string | null;
   readonly polledAt: string | null;
@@ -153,6 +154,7 @@ function repoOf(row: Row): RepoRow {
     externalId: str(row.externalId),
     branchRules: rulesOf(row.branchRules),
     wakeOnChecks: bool(row.wakeOnChecks),
+    wakeOnChecksPassed: bool(row.wakeOnChecksPassed),
     wakeOnConflict: bool(row.wakeOnConflict),
     listEtag: str(row.listEtag),
     polledAt: iso(row.polledAt),
@@ -211,6 +213,7 @@ export async function ensureRepo(
           externalId: null,
           branchRules: null,
           wakeOnChecks: true,
+          wakeOnChecksPassed: true,
           wakeOnConflict: true,
           listEtag: null,
           polledAt: null,
@@ -310,7 +313,7 @@ export interface SignalState {
 }
 
 export type Signals = Readonly<
-  Partial<Record<'checks' | 'conflict', SignalState>>
+  Partial<Record<'checks' | 'conflict' | 'passed', SignalState>>
 >;
 
 export interface PullRequestRow {
@@ -452,6 +455,22 @@ export async function linkedOpenPullRequests(
     .where('repoId', '=', repoId)
     .where('state', '=', 'open')
     .where('id', 'in', linked)
+    .execute();
+  return withRepos(conn, rows);
+}
+
+/** Open pull requests whose preview labels Studio manages, including those no issue links anymore. */
+export async function previewManagedOpenPullRequests(
+  conn: DatabaseConnection,
+  repoId: string,
+): Promise<PullRequestRow[]> {
+  const rows = await conn.query
+    .selectFrom('studioPreviewLabels as label')
+    .innerJoin(`${PULL_REQUESTS} as pr`, 'pr.id', 'label.pullRequestId')
+    .selectAll('pr')
+    .where('pr.repoId', '=', repoId)
+    .where('pr.state', '=', 'open')
+    .where('label.managed', '=', true)
     .execute();
   return withRepos(conn, rows);
 }

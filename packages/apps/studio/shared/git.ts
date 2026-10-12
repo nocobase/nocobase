@@ -49,7 +49,11 @@ export const PR_EDIT_FIELDS = [
 export type PullRequestEditField = (typeof PR_EDIT_FIELDS)[number];
 
 /** The issue triggers a pull request starts runs for. */
-export const PR_TRIGGERS = ['prChecksFailed', 'prConflict'] as const;
+export const PR_TRIGGERS = [
+  'prChecksFailed',
+  'prChecksPassed',
+  'prConflict',
+] as const;
 export type PullRequestTrigger = (typeof PR_TRIGGERS)[number];
 
 /** How many times in a row the same signal wakes the agent before the owner is told instead. */
@@ -184,6 +188,8 @@ export interface MergePullRequestRequest {
 
 /** A pull request as an issue shows it: with who linked it and what the viewer may do. */
 export interface IssuePullRequest extends PullRequest {
+  /** Opening succeeds even if its preview label needs a later retry. */
+  readonly previewLabelSyncFailed?: boolean;
   readonly linkedBy: {
     readonly type: PullRequestLinkedBy;
     readonly id: string | null;
@@ -302,6 +308,8 @@ export interface GitRepoSettings {
   /** The branch rules, in order: the first names the branches agents work on (`branchOf`). */
   readonly branchRules: readonly string[];
   readonly wakeOnChecks: boolean;
+  /** Wake the project manager once per head commit when all its checks passed. */
+  readonly wakeOnChecksPassed: boolean;
   readonly wakeOnConflict: boolean;
   readonly polledAt: string | null;
   readonly pollError: string | null;
@@ -321,6 +329,7 @@ export interface UpdateGitRepoRequest {
   /** A new webhook secret; null removes it; left out keeps it. */
   readonly webhookSecret?: string | null;
   readonly wakeOnChecks?: boolean;
+  readonly wakeOnChecksPassed?: boolean;
   readonly wakeOnConflict?: boolean;
   /** The branch rules, each with `{key}` once; at least one. */
   readonly branchRules?: readonly string[];

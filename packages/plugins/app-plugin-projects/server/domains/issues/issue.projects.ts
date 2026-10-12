@@ -7,11 +7,11 @@ import {
   issuesOfProject,
   updateIssue,
 } from './issue.store.js';
-import type { StatusCatalogs } from './ports.js';
+import type { StatusService } from './ports.js';
 
 export function createProjectIssues(deps: {
   readonly activity: ActivityRecorder;
-  readonly statuses: StatusCatalogs;
+  readonly statuses: Pick<StatusService, 'category'>;
 }): ProjectIssues {
   return {
     async counts(conn, projectIds) {
@@ -27,12 +27,11 @@ export function createProjectIssues(deps: {
       }
       const result = new Map<string, IssueCounts>();
       for (const [projectId, byStatus] of byProject) {
-        const catalog = await deps.statuses.forProject(conn, projectId);
         const entries = Object.entries(byStatus);
         result.set(projectId, {
           total: entries.reduce((sum, [, count]) => sum + count, 0),
           done: entries
-            .filter(([key]) => catalog.category(key) === 'done')
+            .filter(([key]) => deps.statuses.category(key) === 'done')
             .reduce((sum, [, count]) => sum + count, 0),
           byStatus,
         });

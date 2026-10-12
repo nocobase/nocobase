@@ -4,8 +4,7 @@
  * unavailable and how to fix it), the vector store `config.yml` configures (type, location, its indexes' progress),
  * then one section per setting, each saved on its own: the embedding model, the rerank model, ranking (the result
  * count, the minimum relevance, the keyword weight and the rerank model's candidates), the default chunking (a space may
- * set its own), adding context to sections (a switch, its model and the spaces it is on for) and the token threshold
- * under which an online agent gets its knowledge whole. The models come from the agents plugin's model services, by kind; each picker links to them.
+ * set its own) and adding context to sections (a switch, its model and the spaces it is on for). The models come from the agents plugin's model services, by kind; each picker links to them.
  */
 import {
   SectionHeading,
@@ -48,7 +47,6 @@ import { Switch } from '@/components/ui/switch';
 
 import {
   SYSTEM_SCOPE,
-  WHOLE_TOKENS_MAX,
   type KnowledgeIndexModel,
   type KnowledgeIndexStatus,
   type KnowledgeModelOption,
@@ -98,14 +96,6 @@ function semanticStateOf(
   if (!index.available) return 'unavailable';
   if (!settings.embedding) return 'off';
   return index.active ? 'available' : 'building';
-}
-
-/** A token count as people read it: "150K", "15万". */
-function approxTokens(value: number, locale: string): string {
-  return new Intl.NumberFormat(locale, {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(value);
 }
 
 /** Saves a part of the settings over the latest ones the page has. */
@@ -356,16 +346,6 @@ function StoreSection({
           {t('knowledge.searchSettings.store.type')}
         </dt>
         <dd>{typeLabel}</dd>
-        {index.store?.target ? (
-          <>
-            <dt className='text-muted-foreground'>
-              {t('knowledge.searchSettings.store.target')}
-            </dt>
-            <dd className='font-mono text-xs break-all'>
-              {index.store.target}
-            </dd>
-          </>
-        ) : null}
         <dt className='text-muted-foreground'>
           {t('knowledge.searchSettings.store.state')}
         </dt>
@@ -816,68 +796,6 @@ function RecallSection({
   );
 }
 
-function WholeSection({
-  config,
-}: {
-  readonly config: KnowledgeSearchConfig;
-}): ReactElement {
-  const { t, i18n } = useTranslation();
-  const save = useSaveSettings();
-  const [whole, setWhole] = useState(String(config.settings.wholeTokens));
-  const value = Number(whole.trim());
-  const valid =
-    whole.trim() !== '' &&
-    Number.isInteger(value) &&
-    value >= 0 &&
-    value <= WHOLE_TOKENS_MAX;
-  const changed = valid && value !== config.settings.wholeTokens;
-  return (
-    <section className='flex flex-col gap-4' aria-labelledby='kb-search-whole'>
-      <SectionHeading
-        id='kb-search-whole'
-        title={t('knowledge.searchSettings.whole.title')}
-        description={t('knowledge.searchSettings.whole.description')}
-      />
-      <form
-        className='flex flex-wrap items-center gap-2'
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (changed) save.mutate({ wholeTokens: value });
-        }}
-      >
-        <Input
-          id='kb-search-whole-tokens'
-          className='w-40'
-          inputMode='numeric'
-          aria-label={t('knowledge.searchSettings.whole.title')}
-          aria-invalid={!valid}
-          aria-describedby='kb-search-whole-hint'
-          value={whole}
-          disabled={!config.canManage || save.isPending}
-          onChange={(event) => setWhole(event.target.value)}
-        />
-        <span
-          id='kb-search-whole-hint'
-          className='text-sm text-muted-foreground'
-        >
-          {!valid
-            ? t('knowledge.searchSettings.whole.invalid')
-            : value === 0
-              ? t('knowledge.searchSettings.whole.off')
-              : t('knowledge.searchSettings.whole.approx', {
-                  value: approxTokens(value, i18n.language),
-                })}
-        </span>
-        {config.canManage ? (
-          <Button type='submit' disabled={!changed || save.isPending}>
-            {t('knowledge.searchSettings.save')}
-          </Button>
-        ) : null}
-      </form>
-    </section>
-  );
-}
-
 /** `/config/knowledge-search`. */
 export default function KnowledgeSearchSettingsPage(): ReactElement {
   const { t } = useTranslation();
@@ -927,7 +845,6 @@ export default function KnowledgeSearchSettingsPage(): ReactElement {
             key={valueOf(data.settings.contextModel)}
             config={data}
           />
-          <WholeSection key={data.settings.wholeTokens} config={data} />
         </div>
       ) : (
         <div

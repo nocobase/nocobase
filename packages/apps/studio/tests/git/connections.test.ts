@@ -9,6 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setPreviewNotRequired } from '../../server/previews/preferences.js';
 import { createGitConnections } from '../../server/git/connections.js';
 import { INSTALLATION_TOKENS } from '../../server/git/installation-tokens.js';
 import { createGitProviders } from '../../server/git/providers.js';
@@ -16,7 +17,6 @@ import { GitApiError } from '../../server/git/platform.js';
 import { createWebhookRouter } from '../../server/git/routes.js';
 import { createGitSecrets } from '../../server/git/sealing.js';
 import { DELIVERIES, findRepo } from '../../server/git/store.js';
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import {
   agentCoAuthor,
   ATTRIBUTION_PREFERENCE,
@@ -27,7 +27,13 @@ import {
   TEST_SECRETS,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
-import { API, bindingOf, signBody, tokenConnection } from './helpers.js';
+import {
+  API,
+  bindingOf,
+  mentionAgent,
+  signBody,
+  tokenConnection,
+} from './helpers.js';
 
 const REPO = 'acme/studio';
 const WEBHOOK_SECRET = 'whsec-app-0123456789';
@@ -37,11 +43,6 @@ beforeEach(async () => {
   h = await createBridgeHarness();
   for (const id of ['alice', 'bob']) await h.addUser(id);
   h.roles.set('alice', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
-  const software = (await h.projects.workflows.list(h.viewer('alice'))).find(
-    (workflow) => workflow.builtInKey === 'software',
-  )!;
-  await h.projects.workflows.setDefault(h.viewer('alice'), software.id);
 });
 afterEach(() => h.close());
 
@@ -63,7 +64,10 @@ async function appConnection(): Promise<GitConnection> {
 }
 
 /** A project with `REPO` linked through `connection` as its working directory, and an issue in it. */
-async function projectWithRepo(connection: GitConnection, statusKey = 'todo') {
+async function projectWithRepo(
+  connection: GitConnection,
+  statusKey = 'backlog',
+) {
   h.github.addRepo(REPO);
   const project = await h.projects.projects.create(alice(), { name: 'Web' });
   const resource = await h.projects.projects.addResource(alice(), project.id, {
@@ -739,11 +743,7 @@ describe('nb-studio pr open', () => {
       ],
     });
     const { issue, resource } = await projectWithRepo(connection);
-    await h.projects.issues.update(alice(), issue.id, {
-      revision: (await h.projects.issueQueries.detail(alice(), issue.id))
-        .revision,
-      executor: { type: 'agent', id: agentId },
-    });
+    await mentionAgent(h, 'alice', issue.id, agentId);
     beforeClaim?.();
     const payload = await h.claimOne();
     return { agentId, issue, resource, payload };
@@ -756,11 +756,12 @@ describe('nb-studio pr open', () => {
       .mockRejectedValue(
         new GitApiError(0, 'synthetic-secret-that-must-not-reach-the-run'),
       );
-    const { issue, payload } = await agentRun(app);
+    const { agentId, issue, payload } = await agentRun(app);
     expect(payload).toBeUndefined();
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run).toMatchObject({
       status: 'queued',
@@ -778,8 +779,8 @@ describe('nb-studio pr open', () => {
 
   it('ends the run with an actionable reason after signing is repeatedly refused', async () => {
     const app = await appConnection();
-    const { issue, payload } = await agentRun(app, () => {
-      h.github.outage = { status: 503, times: 3 };
+    const { agentId, issue, payload } = await agentRun(app, () => {
+      h.github.outage = { status: 503, times: 10 };
     });
     expect(payload).toBeUndefined();
     expect(await h.claimOne()).toBeUndefined();
@@ -787,6 +788,7 @@ describe('nb-studio pr open', () => {
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run).toMatchObject({
       status: 'failed',
@@ -799,7 +801,7 @@ describe('nb-studio pr open', () => {
 
   it('refuses an absent preparation result after the framework catches a prepare exception', async () => {
     const app = await appConnection();
-    const { issue, payload } = await agentRun(app, () => {
+    const { agentId, issue, payload } = await agentRun(app, () => {
       vi.spyOn(h.git, 'repoOfResource').mockRejectedValue(
         new Error('synthetic-private-error'),
       );
@@ -808,6 +810,7 @@ describe('nb-studio pr open', () => {
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run?.failureDetail).toContain('could not prepare repository access');
     expect(run?.failureDetail).not.toContain('synthetic-private-error');
@@ -853,11 +856,12 @@ describe('nb-studio pr open', () => {
       .set({ installationId: null })
       .where('id', '=', app.id)
       .execute();
-    const { issue, payload } = await agentRun(app);
+    const { agentId, issue, payload } = await agentRun(app);
     expect(payload).toBeUndefined();
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run?.failureDetail).toContain('could not issue a credential');
   });
@@ -893,6 +897,7 @@ describe('nb-studio pr open', () => {
     const app = await appConnection();
     await authorizeAlice(app);
     const { issue, payload } = await agentRun(app);
+    await setPreviewNotRequired(h.projects.tx.read(), issue.id, true);
     const opened = await h.request('POST', '/git/pullRequests/open', {
       runToken: payload.cli.credential.content.token as string,
       body: { title: `${issue.identifier}: Fix login`, draft: true },
@@ -904,16 +909,50 @@ describe('nb-studio pr open', () => {
     )!;
     expect(create.token).toMatch(/^ghu_/u);
     expect(h.github.pull(REPO, 1).user.login).toBe('alice-gh');
+    expect(h.github.pull(REPO, 1).labels).toContainEqual({
+      name: 'no-preview',
+    });
+  });
+
+  it('keeps an opened PR linked and reports a label failure without creating another PR', async () => {
+    const app = await appConnection();
+    const { issue, payload } = await agentRun(app);
+    await setPreviewNotRequired(h.projects.tx.read(), issue.id, true);
+    const write = vi
+      .spyOn(h.github.platform, 'addPullRequestLabel')
+      .mockRejectedValueOnce(new Error('Offline'));
+    const opened = await h.request('POST', '/git/pullRequests/open', {
+      runToken: payload.cli.credential.content.token as string,
+      body: { title: 'Preview preference', draft: true },
+    });
+    expect(opened.status).toBe(201);
+    expect(opened.body.data.previewLabelSyncFailed).toBe(true);
+    expect(opened.body.meta.message).toContain(
+      'Do not open another pull request',
+    );
+    expect((await h.git.list(alice(), issue.id)).data).toHaveLength(1);
+    expect(
+      h.github.requests.filter(
+        (request) =>
+          request.method === 'POST' && request.path === `/repos/${REPO}/pulls`,
+      ),
+    ).toHaveLength(1);
+    write.mockRestore();
+    await h.git.syncPreviewLabels(issue.id);
+    expect(h.github.pull(REPO, 1).labels).toContainEqual({
+      name: 'no-preview',
+    });
   });
 
   it('refuses without a linked repository', async () => {
     const agentId = await h.createAgent({
       actions: ['pm.issues/view', 'pm.issues/edit', 'studio.git/open-pr'],
     });
-    await h.projects.issues.create(alice(), {
+    const loose = await h.projects.issues.create(alice(), {
       title: 'Loose',
-      executor: { type: 'agent', id: agentId },
+      start: false,
     });
+    await mentionAgent(h, 'alice', loose.id, agentId);
     const payload = await h.claimOne();
     const refused = await h.request('POST', '/git/pullRequests/open', {
       runToken: payload.cli.credential.content.token as string,
@@ -957,22 +996,24 @@ describe('nb-studio pr open', () => {
       attribution: 'meOnly',
     });
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
-    await h.projects.issues.create(alice(), {
+    const second = await h.projects.issues.create(alice(), {
       title: 'Second',
       projectId: project.id,
-      executor: { type: 'agent', id: agentId },
+      start: false,
     });
+    await mentionAgent(h, 'alice', second.id, agentId);
     const payload = await h.claimOne();
     // No authorization of her own: her profile; a token connection gives no push credential.
     expect(payload.workspace.git).toEqual({
       author: { name: 'alice', email: expect.any(String) },
     });
     h.preferences.set(`alice:${ATTRIBUTION_PREFERENCE}`, 'withAgent');
-    await h.projects.issues.create(alice(), {
+    const third = await h.projects.issues.create(alice(), {
       title: 'Third',
       projectId: project.id,
-      executor: { type: 'agent', id: agentId },
+      start: false,
     });
+    await mentionAgent(h, 'alice', third.id, agentId);
     const next = await h.claimOne();
     expect(next.workspace.git.trailers).toHaveLength(1);
   });

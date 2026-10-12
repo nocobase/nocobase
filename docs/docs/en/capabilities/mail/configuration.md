@@ -9,6 +9,8 @@ Administrators configure how the application connects to a mail provider. Users 
 
 ## Administrator preparation
 
+Configure the provider’s mail servers and connection methods before connecting personal mailboxes. Users then connect accounts without repeating provider setup.
+
 | Integration   | Information required                                                                         |
 | ------------- | -------------------------------------------------------------------------------------------- |
 | IMAP/SMTP     | Incoming and outgoing server addresses, ports, and secure connection settings.               |

@@ -2,8 +2,7 @@
  * One conversation, the panel's main view: the messages as a log (older pages on demand), what an application adds
  * among them (plan cards), the agent at work, notices about who answers, and the composer. Without a conversation
  * (`conversationId` null) it is a new one: an empty log whose first message creates it on the server, and the
- * composer's toolbar chooses its agent and model (`NewChatChoice`); once it exists, only the model of an online
- * agent may change there.
+ * composer's toolbar chooses its agent (`NewChatChoice`).
  */
 import {
   ChatExtensionsContext,
@@ -18,7 +17,6 @@ import {
   useSendMessage,
   type ChatTimelineItem,
 } from '@nocobase/app-plugin-agents/client/chat';
-import type { OnlineModelEntry } from '@nocobase/app-plugin-agents/shared/agents';
 import type {
   ConversationDetail,
   ConversationMessage,
@@ -56,7 +54,6 @@ import { LoadError } from './chat-ui.js';
 import { Composer } from './composer.js';
 import { LiveSteps, TurnAnnouncer } from './live-steps.js';
 import { MessageItem, PendingItem } from './message-item.js';
-import { ModelPicker } from './model-picker.js';
 
 const NO_ITEMS: readonly ChatTimelineItem[] = [];
 
@@ -199,14 +196,6 @@ function ConversationBody({
   const target = conversation
     ? null
     : newConversationAgent(agents.data, panel.newAgentId);
-  // A new chat with an online agent answers with the model chosen before its first message; choosing another agent
-  // starts from its default again.
-  const [newModel, setNewModel] = useState<{
-    readonly agentId: string;
-    readonly model: OnlineModelEntry | null;
-  } | null>(null);
-  const chosenModel =
-    target && newModel?.agentId === target.id ? newModel.model : null;
 
   const { selectConversation, resetSource, source, focusComposer } = panel;
   const created = useCallback(
@@ -221,7 +210,6 @@ function ConversationBody({
     conversationId,
     agentId: conversation ? conversation.agent.id : (target?.id ?? null),
     source,
-    model: chosenModel,
     dispatch: messages.dispatch,
     onCreated: created,
   });
@@ -447,26 +435,14 @@ function ConversationBody({
           }}
           registerAddFiles={registerAddFiles}
           toolbar={
-            conversation ? (
-              <ModelPicker
-                conversation={conversation}
-                disabled={actions.chooseModel.isPending}
-                onChange={(model) =>
-                  actions.chooseModel.mutate({ id: conversation.id, model })
-                }
-              />
-            ) : (
-              // Before the first message: who the conversation goes to, and the model of an online agent.
+            conversation ? null : (
+              // Before the first message: who the conversation goes to.
               <NewChatChoice
                 agents={agents.data ?? []}
                 agent={target}
                 onAgentChange={(agentId) => {
                   selectConversation(null, agentId);
                   focusComposer();
-                }}
-                model={chosenModel}
-                onModelChange={(model) => {
-                  if (target) setNewModel({ agentId: target.id, model });
                 }}
               />
             )

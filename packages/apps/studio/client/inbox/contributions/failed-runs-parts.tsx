@@ -60,11 +60,20 @@ export function FailedRunActions({
       setPicking(false);
       onDecided();
     },
-    onError: (error) =>
-      error instanceof ApiClientError &&
-      (error.reason === 'DECISION_ALREADY_TAKEN' || error.status === 409)
-        ? notify.error(null, t('inbox.request.conflict'))
-        : notify.error(error),
+    onError: (error) => {
+      if (
+        error instanceof ApiClientError &&
+        error.reason === 'RUN_ALREADY_RETRIED'
+      ) {
+        notify.error(null, t('inbox.runFailed.alreadyRetried'));
+        onDecided();
+      } else if (
+        error instanceof ApiClientError &&
+        (error.reason === 'DECISION_ALREADY_TAKEN' || error.status === 409)
+      )
+        notify.error(null, t('inbox.request.conflict'));
+      else notify.error(error);
+    },
     onSettled: () => {
       for (const queryKey of [inboxKeys.all, ['pm', 'issue'], pmKeys.issues])
         void queryClient.invalidateQueries({ queryKey });

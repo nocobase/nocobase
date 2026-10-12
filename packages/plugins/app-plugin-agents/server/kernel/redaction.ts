@@ -13,6 +13,8 @@ import { createRedactor, type Redactor } from '@nocobase/agent-protocol';
 export interface SecretMemory {
   /** The secrets handed out with a claim of `owner` (`run:<id>`, `job:<id>`), replacing earlier ones. */
   remember(owner: string, secrets: Iterable<string | null | undefined>): void;
+  /** Adds secrets handed out to `owner` after its claim (a credential it asked for later), keeping the earlier ones. */
+  add(owner: string, secrets: Iterable<string | null | undefined>): void;
   /** Forgets `owner`'s secrets once it ended. */
   forget(owner: string): void;
   /** A redactor for what `owner` reports: its secrets, when remembered, and the common patterns. */
@@ -33,6 +35,21 @@ export function createSecretMemory(
       redactors.delete(owner);
       const redactor = createRedactor(secrets);
       if (redactor.secrets.length === 0) return;
+      redactors.set(owner, redactor);
+      while (redactors.size > limit) {
+        const oldest = redactors.keys().next();
+        if (oldest.done) break;
+        redactors.delete(oldest.value);
+      }
+    },
+    add(owner, secrets) {
+      const current = redactors.get(owner);
+      const redactor = current
+        ? current.with(secrets)
+        : createRedactor(secrets);
+      if (redactor.secrets.length === 0) return;
+      // Most recent last: a run that keeps asking is not the first to be forgotten.
+      redactors.delete(owner);
       redactors.set(owner, redactor);
       while (redactors.size > limit) {
         const oldest = redactors.keys().next();

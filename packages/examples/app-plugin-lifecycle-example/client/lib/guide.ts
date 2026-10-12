@@ -7,6 +7,7 @@ export const GUIDE_STEPS: Readonly<Record<GuidePage, number>> = {
   tickets: 4,
   expenses: 5,
   orders: 4,
+  invoices: 4,
   exports: 3,
   purchases: 3,
   fulfilments: 4,

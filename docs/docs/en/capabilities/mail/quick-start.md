@@ -14,6 +14,8 @@ This example adds a mail center where a sales representative reads and replies t
 
 ## Example: reply to customer email
 
+Connect mailboxes when employees need to read and reply to customer messages within the application. Preserve subjects, content and context while reducing system switches.
+
 Give the following prompt to your Agent:
 
 ```text
@@ -26,24 +28,36 @@ When a sales representative receives a quotation request, they can reply from th
 
 Open the mailbox accounts page and click **Connect account**. Select a provider, enter the mailbox information, and choose a starting date for the initial synchronization. This example uses a dedicated sales mailbox. Its address and connection status appear in the account list.
 
-![Connected demonstration mailboxes](../../../cn/capabilities/assets/mail-accounts.png)
-
 ### 2. Synchronize and read incoming messages
 
 Open the mail center, select the sales mailbox, and synchronize incoming messages. The list contains quotation requests, delivery arrangements, and information requests. Select a message to read it.
-
-![Customer messages and quotation request](../../../cn/capabilities/assets/mail-inbox.png)
 
 ### 3. Reply to the customer
 
 Click **Reply** and enter the pricing and delivery details. The reply includes the recipient, subject, and original context. Click **Send** when ready.
 
-![Reply to the quotation request](../../../cn/capabilities/assets/mail-reply.png)
-
 ### 4. View the received reply
 
 The customer mailbox receives the pricing and delivery information. Both parties can continue the same conversation.
 
-![Quotation reply received by the customer](../../../cn/capabilities/assets/mail-received.png)
-
 For signatures, templates, and business page integration, see [More Mail Features](./usage.md).
+
+## Northstar example
+
+The new application synchronizes the dedicated demo mailboxes and displays their existing fleet-business conversation, reply editor, and received quotation. No new external message is required to reproduce these screenshots.
+
+![Connected demo mailboxes](../assets/northstar-mail-accounts-en.png)
+
+**Personal mailboxes are connected and their connection status is visible.**
+
+![Fleet-business correspondence](../assets/northstar-mail-reading-en.png)
+
+**Users can read synchronized messages and their content in the application.**
+
+![Reply editor](../assets/northstar-mail-reply-en.png)
+
+**The reply editor retains context and lets users compose their response.**
+
+![Previously received demo reply](../assets/northstar-mail-received-en.png)
+
+**The customer mailbox displays the quotation reply in the existing demonstration conversation.**

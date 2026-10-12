@@ -15,9 +15,8 @@ import StudioReleasesProvider from '../releases/provider.js';
 // Each boots after every plugin's provider has booted: `StudioAgentsProvider` joins the agents and projects plugins
 // then, before any request is served (see its header).
 const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
-  // Before the agents: registers the workflow event `studio.merged`, which the template the agents add names.
+  // Registers the status event `studio.merged`: an issue whose pull requests are all merged is done.
   StudioGitProvider,
-  // Before the agents' join: its status rule types are named by the "Software development" template that join adds.
   StudioPreviewsProvider,
   StudioAgentsProvider,
   // New projects and their initialization: follows Studio's git's repository events and the agents' runs.
@@ -28,7 +27,7 @@ const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   StudioReleasesProvider,
   // Repositories' CI set up by Studio: their keys, workflows and the daily key rotation.
   StudioCiProvider,
-  // The knowledge base: its commands, brief sections and mount for the agents, its inbox cards, the retrospective rule.
+  // The knowledge base: its commands, brief sections and mount for the agents, its inbox cards.
   StudioKnowledgeProvider,
   // What Studio's command line leaves off.
   StudioCliProvider,
