@@ -204,30 +204,25 @@ describe('inbox', () => {
       await projects.send({
         ...decision(['lead']),
         key,
-        approvalRequestId: key,
       });
     }
-    const first = await inbox.openDecisions(
-      'projects',
-      'approval_requested',
-      '',
-    );
+    const first = await inbox.openDecisions('projects', 'agent_blocked', '');
     expect(first).toHaveLength(500);
     const second = await inbox.openDecisions(
       'projects',
-      'approval_requested',
+      'agent_blocked',
       first.at(-1)!.decisionKey,
     );
     expect(second.map((card) => card.decisionKey)).toEqual(['decision-0500']);
     expect(
       await inbox.openDecisions(
         'projects',
-        'approval_requested',
+        'agent_blocked',
         second[0]!.decisionKey,
       ),
     ).toEqual([]);
     expect(
-      await inbox.openDecisions('projects', 'approval_requested', '', {
+      await inbox.openDecisions('projects', 'agent_blocked', '', {
         type: 'issue',
         id: 'other',
       }),
