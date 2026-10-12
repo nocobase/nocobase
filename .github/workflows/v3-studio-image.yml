@@ -16,7 +16,10 @@ name: V3 Studio image
 # Internal images (dev versions of Studio, nb-studio and the runner) are built in 2013xile/nocobase-ci and pushed to the
 # internal registry instead.
 #
-# The beta release calls this; re-run its job from the release run to rebuild an image.
+# The beta release calls this. To rebuild an image, re-run its job from the release run, or dispatch this workflow
+# (through its entry on main) with the release tag. Pushing a tag again replaces the image it names. Besides
+# `:<version>`, the release also points `:beta` (`:latest` for a stable version) at the new image; a dispatch does so only
+# with `update_beta_or_latest`, so rebuilding an older release cannot send `docker pull nocobase/studio:beta` back to it.
 
 on:
   workflow_call:
@@ -25,6 +28,20 @@ on:
         description: 'Aggregate release tag to build, e.g. release-beta/2026-10-11.1'
         type: string
         required: true
+      update_beta_or_latest:
+        description: Besides :<version>, also point :beta (or :latest for a stable version) at this image
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Aggregate release tag to build, e.g. release-beta/2026-10-11.1'
+        type: string
+        required: true
+      update_beta_or_latest:
+        description: Besides :<version>, also point :beta (or :latest for a stable version) at this image. Leave off when rebuilding an older release
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -52,6 +69,7 @@ jobs:
         env:
           ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
           TAG: ${{ inputs.tag }}
+          UPDATE_BETA_OR_LATEST: ${{ inputs.update_beta_or_latest }}
         run: |
           manifest=packages/apps/studio/package.json
           version=$(jq -r '.version // empty' "$manifest" 2>/dev/null || true)
@@ -65,7 +83,10 @@ jobs:
           esac
           tags=
           for image in nocobase/studio "$ALI_REGISTRY/nocobase/studio"; do
-            tags="${tags}${image}:${version}"$'\n'"${image}:${channel}"$'\n'
+            tags="${tags}${image}:${version}"$'\n'
+            if [ "${UPDATE_BETA_OR_LATEST:-true}" != false ]; then
+              tags="${tags}${image}:${channel}"$'\n'
+            fi
           done
           {
             echo "version=${version}"

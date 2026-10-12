@@ -322,9 +322,11 @@ test('a beta release that publishes Studio builds its public release image from 
   // The image is tagged with Studio's version and channel on Docker Hub and Aliyun's public registry.
   const image = workflow('studio-image');
   assert.match(image, /workflow_call:\n\s+inputs:\n\s+tag:/u);
-  assert.doesNotMatch(
+  assert.doesNotMatch(image, /ALI_DOCKER_REGISTRY\b|runners-dist/u);
+  // The release moves the channel tag; a manual rebuild does not unless asked, so an older release cannot take :beta.
+  assert.match(
     image,
-    /workflow_dispatch|ALI_DOCKER_REGISTRY\b|runners-dist/u,
+    /workflow_call:[\s\S]*?update_beta_or_latest:[\s\S]*?default: true\n\s+workflow_dispatch:[\s\S]*?update_beta_or_latest:[\s\S]*?default: false\n/u,
   );
   // Studio's own `pnpm build` packs the runner and nb-studio into dist/runners, which the prebuilt image carries.
   assert.doesNotMatch(image, /cli build|upload-artifact|studio-dist/u);
@@ -349,8 +351,11 @@ test('a beta release that publishes Studio builds its public release image from 
     image,
     /docker buildx imagetools create "\$\{args\[@\]\}" "nocobase\/studio@\$\{AMD64\}" "nocobase\/studio@\$\{ARM64\}"/u,
   );
-  const name = (version) => {
-    const tagWorkspace = path.join(directory, `tags-${version || 'none'}`);
+  const name = (version, updateBetaOrLatest) => {
+    const tagWorkspace = path.join(
+      directory,
+      `tags-${version || 'none'}-${updateBetaOrLatest ?? 'unset'}`,
+    );
     mkdirSync(path.join(tagWorkspace, 'packages/apps/studio'), {
       recursive: true,
     });
@@ -372,6 +377,9 @@ test('a beta release that publishes Studio builds its public release image from 
           ALI_REGISTRY: 'registry.example.com',
           TAG: 'release-beta/2026-10-11.1',
           GITHUB_OUTPUT: output,
+          ...(updateBetaOrLatest === undefined
+            ? {}
+            : { UPDATE_BETA_OR_LATEST: updateBetaOrLatest }),
         },
       },
     );
@@ -395,6 +403,21 @@ test('a beta release that publishes Studio builds its public release image from 
     ].join('\n'),
   );
   assert.match(name('1.0.0').output, /nocobase\/studio:latest\n/u);
+  assert.equal(
+    name('1.0.0-beta.52', 'true').output,
+    name('1.0.0-beta.52').output,
+  );
+  assert.equal(
+    name('1.0.0-beta.52', 'false').output,
+    [
+      'version=1.0.0-beta.52',
+      'tags<<EOF',
+      'nocobase/studio:1.0.0-beta.52',
+      'registry.example.com/nocobase/studio:1.0.0-beta.52',
+      'EOF',
+      '',
+    ].join('\n'),
+  );
   const missing = name('');
   assert.notEqual(missing.status, 0);
   assert.match(
