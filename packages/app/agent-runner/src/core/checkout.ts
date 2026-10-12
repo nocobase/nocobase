@@ -743,6 +743,37 @@ async function ensureCheckout(
       'HEAD',
     ]).catch(() => '');
     if (repo.pullRequest) {
+      // Cleanup records only the active branch. Do not strand unpublished work on a branch it will stop checking.
+      // These origin refs were just fetched: a same-name remote containing HEAD is evidence the old work was pushed.
+      if (current !== repo.branch) {
+        if (current === '')
+          throw new CheckoutError(
+            'cannot switch from detached HEAD: cannot prove its commits were pushed',
+          );
+        const oldRemote = `refs/remotes/origin/${current}`;
+        if (
+          !(await taskGitOk(context, [
+            'show-ref',
+            '--verify',
+            '--quiet',
+            oldRemote,
+          ]))
+        )
+          throw new CheckoutError(
+            `cannot switch from branch ${current}: remote branch is missing; cannot prove its commits were pushed`,
+          );
+        if (
+          !(await taskGitOk(context, [
+            'merge-base',
+            '--is-ancestor',
+            'HEAD',
+            oldRemote,
+          ]))
+        )
+          throw new CheckoutError(
+            `cannot switch from branch ${current}: local commits are unpublished or their push cannot be proven`,
+          );
+      }
       const remote = `refs/remotes/origin/${repo.branch}`;
       if (
         !(await taskGitOk(context, ['show-ref', '--verify', '--quiet', remote]))
