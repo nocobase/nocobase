@@ -5,8 +5,8 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation } from 'react-router';
 
 import { LinkName } from '../../client/components/link-name.js';
@@ -16,10 +16,9 @@ const link: SessionLink = {
   kind: 'issue',
   refId: 'issue-1',
   key: 'ST-346',
-  title:
-    'A very long mixed title 标题 mixed with English that should wrap inside the viewport',
+  title: '任务标题 Mixed English and 中文内容 for the session work list',
   group: 'Studio',
-  status: 'in_progress',
+  status: { label: 'In progress', tone: 'active' },
   href: '/issues/issue-1',
   startable: false,
 };
@@ -33,77 +32,69 @@ function Location(): ReactElement {
   return <output>{useLocation().pathname}</output>;
 }
 
-function renderLink(): void {
+function renderLink(value: SessionLink = link): void {
   render(
     <MemoryRouter>
-      <LinkName link={link} />
+      <LinkName link={value} />
       <Location />
     </MemoryRouter>,
   );
 }
 
+function mockWidth(title: string, truncated: boolean): void {
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(80);
+  vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(
+    function (this: HTMLElement) {
+      return this.textContent === title && truncated ? 800 : 80;
+    },
+  );
+}
+
+function tooltip(): HTMLElement | null {
+  return document.querySelector('[data-slot="tooltip-content"]');
+}
+
 describe('LinkName', () => {
-  it('shows a wrapped full title on hover and keyboard focus only when truncated', async () => {
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe = vi.fn();
-        disconnect = vi.fn();
-      },
-    );
-    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(80);
-    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(
-      function (this: HTMLElement) {
-        return this.textContent === link.title ? 320 : 80;
-      },
-    );
+  it('shows the complete long title on keyboard focus, then closes', async () => {
+    const title = '任务标题 Mixed English and 中文内容 '.repeat(30);
+    mockWidth(title, true);
+    renderLink({ ...link, title });
 
-    renderLink();
     const entry = screen.getByRole('link');
-    fireEvent.pointerEnter(entry, { pointerType: 'mouse' });
-    const tooltip = await waitFor(() => {
-      const element = document.querySelector('[data-slot="tooltip-content"]');
-      expect(element).not.toBeNull();
-      return element as HTMLElement;
-    });
-    expect(tooltip).toHaveTextContent(link.title);
-    expect(tooltip).toHaveClass('whitespace-normal');
-    expect(tooltip).toHaveClass('[overflow-wrap:anywhere]');
-
-    fireEvent.pointerLeave(entry);
-    await waitFor(() =>
-      expect(
-        document.querySelector('[data-slot="tooltip-content"]'),
-      ).toBeNull(),
-    );
     fireEvent.focus(entry);
-    await waitFor(() =>
-      expect(
-        document.querySelector('[data-slot="tooltip-content"]'),
-      ).toHaveTextContent(link.title),
-    );
+    await waitFor(() => expect(tooltip()?.textContent).toBe(title));
+    expect(tooltip()).toHaveClass('overflow-y-auto');
+
     fireEvent.blur(entry);
-    await waitFor(() =>
-      expect(
-        document.querySelector('[data-slot="tooltip-content"]'),
-      ).toBeNull(),
-    );
+    await waitFor(() => expect(tooltip()).toBeNull());
   });
 
-  it('keeps navigation working from the tooltip trigger', async () => {
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe = vi.fn();
-        disconnect = vi.fn();
-      },
-    );
-    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(500);
-    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(80);
-
+  it('does not open for a short title on hover or focus', async () => {
+    mockWidth(link.title, false);
     renderLink();
-    fireEvent.click(screen.getByRole('link'));
+
+    const entry = screen.getByRole('link');
+    fireEvent.focus(entry);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(tooltip()).toBeNull();
+  });
+
+  it('shows an unlinked truncated title on keyboard focus without creating a link', async () => {
+    mockWidth(link.title, true);
+    renderLink({ ...link, href: null });
+
+    const entry = screen.getByText(link.title).parentElement;
+    expect(screen.queryByRole('link')).toBeNull();
+    fireEvent.focus(entry!);
+    await waitFor(() => expect(tooltip()).toHaveTextContent(link.title));
+  });
+
+  it('keeps navigation working from a truncated title', async () => {
+    mockWidth(link.title, true);
+    renderLink();
+
+    const entry = screen.getByRole('link');
+    fireEvent.click(entry);
     expect(screen.getByText('/issues/issue-1')).toBeInTheDocument();
-    expect(document.querySelector('[data-slot="tooltip-content"]')).toBeNull();
   });
 });

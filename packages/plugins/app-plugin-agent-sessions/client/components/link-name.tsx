@@ -38,23 +38,11 @@ export function LinkName({
       to={link.href}
       className={cn(classes, 'hover:underline')}
       onClick={(event) => event.stopPropagation()}
-      onPointerEnter={() => setOpen(isTruncated())}
-      onPointerLeave={() => setOpen(false)}
-      onFocus={() => setOpen(isTruncated())}
-      onBlur={() => setOpen(false)}
     >
       {name}
     </Link>
   ) : (
-    <span
-      className={classes}
-      onPointerEnter={() => setOpen(isTruncated())}
-      onPointerLeave={() => setOpen(false)}
-      onFocus={() => setOpen(isTruncated())}
-      onBlur={() => setOpen(false)}
-    >
-      {name}
-    </span>
+    <span className={classes}>{name}</span>
   );
   return (
     <Tooltip
@@ -62,7 +50,7 @@ export function LinkName({
       onOpenChange={(nextOpen) => setOpen(nextOpen && isTruncated())}
     >
       <TooltipTrigger render={content} />
-      <TooltipContent className='max-h-[calc(100dvh-1rem)] max-w-[min(20rem,calc(100vw-2rem))] overflow-y-auto whitespace-normal [overflow-wrap:anywhere]'>
+      <TooltipContent className='max-h-[calc(100dvh-2rem)] max-w-[min(20rem,calc(100vw-2rem))] overflow-y-auto whitespace-normal [overflow-wrap:anywhere]'>
         {link.title}
       </TooltipContent>
     </Tooltip>
