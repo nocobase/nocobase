@@ -169,6 +169,17 @@ Markdown rendered as compact prose for descriptions and comments, with mention c
 - Example: `@nocobase/markdown-view-demo` (`pnpm exec shadcn view @nocobase/markdown-view-demo`)
 - After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind. remarkCjkAutolink ends a bare URL at CJK text or full-width punctuation; add it after remark-gfm wherever else you render the same Markdown.
 
+### long-text
+
+A long text shown in part, the last line fading out instead of an ellipsis. LongText is for where there is room, such as the description under a page's title or a comment: five lines that unfold in place on a click. LongTextPreview is for a narrow column, such as a record's introduction or address beside its page: three muted lines whose whole text opens in a pop-up, so the column never grows. Neither reacts unless the text overflows.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/long-text`
+- Installs to: `client/components/long-text.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/long-text-demo` (`pnpm exec shadcn view @nocobase/long-text-demo`)
+- After installing: Pass the text as children; a string keeps its line breaks, and rendered content such as MarkdownView works too. LongTextPreview needs a label, the heading of the pop-up that shows the text whole.
+
 ### comment-thread
 
 A record's activity line: comment threads with reactions, reply, edit, delete and resolve, the consumer's own entries between them, and a composer with modes and files. Use it for a record's discussion, such as an issue's comments from @nocobase/app-plugin-projects.
@@ -196,14 +207,15 @@ Files on a record or a message: image thumbnails and file chips with download, t
 
 ### property-fields
 
-The fields of a record's property card: the titled card, label and value rows, a select, chips with creation, a date, a number, a person as a value, and a row of avatars. Use it for the side column of a detail page.
+The fields of a record's property card: the titled card, label and value rows, a select, chips with creation, a date, a number, a line of text, a long text, a link, a person as a value, and a row of avatars. Use it for the side column of a detail page. PropertyCard draws its fields one of two ways: variant form shows every value in its control, and variant inline reads first, each value plain text that a double-click, Enter or F2 edits, shaded under the pointer, with a copy button on hover; a long text opens whole on a click, and a link, which a click opens, is edited from a pencil.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/property-fields`
 - Installs to: `client/components/property-fields.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/long-text`
 - Example: `@nocobase/property-fields-demo` (`pnpm exec shadcn view @nocobase/property-fields-demo`)
-- After installing: Values in, changes out: each field reports a change through onChange. Pass PropertyFieldLabels built from your locale resources for the words the fields show themselves.
+- After installing: Values in, changes out: each field reports a change through onChange. Pass PropertyFieldLabels built from your locale resources for the words the fields show themselves. Set variant='inline' on PropertyCard for the read-first card, and give each field an aria-label, its name while it shows as text.
 
 ### rich-text-editor
 

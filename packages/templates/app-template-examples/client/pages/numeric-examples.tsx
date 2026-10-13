@@ -62,7 +62,8 @@ function Value({ value }: { value: NumericValue }): ReactElement {
       </code>
       <Badge
         variant='secondary'
-        className={`px-1.5 py-0 text-[10px] font-mono shrink-0 shadow-2xs ${
+        data-size='sm'
+        className={`font-mono shrink-0 shadow-2xs ${
           type === 'number'
             ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
             : type === 'string'
@@ -106,10 +107,7 @@ export default function NumericExamplesPage(): ReactElement {
         title={t('numbers.title')}
         actions={
           data ? (
-            <Badge
-              variant='outline'
-              className='gap-1.5 px-3 py-1.5 text-xs font-mono font-medium shadow-2xs'
-            >
+            <Badge variant='outline' className='gap-1.5 font-mono shadow-2xs'>
               <Database className='size-3.5 text-primary' />
               <span>
                 {t('numbers.database', { dialect: data.data.dialect })}
