@@ -830,13 +830,24 @@ export class RunnerDaemon {
     this.updating = true;
     try {
       const reported = Promise.all(this.live.map((app) => this.heartbeat(app)));
-      while (this.claimsInFlight > 0 && !this.stopping.signal.aborted)
+      const cancellations = new Map<string, Promise<void>>();
+      const interruptAgents = (): void => {
+        for (const run of this.supervisor.runs.values()) {
+          if (run.jobId !== undefined || cancellations.has(run.runId)) continue;
+          cancellations.set(
+            run.runId,
+            this.supervisor.enforceCancel(run.runId, true),
+          );
+        }
+      };
+      // Stop existing tools immediately, and include workers registered by outstanding claims.
+      interruptAgents();
+      while (this.claimsInFlight > 0 && !this.stopping.signal.aborted) {
         await delay(20, this.stopping.signal);
-      await Promise.all(
-        [...this.supervisor.runs.values()]
-          .filter((run) => run.jobId === undefined)
-          .map((run) => this.supervisor.enforceCancel(run.runId, true)),
-      );
+        interruptAgents();
+      }
+      interruptAgents();
+      await Promise.all(cancellations.values());
       await reported;
       // Background jobs retain their existing completion semantics.
       if (this.supervisor.size > 0 || this.stopping.signal.aborted) return;
