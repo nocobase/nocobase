@@ -1,0 +1,242 @@
+/**
+ * The issue page's "Now" line: what the issue waits for in each state, the project manager's "Next" line, "Start" on a
+ * backlog issue and "Hand over to the project manager" when the server offers it.
+ */
+import {
+  createTestI18nRuntime,
+  TestI18nProvider,
+} from '@nocobase/i18n/testing';
+import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import enUS from '../../client/locales/en-US.js';
+import zhCN from '../../client/locales/zh-CN.js';
+import { IssueProgressLine } from '../../client/issues/detail/issue-progress.js';
+import { progressSentence } from '../../client/issues/detail/progress-text.js';
+import type { IssueProgress } from '../../shared/project-manager.js';
+
+const mocks = vi.hoisted(() => ({
+  request: vi.fn(),
+  show: vi.fn(),
+  editable: true,
+  userId: 'alice',
+}));
+vi.mock('@nocobase/app-client', async (original) => ({
+  ...(await original<typeof import('@nocobase/app-client')>()),
+  useApiClient: () => ({ request: mocks.request }),
+  useToaster: () => ({ show: mocks.show }),
+}));
+vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
+  useViewer: () => ({ userId: mocks.userId }),
+}));
+vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
+  canEditIssues: () => mocks.editable,
+}));
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
+  state: 'idle',
+  agent: null,
+  step: null,
+  since: null,
+  runner: null,
+  pullRequest: null,
+  question: null,
+  next: null,
+  handOver: false,
+  ...overrides,
+});
+const issue = (statusKey: string) =>
+  ({ id: 'i1', ownerUserId: 'alice', statusKey, revision: 1 }) as IssueDetail;
+
+beforeEach(() => {
+  mocks.editable = true;
+  mocks.userId = 'alice';
+  mocks.request.mockReset();
+  mocks.show.mockReset();
+});
+afterEach(cleanup);
+
+async function translator(language: 'en-US' | 'zh-CN') {
+  const runtime = await createTestI18nRuntime({
+    application: {
+      namespace: 'studio',
+      resources: language === 'en-US' ? enUS : zhCN,
+    },
+    locale: language,
+  });
+  return runtime;
+}
+
+async function mount(
+  statusKey: string,
+  answer: IssueProgress,
+  onStart = vi.fn(),
+  language: 'en-US' | 'zh-CN' = 'en-US',
+) {
+  mocks.request.mockImplementation((request: { method?: string }) =>
+    Promise.resolve(
+      request.method === 'POST' ? { data: { runId: 'r1' } } : { data: answer },
+    ),
+  );
+  const runtime = await translator(language);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <TestI18nProvider runtime={runtime} namespace='studio'>
+      <QueryClientProvider client={client}>
+        <IssueProgressLine
+          issue={issue(statusKey)}
+          refresh='1'
+          starting={false}
+          onStart={onStart}
+        />
+      </QueryClientProvider>
+    </TestI18nProvider>,
+  );
+  return onStart;
+}
+
+describe('what an issue waits for', () => {
+  const agent = { id: 'sol', name: 'Codex · GPT-6.1 Sol' };
+  it.each([
+    [
+      progress({
+        state: 'working',
+        agent,
+        step: 'fixing the review findings',
+        since: '2026-10-12T11:48:00Z',
+        runner: 'dev-2',
+      }),
+      'Codex · GPT-6.1 Sol is working on fixing the review findings · for 12 min · on dev-2',
+      'Codex · GPT-6.1 Sol 正在fixing the review findings · 已运行 12 分钟 · 在 dev-2',
+    ],
+    [
+      progress({ state: 'queued', agent, step: 'review' }),
+      'Codex · GPT-6.1 Sol waits for a runner to take it: review',
+      'Codex · GPT-6.1 Sol 在等执行机领取：review',
+    ],
+    [
+      progress({
+        state: 'checksPending',
+        pullRequest: { number: 10777, url: null },
+      }),
+      'Waiting for the checks of PR #10777',
+      '等待 PR #10777 的检查结果',
+    ],
+    [
+      progress({ state: 'needsDecision', question: 'Keep the old API?' }),
+      'The project manager asks: Keep the old API?',
+      '项目经理在等你决定：Keep the old API?',
+    ],
+    [progress({ state: 'inReview' }), 'Waiting for acceptance', '等待验收'],
+    [
+      progress({ state: 'notStarted' }),
+      'Not started. Start it and the project manager arranges the work.',
+      '还没开始。点「开始」后由项目经理安排。',
+    ],
+    [progress({ state: 'finished' }), 'Finished', '已结束'],
+    [
+      progress({ state: 'idle' }),
+      'Nothing is going on now',
+      '现在没有在进行的工作',
+    ],
+  ])('words %o in both languages', async (value, english, chinese) => {
+    const en = await translator('en-US');
+    const zh = await translator('zh-CN');
+    expect(progressSentence(en.getFixedT('studio', 'en-US'), value, NOW)).toBe(
+      english,
+    );
+    expect(progressSentence(zh.getFixedT('studio', 'zh-CN'), value, NOW)).toBe(
+      chinese,
+    );
+  });
+
+  it('shows the line with the project manager’s next step, and links the pull request whose checks it waits for', async () => {
+    await mount(
+      'in_progress',
+      progress({
+        state: 'checksPending',
+        pullRequest: {
+          number: 12,
+          url: 'https://github.com/acme/shop/pull/12',
+        },
+        next: 'Hand it to Opus for review once the checks pass',
+      }),
+    );
+    expect(
+      await screen.findByRole('link', {
+        name: 'Waiting for the checks of PR #12',
+      }),
+    ).toHaveAttribute('href', 'https://github.com/acme/shop/pull/12');
+    expect(
+      screen.getByText('Next: Hand it to Opus for review once the checks pass'),
+    ).toBeInTheDocument();
+    expect(mocks.request).toHaveBeenCalledWith({ path: 'issueProgress/i1' });
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('offers Start on a backlog issue', async () => {
+    const onStart = await mount(
+      'backlog',
+      progress({ state: 'notStarted' }),
+      vi.fn(),
+      'zh-CN',
+    );
+    expect(
+      await screen.findByText('还没开始。点「开始」后由项目经理安排。'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '开始' }));
+    expect(onStart).toHaveBeenCalledOnce();
+  });
+
+  it('hands an issue the project manager never worked on over to it', async () => {
+    await mount('in_progress', progress({ state: 'idle', handOver: true }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Hand over to the project manager',
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: 'projectManager/issues/i1/start',
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'success',
+          title: 'Handed over to the project manager',
+        }),
+      ),
+    );
+  });
+
+  it('offers nothing to a person who may not edit the issue', async () => {
+    mocks.editable = false;
+    await mount('backlog', progress({ state: 'notStarted', handOver: true }));
+    expect(await screen.findByText(/Not started/u)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+it('hides start and hand-over from an editor who is not the owner', async () => {
+  mocks.userId = 'bob';
+  await mount('backlog', progress());
+  expect(screen.queryByRole('button', { name: 'Start' })).toBeNull();
+  cleanup();
+  await mount('in_progress', progress({ handOver: true }));
+  expect(
+    screen.queryByRole('button', { name: 'Hand over to the project manager' }),
+  ).toBeNull();
+});

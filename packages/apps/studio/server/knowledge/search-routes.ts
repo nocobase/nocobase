@@ -128,7 +128,7 @@ export const knowledgeSearchRoutes: AppApiRouteContribution<Application> =
       if (!container.has(agentsToken)) return [];
       const catalog = await container
         .resolve(agentsToken)
-        .online.gateway.catalog(kind);
+        .models.gateway.catalog(kind);
       return catalog.services.flatMap((service) =>
         service.models.map((model) => ({
           modelService: service.name,
@@ -165,7 +165,7 @@ export const knowledgeSearchRoutes: AppApiRouteContribution<Application> =
           'MODEL_SERVICES_UNAVAILABLE',
           'There are no model services.',
         );
-      const gateway = container.resolve(agentsToken).online.gateway;
+      const gateway = container.resolve(agentsToken).models.gateway;
       const named: [KnowledgeModelRef | null, ModelKind, string][] = [
         [settings.embedding, 'embedding', 'embedding'],
         [settings.rerank, 'rerank', 'rerank'],

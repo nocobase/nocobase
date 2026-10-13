@@ -31,7 +31,7 @@ describe('the model gateway', () => {
   beforeEach(async () => {
     mock = await startMockOpenAI();
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     await services.create({
       title: 'Local',
       provider: 'openai-compatible',

@@ -85,8 +85,8 @@ const enUS = {
     dismiss: 'Dismiss',
     accepted: 'Message queued for delivery.',
     loadedCount: '{{count}} loaded',
-    mailboxNavigation: 'Mailbox navigation',
-    backToMessages: 'Back to messages',
+    mailboxNavigation: 'Mailboxes and folders',
+    backToMessages: 'Back to message list',
     closeNavigation: 'Close mailbox navigation',
     retry: 'Try again',
     noAccountsTitle: 'Connect your first mailbox',
@@ -95,6 +95,10 @@ const enUS = {
     allAccounts: 'All accounts',
     allMail: 'All mail',
     search: 'Search mail',
+    participant: 'Participant',
+    participantHint:
+      'Full email address or @domain. Matches From, To and Cc only.',
+    participantInvalid: 'Enter a valid full email address or @domain.',
     unreadOnly: 'Unread',
     starredOnly: 'Starred',
     folders: 'Folders',
@@ -338,7 +342,9 @@ const enUS = {
       configurationRequired:
         'Ask an administrator to configure this mail provider first',
       emailAddress: 'Email address',
-      username: 'Username',
+      username: 'Username (optional)',
+      usernameDescription:
+        'Usually your email address. Leave blank to use the email address you entered.',
       password: 'Password',
       displayName: 'Sender name (optional)',
     },

@@ -23,7 +23,7 @@ import {
   withSections,
   type BriefSectionRegistry,
 } from './extensions.js';
-import { dialectOf, type ClaimContext, type SubjectRegistry } from './ports.js';
+import { type ClaimContext, type SubjectRegistry } from './ports.js';
 import { DEFAULT_THREAD } from './run.service.js';
 
 /** The id a sample subject is previewed under. */
@@ -102,7 +102,7 @@ export function createBriefPreviewer(deps: {
         run: {
           id: 'preview',
           agentId: agent.id,
-          agentType: agent.type,
+          agentType: 'runner',
           runnerId: null,
           tool: null,
           modelService: null,
@@ -140,7 +140,6 @@ export function createBriefPreviewer(deps: {
         inputs,
         cli: deps.cliName,
         appName: deps.appName,
-        dialect: dialectOf(agent),
       };
       const assembly = await sample.assemble(conn, claim);
       const skills = await deps.skills.forRun(

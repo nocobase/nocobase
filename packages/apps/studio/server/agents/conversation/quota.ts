@@ -14,7 +14,7 @@
  * | `startsRun`      | wake an agent (an executor, a mention, a reply), as the rehearsal reports              |
  * | `finalStatus`    | move an issue to a done or closed status                                               |
  * | `ownerChange`    | change an issue's owner, or create one owned by someone else                           |
- * | `agentExecutor`  | make an agent an issue's executor (a person, or none, is fine)                         |
+ * | `agentExecutor`  | make an agent an issue's executor (a person, none, or the default of a new issue is fine) |
  * | `createsProject` | create a project                                                                       |
  * | `quota`          | touch a third distinct object in this turn (a comment or a dependency counts on its issue) |
  *

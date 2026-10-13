@@ -174,6 +174,11 @@ const IssueRunRowSchema: z.ZodType<IssueRunRow> = z
 
 export interface IssueRunDetail {
   readonly id: string;
+  readonly actorUserId: string;
+  readonly actorName: string;
+  readonly requestedByUserId: string;
+  readonly requestedByName: string;
+  readonly ownerUserId: string | null;
   readonly agentId: string;
   readonly agent: string;
   readonly issue: {
@@ -186,6 +191,7 @@ export interface IssueRunDetail {
   readonly attempt: number;
   readonly maxAttempts: number;
   readonly retryOfRunId: string | null;
+  readonly retriedRunId: string | null;
   readonly freshSession?: boolean;
   readonly createdAt: string;
   readonly startedAt: string | null;
@@ -213,6 +219,23 @@ export interface IssueRunDetail {
 const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
   .object({
     id: z.string(),
+    actorUserId: z.string().meta({
+      description: 'Execution identity, fixed when the run is first claimed.',
+    }),
+    actorName: z
+      .string()
+      .meta({ description: 'The name of the execution identity.' }),
+    requestedByUserId: z.string().meta({
+      description:
+        'The user associated with the chain origin; input actors identify the actual triggers, including system events.',
+    }),
+    requestedByName: z.string().meta({
+      description: 'The name of the user associated with the chain origin.',
+    }),
+    ownerUserId: z
+      .string()
+      .nullable()
+      .meta({ description: 'The issue owner snapshot for this run.' }),
     agentId: z.string(),
     agent: z.string(),
     issue: z.object({
@@ -225,6 +248,7 @@ const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
     attempt: z.number().int(),
     maxAttempts: z.number().int(),
     retryOfRunId: z.string().nullable(),
+    retriedRunId: z.string().nullable(),
     freshSession: z.boolean().optional(),
     createdAt: z.string(),
     startedAt: z.string().nullable(),
@@ -426,7 +450,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
 
     async function agentNames(): Promise<Map<string, string>> {
       return new Map(
-        (await agents.agents.list({ includeArchived: true })).map((agent) => [
+        (await agents.agents.directory(agents.tx.read())).map((agent) => [
           agent.id,
           agent.name,
         ]),
@@ -610,6 +634,11 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
         ];
         const data: IssueRunDetail = {
           id: run.id,
+          actorUserId: run.actorUserId,
+          actorName: detail.actorName ?? run.actorUserId,
+          requestedByUserId: run.requestedByUserId,
+          requestedByName: detail.requestedByName ?? run.requestedByUserId,
+          ownerUserId: run.ownerUserId,
           agentId: run.agentId,
           agent,
           issue: {
@@ -622,6 +651,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           attempt: run.attempt,
           maxAttempts: run.maxAttempts,
           retryOfRunId: run.retryOfRunId,
+          retriedRunId: detail.retriedRunId ?? null,
           freshSession: run.freshSession === true,
           createdAt: run.createdAt,
           startedAt: run.startedAt,

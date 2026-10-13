@@ -4,7 +4,7 @@
  * and both issues visible; the "blocks" side is read-only (the link belongs to the issue that waits).
  *
  * Toward the issues domain this implements `IssueRelations` (linking on create, cycle checks, release and join), the
- * extras the issue page and list show, and the checks the `subtasksDone` and `blockersDone` workflow rules make.
+ * extras the issue page and list show.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -37,7 +37,6 @@ import {
   type IssueExtras,
   type IssueRelations,
 } from '../issues/index.js';
-import type { RelationChecks } from '../workflows/index.js';
 import {
   blockedCounts,
   blockersOf,
@@ -100,7 +99,6 @@ export interface SubtaskService {
     issueIds: readonly string[],
   ): Promise<Map<string, Blocker[]>>;
   readonly relations: IssueRelations;
-  readonly checks: RelationChecks;
   readonly extras: Pick<IssueExtras, 'relations' | 'listCounts'>;
 }
 
@@ -279,18 +277,6 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         await onTerminal(deps, tx, after, actor);
     },
     removed: (tx, issue, actor) => onTerminal(deps, tx, issue, actor),
-  };
-
-  const checks: RelationChecks = {
-    async openChildren(conn, issueId) {
-      const catalogs = catalogsFor(deps.statuses, conn);
-      const open: Issue[] = [];
-      for (const child of await liveChildren(conn, [issueId]))
-        if (!(await catalogs.terminal(child))) open.push(child);
-      return open;
-    },
-    blockers: (conn, issue) =>
-      blockersOf(conn, catalogsFor(deps.statuses, conn), issue),
   };
 
   return {
@@ -481,7 +467,6 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     },
 
     relations,
-    checks,
 
     extras: {
       async relations(conn, viewer, issue) {

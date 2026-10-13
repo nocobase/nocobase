@@ -1,0 +1,4 @@
+[
+  { "type": "file", "name": "index", "label": "概览" },
+  { "type": "file", "name": "usage", "label": "使用说明" }
+]

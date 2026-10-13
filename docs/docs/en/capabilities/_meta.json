@@ -16,9 +16,10 @@
     "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "data-sources",
-    "label": "Data sources"
+    "label": "Data sources",
+    "collapsed": true
   },
   {
     "type": "dir",
@@ -39,29 +40,34 @@
     "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "file",
-    "label": "Files"
+    "label": "Files",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "i18n",
-    "label": "Internationalization"
+    "label": "Internationalization",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "theme",
-    "label": "Themes"
+    "label": "Themes",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "notification",
-    "label": "Notifications"
+    "label": "Notifications",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "scheduler",
-    "label": "Scheduled tasks"
+    "label": "Scheduled tasks",
+    "collapsed": true
   },
   {
     "type": "dir",
@@ -79,6 +85,12 @@
     "type": "dir",
     "name": "ai-knowledge-base",
     "label": "AI knowledge bases",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "template-print",
+    "label": "Template printing",
     "collapsed": true
   }
 ]

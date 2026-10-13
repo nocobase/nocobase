@@ -196,9 +196,7 @@ vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
     options: [{ value: 'r1', label: 'Build box' }],
   }),
 }));
-vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
-  WorkflowSelect: ({ id }: { id: string }) => <select id={id} />,
-}));
+vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({}));
 vi.mock('@nocobase/i18n/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/i18n/client')>()),
   useTranslation: () => ({
@@ -249,15 +247,6 @@ globalThis.ResizeObserver ??= class {
   public disconnect(): void {}
 };
 Element.prototype.scrollIntoView ??= () => undefined;
-// CodeMirror measures text ranges, which jsdom does not lay out.
-Range.prototype.getClientRects ??= () =>
-  ({
-    length: 0,
-    item: () => null,
-    [Symbol.iterator]: [][Symbol.iterator],
-  }) as unknown as DOMRectList;
-Range.prototype.getBoundingClientRect ??= () => new DOMRect();
-
 /** Picks an option of a shadcn Select by its trigger's label. */
 /** Picks an agent in an agent picker, whose menu lists it with its availability. */
 async function chooseAgent(label: string, name: string) {
@@ -595,12 +584,10 @@ describe('the New project wizard', () => {
     expect(init.create.mock.calls[0]?.[0]).not.toHaveProperty('ci');
   });
 
-  it('hands it to the senior developer agent unless another is chosen', async () => {
-    // The project lead coordinates and opens no pull requests, so it is not the default even when listed first.
+  it('hands it to the first agent offered unless another is chosen', async () => {
     agents.options = [
       { value: 'a1', label: 'Coder' },
-      { value: 'studio-project-lead', label: 'Project lead' },
-      { value: 'studio-senior-developer', label: 'Senior developer' },
+      { value: 'a2', label: 'Reviewer' },
     ];
     render(wrap(<NewProjectPage />));
     await toDeploy();
@@ -609,7 +596,7 @@ describe('the New project wizard', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText('ciSetup.agent.label').textContent,
-      ).toContain('Senior developer'),
+      ).toContain('Coder'),
     );
     // The agent picker as a form field, with the agent's availability.
     expect(screen.getByLabelText('ciSetup.agent.label')).toHaveAttribute(
@@ -623,7 +610,7 @@ describe('the New project wizard', () => {
         method: 'agent',
         app: { appId: 'shop' },
         target: PULL_REQUESTS,
-        agentId: 'studio-senior-developer',
+        agentId: 'a1',
       },
     });
   });
@@ -724,7 +711,6 @@ describe('the New project wizard', () => {
     await waitFor(() => expect(init.create).toHaveBeenCalledOnce());
     expect(init.create.mock.calls[0]?.[0]).toEqual({
       name: 'Local',
-      workflowId: null,
       initAgentId: 'a1',
       codeLocation: 'runnerDirectory',
       runnerDirectory: {
@@ -782,7 +768,6 @@ describe('the New project wizard', () => {
     await waitFor(() => expect(init.create).toHaveBeenCalledOnce());
     expect(init.create.mock.calls[0]?.[0]).toEqual({
       name: 'Notes',
-      workflowId: null,
       codeLocation: 'none',
     });
   });

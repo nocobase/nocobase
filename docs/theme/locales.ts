@@ -8,7 +8,7 @@ export const locales = [
   {
     code: 'cn',
     label: '简体中文',
-    href: '/cn/',
+    href: '/zh-CN/',
   },
   {
     code: 'ja',

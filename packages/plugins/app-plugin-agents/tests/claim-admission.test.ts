@@ -55,108 +55,53 @@ describe('subject admission during claim', () => {
     });
     expect(h.finished).toHaveLength(1);
   });
-  it('applies the same admission hook to online work', async () => {
-    h = await createHarness();
-    const binding = h.services.subjects.get('sample')!;
-    h.services.subjects.register({
-      ...binding,
-      kind: 'admitted',
-      agentTypes: ['online'],
-    });
-    const assemble = vi.spyOn(binding.context, 'assemble');
-    binding.context.admit = async () => ({ reason: 'stageMismatch' });
-    const agent = await h.createAgent({ type: 'online', modelEntries: [] });
-    const queued = await h.services.runs.enqueue({
+});
+
+it('delivers the subject-selected inputs to runner claims', async () => {
+  h = await createHarness();
+  const binding = h.services.subjects.get('sample')!;
+  const assemble = binding.context.assemble;
+  h.services.subjects.register({
+    ...binding,
+    kind: 'filtered',
+    context: {
+      ...binding.context,
+      assemble: async (conn, candidate) => {
+        const inputs = candidate.inputs.filter(
+          (item) => item.text !== 'Obsolete',
+        );
+        return {
+          ...(await assemble(conn, { ...candidate, inputs })),
+          inputs,
+        };
+      },
+    },
+  });
+  const agent = await h.createAgent();
+  for (const text of ['Current', 'Obsolete'])
+    await h.services.runs.enqueue({
       agentId: agent,
-      subject: { kind: 'admitted', id: 'old' },
+      subject: { kind: 'filtered', id: 'issue' },
       actorUserId: 'owner',
       input: {
         type: 'signal',
-        actor: { kind: 'user', id: 'owner', name: 'Owner' },
-        text: 'Continue.',
+        actor: { kind: 'system', id: 'system', name: 'System' },
+        text,
       },
     });
-    const run = queued.runId!;
-    expect(
-      await h.services.claims.claimServer({ id: 'server:test' }, 1),
-    ).toEqual([]);
-    expect(assemble).not.toHaveBeenCalled();
-    expect(await h.services.runs.get(run)).toMatchObject({
-      status: 'cancelled',
-      attempt: 1,
-      failureDetail: 'stageMismatch',
-    });
-  });
+  const runner = await h.registerRunner();
+  const [payload] = await claim(h, runner);
+  expect(payload.inputs.map((input) => input.text)).toEqual(['Current']);
+  expect(payload.prompt.turn).not.toContain('Obsolete');
+  expect(
+    (
+      await h.services.runs.pendingInputs(
+        h.database.connection(),
+        payload.run.id,
+      )
+    ).map((input) => input.text),
+  ).toEqual(['Current']);
 });
-
-for (const type of ['runner', 'online'] as const) {
-  it(`delivers the subject-selected inputs to ${type} claims`, async () => {
-    h = await createHarness();
-    const binding = h.services.subjects.get('sample')!;
-    const assemble = binding.context.assemble;
-    h.services.subjects.register({
-      ...binding,
-      kind: 'filtered',
-      agentTypes: [type],
-      context: {
-        ...binding.context,
-        assemble: async (conn, candidate) => {
-          const inputs = candidate.inputs.filter(
-            (item) => item.text !== 'Obsolete',
-          );
-          return {
-            ...(await assemble(conn, { ...candidate, inputs })),
-            inputs,
-          };
-        },
-      },
-    });
-    const agent = await h.createAgent({
-      type,
-      ...(type === 'online' ? { modelEntries: [] } : {}),
-    });
-    for (const text of ['Current', 'Obsolete'])
-      await h.services.runs.enqueue({
-        agentId: agent,
-        subject: { kind: 'filtered', id: 'issue' },
-        actorUserId: 'owner',
-        input: {
-          type: 'signal',
-          actor: { kind: 'system', id: 'system', name: 'System' },
-          text,
-        },
-      });
-    if (type === 'runner') {
-      const runner = await h.registerRunner();
-      const [payload] = await claim(h, runner);
-      expect(payload.inputs.map((input) => input.text)).toEqual(['Current']);
-      expect(payload.prompt.turn).not.toContain('Obsolete');
-      expect(
-        (
-          await h.services.runs.pendingInputs(
-            h.database.connection(),
-            payload.run.id,
-          )
-        ).map((input) => input.text),
-      ).toEqual(['Current']);
-    } else {
-      const [payload] = await h.services.claims.claimServer(
-        { id: 'server:test' },
-        1,
-      );
-      expect(payload.inputs.map((input) => input.text)).toEqual(['Current']);
-      expect(payload.turn).not.toContain('Obsolete');
-      expect(
-        (
-          await h.services.runs.pendingInputs(
-            h.database.connection(),
-            payload.runId,
-          )
-        ).map((input) => input.text),
-      ).toEqual(['Current']);
-    }
-  });
-}
 
 describe('subject admission for a working run', () => {
   async function working() {

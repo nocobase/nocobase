@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-i18n
 
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+
 ## 1.0.0-beta.15
 
 ### Patch Changes

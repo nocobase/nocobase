@@ -31,7 +31,8 @@ const inMenuOrder = (
 
 /**
  * The grantable pages grouped and ordered as the sidebar shows them: the top entries, then each section in turn.
- * Sections without such a page (Settings, whose tabs are settings items) are left out.
+ * Sections without such a page (Settings, whose tabs are settings items) are left out, and a page behind several
+ * entries (My issues' grant also opens My follow-ups) is listed once, where it first appears.
  */
 export function pageGroupsOf(
   contributions: readonly AppClientRouteContribution[],
@@ -42,18 +43,22 @@ export function pageGroupsOf(
     ),
   );
   const groups: { title: string | null; pages: Page[] }[] = [];
+  const listed = new Set<Page>();
+  const first = (page: Page | null): page is Page => {
+    if (page === null || listed.has(page)) return false;
+    listed.add(page);
+    return true;
+  };
   for (const route of top) {
     if (!route.componentLoader && route.children) {
       groups.push({
         title: route.navigation?.title ?? null,
-        pages: inMenuOrder(route.children)
-          .map(pageOf)
-          .filter((page) => page !== null),
+        pages: inMenuOrder(route.children).map(pageOf).filter(first),
       });
       continue;
     }
     const page = pageOf(route);
-    if (!page) continue;
+    if (!first(page)) continue;
     const last = groups.at(-1);
     if (last && last.title === null) last.pages.push(page);
     else groups.push({ title: null, pages: [page] });

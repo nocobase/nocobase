@@ -17,7 +17,6 @@
 import { SYSTEM_CALLER } from '@nocobase/app-plugin-releases/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import { AccessError } from '../../server/access/errors.js';
 import {
   CI_KEY_REVOKED,
@@ -45,6 +44,7 @@ import {
   createBridgeHarness,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
+import { claimHandedOver } from '../projects-init/hand-over.js';
 
 const STUDIO = 'https://studio.example.com';
 const WORKFLOW = '.github/workflows/nb-studio-shop-preview.yml';
@@ -142,7 +142,6 @@ beforeEach(async () => {
   for (const id of ['alice', 'bob', 'root']) await h.addUser(id);
   h.roles.set('alice', 'admin');
   h.roles.set('root', 'owner');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
   agentId = await h.createAgent({ name: 'Coder' });
   h.github.app.installations.set('acme', '77');
   connection = await h.gitConnections.create('alice', {
@@ -377,7 +376,7 @@ describe('a repository Studio created', () => {
       key: null,
     });
     expect(calls).toEqual([]);
-    const payload = await h.claimOne();
+    const payload = await claimHandedOver(h, agentId);
     // The agent's first push reaches GitHub, which tells Studio.
     h.github.repos.get('acme/shop')!.empty = false;
     await inits.repoEvent({

@@ -45,7 +45,7 @@ const DAY_MS = 24 * 3600 * 1000;
 const FAILED_RUN_LOOKBACK_DAYS = 7;
 
 export interface DashboardDeps {
-  readonly agents: Pick<Agents, 'reporting' | 'agents' | 'clock'>;
+  readonly agents: Pick<Agents, 'reporting' | 'agents' | 'clock' | 'tx'>;
   readonly projects: () => Pick<Projects, 'reports'> | undefined;
   readonly viewerOf: (userId: string) => Promise<Viewer>;
   readonly connection?: () => DatabaseConnection;
@@ -482,7 +482,7 @@ export async function dashboardAttention(
     shown.map((run) => run.subjectId),
   );
   const names = new Map(
-    (await deps.agents.agents.list({ includeArchived: true })).map((agent) => [
+    (await deps.agents.agents.directory(deps.agents.tx.read())).map((agent) => [
       agent.id,
       agent.name,
     ]),

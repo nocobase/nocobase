@@ -76,7 +76,7 @@ import {
   usageRepo,
   type RunRecord,
 } from './run.store.js';
-import { dialectOf, takesType, type SubjectRegistry } from './ports.js';
+import type { SubjectRegistry } from './ports.js';
 import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { gateInputs, gatePending } from './input-gate.js';
@@ -198,6 +198,14 @@ export interface RunService {
    * events).
    */
   enqueue(request: EnqueueRequest, outer?: Tx): Promise<EnqueueResult>;
+  /** Reads causal work inside the caller's transaction, without opening a second database connection. */
+  identityInputs(
+    conn: DatabaseConnection,
+    runId: string,
+  ): Promise<{
+    readonly run: Run;
+    readonly inputs: readonly RunInput[];
+  } | null>;
   /** Work waiting for the subject's responsible to confirm it: confirming, rejecting, withdrawing, handing it on. */
   readonly requests: RunRequestService;
   /** Adds input to a run that has not ended. */
@@ -221,9 +229,20 @@ export interface RunService {
     outer?: Tx,
   ): Promise<Run[]>;
   /** Starts a failed or cancelled run's work again as a new run, with its unhandled input, as `byUserId`. */
-  retry(runId: string, byUserId: string): Promise<Run>;
+  retry(
+    runId: string,
+    byUserId: string,
+    source?: 'card' | 'cli' | 'runRecord' | 'api',
+  ): Promise<Run>;
   get(runId: string): Promise<Run>;
   detail(runId: string): Promise<RunDetail>;
+  /** The first replacement and its retry attribution, without loading a run transcript. */
+  retryInfo(runId: string): Promise<{
+    readonly runId: string;
+    readonly actorUserId: string;
+    readonly actorName: string;
+    readonly source: string;
+  } | null>;
   list(filter: RunFilter): Promise<Run[]>;
   /** The newest ended run of each agent on each of the subjects (`subjectIds` of `subjectKind`), in no order. */
   lastEnded(subjectKind: string, subjectIds: readonly string[]): Promise<Run[]>;
@@ -386,8 +405,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
   ): Promise<Agent> {
     const agent = await findAgent(unit.conn, agentId);
     if (!agent) throw notFound('Agent');
-    if (agent.archivedAt)
-      throw precondition('AGENT_ARCHIVED', 'The agent is archived.');
+    if (agent.status !== 'enabled')
+      throw precondition('AGENT_NOT_ENABLED', 'The agent is not enabled.');
     if (!deps.agents.mayInvoke(agent, userId))
       throw forbidden('You may not wake this agent.');
     return agent;
@@ -412,18 +431,13 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly maxAttempts?: number;
     },
   ): Promise<string> {
-    if (!takesType(deps.subjects.get(values.subject.kind), agent.type))
-      throw invalid(
-        `A ${agent.type} agent cannot work on a ${values.subject.kind}.`,
-        { reason: 'AGENT_TYPE_NOT_ALLOWED', agentType: agent.type },
-      );
     const now = clock.now().toISOString();
     const id = ids.next();
     await runsRepo(unit.conn).createOne({
       values: {
         id,
         agentId: agent.id,
-        agentType: agent.type,
+        agentType: 'runner',
         runnerId: null,
         status: 'queued',
         priority: values.priority,
@@ -660,6 +674,24 @@ export function createRunService(deps: RunServiceDeps): RunService {
     return source;
   }
 
+  async function selectedIdentity(unit: Tx, request: EnqueueRequest) {
+    const identity = await deps.subjects
+      .get(request.subject.kind)
+      ?.actsAs?.(unit.conn, {
+        subjectId: request.subject.id,
+        agentId: request.agentId,
+        causedByRunId: request.causedByRunId,
+        inputs: [request.input],
+      });
+    if (identity && !identity.actorUserId)
+      throw new ProtocolError(
+        'FORBIDDEN',
+        'The subject has no valid execution identity.',
+        { identityReason: identity.reason ?? 'noOwner' },
+      );
+    return identity;
+  }
+
   /** Refuses work run as `userId` when no runner they may use can run the agent now: it would only wait. */
   async function requireRunnerFor(
     unit: Tx,
@@ -667,7 +699,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
     userId: string,
     requires: readonly string[],
   ): Promise<void> {
-    if (agent.type !== 'runner') return;
     // By the claim's own rules, the agent's variables included; the subject's are the claim's to check.
     if (
       !(await deps.eligibility.canClaim(unit.conn, agent, {
@@ -694,29 +725,40 @@ export function createRunService(deps: RunServiceDeps): RunService {
     mayInvoke: (agent, userId) => deps.agents.mayInvoke(agent, userId),
     requireInvocable,
     requireRunnerFor,
-    direct: (unit, run) =>
-      queue(unit, run.agent, {
+    direct: async (unit, run) => {
+      const identity = await selectedIdentity(unit, {
+        agentId: run.agent.id,
+        subject: run.subject,
+        input: run.input,
+      });
+      const actorUserId = identity?.actorUserId ?? run.actorUserId;
+      const agent = await requireInvocable(unit, run.agent.id, actorUserId);
+      return queue(unit, agent, {
         freshSession: run.freshSession,
         subject: run.subject,
         threadScope: run.threadScope,
-        actorUserId: run.actorUserId,
+        actorUserId,
         requestedByUserId: run.requestedByUserId,
         confirmedByUserId: run.confirmedByUserId,
-        ownerUserId: run.ownerUserId,
+        ownerUserId: identity ? actorUserId : run.ownerUserId,
         priority: run.priority,
         // As it was asked: a moment already past when it is confirmed means now.
         fireAt: fireAtOf(run.fireAt ?? undefined, clock.now()),
         requires: run.requires,
         ...(run.maxAttempts === null ? {} : { maxAttempts: run.maxAttempts }),
         input: run.input,
-      }),
+      });
+    },
   });
 
   return {
     enqueue: (request, outer) =>
       tx.run(async (unit): Promise<EnqueueResult> => {
         const source = await sourceOf(unit, request);
-        const responsible = request.responsibleUserId ?? null;
+        const identity = await selectedIdentity(unit, request);
+        const responsible = identity
+          ? null
+          : (request.responsibleUserId ?? null);
         const threadScope = request.threadScope ?? DEFAULT_THREAD;
         const foreign = responsible !== null && source !== responsible;
         if (foreign && (request.execution ?? 'auto') === 'auto') {
@@ -730,11 +772,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
           if (!deps.agents.mayInvoke(agent, responsible))
             throw forbidden(
               'The person who answers for this may not wake this agent.',
-            );
-          if (!takesType(deps.subjects.get(request.subject.kind), agent.type))
-            throw invalid(
-              `A ${agent.type} agent cannot work on a ${request.subject.kind}.`,
-              { reason: 'AGENT_TYPE_NOT_ALLOWED', agentType: agent.type },
             );
           const created = await insertRunRequest(
             unit,
@@ -764,9 +801,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
         }
         // As the responsible when they caused it; as the source when they run it as themselves (`mine`); as whoever
         // woke the agent when nobody answers for the subject.
-        const actorUserId = foreign
-          ? source
-          : (responsible ?? request.actorUserId ?? source);
+        const actorUserId =
+          identity?.actorUserId ??
+          (foreign ? source : (responsible ?? request.actorUserId ?? source));
         const agent = await requireInvocable(
           unit,
           request.agentId,
@@ -786,7 +823,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
           actorUserId,
           requestedByUserId: source,
           confirmedByUserId: null,
-          ownerUserId: request.ownerUserId ?? null,
+          ownerUserId: identity ? actorUserId : (request.ownerUserId ?? null),
           priority: request.priority ?? 0,
           fireAt: fireAtOf(request.fireAt, clock.now()),
           requires: request.requires ?? [],
@@ -797,6 +834,13 @@ export function createRunService(deps: RunServiceDeps): RunService {
       }, outer),
 
     requests,
+
+    identityInputs: async (conn, runId) => {
+      const run = await findRunRecord(conn, runId);
+      if (!run) return null;
+      const inputs = await inputsRepo(conn).findMany({ filter: { runId } });
+      return { run: toRun(run), inputs: inputs.map(toInput) };
+    },
 
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
@@ -877,8 +921,18 @@ export function createRunService(deps: RunServiceDeps): RunService {
         return ended;
       }, outer),
 
-    retry: (runId, byUserId) =>
-      tx.run(async (unit) => {
+    retry: async (runId, byUserId, source = 'api') => {
+      const target = await require(tx.read(), runId);
+      // Resolve collection metadata outside the transaction too. The lock must
+      // precede consistent reads so repeatable-read databases see a concurrent
+      // retry that committed while this request waited for the lock.
+      await findAgent(tx.read(), target.agentId);
+      return tx.run(async (unit) => {
+        await lockAgentForClaim(
+          unit.conn,
+          target.agentId,
+          clock.now().toISOString(),
+        );
         const run = await require(unit.conn, runId);
         if (run.status !== 'failed' && run.status !== 'cancelled')
           throw precondition(
@@ -890,13 +944,43 @@ export function createRunService(deps: RunServiceDeps): RunService {
             'RUN_NOT_RETRYABLE',
             'A consultation is not retried: the agent that asked asks again.',
           );
-        const agent = await requireInvocable(unit, run.agentId, byUserId);
-        await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
+        // The agent lock serializes retry and enqueue across server instances. Check
+        // the relationship even after the replacement has already ended.
+        const retried = await runsRepo(unit.conn).findOne({
+          filter: { retryOfRunId: run.id },
+          sort: (sort) => [
+            sort.field('createdAt').asc(),
+            sort.field('id').asc(),
+          ],
+        });
+        if (retried)
+          throw precondition(
+            'RUN_ALREADY_RETRIED',
+            'This run has already been retried.',
+            {
+              runId: retried.id,
+            },
+          );
+        const previousInputs = await inputsRepo(unit.conn).findMany({
+          filter: { runId: run.id },
+        });
+        const identity = await deps.subjects
+          .get(run.subjectKind)
+          ?.actsAs?.(unit.conn, {
+            subjectId: run.subjectId,
+            agentId: run.agentId,
+            inputs: previousInputs.map(toInput),
+            causedByRunId: run.retryOfRunId ?? undefined,
+          });
+        if (identity && !identity.actorUserId)
+          throw forbidden(identity.reason ?? 'noOwner');
+        const actorUserId = identity?.actorUserId ?? byUserId;
+        const agent = await requireInvocable(unit, run.agentId, actorUserId);
         const open = await runsOfKey(
           unit.conn,
           run,
           ['queued', ...ACTIVE],
-          byUserId,
+          actorUserId,
         );
         if (open.length > 0)
           throw precondition(
@@ -909,10 +993,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
         const newId = await createRun(unit, agent, {
           subject: { kind: run.subjectKind, id: run.subjectId },
           threadScope: run.threadScope,
-          actorUserId: byUserId,
+          actorUserId,
           requestedByUserId: byUserId,
           confirmedByUserId: null,
-          ownerUserId: run.ownerUserId,
+          ownerUserId: identity ? actorUserId : run.ownerUserId,
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
@@ -927,15 +1011,55 @@ export function createRunService(deps: RunServiceDeps): RunService {
           });
         await insertInput(unit, newId, {
           type: 'retry',
-          actor: { kind: 'user', id: byUserId, name: byUserId },
+          actor: {
+            kind: 'user',
+            id: byUserId,
+            name:
+              (await deps.people.names(unit.conn, [byUserId])).get(byUserId) ??
+              byUserId,
+          },
           text: 'Retry the work of the previous run.',
-          payload: { retryOfRunId: run.id, failureReason: run.failureReason },
+          payload: {
+            retryOfRunId: run.id,
+            failureReason: run.failureReason,
+            source,
+          },
+        });
+        unit.emit({
+          type: 'run.retried',
+          runId: newId,
+          retryOfRunId: run.id,
+          previousStatus: run.status,
         });
         return toRun(await require(unit.conn, newId));
-      }),
+      });
+    },
 
     get: async (runId) =>
       (await readRuns([await require(tx.read(), runId)]))[0],
+
+    async retryInfo(runId) {
+      const conn = tx.read();
+      const next = await runsRepo(conn).findOne({
+        filter: { retryOfRunId: runId },
+        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      });
+      if (!next) return null;
+      const input = await inputsRepo(conn).findOne({
+        filter: { runId: next.id, type: 'retry' },
+        sort: (sort) => [
+          sort.field('createdAt').desc(),
+          sort.field('id').desc(),
+        ],
+      });
+      const source = (input?.payload as { source?: unknown } | null)?.source;
+      return {
+        runId: next.id,
+        actorUserId: next.actorUserId,
+        actorName: input ? toInputView(input).actor.name : next.actorUserId,
+        source: typeof source === 'string' ? source : 'unknown',
+      };
+    },
 
     async detail(runId) {
       const conn = tx.read();
@@ -945,6 +1069,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
       const repos = await reposRepo(conn).findMany({ filter: { runId } });
+      const retried = await runsRepo(conn).findOne({
+        filter: { retryOfRunId: runId },
+        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      });
       const children = await runsRepo(conn).findMany({
         filter: { parentRunId: runId },
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
@@ -958,6 +1086,19 @@ export function createRunService(deps: RunServiceDeps): RunService {
           );
       return {
         ...(await readRuns([run]))[0],
+        actorName:
+          (await deps.people.names(conn, [run.actorUserId])).get(
+            run.actorUserId,
+          ) ?? run.actorUserId,
+        requestedByName:
+          (
+            await deps.people.names(conn, [
+              run.requestedByUserId ?? run.actorUserId,
+            ])
+          ).get(run.requestedByUserId ?? run.actorUserId) ??
+          run.requestedByUserId ??
+          run.actorUserId,
+        retriedRunId: retried?.id ?? null,
         inputs: inputs.map(toInputView),
         repos: repos.map(toRepo),
         usage: await usageOf(conn, runId),
@@ -1137,17 +1278,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
       const conn = tx.read();
       const binding = deps.subjects.get(run.subjectKind);
       const agent = await findAgent(conn, run.agentId);
-      // An online run is held by the application itself, not by a registered runner.
-      const runner =
-        run.runnerId && agent?.type === 'runner'
-          ? await deps.runners.find(conn, run.runnerId)
-          : null;
-      if (
-        !binding ||
-        !agent ||
-        (agent.type === 'runner' && !runner) ||
-        !isActive(run.status)
-      )
+      const runner = run.runnerId
+        ? await deps.runners.find(conn, run.runnerId)
+        : null;
+      if (!binding || !agent || !runner || !isActive(run.status))
         throw notFound('Run context');
       const assembly = await binding.context.assemble(conn, {
         run: toRun(run),
@@ -1156,7 +1290,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
         inputs: (await pendingInputs(conn, run.id)).map(toInput),
         cli: deps.cliName,
         appName: deps.appName,
-        dialect: dialectOf(agent),
       });
       return assembly.data;
     },

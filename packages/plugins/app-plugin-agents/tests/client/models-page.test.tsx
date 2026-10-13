@@ -149,39 +149,6 @@ describe('Agent team › Models', () => {
     expect(rows[2]).toHaveTextContent('services.status.on');
   });
 
-  it('sets the system default chat model at the top of the page', async () => {
-    state.services = [
-      service(),
-      service({
-        name: 'lab',
-        title: 'Lab',
-        models: [
-          {
-            value: 'lab-model',
-            label: 'lab-model',
-            kind: 'chat',
-            dimensions: null,
-          },
-        ],
-      }),
-    ];
-    renderPage(<ModelsPage />);
-    const section = await screen.findByTestId('ag-default-model');
-    const select = await within(section).findByRole('combobox', {
-      name: 'defaultModel.title',
-    });
-    expect(select).toHaveTextContent('Team · mock-model');
-    await userEvent.click(select);
-    await userEvent.click(
-      await screen.findByRole('option', { name: 'lab-model' }),
-    );
-    await waitFor(() =>
-      expect(sent('PUT', 'agents/defaultModels/chat')).toEqual([
-        { modelService: 'lab', model: 'lab-model' },
-      ]),
-    );
-  });
-
   it('adds a service in one dialog: provider type, name, key, base URL and models', async () => {
     state.services = [service()];
     renderPage(<ModelsPage />);

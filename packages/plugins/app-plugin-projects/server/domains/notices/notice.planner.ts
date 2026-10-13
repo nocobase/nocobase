@@ -4,10 +4,11 @@
  * follower before followers are read; then it runs the rules and emits what remains as `notice.planned`.
  *
  * Within one transaction and issue: the actor (a person) is never told of their own action; a person mentioned in a
- * comment is not told of the comment too; a person who got a decision or the workflow's owner notice is not told of
+ * comment is not told of the comment too; a person who got a decision or the owner's notice is not told of
  * the status change too. Kinds other than `user` have no inbox.
  */
 import type { DomainEvent } from '../../kernel/events.js';
+import '../statuses/status.events.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
 import type { Tx } from '../../kernel/tx.js';
 import { findIssue } from '../issues/index.js';
@@ -137,7 +138,7 @@ export function dedupe(
     taken.get(`${slot}:${issueId}`)?.has(userId) ?? false;
 
   for (const event of events)
-    if (event.type === 'workflow.ownerNotified')
+    if (event.type === 'status.ownerNotified')
       take('change', event.issueId, [event.ownerUserId]);
   for (const notice of notices) {
     if (notice.slot === 'change' && notice.kind === 'decision')

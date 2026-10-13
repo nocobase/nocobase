@@ -1,7 +1,8 @@
 // Preparing a run before the agent starts: an ordered list of steps (`PREPARE_STEPS`), each a module of this
 // directory. The worker runs them in order, records the step under way in the run's record, and fails the run with the
-// step's failure reason when one throws; what a step learns it leaves on the context for the steps after it and for
-// the agent's start.
+// step's failure reason when one throws, except that a lock another live process holds, found by any step, is
+// `workspaceBusy` (`stepFailure`); what a step learns it leaves on the context for the steps after it and for the
+// agent's start.
 //
 //   variables  the variables the run asks the runner for by name are ones it provides (`workspace.passthrough`)
 //   workspace  lock the subject's work directory; start over when the run asks (`workspace.clean`)
@@ -24,6 +25,8 @@ import { workspaceStep } from './workspace.ts';
 export {
   agentCwd,
   PrepareError,
+  stepFailure,
+  workspaceKey,
   type PrepareContext,
   type PrepareStep,
 } from './types.ts';

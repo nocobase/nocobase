@@ -1,5 +1,62 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.49
+
+### Patch Changes
+
+- e6dd56e: Slim `AGENTS.md` to an index of always-on rules, at most 32 KB, and move template-specific guidance into a committed `.agents/rules/` directory that ships with the template and is linked from that index. Framework-wide guidance is linked from the synchronized `nocobase-app-development` Skill instead of being copied. `CLAUDE.md` now only imports `AGENTS.md`. `.gitignore`, `.npmignore` and `.prettierignore` ignore `.agents/*` except `.agents/rules/`, and `tests/logic/agents-md.test.ts` enforces the size limit and the links. Existing applications that upgrade should change a `/.agents/` line in their `.gitignore` to `/.agents/*` followed by `!/.agents/rules/`.
+- Updated dependencies [e6dd56e]
+- Updated dependencies [f675e8d]
+  - @nocobase/app-cli@1.0.0-beta.21
+  - @nocobase/app-plugin-mail@1.0.0-beta.13
+
+## 1.0.0-beta.48
+
+### Patch Changes
+
+- 9f02fe3: Route requests to upgrade NocoBase or its core version to the application upgrade Skill, since users rarely refer to the template they generated the application from.
+- 2a54505: Compose all seven MAIL_* environment mappings with the Mail configuration section and preserve them in the examples application. Keep the legacy fully prefixed application-level mappings compatible. Deployment environment values now override configuration files and code defaults automatically: review existing OAuth, sync, webhook and jobs variables before upgrading, including empty or invalid integers. Applications with custom parsers must retain or override the section rules explicitly; calling the defaults factory alone does not inherit them. Mail server configuration and webhook secrets remain outside public browser configuration.
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+  - @nocobase/app-plugin-mail@1.0.0-beta.12
+  - @nocobase/app-server@2.0.0-beta.5
+
+## 1.0.0-beta.47
+
+### Patch Changes
+
+- 9e84d15: Exclude `database/*/migrations/` and `database/*/seeds/` from Prettier in generated applications, so formatting never changes the checksum an installation recorded for an applied migration or seed.
+
+## 1.0.0-beta.46
+
+### Patch Changes
+
+- d54dd59: Show actionable origin errors with the browser address and the app.publicOrigin setting in config.yml. Use localized authentication errors for sign-out in both templates while preserving the session on failure.
+- Updated dependencies [d54dd59]
+- Updated dependencies [d54dd59]
+- Updated dependencies [693e43d]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.20
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.7
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.14
+  - @nocobase/app-plugin-i18n@1.0.0-beta.16
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.4
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.6
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.3
+
 ## 1.0.0-beta.45
 
 ### Patch Changes

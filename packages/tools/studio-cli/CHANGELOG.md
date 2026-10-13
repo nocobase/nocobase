@@ -1,5 +1,14 @@
 # @nocobase/studio-cli
 
+## 1.0.0-beta.56
+
+### Patch Changes
+
+- Updated dependencies [65ec64a]
+  - @nocobase/app-cli-client@0.1.0-beta.5
+
+## 1.0.0-beta.55
+
 ## 1.0.0-beta.54
 
 ### Patch Changes

@@ -74,8 +74,8 @@ export function IssueListView({
   const filters: IssueFilters = page.filters;
   const list = useIssuePages(filters, true);
   const statuses = useQuery({
-    queryKey: pmKeys.statuses(filters.projectId ?? null),
-    queryFn: () => api.statuses(filters.projectId),
+    queryKey: pmKeys.statuses,
+    queryFn: () => api.statuses(),
   });
   const issues = flattenIssuePages(list.data?.pages);
   const work = useIssueAgentWork(

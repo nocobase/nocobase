@@ -1,6 +1,13 @@
 // Loads and runs the CLI. The oclif configuration is synthesized here rather than read from package.json, so the same
 // code runs from `src/` (Node strips the types) and from the compiled `dist/`.
-import { Config, Errors, flush, run, type Command } from '@oclif/core';
+import {
+  Config,
+  Errors,
+  flush,
+  run,
+  settings,
+  type Command,
+} from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -108,6 +115,9 @@ export async function runAppCli(
     process.env.NO_COLOR = '1';
     process.env.FORCE_COLOR = '0';
   }
+  // `pjson` names the `.ts` or `.js` entries itself. Left on, oclif registers tsx under NODE_ENV=development or test
+  // when a tsconfig.json sits beside the sources, which makes every cold start about half again as slow.
+  settings.enableAutoTranspile = false;
   defineCommands(config, options.commands);
   setOriginalArgv(line);
   argv = line;

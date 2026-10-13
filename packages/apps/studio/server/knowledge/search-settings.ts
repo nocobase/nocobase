@@ -1,7 +1,7 @@
 /**
  * How the knowledge base is searched (`KnowledgeSearchSettings`, `shared/knowledge.ts`), kept in `studioSettings` under
- * `knowledgeSearch`: the embedding, rerank and context models, the spaces with contextual retrieval, the token
- * threshold of whole-in-prompt, the default chunking and how search ranks its hits. Read often (every search and online claim), so the last value read is kept for a few
+ * `knowledgeSearch`: the embedding, rerank and context models, the spaces with contextual retrieval, the default
+ * chunking and how search ranks its hits. Read often (every search), so the last value read is kept for a few
  * seconds; a save replaces it at once and tells the listeners (the vector index re-reads its model).
  */
 import type { DatabaseManager } from '@nocobase/db';
@@ -14,7 +14,6 @@ import {
 
 import {
   DEFAULT_KNOWLEDGE_SEARCH,
-  WHOLE_TOKENS_MAX,
   type KnowledgeSearchSettings,
 } from '../../shared/knowledge.js';
 
@@ -44,7 +43,6 @@ const recall = {
 
 const fields = {
   contextual: z.array(z.string().trim().min(1).max(200)).max(1000),
-  wholeTokens: z.number().int().min(0).max(WHOLE_TOKENS_MAX),
 };
 
 /** The stored settings, read leniently. */

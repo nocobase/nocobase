@@ -39,10 +39,10 @@ import type { KindRegistry } from '../../kernel/kinds.js';
 import type { IssueValues } from './issue.store.js';
 import { findIssue, parentOf } from './issue.store.js';
 import {
-  isTerminal,
-  type StatusCatalog,
-  type StatusCatalogs,
-} from './ports.js';
+  DEFAULT_START_STATUS,
+  START_STATUSES,
+} from '../../../shared/statuses.js';
+import { isTerminal, type StatusCatalog, type StatusService } from './ports.js';
 
 const MAX_PARENT_DEPTH = 50;
 
@@ -50,7 +50,7 @@ export interface FieldDeps {
   readonly users: UserDirectory;
   readonly kinds: KindRegistry;
   readonly labels: Pick<LabelService, 'requireExisting'>;
-  readonly statuses: StatusCatalogs;
+  readonly statuses: Pick<StatusService, 'catalog'>;
 }
 
 export interface FieldContext extends FieldDeps {
@@ -198,7 +198,7 @@ function status(catalog: StatusCatalog, value: unknown): string {
   if (typeof value !== 'string' || !catalog.category(value))
     throw invalid(
       'INVALID_STATUS',
-      'statusKey is not a status of this workflow.',
+      `statusKey must be one of ${catalog.statuses.map((item) => item.key).join(', ')}.`,
     );
   return value;
 }
@@ -244,15 +244,12 @@ export async function resolveCreate(
           scopeOf(ctx.viewer, 'pm.issues', 'create') === 'all',
         );
   requireProjectInScope(ctx, projectId);
-  const catalog = await ctx.statuses.forProject(ctx.conn, projectId);
   const statusKey =
-    input.statusKey === undefined
-      ? catalog.initialStatus
-      : status(catalog, input.statusKey);
-  if (isTerminal(catalog, statusKey))
+    input.statusKey === undefined ? DEFAULT_START_STATUS : input.statusKey;
+  if (typeof statusKey !== 'string' || !START_STATUSES.includes(statusKey))
     throw invalid(
       'INVALID_STATUS',
-      'An issue cannot be created done or closed.',
+      `A new issue starts in ${START_STATUSES.join(' or ')}.`,
     );
   const setup = await setupOf(ctx, projectId);
   const projectSetup = input.projectSetup === true;
@@ -281,8 +278,11 @@ export async function resolveCreate(
       input.ownerUserId === undefined
         ? await defaultOwner(ctx)
         : await owner(ctx, input.ownerUserId),
+    // Left out (not null): the default executor a kind names, such as an application's coordinating agent.
     executor:
-      input.executor === undefined ? null : await executor(ctx, input.executor),
+      input.executor === undefined
+        ? await ctx.kinds.defaultExecutor(ctx.conn)
+        : await executor(ctx, input.executor),
     parentIssueId: parentIssue?.id ?? null,
     stage:
       input.stage === undefined
@@ -311,8 +311,7 @@ async function setupOf(
   if (!id) return null;
   const issue = await findIssue(ctx.conn, id);
   if (!issue || issue.deletedAt) return null;
-  const catalog = await ctx.statuses.forProject(ctx.conn, issue.projectId);
-  return isTerminal(catalog, issue.statusKey) ? null : issue;
+  return isTerminal(ctx.statuses.catalog(), issue.statusKey) ? null : issue;
 }
 
 export interface Changes {
@@ -320,7 +319,7 @@ export interface Changes {
   readonly activities: Activity[];
   /** The new label set, when the request replaces it. */
   readonly labelIds?: string[];
-  /** A status change: it goes through the workflow (`issue.status.ts`) before anything is written. */
+  /** A status change: it goes through the status machine (`issue.status.ts`) before anything is written. */
   readonly status?: { readonly to: string; readonly catalog: StatusCatalog };
   /** The parent or the stage changes: once written, the issues waiting for each other are checked again. */
   readonly placed: boolean;
@@ -384,7 +383,7 @@ export async function resolveUpdate(
       ? before.projectId
       : await project(ctx, patch.projectId);
   change('projectId', 'project_changed', projectId);
-  const catalog = await ctx.statuses.forProject(ctx.conn, projectId);
+  const catalog = ctx.statuses.catalog();
   let statusChange: Changes['status'];
   if (patch.statusKey !== undefined) {
     const target = status(catalog, patch.statusKey);
@@ -394,11 +393,6 @@ export async function resolveUpdate(
       change('statusKey', 'status_changed', target);
       statusChange = { to: target, catalog };
     }
-  } else if (!catalog.category(before.statusKey)) {
-    throw invalid(
-      'STATUS_REQUIRED',
-      `The new project has no status ${before.statusKey}; choose one with statusKey.`,
-    );
   }
 
   if (patch.ownerUserId !== undefined) {
