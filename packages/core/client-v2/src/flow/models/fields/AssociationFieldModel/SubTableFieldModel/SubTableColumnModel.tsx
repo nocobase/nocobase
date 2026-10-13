@@ -143,7 +143,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     try {
       await flowEngine.context.viewer.open({
         type: 'popover',
-        target: e.target,
+        target,
         placement: 'rightTop',
         getPopupContainer: getLargeFieldPopupContainer,
         styles: {
