@@ -274,6 +274,12 @@ function SortButton({
 
 export interface IssueTableProps {
   readonly rows: readonly IssueTableRow[];
+  /** Flat ordered table entries; full-width entries supply group, pagination or child-load controls. */
+  readonly entries?: readonly (
+    IssueTableRow | { readonly key: string; readonly content: ReactNode }
+  )[];
+  readonly rowLeading?: (row: IssueTableRow) => ReactNode;
+  readonly rowDescription?: (row: IssueTableRow) => ReactNode;
   /** The order the rows are in, shown on the column headers. */
   readonly sort?: IssueTableSort;
   /** Makes the identifier, priority and updated headers sortable; the consumer reorders (usually on the server). */
@@ -309,6 +315,9 @@ function plainClick(event: MouseEvent): boolean {
 
 export function IssueTable({
   rows,
+  entries,
+  rowLeading,
+  rowDescription,
   sort,
   onSortChange,
   selectedIds,
@@ -397,7 +406,7 @@ export function IssueTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.length === 0 ? (
+        {(entries ?? rows).length === 0 ? (
           <TableRow className='hover:bg-transparent'>
             <TableCell
               colSpan={columns}
@@ -407,12 +416,19 @@ export function IssueTable({
             </TableCell>
           </TableRow>
         ) : null}
-        {rows.map((row) => {
+        {(entries ?? rows).map((row) => {
+          if ('content' in row)
+            return (
+              <TableRow key={row.key} className='hover:bg-transparent'>
+                <TableCell colSpan={columns}>{row.content}</TableCell>
+              </TableRow>
+            );
           const href = rowHref?.(row);
           const checked = selectedIds?.has(row.id) ?? false;
           return (
             <TableRow
               key={row.id}
+              data-task-id={row.id}
               data-state={checked ? 'selected' : undefined}
               className={cn(onRowClick && 'cursor-pointer')}
               onClick={(event) => {
@@ -432,25 +448,28 @@ export function IssueTable({
                 </TableCell>
               ) : null}
               <TableCell>
-                {href ? (
-                  <a
-                    href={href}
-                    className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (onRowClick && plainClick(event)) {
-                        event.preventDefault();
-                        onRowClick(row, event);
-                      }
-                    }}
-                  >
-                    {row.identifier}
-                  </a>
-                ) : (
-                  <span className='font-mono text-xs text-muted-foreground'>
-                    {row.identifier}
-                  </span>
-                )}
+                <div className='flex items-center gap-1'>
+                  {rowLeading?.(row)}
+                  {href ? (
+                    <a
+                      href={href}
+                      className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (onRowClick && plainClick(event)) {
+                          event.preventDefault();
+                          onRowClick(row, event);
+                        }
+                      }}
+                    >
+                      {row.identifier}
+                    </a>
+                  ) : (
+                    <span className='font-mono text-xs text-muted-foreground'>
+                      {row.identifier}
+                    </span>
+                  )}
+                </div>
               </TableCell>
               <TableCell className='max-w-0'>
                 <div className='flex min-w-0 items-center gap-2'>
@@ -481,6 +500,7 @@ export function IssueTable({
                     </span>
                   ) : null}
                 </div>
+                {rowDescription?.(row)}
               </TableCell>
               <TableCell>
                 {row.status ? (

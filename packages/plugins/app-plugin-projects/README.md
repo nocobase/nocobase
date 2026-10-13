@@ -94,6 +94,7 @@ issueId)` says where firing it would take one issue without moving it (for a con
   finished) or that are among the ids given (whatever their status), with `truncated` past the limit, and
   `subscriptions.followedBy(conn, userId, issueIds)` those of them a person follows. An application's board of work joins its own records to issues with
   them, without a query per issue.
+- **Hierarchy reads**: `issueQueries.hierarchy(viewer, query)` returns the complete independently authorized live issue scope, filtered matching IDs and internal dependency-wait facts before paging. It is an uncapped input for application-owned grouping, never a substitute for authorization. `hierarchyItems(viewer, ids)` hydrates at most 100 independently reauthorized rows with visible child/dependency counts; callers must replace raw parent IDs at unreadable boundaries. Applications own attention policy, grouping and continuation consistency. No new task statuses or persistence are required.
 - **Operation plans** (`shared/plans.ts`, `server/domains/plans/`): a short list of changes (create or update an
   issue, comment, add or remove a dependency, create a project; 1–50 rows, later rows may refer to what earlier ones
   create) that one person, the decider, reviews and executes as a whole. Creating, editing and retrying a plan
