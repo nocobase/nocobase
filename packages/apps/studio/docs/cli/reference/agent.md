@@ -49,6 +49,28 @@ nb-studio agent brief <agent>
 nb-studio agent brief <agent> --scenario conversation
 ```
 
+## agent discovery set
+
+Ignore or restore discovery groups
+
+Shared administrator preferences. Only pending groups can be changed. Batches are atomic and checked against each group revision. Reports do not reset preferences.
+
+```bash
+nb-studio agent discovery set
+```
+
+| Flag        | Type    | Description                                                                 |
+| ----------- | ------- | --------------------------------------------------------------------------- |
+| `--groups`  | json    | Unique pending discovery groups to update atomically.                       |
+| `--ignored` | boolean | True to ignore pending discoveries; false to restore them without enabling. |
+| `--input`   | path    | The request body as a JSON object; the flags override its fields.           |
+
+**Output:** A list; with `--json`, `result.data` is the array and `result.meta` the paging.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `PUT /api/agents/discoveryPreferences` (`agentsSetDiscoveryPreferences`)
+
 ## agent get
 
 Get an agent

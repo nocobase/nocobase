@@ -356,12 +356,13 @@ export function dirsOf(
  */
 export function mayInitializeEmptyRepository(
   context: IssueContext,
-  agent: { readonly id: string; readonly actions: readonly string[] },
+  agent: { readonly id: string; readonly actions?: readonly string[] },
+  mayOpenPullRequest = false,
 ): boolean {
   return (
     !isManager(agent.id) &&
     ['in_progress', 'blocked'].includes(context.status.key) &&
-    agent.actions.includes('studio.git/open-pr')
+    mayOpenPullRequest
   );
 }
 
@@ -414,10 +415,16 @@ export function issueClaimRejection(
 }
 
 export function createIssueContextProvider(
-  agents: Pick<Agents, 'runs' | 'briefs'>,
+  agents: Pick<Agents, 'runs' | 'briefs' | 'gate'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
 ): ContextProvider {
   return {
+    prepare: (run) =>
+      agents.gate.allowed({
+        kind: 'run',
+        userId: run.actorUserId,
+        displayName: '',
+      }),
     async admit(conn, claim) {
       if ((await readOwnerHandoff(conn, claim.run.subject.id))?.waiting)
         return {
@@ -433,7 +440,7 @@ export function createIssueContextProvider(
         return { reason: 'subjectMissing', detail: 'The issue is gone.' };
       return issueClaimRejection(context, claim.agent);
     },
-    async assemble(conn, claim) {
+    async assemble(conn, claim, prepared) {
       const context = await projects().issueContext.contextFor(
         conn,
         claim.run.subject.id,
@@ -442,6 +449,8 @@ export function createIssueContextProvider(
       if (!context) throw new Error('The issue is gone.');
       const inputs = claim.inputs;
       const manager = isManager(claim.agent.id);
+      const allowed =
+        (prepared as ReadonlySet<string> | undefined) ?? new Set<string>();
       const subject = { noun: SUBJECT_NOUN, key: context.identifier };
       const previousSummary = await agents.runs.lastSummary(
         conn,
@@ -464,7 +473,13 @@ export function createIssueContextProvider(
         context.project?.id ?? null,
       );
       const initializeIfEmpty =
-        !manager && mayInitializeEmptyRepository(context, claim.agent);
+        !manager &&
+        !claim.run.parentRunId &&
+        mayInitializeEmptyRepository(
+          context,
+          claim.agent,
+          allowed.has('studio.git/open-pr'),
+        );
       return {
         subject: {
           key: context.identifier,
@@ -473,7 +488,7 @@ export function createIssueContextProvider(
           noun: SUBJECT_NOUN,
         },
         guidance: issueGuidance(context.identifier, claim.cli, {
-          attach: claim.agent.actions.includes(ATTACH_ACTION),
+          attach: !claim.run.parentRunId && allowed.has(ATTACH_ACTION),
           manager,
         }),
         inputs,
@@ -609,7 +624,7 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
           noun: SUBJECT_NOUN,
         },
         guidance: issueGuidance(context.identifier, claim.cli, {
-          attach: claim.agent.actions.includes(ATTACH_ACTION),
+          attach: true,
           manager: isManager(claim.agent.id),
         }),
         task: renderTask(context, claim.inputs, {
@@ -630,7 +645,7 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
 }
 
 export function issueBinding(
-  agents: Pick<Agents, 'runs' | 'briefs' | 'agents'>,
+  agents: Pick<Agents, 'runs' | 'briefs' | 'agents' | 'gate'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
