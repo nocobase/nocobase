@@ -109,7 +109,7 @@ describe('per-attempt worktrees', () => {
     });
     return { workDir, repo: prepared.dirs[0]!.repo!, prepared };
   }
-  it('starts two unmarked writers, saves both heads, and merges both contents on the next run', async () => {
+  it('starts two unmarked writers and keeps divergent heads visible without merging', async () => {
     const [a, b] = await Promise.all([start('a'), start('b')]);
     expect(a.workDir).not.toBe(b.workDir);
     expect(a.repo.localBranch).not.toBe(b.repo.localBranch);
@@ -128,7 +128,7 @@ describe('per-attempt worktrees', () => {
         ['for-each-ref', '--format=%(objectname)', 'refs/runner/saved/'],
         a.repo.cache,
       ).split('\n'),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(
       git(
         ['for-each-ref', '--format=%(refname)', 'refs/heads/agent/'],
@@ -136,37 +136,44 @@ describe('per-attempt worktrees', () => {
       ),
     ).toBe('');
     const c = await start('c');
-    expect(readFileSync(path.join(c.repo.dir, 'a.txt'), 'utf8')).toBe('a');
-    expect(readFileSync(path.join(c.repo.dir, 'b.txt'), 'utf8')).toBe('b');
+    const files = ['a.txt', 'b.txt'].filter((name) =>
+      existsSync(path.join(c.repo.dir, name)),
+    );
+    expect(files).toHaveLength(1);
+    const other = files[0] === 'a.txt' ? 'b.txt' : 'a.txt';
+    const ref = git(
+      ['for-each-ref', '--format=%(refname)', 'refs/runner/saved/'],
+      c.repo.cache,
+    );
+    expect(c.repo.warnings?.join(' ')).toContain(ref);
+    expect(git(['show', `${ref}:${other}`], c.repo.cache)).toBe(other[0]);
+    expect(
+      git(['rev-list', '--parents', '-n', '1', 'HEAD'], c.repo.dir).split(' '),
+    ).toHaveLength(2);
     await finalizeRunWorktrees(paths, c.workDir, () => {});
   });
-  it.each(['conflict.txt', '.gitmodules'])(
-    'keeps unresolved %s merges and files for recovery',
-    async (file) => {
-      const a = await start('a');
-      const b = await start('b');
-      for (const [run, text] of [
-        [a, 'a'],
-        [b, 'b'],
-      ] as const) {
-        writeFileSync(path.join(run.repo.dir, file), `#${text}`);
-        git(['add', '.'], run.repo.dir);
-        git([...COMMIT, 'commit', '-m', text], run.repo.dir);
-        await finalizeRunWorktrees(paths, run.workDir, () => {});
-      }
-      const c = await start('c');
-      expect(c.repo.warnings?.join(' ')).toContain('Resolve the merge');
-      expect(
-        git(['diff', '--name-only', '--diff-filter=U'], c.repo.dir),
-      ).toContain(file);
-      const result = await finalizeRunWorktrees(paths, c.workDir, () => {});
-      expect(result[0]?.saved).toBe(false);
-      expect(existsSync(c.repo.dir)).toBe(true);
-      expect(
-        (await readWorkspaceMeta(paths, c.workDir))?.recoveryRequired,
-      ).toBe(true);
-    },
-  );
+  it('keeps an unresolved user merge instead of committing or deleting it', async () => {
+    const a = await start('a');
+    git(['checkout', '-b', 'other'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'conflict.txt'), 'other');
+    git(['add', '.'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'other'], a.repo.dir);
+    git(['checkout', a.repo.localBranch!], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'conflict.txt'), 'local');
+    git(['add', '.'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'local'], a.repo.dir);
+    try {
+      git(['merge', 'other'], a.repo.dir);
+    } catch {
+      /* Expected conflict. */
+    }
+    const result = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(result[0].saved).toBe(false);
+    expect(existsSync(a.repo.dir)).toBe(true);
+    expect((await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired).toBe(
+      true,
+    );
+  });
   it('discards read-only changes without updating continuation refs or deleting another run', async () => {
     const a = await start('a');
     const b = await start('b', true);
@@ -182,7 +189,7 @@ describe('per-attempt worktrees', () => {
     ).toBe('');
     await finalizeRunWorktrees(paths, a.workDir, () => {});
   });
-  it('retains a snapshot during pending input, then saves later edits under a different immutable ref', async () => {
+  it('retains a snapshot during pending input, then fast-forwards the resume ref with later edits', async () => {
     const a = await start('a');
     writeFileSync(path.join(a.repo.dir, 'first.txt'), 'first');
     const first = await finalizeRunWorktrees(paths, a.workDir, () => {}, {
@@ -218,7 +225,7 @@ describe('per-attempt worktrees', () => {
     await finalizeRunWorktrees(paths, b.workDir, () => {});
   });
 
-  it('imports unpublished legacy files and commits while retaining the legacy checkout', async () => {
+  it('leaves legacy clones to GC and starts from the remote without importing their files', async () => {
     const legacy = await checkout({
       paths,
       appKey: 'app',
@@ -233,16 +240,13 @@ describe('per-attempt worktrees', () => {
         },
       ],
     });
-    writeFileSync(path.join(legacy.repos[0]!.dir, 'legacy.txt'), 'legacy');
+    writeFileSync(path.join(legacy.repos[0].dir, 'legacy.txt'), 'legacy');
     await legacy.release();
     const next = await start('new');
-    expect(readFileSync(path.join(next.repo.dir, 'legacy.txt'), 'utf8')).toBe(
-      'legacy',
-    );
-    expect(existsSync(legacy.repos[0]!.dir)).toBe(true);
+    expect(existsSync(path.join(next.repo.dir, 'legacy.txt'))).toBe(false);
+    expect(existsSync(legacy.repos[0].dir)).toBe(true);
     await finalizeRunWorktrees(paths, next.workDir, () => {});
   });
-
   it('keeps initialization state across disposable worktrees', async () => {
     const a = await start('a');
     expect(a.prepared.dirs[0]!.fresh).toBe(true);
@@ -290,27 +294,65 @@ describe('per-attempt worktrees', () => {
     ).toBe(other);
     expect(existsSync(a.repo.cache)).toBe(true);
   });
-  it('starts a clean continuation generation without discarding earlier saved heads', async () => {
+  it('starts a clean continuation generation without discarding earlier local heads', async () => {
     const a = await start('a');
     writeFileSync(path.join(a.repo.dir, 'previous.txt'), 'recoverable');
     const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
     const clean = await start('clean', false, true);
     expect(existsSync(path.join(clean.repo.dir, 'previous.txt'))).toBe(false);
-    expect(clean.repo.continuationEpoch).not.toBe(a.repo.continuationEpoch);
     expect(
       git(['cat-file', '-p', saved[0]!.head!], clean.repo.cache),
     ).toContain('chore(runner)');
     writeFileSync(path.join(clean.repo.dir, 'fresh.txt'), 'fresh');
     await finalizeRunWorktrees(paths, clean.workDir, () => {});
     const next = await start('next');
-    expect(existsSync(path.join(next.repo.dir, 'previous.txt'))).toBe(false);
-    expect(readFileSync(path.join(next.repo.dir, 'fresh.txt'), 'utf8')).toBe(
-      'fresh',
+    expect(readFileSync(path.join(next.repo.dir, 'previous.txt'), 'utf8')).toBe(
+      'recoverable',
     );
+    expect(existsSync(path.join(next.repo.dir, 'fresh.txt'))).toBe(false);
+    expect(next.repo.warnings?.join(' ')).toContain('Additional saved commits');
     await finalizeRunWorktrees(paths, next.workDir, () => {});
   });
 
-  it('merges divergent remote target changes on the next worktree', async () => {
+  it('starts from a remote fast-forward without rewriting local continuation history', async () => {
+    const a = await start('a');
+    writeFileSync(path.join(a.repo.dir, 'local.txt'), 'local');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    const resume = git(
+      ['for-each-ref', '--format=%(refname)', 'refs/runner/resume/'],
+      a.repo.cache,
+    );
+    const seed = path.join(root, 'origin-repo-seed');
+    git(['fetch', a.repo.cache, resume], seed);
+    git(['checkout', '-B', 'main', 'FETCH_HEAD'], seed);
+    writeFileSync(path.join(seed, 'remote.txt'), 'remote');
+    git(['add', '.'], seed);
+    git([...COMMIT, 'commit', '-m', 'fast forward'], seed);
+    git(
+      ['fetch', seed, 'refs/heads/main:refs/heads/agent/PM-300'],
+      path.join(root, 'origin-repo.git'),
+    );
+    const b = await start('b');
+    expect(readFileSync(path.join(b.repo.dir, 'local.txt'), 'utf8')).toBe(
+      'local',
+    );
+    expect(readFileSync(path.join(b.repo.dir, 'remote.txt'), 'utf8')).toBe(
+      'remote',
+    );
+    expect(git(['rev-parse', resume], b.repo.cache)).toBe(saved[0].head);
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    expect(git(['rev-parse', resume], b.repo.cache)).toBe(
+      git(['rev-parse', 'HEAD'], seed),
+    );
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', 'refs/runner/saved/'],
+        b.repo.cache,
+      ),
+    ).toBe('');
+  });
+
+  it('lists remote divergence without merging it into local continuation', async () => {
     const a = await start('a');
     writeFileSync(path.join(a.repo.dir, 'local.txt'), 'local');
     await finalizeRunWorktrees(paths, a.workDir, () => {});
@@ -326,39 +368,14 @@ describe('per-attempt worktrees', () => {
     expect(readFileSync(path.join(b.repo.dir, 'local.txt'), 'utf8')).toBe(
       'local',
     );
-    expect(readFileSync(path.join(b.repo.dir, 'remote.txt'), 'utf8')).toBe(
-      'remote',
-    );
+    expect(existsSync(path.join(b.repo.dir, 'remote.txt'))).toBe(false);
+    expect(b.repo.warnings?.join(' ')).toContain('no automatic merge');
     expect(
       git(['rev-list', '--parents', '-n', '1', 'HEAD'], b.repo.dir).split(' '),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
     await finalizeRunWorktrees(paths, b.workDir, () => {});
   });
 
-  it('does not fall back when the selected PR remote branch is missing', async () => {
-    const workDir = runWorkDir(paths, 'app', 'PM-300', 'pr-missing', 1);
-    await expect(
-      prepareDirs({
-        paths,
-        appKey: 'app',
-        subjectKey: 'PM-300',
-        runId: 'pr-missing',
-        perRun: true,
-        workDir,
-        dirs: [
-          {
-            kind: 'repo',
-            url: remote,
-            path: 'repo',
-            branch: 'fix/missing',
-            defaultBranch: 'main',
-            pullRequest: { number: 123, url: 'https://example.com/pull/123' },
-          },
-        ],
-      }),
-    ).rejects.toThrow('selected pull request branch');
-    expect(existsSync(path.join(workDir, 'repo', '.git'))).toBe(false);
-  });
   it('keeps other linked job worktrees usable when enabling per-worktree configuration', async () => {
     const a = await start('a');
     const job = path.join(root, 'job');
@@ -375,18 +392,14 @@ describe('per-attempt worktrees', () => {
     expect(git(['status', '--porcelain'], job)).toBe('');
     git(['worktree', 'remove', job], a.repo.cache);
   });
-  it('retains the checkout and its commit when publishing a saved ref fails', async () => {
+  it('retains the checkout and its commit when publishing the resume ref fails', async () => {
     const a = await start('a');
     writeFileSync(
       path.join(a.repo.dir, 'must-survive.txt'),
       'retain on failure',
     );
     git(
-      [
-        'update-ref',
-        `refs/runner/saved/${a.repo.continuation}`,
-        'refs/remotes/origin/main',
-      ],
+      ['update-ref', `refs/runner/resume`, 'refs/remotes/origin/main'],
       a.repo.cache,
     );
     const result = await finalizeRunWorktrees(paths, a.workDir, () => {});

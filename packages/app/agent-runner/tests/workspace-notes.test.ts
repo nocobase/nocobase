@@ -71,7 +71,6 @@ describe('workspaceNotes', () => {
     };
     const notes = workspaceNotes({
       ...base,
-      sessionDir: '/work/session',
       dirs: [
         {
           kind: 'repo',
@@ -85,6 +84,6 @@ describe('workspaceNotes', () => {
     });
     expect(notes).toContain('local branch runner/attempt/repo');
     expect(notes).toContain('git push origin HEAD:refs/heads/fix/human');
-    expect(notes).toContain('previous run paths are stale');
+    expect(notes).toContain('legacy sessions are not migrated');
   });
 });

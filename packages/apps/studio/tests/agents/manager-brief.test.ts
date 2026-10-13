@@ -200,7 +200,7 @@ describe("an agent's step", () => {
     expect(WORKER_INSTRUCTIONS).toContain(
       'never rewrite history already pushed',
     );
-    expect(WORKER_INSTRUCTIONS).toContain('configured branch rule');
+    expect(WORKER_INSTRUCTIONS).toContain('task default branch agent/<KEY>');
     expect(system).toContain("Do not change the issue's status.");
     expect(system).not.toContain(firstLine(MANAGER_ROLE));
     expect(system).not.toContain('## Agents you can hand work to');

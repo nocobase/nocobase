@@ -145,19 +145,6 @@ function ok(c: Context, data: unknown, status = 200): Response {
 }
 
 export class FakeServer {
-  onCancelAck?: (run: FakeRun) => void;
-  /** Persist and acknowledge recovery reports when true. False withholds receipt; undefined simulates a legacy response. */
-  cancelRecoveryAccepted?: boolean;
-  diagnosticEnabled = false;
-  readonly diagnosticRequests: {
-    at: string;
-    endedAt: string;
-    route: string;
-    status: number;
-    selected?: number;
-    reason?: string;
-    authenticated?: boolean;
-  }[] = [];
   readonly app = new Hono();
   readonly runners = new Map<string, FakeRunner>();
   readonly runs = new Map<string, FakeRun>();
@@ -167,6 +154,7 @@ export class FakeServer {
   ]);
   /** While set, `events` answers 503. */
   eventsDown = false;
+  onCancelAck?: (run: FakeRun) => void;
   eventsFailures = 0;
   /** Skill bundles by slug, served at `RUNNER_ROUTES.skill`. */
   readonly skillBundles = new Map<string, SkillBundle>();
@@ -243,46 +231,6 @@ export class FakeServer {
       app: { id: 'test-app', name: 'Test App' },
       ...options,
     };
-    this.app.use('*', async (c, next) => {
-      const route = c.req.path.split('/').at(-1) ?? '';
-      const at = new Date().toISOString();
-      await next();
-      if (
-        !this.diagnosticEnabled ||
-        ![
-          'heartbeat',
-          'claim',
-          'status',
-          'start',
-          'events',
-          'complete',
-          'fail',
-          'cancelAck',
-        ].includes(route)
-      )
-        return;
-      const body = await c.res
-        .clone()
-        .json()
-        .catch(() => ({}));
-      const heartbeat =
-        route === 'heartbeat'
-          ? await c.req.json().catch(() => ({}))
-          : undefined;
-      if (this.diagnosticRequests.length >= 1000)
-        this.diagnosticRequests.shift();
-      this.diagnosticRequests.push({
-        at,
-        endedAt: new Date().toISOString(),
-        route,
-        status: c.res.status,
-        selected: route === 'claim' ? body.data?.runs?.length : undefined,
-        reason: body.error?.reason,
-        authenticated: heartbeat?.tools?.find(
-          (tool: { kind: string }) => tool.kind === 'pi',
-        )?.authenticated,
-      });
-    });
     this.routes();
   }
 
@@ -936,42 +884,11 @@ export class FakeServer {
       const body = (await c.req.json()) as CancelAckRequest;
       const run = owned(c);
       if (run instanceof Response) return run;
-      // Match the recovery acknowledgement contract: confirmed reports remain visible after event streaming ends.
-      if (
-        this.cancelRecoveryAccepted === true &&
-        body.recovery !== undefined &&
-        ![...run.events.values()].some(
-          (event) =>
-            event.meta?.cancellationRecoveryAttempt === body.recovery?.attempt,
-        )
-      ) {
-        const seq =
-          [...run.events.keys()].reduce(
-            (last, value) => Math.max(last, value),
-            0,
-          ) + 1;
-        run.events.set(seq, {
-          seq,
-          at: new Date().toISOString(),
-          type: 'status',
-          content: body.recovery.detail,
-          meta: {
-            orphaned: true,
-            cancellationRecoveryAttempt: body.recovery.attempt,
-            localSave: body.recovery.localSave,
-          },
-        });
-      }
-      run.cancelAck = body;
       this.onCancelAck?.(run);
+      run.cancelAck = body;
       run.status = 'cancelled';
       run.reports.push({ kind: 'cancelAck', body, status: 200 });
-      return ok(c, {
-        status: run.status,
-        ...(this.cancelRecoveryAccepted === undefined
-          ? {}
-          : { recoveryAccepted: this.cancelRecoveryAccepted }),
-      });
+      return ok(c, { status: run.status });
     });
 
     app.get('/api/agents/runners/runs/:runId/skills/:slug', (c) => {

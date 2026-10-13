@@ -221,14 +221,6 @@ export interface RepoDir {
    * except with `initial`.
    */
   readonly branch: string;
-  /** A selected same-repository PR: its remote branch must exist (requires `prBranches`). */
-  readonly pullRequest?: { readonly number: number; readonly url: string };
-  /** Open PRs excluded from branch selection; unknown origins are never treated as forks. */
-  readonly excludedPullRequests?: readonly {
-    readonly number: number;
-    readonly url: string;
-    readonly reason: 'fork' | 'unknown';
-  }[];
   /** Where to check it out, relative to the run's working directory. */
   readonly path: string;
   /** What people call it, for the agent's notes. */
@@ -254,18 +246,6 @@ const repoDirObject = z.object({
   url: z.string().min(1),
   defaultBranch: z.string().min(1),
   branch: z.string().min(1),
-  pullRequest: z
-    .object({ number: z.number().int().positive(), url: z.string().min(1) })
-    .optional(),
-  excludedPullRequests: z
-    .array(
-      z.object({
-        number: z.number().int().positive(),
-        url: z.string().min(1),
-        reason: z.enum(['fork', 'unknown']),
-      }),
-    )
-    .optional(),
   path: z
     .string()
     .min(1)
@@ -354,7 +334,7 @@ export const RepoCredentialSchema: z.ZodType<RepoCredential> = z.object({
  * - `trailers`: lines added to every commit message, such as `Co-authored-by: Agent <agent+1@acme.noreply>`;
  * - `credentials`: short-lived credentials by repository URL, which the runner fetches and pushes that repository with
  *   (a git credential helper for the agent). They live in memory only: never written to disk, gone with the run. The
- *   runner installs no push guard; the application instructs the agent to push only its checkout branch.
+ *   push guard still allows only the run's branch.
  * - `onDemand` (runners with the `gitCredentials` feature): repository URLs, each exactly as a `RepoDir` names it, whose
  *   credential the runner asks for whenever git needs one (`RUNNER_ROUTES.gitCredential`) rather than receiving it
  *   here. For these URLs the runner uses nothing else: no credential of the claim and none of the host's.
@@ -445,7 +425,7 @@ export interface RunWorkspace {
    * checks nothing out, so its runs never wait for the subject's lock. A runner from before this field ignores it.
    */
   readonly key?: string;
-  /** Stable thread scope for local tool conversation containers; older runners ignore it. */
+  /** Stable thread scope for external Codex state; older runners ignore it. */
   readonly sessionScope?: string;
 }
 
@@ -454,9 +434,9 @@ export const RunWorkspaceSchema: z.ZodType<RunWorkspace> = z.object({
   env: z.array(EnvVarSchema),
   passthrough: z.array(z.string()).optional(),
   clean: z.boolean().optional(),
+  sessionScope: z.string().max(500).optional(),
   git: RunGitSchema.optional(),
   readOnly: z.boolean().optional(),
-  sessionScope: z.string().max(500).optional(),
   key: z
     .string()
     .min(1)

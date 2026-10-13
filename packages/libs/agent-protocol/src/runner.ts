@@ -673,43 +673,13 @@ export const FailRequestSchema: z.ZodType<FailRequest> = z.object({
   repos: z.array(RepoReportSchema).optional(),
 });
 
-/** A local-only preservation report, acknowledged atomically with cancellation. */
-export interface CancellationRecovery {
-  readonly attempt: number;
-  readonly detail: string;
-  readonly localSave: readonly {
-    readonly path: string;
-    readonly saved: boolean;
-    readonly reason?: string;
-    readonly head?: string;
-  }[];
-}
-
-export const CancellationRecoverySchema: z.ZodType<CancellationRecovery> =
-  z.object({
-    attempt: z.number().int().positive(),
-    detail: z.string().max(10_000),
-    localSave: z
-      .array(
-        z.object({
-          path: z.string().max(10_000),
-          saved: z.boolean(),
-          reason: z.string().max(10_000).optional(),
-          head: z.string().optional(),
-        }),
-      )
-      .max(100),
-  });
-
 export interface CancelAckRequest {
-  readonly recovery?: CancellationRecovery;
   readonly sessionId?: string;
   readonly handledInputIds?: readonly string[];
   readonly usage?: readonly Usage[];
 }
 
 export const CancelAckRequestSchema: z.ZodType<CancelAckRequest> = z.object({
-  recovery: CancellationRecoverySchema.optional(),
   sessionId: z.string().max(200).optional(),
   handledInputIds: z.array(z.string()).optional(),
   usage: z.array(UsageSchema).optional(),
@@ -717,14 +687,12 @@ export const CancelAckRequestSchema: z.ZodType<CancelAckRequest> = z.object({
 
 /** The answer to `complete`, `fail` and `cancelAck`. */
 export interface FinishResponse {
-  readonly recoveryAccepted?: boolean;
   readonly status: RunStatus;
   /** Set when a failed attempt went back to the queue: when the next attempt may start. */
   readonly retryAt?: string;
 }
 
 export const FinishResponseSchema: z.ZodType<FinishResponse> = z.object({
-  recoveryAccepted: z.boolean().optional(),
   status: RunStatusSchema,
   retryAt: z.string().optional(),
 });

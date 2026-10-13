@@ -3,15 +3,14 @@ import {
   sessionWorkDir,
   updateContinuationState,
 } from '../core/run-worktrees.ts';
-import { repositoryContext } from './repository-context.ts';
 // One run, start to end, in its own process (see supervisor.ts):
 //
 //   prepare (prepare/index.ts: workspace, application CLI, working directories, skills) -> start
 //     -> adapter turns (events, permissions, inputs) -> complete | fail | cancelAck
 //
 // The agent starts in the run's primary working directory (or the subject's work directory when the run names none),
-// with the real HOME of the user the runner runs as, its own TMPDIR (and Codex its own CODEX_HOME) inside the work
-// directory, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
+// with the real HOME of the user the runner runs as, its own TMPDIR inside the work directory and an external
+// Codex CODEX_HOME, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
 // tools do: the runner is not a security boundary, so run it as a dedicated user, in a container or in a VM.
 //
 // While it runs, the lease is renewed every 15 s and the run's status is polled every few seconds; both answers carry
@@ -49,13 +48,7 @@ import {
   type AppConnection,
   type RunnerSettings,
 } from '../lib/config.ts';
-import {
-  backoff,
-  delay,
-  ApiError,
-  dataOf,
-  type ApiClient,
-} from '../lib/http.ts';
+import { backoff, delay, ApiError, type ApiClient } from '../lib/http.ts';
 import type { RunnerPaths } from '../lib/home.ts';
 import {
   createRedactor,
@@ -78,11 +71,10 @@ import {
   markWorkspaceEnded,
   reportRepos,
   RUNNER_DIR,
-  subjectWorkDir,
   type PreparedDir,
 } from '../core/checkout.ts';
 import { deleteRunCredentials } from './credentials.ts';
-import { prepareCodexHome, migrateCodexConversation } from './codex-home.ts';
+import { prepareCodexHome } from './codex-home.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import {
@@ -155,7 +147,6 @@ export function workspaceNotes(options: {
   cwd: string;
   dirs: readonly PreparedDir[];
   cli: string;
-  sessionDir?: string;
   skillsDir?: string;
   /** The coding tool, for how it names the skills. */
   tool?: AgentTool;
@@ -172,10 +163,9 @@ export function workspaceNotes(options: {
       ? `Your working directory is ${workDir}, an empty directory kept for this task; you start in it.`
       : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
   ];
-  if (options.sessionDir !== undefined)
-    lines.push(
-      `The tool starts from its persistent session container ${options.sessionDir}. The code for this run is in ${cwd}. Use the current absolute working directories below for commands and file edits; previous run paths are stale. Read the current repository instructions before working.`,
-    );
+  lines.push(
+    'Repository attempts use new code directories. Claude, Pi and OpenCode start fresh when the directory changes; legacy sessions are not migrated. Codex state is kept outside the disposable worktree.',
+  );
   if (dirs.length > 0) {
     lines.push(
       `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). When this run ends, repository changes are saved to local continuation refs without pushing, then its worktrees are removed. If saving fails, the original worktree is kept for recovery. Temporary files outside repositories are removed.`,
@@ -388,7 +378,9 @@ export class RunWorker {
     this.runId = payload.run.id;
     this.record = record;
     this.sessionId =
-      payload.prompt.session === 'resume'
+      payload.prompt.session === 'resume' &&
+      (payload.tool.kind === 'codex' ||
+        payload.workspace.dirs[0]?.kind === 'directory')
         ? payload.prompt.resumeSessionId
         : undefined;
     this.spool = EventSpool.open({
@@ -539,12 +531,13 @@ export class RunWorker {
     await writeRecord(this.deps.paths, this.record);
   }
 
-  /** POSTs a final report, retrying transient failures and returning its acknowledgement. */
-  private async report(route: string, body: unknown): Promise<unknown> {
+  /** POSTs a final report, retrying transient failures. False when the run is no longer this runner's. */
+  private async report(route: string, body: unknown): Promise<boolean> {
     const deadline = Date.now() + (this.timings.reportTimeoutMs ?? 10 * 60_000);
     for (let attempt = 0; ; attempt += 1) {
       try {
-        return await this.client.request('POST', route, body);
+        await this.client.request('POST', route, body);
+        return true;
       } catch (error) {
         if (
           !(error instanceof ApiError) ||
@@ -574,35 +567,19 @@ export class RunWorker {
       log(
         `run ${this.runId}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
       );
-      if (this.ending?.kind === 'cancel') return await this.finishEnding();
       if (this.ending?.kind === 'lost') return 'leaseLost';
-      return await this.finishFailed(
+      return this.finishFailed(
         'unknown',
         error instanceof Error ? error.message : String(error),
       );
     } finally {
       await this.stopTool();
-      // Descendants and tagged detached processes must stop before files are snapshotted.
-      const unsafeReason = await this.quiesceWriters();
-      const workDir = this.prepared?.workspace?.workDir ?? this.record.workDir;
-      if (workDir !== undefined) {
-        const saved = await finalizeRunWorktrees(
-          this.deps.paths,
-          workDir,
-          this.deps.log,
-          { ...(unsafeReason === undefined ? {} : { unsafeReason }) },
-        ).catch((error: unknown) => {
-          this.reportAcknowledged = false;
-          this.deps.log(
-            `run ${this.runId}: final preservation failed; retry record retained: ${String(error)}`,
-          );
-          return [];
-        });
-        for (const result of saved)
-          this.deps.log(
-            `run ${this.runId}: local save ${JSON.stringify(result)}`,
-          );
-      }
+      // A failed stop/save retains the original directory. No separate recovery protocol is maintained.
+      await this.saveLocal(true).catch((error: unknown) =>
+        log(
+          `Directory retained: ${this.prepared?.workspace?.workDir ?? this.record.workDir}: ${String(error)}`,
+        ),
+      );
       this.lease.stop();
       this.broker?.close();
       await this.credentialServer?.close().catch(() => undefined);
@@ -617,16 +594,10 @@ export class RunWorker {
             `run ${this.runId}: release failed: ${error instanceof Error ? error.message : String(error)}`,
           ),
         );
-      // Retain the sole retry record and spool until a final report has been confirmed.
-      if (this.reportAcknowledged) {
-        if (this.spool.size === 0) await this.spool.remove();
-        await removeRecord(this.deps.paths, this.runId, {
-          preserveWriters: unsafeReason !== undefined,
-        });
-      } else
-        log(
-          `run ${this.runId}: final report unconfirmed; retry record retained`,
-        );
+      // A lost run's events can no longer be delivered; everything else was drained before reporting.
+      if (this.spool.size === 0 || this.ending?.kind === 'lost')
+        await this.spool.remove();
+      await removeRecord(this.deps.paths, this.runId);
     }
   }
 
@@ -760,22 +731,6 @@ export class RunWorker {
       payload.tool.kind === 'codex'
         ? await prepareCodexHome(path.join(sessionDir, 'codex-home'))
         : undefined;
-    if (codexHome !== undefined) {
-      const legacyBase = payload.workspace.key ?? payload.subject.key;
-      const legacyKey =
-        payload.workspace.readOnly === true
-          ? `${legacyBase}.readonly-${payload.agent?.id ?? payload.run.id}`
-          : legacyBase;
-      await migrateCodexConversation(
-        codexHome,
-        path.join(
-          subjectWorkDir(deps.paths, registration.key, legacyKey),
-          RUNNER_DIR,
-          'codex-home',
-        ),
-        this.sessionId,
-      );
-    }
     const runnerTools =
       deps.settings.agentTools === 'system'
         ? []
@@ -783,20 +738,6 @@ export class RunWorker {
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
     const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
-    const legacyBase = payload.workspace.key ?? payload.subject.key;
-    const legacyKey =
-      payload.workspace.readOnly === true
-        ? `${legacyBase}.readonly-${payload.agent?.id ?? payload.run.id}`
-        : legacyBase;
-    const legacyRoot = subjectWorkDir(deps.paths, registration.key, legacyKey);
-    const legacyWorkDirs =
-      context.dirs.length === 0
-        ? [legacyRoot]
-        : context.dirs.map((dir) =>
-            dir.kind === 'repo'
-              ? path.join(legacyRoot, path.relative(workDir, dir.dir))
-              : dir.dir,
-          );
     if (this.broker !== undefined && this.broker.urls.length > 0) {
       this.credentialServer = await serveGitCredentials(
         this.broker,
@@ -868,7 +809,6 @@ export class RunWorker {
         cwd,
         dirs: context.dirs,
         cli: payload.cli.name,
-        ...(payload.tool.kind === 'codex' ? {} : { sessionDir }),
         tool: payload.tool.kind,
         ...(context.skills === undefined
           ? {}
@@ -876,13 +816,7 @@ export class RunWorker {
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
         pnpmStoreDir,
         ...(payload.workspace.readOnly === true ? { readOnly: true } : {}),
-      }) +
-        '\n\n' +
-        (await repositoryContext(
-          context.dirs
-            .filter((dir) => dir.kind === 'repo')
-            .map((dir) => dir.dir),
-        )),
+      }),
       init,
     );
     const claimed = this.undelivered();
@@ -893,13 +827,7 @@ export class RunWorker {
     for (;;) {
       this.lastActivity = Date.now();
       const handle = adapter.start({
-        workDir: payload.tool.kind === 'codex' ? cwd : sessionDir,
-        legacyWorkDirs,
-        ...(payload.tool.kind === 'pi'
-          ? { sessionStoreDir: path.join(sessionDir, 'pi-sessions') }
-          : {}),
-        additionalDirectories:
-          context.dirs.length > 0 ? context.dirs.map((dir) => dir.dir) : [cwd],
+        workDir: cwd,
         prompt,
         systemPrompt: system,
         ...(payload.tool.model === undefined
@@ -1061,29 +989,20 @@ export class RunWorker {
     return reports;
   }
 
-  private reportAcknowledged = false;
-  private localSaveResults: Awaited<ReturnType<typeof finalizeRunWorktrees>> =
-    [];
-  private saveEventFailure?: string;
   private savedDuringRun = false;
-  private writerRecoveryReason?: string;
 
-  private async quiesceWriters(): Promise<string | undefined> {
-    if (this.writerRecoveryReason !== undefined)
-      return this.writerRecoveryReason;
-    try {
-      await this.deps.stopWriters?.();
-      return undefined;
-    } catch (error) {
-      this.writerRecoveryReason = `Writer stop verification failed: ${error instanceof Error ? error.message : String(error)}`;
-      return this.writerRecoveryReason;
-    }
-  }
+  private writerStopFailure?: string;
 
   private async saveLocal(remove = false): Promise<string> {
     await this.stopTool();
-    const unsafeReason = await this.quiesceWriters();
-    const workDir = this.prepared?.workspace?.workDir ?? this.record.workDir;
+    if (this.writerStopFailure === undefined) {
+      try {
+        await this.deps.stopWriters?.();
+      } catch (error) {
+        this.writerStopFailure = `Process stop failed: ${String(error)}`;
+      }
+    }
+    const workDir = this.prepared?.workspace?.workDir;
     if (workDir === undefined) return '';
     const results = await finalizeRunWorktrees(
       this.deps.paths,
@@ -1091,10 +1010,11 @@ export class RunWorker {
       this.deps.log,
       {
         remove,
-        ...(unsafeReason === undefined ? {} : { unsafeReason }),
+        ...(this.writerStopFailure === undefined
+          ? {}
+          : { unsafeReason: this.writerStopFailure }),
       },
     );
-    this.localSaveResults = results;
     if (results.length > 0) this.savedDuringRun = true;
     const message = results
       .map((result) =>
@@ -1103,18 +1023,12 @@ export class RunWorker {
           : `Recovery required: ${result.path}: ${result.reason}`,
       )
       .join('\n');
-    if (message !== '') {
-      try {
-        this.spool.push({
-          type: 'status',
-          content: message,
-          meta: { phase: 'localSave' },
-        });
-      } catch (error) {
-        this.saveEventFailure = `Local save status could not be spooled: ${String(error)}`;
-        this.deps.log(`run ${this.runId}: ${this.saveEventFailure}`);
-      }
-    }
+    if (message !== '')
+      this.spool.push({
+        type: 'status',
+        content: message,
+        meta: { phase: 'localSave' },
+      });
     return message;
   }
 
@@ -1170,7 +1084,6 @@ export class RunWorker {
       }
       throw error;
     }
-    this.reportAcknowledged = true;
     this.deps.log(`run ${this.runId}: completed`);
     return 'completed';
   }
@@ -1191,7 +1104,6 @@ export class RunWorker {
     const repos = await this.repoReports(false).catch(() => []);
     const saved = await this.saveLocal();
     await this.drainEvents();
-    if (this.ending?.kind === 'cancel') return this.finishEnding();
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,
@@ -1206,7 +1118,6 @@ export class RunWorker {
         return 'leaseLost';
       throw error;
     }
-    this.reportAcknowledged = true;
     this.deps.log(`run ${this.runId}: failed (${reason}): ${detail}`);
     return 'failed';
   }
@@ -1214,7 +1125,7 @@ export class RunWorker {
   private async finishEnding(): Promise<WorkerOutcome> {
     const ending = this.ending;
     await this.stopTool();
-    if (ending?.kind === 'lost') await this.saveLocal();
+    if (ending?.kind === 'lost') await this.saveLocal(true);
     switch (ending?.kind) {
       case 'lost':
         this.deps.log(
@@ -1222,101 +1133,29 @@ export class RunWorker {
         );
         return 'leaseLost';
       case 'cancel': {
-        // Persist intent before cleanup. The existing record protects recovery when this write itself fails.
-        const notes: string[] = [];
-        await this.updateRecord({ recoveryReason: 'cancelled' }).catch(
-          (error: unknown) => {
-            notes.push(
-              `Cancellation retry metadata could not be stored: ${String(error)}`,
-            );
-          },
-        );
+        const saved = await this.saveLocal(true);
+        this.spool.push({
+          type: 'status',
+          content: saved.includes('Recovery required:')
+            ? `Cancelled. ${saved}`
+            : 'Cancelled.',
+          meta: { status: 'cancelled' },
+        });
+        await this.drainEvents();
         try {
-          // Safe cleanup must finish before the server can release this worker on acknowledgement.
-          await this.saveLocal(true);
-        } catch (error) {
-          const workDir =
-            this.prepared?.workspace?.workDir ?? this.record.workDir;
-          const reason = `Cancellation preservation failed; directory retained: ${this.writerRecoveryReason ?? 'local save could not finish'}; ${String(error)}`;
-          notes.push(reason);
-          if (workDir !== undefined)
-            this.localSaveResults = [{ path: workDir, saved: false, reason }];
-        }
-        if (this.saveEventFailure !== undefined)
-          notes.push(this.saveEventFailure);
-        try {
-          this.spool.push({
-            type: 'status',
-            content: 'Cancelled.',
-            meta: { status: 'cancelled' },
-          });
-          await this.drainEvents();
-        } catch (error) {
-          notes.push(
-            `Cancellation status could not be spooled: ${String(error)}`,
-          );
-        }
-        const recovery =
-          this.localSaveResults.some((result) => !result.saved) ||
-          notes.length > 0
-            ? {
-                attempt: this.record.attempt,
-                detail: this.redactor
-                  .text(
-                    [
-                      ...this.localSaveResults.map(
-                        (result) =>
-                          `${result.path}: ${result.saved ? 'Local continuation saved; not pushed' : result.reason}`,
-                      ),
-                      ...notes,
-                    ].join('\n\n'),
-                  )
-                  .slice(0, 10_000),
-                localSave: this.localSaveResults.map((result) => ({
-                  ...result,
-                  ...(result.reason === undefined
-                    ? {}
-                    : {
-                        reason: this.redactor
-                          .text(result.reason)
-                          .slice(0, 10_000),
-                      }),
-                })),
-              }
-            : undefined;
-        if (recovery !== undefined)
-          await this.updateRecord({ cancellationRecovery: recovery }).catch(
-            (error: unknown) => {
-              this.deps.log(
-                `run ${this.runId}: recovery details could not be stored; retry record retained: ${String(error)}`,
-              );
+          await this.report(
+            routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
+            {
+              ...(this.confirmedSessionId === undefined
+                ? {}
+                : { sessionId: this.confirmedSessionId }),
+              handledInputIds: [...this.delivered],
+              usage: this.usage,
             },
           );
-        try {
-          const response = dataOf(
-            await this.report(
-              routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
-              {
-                ...(this.confirmedSessionId === undefined
-                  ? {}
-                  : { sessionId: this.confirmedSessionId }),
-                handledInputIds: [...this.delivered],
-                usage: this.usage,
-                ...(recovery === undefined ? {} : { recovery }),
-              },
-            ),
-          );
-          this.reportAcknowledged =
-            recovery === undefined ||
-            (response !== null &&
-              typeof response === 'object' &&
-              'recoveryAccepted' in response &&
-              response.recoveryAccepted === true);
         } catch (error) {
-          // A terminal refusal is not an acknowledgement of preservation details. Restart recovery must retry.
-          this.deps.log(
-            `run ${this.runId}: cancellation report unconfirmed: ${error instanceof ApiError ? error.reason : String(error)}`,
-          );
+          if (!(error instanceof ApiError && LOST_CODES.has(error.reason)))
+            throw error;
         }
         this.deps.log(`run ${this.runId}: cancelled`);
         return 'cancelled';

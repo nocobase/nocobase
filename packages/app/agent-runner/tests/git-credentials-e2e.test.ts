@@ -5,7 +5,6 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { FakeServer, waitFor } from './fake-server.ts';
-import { fixtureDiagnostics } from './fixture-diagnostics.ts';
 import {
   makeServedRepo,
   startGitHttpServer,
@@ -35,7 +34,6 @@ describe('repository credentials on demand', () => {
   let served: string;
   let env: NodeJS.ProcessEnv;
   const daemons: Daemon[] = [];
-  let observation: ReturnType<typeof fixtureDiagnostics>;
   /** The passwords the git server takes, by repository, and the repository each was issued for. */
   const valid = new Map<string, Set<string>>();
   const issuedFor = new Map<string, string>();
@@ -81,7 +79,6 @@ describe('repository credentials on demand', () => {
       };
     };
     env = cliEnv(home);
-    observation = fixtureDiagnostics(home, [server], 'git-credentials');
     await registerRunner(server.url, env, [
       '--cli',
       `appcli=${writeFakeCli(scratch)}`,
@@ -89,7 +86,6 @@ describe('repository credentials on demand', () => {
   });
 
   afterEach(async () => {
-    observation?.finish();
     for (const daemon of daemons.splice(0)) await stopDaemon(daemon);
     await server.close();
     await remote.close();

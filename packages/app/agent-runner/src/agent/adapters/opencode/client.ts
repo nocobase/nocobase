@@ -33,7 +33,6 @@ export interface PermissionRule {
 
 export interface SessionInfo {
   id: string;
-  location?: { directory: string };
   model?: ModelRef;
   [key: string]: unknown;
 }
@@ -137,13 +136,6 @@ export class OpencodeClient {
   async switchModel(id: string, model: ModelRef): Promise<void> {
     await this.request('POST', `/api/session/${encodeURIComponent(id)}/model`, {
       model,
-    });
-  }
-
-  async moveSession(id: string, directory: string): Promise<void> {
-    await this.request('POST', `/api/session/${encodeURIComponent(id)}/move`, {
-      directory,
-      delivery: 'steer',
     });
   }
 

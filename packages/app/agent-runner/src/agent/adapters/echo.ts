@@ -103,12 +103,7 @@ export class EventQueue<T> implements AsyncIterable<T> {
 
 class Aborted extends Error {}
 
-function startEcho(kind: AdapterKind, input: AdapterSession): AdapterHandle {
-  // Model the tool following the current workspace notes when its conversation starts in a stable container.
-  const session = {
-    ...input,
-    workDir: input.additionalDirectories?.[0] ?? input.workDir,
-  };
+function startEcho(kind: AdapterKind, session: AdapterSession): AdapterHandle {
   const events = new EventQueue<AdapterEvent>();
   const children = new Set<ChildProcess>();
   const steered: { text: string; inputId?: string }[] = [];

@@ -93,8 +93,6 @@ export function isProtocolSupported(version: number): boolean {
  * - `steer`: injects input into the running turn instead of waiting for a turn boundary.
  * - `attachments`: the agent can upload files through the CLI.
  * - `checkout`: checks repositories out before the agent starts (`workspace.dirs` entries of kind `repo`).
- * - `prBranches`: checks out an existing PR branch from its remote, only fast-forwards, and refuses missing or
- *   diverged branches without switching to another branch (`RepoDir.pullRequest`).
  * - `directories`: works in a directory that already exists on the runner, in place (entries of kind `directory`).
  * - `secrets`: receives secrets from the server and injects them without writing them to disk.
  * - `skills`: installs the run's skills (`RunPayload.skills`) where its tool finds them.
@@ -112,7 +110,6 @@ export const RUNNER_FEATURES = [
   'steer',
   'attachments',
   'checkout',
-  'prBranches',
   'directories',
   'secrets',
   'skills',

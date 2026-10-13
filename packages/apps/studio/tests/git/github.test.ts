@@ -13,7 +13,6 @@ import {
   createGitHubPlatform,
   parseGitHubWebhook,
   tokenExpirationOf,
-  snapshotFromPayload,
 } from '../../server/git/github.js';
 import { rateLimitOf } from '../../server/git/github-client.js';
 import { GitApiError, type GitAuth } from '../../server/git/platform.js';
@@ -29,22 +28,6 @@ const auth = (token: string | null): GitAuth => ({
 afterEach(() => vi.useRealTimers());
 
 describe('the GitHub platform', () => {
-  it('records same-repository, fork and unknown head origins independently', () => {
-    for (const origin of [REPO, 'fork/studio', null]) {
-      expect(
-        snapshotFromPayload(
-          {
-            head: {
-              ref: 'fix/human',
-              repo: origin ? { full_name: origin } : null,
-            },
-          },
-          REPO,
-          1,
-        ).headRepo,
-      ).toBe(origin);
-    }
-  });
   it('refreshes a cached push token before handing a new run less than 30 minutes', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const github = createFakeGitHub();

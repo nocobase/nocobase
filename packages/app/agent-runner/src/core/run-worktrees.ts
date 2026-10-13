@@ -1,5 +1,4 @@
-// Per-attempt worktrees and local continuation refs. Saved heads are immutable: a concurrent run never replaces
-// another run's work, even when the resume compare-and-swap loses. Only Git's normal merge combines their contents.
+// Per-attempt worktrees. Resume advances only by fast-forward; divergent heads are listed for manual integration.
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
@@ -189,119 +188,6 @@ async function ref(cache: string, name: string): Promise<string | undefined> {
   return git(['rev-parse', '--verify', `${name}^{commit}`], cache);
 }
 
-async function importLegacy(
-  paths: RunnerPaths,
-  app: string,
-  subject: string,
-  cache: string,
-  url: string,
-): Promise<void> {
-  const workDir = subjectWorkDir(paths, app, subject);
-  const meta = await readWorkspaceMeta(paths, workDir);
-  if (meta === undefined || meta.repos.length === 0) return;
-  const lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
-  try {
-    for (const repo of meta.repos) {
-      if (repo.url !== url) continue;
-      const context = { dir: path.join(workDir, repo.path), cache, url };
-      const gitDir = await taskGitDir(context);
-      if (
-        (await taskGit(context, [
-          'symbolic-ref',
-          '--quiet',
-          '--short',
-          'HEAD',
-        ]).catch(() => '')) === ''
-      )
-        throw new CheckoutError(
-          `Legacy recovery required in ${context.dir}: detached HEAD cannot be imported as a task branch`,
-        );
-      if (
-        [
-          'MERGE_HEAD',
-          'rebase-merge',
-          'rebase-apply',
-          'CHERRY_PICK_HEAD',
-          'REVERT_HEAD',
-        ].some((name) => existsSync(path.join(gitDir, name))) ||
-        (await taskGit(context, ['diff', '--name-only', '--diff-filter=U'])) !==
-          ''
-      )
-        throw new CheckoutError(
-          `Legacy recovery required in ${context.dir}: unresolved Git operation`,
-        );
-      if (
-        (await taskGit(context, ['submodule', 'status', '--recursive'])) !== ''
-      )
-        throw new CheckoutError(
-          `Legacy recovery required in ${context.dir}: submodule objects must remain in their original repository`,
-        );
-      await taskGit(context, ['add', '--all']);
-      if (!(await taskGitOk(context, ['diff', '--cached', '--quiet'])))
-        await taskGit(context, [
-          ...COMMIT,
-          'commit',
-          '-m',
-          'chore(runner): save legacy local continuation',
-        ]);
-      const branches = (
-        await taskGit(context, [
-          'for-each-ref',
-          '--format=%(refname:strip=2)',
-          'refs/heads/',
-        ])
-      )
-        .split('\n')
-        .filter(Boolean);
-      for (const branch of branches) {
-        const head = await taskGit(context, [
-          'rev-parse',
-          `refs/heads/${branch}`,
-        ]);
-        const key = continuationKey(app, subject, url, branch);
-        const saved = `refs/runner/saved/${key}/0/legacy-${identity([workDir, repo.path])}/${head}`;
-        // Fetch only into an immutable namespace; never overwrite remote tracking refs or the legacy branch.
-        await git(
-          [
-            'fetch',
-            '--no-write-fetch-head',
-            context.dir,
-            `refs/heads/${branch}:${saved}`,
-          ],
-          cache,
-        );
-        if ((await ref(cache, saved)) !== head)
-          throw new CheckoutError(
-            `Legacy ref verification failed: ${context.dir}`,
-          );
-        await updateContinuationState(paths, app, subject, (state) => ({
-          ...state,
-          repos: state.repos.some((item) => item.continuation === key)
-            ? state.repos
-            : [
-                ...state.repos,
-                { url, path: key, cache, branch, continuation: key },
-              ],
-        }));
-      }
-    }
-    // The old directory stays protected by its existing GC evidence; do not remove it during import.
-    // Each repository is imported on demand, so do not mark a multi-repository workspace fully migrated yet.
-  } catch (error) {
-    await writeWorkspaceMeta(paths, workDir, {
-      ...meta,
-      recoveryRequired: true,
-    });
-    await updateContinuationState(paths, app, subject, (state) => ({
-      ...state,
-      activeWorkDirs: [...new Set([...(state.activeWorkDirs ?? []), workDir])],
-    }));
-    throw error;
-  } finally {
-    await lock.release();
-  }
-}
-
 /** Create and register before any subsequent preparation can fail or be cancelled. */
 export async function addRunWorktree(options: {
   paths: RunnerPaths;
@@ -316,17 +202,13 @@ export async function addRunWorktree(options: {
 }): Promise<{
   branch: string;
   continuation: string;
-  continuationEpoch: string;
-  conflicted: boolean;
   warnings: string[];
 }> {
   const { paths, workDir, appKey, subjectKey, cache, repo } = options;
   const dir = path.resolve(workDir, repo.path);
   const branch = runBranch(workDir, repo.path);
   const key = continuationKey(appKey, subjectKey, repo.url, repo.branch);
-  let epoch = '0';
   const warnings: string[] = [];
-  let conflicted = false;
   const state = await readContinuationState(paths, appKey, subjectKey);
   for (const previous of state?.activeWorkDirs ?? []) {
     const record = await readWorkspaceMeta(paths, previous);
@@ -337,11 +219,6 @@ export async function addRunWorktree(options: {
   }
   await mkdir(path.dirname(dir), { recursive: true });
   await updateContinuationState(paths, appKey, subjectKey, (state) => {
-    epoch =
-      options.clean === true && !options.readOnly
-        ? randomUUID()
-        : (state.repos.find((item) => item.continuation === key)
-            ?.continuationEpoch ?? '0');
     return {
       ...state,
       lastRunId: options.runId,
@@ -355,31 +232,35 @@ export async function addRunWorktree(options: {
           cache,
           branch: repo.branch,
           continuation: key,
-          continuationEpoch: epoch,
         },
       ],
     };
   });
-  const resume = `refs/runner/resume/${key}/${epoch}`;
+  const resume = `refs/runner/resume/${key}`;
   const lock = await lockCache(cache);
   try {
-    if (!options.readOnly)
-      await importLegacy(paths, appKey, subjectKey, cache, repo.url);
     const remote = await ref(cache, `refs/remotes/origin/${repo.branch}`);
     const local = await ref(cache, resume);
-    const base =
-      local ??
+    let base =
+      (options.readOnly || options.clean ? undefined : local) ??
       remote ??
       (await ref(cache, `refs/remotes/origin/${repo.defaultBranch}`));
-    // PM-294's selected PR must exist remotely; do not substitute the default branch.
     if (
-      'pullRequest' in repo &&
-      repo.pullRequest !== undefined &&
-      remote === undefined
-    )
-      throw new CheckoutError(
-        `${repo.url}: selected pull request branch ${repo.branch} is missing remotely`,
-      );
+      !options.readOnly &&
+      !options.clean &&
+      local &&
+      remote &&
+      local !== remote
+    ) {
+      if (await gitOk(['merge-base', '--is-ancestor', local, remote], cache))
+        base = remote;
+      else if (
+        !(await gitOk(['merge-base', '--is-ancestor', remote, local], cache))
+      )
+        warnings.push(
+          `Remote ${repo.branch} diverged from local continuation. Integrate it manually before pushing; no automatic merge was performed.`,
+        );
+    }
     const existing = await readWorkspaceMeta(paths, workDir);
     await writeWorkspaceMeta(paths, workDir, {
       ...existing,
@@ -398,7 +279,6 @@ export async function addRunWorktree(options: {
           branch: repo.branch,
           localBranch: branch,
           continuation: key,
-          continuationEpoch: epoch,
           ...(base === undefined ? {} : { startSha: base }),
         },
       ],
@@ -444,55 +324,29 @@ export async function addRunWorktree(options: {
   } finally {
     await lock.release();
   }
+  const savedHeads = await git(
+    [
+      'for-each-ref',
+      '--format=%(refname) %(objectname)',
+      `refs/runner/saved/${key}/`,
+    ],
+    cache,
+  );
+  if (savedHeads !== '')
+    warnings.push(
+      `Additional saved commits require manual integration:\n${savedHeads}`,
+    );
   if (options.clean === true)
     warnings.push(
-      `A clean run starts a new continuation generation. Earlier saved heads remain protected under refs/runner/saved/${key}/; they are not discarded or merged into this generation.`,
+      'Clean checkout starts from the remote. Existing local resume and saved commits remain available.',
     );
-  const context = { dir, cache, url: repo.url };
-  const heads = (
-    await git(
-      [
-        'for-each-ref',
-        '--format=%(objectname)',
-        `refs/runner/saved/${key}/${epoch}/`,
-      ],
-      cache,
-    )
-  )
-    .split('\n')
-    .filter(Boolean);
-  const remote = await ref(cache, `refs/remotes/origin/${repo.branch}`);
-  if (remote !== undefined) heads.push(remote);
-  for (const head of options.readOnly ? [] : [...new Set(heads)]) {
-    if (await taskGitOk(context, ['merge-base', '--is-ancestor', head, 'HEAD']))
-      continue;
-    try {
-      await taskGit(context, [...COMMIT, 'merge', '--no-edit', head]);
-    } catch (error) {
-      const gitDir = await taskGitDir(context);
-      if (
-        !existsSync(path.join(gitDir, 'MERGE_HEAD')) &&
-        (await taskGit(context, ['diff', '--name-only', '--diff-filter=U'])) ===
-          ''
-      )
-        throw error;
-      conflicted = true;
-      warnings.push(
-        `Resolve the merge in ${dir} before working or pushing. Remaining continuation heads: ${heads.join(', ')}.`,
-      );
-      break;
-    }
-  }
-
   if (await ref(cache, resume))
     warnings.push(
-      `This machine restored local continuation commits for target ${repo.branch}. These may not have been pushed.`,
+      `This machine has local continuation commits for target ${repo.branch}. These may not have been pushed.`,
     );
   return {
     branch,
     continuation: key,
-    continuationEpoch: epoch,
-    conflicted,
     warnings,
   };
 }
@@ -619,24 +473,9 @@ export async function finalizeRunWorktrees(
           () => undefined,
         );
         if (head !== undefined) {
-          const saved = `refs/runner/saved/${repo.continuation}/${repo.continuationEpoch ?? '0'}/${identity([workDir])}/${head}`;
-          const resume = `refs/runner/resume/${repo.continuation}/${repo.continuationEpoch ?? '0'}`;
-          const lock = await acquireLock(
-            path.join(paths.locksDir, `resume-${repo.continuation}.lock`),
-          );
+          const resume = `refs/runner/resume/${repo.continuation}`;
+          const lock = await lockCache(repo.cache);
           try {
-            const previousSaved = await ref(repo.cache, saved);
-            if (previousSaved !== undefined && previousSaved !== head)
-              throw new CheckoutError(
-                'Immutable saved ref already contains a different head',
-              );
-            if (previousSaved === undefined)
-              await git(
-                ['update-ref', saved, head, '0'.repeat(head.length)],
-                repo.cache,
-              );
-            if ((await ref(repo.cache, saved)) !== head)
-              throw new CheckoutError('Saved ref verification failed');
             const previous = await ref(repo.cache, resume);
             if (
               previous === undefined ||
@@ -644,17 +483,15 @@ export async function finalizeRunWorktrees(
                 ['merge-base', '--is-ancestor', previous, head],
                 repo.cache,
               ))
-            )
-              await git(
-                [
-                  'update-ref',
-                  resume,
-                  head,
-                  previous ?? '0'.repeat(head.length),
-                ],
-                repo.cache,
+            ) {
+              await git(['update-ref', resume, head], repo.cache);
+            } else {
+              const saved = `refs/runner/saved/${repo.continuation}/${randomUUID()}`;
+              await git(['update-ref', saved, head], repo.cache);
+              log(
+                `Divergent local commit saved for manual integration: ${saved} ${head}`,
               );
-            // A divergent result stays reachable in saved/* and is merged during the next preparation.
+            }
           } finally {
             await lock.release();
           }
@@ -674,6 +511,7 @@ export async function finalizeRunWorktrees(
           ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
           repo.cache,
         );
+        await git(['worktree', 'prune'], repo.cache);
       } finally {
         await lock.release();
       }

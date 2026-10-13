@@ -632,7 +632,6 @@ export async function createHarness(
           ...(options.features ?? [
             'input',
             'checkout',
-            'prBranches',
             'directories',
             'attachments',
             'skills',

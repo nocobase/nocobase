@@ -38,7 +38,7 @@ import type { Agent } from '@nocobase/app-plugin-agents/shared/agents';
 import { statusCategory } from '@nocobase/app-plugin-projects/shared/statuses';
 
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
-import { runBranches, type RunBranch } from '../git/run-git.js';
+import { runBranches } from '../git/run-git.js';
 import { initialDirOf } from '../projects-init/store.js';
 import { ATTACH_ACTION } from './capabilities.js';
 import { PROJECT_SCOPE } from './catalog/scopes.js';
@@ -264,7 +264,7 @@ function fileLine(file: IssueContextFile): string {
  */
 export function dirsOf(
   context: IssueContext,
-  branches: ReadonlyMap<string, RunBranch> = new Map(),
+  branches: ReadonlyMap<string, string> = new Map(),
   initial: {
     readonly resourceId: string;
     readonly defaultBranch: string;
@@ -325,23 +325,14 @@ export function dirsOf(
           ...initPrompt,
         },
       ];
-    const selected = branches.get(repo.id);
     return [
       {
         kind: 'repo',
         url: repo.url,
         // A project's repository may name no base: assume the common default.
-        defaultBranch: selected?.base ?? repo.defaultRef ?? 'main',
-        branch: selected?.branch ?? `agent/${context.identifier}`,
-        ...(selected?.pullRequest ? { pullRequest: selected.pullRequest } : {}),
-        ...(selected?.excludedPullRequests
-          ? {
-              excludedPullRequests: selected.excludedPullRequests,
-            }
-          : {}),
-        ...(initializeIfEmpty && !selected?.pullRequest
-          ? { initializeIfEmpty: true as const }
-          : {}),
+        defaultBranch: repo.defaultRef ?? 'main',
+        branch: branches.get(repo.id) ?? `agent/${context.identifier}`,
+        ...(initializeIfEmpty ? { initializeIfEmpty: true as const } : {}),
         path: nameOf(
           repo.url
             .replace(/\.git$/u, '')
@@ -510,7 +501,6 @@ export function createIssueContextProvider(
                 conn,
                 context.project?.repos ?? [],
                 context.identifier,
-                context.id,
               ),
               initial,
               initializeIfEmpty,

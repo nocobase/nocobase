@@ -13,7 +13,7 @@
 // killing what is left in the unit's cgroup, is what remains for those.
 import { execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, readlink } from 'node:fs/promises';
 import { promisify } from 'node:util';
 
 import { delay } from '../lib/http.ts';
@@ -31,12 +31,14 @@ export async function listProcesses(): Promise<ProcessEntry[]> {
   try {
     const { stdout } = await execFileAsync(
       'ps',
-      ['-A', '-o', 'pid=,ppid=,pgid='],
+      ['-A', '-o', 'pid=,ppid=,pgid=,stat='],
       { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 },
     );
     const entries: ProcessEntry[] = [];
     for (const line of stdout.split('\n')) {
-      const [pid, ppid, pgid] = line.trim().split(/\s+/u).map(Number);
+      const fields = line.trim().split(/\s+/u);
+      if (fields[3]?.startsWith('Z') || fields[3]?.startsWith('X')) continue;
+      const [pid, ppid, pgid] = fields.slice(0, 3).map(Number);
       if (
         Number.isInteger(pid) &&
         Number.isInteger(ppid) &&
@@ -229,4 +231,17 @@ export async function killTagged(tags: readonly string[]): Promise<number> {
     await delay(100);
   }
   return killed;
+}
+
+/** Current cwd holders only. This is a best-effort check, not process containment. */
+export async function workspaceHolders(workDir: string): Promise<number[]> {
+  if (process.platform !== 'linux') return [];
+  const prefix = `${workDir}/`;
+  const found: number[] = [];
+  for (const entry of await listProcesses()) {
+    if (entry.pid === process.pid) continue;
+    const cwd = await readlink(`/proc/${entry.pid}/cwd`).catch(() => '');
+    if (cwd === workDir || cwd.startsWith(prefix)) found.push(entry.pid);
+  }
+  return found;
 }

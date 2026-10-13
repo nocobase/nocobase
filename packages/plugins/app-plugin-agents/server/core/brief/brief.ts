@@ -118,19 +118,8 @@ export const AGENT_LAYER_PREFIX =
 
 function describeDir(dir: WorkspaceDir): string {
   const name = dir.name ? ` (${dir.name})` : '';
-  if (dir.kind === 'repo') {
-    const selected = dir.pullRequest
-      ? `, the branch of pull request #${dir.pullRequest.number} (${dir.pullRequest.url}), selected by earliest association time, then ascending PR number`
-      : '';
-    const excluded = (dir.excludedPullRequests ?? [])
-      .map((pr) =>
-        pr.reason === 'fork'
-          ? ` Pull request #${pr.number} (${pr.url}) comes from a fork: it is not checked out and nothing is pushed to it.`
-          : ` Pull request #${pr.number} (${pr.url}) has an unknown head repository: it is excluded until a host refresh identifies its origin, and nothing is pushed to it.`,
-      )
-      .join('');
-    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} targeting remote branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`)${selected}; the local branch may be a private runner alias. Work and commit in the current checkout, then push only with \`git push origin HEAD:refs/heads/${dir.branch}\`, never another target, and never rewrite history already pushed (no force push, no rebase or amend of pushed commits)${excluded}`;
-  }
+  if (dir.kind === 'repo')
+    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} targeting branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); the local branch may be a private runner alias. Commit in the current checkout and push with \`git push origin HEAD:refs/heads/${dir.branch}\`; never force push`;
   return `\`${dir.path}\`${name}, a directory on this machine you work in as it is: no branch of its own, so leave its version control alone unless the task asks, and do not delete or reset what is there`;
 }
 

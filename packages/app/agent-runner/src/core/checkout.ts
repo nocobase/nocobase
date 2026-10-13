@@ -287,7 +287,6 @@ export interface CheckedOutRepo {
   defaultBranch: string;
   localBranch?: string;
   continuation?: string;
-  continuationEpoch?: string;
   warnings?: string[];
   primary: boolean;
   /** Absolute. */
@@ -339,7 +338,6 @@ export interface WorkspaceRepo {
   branch: string;
   localBranch?: string;
   continuation?: string;
-  continuationEpoch?: string;
   /** Where the checkout started when the runner created it; nothing past it was committed while HEAD is here. */
   startSha?: string;
   /** What the runner last saw the remote task branch hold after it pushed (or found it already pushed). */
@@ -447,11 +445,6 @@ function believable(
           : {}),
         ...(!legacy && isText(repo.continuation)
           ? { continuation: repo.continuation }
-          : {}),
-        ...(!legacy &&
-        isText(repo.continuationEpoch) &&
-        /^[a-zA-Z0-9-]+$/u.test(repo.continuationEpoch)
-          ? { continuationEpoch: repo.continuationEpoch }
           : {}),
         ...(!legacy && isText(repo.startSha) && SHA.test(repo.startSha)
           ? { startSha: repo.startSha }
@@ -745,10 +738,6 @@ async function addClone(
     '--quiet',
     `refs/remotes/origin/${repo.branch}`,
   ]);
-  if (repo.pullRequest && !remote)
-    throw new CheckoutError(
-      `PR #${repo.pullRequest.number} branch ${repo.branch}: remote branch is missing in ${repo.url}`,
-    );
   const base = remote
     ? `origin/${repo.branch}`
     : `origin/${repo.defaultBranch}`;
@@ -830,81 +819,6 @@ async function ensureCheckout(
       '--short',
       'HEAD',
     ]).catch(() => '');
-    if (repo.pullRequest) {
-      // Cleanup records only the active branch. Do not strand unpublished work on a branch it will stop checking.
-      // These origin refs were just fetched: a same-name remote containing HEAD is evidence the old work was pushed.
-      if (current !== repo.branch) {
-        if (current === '')
-          throw new CheckoutError(
-            'cannot switch from detached HEAD: cannot prove its commits were pushed',
-          );
-        const oldRemote = `refs/remotes/origin/${current}`;
-        if (
-          !(await taskGitOk(context, [
-            'show-ref',
-            '--verify',
-            '--quiet',
-            oldRemote,
-          ]))
-        )
-          throw new CheckoutError(
-            `cannot switch from branch ${current}: remote branch is missing; cannot prove its commits were pushed`,
-          );
-        if (
-          !(await taskGitOk(context, [
-            'merge-base',
-            '--is-ancestor',
-            'HEAD',
-            oldRemote,
-          ]))
-        )
-          throw new CheckoutError(
-            `cannot switch from branch ${current}: local commits are unpublished or their push cannot be proven`,
-          );
-      }
-      const remote = `refs/remotes/origin/${repo.branch}`;
-      if (
-        !(await taskGitOk(context, ['show-ref', '--verify', '--quiet', remote]))
-      )
-        throw new CheckoutError('remote branch is missing');
-      const local = `refs/heads/${repo.branch}`;
-      const exists = await taskGitOk(context, [
-        'show-ref',
-        '--verify',
-        '--quiet',
-        local,
-      ]);
-      if (!exists) {
-        await taskGit(context, [
-          'checkout',
-          '--quiet',
-          '--no-track',
-          '-b',
-          repo.branch,
-          remote,
-        ]);
-      } else {
-        const behind = await taskGitOk(context, [
-          'merge-base',
-          '--is-ancestor',
-          local,
-          remote,
-        ]);
-        const ahead = await taskGitOk(context, [
-          'merge-base',
-          '--is-ancestor',
-          remote,
-          local,
-        ]);
-        if (!behind && !ahead)
-          throw new CheckoutError('local and remote branches have diverged');
-        if (current !== repo.branch)
-          await taskGit(context, ['checkout', '--quiet', repo.branch]);
-        if (behind && !ahead)
-          await taskGit(context, ['merge', '--ff-only', remote]);
-      }
-      return false;
-    }
     if (current !== repo.branch) {
       const exists = await taskGitOk(context, [
         'show-ref',
@@ -1274,25 +1188,17 @@ export async function prepareDirs(
       );
       const retry = options.retry === undefined ? {} : { retry: options.retry };
       const repoUrl = entry.url;
-      const prError = (error: unknown): never => {
-        if (entry.kind === 'repo' && entry.pullRequest)
-          throw new CheckoutError(
-            `PR #${entry.pullRequest.number} branch ${entry.branch}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        throw error;
-      };
       const cache = await withRepoAuth(options.auth, repoUrl, (auth) =>
         updateCache(paths, repoUrl, {
           ...(auth === undefined ? {} : { auth }),
           ...retry,
         }),
-      ).catch(prError);
+      );
       // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
       // above; read all advertised refs before granting the narrowly scoped first-push exception.
       let initializing = false;
       if (
         entry.initializeIfEmpty === true &&
-        !entry.pullRequest &&
         entry.initial !== true &&
         !(await gitOk(
           [
@@ -1343,11 +1249,10 @@ export async function prepareDirs(
               repo: entry,
               readOnly: options.readOnly === true,
               clean: options.clean === true,
-            }).catch(prError)
+            })
           : undefined;
       const created =
-        runTree !== undefined ||
-        (await ensureCheckout(cache, dir, entry).catch(prError));
+        runTree !== undefined || (await ensureCheckout(cache, dir, entry));
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
       const known = meta?.repos.find(
@@ -1371,18 +1276,15 @@ export async function prepareDirs(
       // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'));
-      const submodules =
-        runTree?.conflicted === true
-          ? []
-          : await withRepoAuth(options.auth, entry.url, (auth) =>
-              initSubmodules(dir, {
-                all: created,
-                url: entry.url,
-                cache,
-                ...(auth === undefined ? {} : { auth }),
-                ...retry,
-              }),
-            ).catch(prError);
+      const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
+        initSubmodules(dir, {
+          all: created,
+          url: entry.url,
+          cache,
+          ...(auth === undefined ? {} : { auth }),
+          ...retry,
+        }),
+      );
       if (submodules.length > 0)
         options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
@@ -1394,15 +1296,13 @@ export async function prepareDirs(
           : {
               localBranch: runTree.branch,
               continuation: runTree.continuation,
-              continuationEpoch: runTree.continuationEpoch,
               warnings: runTree.warnings,
             }),
         primary,
         dir,
         cache,
         gitDir,
-        submodules:
-          runTree?.conflicted === true ? [] : await listSubmodules(dir),
+        submodules: await listSubmodules(dir),
         ...(initializing ? { initializing: true as const } : {}),
       };
       const key = preparedKey(entry);
@@ -1438,7 +1338,6 @@ export async function prepareDirs(
           : {
               localBranch: repo.localBranch,
               continuation: repo.continuation,
-              continuationEpoch: repo.continuationEpoch,
             }),
         ...shas.get(repo.dir),
       })),

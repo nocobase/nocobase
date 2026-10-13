@@ -1,5 +1,4 @@
-import { readFile, writeFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -60,92 +59,6 @@ const settled = [
 ];
 
 describe('detect', () => {
-  it.each(['repository', 'container', 'custom'] as const)(
-    'migrates the assigned %s session without changing its id or history and uses persistent storage',
-    async (mode) => {
-      const root = await mkdtemp(path.join(tmpdir(), 'pi-migration-'));
-      try {
-        const newCwd = path.join(root, 'container');
-        const oldCwd =
-          mode === 'container' ? newCwd : path.join(root, 'old-repo');
-        const sessionStoreDir = path.join(newCwd, 'pi-sessions');
-        const legacy =
-          mode === 'custom'
-            ? path.join(root, 'custom-sessions')
-            : path.join(
-                root,
-                '.pi/agent/sessions',
-                `--${oldCwd.replace(/^[/\\]/u, '').replace(/[/\\:]/g, '-')}--`,
-              );
-        await mkdir(legacy, { recursive: true });
-        const file = 'timestamp_pi-session-0.jsonl';
-        const body =
-          '\n{"type":"message","id":"entry","message":{"role":"user","content":"synthetic memory"}}\n';
-        const original =
-          JSON.stringify({
-            type: 'session',
-            version: 3,
-            id: 'pi-session-0',
-            cwd: oldCwd,
-          }) + body;
-        await writeFile(path.join(legacy, file), original);
-        await writeFile(path.join(legacy, 'timestamp_other.jsonl'), '{}\n');
-        const { spawn, processes } = fakeSpawn(
-          (pi) => {
-            void pi.next('prompt').then((prompt) => {
-              pi.respond(prompt, { disposition: 'started' });
-              writeAll(pi, [
-                ...assistantMessage([{ type: 'text', text: 'ok' }]),
-                ...settled,
-              ]);
-            });
-          },
-          { sessionId: 'pi-session-0', messageCount: 1 },
-        );
-        const handle = (await adapterWith(spawn)).start(
-          session({
-            workDir: newCwd,
-            env: {
-              HOME: root,
-              PATH: process.env.PATH!,
-              ...(mode === 'custom'
-                ? { PI_CODING_AGENT_SESSION_DIR: legacy }
-                : {}),
-            },
-            legacyWorkDirs: mode === 'container' ? [] : [oldCwd],
-            sessionStoreDir,
-            resumeSessionId: 'pi-session-0',
-          }),
-        );
-        const events = await collect(handle);
-        expect((await handle.result).sessionId).toBe('pi-session-0');
-        expect(
-          events.some((event) => event.content === 'sessionRecovery'),
-        ).toBe(false);
-        const args = processes[0].args;
-        expect(args[args.indexOf('--session-id') + 1]).toBe('pi-session-0');
-        expect(args[args.indexOf('--session-dir') + 1]).toBe(sessionStoreDir);
-        const migrated = await readFile(
-          path.join(sessionStoreDir, file),
-          'utf8',
-        );
-        expect(JSON.parse(migrated.split('\n')[0])).toMatchObject({
-          id: 'pi-session-0',
-          cwd: newCwd,
-        });
-        expect(migrated.slice(migrated.indexOf('\n'))).toBe(body);
-        expect(await readFile(path.join(legacy, file), 'utf8')).toBe(original);
-        expect(
-          await readFile(
-            path.join(sessionStoreDir, 'timestamp_other.jsonl'),
-            'utf8',
-          ).catch(() => undefined),
-        ).toBeUndefined();
-      } finally {
-        await rm(root, { recursive: true, force: true });
-      }
-    },
-  );
   it.each([0, 3, undefined])(
     'uses successful structured state for recovery (messageCount=%s), independently of late stderr',
     async (messageCount) => {
