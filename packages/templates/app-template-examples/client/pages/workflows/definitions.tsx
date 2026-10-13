@@ -1,4 +1,3 @@
-import { Badge } from '#components/ui/badge';
 import { Empty, EmptyDescription } from '#components/ui/empty';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -19,7 +18,6 @@ import { useWorkflowData, useWorkflowLabels } from './hooks.js';
 
 export default function DefinitionsPage(): ReactElement {
   const [sort, setSort] = useState<{
-    field: 'states' | 'transitions';
     ascending: boolean;
   }>();
   const { t } = useTranslation();
@@ -29,22 +27,23 @@ export default function DefinitionsPage(): ReactElement {
     'workflows/definitions',
   );
   const rows = [...(request.data?.data ?? [])].sort((a, b) =>
-    sort ? (sort.ascending ? 1 : -1) * (a[sort.field] - b[sort.field]) : 0,
+    sort
+      ? (sort.ascending ? 1 : -1) * (a.executionCount - b.executionCount)
+      : 0,
   );
-  const sortButton = (field: 'states' | 'transitions') => (
+  const sortButton = (
     <Button
       variant='ghost'
       size='sm'
       className='-mr-3 h-8'
       onClick={() =>
         setSort({
-          field,
-          ascending: sort?.field === field ? !sort.ascending : true,
+          ascending: sort ? !sort.ascending : true,
         })
       }
     >
-      {t(`workflows.${field}`)}
-      {sort?.field === field && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
+      {t('workflows.executionCount')}
+      {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
     </Button>
   );
   return (
@@ -68,14 +67,17 @@ export default function DefinitionsPage(): ReactElement {
                 <TableHead className='px-3 text-muted-foreground'>
                   {t('workflows.workflow')}
                 </TableHead>
-                <TableHead className='px-3 text-muted-foreground'>
-                  {t('workflows.source')}
-                </TableHead>
-                <TableHead className='px-3 text-right text-muted-foreground'>
-                  {sortButton('states')}
-                </TableHead>
-                <TableHead className='px-3 text-right text-muted-foreground'>
-                  {sortButton('transitions')}
+                <TableHead
+                  className='px-3 text-right text-muted-foreground'
+                  aria-sort={
+                    sort
+                      ? sort.ascending
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                  }
+                >
+                  {sortButton}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -96,16 +98,19 @@ export default function DefinitionsPage(): ReactElement {
                       {workflow.name}
                     </p>
                   </TableCell>
-                  <TableCell className='px-3'>
-                    <Badge variant='secondary'>
-                      {t(`workflows.sources.${workflow.source}`)}
-                    </Badge>
-                  </TableCell>
                   <TableCell className='px-3 text-right tabular-nums'>
-                    {workflow.states}
-                  </TableCell>
-                  <TableCell className='px-3 text-right tabular-nums'>
-                    {workflow.transitions}
+                    <Link
+                      className='text-primary underline-offset-4 hover:underline'
+                      to={{
+                        pathname: '/workflows/executions',
+                        search: new URLSearchParams({
+                          workflowId: workflow.id,
+                        }).toString(),
+                      }}
+                      aria-label={`${labels.title(workflow)}: ${t('workflows.viewExecutions')} (${workflow.executionCount})`}
+                    >
+                      {workflow.executionCount}
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

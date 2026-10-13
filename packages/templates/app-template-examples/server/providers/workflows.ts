@@ -35,7 +35,7 @@ export class WorkflowsService {
     private readonly sources: readonly WorkflowSource[],
   ) {}
 
-  public definitions(): WorkflowSummary[] {
+  private summaries(): Omit<WorkflowSummary, 'executionCount'>[] {
     return this.sources.flatMap((source) =>
       source.definitions.map(({ name }) => {
         const description = source.runtime.describe(name);
@@ -48,6 +48,21 @@ export class WorkflowsService {
         };
       }),
     );
+  }
+
+  public async definitions(): Promise<WorkflowSummary[]> {
+    return Promise.all(
+      this.summaries().map(async (workflow) => ({
+        ...workflow,
+        executionCount: await this.executionCount(workflow.id),
+      })),
+    );
+  }
+
+  private async executionCount(id: string): Promise<number> {
+    const { collection } = this.resolve(id);
+    // Match the execution list: one lifecycle-managed business record is one execution.
+    return this.database.repository(collection).count({});
   }
 
   private resolve(id: string) {
@@ -68,7 +83,10 @@ export class WorkflowsService {
   public async definition(id: string): Promise<WorkflowDefinition> {
     const { runtime, name } = this.resolve(id);
     return {
-      workflow: this.definitions().find((item) => item.id === id)!,
+      workflow: {
+        ...this.summaries().find((item) => item.id === id)!,
+        executionCount: await this.executionCount(id),
+      },
       ...(await lifecycleDescriptionViewAsync(runtime, name, {
         record: null,
         transactionHandle: undefined,
@@ -83,8 +101,8 @@ export class WorkflowsService {
     order: 'newest' | 'oldest' = 'newest',
   ): Promise<WorkflowExecutionPage> {
     const workflows = workflowId
-      ? [this.definitions().find((item) => item.id === workflowId)!]
-      : this.definitions();
+      ? [this.summaries().find((item) => item.id === workflowId)!]
+      : this.summaries();
     if (workflowId) this.resolve(workflowId);
     const offset = (page - 1) * pageSize;
     // Each collection contributes only its newest candidates. Merge using the same date/id ordering as the queries;
