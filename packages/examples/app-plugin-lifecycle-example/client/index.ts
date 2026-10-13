@@ -8,7 +8,8 @@ export { parameterApi, type ParameterApi } from './lib/parameter-api.js';
 export type {
   ParameterGroupView,
   ParameterHistoryView,
-  ReviewerOptions,
+  ReviewerReferencePage,
+  ReviewerReferenceType,
 } from '../shared/parameter-configuration.js';
 
 export { ProcessDiagram } from './components/process-diagram-lazy.js';

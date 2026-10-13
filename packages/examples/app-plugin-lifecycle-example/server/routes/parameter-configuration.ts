@@ -73,16 +73,79 @@ export function configurationRoutes(
       return context.json({ data, meta: { total: data.length } });
     },
   );
+  const referenceType = z.enum(['department', 'role', 'user']);
+  const referenceSchema = z.object({
+    id: z.string().meta({ description: 'Scoped reference ID.' }),
+    name: z.string().meta({ description: 'Reference display name.' }),
+    active: z.boolean().optional(),
+  });
+  const referenceMeta = z.object({
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    total: z.number().int(),
+  });
   router.get(
-    `${base}/parameterGroups/financeReviewers/options`,
+    `${base}/parameterGroups/financeReviewers/references`,
     permission('candidates'),
-    describe(
-      'lifecycleExampleReviewerOptions',
-      'List scoped reviewer references',
+    describeRoute({
+      tags,
+      operationId: 'lifecycleExampleSearchReviewerReferences',
+      summary: 'Search scoped reviewer references',
+      description:
+        'Requires a signed-in session and candidate lookup permission. Queries only the selected reference type by name; blank searches return no candidates. Active users only, at most ten results per page.',
+      responses: {
+        200: listResponse(referenceSchema, referenceMeta),
+        401: apiErrorResponse(401),
+        403: apiErrorResponse(403),
+        500: apiErrorResponse(500),
+      },
+    }),
+    apiValidator(
+      'query',
+      ActAsQuery.extend({
+        type: referenceType,
+        q: z.string().trim().max(100).default(''),
+        page: z.coerce.number().int().min(1).max(100000).default(1),
+        pageSize: z.coerce.number().int().min(1).max(10).default(10),
+      }),
+    ),
+    async (context) => {
+      const { type, q, page, pageSize } = context.req.valid('query');
+      return context.json(
+        await service.references(actor(context), type, q, page, pageSize),
+      );
+    },
+  );
+  router.get(
+    `${base}/parameterGroups/financeReviewers/references/:type/:referenceId`,
+    permission('candidates'),
+    describeRoute({
+      tags,
+      operationId: 'lifecycleExampleGetReviewerReference',
+      summary: 'Read a selected scoped reviewer reference',
+      description:
+        'Requires a signed-in session and candidate lookup permission. Resolves only the selected ID, including inactive saved references.',
+      responses: {
+        200: dataResponse(referenceSchema.nullable()),
+        401: apiErrorResponse(401),
+        403: apiErrorResponse(403),
+        500: apiErrorResponse(500),
+      },
+    }),
+    apiValidator(
+      'param',
+      z.object({
+        type: referenceType,
+        referenceId: z.string().min(1).max(100),
+      }),
     ),
     apiValidator('query', ActAsQuery),
-    async (context) =>
-      context.json({ data: await service.options(actor(context)) }),
+    async (context) => {
+      const { type, referenceId } = context.req.valid('param');
+      return context.json({
+        data: await service.reference(actor(context), type, referenceId),
+      });
+    },
   );
   router.post(
     `${base}/parameterGroups/financeReviewers/previewCandidates`,
