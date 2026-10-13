@@ -35,4 +35,16 @@ describe('MarkdownView', () => {
       decodeURI(container.querySelector('a')?.getAttribute('href') ?? ''),
     ).toBe('https://example.com/中文');
   });
+
+  it('keeps a valid port in a bare URL before CJK text', () => {
+    const { container } = render(
+      <MarkdownView content='https://example.com:8443/docs中文说明' />,
+    );
+    expect(links(container)).toEqual([
+      ['https://example.com:8443/docs', 'https://example.com:8443/docs'],
+    ]);
+    expect(container).toHaveTextContent(
+      'https://example.com:8443/docs中文说明',
+    );
+  });
 });

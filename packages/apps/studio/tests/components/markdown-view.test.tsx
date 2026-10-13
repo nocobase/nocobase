@@ -18,6 +18,12 @@ describe('MarkdownView CJK autolinks', () => {
       'See https://example.com/docs中文说明',
     ],
     [
+      'See https://example.com:8443/docs中文说明',
+      ['https://example.com:8443/docs'],
+      ['https://example.com:8443/docs'],
+      'See https://example.com:8443/docs中文说明',
+    ],
+    [
       'Visit www.example.com，感谢！',
       ['http://www.example.com'],
       ['www.example.com'],
@@ -34,6 +40,12 @@ describe('MarkdownView CJK autolinks', () => {
       ['https://example.com/path_(nested)', 'https://example.com/end'],
       ['https://example.com/path_(nested)', 'https://example.com/end'],
       '(https://example.com/path_(nested)). Next: https://example.com/end.,',
+    ],
+    [
+      'https://example.com:8443/docs.,（说明）',
+      ['https://example.com:8443/docs'],
+      ['https://example.com:8443/docs'],
+      'https://example.com:8443/docs.,（说明）',
     ],
   ])('links only the URL in %s', (content, hrefs, labels, fullText) => {
     const { container } = render(<MarkdownView content={content} />);
