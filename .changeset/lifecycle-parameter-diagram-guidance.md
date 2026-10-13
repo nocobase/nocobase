@@ -2,4 +2,4 @@
 '@nocobase/app-skills': patch
 ---
 
-Guide agents to expose node-related lifecycle parameters through editing dialogs on process diagrams, with references to the workflow example.
+Guide agents to expose node-related lifecycle parameters through editing dialogs on process diagrams, with references to the workflow example. Clarify HTTP-compatible browser request IDs and key reuse for transport retries.

@@ -78,6 +78,8 @@ Respect the user's existing UI and scope. API-only work needs no configuration p
 
 When building a page with configurable parameters tied to business process nodes, prefer an editing entry on the corresponding diagram node or transition. For example, clicking a finance-review node can open a dialog for its reviewer rules and approval threshold, so users can adjust those values in their process context. If the page already includes a diagram, incorporate this entry as part of the page design; if a diagram has not been requested, suggest this interaction when discussing the process interface. Parameters with no node or transition relationship can stay in an embedded form or settings page.
 
+For save request IDs, follow the [browser request ID guidance](lifecycle.md#5-the-page): use an HTTP-compatible generator and retain the key for retries of the same save.
+
 The example plugin exports `ParameterEditor`, `parameterApi` and `boundParameterGroups` from `@nocobase/app-plugin-lifecycle-example/client`. They illustrate a shared editor with an injected API, complete-version CAS saves, read-only mode and preserved drafts on conflicts. They are example exports, not an automatically installed platform settings service. Applications can implement the same contracts in their own UI.
 
 For a working reference in the NocoBase source repository, inspect `packages/examples/app-plugin-lifecycle-example/client/pages/parameters.tsx` and `client/components/parameter-binding-editor.tsx` in the same package: `useParameterBindingEditor` connects diagram bindings to a dialog containing the shared `ParameterEditor` and refreshes the page after saving. Reuse the same editor and save contract for diagram and settings entries when both exist.
